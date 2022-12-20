@@ -106,11 +106,13 @@ type ResourceMapsProvider interface {
 
 // NodeAndEdgeProvider must be implemented by any dashboard leaf node which supports edges and nodes
 // (DashboardGraph, DashboardFlow, DashboardHierarchy)
+// TODO [node_reuse] add NodeAndEdgeProviderImpl
 type NodeAndEdgeProvider interface {
 	QueryProvider
 	GetEdges() DashboardEdgeList
 	SetEdges(DashboardEdgeList)
 	GetNodes() DashboardNodeList
+	GetInheritedChildren() map[string]bool
 	SetNodes(DashboardNodeList)
 	AddCategory(category *DashboardCategory) hcl.Diagnostics
 	AddChild(child HclResource) hcl.Diagnostics

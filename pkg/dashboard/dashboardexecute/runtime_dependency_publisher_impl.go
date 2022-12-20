@@ -270,40 +270,6 @@ func (p *RuntimeDependencyPublisherImpl) withsComplete() bool {
 	return true
 }
 
-func (p *RuntimeDependencyPublisherImpl) findRuntimeDependencyPublisher(runtimeDependency *modconfig.RuntimeDependency) RuntimeDependencyPublisher {
-	// the runtime dependency publisher is usually the root node of the execution tree
-	// the exception to this is if the node is a LeafRun(?) for a base node which has a with block,
-	// in which case it may provide its own runtime depdency
-
-	// try ourselves
-	if p.ProvidesRuntimeDependency(runtimeDependency) {
-		return p
-	}
-
-	// try root node
-	// NOTE: we cannot just use b.executionTree.Root as this function is called at init time before Root is assigned
-	rootPublisher := p.getRoot().(RuntimeDependencyPublisher)
-
-	if rootPublisher.ProvidesRuntimeDependency(runtimeDependency) {
-		return rootPublisher
-	}
-
-	return nil
-}
-
-// get the root of the tree by searching up the parents
-func (p *RuntimeDependencyPublisherImpl) getRoot() dashboardtypes.DashboardTreeRun {
-	var root dashboardtypes.DashboardTreeRun = p
-	for {
-		parent := root.GetParent()
-		if parent == p.executionTree {
-			break
-		}
-		root = parent.(dashboardtypes.DashboardTreeRun)
-	}
-	return root
-}
-
 func (p *RuntimeDependencyPublisherImpl) createWithRuns(withs []*modconfig.DashboardWith, executionTree *DashboardExecutionTree) error {
 	for _, w := range withs {
 		withRun, err := NewLeafRun(w, p, executionTree)

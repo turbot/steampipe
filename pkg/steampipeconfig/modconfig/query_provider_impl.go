@@ -122,7 +122,7 @@ func (b *QueryProviderImpl) MergeParentArgs(queryProvider QueryProvider, parent 
 	return nil
 }
 
-// GetQueryProviderBase implements QueryProvider
+// GetQueryProviderImpl implements QueryProvider
 func (b *QueryProviderImpl) GetQueryProviderImpl() *QueryProviderImpl {
 	return b
 }

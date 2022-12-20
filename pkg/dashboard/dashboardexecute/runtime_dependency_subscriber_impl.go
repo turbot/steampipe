@@ -132,6 +132,31 @@ func (s *RuntimeDependencySubscriber) resolveRuntimeDependencies() error {
 	return nil
 }
 
+func (s *RuntimeDependencySubscriber) findRuntimeDependencyPublisher(runtimeDependency *modconfig.RuntimeDependency) (res RuntimeDependencyPublisher) {
+	// the runtime dependency publisher is usually the root node of the execution tree
+	// the exception to this is if the node is a LeafRun(?) for a base node which has a with block,
+	// in which case it may provide its own runtime dependency
+
+	// traverse up the tree - we rely on resource validation to ensure that intermediate nodes in the tree
+	// do not provide the runtime dependency
+	var item dashboardtypes.DashboardTreeRun = s
+	for {
+
+		if publisher, ok := item.(RuntimeDependencyPublisher); ok {
+			if publisher.ProvidesRuntimeDependency(runtimeDependency) {
+				res = publisher
+				break
+			}
+		}
+
+		item = item.GetParent()
+		if item == s.executionTree {
+			break
+		}
+	}
+	return
+}
+
 func (s *RuntimeDependencySubscriber) evaluateRuntimeDependencies() error {
 	// now wait for any runtime dependencies then resolve args and params
 	// (it is possible to have params but no sql)
@@ -354,6 +379,6 @@ func (s *RuntimeDependencySubscriber) executeChildrenAsync(ctx context.Context) 
 
 	// if this leaf run has children (including with runs) execute them asynchronously
 
-	// set RuntimeDepedenciesOnly if needed
+	// set RuntimeDependenciesOnly if needed
 	s.DashboardParentImpl.executeChildrenAsync(ctx)
 }

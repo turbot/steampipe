@@ -158,6 +158,29 @@ func (g *DashboardGraph) GetNodes() DashboardNodeList {
 	return g.Nodes
 }
 
+// GetInheritedChildren implements NodeAndEdgeProvider
+// return a map keyed by the names of all children injerited from a base struct
+func (g *DashboardGraph) GetInheritedChildren() map[string]bool {
+	var res = make(map[string]bool)
+
+	if g.Base == nil || len(g.Base.Edges)+len(g.Base.Nodes) == 0 {
+		return res
+	}
+
+	for _, e := range g.Edges {
+		if g.Base.Edges.Contains(e) {
+			res[e.Name()] = true
+		}
+	}
+	for _, n := range g.Nodes {
+		if g.Base.Nodes.Contains(n) {
+			res[n.Name()] = true
+		}
+	}
+
+	return res
+}
+
 // SetEdges implements NodeAndEdgeProvider
 func (g *DashboardGraph) SetEdges(edges DashboardEdgeList) {
 	g.Edges = edges

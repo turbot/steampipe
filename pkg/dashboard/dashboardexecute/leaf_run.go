@@ -80,13 +80,28 @@ func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
 	r.children = make([]dashboardtypes.DashboardTreeRun, len(children))
 	var errors []error
 
-	// if the leaf run has children (nodes/edges) create a run for this too
+	// if the leaf run has children (nodes/edges) create runs for them
+	inheritedChildren := r.resource.(modconfig.NodeAndEdgeProvider).GetInheritedChildren()
+
 	for i, c := range children {
-		childRun, err := NewLeafRun(c.(modconfig.DashboardLeafNode), r, executionTree)
+		// TACTICAL if nodes/edges have been inherited from a base NodeEdgeProvider resource,
+		// create the run passing the BASE resource as the parent
+		// this ensures we resolve runtime dependencies from the base resource
+		var parent dashboardtypes.DashboardParent = r
+		isInherited := inheritedChildren[c.Name()]
+		if isInherited {
+			// set parent to the base run
+			parent = r.baseRun
+		}
+
+		childRun, err := NewLeafRun(c.(modconfig.DashboardLeafNode), parent, executionTree)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
+		// TACTICAL reset parent
+		r.parent = r
+
 		r.children[i] = childRun
 	}
 	return error_helpers.CombineErrors(errors...)
