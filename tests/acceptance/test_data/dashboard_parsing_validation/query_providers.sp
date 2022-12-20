@@ -1,5 +1,5 @@
 dashboard "query_providers_top_level" {
-  title = "Query providers at top level"
+  title = "Query providers at top level that do not require a query/sql block"
   description = "This is a dashboard that validates - Query providers at top level DO NOT need a query/sql block"
 
   card "card_1" {
