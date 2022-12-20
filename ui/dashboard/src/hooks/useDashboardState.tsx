@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import get from "lodash/get";
 import VersionErrorMismatch from "../components/VersionErrorMismatch";
 import {
@@ -116,7 +115,7 @@ const reducer = (state: IDashboardContext, action) => {
       return {
         ...state,
         error: null,
-        panelsLog: buildPanelsLog(action.panels, dayjs()),
+        panelsLog: buildPanelsLog(action.panels, action.timestamp),
         panelsMap: addDataToPanels(action.panels, state.sqlDataMap),
         dashboard,
         execution_id: action.execution_id,
