@@ -79,7 +79,6 @@ const DashboardProvider = ({
     stateDefaults,
     versionMismatchCheck,
   });
-  console.log(state);
   const { dashboard_name } = useParams();
   const { eventHandler } = useDashboardWebSocketEventHandler(
     dispatch,
