@@ -81,6 +81,7 @@ export const PanelStoryDecorator = ({
         selectedDashboardInputs: {},
         lastChangedInput: null,
         execution_id: null,
+        panelsLog: {},
         panelsMap: {
           [newPanel.name]: newPanel,
           ...panels,

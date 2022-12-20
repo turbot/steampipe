@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import get from "lodash/get";
 import paths from "deepdash/paths";
 import set from "lodash/set";
@@ -8,6 +9,7 @@ import {
   DashboardDefinition,
   DashboardsCollection,
   PanelDefinition,
+  PanelsLog,
   PanelsMap,
   SQLDataMap,
 } from "../types";
@@ -107,6 +109,20 @@ const buildDashboards = (
   };
 };
 
+const buildPanelsLog = (panels: PanelsMap, dayjs: dayjs.Dayjs) => {
+  const panelsLog: PanelsLog = {};
+  for (const [name, panel] of Object.entries(panels || {})) {
+    panelsLog[name] = [
+      {
+        error: panel.status === "error" ? panel.error : null,
+        status: !!panel.status ? panel.status : null,
+        timestamp: dayjs.toDate(),
+      },
+    ];
+  }
+  return panelsLog;
+};
+
 const buildSelectedDashboardInputsFromSearchParams = (searchParams) => {
   const selectedDashboardInputs = {};
   // @ts-ignore
@@ -191,6 +207,7 @@ const wrapDefinitionInArtificialDashboard = (
 export {
   addDataToPanels,
   buildDashboards,
+  buildPanelsLog,
   buildSelectedDashboardInputsFromSearchParams,
   buildSqlDataMap,
   updateSelectedDashboard,

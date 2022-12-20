@@ -18,6 +18,7 @@ export type IDashboardContext = {
 
   error: any;
 
+  panelsLog: PanelsLog;
   panelsMap: PanelsMap;
 
   execution_id: string | null;
@@ -87,6 +88,16 @@ export type ReceivedSocketMessagePayload = {
 
 export type ComponentsMap = {
   [name: string]: any;
+};
+
+export type PanelLog = {
+  error?: string | null;
+  status: DashboardRunState | null;
+  timestamp: Date;
+};
+
+export type PanelsLog = {
+  [name: string]: PanelLog[];
 };
 
 export type PanelsMap = {
