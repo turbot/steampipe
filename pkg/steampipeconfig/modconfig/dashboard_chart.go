@@ -28,7 +28,6 @@ type DashboardChart struct {
 	Series     map[string]*DashboardChartSeries `cty:"series" json:"series,omitempty"`
 	Base       *DashboardChart                  `hcl:"base" json:"-"`
 	References []*ResourceReference             `json:"-"`
-	Paths      []NodePath                       `column:"path,jsonb" json:"-"`
 }
 
 func NewDashboardChart(block *hcl.Block, mod *Mod, shortName string) HclResource {

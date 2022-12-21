@@ -25,7 +25,6 @@ type DashboardContainer struct {
 	Inputs     []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
 	References []*ResourceReference
 
-	Paths []NodePath `column:"path,jsonb"`
 	// store children in a way which can be serialised via cty
 	ChildNames []string `cty:"children" column:"children,jsonb"`
 

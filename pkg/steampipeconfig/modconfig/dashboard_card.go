@@ -29,7 +29,6 @@ type DashboardCard struct {
 
 	Base       *DashboardCard       `hcl:"base" json:"-"`
 	References []*ResourceReference `json:"-"`
-	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 
 	metadata *ResourceMetadata
 }
