@@ -3,9 +3,17 @@ import Icon from "../../../Icon";
 import Panel from "../Panel";
 import sortBy from "lodash/sortBy";
 import { classNames } from "../../../../utils/styles";
+import {
+  DashboardRunState,
+  PanelDefinition,
+  PanelLog,
+  PanelsLog,
+  PanelsMap,
+} from "../../../../types";
 import { Disclosure } from "@headlessui/react";
+import { getNodeAndEdgeDataFormat } from "../../common/useNodeAndEdgeData";
+import { NodeAndEdgeProperties } from "../../common/types";
 import { PanelDetailProps } from "./index";
-import { DashboardRunState, PanelLog } from "../../../../types";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { usePanel } from "../../../../hooks/usePanel";
 
@@ -81,7 +89,7 @@ const PanelLogMessage = ({ log }: PanelLogRowProps) => (
   <div className="flex space-x-2">
     <PanelLogStatus status={log.status} />
     {log.prefix && (
-      <span className="text-foreground-lighter">{log.prefix}:</span>
+      <pre className="text-foreground-lighter tabular-nums">{log.prefix}:</pre>
     )}
     {log.isDependency && <span className="">{log.title}</span>}
   </div>
@@ -133,31 +141,100 @@ const PanelLogRow = ({ log }: PanelLogRowProps) => {
   );
 };
 
-const PanelLogs = () => {
-  const { panelsLog } = useDashboard();
-  const { definition, dependencies } = usePanel();
-  const panelLog = panelsLog[definition.name];
-  const dependencyPanelLogs: PanelLog[] = [];
-  for (const dependency of dependencies || []) {
-    const dependencyPanelLog = panelsLog[dependency.name];
-    if (!dependencyPanelLog) {
+const addDependencyLogs = (
+  panel: PanelDefinition,
+  panelsLog: PanelsLog,
+  panelsMap: PanelsMap,
+  dependencyLogs: PanelLog[],
+  dependentPanelRecord
+) => {
+  for (const dependency of panel.dependencies || []) {
+    if (dependentPanelRecord[dependency]) {
       continue;
     }
-    dependencyPanelLogs.push(
-      ...dependencyPanelLog.map((l) => ({
-        ...l,
-        isDependency: true,
-        prefix: "Dependency",
-      }))
+    dependentPanelRecord[dependency] = true;
+    const dependencyPanel = panelsMap[dependency];
+    addDependencyLogs(
+      dependencyPanel,
+      panelsLog,
+      panelsMap,
+      dependencyLogs,
+      dependentPanelRecord
     );
   }
+  const dependencyPanelLog = panelsLog[panel.name];
+  dependencyLogs.push(
+    ...dependencyPanelLog.map((l) => ({
+      ...l,
+      isDependency: true,
+      prefix: panel.panel_type,
+    }))
+  );
+};
+
+const getDependencyLogs = (
+  panel: PanelDefinition,
+  panelsLog: PanelsLog,
+  panelsMap: PanelsMap
+) => {
+  const dependencyLogs: PanelLog[] = [];
+  const dependentPanelRecord = {};
+
+  addDependencyLogs(
+    panel,
+    panelsLog,
+    panelsMap,
+    dependencyLogs,
+    dependentPanelRecord
+  );
+
+  if (
+    (panel.panel_type === "flow" ||
+      panel.panel_type === "graph" ||
+      panel.panel_type === "hierarchy") &&
+    panel.properties &&
+    getNodeAndEdgeDataFormat(panel.properties) === "NODE_AND_EDGE"
+  ) {
+    const nodeAndEdgeProperties = panel.properties as NodeAndEdgeProperties;
+    for (const node of nodeAndEdgeProperties.nodes || []) {
+      const nodePanel = panelsMap[node];
+      addDependencyLogs(
+        nodePanel,
+        panelsLog,
+        panelsMap,
+        dependencyLogs,
+        dependentPanelRecord
+      );
+    }
+    for (const edge of nodeAndEdgeProperties.edges || []) {
+      const edgePanel = panelsMap[edge];
+      addDependencyLogs(
+        edgePanel,
+        panelsLog,
+        panelsMap,
+        dependencyLogs,
+        dependentPanelRecord
+      );
+    }
+  }
+  return dependencyLogs;
+};
+
+const PanelLogs = () => {
+  const { panelsLog, panelsMap } = useDashboard();
+  const { definition } = usePanel();
+  const panelLog = panelsLog[definition.name];
+  const dependencyPanelLogs = getDependencyLogs(
+    definition as PanelDefinition,
+    panelsLog,
+    panelsMap
+  );
   const allLogs = sortBy([...dependencyPanelLogs, ...panelLog], "timestamp");
-  console.log(dependencies);
   return (
     <div className="border border-black-scale-2 divide-y divide-divide">
-      {allLogs.map((log) => (
+      {allLogs.map((log, idx) => (
         <PanelLogRow
-          key={`${log.status}:${log.timestamp}:${log.prefix}:${log.title}`}
+          key={`${log.status}:${log.timestamp}:${log.prefix}:${log.title}-${idx}`}
           log={log}
         />
       ))}

@@ -8,13 +8,18 @@ import {
   DashboardDefinition,
   DashboardRunState,
   DashboardsCollection,
+  DependencyPanelProperties,
   PanelDefinition,
   PanelLog,
   PanelsLog,
   PanelsMap,
   SQLDataMap,
 } from "../types";
-import { KeyValueStringPairs } from "../components/dashboards/common/types";
+import {
+  EdgeProperties,
+  KeyValueStringPairs,
+  NodeProperties,
+} from "../components/dashboards/common/types";
 
 const addDataToPanels = (
   panels: PanelsMap,
@@ -122,12 +127,52 @@ const buildDashboards = (
   };
 };
 
+const panelLogTitle = (panel: PanelDefinition) => {
+  switch (panel.panel_type) {
+    case "with":
+      const dependencyPanelProperties = (panel.properties ||
+        {}) as DependencyPanelProperties;
+      return panel.title
+        ? panel.title
+        : dependencyPanelProperties && dependencyPanelProperties.name
+        ? dependencyPanelProperties.name
+        : panel.name;
+    case "edge":
+      if (panel.title) {
+        return panel.title;
+      }
+      const edgeProperties = (panel.properties || {}) as EdgeProperties;
+      if (edgeProperties.category) {
+        if (edgeProperties.category.title) {
+          return edgeProperties.category.title as string;
+        }
+        return edgeProperties.category.name as string;
+      }
+      return panel.name;
+    case "node":
+      if (panel.title) {
+        return panel.title;
+      }
+      const nodeProperties = (panel.properties || {}) as NodeProperties;
+      if (nodeProperties.category) {
+        if (nodeProperties.category.title) {
+          return nodeProperties.category.title as string;
+        }
+        return nodeProperties.category.name as string;
+      }
+      console.log(panel);
+      return panel.name;
+    default:
+      return panel.title || panel.name;
+  }
+};
+
 const buildPanelLog = (panel: PanelDefinition, timestamp: number): PanelLog => {
   return {
     error: panel.status === "error" ? panel.error : null,
     status: panel.status as DashboardRunState,
     timestamp,
-    title: panel.title || panel.name,
+    title: panelLogTitle(panel),
   };
 };
 
@@ -249,6 +294,7 @@ export {
   buildPanelsLog,
   buildSelectedDashboardInputsFromSearchParams,
   buildSqlDataMap,
+  panelLogTitle,
   updatePanelsLogFromCompletedPanels,
   updateSelectedDashboard,
   wrapDefinitionInArtificialDashboard,

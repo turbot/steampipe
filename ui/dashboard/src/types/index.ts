@@ -262,14 +262,17 @@ export type DashboardPanelType =
   | "container"
   | "control"
   | "dashboard"
+  | "edge"
   | "error"
   | "flow"
   | "graph"
   | "hierarchy"
   | "image"
   | "input"
+  | "node"
   | "table"
-  | "text";
+  | "text"
+  | "with";
 
 export type DashboardSnapshot = {
   schema_version: DashboardSnapshotSchemaVersion;

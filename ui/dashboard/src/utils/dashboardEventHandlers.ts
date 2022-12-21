@@ -1,4 +1,4 @@
-import { addPanelLog } from "./state";
+import { addPanelLog, panelLogTitle } from "./state";
 import {
   DashboardActions,
   DashboardExecutionCompleteEvent,
@@ -148,7 +148,7 @@ const leafNodesUpdatedEventHandler = (action, state) => {
       error,
       status,
       timestamp,
-      title: dashboard_node.title || dashboard_node.name,
+      title: panelLogTitle(dashboard_node),
     });
 
     panelsMap[dashboard_node.name] = dashboard_node;
