@@ -148,7 +148,6 @@ const panelLogTitle = (panel: PanelDefinition) => {
         }
         return nodeProperties.category.name as string;
       }
-      console.log(panel);
       return panel.name;
     default:
       return panel.title || panel.name;

@@ -495,6 +495,7 @@ describe("dashboard event handlers", () => {
               error: null,
               status: "ready",
               timestamp: readyAt.valueOf(),
+              title: "panel_a",
             },
           ],
         },
@@ -531,6 +532,7 @@ describe("dashboard event handlers", () => {
               error: null,
               status: "blocked",
               timestamp: blockedAt.valueOf(),
+              title: "panel_a",
             },
           ],
         },
@@ -555,6 +557,7 @@ describe("dashboard event handlers", () => {
               error: null,
               status: "ready",
               timestamp: readyAt.valueOf(),
+              title: "panel_a",
             },
           ],
         },
@@ -591,6 +594,7 @@ describe("dashboard event handlers", () => {
               error: null,
               status: "running",
               timestamp: runningAt.valueOf(),
+              title: "panel_a",
             },
           ],
         },
@@ -615,6 +619,7 @@ describe("dashboard event handlers", () => {
               error: null,
               status: "ready",
               timestamp: readyAt.valueOf(),
+              title: "panel_a",
             },
           ],
         },
@@ -651,6 +656,7 @@ describe("dashboard event handlers", () => {
               error: "BOOM!",
               status: "error",
               timestamp: erroredAt.valueOf(),
+              title: "panel_a",
             },
           ],
         },
@@ -667,14 +673,15 @@ describe("dashboard event handlers", () => {
       const completeAt = new Date(readyAt);
       completeAt.setSeconds(readyAt.getSeconds() + 1);
       const state = {
-        state: "ready",
+        state: "running",
         execution_id: "1",
         panelsLog: {
           panel_a: [
             {
               error: null,
-              status: "ready",
+              status: "running",
               timestamp: readyAt.valueOf(),
+              title: "panel_a",
             },
           ],
         },
@@ -709,8 +716,10 @@ describe("dashboard event handlers", () => {
             ...state.panelsLog.panel_a,
             {
               error: null,
+              executionTime: 1000,
               status: "complete",
               timestamp: completeAt.valueOf(),
+              title: "panel_a",
             },
           ],
         },
@@ -737,6 +746,7 @@ describe("dashboard event handlers", () => {
               error: null,
               status: "ready",
               timestamp: readyAt.valueOf(),
+              title: "panel_a",
             },
           ],
           panel_b: [
@@ -744,6 +754,7 @@ describe("dashboard event handlers", () => {
               error: null,
               status: "ready",
               timestamp: readyAt.valueOf(),
+              title: "panel_b",
             },
           ],
           panel_c: [
@@ -751,6 +762,7 @@ describe("dashboard event handlers", () => {
               error: null,
               status: "ready",
               timestamp: readyAt.valueOf(),
+              title: "panel_c",
             },
           ],
           panel_d: [
@@ -758,6 +770,7 @@ describe("dashboard event handlers", () => {
               error: null,
               status: "ready",
               timestamp: readyAt.valueOf(),
+              title: "panel_d",
             },
           ],
         },
@@ -811,6 +824,7 @@ describe("dashboard event handlers", () => {
               error: null,
               status: "complete",
               timestamp: panelACompleteAt.valueOf(),
+              title: "panel_a",
             },
           ],
           panel_b: [
@@ -819,6 +833,7 @@ describe("dashboard event handlers", () => {
               error: null,
               status: "complete",
               timestamp: panelBCompleteAt.valueOf(),
+              title: "panel_b",
             },
           ],
         },
