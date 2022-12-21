@@ -92,6 +92,11 @@ const PanelLogMessage = ({ log }: PanelLogRowProps) => (
       <pre className="text-foreground-lighter tabular-nums">{log.prefix}:</pre>
     )}
     {log.isDependency && <span className="">{log.title}</span>}
+    {log.executionTime !== undefined && (
+      <span className="text-foreground-light tabular-nums">
+        {log.executionTime.toLocaleString()}ms
+      </span>
+    )}
   </div>
 );
 

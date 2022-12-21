@@ -53,18 +53,6 @@ const addDataToPanels = (
   return { ...panels };
 };
 
-const addPanelLog = (
-  panelsLog: PanelsLog,
-  panelName: string,
-  panelLog: PanelLog
-) => {
-  const newPanelsLog = { ...panelsLog };
-  const newPanelLog = [...(newPanelsLog[panelName] || [])];
-  newPanelLog.push(panelLog);
-  newPanelsLog[panelName] = newPanelLog;
-  return newPanelsLog;
-};
-
 const buildDashboards = (
   dashboards: AvailableDashboardsDictionary,
   benchmarks: AvailableDashboardsDictionary,
@@ -167,9 +155,14 @@ const panelLogTitle = (panel: PanelDefinition) => {
   }
 };
 
-const buildPanelLog = (panel: PanelDefinition, timestamp: number): PanelLog => {
+const buildPanelLog = (
+  panel: PanelDefinition,
+  timestamp: number,
+  executionTime?: number
+): PanelLog => {
   return {
     error: panel.status === "error" ? panel.error : null,
+    executionTime,
     status: panel.status as DashboardRunState,
     timestamp,
     title: panelLogTitle(panel),
@@ -184,6 +177,38 @@ const buildPanelsLog = (panels: PanelsMap, timestamp: number) => {
   return panelsLog;
 };
 
+const calculateExecutionTime = (
+  timestamp: number,
+  panel: PanelDefinition,
+  panelLogs: PanelLog[]
+): number | undefined => {
+  let overallTime: number | undefined = undefined;
+  if (panel.status === "complete") {
+    const runningLog = panelLogs.find((l) => l.status === "running");
+    if (runningLog) {
+      overallTime = timestamp - runningLog.timestamp;
+    }
+  }
+  return overallTime;
+};
+
+const addUpdatedPanelLogs = (
+  panelsLog: PanelsLog,
+  panel: PanelDefinition,
+  timestamp: number
+) => {
+  const newPanelsLog = { ...panelsLog };
+  const newPanelLog = [...(newPanelsLog[panel.name] || [])];
+  if (newPanelLog.find((l) => l.status === panel.status)) {
+    return newPanelsLog;
+  } else {
+    const overallTime = calculateExecutionTime(timestamp, panel, newPanelLog);
+    newPanelLog.push(buildPanelLog(panel, timestamp, overallTime));
+  }
+  newPanelsLog[panel.name] = newPanelLog;
+  return newPanelsLog;
+};
+
 const updatePanelsLogFromCompletedPanels = (
   panelsLog: PanelsLog,
   panels: PanelsMap,
@@ -193,13 +218,11 @@ const updatePanelsLogFromCompletedPanels = (
   for (const [panelName, panel] of Object.entries(panels || {})) {
     const newPanelLog = [...(newPanelsLog[panelName] || [])];
     // If we have an existing panel log for the same status, don't log it
-    if (
-      newPanelLog.length > 0 &&
-      newPanelLog[newPanelLog.length - 1].status === panel.status
-    ) {
+    if (newPanelLog.find((l) => l.status === panel.status)) {
       continue;
     }
-    newPanelLog.push(buildPanelLog(panel, timestamp));
+    const overallTime = calculateExecutionTime(timestamp, panel, newPanelLog);
+    newPanelLog.push(buildPanelLog(panel, timestamp, overallTime));
     newPanelsLog[panelName] = newPanelLog;
   }
 
@@ -289,7 +312,7 @@ const wrapDefinitionInArtificialDashboard = (
 
 export {
   addDataToPanels,
-  addPanelLog,
+  addUpdatedPanelLogs,
   buildDashboards,
   buildPanelsLog,
   buildSelectedDashboardInputsFromSearchParams,
