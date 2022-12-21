@@ -7,6 +7,14 @@ import (
 	"strings"
 )
 
+// New creates a new sperr.Error with a stack
+// It is recommended that `New` be called from the place where the actual
+// error occurs and not do define errors.
+// This is because sperr.Error is a stateful construct which also
+// encapsulates the stacktrace at the time of creation.
+//
+// For converting generic errors to sperr.Error the recommended usage pattern
+// is sperr.Wrap or sperr.Wrapf
 func New(format string, args ...interface{}) *Error {
 	sperr := &Error{
 		msg:    fmt.Sprintf(format, args...),
@@ -16,6 +24,10 @@ func New(format string, args ...interface{}) *Error {
 	return sperr
 }
 
+// Wrap creates a new sperr.Error if the `error` that is being wrapped
+// is not an sperr.Error
+//
+// When wrapping an `error` this also adds a stacktrace into the new `Error` object
 func Wrap(err error) *Error {
 	if err == nil {
 		return nil
@@ -51,21 +63,25 @@ func Wrapf(err error, format string, args ...interface{}) *Error {
 	if err == nil {
 		return nil
 	}
-	return Wrap(err).WithMessage(format, args...)
+	e := Wrap(err)
+	// making sure that the Wrap function does not get included in the stack
+	e.stack = callers()
+	return e.WithMessage(format, args...)
 }
 
 func ToError(val interface{}) *Error {
 	if val == nil {
 		return nil
 	}
-	var err error
+	var err *Error
 	if e, ok := val.(error); ok {
 		err = Wrap(e)
 	} else {
 		err = New("%v", val)
 	}
-	sperr := err.(*Error)
-	return sperr
+	// overwrite the stack to the stack for this function call
+	err.stack = callers()
+	return err
 }
 
 func tryMessageConstruction(err error) string {
