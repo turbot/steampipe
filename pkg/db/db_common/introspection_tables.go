@@ -74,23 +74,23 @@ func populateAllIntrospectionTables(ctx context.Context, workspaceResources *mod
 
 func getCreateTablesSql(commonColumnSql []string) string {
 	var createSql []string
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.IntrospectionTableControl, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Query{}, constants.IntrospectionTableQuery, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Dashboard{}, constants.IntrospectionTableDashboard, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardContainer{}, constants.IntrospectionTableDashboardContainer, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardCard{}, constants.IntrospectionTableDashboardCard, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardChart{}, constants.IntrospectionTableDashboardChart, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardFlow{}, constants.IntrospectionTableDashboardFlow, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardGraph{}, constants.IntrospectionTableDashboardGraph, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardHierarchy{}, constants.IntrospectionTableDashboardHierarchy, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardImage{}, constants.IntrospectionTableDashboardImage, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardInput{}, constants.IntrospectionTableDashboardInput, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardTable{}, constants.IntrospectionTableDashboardTable, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.DashboardText{}, constants.IntrospectionTableDashboardText, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Control{}, constants.IntrospectionTableControl, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Query{}, constants.IntrospectionTableQuery, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Dashboard{}, constants.IntrospectionTableDashboard, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardContainer{}, constants.IntrospectionTableDashboardContainer, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardCard{}, constants.IntrospectionTableDashboardCard, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardChart{}, constants.IntrospectionTableDashboardChart, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardFlow{}, constants.IntrospectionTableDashboardFlow, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardGraph{}, constants.IntrospectionTableDashboardGraph, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardHierarchy{}, constants.IntrospectionTableDashboardHierarchy, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardImage{}, constants.IntrospectionTableDashboardImage, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardInput{}, constants.IntrospectionTableDashboardInput, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardTable{}, constants.IntrospectionTableDashboardTable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardText{}, constants.IntrospectionTableDashboardText, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
 
@@ -161,6 +161,15 @@ func getTableInsertSql(workspaceResources *modconfig.ResourceMaps) string {
 
 func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnSql []string) string {
 	columnDefinitions := append(commonColumnSql, getColumnDefinitions(s)...)
+	if qp, ok := s.(modconfig.QueryProvider); ok {
+		columnDefinitions = append(columnDefinitions, getColumnDefinitions(qp.GetQueryProviderImpl())...)
+	}
+	if mti, ok := s.(modconfig.ModTreeItem); ok {
+		columnDefinitions = append(columnDefinitions, getColumnDefinitions(mti.GetModTreeItemImpl())...)
+	}
+	if hr, ok := s.(modconfig.HclResource); ok {
+		columnDefinitions = append(columnDefinitions, getColumnDefinitions(hr.GetHclResourceImpl())...)
+	}
 
 	tableSql := fmt.Sprintf(`create temp table %s (
 %s
@@ -210,8 +219,14 @@ func getControlTableInsertSql(workspaceResources *modconfig.ResourceMaps) string
 // getColumnDefinitions returns the sql column definitions for tagged properties of the item
 func getColumnDefinitions(item interface{}) []string {
 	t := reflect.TypeOf(item)
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
 	var columnDef []string
 	val := reflect.ValueOf(item)
+	if val.Kind() == reflect.Pointer {
+		val = val.Elem()
+	}
 	for i := 0; i < val.NumField(); i++ {
 		fieldName := val.Type().Field(i).Name
 		field, _ := t.FieldByName(fieldName)
@@ -224,16 +239,37 @@ func getColumnDefinitions(item interface{}) []string {
 	return columnDef
 }
 
-func getTableInsertSqlForResource(item modconfig.ResourceWithMetadata, tableName string) string {
+func getTableInsertSqlForResource(item any, tableName string) string {
 	// for each item there is core reflection data (i.e. reflection resource all items have)
 	// and item specific reflection data
 	// get the core reflection data values
-	valuesCore, columnsCore := getColumnValues(item.GetMetadata())
+	var valuesCore, columnsCore []string
+	if rwm, ok := item.(modconfig.ResourceWithMetadata); ok {
+		valuesCore, columnsCore = getColumnValues(rwm.GetMetadata())
+	}
+
 	// get item specific reflection data values from the item
 	valuesItem, columnsItem := getColumnValues(item)
-
 	columns := append(columnsCore, columnsItem...)
 	values := append(valuesCore, valuesItem...)
+
+	// get properties from embedded structs
+	if qp, ok := item.(modconfig.QueryProvider); ok {
+		valuesItem, columnsItem = getColumnValues(qp.GetQueryProviderImpl())
+		columns = append(columns, columnsItem...)
+		values = append(values, valuesItem...)
+	}
+	if mti, ok := item.(modconfig.ModTreeItem); ok {
+		valuesItem, columnsItem = getColumnValues(mti.GetModTreeItemImpl())
+		columns = append(columns, columnsItem...)
+		values = append(values, valuesItem...)
+	}
+	if hr, ok := item.(modconfig.HclResource); ok {
+		valuesItem, columnsItem = getColumnValues(hr.GetHclResourceImpl())
+		columns = append(columns, columnsItem...)
+		values = append(values, valuesItem...)
+	}
+
 	insertSql := fmt.Sprintf(`insert into %s (%s) values(%s);`, tableName, strings.Join(columns, ","), strings.Join(values, ","))
 	return insertSql
 }

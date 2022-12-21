@@ -18,7 +18,6 @@ type DashboardNode struct {
 	Category   *DashboardCategory   `cty:"category" hcl:"category" column:"category,jsonb" json:"category,omitempty"`
 	Base       *DashboardNode       `hcl:"base" json:"-"`
 	References []*ResourceReference `json:"-"`
-	Paths      []NodePath           `column:"path,jsonb" json:"-"`
 }
 
 func NewDashboardNode(block *hcl.Block, mod *Mod, shortName string) HclResource {
