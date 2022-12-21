@@ -56,6 +56,9 @@ const PanelProgress = ({ className }) => {
           continue;
         }
         const dependencyPanel = panelsMap[dependency];
+        if (!dependencyPanel) {
+          continue;
+        }
         dependencyPanels[dependency] = dependencyPanel;
         if (dependencyPanel.status === "error") {
           totalError += 1;

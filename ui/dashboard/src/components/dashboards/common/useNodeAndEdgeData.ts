@@ -104,6 +104,9 @@ const addPanelWithsStatus = (
     }
 
     const dependencyPanel = panelsMap[dependency];
+    if (!dependencyPanel) {
+      continue;
+    }
     const dependencyPanelProperties =
       dependencyPanel.properties as DependencyPanelProperties;
     withLookup[dependency] = dependencyPanelProperties.name;

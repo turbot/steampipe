@@ -63,35 +63,41 @@ const NodeAndEdgePanelInformation = ({
             No nodes or edges
           </span>
         )}
-      {statuses.running.withs.map((withStatus) => (
+      {statuses.running.withs.map((withStatus, idx) => (
         <PendingRow
-          key={withStatus.id}
+          key={`with:${withStatus.id}-${idx}`}
           title={`with: ${withStatus.title || withStatus.id}`}
         />
       ))}
-      {statuses.running.nodes.map((node) => (
-        <PendingRow key={node.id} title={`node: ${nodeOrEdgeTitle(node)}`} />
+      {statuses.running.nodes.map((node, idx) => (
+        <PendingRow
+          key={`node:${node.id}-${idx}`}
+          title={`node: ${nodeOrEdgeTitle(node)}`}
+        />
       ))}
-      {statuses.running.edges.map((edge) => (
-        <PendingRow key={edge.id} title={`edge: ${nodeOrEdgeTitle(edge)}`} />
+      {statuses.running.edges.map((edge, idx) => (
+        <PendingRow
+          key={`edge:${edge.id}-${idx}`}
+          title={`edge: ${nodeOrEdgeTitle(edge)}`}
+        />
       ))}
-      {statuses.error.withs.map((withStatus) => (
+      {statuses.error.withs.map((withStatus, idx) => (
         <ErrorRow
-          key={withStatus.id}
+          key={`with:${withStatus.id}-${idx}`}
           title={`with: ${withStatus.title || withStatus.id}`}
           error={withStatus.error}
         />
       ))}
-      {statuses.error.nodes.map((node) => (
+      {statuses.error.nodes.map((node, idx) => (
         <ErrorRow
-          key={node.id}
+          key={`node:${node.id}-${idx}`}
           title={`node: ${nodeOrEdgeTitle(node)}`}
           error={node.error}
         />
       ))}
-      {statuses.error.edges.map((edge) => (
+      {statuses.error.edges.map((edge, idx) => (
         <ErrorRow
-          key={edge.id}
+          key={`edge:${edge.id}-${idx}`}
           title={`edge: ${nodeOrEdgeTitle(edge)}`}
           error={edge.error}
         />

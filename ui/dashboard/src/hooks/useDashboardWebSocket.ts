@@ -67,10 +67,10 @@ const useDashboardWebSocket = (
       return;
     }
     const typedEvent = lastJsonMessage as ReceivedSocketMessagePayload;
-    if (!typedEvent.action) {
+    if (!typedEvent || !typedEvent.action) {
       return;
     }
-    eventHandler(typedEvent);
+    eventHandler({ ...typedEvent, timestamp: Date.now() });
   }, [eventHandler, lastJsonMessage]);
 
   useEffect(() => {

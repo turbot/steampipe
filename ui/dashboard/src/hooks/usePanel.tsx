@@ -25,6 +25,7 @@ type IPanelContext = {
     | PanelDefinition
     | TableProps
     | TextProps;
+  dependencies: PanelDefinition[];
   dependenciesByStatus: PanelDependenciesByStatus;
   panelControls: IPanelControl[];
   panelInformation: ReactNode | null;
@@ -65,6 +66,25 @@ const PanelProvider = ({
     null
   );
   const { panelControls } = usePanelControls(definition, showControls);
+  const dependencies = useMemo<PanelDefinition[]>(() => {
+    if (
+      !definition ||
+      !definition.dependencies ||
+      definition.dependencies.length === 0
+    ) {
+      return [];
+    }
+    const dependencies: PanelDefinition[] = [];
+    for (const dependency of definition.dependencies) {
+      const dependencyPanel = panelsMap[dependency];
+      if (!dependencyPanel) {
+        continue;
+      }
+      dependencies.push(dependencyPanel);
+    }
+    return dependencies;
+  }, [definition, panelsMap]);
+
   const dependenciesByStatus = useMemo<PanelDependenciesByStatus>(() => {
     if (
       !definition ||
@@ -90,6 +110,7 @@ const PanelProvider = ({
     <PanelContext.Provider
       value={{
         definition,
+        dependencies,
         dependenciesByStatus,
         panelControls,
         panelInformation,

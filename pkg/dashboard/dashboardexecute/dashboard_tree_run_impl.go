@@ -151,6 +151,6 @@ func (r *DashboardTreeRunImpl) setStatus(status dashboardtypes.DashboardRunStatu
 	// raise LeafNodeUpdated event
 	// TODO [node_reuse] tidy this up
 	// NOTE: pass the full run struct - 'r.run', rather than ourselves - so we serialize all properties
-	e := dashboardevents.NewLeafNodeUpdate(r.run, r.executionTree.sessionId, r.executionTree.id)
+	e, _ := dashboardevents.NewLeafNodeUpdate(r.run, r.executionTree.sessionId, r.executionTree.id)
 	r.executionTree.workspace.PublishDashboardEvent(e)
 }

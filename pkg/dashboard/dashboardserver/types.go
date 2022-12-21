@@ -6,6 +6,7 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"gopkg.in/olahol/melody.v1"
+	"time"
 )
 
 type ListenType string
@@ -42,19 +43,21 @@ type ErrorPayload struct {
 var ExecutionStartedSchemaVersion int64 = 20220614
 
 type ExecutionStartedPayload struct {
-	SchemaVersion string                                  `json:"schema_version"`
-	Action        string                                  `json:"action"`
-	ExecutionId   string                                  `json:"execution_id"`
-	Panels        map[string]dashboardtypes.SnapshotPanel `json:"panels"`
-	Layout        *dashboardtypes.SnapshotTreeNode        `json:"layout"`
-	Inputs        map[string]interface{}                  `json:"inputs,omitempty"`
-	Variables     map[string]string                       `json:"variables,omitempty"`
+	SchemaVersion string                           `json:"schema_version"`
+	Action        string                           `json:"action"`
+	ExecutionId   string                           `json:"execution_id"`
+	Panels        map[string]any                   `json:"panels"`
+	Layout        *dashboardtypes.SnapshotTreeNode `json:"layout"`
+	Inputs        map[string]interface{}           `json:"inputs,omitempty"`
+	Variables     map[string]string                `json:"variables,omitempty"`
+	StartTime     time.Time                        `json:"start_time"`
 }
 
-type LeafNodeCompletePayload struct {
-	Action        string                          `json:"action"`
-	DashboardNode dashboardtypes.DashboardTreeRun `json:"dashboard_node"`
-	ExecutionId   string                          `json:"execution_id"`
+type LeafNodeUpdatedPayload struct {
+	Action        string         `json:"action"`
+	DashboardNode map[string]any `json:"dashboard_node"`
+	ExecutionId   string         `json:"execution_id"`
+	Timestamp     time.Time      `json:"timestamp"`
 }
 
 type ControlEventPayload struct {
@@ -63,11 +66,13 @@ type ControlEventPayload struct {
 	Name        string                                 `json:"name"`
 	Progress    *controlstatus.ControlProgress         `json:"progress"`
 	ExecutionId string                                 `json:"execution_id"`
+	Timestamp   time.Time                              `json:"timestamp"`
 }
 
 type ExecutionErrorPayload struct {
-	Action string `json:"action"`
-	Error  string `json:"error"`
+	Action    string    `json:"action"`
+	Error     string    `json:"error"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 var ExecutionCompletePayloadSchemaVersion int64 = 20220929
@@ -77,13 +82,15 @@ type ExecutionCompletePayload struct {
 	SchemaVersion string                            `json:"schema_version"`
 	Snapshot      *dashboardtypes.SteampipeSnapshot `json:"snapshot"`
 	ExecutionId   string                            `json:"execution_id"`
+	StartTime     time.Time                         `json:"start_time"`
+	EndTime       time.Time                         `json:"end_time"`
 }
 
 type DisplaySnapshotPayload struct {
 	Action        string `json:"action"`
 	SchemaVersion string `json:"schema_version"`
 	// snapshot is a map here as we cannot deserialise SteampipeSnapshot into a struct
-	// (without custom derserialisation code) as the Panels property is an interface
+	// (without custom deserialisation code) as the Panels property is an interface
 	Snapshot    map[string]any `json:"snapshot"`
 	ExecutionId string         `json:"execution_id"`
 }

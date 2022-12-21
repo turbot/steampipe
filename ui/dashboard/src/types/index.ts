@@ -18,6 +18,7 @@ export type IDashboardContext = {
 
   error: any;
 
+  panelsLog: PanelsLog;
   panelsMap: PanelsMap;
 
   execution_id: string | null;
@@ -87,6 +88,20 @@ export type ReceivedSocketMessagePayload = {
 
 export type ComponentsMap = {
   [name: string]: any;
+};
+
+export type PanelLog = {
+  error?: string | null;
+  executionTime?: number;
+  isDependency?: boolean;
+  prefix?: string;
+  status: DashboardRunState;
+  timestamp: number;
+  title: string;
+};
+
+export type PanelsLog = {
+  [name: string]: PanelLog[];
 };
 
 export type PanelsMap = {
@@ -248,14 +263,17 @@ export type DashboardPanelType =
   | "container"
   | "control"
   | "dashboard"
+  | "edge"
   | "error"
   | "flow"
   | "graph"
   | "hierarchy"
   | "image"
   | "input"
+  | "node"
   | "table"
-  | "text";
+  | "text"
+  | "with";
 
 export type DashboardSnapshot = {
   schema_version: DashboardSnapshotSchemaVersion;

@@ -473,6 +473,7 @@ describe("dashboard event handlers", () => {
       const state = {
         state: "ready",
         execution_id: "1",
+        panelsLog: {},
         panelsMap: {},
         progress: 100,
       };
@@ -481,10 +482,23 @@ describe("dashboard event handlers", () => {
       ).toEqual(state);
     });
 
-    test("single node complete", () => {
+    test("single node blocked", () => {
+      const readyAt = new Date();
+      const blockedAt = new Date(readyAt);
+      blockedAt.setSeconds(readyAt.getSeconds() + 1);
       const state = {
         state: "ready",
         execution_id: "1",
+        panelsLog: {
+          panel_a: [
+            {
+              error: null,
+              status: "ready",
+              timestamp: readyAt.valueOf(),
+              title: "panel_a",
+            },
+          ],
+        },
         panelsMap: { panel_a: { name: "panel_a", sql: "", status: "ready" } },
         progress: 0,
       };
@@ -492,7 +506,8 @@ describe("dashboard event handlers", () => {
         name: "panel_a",
         panel_type: "node",
         sql: "",
-        status: "complete",
+        status: "blocked",
+        error: null,
       };
       expect(
         leafNodesUpdatedEventHandler(
@@ -501,6 +516,7 @@ describe("dashboard event handlers", () => {
               {
                 dashboard_node: updatedDashboardNode,
                 execution_id: "1",
+                timestamp: blockedAt.valueOf(),
               },
             ],
           },
@@ -508,6 +524,205 @@ describe("dashboard event handlers", () => {
         )
       ).toEqual({
         ...state,
+        panelsLog: {
+          ...state.panelsLog,
+          panel_a: [
+            ...state.panelsLog.panel_a,
+            {
+              error: null,
+              status: "blocked",
+              timestamp: blockedAt.valueOf(),
+              title: "panel_a",
+            },
+          ],
+        },
+        panelsMap: {
+          ...state.panelsMap,
+          [updatedDashboardNode.name]: updatedDashboardNode,
+        },
+        progress: 0,
+      });
+    });
+
+    test("single node running", () => {
+      const readyAt = new Date();
+      const runningAt = new Date(readyAt);
+      runningAt.setSeconds(readyAt.getSeconds() + 1);
+      const state = {
+        state: "ready",
+        execution_id: "1",
+        panelsLog: {
+          panel_a: [
+            {
+              error: null,
+              status: "ready",
+              timestamp: readyAt.valueOf(),
+              title: "panel_a",
+            },
+          ],
+        },
+        panelsMap: { panel_a: { name: "panel_a", sql: "", status: "ready" } },
+        progress: 0,
+      };
+      const updatedDashboardNode = {
+        name: "panel_a",
+        panel_type: "node",
+        sql: "",
+        status: "running",
+        error: null,
+      };
+      expect(
+        leafNodesUpdatedEventHandler(
+          {
+            nodes: [
+              {
+                dashboard_node: updatedDashboardNode,
+                execution_id: "1",
+                timestamp: runningAt.valueOf(),
+              },
+            ],
+          },
+          state
+        )
+      ).toEqual({
+        ...state,
+        panelsLog: {
+          ...state.panelsLog,
+          panel_a: [
+            ...state.panelsLog.panel_a,
+            {
+              error: null,
+              status: "running",
+              timestamp: runningAt.valueOf(),
+              title: "panel_a",
+            },
+          ],
+        },
+        panelsMap: {
+          ...state.panelsMap,
+          [updatedDashboardNode.name]: updatedDashboardNode,
+        },
+        progress: 0,
+      });
+    });
+
+    test("single node error", () => {
+      const readyAt = new Date();
+      const erroredAt = new Date(readyAt);
+      erroredAt.setSeconds(readyAt.getSeconds() + 1);
+      const state = {
+        state: "ready",
+        execution_id: "1",
+        panelsLog: {
+          panel_a: [
+            {
+              error: null,
+              status: "ready",
+              timestamp: readyAt.valueOf(),
+              title: "panel_a",
+            },
+          ],
+        },
+        panelsMap: { panel_a: { name: "panel_a", sql: "", status: "ready" } },
+        progress: 0,
+      };
+      const updatedDashboardNode = {
+        name: "panel_a",
+        panel_type: "node",
+        sql: "",
+        status: "error",
+        error: "BOOM!",
+      };
+      expect(
+        leafNodesUpdatedEventHandler(
+          {
+            nodes: [
+              {
+                dashboard_node: updatedDashboardNode,
+                execution_id: "1",
+                timestamp: erroredAt.valueOf(),
+              },
+            ],
+          },
+          state
+        )
+      ).toEqual({
+        ...state,
+        panelsLog: {
+          ...state.panelsLog,
+          panel_a: [
+            ...state.panelsLog.panel_a,
+            {
+              error: "BOOM!",
+              status: "error",
+              timestamp: erroredAt.valueOf(),
+              title: "panel_a",
+            },
+          ],
+        },
+        panelsMap: {
+          ...state.panelsMap,
+          [updatedDashboardNode.name]: updatedDashboardNode,
+        },
+        progress: 100,
+      });
+    });
+
+    test("single node complete", () => {
+      const readyAt = new Date();
+      const completeAt = new Date(readyAt);
+      completeAt.setSeconds(readyAt.getSeconds() + 1);
+      const state = {
+        state: "running",
+        execution_id: "1",
+        panelsLog: {
+          panel_a: [
+            {
+              error: null,
+              status: "running",
+              timestamp: readyAt.valueOf(),
+              title: "panel_a",
+            },
+          ],
+        },
+        panelsMap: { panel_a: { name: "panel_a", sql: "", status: "ready" } },
+        progress: 0,
+      };
+      const updatedDashboardNode = {
+        name: "panel_a",
+        panel_type: "node",
+        sql: "",
+        status: "complete",
+        error: null,
+      };
+      expect(
+        leafNodesUpdatedEventHandler(
+          {
+            nodes: [
+              {
+                dashboard_node: updatedDashboardNode,
+                execution_id: "1",
+                timestamp: completeAt.valueOf(),
+              },
+            ],
+          },
+          state
+        )
+      ).toEqual({
+        ...state,
+        panelsLog: {
+          ...state.panelsLog,
+          panel_a: [
+            ...state.panelsLog.panel_a,
+            {
+              error: null,
+              executionTime: 1000,
+              status: "complete",
+              timestamp: completeAt.valueOf(),
+              title: "panel_a",
+            },
+          ],
+        },
         panelsMap: {
           ...state.panelsMap,
           [updatedDashboardNode.name]: updatedDashboardNode,
@@ -517,9 +732,48 @@ describe("dashboard event handlers", () => {
     });
 
     test("multiple node complete", () => {
+      const readyAt = new Date();
+      const panelACompleteAt = new Date(readyAt);
+      panelACompleteAt.setSeconds(readyAt.getSeconds() + 1);
+      const panelBCompleteAt = new Date(readyAt);
+      panelBCompleteAt.setSeconds(readyAt.getSeconds() + 2);
       const state = {
         state: "ready",
         execution_id: "1",
+        panelsLog: {
+          panel_a: [
+            {
+              error: null,
+              status: "ready",
+              timestamp: readyAt.valueOf(),
+              title: "panel_a",
+            },
+          ],
+          panel_b: [
+            {
+              error: null,
+              status: "ready",
+              timestamp: readyAt.valueOf(),
+              title: "panel_b",
+            },
+          ],
+          panel_c: [
+            {
+              error: null,
+              status: "ready",
+              timestamp: readyAt.valueOf(),
+              title: "panel_c",
+            },
+          ],
+          panel_d: [
+            {
+              error: null,
+              status: "ready",
+              timestamp: readyAt.valueOf(),
+              title: "panel_d",
+            },
+          ],
+        },
         panelsMap: {
           panel_a: { name: "panel_a", sql: "", status: "ready" },
           panel_b: { name: "panel_b", sql: "", status: "ready" },
@@ -533,12 +787,14 @@ describe("dashboard event handlers", () => {
         panel_type: "node",
         sql: "",
         status: "complete",
+        error: null,
       };
       const updatedDashboardNode2 = {
         name: "panel_b",
         panel_type: "edge",
         sql: "",
         status: "complete",
+        error: null,
       };
       expect(
         leafNodesUpdatedEventHandler(
@@ -547,10 +803,12 @@ describe("dashboard event handlers", () => {
               {
                 dashboard_node: updatedDashboardNode1,
                 execution_id: "1",
+                timestamp: panelACompleteAt.valueOf(),
               },
               {
                 dashboard_node: updatedDashboardNode2,
                 execution_id: "1",
+                timestamp: panelBCompleteAt.valueOf(),
               },
             ],
           },
@@ -558,6 +816,27 @@ describe("dashboard event handlers", () => {
         )
       ).toEqual({
         ...state,
+        panelsLog: {
+          ...state.panelsLog,
+          panel_a: [
+            ...state.panelsLog.panel_a,
+            {
+              error: null,
+              status: "complete",
+              timestamp: panelACompleteAt.valueOf(),
+              title: "panel_a",
+            },
+          ],
+          panel_b: [
+            ...state.panelsLog.panel_b,
+            {
+              error: null,
+              status: "complete",
+              timestamp: panelBCompleteAt.valueOf(),
+              title: "panel_b",
+            },
+          ],
+        },
         panelsMap: {
           ...state.panelsMap,
           [updatedDashboardNode1.name]: updatedDashboardNode1,

@@ -163,6 +163,7 @@ func buildControlCompletePayload(event *dashboardevents.ControlComplete) ([]byte
 		Name:        event.Name,
 		Progress:    event.Progress,
 		ExecutionId: event.ExecutionId,
+		Timestamp:   event.Timestamp,
 	}
 	return json.Marshal(payload)
 }
@@ -174,15 +175,17 @@ func buildControlErrorPayload(event *dashboardevents.ControlError) ([]byte, erro
 		Name:        event.Name,
 		Progress:    event.Progress,
 		ExecutionId: event.ExecutionId,
+		Timestamp:   event.Timestamp,
 	}
 	return json.Marshal(payload)
 }
 
 func buildLeafNodeUpdatedPayload(event *dashboardevents.LeafNodeUpdated) ([]byte, error) {
-	payload := LeafNodeCompletePayload{
+	payload := LeafNodeUpdatedPayload{
 		Action:        "leaf_node_updated",
 		DashboardNode: event.LeafNode,
 		ExecutionId:   event.ExecutionId,
+		Timestamp:     event.Timestamp,
 	}
 	return json.Marshal(payload)
 }
@@ -196,14 +199,16 @@ func buildExecutionStartedPayload(event *dashboardevents.ExecutionStarted) ([]by
 		Layout:        event.Root.AsTreeNode(),
 		Inputs:        event.Inputs,
 		Variables:     event.Variables,
+		StartTime:     event.StartTime,
 	}
 	return json.Marshal(payload)
 }
 
 func buildExecutionErrorPayload(event *dashboardevents.ExecutionError) ([]byte, error) {
 	payload := ExecutionErrorPayload{
-		Action: "execution_error",
-		Error:  event.Error.Error(),
+		Action:    "execution_error",
+		Error:     event.Error.Error(),
+		Timestamp: event.Timestamp,
 	}
 	return json.Marshal(payload)
 }
@@ -215,6 +220,8 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 		SchemaVersion: fmt.Sprintf("%d", ExecutionCompletePayloadSchemaVersion),
 		ExecutionId:   event.ExecutionId,
 		Snapshot:      snap,
+		StartTime:     event.StartTime,
+		EndTime:       event.EndTime,
 	}
 	return json.Marshal(payload)
 }

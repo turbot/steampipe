@@ -1,19 +1,29 @@
 package dashboardevents
 
-import "github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+import (
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+	"github.com/turbot/steampipe/pkg/utils"
+	"time"
+)
 
 type LeafNodeUpdated struct {
-	LeafNode    dashboardtypes.DashboardTreeRun
+	LeafNode    map[string]any
 	Session     string
 	ExecutionId string
+	Timestamp   time.Time
 }
 
-func NewLeafNodeUpdate(r dashboardtypes.DashboardTreeRun, session, executionId string) *LeafNodeUpdated {
+func NewLeafNodeUpdate(r dashboardtypes.DashboardTreeRun, session, executionId string) (*LeafNodeUpdated, error) {
+	immutableNode, err := utils.JsonCloneToMap(r)
+	if err != nil {
+		return nil, err
+	}
 	return &LeafNodeUpdated{
-		LeafNode:    r,
+		LeafNode:    immutableNode,
 		Session:     session,
 		ExecutionId: executionId,
-	}
+		Timestamp:   time.Now(),
+	}, nil
 }
 
 // IsDashboardEvent implements DashboardEvent interface
