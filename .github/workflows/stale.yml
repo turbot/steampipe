@@ -1,0 +1,17 @@
+name: Stale Issues and PRs
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: Set to true for a dry run
+        required: false
+        default: "false"
+        type: string
+
+jobs:
+  stale_workflow:
+    uses: turbot/steampipe-workflows/.github/workflows/stale.yml@main
+    with:
+      dryRun: ${{ github.event.inputs.dryRun }}
