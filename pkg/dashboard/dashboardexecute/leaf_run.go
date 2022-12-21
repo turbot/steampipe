@@ -14,7 +14,7 @@ import (
 // LeafRun is a struct representing the execution of a leaf dashboard node
 type LeafRun struct {
 	// all RuntimeDependencySubscribers are also publishers as they have args/params
-	RuntimeDependencySubscriber
+	RuntimeDependencySubscriberImpl
 	Resource modconfig.DashboardLeafNode `json:"properties,omitempty"`
 
 	Data         *dashboardtypes.LeafData  `json:"data,omitempty"`
@@ -31,18 +31,18 @@ func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	}
 }
 
-func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree, overrideName *string) (*LeafRun, error) {
+func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree, opts ...LeafRunOption) (*LeafRun, error) {
 	r := &LeafRun{
 		Resource: resource,
 	}
 
-	// create RuntimeDependencySubscriber- this handles 'with' run creation and resolving runtime dependency resolution
+	// create RuntimeDependencySubscriberImpl- this handles 'with' run creation and resolving runtime dependency resolution
 	// (NOTE: we have to do this after creating run as we need to pass a ref to the run)
-	r.RuntimeDependencySubscriber = *NewRuntimeDependencySubscriber(resource, parent, r, executionTree)
+	r.RuntimeDependencySubscriberImpl = *NewRuntimeDependencySubscriber(resource, parent, r, executionTree)
 
-	// HACK - use options
-	if overrideName != nil {
-		r.Name = *overrideName
+	// apply options AFTER calling NewRuntimeDependencySubscriber
+	for _, opt := range opts {
+		opt(r)
 	}
 
 	err := r.initRuntimeDependencies(executionTree)
@@ -89,23 +89,19 @@ func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
 	inheritedChildren := r.resource.(modconfig.NodeAndEdgeProvider).GetInheritedChildren()
 
 	for i, c := range children {
-		// TACTICAL if nodes/edges have been inherited from a base NodeEdgeProvider resource,
-		// create the run passing the BASE resource as the parent
+		var opts []LeafRunOption
+		// NOTE: if nodes/edges have been inherited from a base NodeEdgeProvider resource,
+		// set the runtime dependency parent to be the BASE resource
 		// this ensures we resolve runtime dependencies from the base resource
-		var parent dashboardtypes.DashboardParent = r
-		isInherited := inheritedChildren[c.Name()]
-		if isInherited {
-			// set parent to the base run
-			parent = r.baseDependencySubscriber
+		if inheritedChildren[c.Name()] {
+			opts = append(opts, setRuntimeDependencyParent(r.baseDependencySubscriber))
 		}
 
-		childRun, err := NewLeafRun(c.(modconfig.DashboardLeafNode), parent, executionTree, nil)
+		childRun, err := NewLeafRun(c.(modconfig.DashboardLeafNode), r, executionTree, opts...)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		// TACTICAL reset parent
-		childRun.parent = r
 
 		r.children[i] = childRun
 	}

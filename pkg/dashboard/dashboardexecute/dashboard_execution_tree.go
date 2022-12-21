@@ -247,6 +247,11 @@ func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes
 
 	for name, run := range e.runs {
 		res[name] = run.(dashboardtypes.SnapshotPanel)
+		if s, ok := run.(RuntimeDependencySubscriber); ok {
+			if base := s.GetBaseDependencySubscriber(); base != nil {
+				res[base.GetName()] = base.(dashboardtypes.SnapshotPanel)
+			}
+		}
 
 		// special case handling for check runs
 		if checkRun, ok := run.(*CheckRun); ok {

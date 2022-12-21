@@ -14,9 +14,8 @@ import (
 
 type RuntimeDependencyPublisherImpl struct {
 	DashboardParentImpl
-	Args   []any                 `json:"args,omitempty"`
-	Params []*modconfig.ParamDef `json:"params,omitempty"`
-
+	Args           []any                 `json:"args,omitempty"`
+	Params         []*modconfig.ParamDef `json:"params,omitempty"`
 	subscriptions  map[string][]*RuntimeDependencyPublishTarget
 	withValueMutex sync.Mutex
 	withRuns       map[string]*LeafRun
@@ -272,9 +271,9 @@ func (p *RuntimeDependencyPublisherImpl) withsComplete() bool {
 
 func (p *RuntimeDependencyPublisherImpl) createWithRuns(withs []*modconfig.DashboardWith, executionTree *DashboardExecutionTree) error {
 	for _, w := range withs {
-		// NOTE: set the name of the run toe be the scoped name
+		// NOTE: set the name of the run to be the scoped name
 		withRunName := fmt.Sprintf("%s.%s", p.GetName(), w.UnqualifiedName)
-		withRun, err := NewLeafRun(w, p, executionTree, &withRunName)
+		withRun, err := NewLeafRun(w, p, executionTree, setName(withRunName))
 		if err != nil {
 			return err
 		}

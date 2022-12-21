@@ -72,7 +72,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 				return nil, fmt.Errorf("child %s does not implement DashboardLeafNode", i.Name())
 			}
 
-			childRun, err = NewLeafRun(leafNode, r, executionTree, nil)
+			childRun, err = NewLeafRun(leafNode, r, executionTree)
 			if err != nil {
 				return nil, err
 			}

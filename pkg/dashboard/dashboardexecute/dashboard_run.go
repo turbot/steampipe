@@ -157,12 +157,15 @@ func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) er
 			// NOTE: clone the input to avoid mutating the original
 			// TODO remove the need for this when we refactor input values resolution
 			// TODO https://github.com/turbot/steampipe/issues/2864
-			childRun, err = NewLeafRun(i.Clone(), r, executionTree, nil)
+
+			// TACTICAL: as this is a runtime dependency,  set the run name to the 'scoped name'
+			// this is to match the name in the panel dependendencies
+			// TODO [node_reuse] tidy this
+			inputRunName := fmt.Sprintf("%s.%s", r.DashboardName, i.UnqualifiedName)
+			childRun, err = NewLeafRun(i.Clone(), r, executionTree, setName(inputRunName))
 			if err != nil {
 				return err
 			}
-			// TACTICAL: as this is a runtime dependency,  set the run name to the 'scoped name'
-			childRun.(*LeafRun).Name = fmt.Sprintf("%s.%s", r.DashboardName, i.UnqualifiedName)
 
 		default:
 			// ensure this item is a DashboardLeafNode
@@ -171,7 +174,7 @@ func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) er
 				return fmt.Errorf("child %s does not implement DashboardLeafNode", i.Name())
 			}
 
-			childRun, err = NewLeafRun(leafNode, r, executionTree, nil)
+			childRun, err = NewLeafRun(leafNode, r, executionTree)
 			if err != nil {
 				return err
 			}
