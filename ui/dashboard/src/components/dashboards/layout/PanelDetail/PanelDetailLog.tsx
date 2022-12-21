@@ -159,6 +159,9 @@ const addDependencyLogs = (
     }
     dependentPanelRecord[dependency] = true;
     const dependencyPanel = panelsMap[dependency];
+    if (!dependencyPanel) {
+      continue;
+    }
     addDependencyLogs(
       dependencyPanel,
       panelsLog,
@@ -203,6 +206,9 @@ const getDependencyLogs = (
     const nodeAndEdgeProperties = panel.properties as NodeAndEdgeProperties;
     for (const node of nodeAndEdgeProperties.nodes || []) {
       const nodePanel = panelsMap[node];
+      if (!nodePanel) {
+        continue;
+      }
       addDependencyLogs(
         nodePanel,
         panelsLog,
@@ -213,6 +219,9 @@ const getDependencyLogs = (
     }
     for (const edge of nodeAndEdgeProperties.edges || []) {
       const edgePanel = panelsMap[edge];
+      if (!edgePanel) {
+        continue;
+      }
       addDependencyLogs(
         edgePanel,
         panelsLog,
