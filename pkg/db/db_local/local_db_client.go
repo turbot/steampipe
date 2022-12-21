@@ -13,7 +13,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/schema"
-	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -33,18 +32,18 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 
 	// start db if necessary
 	if err := EnsureDBInstalled(ctx); err != nil {
-		return nil, sperr.Wrapf(err, "failed to ensure db installation")
+		return nil, err
 	}
 
 	startResult := StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), ListenTypeLocal, invoker)
 	if startResult.Error != nil {
-		return nil, sperr.Wrapf(startResult.Error, "failed to start service")
+		return nil, startResult.Error
 	}
 
 	client, err := NewLocalClient(ctx, invoker, onConnectionCallback)
 	if err != nil {
 		ShutdownService(ctx, invoker)
-		return nil, sperr.Wrapf(err, "failed to create local client")
+		return nil, err
 	}
 	return client, nil
 }

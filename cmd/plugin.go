@@ -688,12 +688,12 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult, error) {
 	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
 	if err != nil {
-		return nil, nil, sperr.Wrapf(err, "failed to create db client")
+		return nil, nil, err
 	}
 	defer client.Close(ctx)
 	res := client.RefreshConnectionAndSearchPaths(ctx)
 	if res.Error != nil {
-		return nil, nil, sperr.Wrapf(res.Error, "failed to refresh connection")
+		return nil, nil, err
 	}
 
 	pluginConnectionMap := make(map[string][]modconfig.Connection)
