@@ -99,7 +99,7 @@ func (r *Runner) run(ctx context.Context) {
 	waitGroup.Wait()
 
 	// check if the context was cancelled before starting any FileIO
-	if utils.IsContextCancelled(ctx) {
+	if error_helpers.IsContextCanceled(ctx) {
 		// if the context was cancelled, we don't want to do anything
 		return
 	}

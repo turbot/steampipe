@@ -247,7 +247,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	dbSession := sessionResult.Session
 	defer func() {
 		// do this in a closure, otherwise the argument will not get evaluated during calltime
-		dbSession.Close(utils.IsContextCancelled(ctx))
+		dbSession.Close(error_helpers.IsContextCanceled(ctx))
 	}()
 
 	// set our status

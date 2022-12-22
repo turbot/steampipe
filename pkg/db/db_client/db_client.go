@@ -162,7 +162,7 @@ func (c *DbClient) RefreshSessions(ctx context.Context) *db_common.AcquireSessio
 	}
 	sessionResult := c.AcquireSession(ctx)
 	if sessionResult.Session != nil {
-		sessionResult.Session.Close(utils.IsContextCancelled(ctx))
+		sessionResult.Session.Close(error_helpers.IsContextCanceled(ctx))
 	}
 	return sessionResult
 }

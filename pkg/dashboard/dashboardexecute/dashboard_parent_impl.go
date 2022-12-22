@@ -85,7 +85,7 @@ func (r *DashboardParentImpl) waitForChildrenAsync() chan error {
 			for !(r.ChildrenComplete()) {
 				completeChild := <-r.childCompleteChan
 				log.Printf("[TRACE] %s got child complete for %s", r.Name, completeChild.GetName())
-				if completeChild.GetRunStatus() == dashboardtypes.DashboardRunError {
+				if completeChild.GetRunStatus().IsError() {
 					errors = append(errors, completeChild.GetError())
 					log.Printf("[TRACE] %s child %s has error %v", r.Name, completeChild.GetName(), completeChild.GetError())
 				}

@@ -138,7 +138,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// treat each arg as a separate execution
 	for _, targetName := range args {
-		if utils.IsContextCancelled(ctx) {
+		if error_helpers.IsContextCanceled(ctx) {
 			durations = append(durations, 0)
 			// skip over this arg, since the execution was cancelled
 			// (do not just quit as we want to populate the durations)

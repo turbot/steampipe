@@ -35,7 +35,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	utils.LogTime("db_local.ShutdownService start")
 	defer utils.LogTime("db_local.ShutdownService end")
 
-	if utils.IsContextCancelled(ctx) {
+	if error_helpers.IsContextCanceled(ctx) {
 		ctx = context.Background()
 	}
 

@@ -3,7 +3,6 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
-
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -84,8 +83,8 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 		}
 
 		// if our child has not completed, we have not completed
-		if childRun.GetRunStatus() == dashboardtypes.DashboardRunReady {
-			r.Status = dashboardtypes.DashboardRunReady
+		if childRun.GetRunStatus() == dashboardtypes.DashboardRunInitialized {
+			r.Status = dashboardtypes.DashboardRunInitialized
 		}
 		r.children = append(r.children, childRun)
 	}
@@ -117,7 +116,7 @@ func (r *DashboardContainerRun) Execute(ctx context.Context) {
 	var errors []error
 	for !r.ChildrenComplete() {
 		completeChild := <-r.childCompleteChan
-		if completeChild.GetRunStatus() == dashboardtypes.DashboardRunError {
+		if completeChild.GetRunStatus().IsError() {
 			errors = append(errors, completeChild.GetError())
 		}
 		// fall through to recheck ChildrenComplete
@@ -131,21 +130,4 @@ func (r *DashboardContainerRun) Execute(ctx context.Context) {
 	} else {
 		r.SetError(ctx, err)
 	}
-}
-
-// SetError implements DashboardTreeRun
-// tell parent we are done
-func (r *DashboardContainerRun) SetError(_ context.Context, err error) {
-	r.err = err
-	// error type does not serialise to JSON so copy into a string
-	r.ErrorString = err.Error()
-	r.Status = dashboardtypes.DashboardRunError
-	r.notifyParentOfCompletion()
-}
-
-// SetComplete implements DashboardTreeRun
-func (r *DashboardContainerRun) SetComplete(context.Context) {
-	r.Status = dashboardtypes.DashboardRunComplete
-	// tell parent we are done
-	r.notifyParentOfCompletion()
 }

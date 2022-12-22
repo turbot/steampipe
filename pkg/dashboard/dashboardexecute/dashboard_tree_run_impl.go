@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"log"
 )
@@ -86,7 +86,7 @@ func (r *DashboardTreeRunImpl) GetError() error {
 
 // RunComplete implements DashboardTreeRun
 func (r *DashboardTreeRunImpl) RunComplete() bool {
-	return r.Status == dashboardtypes.DashboardRunComplete || r.Status == dashboardtypes.DashboardRunError
+	return r.Status == dashboardtypes.DashboardRunComplete || r.Status.IsError()
 }
 
 // GetInputsDependingOn implements DashboardTreeRun
@@ -134,10 +134,12 @@ func (r *DashboardTreeRunImpl) SetError(ctx context.Context, err error) {
 	r.err = err
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
-	// increment error count for snapshot hook
-	statushooks.SnapshotError(ctx)
 	// set status (this sends update event)
-	r.setStatus(dashboardtypes.DashboardRunError)
+	if error_helpers.IsContextCancelledError(err) {
+		r.setStatus(dashboardtypes.DashboardRunCanceled)
+	} else {
+		r.setStatus(dashboardtypes.DashboardRunError)
+	}
 	// tell parent we are done
 	r.notifyParentOfCompletion()
 }

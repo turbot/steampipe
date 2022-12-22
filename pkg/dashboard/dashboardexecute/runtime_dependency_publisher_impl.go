@@ -36,7 +36,7 @@ func NewRuntimeDependencyPublisherImpl(resource modconfig.DashboardLeafNode, par
 		// get params
 		b.Params = queryProvider.GetParams()
 		if queryProvider.RequiresExecution(queryProvider) || len(queryProvider.GetChildren()) > 0 {
-			b.Status = dashboardtypes.DashboardRunReady
+			b.Status = dashboardtypes.DashboardRunInitialized
 		}
 	}
 
@@ -46,14 +46,6 @@ func NewRuntimeDependencyPublisherImpl(resource modconfig.DashboardLeafNode, par
 func (p *RuntimeDependencyPublisherImpl) Initialise(context.Context) {}
 
 func (p *RuntimeDependencyPublisherImpl) Execute(context.Context) {
-	panic("must be implemented by child struct")
-}
-
-func (p *RuntimeDependencyPublisherImpl) SetError(context.Context, error) {
-	panic("must be implemented by child struct")
-}
-
-func (p *RuntimeDependencyPublisherImpl) SetComplete(context.Context) {
 	panic("must be implemented by child struct")
 }
 

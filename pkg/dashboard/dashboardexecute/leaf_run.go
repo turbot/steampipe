@@ -152,31 +152,19 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	}
 }
 
-// SetError implements DashboardTreeRun
+// SetError implements DashboardTreeRun (override to set snapshothook status
 func (r *LeafRun) SetError(ctx context.Context, err error) {
-	log.Printf("[TRACE] %s SetError err %v", r.Name, err)
-	r.err = err
-	// error type does not serialise to JSON so copy into a string
-	r.ErrorString = err.Error()
-
 	// increment error count for snapshot hook
 	statushooks.SnapshotError(ctx)
-	// set status (this sends update event)
-	r.setStatus(dashboardtypes.DashboardRunError)
-
-	r.notifyParentOfCompletion()
+	r.DashboardTreeRunImpl.SetError(ctx, err)
 }
 
-// SetComplete implements DashboardTreeRun
+// SetComplete implements DashboardTreeRun (override to set snapshothook status
 func (r *LeafRun) SetComplete(ctx context.Context) {
-	// set status (this sends update event)
-	r.setStatus(dashboardtypes.DashboardRunComplete)
-
 	// call snapshot hooks with progress
 	statushooks.UpdateSnapshotProgress(ctx, 1)
 
-	// tell parent we are done
-	r.notifyParentOfCompletion()
+	r.DashboardTreeRunImpl.SetComplete(ctx)
 }
 
 // IsSnapshotPanel implements SnapshotPanel

@@ -230,7 +230,7 @@ func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardtypes.Dashboa
 
 func (e *DashboardExecutionTree) Cancel() {
 	// if we have not completed, and already have a cancel function - cancel
-	if e.GetRunStatus() != dashboardtypes.DashboardRunReady || e.cancel == nil {
+	if e.GetRunStatus() != dashboardtypes.DashboardRunInitialized || e.cancel == nil {
 		return
 	}
 	e.cancel()
