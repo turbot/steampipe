@@ -3,6 +3,7 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -149,52 +150,76 @@ func (s *RuntimeDependencySubscriberImpl) resolveRuntimeDependencies() error {
 }
 
 func (s *RuntimeDependencySubscriberImpl) findRuntimeDependencyPublisher(runtimeDependency *modconfig.RuntimeDependency) (res RuntimeDependencyPublisher) {
-	// the runtime dependency publisher is usually the root node of the execution tree
-	// the exception to this is if the node is a LeafRun(?) for a base node which has a with block,
-	// in which case it may provide its own runtime dependency
-
-	// traverse up the tree - we rely on resource validation to ensure that intermediate nodes in the tree
-	// do not provide the runtime dependency
-	var item dashboardtypes.DashboardTreeRun = s
-	//find run correspondoing to depdnecy owner - update item to base if necessary
-
-	for {
-		//start
-		if publisher, ok := item.(RuntimeDependencyPublisher); ok {
-			if publisher.ProvidesRuntimeDependency(runtimeDependency) {
-				res = publisher
-				break
-			}
-		}
-
-		// with values are provided by the resource in which they were declared so if the with in in a base resource,
-		// resolve the depdency publisher using the base resource as parent
-
-		// if the target property was inherited from the base, use the base as the parent
-		var useBase bool
-
-		switch runtimeDependency.ParentPropertyName {
-		case "args":
-			useBase = s.resource.(modconfig.QueryProvider).ArgsInheritedFromBase()
-		default:
-			// param
-			useBase = s.resource.(modconfig.QueryProvider).ParamsInheritedFromBase()
-		}
-
-		// ask for it's GetRuntimeDependencyParent
-		// (this may be the same as it's parent, but for resource which inherit from a base
-		// it will be the base resource Subscriber
-		// TODO either we pass arg values back to base or we do not use base ar dep parent for params
-		// for now tryt passing val back
-		if s, ok := item.(RuntimeDependencySubscriber); ok && useBase {
-			item = s.GetRuntimeDependencyParent()
-		} else {
-			item = item.GetParent()
-		}
-		if item == s.executionTree {
-			break
-		}
+	// the runtime dependency publisher is either the root dashboard run,
+	// or if this resource (or in case of a node/edge, the resource parent) has a base,
+	// the baseDependencySubscriber for that base
+	var subscriber RuntimeDependencySubscriber = s
+	if s.NodeType == modconfig.BlockTypeNode || s.NodeType == modconfig.BlockTypeEdge {
+		subscriber = s.parent.(RuntimeDependencySubscriber)
 	}
+	baseSubscriber := subscriber.GetBaseDependencySubscriber()
+	// not check the provider property on the runtime dependency
+	// - if the matches the underlying resource for the baseDependencySubscriber,
+	// then baseDependencySubscriber _should_ be the dependency publisher
+	if !helpers.IsNil(baseSubscriber) && runtimeDependency.Provider == baseSubscriber.GetResource() {
+		if baseSubscriber.ProvidesRuntimeDependency(runtimeDependency) {
+			return baseSubscriber
+		}
+
+		// unexpected
+		log.Printf("[WARN] dependency %s has a dependency provider matching the base resource %s but the BaseDependencySubscriber does not provider the runtime dependency",
+			runtimeDependency.String(), baseSubscriber.GetName())
+		return nil
+	}
+
+	// otherwise the dashboard run must be the publisher
+	dasboardRun := s.executionTree.runs[s.DashboardName].(RuntimeDependencyPublisher)
+	if dasboardRun.ProvidesRuntimeDependency(runtimeDependency) {
+		return dasboardRun
+	}
+	//
+	//// traverse up the tree - we rely on resource validation to ensure that intermediate nodes in the tree
+	//// do not provide the runtime dependency
+	//var item dashboardtypes.DashboardTreeRun = s
+	////find run correspondoing to depdnecy owner - update item to base if necessary
+	//
+	//for {
+	//	//start
+	//	if publisher, ok := item.(RuntimeDependencyPublisher); ok {
+	//		if publisher.ProvidesRuntimeDependency(runtimeDependency) {
+	//			res = publisher
+	//			break
+	//		}
+	//	}
+	//
+	//	// with values are provided by the resource in which they were declared so if the with in in a base resource,
+	//	// resolve the depdency publisher using the base resource as parent
+	//
+	//	// if the target property was inherited from the base, use the base as the parent
+	//	var useBase bool
+	//
+	//	switch runtimeDependency.ParentPropertyName {
+	//	case "args":
+	//		useBase = s.resource.(modconfig.QueryProvider).ArgsInheritedFromBase()
+	//	default:
+	//		// param
+	//		useBase = s.resource.(modconfig.QueryProvider).ParamsInheritedFromBase()
+	//	}
+	//
+	//	// ask for it's GetRuntimeDependencyParent
+	//	// (this may be the same as it's parent, but for resource which inherit from a base
+	//	// it will be the base resource Subscriber
+	//	// TODO either we pass arg values back to base or we do not use base ar dep parent for params
+	//	// for now tryt passing val back
+	//	if s, ok := item.(RuntimeDependencySubscriber); ok && useBase {
+	//		item = s.GetRuntimeDependencyParent()
+	//	} else {
+	//		item = item.GetParent()
+	//	}
+	//	if item == s.executionTree {
+	//		break
+	//	}
+	//}
 
 	return
 }

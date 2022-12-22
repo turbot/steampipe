@@ -52,13 +52,13 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 		return nil, err
 	}
 
+	// add r into execution tree BEFORE creating child runs - this is so child runs can find this dashboard run
+	executionTree.runs[r.Name] = r
+
 	err = r.createChildRuns(executionTree)
 	if err != nil {
 		return nil, err
 	}
-
-	// add r into execution tree
-	executionTree.runs[r.Name] = r
 
 	// create buffered channel for children to report their completion
 	r.createChildCompleteChan()

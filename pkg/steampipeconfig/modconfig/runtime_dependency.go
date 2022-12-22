@@ -17,7 +17,7 @@ type RuntimeDependency struct {
 	IsArray bool
 
 	// resource which provides has the dependency
-	Provider RuntimeDependencyProvider
+	Provider HclResource
 }
 
 func (d *RuntimeDependency) SourceResourceName() string {

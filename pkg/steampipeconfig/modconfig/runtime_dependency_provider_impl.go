@@ -41,7 +41,7 @@ func (b *RuntimeDependencyProviderImpl) AddRuntimeDependencies(dependencies []*R
 		b.runtimeDependencies = make(map[string]*RuntimeDependency)
 	}
 	for _, dependency := range dependencies {
-		// set the dependency owner
+		// set the dependency provider (this is used if this resource is inherited via base)
 		dependency.Provider = b
 		b.runtimeDependencies[dependency.String()] = dependency
 	}

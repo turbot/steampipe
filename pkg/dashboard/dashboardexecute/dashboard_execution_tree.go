@@ -313,7 +313,7 @@ func (e *DashboardExecutionTree) ChildrenComplete() bool {
 }
 
 // Tactical: Empty implementations of DashboardParent functions
-
+// TODO remove need for this
 func (e *DashboardExecutionTree) Initialise(ctx context.Context) {
 	panic("should never call for DashboardExecutionTree")
 }
@@ -338,6 +338,10 @@ func (e *DashboardExecutionTree) GetInputsDependingOn(s string) []string {
 	panic("should never call for DashboardExecutionTree")
 }
 
-func (e *DashboardExecutionTree) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+func (*DashboardExecutionTree) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+	panic("should never call for DashboardExecutionTree")
+}
+
+func (*DashboardExecutionTree) GetResource() modconfig.DashboardLeafNode {
 	panic("should never call for DashboardExecutionTree")
 }

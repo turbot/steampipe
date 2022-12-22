@@ -124,6 +124,11 @@ func (r *DashboardTreeRunImpl) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	panic("must be implemented by child struct")
 }
 
+// GetResource implements DashboardTreeRun
+func (r *DashboardTreeRunImpl) GetResource() modconfig.DashboardLeafNode {
+	return r.resource
+}
+
 // TODO [node_reuse] do this a different way
 // maybe move to a different embedded struct - ExecutableRun, to differentiate between Base runs
 
