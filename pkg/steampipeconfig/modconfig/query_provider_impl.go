@@ -20,8 +20,8 @@ type QueryProviderImpl struct {
 	withs               []*DashboardWith
 	disableCtySerialise bool
 	// flags to indicate if params and args were inherited from base resource
-	baseArgs   bool
-	baseParams bool
+	argsInheritedFromBase   bool
+	paramsInheritedFromBase bool
 }
 
 // GetParams implements QueryProvider
@@ -132,13 +132,13 @@ func (b *QueryProviderImpl) GetQueryProviderImpl() *QueryProviderImpl {
 // ParamsInheritedFromBase implements QueryProvider
 // determine whether our params were inherited from base resource
 func (b *QueryProviderImpl) ParamsInheritedFromBase() bool {
-	return b.baseParams
+	return b.paramsInheritedFromBase
 }
 
 // ArgsInheritedFromBase implements QueryProvider
 // determine whether our args were inherited from base resource
 func (b *QueryProviderImpl) ArgsInheritedFromBase() bool {
-	return b.baseArgs
+	return b.argsInheritedFromBase
 }
 
 // CtyValue implements CtyValueProvider
@@ -159,11 +159,11 @@ func (b *QueryProviderImpl) setBaseProperties() {
 	}
 	if b.Args == nil {
 		b.Args = b.getBaseImpl().Args
-		b.baseArgs = true
+		b.argsInheritedFromBase = true
 	}
 	if b.Params == nil {
 		b.Params = b.getBaseImpl().Params
-		b.baseParams = true
+		b.paramsInheritedFromBase = true
 	}
 }
 
