@@ -74,6 +74,7 @@ type QueryProvider interface {
 	MergeParentArgs(QueryProvider, QueryProvider) hcl.Diagnostics
 	GetQueryProviderImpl() *QueryProviderImpl
 	ParamsInheritedFromBase() bool
+	ArgsInheritedFromBase() bool
 }
 
 type CtyValueProvider interface {

@@ -269,5 +269,5 @@ func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvi
 	} else {
 		g.Nodes.Merge(g.Base.Nodes)
 	}
-	g.MergeRuntimeDependencies(g.Base)
+	g.MergeBaseDependencies(g.Base)
 }

@@ -249,7 +249,7 @@ func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	}
 	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
 	c.base = c.Base
-	// call into parent nested struct setBaseProperties    
+	// call into parent nested struct setBaseProperties
 	c.QueryProviderImpl.setBaseProperties()
 
 	if c.SearchPath == nil {
@@ -272,5 +272,5 @@ func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 		c.Display = c.Base.Display
 	}
 
-	c.MergeRuntimeDependencies(c.Base)
+	c.MergeBaseDependencies(c.Base)
 }

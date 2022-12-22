@@ -41,19 +41,9 @@ func (b *RuntimeDependencyProviderImpl) AddRuntimeDependencies(dependencies []*R
 		b.runtimeDependencies = make(map[string]*RuntimeDependency)
 	}
 	for _, dependency := range dependencies {
+		// set the dependency owner
+		dependency.Provider = b
 		b.runtimeDependencies[dependency.String()] = dependency
-	}
-}
-
-func (b *RuntimeDependencyProviderImpl) MergeRuntimeDependencies(other QueryProvider) {
-	dependencies := other.GetRuntimeDependencies()
-	if b.runtimeDependencies == nil {
-		b.runtimeDependencies = make(map[string]*RuntimeDependency)
-	}
-	for _, dependency := range dependencies {
-		if _, ok := b.runtimeDependencies[dependency.String()]; !ok {
-			b.runtimeDependencies[dependency.String()] = dependency
-		}
 	}
 }
 

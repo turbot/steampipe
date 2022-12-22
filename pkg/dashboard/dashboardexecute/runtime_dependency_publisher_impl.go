@@ -285,3 +285,17 @@ func (p *RuntimeDependencyPublisherImpl) createWithRuns(withs []*modconfig.Dashb
 	}
 	return nil
 }
+
+func (p *RuntimeDependencyPublisherImpl) argsResolved(args []any) {
+	// use params to get param names for each arg and then look of subscriber
+	for i, param := range p.Params {
+		if i == len(args) {
+			return
+		}
+		// do we have a subscription for this param
+		if _, ok := p.subscriptions[param.UnqualifiedName]; ok {
+			p.PublishRuntimeDependencyValue(param.UnqualifiedName, &dashboardtypes.ResolvedRuntimeDependencyValue{Value: args[i]})
+		}
+	}
+	log.Printf("[TRACE] %s: argsResolved", p.Name)
+}

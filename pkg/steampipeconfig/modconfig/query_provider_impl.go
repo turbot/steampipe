@@ -18,8 +18,10 @@ type QueryProviderImpl struct {
 	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
 
 	withs               []*DashboardWith
-	runtimeDependencies map[string]*RuntimeDependency
 	disableCtySerialise bool
+	// flags to indicate if params and args were inherited from base resource
+	baseArgs   bool
+	baseParams bool
 }
 
 // GetParams implements QueryProvider
@@ -130,22 +132,13 @@ func (b *QueryProviderImpl) GetQueryProviderImpl() *QueryProviderImpl {
 // ParamsInheritedFromBase implements QueryProvider
 // determine whether our params were inherited from base resource
 func (b *QueryProviderImpl) ParamsInheritedFromBase() bool {
-	// note: this depends on baseQueryProvider being a reference to the same object as the derived class
-	// base property which was used to populate the params
-	if b.base == nil {
-		return false
-	}
+	return b.baseParams
+}
 
-	baseParams := b.base.(QueryProvider).GetParams()
-	if len(b.Params) != len(baseParams) {
-		return false
-	}
-	for i, p := range b.Params {
-		if baseParams[i] != p {
-			return false
-		}
-	}
-	return true
+// ArgsInheritedFromBase implements QueryProvider
+// determine whether our args were inherited from base resource
+func (b *QueryProviderImpl) ArgsInheritedFromBase() bool {
+	return b.baseArgs
 }
 
 // CtyValue implements CtyValueProvider
@@ -166,12 +159,34 @@ func (b *QueryProviderImpl) setBaseProperties() {
 	}
 	if b.Args == nil {
 		b.Args = b.getBaseImpl().Args
+		b.baseArgs = true
 	}
 	if b.Params == nil {
 		b.Params = b.getBaseImpl().Params
+		b.baseParams = true
 	}
 }
 
 func (b *QueryProviderImpl) getBaseImpl() *QueryProviderImpl {
 	return b.base.(QueryProvider).GetQueryProviderImpl()
+}
+
+func (b *QueryProviderImpl) MergeBaseDependencies(base QueryProvider) {
+	//only merge dependency if target property of other was inherited
+	//i.e. if other target propery
+	baseRuntimeDependencies := base.GetRuntimeDependencies()
+	if b.runtimeDependencies == nil {
+		b.runtimeDependencies = make(map[string]*RuntimeDependency)
+	}
+	for _, baseDep := range baseRuntimeDependencies {
+		if _, ok := b.runtimeDependencies[baseDep.String()]; !ok {
+			// was this target parent property (args/params) inherited
+			if (baseDep.ParentPropertyName == "args" && !b.ArgsInheritedFromBase()) ||
+				!b.ParamsInheritedFromBase() {
+				continue
+			}
+
+			b.runtimeDependencies[baseDep.String()] = baseDep
+		}
+	}
 }

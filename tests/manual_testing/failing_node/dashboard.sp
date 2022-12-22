@@ -19,7 +19,7 @@ dashboard "name_graph" {
   graph {
     base = graph.iam_policy_structure
     args = {
-      policy_std = with.bucket_policy[0].policy_std
+      policy_std = with.bucket_policy.rows[0].policy_std
     }
   }
 }

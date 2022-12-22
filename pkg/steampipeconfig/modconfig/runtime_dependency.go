@@ -15,6 +15,9 @@ type RuntimeDependency struct {
 	// this provides support for args which convert a runtime dependency to an array, like:
 	// arns = [input.arn]
 	IsArray bool
+
+	// resource which provides has the dependency
+	Provider RuntimeDependencyProvider
 }
 
 func (d *RuntimeDependency) SourceResourceName() string {

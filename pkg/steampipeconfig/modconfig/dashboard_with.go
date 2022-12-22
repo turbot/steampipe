@@ -93,5 +93,5 @@ func (w *DashboardWith) setBaseProperties(resourceMapProvider ResourceMapsProvid
 	// call into parent nested struct setBaseProperties
 	w.QueryProviderImpl.setBaseProperties()
 
-	w.MergeRuntimeDependencies(w.base.(*DashboardWith))
+	w.MergeBaseDependencies(w.base.(*DashboardWith))
 }
