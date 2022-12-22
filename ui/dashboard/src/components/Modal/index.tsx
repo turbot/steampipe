@@ -46,11 +46,11 @@ const Modal = ({ icon, message, title }) => {
                 leaveFrom="opacity-100 translate-y-0 scale-100"
                 leaveTo="opacity-0 translate-y-0 scale-95"
               >
-                <div className="inline-block h-full sm:h-auto align-middle bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all my-8 w-full sm:max-w-xl sm:p-6 lg:max-w-3xl">
+                <div className="inline-block h-full sm:h-auto align-middle bg-dashboard rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all my-8 w-full sm:max-w-xl sm:p-6 lg:max-w-3xl">
                   <div className="absolute top-0 right-0 pt-4 pr-4">
                     <button
                       type="button"
-                      className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      className="bg-dashboard rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                       onClick={() => setOpen(false)}
                     >
                       <span className="sr-only">Close</span>
@@ -64,12 +64,12 @@ const Modal = ({ icon, message, title }) => {
                     <div className="grow mt-1 ml-4 text-left">
                       <Dialog.Title
                         as="h2"
-                        className="text-xl leading-6 font-medium text-gray-900"
+                        className="text-xl leading-6 font-medium"
                       >
                         {title}
                       </Dialog.Title>
                       <div className="mt-2 mb-2">
-                        <p className="w-full sm:w-11/12 text-sm text-foreground-light break-words whitespace-pre-wrap">
+                        <p className="w-full sm:w-11/12 text-sm break-keep whitespace-pre-wrap">
                           {message}
                         </p>
                       </div>
