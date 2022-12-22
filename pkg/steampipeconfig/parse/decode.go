@@ -285,7 +285,7 @@ func decodeVariable(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Var
 
 }
 
-func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclResource, *decodeResult) {
+func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig.QueryProvider, *decodeResult) {
 	res := newDecodeResult()
 
 	// TODO  [node_reuse] need raise errors for invalid properties
@@ -313,7 +313,7 @@ func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig
 	// decode 'with',args and params blocks
 	res.Merge(decodeQueryProviderBlocks(block, remain.(*hclsyntax.Body), resource, parseCtx))
 
-	return resource, res
+	return resource.(modconfig.QueryProvider), res
 }
 
 func decodeQueryProviderBlocks(block *hcl.Block, content *hclsyntax.Body, resource modconfig.HclResource, parseCtx *ModParseContext) *decodeResult {
@@ -431,6 +431,14 @@ func decodeNodeAndEdgeProviderBlocks(content *hclsyntax.Body, nodeAndEdgeProvide
 
 		case modconfig.BlockTypeNode, modconfig.BlockTypeEdge:
 			child, childRes := decodeQueryProvider(block, parseCtx)
+
+			// TACTICAL if child has any runtime dependencies, claim them
+			// this is to ensure if this resourc eis used as base, we can be correctly identified
+			// as the publisher of the runtime dependencies
+			for _, r := range child.GetRuntimeDependencies() {
+				r.Provider = nodeAndEdgeProvider
+			}
+
 			// populate metadata, set references and call OnDecoded
 			handleModDecodeResult(child, childRes, block, parseCtx)
 			res.Merge(childRes)

@@ -132,5 +132,5 @@ func (e *DashboardEdge) setBaseProperties(resourceMapProvider ResourceMapsProvid
 	if e.Category == nil {
 		e.Category = e.Base.Category
 	}
-	e.MergeRuntimeDependencies(e.Base)
+	e.MergeBaseDependencies(e.Base)
 }

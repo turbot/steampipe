@@ -14,9 +14,8 @@ import (
 
 type RuntimeDependencyPublisherImpl struct {
 	DashboardParentImpl
-	Args   []any                 `json:"args,omitempty"`
-	Params []*modconfig.ParamDef `json:"params,omitempty"`
-
+	Args           []any                 `json:"args,omitempty"`
+	Params         []*modconfig.ParamDef `json:"params,omitempty"`
 	subscriptions  map[string][]*RuntimeDependencyPublishTarget
 	withValueMutex sync.Mutex
 	withRuns       map[string]*LeafRun
@@ -270,48 +269,14 @@ func (p *RuntimeDependencyPublisherImpl) withsComplete() bool {
 	return true
 }
 
-func (p *RuntimeDependencyPublisherImpl) findRuntimeDependencyPublisher(runtimeDependency *modconfig.RuntimeDependency) RuntimeDependencyPublisher {
-	// the runtime dependency publisher is usually the root node of the execution tree
-	// the exception to this is if the node is a LeafRun(?) for a base node which has a with block,
-	// in which case it may provide its own runtime depdency
-
-	// try ourselves
-	if p.ProvidesRuntimeDependency(runtimeDependency) {
-		return p
-	}
-
-	// try root node
-	// NOTE: we cannot just use b.executionTree.Root as this function is called at init time before Root is assigned
-	rootPublisher := p.getRoot().(RuntimeDependencyPublisher)
-
-	if rootPublisher.ProvidesRuntimeDependency(runtimeDependency) {
-		return rootPublisher
-	}
-
-	return nil
-}
-
-// get the root of the tree by searching up the parents
-func (p *RuntimeDependencyPublisherImpl) getRoot() dashboardtypes.DashboardTreeRun {
-	var root dashboardtypes.DashboardTreeRun = p
-	for {
-		parent := root.GetParent()
-		if parent == p.executionTree {
-			break
-		}
-		root = parent.(dashboardtypes.DashboardTreeRun)
-	}
-	return root
-}
-
 func (p *RuntimeDependencyPublisherImpl) createWithRuns(withs []*modconfig.DashboardWith, executionTree *DashboardExecutionTree) error {
 	for _, w := range withs {
-		withRun, err := NewLeafRun(w, p, executionTree)
+		// NOTE: set the name of the run to be the scoped name
+		withRunName := fmt.Sprintf("%s.%s", p.GetName(), w.UnqualifiedName)
+		withRun, err := NewLeafRun(w, p, executionTree, setName(withRunName))
 		if err != nil {
 			return err
 		}
-		// NOTE: set the name of the run toe be the scoped name
-		withRun.Name = fmt.Sprintf("%s.%s", withRun.GetParent().GetName(), w.UnqualifiedName)
 		// set an onComplete function to populate 'with' data
 		withRun.onComplete = func() { p.setWithValue(withRun) }
 
@@ -319,4 +284,18 @@ func (p *RuntimeDependencyPublisherImpl) createWithRuns(withs []*modconfig.Dashb
 		p.children = append(p.children, withRun)
 	}
 	return nil
+}
+
+func (p *RuntimeDependencyPublisherImpl) argsResolved(args []any) {
+	// use params to get param names for each arg and then look of subscriber
+	for i, param := range p.Params {
+		if i == len(args) {
+			return
+		}
+		// do we have a subscription for this param
+		if _, ok := p.subscriptions[param.UnqualifiedName]; ok {
+			p.PublishRuntimeDependencyValue(param.UnqualifiedName, &dashboardtypes.ResolvedRuntimeDependencyValue{Value: args[i]})
+		}
+	}
+	log.Printf("[TRACE] %s: argsResolved", p.Name)
 }

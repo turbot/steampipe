@@ -29,7 +29,7 @@ func MergeArgs(queryProvider QueryProvider, runtimeArgs *QueryArgs) (*QueryArgs,
 // it returns the arg values as a csv string which can be used in a prepared statement invocation
 // (the arg values and param defaults will already have been converted to postgres format)
 func ResolveArgs(qp QueryProvider, runtimeArgs *QueryArgs) ([]any, error) {
-	var paramVals []any
+	var argVals []any
 	var missingParams []string
 	var err error
 	// validate args
@@ -52,12 +52,12 @@ func ResolveArgs(qp QueryProvider, runtimeArgs *QueryArgs) ([]any, error) {
 			log.Printf("[TRACE] %s defines %d named %s but has no parameters definitions", qp.Name(), namedArgCount, utils.Pluralize("arg", namedArgCount))
 		} else {
 			// do params contain named params?
-			paramVals, missingParams, err = mergedArgs.resolveNamedParameters(qp)
+			argVals, missingParams, err = mergedArgs.resolveNamedParameters(qp)
 		}
 	} else {
 		// resolve as positional parameters
 		// (or fall back to defaults if no positional params are present)
-		paramVals, missingParams, err = mergedArgs.resolvePositionalParameters(qp)
+		argVals, missingParams, err = mergedArgs.resolvePositionalParameters(qp)
 	}
 	if err != nil {
 		return nil, err
@@ -70,15 +70,15 @@ func ResolveArgs(qp QueryProvider, runtimeArgs *QueryArgs) ([]any, error) {
 	}
 
 	// are there any params?
-	if len(paramVals) == 0 {
+	if len(argVals) == 0 {
 		return nil, nil
 	}
 
 	// convert any array args into a strongly typed array
-	for i, v := range paramVals {
-		paramVals[i] = type_conversion.AnySliceToTypedSlice(v)
+	for i, v := range argVals {
+		argVals[i] = type_conversion.AnySliceToTypedSlice(v)
 	}
 
 	// success!
-	return paramVals, nil
+	return argVals, nil
 }

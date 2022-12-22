@@ -30,7 +30,8 @@ type DashboardTreeRunImpl struct {
 	resource      modconfig.DashboardLeafNode
 	// store the top level run which embeds this struct
 	// we need this for setStatus which serialises the run for the message payload
-	run dashboardtypes.DashboardTreeRun
+	run           dashboardtypes.DashboardTreeRun
+	executeConfig dashboardtypes.TreeRunExecuteConfig
 }
 
 func NewDashboardTreeRunImpl(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, run dashboardtypes.DashboardTreeRun, executionTree *DashboardExecutionTree) DashboardTreeRunImpl {
@@ -108,16 +109,24 @@ func (r *DashboardTreeRunImpl) GetNodeType() string {
 	return r.NodeType
 }
 
+// Initialise implements DashboardTreeRun
 func (r *DashboardTreeRunImpl) Initialise(context.Context) {
 	panic("must be implemented by child struct")
 }
 
+// Execute implements DashboardTreeRun
 func (r *DashboardTreeRunImpl) Execute(ctx context.Context) {
 	panic("must be implemented by child struct")
 }
 
+// AsTreeNode implements DashboardTreeRun
 func (r *DashboardTreeRunImpl) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	panic("must be implemented by child struct")
+}
+
+// GetResource implements DashboardTreeRun
+func (r *DashboardTreeRunImpl) GetResource() modconfig.DashboardLeafNode {
+	return r.resource
 }
 
 // TODO [node_reuse] do this a different way
@@ -134,7 +143,7 @@ func (r *DashboardTreeRunImpl) SetError(ctx context.Context, err error) {
 	// set status (this sends update event)
 	r.setStatus(dashboardtypes.DashboardRunError)
 	// tell parent we are done
-	r.parent.ChildCompleteChan() <- r
+	r.notifyParentOfCompletion()
 }
 
 // SetComplete implements DashboardTreeRun
@@ -142,15 +151,22 @@ func (r *DashboardTreeRunImpl) SetComplete(context.Context) {
 	// set status (this sends update event)
 	r.setStatus(dashboardtypes.DashboardRunComplete)
 	// tell parent we are done
-	r.parent.ChildCompleteChan() <- r
+	r.notifyParentOfCompletion()
 }
 
 func (r *DashboardTreeRunImpl) setStatus(status dashboardtypes.DashboardRunStatus) {
 	r.Status = status
+	// do not send events for runtime dependency execution (i.e. when we are executing base resources
+	// for their runtime dependencies)
+	if !r.executeConfig.RuntimeDependenciesOnly {
+		// raise LeafNodeUpdated event
+		// TODO [node_reuse] tidy this up
+		// TACTICAL: pass the full run struct - 'r.run', rather than ourselves - so we serialize all properties
+		e, _ := dashboardevents.NewLeafNodeUpdate(r.run, r.executionTree.sessionId, r.executionTree.id)
+		r.executionTree.workspace.PublishDashboardEvent(e)
+	}
+}
 
-	// raise LeafNodeUpdated event
-	// TODO [node_reuse] tidy this up
-	// NOTE: pass the full run struct - 'r.run', rather than ourselves - so we serialize all properties
-	e, _ := dashboardevents.NewLeafNodeUpdate(r.run, r.executionTree.sessionId, r.executionTree.id)
-	r.executionTree.workspace.PublishDashboardEvent(e)
+func (r *DashboardTreeRunImpl) notifyParentOfCompletion() {
+	r.parent.ChildCompleteChan() <- r
 }

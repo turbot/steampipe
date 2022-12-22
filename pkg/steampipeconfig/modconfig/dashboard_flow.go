@@ -241,5 +241,5 @@ func (f *DashboardFlow) setBaseProperties(resourceMapProvider ResourceMapsProvid
 	} else {
 		f.Nodes.Merge(f.Base.Nodes)
 	}
-	f.MergeRuntimeDependencies(f.Base)
+	f.MergeBaseDependencies(f.Base)
 }

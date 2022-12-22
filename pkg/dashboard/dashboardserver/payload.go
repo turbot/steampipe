@@ -220,8 +220,6 @@ func buildExecutionCompletePayload(event *dashboardevents.ExecutionComplete) ([]
 		SchemaVersion: fmt.Sprintf("%d", ExecutionCompletePayloadSchemaVersion),
 		ExecutionId:   event.ExecutionId,
 		Snapshot:      snap,
-		StartTime:     event.StartTime,
-		EndTime:       event.EndTime,
 	}
 	return json.Marshal(payload)
 }

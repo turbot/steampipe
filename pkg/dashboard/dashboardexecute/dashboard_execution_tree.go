@@ -242,12 +242,20 @@ func (e *DashboardExecutionTree) Cancel() {
 }
 
 func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes.SnapshotPanel {
+	// just build from e.runs
 	res := map[string]dashboardtypes.SnapshotPanel{}
-	// if this node is a snapshot node, add to map
-	if snapshotNode, ok := e.Root.(dashboardtypes.SnapshotPanel); ok {
-		res[e.Root.GetName()] = snapshotNode
+
+	for name, run := range e.runs {
+		res[name] = run.(dashboardtypes.SnapshotPanel)
+		// special case handling for check runs
+		if checkRun, ok := run.(*CheckRun); ok {
+			checkRunChildren := checkRun.BuildSnapshotPanels(res)
+			for k, v := range checkRunChildren {
+				res[k] = v
+			}
+		}
 	}
-	return e.buildSnapshotPanelsUnder(e.Root.(dashboardtypes.DashboardParent), res)
+	return res
 }
 
 // InputRuntimeDependencies returns the names of all inputs which are runtime dependencies
@@ -265,23 +273,6 @@ func (e *DashboardExecutionTree) InputRuntimeDependencies() []string {
 	return maps.Keys(deps)
 }
 
-func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.DashboardParent, res map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {
-	if checkRun, ok := parent.(*CheckRun); ok {
-		return checkRun.BuildSnapshotPanels(res)
-	}
-	for _, c := range parent.GetChildren() {
-		// if this node is a snapshot node, add to map
-		if snapshotNode, ok := c.(dashboardtypes.SnapshotPanel); ok {
-			res[c.GetName()] = snapshotNode
-		}
-		if p, ok := c.(dashboardtypes.DashboardParent); ok {
-			res = e.buildSnapshotPanelsUnder(p, res)
-		}
-	}
-
-	return res
-}
-
 // GetChildren implements DashboardParent
 func (e *DashboardExecutionTree) GetChildren() []dashboardtypes.DashboardTreeRun {
 	return []dashboardtypes.DashboardTreeRun{e.Root}
@@ -293,6 +284,7 @@ func (e *DashboardExecutionTree) ChildrenComplete() bool {
 }
 
 // Tactical: Empty implementations of DashboardParent functions
+// TODO remove need for this
 
 func (e *DashboardExecutionTree) Initialise(ctx context.Context) {
 	panic("should never call for DashboardExecutionTree")
@@ -318,6 +310,10 @@ func (e *DashboardExecutionTree) GetInputsDependingOn(s string) []string {
 	panic("should never call for DashboardExecutionTree")
 }
 
-func (e *DashboardExecutionTree) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+func (*DashboardExecutionTree) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
+	panic("should never call for DashboardExecutionTree")
+}
+
+func (*DashboardExecutionTree) GetResource() modconfig.DashboardLeafNode {
 	panic("should never call for DashboardExecutionTree")
 }

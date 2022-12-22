@@ -212,5 +212,5 @@ func (i *DashboardInput) setBaseProperties(resourceMapProvider ResourceMapsProvi
 		i.Width = i.Base.Width
 	}
 
-	i.MergeRuntimeDependencies(i.Base)
+	i.MergeBaseDependencies(i.Base)
 }

@@ -14,7 +14,7 @@ import (
 // LeafRun is a struct representing the execution of a leaf dashboard node
 type LeafRun struct {
 	// all RuntimeDependencySubscribers are also publishers as they have args/params
-	RuntimeDependencySubscriber
+	RuntimeDependencySubscriberImpl
 	Resource modconfig.DashboardLeafNode `json:"properties,omitempty"`
 
 	Data         *dashboardtypes.LeafData  `json:"data,omitempty"`
@@ -31,23 +31,22 @@ func (r *LeafRun) AsTreeNode() *dashboardtypes.SnapshotTreeNode {
 	}
 }
 
-func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree) (*LeafRun, error) {
+func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, executionTree *DashboardExecutionTree, opts ...LeafRunOption) (*LeafRun, error) {
 	r := &LeafRun{
 		Resource: resource,
 	}
 
-	// create RuntimeDependencySubscriber- this handles 'with' run creation and resolving runtime dependency resolution
+	// create RuntimeDependencySubscriberImpl- this handles 'with' run creation and resolving runtime dependency resolution
 	// (NOTE: we have to do this after creating run as we need to pass a ref to the run)
-	r.RuntimeDependencySubscriber = *NewRuntimeDependencySubscriber(resource, parent, r, executionTree)
+	r.RuntimeDependencySubscriberImpl = *NewRuntimeDependencySubscriber(resource, parent, r, executionTree)
 
-	err := r.initRuntimeDependencies()
-	if err != nil {
-		return nil, err
+	// apply options AFTER calling NewRuntimeDependencySubscriber
+	for _, opt := range opts {
+		opt(r)
 	}
 
-	// if our underlying resource has a base which has runtime dependencies,
-	// create a RuntimeDependencySubscriber for it
-	if err := r.initBaseRuntimeDependencySubscriber(executionTree); err != nil {
+	err := r.initRuntimeDependencies(executionTree)
+	if err != nil {
 		return nil, err
 	}
 
@@ -77,22 +76,6 @@ func NewLeafRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Dash
 	return r, nil
 }
 
-func (r *LeafRun) initBaseRuntimeDependencySubscriber(executionTree *DashboardExecutionTree) error {
-	if base := r.resource.(modconfig.HclResource).GetBase(); base != nil {
-		if _, ok := base.(modconfig.RuntimeDependencyProvider); ok {
-
-			r.baseDependencySubscriber = NewRuntimeDependencySubscriber(base.(modconfig.DashboardLeafNode), nil, r, executionTree)
-			err := r.baseDependencySubscriber.initRuntimeDependencies()
-			if err != nil {
-				return err
-			}
-			// create buffered channel for base with to report their completion
-			r.baseDependencySubscriber.createChildCompleteChan()
-		}
-	}
-	return nil
-}
-
 func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
 	children := r.resource.GetChildren()
 	if len(children) == 0 {
@@ -102,20 +85,20 @@ func (r *LeafRun) createChildRuns(executionTree *DashboardExecutionTree) error {
 	r.children = make([]dashboardtypes.DashboardTreeRun, len(children))
 	var errors []error
 
-	// if the leaf run has children (nodes/edges) create a run for this too
 	for i, c := range children {
-		// TODO [node_reuse] what about with nodes - only relevant when running base withs
-		childRun, err := NewLeafRun(c.(modconfig.DashboardLeafNode), r, executionTree)
+		var opts []LeafRunOption
+		childRun, err := NewLeafRun(c.(modconfig.DashboardLeafNode), r, executionTree, opts...)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
+
 		r.children[i] = childRun
 	}
 	return error_helpers.CombineErrors(errors...)
 }
 
-// Execute implements DashboardRunNode
+// Execute implements DashboardTreeRun
 func (r *LeafRun) Execute(ctx context.Context) {
 	defer func() {
 		// call our oncomplete is we have one
@@ -138,9 +121,9 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	r.executeChildrenAsync(ctx)
 
 	// start a goroutine to wait for children to complete
-	doneChan := r.waitForChildren()
+	doneChan := r.waitForChildrenAsync()
 
-	if err := r.evaluateRuntimeDependencies(ctx); err != nil {
+	if err := r.evaluateRuntimeDependencies(); err != nil {
 		r.SetError(ctx, err)
 		return
 	}
@@ -149,7 +132,8 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	r.setStatus(dashboardtypes.DashboardRunRunning)
 
 	// if we have sql to execute, do it now
-	if r.executeSQL != "" {
+	// (if we are only performing a base execution, do not run the query)
+	if r.executeSQL != "" && !r.executeConfig.BaseExecution {
 		if err := r.executeQuery(ctx); err != nil {
 			r.SetError(ctx, err)
 			return
@@ -174,12 +158,13 @@ func (r *LeafRun) SetError(ctx context.Context, err error) {
 	r.err = err
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
+
 	// increment error count for snapshot hook
 	statushooks.SnapshotError(ctx)
 	// set status (this sends update event)
 	r.setStatus(dashboardtypes.DashboardRunError)
 
-	r.parent.ChildCompleteChan() <- r
+	r.notifyParentOfCompletion()
 }
 
 // SetComplete implements DashboardTreeRun
@@ -191,7 +176,7 @@ func (r *LeafRun) SetComplete(ctx context.Context) {
 	statushooks.UpdateSnapshotProgress(ctx, 1)
 
 	// tell parent we are done
-	r.parent.ChildCompleteChan() <- r
+	r.notifyParentOfCompletion()
 }
 
 // IsSnapshotPanel implements SnapshotPanel

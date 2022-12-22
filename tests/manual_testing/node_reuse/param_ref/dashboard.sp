@@ -7,12 +7,14 @@ dashboard "param_ref" {
   }
 }
 
-
 table "t1"{
-  param "dash" {
-    default = "foo"
+
+  with "w1" {
+    sql = "select 'foo'"
   }
 
   sql = "select $1 as c1"
-  args = [ param.dash]
+  param "p1" {
+    default = with.w1.rows[0]
+  }
 }

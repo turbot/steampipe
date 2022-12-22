@@ -147,5 +147,5 @@ func (n *DashboardNode) setBaseProperties(resourceMapProvider ResourceMapsProvid
 	if n.Params == nil {
 		n.Params = n.Base.Params
 	}
-	n.MergeRuntimeDependencies(n.Base)
+	n.MergeBaseDependencies(n.Base)
 }

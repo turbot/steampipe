@@ -27,10 +27,19 @@ func (l *DashboardEdgeList) Get(name string) *DashboardEdge {
 	return nil
 }
 
-func (l DashboardEdgeList) Names() []string {
-	res := make([]string, len(l))
-	for i, e := range l {
+func (l *DashboardEdgeList) Names() []string {
+	res := make([]string, len(*l))
+	for i, e := range *l {
 		res[i] = e.Name()
 	}
 	return res
+}
+
+func (l *DashboardEdgeList) Contains(other *DashboardEdge) bool {
+	for _, e := range *l {
+		if e == other {
+			return true
+		}
+	}
+	return false
 }

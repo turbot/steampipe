@@ -149,5 +149,5 @@ func (i *DashboardImage) setBaseProperties(resourceMapProvider ResourceMapsProvi
 		i.Display = i.Base.Display
 	}
 
-	i.MergeRuntimeDependencies(i.Base)
+	i.MergeBaseDependencies(i.Base)
 }

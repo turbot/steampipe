@@ -243,5 +243,5 @@ func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsP
 	} else {
 		h.Nodes.Merge(h.Base.Nodes)
 	}
-	h.MergeRuntimeDependencies(h.Base)
+	h.MergeBaseDependencies(h.Base)
 }

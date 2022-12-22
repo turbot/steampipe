@@ -42,6 +42,9 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 	// (we must create after creating the run as it requires a ref to the run)
 	// TODO [node_reuse] do this a different way
 	r.RuntimeDependencyPublisherImpl = NewRuntimeDependencyPublisherImpl(dashboard, parent, r, executionTree)
+	// add r into execution tree BEFORE creating child runs or initialising runtime depdencies
+	// - this is so child runs can find this dashboard run
+	executionTree.runs[r.Name] = r
 
 	// set inputs map on RuntimeDependencyPublisherImpl BEFORE creating child runs
 	r.inputs = dashboard.GetInputs()
@@ -57,16 +60,13 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 		return nil, err
 	}
 
-	// add r into execution tree
-	executionTree.runs[r.Name] = r
-
 	// create buffered channel for children to report their completion
 	r.createChildCompleteChan()
 
 	return r, nil
 }
 
-// Initialise implements DashboardRunNode
+// Initialise implements DashboardTreeRun
 func (r *DashboardRun) Initialise(ctx context.Context) {
 	// initialise our children
 	if err := r.initialiseChildren(ctx); err != nil {
@@ -74,13 +74,13 @@ func (r *DashboardRun) Initialise(ctx context.Context) {
 	}
 }
 
-// Execute implements DashboardRunNode
+// Execute implements DashboardTreeRun
 // execute all children and wait for them to complete
 func (r *DashboardRun) Execute(ctx context.Context) {
 	r.executeChildrenAsync(ctx)
 
 	// wait for children to complete
-	err := <-r.waitForChildren()
+	err := <-r.waitForChildrenAsync()
 	log.Printf("[TRACE] Execute run %s all children complete, error: %v", r.Name, err)
 
 	if err == nil {
@@ -101,14 +101,14 @@ func (r *DashboardRun) SetError(_ context.Context, err error) {
 	// error type does not serialise to JSON so copy into a string
 	r.ErrorString = err.Error()
 	r.Status = dashboardtypes.DashboardRunError
-	r.parent.ChildCompleteChan() <- r
+	r.notifyParentOfCompletion()
 }
 
 // SetComplete implements DashboardTreeRun
 func (r *DashboardRun) SetComplete(context.Context) {
 	r.Status = dashboardtypes.DashboardRunComplete
 	// tell parent we are done
-	r.parent.ChildCompleteChan() <- r
+	r.notifyParentOfCompletion()
 }
 
 // GetInput searches for an input with the given name
@@ -157,12 +157,15 @@ func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) er
 			// NOTE: clone the input to avoid mutating the original
 			// TODO remove the need for this when we refactor input values resolution
 			// TODO https://github.com/turbot/steampipe/issues/2864
-			childRun, err = NewLeafRun(i.Clone(), r, executionTree)
+
+			// TACTICAL: as this is a runtime dependency,  set the run name to the 'scoped name'
+			// this is to match the name in the panel dependendencies
+			// TODO [node_reuse] tidy this
+			inputRunName := fmt.Sprintf("%s.%s", r.DashboardName, i.UnqualifiedName)
+			childRun, err = NewLeafRun(i.Clone(), r, executionTree, setName(inputRunName))
 			if err != nil {
 				return err
 			}
-			// TACTICAL: as this is a runtime dependency,  set the run name to the 'scoped name'
-			childRun.(*LeafRun).Name = fmt.Sprintf("%s.%s", r.DashboardName, i.UnqualifiedName)
 
 		default:
 			// ensure this item is a DashboardLeafNode

@@ -130,8 +130,6 @@ func (v *VersionChecker) getLatestVersionsForPlugins(ctx context.Context, plugin
 		return map[string]VersionCheckReport{}
 	}
 
-	log.Println("[TRACE] serverResponse:", serverResponse)
-
 	for _, pluginResponseData := range serverResponse {
 		r := reports[pluginResponseData.getMapKey()]
 		r.CheckResponse = pluginResponseData
