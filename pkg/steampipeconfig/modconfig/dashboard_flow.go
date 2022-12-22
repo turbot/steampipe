@@ -158,29 +158,6 @@ func (f *DashboardFlow) GetNodes() DashboardNodeList {
 	return f.Nodes
 }
 
-// GetInheritedChildren implements NodeAndEdgeProvider
-// return a map keyed by the names of all children injerited from a base struct
-func (f *DashboardFlow) GetInheritedChildren() map[string]bool {
-	var res = make(map[string]bool)
-
-	if f.Base == nil || len(f.Base.Edges) == 0 {
-		return res
-	}
-
-	for _, e := range f.Edges {
-		if f.Base.Edges.Contains(e) {
-			res[e.Name()] = true
-		}
-	}
-	for _, n := range f.Nodes {
-		if f.Base.Nodes.Contains(n) {
-			res[n.Name()] = true
-		}
-	}
-
-	return res
-}
-
 // SetEdges implements NodeAndEdgeProvider
 func (f *DashboardFlow) SetEdges(edges DashboardEdgeList) {
 	f.Edges = edges

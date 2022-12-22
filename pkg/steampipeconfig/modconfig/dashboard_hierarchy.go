@@ -159,29 +159,6 @@ func (h *DashboardHierarchy) GetNodes() DashboardNodeList {
 	return h.Nodes
 }
 
-// GetInheritedChildren implements NodeAndEdgeProvider
-// return a map keyed by the names of all children injerited from a base struct
-func (h *DashboardHierarchy) GetInheritedChildren() map[string]bool {
-	var res = make(map[string]bool)
-
-	if h.Base == nil || len(h.Base.Edges) == 0 {
-		return res
-	}
-
-	for _, e := range h.Edges {
-		if h.Base.Edges.Contains(e) {
-			res[e.Name()] = true
-		}
-	}
-	for _, n := range h.Nodes {
-		if h.Base.Nodes.Contains(n) {
-			res[n.Name()] = true
-		}
-	}
-
-	return res
-}
-
 // SetEdges implements NodeAndEdgeProvider
 func (h *DashboardHierarchy) SetEdges(edges DashboardEdgeList) {
 	h.Edges = edges

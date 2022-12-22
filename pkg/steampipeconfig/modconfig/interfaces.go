@@ -113,7 +113,6 @@ type NodeAndEdgeProvider interface {
 	GetEdges() DashboardEdgeList
 	SetEdges(DashboardEdgeList)
 	GetNodes() DashboardNodeList
-	GetInheritedChildren() map[string]bool
 	SetNodes(DashboardNodeList)
 	AddCategory(category *DashboardCategory) hcl.Diagnostics
 	AddChild(child HclResource) hcl.Diagnostics
