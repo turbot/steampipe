@@ -96,7 +96,7 @@ export type PanelLog = {
   isDependency?: boolean;
   prefix?: string;
   status: DashboardRunState;
-  timestamp: number;
+  timestamp: string;
   title: string;
 };
 

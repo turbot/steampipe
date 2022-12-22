@@ -494,7 +494,7 @@ describe("dashboard event handlers", () => {
             {
               error: null,
               status: "ready",
-              timestamp: readyAt.valueOf(),
+              timestamp: readyAt.toString(),
               title: "panel_a",
             },
           ],
@@ -516,7 +516,7 @@ describe("dashboard event handlers", () => {
               {
                 dashboard_node: updatedDashboardNode,
                 execution_id: "1",
-                timestamp: blockedAt.valueOf(),
+                timestamp: blockedAt.toString(),
               },
             ],
           },
@@ -531,7 +531,7 @@ describe("dashboard event handlers", () => {
             {
               error: null,
               status: "blocked",
-              timestamp: blockedAt.valueOf(),
+              timestamp: blockedAt.toString(),
               title: "panel_a",
             },
           ],
@@ -556,7 +556,7 @@ describe("dashboard event handlers", () => {
             {
               error: null,
               status: "ready",
-              timestamp: readyAt.valueOf(),
+              timestamp: readyAt.toString(),
               title: "panel_a",
             },
           ],
@@ -578,7 +578,7 @@ describe("dashboard event handlers", () => {
               {
                 dashboard_node: updatedDashboardNode,
                 execution_id: "1",
-                timestamp: runningAt.valueOf(),
+                timestamp: runningAt.toString(),
               },
             ],
           },
@@ -593,7 +593,7 @@ describe("dashboard event handlers", () => {
             {
               error: null,
               status: "running",
-              timestamp: runningAt.valueOf(),
+              timestamp: runningAt.toString(),
               title: "panel_a",
             },
           ],
@@ -618,7 +618,7 @@ describe("dashboard event handlers", () => {
             {
               error: null,
               status: "ready",
-              timestamp: readyAt.valueOf(),
+              timestamp: readyAt.toString(),
               title: "panel_a",
             },
           ],
@@ -640,7 +640,7 @@ describe("dashboard event handlers", () => {
               {
                 dashboard_node: updatedDashboardNode,
                 execution_id: "1",
-                timestamp: erroredAt.valueOf(),
+                timestamp: erroredAt.toString(),
               },
             ],
           },
@@ -655,7 +655,7 @@ describe("dashboard event handlers", () => {
             {
               error: "BOOM!",
               status: "error",
-              timestamp: erroredAt.valueOf(),
+              timestamp: erroredAt.toString(),
               title: "panel_a",
             },
           ],
@@ -680,7 +680,7 @@ describe("dashboard event handlers", () => {
             {
               error: null,
               status: "running",
-              timestamp: readyAt.valueOf(),
+              timestamp: readyAt.toString(),
               title: "panel_a",
             },
           ],
@@ -702,7 +702,7 @@ describe("dashboard event handlers", () => {
               {
                 dashboard_node: updatedDashboardNode,
                 execution_id: "1",
-                timestamp: completeAt.valueOf(),
+                timestamp: completeAt.toString(),
               },
             ],
           },
@@ -718,7 +718,7 @@ describe("dashboard event handlers", () => {
               error: null,
               executionTime: 1000,
               status: "complete",
-              timestamp: completeAt.valueOf(),
+              timestamp: completeAt.toString(),
               title: "panel_a",
             },
           ],
@@ -745,7 +745,7 @@ describe("dashboard event handlers", () => {
             {
               error: null,
               status: "ready",
-              timestamp: readyAt.valueOf(),
+              timestamp: readyAt.toString(),
               title: "panel_a",
             },
           ],
@@ -753,7 +753,7 @@ describe("dashboard event handlers", () => {
             {
               error: null,
               status: "ready",
-              timestamp: readyAt.valueOf(),
+              timestamp: readyAt.toString(),
               title: "panel_b",
             },
           ],
@@ -761,7 +761,7 @@ describe("dashboard event handlers", () => {
             {
               error: null,
               status: "ready",
-              timestamp: readyAt.valueOf(),
+              timestamp: readyAt.toString(),
               title: "panel_c",
             },
           ],
@@ -769,7 +769,7 @@ describe("dashboard event handlers", () => {
             {
               error: null,
               status: "ready",
-              timestamp: readyAt.valueOf(),
+              timestamp: readyAt.toString(),
               title: "panel_d",
             },
           ],
@@ -803,12 +803,12 @@ describe("dashboard event handlers", () => {
               {
                 dashboard_node: updatedDashboardNode1,
                 execution_id: "1",
-                timestamp: panelACompleteAt.valueOf(),
+                timestamp: panelACompleteAt.toString(),
               },
               {
                 dashboard_node: updatedDashboardNode2,
                 execution_id: "1",
-                timestamp: panelBCompleteAt.valueOf(),
+                timestamp: panelBCompleteAt.toString(),
               },
             ],
           },
@@ -823,7 +823,7 @@ describe("dashboard event handlers", () => {
             {
               error: null,
               status: "complete",
-              timestamp: panelACompleteAt.valueOf(),
+              timestamp: panelACompleteAt.toString(),
               title: "panel_a",
             },
           ],
@@ -832,7 +832,7 @@ describe("dashboard event handlers", () => {
             {
               error: null,
               status: "complete",
-              timestamp: panelBCompleteAt.valueOf(),
+              timestamp: panelBCompleteAt.toString(),
               title: "panel_b",
             },
           ],

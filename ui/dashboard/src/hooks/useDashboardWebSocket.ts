@@ -70,7 +70,7 @@ const useDashboardWebSocket = (
     if (!typedEvent || !typedEvent.action) {
       return;
     }
-    eventHandler({ ...typedEvent, timestamp: Date.now() });
+    eventHandler(typedEvent);
   }, [eventHandler, lastJsonMessage]);
 
   useEffect(() => {

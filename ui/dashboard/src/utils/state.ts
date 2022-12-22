@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import get from "lodash/get";
 import paths from "deepdash/paths";
 import set from "lodash/set";
@@ -156,7 +157,7 @@ const panelLogTitle = (panel: PanelDefinition) => {
 
 const buildPanelLog = (
   panel: PanelDefinition,
-  timestamp: number,
+  timestamp: string,
   executionTime?: number
 ): PanelLog => {
   return {
@@ -168,7 +169,7 @@ const buildPanelLog = (
   };
 };
 
-const buildPanelsLog = (panels: PanelsMap, timestamp: number) => {
+const buildPanelsLog = (panels: PanelsMap, timestamp: string) => {
   const panelsLog: PanelsLog = {};
   for (const [name, panel] of Object.entries(panels || {})) {
     panelsLog[name] = [buildPanelLog(panel, timestamp)];
@@ -177,7 +178,7 @@ const buildPanelsLog = (panels: PanelsMap, timestamp: number) => {
 };
 
 const calculateExecutionTime = (
-  timestamp: number,
+  timestamp: string,
   panel: PanelDefinition,
   panelLogs: PanelLog[]
 ): number | undefined => {
@@ -185,7 +186,7 @@ const calculateExecutionTime = (
   if (panel.status === "complete") {
     const runningLog = panelLogs.find((l) => l.status === "running");
     if (runningLog) {
-      overallTime = timestamp - runningLog.timestamp;
+      overallTime = dayjs(timestamp).diff(runningLog.timestamp);
     }
   }
   return overallTime;
@@ -194,7 +195,7 @@ const calculateExecutionTime = (
 const addUpdatedPanelLogs = (
   panelsLog: PanelsLog,
   panel: PanelDefinition,
-  timestamp: number
+  timestamp: string
 ) => {
   const newPanelsLog = { ...panelsLog };
   const newPanelLog = [...(newPanelsLog[panel.name] || [])];
@@ -211,7 +212,7 @@ const addUpdatedPanelLogs = (
 const updatePanelsLogFromCompletedPanels = (
   panelsLog: PanelsLog,
   panels: PanelsMap,
-  timestamp: number
+  timestamp: string
 ) => {
   const newPanelsLog = { ...panelsLog };
   for (const [panelName, panel] of Object.entries(panels || {})) {
