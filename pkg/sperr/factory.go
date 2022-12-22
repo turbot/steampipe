@@ -64,9 +64,11 @@ func Wrapf(err error, format string, args ...interface{}) *Error {
 		return nil
 	}
 	e := Wrap(err)
-	// making sure that the Wrap function does not get included in the stack
+	// wrap with message
+	e = e.WithMessage(format, args...)
+	// overwrite the stack to the stack for this function call
 	e.stack = callers()
-	return e.WithMessage(format, args...)
+	return e
 }
 
 func ToError(val interface{}) *Error {
