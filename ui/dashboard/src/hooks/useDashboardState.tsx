@@ -14,6 +14,7 @@ import {
   controlsUpdatedEventHandler,
   leafNodesUpdatedEventHandler,
   migrateDashboardExecutionCompleteSchema,
+  migratePanelStatuses,
 } from "../utils/dashboardEventHandlers";
 import {
   DashboardActions,
@@ -25,6 +26,10 @@ import {
   IDashboardContext,
 } from "../types";
 import { useCallback, useReducer } from "react";
+import {
+  EXECUTION_SCHEMA_VERSION_20220929,
+  EXECUTION_SCHEMA_VERSION_LATEST,
+} from "../constants/versions";
 
 const reducer = (state: IDashboardContext, action) => {
   if (state.ignoreEvents) {
@@ -113,17 +118,22 @@ const reducer = (state: IDashboardContext, action) => {
         };
       }
 
+      const panelsMap = migratePanelStatuses(
+        action.panels,
+        action.schema_version
+      );
+
       return {
         ...state,
         error: null,
-        panelsLog: buildPanelsLog(action.panels, action.start_time),
-        panelsMap: addDataToPanels(action.panels, state.sqlDataMap),
+        panelsLog: buildPanelsLog(panelsMap, action.start_time),
+        panelsMap: addDataToPanels(panelsMap, state.sqlDataMap),
         dashboard,
         execution_id: action.execution_id,
         refetchDashboard: false,
         progress: 0,
         snapshot: null,
-        state: "ready",
+        state: "running",
       };
     }
     case DashboardActions.EXECUTION_COMPLETE: {
@@ -151,8 +161,10 @@ const reducer = (state: IDashboardContext, action) => {
         };
       }
 
+      const panelsMap = migratePanelStatuses(panels, action.schema_version);
+
       // Build map of SQL to data
-      const sqlDataMap = buildSqlDataMap(panels);
+      const sqlDataMap = buildSqlDataMap(panelsMap);
       // Replace the whole dashboard as this event contains everything
       return {
         ...state,
@@ -162,7 +174,7 @@ const reducer = (state: IDashboardContext, action) => {
           panels,
           action.snapshot.end_time
         ),
-        panelsMap: panels,
+        panelsMap,
         dashboard,
         sqlDataMap,
         progress: 100,
@@ -175,8 +187,17 @@ const reducer = (state: IDashboardContext, action) => {
     case DashboardActions.CONTROLS_UPDATED:
       return controlsUpdatedEventHandler(action, state);
     case DashboardActions.LEAF_NODES_COMPLETE:
+      return leafNodesUpdatedEventHandler(
+        action,
+        EXECUTION_SCHEMA_VERSION_20220929,
+        state
+      );
     case DashboardActions.LEAF_NODES_UPDATED:
-      return leafNodesUpdatedEventHandler(action, state);
+      return leafNodesUpdatedEventHandler(
+        action,
+        EXECUTION_SCHEMA_VERSION_LATEST,
+        state
+      );
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
     case DashboardActions.SET_DATA_MODE:
@@ -294,7 +315,7 @@ const reducer = (state: IDashboardContext, action) => {
         const panel = newPanelsMap[matchingPanelKey];
         newPanelsMap[matchingPanelKey] = {
           ...panel,
-          status: "ready",
+          status: "initialized",
         };
       }
       return {

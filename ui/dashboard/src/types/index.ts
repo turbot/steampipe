@@ -109,9 +109,10 @@ export type PanelsMap = {
 };
 
 export type DashboardRunState =
-  | "ready"
+  | "initialized"
   | "blocked"
   | "running"
+  | "cancelled"
   | "error"
   | "complete";
 

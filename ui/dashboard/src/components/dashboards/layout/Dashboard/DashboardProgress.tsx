@@ -11,7 +11,7 @@ const DashboardProgress = () => {
 
   return (
     <div className="w-full h-[4px] bg-dashboard print:hidden">
-      {state === "ready" ? (
+      {state === "running" ? (
         <div
           className="h-full bg-black-scale-3"
           style={{ width: `${progress}%` }}

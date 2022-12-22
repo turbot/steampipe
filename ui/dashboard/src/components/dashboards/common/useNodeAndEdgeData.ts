@@ -113,7 +113,7 @@ const addPanelWithsStatus = (
     withStatuses[dependencyPanelProperties.name] = {
       id: dependencyPanelProperties.name,
       title: dependencyPanel.title,
-      state: dependencyPanel.status || "ready",
+      state: dependencyPanel.status || "initialized",
       error: dependencyPanel.error,
     };
   }
@@ -208,7 +208,7 @@ const useNodeAndEdgeData = (
       // Capture the status of this node resource
       nodeAndEdgeStatus.nodes.push({
         id: panel.title || nodeProperties.name,
-        state: panel.status || "ready",
+        state: panel.status || "initialized",
         category: nodeProperties.category,
         error: panel.error,
         title: panel.title,
@@ -283,7 +283,7 @@ const useNodeAndEdgeData = (
       // Capture the status of this edge resource
       nodeAndEdgeStatus.edges.push({
         id: panel.title || edgeProperties.name,
-        state: panel.status || "ready",
+        state: panel.status || "initialized",
         category: edgeProperties.category,
         error: panel.error,
         title: panel.title,

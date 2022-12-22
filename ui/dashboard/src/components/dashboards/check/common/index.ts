@@ -54,6 +54,7 @@ export type CheckSummary = {
   skip: number;
   error: number;
 };
+
 export type CheckLeafNodeDataGroupSummary = {
   status: CheckSummary;
 };

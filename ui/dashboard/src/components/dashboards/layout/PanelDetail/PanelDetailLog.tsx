@@ -31,7 +31,7 @@ type PanelLogStatusProps = {
 
 const PanelLogIcon = ({ status }: PanelLogIconProps) => {
   switch (status) {
-    case "ready":
+    case "initialized":
       return (
         <Icon
           className="text-skip w-4.5 h-4.5"
@@ -50,6 +50,13 @@ const PanelLogIcon = ({ status }: PanelLogIconProps) => {
         <Icon
           className="text-skip w-4.5 h-4.5"
           icon="materialsymbols-solid:run_circle"
+        />
+      );
+    case "cancelled":
+      return (
+        <Icon
+          className="text-skip w-4.5 h-4.5"
+          icon="materialsymbols-outline:cancel"
         />
       );
     case "error":
@@ -72,16 +79,26 @@ const PanelLogIcon = ({ status }: PanelLogIconProps) => {
 const PanelLogStatus = ({ status }: PanelLogStatusProps) => {
   const baseClassname = "inline-block tabular-nums whitespace-nowrap";
   switch (status) {
-    case "ready":
-      return <pre className={baseClassname}>Ready&nbsp;&nbsp;&nbsp;</pre>;
+    case "initialized":
+      return <pre className={baseClassname}>Initialized</pre>;
     case "blocked":
-      return <pre className={baseClassname}>Blocked&nbsp;</pre>;
+      return (
+        <pre className={baseClassname}>Blocked&nbsp;&nbsp;&nbsp;&nbsp;</pre>
+      );
     case "running":
-      return <pre className={baseClassname}>Running&nbsp;</pre>;
+      return (
+        <pre className={baseClassname}>Running&nbsp;&nbsp;&nbsp;&nbsp;</pre>
+      );
+    case "cancelled":
+      return <pre className={baseClassname}>Cancelled&nbsp;&nbsp;</pre>;
     case "error":
-      return <pre className={baseClassname}>Error&nbsp;&nbsp;&nbsp;</pre>;
+      return (
+        <pre className={baseClassname}>
+          Error&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        </pre>
+      );
     case "complete":
-      return <pre className={baseClassname}>Complete</pre>;
+      return <pre className={baseClassname}>Complete&nbsp;&nbsp;&nbsp;</pre>;
   }
 };
 

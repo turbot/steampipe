@@ -5,7 +5,7 @@ import {
   migrateSnapshotDataToExecutionCompleteEvent,
 } from "./dashboardEventHandlers";
 import { DashboardActions, DashboardExecutionEventWithSchema } from "../types";
-import { LATEST_EXECUTION_SCHEMA_VERSION } from "../constants/versions";
+import { EXECUTION_SCHEMA_VERSION_LATEST } from "../constants/versions";
 
 describe("dashboard event handlers", () => {
   describe("migrateSnapshotDataToExecutionCompleteEvent", () => {
@@ -51,9 +51,9 @@ describe("dashboard event handlers", () => {
 
       const expectedEvent = {
         action: DashboardActions.EXECUTION_COMPLETE,
-        schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+        schema_version: EXECUTION_SCHEMA_VERSION_LATEST,
         snapshot: {
-          schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+          schema_version: EXECUTION_SCHEMA_VERSION_LATEST,
           layout: inputSnapshot.layout,
           panels: inputSnapshot.panels,
           inputs: inputSnapshot.inputs,
@@ -105,9 +105,9 @@ describe("dashboard event handlers", () => {
 
       const expectedEvent = {
         action: DashboardActions.EXECUTION_COMPLETE,
-        schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+        schema_version: EXECUTION_SCHEMA_VERSION_LATEST,
         snapshot: {
-          schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+          schema_version: EXECUTION_SCHEMA_VERSION_LATEST,
           layout: inputSnapshot.layout,
           panels: inputSnapshot.panels,
           inputs: inputSnapshot.inputs,
@@ -178,10 +178,10 @@ describe("dashboard event handlers", () => {
 
       const expectedEvent = {
         action: inputEvent.action,
-        schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+        schema_version: EXECUTION_SCHEMA_VERSION_LATEST,
         execution_id: inputEvent.execution_id,
         snapshot: {
-          schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+          schema_version: EXECUTION_SCHEMA_VERSION_LATEST,
           layout: inputEvent.layout,
           panels: inputEvent.panels,
           inputs: inputEvent.inputs,
@@ -257,14 +257,14 @@ describe("dashboard event handlers", () => {
     });
 
     test("no event controls", () => {
-      const state = { state: "ready" };
+      const state = { state: "running" };
       expect(controlsUpdatedEventHandler({ controls: null }, state)).toEqual(
         state
       );
     });
 
     test("empty event controls", () => {
-      const state = { state: "ready" };
+      const state = { state: "running" };
       expect(controlsUpdatedEventHandler({ controls: [] }, state)).toEqual(
         state
       );
@@ -272,7 +272,7 @@ describe("dashboard event handlers", () => {
 
     test("control for different execution", () => {
       const state = {
-        state: "ready",
+        state: "running",
         execution_id: "1",
         panelsMap: {},
         progress: 100,
@@ -287,18 +287,18 @@ describe("dashboard event handlers", () => {
 
     test("single control complete", () => {
       const state = {
-        state: "ready",
+        state: "running",
         execution_id: "1",
         panelsMap: {
           control_a: {
             name: "control_a",
             panel_type: "control",
-            status: "ready",
+            status: "running",
           },
           control_b: {
             name: "control_b",
             panel_type: "control",
-            status: "ready",
+            status: "running",
           },
         },
         progress: 0,
@@ -332,18 +332,18 @@ describe("dashboard event handlers", () => {
 
     test("single control error", () => {
       const state = {
-        state: "ready",
+        state: "running",
         execution_id: "1",
         panelsMap: {
           control_a: {
             name: "control_a",
             panel_type: "control",
-            status: "ready",
+            status: "running",
           },
           control_b: {
             name: "control_b",
             panel_type: "control",
-            status: "ready",
+            status: "running",
           },
         },
         progress: 0,
@@ -377,28 +377,28 @@ describe("dashboard event handlers", () => {
 
     test("multiple controls", () => {
       const state = {
-        state: "ready",
+        state: "running",
         execution_id: "1",
         panelsMap: {
           control_a: {
             name: "control_a",
             panel_type: "control",
-            status: "ready",
+            status: "running",
           },
           control_b: {
             name: "control_b",
             panel_type: "control",
-            status: "ready",
+            status: "running",
           },
           control_c: {
             name: "control_c",
             panel_type: "control",
-            status: "ready",
+            status: "running",
           },
           control_d: {
             name: "control_d",
             panel_type: "control",
-            status: "ready",
+            status: "running",
           },
         },
         progress: 0,
@@ -454,31 +454,51 @@ describe("dashboard event handlers", () => {
   describe("leafNodesUpdatedEventHandler", () => {
     test("ignore complete events", () => {
       const state = { state: "complete" };
-      expect(leafNodesUpdatedEventHandler(null, state)).toEqual(state);
+      expect(
+        leafNodesUpdatedEventHandler(
+          null,
+          EXECUTION_SCHEMA_VERSION_LATEST,
+          state
+        )
+      ).toEqual(state);
     });
 
     test("no event nodes", () => {
-      const state = { state: "ready" };
-      expect(leafNodesUpdatedEventHandler({ nodes: null }, state)).toEqual(
-        state
-      );
+      const state = { state: "running" };
+      expect(
+        leafNodesUpdatedEventHandler(
+          { nodes: null },
+          EXECUTION_SCHEMA_VERSION_LATEST,
+          state
+        )
+      ).toEqual(state);
     });
 
     test("empty event nodes", () => {
-      const state = { state: "ready" };
-      expect(leafNodesUpdatedEventHandler({ nodes: [] }, state)).toEqual(state);
+      const state = { state: "running" };
+      expect(
+        leafNodesUpdatedEventHandler(
+          { nodes: [] },
+          EXECUTION_SCHEMA_VERSION_LATEST,
+          state
+        )
+      ).toEqual(state);
     });
 
     test("node for different execution", () => {
       const state = {
-        state: "ready",
+        state: "running",
         execution_id: "1",
         panelsLog: {},
         panelsMap: {},
         progress: 100,
       };
       expect(
-        leafNodesUpdatedEventHandler({ nodes: [{ execution_id: "2" }] }, state)
+        leafNodesUpdatedEventHandler(
+          { nodes: [{ execution_id: "2" }] },
+          EXECUTION_SCHEMA_VERSION_LATEST,
+          state
+        )
       ).toEqual(state);
     });
 
@@ -487,19 +507,19 @@ describe("dashboard event handlers", () => {
       const blockedAt = new Date(readyAt);
       blockedAt.setSeconds(readyAt.getSeconds() + 1);
       const state = {
-        state: "ready",
+        state: "running",
         execution_id: "1",
         panelsLog: {
           panel_a: [
             {
               error: null,
-              status: "ready",
+              status: "running",
               timestamp: readyAt.toString(),
               title: "panel_a",
             },
           ],
         },
-        panelsMap: { panel_a: { name: "panel_a", sql: "", status: "ready" } },
+        panelsMap: { panel_a: { name: "panel_a", sql: "", status: "running" } },
         progress: 0,
       };
       const updatedDashboardNode = {
@@ -520,6 +540,7 @@ describe("dashboard event handlers", () => {
               },
             ],
           },
+          EXECUTION_SCHEMA_VERSION_LATEST,
           state
         )
       ).toEqual({
@@ -549,19 +570,21 @@ describe("dashboard event handlers", () => {
       const runningAt = new Date(readyAt);
       runningAt.setSeconds(readyAt.getSeconds() + 1);
       const state = {
-        state: "ready",
+        state: "initialized",
         execution_id: "1",
         panelsLog: {
           panel_a: [
             {
               error: null,
-              status: "ready",
+              status: "initialized",
               timestamp: readyAt.toString(),
               title: "panel_a",
             },
           ],
         },
-        panelsMap: { panel_a: { name: "panel_a", sql: "", status: "ready" } },
+        panelsMap: {
+          panel_a: { name: "panel_a", sql: "", status: "initialized" },
+        },
         progress: 0,
       };
       const updatedDashboardNode = {
@@ -582,6 +605,7 @@ describe("dashboard event handlers", () => {
               },
             ],
           },
+          EXECUTION_SCHEMA_VERSION_LATEST,
           state
         )
       ).toEqual({
@@ -611,19 +635,19 @@ describe("dashboard event handlers", () => {
       const erroredAt = new Date(readyAt);
       erroredAt.setSeconds(readyAt.getSeconds() + 1);
       const state = {
-        state: "ready",
+        state: "running",
         execution_id: "1",
         panelsLog: {
           panel_a: [
             {
               error: null,
-              status: "ready",
+              status: "running",
               timestamp: readyAt.toString(),
               title: "panel_a",
             },
           ],
         },
-        panelsMap: { panel_a: { name: "panel_a", sql: "", status: "ready" } },
+        panelsMap: { panel_a: { name: "panel_a", sql: "", status: "running" } },
         progress: 0,
       };
       const updatedDashboardNode = {
@@ -644,6 +668,7 @@ describe("dashboard event handlers", () => {
               },
             ],
           },
+          EXECUTION_SCHEMA_VERSION_LATEST,
           state
         )
       ).toEqual({
@@ -685,7 +710,7 @@ describe("dashboard event handlers", () => {
             },
           ],
         },
-        panelsMap: { panel_a: { name: "panel_a", sql: "", status: "ready" } },
+        panelsMap: { panel_a: { name: "panel_a", sql: "", status: "running" } },
         progress: 0,
       };
       const updatedDashboardNode = {
@@ -706,6 +731,7 @@ describe("dashboard event handlers", () => {
               },
             ],
           },
+          EXECUTION_SCHEMA_VERSION_LATEST,
           state
         )
       ).toEqual({
@@ -738,13 +764,13 @@ describe("dashboard event handlers", () => {
       const panelBCompleteAt = new Date(readyAt);
       panelBCompleteAt.setSeconds(readyAt.getSeconds() + 2);
       const state = {
-        state: "ready",
+        state: "running",
         execution_id: "1",
         panelsLog: {
           panel_a: [
             {
               error: null,
-              status: "ready",
+              status: "running",
               timestamp: readyAt.toString(),
               title: "panel_a",
             },
@@ -752,7 +778,7 @@ describe("dashboard event handlers", () => {
           panel_b: [
             {
               error: null,
-              status: "ready",
+              status: "running",
               timestamp: readyAt.toString(),
               title: "panel_b",
             },
@@ -760,7 +786,7 @@ describe("dashboard event handlers", () => {
           panel_c: [
             {
               error: null,
-              status: "ready",
+              status: "running",
               timestamp: readyAt.toString(),
               title: "panel_c",
             },
@@ -768,17 +794,17 @@ describe("dashboard event handlers", () => {
           panel_d: [
             {
               error: null,
-              status: "ready",
+              status: "running",
               timestamp: readyAt.toString(),
               title: "panel_d",
             },
           ],
         },
         panelsMap: {
-          panel_a: { name: "panel_a", sql: "", status: "ready" },
-          panel_b: { name: "panel_b", sql: "", status: "ready" },
-          panel_c: { name: "panel_c", sql: "", status: "ready" },
-          panel_d: { name: "panel_d", sql: "", status: "ready" },
+          panel_a: { name: "panel_a", sql: "", status: "running" },
+          panel_b: { name: "panel_b", sql: "", status: "running" },
+          panel_c: { name: "panel_c", sql: "", status: "running" },
+          panel_d: { name: "panel_d", sql: "", status: "running" },
         },
         progress: 0,
       };
@@ -812,6 +838,7 @@ describe("dashboard event handlers", () => {
               },
             ],
           },
+          EXECUTION_SCHEMA_VERSION_LATEST,
           state
         )
       ).toEqual({
@@ -822,6 +849,7 @@ describe("dashboard event handlers", () => {
             ...state.panelsLog.panel_a,
             {
               error: null,
+              executionTime: 1000,
               status: "complete",
               timestamp: panelACompleteAt.toString(),
               title: "panel_a",
@@ -831,6 +859,7 @@ describe("dashboard event handlers", () => {
             ...state.panelsLog.panel_b,
             {
               error: null,
+              executionTime: 2000,
               status: "complete",
               timestamp: panelBCompleteAt.toString(),
               title: "panel_b",

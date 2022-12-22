@@ -1,5 +1,5 @@
 import { DashboardActions, DashboardDataModeCLISnapshot } from "../../types";
-import { LATEST_EXECUTION_SCHEMA_VERSION } from "../../constants/versions";
+import { EXECUTION_SCHEMA_VERSION_LATEST } from "../../constants/versions";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useNavigate } from "react-router-dom";
 import { useRef } from "react";
@@ -18,9 +18,9 @@ const migrateSnapshotFileToExecutionCompleteEvent = (snapshot) => {
       } = snapshot;
       return {
         action: DashboardActions.EXECUTION_COMPLETE,
-        schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+        schema_version: EXECUTION_SCHEMA_VERSION_LATEST,
         snapshot: {
-          schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
+          schema_version: EXECUTION_SCHEMA_VERSION_LATEST,
           layout,
           panels,
           inputs,

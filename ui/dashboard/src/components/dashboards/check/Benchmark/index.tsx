@@ -246,7 +246,7 @@ const BenchmarkTableView = ({
         width: definition.width,
         children: definition.children,
         data: benchmarkDataTable,
-        status: benchmarkDataTable ? "complete" : "ready",
+        status: benchmarkDataTable ? "complete" : "running",
       }}
       ready={!!benchmarkDataTable}
     >
