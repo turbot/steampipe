@@ -192,3 +192,107 @@ WrapColumn.args = {
     },
   },
 };
+
+export const LineView = Template.bind({});
+LineView.args = {
+  display_type: "line",
+  data: {
+    columns: [
+      { name: "Region", data_type: "TEXT" },
+      { name: "Resource Count", data_type: "INT8" },
+      { name: "Encrypted", data_type: "BOOL" },
+      { name: "Info", data_type: "JSONB" },
+    ],
+    rows: [
+      {
+        Region: "us-east-1",
+        "Resource Count": 246,
+        Encrypted: true,
+        Info: null,
+      },
+    ],
+  },
+};
+
+export const LineViewMultipleRows = Template.bind({});
+LineViewMultipleRows.args = {
+  display_type: "line",
+  data: {
+    columns: [
+      { name: "Region", data_type: "TEXT" },
+      { name: "Resource Count", data_type: "INT8" },
+      { name: "Encrypted", data_type: "BOOL" },
+      { name: "Info", data_type: "JSONB" },
+    ],
+    rows: [
+      {
+        Region: "us-east-1",
+        "Resource Count": 246,
+        Encrypted: true,
+        Info: null,
+      },
+      {
+        Region: "us-east-2",
+        "Resource Count": 146,
+        Encrypted: false,
+        Info: { foo: "bar" },
+      },
+    ],
+  },
+};
+
+export const LineViewHideColumn = Template.bind({});
+LineViewHideColumn.args = {
+  display_type: "line",
+  data: {
+    columns: [
+      { name: "Region", data_type: "TEXT" },
+      { name: "Resource Count", data_type: "INT8" },
+      { name: "Encrypted", data_type: "BOOL" },
+      { name: "Info", data_type: "JSONB" },
+    ],
+    rows: [
+      {
+        Region: "us-east-1",
+        "Resource Count": 246,
+        Encrypted: true,
+        Info: null,
+      },
+    ],
+  },
+  properties: {
+    columns: {
+      Info: {
+        display: "none",
+      },
+    },
+  },
+};
+
+export const LineViewWrapColumn = Template.bind({});
+LineViewWrapColumn.args = {
+  display_type: "line",
+  data: {
+    columns: [
+      { name: "Region", data_type: "TEXT" },
+      { name: "Resource Count", data_type: "INT8" },
+      { name: "Encrypted", data_type: "BOOL" },
+      { name: "Long", data_type: "TEXT" },
+    ],
+    rows: [
+      {
+        Region: "us-east-1",
+        "Resource Count": 246,
+        Encrypted: true,
+        Long: "Some really, really, really, really, really, really, really, really, really, really, long text with the occasional realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly long word that we want to wrap in a better way.",
+      },
+    ],
+  },
+  properties: {
+    columns: {
+      Long: {
+        wrap: "all",
+      },
+    },
+  },
+};

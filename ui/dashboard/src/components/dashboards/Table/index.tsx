@@ -604,7 +604,7 @@ const LineView = (props: TableProps) => {
                   <span
                     className={classNames(
                       "block",
-                      col.wrap === "all" ? "break-words" : "truncate"
+                      col.wrap === "all" ? "break-keep" : "truncate"
                     )}
                   >
                     <MemoCellValue
