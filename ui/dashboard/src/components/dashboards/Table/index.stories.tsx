@@ -1,24 +1,25 @@
 import Table from "./index";
 import { PanelStoryDecorator } from "../../../utils/storybook";
+import { ComponentMeta, ComponentStory } from "@storybook/react";
 
-const story = {
+export default {
   title: "Primitives/Table",
   component: Table,
-};
+} as ComponentMeta<typeof Table>;
 
-export default story;
-
-const Template = (args) => (
+const Template: ComponentStory<typeof Table> = (args) => (
   <PanelStoryDecorator definition={args} panelType="table" />
 );
 
 export const Loading = Template.bind({});
 Loading.args = {
+  // @ts-ignore
   data: null,
 };
 
 export const NoData = Template.bind({});
 NoData.args = {
+  // @ts-ignore
   data: {
     columns: [
       { name: "Region", data_type: "TEXT" },
@@ -155,31 +156,31 @@ WrapColumn.args = {
         Region: "us-east-1",
         "Resource Count": 246,
         Encrypted: true,
-        Long: "I am a really, really, really, really, really, really, really, really, really, really long value that I wish to wrap",
+        Long: "Some really, really, really, really, really, really, really, really, really, really, long text with the occasional realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly long word that we want to wrap in a better way.",
       },
       {
         Region: "us-east-2",
         "Resource Count": 146,
         Encrypted: false,
-        Long: "I am a really, really, really, really, really, really, really, really, really, really long value that I wish to wrap",
+        Long: "Some really, really, really, really, really, really, really, really, really, really, long text with the occasional realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly long word that we want to wrap in a better way.",
       },
       {
         Region: "us-west-1",
         "Resource Count": 57,
         Encrypted: true,
-        Long: "I am a really, really, really, really, really, really, really, really, really, really long value that I wish to wrap",
+        Long: "Some really, really, really, really, really, really, really, really, really, really, long text with the occasional realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly long word that we want to wrap in a better way.",
       },
       {
         Region: "eu-west-1",
         "Resource Count": 290,
         Encrypted: false,
-        Long: "I am a really, really, really, really, really, really, really, really, really, really long value that I wish to wrap",
+        Long: "Some really, really, really, really, really, really, really, really, really, really, long text with the occasional realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly long word that we want to wrap in a better way.",
       },
       {
         Region: "eu-west-2",
         "Resource Count": 198,
         Encrypted: true,
-        Long: "I am a really, really, really, really, really, really, really, really, really, really long value that I wish to wrap",
+        Long: "Some really, really, really, really, really, really, really, really, really, really, long text with the occasional realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly long word that we want to wrap in a better way.",
       },
     ],
   },

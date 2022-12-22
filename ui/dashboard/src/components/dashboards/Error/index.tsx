@@ -14,7 +14,7 @@ const Error = ({ className, error }: ErrorProps) => {
   return (
     <div
       className={classNames(
-        "flex w-full h-full p-2 break-all bg-red-50 border-red-700 border text-red-700 justify-center items-center shadow rounded-md",
+        "flex w-full h-full p-2 break-keep bg-red-50 border-red-700 border text-red-700 justify-center items-center shadow rounded-md",
         className
       )}
     >

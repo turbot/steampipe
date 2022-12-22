@@ -105,7 +105,7 @@ const CodeBlock = ({
             style={styles}
             customStyle={{
               padding: 0,
-              wordBreak: "break-all",
+              wordBreak: "break-keep",
               background: "transparent",
               borderRadius: "4px",
               ...style,

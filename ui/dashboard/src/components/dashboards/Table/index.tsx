@@ -477,7 +477,7 @@ const TableView = ({
                       "px-4 py-4 align-top content-center text-sm",
                       isNumericCol(cell.column.data_type) ? "text-right" : "",
                       cell.column.wrap === "all"
-                        ? "break-all"
+                        ? "break-keep"
                         : "whitespace-nowrap"
                     )}
                   >
@@ -634,5 +634,7 @@ const Table = (props: TableProps) => {
 };
 
 registerComponent("table", Table);
+
+export default Table;
 
 export { TableView };

@@ -213,7 +213,7 @@ const Tooltip = ({
 };
 
 const Title = ({ title }) => {
-  return <div className="block break-all">{title}</div>;
+  return <div className="block break-keep">{title}</div>;
 };
 
 export default Tooltip;

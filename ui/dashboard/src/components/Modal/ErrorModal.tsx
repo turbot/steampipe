@@ -6,7 +6,7 @@ const ErrorModal = ({ error, title }) => (
   <Modal
     icon={<ErrorIcon className="h-8 w-8 text-red-600" aria-hidden="true" />}
     message={
-      <div className="break-all">
+      <div className="break-keep">
         <ErrorMessage error={error} />
       </div>
     }

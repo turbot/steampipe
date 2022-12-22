@@ -93,7 +93,7 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
     <div className="h-full overflow-y-auto p-4">
       <Grid name={definition.name}>
         <div className="col-span-6">
-          <h2 className="break-all">{definition.title || "Panel Detail"}</h2>
+          <h2 className="break-keep">{definition.title || "Panel Detail"}</h2>
         </div>
         <div className="col-span-6 space-x-2 text-right">
           <PanelDetailDataDownloadButton

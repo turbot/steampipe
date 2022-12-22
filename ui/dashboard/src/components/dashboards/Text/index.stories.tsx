@@ -1,14 +1,13 @@
 import Text from "./index";
 import { PanelStoryDecorator } from "../../../utils/storybook";
+import { ComponentMeta, ComponentStory } from "@storybook/react";
 
-const story = {
+export default {
   title: "Primitives/Text",
   component: Text,
-};
+} as ComponentMeta<typeof Text>;
 
-export default story;
-
-const Template = (args) => (
+const Template: ComponentStory<typeof Text> = (args) => (
   <PanelStoryDecorator definition={args} panelType="text" />
 );
 
@@ -170,12 +169,28 @@ So long lives this, and this gives life to thee.
   },
 };
 
+export const markdownLongText = Template.bind({});
+markdownLongText.args = {
+  display_type: "markdown",
+  properties: {
+    value: `Some really, really, really, really, really, really, really, really, really, really, long text with the occasional realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly long and **bold** word that we want to wrap in a better way.`,
+  },
+};
+
+export const rawLongText = Template.bind({});
+rawLongText.args = {
+  display_type: "raw",
+  properties: {
+    value: `Some really, really, really, really, really, really, really, really, really, really, long text with the occasional realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly, realllllllllllllllllly long word that we want to wrap in a better way.`,
+  },
+};
+
 export const rawWithMarkdown = Template.bind({});
 rawWithMarkdown.args = {
+  display_type: "raw",
   properties: {
     value: `## Title goes here
 
 **Bold** is best`,
-    type: "raw",
   },
 };

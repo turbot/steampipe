@@ -51,7 +51,7 @@ const Markdown = ({ value }) => {
         <div className={panelClasses}>
           <div
             className={classNames(
-              "p-2 sm:p-1 prose prose-sm max-w-none break-all",
+              "p-2 sm:p-1 prose prose-sm max-w-none break-keep",
               proseHeadings
             )}
           >
@@ -60,7 +60,7 @@ const Markdown = ({ value }) => {
         </div>
       ) : (
         <article
-          className={classNames(panelClasses, "break-all", proseHeadings)}
+          className={classNames(panelClasses, "break-keep", proseHeadings)}
         >
           <ReactMarkdown remarkPlugins={[gfm]}>{value}</ReactMarkdown>
         </article>
@@ -73,7 +73,7 @@ const Raw = ({ value }) => {
   if (!value) {
     return null;
   }
-  return <pre className="whitespace-pre-wrap break-all">{value}</pre>;
+  return <pre className="whitespace-pre-wrap break-keep">{value}</pre>;
 };
 
 const renderText = (type, value) => {
