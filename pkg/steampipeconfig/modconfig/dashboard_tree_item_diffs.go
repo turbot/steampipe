@@ -148,6 +148,26 @@ func (d *DashboardTreeItemDiffs) queryProviderDiff(l QueryProvider, r QueryProvi
 		}
 	}
 
+	// have BASE withs changed
+	lbase := l.GetBase()
+	rbase := r.GetBase()
+	var lbaseWiths []*DashboardWith
+	var rbaseWiths []*DashboardWith
+	if lbase != nil {
+		lbaseWiths = lbase.(RuntimeDependencyProvider).GetWiths()
+	}
+	if rbase != nil {
+		rbaseWiths = rbase.(RuntimeDependencyProvider).GetWiths()
+	}
+	if len(lbaseWiths) != len(rbaseWiths) {
+		d.AddPropertyDiff("With")
+	} else {
+		for i, lBaseWith := range lbaseWiths {
+			if !lBaseWith.Equals(rbaseWiths[i]) {
+				d.AddPropertyDiff("With")
+			}
+		}
+	}
 }
 
 func (d *DashboardTreeItemDiffs) dashboardLeafNodeDiff(l DashboardLeafNode, r DashboardLeafNode) {
