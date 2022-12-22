@@ -168,7 +168,6 @@ func (d *DashboardTreeItemDiffs) queryProviderDiff(l QueryProvider, r QueryProvi
 			}
 		}
 	}
-
 }
 
 func (d *DashboardTreeItemDiffs) dashboardLeafNodeDiff(l DashboardLeafNode, r DashboardLeafNode) {
