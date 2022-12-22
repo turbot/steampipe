@@ -82,8 +82,6 @@ type ExecutionCompletePayload struct {
 	SchemaVersion string                            `json:"schema_version"`
 	Snapshot      *dashboardtypes.SteampipeSnapshot `json:"snapshot"`
 	ExecutionId   string                            `json:"execution_id"`
-	StartTime     time.Time                         `json:"start_time"`
-	EndTime       time.Time                         `json:"end_time"`
 }
 
 type DisplaySnapshotPayload struct {
