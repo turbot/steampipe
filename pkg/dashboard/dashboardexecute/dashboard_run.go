@@ -42,6 +42,9 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 	// (we must create after creating the run as it requires a ref to the run)
 	// TODO [node_reuse] do this a different way
 	r.RuntimeDependencyPublisherImpl = NewRuntimeDependencyPublisherImpl(dashboard, parent, r, executionTree)
+	// add r into execution tree BEFORE creating child runs or initialising runtime depdencies
+	// - this is so child runs can find this dashboard run
+	executionTree.runs[r.Name] = r
 
 	// set inputs map on RuntimeDependencyPublisherImpl BEFORE creating child runs
 	r.inputs = dashboard.GetInputs()
@@ -51,9 +54,6 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 	if err != nil {
 		return nil, err
 	}
-
-	// add r into execution tree BEFORE creating child runs - this is so child runs can find this dashboard run
-	executionTree.runs[r.Name] = r
 
 	err = r.createChildRuns(executionTree)
 	if err != nil {

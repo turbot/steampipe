@@ -173,9 +173,9 @@ func (s *RuntimeDependencySubscriberImpl) findRuntimeDependencyPublisher(runtime
 	}
 
 	// otherwise the dashboard run must be the publisher
-	dasboardRun := s.executionTree.runs[s.DashboardName].(RuntimeDependencyPublisher)
-	if dasboardRun.ProvidesRuntimeDependency(runtimeDependency) {
-		return dasboardRun
+	dashboardRun := s.executionTree.runs[s.DashboardName].(RuntimeDependencyPublisher)
+	if dashboardRun.ProvidesRuntimeDependency(runtimeDependency) {
+		return dashboardRun
 	}
 	//
 	//// traverse up the tree - we rely on resource validation to ensure that intermediate nodes in the tree
@@ -281,8 +281,10 @@ func (s *RuntimeDependencySubscriberImpl) waitForRuntimeDependencies() error {
 	var wg sync.WaitGroup
 	var errChan = make(chan error)
 	var doneChan = make(chan struct{})
-	for _, resolvedDependency := range s.runtimeDependencies {
-		if !resolvedDependency.IsResolved() {
+	for _, r := range s.runtimeDependencies {
+		if !r.IsResolved() {
+			// make copy of loop var for goroutine
+			resolvedDependency := r
 			log.Printf("[TRACE] %s: wait for %s", s.Name, resolvedDependency.Dependency.String())
 			wg.Add(1)
 			go func() {
@@ -295,8 +297,6 @@ func (s *RuntimeDependencySubscriberImpl) waitForRuntimeDependencies() error {
 					errChan <- err
 				}
 			}()
-
-			// todo really here we should resolve the depdent arg/param then publish
 		}
 	}
 	go func() {
