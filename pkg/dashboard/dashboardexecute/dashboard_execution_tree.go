@@ -247,13 +247,6 @@ func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes
 
 	for name, run := range e.runs {
 		res[name] = run.(dashboardtypes.SnapshotPanel)
-		// TODO make this work
-		//if s, ok := run.(RuntimeDependencySubscriber); ok {
-		//	if base := s.GetBaseDependencySubscriber(); base != nil {
-		//		res[base.GetName()] = base.(dashboardtypes.SnapshotPanel)
-		//	}
-		//}
-
 		// special case handling for check runs
 		if checkRun, ok := run.(*CheckRun); ok {
 			checkRunChildren := checkRun.BuildSnapshotPanels(res)
@@ -263,11 +256,6 @@ func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes
 		}
 	}
 	return res
-	//// if this node is a snapshot node, add to map
-	//if snapshotNode, ok := e.Root.(dashboardtypes.SnapshotPanel); ok {
-	//	res[e.Root.GetName()] = snapshotNode
-	//}
-	//return e.buildSnapshotPanelsUnder(e.Root.(dashboardtypes.DashboardParent), res)
 }
 
 // InputRuntimeDependencies returns the names of all inputs which are runtime dependencies
@@ -285,23 +273,6 @@ func (e *DashboardExecutionTree) InputRuntimeDependencies() []string {
 	return maps.Keys(deps)
 }
 
-//func (e *DashboardExecutionTree) buildSnapshotPanelsUnder(parent dashboardtypes.DashboardParent, res map[string]dashboardtypes.SnapshotPanel) map[string]dashboardtypes.SnapshotPanel {
-//	if checkRun, ok := parent.(*CheckRun); ok {
-//		return checkRun.BuildSnapshotPanels(res)
-//	}
-//	for _, c := range parent.GetChildren() {
-//		// if this node is a snapshot node, add to map
-//		if snapshotNode, ok := c.(dashboardtypes.SnapshotPanel); ok {
-//			res[c.GetName()] = snapshotNode
-//		}
-//		if p, ok := c.(dashboardtypes.DashboardParent); ok {
-//			res = e.buildSnapshotPanelsUnder(p, res)
-//		}
-//	}
-//
-//	return res
-//}
-
 // GetChildren implements DashboardParent
 func (e *DashboardExecutionTree) GetChildren() []dashboardtypes.DashboardTreeRun {
 	return []dashboardtypes.DashboardTreeRun{e.Root}
@@ -314,6 +285,7 @@ func (e *DashboardExecutionTree) ChildrenComplete() bool {
 
 // Tactical: Empty implementations of DashboardParent functions
 // TODO remove need for this
+
 func (e *DashboardExecutionTree) Initialise(ctx context.Context) {
 	panic("should never call for DashboardExecutionTree")
 }
