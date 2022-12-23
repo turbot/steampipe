@@ -7,11 +7,11 @@ import (
 )
 
 type Error struct {
-	stack  *stack
-	cause  error
-	detail string
-	msg    string
-	isRoot bool
+	stack   *stack
+	cause   error
+	detail  string
+	message string
+	isRoot  bool
 }
 
 // RootCause will retrieves the underlying root error in the error stack
@@ -47,11 +47,11 @@ func (e Error) Unwrap() error { return e.cause }
 
 func (e Error) Error() (str string) {
 	res := []string{}
-	if len(e.msg) > 0 {
-		res = append(res, e.msg)
+	if len(e.message) > 0 {
+		res = append(res, e.message)
 	}
 	if e.isRoot || e.cause == nil {
-		return e.msg
+		return e.message
 	}
 	if e.cause != nil && len(e.cause.Error()) > 0 {
 		res = append(res, e.cause.Error())
@@ -66,7 +66,7 @@ func (e Error) Detail() string {
 	res := []string{}
 	if len(e.detail) > 0 {
 		// if this is available - the underlying error will always be a sperr
-		res = append(res, fmt.Sprintf("%s :: %s", e.msg, e.detail))
+		res = append(res, fmt.Sprintf("%s :: %s", e.message, e.detail))
 	}
 	if e.cause != nil && len(e.cause.Error()) > 0 {
 		if asD, ok := e.cause.(hasDetail); ok {
