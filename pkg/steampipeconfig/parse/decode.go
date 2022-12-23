@@ -288,7 +288,7 @@ func decodeVariable(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Var
 func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig.QueryProvider, *decodeResult) {
 	res := newDecodeResult()
 
-	// TODO  [node_reuse] need raise errors for invalid properties
+	// TODO  [node_reuse] need raise errors for invalid properties https://github.com/turbot/steampipe/issues/2923
 
 	// get shell resource
 	resource, diags := resourceForBlock(block, parseCtx)
@@ -367,7 +367,7 @@ func decodeQueryProviderBlocks(block *hcl.Block, content *hclsyntax.Body, resour
 func decodeNodeAndEdgeProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclResource, *decodeResult) {
 	res := newDecodeResult()
 
-	// TODO  [node_reuse] need raise errors for invalid properties - update validateHcl to include attributes
+	// TODO  [node_reuse] need raise errors for invalid properties https://github.com/turbot/steampipe/issues/2923
 
 	// get shell resource
 	resource, diags := resourceForBlock(block, parseCtx)

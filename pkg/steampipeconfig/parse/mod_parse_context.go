@@ -329,7 +329,7 @@ func (r *ModParseContext) getResourceCtyValue(resource modconfig.HclResource) (c
 	if ctyValue.Type().FriendlyName() != "object" {
 		return ctyValue, nil
 	}
-	// TODO [node_reuse] fetch nested structs and serialise automatically
+	// TODO [node_reuse] fetch nested structs and serialise automatically https://github.com/turbot/steampipe/issues/2924
 	valueMap := ctyValue.AsValueMap()
 	if valueMap == nil {
 		valueMap = make(map[string]cty.Value)

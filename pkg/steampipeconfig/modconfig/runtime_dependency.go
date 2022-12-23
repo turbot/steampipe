@@ -33,9 +33,9 @@ func (d *RuntimeDependency) String() string {
 }
 
 func (d *RuntimeDependency) ValidateSource(dashboard *Dashboard, workspace ResourceMapsProvider) error {
+	// TODO  [node_reuse] re-add parse time validation https://github.com/turbot/steampipe/issues/2925
 	//resourceName := d.PropertyPath.ToResourceName()
-	var found bool
-	// TODO  [node_reuse] validate source resource in resource tree
+	//var found bool
 	////var sourceResource HclResource
 	//switch d.PropertyPath.ItemType {
 	//// if this is a 'with' resolve from the parent resource
@@ -51,9 +51,9 @@ func (d *RuntimeDependency) ValidateSource(dashboard *Dashboard, workspace Resou
 	//	//	// otherwise, resolve from the global inputs
 	//	//	_, found = workspace.GetResourceMaps().GlobalDashboardInputs[resourceName]
 	//}
-	if !found {
-		return fmt.Errorf("could not resolve runtime dependency resource %s", d.PropertyPath)
-	}
+	//if !found {
+	//	return fmt.Errorf("could not resolve runtime dependency resource %s", d.PropertyPath)
+	//}
 
 	return nil
 }

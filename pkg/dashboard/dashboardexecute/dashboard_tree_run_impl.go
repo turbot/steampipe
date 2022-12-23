@@ -30,8 +30,7 @@ type DashboardTreeRunImpl struct {
 	resource      modconfig.DashboardLeafNode
 	// store the top level run which embeds this struct
 	// we need this for setStatus which serialises the run for the message payload
-	run           dashboardtypes.DashboardTreeRun
-	executeConfig dashboardtypes.TreeRunExecuteConfig
+	run dashboardtypes.DashboardTreeRun
 }
 
 func NewDashboardTreeRunImpl(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, run dashboardtypes.DashboardTreeRun, executionTree *DashboardExecutionTree) DashboardTreeRunImpl {
@@ -129,9 +128,6 @@ func (r *DashboardTreeRunImpl) GetResource() modconfig.DashboardLeafNode {
 	return r.resource
 }
 
-// TODO [node_reuse] do this a different way
-// maybe move to a different embedded struct - ExecutableRun, to differentiate between Base runs
-
 // SetError implements DashboardTreeRun
 func (r *DashboardTreeRunImpl) SetError(ctx context.Context, err error) {
 	log.Printf("[TRACE] %s SetError err %v", r.Name, err)
@@ -156,15 +152,12 @@ func (r *DashboardTreeRunImpl) SetComplete(context.Context) {
 
 func (r *DashboardTreeRunImpl) setStatus(status dashboardtypes.DashboardRunStatus) {
 	r.Status = status
-	// do not send events for runtime dependency execution (i.e. when we are executing base resources
-	// for their runtime dependencies)
-	if !r.executeConfig.RuntimeDependenciesOnly {
-		// raise LeafNodeUpdated event
-		// TODO [node_reuse] tidy this up
-		// TACTICAL: pass the full run struct - 'r.run', rather than ourselves - so we serialize all properties
-		e, _ := dashboardevents.NewLeafNodeUpdate(r.run, r.executionTree.sessionId, r.executionTree.id)
-		r.executionTree.workspace.PublishDashboardEvent(e)
-	}
+	// raise LeafNodeUpdated event
+	// TODO [node_reuse] do this a different way https://github.com/turbot/steampipe/issues/2919
+	// TACTICAL: pass the full run struct - 'r.run', rather than ourselves - so we serialize all properties
+	e, _ := dashboardevents.NewLeafNodeUpdate(r.run, r.executionTree.sessionId, r.executionTree.id)
+	r.executionTree.workspace.PublishDashboardEvent(e)
+
 }
 
 func (r *DashboardTreeRunImpl) notifyParentOfCompletion() {

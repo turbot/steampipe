@@ -41,6 +41,7 @@ func validateRuntimeDependencyProvider(resource modconfig.RuntimeDependencyProvi
 // enrich the loaded nodes and edges with the fully parsed resources from the resourceMapProvider
 func validateNodeAndEdgeProvider(resource modconfig.NodeAndEdgeProvider) hcl.Diagnostics {
 	// TODO [node_reuse] add NodeAndEdgeProviderImpl and move validate there
+	// https://github.com/turbot/steampipe/issues/2918
 
 	var diags hcl.Diagnostics
 	containsEdgesOrNodes := len(resource.GetEdges())+len(resource.GetNodes()) > 0

@@ -133,7 +133,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 
 	// if we have sql to execute, do it now
 	// (if we are only performing a base execution, do not run the query)
-	if r.executeSQL != "" && !r.executeConfig.BaseExecution {
+	if r.executeSQL != "" {
 		if err := r.executeQuery(ctx); err != nil {
 			r.SetError(ctx, err)
 			return

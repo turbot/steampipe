@@ -94,7 +94,7 @@ func (r *DashboardParentImpl) waitForChildrenAsync() chan error {
 
 			log.Printf("[TRACE]  %s ALL children and withs complete, errors: %v", r.Name, errors)
 			// so all children have completed - check for errors
-			// TODO [node_reuse] format better error
+			// TODO [node_reuse] format better error https://github.com/turbot/steampipe/issues/2920
 			doneChan <- error_helpers.CombineErrors(errors...)
 		}()
 	}

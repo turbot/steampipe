@@ -263,9 +263,9 @@ func (d *Dashboard) ValidateRuntimeDependencies(workspace ResourceMapsProvider) 
 }
 
 func (d *Dashboard) validateRuntimeDependenciesForResource(resource HclResource, workspace ResourceMapsProvider) error {
+	// TODO  [node_reuse] re-add parse time validation https://github.com/turbot/steampipe/issues/2925
 	return nil
 	//rdp := resource.(RuntimeDependencyProvider)
-	// TODO  [node_reuse] validate param and args runtime deps
 	//// WHAT ABOUT CHILDREN
 	//if len(runtimeDependencies) == 0 {
 	//	return nil

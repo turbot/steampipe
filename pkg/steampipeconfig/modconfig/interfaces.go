@@ -107,7 +107,7 @@ type ResourceMapsProvider interface {
 
 // NodeAndEdgeProvider must be implemented by any dashboard leaf node which supports edges and nodes
 // (DashboardGraph, DashboardFlow, DashboardHierarchy)
-// TODO [node_reuse] add NodeAndEdgeProviderImpl
+// TODO [node_reuse] add NodeAndEdgeProviderImpl https://github.com/turbot/steampipe/issues/2918
 type NodeAndEdgeProvider interface {
 	QueryProvider
 	GetEdges() DashboardEdgeList

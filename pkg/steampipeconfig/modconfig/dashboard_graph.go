@@ -84,7 +84,8 @@ func (g *DashboardGraph) GetReferences() []*ResourceReference {
 	return g.References
 }
 
-// TODO  [node_reuse] PUT IN 1 PLACE FOR ALL EDGE PROVIDERS
+// TODO [node_reuse] Add DashboardLeafNodeImpl and move this there https://github.com/turbot/steampipe/issues/2926
+
 // GetChildren implements ModTreeItem
 func (g *DashboardGraph) GetChildren() []ModTreeItem {
 	// return nodes and edges (if any)

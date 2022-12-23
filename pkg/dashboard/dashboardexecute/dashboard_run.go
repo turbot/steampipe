@@ -40,7 +40,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 	}
 	// create RuntimeDependencyPublisherImpl- this handles 'with' run creation and resolving runtime dependency resolution
 	// (we must create after creating the run as it requires a ref to the run)
-	// TODO [node_reuse] do this a different way
+	// TODO [node_reuse] do this a different way https://github.com/turbot/steampipe/issues/2919
 	r.RuntimeDependencyPublisherImpl = NewRuntimeDependencyPublisherImpl(dashboard, parent, r, executionTree)
 	// add r into execution tree BEFORE creating child runs or initialising runtime depdencies
 	// - this is so child runs can find this dashboard run
@@ -160,7 +160,7 @@ func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) er
 
 			// TACTICAL: as this is a runtime dependency,  set the run name to the 'scoped name'
 			// this is to match the name in the panel dependendencies
-			// TODO [node_reuse] tidy this
+			// TODO [node_reuse] consider naming https://github.com/turbot/steampipe/issues/2921
 			inputRunName := fmt.Sprintf("%s.%s", r.DashboardName, i.UnqualifiedName)
 			childRun, err = NewLeafRun(i.Clone(), r, executionTree, setName(inputRunName))
 			if err != nil {

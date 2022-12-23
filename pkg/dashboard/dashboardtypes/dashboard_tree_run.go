@@ -22,8 +22,3 @@ type DashboardTreeRun interface {
 	AsTreeNode() *SnapshotTreeNode
 	GetResource() modconfig.DashboardLeafNode
 }
-
-type TreeRunExecuteConfig struct {
-	RuntimeDependenciesOnly bool
-	BaseExecution           bool
-}
