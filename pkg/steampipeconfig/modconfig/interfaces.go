@@ -8,14 +8,11 @@ import (
 // MappableResource must be implemented by resources which can be created
 // directly from a content file (e.g. sql)
 type MappableResource interface {
+	HclResource
+	ResourceWithMetadata
 	// InitialiseFromFile creates a mappable resource from a file path
 	// It returns the resource, and the raw file data
 	InitialiseFromFile(modPath, filePath string) (MappableResource, []byte, error)
-	Name() string
-	GetUnqualifiedName() string
-	GetMetadata() *ResourceMetadata
-	SetMetadata(*ResourceMetadata)
-	GetDeclRange() *hcl.Range
 }
 
 // HclResource must be implemented by resources defined in HCL

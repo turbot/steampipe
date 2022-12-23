@@ -2,9 +2,6 @@ package dashboardexecute
 
 import (
 	"context"
-	"fmt"
-	"reflect"
-
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
@@ -36,17 +33,9 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Das
 	// TODO [node_reuse] do this a different way https://github.com/turbot/steampipe/issues/2919
 	c.DashboardTreeRunImpl = NewDashboardTreeRunImpl(resource, parent, c, executionTree)
 
-	// verify node type
-	switch t := resource.(type) {
-	case *modconfig.Control:
-		c.NodeType = modconfig.BlockTypeControl
-		c.Control = t
-	case *modconfig.Benchmark:
-		c.NodeType = modconfig.BlockTypeBenchmark
-	default:
-		return nil, fmt.Errorf("check run instantiated with invalid node type %s", reflect.TypeOf(resource).Name())
-	}
-
+	c.NodeType = resource.BlockType()
+	//  set status to ready
+	c.Status = dashboardtypes.DashboardRunReady
 	// add r into execution tree
 	executionTree.runs[c.Name] = c
 	return c, nil
