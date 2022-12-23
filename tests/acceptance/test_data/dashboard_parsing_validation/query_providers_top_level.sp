@@ -35,11 +35,11 @@ card "top_card" {
 
 chart "chart_top_1" {
   width = 5
-  display = "Chart"
+  title = "Top level Chart"
 }
 
 flow "top_flow" {
-  display = "TopLevelFlow"
+  title = "TopLevelFlow"
   width = 5
 
   node "node_flow_1" {
