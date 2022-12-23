@@ -17,9 +17,9 @@ import (
 // is sperr.Wrap or sperr.Wrapf
 func New(format string, args ...interface{}) *Error {
 	sperr := &Error{
-		msg:    fmt.Sprintf(format, args...),
-		stack:  callers(), // always has a stack
-		isRoot: true,
+		message: fmt.Sprintf(format, args...),
+		stack:   callers(), // always has a stack
+		isRoot:  true,
 	}
 	return sperr
 }
@@ -32,30 +32,19 @@ func Wrap(err error) *Error {
 	if err == nil {
 		return nil
 	}
-	if castedErr, ok := err.(*Error); ok {
-		return castedErr
+	if e, ok := err.(*Error); ok {
+		return e
 	}
 
-	constructedMsg := tryMessageConstruction(err)
-
-	// default to a blank error string
-	msg := ""
-	// and let the underlying error bubble
-	setRoot := false
-
-	// if we were able to deduce a message
-	if len(constructedMsg) > 0 {
-		// use it
-		msg = constructedMsg
-		// and hide the underlying error
-		setRoot = true
-	}
+	msg := inferMessageFromError(err)
+	// hide the child error if we could infer a message from the error
+	setRoot := len(msg) > 0
 
 	return &Error{
-		cause:  err,
-		msg:    msg,
-		isRoot: setRoot, // set this to false if the underlying error is unknown
-		stack:  callers(),
+		cause:   err,
+		message: msg,
+		isRoot:  setRoot,
+		stack:   callers(),
 	}
 }
 
@@ -63,12 +52,11 @@ func Wrapf(err error, format string, args ...interface{}) *Error {
 	if err == nil {
 		return nil
 	}
-	e := Wrap(err)
-	// wrap with message
-	e = e.WithMessage(format, args...)
-	// overwrite the stack to the stack for this function call
-	e.stack = callers()
-	return e
+	return &Error{
+		cause:   err,
+		message: fmt.Sprintf(format, args...),
+		stack:   callers(),
+	}
 }
 
 func ToError(val interface{}) *Error {
@@ -82,11 +70,12 @@ func ToError(val interface{}) *Error {
 		err = New("%v", val)
 	}
 	// overwrite the stack to the stack for this function call
+	// so that ToError doesn't end up in the stack
 	err.stack = callers()
 	return err
 }
 
-func tryMessageConstruction(err error) string {
+func inferMessageFromError(err error) string {
 	constructedMsg := ""
 	// if this is one of the errors from the SQL stdlib
 	if errors.Is(err, sql.ErrConnDone) ||
