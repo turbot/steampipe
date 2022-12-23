@@ -22,6 +22,11 @@ func (e Error) RootCause() error {
 	type hasCause interface {
 		Cause() error
 	}
+	if e.cause == nil {
+		// return self if we don't have a cause
+		// I was created with New
+		return e
+	}
 	if cause, ok := e.cause.(hasCause); ok {
 		return cause.Cause()
 	}
