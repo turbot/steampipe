@@ -2,7 +2,6 @@ package sperr
 
 import (
 	"fmt"
-	"log"
 )
 
 // WithMessage wraps Error and sets the provided message in the new error
@@ -10,40 +9,39 @@ func (e *Error) WithMessage(format string, args ...interface{}) *Error {
 	if e == nil {
 		return nil
 	}
-	newErr := &Error{
-		msg:   fmt.Sprintf(format, args...),
-		cause: e,
+	res := e
+	// if there's a message, wrap this error and set the message on the new error
+	if len(e.message) > 0 {
+		res = &Error{
+			cause: e,
+		}
 	}
-	return newErr
+	res.message = fmt.Sprintf(format, args...)
+	return res
 }
 
 // WithDetail wraps Error and sets the provided detail message in the new error
 func (e *Error) WithDetail(format string, args ...interface{}) *Error {
-	newErr := &Error{
-		detail: fmt.Sprintf(format, args...),
-		cause:  e,
+	if e == nil {
+		return nil
 	}
-	return newErr
-}
-
-// SetDetail sets the given message as the detail in the Error
-// It is not suggested, but is legal, to call SetDetail on an error which already
-// has a detail. In such a case, SetDetail will raise a warning, but will set the
-// detail none-the-less
-func (e *Error) SetDetail(format string, args ...interface{}) *Error {
+	res := e
+	// if there's a detail, wrap this error and set the detail the new error
 	if len(e.detail) > 0 {
-		log.Println("[WARN] setting detail on an Error which already has a detail set to", e.detail)
+		res = &Error{
+			cause: e,
+		}
 	}
-	e.detail = fmt.Sprintf(format, args...)
-	return e
+	res.detail = fmt.Sprintf(format, args...)
+	return res
 }
 
 // SetAsRoot sets this error as the root error in the error stack.
 // When an Error is set as root, all child errors are hidden from display
 func (e *Error) SetAsRoot() *Error {
-	newErr := &Error{
-		isRoot: true,
-		cause:  e,
+	if e == nil {
+		return nil
 	}
-	return newErr
+	e.isRoot = true
+	return e
 }
