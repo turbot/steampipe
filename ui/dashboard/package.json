@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "setup-material-symbols": "node scripts/setupMaterialSymbols.js",
-    "start": "yarn run setup-material-symbols && if-node-version '>= 17' && craco --openssl-legacy-provider start || craco start",
-    "build": "yarn run setup-material-symbols && GENERATE_SOURCEMAP=false if-node-version '>= 17' && craco --openssl-legacy-provider build || craco build",
+    "start": "if-node-version '>= 17' && craco --openssl-legacy-provider start || craco start",
+    "build": "GENERATE_SOURCEMAP=false if-node-version '>= 17' && craco --openssl-legacy-provider build || craco build",
     "test": "craco test",
     "eject": "react-scripts eject",
     "prettify": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",

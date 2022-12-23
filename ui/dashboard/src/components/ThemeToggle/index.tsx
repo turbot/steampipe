@@ -45,7 +45,7 @@ const ThemeToggle = () => {
         >
           <DashboardIcon
             className="text-gray-500"
-            icon="materialsymbols-solid:light-mode"
+            icon="materialsymbols-solid:light_mode"
           />
         </span>
         <span
@@ -59,7 +59,7 @@ const ThemeToggle = () => {
         >
           <DashboardIcon
             className="text-gray-500"
-            icon="materialsymbols-solid:dark-mode"
+            icon="materialsymbols-solid:dark_mode"
           />
         </span>
       </span>

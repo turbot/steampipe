@@ -116,7 +116,7 @@ const FolderNodeTooltipNodes = ({
             onClick={loadMore}
           >
             <span>More</span>
-            <Icon className="w-4 h-4" icon="arrow-long-down" />
+            <Icon className="w-4 h-4" icon="arrow_long_down" />
           </div>
         )}
       </div>
@@ -202,7 +202,7 @@ const NodeControls = ({ children }: NodeControlsProps) => {
 const NodeGrabHandleControl = () => (
   <NodeControl
     className="custom-drag-handle cursor-grab"
-    icon="arrows-pointing-out"
+    icon="arrows_pointing_out"
     iconClassName="rotate-45"
     title="Move node"
   />
@@ -219,7 +219,7 @@ const RefoldNodeControl = ({
     <NodeControl
       action={() => collapseNodes(expandedNodeInfo.foldedNodes)}
       className="cursor-pointer"
-      icon="arrows-pointing-in"
+      icon="arrows_pointing_in"
       title="Collapse node"
     />
   );

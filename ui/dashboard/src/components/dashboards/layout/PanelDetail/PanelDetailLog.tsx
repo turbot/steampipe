@@ -49,7 +49,7 @@ const PanelLogIcon = ({ status }: PanelLogIconProps) => {
       return (
         <Icon
           className="text-skip w-4.5 h-4.5"
-          icon="materialsymbols-solid:run-circle"
+          icon="materialsymbols-solid:run_circle"
         />
       );
     case "error":
@@ -63,7 +63,7 @@ const PanelLogIcon = ({ status }: PanelLogIconProps) => {
       return (
         <Icon
           className="text-ok w-4.5 h-4.5"
-          icon="materialsymbols-solid:check-circle"
+          icon="materialsymbols-solid:check_circle"
         />
       );
   }

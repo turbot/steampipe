@@ -151,6 +151,11 @@ jobs:
         unset CI
         yarn install
 
+    - name: Generate dashboard UI icons
+      working-directory: ./ui/dashboard
+      run: |-
+        make setup
+
     - name: Run Unit Tests
       working-directory: ./ui/dashboard
       run: |

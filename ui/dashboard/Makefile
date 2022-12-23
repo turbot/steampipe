@@ -21,3 +21,6 @@ clean:
 run-local:
 	yarn install
 	yarn start
+
+setup:
+	yarn setup-material-symbols

@@ -15,16 +15,16 @@ const upperFirst = require("lodash/upperFirst");
       importName = "_" + importName;
     }
     const nameAndStyleParts = fileNameParts[0].split("-");
-    const nameKebab = nameAndStyleParts[0].replaceAll("_", "-");
+    const name = nameAndStyleParts[0];
     const isFillIcon =
       nameAndStyleParts.length === 2 && nameAndStyleParts[1] === "fill";
 
     if (isFillIcon) {
-      solidIcons[nameKebab] = {
+      solidIcons[name] = {
         component: importName,
       };
     } else {
-      outlineIcons[nameKebab] = {
+      outlineIcons[name] = {
         component: importName,
       };
     }
