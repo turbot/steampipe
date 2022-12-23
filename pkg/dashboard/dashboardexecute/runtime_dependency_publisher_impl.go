@@ -69,7 +69,17 @@ func (p *RuntimeDependencyPublisherImpl) ProvidesRuntimeDependency(dependency *m
 	resourceName := dependency.SourceResourceName()
 	switch dependency.PropertyPath.ItemType {
 	case modconfig.BlockTypeWith:
-		return p.withRuns[resourceName] != nil
+		// we cannot use withRuns here as if withs have dependencies on each other,
+		// this function may be called before all runs have been added
+		// instead, look directly at the underlying resource withs
+		if rdp, ok := p.resource.(modconfig.RuntimeDependencyProvider); ok {
+			for _, w := range rdp.GetWiths() {
+				if w.UnqualifiedName == resourceName {
+					return true
+				}
+			}
+		}
+		return false
 	case modconfig.BlockTypeInput:
 		return p.inputs[resourceName] != nil
 	case modconfig.BlockTypeParam:

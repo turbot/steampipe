@@ -144,7 +144,9 @@ func (s *RuntimeDependencySubscriberImpl) findRuntimeDependencyPublisher(runtime
 		subscriber = s.parent.(RuntimeDependencySubscriber)
 	}
 	baseSubscriber := subscriber.GetBaseDependencySubscriber()
-	// not check the provider property on the runtime dependency
+
+	// "if I have a base with runtime dependencies, those dependencies must be provided BY THE BASE"
+	// check the provider property on the runtime dependency
 	// - if the matches the underlying resource for the baseDependencySubscriber,
 	// then baseDependencySubscriber _should_ be the dependency publisher
 	if !helpers.IsNil(baseSubscriber) && runtimeDependency.Provider == baseSubscriber.GetResource() {
@@ -158,11 +160,13 @@ func (s *RuntimeDependencySubscriberImpl) findRuntimeDependencyPublisher(runtime
 		return nil
 	}
 
-	// see if we can satisfy the dependency (this would occur when initialising the baseDependencySubscriber
+	// "if I am a base resource with runtime dependencies, I provide my own dependencies"
+	// see if we can satisfy the dependency (this would occur when initialising the baseDependencySubscriber)
 	if s.ProvidesRuntimeDependency(runtimeDependency) {
 		return s
 	}
 
+	// "if I am a nested resource, my dashboard provides my dependencies"
 	// otherwise the dashboard run must be the publisher
 	dashboardRun := s.executionTree.runs[s.DashboardName].(RuntimeDependencyPublisher)
 	if dashboardRun.ProvidesRuntimeDependency(runtimeDependency) {
