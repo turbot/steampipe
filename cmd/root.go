@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -64,11 +65,11 @@ var rootCmd = &cobra.Command{
 		viper.Set(constants.ConfigKeyActiveCommandArgs, args)
 		viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
 
-		createLogger()
-
 		// set up the global viper config with default values from
 		// config files and ENV variables
 		initGlobalConfig()
+
+		createLogger()
 
 		var taskUpdateCtx context.Context
 		taskUpdateCtx, tasksCancelFn = context.WithCancel(cmd.Context())
@@ -304,18 +305,21 @@ func validateConfig() error {
 
 // create a hclog logger with the level specified by the SP_LOG env var
 func createLogger() {
-	level := logging.LogLevel()
-
+	logName := fmt.Sprintf("steampipe-%s.log", time.Now().Format("2006-01-02"))
+	logPath := filepath.Join(filepaths.EnsureLogDir(), logName)
+	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		fmt.Printf("failed to open plugin manager log file: %s\n", err.Error())
+		os.Exit(3)
+	}
 	options := &hclog.LoggerOptions{
 		Name:       "steampipe",
-		Level:      hclog.LevelFromString(level),
+		Output:     f,
 		TimeFn:     func() time.Time { return time.Now().UTC() },
 		TimeFormat: "2006-01-02 15:04:05.000 UTC",
 	}
-	if options.Output == nil {
-		options.Output = os.Stderr
-	}
-	logger := hclog.New(options)
+	logger := logging.NewLogger(options)
+
 	log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
 	log.SetPrefix("")
 	log.SetFlags(0)
