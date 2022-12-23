@@ -36,12 +36,12 @@ func (e *Error) WithDetail(format string, args ...interface{}) *Error {
 	return res
 }
 
-// SetAsRoot sets this error as the root error in the error stack.
+// AsRootMessage sets this error as the root error in the error stack.
 // When an Error is set as root, all child errors are hidden from display
-func (e *Error) SetAsRoot() *Error {
+func (e *Error) AsRootMessage() *Error {
 	if e == nil {
 		return nil
 	}
-	e.isRoot = true
+	e.isRootMessage = true
 	return e
 }

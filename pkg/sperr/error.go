@@ -7,11 +7,11 @@ import (
 )
 
 type Error struct {
-	stack   *stack
-	cause   error
-	detail  string
-	message string
-	isRoot  bool
+	stack         *stack
+	cause         error
+	detail        string
+	message       string
+	isRootMessage bool
 }
 
 // RootCause will retrieves the underlying root error in the error stack
@@ -30,6 +30,11 @@ func (e Error) RootCause() error {
 	if cause, ok := e.cause.(hasCause); ok {
 		return cause.Cause()
 	}
+	return e.cause
+}
+
+// TODO: implement the Cause method
+func (e Error) Cause() error {
 	return e.cause
 }
 
@@ -55,13 +60,13 @@ func (e Error) Error() (str string) {
 	if len(e.message) > 0 {
 		res = append(res, e.message)
 	}
-	if e.isRoot || e.cause == nil {
+	if e.isRootMessage || e.cause == nil {
 		return e.message
 	}
 	if e.cause != nil && len(e.cause.Error()) > 0 {
 		res = append(res, e.cause.Error())
 	}
-	return strings.Join(res, ":")
+	return strings.Join(res, " : ")
 }
 
 func (e Error) Detail() string {

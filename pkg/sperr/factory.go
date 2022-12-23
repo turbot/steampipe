@@ -17,9 +17,9 @@ import (
 // is sperr.Wrap or sperr.Wrapf
 func New(format string, args ...interface{}) *Error {
 	sperr := &Error{
-		message: fmt.Sprintf(format, args...),
-		stack:   callers(), // always has a stack
-		isRoot:  true,
+		message:       fmt.Sprintf(format, args...),
+		stack:         callers(), // always has a stack
+		isRootMessage: true,
 	}
 	return sperr
 }
@@ -41,10 +41,10 @@ func Wrap(err error) *Error {
 	setRoot := len(msg) > 0
 
 	return &Error{
-		cause:   err,
-		message: msg,
-		isRoot:  setRoot,
-		stack:   callers(),
+		cause:         err,
+		message:       msg,
+		isRootMessage: setRoot,
+		stack:         callers(),
 	}
 }
 
