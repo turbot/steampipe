@@ -249,8 +249,13 @@ const buildSqlDataMap = (panels: PanelsMap): SQLDataMap => {
   for (const sqlPath of sqlPaths) {
     // @ts-ignore
     const sql: string = get(panels, sqlPath);
-    const panelPath = sqlPath.toString().substring(0, sqlPath.indexOf(".sql"));
+    const panelPath = sqlPath
+      .toString()
+      .substring(0, sqlPath.lastIndexOf(".sql"));
     const panel = get(panels, panelPath);
+    if (!panel) {
+      continue;
+    }
     const data = panel.data;
     if (!data) {
       continue;
