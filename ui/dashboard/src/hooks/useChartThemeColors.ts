@@ -67,7 +67,7 @@ const useChartThemeColors = () => {
 
   useEffect(() => {
     setRandom(Math.random() * Math.random());
-  }, [theme]);
+  }, [setRandom, theme]);
 
   return themeColors;
 };
