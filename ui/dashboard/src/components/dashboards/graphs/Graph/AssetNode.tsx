@@ -99,7 +99,7 @@ const FoldedNodeTooltipTitle = ({
   </div>
 );
 
-const FolderNodeTooltipNodes = ({
+const FoldedNodeTooltipNodes = ({
   foldedNodes,
 }: FolderNodeTooltipNodesProps) => {
   const { visibleItems, hasMore, loadMore } = usePaginatedList(foldedNodes, 5);
@@ -116,7 +116,7 @@ const FolderNodeTooltipNodes = ({
             onClick={loadMore}
           >
             <span>More</span>
-            <Icon className="w-4 h-4" icon="arrow_long_down" />
+            <Icon className="w-4 h-4" icon="south" />
           </div>
         )}
       </div>
@@ -202,7 +202,7 @@ const NodeControls = ({ children }: NodeControlsProps) => {
 const NodeGrabHandleControl = () => (
   <NodeControl
     className="custom-drag-handle cursor-grab"
-    icon="arrows_pointing_out"
+    icon="zoom_out_map"
     iconClassName="rotate-45"
     title="Move node"
   />
@@ -219,7 +219,7 @@ const RefoldNodeControl = ({
     <NodeControl
       action={() => collapseNodes(expandedNodeInfo.foldedNodes)}
       className="cursor-pointer"
-      icon="arrows_pointing_in"
+      icon="zoom_in_map"
       title="Collapse node"
     />
   );
@@ -436,7 +436,7 @@ const AssetNode = ({
       )}
       {isFolded && (
         <Tooltip
-          overlay={<FolderNodeTooltipNodes foldedNodes={foldedNodes} />}
+          overlay={<FoldedNodeTooltipNodes foldedNodes={foldedNodes} />}
           title={
             <FoldedNodeTooltipTitle
               category={category}
