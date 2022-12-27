@@ -32,7 +32,10 @@ const addDataToPanels = (
   for (const sqlPath of sqlPaths) {
     const panelPath = sqlPath.toString().substring(0, sqlPath.indexOf(".sql"));
     const panel = get(panels, panelPath);
-    const args = panel.args;
+    if (!panel) {
+      continue;
+    }
+    const args = panel.args || [];
     const sql = panel.sql;
     if (!sql) {
       continue;
@@ -260,7 +263,7 @@ const buildSqlDataMap = (panels: PanelsMap): SQLDataMap => {
     if (!data) {
       continue;
     }
-    const args = panel.args;
+    const args = panel.args || [];
     const key = getSqlDataMapKey(sql, args);
     if (!sqlDataMap[key]) {
       sqlDataMap[key] = data;
