@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -48,7 +48,7 @@ func main() {
 func checkRoot(ctx context.Context) {
 	if os.Geteuid() == 0 {
 		exitCode = constants.ExitCodeUnknownErrorPanic
-		error_helpers.ShowError(ctx, fmt.Errorf(`Steampipe cannot be run as the "root" user.
+		error_helpers.ShowError(ctx, sperr.New(`Steampipe cannot be run as the "root" user.
 To reduce security risk, use an unprivileged user account instead.`))
 		os.Exit(exitCode)
 	}
@@ -64,7 +64,7 @@ To reduce security risk, use an unprivileged user account instead.`))
 
 	if os.Geteuid() != os.Getuid() {
 		exitCode = constants.ExitCodeUnknownErrorPanic
-		error_helpers.ShowError(ctx, fmt.Errorf("real and effective user IDs must match."))
+		error_helpers.ShowError(ctx, sperr.New("real and effective user IDs must match."))
 		os.Exit(exitCode)
 	}
 }
@@ -73,7 +73,7 @@ func checkWsl1(ctx context.Context) {
 	// store the 'uname -r' output
 	output, err := exec.Command("uname", "-r").Output()
 	if err != nil {
-		error_helpers.ShowErrorWithMessage(ctx, err, "failed to check uname")
+		error_helpers.ShowError(ctx, sperr.Wrapf(err, "failed to check uname"))
 		return
 	}
 	// convert the output to a string of lowercase characters for ease of use
@@ -88,22 +88,22 @@ func checkWsl1(ctx context.Context) {
 
 		// store the system kernel version
 		sys_kernel, _, _ := strings.Cut(string(output), "-")
-		sys_kernel_ver, err := version.NewVersion(sys_kernel)
+		systemKernelVersion, err := version.NewVersion(sys_kernel)
 		if err != nil {
-			error_helpers.ShowErrorWithMessage(ctx, err, "failed to check system kernel version")
+			error_helpers.ShowError(ctx, sperr.Wrapf(err, "failed to check system kernel version"))
 			return
 		}
 		// if the kernel version >= 4.19, it's WSL Version 2.
-		kernel_ver, err := version.NewVersion("4.19")
+		requiredKernelVersion, err := version.NewVersion("4.19")
 		if err != nil {
-			error_helpers.ShowErrorWithMessage(ctx, err, "checking system kernel version")
+			error_helpers.ShowError(ctx, sperr.Wrapf(err, "checking system kernel version"))
 			return
 		}
 		// if the kernel version >= 4.19, it's WSL version 2, else version 1
-		if sys_kernel_ver.GreaterThanOrEqual(kernel_ver) {
+		if systemKernelVersion.GreaterThanOrEqual(requiredKernelVersion) {
 			return
 		} else {
-			error_helpers.ShowError(ctx, fmt.Errorf("Steampipe requires WSL2, please upgrade and try again."))
+			error_helpers.ShowError(ctx, sperr.New("Steampipe requires WSL2, please upgrade and try again."))
 			os.Exit(1)
 		}
 	}

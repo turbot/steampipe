@@ -44,7 +44,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	doneChan := make(chan bool, 1)
 	defer func() {
 		if r := recover(); r != nil {
-			err = sperr.Wrap(sperr.ToError(r))
+			err = sperr.ToError(recover())
 		}
 
 		utils.LogTime("db_local.EnsureDBInstalled end")
@@ -55,7 +55,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	if IsInstalled() {
 		// check if the FDW need updating, and init the db if required
 		if err := prepareDb(ctx); err != nil {
-			return sperr.Wrapf(err, "failed to prepare db installation")
+			return err
 		}
 		return nil
 	}
@@ -64,7 +64,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	dbState, err := GetState()
 	if err != nil {
 		log.Println("[TRACE] Error while loading database state", err)
-		return sperr.Wrapf(err, "failed to read service state")
+		return err
 	}
 	if dbState != nil {
 		return sperr.New("cannot install db - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
@@ -82,7 +82,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	err = downloadAndInstallDbFiles(ctx)
 	if err != nil {
-		return sperr.Wrapf(err, "failed to download and install db files")
+		return err
 	}
 
 	statushooks.SetStatus(ctx, "Preparing backups...")
@@ -131,14 +131,14 @@ func downloadAndInstallDbFiles(ctx context.Context) error {
 	err := os.RemoveAll(getDatabaseLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
-		return sperr.New("Prepare database install location... FAILED!")
+		return sperr.Wrapf(err, "Prepare database install location... FAILED!")
 	}
 
 	statushooks.SetStatus(ctx, "Download & install embedded PostgreSQL database...")
 	_, err = ociinstaller.InstallDB(ctx, getDatabaseLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
-		return sperr.New("Download & install embedded PostgreSQL database... FAILED!")
+		return sperr.Wrapf(err, "Download & install embedded PostgreSQL database... FAILED!")
 	}
 	return nil
 }
@@ -201,18 +201,18 @@ func prepareDb(ctx context.Context) error {
 		statushooks.SetStatus(ctx, "Updating install records...")
 		if err = updateDownloadedBinarySignature(); err != nil {
 			log.Printf("[TRACE] updateDownloadedBinarySignature failed: %v", err)
-			return sperr.New("Updating install records... FAILED!")
+			return sperr.Wrapf(err, "updating install records failed")
 		}
 
 		// install fdw
 		if _, err := installFDW(ctx, false); err != nil {
 			log.Printf("[TRACE] installFDW failed: %v", err)
-			return sperr.New("Update steampipe-postgres-fdw... FAILED!")
+			return sperr.Wrapf(err, "Update steampipe-postgres-fdw... FAILED!").AsRootMessage()
 		}
 	} else if fdwNeedsUpdate(versionInfo) {
 		if _, err := installFDW(ctx, false); err != nil {
 			log.Printf("[TRACE] installFDW failed: %v", err)
-			return sperr.New("Update steampipe-postgres-fdw... FAILED!")
+			return sperr.Wrapf(err, "Update steampipe-postgres-fdw... FAILED!").AsRootMessage()
 		}
 
 		// get the message renderer from the context

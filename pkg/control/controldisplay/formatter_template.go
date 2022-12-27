@@ -2,11 +2,11 @@ package controldisplay
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"text/template"
 
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 
 	"github.com/spf13/viper"
@@ -36,7 +36,7 @@ func NewTemplateFormatter(input *OutputTemplate) (*TemplateFormatter, error) {
 		ParseFS(os.DirFS(input.TemplatePath), "*")
 
 	if err != nil {
-		return nil, fmt.Errorf("could not load template '%s' - %v", input.TemplatePath, err)
+		return nil, sperr.Wrapf(err, "could not load template '%s'", input.TemplatePath)
 	}
 
 	return &TemplateFormatter{exportFormat: input, template: t}, nil

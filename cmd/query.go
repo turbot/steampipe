@@ -23,6 +23,7 @@ import (
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/queryexecute"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -269,11 +270,11 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 	tableName := modconfig.BuildFullResourceName(parsedName.Mod, modconfig.BlockTypeTable, parsedName.Name)
 	tablePanel, ok := snap.Panels[tableName]
 	if !ok {
-		return nil, fmt.Errorf("dashboard does not contain table result for query")
+		return nil, sperr.New("dashboard does not contain table result for query")
 	}
 	chartRun := tablePanel.(*dashboardexecute.LeafRun)
 	if !ok {
-		return nil, fmt.Errorf("failed to read query result from snapshot")
+		return nil, sperr.New("failed to read query result from snapshot")
 	}
 	// check for error
 	if err := chartRun.GetError(); err != nil {

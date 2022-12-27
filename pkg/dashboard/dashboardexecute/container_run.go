@@ -2,10 +2,11 @@ package dashboardexecute
 
 import (
 	"context"
-	"fmt"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"log"
+
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+	"github.com/turbot/steampipe/pkg/sperr"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 // DashboardContainerRun is a struct representing a container run
@@ -68,7 +69,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 			// ensure this item is a DashboardLeafNode
 			leafNode, ok := i.(modconfig.DashboardLeafNode)
 			if !ok {
-				return nil, fmt.Errorf("child %s does not implement DashboardLeafNode", i.Name())
+				return nil, sperr.New("child %s does not implement DashboardLeafNode", i.Name())
 			}
 
 			childRun, err = NewLeafRun(leafNode, r, executionTree)

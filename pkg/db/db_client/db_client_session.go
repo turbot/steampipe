@@ -2,11 +2,11 @@ package db_client
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/sperr"
 )
 
 func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common.AcquireSessionResult) {
@@ -19,7 +19,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 			// fail safe - if there is no database connection, ensure we return an error
 			// NOTE: this should not be necessary but an occasional crash is occurring with a nil connection
 			if sessionResult.Session.Connection == nil && sessionResult.Error == nil {
-				sessionResult.Error = fmt.Errorf("nil database connection being returned from AcquireSession but no error was raised")
+				sessionResult.Error = sperr.New("nil database connection being returned from AcquireSession but no error was raised")
 			}
 		}
 	}()

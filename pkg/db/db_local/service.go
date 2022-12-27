@@ -1,7 +1,6 @@
 package db_local
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -17,6 +17,8 @@ import (
 func GetState() (*RunningDBInstanceInfo, error) {
 	utils.LogTime("db.GetStatus start")
 	defer utils.LogTime("db.GetStatus end")
+
+	// return nil, sperr.ToError("created by ToError")
 
 	info, err := loadRunningInstanceInfo()
 	if err != nil {
@@ -59,7 +61,7 @@ func errorIfUnknownService() error {
 	// read the content of the postmaster.pid file
 	fileContent, err := os.ReadFile(getPostmasterPidLocation())
 	if err != nil {
-		return err
+		return sperr.Wrapf(err, "could not read postmaster.pid from %s", getPostmasterPidLocation())
 	}
 
 	// the first line contains the PID
@@ -75,7 +77,7 @@ func errorIfUnknownService() error {
 	// extract it
 	pid, err := strconv.Atoi(lines[0])
 	if err != nil {
-		return err
+		return sperr.Wrapf(err, "error while trying to convert PID to int: %s", lines[0])
 	}
 
 	// check if a process with that PID exists
@@ -85,7 +87,7 @@ func errorIfUnknownService() error {
 	}
 	if exists {
 		// if it does, then somehow we don't know about it. Error out
-		return fmt.Errorf("service is running in an unknown state [PID: %d] - try killing it with %s", pid, constants.Bold("steampipe service stop --force"))
+		return sperr.New("service is running in an unknown state [PID: %d] - try killing it with %s", pid, constants.Bold("steampipe service stop --force"))
 	}
 
 	// the pid does not exist

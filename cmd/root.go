@@ -21,10 +21,12 @@ import (
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/migrate"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -298,7 +300,7 @@ func migrateLegacyFiles() error {
 func validateConfig() error {
 	telemetry := viper.GetString(constants.ArgTelemetry)
 	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
-		return fmt.Errorf(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
+		return sperr.New(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
 	}
 	return nil
 }
@@ -321,8 +323,11 @@ func createLogger() {
 	logger := logging.NewLogger(options)
 
 	log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
-	log.SetPrefix("")
+	log.SetPrefix(runtime.ExecutionID)
 	log.SetFlags(0)
+	log.Printf("[INFO] .\n******************************************************\n\n\t\tsteampipe cli\n\n******************************************************\n")
+	log.Printf("[INFO] Version:   v%s\n", version.VersionString)
+	log.Printf("[INFO] Log level: %s\n", logging.LogLevel())
 }
 
 func ensureInstallDir(installDir string) {

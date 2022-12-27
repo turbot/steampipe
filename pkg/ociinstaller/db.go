@@ -2,16 +2,16 @@ package ociinstaller
 
 import (
 	"context"
+	"log"
 	"path/filepath"
 	"time"
-	"log"
 
 	"github.com/turbot/steampipe/pkg/constants"
 	versionfile "github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 )
 
 // InstallDB :: Install Postgres files fom OCI image
-func InstallDB(ctx context.Context, dblocation string) (string, error) {
+func InstallDB(ctx context.Context, dblocation string) (digest string, _ error) {
 	tempDir := NewTempDir(dblocation)
 	defer func() {
 		if err := tempDir.Delete(); err != nil {

@@ -3,14 +3,16 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"log"
 	"sync"
 	"time"
 
+	"golang.org/x/exp/maps"
+
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
@@ -63,7 +65,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		return nil, err
 	}
 	if parsedName.ItemType == "" {
-		return nil, fmt.Errorf("root item is not valid named resource")
+		return nil, sperr.New("root item is not valid named resource")
 	}
 	// if no mod is specified, assume the workspace mod
 	if parsedName.Mod == "" {
@@ -74,20 +76,20 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 	case modconfig.BlockTypeDashboard:
 		dashboard, ok := e.workspace.GetResourceMaps().Dashboards[rootName]
 		if !ok {
-			return nil, fmt.Errorf("dashboard '%s' does not exist in workspace", rootName)
+			return nil, sperr.New("dashboard '%s' does not exist in workspace", rootName)
 		}
 		return NewDashboardRun(dashboard, e, e)
 	case modconfig.BlockTypeBenchmark:
 		benchmark, ok := e.workspace.GetResourceMaps().Benchmarks[rootName]
 		if !ok {
-			return nil, fmt.Errorf("benchmark '%s' does not exist in workspace", rootName)
+			return nil, sperr.New("benchmark '%s' does not exist in workspace", rootName)
 		}
 		return NewCheckRun(benchmark, e, e)
 	case modconfig.BlockTypeQuery:
 		// wrap in a table
 		query, ok := e.workspace.GetResourceMaps().Queries[rootName]
 		if !ok {
-			return nil, fmt.Errorf("query '%s' does not exist in workspace", rootName)
+			return nil, sperr.New("query '%s' does not exist in workspace", rootName)
 		}
 		// wrap this in a chart and a dashboard
 		dashboard, err := modconfig.NewQueryDashboard(query)
@@ -99,7 +101,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		// wrap in a table
 		control, ok := e.workspace.GetResourceMaps().Controls[rootName]
 		if !ok {
-			return nil, fmt.Errorf("query '%s' does not exist in workspace", rootName)
+			return nil, sperr.New("query '%s' does not exist in workspace", rootName)
 		}
 		// wrap this in a chart and a dashboard
 		dashboard, err := modconfig.NewQueryDashboard(control)
@@ -108,7 +110,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		}
 		return NewDashboardRun(dashboard, e, e)
 	default:
-		return nil, fmt.Errorf("reporting type %s cannot be executed as dashboard", parsedName.ItemType)
+		return nil, sperr.New("reporting type %s cannot be executed as dashboard", parsedName.ItemType)
 	}
 }
 

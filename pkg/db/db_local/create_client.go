@@ -12,6 +12,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -28,7 +29,7 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 		return "", err
 	}
 	if info == nil {
-		return "", fmt.Errorf("steampipe service is not running")
+		return "", sperr.New("steampipe service is not running")
 	}
 
 	// if no database name is passed, use constants.DatabaseUser

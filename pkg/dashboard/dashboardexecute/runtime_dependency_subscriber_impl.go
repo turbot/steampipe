@@ -3,14 +3,16 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
+	"log"
+	"sync"
+
 	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
-	"log"
-	"sync"
 )
 
 type RuntimeDependencySubscriberImpl struct {
@@ -98,7 +100,7 @@ func (s *RuntimeDependencySubscriberImpl) resolveRuntimeDependencies() error {
 		publisher := s.findRuntimeDependencyPublisher(d)
 		if publisher == nil {
 			// should never happen as validation should have caught this
-			return fmt.Errorf("cannot resolve runtime dependency %s", d.String())
+			return sperr.New("cannot resolve runtime dependency %s", d.String())
 		}
 
 		// read name and dep into local loop vars to ensure correct value used when transform func is invoked
@@ -117,7 +119,7 @@ func (s *RuntimeDependencySubscriberImpl) resolveRuntimeDependencies() error {
 					// the runtime dependency value for a 'with' is *dashboardtypes.LeafData
 					withValue, err := s.getWithValue(name, resolvedVal.Value.(*dashboardtypes.LeafData), dep.PropertyPath)
 					if err != nil {
-						transformedResolvedVal.Error = fmt.Errorf("failed to resolve with value '%s' for %s: %s", dep.PropertyPath.Original, name, err.Error())
+						transformedResolvedVal.Error = sperr.Wrapf(err, "failed to resolve with value '%s' for %s", dep.PropertyPath.Original, name)
 					} else {
 						transformedResolvedVal.Value = withValue
 					}
@@ -397,7 +399,7 @@ func (s *RuntimeDependencySubscriberImpl) buildRuntimeDependencyArgs() (*modconf
 
 		} else {
 			if dep.Dependency.TargetPropertyIndex == nil {
-				return nil, fmt.Errorf("invalid runtime dependency - both ArgName and ArgIndex are nil ")
+				return nil, sperr.New("invalid runtime dependency - both ArgName and ArgIndex are nil ")
 			}
 			err := res.SetPositionalArgVal(dep.Value, *dep.Dependency.TargetPropertyIndex)
 			if err != nil {

@@ -1,13 +1,12 @@
 package controlexecute
 
 import (
-	"fmt"
-
 	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -101,7 +100,7 @@ func NewResultRow(run *ControlRun, row *queryresult.RowResult, cols []*queryresu
 		case "status":
 			status := typehelpers.ToString(row.Data[i])
 			if !IsValidControlStatus(status) {
-				return nil, fmt.Errorf("invalid control status '%s'", status)
+				return nil, sperr.New("invalid control status '%s'", status)
 			}
 			res.Status = status
 		default:
@@ -129,7 +128,7 @@ func validateColumns(cols []*queryresult.ColumnDef) error {
 		}
 	}
 	if len(missingColumns) > 0 {
-		return fmt.Errorf("control result is missing required %s: %v", utils.Pluralize("column", len(missingColumns)), missingColumns)
+		return sperr.New("control result is missing required %s: %v", utils.Pluralize("column", len(missingColumns)), missingColumns)
 	}
 	return nil
 }

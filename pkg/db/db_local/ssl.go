@@ -6,13 +6,13 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"fmt"
 	"log"
 	"math/big"
 	"os"
 	"time"
 
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -262,7 +262,7 @@ func loadRootPrivateKey() (*rsa.PrivateKey, error) {
 	privPem, _ := pem.Decode(priv)
 	if privPem.Type != "RSA PRIVATE KEY" {
 		log.Printf("[TRACE] RSA private key is of the wrong type: %v", privPem.Type)
-		return nil, fmt.Errorf("RSA private key is of the wrong type: %v", privPem.Type)
+		return nil, sperr.New("RSA private key is of the wrong type: %v", privPem.Type)
 	}
 
 	privPemBytes := privPem.Bytes
@@ -281,7 +281,7 @@ func loadRootPrivateKey() (*rsa.PrivateKey, error) {
 	privateKey, ok = parsedKey.(*rsa.PrivateKey)
 	if !ok {
 		log.Printf("[TRACE] failed to parse RSA private key")
-		return nil, fmt.Errorf("failed to parse RSA private key")
+		return nil, sperr.New("failed to parse RSA private key")
 	}
 	return privateKey, nil
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
@@ -213,7 +214,7 @@ func createCheckContext(ctx context.Context) context.Context {
 func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) bool {
 	if len(args) == 0 {
 		fmt.Println()
-		error_helpers.ShowError(ctx, fmt.Errorf("you must provide at least one argument"))
+		error_helpers.ShowError(ctx, sperr.New("you must provide at least one argument"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -227,19 +228,19 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 
 	// only 1 character is allowed for '--separator'
 	if len(viper.GetString(constants.ArgSeparator)) > 1 {
-		error_helpers.ShowError(ctx, fmt.Errorf("'--%s' can be 1 character long at most", constants.ArgSeparator))
+		error_helpers.ShowError(ctx, sperr.New("'--%s' can be 1 character long at most", constants.ArgSeparator))
 		return false
 	}
 
 	// only 1 of 'share' and 'snapshot' may be set
 	if viper.GetBool(constants.ArgShare) && viper.GetBool(constants.ArgSnapshot) {
-		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of '--%s' and '--%s' may be set", constants.ArgShare, constants.ArgSnapshot))
+		error_helpers.ShowError(ctx, sperr.New("only 1 of '--%s' and '--%s' may be set", constants.ArgShare, constants.ArgSnapshot))
 		return false
 	}
 
 	// if both '--where' and '--tag' have been used, then it's an error
 	if viper.IsSet(constants.ArgWhere) && viper.IsSet(constants.ArgTag) {
-		error_helpers.ShowError(ctx, fmt.Errorf("only 1 of '--%s' and '--%s' may be set", constants.ArgWhere, constants.ArgTag))
+		error_helpers.ShowError(ctx, sperr.New("only 1 of '--%s' and '--%s' may be set", constants.ArgWhere, constants.ArgTag))
 		return false
 	}
 

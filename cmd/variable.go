@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -10,6 +8,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -68,7 +67,7 @@ func runVariableListCmd(cmd *cobra.Command, args []string) {
 	// validate output arg
 	output := viper.GetString(constants.ArgOutput)
 	if !helpers.StringSliceContains([]string{constants.OutputFormatTable, constants.OutputFormatJSON}, output) {
-		error_helpers.ShowError(ctx, fmt.Errorf("output flag must be either 'json' or 'table'"))
+		error_helpers.ShowError(ctx, sperr.New("output flag must be either 'json' or 'table'"))
 		return
 	}
 

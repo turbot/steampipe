@@ -10,6 +10,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -74,6 +75,7 @@ func (r *RunningDBInstanceInfo) String() string {
 	if err != nil {
 		log.Printf("[TRACE] Encode failed: %v\n", err)
 	}
+	// set it back
 	r.Password = p
 	return writeBuffer.String()
 }
@@ -88,7 +90,7 @@ func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
 
 	fileContent, err := os.ReadFile(filepaths.RunningInfoFilePath())
 	if err != nil {
-		return nil, err
+		return nil, sperr.Wrapf(err, "error while trying to read state file from %s", filepaths.RunningInfoFilePath())
 	}
 	var info = new(RunningDBInstanceInfo)
 	err = json.Unmarshal(fileContent, info)
@@ -100,5 +102,5 @@ func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
 }
 
 func removeRunningInstanceInfo() error {
-	return os.Remove(filepaths.RunningInfoFilePath())
+	return sperr.Wrap(os.Remove(filepaths.RunningInfoFilePath()))
 }

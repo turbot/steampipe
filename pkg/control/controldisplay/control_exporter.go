@@ -2,13 +2,15 @@ package controldisplay
 
 import (
 	"context"
-	"fmt"
+
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/export"
+	"github.com/turbot/steampipe/pkg/sperr"
 )
 
-var 	contextKeyFormatterPurpose = contexthelpers.ContextKey("formatter_purpose")
+var contextKeyFormatterPurpose = contexthelpers.ContextKey("formatter_purpose")
+
 const formatterPurposeExport = "export"
 
 type ControlExporter struct {
@@ -29,7 +31,7 @@ func (e *ControlExporter) Export(ctx context.Context, input export.ExportSourceD
 	// input must be control execution tree
 	tree, ok := input.(*controlexecute.ExecutionTree)
 	if !ok {
-		return fmt.Errorf("ControlExporter input must be *controlexecute.ExecutionTree")
+		return sperr.New("ControlExporter input must be *controlexecute.ExecutionTree")
 	}
 	res, err := e.formatter.Format(exportCtx, tree)
 	if err != nil {

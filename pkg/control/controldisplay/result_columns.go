@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
+	"github.com/turbot/steampipe/pkg/sperr"
 )
 
 type CsvColumnPair struct {
@@ -101,7 +102,7 @@ func getCsvColumns(item interface{}) []CsvColumnPair {
 
 	if len(columns) == 0 {
 		debug.PrintStack()
-		panic(fmt.Errorf("getCsvColumns: given interface does not contain any CSV tags"))
+		panic(sperr.New("getCsvColumns: given interface does not contain any CSV tags"))
 	}
 
 	return columns

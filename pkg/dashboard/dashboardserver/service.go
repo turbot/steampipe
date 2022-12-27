@@ -17,6 +17,7 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -214,7 +215,7 @@ func waitForDashboardService(ctx context.Context) error {
 			// we loaded the state and there was no error
 			return nil
 		case <-timeoutAt:
-			return fmt.Errorf("dashboard server startup timed out")
+			return sperr.New("dashboard server startup timed out")
 		}
 	}
 }

@@ -4,9 +4,8 @@
 package utils
 
 import (
-	"fmt"
-
 	psutils "github.com/shirou/gopsutil/process"
+	"github.com/turbot/steampipe/pkg/sperr"
 )
 
 // PidExists scans through the list of PIDs in the system
@@ -16,7 +15,6 @@ import (
 // signalling does not always work reliably when the destination of the signal
 // is a child of the source of the signal - which may be the case then starting
 // implicit services
-//
 func PidExists(targetPid int) (bool, error) {
 	LogTime("PidExists start")
 	defer LogTime("PidExists end")
@@ -34,7 +32,7 @@ func FindProcess(targetPid int) (*psutils.Process, error) {
 
 	pids, err := psutils.Pids()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get pids")
+		return nil, sperr.Wrapf(err, "failed to get pids")
 	}
 	for _, pid := range pids {
 		if targetPid == int(pid) {
@@ -46,7 +44,7 @@ func FindProcess(targetPid int) (*psutils.Process, error) {
 
 			status, err := process.Status()
 			if err != nil {
-				return nil, fmt.Errorf("failed to get status: %s", err.Error())
+				return nil, sperr.Wrapf(err, "failed to get process status")
 			}
 
 			if status == "Z" {

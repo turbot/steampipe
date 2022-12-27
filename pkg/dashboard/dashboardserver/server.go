@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/workspace"
 	"gopkg.in/olahol/melody.v1"
@@ -85,7 +86,7 @@ func (s *Server) HandleDashboardEvent(ctx context.Context, event dashboardevents
 			// we don't expect the build functions to ever error during marshalling
 			// this is because the data getting marshalled are not expected to have go specific
 			// properties/data in them
-			panic(fmt.Errorf("error building payload for '%s': %v", reflect.TypeOf(event).String(), payloadError))
+			panic(sperr.Wrapf(payloadError, "error building payload for '%s'", reflect.TypeOf(event).String()))
 		}
 	}()
 
@@ -335,13 +336,13 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 		case "get_dashboard_metadata":
 			payload, err := buildDashboardMetadataPayload(s.workspace.GetResourceMaps(), s.workspace.CloudMetadata)
 			if err != nil {
-				panic(fmt.Errorf("error building payload for get_metadata: %v", err))
+				panic(sperr.Wrapf(err, "error building payload for get_metadata"))
 			}
 			_ = session.Write(payload)
 		case "get_available_dashboards":
 			payload, err := buildAvailableDashboardsPayload(s.workspace.GetResourceMaps())
 			if err != nil {
-				panic(fmt.Errorf("error building payload for get_available_dashboards: %v", err))
+				panic(sperr.Wrapf(err, "error building payload for get_available_dashboards"))
 			}
 			_ = session.Write(payload)
 		case "select_dashboard":

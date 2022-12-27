@@ -19,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
@@ -755,7 +756,7 @@ To keep the service running after the %s session completes, use %s.
 		// the service is running, but the plugin_manager is not running and there's no state file
 		// meaning that it cannot be restarted by the FDW
 		// it's an ERROR
-		error_helpers.ShowError(ctx, fmt.Errorf(`
+		error_helpers.ShowError(ctx, sperr.New(`
 Service is running, but the Plugin Manager cannot be recovered.
 Please use %s to recover the service
 `,

@@ -12,6 +12,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/sperr"
 )
 
 // GetCurrentSearchPath implements Client
@@ -19,11 +20,11 @@ import (
 func (c *DbClient) GetCurrentSearchPath(ctx context.Context) ([]string, error) {
 	res, err := c.ExecuteSync(ctx, "show search_path")
 	if err != nil {
-		return nil, err
+		return nil, sperr.Wrapf(err, "failed to read the current search path")
 	}
 	pathAsString, ok := res.Rows[0].(*queryresult.RowResult).Data[0].(string)
 	if !ok {
-		return nil, fmt.Errorf("failed to read the current search path: %s", err.Error())
+		return nil, sperr.New("failed to read the current search path")
 	}
 	return c.buildSearchPathResult(pathAsString)
 }
@@ -37,7 +38,7 @@ func (c *DbClient) GetCurrentSearchPathForDbConnection(ctx context.Context, data
 	}
 	pathAsString := ""
 	if err := res.Scan(&pathAsString); err != nil {
-		return nil, fmt.Errorf("failed to read the current search path: %s", err.Error())
+		return nil, sperr.Wrapf(err, "failed to read the current search path")
 	}
 	return c.buildSearchPathResult(pathAsString)
 }

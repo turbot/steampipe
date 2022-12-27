@@ -12,6 +12,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -46,7 +47,7 @@ func createModIntrospectionTable(ctx context.Context, workspaceResources *modcon
 
 	_, err := conn.Exec(ctx, modTableSql)
 	if err != nil {
-		return fmt.Errorf("failed to create mod introspection table: %v", err)
+		return sperr.Wrapf(err, "failed to create mod introspection table")
 	}
 
 	// return context error - this enables calling code to respond to cancellation
@@ -66,7 +67,7 @@ func populateAllIntrospectionTables(ctx context.Context, workspaceResources *mod
 
 	_, err := conn.Exec(ctx, strings.Join(sql, "\n"))
 	if err != nil {
-		return fmt.Errorf("failed to create introspection tables: %v", err)
+		return sperr.Wrapf(err, "failed to create introspection tables")
 	}
 	// return context error - this enables calling code to respond to cancellation
 	return ctx.Err()
@@ -192,7 +193,7 @@ func populateControlIntrospectionTables(ctx context.Context, workspaceResources 
 
 	_, err := conn.Exec(ctx, strings.Join(sql, "\n"))
 	if err != nil {
-		return fmt.Errorf("failed to create introspection tables: %v", err)
+		return sperr.Wrapf(err, "failed to create introspection tables")
 	}
 
 	// return context error - this enables calling code to respond to cancellation
@@ -323,7 +324,7 @@ func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (stri
 	// if the item is a cty value, we always represent it as json
 	case cty.Value:
 		if columnTag.ColumnType != "jsonb" {
-			return "nil", fmt.Errorf("data for column %s is of type cty.Value so column type should be 'jsonb' but is actually %s", columnTag.Column, columnTag.ColumnType)
+			return "nil", sperr.New("data for column %s is of type cty.Value so column type should be 'jsonb' but is actually %s", columnTag.Column, columnTag.ColumnType)
 		}
 		str, err := type_conversion.CtyToJSON(t)
 		if err != nil {
@@ -333,7 +334,7 @@ func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (stri
 	case cty.Type:
 		// if the item is a cty value, we always represent it as json
 		if columnTag.ColumnType != "text" {
-			return "nil", fmt.Errorf("data for column %s is of type cty.Type so column type should be 'text' but is actually %s", columnTag.Column, columnTag.ColumnType)
+			return "nil", sperr.New("data for column %s is of type cty.Type so column type should be 'text' but is actually %s", columnTag.Column, columnTag.ColumnType)
 		}
 		return PgEscapeString(t.FriendlyName()), nil
 	}

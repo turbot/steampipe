@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -52,17 +53,13 @@ func ShowError(ctx context.Context, err error) {
 	}
 	err = HandleCancelError(err)
 	statushooks.Done(ctx)
+	log.Printf("[ERROR] Error: %+#v\n", sperr.Wrap(err))
 	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, sperr.Wrap(err))
 }
 
 // ShowErrorWithMessage displays the given error nicely with the given message
 func ShowErrorWithMessage(ctx context.Context, err error, message string) {
-	if err == nil {
-		return
-	}
-	err = HandleCancelError(err)
-	statushooks.Done(ctx)
-	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, sperr.Wrap(err))
+	ShowError(ctx, sperr.Wrapf(err, message))
 }
 
 // TransformErrorToSteampipe removes the pq: and rpc error prefixes along

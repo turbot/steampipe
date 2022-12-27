@@ -9,6 +9,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/migrate"
+	"github.com/turbot/steampipe/pkg/sperr"
 )
 
 const DatabaseStructVersion = 20220411
@@ -64,11 +65,14 @@ func LoadDatabaseVersionFile() (*DatabaseVersionFile, error) {
 }
 
 func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
-	file, _ := os.ReadFile(path)
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return nil, sperr.Wrapf(err, "error reading DB version file")
+	}
 	var data DatabaseVersionFile
 	if err := json.Unmarshal(file, &data); err != nil {
 		log.Println("[ERROR]", "Error while reading DB version file", err)
-		return nil, err
+		return nil, sperr.Wrapf(err, "error unmarshalling db version file")
 	}
 	if data.FdwExtension == (InstalledVersion{}) {
 		data.FdwExtension = InstalledVersion{}
@@ -101,7 +105,7 @@ func (f *DatabaseVersionFile) write(path string) error {
 		log.Println("[ERROR]", "Error while writing version file", err)
 		return err
 	}
-	return os.WriteFile(path, versionFileJSON, 0644)
+	return sperr.Wrap(os.WriteFile(path, versionFileJSON, 0644))
 }
 
 // FormatTime :: format time as RFC3339 in UTC

@@ -2,14 +2,15 @@ package cmdconfig
 
 import (
 	"context"
-	"fmt"
+	"strings"
+
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"strings"
 )
 
 func ValidateSnapshotArgs(ctx context.Context) error {
@@ -17,7 +18,7 @@ func ValidateSnapshotArgs(ctx context.Context) error {
 	share := viper.GetBool(constants.ArgShare)
 	snapshot := viper.GetBool(constants.ArgSnapshot)
 	if share && snapshot {
-		return fmt.Errorf("only 1 of 'share' and 'snapshot' may be set")
+		return sperr.New("only 1 of 'share' and 'snapshot' may be set")
 	}
 
 	// if neither share or snapshot are set, nothing more to do
@@ -39,12 +40,12 @@ func ValidateSnapshotArgs(ctx context.Context) error {
 
 	// verify cloud token and workspace has been set
 	if requireCloudToken && token == "" {
-		return error_helpers.MissingCloudTokenError
+		return sperr.Wrap(error_helpers.MissingCloudTokenError)
 	}
 
 	// should never happen as there is a default set
 	if viper.GetString(constants.ArgCloudHost) == "" {
-		return fmt.Errorf("to share snapshots, cloud host must be set")
+		return sperr.New("to share snapshots, cloud host must be set")
 	}
 
 	return validateSnapshotTags()
@@ -74,7 +75,7 @@ func validateSnapshotLocation(ctx context.Context, cloudToken string) error {
 		viper.Set(constants.ArgSnapshotLocation, snapshotLocation)
 
 		if !filehelpers.DirectoryExists(snapshotLocation) {
-			return fmt.Errorf("snapshot location %s does not exist", snapshotLocation)
+			return sperr.New("snapshot location %s does not exist", snapshotLocation)
 		}
 	}
 	return nil
@@ -94,7 +95,7 @@ func validateSnapshotTags() error {
 	tags := viper.GetStringSlice(constants.ArgSnapshotTag)
 	for _, tagStr := range tags {
 		if len(strings.Split(tagStr, "=")) != 2 {
-			return fmt.Errorf("snapshot tags must be specified '--%s key=value'", constants.ArgSnapshotTag)
+			return sperr.New("snapshot tags must be specified '--%s key=value'", constants.ArgSnapshotTag)
 		}
 	}
 	return nil

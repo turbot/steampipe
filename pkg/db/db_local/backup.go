@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/turbot/go-kit/files"
 	"io/fs"
 	"log"
 	"os"
@@ -14,10 +13,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/turbot/go-kit/files"
+
 	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -114,7 +116,7 @@ func killRunningDbInstance(ctx context.Context) error {
 			log.Println("[TRACE] Terminating running postgres process")
 			if err := p.Kill(); err != nil {
 				error_helpers.ShowWarning(fmt.Sprintf("Failed to kill orphan postgres process PID %d", p.Pid))
-				return errDbInstanceRunning
+				return sperr.Wrap(errDbInstanceRunning)
 			}
 		}
 	}
@@ -240,7 +242,7 @@ func restoreDBBackup(ctx context.Context) error {
 		return err
 	}
 	if runningInfo == nil {
-		return fmt.Errorf("steampipe service is not running")
+		return sperr.New("steampipe service is not running")
 	}
 
 	// extract the Table of Contents from the Backup Archive

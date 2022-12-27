@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -17,7 +18,7 @@ type Passwords struct {
 }
 
 func writePasswordFile(password string) error {
-	return os.WriteFile(getPasswordFileLocation(), []byte(password), 0600)
+	return (os.WriteFile(getPasswordFileLocation(), []byte(password), 0600))
 }
 
 // readPasswordFile reads the password file and returns it contents.
@@ -27,13 +28,13 @@ func readPasswordFile() (string, error) {
 	if !filehelpers.FileExists(getPasswordFileLocation()) {
 		p := generatePassword()
 		if err := writePasswordFile(p); err != nil {
-			return "", err
+			return "", sperr.Wrapf(err, "could not write .passwd file")
 		}
 		return p, nil
 	}
 	contentBytes, err := os.ReadFile(getPasswordFileLocation())
 	if err != nil {
-		return "", err
+		return "", sperr.Wrapf(err, "could not read password file from '%s'", getPasswordFileLocation())
 	}
 	return strings.TrimSpace(string(contentBytes)), nil
 }

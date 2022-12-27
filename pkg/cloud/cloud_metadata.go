@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/sperr"
 )

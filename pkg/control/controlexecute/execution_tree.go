@@ -7,14 +7,13 @@ import (
 	"sort"
 	"time"
 
-	"github.com/turbot/go-kit/helpers"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -185,18 +184,18 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeIt
 	parsedName, err := modconfig.ParseResourceName(arg)
 	if err != nil {
 		// just log error
-		return nil, fmt.Errorf("failed to parse check argument '%s': %v", arg, err)
+		return nil, sperr.Wrapf(err, "failed to parse check argument '%s'", arg)
 	}
 
 	resource, found := e.Workspace.GetResource(parsedName)
 
 	root, ok := resource.(modconfig.ModTreeItem)
 	if !found || !ok {
-		return nil, fmt.Errorf("no resources found matching argument '%s'", arg)
+		return nil, sperr.New("no resources found matching argument '%s'", arg)
 	}
 	// root item must be either a benchmark or a control
 	if !helpers.StringSliceContains([]string{modconfig.BlockTypeControl, modconfig.BlockTypeBenchmark}, root.BlockType()) {
-		return nil, fmt.Errorf("cannot execute '%s' using check, only controls and benchmarks may be run", resource.Name())
+		return nil, sperr.New("cannot execute '%s' using check, only controls and benchmarks may be run", resource.Name())
 	}
 	return root, nil
 }
@@ -232,7 +231,7 @@ func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereC
 		}
 	}
 	if resourceNameColumnIndex == -1 {
-		return nil, fmt.Errorf("the named query passed in the 'where' argument must return the 'resource_name' column")
+		return nil, sperr.New("the named query passed in the 'where' argument must return the 'resource_name' column")
 	}
 
 	var controlNames = make(map[string]bool)

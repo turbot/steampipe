@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/type_conversion"
 )
@@ -64,12 +65,12 @@ func (d *ResolvedRuntimeDependency) Resolve() error {
 	}
 
 	if val.Error != nil {
-		return val.Error
+		return sperr.Wrap(val.Error)
 	}
 
 	// we should have a non nil value now
 	if !d.hasValue() {
-		return fmt.Errorf("nil value recevied for runtime dependency %s", d.Dependency.String())
+		return sperr.New("nil value recevied for runtime dependency %s", d.Dependency.String())
 	}
 	return nil
 }

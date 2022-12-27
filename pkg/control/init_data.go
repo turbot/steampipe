@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controldisplay"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/initialisation"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -33,7 +34,7 @@ func NewInitData(ctx context.Context) *InitData {
 	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
 	if errAndWarnings.GetError() != nil {
 		return &InitData{
-			InitData: *initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", errAndWarnings.GetError().Error())),
+			InitData: *initialisation.NewErrorInitData(sperr.Wrapf(errAndWarnings.GetError(), "failed to load workspace")),
 		}
 	}
 
@@ -166,7 +167,7 @@ func initialiseCheckColorScheme() error {
 	}
 	themeDef, ok := controldisplay.ColorSchemes[theme]
 	if !ok {
-		return fmt.Errorf("invalid theme '%s'", theme)
+		return sperr.New("invalid theme '%s'", theme)
 	}
 	scheme, err := controldisplay.NewControlColorScheme(themeDef)
 	if err != nil {
