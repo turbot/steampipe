@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
@@ -276,7 +277,7 @@ func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) erro
 	if !exitSuccessful {
 		log.Println("[ERROR] Failed to stop service")
 		log.Printf("[ERROR] Service Details:\n%s\n", getPrintableProcessDetails(process, 0))
-		return fmt.Errorf("service shutdown timed out")
+		return sperr.New("service shutdown timed out")
 	}
 
 	return nil

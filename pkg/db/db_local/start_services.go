@@ -19,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
 )
@@ -63,7 +64,7 @@ func (slt StartListenType) IsValid() error {
 	case ListenTypeNetwork, ListenTypeLocal:
 		return nil
 	}
-	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
+	return sperr.New("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
 }
 
 func StartServices(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) (startResult *StartResult) {
@@ -154,7 +155,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 	_ = removeRunningInstanceInfo()
 
 	if err := utils.EnsureDirectoryPermission(getDataLocation()); err != nil {
-		return res.SetError(fmt.Errorf("%s does not have the necessary permissions to start the service", getDataLocation()))
+		return res.SetError(sperr.Wrapf(err, "%s does not have the necessary permissions to start the service", getDataLocation()).AsRootMessage())
 	}
 
 	// Generate the certificate if it fails then set the ssl to off
@@ -163,7 +164,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 	}
 
 	if err := utils.IsPortBindable(port); err != nil {
-		return res.SetError(fmt.Errorf("cannot listen on port %d", constants.Bold(port)))
+		return res.SetError(sperr.Wrapf(err, "cannot listen on port %d", constants.Bold(port)).AsRootMessage())
 	}
 
 	if err := migrateLegacyPasswordFile(); err != nil {
@@ -260,7 +261,7 @@ func getDatabaseName(ctx context.Context, port int) (string, error) {
 		return "", err
 	}
 	if len(databaseName) == 0 {
-		return "", fmt.Errorf("could not find database to connect to")
+		return "", sperr.New("could not find database to connect to")
 	}
 	return databaseName, nil
 }

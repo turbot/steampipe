@@ -3,14 +3,16 @@ package error_helpers
 import (
 	"errors"
 	"fmt"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/jackc/pgconn"
+	"github.com/turbot/steampipe/pkg/sperr"
 )
 
 func DecodePgError(err error) error {
 	var pgError *pgconn.PgError
 	if errors.As(err, &pgError) {
-		return fmt.Errorf(pgError.Message)
+		return sperr.Wrap(pgError)
 	}
 	return err
 }
