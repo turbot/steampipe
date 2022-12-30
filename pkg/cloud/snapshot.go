@@ -12,7 +12,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/export"
-	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/sperr"
 )
@@ -21,11 +20,7 @@ func PublishSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnap
 	snapshotLocation := viper.GetString(constants.ArgSnapshotLocation)
 	// snapshotLocation must be set (validation should ensure this)
 	if snapshotLocation == "" {
-<<<<<<< HEAD
 		return "", sperr.New("to share a snapshot, snapshot-location must be set")
-=======
-		return "", sperr.New("to share a snapshot, snapshot-locationmust be set")
->>>>>>> 8c406c28 (updates to codes)
 	}
 
 	// if snapshot location is a workspace handle, upload it

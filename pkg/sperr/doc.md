@@ -121,7 +121,14 @@ err = sperr.Wrapf(err, "error occurred").WithMessage("error occurred with %d arg
 ### Set an `error` as the `root` error
 
 ```
-err = sperr.Wrap(err).SetRoot()
+err = sperr.Wrap(err).AsRootMessage()
+```
+
+```
+if _, err := installFDW(ctx, false); err != nil {
+	log.Printf("[TRACE] installFDW failed: %v", err)
+	return sperr.Wrapf(err, "Update steampipe-postgres-fdw... FAILED!").AsRootMessage()
+}
 ```
 
 > Setting an error as the `root` error hides all errors below it from the user interface. They are not purged - just hidden from display when displaying error messages. When enumerating error `details`, the details of all errors in the stack are shown - including errors under a `root` error.
@@ -163,6 +170,6 @@ The package function `Wrapf` **always** wraps around the `error` given to it. Th
 >     Message : "error occurred"
 >     Detail  : "added detail"
 >   }
->   Message : "error occurred with %d argument"
+>   Message : "error occurred with 10 argument"
 > }
 > ```

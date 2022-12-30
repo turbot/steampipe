@@ -58,7 +58,7 @@ func GetLoginToken(ctx context.Context, id, code string) (string, error) {
 		if apiErr, ok := err.(steampipecloud.GenericOpenAPIError); ok {
 			var body = map[string]any{}
 			if err := json.Unmarshal(apiErr.Body(), &body); err == nil {
-				return "", sperr.New("%s", body["detail"])
+				return "", sperr.Wrapf(err, "%s", body["detail"])
 			}
 		}
 		return "", sperr.Wrap(err)
