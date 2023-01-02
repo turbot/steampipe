@@ -70,5 +70,11 @@ dashboard "query_providers_nested" {
       width = 2
       title = "Nested input"
     }
+
+    input "nested_input_type_text" {
+      type = "text"
+      width = 2
+      title = "Nested input type text"
+    }
   }
 }
