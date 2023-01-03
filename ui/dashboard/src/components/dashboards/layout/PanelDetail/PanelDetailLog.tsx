@@ -144,8 +144,8 @@ const PanelLogRow = ({ log }: PanelLogRowProps) => {
                     className="w-4.5 h-4.5 text-foreground-light"
                     icon={
                       open
-                        ? "materialsymbols-outline:expand-less"
-                        : "materialsymbols-outline:expand-more"
+                        ? "materialsymbols-outline:expand_less"
+                        : "materialsymbols-outline:expand_more"
                     }
                   />
                 </div>

@@ -29,7 +29,7 @@ const getIconForType = (type, icon) => {
     case "alert":
       return "materialsymbols-solid:error";
     case "ok":
-      return "materialsymbols-solid:check-circle";
+      return "materialsymbols-solid:check_circle";
     case "info":
       return "materialsymbols-solid:info";
     case "severity":
