@@ -8,6 +8,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/sperr"
 )
 
 // Constants for Config
@@ -32,7 +33,7 @@ func ensureSteampipeSubDir(dirName string) string {
 
 	if _, err := os.Stat(subDir); os.IsNotExist(err) {
 		err = os.MkdirAll(subDir, 0755)
-		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create %s directory", dirName))
+		error_helpers.FailOnError(sperr.Wrapf(err, fmt.Sprintf("could not create %s directory", dirName)))
 	}
 
 	return subDir

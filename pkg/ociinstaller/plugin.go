@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	versionfile "github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -228,7 +229,7 @@ func pluginInstallDir(ref *SteampipeImageRef) string {
 
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 		err = os.MkdirAll(fullPath, 0755)
-		error_helpers.FailOnErrorWithMessage(err, "could not create plugin install directory")
+		error_helpers.FailOnError(sperr.Wrapf(err, "could not create plugin install directory"))
 	}
 
 	return fullPath
