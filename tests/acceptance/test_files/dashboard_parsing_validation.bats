@@ -58,3 +58,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe dashboard dashboard.node_edge_providers_nested --output snapshot
   assert_success
 }
+
+@test "Parsing case 9 - nested node and edge providers do require a query/sql block or a node/edge block (FAIL)" {
+  cd $FILE_PATH/test_data/dashboard_parsing_nested_node_edge_providers_fail
+
+  run steampipe dashboard dashboard.node_edge_providers_nested --output snapshot
+  assert_output --partial 'does not define a query or SQL, and has no edges/nodes'
+}
