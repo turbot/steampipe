@@ -91,15 +91,15 @@
                 "columns": [
                     {
                         "data_type": "INT4",
+                        "name": "edge_chaos_cache_check_1"
+                    },
+                    {
+                        "data_type": "INT4",
                         "name": "node_chaos_cache_check_1"
                     },
                     {
                         "data_type": "INT4",
                         "name": "node_chaos_cache_check_top"
-                    },
-                    {
-                        "data_type": "INT4",
-                        "name": "edge_chaos_cache_check_1"
                     }
                 ],
                 "rows": [

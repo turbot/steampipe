@@ -22,14 +22,18 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # run a dashboard and shapshot the output
   run steampipe dashboard dashboard.testing_with_blocks --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_withs"
 
+  # sort the panels data by 'name' using jq sort_by(for ease in comparison)
+  cat test.sps | jq '.panels."dashbaord_withs.graph.with_testing".data.columns|=sort_by(.name)' > test2.json
+
   # get the patch diff between the two snapshots
-  run jd -f patch $SNAPSHOTS_DIR/expected_sps_many_withs_dashboard.json test.sps
+  run jd -f patch $SNAPSHOTS_DIR/expected_sps_many_withs_dashboard.json test2.json
 
   # run the script to evaluate the patch
   # returns nothing if there is no diff(except start_time, end_time & search_path)
   diff=$($FILE_PATH/test_files/json_patch.sh $output)
   echo $diff
   rm -f test.sps
+  rm -f test2.json
 
   # check if there is no diff returned by the script
   assert_equal "$diff" ""
@@ -74,15 +78,18 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # run a dashboard and shapshot the output
   run steampipe dashboard dashboard.testing_nodes_and_edges --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_graphs"
 
-  # get the patch diff between the two snapshots
-  run jd -f patch $SNAPSHOTS_DIR/expected_sps_testing_nodes_and_edges_dashboard.json test.sps
+  # sort the panels data by 'name' using jq sort_by(for ease in comparison)
+  cat test.sps | jq '.panels."dashboard_graphs.graph.node_and_edge_testing".data.columns|=sort_by(.name)' > test2.json
 
+  # get the patch diff between the two snapshots
+  run jd -f patch $SNAPSHOTS_DIR/expected_sps_testing_nodes_and_edges_dashboard.json test2.json
 
   # run the script to evaluate the patch
   # returns nothing if there is no diff(except start_time, end_time & search_path)
   diff=$($FILE_PATH/test_files/json_patch.sh $output)
   echo $diff
   rm -f test.sps
+  rm -f test2.json
 
   # check if there is no diff returned by the script
   assert_equal "$diff" ""
