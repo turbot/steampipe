@@ -21,15 +21,15 @@ load "$LIB_BATS_SUPPORT/load.bash"
   for i in $test_indices; do
     test_name=$(echo $tests | jq -c ".[${i}]" | jq ".name")
     echo ">>> TEST NAME: '$test_name'"
-    # pick u p the commands that need to run for this test
+    # pick up the commands that need to run for this test
     runs=$(echo $tests | jq -c ".[${i}]" | jq ".run")
     
     # get the indices of the commands to run
-    run_keys=$(echo $runs | jq '. | keys[]')
+    run_indices=$(echo $runs | jq '. | keys[]')
     
     for k in 1..10; do
       # loop through the run indices
-      for j in $run_keys; do
+      for j in $run_indices; do
         cmd=$(echo $runs | jq ".[${j}]" | tr -d '"')
         echo ">>>>>>Command: $cmd"
         # run the command
@@ -44,7 +44,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     done
   done
 
-  # remove the samplke sql file
+  # remove the sample sql file
   rm -f sample.sql
 }
 
