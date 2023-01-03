@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/turbot/go-kit/helpers"
 )
 
 // New creates a new sperr.Error with a stack
@@ -27,9 +29,9 @@ func New(format string, args ...interface{}) *Error {
 // Wrap creates a new sperr.Error if the `error` that is being wrapped
 // is not an sperr.Error
 //
-// When wrapping an `error` this also adds a stacktrace into the new `Error` object
+// When wrapping an error this also adds a stacktrace into the new `Error` object
 func Wrap(err error) *Error {
-	if err == nil {
+	if helpers.IsNil(err) {
 		return nil
 	}
 	if e, ok := err.(*Error); ok {
@@ -49,7 +51,7 @@ func Wrap(err error) *Error {
 }
 
 func Wrapf(err error, format string, args ...interface{}) *Error {
-	if err == nil {
+	if helpers.IsNil(err) {
 		return nil
 	}
 	return &Error{
@@ -60,7 +62,7 @@ func Wrapf(err error, format string, args ...interface{}) *Error {
 }
 
 func ToError(val interface{}) *Error {
-	if val == nil {
+	if helpers.IsNil(val) {
 		return nil
 	}
 	var err *Error
