@@ -311,7 +311,7 @@ func createLogger() {
 	logPath := filepath.Join(filepaths.EnsureLogDir(), logName)
 	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		fmt.Printf("failed to open plugin manager log file: %s\n", err.Error())
+		fmt.Printf("failed to open steampipe log file: %s\n", err.Error())
 		os.Exit(3)
 	}
 	options := &hclog.LoggerOptions{
@@ -319,6 +319,7 @@ func createLogger() {
 		Output:     f,
 		TimeFn:     func() time.Time { return time.Now().UTC() },
 		TimeFormat: "2006-01-02 15:04:05.000 UTC",
+		Level:      hclog.LevelFromString(logging.LogLevel()),
 	}
 	logger := logging.NewLogger(options)
 
@@ -328,6 +329,7 @@ func createLogger() {
 	log.Printf("[INFO] .\n******************************************************\n\n\t\tsteampipe cli\n\n******************************************************\n")
 	log.Printf("[INFO] Version:   v%s\n", version.VersionString)
 	log.Printf("[INFO] Log level: %s\n", logging.LogLevel())
+	log.Printf("[INFO] Log date: %s\n", time.Now().Format("2006-01-02"))
 }
 
 func ensureInstallDir(installDir string) {
