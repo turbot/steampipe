@@ -119,6 +119,16 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_table_no_header.txt)"
 }
 
+@test "table with null values" {
+  run steampipe query "select 1 as id, 2 as val1, null as val2"
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_table_with_null_values.txt)"
+}
+
+@test "csv with null values" {
+  run steampipe query --output csv "select 1 as id, 2 as val1, null as val2"
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_csv_with_null_values.csv)"
+}
+
 @test "csv header" {
   run steampipe query --output csv "select id, string_column, json_column from chaos.chaos_all_column_types where id='0'"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_csv_header.csv)"
