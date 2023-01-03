@@ -11,6 +11,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/shiena/ansicolor"
 	"github.com/spf13/viper"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
@@ -34,21 +35,20 @@ func WrapError(err error) error {
 }
 
 func FailOnError(err error) {
-	if err != nil {
+	if !helpers.IsNil(err) {
 		err = HandleCancelError(err)
 		panic(err)
 	}
 }
 
 func FailOnErrorWithMessage(err error, message string) {
-	if err != nil {
-		err = HandleCancelError(err)
-		panic(fmt.Sprintf("%s: %s", message, err.Error()))
+	if !helpers.IsNil(err) {
+		FailOnError(sperr.Wrapf(err, message))
 	}
 }
 
 func ShowError(ctx context.Context, err error) {
-	if err == nil {
+	if helpers.IsNil(err) {
 		return
 	}
 	err = HandleCancelError(err)
