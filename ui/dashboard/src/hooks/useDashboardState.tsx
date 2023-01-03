@@ -13,7 +13,6 @@ import {
 import {
   controlsUpdatedEventHandler,
   leafNodesUpdatedEventHandler,
-  migrateDashboardExecutionCompleteSchema,
   migratePanelStatuses,
 } from "../utils/dashboardEventHandlers";
 import {
@@ -25,11 +24,15 @@ import {
   DashboardRenderOptions,
   IDashboardContext,
 } from "../types";
-import { useCallback, useReducer } from "react";
 import {
   EXECUTION_SCHEMA_VERSION_20220929,
-  EXECUTION_SCHEMA_VERSION_LATEST,
+  EXECUTION_SCHEMA_VERSION_20221222,
 } from "../constants/versions";
+import {
+  ExecutionCompleteSchemaMigrator,
+  ExecutionStartedSchemaMigrator,
+} from "../utils/schema";
+import { useCallback, useReducer } from "react";
 
 const reducer = (state: IDashboardContext, action) => {
   if (state.ignoreEvents) {
@@ -118,18 +121,19 @@ const reducer = (state: IDashboardContext, action) => {
         };
       }
 
-      const panelsMap = migratePanelStatuses(
-        action.panels,
-        action.schema_version
-      );
+      const eventMigrator = new ExecutionStartedSchemaMigrator();
+      const migratedEvent = eventMigrator.toLatest(action);
 
       return {
         ...state,
         error: null,
-        panelsLog: buildPanelsLog(panelsMap, action.start_time),
-        panelsMap: addDataToPanels(panelsMap, state.sqlDataMap),
+        panelsLog: buildPanelsLog(
+          migratedEvent.panels,
+          migratedEvent.start_time
+        ),
+        panelsMap: addDataToPanels(migratedEvent.panels, state.sqlDataMap),
         dashboard,
-        execution_id: action.execution_id,
+        execution_id: migratedEvent.execution_id,
         refetchDashboard: false,
         progress: 0,
         snapshot: null,
@@ -145,7 +149,8 @@ const reducer = (state: IDashboardContext, action) => {
         return state;
       }
 
-      const migratedEvent = migrateDashboardExecutionCompleteSchema(action);
+      const eventMigrator = new ExecutionCompleteSchemaMigrator();
+      const migratedEvent = eventMigrator.toLatest(action);
       const layout = migratedEvent.snapshot.layout;
       const panels = migratedEvent.snapshot.panels;
       const rootLayoutPanel = migratedEvent.snapshot.layout;
@@ -195,7 +200,7 @@ const reducer = (state: IDashboardContext, action) => {
     case DashboardActions.LEAF_NODES_UPDATED:
       return leafNodesUpdatedEventHandler(
         action,
-        EXECUTION_SCHEMA_VERSION_LATEST,
+        EXECUTION_SCHEMA_VERSION_20221222,
         state
       );
     case DashboardActions.SELECT_PANEL:

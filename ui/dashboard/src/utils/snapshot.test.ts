@@ -1,11 +1,15 @@
 import { DashboardExecutionEventWithSchema, PanelDefinition } from "../types";
+import {
+  EXECUTION_SCHEMA_VERSION_20220614,
+  EXECUTION_SCHEMA_VERSION_20220929,
+} from "../constants/versions";
 import { stripSnapshotDataForExport } from "./snapshot";
 
 describe("snapshot utils", () => {
   describe("stripSnapshotDataForExport", () => {
     test("Schema 20220614", () => {
       const inputSnapshot: DashboardExecutionEventWithSchema = {
-        schema_version: "20220614",
+        schema_version: EXECUTION_SCHEMA_VERSION_20220614,
         execution_id: "0x140029247e0",
         dashboard_node: {
           name: "aws_insights.dashboard.aws_iam_user_dashboard",
@@ -84,7 +88,7 @@ describe("snapshot utils", () => {
 
     test("Schema 20220929", () => {
       const inputSnapshot: DashboardExecutionEventWithSchema = {
-        schema_version: "20220929",
+        schema_version: EXECUTION_SCHEMA_VERSION_20220929,
         layout: {
           name: "aws_insights.dashboard.aws_iam_user_dashboard",
           panel_type: "dashboard",
