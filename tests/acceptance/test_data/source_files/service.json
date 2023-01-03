@@ -70,5 +70,12 @@
     "run": [
       "steampipe check all"
     ]
+  },
+  {
+    "name": "check test 7",
+    "run": [
+      "steampipe check all",
+      "steampipe query sample.sql"
+    ]
   }
 ]
