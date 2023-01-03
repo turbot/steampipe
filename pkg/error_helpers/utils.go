@@ -37,6 +37,7 @@ func WrapError(err error) error {
 func FailOnError(err error) {
 	if !helpers.IsNil(err) {
 		err = HandleCancelError(err)
+		log.Printf("[ERROR] FailOnError: %+#v\n", sperr.Wrap(err))
 		panic(err)
 	}
 }
