@@ -30,8 +30,6 @@ type Benchmark struct {
 	Width   *int       `cty:"width" hcl:"width" column:"width,text" json:"-"`
 	Type    *string    `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	Display *string    `cty:"display" hcl:"display" json:"-"`
-
-	References []*ResourceReference `json:"-"`
 }
 
 func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -64,16 +62,6 @@ func (b *Benchmark) Equals(other *Benchmark) bool {
 func (b *Benchmark) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	b.setBaseProperties(resourceMapProvider)
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (b *Benchmark) AddReference(ref *ResourceReference) {
-	b.References = append(b.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (b *Benchmark) GetReferences() []*ResourceReference {
-	return b.References
 }
 
 func (b *Benchmark) String() string {
@@ -219,7 +207,7 @@ func (b *Benchmark) setBaseProperties(resourceMapProvider ResourceMapsProvider) 
 	}
 	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
 	b.base = b.Base
-	// call into parent nested struct setBaseProperties    
+	// call into parent nested struct setBaseProperties
 	b.ModTreeItemImpl.setBaseProperties()
 
 	if b.Width == nil {

@@ -4,9 +4,11 @@ import "github.com/hashicorp/hcl/v2"
 
 type ResourceWithMetadataImpl struct {
 	// required to allow partial decoding
-	ResourceWithMetadataBaseRemain hcl.Body `hcl:",remain" json:"-"`
-	metadata                       *ResourceMetadata
-	anonymous                      bool
+	ResourceWithMetadataBaseRemain hcl.Body             `hcl:",remain" json:"-"`
+	References                     []*ResourceReference `json:"-"`
+
+	metadata  *ResourceMetadata
+	anonymous bool
 }
 
 // GetMetadata implements ResourceWithMetadata
@@ -31,9 +33,12 @@ func (b *ResourceWithMetadataImpl) IsAnonymous() bool {
 	return b.anonymous
 }
 
+// AddReference implements ResourceWithMetadata
 func (b *ResourceWithMetadataImpl) AddReference(ref *ResourceReference) {
+	b.References = append(b.References, ref)
 }
 
+// GetReferences implements ResourceWithMetadata
 func (b *ResourceWithMetadataImpl) GetReferences() []*ResourceReference {
-	return nil
+	return b.References
 }

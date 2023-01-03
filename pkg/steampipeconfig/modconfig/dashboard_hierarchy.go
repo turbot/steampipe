@@ -28,8 +28,7 @@ type DashboardHierarchy struct {
 	Type       *string                       `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	Display    *string                       `cty:"display" hcl:"display" json:"-"`
 
-	Base       *DashboardHierarchy  `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
+	Base *DashboardHierarchy `hcl:"base" json:"-"`
 
 	parents []ModTreeItem
 }
@@ -73,16 +72,6 @@ func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider Res
 		h.EdgeNames = h.Edges.Names()
 	}
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (h *DashboardHierarchy) AddReference(ref *ResourceReference) {
-	h.References = append(h.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (h *DashboardHierarchy) GetReferences() []*ResourceReference {
-	return h.References
 }
 
 // TODO [node_reuse] Add DashboardLeafNodeImpl and move this there https://github.com/turbot/steampipe/issues/2926

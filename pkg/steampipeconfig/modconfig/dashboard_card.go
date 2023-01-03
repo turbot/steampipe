@@ -23,12 +23,10 @@ type DashboardCard struct {
 	Icon  *string `cty:"icon" hcl:"icon" column:"icon,text" json:"icon,omitempty"`
 	HREF  *string `cty:"href" hcl:"href" json:"href,omitempty"`
 
-	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
-	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
-	Display *string `cty:"display" hcl:"display" json:"-"`
-
-	Base       *DashboardCard       `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
+	Width   *int           `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type    *string        `cty:"type" hcl:"type" column:"type,text" json:"-"`
+	Display *string        `cty:"display" hcl:"display" json:"-"`
+	Base    *DashboardCard `hcl:"base" json:"-"`
 
 	metadata *ResourceMetadata
 }
@@ -65,16 +63,6 @@ func (c *DashboardCard) Equals(other *DashboardCard) bool {
 func (c *DashboardCard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties(resourceMapProvider)
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (c *DashboardCard) AddReference(ref *ResourceReference) {
-	c.References = append(c.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (c *DashboardCard) GetReferences() []*ResourceReference {
-	return c.References
 }
 
 func (c *DashboardCard) Diff(other *DashboardCard) *DashboardTreeItemDiffs {

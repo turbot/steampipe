@@ -27,7 +27,6 @@ type DashboardChart struct {
 	Transform  *string                          `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 	Series     map[string]*DashboardChartSeries `cty:"series" json:"series,omitempty"`
 	Base       *DashboardChart                  `hcl:"base" json:"-"`
-	References []*ResourceReference             `json:"-"`
 }
 
 func NewDashboardChart(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -71,16 +70,6 @@ func (c *DashboardChart) OnDecoded(block *hcl.Block, resourceMapProvider Resourc
 		}
 	}
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (c *DashboardChart) AddReference(ref *ResourceReference) {
-	c.References = append(c.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (c *DashboardChart) GetReferences() []*ResourceReference {
-	return c.References
 }
 
 func (c *DashboardChart) Diff(other *DashboardChart) *DashboardTreeItemDiffs {

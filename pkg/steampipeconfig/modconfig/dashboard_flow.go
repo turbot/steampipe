@@ -28,8 +28,7 @@ type DashboardFlow struct {
 	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	Display *string `cty:"display" hcl:"display" json:"-"`
 
-	Base       *DashboardFlow       `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
+	Base *DashboardFlow `hcl:"base" json:"-"`
 }
 
 func NewDashboardFlow(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -71,16 +70,6 @@ func (f *DashboardFlow) OnDecoded(block *hcl.Block, resourceMapProvider Resource
 		f.EdgeNames = f.Edges.Names()
 	}
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (f *DashboardFlow) AddReference(ref *ResourceReference) {
-	f.References = append(f.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (f *DashboardFlow) GetReferences() []*ResourceReference {
-	return f.References
 }
 
 // TODO [node_reuse] Add DashboardLeafNodeImpl and move this there https://github.com/turbot/steampipe/issues/2926

@@ -27,7 +27,6 @@ type DashboardCategory struct {
 	Properties    map[string]*DashboardCategoryProperty `cty:"properties" json:"properties,omitempty"`
 	PropertyOrder []string                              `cty:"property_order" hcl:"property_order,optional" json:"property_order,omitempty"`
 	Base          *DashboardCategory                    `hcl:"base" json:"-"`
-	References    []*ResourceReference                  `json:"-"`
 }
 
 func NewDashboardCategory(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -60,16 +59,6 @@ func (c *DashboardCategory) OnDecoded(block *hcl.Block, resourceMapProvider Reso
 		}
 	}
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (c *DashboardCategory) AddReference(ref *ResourceReference) {
-	c.References = append(c.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (c *DashboardCategory) GetReferences() []*ResourceReference {
-	return c.References
 }
 
 func (c *DashboardCategory) Equals(other *DashboardCategory) bool {

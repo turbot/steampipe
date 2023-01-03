@@ -383,6 +383,15 @@ func (m *ResourceMaps) PopulateReferences() {
 			for _, ref := range resourceWithMetadata.GetReferences() {
 				m.References[ref.String()] = ref
 			}
+
+			// if this resource is a RuntimeDependencyProvider, add references from any 'withs'
+			if rdp, ok := resource.(RuntimeDependencyProvider); ok {
+				for _, w := range rdp.GetWiths() {
+					for _, ref := range w.GetReferences() {
+						m.References[ref.String()] = ref
+					}
+				}
+			}
 		}
 
 		// continue walking

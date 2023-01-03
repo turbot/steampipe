@@ -16,7 +16,6 @@ type DashboardWith struct {
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	Base       *DashboardWith       `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
 }
 
 func NewDashboardWith(block *hcl.Block, mod *Mod, shortName string) HclResource {

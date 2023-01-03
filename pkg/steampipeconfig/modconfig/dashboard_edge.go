@@ -15,9 +15,8 @@ type DashboardEdge struct {
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	Category   *DashboardCategory   `cty:"category" hcl:"category" column:"category,jsonb" json:"category,omitempty"`
-	Base       *DashboardEdge       `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
+	Category *DashboardCategory `cty:"category" hcl:"category" column:"category,jsonb" json:"category,omitempty"`
+	Base     *DashboardEdge     `hcl:"base" json:"-"`
 }
 
 func NewDashboardEdge(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -63,16 +62,6 @@ func (e *DashboardEdge) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMaps
 		e.Category = fullCategory
 	}
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (e *DashboardEdge) AddReference(ref *ResourceReference) {
-	e.References = append(e.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (e *DashboardEdge) GetReferences() []*ResourceReference {
-	return e.References
 }
 
 func (e *DashboardEdge) Diff(other *DashboardEdge) *DashboardTreeItemDiffs {
