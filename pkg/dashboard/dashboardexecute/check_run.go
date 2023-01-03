@@ -35,8 +35,8 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Das
 	c.DashboardTreeRunImpl = NewDashboardTreeRunImpl(resource, parent, c, executionTree)
 
 	c.NodeType = resource.BlockType()
-	//  set status to ready
-	c.Status = dashboardtypes.DashboardRunReady
+	//  set status to initialized
+	c.Status = dashboardtypes.DashboardRunInitialized
 	// add r into execution tree
 	executionTree.runs[c.Name] = c
 	return c, nil
