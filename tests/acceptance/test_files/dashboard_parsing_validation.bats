@@ -44,3 +44,17 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe dashboard dashboard.query_providers_nested_dont_require_sql --output snapshot
   assert_success
 }
+
+@test "Parsing case 7 - top level node and edge providers do not require a query/sql block or a node/edge block (PASS)" {
+  cd $FILE_PATH/test_data/dashboard_parsing_validation
+
+  run steampipe dashboard dashboard.node_edge_providers_top_level --output snapshot
+  assert_success
+}
+
+@test "Parsing case 8 - nested node and edge providers always require a query/sql block or a node/edge block (PASS)" {
+  cd $FILE_PATH/test_data/dashboard_parsing_validation
+
+  run steampipe dashboard dashboard.node_edge_providers_nested --output snapshot
+  assert_success
+}
