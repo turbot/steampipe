@@ -106,12 +106,26 @@ func (e Error) Format(s fmt.State, verb rune) {
 	case 'v':
 		io.WriteString(s, e.Error())
 		io.WriteString(s, "\n")
+
+		printDetail := false
+		printStack := false
+
 		if s.Flag('+') {
+			printDetail = true
+		}
+
+		if s.Flag('#') {
+			printDetail = true
+			printStack = true
+		}
+
+		if printDetail {
 			io.WriteString(s, "\nDetails:\n")
 			io.WriteString(s, e.Detail())
 			io.WriteString(s, "\n")
 		}
-		if s.Flag('#') {
+
+		if printStack {
 			io.WriteString(s, "\nStack:")
 			e.Stack().Format(s, verb)
 			io.WriteString(s, "\n")
