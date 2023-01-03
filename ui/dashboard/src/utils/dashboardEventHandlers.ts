@@ -127,7 +127,9 @@ const calculateProgress = (panelsMap) => {
   for (const panel of panels) {
     const isControl = panel.panel_type === "control";
     const isPendingDataPanel =
-      panel.panel_type !== "container" && panel.panel_type !== "dashboard";
+      panel.panel_type !== "container" &&
+      panel.panel_type !== "dashboard" &&
+      panel.panel_type !== "benchmark";
     if (isControl || isPendingDataPanel) {
       dataPanels += 1;
     }

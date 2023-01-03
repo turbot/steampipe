@@ -35,8 +35,6 @@ export type CheckNode = {
   merge?: (other: CheckNode) => void;
 };
 
-export type CheckNodeStatusRaw = "ready" | "started" | "complete" | "error";
-
 export type CheckNodeStatus = "running" | "complete";
 
 export type CheckSeverity = "none" | "low" | "medium" | "high" | "critical";
@@ -104,6 +102,8 @@ type CheckControlRunProperties = {
   severity?: CheckSeverity | undefined;
 };
 
+export type CheckRunState = "ready" | "error" | "complete";
+
 export type CheckControlRun = {
   name: string;
   title?: string;
@@ -114,7 +114,7 @@ export type CheckControlRun = {
   tags?: CheckTags;
   data: LeafNodeData;
   summary: CheckSummary;
-  status: CheckNodeStatusRaw;
+  status: CheckRunState;
   error?: string;
 };
 

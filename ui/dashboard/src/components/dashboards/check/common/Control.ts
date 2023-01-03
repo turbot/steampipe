@@ -4,9 +4,9 @@ import {
   CheckDynamicColsMap,
   CheckNode,
   CheckNodeStatus,
-  CheckNodeStatusRaw,
   CheckNodeType,
   CheckResult,
+  CheckRunState,
   CheckSeverity,
   CheckSeveritySummary,
   CheckSummary,
@@ -32,7 +32,7 @@ class Control implements CheckNode {
   private readonly _results: CheckResult[];
   private readonly _summary: CheckSummary;
   private readonly _tags: CheckTags;
-  private readonly _status: CheckNodeStatusRaw;
+  private readonly _status: CheckRunState;
   private readonly _error: string | undefined;
 
   constructor(
@@ -47,7 +47,7 @@ class Control implements CheckNode {
     data: LeafNodeData | undefined,
     summary: CheckSummary | undefined,
     tags: CheckTags | undefined,
-    status: CheckNodeStatusRaw,
+    status: CheckRunState,
     error: string | undefined,
     panelsMap: PanelsMap,
     benchmark_trunk: Benchmark[],
@@ -73,7 +73,7 @@ class Control implements CheckNode {
     this._status = status;
     this._error = error;
 
-    if (this._status === "ready" || this._status === "started") {
+    if (this._status === "ready") {
       add_control_results([this._build_control_loading_node(benchmark_trunk)]);
     } else if (this._error) {
       add_control_results([
@@ -123,7 +123,6 @@ class Control implements CheckNode {
   get status(): CheckNodeStatus {
     switch (this._status) {
       case "ready":
-      case "started":
         return "running";
       default:
         return "complete";
