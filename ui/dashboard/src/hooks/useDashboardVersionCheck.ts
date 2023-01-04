@@ -2,7 +2,6 @@ import { IDashboardContext } from "../types";
 import { useEffect } from "react";
 
 const useDashboardVersionCheck = (state: IDashboardContext) => {
-  console.log(state, process.env.REACT_APP_VERSION);
   useEffect(() => {
     let cliVersion: string | null = "";
     let uiVersion: string | null = "";
@@ -25,12 +24,9 @@ const useDashboardVersionCheck = (state: IDashboardContext) => {
 
       const searchParams = new URLSearchParams(window.location.search);
 
+      // Add a version to force a reload with the new version to get the correct assets
       if (mismatchedVersions && cliVersionRaw) {
         searchParams.set("version", cliVersionRaw);
-        console.log(searchParams.toString());
-        const url = new URL(window.location.href);
-        console.log(url);
-        console.log({ cliVersion, uiVersion, mismatchedVersions });
         window.location.replace(`${window.location.origin}?${searchParams}`);
       }
     }
