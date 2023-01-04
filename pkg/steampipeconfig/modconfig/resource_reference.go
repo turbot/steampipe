@@ -40,13 +40,15 @@ func (r *ResourceReference) CloneWithNewFrom(from string) *ResourceReference {
 		Attribute:                r.Attribute,
 	}
 	ref.name = ref.buildName()
+	// clone metadata so we can mutate it
+	ref.ResourceWithMetadataImpl.metadata = ref.ResourceWithMetadataImpl.metadata.Clone()
 	// set metadata name
 	ref.ResourceWithMetadataImpl.metadata.ResourceName = ref.name
 	return ref
 }
 
 func (r *ResourceReference) buildName() string {
-	return helpers.GetMD5Hash(r.String())
+	return helpers.GetMD5Hash(r.String())[:8]
 }
 
 // ResourceReferenceMap is a map of references keyed by 'ref'
