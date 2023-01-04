@@ -87,8 +87,10 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 	return cmd
 }
 
-// exitCode=1 For unknown errors resulting in panics
-// exitCode=2 For insufficient args
+// exitCode=0 no runtime errors, no control alarms or errors
+// exitCode=1 no runtime errors, 1 or more control alarms, no control errors
+// exitCode=2 no runtime errors, 1 or more control errors
+// exitCode=3+ runtime errors
 
 func runCheckCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("runCheckCmd start")
@@ -103,13 +105,13 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			exitCode = constants.ExitCodeUnknownErrorPanic
+			exitCode = constants.ExitCodeRuntimeError
 		}
 	}()
 
 	// verify we have an argument
 	if !validateCheckArgs(ctx, cmd, args) {
-		exitCode = constants.ExitCodeInsufficientOrWrongArguments
+		exitCode = constants.ExitCodeRuntimeError
 		return
 	}
 	// if diagnostic mode is set, print out config and return
@@ -129,7 +131,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	// pull out useful properties
 	w := initData.Workspace
 	client := initData.Client
-	failures := 0
+	totalAlarms, totalErrors := 0, 0
 	var durations []time.Duration
 
 	shouldShare := viper.GetBool(constants.ArgShare)
@@ -149,8 +151,11 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, targetName, initData.ControlFilterWhereClause)
 		error_helpers.FailOnError(err)
 
-		// execute controls synchronously (execute returns the number of failures)
-		failures += executionTree.Execute(ctx)
+		// execute controls synchronously (execute returns the number of alarms and errors)
+		alarms, errors := executionTree.Execute(ctx)
+		// append the total number of alarms and errors for multiple runs
+		totalAlarms += alarms
+		totalErrors += errors
 		err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
 		error_helpers.FailOnError(err)
 
@@ -174,6 +179,23 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	if shouldPrintTiming() {
 		printTiming(args, durations)
 	}
+
+	// set the defined exit code after successful execution
+	exitCode = getExitCode(totalAlarms, totalErrors)
+}
+
+// get the exit code for successful check run
+func getExitCode(alarms int, errors int) int {
+	// 1 or more control errors, return exitCode=2
+	if errors > 0 {
+		return constants.ExitCodeControlsError
+	}
+	// 1 or more controls in alarm, return exitCode=1
+	if alarms > 0 {
+		return constants.ExitCodeControlsAlarm
+	}
+	// no controls in alarm/error
+	return constants.ExitCodeSuccessful
 }
 
 // create the context for the check run - add a control status renderer

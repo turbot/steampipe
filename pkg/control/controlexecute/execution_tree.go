@@ -3,10 +3,11 @@ package controlexecute
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/go-kit/helpers"
 	"log"
 	"sort"
 	"time"
+
+	"github.com/turbot/go-kit/helpers"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -86,7 +87,7 @@ func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Contr
 	}
 }
 
-func (e *ExecutionTree) Execute(ctx context.Context) int {
+func (e *ExecutionTree) Execute(ctx context.Context) (int, int) {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.StartTime = time.Now()
@@ -113,13 +114,11 @@ func (e *ExecutionTree) Execute(ctx context.Context) int {
 		log.Printf("[WARN] timed out waiting for active runs to complete")
 	}
 
-	failures := e.Root.Summary.Status.Alarm + e.Root.Summary.Status.Error
-
 	// now build map of dimension property name to property value to color map
 	e.DimensionColorGenerator, _ = NewDimensionColorGenerator(4, 27)
 	e.DimensionColorGenerator.populate(e)
 
-	return failures
+	return e.Root.Summary.Status.Alarm, e.Root.Summary.Status.Error
 }
 
 func (e *ExecutionTree) waitForActiveRunsToComplete(ctx context.Context, parallelismLock *semaphore.Weighted, maxParallelGoRoutines int64) error {
