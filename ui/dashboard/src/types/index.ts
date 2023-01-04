@@ -4,7 +4,6 @@ import { Theme } from "../hooks/useTheme";
 
 export type IDashboardContext = {
   versionMismatchCheck: boolean;
-  ignoreEvents: boolean;
   metadata: DashboardMetadata | null;
   availableDashboardsLoaded: boolean;
 
