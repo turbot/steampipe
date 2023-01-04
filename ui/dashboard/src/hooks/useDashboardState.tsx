@@ -1,5 +1,4 @@
 import get from "lodash/get";
-import VersionErrorMismatch from "../components/VersionErrorMismatch";
 import {
   addDataToPanels,
   buildDashboards,
@@ -33,6 +32,7 @@ import {
   ExecutionStartedSchemaMigrator,
 } from "../utils/schema";
 import { useCallback, useReducer } from "react";
+import useDashboardVersionCheck from "./useDashboardVersionCheck";
 
 const reducer = (state: IDashboardContext, action) => {
   if (state.ignoreEvents) {
@@ -41,35 +41,35 @@ const reducer = (state: IDashboardContext, action) => {
 
   switch (action.type) {
     case DashboardActions.DASHBOARD_METADATA:
-      let cliVersion: string | null = "";
-      let uiVersion: string | null = "";
-      let mismatchedVersions = false;
-      if (state.versionMismatchCheck) {
-        const cliVersionRaw = get(action.metadata, "cli.version");
-        const uiVersionRaw = process.env.REACT_APP_VERSION;
-        const hasVersionsSet = !!cliVersionRaw && !!uiVersionRaw;
-        cliVersion = !!cliVersionRaw
-          ? cliVersionRaw.startsWith("v")
-            ? cliVersionRaw.substring(1)
-            : cliVersionRaw
-          : null;
-        uiVersion = !!uiVersionRaw
-          ? uiVersionRaw.startsWith("v")
-            ? uiVersionRaw.substring(1)
-            : uiVersionRaw
-          : null;
-        mismatchedVersions = hasVersionsSet && cliVersion !== uiVersion;
-      }
+      // let cliVersion: string | null = "";
+      // let uiVersion: string | null = "";
+      // let mismatchedVersions = false;
+      // if (state.versionMismatchCheck) {
+      //   const cliVersionRaw = get(action.metadata, "cli.version");
+      //   const uiVersionRaw = process.env.REACT_APP_VERSION;
+      //   const hasVersionsSet = !!cliVersionRaw && !!uiVersionRaw;
+      //   cliVersion = !!cliVersionRaw
+      //     ? cliVersionRaw.startsWith("v")
+      //       ? cliVersionRaw.substring(1)
+      //       : cliVersionRaw
+      //     : null;
+      //   uiVersion = !!uiVersionRaw
+      //     ? uiVersionRaw.startsWith("v")
+      //       ? uiVersionRaw.substring(1)
+      //       : uiVersionRaw
+      //     : null;
+      //   mismatchedVersions = hasVersionsSet && cliVersion !== uiVersion;
+      // }
       return {
         ...state,
         metadata: {
           mod: {},
           ...action.metadata,
         },
-        error: mismatchedVersions ? (
-          <VersionErrorMismatch cliVersion={cliVersion} uiVersion={uiVersion} />
-        ) : null,
-        ignoreEvents: mismatchedVersions,
+        // error: mismatchedVersions ? (
+        //   <VersionErrorMismatch cliVersion={cliVersion} uiVersion={uiVersion} />
+        // ) : null,
+        // ignoreEvents: mismatchedVersions,
       };
     case DashboardActions.AVAILABLE_DASHBOARDS:
       const { dashboards, dashboardsMap } = buildDashboards(
@@ -438,6 +438,7 @@ const useDashboardState = ({
       versionMismatchCheck,
     })
   );
+  useDashboardVersionCheck(state);
   const dispatch = useCallback((action) => {
     // console.log(action.type, action);
     dispatchInner(action);
