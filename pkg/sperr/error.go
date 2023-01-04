@@ -18,7 +18,10 @@ type Error struct {
 // RootCause will recursively retrieve
 // the topmost error that does not have a cause, which is assumed to be
 // the original cause.
-func (e Error) RootCause() error {
+func (e *Error) RootCause() error {
+	if e == nil {
+		return nil
+	}
 	type hasCause interface {
 		Cause() error
 	}
@@ -34,12 +37,18 @@ func (e Error) RootCause() error {
 }
 
 // Cause returns the underlying cause of this error. Maybe <nil> if this was created with New
-func (e Error) Cause() error {
+func (e *Error) Cause() error {
+	if e == nil {
+		return nil
+	}
 	return e.cause
 }
 
 // Stack retrieves the stack trace of the absolute underlying sperr.Error
-func (e Error) Stack() StackTrace {
+func (e *Error) Stack() StackTrace {
+	if e == nil {
+		return nil
+	}
 	type hasStack interface {
 		Stack() StackTrace
 	}
@@ -53,9 +62,17 @@ func (e Error) Stack() StackTrace {
 }
 
 // Unwrap returns the immediately underlying error
-func (e Error) Unwrap() error { return e.cause }
+func (e *Error) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.cause
+}
 
-func (e Error) Error() (str string) {
+func (e *Error) Error() string {
+	if e == nil {
+		return ""
+	}
 	res := []string{}
 	if len(e.message) > 0 {
 		res = append(res, e.message)
@@ -69,7 +86,10 @@ func (e Error) Error() (str string) {
 	return strings.Join(res, " : ")
 }
 
-func (e Error) Detail() string {
+func (e *Error) Detail() string {
+	if e == nil {
+		return ""
+	}
 	type hasDetail interface {
 		Detail() string
 	}
@@ -90,6 +110,10 @@ func (e Error) Detail() string {
 	return strings.Join(res, "\n|-- ")
 }
 
+func (e *Error) E() error {
+	return nil
+}
+
 // All error values returned from this package implement fmt.Formatter and can
 // be formatted by the fmt package. The following verbs are supported:
 //
@@ -101,7 +125,10 @@ func (e Error) Detail() string {
 //		  %q		a double-quoted string safely escaped with Go syntax
 //
 // TODO: add Details for +
-func (e Error) Format(s fmt.State, verb rune) {
+func (e *Error) Format(s fmt.State, verb rune) {
+	if e == nil {
+		return
+	}
 	switch verb {
 	case 'v':
 		io.WriteString(s, e.Error())

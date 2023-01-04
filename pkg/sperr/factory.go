@@ -31,11 +31,8 @@ func New(format string, args ...interface{}) *Error {
 //
 // When wrapping an error this also adds a stacktrace into the new `Error` object
 func Wrap(err error) *Error {
-	if helpers.IsNil(err) {
-		return nil
-	}
-	if e, ok := err.(*Error); ok {
-		return e
+	if spe, ok := err.(*Error); ok {
+		return spe
 	}
 
 	msg := inferMessageFromError(err)
@@ -51,7 +48,8 @@ func Wrap(err error) *Error {
 }
 
 func Wrapf(err error, format string, args ...interface{}) *Error {
-	if helpers.IsNil(err) {
+	if spe, ok := err.(*Error); ok && spe == nil {
+		// if this is an error interface wrapping around a nil sperr.Error
 		return nil
 	}
 	return &Error{
@@ -75,6 +73,13 @@ func ToError(val interface{}) *Error {
 	// so that ToError doesn't end up in the stack
 	err.stack = callers()
 	return err
+}
+
+func IsNil(err error) bool {
+	if spe, ok := err.(*Error); ok {
+		return spe == nil
+	}
+	return err == nil
 }
 
 func inferMessageFromError(err error) string {

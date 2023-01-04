@@ -11,7 +11,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/shiena/ansicolor"
 	"github.com/spf13/viper"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
@@ -35,7 +34,10 @@ func WrapError(err error) error {
 }
 
 func FailOnError(err error) {
-	if !helpers.IsNil(err) {
+	if spe, ok := err.(*sperr.Error); ok && spe == nil {
+		return
+	}
+	if err != nil {
 		err = HandleCancelError(err)
 		log.Printf("[ERROR] FailOnError: %+#v\n", sperr.Wrap(err))
 		panic(err)
@@ -43,13 +45,11 @@ func FailOnError(err error) {
 }
 
 func FailOnErrorWithMessage(err error, message string) {
-	if !helpers.IsNil(err) {
-		FailOnError(sperr.Wrapf(err, message))
-	}
+	FailOnError(sperr.Wrapf(err, message))
 }
 
 func ShowError(ctx context.Context, err error) {
-	if helpers.IsNil(err) {
+	if err == nil {
 		return
 	}
 	err = HandleCancelError(err)
@@ -62,33 +62,6 @@ func ShowError(ctx context.Context, err error) {
 func ShowErrorWithMessage(ctx context.Context, err error, message string) {
 	ShowError(ctx, sperr.Wrapf(err, message))
 }
-
-// TransformErrorToSteampipe removes the pq: and rpc error prefixes along
-// with all the unnecessary information that comes from the
-// drivers and libraries
-// TODO: translate this to sperr.Wrap as much as possible
-// func TransformErrorToSteampipe(err error) error {
-// 	return sperr.Wrap(err)
-// if err == nil {
-// 	return err
-// }
-// // transform to a context
-// err = HandleCancelError(err)
-
-// errString := strings.TrimSpace(err.Error())
-
-// // an error that originated from our database/sql driver (always prefixed with "ERROR:")
-// if strings.HasPrefix(errString, "ERROR:") {
-// 	errString = strings.TrimSpace(strings.TrimPrefix(errString, "ERROR:"))
-
-// 	// if this is an RPC Error while talking with the plugin
-// 	if strings.HasPrefix(errString, "rpc error") {
-// 		// trim out "rpc error: code = Unknown desc ="
-// 		errString = strings.TrimPrefix(errString, "rpc error: code = Unknown desc =")
-// 	}
-// }
-// return fmt.Errorf(strings.TrimSpace(errString))
-// }
 
 // HandleCancelError modifies a context.Canceled error into a readable error that can
 // be printed on the console
