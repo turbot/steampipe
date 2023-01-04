@@ -105,13 +105,13 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			exitCode = constants.ExitCodeRuntimeError
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
 	// verify we have an argument
 	if !validateCheckArgs(ctx, cmd, args) {
-		exitCode = constants.ExitCodeRuntimeError
+		exitCode = constants.ExitCodeInsufficientOrWrongArguments
 		return
 	}
 	// if diagnostic mode is set, print out config and return
