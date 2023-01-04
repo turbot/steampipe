@@ -400,16 +400,23 @@ func (m *ResourceMaps) PopulateReferences() {
 func (m *ResourceMaps) populateNodeEdgeProviderRefs(nep NodeAndEdgeProvider) {
 	withRoot := getWithRoot(nep)
 	for _, n := range nep.GetNodes() {
-		for _, r := range n.GetRuntimeDependencies() {
-			if r.PropertyPath.ItemType == BlockTypeWith {
-				// find the with
-				w, ok := withRoot.GetWith(r.PropertyPath.ToResourceName())
-				if ok {
-					for _, withRef := range w.References {
-						// build a new reference changing the 'from' to the NodeAndEdgeProvider
-						ref := withRef.CloneWithNewFrom(nep.Name())
-						m.References[ref.String()] = ref
-					}
+		m.populateWithRefs(nep, n, withRoot)
+	}
+	for _, e := range nep.GetEdges() {
+		m.populateWithRefs(nep, e, withRoot)
+	}
+}
+
+func (m *ResourceMaps) populateWithRefs(nep NodeAndEdgeProvider, rdp RuntimeDependencyProvider, withRoot RuntimeDependencyProvider) {
+	for _, r := range rdp.GetRuntimeDependencies() {
+		if r.PropertyPath.ItemType == BlockTypeWith {
+			// find the with
+			w, ok := withRoot.GetWith(r.PropertyPath.ToResourceName())
+			if ok {
+				for _, withRef := range w.References {
+					// build a new reference changing the 'from' to the NodeAndEdgeProvider
+					ref := withRef.CloneWithNewFrom(nep.Name())
+					m.References[ref.String()] = ref
 				}
 			}
 		}
