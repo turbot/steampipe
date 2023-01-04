@@ -5,6 +5,7 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -34,8 +35,8 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Das
 	c.DashboardTreeRunImpl = NewDashboardTreeRunImpl(resource, parent, c, executionTree)
 
 	c.NodeType = resource.BlockType()
-	//  set status to ready
-	c.Status = dashboardtypes.DashboardRunReady
+	//  set status to initialized
+	c.Status = dashboardtypes.RunInitialized
 	// add r into execution tree
 	executionTree.runs[c.Name] = c
 	return c, nil
@@ -60,7 +61,7 @@ func (r *CheckRun) Execute(ctx context.Context) {
 	defer utils.LogTime("CheckRun.execute end")
 
 	// set status (this sends update event)
-	r.setStatus(dashboardtypes.DashboardRunRunning)
+	r.setStatus(dashboardtypes.RunRunning)
 
 	// create a context with a DashboardEventControlHooks to report control execution progress
 	ctx = controlstatus.AddControlHooksToContext(ctx, NewDashboardEventControlHooks(r))
@@ -81,9 +82,19 @@ func (r *CheckRun) ChildrenComplete() bool {
 // IsSnapshotPanel implements SnapshotPanel
 func (*CheckRun) IsSnapshotPanel() {}
 
-// GetTitle implements DashboardTreeRun
-func (r *CheckRun) GetTitle() string {
-	return r.Title
+// SetError implements DashboardTreeRun (override to set snapshothook status
+func (r *CheckRun) SetError(ctx context.Context, err error) {
+	// increment error count for snapshot hook
+	statushooks.SnapshotError(ctx)
+	r.DashboardTreeRunImpl.SetError(ctx, err)
+}
+
+// SetComplete implements DashboardTreeRun (override to set snapshothook status
+func (r *CheckRun) SetComplete(ctx context.Context) {
+	// call snapshot hooks with progress
+	statushooks.UpdateSnapshotProgress(ctx, 1)
+
+	r.DashboardTreeRunImpl.SetComplete(ctx)
 }
 
 // BuildSnapshotPanels is a custom implementation of BuildSnapshotPanels - be nice to just use the DashboardExecutionTree but work is needed on common interface types/generics

@@ -13,7 +13,7 @@ import {
 import {
   controlsUpdatedEventHandler,
   leafNodesUpdatedEventHandler,
-  migrateDashboardExecutionCompleteSchema,
+  migratePanelStatuses,
 } from "../utils/dashboardEventHandlers";
 import {
   DashboardActions,
@@ -24,6 +24,14 @@ import {
   DashboardRenderOptions,
   IDashboardContext,
 } from "../types";
+import {
+  EXECUTION_SCHEMA_VERSION_20220929,
+  EXECUTION_SCHEMA_VERSION_20221222,
+} from "../constants/versions";
+import {
+  ExecutionCompleteSchemaMigrator,
+  ExecutionStartedSchemaMigrator,
+} from "../utils/schema";
 import { useCallback, useReducer } from "react";
 
 const reducer = (state: IDashboardContext, action) => {
@@ -113,17 +121,23 @@ const reducer = (state: IDashboardContext, action) => {
         };
       }
 
+      const eventMigrator = new ExecutionStartedSchemaMigrator();
+      const migratedEvent = eventMigrator.toLatest(action);
+
       return {
         ...state,
         error: null,
-        panelsLog: buildPanelsLog(action.panels, action.start_time),
-        panelsMap: addDataToPanels(action.panels, state.sqlDataMap),
+        panelsLog: buildPanelsLog(
+          migratedEvent.panels,
+          migratedEvent.start_time
+        ),
+        panelsMap: addDataToPanels(migratedEvent.panels, state.sqlDataMap),
         dashboard,
-        execution_id: action.execution_id,
+        execution_id: migratedEvent.execution_id,
         refetchDashboard: false,
         progress: 0,
         snapshot: null,
-        state: "ready",
+        state: "running",
       };
     }
     case DashboardActions.EXECUTION_COMPLETE: {
@@ -135,7 +149,8 @@ const reducer = (state: IDashboardContext, action) => {
         return state;
       }
 
-      const migratedEvent = migrateDashboardExecutionCompleteSchema(action);
+      const eventMigrator = new ExecutionCompleteSchemaMigrator();
+      const migratedEvent = eventMigrator.toLatest(action);
       const layout = migratedEvent.snapshot.layout;
       const panels = migratedEvent.snapshot.panels;
       const rootLayoutPanel = migratedEvent.snapshot.layout;
@@ -151,8 +166,10 @@ const reducer = (state: IDashboardContext, action) => {
         };
       }
 
+      const panelsMap = migratePanelStatuses(panels, action.schema_version);
+
       // Build map of SQL to data
-      const sqlDataMap = buildSqlDataMap(panels);
+      const sqlDataMap = buildSqlDataMap(panelsMap);
       // Replace the whole dashboard as this event contains everything
       return {
         ...state,
@@ -162,7 +179,7 @@ const reducer = (state: IDashboardContext, action) => {
           panels,
           action.snapshot.end_time
         ),
-        panelsMap: panels,
+        panelsMap,
         dashboard,
         sqlDataMap,
         progress: 100,
@@ -175,8 +192,17 @@ const reducer = (state: IDashboardContext, action) => {
     case DashboardActions.CONTROLS_UPDATED:
       return controlsUpdatedEventHandler(action, state);
     case DashboardActions.LEAF_NODES_COMPLETE:
+      return leafNodesUpdatedEventHandler(
+        action,
+        EXECUTION_SCHEMA_VERSION_20220929,
+        state
+      );
     case DashboardActions.LEAF_NODES_UPDATED:
-      return leafNodesUpdatedEventHandler(action, state);
+      return leafNodesUpdatedEventHandler(
+        action,
+        EXECUTION_SCHEMA_VERSION_20221222,
+        state
+      );
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
     case DashboardActions.SET_DATA_MODE:
@@ -294,7 +320,7 @@ const reducer = (state: IDashboardContext, action) => {
         const panel = newPanelsMap[matchingPanelKey];
         newPanelsMap[matchingPanelKey] = {
           ...panel,
-          status: "ready",
+          status: "initialized",
         };
       }
       return {

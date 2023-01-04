@@ -182,6 +182,7 @@ func buildControlErrorPayload(event *dashboardevents.ControlError) ([]byte, erro
 
 func buildLeafNodeUpdatedPayload(event *dashboardevents.LeafNodeUpdated) ([]byte, error) {
 	payload := LeafNodeUpdatedPayload{
+		SchemaVersion: fmt.Sprintf("%d", LeafNodeUpdatedSchemaVersion),
 		Action:        "leaf_node_updated",
 		DashboardNode: event.LeafNode,
 		ExecutionId:   event.ExecutionId,

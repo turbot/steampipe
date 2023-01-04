@@ -1,91 +1,49 @@
 import { addUpdatedPanelLogs } from "./state";
 import {
-  DashboardActions,
-  DashboardExecutionCompleteEvent,
-  DashboardExecutionEventWithSchema,
-  PanelDefinition,
-} from "../types";
-import { LATEST_EXECUTION_SCHEMA_VERSION } from "../constants/versions";
+  EXECUTION_SCHEMA_VERSION_20220614,
+  EXECUTION_SCHEMA_VERSION_20220929,
+  EXECUTION_SCHEMA_VERSION_20221222,
+} from "../constants/versions";
+import { PanelDefinition, PanelsMap } from "../types";
 
-const migrateSnapshotDataToExecutionCompleteEvent = (snapshot) => {
-  switch (snapshot.schema_version) {
-    case "20220614":
-    case "20220929":
-      const {
-        layout,
-        panels,
-        inputs,
-        variables,
-        search_path,
-        start_time,
-        end_time,
-      } = snapshot;
+const migratePanelStatus = (
+  panel: PanelDefinition,
+  currentSchemaVersion: string
+): PanelDefinition => {
+  switch (currentSchemaVersion) {
+    case "":
+    case EXECUTION_SCHEMA_VERSION_20220614:
+    case EXECUTION_SCHEMA_VERSION_20220929:
       return {
-        action: DashboardActions.EXECUTION_COMPLETE,
-        schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
-        snapshot: {
-          schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
-          layout,
-          panels,
-          inputs,
-          variables,
-          search_path,
-          start_time,
-          end_time,
-        },
+        ...panel,
+        // @ts-ignore
+        status: panel.status === "ready" ? "running" : panel.status,
       };
+    case EXECUTION_SCHEMA_VERSION_20221222:
+      // Nothing to do - already the latest statuses
+      return panel;
     default:
       throw new Error(
-        `Unsupported dashboard event schema ${snapshot.schema_version}`
+        `Unsupported dashboard event schema ${currentSchemaVersion}`
       );
   }
 };
 
-const migrateDashboardExecutionCompleteSchema = (
-  event: DashboardExecutionEventWithSchema
-): DashboardExecutionCompleteEvent => {
-  switch (event.schema_version) {
-    case "20220614":
-      const {
-        action,
-        execution_id,
-        layout,
-        panels,
-        inputs,
-        variables,
-        search_path,
-        start_time,
-        end_time,
-      } = event;
-      return {
-        action,
-        schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
-        execution_id,
-        snapshot: {
-          schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
-          layout,
-          panels,
-          inputs,
-          variables,
-          search_path,
-          start_time,
-          end_time,
-        },
-      };
-    case LATEST_EXECUTION_SCHEMA_VERSION:
-      // Nothing to do here as this event is already in the latest supported schema
-      return event as DashboardExecutionCompleteEvent;
-    default:
-      throw new Error(
-        `Unsupported dashboard event schema ${event.schema_version}`
-      );
+const migratePanelStatuses = (
+  panelsMap: PanelsMap,
+  currentSchemaVersion: string
+): PanelsMap => {
+  const newPanelsMap = {};
+  for (const [name, panel] of Object.entries(panelsMap || {})) {
+    newPanelsMap[name] = migratePanelStatus(panel, currentSchemaVersion);
   }
+  return newPanelsMap;
 };
 
 const updatePanelsMapWithControlEvent = (panelsMap, action) => {
   return {
     ...panelsMap,
-    [action.control.name]: action.control,
+    [action.control.name]: migratePanelStatus(action.control, ""),
   };
 };
 
@@ -122,7 +80,7 @@ const controlsUpdatedEventHandler = (action, state) => {
   };
 };
 
-const leafNodesUpdatedEventHandler = (action, state) => {
+const leafNodesUpdatedEventHandler = (action, currentSchemaVersion, state) => {
   // If there's nothing to process, no need to mutate state
   if (!action || !action.nodes || action.nodes.length === 0) {
     return state;
@@ -143,7 +101,10 @@ const leafNodesUpdatedEventHandler = (action, state) => {
     }
 
     panelsLog = addUpdatedPanelLogs(panelsLog, dashboard_node, timestamp);
-    panelsMap[dashboard_node.name] = dashboard_node;
+    panelsMap[dashboard_node.name] = migratePanelStatus(
+      dashboard_node,
+      currentSchemaVersion
+    );
   }
 
   const newState = {
@@ -166,7 +127,9 @@ const calculateProgress = (panelsMap) => {
   for (const panel of panels) {
     const isControl = panel.panel_type === "control";
     const isPendingDataPanel =
-      panel.panel_type !== "container" && panel.panel_type !== "dashboard";
+      panel.panel_type !== "container" &&
+      panel.panel_type !== "dashboard" &&
+      panel.panel_type !== "benchmark";
     if (isControl || isPendingDataPanel) {
       dataPanels += 1;
     }
@@ -186,6 +149,6 @@ const calculateProgress = (panelsMap) => {
 export {
   controlsUpdatedEventHandler,
   leafNodesUpdatedEventHandler,
-  migrateDashboardExecutionCompleteSchema,
-  migrateSnapshotDataToExecutionCompleteEvent,
+  migratePanelStatus,
+  migratePanelStatuses,
 };

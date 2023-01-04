@@ -94,23 +94,6 @@ func (r *DashboardRun) Execute(ctx context.Context) {
 // IsSnapshotPanel implements SnapshotPanel
 func (*DashboardRun) IsSnapshotPanel() {}
 
-// SetError implements DashboardTreeRun
-// tell parent we are done
-func (r *DashboardRun) SetError(_ context.Context, err error) {
-	r.err = err
-	// error type does not serialise to JSON so copy into a string
-	r.ErrorString = err.Error()
-	r.Status = dashboardtypes.DashboardRunError
-	r.notifyParentOfCompletion()
-}
-
-// SetComplete implements DashboardTreeRun
-func (r *DashboardRun) SetComplete(context.Context) {
-	r.Status = dashboardtypes.DashboardRunComplete
-	// tell parent we are done
-	r.notifyParentOfCompletion()
-}
-
 // GetInput searches for an input with the given name
 func (r *DashboardRun) GetInput(name string) (*modconfig.DashboardInput, bool) {
 	return r.dashboard.GetInput(name)
@@ -186,8 +169,8 @@ func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) er
 		}
 
 		// if our child has not completed, we have not completed
-		if childRun.GetRunStatus() == dashboardtypes.DashboardRunReady {
-			r.Status = dashboardtypes.DashboardRunReady
+		if childRun.GetRunStatus() == dashboardtypes.RunInitialized {
+			r.Status = dashboardtypes.RunInitialized
 		}
 		r.children = append(r.children, childRun)
 	}

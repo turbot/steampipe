@@ -3,6 +3,7 @@ package initialisation
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
@@ -16,7 +17,6 @@ import (
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -144,7 +144,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 	if sessionResult.Error != nil {
 		i.Result.Error = fmt.Errorf("error acquiring database connection, %s", sessionResult.Error.Error())
 	} else {
-		sessionResult.Session.Close(utils.IsContextCancelled(ctx))
+		sessionResult.Session.Close(error_helpers.IsContextCanceled(ctx))
 	}
 	// add refresh connection warnings
 	i.Result.AddWarnings(refreshResult.Warnings...)

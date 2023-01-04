@@ -54,8 +54,6 @@ export type IDashboardContext = {
   snapshotFileName: string | null;
 };
 
-type DashboardSnapshotSchemaVersion = "20220614" | "20220929";
-
 export type IBreakpointContext = {
   currentBreakpoint: string | null;
   maxBreakpoint(breakpointAndDown: string): boolean;
@@ -109,9 +107,10 @@ export type PanelsMap = {
 };
 
 export type DashboardRunState =
-  | "ready"
+  | "initialized"
   | "blocked"
   | "running"
+  | "cancelled"
   | "error"
   | "complete";
 
@@ -144,7 +143,30 @@ export const DashboardActions: IActions = {
   WORKSPACE_ERROR: "workspace_error",
 };
 
-type DashboardExecutionEventSchemaVersion = "20220614" | "20220929";
+type DashboardExecutionEventSchemaVersion =
+  | "20220614"
+  | "20220929"
+  | "20221222";
+
+type DashboardExecutionStartedEventSchemaVersion = "20220614" | "20221222";
+
+type DashboardExecutionCompleteEventSchemaVersion =
+  | "20220614"
+  | "20220929"
+  | "20221222";
+
+type DashboardSnapshotSchemaVersion = "20220614" | "20220929" | "20221222";
+
+export type DashboardExecutionStartedEvent = {
+  action: "execution_started";
+  execution_id: string;
+  inputs: DashboardInputs;
+  layout: DashboardLayoutNode;
+  panels: PanelsMap;
+  variables: DashboardVariables;
+  schema_version: DashboardExecutionStartedEventSchemaVersion;
+  start_time: string;
+};
 
 export type DashboardExecutionEventWithSchema = {
   schema_version: DashboardExecutionEventSchemaVersion;
@@ -153,7 +175,7 @@ export type DashboardExecutionEventWithSchema = {
 
 export type DashboardExecutionCompleteEvent = {
   action: string;
-  schema_version: DashboardExecutionEventSchemaVersion;
+  schema_version: DashboardExecutionCompleteEventSchemaVersion;
   execution_id: string;
   snapshot: DashboardSnapshot;
 };

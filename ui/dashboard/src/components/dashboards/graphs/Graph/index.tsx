@@ -415,32 +415,37 @@ const useNodeAndEdgePanelInformation = (
   const { setShowPanelInformation, setPanelInformation } = usePanel();
 
   const statuses = useMemo<GraphStatuses>(() => {
-    const readyWiths: WithStatus[] = [];
+    const initializedWiths: WithStatus[] = [];
+    const initializedNodes: NodeStatus[] = [];
+    const initializedEdges: EdgeStatus[] = [];
     const blockedWiths: WithStatus[] = [];
-    const runningWiths: WithStatus[] = [];
-    const errorWiths: WithStatus[] = [];
-    const completeWiths: WithStatus[] = [];
-    const readyNodes: NodeStatus[] = [];
     const blockedNodes: NodeStatus[] = [];
-    const runningNodes: NodeStatus[] = [];
-    const errorNodes: NodeStatus[] = [];
-    const completeNodes: NodeStatus[] = [];
-    const readyEdges: EdgeStatus[] = [];
     const blockedEdges: EdgeStatus[] = [];
+    const runningWiths: WithStatus[] = [];
+    const runningNodes: NodeStatus[] = [];
     const runningEdges: EdgeStatus[] = [];
+    const cancelledWiths: WithStatus[] = [];
+    const cancelledNodes: NodeStatus[] = [];
+    const cancelledEdges: EdgeStatus[] = [];
+    const errorWiths: WithStatus[] = [];
+    const errorNodes: NodeStatus[] = [];
     const errorEdges: EdgeStatus[] = [];
+    const completeWiths: WithStatus[] = [];
+    const completeNodes: NodeStatus[] = [];
     const completeEdges: EdgeStatus[] = [];
     if (nodeAndEdgeStatus) {
       for (const withStatus of sortBy(Object.values(nodeAndEdgeStatus.withs), [
         "title",
         "id",
       ])) {
-        if (withStatus.state === "ready") {
-          readyWiths.push(withStatus);
+        if (withStatus.state === "initialized") {
+          initializedWiths.push(withStatus);
         } else if (withStatus.state === "blocked") {
           blockedWiths.push(withStatus);
         } else if (withStatus.state === "running") {
           runningWiths.push(withStatus);
+        } else if (withStatus.state === "cancelled") {
+          cancelledWiths.push(withStatus);
         } else if (withStatus.state === "error") {
           errorWiths.push(withStatus);
         } else {
@@ -453,12 +458,14 @@ const useNodeAndEdgePanelInformation = (
         "category.name",
         "id",
       ])) {
-        if (node.state === "ready") {
-          readyNodes.push(node);
+        if (node.state === "initialized") {
+          initializedNodes.push(node);
         } else if (node.state === "blocked") {
           blockedNodes.push(node);
         } else if (node.state === "running") {
           runningNodes.push(node);
+        } else if (node.state === "cancelled") {
+          cancelledNodes.push(node);
         } else if (node.state === "error") {
           errorNodes.push(node);
         } else {
@@ -471,12 +478,14 @@ const useNodeAndEdgePanelInformation = (
         "category.name",
         "id",
       ])) {
-        if (edge.state === "ready") {
-          readyEdges.push(edge);
+        if (edge.state === "initialized") {
+          initializedEdges.push(edge);
         } else if (edge.state === "blocked") {
           blockedEdges.push(edge);
         } else if (edge.state === "running") {
           runningEdges.push(edge);
+        } else if (edge.state === "cancelled") {
+          cancelledEdges.push(edge);
         } else if (edge.state === "error") {
           errorEdges.push(edge);
         } else {
@@ -485,11 +494,14 @@ const useNodeAndEdgePanelInformation = (
       }
     }
     return {
-      ready: {
-        total: readyWiths.length + readyNodes.length + readyEdges.length,
-        withs: readyWiths,
-        nodes: readyNodes,
-        edges: readyEdges,
+      initialized: {
+        total:
+          initializedWiths.length +
+          initializedNodes.length +
+          initializedEdges.length,
+        withs: initializedWiths,
+        nodes: initializedNodes,
+        edges: initializedEdges,
       },
       blocked: {
         total: blockedWiths.length + blockedNodes.length + blockedEdges.length,
@@ -502,6 +514,13 @@ const useNodeAndEdgePanelInformation = (
         withs: runningWiths,
         nodes: runningNodes,
         edges: runningEdges,
+      },
+      cancelled: {
+        total:
+          cancelledWiths.length + cancelledNodes.length + cancelledEdges.length,
+        withs: cancelledWiths,
+        nodes: cancelledNodes,
+        edges: cancelledEdges,
       },
       error: {
         total: errorWiths.length + errorNodes.length + errorEdges.length,
@@ -523,7 +542,7 @@ const useNodeAndEdgePanelInformation = (
     if (
       !nodeAndEdgeStatus ||
       dataFormat === "LEGACY" ||
-      (statuses.ready.total === 0 &&
+      (statuses.initialized.total === 0 &&
         statuses.blocked.total === 0 &&
         statuses.running.total === 0 &&
         statuses.error.total === 0 &&

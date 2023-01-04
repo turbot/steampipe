@@ -4,6 +4,7 @@ import {
   ExecutablePrimitiveProps,
   LeafNodeData,
 } from "../../common";
+import { DashboardRunState } from "../../../../types";
 
 export type CheckNodeType =
   | "benchmark"
@@ -35,8 +36,6 @@ export type CheckNode = {
   merge?: (other: CheckNode) => void;
 };
 
-export type CheckNodeStatusRaw = "ready" | "started" | "complete" | "error";
-
 export type CheckNodeStatus = "running" | "complete";
 
 export type CheckSeverity = "none" | "low" | "medium" | "high" | "critical";
@@ -53,9 +52,6 @@ export type CheckSummary = {
   info: number;
   skip: number;
   error: number;
-};
-export type CheckLeafNodeDataGroupSummary = {
-  status: CheckSummary;
 };
 
 export type CheckDynamicValueMap = {
@@ -113,7 +109,7 @@ export type CheckControlRun = {
   tags?: CheckTags;
   data: LeafNodeData;
   summary: CheckSummary;
-  status: CheckNodeStatusRaw;
+  status: DashboardRunState;
   error?: string;
 };
 

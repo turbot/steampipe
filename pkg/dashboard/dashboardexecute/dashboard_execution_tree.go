@@ -166,7 +166,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	log.Println("[TRACE]", "begin DashboardExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end DashboardExecutionTree.Execute")
 
-	if e.GetRunStatus() == dashboardtypes.DashboardRunComplete {
+	if e.GetRunStatus() == dashboardtypes.RunComplete {
 		// there must be no nodes to execute
 		log.Println("[TRACE]", "execution tree already complete")
 		return
@@ -177,7 +177,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 }
 
 // GetRunStatus returns the stats of the Root run
-func (e *DashboardExecutionTree) GetRunStatus() dashboardtypes.DashboardRunStatus {
+func (e *DashboardExecutionTree) GetRunStatus() dashboardtypes.RunStatus {
 	return e.Root.GetRunStatus()
 }
 
@@ -230,7 +230,7 @@ func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardtypes.Dashboa
 
 func (e *DashboardExecutionTree) Cancel() {
 	// if we have not completed, and already have a cancel function - cancel
-	if e.GetRunStatus() != dashboardtypes.DashboardRunReady || e.cancel == nil {
+	if e.GetRunStatus() != dashboardtypes.RunInitialized || e.cancel == nil {
 		return
 	}
 	e.cancel()

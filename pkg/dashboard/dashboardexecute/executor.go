@@ -152,7 +152,7 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 	}
 	// if there are any dependent inputs, set their value to nil and send an event to the UI
 	// if the dashboard run is complete, just re-execute
-	if executionTree.GetRunStatus() == dashboardtypes.DashboardRunComplete || inputPrevValue != nil {
+	if executionTree.GetRunStatus() == dashboardtypes.RunComplete || inputPrevValue != nil {
 		return e.ExecuteDashboard(
 			ctx,
 			sessionId,

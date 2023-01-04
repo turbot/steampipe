@@ -53,7 +53,7 @@ const NodeAndEdgePanelInformation = ({
         {statuses.error.total} {statuses.error.total === 1 ? "error" : "errors"}
         .
       </div>
-      {statuses.ready.total === 0 &&
+      {statuses.initialized.total === 0 &&
         statuses.blocked.total === 0 &&
         statuses.running.total === 0 &&
         statuses.complete.total === 0 &&

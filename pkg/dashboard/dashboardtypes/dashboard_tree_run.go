@@ -11,7 +11,7 @@ type DashboardTreeRun interface {
 	Execute(ctx context.Context)
 	GetName() string
 	GetTitle() string
-	GetRunStatus() DashboardRunStatus
+	GetRunStatus() RunStatus
 	SetError(context.Context, error)
 	GetError() error
 	GetParent() DashboardParent

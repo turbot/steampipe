@@ -1,37 +1,8 @@
 import { DashboardActions, DashboardDataModeCLISnapshot } from "../../types";
-import { LATEST_EXECUTION_SCHEMA_VERSION } from "../../constants/versions";
+import { SnapshotDataToExecutionCompleteSchemaMigrator } from "../../utils/schema";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useNavigate } from "react-router-dom";
 import { useRef } from "react";
-
-const migrateSnapshotFileToExecutionCompleteEvent = (snapshot) => {
-  switch (snapshot.schema_version) {
-    default:
-      const {
-        layout,
-        panels,
-        inputs,
-        variables,
-        search_path,
-        start_time,
-        end_time,
-      } = snapshot;
-      return {
-        action: DashboardActions.EXECUTION_COMPLETE,
-        schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
-        snapshot: {
-          schema_version: LATEST_EXECUTION_SCHEMA_VERSION,
-          layout,
-          panels,
-          inputs,
-          variables,
-          search_path,
-          start_time,
-          end_time,
-        },
-      };
-  }
-};
 
 const OpenSnapshotButton = () => {
   const { dispatch } = useDashboard();
@@ -70,7 +41,9 @@ const OpenSnapshotButton = () => {
             e.target.value = "";
             try {
               const data = JSON.parse(fr.result.toString());
-              const event = migrateSnapshotFileToExecutionCompleteEvent(data);
+              const eventMigrator =
+                new SnapshotDataToExecutionCompleteSchemaMigrator();
+              const migratedEvent = eventMigrator.toLatest(data);
               dispatch({
                 type: DashboardActions.CLEAR_DASHBOARD_INPUTS,
                 recordInputsHistory: false,
@@ -88,11 +61,11 @@ const OpenSnapshotButton = () => {
               });
               dispatch({
                 type: DashboardActions.EXECUTION_COMPLETE,
-                ...event,
+                ...migratedEvent,
               });
               dispatch({
                 type: DashboardActions.SET_DASHBOARD_INPUTS,
-                value: event.snapshot.inputs,
+                value: migratedEvent.snapshot.inputs,
                 recordInputsHistory: false,
               });
             } catch (err: any) {

@@ -1,3 +1,8 @@
+import {
+  EXECUTION_SCHEMA_VERSION_20220614,
+  EXECUTION_SCHEMA_VERSION_20220929,
+  EXECUTION_SCHEMA_VERSION_20221222,
+} from "../constants/versions";
 import { PanelDefinition } from "../types";
 
 const stripObjectProperties = (obj) => {
@@ -22,8 +27,9 @@ const stripSnapshotDataForExport = (snapshot) => {
   }
 
   switch (snapshot.schema_version) {
-    case "20220614":
-    case "20220929":
+    case EXECUTION_SCHEMA_VERSION_20220614:
+    case EXECUTION_SCHEMA_VERSION_20220929:
+    case EXECUTION_SCHEMA_VERSION_20221222:
       const { panels, ...restSnapshot } = stripObjectProperties(snapshot);
       const newPanels = {};
       for (const [name, panel] of Object.entries(panels)) {

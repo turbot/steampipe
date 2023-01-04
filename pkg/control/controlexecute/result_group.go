@@ -2,6 +2,7 @@ package controlexecute
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"log"
 	"sort"
 	"sync"
@@ -14,7 +15,6 @@ import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -299,7 +299,7 @@ func (r *ResultGroup) execute(ctx context.Context, client db_common.Client, para
 	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
 
 	for _, controlRun := range r.ControlRuns {
-		if utils.IsContextCancelled(ctx) {
+		if error_helpers.IsContextCanceled(ctx) {
 			controlRun.setError(ctx, ctx.Err())
 			continue
 		}

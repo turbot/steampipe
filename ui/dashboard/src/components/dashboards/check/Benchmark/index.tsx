@@ -90,7 +90,7 @@ const Benchmark = (props: InnerCheckProps) => {
         properties: {
           label: "OK",
           value: totalSummary.ok.toString(),
-          icon: "materialsymbols-solid:check-circle",
+          icon: "materialsymbols-solid:check_circle",
         },
       },
       {
@@ -129,7 +129,7 @@ const Benchmark = (props: InnerCheckProps) => {
         properties: {
           label: "Skipped",
           value: totalSummary.skip.toString(),
-          icon: "materialsymbols-solid:arrow-circle-right",
+          icon: "materialsymbols-solid:arrow_circle_right",
         },
       },
     ];
@@ -246,7 +246,7 @@ const BenchmarkTableView = ({
         width: definition.width,
         children: definition.children,
         data: benchmarkDataTable,
-        status: benchmarkDataTable ? "complete" : "ready",
+        status: benchmarkDataTable ? "complete" : "running",
       }}
       ready={!!benchmarkDataTable}
     >

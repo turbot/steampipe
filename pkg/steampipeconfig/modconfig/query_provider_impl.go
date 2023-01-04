@@ -25,76 +25,76 @@ type QueryProviderImpl struct {
 }
 
 // GetParams implements QueryProvider
-func (b *QueryProviderImpl) GetParams() []*ParamDef {
-	return b.Params
+func (q *QueryProviderImpl) GetParams() []*ParamDef {
+	return q.Params
 }
 
 // GetArgs implements QueryProvider
-func (b *QueryProviderImpl) GetArgs() *QueryArgs {
-	return b.Args
+func (q *QueryProviderImpl) GetArgs() *QueryArgs {
+	return q.Args
 
 }
 
 // GetSQL implements QueryProvider
-func (b *QueryProviderImpl) GetSQL() *string {
-	return b.SQL
+func (q *QueryProviderImpl) GetSQL() *string {
+	return q.SQL
 }
 
 // GetQuery implements QueryProvider
-func (b *QueryProviderImpl) GetQuery() *Query {
-	return b.Query
+func (q *QueryProviderImpl) GetQuery() *Query {
+	return q.Query
 }
 
 // SetArgs implements QueryProvider
-func (b *QueryProviderImpl) SetArgs(args *QueryArgs) {
-	b.Args = args
+func (q *QueryProviderImpl) SetArgs(args *QueryArgs) {
+	q.Args = args
 }
 
 // SetParams implements QueryProvider
-func (b *QueryProviderImpl) SetParams(params []*ParamDef) {
-	b.Params = params
+func (q *QueryProviderImpl) SetParams(params []*ParamDef) {
+	q.Params = params
 }
 
 // ValidateQuery implements QueryProvider
 // returns an error if neither sql or query are set
 // it is overidden by resource types for which sql is optional
-func (b *QueryProviderImpl) ValidateQuery() hcl.Diagnostics {
+func (q *QueryProviderImpl) ValidateQuery() hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	// Top level resources (with the exceptions of controls and queries) are never executed directly,
 	// only used as base for a nested resource.
 	// Therefore only nested resources, controls and queries MUST have sql or a query defined
-	queryRequired := !b.IsTopLevel() ||
-		helpers.StringSliceContains([]string{BlockTypeQuery, BlockTypeControl}, b.BlockType())
+	queryRequired := !q.IsTopLevel() ||
+		helpers.StringSliceContains([]string{BlockTypeQuery, BlockTypeControl}, q.BlockType())
 
 	if !queryRequired {
 		return nil
 	}
 
-	if queryRequired && b.Query == nil && b.SQL == nil {
+	if queryRequired && q.Query == nil && q.SQL == nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("%s does not define a query or SQL", b.Name()),
-			Subject:  b.GetDeclRange(),
+			Summary:  fmt.Sprintf("%s does not define a query or SQL", q.Name()),
+			Subject:  q.GetDeclRange(),
 		})
 	}
 	return diags
 }
 
 // RequiresExecution implements QueryProvider
-func (b *QueryProviderImpl) RequiresExecution(queryProvider QueryProvider) bool {
+func (q *QueryProviderImpl) RequiresExecution(queryProvider QueryProvider) bool {
 	return queryProvider.GetQuery() != nil || queryProvider.GetSQL() != nil
 }
 
 // GetResolvedQuery return the SQL and args to run the query
-func (b *QueryProviderImpl) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
-	argsArray, err := ResolveArgs(b, runtimeArgs)
+func (q *QueryProviderImpl) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQuery, error) {
+	argsArray, err := ResolveArgs(q, runtimeArgs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve args for %s: %s", b.Name(), err.Error())
+		return nil, fmt.Errorf("failed to resolve args for %s: %s", q.Name(), err.Error())
 	}
-	sql := typehelpers.SafeString(b.GetSQL())
+	sql := typehelpers.SafeString(q.GetSQL())
 	// we expect there to be sql on the query provider, NOT a Query
 	if sql == "" {
-		return nil, fmt.Errorf("getResolvedQuery faiuled - no sql set for '%s'", b.Name())
+		return nil, fmt.Errorf("getResolvedQuery faiuled - no sql set for '%s'", q.Name())
 	}
 
 	return &ResolvedQuery{
@@ -105,7 +105,7 @@ func (b *QueryProviderImpl) GetResolvedQuery(runtimeArgs *QueryArgs) (*ResolvedQ
 }
 
 // MergeParentArgs merges our args with our parent args (ours take precedence)
-func (b *QueryProviderImpl) MergeParentArgs(queryProvider QueryProvider, parent QueryProvider) (diags hcl.Diagnostics) {
+func (q *QueryProviderImpl) MergeParentArgs(queryProvider QueryProvider, parent QueryProvider) (diags hcl.Diagnostics) {
 	parentArgs := parent.GetArgs()
 	if parentArgs == nil {
 		return nil
@@ -125,68 +125,67 @@ func (b *QueryProviderImpl) MergeParentArgs(queryProvider QueryProvider, parent 
 }
 
 // GetQueryProviderImpl implements QueryProvider
-func (b *QueryProviderImpl) GetQueryProviderImpl() *QueryProviderImpl {
-	return b
+func (q *QueryProviderImpl) GetQueryProviderImpl() *QueryProviderImpl {
+	return q
 }
 
 // ParamsInheritedFromBase implements QueryProvider
 // determine whether our params were inherited from base resource
-func (b *QueryProviderImpl) ParamsInheritedFromBase() bool {
-	return b.paramsInheritedFromBase
+func (q *QueryProviderImpl) ParamsInheritedFromBase() bool {
+	return q.paramsInheritedFromBase
 }
 
 // ArgsInheritedFromBase implements QueryProvider
 // determine whether our args were inherited from base resource
-func (b *QueryProviderImpl) ArgsInheritedFromBase() bool {
-	return b.argsInheritedFromBase
+func (q *QueryProviderImpl) ArgsInheritedFromBase() bool {
+	return q.argsInheritedFromBase
 }
 
 // CtyValue implements CtyValueProvider
-func (b *QueryProviderImpl) CtyValue() (cty.Value, error) {
-	if b.disableCtySerialise {
+func (q *QueryProviderImpl) CtyValue() (cty.Value, error) {
+	if q.disableCtySerialise {
 		return cty.Zero, nil
 	}
-	return GetCtyValue(b)
+	return GetCtyValue(q)
 }
 
-func (b *QueryProviderImpl) setBaseProperties() {
-	b.RuntimeDependencyProviderImpl.setBaseProperties()
-	if b.SQL == nil {
-		b.SQL = b.getBaseImpl().SQL
+func (q *QueryProviderImpl) setBaseProperties() {
+	q.RuntimeDependencyProviderImpl.setBaseProperties()
+	if q.SQL == nil {
+		q.SQL = q.getBaseImpl().SQL
 	}
-	if b.Query == nil {
-		b.Query = b.getBaseImpl().Query
+	if q.Query == nil {
+		q.Query = q.getBaseImpl().Query
 	}
-	if b.Args == nil {
-		b.Args = b.getBaseImpl().Args
-		b.argsInheritedFromBase = true
+	if q.Args == nil {
+		q.Args = q.getBaseImpl().Args
+		q.argsInheritedFromBase = true
 	}
-	if b.Params == nil {
-		b.Params = b.getBaseImpl().Params
-		b.paramsInheritedFromBase = true
+	if q.Params == nil {
+		q.Params = q.getBaseImpl().Params
+		q.paramsInheritedFromBase = true
 	}
 }
 
-func (b *QueryProviderImpl) getBaseImpl() *QueryProviderImpl {
-	return b.base.(QueryProvider).GetQueryProviderImpl()
+func (q *QueryProviderImpl) getBaseImpl() *QueryProviderImpl {
+	return q.base.(QueryProvider).GetQueryProviderImpl()
 }
 
-func (b *QueryProviderImpl) MergeBaseDependencies(base QueryProvider) {
-	//only merge dependency if target property of other was inherited
-	//i.e. if other target propery
+func (q *QueryProviderImpl) MergeBaseDependencies(base QueryProvider) {
+	// only merge dependency if target property of other was inherited
 	baseRuntimeDependencies := base.GetRuntimeDependencies()
-	if b.runtimeDependencies == nil {
-		b.runtimeDependencies = make(map[string]*RuntimeDependency)
+	if q.runtimeDependencies == nil {
+		q.runtimeDependencies = make(map[string]*RuntimeDependency)
 	}
 	for _, baseDep := range baseRuntimeDependencies {
-		if _, ok := b.runtimeDependencies[baseDep.String()]; !ok {
+		if _, ok := q.runtimeDependencies[baseDep.String()]; !ok {
 			// was this target parent property (args/params) inherited
-			if (baseDep.ParentPropertyName == "args" && !b.ArgsInheritedFromBase()) ||
-				!b.ParamsInheritedFromBase() {
+			if (baseDep.ParentPropertyName == "args" && !q.ArgsInheritedFromBase()) ||
+				!q.ParamsInheritedFromBase() {
 				continue
 			}
-
-			b.runtimeDependencies[baseDep.String()] = baseDep
+			// property _was_ inherited - inherit the runtime dependency
+			q.runtimeDependencies[baseDep.String()] = baseDep
 		}
 	}
 }

@@ -283,7 +283,7 @@ func resolvePassword() (string, error) {
 }
 
 func startPostgresProcess(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) (*exec.Cmd, error) {
-	if utils.IsContextCancelled(ctx) {
+	if error_helpers.IsContextCanceled(ctx) {
 		return nil, ctx.Err()
 	}
 
