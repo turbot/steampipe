@@ -209,7 +209,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = constants.ExitCodeInsufficientOrWrongArguments
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return
 	}
 
@@ -303,7 +303,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = constants.ExitCodeInsufficientOrWrongArguments
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return
 	}
 
@@ -652,7 +652,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = constants.ExitCodeInsufficientOrWrongArguments
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return
 	}
 

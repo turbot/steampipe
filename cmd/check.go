@@ -111,7 +111,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// verify we have an argument
 	if !validateCheckArgs(ctx, cmd, args) {
-		exitCode = constants.ExitCodeInsufficientOrWrongArguments
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return
 	}
 	// if diagnostic mode is set, print out config and return
