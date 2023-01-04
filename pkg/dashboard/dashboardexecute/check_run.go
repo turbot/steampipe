@@ -36,7 +36,7 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Das
 
 	c.NodeType = resource.BlockType()
 	//  set status to initialized
-	c.Status = dashboardtypes.DashboardRunInitialized
+	c.Status = dashboardtypes.RunInitialized
 	// add r into execution tree
 	executionTree.runs[c.Name] = c
 	return c, nil
@@ -61,7 +61,7 @@ func (r *CheckRun) Execute(ctx context.Context) {
 	defer utils.LogTime("CheckRun.execute end")
 
 	// set status (this sends update event)
-	r.setStatus(dashboardtypes.DashboardRunRunning)
+	r.setStatus(dashboardtypes.RunRunning)
 
 	// create a context with a DashboardEventControlHooks to report control execution progress
 	ctx = controlstatus.AddControlHooksToContext(ctx, NewDashboardEventControlHooks(r))

@@ -1,14 +1,5 @@
 package controlstatus
 
-type ControlRunStatus string
-
-const (
-	ControlRunReady    ControlRunStatus = "ready"
-	ControlRunStarted  ControlRunStatus = "started"
-	ControlRunComplete ControlRunStatus = "complete"
-	ControlRunError    ControlRunStatus = "error"
-)
-
 // StatusSummary is a struct containing the counts of each possible control status
 type StatusSummary struct {
 	Alarm int `json:"alarm"`

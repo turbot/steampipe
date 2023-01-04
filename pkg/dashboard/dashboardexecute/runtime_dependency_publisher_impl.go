@@ -36,7 +36,7 @@ func NewRuntimeDependencyPublisherImpl(resource modconfig.DashboardLeafNode, par
 		// get params
 		b.Params = queryProvider.GetParams()
 		if queryProvider.RequiresExecution(queryProvider) || len(queryProvider.GetChildren()) > 0 {
-			b.Status = dashboardtypes.DashboardRunInitialized
+			b.Status = dashboardtypes.RunInitialized
 		}
 	}
 

@@ -1,16 +1,16 @@
 package dashboardtypes
 
-type DashboardRunStatus string
+type RunStatus string
 
 const (
-	DashboardRunInitialized DashboardRunStatus = "initialized"
-	DashboardRunBlocked     DashboardRunStatus = "blocked"
-	DashboardRunRunning     DashboardRunStatus = "running"
-	DashboardRunComplete    DashboardRunStatus = "complete"
-	DashboardRunError       DashboardRunStatus = "error"
-	DashboardRunCanceled    DashboardRunStatus = "canceled"
+	RunInitialized RunStatus = "initialized"
+	RunBlocked     RunStatus = "blocked"
+	RunRunning     RunStatus = "running"
+	RunComplete    RunStatus = "complete"
+	RunError       RunStatus = "error"
+	RunCanceled    RunStatus = "canceled"
 )
 
-func (s DashboardRunStatus) IsError() bool {
-	return s == DashboardRunError || s == DashboardRunCanceled
+func (s RunStatus) IsError() bool {
+	return s == RunError || s == RunCanceled
 }

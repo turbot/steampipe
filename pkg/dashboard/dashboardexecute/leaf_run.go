@@ -109,7 +109,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	}()
 
 	// if there is nothing to do, return
-	if r.Status == dashboardtypes.DashboardRunComplete {
+	if r.Status == dashboardtypes.RunComplete {
 		return
 	}
 
@@ -129,7 +129,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	}
 
 	// set status to running (this sends update event)
-	r.setStatus(dashboardtypes.DashboardRunRunning)
+	r.setStatus(dashboardtypes.RunRunning)
 
 	// if we have sql to execute, do it now
 	// (if we are only performing a base execution, do not run the query)

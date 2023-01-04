@@ -42,8 +42,8 @@ type ControlRun struct {
 	// the control being run
 	Control *modconfig.Control `json:"properties,omitempty"`
 	// control summary
-	Summary   *controlstatus.StatusSummary   `json:"summary"`
-	RunStatus controlstatus.ControlRunStatus `json:"status"`
+	Summary   *controlstatus.StatusSummary `json:"summary"`
+	RunStatus dashboardtypes.RunStatus     `json:"status"`
 	// result rows
 	Rows ResultRows `json:"-"`
 
@@ -93,7 +93,7 @@ func NewControlRun(control *modconfig.Control, group *ResultGroup, executionTree
 		rowMap:    make(map[string]ResultRows),
 		Summary:   &controlstatus.StatusSummary{},
 		Tree:      executionTree,
-		RunStatus: controlstatus.ControlRunReady,
+		RunStatus: dashboardtypes.RunInitialized,
 
 		Group:    group,
 		NodeType: modconfig.BlockTypeControl,
@@ -110,7 +110,7 @@ func (r *ControlRun) GetControlId() string {
 }
 
 // GetRunStatus implements ControlRunStatusProvider
-func (r *ControlRun) GetRunStatus() controlstatus.ControlRunStatus {
+func (r *ControlRun) GetRunStatus() dashboardtypes.RunStatus {
 	r.stateLock.Lock()
 	defer r.stateLock.Unlock()
 	return r.RunStatus
@@ -125,7 +125,7 @@ func (r *ControlRun) GetStatusSummary() *controlstatus.StatusSummary {
 
 func (r *ControlRun) Finished() bool {
 	status := r.GetRunStatus()
-	return status == controlstatus.ControlRunComplete || status == controlstatus.ControlRunError
+	return status == dashboardtypes.RunComplete || status.IsError()
 }
 
 // MatchTag returns the value corresponding to the input key. Returns 'false' if not found
@@ -171,11 +171,15 @@ func (r *ControlRun) setError(ctx context.Context, err error) {
 	r.RunErrorString = r.runError.Error()
 	// update error count
 	r.Summary.Error++
-	r.setRunStatus(ctx, controlstatus.ControlRunError)
+	if error_helpers.IsContextCancelledError(err) {
+		r.setRunStatus(ctx, dashboardtypes.RunCanceled)
+	} else {
+		r.setRunStatus(ctx, dashboardtypes.RunError)
+	}
 }
 
 func (r *ControlRun) skip(ctx context.Context) {
-	r.setRunStatus(ctx, controlstatus.ControlRunComplete)
+	r.setRunStatus(ctx, dashboardtypes.RunComplete)
 }
 
 // set search path for this control run
@@ -201,7 +205,7 @@ func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.Datab
 		return err
 	}
 
-	// no execute the SQL to actuall set the search path
+	// now execute the SQL to actually set the search path
 	q := fmt.Sprintf("set search_path to %s", strings.Join(newSearchPath, ","))
 	_, err = session.Connection.Exec(ctx, q)
 	return err
@@ -251,13 +255,13 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	}()
 
 	// set our status
-	r.RunStatus = controlstatus.ControlRunStarted
+	r.RunStatus = dashboardtypes.RunRunning
 
 	// update the current running control in the Progress renderer
 	r.Tree.Progress.OnControlStart(ctx, r)
 	defer func() {
 		// update Progress
-		if r.GetRunStatus() == controlstatus.ControlRunError {
+		if r.GetRunStatus() == dashboardtypes.RunError {
 			r.Tree.Progress.OnControlError(ctx, r)
 		} else {
 			r.Tree.Progress.OnControlComplete(ctx, r)
@@ -358,7 +362,7 @@ func (r *ControlRun) waitForResults(ctx context.Context) {
 			// nil row means control run is complete
 			if row == nil {
 				// nil row means we are done
-				r.setRunStatus(ctx, controlstatus.ControlRunComplete)
+				r.setRunStatus(ctx, dashboardtypes.RunComplete)
 				r.createdOrderedResultRows()
 				return
 			}
@@ -433,7 +437,7 @@ func (r *ControlRun) createdOrderedResultRows() {
 	}
 }
 
-func (r *ControlRun) setRunStatus(ctx context.Context, status controlstatus.ControlRunStatus) {
+func (r *ControlRun) setRunStatus(ctx context.Context, status dashboardtypes.RunStatus) {
 	r.stateLock.Lock()
 	r.RunStatus = status
 	r.stateLock.Unlock()

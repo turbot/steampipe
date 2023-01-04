@@ -169,8 +169,8 @@ func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) er
 		}
 
 		// if our child has not completed, we have not completed
-		if childRun.GetRunStatus() == dashboardtypes.DashboardRunInitialized {
-			r.Status = dashboardtypes.DashboardRunInitialized
+		if childRun.GetRunStatus() == dashboardtypes.RunInitialized {
+			r.Status = dashboardtypes.RunInitialized
 		}
 		r.children = append(r.children, childRun)
 	}

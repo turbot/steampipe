@@ -228,7 +228,7 @@ func (s *RuntimeDependencySubscriberImpl) waitForRuntimeDependencies() error {
 
 	log.Printf("[TRACE] %s: BLOCKED", s.Name)
 	// set status to blocked
-	s.setStatus(dashboardtypes.DashboardRunBlocked)
+	s.setStatus(dashboardtypes.RunBlocked)
 
 	var wg sync.WaitGroup
 	var errChan = make(chan error)
