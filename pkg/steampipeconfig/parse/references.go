@@ -23,13 +23,8 @@ func AddReferences(resource modconfig.HclResource, block *hcl.Block, parseCtx *M
 					if len(block.Labels) > 0 {
 						blockName = block.Labels[0]
 					}
-					reference := &modconfig.ResourceReference{
-						To:        referenceString,
-						From:      resource.GetUnqualifiedName(),
-						BlockType: block.Type,
-						BlockName: blockName,
-						Attribute: attr.Name,
-					}
+					reference := modconfig.NewResourceReference(resource, block, referenceString, blockName, attr)
+
 					moreDiags := addResourceMetadata(reference, attr.SrcRange, parseCtx)
 					diags = append(diags, moreDiags...)
 					resourceWithMetadata.AddReference(reference)

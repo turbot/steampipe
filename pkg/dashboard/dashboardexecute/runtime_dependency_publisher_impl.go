@@ -288,6 +288,7 @@ func (p *RuntimeDependencyPublisherImpl) createWithRuns(withs []*modconfig.Dashb
 	return nil
 }
 
+// called when the args are resolved - if anyone is subscribing to the args value, publish
 func (p *RuntimeDependencyPublisherImpl) argsResolved(args []any) {
 	// use params to get param names for each arg and then look of subscriber
 	for i, param := range p.Params {

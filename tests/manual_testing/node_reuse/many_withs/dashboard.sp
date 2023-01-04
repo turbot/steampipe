@@ -1,9 +1,7 @@
 dashboard "many_withs" {
   title         = "Many Withs"
   with "n1" {
-    sql = <<-EOQ
-          select 'n1'
-        EOQ
+   query = query.q1
   }
   with "n2" {
     sql = <<-EOQ
@@ -49,4 +47,10 @@ EOQ
     }
   }
 
+}
+
+query "q1"{
+  sql = <<-EOQ
+          select 'n1'
+        EOQ
 }

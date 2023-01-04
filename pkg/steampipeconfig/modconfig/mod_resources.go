@@ -3,6 +3,7 @@ package modconfig
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
+
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -385,12 +386,8 @@ func (m *ResourceMaps) PopulateReferences() {
 			}
 
 			// if this resource is a RuntimeDependencyProvider, add references from any 'withs'
-			if rdp, ok := resource.(RuntimeDependencyProvider); ok {
-				for _, w := range rdp.GetWiths() {
-					for _, ref := range w.GetReferences() {
-						m.References[ref.String()] = ref
-					}
-				}
+			if nep, ok := resource.(NodeAndEdgeProvider); ok {
+				m.populateNodeEdgeProviderRefs(nep)
 			}
 		}
 
@@ -398,6 +395,39 @@ func (m *ResourceMaps) PopulateReferences() {
 		return true, nil
 	}
 	m.WalkResources(resourceFunc)
+}
+
+func (m *ResourceMaps) populateNodeEdgeProviderRefs(nep NodeAndEdgeProvider) {
+	withRoot := getWithRoot(nep)
+	for _, n := range nep.GetNodes() {
+		for _, r := range n.GetRuntimeDependencies() {
+			if r.PropertyPath.ItemType == BlockTypeWith {
+				// find the with
+				w, ok := withRoot.GetWith(r.PropertyPath.ToResourceName())
+				if ok {
+					for _, withRef := range w.References {
+						// build a new reference changing the 'from' to the NodeAndEdgeProvider
+						ref := withRef.CloneWithNewFrom(nep.Name())
+						m.References[ref.String()] = ref
+					}
+				}
+			}
+		}
+	}
+}
+
+func getWithRoot(nep NodeAndEdgeProvider) RuntimeDependencyProvider {
+	var withRoot RuntimeDependencyProvider = nep
+	// get the root resource which 'owns' any withs
+	// (if our parent is the Mod, we are thr roor resource, otherwise travers up until we find a dashboard
+	parent := nep.GetParents()[0]
+	for parent.BlockType() != BlockTypeMod {
+		if parent.BlockType() == BlockTypeDashboard {
+			withRoot = parent.(RuntimeDependencyProvider)
+			break
+		}
+	}
+	return withRoot
 }
 
 func (m *ResourceMaps) Empty() bool {

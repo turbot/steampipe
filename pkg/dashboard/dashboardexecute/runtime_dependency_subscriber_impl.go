@@ -191,7 +191,7 @@ func (s *RuntimeDependencySubscriberImpl) evaluateRuntimeDependencies() error {
 		if err := s.resolveSQLAndArgs(); err != nil {
 			return err
 		}
-
+		// call the argsResolved callback in case anyone is waiting for the args
 		s.argsResolved(s.Args)
 	}
 	return nil
@@ -461,6 +461,7 @@ func (s *RuntimeDependencySubscriberImpl) executeChildrenAsync(ctx context.Conte
 	s.DashboardParentImpl.executeChildrenAsync(ctx)
 }
 
+// called when the args are resolved - if anyone is subscribing to the args value, publish
 func (s *RuntimeDependencySubscriberImpl) argsResolved(args []any) {
 	if s.baseDependencySubscriber != nil {
 		s.baseDependencySubscriber.argsResolved(args)

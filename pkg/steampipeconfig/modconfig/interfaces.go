@@ -57,6 +57,7 @@ type RuntimeDependencyProvider interface {
 type WithProvider interface {
 	AddWith(with *DashboardWith) hcl.Diagnostics
 	GetWiths() []*DashboardWith
+	GetWith(string) (*DashboardWith, bool)
 }
 
 // QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
