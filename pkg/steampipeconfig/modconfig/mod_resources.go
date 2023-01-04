@@ -398,11 +398,20 @@ func (m *ResourceMaps) PopulateReferences() {
 }
 
 func (m *ResourceMaps) populateNodeEdgeProviderRefs(nep NodeAndEdgeProvider) {
-	withRoot := getWithRoot(nep)
+	var withRoot RuntimeDependencyProvider
 	for _, n := range nep.GetNodes() {
+		// lazy populate with root
+		if withRoot == nil && len(n.GetRuntimeDependencies()) > 0 {
+			withRoot = getWithRoot(nep)
+		}
 		m.populateWithRefs(nep, n, withRoot)
 	}
 	for _, e := range nep.GetEdges() {
+		// lazy populate with root
+		if withRoot == nil && len(e.GetRuntimeDependencies()) > 0 {
+			withRoot = getWithRoot(nep)
+		}
+
 		m.populateWithRefs(nep, e, withRoot)
 	}
 }
@@ -428,11 +437,13 @@ func getWithRoot(nep NodeAndEdgeProvider) RuntimeDependencyProvider {
 	// get the root resource which 'owns' any withs
 	// (if our parent is the Mod, we are thr roor resource, otherwise travers up until we find a dashboard
 	parent := nep.GetParents()[0]
+
 	for parent.BlockType() != BlockTypeMod {
 		if parent.BlockType() == BlockTypeDashboard {
 			withRoot = parent.(RuntimeDependencyProvider)
 			break
 		}
+		parent = parent.GetParents()[0]
 	}
 	return withRoot
 }
