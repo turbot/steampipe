@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
 
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -377,26 +379,30 @@ func (m *ResourceMaps) Equals(other *ResourceMaps) bool {
 }
 
 func (m *ResourceMaps) PopulateReferences() {
-	m.References = make(map[string]*ResourceReference)
+	// only populate references if introspection is enabled
+	switch viper.GetString(constants.ArgIntrospection) {
+	case constants.IntrospectionInfo:
+		m.References = make(map[string]*ResourceReference)
 
-	resourceFunc := func(resource HclResource) (bool, error) {
-		if resourceWithMetadata, ok := resource.(ResourceWithMetadata); ok {
-			for _, ref := range resourceWithMetadata.GetReferences() {
-				m.References[ref.String()] = ref
+		resourceFunc := func(resource HclResource) (bool, error) {
+			if resourceWithMetadata, ok := resource.(ResourceWithMetadata); ok {
+				for _, ref := range resourceWithMetadata.GetReferences() {
+					m.References[ref.String()] = ref
+				}
+
+				// if this resource is a RuntimeDependencyProvider, add references from any 'withs'
+				if nep, ok := resource.(NodeAndEdgeProvider); ok {
+					m.populateNodeEdgeProviderRefs(nep)
+				} else if rdp, ok := resource.(RuntimeDependencyProvider); ok {
+					m.populateWithRefs(resource.GetUnqualifiedName(), rdp, getWithRoot(rdp))
+				}
 			}
 
-			// if this resource is a RuntimeDependencyProvider, add references from any 'withs'
-			if nep, ok := resource.(NodeAndEdgeProvider); ok {
-				m.populateNodeEdgeProviderRefs(nep)
-			} else if rdp, ok := resource.(RuntimeDependencyProvider); ok {
-				m.populateWithRefs(resource.GetUnqualifiedName(), rdp, getWithRoot(rdp))
-			}
+			// continue walking
+			return true, nil
 		}
-
-		// continue walking
-		return true, nil
+		m.WalkResources(resourceFunc)
 	}
-	m.WalkResources(resourceFunc)
 }
 
 func (m *ResourceMaps) populateNodeEdgeProviderRefs(nep NodeAndEdgeProvider) {
@@ -423,6 +429,9 @@ func (m *ResourceMaps) populateNodeEdgeProviderRefs(nep NodeAndEdgeProvider) {
 }
 
 func (m *ResourceMaps) populateWithRefs(name string, rdp RuntimeDependencyProvider, withRoot RuntimeDependencyProvider) {
+	if withRoot == nil {
+		return
+	}
 	for _, r := range rdp.GetRuntimeDependencies() {
 		if r.PropertyPath.ItemType == BlockTypeWith {
 			// find the with
