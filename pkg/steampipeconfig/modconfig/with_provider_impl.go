@@ -33,3 +33,8 @@ func (b *WithProviderImpl) AddWith(with *DashboardWith) hcl.Diagnostics {
 func (b *WithProviderImpl) GetWiths() []*DashboardWith {
 	return maps.Values(b.withs)
 }
+
+func (b *WithProviderImpl) GetWith(name string) (*DashboardWith, bool) {
+	w, ok := b.withs[name]
+	return w, ok
+}
