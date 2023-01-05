@@ -51,7 +51,9 @@ func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Work
 	}
 
 	w.RegisterDashboardEventHandler(server.HandleDashboardEvent)
-	err := w.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {})
+	err := w.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {
+		log.Println("[WARN] Server error handler")
+	})
 	OutputMessage(ctx, "Workspace loaded")
 
 	return server, err
@@ -66,7 +68,7 @@ func (s *Server) Start() chan struct{} {
 
 // Shutdown stops the API server
 func (s *Server) Shutdown() {
-	log.Println("[TRACE] Server shutdown")
+	log.Println("[WARN] Server shutdown")
 
 	if s.webSocket != nil {
 		log.Println("[TRACE] closing websocket")
@@ -76,7 +78,7 @@ func (s *Server) Shutdown() {
 		log.Println("[TRACE] closed websocket")
 	}
 
-	log.Println("[TRACE] Server shutdown complete")
+	log.Println("[WARN] Server shutdown complete")
 
 }
 
@@ -95,7 +97,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 	switch e := event.(type) {
 
 	case *dashboardevents.WorkspaceError:
-		log.Printf("[TRACE] WorkspaceError event: %s", e.Error)
+		log.Printf("[WARN] WorkspaceError event: %s", e.Error)
 		payload, payloadError = buildWorkspaceErrorPayload(e)
 		if payloadError != nil {
 			return
@@ -104,7 +106,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		OutputError(s.context, e.Error)
 
 	case *dashboardevents.ExecutionStarted:
-		log.Printf("[TRACE] ExecutionStarted event session %s, dashboard %s", e.Session, e.Root.GetName())
+		log.Printf("[WARN] ExecutionStarted event session %s, dashboard %s", e.Session, e.Root.GetName())
 		payload, payloadError = buildExecutionStartedPayload(e)
 		if payloadError != nil {
 			return
@@ -123,7 +125,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		OutputError(s.context, e.Error)
 
 	case *dashboardevents.ExecutionComplete:
-		log.Println("[TRACE] execution complete event", *e)
+		log.Println("[WARN] execution complete event")
 		payload, payloadError = buildExecutionCompletePayload(e)
 		if payloadError != nil {
 			return
@@ -156,7 +158,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		s.writePayloadToSession(e.Session, payload)
 
 	case *dashboardevents.DashboardChanged:
-		log.Println("[TRACE] DashboardChanged event", *e)
+		log.Println("[WARN] DashboardChanged event")
 		deletedDashboards := e.DeletedDashboards
 		newDashboards := e.NewDashboards
 

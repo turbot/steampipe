@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
@@ -40,8 +41,12 @@ func (w *Workspace) UnregisterDashboardEventHandlers() {
 // this function is run as a goroutine to call registered event handlers for all received events
 func (w *Workspace) handleDashboardEvent() {
 	for {
+		defer func() {
+			log.Printf("[WARN] handleDashboardEvent EXITING!!!!")
+		}()
 		e := <-w.dashboardEventChan
 		if e == nil {
+			log.Printf("[WARN] handleDashboardEvent NIL EVENT RECEIVED!!!!")
 			w.dashboardEventChan = nil
 			return
 		}
@@ -53,10 +58,13 @@ func (w *Workspace) handleDashboardEvent() {
 }
 
 func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, ev []fsnotify.Event) {
+	log.Printf("[WARN] handleFileWatcherEvent")
 	prevResourceMaps, resourceMaps, err := w.reloadResourceMaps(ctx)
 	if err != nil {
+		log.Printf("[WARN] handleFileWatcherEvent PublishDashboardEvent(&dashboardevents.WorkspaceError")
 		// publish error event
 		w.PublishDashboardEvent(&dashboardevents.WorkspaceError{Error: err})
+		log.Printf("[WARN] BACK FROM PublishDashboardEvent(&dashboardevents.WorkspaceError")
 		return
 	}
 	// if resources have changed, update introspection tables and prepared statements
@@ -71,7 +79,9 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 			w.onFileWatcherEventMessages()
 		}
 	}
+	log.Printf("[WARN] handleFileWatcherEvent raiseDashboardChangedEvents")
 	w.raiseDashboardChangedEvents(resourceMaps, prevResourceMaps)
+	log.Printf("[WARN] handleFileWatcherEvent raiseDashboardChangedEvents BACK")
 }
 
 func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ResourceMaps, *modconfig.ResourceMaps, error) {
@@ -89,8 +99,10 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Resource
 	// now reload the workspace
 	err := w.loadWorkspaceMod(ctx)
 	if err != nil {
+		log.Printf("[WARN] RELOAD FAILED: %s, watcher error %v", err, w.watcherError)
 		// check the existing watcher error - if we are already in an error state, do not show error
 		if w.watcherError == nil {
+			log.Printf("[WARN] CALL fileWatcherErrorHandler")
 			w.fileWatcherErrorHandler(ctx, error_helpers.PrefixError(err, "failed to reload workspace"))
 		}
 		// now set watcher error to new error
@@ -98,6 +110,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Resource
 
 		return nil, nil, err
 	}
+	log.Printf("[WARN] RELOAD SUCCEEDED")
 
 	// clear watcher error
 	w.watcherError = nil
