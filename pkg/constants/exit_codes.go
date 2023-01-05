@@ -10,7 +10,7 @@ const (
 	ExitCodeSnapshotUploadFailed       = 22  // snapshot
 	ExitCodeServiceSetupFailure        = 31  // service
 	ExitCodeServiceStartupFailure      = 32  // service
-	ExitCodeQueryExecutionFailed       = 41  // query - 1 or more queries failed
+	ExitCodeQueryExecutionFailed       = 41  // query - 1 or more queries failed - change in behavior(previously the exitCode used to be the number of queries that failed)
 	ExitCodeLoginCloudConnectionFailed = 51  // login
 	ExitCodeBindPortUnavailable        = 251 // common(service/dashboard) - port binding failure
 	ExitCodeNoModFile                  = 252 // common - no mod file
