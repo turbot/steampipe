@@ -445,7 +445,9 @@ func getWithRoot(rdp RuntimeDependencyProvider) RuntimeDependencyProvider {
 	parent := rdp.GetParents()[0]
 
 	for parent.BlockType() != BlockTypeMod {
-		withRoot = parent.(RuntimeDependencyProvider)
+		if rdp, ok := parent.(RuntimeDependencyProvider); ok {
+			withRoot = rdp
+		}
 		parent = parent.GetParents()[0]
 	}
 	return withRoot
