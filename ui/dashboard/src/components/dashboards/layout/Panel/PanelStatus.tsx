@@ -1,13 +1,14 @@
 import ErrorMessage from "../../../ErrorMessage";
 import Icon from "../../../Icon";
+import LoadingIndicator from "../../LoadingIndicator";
 import { classNames } from "../../../../utils/styles";
 import { ErrorRow, PendingRow } from "../../common/NodeAndEdgePanelInformation";
 import { DashboardInputs, PanelDefinition } from "../../../../types";
 import { InputProperties } from "../../inputs/types";
 import { PanelDependencyStatuses } from "../../common/types";
 import { ReactNode, useMemo } from "react";
-import { usePanel } from "../../../../hooks/usePanel";
 import { useDashboard } from "../../../../hooks/useDashboard";
+import { usePanel } from "../../../../hooks/usePanel";
 
 type PanelStatusProps = PanelStatusBaseProps & {
   definition: PanelDefinition;
@@ -36,7 +37,7 @@ const BasePanelStatus = ({
   <div
     className={classNames(
       className,
-      "flex w-full h-full p-4 break-keep border items-center shadow rounded-md",
+      "w-full h-full p-4 break-keep border border-t-0 rounded-md",
       !!definition.title ? "rounded-t-none" : null
     )}
   >
@@ -87,7 +88,17 @@ const CompleteRow = ({ definition, inputs, title }: CompleteRowProps) => {
 };
 
 const PanelInitialized = ({ definition }: PanelStatusBaseProps) => {
-  return <BasePanelStatus definition={definition}>Initialized</BasePanelStatus>;
+  return (
+    <BasePanelStatus definition={definition}>
+      <div className="flex items-center space-x-1">
+        <Icon
+          className="w-3.5 h-3.5 text-foreground-light shrink-0"
+          icon="start"
+        />
+        <span className="block truncate">Initialized</span>
+      </div>
+    </BasePanelStatus>
+  );
 };
 
 const PanelBlocked = ({ definition }) => {
@@ -145,9 +156,18 @@ const PanelBlocked = ({ definition }) => {
     };
   }, [dependenciesByStatus]);
   return (
-    <BasePanelStatus definition={definition}>
-      <div className="space-y-1">
-        {/*<div>{JSON.stringify(statuses)}</div>*/}
+    <BasePanelStatus
+      className="px-0 divide-y space-y-4"
+      definition={definition}
+    >
+      <div className="px-4 flex items-center space-x-1">
+        <Icon
+          className="w-3.5 h-3.5 text-foreground-light shrink-0"
+          icon="block"
+        />
+        <span className="block truncate">Blocked</span>
+      </div>
+      <div className="px-4 pt-4">
         {statuses.complete.total} complete, {statuses.running.total} running,{" "}
         {statuses.error.total} {statuses.error.total === 1 ? "error" : "errors"}
         {statuses.running.panels.map((panel) => (
@@ -177,11 +197,28 @@ const PanelBlocked = ({ definition }) => {
 };
 
 const PanelRunning = ({ definition }) => {
-  return <BasePanelStatus definition={definition}>Running</BasePanelStatus>;
+  return (
+    <BasePanelStatus definition={definition}>
+      <div className="flex items-center space-x-1">
+        <LoadingIndicator className="w-3.5 h-3.5 text-foreground-light shrink-0" />
+        <span className="block truncate">Running...</span>
+      </div>
+    </BasePanelStatus>
+  );
 };
 
 const PanelCancelled = ({ definition }) => {
-  return <BasePanelStatus definition={definition}>Cancelled</BasePanelStatus>;
+  return (
+    <BasePanelStatus definition={definition}>
+      <div className="flex items-center space-x-1">
+        <Icon
+          className="w-3.5 h-3.5 text-foreground-light shrink-0"
+          icon="cancel"
+        />
+        <span className="block truncate">Cancelled</span>
+      </div>
+    </BasePanelStatus>
+  );
 };
 
 const PanelError = ({ definition, error }: PanelErrorProps) => {
@@ -190,7 +227,16 @@ const PanelError = ({ definition, error }: PanelErrorProps) => {
       className="bg-alert-light border-alert-light text-foreground"
       definition={definition}
     >
-      <ErrorMessage error={error} />
+      <div className="flex items-center space-x-1">
+        <Icon
+          className="w-3.5 h-3.5 text-alert shrink-0"
+          icon="materialsymbols-solid:error"
+        />
+        <span className="block truncate">Error</span>
+      </div>
+      <span className="block">
+        <ErrorMessage error={error} />
+      </span>
     </BasePanelStatus>
   );
 };

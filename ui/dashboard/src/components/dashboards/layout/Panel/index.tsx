@@ -3,7 +3,6 @@ import PanelControls from "./PanelControls";
 import PanelInformation from "./PanelInformation";
 import PanelProgress from "./PanelProgress";
 import PanelTitle from "../../titles/PanelTitle";
-import Placeholder from "../../Placeholder";
 import { BaseChartProps } from "../../charts/types";
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
@@ -61,7 +60,6 @@ const Panel = ({
     "overflow-auto"
   );
 
-  const PlaceholderComponent = Placeholder.component;
   const showPanelContents =
     !definition.error || (definition.error && !showPanelError);
 
@@ -128,7 +126,9 @@ const Panel = ({
             "relative",
             definition.title &&
               ((definition.panel_type !== "input" &&
-                definition.panel_type !== "table") ||
+                definition.status !== "complete") ||
+                (definition.panel_type !== "input" &&
+                  definition.panel_type !== "table") ||
                 (definition.panel_type === "table" &&
                   definition.display_type === "line"))
               ? "border-t border-divide"
@@ -144,20 +144,15 @@ const Panel = ({
         >
           <PanelProgress className={definition.title ? null : "rounded-t-md"} />
           {showPanelContents && <PanelInformation />}
-          <PlaceholderComponent
-            animate={definition.status === "running"}
-            ready={ready || definition.status !== "running"}
-          >
-            <>
-              {!ready && (
-                <PanelStatus
-                  definition={definition as PanelDefinition}
-                  showPanelError={showPanelError}
-                />
-              )}
-              {showPanelContents ? children : null}
-            </>
-          </PlaceholderComponent>
+          <>
+            {!ready && (
+              <PanelStatus
+                definition={definition as PanelDefinition}
+                showPanelError={showPanelError}
+              />
+            )}
+            {showPanelContents ? children : null}
+          </>
         </div>
       </section>
     </div>

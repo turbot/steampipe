@@ -237,7 +237,7 @@ const Card = (props: CardProps) => {
           )}
           title={state.label || undefined}
         >
-          {state.loading && "Loading..."}
+          {state.loading && "Running..."}
           {!state.loading && !state.label && (
             <DashboardIcon
               className="h-5 w-5"
