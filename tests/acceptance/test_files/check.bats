@@ -1,6 +1,13 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
+@test "steampipe check exitCode - no control alarms or errors" {
+  cd $FUNCTIONALITY_TEST_MOD
+  run steampipe check benchmark.all_controls_ok
+  assert_equal $status 0
+  cd -
+}
+
 @test "steampipe check exitCode - with controls in error" {
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check benchmark.control_check_rendering_benchmark
@@ -15,13 +22,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
-@test "steampipe check exitCode - no control alarms or errors" {
-  cd $FUNCTIONALITY_TEST_MOD
-  run steampipe check benchmark.all_controls_ok
-  assert_equal $status 0
-  cd -
-}
-
 @test "steampipe check exitCode - with controls in error(running multiple benchmarks together)" {
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe check benchmark.control_summary_benchmark benchmark.check_cache_benchmark
@@ -32,7 +32,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe check exitCode - runtime error(insufficient args)" {
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe check
-  assert_equal $status 4
+  assert_equal $status 252
   cd -
 }
 
