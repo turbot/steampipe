@@ -12,6 +12,7 @@ import (
 type DashboardFlow struct {
 	ResourceWithMetadataImpl
 	QueryProviderImpl
+	WithProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`

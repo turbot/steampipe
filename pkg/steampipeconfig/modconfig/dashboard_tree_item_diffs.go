@@ -136,35 +136,38 @@ func (d *DashboardTreeItemDiffs) queryProviderDiff(l QueryProvider, r QueryProvi
 	}
 
 	// with
-	lWiths := l.GetWiths()
-	rWiths := r.GetWiths()
-	if len(lWiths) != len(rWiths) {
-		d.AddPropertyDiff("With")
-	} else {
-		for i, lWith := range lWiths {
-			if !lWith.Equals(rWiths[i]) {
-				d.AddPropertyDiff("With")
+	if lwp, ok := l.(WithProvider); ok {
+		rwp := r.(WithProvider)
+		lWiths := lwp.GetWiths()
+		rWiths := rwp.GetWiths()
+		if len(lWiths) != len(rWiths) {
+			d.AddPropertyDiff("With")
+		} else {
+			for i, lWith := range lWiths {
+				if !lWith.Equals(rWiths[i]) {
+					d.AddPropertyDiff("With")
+				}
 			}
 		}
-	}
 
-	// have BASE withs changed
-	lbase := l.GetBase()
-	rbase := r.GetBase()
-	var lbaseWiths []*DashboardWith
-	var rbaseWiths []*DashboardWith
-	if lbase != nil {
-		lbaseWiths = lbase.(RuntimeDependencyProvider).GetWiths()
-	}
-	if rbase != nil {
-		rbaseWiths = rbase.(RuntimeDependencyProvider).GetWiths()
-	}
-	if len(lbaseWiths) != len(rbaseWiths) {
-		d.AddPropertyDiff("With")
-	} else {
-		for i, lBaseWith := range lbaseWiths {
-			if !lBaseWith.Equals(rbaseWiths[i]) {
-				d.AddPropertyDiff("With")
+		// have BASE withs changed
+		lbase := l.GetBase()
+		rbase := r.GetBase()
+		var lbaseWiths []*DashboardWith
+		var rbaseWiths []*DashboardWith
+		if lbase != nil {
+			lbaseWiths = lbase.(WithProvider).GetWiths()
+		}
+		if rbase != nil {
+			rbaseWiths = rbase.(WithProvider).GetWiths()
+		}
+		if len(lbaseWiths) != len(rbaseWiths) {
+			d.AddPropertyDiff("With")
+		} else {
+			for i, lBaseWith := range lbaseWiths {
+				if !lBaseWith.Equals(rbaseWiths[i]) {
+					d.AddPropertyDiff("With")
+				}
 			}
 		}
 	}

@@ -64,8 +64,8 @@ func (p *RuntimeDependencyPublisherImpl) ProvidesRuntimeDependency(dependency *m
 		// we cannot use withRuns here as if withs have dependencies on each other,
 		// this function may be called before all runs have been added
 		// instead, look directly at the underlying resource withs
-		if rdp, ok := p.resource.(modconfig.RuntimeDependencyProvider); ok {
-			for _, w := range rdp.GetWiths() {
+		if wp, ok := p.resource.(modconfig.WithProvider); ok {
+			for _, w := range wp.GetWiths() {
 				if w.UnqualifiedName == resourceName {
 					return true
 				}
@@ -118,15 +118,15 @@ func (p *RuntimeDependencyPublisherImpl) GetWithRuns() map[string]*LeafRun {
 	return p.withRuns
 }
 
-func (p *RuntimeDependencyPublisherImpl) initRuntimeDependencies() error {
+func (p *RuntimeDependencyPublisherImpl) initWiths() error {
 	// if the resource is a runtime dependency provider, create with runs and resolve dependencies
-	rdp, ok := p.resource.(modconfig.RuntimeDependencyProvider)
+	wp, ok := p.resource.(modconfig.WithProvider)
 	if !ok {
 		return nil
 	}
 	// if we have with blocks, create runs for them
 	// BEFORE creating child runs, and before adding runtime dependencies
-	err := p.createWithRuns(rdp.GetWiths(), p.executionTree)
+	err := p.createWithRuns(wp.GetWiths(), p.executionTree)
 	if err != nil {
 		return err
 	}

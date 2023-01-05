@@ -17,8 +17,8 @@ const runtimeDependencyDashboardScope = "self"
 // Dashboard is a struct representing the Dashboard  resource
 type Dashboard struct {
 	ResourceWithMetadataImpl
-	// dashboards are with providers
-	RuntimeDependencyProviderImpl
+	ModTreeItemImpl
+	WithProviderImpl
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
@@ -40,17 +40,15 @@ func NewDashboard(block *hcl.Block, mod *Mod, shortName string) HclResource {
 	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName)
 
 	c := &Dashboard{
-		RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
-			ModTreeItemImpl: ModTreeItemImpl{
-				HclResourceImpl: HclResourceImpl{
-					ShortName:       shortName,
-					FullName:        fullName,
-					UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-					DeclRange:       block.DefRange,
-					blockType:       block.Type,
-				},
-				Mod: mod,
+		ModTreeItemImpl: ModTreeItemImpl{
+			HclResourceImpl: HclResourceImpl{
+				ShortName:       shortName,
+				FullName:        fullName,
+				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
+				DeclRange:       block.DefRange,
+				blockType:       block.Type,
 			},
+			Mod: mod,
 		},
 	}
 	c.SetAnonymous(block)
@@ -72,20 +70,18 @@ func NewQueryDashboard(q ModTreeItem) (*Dashboard, error) {
 		ResourceWithMetadataImpl: ResourceWithMetadataImpl{
 			metadata: &ResourceMetadata{},
 		},
-		RuntimeDependencyProviderImpl: RuntimeDependencyProviderImpl{
-			ModTreeItemImpl: ModTreeItemImpl{
-				HclResourceImpl: HclResourceImpl{
-					ShortName:       parsedName.Name,
-					FullName:        dashboardName,
-					UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeDashboard, parsedName),
-					Title:           utils.ToStringPointer(q.GetTitle()),
-					Description:     utils.ToStringPointer(q.GetDescription()),
-					Documentation:   utils.ToStringPointer(q.GetDocumentation()),
-					Tags:            q.GetTags(),
-					blockType:       BlockTypeDashboard,
-				},
-				Mod: q.GetMod(),
+		ModTreeItemImpl: ModTreeItemImpl{
+			HclResourceImpl: HclResourceImpl{
+				ShortName:       parsedName.Name,
+				FullName:        dashboardName,
+				UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeDashboard, parsedName),
+				Title:           utils.ToStringPointer(q.GetTitle()),
+				Description:     utils.ToStringPointer(q.GetDescription()),
+				Documentation:   utils.ToStringPointer(q.GetDocumentation()),
+				Tags:            q.GetTags(),
+				blockType:       BlockTypeDashboard,
 			},
+			Mod: q.GetMod(),
 		},
 	}
 
@@ -231,7 +227,7 @@ func (d *Dashboard) ValidateRuntimeDependencies(workspace ResourceMapsProvider) 
 	// define a walk function which determines whether the resource has runtime dependencies and if so,
 	// add to the graph
 	resourceFunc := func(resource HclResource) (bool, error) {
-		rdp, ok := resource.(RuntimeDependencyProvider)
+		wp, ok := resource.(WithProvider)
 		if !ok {
 			// continue walking
 			return true, nil
@@ -242,7 +238,7 @@ func (d *Dashboard) ValidateRuntimeDependencies(workspace ResourceMapsProvider) 
 		}
 
 		// if the query provider has any 'with' blocks, add these dependencies as well
-		for _, with := range rdp.GetWiths() {
+		for _, with := range wp.GetWiths() {
 			if err := d.validateRuntimeDependenciesForResource(with, workspace); err != nil {
 				return false, err
 			}
@@ -387,7 +383,7 @@ func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) 
 	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
 	d.base = d.Base
 	// call into parent nested struct setBaseProperties
-	d.RuntimeDependencyProviderImpl.setBaseProperties()
+	d.ModTreeItemImpl.setBaseProperties()
 
 	if d.Width == nil {
 		d.Width = d.Base.Width
