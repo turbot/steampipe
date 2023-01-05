@@ -50,7 +50,7 @@ func NewDashboardCategory(block *hcl.Block, mod *Mod, shortName string) HclResou
 
 // OnDecoded implements HclResource
 func (c *DashboardCategory) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	c.setBaseProperties(resourceMapProvider)
+	c.setBaseProperties()
 	// populate properties map
 	if len(c.PropertyList) > 0 {
 		c.Properties = make(map[string]*DashboardCategoryProperty, len(c.PropertyList))
@@ -68,7 +68,7 @@ func (c *DashboardCategory) Equals(other *DashboardCategory) bool {
 	return !c.Diff(other).HasChanges()
 }
 
-func (c *DashboardCategory) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (c *DashboardCategory) setBaseProperties() {
 	if c.Base == nil {
 		return
 	}

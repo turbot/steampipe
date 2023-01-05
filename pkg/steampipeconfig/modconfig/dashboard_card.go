@@ -61,7 +61,7 @@ func (c *DashboardCard) Equals(other *DashboardCard) bool {
 
 // OnDecoded implements HclResource
 func (c *DashboardCard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	c.setBaseProperties(resourceMapProvider)
+	c.setBaseProperties()
 	return nil
 }
 
@@ -132,7 +132,7 @@ func (c *DashboardCard) CtyValue() (cty.Value, error) {
 	return GetCtyValue(c)
 }
 
-func (c *DashboardCard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (c *DashboardCard) setBaseProperties() {
 	if c.Base == nil {
 		return
 	}
@@ -168,6 +168,4 @@ func (c *DashboardCard) setBaseProperties(resourceMapProvider ResourceMapsProvid
 	if c.Width == nil {
 		c.Width = c.Base.Width
 	}
-
-	c.MergeBaseDependencies(c.Base)
 }

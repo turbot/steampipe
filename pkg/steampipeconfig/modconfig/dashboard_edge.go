@@ -49,7 +49,7 @@ func (e *DashboardEdge) Equals(other *DashboardEdge) bool {
 
 // OnDecoded implements HclResource
 func (e *DashboardEdge) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	e.setBaseProperties(resourceMapProvider)
+	e.setBaseProperties()
 
 	// when we reference resources (i.e. category),
 	// not all properties are retrieved as they are no cty serialisable
@@ -109,7 +109,7 @@ func (e *DashboardEdge) CtyValue() (cty.Value, error) {
 	return GetCtyValue(e)
 }
 
-func (e *DashboardEdge) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (e *DashboardEdge) setBaseProperties() {
 	if e.Base == nil {
 		return
 	}
@@ -121,5 +121,4 @@ func (e *DashboardEdge) setBaseProperties(resourceMapProvider ResourceMapsProvid
 	if e.Category == nil {
 		e.Category = e.Base.Category
 	}
-	e.MergeBaseDependencies(e.Base)
 }

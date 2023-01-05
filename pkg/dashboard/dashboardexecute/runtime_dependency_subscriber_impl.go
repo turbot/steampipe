@@ -419,9 +419,6 @@ func (s *RuntimeDependencySubscriberImpl) hasParam(paramName string) bool {
 func (s *RuntimeDependencySubscriberImpl) setRuntimeDependencies() {
 	names := make(map[string]struct{}, len(s.runtimeDependencies))
 	for _, d := range s.runtimeDependencies {
-		// tactical - exclude params
-		//if d.Dependency.PropertyPath.ItemType =modconfig.BlockTypeParam
-
 		// add to DependencyWiths using ScopedName, i.e. <parent FullName>.<with UnqualifiedName>.
 		// we do this as there may be a with from a base resource with a clashing with name
 		// NOTE: this must be consistent with the naming in RuntimeDependencyPublisherImpl.createWithRuns

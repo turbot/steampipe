@@ -49,7 +49,7 @@ func (n *DashboardNode) Equals(other *DashboardNode) bool {
 
 // OnDecoded implements HclResource—
 func (n *DashboardNode) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	n.setBaseProperties(resourceMapProvider)
+	n.setBaseProperties()
 
 	// when we reference resources (i.e. category),
 	// not all properties are retrieved as they are no cty serialisable
@@ -104,7 +104,7 @@ func (n *DashboardNode) CtyValue() (cty.Value, error) {
 	return GetCtyValue(n)
 }
 
-func (n *DashboardNode) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (n *DashboardNode) setBaseProperties() {
 	if n.Base == nil {
 		return
 	}
@@ -136,5 +136,4 @@ func (n *DashboardNode) setBaseProperties(resourceMapProvider ResourceMapsProvid
 	if n.Params == nil {
 		n.Params = n.Base.Params
 	}
-	n.MergeBaseDependencies(n.Base)
 }

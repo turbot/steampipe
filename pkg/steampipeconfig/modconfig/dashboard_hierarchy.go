@@ -64,7 +64,7 @@ func (h *DashboardHierarchy) Equals(other *DashboardHierarchy) bool {
 
 // OnDecoded implements HclResource
 func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	h.setBaseProperties(resourceMapProvider)
+	h.setBaseProperties()
 	if len(h.Nodes) > 0 {
 		h.NodeNames = h.Nodes.Names()
 	}
@@ -188,6 +188,9 @@ func (h *DashboardHierarchy) AddChild(child HclResource) hcl.Diagnostics {
 			Subject:  h.GetDeclRange(),
 		}}
 	}
+	// set ourselves as parent
+	child.(ModTreeItem).AddParent(h)
+
 	return nil
 }
 
@@ -196,7 +199,7 @@ func (h *DashboardHierarchy) CtyValue() (cty.Value, error) {
 	return GetCtyValue(h)
 }
 
-func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (h *DashboardHierarchy) setBaseProperties() {
 	if h.Base == nil {
 		return
 	}
@@ -234,5 +237,4 @@ func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsP
 	} else {
 		h.Nodes.Merge(h.Base.Nodes)
 	}
-	h.MergeBaseDependencies(h.Base)
 }

@@ -62,7 +62,7 @@ func (f *DashboardFlow) Equals(other *DashboardFlow) bool {
 
 // OnDecoded implements HclResource
 func (f *DashboardFlow) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	f.setBaseProperties(resourceMapProvider)
+	f.setBaseProperties()
 	if len(f.Nodes) > 0 {
 		f.NodeNames = f.Nodes.Names()
 	}
@@ -186,6 +186,8 @@ func (f *DashboardFlow) AddChild(child HclResource) hcl.Diagnostics {
 			Subject:  f.GetDeclRange(),
 		}}
 	}
+	// set ourselves as parent
+	child.(ModTreeItem).AddParent(f)
 	return nil
 }
 
@@ -194,7 +196,7 @@ func (f *DashboardFlow) CtyValue() (cty.Value, error) {
 	return GetCtyValue(f)
 }
 
-func (f *DashboardFlow) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (f *DashboardFlow) setBaseProperties() {
 	if f.Base == nil {
 		return
 	}
@@ -231,5 +233,4 @@ func (f *DashboardFlow) setBaseProperties(resourceMapProvider ResourceMapsProvid
 	} else {
 		f.Nodes.Merge(f.Base.Nodes)
 	}
-	f.MergeBaseDependencies(f.Base)
 }

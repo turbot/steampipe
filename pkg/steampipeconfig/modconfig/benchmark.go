@@ -60,7 +60,7 @@ func (b *Benchmark) Equals(other *Benchmark) bool {
 
 // OnDecoded implements HclResource
 func (b *Benchmark) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	b.setBaseProperties(resourceMapProvider)
+	b.setBaseProperties()
 	return nil
 }
 
@@ -201,7 +201,7 @@ func (b *Benchmark) CtyValue() (cty.Value, error) {
 	return GetCtyValue(b)
 }
 
-func (b *Benchmark) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (b *Benchmark) setBaseProperties() {
 	if b.Base == nil {
 		return
 	}

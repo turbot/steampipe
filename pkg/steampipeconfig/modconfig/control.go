@@ -165,7 +165,7 @@ func (c *Control) GetParentNames() []string {
 
 // OnDecoded implements HclResource
 func (c *Control) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	c.setBaseProperties(resourceMapProvider)
+	c.setBaseProperties()
 
 	return nil
 }
@@ -230,7 +230,7 @@ func (c *Control) CtyValue() (cty.Value, error) {
 	return GetCtyValue(c)
 }
 
-func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (c *Control) setBaseProperties() {
 	if c.Base == nil {
 		return
 	}
@@ -258,6 +258,4 @@ func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	if c.Display == nil {
 		c.Display = c.Base.Display
 	}
-
-	c.MergeBaseDependencies(c.Base)
 }

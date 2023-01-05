@@ -106,7 +106,7 @@ func (d *Dashboard) Equals(other *Dashboard) bool {
 
 // OnDecoded implements HclResource
 func (d *Dashboard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	d.setBaseProperties(resourceMapProvider)
+	d.setBaseProperties()
 
 	d.ChildNames = make([]string, len(d.children))
 	for i, child := range d.children {
@@ -365,7 +365,7 @@ func (d *Dashboard) CtyValue() (cty.Value, error) {
 	return GetCtyValue(d)
 }
 
-func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (d *Dashboard) setBaseProperties() {
 	if d.Base == nil {
 		return
 	}

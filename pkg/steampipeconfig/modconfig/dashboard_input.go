@@ -82,7 +82,7 @@ func (i *DashboardInput) Equals(other *DashboardInput) bool {
 
 // OnDecoded implements HclResource
 func (i *DashboardInput) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	i.setBaseProperties(resourceMapProvider)
+	i.setBaseProperties()
 	return nil
 }
 
@@ -172,7 +172,7 @@ func (i *DashboardInput) CtyValue() (cty.Value, error) {
 	return GetCtyValue(i)
 }
 
-func (i *DashboardInput) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (i *DashboardInput) setBaseProperties() {
 	if i.Base == nil {
 		return
 	}
@@ -200,6 +200,4 @@ func (i *DashboardInput) setBaseProperties(resourceMapProvider ResourceMapsProvi
 	if i.Width == nil {
 		i.Width = i.Base.Width
 	}
-
-	i.MergeBaseDependencies(i.Base)
 }

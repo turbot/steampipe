@@ -60,7 +60,7 @@ func (c *DashboardChart) Equals(other *DashboardChart) bool {
 
 // OnDecoded implements HclResource
 func (c *DashboardChart) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	c.setBaseProperties(resourceMapProvider)
+	c.setBaseProperties()
 	// populate series map
 	if len(c.SeriesList) > 0 {
 		c.Series = make(map[string]*DashboardChartSeries, len(c.SeriesList))
@@ -146,7 +146,7 @@ func (c *DashboardChart) CtyValue() (cty.Value, error) {
 	return GetCtyValue(c)
 }
 
-func (c *DashboardChart) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (c *DashboardChart) setBaseProperties() {
 	if c.Base == nil {
 		return
 	}
@@ -192,6 +192,4 @@ func (c *DashboardChart) setBaseProperties(resourceMapProvider ResourceMapsProvi
 	if c.Width == nil {
 		c.Width = c.Base.Width
 	}
-
-	c.MergeBaseDependencies(c.Base)
 }

@@ -94,7 +94,7 @@ func (t *DashboardTable) Equals(other *DashboardTable) bool {
 
 // OnDecoded implements HclResource
 func (t *DashboardTable) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	t.setBaseProperties(resourceMapProvider)
+	t.setBaseProperties()
 	// populate columns map
 	if len(t.ColumnList) > 0 {
 		t.Columns = make(map[string]*DashboardTableColumn, len(t.ColumnList))
@@ -160,7 +160,7 @@ func (t *DashboardTable) CtyValue() (cty.Value, error) {
 	return GetCtyValue(t)
 }
 
-func (t *DashboardTable) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (t *DashboardTable) setBaseProperties() {
 	if t.Base == nil {
 		return
 	}
