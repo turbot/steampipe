@@ -162,7 +162,7 @@ func (r *ControlRun) setError(ctx context.Context, err error) {
 		return
 	}
 	if r.runError == context.DeadlineExceeded {
-		r.runError = sperr.Wrapf(r.runError, "control execution timed out")
+		r.runError = sperr.WrapWithMessage(r.runError, "control execution timed out")
 	} else {
 		r.runError = sperr.Wrap(err)
 	}
@@ -211,7 +211,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	if sessionResult.Error != nil {
 		if !error_helpers.IsCancelledError(sessionResult.Error) {
 			log.Printf("[TRACE] controlRun %s execute failed to acquire session: %s", r.ControlId, sessionResult.Error)
-			sessionResult.Error = sperr.Wrapf(sessionResult.Error, "error acquiring database connection")
+			sessionResult.Error = sperr.WrapWithMessage(sessionResult.Error, "error acquiring database connection")
 			r.setError(ctx, sessionResult.Error)
 		}
 		return
@@ -304,7 +304,7 @@ func (r *ControlRun) getControlQueryContext(ctx context.Context) context.Context
 func (r *ControlRun) resolveControlQuery(control *modconfig.Control) (*modconfig.ResolvedQuery, error) {
 	resolvedQuery, err := r.Tree.Workspace.ResolveQueryFromQueryProvider(control, nil)
 	if err != nil {
-		return nil, sperr.Wrapf(err, `cannot run %s - failed to resolve query "%s"`, control.Name(), typehelpers.SafeString(control.SQL))
+		return nil, sperr.WrapWithMessage(err, `cannot run %s - failed to resolve query "%s"`, control.Name(), typehelpers.SafeString(control.SQL))
 	}
 	return resolvedQuery, nil
 }

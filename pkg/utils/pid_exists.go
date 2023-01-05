@@ -32,7 +32,7 @@ func FindProcess(targetPid int) (*psutils.Process, error) {
 
 	pids, err := psutils.Pids()
 	if err != nil {
-		return nil, sperr.Wrapf(err, "failed to get pids")
+		return nil, sperr.WrapWithMessage(err, "failed to get pids")
 	}
 	for _, pid := range pids {
 		if targetPid == int(pid) {
@@ -44,7 +44,7 @@ func FindProcess(targetPid int) (*psutils.Process, error) {
 
 			status, err := process.Status()
 			if err != nil {
-				return nil, sperr.Wrapf(err, "failed to get process status")
+				return nil, sperr.WrapWithMessage(err, "failed to get process status")
 			}
 
 			if status == "Z" {

@@ -67,12 +67,12 @@ func LoadDatabaseVersionFile() (*DatabaseVersionFile, error) {
 func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 	file, err := os.ReadFile(path)
 	if err != nil {
-		return nil, sperr.Wrapf(err, "error reading DB version file")
+		return nil, sperr.WrapWithMessage(err, "error reading DB version file")
 	}
 	var data DatabaseVersionFile
 	if err := json.Unmarshal(file, &data); err != nil {
 		log.Println("[ERROR]", "Error while reading DB version file", err)
-		return nil, sperr.Wrapf(err, "error unmarshalling db version file")
+		return nil, sperr.WrapWithMessage(err, "error unmarshalling db version file")
 	}
 	if data.FdwExtension == (InstalledVersion{}) {
 		data.FdwExtension = InstalledVersion{}

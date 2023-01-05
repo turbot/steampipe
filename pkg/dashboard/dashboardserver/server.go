@@ -86,7 +86,7 @@ func (s *Server) HandleDashboardEvent(ctx context.Context, event dashboardevents
 			// we don't expect the build functions to ever error during marshalling
 			// this is because the data getting marshalled are not expected to have go specific
 			// properties/data in them
-			panic(sperr.Wrapf(payloadError, "error building payload for '%s'", reflect.TypeOf(event).String()))
+			panic(sperr.WrapWithMessage(payloadError, "error building payload for '%s'", reflect.TypeOf(event).String()))
 		}
 	}()
 
@@ -336,13 +336,13 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 		case "get_dashboard_metadata":
 			payload, err := buildDashboardMetadataPayload(s.workspace.GetResourceMaps(), s.workspace.CloudMetadata)
 			if err != nil {
-				panic(sperr.Wrapf(err, "error building payload for get_metadata"))
+				panic(sperr.WrapWithMessage(err, "error building payload for get_metadata"))
 			}
 			_ = session.Write(payload)
 		case "get_available_dashboards":
 			payload, err := buildAvailableDashboardsPayload(s.workspace.GetResourceMaps())
 			if err != nil {
-				panic(sperr.Wrapf(err, "error building payload for get_available_dashboards"))
+				panic(sperr.WrapWithMessage(err, "error building payload for get_available_dashboards"))
 			}
 			_ = session.Write(payload)
 		case "select_dashboard":

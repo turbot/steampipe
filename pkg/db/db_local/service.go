@@ -61,7 +61,7 @@ func errorIfUnknownService() error {
 	// read the content of the postmaster.pid file
 	fileContent, err := os.ReadFile(getPostmasterPidLocation())
 	if err != nil {
-		return sperr.Wrapf(err, "could not read postmaster.pid from %s", getPostmasterPidLocation())
+		return sperr.WrapWithMessage(err, "could not read postmaster.pid from %s", getPostmasterPidLocation())
 	}
 
 	// the first line contains the PID
@@ -77,7 +77,7 @@ func errorIfUnknownService() error {
 	// extract it
 	pid, err := strconv.Atoi(lines[0])
 	if err != nil {
-		return sperr.Wrapf(err, "error while trying to convert PID to int: %s", lines[0])
+		return sperr.WrapWithMessage(err, "error while trying to convert PID to int: %s", lines[0])
 	}
 
 	// check if a process with that PID exists

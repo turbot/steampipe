@@ -131,14 +131,14 @@ func downloadAndInstallDbFiles(ctx context.Context) error {
 	err := os.RemoveAll(getDatabaseLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
-		return sperr.Wrapf(err, "Prepare database install location... FAILED!")
+		return sperr.WrapWithMessage(err, "Prepare database install location... FAILED!")
 	}
 
 	statushooks.SetStatus(ctx, "Download & install embedded PostgreSQL database...")
 	_, err = ociinstaller.InstallDB(ctx, getDatabaseLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
-		return sperr.Wrapf(err, "Download & install embedded PostgreSQL database... FAILED!")
+		return sperr.WrapWithMessage(err, "Download & install embedded PostgreSQL database... FAILED!")
 	}
 	return nil
 }
@@ -201,18 +201,26 @@ func prepareDb(ctx context.Context) error {
 		statushooks.SetStatus(ctx, "Updating install records...")
 		if err = updateDownloadedBinarySignature(); err != nil {
 			log.Printf("[TRACE] updateDownloadedBinarySignature failed: %v", err)
-			return sperr.Wrapf(err, "updating install records failed")
+			return sperr.WrapWithMessage(err, "updating install records failed")
 		}
 
 		// install fdw
 		if _, err := installFDW(ctx, false); err != nil {
 			log.Printf("[TRACE] installFDW failed: %v", err)
-			return sperr.Wrapf(err, "Update steampipe-postgres-fdw... FAILED!").AsRootMessage()
+			return sperr.Wrap(
+				err,
+				sperr.WithRootMessage("Update steampipe-postgres-fdw... FAILED!"),
+			)
 		}
 	} else if fdwNeedsUpdate(versionInfo) {
 		if _, err := installFDW(ctx, false); err != nil {
 			log.Printf("[TRACE] installFDW failed: %v", err)
-			return sperr.Wrapf(err, "Update steampipe-postgres-fdw... FAILED!").AsRootMessage()
+			return sperr.Wrap(
+				err,
+				sperr.WithMessage(""),
+				sperr.WithDetail(""),
+				sperr.WithRootMessage("Update steampipe-postgres-fdw... FAILED!"),
+			)
 		}
 
 		// get the message renderer from the context
@@ -522,7 +530,7 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 		// not logging here, since the password may get logged
 		// we don't want that
 		if _, err := rawClient.Exec(ctx, statement); err != nil {
-			return sperr.Wrapf(err, "failed setup statement: %s", statement)
+			return sperr.WrapWithMessage(err, "failed setup statement: %s", statement)
 		}
 	}
 	return writePgHbaContent(databaseName, constants.DatabaseUser)
@@ -550,7 +558,7 @@ func installForeignServer(ctx context.Context, rawClient *pgx.Conn) error {
 		// since the password is stored in a config file anyway.
 		log.Println("[TRACE] Install Foreign Server: ", statement)
 		if _, err := rawClient.Exec(ctx, statement); err != nil {
-			return sperr.Wrapf(err, "install foreign server statement: %s", statement)
+			return sperr.WrapWithMessage(err, "install foreign server statement: %s", statement)
 		}
 	}
 
@@ -563,7 +571,7 @@ func updateDownloadedBinarySignature() error {
 
 	versionInfo, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {
-		return sperr.Wrapf(err, "failed to load database version file")
+		return sperr.WrapWithMessage(err, "failed to load database version file")
 	}
 	installedSignature := fmt.Sprintf("%s|%s", versionInfo.EmbeddedDB.ImageDigest, versionInfo.FdwExtension.ImageDigest)
 	return os.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)

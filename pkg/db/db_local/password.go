@@ -28,13 +28,13 @@ func readPasswordFile() (string, error) {
 	if !filehelpers.FileExists(getPasswordFileLocation()) {
 		p := generatePassword()
 		if err := writePasswordFile(p); err != nil {
-			return "", sperr.Wrapf(err, "could not write .passwd file")
+			return "", sperr.WrapWithMessage(err, "could not write .passwd file")
 		}
 		return p, nil
 	}
 	contentBytes, err := os.ReadFile(getPasswordFileLocation())
 	if err != nil {
-		return "", sperr.Wrapf(err, "could not read password file from '%s'", getPasswordFileLocation())
+		return "", sperr.WrapWithMessage(err, "could not read password file from '%s'", getPasswordFileLocation())
 	}
 	return strings.TrimSpace(string(contentBytes)), nil
 }

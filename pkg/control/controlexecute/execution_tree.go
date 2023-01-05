@@ -184,7 +184,7 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeIt
 	parsedName, err := modconfig.ParseResourceName(arg)
 	if err != nil {
 		// just log error
-		return nil, sperr.Wrapf(err, "failed to parse check argument '%s'", arg)
+		return nil, sperr.WrapWithMessage(err, "failed to parse check argument '%s'", arg)
 	}
 
 	resource, found := e.Workspace.GetResource(parsedName)

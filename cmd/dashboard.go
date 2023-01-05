@@ -242,7 +242,7 @@ func initDashboard(ctx context.Context) *initialisation.InitData {
 func getInitData(ctx context.Context) *initialisation.InitData {
 	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
 	if errAndWarnings.GetError() != nil {
-		return initialisation.NewErrorInitData(sperr.Wrapf(errAndWarnings.GetError(), "failed to load workspace"))
+		return initialisation.NewErrorInitData(sperr.WrapWithMessage(errAndWarnings.GetError(), "failed to load workspace"))
 	}
 
 	i := initialisation.NewInitData(w).Init(ctx, constants.InvokerDashboard)

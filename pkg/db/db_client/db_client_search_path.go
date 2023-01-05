@@ -20,7 +20,7 @@ import (
 func (c *DbClient) GetCurrentSearchPath(ctx context.Context) ([]string, error) {
 	res, err := c.ExecuteSync(ctx, "show search_path")
 	if err != nil {
-		return nil, sperr.Wrapf(err, "failed to read the current search path")
+		return nil, sperr.WrapWithMessage(err, "failed to read the current search path")
 	}
 	pathAsString, ok := res.Rows[0].(*queryresult.RowResult).Data[0].(string)
 	if !ok {
@@ -38,7 +38,7 @@ func (c *DbClient) GetCurrentSearchPathForDbConnection(ctx context.Context, data
 	}
 	pathAsString := ""
 	if err := res.Scan(&pathAsString); err != nil {
-		return nil, sperr.Wrapf(err, "failed to read the current search path")
+		return nil, sperr.WrapWithMessage(err, "failed to read the current search path")
 	}
 	return c.buildSearchPathResult(pathAsString)
 }

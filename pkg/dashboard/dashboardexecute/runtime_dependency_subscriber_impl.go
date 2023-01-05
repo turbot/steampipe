@@ -119,7 +119,7 @@ func (s *RuntimeDependencySubscriberImpl) resolveRuntimeDependencies() error {
 					// the runtime dependency value for a 'with' is *dashboardtypes.LeafData
 					withValue, err := s.getWithValue(name, resolvedVal.Value.(*dashboardtypes.LeafData), dep.PropertyPath)
 					if err != nil {
-						transformedResolvedVal.Error = sperr.Wrapf(err, "failed to resolve with value '%s' for %s", dep.PropertyPath.Original, name)
+						transformedResolvedVal.Error = sperr.WrapWithMessage(err, "failed to resolve with value '%s' for %s", dep.PropertyPath.Original, name)
 					} else {
 						transformedResolvedVal.Value = withValue
 					}

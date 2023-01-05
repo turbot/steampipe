@@ -155,7 +155,12 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 	_ = removeRunningInstanceInfo()
 
 	if err := utils.EnsureDirectoryPermission(getDataLocation()); err != nil {
-		return res.SetError(sperr.Wrapf(err, "%s does not have the necessary permissions to start the service", getDataLocation()).AsRootMessage())
+		return res.SetError(
+			sperr.Wrap(
+				err,
+				sperr.WithRootMessage("%s does not have the necessary permissions to start the service", getDataLocation()),
+			),
+		)
 	}
 
 	// Generate the certificate if it fails then set the ssl to off
@@ -164,7 +169,12 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 	}
 
 	if err := utils.IsPortBindable(port); err != nil {
-		return res.SetError(sperr.Wrapf(err, "cannot listen on port %d", constants.Bold(port)).AsRootMessage())
+		return res.SetError(
+			sperr.Wrap(
+				err,
+				sperr.WithRootMessage("cannot listen on port %d", constants.Bold(port)),
+			),
+		)
 	}
 
 	if err := migrateLegacyPasswordFile(); err != nil {

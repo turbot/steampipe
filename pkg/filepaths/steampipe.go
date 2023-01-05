@@ -33,7 +33,7 @@ func ensureSteampipeSubDir(dirName string) string {
 
 	if _, err := os.Stat(subDir); os.IsNotExist(err) {
 		err = os.MkdirAll(subDir, 0755)
-		error_helpers.FailOnError(sperr.Wrapf(err, fmt.Sprintf("could not create %s directory", dirName)))
+		error_helpers.FailOnError(sperr.WrapWithMessage(err, fmt.Sprintf("could not create %s directory", dirName)))
 	}
 
 	return subDir

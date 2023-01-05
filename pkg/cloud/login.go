@@ -26,11 +26,7 @@ func WebLogin(ctx context.Context) (string, error) {
 
 	tempTokenReq, _, err := client.Auth.LoginTokenCreate(ctx).Execute()
 	if err != nil {
-<<<<<<< HEAD
 		return "", sperr.WrapWithMessage(err, "failed to create login token")
-=======
-		return "", sperr.Wrapf(err, "failed to create login token")
->>>>>>> 8c406c28 (updates to codes)
 	}
 	id := tempTokenReq.Id
 	// add in id query string
@@ -41,10 +37,14 @@ func WebLogin(ctx context.Context) (string, error) {
 	err = utils.OpenBrowser(browserUrl)
 	if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return "", sperr.WrapWithMessage(err, "failed to open login webpage")
 =======
 		return "", sperr.Wrapf(err, "failed to open login webpage")
 >>>>>>> 8c406c28 (updates to codes)
+=======
+		return "", sperr.WrapWithMessage(err, "failed to open login webpage")
+>>>>>>> 3d96f2c4 (usage)
 	}
 
 	return id, nil
@@ -83,10 +83,14 @@ func LoadToken() (string, error) {
 	tokenBytes, err := os.ReadFile(tokenPath)
 	if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return "", sperr.WrapWithMessage(err, "failed to load token file '%s'", tokenPath)
 =======
 		return "", sperr.Wrapf(err, "failed to load token file '%s'", tokenPath)
 >>>>>>> 8c406c28 (updates to codes)
+=======
+		return "", sperr.WrapWithMessage(err, "failed to load token file '%s'", tokenPath)
+>>>>>>> 3d96f2c4 (usage)
 	}
 	return string(tokenBytes), nil
 }

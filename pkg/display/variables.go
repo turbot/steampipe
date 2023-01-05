@@ -11,7 +11,7 @@ import (
 
 func ShowVarsListJson(vars []*modconfig.Variable) {
 	jsonOutput, err := json.MarshalIndent(vars, "", "  ")
-	error_helpers.FailOnError(sperr.Wrapf(err, "failed to marshal variables to JSON"))
+	error_helpers.FailOnError(sperr.WrapWithMessage(err, "failed to marshal variables to JSON"))
 
 	fmt.Println(string(jsonOutput))
 }

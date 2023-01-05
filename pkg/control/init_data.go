@@ -34,7 +34,7 @@ func NewInitData(ctx context.Context) *InitData {
 	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
 	if errAndWarnings.GetError() != nil {
 		return &InitData{
-			InitData: *initialisation.NewErrorInitData(sperr.Wrapf(errAndWarnings.GetError(), "failed to load workspace")),
+			InitData: *initialisation.NewErrorInitData(sperr.WrapWithMessage(errAndWarnings.GetError(), "failed to load workspace")),
 		}
 	}
 

@@ -90,7 +90,7 @@ func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
 
 	fileContent, err := os.ReadFile(filepaths.RunningInfoFilePath())
 	if err != nil {
-		return nil, sperr.Wrapf(err, "error while trying to read state file from %s", filepaths.RunningInfoFilePath())
+		return nil, sperr.WrapWithMessage(err, "error while trying to read state file from %s", filepaths.RunningInfoFilePath())
 	}
 	var info = new(RunningDBInstanceInfo)
 	err = json.Unmarshal(fileContent, info)

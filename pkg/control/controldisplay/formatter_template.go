@@ -36,7 +36,7 @@ func NewTemplateFormatter(input *OutputTemplate) (*TemplateFormatter, error) {
 		ParseFS(os.DirFS(input.TemplatePath), "*")
 
 	if err != nil {
-		return nil, sperr.Wrapf(err, "could not load template '%s'", input.TemplatePath)
+		return nil, sperr.WrapWithMessage(err, "could not load template '%s'", input.TemplatePath)
 	}
 
 	return &TemplateFormatter{exportFormat: input, template: t}, nil

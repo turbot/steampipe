@@ -229,7 +229,7 @@ func pluginInstallDir(ref *SteampipeImageRef) string {
 
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 		err = os.MkdirAll(fullPath, 0755)
-		error_helpers.FailOnError(sperr.Wrapf(err, "could not create plugin install directory"))
+		error_helpers.FailOnError(sperr.WrapWithMessage(err, "could not create plugin install directory"))
 	}
 
 	return fullPath

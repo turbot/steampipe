@@ -47,7 +47,7 @@ func createModIntrospectionTable(ctx context.Context, workspaceResources *modcon
 
 	_, err := conn.Exec(ctx, modTableSql)
 	if err != nil {
-		return sperr.Wrapf(err, "failed to create mod introspection table")
+		return sperr.WrapWithMessage(err, "failed to create mod introspection table")
 	}
 
 	// return context error - this enables calling code to respond to cancellation
@@ -67,7 +67,7 @@ func populateAllIntrospectionTables(ctx context.Context, workspaceResources *mod
 
 	_, err := conn.Exec(ctx, strings.Join(sql, "\n"))
 	if err != nil {
-		return sperr.Wrapf(err, "failed to create introspection tables")
+		return sperr.WrapWithMessage(err, "failed to create introspection tables")
 	}
 	// return context error - this enables calling code to respond to cancellation
 	return ctx.Err()
@@ -193,7 +193,7 @@ func populateControlIntrospectionTables(ctx context.Context, workspaceResources 
 
 	_, err := conn.Exec(ctx, strings.Join(sql, "\n"))
 	if err != nil {
-		return sperr.Wrapf(err, "failed to create introspection tables")
+		return sperr.WrapWithMessage(err, "failed to create introspection tables")
 	}
 
 	// return context error - this enables calling code to respond to cancellation
