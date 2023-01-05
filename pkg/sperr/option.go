@@ -45,13 +45,3 @@ func WithRootMessage(format string, args ...interface{}) Option {
 		return e
 	}
 }
-
-func AsRootMessage() Option {
-	return func(e *Error) *Error {
-		if e == nil {
-			return nil
-		}
-		e.isRootMessage = true
-		return e
-	}
-}
