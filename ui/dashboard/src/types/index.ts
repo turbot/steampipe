@@ -31,8 +31,6 @@ export type IDashboardContext = {
   selectedDashboardInputs: DashboardInputs;
   lastChangedInput: string | null;
 
-  sqlDataMap: SQLDataMap;
-
   dashboardTags: DashboardTags;
 
   search: DashboardSearch;
@@ -344,10 +342,6 @@ export type PanelProperties = {
 
 export type DependencyPanelProperties = {
   name: string;
-};
-
-export type SQLDataMap = {
-  [sql: string]: LeafNodeData;
 };
 
 export type PanelDefinition = {

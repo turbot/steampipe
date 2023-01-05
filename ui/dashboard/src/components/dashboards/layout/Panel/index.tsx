@@ -145,15 +145,19 @@ const Panel = ({
           <PanelProgress className={definition.title ? null : "rounded-t-md"} />
           {showPanelContents && <PanelInformation />}
           <PlaceholderComponent
+            // @ts-ignore
             animate={definition.status === "running"}
+            // @ts-ignore
             ready={ready || definition.status !== "running"}
           >
             <>
-              {showPanelContents ? (
-                children
-              ) : (
-                <PanelStatus showPanelError={showPanelError} />
-              )}
+              {/*{!ready && (*/}
+              <PanelStatus
+                definition={definition as PanelDefinition}
+                showPanelError={showPanelError}
+              />
+              {/*)}*/}
+              {showPanelContents ? children : null}
             </>
           </PlaceholderComponent>
         </div>

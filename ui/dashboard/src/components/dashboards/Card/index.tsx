@@ -73,11 +73,8 @@ const useCardState = ({ data, sql, display_type, properties }: CardProps) => {
   });
 
   useEffect(() => {
-    if (!data) {
-      return;
-    }
-
     if (
+      !data ||
       !data.columns ||
       !data.rows ||
       data.columns.length === 0 ||
