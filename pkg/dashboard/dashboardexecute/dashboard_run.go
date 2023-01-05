@@ -50,7 +50,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 	r.inputs = dashboard.GetInputs()
 
 	// after setting inputs, init runtime dependencies. this creates with runs and adds them to our children
-	err := r.initRuntimeDependencies()
+	err := r.initWiths()
 	if err != nil {
 		return nil, err
 	}

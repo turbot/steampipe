@@ -50,10 +50,13 @@ type ModTreeItem interface {
 // RuntimeDependencyProvider is implemented by all QueryProviders and Dashboard
 type RuntimeDependencyProvider interface {
 	ModTreeItem
-	AddWith(with *DashboardWith) hcl.Diagnostics
-	GetWiths() []*DashboardWith
 	AddRuntimeDependencies([]*RuntimeDependency)
 	GetRuntimeDependencies() map[string]*RuntimeDependency
+}
+
+type WithProvider interface {
+	AddWith(with *DashboardWith) hcl.Diagnostics
+	GetWiths() []*DashboardWith
 }
 
 // QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
@@ -107,6 +110,7 @@ type ResourceMapsProvider interface {
 // TODO [node_reuse] add NodeAndEdgeProviderImpl https://github.com/turbot/steampipe/issues/2918
 type NodeAndEdgeProvider interface {
 	QueryProvider
+	WithProvider
 	GetEdges() DashboardEdgeList
 	SetEdges(DashboardEdgeList)
 	GetNodes() DashboardNodeList

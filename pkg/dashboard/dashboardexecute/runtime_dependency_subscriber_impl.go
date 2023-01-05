@@ -58,7 +58,7 @@ func (s *RuntimeDependencySubscriberImpl) initRuntimeDependencies(executionTree 
 	}
 
 	// call into publisher to start any with runs
-	if err := s.RuntimeDependencyPublisherImpl.initRuntimeDependencies(); err != nil {
+	if err := s.RuntimeDependencyPublisherImpl.initWiths(); err != nil {
 		return err
 	}
 	// resolve any runtime dependencies

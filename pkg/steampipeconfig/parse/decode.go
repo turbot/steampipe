@@ -349,13 +349,6 @@ func decodeQueryProviderBlocks(block *hcl.Block, content *hclsyntax.Body, resour
 				moreDiags = AddReferences(resource, block, parseCtx)
 			}
 			diags = append(diags, moreDiags...)
-		case modconfig.BlockTypeWith:
-			with, withRes := decodeBlock(block, parseCtx)
-			res.Merge(withRes)
-			if res.Success() {
-				moreDiags := queryProvider.AddWith(with.(*modconfig.DashboardWith))
-				res.addDiags(moreDiags)
-			}
 		}
 	}
 
@@ -446,7 +439,15 @@ func decodeNodeAndEdgeProviderBlocks(content *hclsyntax.Body, nodeAndEdgeProvide
 				moreDiags := nodeAndEdgeProvider.AddChild(child)
 				res.addDiags(moreDiags)
 			}
+		case modconfig.BlockTypeWith:
+			with, withRes := decodeBlock(block, parseCtx)
+			res.Merge(withRes)
+			if res.Success() {
+				moreDiags := nodeAndEdgeProvider.AddWith(with.(*modconfig.DashboardWith))
+				res.addDiags(moreDiags)
+			}
 		}
+
 	}
 
 	return res

@@ -17,16 +17,17 @@ func validateResource(resource modconfig.HclResource) hcl.Diagnostics {
 		diags = append(diags, moreDiags...)
 	}
 
-	if rdp, ok := resource.(modconfig.RuntimeDependencyProvider); ok {
-		moreDiags := validateRuntimeDependencyProvider(rdp)
+	if wp, ok := resource.(modconfig.WithProvider); ok {
+		moreDiags := validateRuntimeDependencyProvider(wp)
 		diags = append(diags, moreDiags...)
 	}
 	return diags
 }
 
-func validateRuntimeDependencyProvider(resource modconfig.RuntimeDependencyProvider) hcl.Diagnostics {
+func validateRuntimeDependencyProvider(wp modconfig.WithProvider) hcl.Diagnostics {
+	resource := wp.(modconfig.HclResource)
 	var diags hcl.Diagnostics
-	if len(resource.GetWiths()) > 0 && !resource.IsTopLevel() {
+	if len(wp.GetWiths()) > 0 && !resource.IsTopLevel() {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  "Only top level resources can have `with` blocks",
