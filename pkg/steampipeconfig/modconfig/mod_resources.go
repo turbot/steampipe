@@ -424,7 +424,7 @@ func (m *ResourceMaps) populateWithRefs(nep NodeAndEdgeProvider, rdp RuntimeDepe
 			if ok {
 				for _, withRef := range w.References {
 					// build a new reference changing the 'from' to the NodeAndEdgeProvider
-					ref := withRef.CloneWithNewFrom(nep.Name())
+					ref := withRef.CloneWithNewFrom(nep.GetUnqualifiedName())
 					m.References[ref.String()] = ref
 				}
 			}
