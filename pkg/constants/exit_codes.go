@@ -6,6 +6,7 @@ const (
 	ExitCodeControlsError              = 2   // check - no runtime errors, 1 or more control errors
 	ExitCodePluginLoadingError         = 11  // plugin - loading error
 	ExitCodePluginListFailure          = 12  // plugin - list failure
+	ExitCodePluginNotFound             = 13  // plugin - not found
 	ExitCodeSnapshotCreationFailed     = 21  // snapshot
 	ExitCodeSnapshotUploadFailed       = 22  // snapshot
 	ExitCodeServiceSetupFailure        = 31  // service

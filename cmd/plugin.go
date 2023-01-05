@@ -310,6 +310,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	if len(plugins) > 0 && !(cmdconfig.Viper().GetBool("all")) && plugins[0] == "all" {
 		// improve the response to wrong argument "steampipe plugin update all"
 		fmt.Println()
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		error_helpers.ShowError(ctx, fmt.Errorf("Did you mean %s?", constants.Bold("--all")))
 		fmt.Println()
 		return
@@ -353,6 +354,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			if isExists {
 				runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
 			} else {
+				exitCode = constants.ExitCodePluginNotFound
 				updateResults = append(updateResults, &display.PluginInstallReport{
 					Skipped:        true,
 					Plugin:         p,
@@ -477,6 +479,7 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		msg := ""
 		_, name, stream := ociinstaller.NewSteampipeImageRef(pluginName).GetOrgNameAndStream()
 		if isPluginNotFoundErr(err) {
+			exitCode = constants.ExitCodePluginNotFound
 			msg = constants.PluginNotFound
 		} else {
 			msg = err.Error()
@@ -668,6 +671,9 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	for _, p := range args {
 		spinner.SetStatus(fmt.Sprintf("Uninstalling %s", p))
 		if report, err := plugin.Remove(ctx, p, connectionMap); err != nil {
+			if strings.Contains(err.Error(), "not found") {
+				exitCode = constants.ExitCodePluginNotFound
+			}
 			error_helpers.ShowErrorWithMessage(ctx, err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
 		} else {
 			report.ShortName = p
