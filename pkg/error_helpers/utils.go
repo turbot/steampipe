@@ -34,9 +34,6 @@ func WrapError(err error) error {
 }
 
 func FailOnError(err error) {
-	if spe, ok := err.(*sperr.Error); ok && spe == nil {
-		return
-	}
 	if err != nil {
 		err = HandleCancelError(err)
 		log.Printf("[ERROR] FailOnError: %+#v\n", sperr.Wrap(err))
@@ -45,7 +42,7 @@ func FailOnError(err error) {
 }
 
 func FailOnErrorWithMessage(err error, message string) {
-	FailOnError(sperr.Wrapf(err, message))
+	FailOnError(sperr.WrapWithMessage(err, message))
 }
 
 func ShowError(ctx context.Context, err error) {
@@ -60,14 +57,14 @@ func ShowError(ctx context.Context, err error) {
 
 // ShowErrorWithMessage displays the given error nicely with the given message
 func ShowErrorWithMessage(ctx context.Context, err error, message string) {
-	ShowError(ctx, sperr.Wrapf(err, message))
+	ShowError(ctx, sperr.WrapWithMessage(err, message))
 }
 
 // HandleCancelError modifies a context.Canceled error into a readable error that can
 // be printed on the console
 func HandleCancelError(err error) error {
 	if IsCancelledError(err) {
-		err = sperr.Wrapf(err, "execution cancelled")
+		err = sperr.WrapWithMessage(err, "execution cancelled")
 	}
 
 	return err
@@ -75,7 +72,7 @@ func HandleCancelError(err error) error {
 
 func HandleQueryTimeoutError(err error) error {
 	if errors.Is(err, context.DeadlineExceeded) {
-		err = sperr.Wrapf(err, "query timeout exceeded (%ds)", viper.GetInt(constants.ArgDatabaseQueryTimeout))
+		err = sperr.WrapWithMessage(err, "query timeout exceeded (%ds)", viper.GetInt(constants.ArgDatabaseQueryTimeout))
 	}
 	return err
 }
@@ -132,5 +129,5 @@ func CombineErrors(errors ...error) error {
 }
 
 func PrefixError(err error, prefix string) error {
-	return sperr.Wrapf(err, prefix)
+	return sperr.WrapWithMessage(err, prefix)
 }
