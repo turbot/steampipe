@@ -19,9 +19,8 @@ import (
 // is sperr.Wrap or sperr.Wrapf
 func New(format string, args ...interface{}) error {
 	sperr := &Error{
-		message:       fmt.Sprintf(format, args...),
-		stack:         callers(), // always has a stack
-		isRootMessage: true,
+		message: fmt.Sprintf(format, args...),
+		stack:   callers(), // always has a stack
 	}
 	return sperr
 }
@@ -34,50 +33,87 @@ func Wrap(err error, options ...Option) error {
 	if err == nil {
 		return nil
 	}
-	msg := inferMessageFromError(err)
-	// hide the child error if we could infer a message from the error
-	setRoot := len(msg) > 0
+	res := wrap(err, options...)
+	// if the error we wrapped was not an sperr,
+	// we need to set the stack
+	if _, ok := err.(*Error); !ok {
+		res.stack = callers()
+	}
+	return res
+}
 
-	e := &Error{
-		cause:         err,
-		message:       msg,
-		isRootMessage: setRoot,
-		stack:         callers(),
+func WrapWithMessage(err error, format string, args ...interface{}) error {
+	if err == nil {
+		return nil
+	}
+	res := wrap(err, WithMessage(format, args...))
+	// if the error we wrapped was not an sperr,
+	// we need to set the stack
+	if _, ok := err.(*Error); !ok {
+		res.stack = callers()
+	}
+	return res
+}
+
+func WrapWithRootMessage(err error, format string, args ...interface{}) error {
+	if err == nil {
+		return nil
+	}
+	res := wrap(err, WithRootMessage(format, args...))
+	// if the error we wrapped was not an sperr,
+	// we need to set the stack
+	if _, ok := err.(*Error); !ok {
+		res.stack = callers()
+	}
+	return res
+}
+
+func ToError(val interface{}, options ...Option) error {
+	// we need to do a IsNil, since the value of the interface may be nil
+	// and not the interface itself
+	if helpers.IsNil(val) {
+		return nil
+	}
+	var res *Error
+
+	if e, ok := val.(error); ok {
+		res = Wrap(e, options...).(*Error)
+	} else {
+		res = New("%v", val).(*Error)
+	}
+	for _, opt := range options {
+		res = opt(res)
+	}
+	// if the error we wrapped was not an sperr,
+	// we need to set the stack
+	if _, ok := val.(*Error); !ok {
+		res.stack = callers()
+	}
+	return res
+}
+
+// err MUST be non-nil
+func wrap(err error, options ...Option) *Error {
+	// we know err will always be non-nil - callers need to make sure of that
+	var e *Error
+	if x, ok := err.(*Error); ok {
+		e = x
+	} else {
+		msg := inferMessageFromError(err)
+		// hide the child error if we could infer a message from the error
+		isRoot := len(msg) > 0
+		return &Error{
+			cause:         err,
+			message:       msg,
+			isRootMessage: isRoot,
+			// do not set the stack here. We need rely on the calling function
+			// to set the stack so that the call stack remains clean
+		}
 	}
 	for _, opt := range options {
 		e = opt(e)
 	}
 	return e
-}
-
-func Wrapf(err error, format string, args ...interface{}) error {
-	if err == nil {
-		return nil
-	}
-	return &Error{
-		cause:   err,
-		message: fmt.Sprintf(format, args...),
-		stack:   callers(),
-	}
-}
-
-func ToError(val interface{}, options ...Option) error {
-	if helpers.IsNil(val) {
-		return nil
-	}
-	var err *Error
-	if e, ok := val.(error); ok {
-		err = Wrap(e).(*Error)
-	} else {
-		err = New("%v", val).(*Error)
-	}
-	for _, opt := range options {
-		err = opt(err)
-	}
-	// overwrite the stack to the stack for this function call
-	// so that ToError doesn't end up in the stack
-	err.stack = callers()
-	return err
 }
 
 func inferMessageFromError(err error) string {

@@ -141,7 +141,7 @@ func (e *Error) Format(s fmt.State, verb rune) {
 
 		if printStack {
 			io.WriteString(s, "\nStack:")
-			e.Stack().Format(s, verb)
+			io.WriteString(s, fmt.Sprintf("%+v", e.Stack()))
 			io.WriteString(s, "\n")
 		}
 	case 's':
