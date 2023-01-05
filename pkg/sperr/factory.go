@@ -17,7 +17,7 @@ import (
 //
 // For converting generic errors to sperr.Error the recommended usage pattern
 // is sperr.Wrap or sperr.Wrapf
-func New(format string, args ...interface{}) *Error {
+func New(format string, args ...interface{}) error {
 	sperr := &Error{
 		message:       fmt.Sprintf(format, args...),
 		stack:         callers(), // always has a stack
@@ -30,26 +30,28 @@ func New(format string, args ...interface{}) *Error {
 // is not an sperr.Error
 //
 // When wrapping an error this also adds a stacktrace into the new `Error` object
-func Wrap(err error) *Error {
-	if spe, ok := err.(*Error); ok {
-		return spe
+func Wrap(err error, options ...Option) error {
+	if err == nil {
+		return nil
 	}
-
 	msg := inferMessageFromError(err)
 	// hide the child error if we could infer a message from the error
 	setRoot := len(msg) > 0
 
-	return &Error{
+	e := &Error{
 		cause:         err,
 		message:       msg,
 		isRootMessage: setRoot,
 		stack:         callers(),
 	}
+	for _, opt := range options {
+		e = opt(e)
+	}
+	return e
 }
 
-func Wrapf(err error, format string, args ...interface{}) *Error {
-	if spe, ok := err.(*Error); ok && spe == nil {
-		// if this is an error interface wrapping around a nil sperr.Error
+func Wrapf(err error, format string, args ...interface{}) error {
+	if err == nil {
 		return nil
 	}
 	return &Error{
@@ -59,27 +61,23 @@ func Wrapf(err error, format string, args ...interface{}) *Error {
 	}
 }
 
-func ToError(val interface{}) *Error {
+func ToError(val interface{}, options ...Option) error {
 	if helpers.IsNil(val) {
 		return nil
 	}
 	var err *Error
 	if e, ok := val.(error); ok {
-		err = Wrap(e)
+		err = Wrap(e).(*Error)
 	} else {
-		err = New("%v", val)
+		err = New("%v", val).(*Error)
+	}
+	for _, opt := range options {
+		err = opt(err)
 	}
 	// overwrite the stack to the stack for this function call
 	// so that ToError doesn't end up in the stack
 	err.stack = callers()
 	return err
-}
-
-func IsNil(err error) bool {
-	if spe, ok := err.(*Error); ok {
-		return spe == nil
-	}
-	return err == nil
 }
 
 func inferMessageFromError(err error) string {
