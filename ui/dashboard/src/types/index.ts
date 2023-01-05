@@ -216,7 +216,7 @@ export type SelectedDashboardStates = {
   selectedDashboardInputs: DashboardInputs;
 };
 
-type DashboardInputs = {
+export type DashboardInputs = {
   [name: string]: string;
 };
 
