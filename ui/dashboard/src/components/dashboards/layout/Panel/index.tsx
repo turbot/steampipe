@@ -1,4 +1,4 @@
-import Error from "../../Error";
+import PanelStatus from "./PanelStatus";
 import PanelControls from "./PanelControls";
 import PanelInformation from "./PanelInformation";
 import PanelProgress from "./PanelProgress";
@@ -61,7 +61,6 @@ const Panel = ({
     "overflow-auto"
   );
 
-  const ErrorComponent = Error;
   const PlaceholderComponent = Placeholder.component;
   const showPanelContents =
     !definition.error || (definition.error && !showPanelError);
@@ -147,21 +146,15 @@ const Panel = ({
           {showPanelContents && <PanelInformation />}
           <PlaceholderComponent
             animate={definition.status === "running"}
-            ready={
-              ready ||
-              definition.status === "complete" ||
-              definition.status === "error"
-            }
+            ready={ready || definition.status !== "running"}
           >
-            <ErrorComponent
-              className={definition.title ? "rounded-t-none" : null}
-              error={
-                showPanelError &&
-                definition.status === "error" &&
-                definition.error
-              }
-            />
-            <>{showPanelContents ? children : null}</>
+            <>
+              {showPanelContents ? (
+                children
+              ) : (
+                <PanelStatus showPanelError={showPanelError} />
+              )}
+            </>
           </PlaceholderComponent>
         </div>
       </section>
