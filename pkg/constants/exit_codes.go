@@ -1,21 +1,20 @@
 package constants
 
 const (
-	ExitCodeSuccessful                     = 0
-	ExitCodeControlsAlarm                  = 1   // check - no runtime errors, 1 or more control alarms, no control errors
-	ExitCodeControlsError                  = 2   // check - no runtime errors, 1 or more control errors
-	ExitCodeLoadingError                   = 11  // plugin - loading error
-	ExitCodePluginListFailure              = 12  // plugin - list failure
-	ExitCodeNoModFile                      = 21  // dashboard - no mod file
-	ExitCodeSnapshotCreationFailed         = 41  // snapshot
-	ExitCodeSnapshotUploadFailed           = 42  // snapshot
-	ExitCodeFileSystemAccessFailure        = 61  // service
-	ExitCodePGServiceSetupFailure          = 62  // service
-	ExitCodePGServiceStartupFailure        = 63  // service
-	ExitCodeDashboardServiceStartupFailure = 64  // service
-	ExitCodeBindPortUnavailable            = 65  // service/dashboard - binding failure
-	ExitCodeSomeQueryExecutionFailed       = 81  // query
-	ExitCodeCloudConnectionFailed          = 91  // login
-	ExitCodeInsufficientOrWrongInputs      = 252 // check/plugin/mod - runtime error(insufficient or wrong input)
-	ExitCodeUnknownErrorPanic              = 253 // all - runtime error(unknown)
+	ExitCodeSuccessful                 = 0
+	ExitCodeControlsAlarm              = 1   // check - no runtime errors, 1 or more control alarms, no control errors
+	ExitCodeControlsError              = 2   // check - no runtime errors, 1 or more control errors
+	ExitCodePluginLoadingError         = 11  // plugin - loading error
+	ExitCodePluginListFailure          = 12  // plugin - list failure
+	ExitCodeSnapshotCreationFailed     = 21  // snapshot
+	ExitCodeSnapshotUploadFailed       = 22  // snapshot
+	ExitCodeServiceSetupFailure        = 31  // service
+	ExitCodeServiceStartupFailure      = 32  // service
+	ExitCodeQueryExecutionFailed       = 41  // query - 1 or more queries failed
+	ExitCodeLoginCloudConnectionFailed = 51  // login
+	ExitCodeBindPortUnavailable        = 251 // common(service/dashboard) - port binding failure
+	ExitCodeNoModFile                  = 252 // common - no mod file
+	ExitCodeFileSystemAccessFailure    = 253 // common - file system access failure
+	ExitCodeInsufficientOrWrongInputs  = 254 // common - runtime error(insufficient or wrong input)
+	ExitCodeUnknownErrorPanic          = 255 // common - runtime error(unknown panic)
 )

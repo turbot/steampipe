@@ -32,7 +32,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe check exitCode - runtime error(insufficient args)" {
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe check
-  assert_equal $status 252
+  assert_equal $status 254
   cd -
 }
 

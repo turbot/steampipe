@@ -318,7 +318,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	state, err := statefile.LoadState()
 	if err != nil {
 		error_helpers.ShowError(ctx, fmt.Errorf("could not load state"))
-		exitCode = constants.ExitCodeLoadingError
+		exitCode = constants.ExitCodePluginLoadingError
 		return
 	}
 
@@ -326,7 +326,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	versionData, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
 		error_helpers.ShowError(ctx, fmt.Errorf("error loading current plugin data"))
-		exitCode = constants.ExitCodeLoadingError
+		exitCode = constants.ExitCodePluginLoadingError
 		return
 	}
 
@@ -383,7 +383,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		// this happens if for some reason the update server could not be contacted,
 		// in which case we get back an empty map
 		error_helpers.ShowError(ctx, fmt.Errorf("there was an issue contacting the update server, please try later"))
-		exitCode = constants.ExitCodeLoadingError
+		exitCode = constants.ExitCodePluginLoadingError
 		return
 	}
 
