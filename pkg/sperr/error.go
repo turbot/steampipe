@@ -90,21 +90,19 @@ func (e *Error) Detail() string {
 	if e == nil {
 		return ""
 	}
-	type hasDetail interface {
-		Detail() string
-	}
 	res := []string{}
 	if len(e.detail) > 0 {
 		// if this is available - the underlying error will always be a sperr
 		res = append(res, fmt.Sprintf("%s :: %s", e.message, e.detail))
 	}
-	if e.cause != nil && len(e.cause.Error()) > 0 {
+	type hasDetail interface {
+		Detail() string
+	}
+	if e.cause != nil {
 		if asD, ok := e.cause.(hasDetail); ok {
 			res = append(res, asD.Detail())
 		} else {
-			if len(e.Error()) > 0 {
-				res = append(res, e.Error())
-			}
+			res = append(res, e.Error(), e.cause.Error())
 		}
 	}
 	return strings.Join(res, "\n|-- ")
