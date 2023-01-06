@@ -268,10 +268,6 @@ The package function `WrapWithMessage` **always** wraps around the `error` given
 
 `WithMessage` sets the internal `message` if it is empty. Otherwise, it will create a `wrapper` around it's instance and set the `message` on the `wrapper` and returns the `wrapper`. This ensures that `WithMessage` is never lossy - but only creates wrappers when necessary.
 
-#### `WithRootMessage`
-
-`WithRootMessage` calls into `WithMessage` and then hides all children under the error returned.
-
 #### `WithDetail`
 
 `WithDetail` behaves just like `WithMessage`, but on the `detail` property.
