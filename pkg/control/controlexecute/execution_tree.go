@@ -87,7 +87,7 @@ func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Contr
 	}
 }
 
-func (e *ExecutionTree) Execute(ctx context.Context) (int, int) {
+func (e *ExecutionTree) Execute(ctx context.Context) controlstatus.StatusSummary {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.StartTime = time.Now()
@@ -118,7 +118,7 @@ func (e *ExecutionTree) Execute(ctx context.Context) (int, int) {
 	e.DimensionColorGenerator, _ = NewDimensionColorGenerator(4, 27)
 	e.DimensionColorGenerator.populate(e)
 
-	return e.Root.Summary.Status.Alarm, e.Root.Summary.Status.Error
+	return e.Root.Summary.Status
 }
 
 func (e *ExecutionTree) waitForActiveRunsToComplete(ctx context.Context, parallelismLock *semaphore.Weighted, maxParallelGoRoutines int64) error {
