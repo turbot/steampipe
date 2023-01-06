@@ -24,7 +24,6 @@ type DashboardTable struct {
 	Columns    map[string]*DashboardTableColumn `cty:"columns" json:"columns,omitempty"`
 	Display    *string                          `cty:"display" hcl:"display" json:"display,omitempty"`
 	Base       *DashboardTable                  `hcl:"base" json:"-"`
-	References []*ResourceReference             `json:"-"`
 }
 
 func NewDashboardTable(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -95,7 +94,7 @@ func (t *DashboardTable) Equals(other *DashboardTable) bool {
 
 // OnDecoded implements HclResource
 func (t *DashboardTable) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	t.setBaseProperties(resourceMapProvider)
+	t.setBaseProperties()
 	// populate columns map
 	if len(t.ColumnList) > 0 {
 		t.Columns = make(map[string]*DashboardTableColumn, len(t.ColumnList))
@@ -104,16 +103,6 @@ func (t *DashboardTable) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMap
 		}
 	}
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (t *DashboardTable) AddReference(ref *ResourceReference) {
-	t.References = append(t.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (t *DashboardTable) GetReferences() []*ResourceReference {
-	return t.References
 }
 
 func (t *DashboardTable) Diff(other *DashboardTable) *DashboardTreeItemDiffs {
@@ -171,7 +160,7 @@ func (t *DashboardTable) CtyValue() (cty.Value, error) {
 	return GetCtyValue(t)
 }
 
-func (t *DashboardTable) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (t *DashboardTable) setBaseProperties() {
 	if t.Base == nil {
 		return
 	}

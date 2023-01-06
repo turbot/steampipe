@@ -170,22 +170,3 @@ func (q *QueryProviderImpl) setBaseProperties() {
 func (q *QueryProviderImpl) getBaseImpl() *QueryProviderImpl {
 	return q.base.(QueryProvider).GetQueryProviderImpl()
 }
-
-func (q *QueryProviderImpl) MergeBaseDependencies(base QueryProvider) {
-	// only merge dependency if target property of other was inherited
-	baseRuntimeDependencies := base.GetRuntimeDependencies()
-	if q.runtimeDependencies == nil {
-		q.runtimeDependencies = make(map[string]*RuntimeDependency)
-	}
-	for _, baseDep := range baseRuntimeDependencies {
-		if _, ok := q.runtimeDependencies[baseDep.String()]; !ok {
-			// was this target parent property (args/params) inherited
-			if (baseDep.ParentPropertyName == "args" && !q.ArgsInheritedFromBase()) ||
-				!q.ParamsInheritedFromBase() {
-				continue
-			}
-			// property _was_ inherited - inherit the runtime dependency
-			q.runtimeDependencies[baseDep.String()] = baseDep
-		}
-	}
-}

@@ -23,9 +23,8 @@ type DashboardText struct {
 	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	Display *string `cty:"display" hcl:"display" json:"-"`
 
-	Base       *DashboardText       `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
-	Mod        *Mod                 `cty:"mod" json:"-"`
+	Base *DashboardText `hcl:"base" json:"-"`
+	Mod  *Mod           `cty:"mod" json:"-"`
 }
 
 func NewDashboardText(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -56,16 +55,6 @@ func (t *DashboardText) Equals(other *DashboardText) bool {
 func (t *DashboardText) OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics {
 	t.setBaseProperties()
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (t *DashboardText) AddReference(ref *ResourceReference) {
-	t.References = append(t.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (t *DashboardText) GetReferences() []*ResourceReference {
-	return t.References
 }
 
 func (t *DashboardText) Diff(other *DashboardText) *DashboardTreeItemDiffs {

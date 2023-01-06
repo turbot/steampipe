@@ -28,8 +28,7 @@ type DashboardHierarchy struct {
 	Type       *string                       `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	Display    *string                       `cty:"display" hcl:"display" json:"-"`
 
-	Base       *DashboardHierarchy  `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
+	Base *DashboardHierarchy `hcl:"base" json:"-"`
 
 	parents []ModTreeItem
 }
@@ -65,7 +64,7 @@ func (h *DashboardHierarchy) Equals(other *DashboardHierarchy) bool {
 
 // OnDecoded implements HclResource
 func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	h.setBaseProperties(resourceMapProvider)
+	h.setBaseProperties()
 	if len(h.Nodes) > 0 {
 		h.NodeNames = h.Nodes.Names()
 	}
@@ -73,16 +72,6 @@ func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider Res
 		h.EdgeNames = h.Edges.Names()
 	}
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (h *DashboardHierarchy) AddReference(ref *ResourceReference) {
-	h.References = append(h.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (h *DashboardHierarchy) GetReferences() []*ResourceReference {
-	return h.References
 }
 
 // TODO [node_reuse] Add DashboardLeafNodeImpl and move this there https://github.com/turbot/steampipe/issues/2926
@@ -199,6 +188,9 @@ func (h *DashboardHierarchy) AddChild(child HclResource) hcl.Diagnostics {
 			Subject:  h.GetDeclRange(),
 		}}
 	}
+	// set ourselves as parent
+	child.(ModTreeItem).AddParent(h)
+
 	return nil
 }
 
@@ -207,7 +199,7 @@ func (h *DashboardHierarchy) CtyValue() (cty.Value, error) {
 	return GetCtyValue(h)
 }
 
-func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (h *DashboardHierarchy) setBaseProperties() {
 	if h.Base == nil {
 		return
 	}
@@ -245,5 +237,4 @@ func (h *DashboardHierarchy) setBaseProperties(resourceMapProvider ResourceMapsP
 	} else {
 		h.Nodes.Merge(h.Base.Nodes)
 	}
-	h.MergeBaseDependencies(h.Base)
 }

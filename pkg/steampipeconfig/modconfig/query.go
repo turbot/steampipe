@@ -25,9 +25,6 @@ type Query struct {
 
 	SearchPath       *string `cty:"search_path" hcl:"search_path" column:"search_path,text" json:"search_path,omitempty"`
 	SearchPathPrefix *string `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
-
-	// list of all blocks referenced by the resource
-	References []*ResourceReference ` json:"-"`
 }
 
 func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -172,16 +169,6 @@ func (q *Query) String() string {
 // OnDecoded implements HclResource
 func (q *Query) OnDecoded(*hcl.Block, ResourceMapsProvider) hcl.Diagnostics {
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (q *Query) AddReference(ref *ResourceReference) {
-	q.References = append(q.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (q *Query) GetReferences() []*ResourceReference {
-	return q.References
 }
 
 // CtyValue implements CtyValueProvider

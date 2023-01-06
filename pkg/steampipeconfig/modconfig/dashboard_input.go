@@ -26,12 +26,11 @@ type DashboardInput struct {
 	InputName string `cty:"input_name" json:"unqualified_name"`
 
 	// these properties are JSON serialised by the parent LeafRun
-	Width      *int                 `cty:"width" hcl:"width" column:"width,text" json:"-"`
-	Type       *string              `cty:"type" hcl:"type" column:"type,text" json:"-"`
-	Display    *string              `cty:"display" hcl:"display" json:"-"`
-	Base       *DashboardInput      `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
-	dashboard  *Dashboard
+	Width     *int            `cty:"width" hcl:"width" column:"width,text" json:"-"`
+	Type      *string         `cty:"type" hcl:"type" column:"type,text" json:"-"`
+	Display   *string         `cty:"display" hcl:"display" json:"-"`
+	Base      *DashboardInput `hcl:"base" json:"-"`
+	dashboard *Dashboard
 }
 
 func NewDashboardInput(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -83,18 +82,8 @@ func (i *DashboardInput) Equals(other *DashboardInput) bool {
 
 // OnDecoded implements HclResource
 func (i *DashboardInput) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	i.setBaseProperties(resourceMapProvider)
+	i.setBaseProperties()
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (i *DashboardInput) AddReference(ref *ResourceReference) {
-	i.References = append(i.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (i *DashboardInput) GetReferences() []*ResourceReference {
-	return i.References
 }
 
 func (i *DashboardInput) Diff(other *DashboardInput) *DashboardTreeItemDiffs {
@@ -183,7 +172,7 @@ func (i *DashboardInput) CtyValue() (cty.Value, error) {
 	return GetCtyValue(i)
 }
 
-func (i *DashboardInput) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (i *DashboardInput) setBaseProperties() {
 	if i.Base == nil {
 		return
 	}
@@ -211,6 +200,4 @@ func (i *DashboardInput) setBaseProperties(resourceMapProvider ResourceMapsProvi
 	if i.Width == nil {
 		i.Width = i.Base.Width
 	}
-
-	i.MergeBaseDependencies(i.Base)
 }

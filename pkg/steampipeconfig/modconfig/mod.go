@@ -213,12 +213,12 @@ func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvid
 
 }
 
-// AddReference implements ResourceWithMetadata
+// AddReference implements ResourceWithMetadata (overridden from ResourceWithMetadataImpl)
 func (m *Mod) AddReference(ref *ResourceReference) {
 	m.ResourceMaps.References[ref.Name()] = ref
 }
 
-// GetReferences implements ResourceWithMetadata
+// GetReferences implements ResourceWithMetadata (overridden from ResourceWithMetadataImpl)
 func (m *Mod) GetReferences() []*ResourceReference {
 	var res = make([]*ResourceReference, len(m.ResourceMaps.References))
 	// convert from map to array

@@ -27,7 +27,6 @@ type DashboardChart struct {
 	Transform  *string                          `cty:"transform" hcl:"transform" json:"transform,omitempty"`
 	Series     map[string]*DashboardChartSeries `cty:"series" json:"series,omitempty"`
 	Base       *DashboardChart                  `hcl:"base" json:"-"`
-	References []*ResourceReference             `json:"-"`
 }
 
 func NewDashboardChart(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -61,7 +60,7 @@ func (c *DashboardChart) Equals(other *DashboardChart) bool {
 
 // OnDecoded implements HclResource
 func (c *DashboardChart) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	c.setBaseProperties(resourceMapProvider)
+	c.setBaseProperties()
 	// populate series map
 	if len(c.SeriesList) > 0 {
 		c.Series = make(map[string]*DashboardChartSeries, len(c.SeriesList))
@@ -71,16 +70,6 @@ func (c *DashboardChart) OnDecoded(block *hcl.Block, resourceMapProvider Resourc
 		}
 	}
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (c *DashboardChart) AddReference(ref *ResourceReference) {
-	c.References = append(c.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (c *DashboardChart) GetReferences() []*ResourceReference {
-	return c.References
 }
 
 func (c *DashboardChart) Diff(other *DashboardChart) *DashboardTreeItemDiffs {
@@ -157,7 +146,7 @@ func (c *DashboardChart) CtyValue() (cty.Value, error) {
 	return GetCtyValue(c)
 }
 
-func (c *DashboardChart) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (c *DashboardChart) setBaseProperties() {
 	if c.Base == nil {
 		return
 	}
@@ -203,6 +192,4 @@ func (c *DashboardChart) setBaseProperties(resourceMapProvider ResourceMapsProvi
 	if c.Width == nil {
 		c.Width = c.Base.Width
 	}
-
-	c.MergeBaseDependencies(c.Base)
 }

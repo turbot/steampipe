@@ -426,7 +426,7 @@ func decodeNodeAndEdgeProviderBlocks(content *hclsyntax.Body, nodeAndEdgeProvide
 			child, childRes := decodeQueryProvider(block, parseCtx)
 
 			// TACTICAL if child has any runtime dependencies, claim them
-			// this is to ensure if this resourc eis used as base, we can be correctly identified
+			// this is to ensure if this resource is used as base, we can be correctly identified
 			// as the publisher of the runtime dependencies
 			for _, r := range child.GetRuntimeDependencies() {
 				r.Provider = nodeAndEdgeProvider

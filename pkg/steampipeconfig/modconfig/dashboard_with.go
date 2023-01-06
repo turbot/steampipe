@@ -14,9 +14,6 @@ type DashboardWith struct {
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
-
-	Base       *DashboardWith       `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
 }
 
 func NewDashboardWith(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -48,8 +45,6 @@ func (w *DashboardWith) Equals(other *DashboardWith) bool {
 
 // OnDecoded implements HclResource
 func (w *DashboardWith) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	w.setBaseProperties(resourceMapProvider)
-
 	return nil
 }
 
@@ -82,16 +77,4 @@ func (*DashboardWith) GetType() string {
 // CtyValue implements CtyValueProvider
 func (w *DashboardWith) CtyValue() (cty.Value, error) {
 	return GetCtyValue(w)
-}
-
-func (w *DashboardWith) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
-	if w.Base == nil {
-		return
-	}
-	// copy base into the HclResourceImpl 'base' property so it is accessible to all nested structs
-	w.base = w.Base
-	// call into parent nested struct setBaseProperties
-	w.QueryProviderImpl.setBaseProperties()
-
-	w.MergeBaseDependencies(w.base.(*DashboardWith))
 }

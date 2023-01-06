@@ -30,7 +30,6 @@ type Dashboard struct {
 	Base    *Dashboard        `hcl:"base"`
 	// store children in a way which can be serialised via cty
 	ChildNames []string `cty:"children" column:"children,jsonb"`
-	References []*ResourceReference
 	// map of all inputs in our resource tree
 	selfInputsMap          map[string]*DashboardInput
 	runtimeDependencyGraph *topsort.Graph
@@ -107,7 +106,7 @@ func (d *Dashboard) Equals(other *Dashboard) bool {
 
 // OnDecoded implements HclResource
 func (d *Dashboard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	d.setBaseProperties(resourceMapProvider)
+	d.setBaseProperties()
 
 	d.ChildNames = make([]string, len(d.children))
 	for i, child := range d.children {
@@ -115,16 +114,6 @@ func (d *Dashboard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMaps
 	}
 
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (d *Dashboard) AddReference(ref *ResourceReference) {
-	d.References = append(d.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (d *Dashboard) GetReferences() []*ResourceReference {
-	return d.References
 }
 
 // GetWidth implements DashboardLeafNode
@@ -376,7 +365,7 @@ func (d *Dashboard) CtyValue() (cty.Value, error) {
 	return GetCtyValue(d)
 }
 
-func (d *Dashboard) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (d *Dashboard) setBaseProperties() {
 	if d.Base == nil {
 		return
 	}

@@ -3,6 +3,9 @@ package modconfig
 import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
+
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -376,19 +379,92 @@ func (m *ResourceMaps) Equals(other *ResourceMaps) bool {
 }
 
 func (m *ResourceMaps) PopulateReferences() {
-	m.References = make(map[string]*ResourceReference)
+	// only populate references if introspection is enabled
+	switch viper.GetString(constants.ArgIntrospection) {
+	case constants.IntrospectionInfo:
+		m.References = make(map[string]*ResourceReference)
 
-	resourceFunc := func(resource HclResource) (bool, error) {
-		if resourceWithMetadata, ok := resource.(ResourceWithMetadata); ok {
-			for _, ref := range resourceWithMetadata.GetReferences() {
-				m.References[ref.String()] = ref
+		resourceFunc := func(resource HclResource) (bool, error) {
+			if resourceWithMetadata, ok := resource.(ResourceWithMetadata); ok {
+				for _, ref := range resourceWithMetadata.GetReferences() {
+					m.References[ref.String()] = ref
+				}
+
+				// if this resource is a RuntimeDependencyProvider, add references from any 'withs'
+				if nep, ok := resource.(NodeAndEdgeProvider); ok {
+					m.populateNodeEdgeProviderRefs(nep)
+				} else if rdp, ok := resource.(RuntimeDependencyProvider); ok {
+					m.populateWithRefs(resource.GetUnqualifiedName(), rdp, getWithRoot(rdp))
+				}
 			}
+
+			// continue walking
+			return true, nil
+		}
+		m.WalkResources(resourceFunc)
+	}
+}
+
+// populate references for any nodes/edges which have reference a 'with'
+func (m *ResourceMaps) populateNodeEdgeProviderRefs(nep NodeAndEdgeProvider) {
+	var withRoots = map[string]WithProvider{}
+	for _, n := range nep.GetNodes() {
+		// lazy populate with-root
+		// (build map keyed by parent
+		// - in theory if we inherit some nodes from base, they may have different parents)
+		parent := n.parents[0]
+		if withRoots[parent.Name()] == nil && len(n.GetRuntimeDependencies()) > 0 {
+			withRoots[parent.Name()] = getWithRoot(n)
+		}
+		m.populateWithRefs(nep.GetUnqualifiedName(), n, withRoots[parent.Name()])
+	}
+	for _, e := range nep.GetEdges() {
+		// lazy populate with root
+		parent := e.parents[0]
+		if withRoots[parent.Name()] == nil && len(e.GetRuntimeDependencies()) > 0 {
+			withRoots[parent.Name()] = getWithRoot(e)
 		}
 
-		// continue walking
-		return true, nil
+		m.populateWithRefs(nep.GetUnqualifiedName(), e, withRoots[parent.Name()])
 	}
-	m.WalkResources(resourceFunc)
+}
+
+// populate references for any 'with' blocks referenced by the RuntimeDependencyProvider
+func (m *ResourceMaps) populateWithRefs(name string, rdp RuntimeDependencyProvider, withRoot WithProvider) {
+	// unexpected but behave nicely
+	if withRoot == nil {
+		return
+	}
+	for _, r := range rdp.GetRuntimeDependencies() {
+		if r.PropertyPath.ItemType == BlockTypeWith {
+			// find the with
+			w, ok := withRoot.GetWith(r.PropertyPath.ToResourceName())
+			if ok {
+				for _, withRef := range w.References {
+					// build a new reference changing the 'from' to the NodeAndEdgeProvider
+					ref := withRef.CloneWithNewFrom(name)
+					m.References[ref.String()] = ref
+				}
+			}
+		}
+	}
+}
+
+// search up the tree to find the root resource which will host any referenced 'withs'
+// this will either be a dashboard ot a NodeEdgeProvider
+func getWithRoot(rdp RuntimeDependencyProvider) WithProvider {
+	var withRoot, _ = rdp.(WithProvider)
+	// get the root resource which 'owns' any withs
+	// (if our parent is the Mod, we are the root resource, otherwise traverse up until we find the mod
+	parent := rdp.GetParents()[0]
+
+	for parent.BlockType() != BlockTypeMod {
+		if wp, ok := parent.(WithProvider); ok {
+			withRoot = wp
+		}
+		parent = parent.GetParents()[0]
+	}
+	return withRoot
 }
 
 func (m *ResourceMaps) Empty() bool {

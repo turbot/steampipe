@@ -23,9 +23,6 @@ type Control struct {
 	SearchPathPrefix *string `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
 	Severity         *string `cty:"severity" hcl:"severity"  column:"severity,text" json:"severity,omitempty"`
 
-	// QueryProvider
-	References []*ResourceReference ` json:"-"`
-
 	// dashboard specific properties
 	Base    *Control `hcl:"base" json:"-"`
 	Width   *int     `cty:"width" hcl:"width" column:"width,text" json:"-"`
@@ -168,19 +165,9 @@ func (c *Control) GetParentNames() []string {
 
 // OnDecoded implements HclResource
 func (c *Control) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	c.setBaseProperties(resourceMapProvider)
+	c.setBaseProperties()
 
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (c *Control) AddReference(ref *ResourceReference) {
-	c.References = append(c.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (c *Control) GetReferences() []*ResourceReference {
-	return c.References
 }
 
 // GetWidth implements DashboardLeafNode
@@ -243,7 +230,7 @@ func (c *Control) CtyValue() (cty.Value, error) {
 	return GetCtyValue(c)
 }
 
-func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (c *Control) setBaseProperties() {
 	if c.Base == nil {
 		return
 	}
@@ -271,6 +258,4 @@ func (c *Control) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
 	if c.Display == nil {
 		c.Display = c.Base.Display
 	}
-
-	c.MergeBaseDependencies(c.Base)
 }

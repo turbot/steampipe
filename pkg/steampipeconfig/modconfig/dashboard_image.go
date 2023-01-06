@@ -24,8 +24,7 @@ type DashboardImage struct {
 	Width   *int    `cty:"width" hcl:"width" column:"width,text" json:"-"`
 	Display *string `cty:"display" hcl:"display" json:"-"`
 
-	Base       *DashboardImage      `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
+	Base *DashboardImage `hcl:"base" json:"-"`
 }
 
 func NewDashboardImage(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -56,18 +55,8 @@ func (i *DashboardImage) Equals(other *DashboardImage) bool {
 
 // OnDecoded implements HclResource
 func (i *DashboardImage) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	i.setBaseProperties(resourceMapProvider)
+	i.setBaseProperties()
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (i *DashboardImage) AddReference(ref *ResourceReference) {
-	i.References = append(i.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (i *DashboardImage) GetReferences() []*ResourceReference {
-	return i.References
 }
 
 func (i *DashboardImage) Diff(other *DashboardImage) *DashboardTreeItemDiffs {
@@ -124,7 +113,7 @@ func (i *DashboardImage) CtyValue() (cty.Value, error) {
 	return GetCtyValue(i)
 }
 
-func (i *DashboardImage) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (i *DashboardImage) setBaseProperties() {
 	if i.Base == nil {
 		return
 	}
@@ -148,6 +137,4 @@ func (i *DashboardImage) setBaseProperties(resourceMapProvider ResourceMapsProvi
 	if i.Display == nil {
 		i.Display = i.Base.Display
 	}
-
-	i.MergeBaseDependencies(i.Base)
 }

@@ -2,7 +2,8 @@ package modconfig
 
 import (
 	"fmt"
-
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/go-kit/helpers"
 )
 
@@ -14,6 +15,40 @@ type ResourceReference struct {
 	BlockType string `cty:"from_block_type" column:"from_block_type,text"`
 	BlockName string `cty:"from_block_name" column:"from_block_name,text"`
 	Attribute string `cty:"from_attribute" column:"from_attribute,text"`
+	name      string
+}
+
+func NewResourceReference(resource HclResource, block *hcl.Block, referenceString string, blockName string, attr *hclsyntax.Attribute) *ResourceReference {
+	ref := &ResourceReference{
+		To:        referenceString,
+		From:      resource.GetUnqualifiedName(),
+		BlockType: block.Type,
+		BlockName: blockName,
+		Attribute: attr.Name,
+	}
+	ref.name = ref.buildName()
+	return ref
+}
+
+func (r *ResourceReference) CloneWithNewFrom(from string) *ResourceReference {
+	ref := &ResourceReference{
+		ResourceWithMetadataImpl: r.ResourceWithMetadataImpl,
+		To:                       r.To,
+		From:                     from,
+		BlockType:                r.BlockType,
+		BlockName:                r.BlockName,
+		Attribute:                r.Attribute,
+	}
+	ref.name = ref.buildName()
+	// clone metadata so we can mutate it
+	ref.ResourceWithMetadataImpl.metadata = ref.ResourceWithMetadataImpl.metadata.Clone()
+	// set metadata name
+	ref.ResourceWithMetadataImpl.metadata.ResourceName = ref.name
+	return ref
+}
+
+func (r *ResourceReference) buildName() string {
+	return helpers.GetMD5Hash(r.String())[:8]
 }
 
 // ResourceReferenceMap is a map of references keyed by 'ref'
@@ -47,7 +82,5 @@ func (r *ResourceReference) Equals(other *ResourceReference) bool {
 // Name implements ResourceWithMetadata
 // the name must start with the 'resource type' as we parse it and use just the 'name' segment
 func (r *ResourceReference) Name() string {
-	hash := helpers.GetMD5Hash(r.String())[:8]
-	str := fmt.Sprintf("ref.%s", hash)
-	return str
+	return fmt.Sprintf("ref.%s", r.name)
 }

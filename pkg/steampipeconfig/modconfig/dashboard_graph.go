@@ -30,8 +30,7 @@ type DashboardGraph struct {
 	Type    *string `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	Display *string `cty:"display" hcl:"display" json:"-"`
 
-	Base       *DashboardGraph      `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
+	Base *DashboardGraph `hcl:"base" json:"-"`
 }
 
 func NewDashboardGraph(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -65,7 +64,7 @@ func (g *DashboardGraph) Equals(other *DashboardGraph) bool {
 
 // OnDecoded implements HclResource
 func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	g.setBaseProperties(resourceMapProvider)
+	g.setBaseProperties()
 	if len(g.Nodes) > 0 {
 		g.NodeNames = g.Nodes.Names()
 	}
@@ -73,16 +72,6 @@ func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider Resourc
 		g.EdgeNames = g.Edges.Names()
 	}
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (g *DashboardGraph) AddReference(ref *ResourceReference) {
-	g.References = append(g.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (g *DashboardGraph) GetReferences() []*ResourceReference {
-	return g.References
 }
 
 // TODO [node_reuse] Add DashboardLeafNodeImpl and move this there https://github.com/turbot/steampipe/issues/2926
@@ -198,6 +187,8 @@ func (g *DashboardGraph) AddChild(child HclResource) hcl.Diagnostics {
 			Subject:  g.GetDeclRange(),
 		}}
 	}
+	// set ourselves as parent
+	child.(ModTreeItem).AddParent(g)
 	return nil
 }
 
@@ -206,7 +197,7 @@ func (g *DashboardGraph) CtyValue() (cty.Value, error) {
 	return GetCtyValue(g)
 }
 
-func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (g *DashboardGraph) setBaseProperties() {
 	if g.Base == nil {
 		return
 	}
@@ -248,5 +239,4 @@ func (g *DashboardGraph) setBaseProperties(resourceMapProvider ResourceMapsProvi
 	} else {
 		g.Nodes.Merge(g.Base.Nodes)
 	}
-	g.MergeBaseDependencies(g.Base)
 }

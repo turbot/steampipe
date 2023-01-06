@@ -15,9 +15,8 @@ type DashboardNode struct {
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	Category   *DashboardCategory   `cty:"category" hcl:"category" column:"category,jsonb" json:"category,omitempty"`
-	Base       *DashboardNode       `hcl:"base" json:"-"`
-	References []*ResourceReference `json:"-"`
+	Category *DashboardCategory `cty:"category" hcl:"category" column:"category,jsonb" json:"category,omitempty"`
+	Base     *DashboardNode     `hcl:"base" json:"-"`
 }
 
 func NewDashboardNode(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -50,7 +49,7 @@ func (n *DashboardNode) Equals(other *DashboardNode) bool {
 
 // OnDecoded implements HclResource—
 func (n *DashboardNode) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
-	n.setBaseProperties(resourceMapProvider)
+	n.setBaseProperties()
 
 	// when we reference resources (i.e. category),
 	// not all properties are retrieved as they are no cty serialisable
@@ -63,16 +62,6 @@ func (n *DashboardNode) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMaps
 		n.Category = fullCategory
 	}
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (n *DashboardNode) AddReference(ref *ResourceReference) {
-	n.References = append(n.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (n *DashboardNode) GetReferences() []*ResourceReference {
-	return n.References
 }
 
 func (n *DashboardNode) Diff(other *DashboardNode) *DashboardTreeItemDiffs {
@@ -115,7 +104,7 @@ func (n *DashboardNode) CtyValue() (cty.Value, error) {
 	return GetCtyValue(n)
 }
 
-func (n *DashboardNode) setBaseProperties(resourceMapProvider ResourceMapsProvider) {
+func (n *DashboardNode) setBaseProperties() {
 	if n.Base == nil {
 		return
 	}
@@ -147,5 +136,4 @@ func (n *DashboardNode) setBaseProperties(resourceMapProvider ResourceMapsProvid
 	if n.Params == nil {
 		n.Params = n.Base.Params
 	}
-	n.MergeBaseDependencies(n.Base)
 }

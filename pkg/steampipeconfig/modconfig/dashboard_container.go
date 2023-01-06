@@ -20,11 +20,9 @@ type DashboardContainer struct {
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	Width      *int              `cty:"width" hcl:"width"  column:"width,text"`
-	Display    *string           `cty:"display" hcl:"display"`
-	Inputs     []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
-	References []*ResourceReference
-
+	Width   *int              `cty:"width" hcl:"width"  column:"width,text"`
+	Display *string           `cty:"display" hcl:"display"`
+	Inputs  []*DashboardInput `cty:"inputs" column:"inputs,jsonb"`
 	// store children in a way which can be serialised via cty
 	ChildNames []string `cty:"children" column:"children,jsonb"`
 
@@ -63,16 +61,6 @@ func (c *DashboardContainer) OnDecoded(block *hcl.Block, resourceMapProvider Res
 		c.ChildNames[i] = child.Name()
 	}
 	return nil
-}
-
-// AddReference implements ResourceWithMetadata
-func (c *DashboardContainer) AddReference(ref *ResourceReference) {
-	c.References = append(c.References, ref)
-}
-
-// GetReferences implements ResourceWithMetadata
-func (c *DashboardContainer) GetReferences() []*ResourceReference {
-	return c.References
 }
 
 // GetWidth implements DashboardLeafNode

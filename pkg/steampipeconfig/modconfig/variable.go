@@ -81,14 +81,6 @@ func (v *Variable) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsP
 	return nil
 }
 
-// AddReference implements ResourceWithMetadata
-func (v *Variable) AddReference(*ResourceReference) {}
-
-// GetReferences implements ResourceWithMetadata
-func (v *Variable) GetReferences() []*ResourceReference {
-	return nil
-}
-
 // Required returns true if this variable is required to be set by the caller,
 // or false if there is a default value that will be used when it isn't set.
 func (v *Variable) Required() bool {

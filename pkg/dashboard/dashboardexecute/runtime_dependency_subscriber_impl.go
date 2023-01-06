@@ -191,7 +191,7 @@ func (s *RuntimeDependencySubscriberImpl) evaluateRuntimeDependencies() error {
 		if err := s.resolveSQLAndArgs(); err != nil {
 			return err
 		}
-
+		// call the argsResolved callback in case anyone is waiting for the args
 		s.argsResolved(s.Args)
 	}
 	return nil
@@ -419,9 +419,6 @@ func (s *RuntimeDependencySubscriberImpl) hasParam(paramName string) bool {
 func (s *RuntimeDependencySubscriberImpl) setRuntimeDependencies() {
 	names := make(map[string]struct{}, len(s.runtimeDependencies))
 	for _, d := range s.runtimeDependencies {
-		// tactical - exclude params
-		//if d.Dependency.PropertyPath.ItemType =modconfig.BlockTypeParam
-
 		// add to DependencyWiths using ScopedName, i.e. <parent FullName>.<with UnqualifiedName>.
 		// we do this as there may be a with from a base resource with a clashing with name
 		// NOTE: this must be consistent with the naming in RuntimeDependencyPublisherImpl.createWithRuns
@@ -461,6 +458,7 @@ func (s *RuntimeDependencySubscriberImpl) executeChildrenAsync(ctx context.Conte
 	s.DashboardParentImpl.executeChildrenAsync(ctx)
 }
 
+// called when the args are resolved - if anyone is subscribing to the args value, publish
 func (s *RuntimeDependencySubscriberImpl) argsResolved(args []any) {
 	if s.baseDependencySubscriber != nil {
 		s.baseDependencySubscriber.argsResolved(args)
