@@ -81,22 +81,22 @@ Let's write up a minimal example program:
 
 ```
 func readFile() error {
-	path := "/imaginary/path"
-	_, err := os.Open(path)
-	if err != nil {
-		return sperr.WrapWithRootMessage(err, "could not open file at %s", path)
-	}
-	return nil
+  path := "/imaginary/path"
+  _, err := os.Open(path)
+  if err != nil {
+    return sperr.WrapWithRootMessage(err, "could not open file at %s", path)
+  }
+  return nil
 }
 
 func wrapWithMessageAndDetail() error {
-	err := readFile()
+  err := readFile()
 
-	return sperr.Wrap(
-		err,
-		sperr.WithMessage("message from wrapWithMessageAndDetail"),
-		sperr.WithDetail("detail from wrapWithMessageAndDetail"),
-	)
+  return sperr.Wrap(
+    err,
+    sperr.WithMessage("message from wrapWithMessageAndDetail"),
+    sperr.WithDetail("detail from wrapWithMessageAndDetail"),
+  )
 }
 
 showCaseErr := sperr.Wrap(
@@ -132,21 +132,24 @@ message from main :: detail from main
 #### `%#v`
 
 ```
-message from main : message from wrapWithMessageAndDetail : could not open file at /imaginary/path
+message from main : message from wrapWithMessageAndDetail : could not open file at /imaginary/path : open /imaginary/path
 
 Details:
 message from main :: detail from main
 |-- message from wrapWithMessageAndDetail :: detail from wrapWithMessageAndDetail
-|-- could not open file at /imaginary/path
-|-- open /imaginary/path: no such file or directory
+|-- could not open file at /imaginary/path : open /imaginary/path: no such file or directory
 
 Stack:
 main.readFile
-        /Users/binaek/work/sources/sandbox/main.go:25
+        /home/user/sandbox/main.go:83
 main.wrapWithMessageAndDetail
-        /Users/binaek/work/sources/sandbox/main.go:31
+        /home/user/sandbox/main.go:63
+main.addMsgAndDetailToError
+        /home/user/sandbox/main.go:53
+main.wrapErrorAndSetRootMessage
+        /home/user/sandbox/main.go:39
 main.main
-        /Users/binaek/work/sources/sandbox/main.go:41
+        /home/user/sandbox/main.go:33
 runtime.main
         /usr/local/go/src/runtime/proc.go:250
 runtime.goexit
