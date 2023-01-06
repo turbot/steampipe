@@ -164,24 +164,38 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	port := viper.GetInt(constants.ArgDatabasePort)
 	if port < 1 || port > 65535 {
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		panic("Invalid port - must be within range (1:65535)")
 	}
 
 	serviceListen := db_local.StartListenType(viper.GetString(constants.ArgListenAddress))
-	error_helpers.FailOnError(serviceListen.IsValid())
+	if serviceListen.IsValid() != nil {
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
+		error_helpers.FailOnError(serviceListen.IsValid())
+	}
 
 	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
-	error_helpers.FailOnError(invoker.IsValid())
+	if invoker.IsValid() != nil {
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
+		error_helpers.FailOnError(invoker.IsValid())
+	}
 
 	err := db_local.EnsureDBInstalled(ctx)
-	error_helpers.FailOnError(err)
+	if err != nil {
+		exitCode = constants.ExitCodeServiceStartupFailure
+		error_helpers.FailOnError(err)
+	}
 
 	// start db, refreshing connections
 	startResult := db_local.StartServices(ctx, port, serviceListen, invoker)
-	error_helpers.FailOnError(startResult.Error)
+	if startResult.Error != nil {
+		exitCode = constants.ExitCodeServiceSetupFailure
+		error_helpers.FailOnError(startResult.Error)
+	}
 
 	if startResult.Status == db_local.ServiceFailedToStart {
 		error_helpers.ShowError(ctx, fmt.Errorf("steampipe service failed to start"))
+		exitCode = constants.ExitCodeServiceStartupFailure
 		return
 	}
 
@@ -189,9 +203,11 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 		// check that we have the same port and listen parameters
 		if port != startResult.DbState.Port {
+			exitCode = constants.ExitCodeInsufficientOrWrongInputs
 			error_helpers.FailOnError(fmt.Errorf("service is already running on port %d - cannot change port while it's running", startResult.DbState.Port))
 		}
 		if serviceListen != startResult.DbState.ListenType {
+			exitCode = constants.ExitCodeInsufficientOrWrongInputs
 			error_helpers.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen type while it's running", startResult.DbState.ListenType))
 		}
 
@@ -199,6 +215,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		startResult.DbState.Invoker = constants.InvokerService
 		err = startResult.DbState.Save()
 		if err != nil {
+			exitCode = constants.ExitCodeFileSystemAccessFailure
 			error_helpers.FailOnErrorWithMessage(err, "service was already running, but could not make it persistent")
 		}
 	}
@@ -211,6 +228,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 			_, err1 := db_local.StopServices(ctx, false, constants.InvokerService)
 			if err1 != nil {
 				error_helpers.ShowError(ctx, err1)
+				exitCode = constants.ExitCodeServiceSetupFailure
 			}
 			error_helpers.FailOnError(err)
 		}
@@ -373,7 +391,11 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 
 	// stop db
 	stopStatus, err := db_local.StopServices(ctx, viper.GetBool(constants.ArgForce), constants.InvokerService)
-	error_helpers.FailOnErrorWithMessage(err, "could not stop current instance")
+	if err != nil {
+		exitCode = constants.ExitCodeServiceStopFailure
+		error_helpers.FailOnErrorWithMessage(err, "could not stop current instance")
+	}
+
 	if stopStatus != db_local.ServiceStopped {
 		fmt.Println(`
 Service stop failed.
@@ -388,7 +410,10 @@ to force a restart.
 
 	// stop the running dashboard server
 	err = dashboardserver.StopDashboardService(ctx)
-	error_helpers.FailOnErrorWithMessage(err, "could not stop dashboard service")
+	if err != nil {
+		exitCode = constants.ExitCodeServiceStopFailure
+		error_helpers.FailOnErrorWithMessage(err, "could not stop dashboard service")
+	}
 
 	// set the password in 'viper' so that it can be used by 'service start'
 	viper.Set(constants.ArgServicePassword, currentDbState.Password)
@@ -397,13 +422,17 @@ to force a restart.
 	dbStartResult := db_local.StartServices(cmd.Context(), currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
 	error_helpers.FailOnError(dbStartResult.Error)
 	if dbStartResult.Status == db_local.ServiceFailedToStart {
+		exitCode = constants.ExitCodeServiceStartupFailure
 		fmt.Println("Steampipe service was stopped, but failed to restart.")
 		return
 	}
 
 	// refresh connections
 	err = db_local.RefreshConnectionAndSearchPaths(cmd.Context(), constants.InvokerService)
-	error_helpers.FailOnError(err)
+	if err != nil {
+		exitCode = constants.ExitCodeServiceSetupFailure
+		error_helpers.FailOnError(err)
+	}
 
 	// if the dashboard was running, start it
 	if currentDashboardState != nil {
@@ -488,13 +517,22 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		dashboardStopError := dashboardserver.StopDashboardService(ctx)
 		status, dbStopError = db_local.StopServices(ctx, force, constants.InvokerService)
 		dbStopError = error_helpers.CombineErrors(dbStopError, dashboardStopError)
-		error_helpers.FailOnError(dbStopError)
+		if dbStopError != nil {
+			exitCode = constants.ExitCodeServiceStopFailure
+			error_helpers.FailOnError(dbStopError)
+		}
 	} else {
 		dbState, dbStopError = db_local.GetState()
-		error_helpers.FailOnErrorWithMessage(dbStopError, "could not stop Steampipe service")
+		if dbStopError != nil {
+			exitCode = constants.ExitCodeServiceStopFailure
+			error_helpers.FailOnErrorWithMessage(dbStopError, "could not stop Steampipe service")
+		}
 
 		dashboardState, err := dashboardserver.GetDashboardServiceState()
-		error_helpers.FailOnErrorWithMessage(err, "could not stop Steampipe service")
+		if err != nil {
+			exitCode = constants.ExitCodeServiceStopFailure
+			error_helpers.FailOnErrorWithMessage(err, "could not stop Steampipe service")
+		}
 
 		if dbState == nil {
 			fmt.Println("Steampipe service is not running.")
@@ -507,12 +545,18 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 
 		if dashboardState != nil {
 			err = dashboardserver.StopDashboardService(ctx)
-			error_helpers.FailOnErrorWithMessage(err, "could not stop dashboard server")
+			if err != nil {
+				exitCode = constants.ExitCodeServiceStopFailure
+				error_helpers.FailOnErrorWithMessage(err, "could not stop dashboard server")
+			}
 		}
 
 		// check if there are any connected clients to the service
 		connectedClients, err := db_local.GetClientCount(cmd.Context())
-		error_helpers.FailOnErrorWithMessage(err, "service stop failed")
+		if err != nil {
+			exitCode = constants.ExitCodeServiceStopFailure
+			error_helpers.FailOnErrorWithMessage(err, "service stop failed")
+		}
 
 		if connectedClients.TotalClients > 0 {
 			printClientsConnected()
@@ -520,7 +564,10 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 		}
 
 		status, err = db_local.StopServices(ctx, false, constants.InvokerService)
-		error_helpers.FailOnErrorWithMessage(err, "service stop failed")
+		if err != nil {
+			exitCode = constants.ExitCodeServiceStopFailure
+			error_helpers.FailOnErrorWithMessage(err, "service stop failed")
+		}
 	}
 
 	switch status {
