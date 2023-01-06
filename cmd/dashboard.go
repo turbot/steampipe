@@ -140,7 +140,10 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	// load the workspace
 	initData := initDashboard(dashboardCtx)
 	defer initData.Cleanup(dashboardCtx)
-	error_helpers.FailOnError(initData.Result.Error)
+	if initData.Result.Error != nil {
+		exitCode = constants.ExitCodeInitializationFailed
+		error_helpers.FailOnError(initData.Result.Error)
+	}
 
 	// if there is a usage warning we display it
 	initData.Result.DisplayMessage = dashboardserver.OutputMessage
@@ -286,6 +289,7 @@ func runSingleDashboard(ctx context.Context, targetName string, inputs map[strin
 	// so a dashboard name was specified - just call GenerateSnapshot
 	snap, err := dashboardexecute.GenerateSnapshot(ctx, targetName, initData, inputs)
 	if err != nil {
+		exitCode = constants.ExitCodeSnapshotCreationFailed
 		return err
 	}
 	// display the snapshot result (if needed)
@@ -293,7 +297,10 @@ func runSingleDashboard(ctx context.Context, targetName string, inputs map[strin
 
 	// upload the snapshot (if needed)
 	err = publishSnapshotIfNeeded(ctx, snap)
-	error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
+	if err != nil {
+		exitCode = constants.ExitCodeSnapshotUploadFailed
+		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
+	}
 
 	// export the result (if needed)
 	exportArgs := viper.GetStringSlice(constants.ArgExport)

@@ -128,7 +128,11 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// start the initializer
 	initData := query.NewInitData(ctx, args)
-	error_helpers.FailOnError(initData.Result.Error)
+	if initData.Result.Error != nil {
+		exitCode = constants.ExitCodeInitializationFailed
+		error_helpers.ShowError(ctx, initData.Result.Error)
+		return
+	}
 	defer initData.Cleanup(ctx)
 
 	switch {
@@ -137,34 +141,44 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	case snapshotRequired():
 		// if we are either outputting snapshot format, or sharing the results as a snapshot, execute the query
 		// as a dashboard
-		exitCode = executeSnapshotQuery(initData, ctx)
+		failures := executeSnapshotQuery(initData, ctx)
+		if failures != 0 {
+			exitCode = constants.ExitCodeQueryExecutionFailed
+		}
 	default:
 		// NOTE: disable any status updates - we do not want 'loading' output from any queries
 		ctx = statushooks.DisableStatusHooks(ctx)
 
 		// fall through to running a batch query
 		// set global exit code
-		exitCode = queryexecute.RunBatchSession(ctx, initData)
+		failures := queryexecute.RunBatchSession(ctx, initData)
+		if failures != 0 {
+			exitCode = constants.ExitCodeQueryExecutionFailed
+		}
 	}
 }
 
 func validateQueryArgs(ctx context.Context, args []string) error {
 	interactiveMode := len(args) == 0
 	if interactiveMode && (viper.IsSet(constants.ArgSnapshot) || viper.IsSet(constants.ArgShare)) {
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return fmt.Errorf("cannot share snapshots in interactive mode")
 	}
 	if interactiveMode && len(viper.GetStringSlice(constants.ArgExport)) > 0 {
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return fmt.Errorf("cannot export query results in interactive mode")
 	}
 	// if share or snapshot args are set, there must be a query specified
 	err := cmdconfig.ValidateSnapshotArgs(ctx)
 	if err != nil {
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return err
 	}
 
 	validOutputFormats := []string{constants.OutputFormatLine, constants.OutputFormatCSV, constants.OutputFormatTable, constants.OutputFormatJSON, constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort, constants.OutputFormatNone}
 	output := viper.GetString(constants.ArgOutput)
 	if !helpers.StringSliceContains(validOutputFormats, output) {
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return fmt.Errorf("invalid output format: '%s', must be one of [%s]", output, strings.Join(validOutputFormats, ", "))
 	}
 
@@ -198,7 +212,10 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 
 			// so a dashboard name was specified - just call GenerateSnapshot
 			snap, err := dashboardexecute.GenerateSnapshot(ctx, queryProvider.Name(), baseInitData, nil)
-			error_helpers.FailOnError(err)
+			if err != nil {
+				exitCode = constants.ExitCodeSnapshotCreationFailed
+				error_helpers.FailOnError(err)
+			}
 
 			// set the filename root for the snapshot (in case needed)
 			if !existingResource {
@@ -225,7 +242,10 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 
 			// share the snapshot if necessary
 			err = publishSnapshotIfNeeded(ctx, snap)
-			error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
+			if err != nil {
+				exitCode = constants.ExitCodeSnapshotUploadFailed
+				error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
+			}
 
 			// export the result if necessary
 			exportArgs := viper.GetStringSlice(constants.ArgExport)

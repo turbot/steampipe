@@ -209,7 +209,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = constants.ExitCodeInsufficientOrWrongArguments
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return
 	}
 
@@ -303,13 +303,14 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = constants.ExitCodeInsufficientOrWrongArguments
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return
 	}
 
 	if len(plugins) > 0 && !(cmdconfig.Viper().GetBool("all")) && plugins[0] == "all" {
 		// improve the response to wrong argument "steampipe plugin update all"
 		fmt.Println()
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		error_helpers.ShowError(ctx, fmt.Errorf("Did you mean %s?", constants.Bold("--all")))
 		fmt.Println()
 		return
@@ -318,7 +319,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	state, err := statefile.LoadState()
 	if err != nil {
 		error_helpers.ShowError(ctx, fmt.Errorf("could not load state"))
-		exitCode = constants.ExitCodeLoadingError
+		exitCode = constants.ExitCodePluginLoadingError
 		return
 	}
 
@@ -326,7 +327,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	versionData, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
 		error_helpers.ShowError(ctx, fmt.Errorf("error loading current plugin data"))
-		exitCode = constants.ExitCodeLoadingError
+		exitCode = constants.ExitCodePluginLoadingError
 		return
 	}
 
@@ -353,6 +354,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			if isExists {
 				runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
 			} else {
+				exitCode = constants.ExitCodePluginNotFound
 				updateResults = append(updateResults, &display.PluginInstallReport{
 					Skipped:        true,
 					Plugin:         p,
@@ -383,7 +385,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		// this happens if for some reason the update server could not be contacted,
 		// in which case we get back an empty map
 		error_helpers.ShowError(ctx, fmt.Errorf("there was an issue contacting the update server, please try later"))
-		exitCode = constants.ExitCodeLoadingError
+		exitCode = constants.ExitCodePluginLoadingError
 		return
 	}
 
@@ -477,6 +479,7 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		msg := ""
 		_, name, stream := ociinstaller.NewSteampipeImageRef(pluginName).GetOrgNameAndStream()
 		if isPluginNotFoundErr(err) {
+			exitCode = constants.ExitCodePluginNotFound
 			msg = constants.PluginNotFound
 		} else {
 			msg = err.Error()
@@ -652,7 +655,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = constants.ExitCodeInsufficientOrWrongArguments
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return
 	}
 
@@ -668,6 +671,9 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	for _, p := range args {
 		spinner.SetStatus(fmt.Sprintf("Uninstalling %s", p))
 		if report, err := plugin.Remove(ctx, p, connectionMap); err != nil {
+			if strings.Contains(err.Error(), "not found") {
+				exitCode = constants.ExitCodePluginNotFound
+			}
 			error_helpers.ShowErrorWithMessage(ctx, err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
 		} else {
 			report.ShortName = p
