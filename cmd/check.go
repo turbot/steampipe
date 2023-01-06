@@ -174,8 +174,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		// if the share args are set, create a snapshot and share it
 		if generateSnapshot {
 			err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
-			exitCode = constants.ExitCodeSnapshotUploadFailed
-			error_helpers.FailOnError(err)
+			if err != nil {
+				exitCode = constants.ExitCodeSnapshotUploadFailed
+				error_helpers.FailOnError(err)
+			}
 		}
 
 		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))

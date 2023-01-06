@@ -140,7 +140,10 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	// load the workspace
 	initData := initDashboard(dashboardCtx)
 	defer initData.Cleanup(dashboardCtx)
-	error_helpers.FailOnError(initData.Result.Error)
+	if initData.Result.Error != nil {
+		exitCode = constants.ExitCodeInitializationFailed
+		error_helpers.FailOnError(initData.Result.Error)
+	}
 
 	// if there is a usage warning we display it
 	initData.Result.DisplayMessage = dashboardserver.OutputMessage
