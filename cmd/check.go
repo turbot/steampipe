@@ -122,7 +122,11 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// initialise
 	initData := control.NewInitData(ctx)
-	error_helpers.FailOnError(initData.Result.Error)
+	if initData.Result.Error != nil {
+		exitCode = constants.ExitCodeInitializationFailed
+		error_helpers.ShowError(ctx, initData.Result.Error)
+		return
+	}
 	defer initData.Cleanup(ctx)
 
 	// if there is a usage warning we display it

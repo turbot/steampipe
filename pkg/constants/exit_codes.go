@@ -12,8 +12,8 @@ const (
 	ExitCodeServiceSetupFailure        = 31  // service
 	ExitCodeServiceStartupFailure      = 32  // service
 	ExitCodeQueryExecutionFailed       = 41  // query - 1 or more queries failed - change in behavior(previously the exitCode used to be the number of queries that failed)
-	ExitCodeQueryInitializationFailed  = 42  // query - initialization failed
 	ExitCodeLoginCloudConnectionFailed = 51  // login
+	ExitCodeInitializationFailed       = 250 // common - initialization failed
 	ExitCodeBindPortUnavailable        = 251 // common(service/dashboard) - port binding failure
 	ExitCodeNoModFile                  = 252 // common - no mod file
 	ExitCodeFileSystemAccessFailure    = 253 // common - file system access failure

@@ -129,7 +129,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// start the initializer
 	initData := query.NewInitData(ctx, args)
 	if initData.Result.Error != nil {
-		exitCode = constants.ExitCodeQueryInitializationFailed
+		exitCode = constants.ExitCodeInitializationFailed
 		error_helpers.ShowError(ctx, initData.Result.Error)
 		return
 	}
