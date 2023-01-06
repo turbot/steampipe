@@ -405,6 +405,7 @@ func (m *ResourceMaps) PopulateReferences() {
 	}
 }
 
+// populate references for any nodes/edges which have reference a 'with'
 func (m *ResourceMaps) populateNodeEdgeProviderRefs(nep NodeAndEdgeProvider) {
 	var withRoots = map[string]WithProvider{}
 	for _, n := range nep.GetNodes() {
@@ -428,6 +429,7 @@ func (m *ResourceMaps) populateNodeEdgeProviderRefs(nep NodeAndEdgeProvider) {
 	}
 }
 
+// populate references for any 'with' blocks referenced by the RuntimeDependencyProvider
 func (m *ResourceMaps) populateWithRefs(name string, rdp RuntimeDependencyProvider, withRoot WithProvider) {
 	// unexpected but behave nicely
 	if withRoot == nil {
@@ -448,6 +450,8 @@ func (m *ResourceMaps) populateWithRefs(name string, rdp RuntimeDependencyProvid
 	}
 }
 
+// search up the tree to find the root resource which will host any referenced 'withs'
+// this will either be a dashboard ot a NodeEdgeProvider
 func getWithRoot(rdp RuntimeDependencyProvider) WithProvider {
 	var withRoot, _ = rdp.(WithProvider)
 	// get the root resource which 'owns' any withs
