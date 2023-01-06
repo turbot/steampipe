@@ -406,7 +406,7 @@ func (m *ResourceMaps) PopulateReferences() {
 }
 
 func (m *ResourceMaps) populateNodeEdgeProviderRefs(nep NodeAndEdgeProvider) {
-	var withRoots = map[string]RuntimeDependencyProvider{}
+	var withRoots = map[string]WithProvider{}
 	for _, n := range nep.GetNodes() {
 		// lazy populate with-root
 		// (build map keyed by parent
@@ -428,7 +428,7 @@ func (m *ResourceMaps) populateNodeEdgeProviderRefs(nep NodeAndEdgeProvider) {
 	}
 }
 
-func (m *ResourceMaps) populateWithRefs(name string, rdp RuntimeDependencyProvider, withRoot RuntimeDependencyProvider) {
+func (m *ResourceMaps) populateWithRefs(name string, rdp RuntimeDependencyProvider, withRoot WithProvider) {
 	if withRoot == nil {
 		return
 	}
@@ -447,15 +447,15 @@ func (m *ResourceMaps) populateWithRefs(name string, rdp RuntimeDependencyProvid
 	}
 }
 
-func getWithRoot(rdp RuntimeDependencyProvider) RuntimeDependencyProvider {
-	var withRoot = rdp
+func getWithRoot(rdp RuntimeDependencyProvider) WithProvider {
+	var withRoot, _ = rdp.(WithProvider)
 	// get the root resource which 'owns' any withs
 	// (if our parent is the Mod, we are the root resource, otherwise traverse up until we find the mod
 	parent := rdp.GetParents()[0]
 
 	for parent.BlockType() != BlockTypeMod {
-		if rdp, ok := parent.(RuntimeDependencyProvider); ok {
-			withRoot = rdp
+		if wp, ok := parent.(WithProvider); ok {
+			withRoot = wp
 		}
 		parent = parent.GetParents()[0]
 	}
