@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync/atomic"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
@@ -13,8 +14,11 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
+var EventCount int64 = 0
+
 func (w *Workspace) PublishDashboardEvent(e dashboardevents.DashboardEvent) {
 	if w.dashboardEventChan != nil {
+		atomic.AddInt64(&EventCount, 1)
 		// send an event onto the event bus
 		w.dashboardEventChan <- e
 	}
@@ -40,11 +44,19 @@ func (w *Workspace) UnregisterDashboardEventHandlers() {
 
 // this function is run as a goroutine to call registered event handlers for all received events
 func (w *Workspace) handleDashboardEvent() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[WARN] handleDashboardEvent PANIC %v!!!!", r)
+		}
+		log.Printf("[WARN] handleDashboardEvent EXITING!!!!")
+	}()
 	for {
-		defer func() {
-			log.Printf("[WARN] handleDashboardEvent EXITING!!!!")
-		}()
+		log.Printf("[WARN] handleDashboardEvent loop event count %d", EventCount)
 		e := <-w.dashboardEventChan
+		atomic.AddInt64(&EventCount, -1)
+		log.Printf("[WARN] got event")
+
+		//log.Printf("[WARN] handleDashboardEvent GOT EVENT")
 		if e == nil {
 			log.Printf("[WARN] handleDashboardEvent NIL EVENT RECEIVED!!!!")
 			w.dashboardEventChan = nil
@@ -52,7 +64,9 @@ func (w *Workspace) handleDashboardEvent() {
 		}
 
 		for _, handler := range w.dashboardEventHandlers {
+			//log.Printf("[WARN] handleDashboardEvent call handler %s", helpers.GetFunctionName(e))
 			handler(e)
+			//log.Printf("[WARN] handleDashboardEvent back from handler %s", helpers.GetFunctionName(e))
 		}
 	}
 }
@@ -60,8 +74,10 @@ func (w *Workspace) handleDashboardEvent() {
 func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, ev []fsnotify.Event) {
 	log.Printf("[WARN] handleFileWatcherEvent")
 	prevResourceMaps, resourceMaps, err := w.reloadResourceMaps(ctx)
+	log.Printf("[WARN] handleFileWatcherEvent reloadResourceMaps returned error %v", err)
+
 	if err != nil {
-		log.Printf("[WARN] handleFileWatcherEvent PublishDashboardEvent(&dashboardevents.WorkspaceError")
+		log.Printf("[WARN] handleFileWatcherEvent reloadResourceMaps returned error - call PublishDashboardEvent")
 		// publish error event
 		w.PublishDashboardEvent(&dashboardevents.WorkspaceError{Error: err})
 		log.Printf("[WARN] BACK FROM PublishDashboardEvent(&dashboardevents.WorkspaceError")
@@ -104,10 +120,11 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Resource
 		if w.watcherError == nil {
 			log.Printf("[WARN] CALL fileWatcherErrorHandler")
 			w.fileWatcherErrorHandler(ctx, error_helpers.PrefixError(err, "failed to reload workspace"))
+			log.Printf("[WARN] BACK FROM fileWatcherErrorHandler")
 		}
 		// now set watcher error to new error
 		w.watcherError = err
-
+		log.Printf("[WARN] return RELOAD error")
 		return nil, nil, err
 	}
 	log.Printf("[WARN] RELOAD SUCCEEDED")

@@ -83,6 +83,7 @@ func (s *Server) Shutdown() {
 }
 
 func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
+
 	var payloadError error
 	var payload []byte
 	defer func() {
@@ -213,6 +214,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 				return
 			}
 			_ = s.webSocket.Broadcast(payload)
+			log.Printf("[WARN] Server) HandleDashboardEvent broadcast available dashboards complete")
 		}
 
 		var dashboardsBeingWatched []string
@@ -284,6 +286,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 				}
 			}
 		}
+		log.Printf("[WARN] case *dashboardevents.DashboardChanged: complete")
 
 	case *dashboardevents.InputValuesCleared:
 		log.Println("[TRACE] input values cleared event", *e)
