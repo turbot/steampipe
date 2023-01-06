@@ -429,6 +429,7 @@ func (m *ResourceMaps) populateNodeEdgeProviderRefs(nep NodeAndEdgeProvider) {
 }
 
 func (m *ResourceMaps) populateWithRefs(name string, rdp RuntimeDependencyProvider, withRoot WithProvider) {
+	// unexpected but behave nicely
 	if withRoot == nil {
 		return
 	}
