@@ -248,7 +248,6 @@ const BenchmarkTableView = ({
         data: benchmarkDataTable,
         status: benchmarkDataTable ? "complete" : "running",
       }}
-      ready={!!benchmarkDataTable}
     >
       <Table
         name={`${definition.name}.table`}

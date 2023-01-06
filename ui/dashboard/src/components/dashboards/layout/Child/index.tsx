@@ -35,11 +35,7 @@ const Child = ({
     case "chart":
       const Chart = getComponent("chart");
       return (
-        <Panel
-          definition={panelDefinition}
-          ready={!!panelDefinition.data}
-          showControls={showPanelControls}
-        >
+        <Panel definition={panelDefinition} showControls={showPanelControls}>
           <Chart {...panelDefinition} />
         </Panel>
       );
@@ -110,15 +106,7 @@ const Child = ({
     case "image":
       const Image = getComponent("image");
       return (
-        <Panel
-          definition={panelDefinition}
-          ready={
-            panelDefinition.sql
-              ? !!panelDefinition.data
-              : !!panelDefinition.properties?.src
-          }
-          showControls={showPanelControls}
-        >
+        <Panel definition={panelDefinition} showControls={showPanelControls}>
           <Image {...panelDefinition} />
         </Panel>
       );
@@ -138,11 +126,7 @@ const Child = ({
     case "table":
       const Table = getComponent("table");
       return (
-        <Panel
-          definition={panelDefinition}
-          ready={!!panelDefinition.data}
-          showControls={showPanelControls}
-        >
+        <Panel definition={panelDefinition} showControls={showPanelControls}>
           <Table {...panelDefinition} />
         </Panel>
       );

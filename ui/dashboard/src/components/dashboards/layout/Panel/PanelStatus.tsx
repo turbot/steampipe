@@ -70,18 +70,24 @@ const CompleteRow = ({ definition, inputs, title }: CompleteRowProps) => {
       />
       <span className="block space-x-2 truncate">
         {title}
-        {isInput && !hasInputValue ? (
-          <span className="italic text-foreground-light">
+        {isInput && !hasInputValue && displayType !== "text" && (
+          <span
+            className="italic text-foreground-light"
+            title="Please select a value"
+          >
             {" "}
-            {!displayType && "Please select a value"}
-            {displayType === "select" && "Please select a value"}
-            {displayType === "multiselect" && "Please select a value"}
-            {displayType === "combo" && "Please select a value"}
-            {displayType === "multicombo" && "Please select a value"}
-            {displayType === "table" && "Please select a value"}
-            {displayType === "text" && "Please enter a value"}
+            Please select a value
           </span>
-        ) : null}
+        )}
+        {isInput && !hasInputValue && displayType === "text" && (
+          <span
+            className="italic text-foreground-light"
+            title="Please enter a value"
+          >
+            {" "}
+            Please enter a value
+          </span>
+        )}
       </span>
     </div>
   );

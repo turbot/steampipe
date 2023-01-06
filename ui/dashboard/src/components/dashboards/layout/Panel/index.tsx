@@ -20,6 +20,8 @@ import { registerComponent } from "../../index";
 import { TableProps } from "../../Table";
 import { TextProps } from "../../Text";
 import { useDashboard } from "../../../../hooks/useDashboard";
+import { getNodeAndEdgeDataFormat } from "../../common/useNodeAndEdgeData";
+import { NodeAndEdgeProperties } from "../../common/types";
 
 type PanelProps = {
   children: ReactNode;
@@ -38,7 +40,6 @@ type PanelProps = {
   showControls?: boolean;
   showPanelError?: boolean;
   forceBackground?: boolean;
-  ready?: boolean;
 };
 
 const Panel = ({
@@ -48,11 +49,17 @@ const Panel = ({
   showControls = true,
   showPanelError = true,
   forceBackground = false,
-  ready = true,
 }: PanelProps) => {
   const { selectedPanel } = useDashboard();
   const { panelControls, showPanelControls, setShowPanelControls } = usePanel();
   const [referenceElement, setReferenceElement] = useState(null);
+  const dataFormat = getNodeAndEdgeDataFormat(
+    definition.panel_type === "flow" ||
+      definition.panel_type === "graph" ||
+      definition.panel_type === "hierarchy"
+      ? (definition.properties as NodeAndEdgeProperties)
+      : undefined
+  );
 
   const baseStyles = classNames(
     "relative col-span-12",
@@ -126,6 +133,7 @@ const Panel = ({
             "relative",
             definition.title &&
               ((definition.panel_type !== "input" &&
+                // @ts-ignore
                 definition.status !== "complete") ||
                 (definition.panel_type !== "input" &&
                   definition.panel_type !== "table") ||
@@ -145,12 +153,14 @@ const Panel = ({
           <PanelProgress className={definition.title ? null : "rounded-t-md"} />
           {showPanelContents && <PanelInformation />}
           <>
-            {!ready && (
-              <PanelStatus
-                definition={definition as PanelDefinition}
-                showPanelError={showPanelError}
-              />
-            )}
+            {definition.panel_type !== "input" &&
+              definition.panel_type !== "card" &&
+              dataFormat !== "NODE_AND_EDGE" && (
+                <PanelStatus
+                  definition={definition as PanelDefinition}
+                  showPanelError={showPanelError}
+                />
+              )}
             {showPanelContents ? children : null}
           </>
         </div>
