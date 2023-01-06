@@ -215,12 +215,7 @@ func prepareDb(ctx context.Context) error {
 	} else if fdwNeedsUpdate(versionInfo) {
 		if _, err := installFDW(ctx, false); err != nil {
 			log.Printf("[TRACE] installFDW failed: %v", err)
-			return sperr.Wrap(
-				err,
-				sperr.WithMessage(""),
-				sperr.WithDetail(""),
-				sperr.WithRootMessage("Update steampipe-postgres-fdw... FAILED!"),
-			)
+			return sperr.WrapWithRootMessage(err, "Update steampipe-postgres-fdw... FAILED!")
 		}
 
 		// get the message renderer from the context
