@@ -176,13 +176,13 @@ func (s *RuntimeDependencySubscriberImpl) findRuntimeDependencyPublisher(runtime
 	return nil
 }
 
-func (s *RuntimeDependencySubscriberImpl) evaluateRuntimeDependencies() error {
+func (s *RuntimeDependencySubscriberImpl) evaluateRuntimeDependencies(ctx context.Context) error {
 	log.Printf("[TRACE] %s: evaluateRuntimeDependencies", s.Name)
 	// now wait for any runtime dependencies then resolve args and params
 	// (it is possible to have params but no sql)
 	if s.hasRuntimeDependencies() {
 		// if there are any unresolved runtime dependencies, wait for them
-		if err := s.waitForRuntimeDependencies(); err != nil {
+		if err := s.waitForRuntimeDependencies(ctx); err != nil {
 			return err
 		}
 		log.Printf("[TRACE] %s: runtime dependencies availablem resolving sql and args", s.Name)
@@ -197,7 +197,7 @@ func (s *RuntimeDependencySubscriberImpl) evaluateRuntimeDependencies() error {
 	return nil
 }
 
-func (s *RuntimeDependencySubscriberImpl) waitForRuntimeDependencies() error {
+func (s *RuntimeDependencySubscriberImpl) waitForRuntimeDependencies(ctx context.Context) error {
 	log.Printf("[TRACE] %s: waitForRuntimeDependencies", s.Name)
 
 	if !s.hasRuntimeDependencies() {
@@ -208,7 +208,7 @@ func (s *RuntimeDependencySubscriberImpl) waitForRuntimeDependencies() error {
 	// wait for base dependencies if we have any
 	if s.baseDependencySubscriber != nil {
 		log.Printf("[TRACE] %s: calling baseDependencySubscriber.waitForRuntimeDependencies", s.Name)
-		if err := s.baseDependencySubscriber.waitForRuntimeDependencies(); err != nil {
+		if err := s.baseDependencySubscriber.waitForRuntimeDependencies(ctx); err != nil {
 			return err
 		}
 	}
@@ -228,7 +228,7 @@ func (s *RuntimeDependencySubscriberImpl) waitForRuntimeDependencies() error {
 
 	log.Printf("[TRACE] %s: BLOCKED", s.Name)
 	// set status to blocked
-	s.setStatus(dashboardtypes.RunBlocked)
+	s.setStatus(ctx, dashboardtypes.RunBlocked)
 
 	var wg sync.WaitGroup
 	var errChan = make(chan error)

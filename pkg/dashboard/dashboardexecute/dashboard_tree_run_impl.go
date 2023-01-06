@@ -136,29 +136,29 @@ func (r *DashboardTreeRunImpl) SetError(ctx context.Context, err error) {
 	r.ErrorString = err.Error()
 	// set status (this sends update event)
 	if error_helpers.IsContextCancelledError(err) {
-		r.setStatus(dashboardtypes.RunCanceled)
+		r.setStatus(ctx, dashboardtypes.RunCanceled)
 	} else {
-		r.setStatus(dashboardtypes.RunError)
+		r.setStatus(ctx, dashboardtypes.RunError)
 	}
 	// tell parent we are done
 	r.notifyParentOfCompletion()
 }
 
 // SetComplete implements DashboardTreeRun
-func (r *DashboardTreeRunImpl) SetComplete(context.Context) {
+func (r *DashboardTreeRunImpl) SetComplete(ctx context.Context) {
 	// set status (this sends update event)
-	r.setStatus(dashboardtypes.RunComplete)
+	r.setStatus(ctx, dashboardtypes.RunComplete)
 	// tell parent we are done
 	r.notifyParentOfCompletion()
 }
 
-func (r *DashboardTreeRunImpl) setStatus(status dashboardtypes.RunStatus) {
+func (r *DashboardTreeRunImpl) setStatus(ctx context.Context, status dashboardtypes.RunStatus) {
 	r.Status = status
 	// raise LeafNodeUpdated event
 	// TODO [node_reuse] do this a different way https://github.com/turbot/steampipe/issues/2919
 	// TACTICAL: pass the full run struct - 'r.run', rather than ourselves - so we serialize all properties
 	e, _ := dashboardevents.NewLeafNodeUpdate(r.run, r.executionTree.sessionId, r.executionTree.id)
-	r.executionTree.workspace.PublishDashboardEvent(e)
+	r.executionTree.workspace.PublishDashboardEvent(ctx, e)
 
 }
 

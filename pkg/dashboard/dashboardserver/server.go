@@ -113,7 +113,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		OutputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", e.Root.GetName()))
 
 	case *dashboardevents.ExecutionError:
-		log.Println("[TRACE] execution error event", *e)
+		log.Println("[TRACE] execution error event")
 		payload, payloadError = buildExecutionErrorPayload(e)
 		if payloadError != nil {
 			return
@@ -123,7 +123,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		OutputError(s.context, e.Error)
 
 	case *dashboardevents.ExecutionComplete:
-		log.Println("[TRACE] execution complete event", *e)
+		log.Println("[TRACE] execution complete event")
 		payload, payloadError = buildExecutionCompletePayload(e)
 		if payloadError != nil {
 			return
@@ -156,7 +156,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		s.writePayloadToSession(e.Session, payload)
 
 	case *dashboardevents.DashboardChanged:
-		log.Println("[TRACE] DashboardChanged event", *e)
+		log.Println("[TRACE] DashboardChanged event")
 		deletedDashboards := e.DeletedDashboards
 		newDashboards := e.NewDashboards
 

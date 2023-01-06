@@ -3,7 +3,11 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"log"
+	"reflect"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
@@ -12,10 +16,26 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func (w *Workspace) PublishDashboardEvent(e dashboardevents.DashboardEvent) {
+var EventCount int64 = 0
+
+func (w *Workspace) PublishDashboardEvent(ctx context.Context, e dashboardevents.DashboardEvent) {
 	if w.dashboardEventChan != nil {
-		// send an event onto the event bus
-		w.dashboardEventChan <- e
+		// NOTE: channel send stalls have been observed when the channel buffer was too small
+		// - timeout send after 1s and support cancellation while waiting for event send
+		var doneChan = make(chan struct{})
+		go func() {
+			// send an event onto the event bus
+			w.dashboardEventChan <- e
+			atomic.AddInt64(&EventCount, 1)
+			close(doneChan)
+		}()
+		select {
+		case <-doneChan:
+		case <-time.After(1 * time.Second):
+			log.Printf("[TRACE] timeout sending dashboard event %s, buffered events: %d", reflect.TypeOf(e).String(), EventCount)
+		case <-ctx.Done():
+			log.Printf("[TRACE] context cancelled sending dashboard event")
+		}
 	}
 }
 
@@ -24,7 +44,9 @@ func (w *Workspace) PublishDashboardEvent(e dashboardevents.DashboardEvent) {
 func (w *Workspace) RegisterDashboardEventHandler(handler dashboardevents.DashboardEventHandler) {
 	// if no event channel has been created we need to start the event handler goroutine
 	if w.dashboardEventChan == nil {
-		w.dashboardEventChan = make(chan dashboardevents.DashboardEvent, 20)
+		// create a fairly large channel buffer - event send stalls have been observed when this buffering is too low
+		// (not fully understood yet - this is a sticking plaster)
+		w.dashboardEventChan = make(chan dashboardevents.DashboardEvent, 200)
 		go w.handleDashboardEvent()
 	}
 	// now add the handler to our list
@@ -41,7 +63,9 @@ func (w *Workspace) UnregisterDashboardEventHandlers() {
 func (w *Workspace) handleDashboardEvent() {
 	for {
 		e := <-w.dashboardEventChan
+		atomic.AddInt64(&EventCount, -1)
 		if e == nil {
+			log.Printf("[TRACE] handleDashboardEvent nil event received - exiting")
 			w.dashboardEventChan = nil
 			return
 		}
@@ -53,10 +77,14 @@ func (w *Workspace) handleDashboardEvent() {
 }
 
 func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, ev []fsnotify.Event) {
+	log.Printf("[TRACE] handleFileWatcherEvent")
 	prevResourceMaps, resourceMaps, err := w.reloadResourceMaps(ctx)
+
 	if err != nil {
+		log.Printf("[TRACE] handleFileWatcherEvent reloadResourceMaps returned error - call PublishDashboardEvent")
 		// publish error event
-		w.PublishDashboardEvent(&dashboardevents.WorkspaceError{Error: err})
+		w.PublishDashboardEvent(ctx, &dashboardevents.WorkspaceError{Error: err})
+		log.Printf("[TRACE] back from PublishDashboardEvent")
 		return
 	}
 	// if resources have changed, update introspection tables and prepared statements
@@ -71,7 +99,7 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 			w.onFileWatcherEventMessages()
 		}
 	}
-	w.raiseDashboardChangedEvents(resourceMaps, prevResourceMaps)
+	w.raiseDashboardChangedEvents(ctx, resourceMaps, prevResourceMaps)
 }
 
 func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ResourceMaps, *modconfig.ResourceMaps, error) {
@@ -95,10 +123,8 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Resource
 		}
 		// now set watcher error to new error
 		w.watcherError = err
-
 		return nil, nil, err
 	}
-
 	// clear watcher error
 	w.watcherError = nil
 
@@ -109,7 +135,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Resource
 
 }
 
-func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *modconfig.ResourceMaps) {
+func (w *Workspace) raiseDashboardChangedEvents(ctx context.Context, resourceMaps, prevResourceMaps *modconfig.ResourceMaps) {
 	event := &dashboardevents.DashboardChanged{}
 
 	// TODO reports can we use a ResourceMaps diff function to do all of this - we are duplicating logic
@@ -399,6 +425,6 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 			return true, nil
 		}
 		event.WalkChangedResources(f)
-		w.PublishDashboardEvent(event)
+		w.PublishDashboardEvent(ctx, event)
 	}
 }

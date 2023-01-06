@@ -71,6 +71,7 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, error) {
 
 	// load the workspace mod
 	if err := workspace.loadWorkspaceMod(ctx); err != nil {
+		log.Printf("[TRACE] loadWorkspaceMod failed: %s", err.Error())
 		return nil, err
 	}
 
