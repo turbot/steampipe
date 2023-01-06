@@ -260,13 +260,17 @@ defer func() {
 
 The package function `Wrap` wraps around a given `error` instance if and only if it is not an instance of `sperr.Error`. This effectively ensures that the return of `Wrap` is always an instance of `sperr.Error`.
 
-#### `Wrapf`
+#### `WrapWithMessage`
 
-The package function `Wrapf` **always** wraps around the `error` given to it. This is because `Wrapf` always sets it's own message with the arguments provided.
+The package function `WrapWithMessage` **always** wraps around the `error` given to it. This is because `WrapWithMessage` always sets it's own message with the arguments provided.
 
 #### `WithMessage`
 
 `WithMessage` sets the internal `message` if it is empty. Otherwise, it will create a `wrapper` around it's instance and set the `message` on the `wrapper` and returns the `wrapper`. This ensures that `WithMessage` is never lossy - but only creates wrappers when necessary.
+
+#### `WithRootMessage`
+
+`WithRootMessage` calls into `WithMessage` and then hides all children under the error returned.
 
 #### `WithDetail`
 
