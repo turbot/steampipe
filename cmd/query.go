@@ -212,7 +212,10 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 
 			// so a dashboard name was specified - just call GenerateSnapshot
 			snap, err := dashboardexecute.GenerateSnapshot(ctx, queryProvider.Name(), baseInitData, nil)
-			error_helpers.FailOnError(err)
+			if err != nil {
+				exitCode = constants.ExitCodeSnapshotCreationFailed
+				error_helpers.FailOnError(err)
+			}
 
 			// set the filename root for the snapshot (in case needed)
 			if !existingResource {
@@ -239,7 +242,10 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 
 			// share the snapshot if necessary
 			err = publishSnapshotIfNeeded(ctx, snap)
-			error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
+			if err != nil {
+				exitCode = constants.ExitCodeSnapshotUploadFailed
+				error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
+			}
 
 			// export the result if necessary
 			exportArgs := viper.GetStringSlice(constants.ArgExport)
