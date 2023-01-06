@@ -37,14 +37,26 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 	log.Printf("[TRACE] opening login web page")
 	// start login flow - this will open a web page prompting user to login, and will give the user a code to enter
 	var id, err = cloud.WebLogin(ctx)
-	error_helpers.FailOnError(err)
+	if err != nil {
+		error_helpers.ShowError(ctx, err)
+		exitCode = constants.ExitCodeLoginCloudConnectionFailed
+		return
+	}
 
 	token, err := getToken(ctx, id)
-	error_helpers.FailOnError(err)
+	if err != nil {
+		error_helpers.ShowError(ctx, err)
+		exitCode = constants.ExitCodeLoginCloudConnectionFailed
+		return
+	}
 
 	// save token
 	err = cloud.SaveToken(token)
-	error_helpers.FailOnError(err)
+	if err != nil {
+		error_helpers.ShowError(ctx, err)
+		exitCode = constants.ExitCodeLoginCloudConnectionFailed
+		return
+	}
 
 	displayLoginMessage(ctx, token)
 }
@@ -80,8 +92,6 @@ func getToken(ctx context.Context, id string) (loginToken string, err error) {
 		}
 		log.Printf("[TRACE] Retrying")
 	}
-
-	return
 }
 
 func displayLoginMessage(ctx context.Context, token string) {
