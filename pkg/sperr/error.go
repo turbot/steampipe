@@ -56,7 +56,7 @@ func (e *Error) Stack() StackTrace {
 		return cause.Stack()
 	}
 	if e.stack == nil {
-		panic("sperr: stack cannot be nil")
+		return StackTrace{}
 	}
 	return e.stack.StackTrace()
 }
