@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
@@ -16,12 +17,24 @@ import (
 
 var EventCount int64 = 0
 
-func (w *Workspace) PublishDashboardEvent(e dashboardevents.DashboardEvent) {
+func (w *Workspace) PublishDashboardEvent(ctx context.Context, e dashboardevents.DashboardEvent) {
 	if w.dashboardEventChan != nil {
-		atomic.AddInt64(&EventCount, 1)
-		// send an event onto the event bus
-		w.dashboardEventChan <- e
+		var doneChan = make(chan struct{})
+		go func() {
+			atomic.AddInt64(&EventCount, 1)
+			// send an event onto the event bus
+			w.dashboardEventChan <- e
+			close(doneChan)
+		}()
+		select {
+		case <-doneChan:
+		case <-time.After(1 * time.Second):
+			log.Printf("[WARN] timeout sending dashboard event")
+		case <-ctx.Done():
+			log.Printf("[WARN] context cancelled sending dashboard event")
+		}
 	}
+
 }
 
 // RegisterDashboardEventHandler starts the event handler goroutine if necessary and
@@ -54,7 +67,7 @@ func (w *Workspace) handleDashboardEvent() {
 		log.Printf("[WARN] handleDashboardEvent loop event count %d", EventCount)
 		e := <-w.dashboardEventChan
 		atomic.AddInt64(&EventCount, -1)
-		log.Printf("[WARN] got event")
+		//log.Printf("[WARN] got event")
 
 		//log.Printf("[WARN] handleDashboardEvent GOT EVENT")
 		if e == nil {
@@ -72,15 +85,20 @@ func (w *Workspace) handleDashboardEvent() {
 }
 
 func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, ev []fsnotify.Event) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[WARN] handleFileWatcherEvent PANIC %v!!!!", r)
+		}
+		log.Printf("[WARN] handleFileWatcherEvent EXITING!!!!")
+	}()
 	log.Printf("[WARN] handleFileWatcherEvent")
 	prevResourceMaps, resourceMaps, err := w.reloadResourceMaps(ctx)
-	log.Printf("[WARN] handleFileWatcherEvent reloadResourceMaps returned error %v", err)
 
 	if err != nil {
 		log.Printf("[WARN] handleFileWatcherEvent reloadResourceMaps returned error - call PublishDashboardEvent")
 		// publish error event
-		w.PublishDashboardEvent(&dashboardevents.WorkspaceError{Error: err})
-		log.Printf("[WARN] BACK FROM PublishDashboardEvent(&dashboardevents.WorkspaceError")
+		w.PublishDashboardEvent(ctx, &dashboardevents.WorkspaceError{Error: err})
+		log.Printf("[WARN] BACK FROM PublishDashboardEvent WorkspaceError")
 		return
 	}
 	// if resources have changed, update introspection tables and prepared statements
@@ -96,7 +114,7 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 		}
 	}
 	log.Printf("[WARN] handleFileWatcherEvent raiseDashboardChangedEvents")
-	w.raiseDashboardChangedEvents(resourceMaps, prevResourceMaps)
+	w.raiseDashboardChangedEvents(ctx, resourceMaps, prevResourceMaps)
 	log.Printf("[WARN] handleFileWatcherEvent raiseDashboardChangedEvents BACK")
 }
 
@@ -115,7 +133,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Resource
 	// now reload the workspace
 	err := w.loadWorkspaceMod(ctx)
 	if err != nil {
-		log.Printf("[WARN] RELOAD FAILED: %s, watcher error %v", err, w.watcherError)
+		log.Printf("[WARN] RELOAD FAILED")
 		// check the existing watcher error - if we are already in an error state, do not show error
 		if w.watcherError == nil {
 			log.Printf("[WARN] CALL fileWatcherErrorHandler")
@@ -139,7 +157,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Resource
 
 }
 
-func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *modconfig.ResourceMaps) {
+func (w *Workspace) raiseDashboardChangedEvents(ctx context.Context, resourceMaps, prevResourceMaps *modconfig.ResourceMaps) {
 	event := &dashboardevents.DashboardChanged{}
 
 	// TODO reports can we use a ResourceMaps diff function to do all of this - we are duplicating logic
@@ -429,6 +447,6 @@ func (w *Workspace) raiseDashboardChangedEvents(resourceMaps, prevResourceMaps *
 			return true, nil
 		}
 		event.WalkChangedResources(f)
-		w.PublishDashboardEvent(event)
+		w.PublishDashboardEvent(ctx, event)
 	}
 }

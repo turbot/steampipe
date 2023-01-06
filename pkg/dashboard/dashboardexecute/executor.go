@@ -50,7 +50,7 @@ func (e *DashboardExecutor) ExecuteDashboard(ctx context.Context, sessionId, das
 				Session:   sessionId,
 				Timestamp: time.Now(),
 			}
-			workspace.PublishDashboardEvent(errorEvent)
+			workspace.PublishDashboardEvent(ctx, errorEvent)
 		}
 	}()
 
@@ -148,7 +148,7 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 			Session:       executionTree.sessionId,
 			ExecutionId:   executionTree.id,
 		}
-		executionTree.workspace.PublishDashboardEvent(event)
+		executionTree.workspace.PublishDashboardEvent(ctx, event)
 	}
 	// if there are any dependent inputs, set their value to nil and send an event to the UI
 	// if the dashboard run is complete, just re-execute

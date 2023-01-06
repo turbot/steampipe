@@ -136,7 +136,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 		e.SetError(ctx, err)
 		return
 	}
-	workspace.PublishDashboardEvent(&dashboardevents.ExecutionStarted{
+	workspace.PublishDashboardEvent(ctx, &dashboardevents.ExecutionStarted{
 		Root:        e.Root,
 		Session:     e.sessionId,
 		ExecutionId: e.id,
@@ -160,7 +160,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 			StartTime:  startTime,
 			EndTime:    time.Now(),
 		}
-		workspace.PublishDashboardEvent(e)
+		workspace.PublishDashboardEvent(ctx, e)
 	}()
 
 	log.Println("[TRACE]", "begin DashboardExecutionTree.Execute")

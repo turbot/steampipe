@@ -36,7 +36,7 @@ func (c *DashboardEventControlHooks) OnControlComplete(ctx context.Context, cont
 		Session:     c.CheckRun.SessionId,
 		Timestamp:   time.Now(),
 	}
-	c.CheckRun.executionTree.workspace.PublishDashboardEvent(event)
+	c.CheckRun.executionTree.workspace.PublishDashboardEvent(ctx, event)
 }
 
 func (c *DashboardEventControlHooks) OnControlError(ctx context.Context, controlRun controlstatus.ControlRunStatusProvider, progress *controlstatus.ControlProgress) {
@@ -48,7 +48,7 @@ func (c *DashboardEventControlHooks) OnControlError(ctx context.Context, control
 		Session:     c.CheckRun.SessionId,
 		Timestamp:   time.Now(),
 	}
-	c.CheckRun.executionTree.workspace.PublishDashboardEvent(event)
+	c.CheckRun.executionTree.workspace.PublishDashboardEvent(ctx, event)
 }
 
 func (c *DashboardEventControlHooks) OnComplete(ctx context.Context, _ *controlstatus.ControlProgress) {

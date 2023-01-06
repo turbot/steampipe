@@ -123,13 +123,13 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	// start a goroutine to wait for children to complete
 	doneChan := r.waitForChildrenAsync()
 
-	if err := r.evaluateRuntimeDependencies(); err != nil {
+	if err := r.evaluateRuntimeDependencies(ctx); err != nil {
 		r.SetError(ctx, err)
 		return
 	}
 
 	// set status to running (this sends update event)
-	r.setStatus(dashboardtypes.RunRunning)
+	r.setStatus(ctx, dashboardtypes.RunRunning)
 
 	// if we have sql to execute, do it now
 	// (if we are only performing a base execution, do not run the query)

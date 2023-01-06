@@ -98,7 +98,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 	switch e := event.(type) {
 
 	case *dashboardevents.WorkspaceError:
-		log.Printf("[WARN] WorkspaceError event: %s", e.Error)
+		log.Printf("[WARN] WorkspaceError event")
 		payload, payloadError = buildWorkspaceErrorPayload(e)
 		if payloadError != nil {
 			return
