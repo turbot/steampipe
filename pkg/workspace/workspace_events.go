@@ -31,7 +31,7 @@ func (w *Workspace) PublishDashboardEvent(ctx context.Context, e dashboardevents
 		case <-time.After(1 * time.Second):
 			log.Printf("[WARN] timeout sending dashboard event")
 		case <-ctx.Done():
-			log.Printf("[WARN] context cancelled sending dashboard event")
+			log.Printf("[TRACE] context cancelled sending dashboard event")
 		}
 	}
 
