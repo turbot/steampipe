@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -19,22 +20,23 @@ var EventCount int64 = 0
 
 func (w *Workspace) PublishDashboardEvent(ctx context.Context, e dashboardevents.DashboardEvent) {
 	if w.dashboardEventChan != nil {
+		// NOTE: channel send stalls have been observed when the channel buffer was too small
+		// - timeout send after 1s and support cancellation while waiting for event send
 		var doneChan = make(chan struct{})
 		go func() {
-			atomic.AddInt64(&EventCount, 1)
 			// send an event onto the event bus
 			w.dashboardEventChan <- e
+			atomic.AddInt64(&EventCount, 1)
 			close(doneChan)
 		}()
 		select {
 		case <-doneChan:
 		case <-time.After(1 * time.Second):
-			log.Printf("[WARN] timeout sending dashboard event")
+			log.Printf("[TRACE] timeout sending dashboard event %s, buffered events: %d", reflect.TypeOf(e).String(), EventCount)
 		case <-ctx.Done():
 			log.Printf("[TRACE] context cancelled sending dashboard event")
 		}
 	}
-
 }
 
 // RegisterDashboardEventHandler starts the event handler goroutine if necessary and
@@ -42,7 +44,9 @@ func (w *Workspace) PublishDashboardEvent(ctx context.Context, e dashboardevents
 func (w *Workspace) RegisterDashboardEventHandler(handler dashboardevents.DashboardEventHandler) {
 	// if no event channel has been created we need to start the event handler goroutine
 	if w.dashboardEventChan == nil {
-		w.dashboardEventChan = make(chan dashboardevents.DashboardEvent, 20)
+		// create a fairly large channel buffer - event send stalls have been observed when this buffering is too low
+		// (not fully understood yet - this is a sticking plaster)
+		w.dashboardEventChan = make(chan dashboardevents.DashboardEvent, 200)
 		go w.handleDashboardEvent()
 	}
 	// now add the handler to our list
@@ -57,48 +61,30 @@ func (w *Workspace) UnregisterDashboardEventHandlers() {
 
 // this function is run as a goroutine to call registered event handlers for all received events
 func (w *Workspace) handleDashboardEvent() {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("[WARN] handleDashboardEvent PANIC %v!!!!", r)
-		}
-		log.Printf("[WARN] handleDashboardEvent EXITING!!!!")
-	}()
 	for {
-		log.Printf("[WARN] handleDashboardEvent loop event count %d", EventCount)
 		e := <-w.dashboardEventChan
 		atomic.AddInt64(&EventCount, -1)
-		//log.Printf("[WARN] got event")
-
-		//log.Printf("[WARN] handleDashboardEvent GOT EVENT")
 		if e == nil {
-			log.Printf("[WARN] handleDashboardEvent NIL EVENT RECEIVED!!!!")
+			log.Printf("[TRACE] handleDashboardEvent nil event received - exiting")
 			w.dashboardEventChan = nil
 			return
 		}
 
 		for _, handler := range w.dashboardEventHandlers {
-			//log.Printf("[WARN] handleDashboardEvent call handler %s", helpers.GetFunctionName(e))
 			handler(e)
-			//log.Printf("[WARN] handleDashboardEvent back from handler %s", helpers.GetFunctionName(e))
 		}
 	}
 }
 
 func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, ev []fsnotify.Event) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("[WARN] handleFileWatcherEvent PANIC %v!!!!", r)
-		}
-		log.Printf("[WARN] handleFileWatcherEvent EXITING!!!!")
-	}()
-	log.Printf("[WARN] handleFileWatcherEvent")
+	log.Printf("[TRACE] handleFileWatcherEvent")
 	prevResourceMaps, resourceMaps, err := w.reloadResourceMaps(ctx)
 
 	if err != nil {
-		log.Printf("[WARN] handleFileWatcherEvent reloadResourceMaps returned error - call PublishDashboardEvent")
+		log.Printf("[TRACE] handleFileWatcherEvent reloadResourceMaps returned error - call PublishDashboardEvent")
 		// publish error event
 		w.PublishDashboardEvent(ctx, &dashboardevents.WorkspaceError{Error: err})
-		log.Printf("[WARN] BACK FROM PublishDashboardEvent WorkspaceError")
+		log.Printf("[TRACE] back from PublishDashboardEvent")
 		return
 	}
 	// if resources have changed, update introspection tables and prepared statements
@@ -113,9 +99,7 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 			w.onFileWatcherEventMessages()
 		}
 	}
-	log.Printf("[WARN] handleFileWatcherEvent raiseDashboardChangedEvents")
 	w.raiseDashboardChangedEvents(ctx, resourceMaps, prevResourceMaps)
-	log.Printf("[WARN] handleFileWatcherEvent raiseDashboardChangedEvents BACK")
 }
 
 func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ResourceMaps, *modconfig.ResourceMaps, error) {
@@ -133,20 +117,14 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Resource
 	// now reload the workspace
 	err := w.loadWorkspaceMod(ctx)
 	if err != nil {
-		log.Printf("[WARN] RELOAD FAILED")
 		// check the existing watcher error - if we are already in an error state, do not show error
 		if w.watcherError == nil {
-			log.Printf("[WARN] CALL fileWatcherErrorHandler")
 			w.fileWatcherErrorHandler(ctx, error_helpers.PrefixError(err, "failed to reload workspace"))
-			log.Printf("[WARN] BACK FROM fileWatcherErrorHandler")
 		}
 		// now set watcher error to new error
 		w.watcherError = err
-		log.Printf("[WARN] return RELOAD error")
 		return nil, nil, err
 	}
-	log.Printf("[WARN] RELOAD SUCCEEDED")
-
 	// clear watcher error
 	w.watcherError = nil
 

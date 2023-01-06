@@ -51,9 +51,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Work
 	}
 
 	w.RegisterDashboardEventHandler(server.HandleDashboardEvent)
-	err := w.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {
-		log.Println("[WARN] Server error handler")
-	})
+	err := w.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {})
 	OutputMessage(ctx, "Workspace loaded")
 
 	return server, err
@@ -68,7 +66,7 @@ func (s *Server) Start() chan struct{} {
 
 // Shutdown stops the API server
 func (s *Server) Shutdown() {
-	log.Println("[WARN] Server shutdown")
+	log.Println("[TRACE] Server shutdown")
 
 	if s.webSocket != nil {
 		log.Println("[TRACE] closing websocket")
@@ -78,12 +76,11 @@ func (s *Server) Shutdown() {
 		log.Println("[TRACE] closed websocket")
 	}
 
-	log.Println("[WARN] Server shutdown complete")
+	log.Println("[TRACE] Server shutdown complete")
 
 }
 
 func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
-
 	var payloadError error
 	var payload []byte
 	defer func() {
@@ -98,7 +95,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 	switch e := event.(type) {
 
 	case *dashboardevents.WorkspaceError:
-		log.Printf("[WARN] WorkspaceError event")
+		log.Printf("[TRACE] WorkspaceError event: %s", e.Error)
 		payload, payloadError = buildWorkspaceErrorPayload(e)
 		if payloadError != nil {
 			return
@@ -107,7 +104,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		OutputError(s.context, e.Error)
 
 	case *dashboardevents.ExecutionStarted:
-		log.Printf("[WARN] ExecutionStarted event session %s, dashboard %s", e.Session, e.Root.GetName())
+		log.Printf("[TRACE] ExecutionStarted event session %s, dashboard %s", e.Session, e.Root.GetName())
 		payload, payloadError = buildExecutionStartedPayload(e)
 		if payloadError != nil {
 			return
@@ -116,7 +113,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		OutputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", e.Root.GetName()))
 
 	case *dashboardevents.ExecutionError:
-		log.Println("[TRACE] execution error event", *e)
+		log.Println("[TRACE] execution error event")
 		payload, payloadError = buildExecutionErrorPayload(e)
 		if payloadError != nil {
 			return
@@ -126,7 +123,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		OutputError(s.context, e.Error)
 
 	case *dashboardevents.ExecutionComplete:
-		log.Println("[WARN] execution complete event")
+		log.Println("[TRACE] execution complete event")
 		payload, payloadError = buildExecutionCompletePayload(e)
 		if payloadError != nil {
 			return
@@ -159,7 +156,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		s.writePayloadToSession(e.Session, payload)
 
 	case *dashboardevents.DashboardChanged:
-		log.Println("[WARN] DashboardChanged event")
+		log.Println("[TRACE] DashboardChanged event")
 		deletedDashboards := e.DeletedDashboards
 		newDashboards := e.NewDashboards
 
@@ -214,7 +211,6 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 				return
 			}
 			_ = s.webSocket.Broadcast(payload)
-			log.Printf("[WARN] Server) HandleDashboardEvent broadcast available dashboards complete")
 		}
 
 		var dashboardsBeingWatched []string
@@ -286,7 +282,6 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 				}
 			}
 		}
-		log.Printf("[WARN] case *dashboardevents.DashboardChanged: complete")
 
 	case *dashboardevents.InputValuesCleared:
 		log.Println("[TRACE] input values cleared event", *e)
