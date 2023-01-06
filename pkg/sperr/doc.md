@@ -2,9 +2,43 @@ New package `sperr`
 
 # `sperr.Error`
 
-`sperr.Error` satisfies the standard `error` interface. An `sperr.Error` is a stateful object with a StackTrace of the call stack to a depth of `32` (`32` picked OTA)
+An `sperr.Error` is a stateful object with a `StackTrace` till the point of creation with a stack depth of `32` (`32` picked OTA)
 
-## Options
+`sperr.Error` satisfies the standard `error` interface.
+
+## Create `sperr.Error`:
+
+> **Note:** All `sperr.Error` factory functions return an `error` interface.
+
+### `sperr.New(format string, args interface{}...)`
+
+This is to be used when we want to create new `error` instances. Always carries a `StackTrace`. It is recommended that this function be called from the actual place of the error and not to create error.
+
+### `sperr.Wrap(err error, options Option...)`
+
+If the given `err` is not an `sperr.Error`, this wraps around `err` and creates an `sperr.Error` along with a `StackTrace`.
+
+Returns `nil` if `err` is `nil`. `Wrap` tries to infer a friendly message for the error and if the inference succeeded, it will set the friendly message as it's own message.
+
+### `sperr.WrapWithMessage(err error, format string, args ...interface{})`
+
+Wrap an `error` to create an `sperr.Error` and sets a formatted message to the `wrapper`.
+
+`WrapWithMessage` is functionally equivalent to `Wrap(err, WithMessage(format,args...))` - but maintains the proper call stack.
+
+### `sperr.WrapWithRootMessage(err error, format string, args ...interface{})`
+
+Wrap an `error` to create an `sperr.Error` and sets a formatted message to the `wrapper` along with the `root` flag.
+
+`WrapWithRootMessage` is functionally equivalent to `Wrap(err, WithRootMessage(format,args...))` - but maintains the proper call stack.
+
+### `sperr.ToError(val interface{})`
+
+This creates an `error` object from any available value.
+
+If `val` is an instance of `error`, `ToError` creates a wrapper around `val` and returns it. Otherwise, it creates a new error using the value of `fmt.Sprintf("%v", val)` as the message. In both the cases, `ToError` creates and includes a `StackTrace`.
+
+## Adding Options
 
 ### `WithMessage(format string, args ...interface())`
 
@@ -28,31 +62,9 @@ sperr.Wrap(
 )
 ```
 
-## Create `sperr.Error`:
-
-### `sperr.New(format string, args interface{}...)`
-
-This is to be used when we want to create new `error` instances. Always carries a `StackTrace`. It is recommended that this function be called from the actual place of the error and not to create error.
-
-### `sperr.Wrap(err error, options Option...)`
-
-If the given `err` is not an `sperr.Error`, this wraps around `err` and creates an `sperr.Error` along with a `StackTrace`. Returns `nil` if `err` is `nil`. `Wrap` tries to infer a friendly message for the error and if the inference succeeded, it will set the friendly message as it's own message.
-
-### `sperr.WrapWithMessage(err error, format string, args ...interface{})`
-
-Wrap an `error` to create an `sperr.Error` and sets a formatted message to the `wrapper`.
-
-`WrapWithMessage` is functionally equivalent to `Wrap(err, WithMessage(format,args...))` - but maintains the proper call stack.
-
-### `sperr.WrapWithRootMessage(err error, format string, args ...interface{})`
-
-Wrap an `error` to create an `sperr.Error` and sets a formatted message to the `wrapper` along with the `root` flag.
-
-`WrapWithRootMessage` is functionally equivalent to `Wrap(err, WithRootMessage(format,args...))` - but maintains the proper call stack.
-
 ## Printing errors
 
-`sperr.Error` objects implement the `Formatter` interface to facilitate serializing errors to output channels.
+`sperr.Error` objects implement the `Formatter` interface to facilitate serializing errors to `io.Writer` interfaces.
 
 Formatting verbs supported are:
 | | |
@@ -72,18 +84,18 @@ func readFile() error {
 	path := "/imaginary/path"
 	_, err := os.Open(path)
 	if err != nil {
-		return sperr.WrapWithMessage(err, "could not open file at %s", path)
+		return sperr.WrapWithRootMessage(err, "could not open file at %s", path)
 	}
 	return nil
 }
 
-func wrapFirstWithMessageAndDetail() error {
+func wrapWithMessageAndDetail() error {
 	err := readFile()
 
 	return sperr.Wrap(
 		err,
-		sperr.WithMessage("message from wrapFirstWithMessageAndDetail"),
-		sperr.WithDetail("detail from wrapFirstWithMessageAndDetail"),
+		sperr.WithMessage("message from wrapWithMessageAndDetail"),
+		sperr.WithDetail("detail from wrapWithMessageAndDetail"),
 	)
 }
 
@@ -97,50 +109,44 @@ showCaseErr := sperr.Wrap(
 
 Outputs of the `showCaseErr` in preceeding program would be:
 
-#### `%s`
-
-`message from main : message from wrapFirstWithMessageAndDetail : could not open file at /imaginary/path : open /imaginary/path: no such file or directory`
-
 #### `%q`
 
-`"message from main : message from wrapFirstWithMessageAndDetail : could not open file at /imaginary/path : open /imaginary/path: no such file or directory"`
+`"message from main : message from wrapWithMessageAndDetail : could not open file at /imaginary/path : open /imaginary/path"`
 
-#### `%v`
+#### `%s` and `%v`
 
-`message from main : message from wrapFirstWithMessageAndDetail : could not open file at /imaginary/path : open /imaginary/path: no such file or directory`
+`message from main : message from wrapWithMessageAndDetail : could not open file at /imaginary/path : open /imaginary/path`
 
 #### `%+v`
 
 ```
-message from main : message from wrapFirstWithMessageAndDetail : could not open file at /imaginary/path : open /imaginary/path: no such file or directory
+message from main : message from wrapWithMessageAndDetail : could not open file at /imaginary/path
 
 Details:
 message from main :: detail from main
-|-- message from wrapFirstWithMessageAndDetail :: detail from wrapFirstWithMessageAndDetail
-|-- could not open file at /imaginary/path : open /imaginary/path: no such file or directory
+|-- message from wrapWithMessageAndDetail :: detail from wrapWithMessageAndDetail
+|-- could not open file at /imaginary/path
+|-- open /imaginary/path: no such file or directory
 ```
 
 #### `%#v`
 
 ```
-message from main : message from wrapFirstWithMessageAndDetail : could not open file at /imaginary/path : open /imaginary/path: no such file or directory
+message from main : message from wrapWithMessageAndDetail : could not open file at /imaginary/path
 
 Details:
 message from main :: detail from main
-|-- message from wrapFirstWithMessageAndDetail :: detail from wrapFirstWithMessageAndDetail
-|-- could not open file at /imaginary/path : open /imaginary/path: no such file or directory
+|-- message from wrapWithMessageAndDetail :: detail from wrapWithMessageAndDetail
+|-- could not open file at /imaginary/path
+|-- open /imaginary/path: no such file or directory
 
 Stack:
 main.readFile
-        /home/user/sandbox/main.go:83
-main.wrapFirstWithMessageAndDetail
-        /home/user/sandbox/main.go:63
-main.addMsgAndDetailToError
-        /home/user/sandbox/main.go:53
-main.wrapErrorAndSetRootMessage
-        /home/user/sandbox/main.go:39
+        /Users/binaek/work/sources/sandbox/main.go:25
+main.wrapWithMessageAndDetail
+        /Users/binaek/work/sources/sandbox/main.go:31
 main.main
-        /home/user/sandbox/main.go:33
+        /Users/binaek/work/sources/sandbox/main.go:41
 runtime.main
         /usr/local/go/src/runtime/proc.go:250
 runtime.goexit
@@ -166,6 +172,20 @@ if dbState != nil {
 }
 ```
 
+### Create `error` with `message` and `detail`
+
+```
+func validateData(data int) error {
+  if data > 10 {
+    return sperr.Wrap(
+      sperr.New("invalid argument: %d", data),
+      sperr.WithDetail("error occurred with %d argument", data),
+    )
+  }
+  return nil
+}
+```
+
 ### Wrap an `error`
 
 ```
@@ -178,7 +198,7 @@ if err := json.Unmarshal(bytContent, &data); err != nil {
 
 ```
 if err := json.Unmarshal(byteContent, &data); err != nil {
-  return nil, sperr.Wrapf(err, "error unmarshalling file content in %s", filePath)
+  return nil, sperr.WrapWithMessage(err, "error unmarshalling file content in %s", filePath)
 }
 ```
 
@@ -186,18 +206,7 @@ or
 
 ```
 if err := json.Unmarshal(byteContent, &data); err != nil {
-  return nil, sperr.Wrap(err).WithMessage("error unmarshalling file content in %s", filePath)
-}
-```
-
-### Create an `error` with `message` and `detail`
-
-```
-func validateData(data int) error {
-  if data > 10 {
-    return sperr.New("invalid argument: %d", data).WithDetail("error occurred with %d argument", data)
-  }
-  return nil
+  return nil, sperr.Wrap(err, sperr.WithMessage("error unmarshalling file content in %s", filePath))
 }
 ```
 
@@ -206,41 +215,29 @@ func validateData(data int) error {
 ```
 err := validateData(userInput.numAttacks)
 if err!= nil {
-  return sperr.Wrap(err).WithDetail("error occurred with %d argument", userInput.numAttacks)
+  return sperr.Wrap(err, sperr.WithDetail("error occurred with %d argument", userInput.numAttacks))
 }
 ```
 
-### Wrap an `error` with `message`
-
-```
-err := validateData(userInput.numAttacks)
-if err!= nil {
-  return sperr.Wrap(err).WithMessage("error occurred with %d argument", userInput.numAttacks)
-}
-```
-
-> While wrapping around `err`, if `Wrap` could infer a `message` then `WithMessage` will create a `wrapper` around the **output of `sperr.Wrap(err)`** and set the message on the `wrapper`. Otherwise, it will just set the `message` on `err`.
-
-### Wrap an `error` with a message replacing the message of the `error`
-
-```
-err = sperr.Wrap(err).AsRootMessage()
-```
+### Wrap an `error` with a message replacing the message of the original `error`
 
 ```
 if _, err := installFDW(ctx, false); err != nil {
 	log.Printf("[TRACE] installFDW failed: %v", err)
-	return sperr.Wrapf(err, "Update steampipe-postgres-fdw... FAILED!").AsRootMessage()
+	return sperr.WrapWithRootMessage(err, "Update steampipe-postgres-fdw... FAILED!")
+}
+```
+
+or
+
+```
+if _, err := installFDW(ctx, false); err != nil {
+	log.Printf("[TRACE] installFDW failed: %v", err)
+	return sperr.Wrap(err, sperr.WithRootMessage("Update steampipe-postgres-fdw... FAILED!"))
 }
 ```
 
 > Setting an error as the `root` error hides all errors below it from the user interface. They are not purged - just hidden from display when displaying error messages. When enumerating error `details`, the details of all errors in the stack are shown - including errors under a `root` error.
-
-### Wrap an `error` with formatted message and then set a `message`
-
-```
-err = sperr.Wrapf(err, "error occurred").WithMessage("error occurred with %d argument", intArgument)
-```
 
 ### Convert `panic` recovery to an `error`
 
@@ -275,9 +272,14 @@ The package function `Wrapf` **always** wraps around the `error` given to it. Th
 #### Example:
 
 > ```
-> err = sperr.Wrapf(err, "error occurred").
->              WithDetail("added detail").
->              WithMessage("error occurred with %d argument", intArgument)
+> sperr.WrapWithMessage(
+>   sperr.Wrap(
+>     err,
+>     sperr.WithDetail("added detail"),
+>     sperr.WithMessage("error occurred with %d argument", intArgument),
+>   ),
+>   "error occurred"
+> )
 > ```
 >
 > Result:
@@ -286,9 +288,9 @@ The package function `Wrapf` **always** wraps around the `error` given to it. Th
 > Error {
 >   Error {
 >     err
->     Message : "error occurred"
+>     Message : "error occurred with 10 argument"
 >     Detail  : "added detail"
 >   }
->   Message : "error occurred with 10 argument"
+>   Message : "error occurred"
 > }
 > ```
