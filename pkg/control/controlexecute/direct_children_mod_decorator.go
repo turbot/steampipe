@@ -11,7 +11,7 @@ type DirectChildrenModDecorator struct {
 	*modconfig.Mod
 }
 
-// override GetChildren
+// GetChildren is overridden
 func (r DirectChildrenModDecorator) GetChildren() []modconfig.ModTreeItem {
 	var res []modconfig.ModTreeItem
 	for _, child := range r.Mod.GetChildren() {
@@ -20,4 +20,24 @@ func (r DirectChildrenModDecorator) GetChildren() []modconfig.ModTreeItem {
 		}
 	}
 	return res
+}
+
+// GetDocumentation implements DashboardLeafNode
+func (r DirectChildrenModDecorator) GetDocumentation() string {
+	return r.Mod.GetDocumentation()
+}
+
+// GetDisplay implements DashboardLeafNode
+func (r DirectChildrenModDecorator) GetDisplay() string {
+	return ""
+}
+
+// GetType implements DashboardLeafNode
+func (r DirectChildrenModDecorator) GetType() string {
+	return ""
+}
+
+// GetWidth implements DashboardLeafNode
+func (r DirectChildrenModDecorator) GetWidth() int {
+	return 0
 }
