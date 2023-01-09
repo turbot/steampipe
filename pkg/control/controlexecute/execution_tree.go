@@ -31,7 +31,7 @@ type ExecutionTree struct {
 	Progress    *controlstatus.ControlProgress `json:"progress"`
 	// map of dimension property name to property value to color map
 	DimensionColorGenerator *DimensionColorGenerator `json:"-"`
-	// the current session search path (this may be overidden for specific controls)
+	// the current session search path
 	SearchPath []string             `json:"-"`
 	Workspace  *workspace.Workspace `json:"-"`
 	client     db_common.Client
