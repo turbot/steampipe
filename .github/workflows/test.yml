@@ -102,6 +102,7 @@ jobs:
           - "workspace"
           - "cloud"
           - "dashboard"
+          - "dashboard_parsing_validation"
           - "exit_codes"
           - "force_stop"
         exclude:
