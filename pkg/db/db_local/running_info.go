@@ -102,5 +102,5 @@ func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
 }
 
 func removeRunningInstanceInfo() error {
-	return sperr.Wrap(os.Remove(filepaths.RunningInfoFilePath()))
+	return os.Remove(filepaths.RunningInfoFilePath())
 }
