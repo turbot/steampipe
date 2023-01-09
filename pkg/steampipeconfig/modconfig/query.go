@@ -22,9 +22,6 @@ type Query struct {
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
-
-	SearchPath       *string `cty:"search_path" hcl:"search_path" column:"search_path,text" json:"search_path,omitempty"`
-	SearchPathPrefix *string `cty:"search_path_prefix" hcl:"search_path_prefix" column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
 }
 
 func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
@@ -108,8 +105,6 @@ func (q *Query) Equals(other *Query) bool {
 		q.FullName == other.FullName &&
 		typehelpers.SafeString(q.Description) == typehelpers.SafeString(other.Description) &&
 		typehelpers.SafeString(q.Documentation) == typehelpers.SafeString(other.Documentation) &&
-		typehelpers.SafeString(q.SearchPath) == typehelpers.SafeString(other.SearchPath) &&
-		typehelpers.SafeString(q.SearchPathPrefix) == typehelpers.SafeString(other.SearchPathPrefix) &&
 		typehelpers.SafeString(q.SQL) == typehelpers.SafeString(other.SQL) &&
 		typehelpers.SafeString(q.Title) == typehelpers.SafeString(other.Title)
 	if !res {
@@ -184,10 +179,6 @@ func (q *Query) Diff(other *Query) *DashboardTreeItemDiffs {
 
 	if !utils.SafeStringsEqual(q.FullName, other.FullName) {
 		res.AddPropertyDiff("Name")
-	}
-
-	if !utils.SafeStringsEqual(q.SearchPath, other.SearchPath) {
-		res.AddPropertyDiff("SearchPath")
 	}
 
 	res.populateChildDiffs(q, other)
