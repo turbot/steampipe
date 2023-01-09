@@ -19,9 +19,7 @@ type Control struct {
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
-	SearchPath       *string `cty:"search_path" hcl:"search_path"  column:"search_path,text" json:"search_path,omitempty"`
-	SearchPathPrefix *string `cty:"search_path_prefix" hcl:"search_path_prefix"  column:"search_path_prefix,text" json:"search_path_prefix,omitempty"`
-	Severity         *string `cty:"severity" hcl:"severity"  column:"severity,text" json:"severity,omitempty"`
+	Severity *string `cty:"severity" hcl:"severity"  column:"severity,text" json:"severity,omitempty"`
 
 	// dashboard specific properties
 	Base    *Control `hcl:"base" json:"-"`
@@ -62,8 +60,6 @@ func (c *Control) Equals(other *Control) bool {
 		c.FullName == other.FullName &&
 		typehelpers.SafeString(c.Description) == typehelpers.SafeString(other.Description) &&
 		typehelpers.SafeString(c.Documentation) == typehelpers.SafeString(other.Documentation) &&
-		typehelpers.SafeString(c.SearchPath) == typehelpers.SafeString(other.SearchPath) &&
-		typehelpers.SafeString(c.SearchPathPrefix) == typehelpers.SafeString(other.SearchPathPrefix) &&
 		typehelpers.SafeString(c.Severity) == typehelpers.SafeString(other.Severity) &&
 		typehelpers.SafeString(c.SQL) == typehelpers.SafeString(other.SQL) &&
 		typehelpers.SafeString(c.Title) == typehelpers.SafeString(other.Title)
@@ -200,12 +196,6 @@ func (c *Control) Diff(other *Control) *DashboardTreeItemDiffs {
 	if !utils.SafeStringsEqual(c.Documentation, other.Documentation) {
 		res.AddPropertyDiff("Documentation")
 	}
-	if !utils.SafeStringsEqual(c.SearchPath, other.SearchPath) {
-		res.AddPropertyDiff("SearchPath")
-	}
-	if !utils.SafeStringsEqual(c.SearchPathPrefix, other.SearchPathPrefix) {
-		res.AddPropertyDiff("SearchPathPrefix")
-	}
 	if !utils.SafeStringsEqual(c.Severity, other.Severity) {
 		res.AddPropertyDiff("Severity")
 	}
@@ -239,12 +229,6 @@ func (c *Control) setBaseProperties() {
 	// call into parent nested struct setBaseProperties
 	c.QueryProviderImpl.setBaseProperties()
 
-	if c.SearchPath == nil {
-		c.SearchPath = c.Base.SearchPath
-	}
-	if c.SearchPathPrefix == nil {
-		c.SearchPathPrefix = c.Base.SearchPathPrefix
-	}
 	if c.Severity == nil {
 		c.Severity = c.Base.Severity
 	}

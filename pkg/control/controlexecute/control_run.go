@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 	"time"
 
@@ -182,35 +181,6 @@ func (r *ControlRun) skip(ctx context.Context) {
 	r.setRunStatus(ctx, dashboardtypes.RunComplete)
 }
 
-// set search path for this control run
-func (r *ControlRun) setSearchPath(ctx context.Context, session *db_common.DatabaseSession, client db_common.Client) error {
-	utils.LogTime("ControlRun.setSearchPath start")
-	defer utils.LogTime("ControlRun.setSearchPath end")
-
-	var searchPath []string
-	var searchPathPrefix []string
-
-	if r.Control.SearchPath == nil && r.Control.SearchPathPrefix == nil {
-		return nil
-	}
-	if r.Control.SearchPath != nil {
-		searchPath = strings.Split(*r.Control.SearchPath, ",")
-	}
-	if r.Control.SearchPathPrefix != nil {
-		searchPathPrefix = strings.Split(*r.Control.SearchPathPrefix, ",")
-	}
-
-	newSearchPath, err := client.ContructSearchPath(ctx, searchPath, searchPathPrefix)
-	if err != nil {
-		return err
-	}
-
-	// now execute the SQL to actually set the search path
-	q := fmt.Sprintf("set search_path to %s", strings.Join(newSearchPath, ","))
-	_, err = session.Connection.Exec(ctx, q)
-	return err
-}
-
 func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	utils.LogTime("ControlRun.execute start")
 	defer utils.LogTime("ControlRun.execute end")
@@ -271,12 +241,6 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	// resolve the control query
 	resolvedQuery, err := r.resolveControlQuery(control)
 	if err != nil {
-		r.setError(ctx, err)
-		return
-	}
-
-	log.Printf("[TRACE] setting search path %s\n", control.Name())
-	if err := r.setSearchPath(ctx, dbSession, client); err != nil {
 		r.setError(ctx, err)
 		return
 	}
