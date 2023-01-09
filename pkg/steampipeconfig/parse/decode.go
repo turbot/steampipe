@@ -751,7 +751,7 @@ func validateHcl(body *hclsyntax.Body, schema *hcl.BodySchema) hcl.Diagnostics {
 			subject := attribute.Range()
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf(`Unsupported attribute: Attributes "%s" are not expected here.`, attribute.Name),
+				Summary:  fmt.Sprintf(`Unsupported attribute: Attribute "%s" not expected here.`, attribute.Name),
 				Subject:  &subject,
 			})
 		}
