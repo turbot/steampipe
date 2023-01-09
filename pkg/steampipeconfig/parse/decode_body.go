@@ -53,6 +53,7 @@ func decodeHclBodyIntoStruct(body hcl.Body, evalCtx *hcl.EvalContext, resourcePr
 	return diags
 }
 
+// build the hcl schema for this resource
 func getResourceSchema(resource modconfig.HclResource, nestedStructs []any) *hcl.BodySchema {
 	t := reflect.TypeOf(helpers.DereferencePointer(resource))
 	typeName := t.Name()
@@ -148,7 +149,6 @@ func getResourceSchema(resource modconfig.HclResource, nestedStructs []any) *hcl
 }
 
 func getSchemaForStruct(t reflect.Type) *hcl.BodySchema {
-
 	var schema = &hcl.BodySchema{}
 	// get all hcl tags
 	for i := 0; i < t.NumField(); i++ {
