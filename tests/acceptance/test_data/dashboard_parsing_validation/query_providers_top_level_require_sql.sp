@@ -8,10 +8,6 @@ query "top_query_1" {
   sql = "select 1 as query"
 }
 
-query "top_query_2" {
-  description = "This is a top level query block"
-  query = query.simple_query
-}
 
 control "top_control_1" {
   description = "This is a top level control block"
