@@ -24,7 +24,7 @@ type Query struct {
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
 	// only here as otherwise gocty.ImpliedType panics
-	Unused string `cty:"unused"`
+	Unused string `cty:"unused" json:"-"`
 }
 
 func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
