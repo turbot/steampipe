@@ -22,6 +22,9 @@ type Query struct {
 
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
+
+	// only here as otherwise gocty.ImpliedType panics
+	Unused string `cty:"unused"`
 }
 
 func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
