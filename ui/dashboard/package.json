@@ -40,6 +40,7 @@
     "react-placeholder": "4.1.0",
     "react-popper": "2.3.0",
     "react-router-dom": "6.6.1",
+    "react-router-hash-link": "^2.4.3",
     "react-select": "5.7.0",
     "react-syntax-highlighter": "15.5.0",
     "react-table": "7.8.0",

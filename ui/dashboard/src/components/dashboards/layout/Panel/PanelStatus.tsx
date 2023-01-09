@@ -2,12 +2,13 @@ import ErrorMessage from "../../../ErrorMessage";
 import Icon from "../../../Icon";
 import LoadingIndicator from "../../LoadingIndicator";
 import { classNames } from "../../../../utils/styles";
-import { ErrorRow, PendingRow } from "../../common/NodeAndEdgePanelInformation";
-import { DashboardInputs, PanelDefinition } from "../../../../types";
+import { HashLink } from "react-router-hash-link";
 import { InputProperties } from "../../inputs/types";
+import { PanelDefinition } from "../../../../types";
 import { PanelDependencyStatuses } from "../../common/types";
 import { ReactNode, useMemo } from "react";
 import { useDashboard } from "../../../../hooks/useDashboard";
+import { useLocation } from "react-router-dom";
 import { usePanel } from "../../../../hooks/usePanel";
 
 type PanelStatusProps = PanelStatusBaseProps & {
@@ -19,106 +20,38 @@ type PanelStatusBaseProps = {
   definition: PanelDefinition;
 };
 
-type PanelErrorProps = PanelStatusBaseProps & {
-  error: string;
-};
-
 type BasePanelStatusProps = {
   children: ReactNode;
   className?: string;
   definition: PanelDefinition;
 };
 
-const BasePanelStatus = ({
-  children,
-  className,
-  definition,
-}: BasePanelStatusProps) => (
-  <div
-    className={classNames(
-      className,
-      "w-full h-full p-4 break-keep border border-t-0 rounded-md",
-      !!definition.title ? "rounded-t-none" : null
-    )}
-  >
-    {children}
-  </div>
-);
-
-type CompleteRowProps = {
-  definition: PanelDefinition;
-  inputs: DashboardInputs;
-  title: string;
-};
-
-const CompleteRow = ({ definition, inputs, title }: CompleteRowProps) => {
-  const isInput = definition.panel_type === "input";
-  const inputProperties = isInput
-    ? (definition.properties as InputProperties)
-    : null;
-  const displayType = definition.display_type;
-  const hasInputValue =
-    isInput &&
-    inputProperties?.unqualified_name &&
-    !!inputs[inputProperties?.unqualified_name];
-
-  return (
-    <div className="flex items-center space-x-1">
-      <Icon
-        className="w-3.5 h-3.5 text-ok shrink-0"
-        icon="materialsymbols-solid:check_circle"
-      />
-      <span className="block space-x-2 truncate">
-        {title}
-        {isInput && !hasInputValue && displayType !== "text" && (
-          <span
-            className="italic text-foreground-light"
-            title="Please select a value"
-          >
-            {" "}
-            Please select a value
-          </span>
-        )}
-        {isInput && !hasInputValue && displayType === "text" && (
-          <span
-            className="italic text-foreground-light"
-            title="Please enter a value"
-          >
-            {" "}
-            Please enter a value
-          </span>
-        )}
-      </span>
-    </div>
-  );
-};
-
-const PanelInitialized = ({ definition }: PanelStatusBaseProps) => {
-  return (
-    <BasePanelStatus definition={definition}>
-      <div className="flex items-center space-x-1">
-        <Icon
-          className="w-3.5 h-3.5 text-foreground-light shrink-0"
-          icon="start"
-        />
-        <span className="block truncate">Initialized</span>
-      </div>
-    </BasePanelStatus>
-  );
-};
-
-const PanelBlocked = ({ definition }) => {
-  const { selectedDashboardInputs } = useDashboard();
+const usePanelDependenciesStatus = () => {
   const { dependenciesByStatus } = usePanel();
-  const statuses = useMemo<PanelDependencyStatuses>(() => {
+  const { selectedDashboardInputs } = useDashboard();
+  return useMemo<PanelDependencyStatuses>(() => {
+    const inputPanelsAwaitingValue: PanelDefinition[] = [];
     const initializedPanels: PanelDefinition[] = [];
     const blockedPanels: PanelDefinition[] = [];
     const runningPanels: PanelDefinition[] = [];
     const cancelledPanels: PanelDefinition[] = [];
     const errorPanels: PanelDefinition[] = [];
     const completePanels: PanelDefinition[] = [];
+    let total = 0;
     for (const panels of Object.values(dependenciesByStatus)) {
       for (const panel of panels) {
+        const isInput = panel.panel_type === "input";
+        const inputProperties = isInput
+          ? (panel.properties as InputProperties)
+          : null;
+        const hasInputValue =
+          isInput &&
+          inputProperties?.unqualified_name &&
+          !!selectedDashboardInputs[inputProperties?.unqualified_name];
+        total += 1;
+        if (isInput && !hasInputValue) {
+          inputPanelsAwaitingValue.push(panel);
+        }
         if (panel.status === "initialized") {
           initializedPanels.push(panel);
         } else if (panel.status === "blocked") {
@@ -134,7 +67,7 @@ const PanelBlocked = ({ definition }) => {
         }
       }
     }
-    return {
+    const status = {
       initialized: {
         total: initializedPanels.length,
         panels: initializedPanels,
@@ -160,54 +93,120 @@ const PanelBlocked = ({ definition }) => {
         panels: completePanels,
       },
     };
+    return {
+      total,
+      inputsAwaitingValue: inputPanelsAwaitingValue,
+      status,
+    };
   }, [dependenciesByStatus]);
+};
+
+const BasePanelStatus = ({
+  children,
+  className,
+  definition,
+}: BasePanelStatusProps) => (
+  <div
+    className={classNames(
+      className,
+      "w-full h-full p-4 break-keep rounded-md",
+      !!definition.title ? "rounded-t-none" : null
+    )}
+  >
+    {children}
+  </div>
+);
+
+const PanelInitialized = ({ definition }: PanelStatusBaseProps) => {
   return (
-    <BasePanelStatus
-      className="px-0 divide-y space-y-4"
-      definition={definition}
-    >
-      <div className="px-4 flex items-center space-x-1">
-        <Icon
-          className="w-3.5 h-3.5 text-foreground-light shrink-0"
-          icon="block"
-        />
-        <span className="block truncate">Blocked</span>
+    <BasePanelStatus definition={definition}>
+      <div className="flex items-center space-x-1">
+        <LoadingIndicator className="w-3.5 h-3.5 text-foreground-light shrink-0" />
+        <span className="block truncate">Initialized...</span>
       </div>
-      <div className="px-4 pt-4">
-        {statuses.complete.total} complete, {statuses.running.total} running,{" "}
-        {statuses.error.total} {statuses.error.total === 1 ? "error" : "errors"}
-        {statuses.running.panels.map((panel) => (
-          <PendingRow
-            key={panel.name}
-            title={`${panel.panel_type}: ${panel.title || panel.name}`}
-          />
-        ))}
-        {statuses.error.panels.map((panel) => (
-          <ErrorRow
-            key={panel.name}
-            title={`${panel.panel_type}: ${panel.title || panel.name}`}
-            error={panel.error}
-          />
-        ))}
-        {statuses.complete.panels.map((panel) => (
-          <CompleteRow
-            key={panel.name}
-            definition={panel}
-            inputs={selectedDashboardInputs}
-            title={`${panel.panel_type}: ${panel.title || panel.name}`}
-          />
-        ))}
+    </BasePanelStatus>
+  );
+};
+
+const PanelBlocked = ({ definition }) => {
+  const panelDependenciesStatus = usePanelDependenciesStatus();
+  const location = useLocation();
+  return (
+    <BasePanelStatus definition={definition}>
+      <div className="flex items-center space-x-1">
+        {panelDependenciesStatus.inputsAwaitingValue.length > 0 && (
+          <>
+            <Icon
+              className="w-3.5 h-3.5 text-foreground-light shrink-0"
+              icon="block"
+            />
+            <span className="block truncate">
+              Awaiting input value:{" "}
+              <HashLink
+                className="text-link"
+                to={`${location.pathname}${
+                  location.search ? location.search : ""
+                }#${panelDependenciesStatus.inputsAwaitingValue[0].name}`}
+              >
+                {panelDependenciesStatus.inputsAwaitingValue[0].title ||
+                  (
+                    panelDependenciesStatus.inputsAwaitingValue[0]
+                      .properties as InputProperties
+                  ).unqualified_name}
+              </HashLink>
+            </span>
+          </>
+        )}
+        {panelDependenciesStatus.inputsAwaitingValue.length === 0 &&
+          panelDependenciesStatus.total === 0 && (
+            <>
+              <LoadingIndicator className="w-3.5 h-3.5 text-foreground-light shrink-0" />
+              <span className="block truncate">Running...</span>
+            </>
+          )}
+        {panelDependenciesStatus.inputsAwaitingValue.length === 0 &&
+          panelDependenciesStatus.total > 0 && (
+            <>
+              <LoadingIndicator className="w-3.5 h-3.5 text-foreground-light shrink-0" />
+              <span className="block truncate">
+                Running{" "}
+                {panelDependenciesStatus.status.complete.total +
+                  panelDependenciesStatus.status.running.total +
+                  1}{" "}
+                of {panelDependenciesStatus.total + 1}...
+              </span>
+            </>
+          )}
       </div>
     </BasePanelStatus>
   );
 };
 
 const PanelRunning = ({ definition }) => {
+  const panelDependenciesStatus = usePanelDependenciesStatus();
   return (
     <BasePanelStatus definition={definition}>
       <div className="flex items-center space-x-1">
-        <LoadingIndicator className="w-3.5 h-3.5 text-foreground-light shrink-0" />
-        <span className="block truncate">Running...</span>
+        {panelDependenciesStatus.inputsAwaitingValue.length === 0 &&
+          panelDependenciesStatus.total === 0 && (
+            <>
+              <LoadingIndicator className="w-3.5 h-3.5 text-foreground-light shrink-0" />
+              <span className="block truncate">Running...</span>
+            </>
+          )}
+        {panelDependenciesStatus.inputsAwaitingValue.length === 0 &&
+          panelDependenciesStatus.total > 0 && (
+            <>
+              <LoadingIndicator className="w-3.5 h-3.5 text-foreground-light shrink-0" />
+              <span className="block truncate">
+                Running{" "}
+                {panelDependenciesStatus.status.complete.total +
+                  panelDependenciesStatus.status.running.total +
+                  1}{" "}
+                of {panelDependenciesStatus.total + 1}...
+              </span>
+            </>
+          )}
       </div>
     </BasePanelStatus>
   );
@@ -227,7 +226,7 @@ const PanelCancelled = ({ definition }) => {
   );
 };
 
-const PanelError = ({ definition, error }: PanelErrorProps) => {
+const PanelError = ({ definition }) => {
   return (
     <BasePanelStatus
       className="bg-alert-light border-alert-light text-foreground"
@@ -241,7 +240,7 @@ const PanelError = ({ definition, error }: PanelErrorProps) => {
         <span className="block truncate">Error</span>
       </div>
       <span className="block">
-        <ErrorMessage error={error} />
+        <ErrorMessage error={definition.error} />
       </span>
     </BasePanelStatus>
   );
@@ -261,8 +260,8 @@ const PanelStatus = ({ definition, showPanelError }: PanelStatusProps) => (
     {definition.status === "cancelled" && (
       <PanelCancelled definition={definition} />
     )}
-    {definition.status === "error" && !!definition.error && showPanelError && (
-      <PanelError definition={definition} error={definition.error as string} />
+    {definition.status === "error" && showPanelError && (
+      <PanelError definition={definition} />
     )}
   </>
 );

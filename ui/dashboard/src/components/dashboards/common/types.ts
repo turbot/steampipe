@@ -127,9 +127,15 @@ export type RowRenderResult = {
   };
 };
 
-export type PanelDependencyStatuses = {
+export type PanelDependencyByStatus = {
   [key in DashboardRunState]: {
     total: number;
     panels: PanelDefinition[];
   };
+};
+
+export type PanelDependencyStatuses = {
+  status: PanelDependencyByStatus;
+  inputsAwaitingValue: PanelDefinition[];
+  total: number;
 };
