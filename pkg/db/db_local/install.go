@@ -370,17 +370,14 @@ func resolveDatabaseName(oldDbName *string) string {
 // createMaintenanceClient connects to the postgres server using the
 // maintenance database and superuser
 func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
-	backoff, err := retry.NewConstant(200 * time.Millisecond)
-	if err != nil {
-		return nil, err
-	}
+	backoff := retry.NewConstant(200 * time.Millisecond)
 	var conn *pgx.Conn
 
-	err = retry.Do(ctx, retry.WithMaxRetries(5, backoff), func(ctx context.Context) error {
+	err := retry.Do(ctx, retry.WithMaxRetries(5, backoff), func(ctx context.Context) error {
 		connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
 		log.Println("[TRACE] Connection string: ", connStr)
 		utils.LogTime("db_local.createClient connection open start")
-		conn, err = pgx.Connect(context.Background(), connStr)
+		conn, err := pgx.Connect(context.Background(), connStr)
 		utils.LogTime("db_local.createClient connection open end")
 		if err != nil {
 			return retry.RetryableError(err)
