@@ -206,7 +206,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	if len(plugins) == 0 {
 		fmt.Println()
-		error_helpers.ShowError(ctx, sperr.New("you need to provide at least one plugin to install"))
+		error_helpers.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to install"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
@@ -517,12 +517,12 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 
 	if len(plugins) == 0 && !(cmdconfig.Viper().GetBool("all")) {
 		// either plugin name(s) or "all" must be provided
-		return nil, sperr.New("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all"))
+		return nil, fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all"))
 	}
 
 	if len(plugins) > 0 && cmdconfig.Viper().GetBool(constants.ArgAll) {
 		// we can't allow update and install at the same time
-		return nil, sperr.New("%s cannot be used when updating specific plugins", constants.Bold("`--all`"))
+		return nil, fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`"))
 	}
 
 	return plugins, nil
@@ -652,7 +652,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 	if len(args) == 0 {
 		fmt.Println()
-		error_helpers.ShowError(ctx, sperr.New("you need to provide at least one plugin to uninstall"))
+		error_helpers.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to uninstall"))
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
