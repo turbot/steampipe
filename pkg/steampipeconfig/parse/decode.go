@@ -2,9 +2,6 @@ package parse
 
 import (
 	"fmt"
-	"reflect"
-	"strings"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -303,9 +300,6 @@ func decodeQueryProvider(block *hcl.Block, parseCtx *ModParseContext) (modconfig
 		return nil, res
 	}
 
-	// handle invalid block types
-	res.addDiags(validateHcl(remain.(*hclsyntax.Body), QueryProviderBlockSchema, resource))
-
 	// decode the body into 'resource' to populate all properties that can be automatically decoded
 	diags = decodeHclBody(remain, parseCtx.EvalCtx, parseCtx, resource)
 	res.handleDecodeDiags(diags)
@@ -383,9 +377,6 @@ func decodeNodeAndEdgeProvider(block *hcl.Block, parseCtx *ModParseContext) (mod
 		return nil, res
 	}
 
-	// handle invalid block types
-	res.addDiags(validateHcl(body, NodeAndEdgeProviderSchema, resource))
-
 	// decode the body into 'resource' to populate all properties that can be automatically decoded
 	diags = decodeHclBody(body, parseCtx.EvalCtx, parseCtx, resource)
 	// handle any resulting diags, which may specify dependencies
@@ -462,13 +453,6 @@ func decodeDashboard(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Da
 	body := r.(*hclsyntax.Body)
 	res.handleDecodeDiags(diags)
 
-	// handle invalid block types
-	// (DashboardBlockSchema ius used purely to validate block types)
-	res.addDiags(validateHcl(body, DashboardBlockSchema, dashboard))
-	if !res.Success() {
-		return nil, res
-	}
-
 	// decode the body into 'dashboardContainer' to populate all properties that can be automatically decoded
 	diags = decodeHclBody(body, parseCtx.EvalCtx, parseCtx, dashboard)
 	// handle any resulting diags, which may specify dependencies
@@ -540,9 +524,6 @@ func decodeDashboardContainer(block *hcl.Block, parseCtx *ModParseContext) (*mod
 	if !res.Success() {
 		return nil, res
 	}
-
-	// handle invalid block types
-	res.addDiags(validateHcl(body, DashboardContainerBlockSchema, container))
 
 	// decode the body into 'dashboardContainer' to populate all properties that can be automatically decoded
 	diags = decodeHclBody(body, parseCtx.EvalCtx, parseCtx, container)
@@ -742,30 +723,36 @@ func validateName(block *hcl.Block) hcl.Diagnostics {
 // We use partial decoding so that we can automatically decode as many properties as possible
 // and only manually decode properties requiring special logic.
 // The problem is the partial decode does not return errors for invalid attributes/blocks, so we must implement our own
-func validateHcl(body *hclsyntax.Body, schema *hcl.BodySchema, resource modconfig.HclResource) hcl.Diagnostics {
+func validateHcl(body *hclsyntax.Body, schema *hcl.BodySchema) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 
 	// identify any blocks specified by hcl tags
-	var supportedBlocks []string
-	v := reflect.TypeOf(helpers.DereferencePointer(resource))
-	for i := 0; i < v.NumField(); i++ {
-		tag := v.FieldByIndex([]int{i}).Tag.Get("hcl")
-		if idx := strings.LastIndex(tag, ",block"); idx != -1 {
-			supportedBlocks = append(supportedBlocks, tag[:idx])
-		}
-	}
-	// ad din blocks specified in the schema
+	var supportedBlocks = make(map[string]struct{})
+	var supportedAttributes = make(map[string]struct{})
 	for _, b := range schema.Blocks {
-		supportedBlocks = append(supportedBlocks, b.Type)
+		supportedBlocks[b.Type] = struct{}{}
+	}
+	for _, b := range schema.Attributes {
+		supportedAttributes[b.Name] = struct{}{}
 	}
 
 	// now check for invalid blocks
 	for _, block := range body.Blocks {
-		if !helpers.StringSliceContains(supportedBlocks, block.Type) {
+		if _, ok := supportedBlocks[block.Type]; !ok {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  fmt.Sprintf(`Unsupported block type: Blocks of type "%s" are not expected here.`, block.Type),
 				Subject:  &block.TypeRange,
+			})
+		}
+	}
+	for _, attribute := range body.Attributes {
+		if _, ok := supportedAttributes[attribute.Name]; !ok {
+			subject := attribute.Range()
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf(`Unsupported attribute: Attributes "%s" are not expected here.`, attribute.Name),
+				Subject:  &subject,
 			})
 		}
 	}

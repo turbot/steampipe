@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"reflect"
@@ -14,19 +15,105 @@ import (
 func decodeHclBody(body hcl.Body, evalCtx *hcl.EvalContext, resourceProvider modconfig.ResourceMapsProvider, resource any) hcl.Diagnostics {
 	defer func() {
 		if r := recover(); r != nil {
+			// TODO ADD DIAG
 			fmt.Println(r)
 		}
 	}()
 	var diags hcl.Diagnostics
-	diags = gohcl.DecodeBody(body, evalCtx, resource)
 
-	resolveReferences(body, resourceProvider, resource)
-	for _, nestedStruct := range getNestedStructVals(resource) {
-		moreDiags := decodeHclBody(body, evalCtx, resourceProvider, nestedStruct)
+	nestedStructs := getNestedStructValsRecursive(resource)
+
+	// get the schema for this resource
+	schema := getResourceSchema(resource, nestedStructs)
+	// handle invalid block types
+	moreDiags := validateHcl(body.(*hclsyntax.Body), schema)
+	diags = append(diags, moreDiags...)
+
+	moreDiags = decodeHclBodyIntoStruct(body, evalCtx, resourceProvider, resource)
+	diags = append(diags, moreDiags...)
+
+	for _, nestedStruct := range nestedStructs {
+		moreDiags := decodeHclBodyIntoStruct(body, evalCtx, resourceProvider, nestedStruct)
 		diags = append(diags, moreDiags...)
 	}
 
 	return diags
+}
+
+func decodeHclBodyIntoStruct(body hcl.Body, evalCtx *hcl.EvalContext, resourceProvider modconfig.ResourceMapsProvider, resource any) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	// call decodeHclBodyIntoStruct to do actual decode
+	moreDiags := gohcl.DecodeBody(body, evalCtx, resource)
+	diags = append(diags, moreDiags...)
+
+	// TODO WHAT DOES THIS DO?????
+	resolveReferences(body, resourceProvider, resource)
+	diags = append(diags, moreDiags...)
+	return diags
+}
+
+func getResourceSchema(resource any, nestedStructs []any) *hcl.BodySchema {
+	var schemas []*hcl.BodySchema
+
+	// build schema for top level object
+	schemas = append(schemas, getSchemaForStruct(resource))
+	for _, nestedStruct := range nestedStructs {
+		schemas = append(schemas, getSchemaForStruct(nestedStruct))
+	}
+
+	// TODO handle duplicates and required/optional
+	// now merge the schemas
+	var res = &hcl.BodySchema{}
+	for _, s := range schemas {
+		for _, b := range s.Blocks {
+			res.Blocks = append(res.Blocks, b)
+		}
+		for _, a := range s.Attributes {
+			res.Attributes = append(res.Attributes, a)
+		}
+	}
+
+	/* special cases for manually parsed attributes and blocks
+	mod require block
+	*/
+	switch resource.(type) {
+	case *modconfig.Mod:
+		res.Blocks = append(res.Blocks, hcl.BlockHeaderSchema{Type: modconfig.BlockTypeRequire})
+	}
+
+	return res
+}
+
+func getSchemaForStruct(s any) *hcl.BodySchema {
+	v := reflect.TypeOf(helpers.DereferencePointer(s))
+
+	typeName := v.Name()
+	if cachedSchema, ok := resourceSchemaCache[typeName]; ok {
+		return cachedSchema
+	}
+	var schema = &hcl.BodySchema{}
+	// ensure we cache before returning
+	defer func() {
+		resourceSchemaCache[typeName] = schema
+	}()
+
+	// get all hcl tags
+	for i := 0; i < v.NumField(); i++ {
+		tag := v.FieldByIndex([]int{i}).Tag.Get("hcl")
+		if tag == "" {
+			continue
+		}
+		if idx := strings.LastIndex(tag, ",block"); idx != -1 {
+			blockName := tag[:idx]
+			schema.Blocks = append(schema.Blocks, hcl.BlockHeaderSchema{Type: blockName})
+		} else {
+			attributeName := strings.Split(tag, ",")[0]
+			if attributeName != "" {
+				schema.Attributes = append(schema.Attributes, hcl.AttributeSchema{Name: attributeName})
+			}
+		}
+	}
+	return schema
 }
 
 func resolveReferences(body hcl.Body, resourceMapsProvider modconfig.ResourceMapsProvider, val any) {
@@ -101,6 +188,17 @@ func getHclAttributeTag(field reflect.StructField) string {
 	default:
 		return ""
 	}
+}
+
+func getNestedStructValsRecursive(val any) []any {
+	nested := getNestedStructVals(val)
+	res := nested
+
+	for _, n := range nested {
+		res = append(res, getNestedStructValsRecursive(n)...)
+	}
+	return res
+
 }
 
 // GetNestedStructVals return a slice of any nested structs within val

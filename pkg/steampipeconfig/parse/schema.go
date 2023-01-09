@@ -5,6 +5,9 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
+// cache resource schemas
+var resourceSchemaCache = make(map[string]*hcl.BodySchema)
+
 // TODO  [node_reuse] Replace all block type with consts https://github.com/turbot/steampipe/issues/2922
 
 var ConfigBlockSchema = &hcl.BodySchema{
