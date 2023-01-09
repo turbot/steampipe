@@ -327,6 +327,9 @@ jobs:
           - "check"
           - "performance"
           - "workspace"
+          - "cloud"
+          - "dashboard"
+          - "dashboard_parsing_validation"
           - "exit_codes"
           - "force_stop"
         exclude:
@@ -381,6 +384,10 @@ jobs:
     - name: Set PATH
       run: |
         echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+
+    - name: Go install jd
+      run: |
+        go install github.com/josephburnett/jd@latest
 
     - name: Install DB
       id: install-db
