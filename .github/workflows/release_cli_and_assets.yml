@@ -16,6 +16,8 @@ env:
   VERSION: ${{ github.event.inputs.version }}
   STEAMPIPE_UPDATE_CHECK: false
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+  SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
+  SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
 
 jobs:
 
@@ -327,6 +329,9 @@ jobs:
           - "check"
           - "performance"
           - "workspace"
+          - "cloud"
+          - "dashboard"
+          - "dashboard_parsing_validation"
           - "exit_codes"
           - "force_stop"
         exclude:
@@ -355,6 +360,11 @@ jobs:
         submodules: true
         ref: ${{ github.event.ref }}
 
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.19
+
     - name: Setup BATS
       uses: mig4/setup-bats@v1
       with:
@@ -380,7 +390,11 @@ jobs:
 
     - name: Set PATH
       run: |
-        echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/bin" >> $GITHUB_ENV
+        echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
+
+    - name: Go install jd
+      run: |
+        go install github.com/josephburnett/jd@latest
 
     - name: Install DB
       id: install-db
