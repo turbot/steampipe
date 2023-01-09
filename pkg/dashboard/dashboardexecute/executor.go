@@ -3,12 +3,12 @@ package dashboardexecute
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 
 	filehelpers "github.com/turbot/go-kit/files"
@@ -97,7 +97,7 @@ func (e *DashboardExecutor) validateInputs(executionTree *DashboardExecutionTree
 		}
 	}
 	if missingCount := len(missingInputs); missingCount > 0 {
-		return sperr.New("%s '%s' must be provided using '--dashboard-input name=value'", utils.Pluralize("input", missingCount), strings.Join(missingInputs, ","))
+		return fmt.Errorf("%s '%s' must be provided using '--dashboard-input name=value'", utils.Pluralize("input", missingCount), strings.Join(missingInputs, ","))
 	}
 
 	return nil
@@ -107,16 +107,16 @@ func (e *DashboardExecutor) LoadSnapshot(ctx context.Context, sessionId, snapsho
 	// find snapshot path in workspace
 	snapshotPath, ok := w.GetResourceMaps().Snapshots[snapshotName]
 	if !ok {
-		return nil, sperr.New("snapshot %s not found in %s (%s)", snapshotName, w.Mod.Name(), w.Path)
+		return nil, fmt.Errorf("snapshot %s not found in %s (%s)", snapshotName, w.Mod.Name(), w.Path)
 	}
 
 	if !filehelpers.FileExists(snapshotPath) {
-		return nil, sperr.New("snapshot %s not does not exist", snapshotPath)
+		return nil, fmt.Errorf("snapshot %s not does not exist", snapshotPath)
 	}
 
 	snapshotContent, err := os.ReadFile(snapshotPath)
 	if err != nil {
-		return nil, sperr.Wrap(err)
+		return nil, err
 	}
 
 	// deserialize the snapshot as an interface map
@@ -136,7 +136,7 @@ func (e *DashboardExecutor) OnInputChanged(ctx context.Context, sessionId string
 	// find the execution
 	executionTree, found := e.executions[sessionId]
 	if !found {
-		return sperr.New("no dashboard running for session %s", sessionId)
+		return fmt.Errorf("no dashboard running for session %s", sessionId)
 	}
 
 	// get the previous value of this input

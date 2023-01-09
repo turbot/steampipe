@@ -24,7 +24,7 @@ func (c *DbClient) GetCurrentSearchPath(ctx context.Context) ([]string, error) {
 	}
 	pathAsString, ok := res.Rows[0].(*queryresult.RowResult).Data[0].(string)
 	if !ok {
-		return nil, sperr.New("failed to read the current search path")
+		return nil, fmt.Errorf("failed to read the current search path")
 	}
 	return c.buildSearchPathResult(pathAsString)
 }

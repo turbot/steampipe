@@ -173,7 +173,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 // validate the args and extract a dashboard name, if provided
 func validateDashboardArgs(ctx context.Context, args []string) (string, error) {
 	if len(args) > 1 {
-		return "", sperr.New("dashboard command accepts 0 or 1 argument")
+		return "", fmt.Errorf("dashboard command accepts 0 or 1 argument")
 	}
 	dashboardName := ""
 	if len(args) == 1 {
@@ -192,14 +192,14 @@ func validateDashboardArgs(ctx context.Context, args []string) (string, error) {
 	// if either share' or 'snapshot' are set, a dashboard name
 	if share || snapshot {
 		if dashboardName == "" {
-			return "", sperr.New("dashboard name must be provided if --share or --snapshot arg is used")
+			return "", fmt.Errorf("dashboard name must be provided if --share or --snapshot arg is used")
 		}
 	}
 
 	validOutputFormats := []string{constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort, constants.OutputFormatNone}
 	output := viper.GetString(constants.ArgOutput)
 	if !helpers.StringSliceContains(validOutputFormats, output) {
-		return "", sperr.New("invalid output format: '%s', must be one of [%s]", output, strings.Join(validOutputFormats, ", "))
+		return "", fmt.Errorf("invalid output format: '%s', must be one of [%s]", output, strings.Join(validOutputFormats, ", "))
 	}
 
 	return dashboardName, nil
@@ -314,10 +314,10 @@ func runSingleDashboard(ctx context.Context, targetName string, inputs map[strin
 func verifyNamedResource(targetName string, w *workspace.Workspace) error {
 	parsedName, err := modconfig.ParseResourceName(targetName)
 	if err != nil {
-		return sperr.New("dashboard command cannot run arbitrary SQL")
+		return fmt.Errorf("dashboard command cannot run arbitrary SQL")
 	}
 	if parsedName.ItemType == "" {
-		return sperr.New("dashboard command cannot run arbitrary SQL")
+		return fmt.Errorf("dashboard command cannot run arbitrary SQL")
 	}
 	if _, found := w.GetResource(parsedName); !found {
 		return sperr.New("'%s' not found in %s (%s)", targetName, w.Mod.Name(), w.Path)
@@ -346,7 +346,7 @@ func publishSnapshotIfNeeded(ctx context.Context, snapshot *dashboardtypes.Steam
 
 func handlePublishSnapshotError(err error) error {
 	if err.Error() == "402 Payment Required" {
-		return sperr.New("maximum number of snapshots reached")
+		return fmt.Errorf("maximum number of snapshots reached")
 	}
 	return err
 }
@@ -436,12 +436,12 @@ func collectInputs() (map[string]interface{}, error) {
 		raw := variableArg
 		eq := strings.Index(raw, "=")
 		if eq == -1 {
-			return nil, sperr.New("the --dashboard-input argument '%s' is not correctly specified. It must be an input name and value separated an equals sign: --dashboard-input key=value", raw)
+			return nil, fmt.Errorf("the --dashboard-input argument '%s' is not correctly specified. It must be an input name and value separated an equals sign: --dashboard-input key=value", raw)
 		}
 		name := raw[:eq]
 		rawVal := raw[eq+1:]
 		if _, ok := res[name]; ok {
-			return nil, sperr.New("the dashboard-input option '%s' is provided more than once", name)
+			return nil, fmt.Errorf("the dashboard-input option '%s' is provided more than once", name)
 		}
 		// add `input. to start of name
 		key := modconfig.BuildModResourceName(modconfig.BlockTypeInput, name)

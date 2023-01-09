@@ -64,7 +64,7 @@ func (slt StartListenType) IsValid() error {
 	case ListenTypeNetwork, ListenTypeLocal:
 		return nil
 	}
-	return sperr.New("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
+	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
 }
 
 func StartServices(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) (startResult *StartResult) {
@@ -271,7 +271,7 @@ func getDatabaseName(ctx context.Context, port int) (string, error) {
 		return "", err
 	}
 	if len(databaseName) == 0 {
-		return "", sperr.New("could not find database to connect to")
+		return "", fmt.Errorf("could not find database to connect to")
 	}
 	return databaseName, nil
 }

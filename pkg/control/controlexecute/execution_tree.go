@@ -191,11 +191,11 @@ func (e *ExecutionTree) getExecutionRootFromArg(arg string) (modconfig.ModTreeIt
 
 	root, ok := resource.(modconfig.ModTreeItem)
 	if !found || !ok {
-		return nil, sperr.New("no resources found matching argument '%s'", arg)
+		return nil, fmt.Errorf("no resources found matching argument '%s'", arg)
 	}
 	// root item must be either a benchmark or a control
 	if !helpers.StringSliceContains([]string{modconfig.BlockTypeControl, modconfig.BlockTypeBenchmark}, root.BlockType()) {
-		return nil, sperr.New("cannot execute '%s' using check, only controls and benchmarks may be run", resource.Name())
+		return nil, fmt.Errorf("cannot execute '%s' using check, only controls and benchmarks may be run", resource.Name())
 	}
 	return root, nil
 }
@@ -231,7 +231,7 @@ func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereC
 		}
 	}
 	if resourceNameColumnIndex == -1 {
-		return nil, sperr.New("the named query passed in the 'where' argument must return the 'resource_name' column")
+		return nil, fmt.Errorf("the named query passed in the 'where' argument must return the 'resource_name' column")
 	}
 
 	var controlNames = make(map[string]bool)

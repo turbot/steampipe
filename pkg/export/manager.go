@@ -2,11 +2,11 @@ package export
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"strings"
 
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 )
@@ -26,14 +26,14 @@ func NewManager() *Manager {
 func (m *Manager) Register(exporter Exporter) error {
 	name := exporter.Name()
 	if _, ok := m.registeredExporters[name]; ok {
-		return sperr.New("failed to register exporter - duplicate name %s", name)
+		return fmt.Errorf("failed to register exporter - duplicate name %s", name)
 	}
 	m.registeredExporters[exporter.Name()] = exporter
 
 	// if the exporter has an alias, also register by alias
 	if alias := exporter.Alias(); alias != "" {
 		if _, ok := m.registeredExporters[alias]; ok {
-			return sperr.New("failed to register exporter - duplicate name %s", name)
+			return fmt.Errorf("failed to register exporter - duplicate name %s", name)
 		}
 		m.registeredExporters[alias] = exporter
 	}
@@ -129,7 +129,7 @@ func (m *Manager) getExportTarget(export, executionName string) (*Target, error)
 		return t, nil
 	}
 
-	return nil, sperr.New("formatter satisfying '%s' not found", export)
+	return nil, fmt.Errorf("formatter satisfying '%s' not found", export)
 }
 
 func (m *Manager) DoExport(ctx context.Context, targetName string, source ExportSourceData, exports []string) error {
@@ -159,7 +159,7 @@ func (m *Manager) ValidateExportFormat(exports []string) error {
 		}
 	}
 	if invalidCount := len(invalidFormats); invalidCount > 0 {
-		return sperr.New("invalid export %s: '%s'", utils.Pluralize("format", invalidCount), strings.Join(invalidFormats, "','"))
+		return fmt.Errorf("invalid export %s: '%s'", utils.Pluralize("format", invalidCount), strings.Join(invalidFormats, "','"))
 	}
 	return nil
 

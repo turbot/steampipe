@@ -1,11 +1,11 @@
 package dashboardserver
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"gopkg.in/olahol/melody.v1"
 )
@@ -23,7 +23,7 @@ func (lt ListenType) IsValid() error {
 	case ListenTypeNetwork, ListenTypeLocal:
 		return nil
 	}
-	return sperr.New("invalid listen type. Must be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
+	return fmt.Errorf("invalid listen type. Must be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
 }
 
 type ListenPort int
@@ -31,7 +31,7 @@ type ListenPort int
 // IsValid is a validator for ListenType known values
 func (lp ListenPort) IsValid() error {
 	if lp < 1 || lp > 65535 {
-		return sperr.New("invalid port - must be within range (1:65535)")
+		return fmt.Errorf("invalid port - must be within range (1:65535)")
 	}
 	return nil
 }

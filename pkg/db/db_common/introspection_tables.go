@@ -324,7 +324,7 @@ func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (stri
 	// if the item is a cty value, we always represent it as json
 	case cty.Value:
 		if columnTag.ColumnType != "jsonb" {
-			return "nil", sperr.New("data for column %s is of type cty.Value so column type should be 'jsonb' but is actually %s", columnTag.Column, columnTag.ColumnType)
+			return "nil", fmt.Errorf("data for column %s is of type cty.Value so column type should be 'jsonb' but is actually %s", columnTag.Column, columnTag.ColumnType)
 		}
 		str, err := type_conversion.CtyToJSON(t)
 		if err != nil {
@@ -334,7 +334,7 @@ func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (stri
 	case cty.Type:
 		// if the item is a cty value, we always represent it as json
 		if columnTag.ColumnType != "text" {
-			return "nil", sperr.New("data for column %s is of type cty.Type so column type should be 'text' but is actually %s", columnTag.Column, columnTag.ColumnType)
+			return "nil", fmt.Errorf("data for column %s is of type cty.Type so column type should be 'text' but is actually %s", columnTag.Column, columnTag.ColumnType)
 		}
 		return PgEscapeString(t.FriendlyName()), nil
 	}

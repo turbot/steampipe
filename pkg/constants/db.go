@@ -1,8 +1,9 @@
 package constants
 
 import (
+	"fmt"
+
 	"github.com/turbot/steampipe/pkg/schema"
-	"github.com/turbot/steampipe/pkg/sperr"
 )
 
 // dbClient constants
@@ -127,5 +128,5 @@ func (i Invoker) IsValid() error {
 	case InvokerService, InvokerQuery, InvokerCheck, InvokerPlugin, InvokerDashboard:
 		return nil
 	}
-	return sperr.New("invalid invoker. Can be one of '%v', '%v', '%v', '%v' or '%v' ", InvokerService, InvokerQuery, InvokerPlugin, InvokerCheck, InvokerDashboard)
+	return fmt.Errorf("invalid invoker. Can be one of '%v', '%v', '%v', '%v' or '%v' ", InvokerService, InvokerQuery, InvokerPlugin, InvokerCheck, InvokerDashboard)
 }

@@ -1,11 +1,11 @@
 package controldisplay
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -136,7 +136,7 @@ func (c *ControlColorScheme) Initialise(def *ControlColorSchemaDefinition) error
 		}
 	}
 	if len(validationErrors) > 0 {
-		return sperr.New("invalid color scheme. %d %s have invalid colors: %v",
+		return fmt.Errorf("invalid color scheme. %d %s have invalid colors: %v",
 			len(validationErrors),
 			utils.Pluralize("property", len(validationErrors)),
 			validationErrors)

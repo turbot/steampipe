@@ -2,6 +2,7 @@ package cmdconfig
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -18,7 +19,7 @@ func ValidateSnapshotArgs(ctx context.Context) error {
 	share := viper.GetBool(constants.ArgShare)
 	snapshot := viper.GetBool(constants.ArgSnapshot)
 	if share && snapshot {
-		return sperr.New("only 1 of 'share' and 'snapshot' may be set")
+		return fmt.Errorf("only 1 of 'share' and 'snapshot' may be set")
 	}
 
 	// if neither share or snapshot are set, nothing more to do
@@ -45,7 +46,7 @@ func ValidateSnapshotArgs(ctx context.Context) error {
 
 	// should never happen as there is a default set
 	if viper.GetString(constants.ArgCloudHost) == "" {
-		return sperr.New("to share snapshots, cloud host must be set")
+		return fmt.Errorf("to share snapshots, cloud host must be set")
 	}
 
 	return validateSnapshotTags()
@@ -75,7 +76,7 @@ func validateSnapshotLocation(ctx context.Context, cloudToken string) error {
 		viper.Set(constants.ArgSnapshotLocation, snapshotLocation)
 
 		if !filehelpers.DirectoryExists(snapshotLocation) {
-			return sperr.New("snapshot location %s does not exist", snapshotLocation)
+			return fmt.Errorf("snapshot location %s does not exist", snapshotLocation)
 		}
 	}
 	return nil
@@ -95,7 +96,7 @@ func validateSnapshotTags() error {
 	tags := viper.GetStringSlice(constants.ArgSnapshotTag)
 	for _, tagStr := range tags {
 		if len(strings.Split(tagStr, "=")) != 2 {
-			return sperr.New("snapshot tags must be specified '--%s key=value'", constants.ArgSnapshotTag)
+			return fmt.Errorf("snapshot tags must be specified '--%s key=value'", constants.ArgSnapshotTag)
 		}
 	}
 	return nil

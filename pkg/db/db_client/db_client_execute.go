@@ -18,7 +18,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
-	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/text/language"
@@ -106,10 +105,10 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 	// fail-safes
 	if session == nil {
-		return nil, sperr.New("nil session passed to ExecuteInSession")
+		return nil, fmt.Errorf("nil session passed to ExecuteInSession")
 	}
 	if session.Connection == nil {
-		return nil, sperr.New("nil database connection passed to ExecuteInSession")
+		return nil, fmt.Errorf("nil database connection passed to ExecuteInSession")
 	}
 	startTime := time.Now()
 	// get a context with a timeout for the query to execute within

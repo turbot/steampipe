@@ -26,7 +26,6 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/migrate"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
-	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -300,7 +299,7 @@ func migrateLegacyFiles() error {
 func validateConfig() error {
 	telemetry := viper.GetString(constants.ArgTelemetry)
 	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
-		return sperr.New(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
+		return fmt.Errorf(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
 	}
 	return nil
 }

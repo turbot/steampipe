@@ -70,7 +70,7 @@ func (d *ResolvedRuntimeDependency) Resolve() error {
 
 	// we should have a non nil value now
 	if !d.hasValue() {
-		return sperr.New("nil value recevied for runtime dependency %s", d.Dependency.String())
+		return fmt.Errorf("nil value recevied for runtime dependency %s", d.Dependency.String())
 	}
 	return nil
 }

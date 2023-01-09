@@ -10,7 +10,6 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -25,7 +24,7 @@ func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 		var ok bool
 		dashboardNode, ok = root.GroupItem.(modconfig.DashboardLeafNode)
 		if !ok {
-			return nil, sperr.New("invalid node found in control execution tree - cannot cast '%s' to a DashboardLeafNode", root.GroupItem.Name())
+			return nil, fmt.Errorf("invalid node found in control execution tree - cannot cast '%s' to a DashboardLeafNode", root.GroupItem.Name())
 		}
 	case *controlexecute.ControlRun:
 		dashboardNode = root.Control

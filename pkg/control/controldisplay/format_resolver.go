@@ -1,13 +1,13 @@
 package controldisplay
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/sperr"
 )
 
 type FormatResolver struct {
@@ -56,20 +56,20 @@ func (r *FormatResolver) GetFormatter(arg string) (Formatter, error) {
 		return formatter, nil
 	}
 
-	return nil, sperr.New(" invalid output format: '%s'", arg)
+	return nil, fmt.Errorf(" invalid output format: '%s'", arg)
 }
 
 func (r *FormatResolver) registerFormatter(f Formatter) error {
 	name := f.Name()
 
 	if _, ok := r.formatterByName[name]; ok {
-		return sperr.New("failed to register output formatter - duplicate format name %s", name)
+		return fmt.Errorf("failed to register output formatter - duplicate format name %s", name)
 	}
 	r.formatterByName[name] = f
 	// if the formatter has an alias, also register by alias
 	if alias := f.Alias(); alias != "" {
 		if _, ok := r.formatterByName[alias]; ok {
-			return sperr.New("failed to register output formatter - duplicate format name %s", alias)
+			return fmt.Errorf("failed to register output formatter - duplicate format name %s", alias)
 		}
 		r.formatterByName[alias] = f
 	}

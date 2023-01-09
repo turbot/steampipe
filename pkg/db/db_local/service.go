@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -87,7 +88,7 @@ func errorIfUnknownService() error {
 	}
 	if exists {
 		// if it does, then somehow we don't know about it. Error out
-		return sperr.New("service is running in an unknown state [PID: %d] - try killing it with %s", pid, constants.Bold("steampipe service stop --force"))
+		return fmt.Errorf("service is running in an unknown state [PID: %d] - try killing it with %s", pid, constants.Bold("steampipe service stop --force"))
 	}
 
 	// the pid does not exist

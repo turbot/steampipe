@@ -1,6 +1,6 @@
 package controlexecute
 
-import "github.com/turbot/steampipe/pkg/sperr"
+import "fmt"
 
 type DimensionColorGenerator struct {
 	Map            map[string]map[string]uint8
@@ -28,10 +28,10 @@ func NewDimensionColorGenerator(startingRow, startingColumn uint8) (*DimensionCo
 		46: true, 47: true, 48: true, 49: true, // green
 	}
 	if startingColumn < minColumn || startingColumn > maxColumn {
-		return nil, sperr.New("starting column must be between 16 and 51")
+		return nil, fmt.Errorf("starting column must be between 16 and 51")
 	}
 	if startingRow < minRow || startingRow > maxRow {
-		return nil, sperr.New("starting row must be between 0 and 5")
+		return nil, fmt.Errorf("starting row must be between 0 and 5")
 	}
 
 	g := &DimensionColorGenerator{

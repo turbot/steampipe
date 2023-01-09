@@ -167,7 +167,7 @@ func initialiseCheckColorScheme() error {
 	}
 	themeDef, ok := controldisplay.ColorSchemes[theme]
 	if !ok {
-		return sperr.New("invalid theme '%s'", theme)
+		return fmt.Errorf("invalid theme '%s'", theme)
 	}
 	scheme, err := controldisplay.NewControlColorScheme(themeDef)
 	if err != nil {

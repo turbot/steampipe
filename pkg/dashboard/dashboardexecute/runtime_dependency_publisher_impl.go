@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -170,7 +169,7 @@ func (p *RuntimeDependencyPublisherImpl) getWithValue(name string, result *dashb
 
 	// second path section MUST  be "rows"
 	if len(path.PropertyPath) > rowsSegment && path.PropertyPath[rowsSegment] != "rows" || len(path.PropertyPath) > (columnSegment+1) {
-		return nil, sperr.New("reference to with '%s' has invalid property path '%s'", name, path.Original)
+		return nil, fmt.Errorf("reference to with '%s' has invalid property path '%s'", name, path.Original)
 	}
 
 	// if no row is specified assume all
@@ -187,7 +186,7 @@ func (p *RuntimeDependencyPublisherImpl) getWithValue(name string, result *dashb
 	} else {
 		if len(result.Columns) > 1 {
 			// we do not support returning all columns (yet
-			return nil, sperr.New("reference to with '%s' is returning more than one column - not supported", name)
+			return nil, fmt.Errorf("reference to with '%s' is returning more than one column - not supported", name)
 		}
 		column = result.Columns[0].Name
 	}
@@ -198,12 +197,12 @@ func (p *RuntimeDependencyPublisherImpl) getWithValue(name string, result *dashb
 
 	rowIdx, err := strconv.Atoi(rowIdxStr)
 	if err != nil {
-		return nil, sperr.New("reference to with '%s' has invalid property path '%s' - cannot parse row idx '%s'", name, path.Original, rowIdxStr)
+		return nil, fmt.Errorf("reference to with '%s' has invalid property path '%s' - cannot parse row idx '%s'", name, path.Original, rowIdxStr)
 	}
 
 	// do we have the requested row
 	if rowCount := len(rows); rowIdx >= rowCount {
-		return nil, sperr.New("reference to with '%s' has invalid row index '%d' - %d %s were returned", name, rowIdx, rowCount, utils.Pluralize("row", rowCount))
+		return nil, fmt.Errorf("reference to with '%s' has invalid row index '%d' - %d %s were returned", name, rowIdx, rowCount, utils.Pluralize("row", rowCount))
 	}
 	// so we are returning a single row
 	row := rows[rowIdx]
@@ -212,14 +211,14 @@ func (p *RuntimeDependencyPublisherImpl) getWithValue(name string, result *dashb
 
 func columnValuesFromRows(column string, rows []map[string]any) (any, error) {
 	if column == "" {
-		return nil, sperr.New("columnValuesFromRows failed - no column specified")
+		return nil, fmt.Errorf("columnValuesFromRows failed - no column specified")
 	}
 	var res = make([]any, len(rows))
 	for i, row := range rows {
 		var ok bool
 		res[i], ok = row[column]
 		if !ok {
-			return nil, sperr.New("column %s does not exist", column)
+			return nil, fmt.Errorf("column %s does not exist", column)
 		}
 	}
 	return res, nil

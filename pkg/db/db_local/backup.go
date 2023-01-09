@@ -242,7 +242,7 @@ func restoreDBBackup(ctx context.Context) error {
 		return err
 	}
 	if runningInfo == nil {
-		return sperr.New("steampipe service is not running")
+		return fmt.Errorf("steampipe service is not running")
 	}
 
 	// extract the Table of Contents from the Backup Archive
