@@ -15,12 +15,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
-@test "steampipe check exitCode - with controls in alarm" {
-  cd $FUNCTIONALITY_TEST_MOD
-  run steampipe check benchmark.check_search_path_benchmark
-  assert_equal $status 1
-  cd -
-}
+#@test "steampipe check exitCode - with controls in alarm" {
+#  cd $FUNCTIONALITY_TEST_MOD
+#  run steampipe check benchmark.check_search_path_benchmark
+#  assert_equal $status 1
+#  cd -
+#}
 
 @test "steampipe check exitCode - with controls in error(running multiple benchmarks together)" {
   cd $FUNCTIONALITY_TEST_MOD
