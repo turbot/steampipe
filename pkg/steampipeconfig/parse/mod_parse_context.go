@@ -2,13 +2,15 @@ package parse
 
 import (
 	"fmt"
+	"runtime/debug"
+
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/zclconf/go-cty/cty"
-	"runtime/debug"
 )
 
 const rootDependencyNode = "rootDependencyNode"
@@ -99,7 +101,7 @@ func (r *ModParseContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
 	// if the mod has dependencies, there must a workspace lock object in the run context
 	// (mod MUST be the workspace mod, not a dependency, as we would hit this error as soon as we parse it)
 	if mod.HasDependentMods() && (r.WorkspaceLock.Empty() || r.WorkspaceLock.Incomplete()) {
-		return fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
+		return sperr.New("not all dependencies are installed - run 'steampipe mod install'")
 	}
 
 	return nil
