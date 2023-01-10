@@ -43,7 +43,7 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mo
 	// populate the resource maps of the current mod using the dependency mods
 	mod.ResourceMaps = parseCtx.GetResourceMaps()
 	// now load the mod resource hcl
-	return loadModResources(modPath, parseCtx)
+	return loadModResources(modPath, parseCtx, mod)
 }
 
 func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (*modconfig.Mod, error) {

@@ -13,8 +13,8 @@ func NewErrorsAndWarning(err error, warnings ...string) *ErrorAndWarnings {
 	}
 }
 
-func (r *ErrorAndWarnings) AddWarning(warning string) {
-	r.Warnings = append(r.Warnings, warning)
+func (r *ErrorAndWarnings) AddWarning(warnings ...string) {
+	r.Warnings = append(r.Warnings, warnings...)
 }
 
 func (r *ErrorAndWarnings) ShowWarnings() {

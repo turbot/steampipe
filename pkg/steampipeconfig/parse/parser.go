@@ -196,6 +196,9 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 		return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to add mod to run context", diags))
 	}
 
+	// collect warnings as we parse
+	var res = &modconfig.ErrorAndWarnings{}
+
 	// we may need to decode more than once as we gather dependencies as we go
 	// continue decoding as long as the number of unresolved blocks decreases
 	prevUnresolvedBlocks := 0
@@ -204,6 +207,8 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 		if diags.HasErrors() {
 			return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to decode all mod hcl files", diags))
 		}
+		// now retrieve the warning strings
+		res.AddWarning(plugin.DiagsToWarnings(diags)...)
 
 		// if there are no unresolved blocks, we are done
 		unresolvedBlocks := len(parseCtx.UnresolvedBlocks)
@@ -221,11 +226,9 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 	}
 
 	// now tell mod to build tree of controls.
-	if err := mod.BuildResourceTree(parseCtx.LoadedDependencyMods); err != nil {
-		return nil, modconfig.NewErrorsAndWarning(err)
-	}
+	res.Error = mod.BuildResourceTree(parseCtx.LoadedDependencyMods)
 
-	return mod, nil
+	return mod, res
 }
 
 // parse a yaml file into a hcl.File object
