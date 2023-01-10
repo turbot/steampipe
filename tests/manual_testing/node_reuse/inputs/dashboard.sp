@@ -13,7 +13,8 @@ dashboard "inputs" {
   }
 
   table {
-    query = query.q1
+    param "foo" {}
+    sql = "select $1"
     args  = {
       arn = self.input.i1.value
     }

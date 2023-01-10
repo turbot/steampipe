@@ -21,27 +21,29 @@ import (
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, err error) {
+func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errAndWarnings *modconfig.ErrorAndWarnings) {
+	var err error
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
+			errAndWarnings = modconfig.NewErrorsAndWarning(err)
 		}
 	}()
 
 	mod, err = loadModDefinition(modPath, parseCtx)
-	if err != nil {
-		return nil, err
+	if errAndWarnings != nil {
+		return nil, errAndWarnings
 	}
 	// load the mod dependencies
 	if err := loadModDependencies(mod, parseCtx); err != nil {
-		return nil, err
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 	// now we have loaded dependencies, set the current mod on the run context
 	parseCtx.CurrentMod = mod
 	// populate the resource maps of the current mod using the dependency mods
 	mod.ResourceMaps = parseCtx.GetResourceMaps()
 	// now load the mod resource hcl
-	return loadModResources(modPath, parseCtx, mod)
+	return loadModResources(modPath, parseCtx)
 }
 
 func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (*modconfig.Mod, error) {
@@ -148,9 +150,9 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	childRunCtx.BlockTypes = parseCtx.BlockTypes
 	childRunCtx.ParentParseCtx = parseCtx
 
-	mod, err := LoadMod(dependencyPath, childRunCtx)
-	if err != nil {
-		return err
+	mod, errAndWarnings := LoadMod(dependencyPath, childRunCtx)
+	if errAndWarnings.GetError() != nil {
+		return errAndWarnings.GetError()
 	}
 
 	// set the version and dependency path of the mod
@@ -163,11 +165,11 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 		parseCtx.ParentParseCtx.LoadedDependencyMods[modDependency.Name] = mod
 	}
 
-	return err
+	return nil
 
 }
 
-func loadModResources(modPath string, parseCtx *parse.ModParseContext, mod *modconfig.Mod) (*modconfig.Mod, error) {
+func loadModResources(modPath string, parseCtx *parse.ModParseContext) (*modconfig.Mod, *modconfig.ErrorAndWarnings) {
 	// if flag is set, create pseudo resources by mapping files
 	var pseudoResources []modconfig.MappableResource
 	var err error
@@ -175,7 +177,7 @@ func loadModResources(modPath string, parseCtx *parse.ModParseContext, mod *modc
 		// now execute any pseudo-resource creations based on file mappings
 		pseudoResources, err = createPseudoResources(modPath, parseCtx)
 		if err != nil {
-			return nil, err
+			return nil, modconfig.NewErrorsAndWarning(err)
 		}
 	}
 
@@ -183,28 +185,26 @@ func loadModResources(modPath string, parseCtx *parse.ModParseContext, mod *modc
 	sourcePaths, err := getSourcePaths(modPath, parseCtx.ListOptions)
 	if err != nil {
 		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
-		return nil, err
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
 	// load the raw file data
 	fileData, diags := parse.LoadFileData(sourcePaths...)
 	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load all mod files", diags)
+		return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to load all mod files", diags))
 	}
 
 	// parse all hcl files.
-	mod, err = parse.ParseMod(modPath, fileData, pseudoResources, parseCtx)
-	if err != nil {
-		return nil, err
+	mod, errAndWarnings := parse.ParseMod(fileData, pseudoResources, parseCtx)
+	if errAndWarnings.GetError() == nil {
+		// now add fully populated mod to the parent run context
+		if parseCtx.ParentParseCtx != nil {
+			parseCtx.ParentParseCtx.CurrentMod = mod
+			parseCtx.ParentParseCtx.AddMod(mod)
+		}
 	}
 
-	// now add fully populated mod to the parent run context
-	if parseCtx.ParentParseCtx != nil {
-		parseCtx.ParentParseCtx.CurrentMod = mod
-		parseCtx.ParentParseCtx.AddMod(mod)
-	}
-
-	return mod, err
+	return mod, errAndWarnings
 }
 
 // search the parent folder for a mod installatio which satisfied the given mod dependency

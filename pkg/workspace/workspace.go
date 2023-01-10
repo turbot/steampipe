@@ -267,9 +267,9 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) error {
 	parseCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 
 	// load the workspace mod
-	m, err := steampipeconfig.LoadMod(w.Path, parseCtx)
-	if err != nil {
-		return err
+	m, errorAndWarning := steampipeconfig.LoadMod(w.Path, parseCtx)
+	if errorAndWarning.Error != nil {
+		return errorAndWarning.Error
 	}
 
 	// now set workspace properties
