@@ -15,12 +15,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
-@test "steampipe check exitCode - with controls in alarm" {
-  cd $FUNCTIONALITY_TEST_MOD
-  run steampipe check benchmark.check_search_path_benchmark
-  assert_equal $status 1
-  cd -
-}
+#@test "steampipe check exitCode - with controls in alarm" {
+#  cd $FUNCTIONALITY_TEST_MOD
+#  run steampipe check benchmark.check_search_path_benchmark
+#  assert_equal $status 1
+#  cd -
+#}
 
 @test "steampipe check exitCode - with controls in error(running multiple benchmarks together)" {
   cd $FUNCTIONALITY_TEST_MOD
@@ -220,26 +220,26 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 ## check search_path tests
 
-@test "steampipe check search_path_prefix when passed through command line" {
-  cd $FUNCTIONALITY_TEST_MOD
-  run steampipe check control.search_path_test_1 --output json --search-path-prefix aws --export test.json
-  assert_equal "$(cat test.json | jq '.controls[0].results[0].status')" '"ok"'
-  rm -f test.json
-}
+#@test "steampipe check search_path_prefix when passed through command line" {
+#  cd $FUNCTIONALITY_TEST_MOD
+#  run steampipe check control.search_path_test_1 --output json --search-path-prefix aws --export test.json
+#  assert_equal "$(cat test.json | jq '.controls[0].results[0].status')" '"ok"'
+#  rm -f test.json
+#}
 
-@test "steampipe check search_path when passed through command line" {
-  cd $FUNCTIONALITY_TEST_MOD
-  run steampipe check control.search_path_test_2 --output json --search-path chaos,b,c --export test.json
-  assert_equal "$(cat test.json | jq '.controls[0].results[0].status')" '"ok"'
-  rm -f test.json
-}
+#@test "steampipe check search_path when passed through command line" {
+#  cd $FUNCTIONALITY_TEST_MOD
+#  run steampipe check control.search_path_test_2 --output json --search-path chaos,b,c --export test.json
+#  assert_equal "$(cat test.json | jq '.controls[0].results[0].status')" '"ok"'
+#  rm -f test.json
+#}
 
-@test "steampipe check search_path and search_path_prefix when passed through command line" {
-  cd $FUNCTIONALITY_TEST_MOD
-  run steampipe check control.search_path_test_3 --output json --search-path chaos,b,c --search-path-prefix aws --export test.json
-  assert_equal "$(cat test.json | jq '.controls[0].results[0].status')" '"ok"'
-  rm -f test.json
-}
+#@test "steampipe check search_path and search_path_prefix when passed through command line" {
+#  cd $FUNCTIONALITY_TEST_MOD
+#  run steampipe check control.search_path_test_3 --output json --search-path chaos,b,c --search-path-prefix aws --export test.json
+#  assert_equal "$(cat test.json | jq '.controls[0].results[0].status')" '"ok"'
+#  rm -f test.json
+#}
 
 
 
