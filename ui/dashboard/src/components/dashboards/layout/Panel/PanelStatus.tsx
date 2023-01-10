@@ -1,15 +1,13 @@
 import ErrorMessage from "../../../ErrorMessage";
 import Icon from "../../../Icon";
 import LoadingIndicator from "../../LoadingIndicator";
+import usePanelDependenciesStatus from "../../../../hooks/usePanelDependenciesStatus";
 import { classNames } from "../../../../utils/styles";
 import { HashLink } from "react-router-hash-link";
 import { InputProperties } from "../../inputs/types";
 import { PanelDefinition } from "../../../../types";
-import { PanelDependencyStatuses } from "../../common/types";
-import { ReactNode, useMemo } from "react";
-import { useDashboard } from "../../../../hooks/useDashboard";
+import { ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-import { usePanel } from "../../../../hooks/usePanel";
 
 type PanelStatusProps = PanelStatusBaseProps & {
   definition: PanelDefinition;
@@ -24,81 +22,6 @@ type BasePanelStatusProps = {
   children: ReactNode;
   className?: string;
   definition: PanelDefinition;
-};
-
-const usePanelDependenciesStatus = () => {
-  const { dependenciesByStatus } = usePanel();
-  const { selectedDashboardInputs } = useDashboard();
-  return useMemo<PanelDependencyStatuses>(() => {
-    const inputPanelsAwaitingValue: PanelDefinition[] = [];
-    const initializedPanels: PanelDefinition[] = [];
-    const blockedPanels: PanelDefinition[] = [];
-    const runningPanels: PanelDefinition[] = [];
-    const cancelledPanels: PanelDefinition[] = [];
-    const errorPanels: PanelDefinition[] = [];
-    const completePanels: PanelDefinition[] = [];
-    let total = 0;
-    for (const panels of Object.values(dependenciesByStatus)) {
-      for (const panel of panels) {
-        const isInput = panel.panel_type === "input";
-        const inputProperties = isInput
-          ? (panel.properties as InputProperties)
-          : null;
-        const hasInputValue =
-          isInput &&
-          inputProperties?.unqualified_name &&
-          !!selectedDashboardInputs[inputProperties?.unqualified_name];
-        total += 1;
-        if (isInput && !hasInputValue) {
-          inputPanelsAwaitingValue.push(panel);
-        }
-        if (panel.status === "initialized") {
-          initializedPanels.push(panel);
-        } else if (panel.status === "blocked") {
-          blockedPanels.push(panel);
-        } else if (panel.status === "running") {
-          runningPanels.push(panel);
-        } else if (panel.status === "cancelled") {
-          completePanels.push(panel);
-        } else if (panel.status === "error") {
-          errorPanels.push(panel);
-        } else if (panel.status === "complete") {
-          completePanels.push(panel);
-        }
-      }
-    }
-    const status = {
-      initialized: {
-        total: initializedPanels.length,
-        panels: initializedPanels,
-      },
-      blocked: {
-        total: blockedPanels.length,
-        panels: blockedPanels,
-      },
-      running: {
-        total: runningPanels.length,
-        panels: runningPanels,
-      },
-      cancelled: {
-        total: cancelledPanels.length,
-        panels: cancelledPanels,
-      },
-      error: {
-        total: errorPanels.length,
-        panels: errorPanels,
-      },
-      complete: {
-        total: completePanels.length,
-        panels: completePanels,
-      },
-    };
-    return {
-      total,
-      inputsAwaitingValue: inputPanelsAwaitingValue,
-      status,
-    };
-  }, [dependenciesByStatus]);
 };
 
 const BasePanelStatus = ({
