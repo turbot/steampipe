@@ -244,8 +244,8 @@ func getInitData(ctx context.Context) *initialisation.InitData {
 		return initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", errAndWarnings.GetError().Error()))
 	}
 
-	i := initialisation.NewInitData(w).
-		Init(ctx, constants.InvokerDashboard)
+	i := initialisation.NewInitData(w).Init(ctx, constants.InvokerDashboard)
+	i.Result.AddWarnings(errAndWarnings.Warnings...)
 
 	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
 		i.RegisterExporters(dashboardExporters()...)
