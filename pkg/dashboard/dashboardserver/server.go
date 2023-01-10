@@ -149,6 +149,8 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		s.writePayloadToSession(e.Session, payload)
 
 	case *dashboardevents.LeafNodeUpdated:
+		log.Printf("[TRACE] LeafNodeUpdated %s status %s, blocking children %v", e.LeafNode["name"], e.LeafNode["status"], e.LeafNode["blocking_children"])
+
 		payload, payloadError = buildLeafNodeUpdatedPayload(e)
 		if payloadError != nil {
 			return
