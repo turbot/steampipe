@@ -50,11 +50,8 @@ func decode(parseCtx *ModParseContext) hcl.Diagnostics {
 			}
 		} else {
 			resource, res := decodeBlock(block, parseCtx)
-			if !res.Success() {
-				diags = append(diags, res.Diags...)
-				continue
-			}
-			if resource == nil {
+			diags = append(diags, res.Diags...)
+			if !res.Success() || resource == nil {
 				continue
 			}
 
@@ -723,7 +720,7 @@ func validateName(block *hcl.Block) hcl.Diagnostics {
 // We use partial decoding so that we can automatically decode as many properties as possible
 // and only manually decode properties requiring special logic.
 // The problem is the partial decode does not return errors for invalid attributes/blocks, so we must implement our own
-func validateHcl(body *hclsyntax.Body, schema *hcl.BodySchema) hcl.Diagnostics {
+func validateHcl(blockType string, body *hclsyntax.Body, schema *hcl.BodySchema) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 
 	// identify any blocks specified by hcl tags
@@ -741,21 +738,39 @@ func validateHcl(body *hclsyntax.Body, schema *hcl.BodySchema) hcl.Diagnostics {
 		if _, ok := supportedBlocks[block.Type]; !ok {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf(`Unsupported block type: Blocks of type "%s" are not expected here.`, block.Type),
+				Summary:  fmt.Sprintf(`Unsupported block type: Blocks of type '%s' are not expected here.`, block.Type),
 				Subject:  &block.TypeRange,
 			})
 		}
 	}
 	for _, attribute := range body.Attributes {
 		if _, ok := supportedAttributes[attribute.Name]; !ok {
+			// special case code for deprecated properties
 			subject := attribute.Range()
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf(`Unsupported attribute: Attribute "%s" not expected here.`, attribute.Name),
-				Subject:  &subject,
-			})
+			if isDeprecated(attribute, blockType) {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagWarning,
+					Summary:  fmt.Sprintf(`Deprecated attribute: '%s' is deprecated for '%s' blocks and will be ignored.`, attribute.Name, blockType),
+					Subject:  &subject,
+				})
+			} else {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  fmt.Sprintf(`Unsupported attribute: '%s' not expected here.`, attribute.Name),
+					Subject:  &subject,
+				})
+			}
 		}
 	}
 
 	return diags
+}
+
+func isDeprecated(attribute *hclsyntax.Attribute, blockType string) bool {
+	switch attribute.Name {
+	case "search_path", "search_path_prefix":
+		return blockType == modconfig.BlockTypeQuery || blockType == modconfig.BlockTypeControl
+	default:
+		return false
+	}
 }

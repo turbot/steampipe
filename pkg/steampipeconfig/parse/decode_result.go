@@ -40,7 +40,7 @@ func (p *decodeResult) handleDecodeDiags(diags hcl.Diagnostics) {
 		}
 	}
 	// only register errors if there are NOT any missing variables
-	if diags.HasErrors() && len(p.Depends) == 0 {
+	if len(p.Depends) == 0 {
 		p.addDiags(diags)
 	}
 }

@@ -31,4 +31,5 @@ dashboard "inputs" {
 query "q1"{
   sql = "select arn from aws_account where arn = $1"
   param "arn" {   }
+  search_path="test"
 }
