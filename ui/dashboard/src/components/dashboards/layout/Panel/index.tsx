@@ -61,29 +61,14 @@ const Panel = ({
     "overflow-auto"
   );
 
-  // const showPanelContents =
-  //   !definition.error || (definition.error && !showPanelError);
-
   return (
     <div
       // @ts-ignore
       ref={setReferenceElement}
       id={definition.name}
       className={baseStyles}
-      onMouseEnter={
-        showControls
-          ? () => {
-              setShowPanelControls(true);
-            }
-          : undefined
-      }
-      onMouseLeave={
-        showControls
-          ? () => {
-              setShowPanelControls(false);
-            }
-          : undefined
-      }
+      onMouseEnter={showControls ? () => setShowPanelControls(true) : undefined}
+      onMouseLeave={() => setShowPanelControls(false)}
     >
       <section
         aria-labelledby={
