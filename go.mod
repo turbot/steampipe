@@ -43,8 +43,13 @@ require (
 	github.com/spf13/viper v1.14.0
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
 	github.com/turbot/go-kit v0.5.0
+<<<<<<< HEAD
 	github.com/turbot/steampipe-cloud-sdk-go v0.4.0
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.1.0-rc.0
+=======
+	github.com/turbot/steampipe-cloud-sdk-go v0.3.0
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.1.0-rc.0.0.20230110122448-0766a9d10e22
+>>>>>>> 78532cc4 (trying with SDK main)
 	github.com/xlab/treeprint v1.1.0
 	github.com/zclconf/go-cty v1.12.1
 	github.com/zclconf/go-cty-yaml v1.0.3
