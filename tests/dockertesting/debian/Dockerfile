@@ -11,12 +11,6 @@ RUN adduser --system --disabled-login --ingroup 0 --gecos "steampipe user" --she
 # and others for running acceptance tests
 RUN apt-get update -y && apt-get install -y sudo wget git jq sed vim curl bc less
 
-# copy jd binary to /usr/local/bin
-COPY jd-amd64-linux /usr/local/bin/jd
-
-# add executable permissions to jd
-RUN chmod +x /usr/local/bin/jd
-
 # copy steampipe binary from local folder
 COPY steampipe /usr/local/bin/
 

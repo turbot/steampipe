@@ -11,12 +11,6 @@ RUN adduser --system --shell /bin/false --uid 9193 --gid 0 --create-home steampi
 # interactive mode, and others for running acceptance tests
 RUN microdnf update -y && microdnf upgrade -y && microdnf install -y sudo findutils wget git jq sed vim curl bc tar less
 
-# copy jd binary to /usr/bin
-COPY jd-amd64-linux /usr/bin/jd
-
-# add executable permissions to jd
-RUN chmod +x /usr/bin/jd
-
 # copy steampipe binary from local folder
 COPY steampipe /usr/bin/
 
