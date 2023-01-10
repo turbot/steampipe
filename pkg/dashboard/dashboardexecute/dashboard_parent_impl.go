@@ -6,12 +6,16 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"log"
+	"sync"
 )
 
 type DashboardParentImpl struct {
 	DashboardTreeRunImpl
 	children          []dashboardtypes.DashboardTreeRun
 	childCompleteChan chan dashboardtypes.DashboardTreeRun
+	// are we blocked by a child run
+	blockedByChild  bool
+	childStatusLock sync.Mutex
 }
 
 func (r *DashboardParentImpl) initialiseChildren(ctx context.Context) error {
@@ -99,4 +103,46 @@ func (r *DashboardParentImpl) waitForChildrenAsync() chan error {
 		}()
 	}
 	return doneChan
+}
+
+func (r *DashboardParentImpl) ChildStatusChanged(ctx context.Context) {
+	// this function may be called asyncronously by children
+	r.childStatusLock.Lock()
+	defer r.childStatusLock.Unlock()
+
+	// if we are currently blocked by a child or we are currently in running state,
+	// call setRunning() to determine whether any of our children are now blocked
+	if r.blockedByChild || r.GetRunStatus() == dashboardtypes.RunRunning {
+
+		log.Printf("[WARN] %s ChildStatusChanged - calling setRunning to see if we are still running, status %s blockedByChild %v", r.Name, r.GetRunStatus(), r.blockedByChild)
+
+		// try setting our status to running again
+		r.setRunning(ctx)
+	}
+}
+
+// override DashboardTreeRunImpl) setStatus(
+func (r *DashboardParentImpl) setRunning(ctx context.Context) {
+	status := dashboardtypes.RunRunning
+	// if we are trying to set status to running, check if any of our children are blocked,
+	// and if so set our status to blocked
+
+	// if any children are blocked, we are blocked
+	for _, c := range r.children {
+		if c.GetRunStatus() == dashboardtypes.RunBlocked {
+			status = dashboardtypes.RunBlocked
+			r.blockedByChild = true
+			break
+		}
+		// to get here, no children can be blocked - clear blockedByChild
+		r.blockedByChild = false
+	}
+
+	// set status if it has changed
+	if status != r.GetRunStatus() {
+		log.Printf("[WARN] %s setRunning - setting state %s, blockedByChild %v", r.Name, status, r.blockedByChild)
+		r.DashboardTreeRunImpl.setStatus(ctx, status)
+	} else {
+		log.Printf("[WARN] %s setRunning - state unchanged %s, blockedByChild %v", r.Name, status, r.blockedByChild)
+	}
 }

@@ -108,9 +108,10 @@ func (r *DashboardContainerRun) Initialise(ctx context.Context) {
 // execute all children and wait for them to complete
 func (r *DashboardContainerRun) Execute(ctx context.Context) {
 	// execute all children asynchronously
-	for _, child := range r.children {
-		go child.Execute(ctx)
-	}
+	r.executeChildrenAsync(ctx)
+
+	// try to set status as running (will be set to blocked if any children are blocked)
+	r.setRunning(ctx)
 
 	// wait for children to complete
 	var errors []error

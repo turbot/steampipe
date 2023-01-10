@@ -154,6 +154,9 @@ func (r *DashboardTreeRunImpl) SetComplete(ctx context.Context) {
 
 func (r *DashboardTreeRunImpl) setStatus(ctx context.Context, status dashboardtypes.RunStatus) {
 	r.Status = status
+	// notify our parent that our status has changed
+	r.parent.ChildStatusChanged(ctx)
+
 	// raise LeafNodeUpdated event
 	// TODO [node_reuse] do this a different way https://github.com/turbot/steampipe/issues/2919
 	// TACTICAL: pass the full run struct - 'r.run', rather than ourselves - so we serialize all properties
