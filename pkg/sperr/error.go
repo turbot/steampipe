@@ -83,7 +83,7 @@ func (e *Error) Error() string {
 	if e.cause != nil && len(e.cause.Error()) > 0 {
 		res = append(res, e.cause.Error())
 	}
-	return strings.Join(res, " : ")
+	return strings.Join(res, ": ")
 }
 
 func (e *Error) Detail() string {
