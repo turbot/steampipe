@@ -377,21 +377,23 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
 		log.Println("[TRACE] Connection string: ", connStr)
 		utils.LogTime("db_local.createClient connection open start")
-		conn, err := pgx.Connect(context.Background(), connStr)
+		connection, err := pgx.Connect(context.Background(), connStr)
 		utils.LogTime("db_local.createClient connection open end")
 		if err != nil {
 			return retry.RetryableError(err)
 		}
-		if err := db_common.WaitForConnection(ctx, conn); err != nil {
+		if err := db_common.WaitForConnection(ctx, connection); err != nil {
 			return retry.RetryableError(err)
 		}
+		conn = connection
 		return nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
-	return conn, nil
 
+	return conn, nil
 }
 
 func startServiceForInstall(port int) (*psutils.Process, error) {
