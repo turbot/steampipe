@@ -162,7 +162,7 @@ func (r *ControlRun) setError(ctx context.Context, err error) {
 		return
 	}
 	if r.runError == context.DeadlineExceeded {
-		r.runError = sperr.WrapWithMessage(r.runError, "control execution timed out")
+		r.runError = sperr.WrapWithRootMessage(r.runError, "control execution timed out")
 	} else {
 		r.runError = err
 	}
