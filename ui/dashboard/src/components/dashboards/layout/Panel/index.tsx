@@ -20,8 +20,6 @@ import { registerComponent } from "../../index";
 import { TableProps } from "../../Table";
 import { TextProps } from "../../Text";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { getNodeAndEdgeDataFormat } from "../../common/useNodeAndEdgeData";
-import { NodeAndEdgeProperties } from "../../common/types";
 
 type PanelProps = {
   children: ReactNode;
@@ -38,7 +36,9 @@ type PanelProps = {
     | TableProps
     | TextProps;
   showControls?: boolean;
+  showPanelContents?: boolean;
   showPanelError?: boolean;
+  showPanelStatus?: boolean;
   forceBackground?: boolean;
 };
 
@@ -47,28 +47,22 @@ const Panel = ({
   className,
   definition,
   showControls = true,
+  showPanelContents = true,
   showPanelError = true,
+  showPanelStatus = true,
   forceBackground = false,
 }: PanelProps) => {
   const { selectedPanel } = useDashboard();
   const { panelControls, showPanelControls, setShowPanelControls } = usePanel();
   const [referenceElement, setReferenceElement] = useState(null);
-  const dataFormat = getNodeAndEdgeDataFormat(
-    definition.panel_type === "flow" ||
-      definition.panel_type === "graph" ||
-      definition.panel_type === "hierarchy"
-      ? (definition.properties as NodeAndEdgeProperties)
-      : undefined
-  );
-
   const baseStyles = classNames(
     "relative col-span-12",
     getResponsivePanelWidthClass(definition.width),
     "overflow-auto"
   );
 
-  const showPanelContents =
-    !definition.error || (definition.error && !showPanelError);
+  // const showPanelContents =
+  //   !definition.error || (definition.error && !showPanelError);
 
   return (
     <div
@@ -153,14 +147,12 @@ const Panel = ({
           <PanelProgress className={definition.title ? null : "rounded-t-md"} />
           {showPanelContents && <PanelInformation />}
           <>
-            {definition.panel_type !== "input" &&
-              definition.panel_type !== "card" &&
-              dataFormat !== "NODE_AND_EDGE" && (
-                <PanelStatus
-                  definition={definition as PanelDefinition}
-                  showPanelError={showPanelError}
-                />
-              )}
+            {showPanelStatus && (
+              <PanelStatus
+                definition={definition as PanelDefinition}
+                showPanelError={showPanelError}
+              />
+            )}
             {showPanelContents ? children : null}
           </>
         </div>

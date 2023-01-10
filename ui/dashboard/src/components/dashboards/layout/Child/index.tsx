@@ -28,7 +28,11 @@ const Child = ({
     case "card":
       const Card = getComponent("card");
       return (
-        <Panel definition={panelDefinition} showControls={showPanelControls}>
+        <Panel
+          definition={panelDefinition}
+          showControls={showPanelControls}
+          showPanelStatus={false}
+        >
           <Card {...panelDefinition} />
         </Panel>
       );
@@ -60,8 +64,15 @@ const Child = ({
       return (
         <Panel
           definition={panelDefinition}
-          ready={format === "NODE_AND_EDGE" || !!panelDefinition.data}
-          showControls={showPanelControls}
+          showPanelContents={
+            panelDefinition.status === "running" ||
+            panelDefinition.status === "complete"
+          }
+          showPanelStatus={
+            panelDefinition.status === "initialized" ||
+            panelDefinition.status === "blocked" ||
+            panelDefinition.status === "cancelled"
+          }
           // Node and edge format will show error info on the panel information
           showPanelError={format === "LEGACY"}
         >
@@ -77,8 +88,16 @@ const Child = ({
       return (
         <Panel
           definition={panelDefinition}
-          ready={format === "NODE_AND_EDGE" || !!panelDefinition.data}
           showControls={showPanelControls}
+          showPanelContents={
+            panelDefinition.status === "running" ||
+            panelDefinition.status === "complete"
+          }
+          showPanelStatus={
+            panelDefinition.status === "initialized" ||
+            panelDefinition.status === "blocked" ||
+            panelDefinition.status === "cancelled"
+          }
           // Node and edge format will show error info on the panel information
           showPanelError={format === "LEGACY"}
         >
@@ -94,8 +113,15 @@ const Child = ({
       return (
         <Panel
           definition={panelDefinition}
-          ready={format === "NODE_AND_EDGE" || !!panelDefinition.data}
-          showControls={showPanelControls}
+          showPanelContents={
+            panelDefinition.status === "running" ||
+            panelDefinition.status === "complete"
+          }
+          showPanelStatus={
+            panelDefinition.status === "initialized" ||
+            panelDefinition.status === "blocked" ||
+            panelDefinition.status === "cancelled"
+          }
           // Node and edge format will show error info on the panel information
           showPanelError={format === "LEGACY"}
         >
