@@ -113,7 +113,6 @@ func (r *DashboardParentImpl) ChildStatusChanged(ctx context.Context) {
 	// if we are currently blocked by a child or we are currently in running state,
 	// call setRunning() to determine whether any of our children are now blocked
 	if len(r.BlockingChildren) > 0 || r.GetRunStatus() == dashboardtypes.RunRunning {
-
 		log.Printf("[TRACE] %s ChildStatusChanged - calling setRunning to see if we are still running, status %s len(blockedByChildren) %d", r.Name, r.GetRunStatus(), len(r.BlockingChildren))
 
 		// try setting our status to running again
