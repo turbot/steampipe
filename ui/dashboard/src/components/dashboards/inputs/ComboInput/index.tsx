@@ -1,7 +1,7 @@
 import CreatableSelect from "react-select/creatable";
 import useSelectInputStyles from "../common/useSelectInputStyles";
+import useSelectInputValues from "../common/useSelectInputValues";
 import { DashboardActions, DashboardDataModeLive } from "../../../../types";
-import { getColumn } from "../../../../utils/data";
 import { InputProps } from "../types";
 import {
   MultiValueLabelWithTags,
@@ -9,7 +9,7 @@ import {
   SingleValueWithTags,
 } from "../common/Common";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 export type SelectOption = {
   label: string;
@@ -80,41 +80,7 @@ const ComboInput = ({
   );
 
   // Get the options for the select
-  const options: SelectOption[] = useMemo(() => {
-    // If no options defined at all
-    if (
-      ((!properties?.options || properties?.options.length === 0) &&
-        (!data || !data.columns || !data.rows)) ||
-      // This property is only present in workspaces >=v0.16.x
-      (status !== undefined && status !== "complete")
-    ) {
-      return [];
-    }
-
-    if (data) {
-      const labelCol = getColumn(data.columns, "label");
-      const valueCol = getColumn(data.columns, "value");
-      const tagsCol = getColumn(data.columns, "tags");
-
-      if (!labelCol || !valueCol) {
-        return [];
-      }
-
-      return data.rows.map((row) => ({
-        label: row[labelCol.name],
-        value: row[valueCol.name],
-        tags: tagsCol ? row[tagsCol.name] : {},
-      }));
-    } else if (properties.options) {
-      return properties.options.map((option) => ({
-        label: option.label || option.name,
-        value: option.name,
-        tags: {},
-      }));
-    } else {
-      return [];
-    }
-  }, [properties.options, data, status]);
+  const options = useSelectInputValues(properties.options, data, status);
 
   const stateValue = selectedDashboardInputs[name];
 
