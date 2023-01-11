@@ -39,8 +39,8 @@ func WaitForPool(ctx context.Context, db *pgxpool.Pool) (err error) {
 	}
 }
 
-// WaitForConnection waits for the db to start accepting connections and returns true
-// returns false if the dbClient does not start within a stipulated time,
+// WaitForConnection PINGs the DB - retrying after a backoff of constants.ServicePingInterval - but only for constants.DBConnectionTimeout
+// returns the error from the database if the dbClient does not respond with after a timeout
 func WaitForConnection(ctx context.Context, connection *pgx.Conn) (err error) {
 	utils.LogTime("db.waitForConnection start")
 	defer utils.LogTime("db.waitForConnection end")
@@ -50,24 +50,26 @@ func WaitForConnection(ctx context.Context, connection *pgx.Conn) (err error) {
 		cancel()
 	}()
 
-	return retry.Do(ctx, retry.WithMaxDuration(
+	retryBackoff := retry.WithMaxDuration(
 		constants.DBConnectionTimeout,
-		retry.NewConstant(
-			constants.ServicePingInterval,
-		),
-	), func(ctx context.Context) error {
-		err := retry.RetryableError(connection.Ping(timeoutCtx))
-		if err != nil {
-			if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.SQLState() == "57P03" {
-				log.Println("[TRACE] faced a 'cannot_connect_now (57P03):", errors.Unwrap(err))
+		retry.NewConstant(constants.ServicePingInterval),
+	)
+
+	retryErr := retry.Do(ctx, retryBackoff, func(ctx context.Context) error {
+		pingErr := connection.Ping(timeoutCtx)
+		if pingErr != nil {
+			if pgErr, ok := pingErr.(*pgconn.PgError); ok && pgErr.SQLState() == "57P03" {
+				log.Println("[TRACE] faced a 'cannot_connect_now (57P03):", errors.Unwrap(pingErr))
 				// 57P03 is a fatal error that comes up when the database is still starting up
 				// let's delay for sometime before trying again
 				// using the PingInterval here - can use any other value if required
 				time.Sleep(constants.ServicePingInterval)
 				log.Println("[TRACE] checking again")
 			}
-			return retry.RetryableError(err)
+			return retry.RetryableError(pingErr)
 		}
 		return nil
 	})
+
+	return retryErr
 }

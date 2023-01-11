@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/sethvargo/go-retry"
@@ -108,19 +107,22 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn,
 }
 
 // createMaintenanceClient connects to the postgres server using the
-// maintenance database and superuser
+// maintenance database (postgres) and superuser
+// this is used in a couple of places
+//  1. During installation to setup the DBMS with foreign_server, extension et.al.
+//  2. During service start and stop to query the DBMS for parameters (connected clients, database name etc.)
 func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	utils.LogTime("db_local.createMaintenanceClient start")
 	defer utils.LogTime("db_local.createMaintenanceClient end")
-	backoff := retry.WithMaxDuration(
-		constants.DBConnectionTimeout,
-		retry.NewConstant(200*time.Millisecond),
-	)
 
 	var conn *pgx.Conn
 	var err error
 
-	// create a connection with some retries
+	backoff := retry.WithMaxDuration(
+		constants.DBConnectionTimeout,
+		retry.NewConstant(constants.DBConnectionRetryBackoff),
+	)
+	// create a connection to the service. This retries after a backoff, but only upto a maximum duration.
 	err = retry.Do(ctx, backoff, func(rCtx context.Context) error {
 		connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
 		log.Println("[TRACE] Trying to create maintenance client with: ", connStr)
@@ -135,6 +137,9 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// wait for the connection to get established
+	// WaitForConnection retries on its own
 	err = db_common.WaitForConnection(ctx, conn)
 	if err != nil {
 		conn.Close(ctx)
