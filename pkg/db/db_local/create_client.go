@@ -123,35 +123,42 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	defer cancel()
 
 	var conn *pgx.Conn
+	var err error
 
 	// create a connection with some retries
-	err := retry.Do(ctx, backoff, func(rCtx context.Context) error {
+	err = retry.Do(ctx, backoff, func(rCtx context.Context) error {
 		connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
 		log.Println("[TRACE] Trying to create maintenance client with: ", connStr)
 		dbConnection, err := pgx.Connect(rCtx, connStr)
 		if err != nil {
 			log.Println("[TRACE] faced error:", err)
-			log.Println("[TRACE] retrying:", err)
 			return retry.RetryableError(err)
 		}
 		conn = dbConnection
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
 
+	backoff = retry.WithMaxRetries(
+		5,
+		retry.NewConstant(200*time.Millisecond),
+	)
+
 	err = retry.Do(ctx, backoff, func(rCtx context.Context) error {
-		if err := db_common.WaitForConnection(rCtx, conn); err != nil {
-			if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.SQLState() == "57P03" {
-				log.Println("[TRACE] looks like a 'cannot_connect_now (57P03):", errors.Unwrap(err))
+		waitErr := db_common.WaitForConnection(rCtx, conn)
+
+		if waitErr != nil {
+			if pgErr, ok := waitErr.(*pgconn.PgError); ok && pgErr.SQLState() == "57P03" {
+				log.Println("[TRACE] faced a 'cannot_connect_now (57P03):", errors.Unwrap(waitErr))
 				// 57P03 is a fatal error that comes up when the database is still starting up
 				// let's delay for sometime before trying again
 				// using the PingInterval here - can use any other value if required
 				time.Sleep(constants.ServicePingInterval)
+				log.Println("[TRACE] checking again")
 			}
-			return retry.RetryableError(err)
+			return retry.RetryableError(waitErr)
 		}
 		return nil
 	})
