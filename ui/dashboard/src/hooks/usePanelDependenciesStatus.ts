@@ -1,12 +1,10 @@
 import { PanelDefinition } from "../types";
 import { PanelDependencyStatuses } from "../components/dashboards/common/types";
-import { useDashboard } from "./useDashboard";
 import { useMemo } from "react";
 import { usePanel } from "./usePanel";
 
 const usePanelDependenciesStatus = () => {
   const { dependenciesByStatus, inputPanelsAwaitingValue } = usePanel();
-  const { selectedDashboardInputs } = useDashboard();
 
   return useMemo<PanelDependencyStatuses>(() => {
     const initializedPanels: PanelDefinition[] = [];
@@ -65,7 +63,7 @@ const usePanelDependenciesStatus = () => {
       inputsAwaitingValue: inputPanelsAwaitingValue,
       status,
     };
-  }, [dependenciesByStatus, inputPanelsAwaitingValue, selectedDashboardInputs]);
+  }, [dependenciesByStatus, inputPanelsAwaitingValue]);
 };
 
 export default usePanelDependenciesStatus;
