@@ -48,8 +48,12 @@ require (
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.1.0-rc.0
 =======
 	github.com/turbot/steampipe-cloud-sdk-go v0.3.0
+<<<<<<< HEAD
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.1.0-rc.0.0.20230110122448-0766a9d10e22
 >>>>>>> 78532cc4 (trying with SDK main)
+=======
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.1.0
+>>>>>>> 373e9b1e (updating SDK version)
 	github.com/xlab/treeprint v1.1.0
 	github.com/zclconf/go-cty v1.12.1
 	github.com/zclconf/go-cty-yaml v1.0.3

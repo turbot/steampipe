@@ -1031,9 +1031,14 @@ github.com/turbot/steampipe-plugin-sdk/v5 v5.1.0-rc.0/go.mod h1:9ut6QKFTdHvQ1Uwk
 =======
 github.com/turbot/steampipe-cloud-sdk-go v0.3.0 h1:2x0VlzAYoRZBWfYxZ3Z0kkMmERtZF8alfY3uctqWhGA=
 github.com/turbot/steampipe-cloud-sdk-go v0.3.0/go.mod h1:8M2CspUHgCGqDCJV+FNn+boBPyLRHyzDinYnoZ/kZYw=
+<<<<<<< HEAD
 github.com/turbot/steampipe-plugin-sdk/v5 v5.1.0-rc.0.0.20230110122448-0766a9d10e22 h1:mYojZwhvP4D51MqSJzASf9aVG86YUoD45SLkurW1AAg=
 github.com/turbot/steampipe-plugin-sdk/v5 v5.1.0-rc.0.0.20230110122448-0766a9d10e22/go.mod h1:BmsIRNU6e1wwBytYaxv6Xbh3nWF5tx7gHxj0kpqEoBw=
 >>>>>>> 78532cc4 (trying with SDK main)
+=======
+github.com/turbot/steampipe-plugin-sdk/v5 v5.1.0 h1:o/duHrXKxTNEU0/Uxi7sNwz/lKfoKFh7/TxI6VWxUPE=
+github.com/turbot/steampipe-plugin-sdk/v5 v5.1.0/go.mod h1:tX8pu72+JioMVHWcyaYjsa1SXdYFYwap1hepXKpxF/I=
+>>>>>>> 373e9b1e (updating SDK version)
 github.com/tv42/httpunix v0.0.0-20191220191345-2ba4b9c3382c/go.mod h1:hzIxponao9Kjc7aWznkXaL4U4TWaDSs8zcsY4Ka08nM=
 github.com/ugorji/go v0.0.0-20180813092308-00b869d2f4a5/go.mod h1:hnLbHMwcvSihnDhEfx2/BzKp2xb0Y+ErdfYcrs9tkJQ=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
