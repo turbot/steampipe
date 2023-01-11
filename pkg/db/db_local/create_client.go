@@ -114,8 +114,10 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn,
 func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	utils.LogTime("db_local.createMaintenanceClient start")
 	defer utils.LogTime("db_local.createMaintenanceClient end")
-	kBackoff, _ := retry.NewConstant(200 * time.Millisecond)
-	backoff := retry.WithMaxDuration(constants.DBConnectionTimeout, kBackoff)
+	backoff := retry.WithMaxDuration(
+		constants.DBConnectionTimeout,
+		retry.NewConstant(200*time.Millisecond),
+	)
 
 	ctx, cancel := context.WithTimeout(ctx, constants.DBConnectionTimeout)
 	defer cancel()
