@@ -64,7 +64,7 @@ const PanelBlocked = ({ definition }) => {
               icon="block"
             />
             <span className="block truncate">
-              Awaiting value:{" "}
+              Awaiting input:{" "}
               <HashLink
                 className="text-link"
                 to={`${location.pathname}${
