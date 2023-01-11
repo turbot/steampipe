@@ -9,17 +9,13 @@ import (
 	"os"
 	"os/exec"
 	"sync"
-	"time"
 
 	"github.com/fatih/color"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/sethvargo/go-retry"
 	psutils "github.com/shirou/gopsutil/process"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
@@ -366,58 +362,6 @@ func resolveDatabaseName(oldDbName *string) string {
 		databaseName = envValue
 	}
 	return databaseName
-}
-
-// createMaintenanceClient connects to the postgres server using the
-// maintenance database and superuser
-func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
-	utils.LogTime("db_local.createMaintenanceClient start")
-	defer utils.LogTime("db_local.createMaintenanceClient end")
-	backoff := retry.WithMaxDuration(constants.DBConnectionTimeout, retry.NewConstant(200*time.Millisecond))
-
-	ctx, cancel := context.WithTimeout(ctx, constants.DBConnectionTimeout)
-	defer cancel()
-
-	var conn *pgx.Conn
-
-	// create a connection with some retries
-	err := retry.Do(ctx, backoff, func(rCtx context.Context) error {
-		connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
-		log.Println("[TRACE] Trying to create maintenance client with: ", connStr)
-		dbConnection, err := pgx.Connect(rCtx, connStr)
-		if err != nil {
-			log.Println("[TRACE] faced error:", err)
-			log.Println("[TRACE] retrying:", err)
-			return retry.RetryableError(err)
-		}
-		conn = dbConnection
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = retry.Do(ctx, backoff, func(rCtx context.Context) error {
-		if err := db_common.WaitForConnection(rCtx, conn); err != nil {
-			if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.SQLState() == "57P03" {
-				log.Println("[TRACE] looks like a 'cannot_connect_now (57P03):", errors.Unwrap(err))
-				// 57P03 is a fatal error that comes up when the database is still starting up
-				// let's delay for sometime before trying again
-				// using the PingInterval here - can use any other value if required
-				time.Sleep(constants.ServicePingInterval)
-			}
-			return retry.RetryableError(err)
-		}
-		return nil
-	})
-
-	if err != nil {
-		conn.Close(ctx)
-		return nil, err
-	}
-
-	return conn, nil
 }
 
 func startServiceForInstall(port int) (*psutils.Process, error) {

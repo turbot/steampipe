@@ -2,11 +2,15 @@ package db_local
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -103,4 +107,57 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn,
 		return nil, err
 	}
 	return conn, nil
+}
+
+// createMaintenanceClient connects to the postgres server using the
+// maintenance database and superuser
+func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
+	utils.LogTime("db_local.createMaintenanceClient start")
+	defer utils.LogTime("db_local.createMaintenanceClient end")
+	kBackoff, _ := retry.NewConstant(200 * time.Millisecond)
+	backoff := retry.WithMaxDuration(constants.DBConnectionTimeout, kBackoff)
+
+	ctx, cancel := context.WithTimeout(ctx, constants.DBConnectionTimeout)
+	defer cancel()
+
+	var conn *pgx.Conn
+
+	// create a connection with some retries
+	err := retry.Do(ctx, backoff, func(rCtx context.Context) error {
+		connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
+		log.Println("[TRACE] Trying to create maintenance client with: ", connStr)
+		dbConnection, err := pgx.Connect(rCtx, connStr)
+		if err != nil {
+			log.Println("[TRACE] faced error:", err)
+			log.Println("[TRACE] retrying:", err)
+			return retry.RetryableError(err)
+		}
+		conn = dbConnection
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = retry.Do(ctx, backoff, func(rCtx context.Context) error {
+		if err := db_common.WaitForConnection(rCtx, conn); err != nil {
+			if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.SQLState() == "57P03" {
+				log.Println("[TRACE] looks like a 'cannot_connect_now (57P03):", errors.Unwrap(err))
+				// 57P03 is a fatal error that comes up when the database is still starting up
+				// let's delay for sometime before trying again
+				// using the PingInterval here - can use any other value if required
+				time.Sleep(constants.ServicePingInterval)
+			}
+			return retry.RetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		conn.Close(ctx)
+		return nil, err
+	}
+	return conn, nil
+
 }
