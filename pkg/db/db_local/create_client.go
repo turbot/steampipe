@@ -122,7 +122,9 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		constants.DBConnectionTimeout,
 		retry.NewConstant(constants.DBConnectionRetryBackoff),
 	)
-	// create a connection to the service. This retries after a backoff, but only upto a maximum duration.
+
+	// create a connection to the service.
+	// Retry after a backoff, but only upto a maximum duration.
 	err = retry.Do(ctx, backoff, func(rCtx context.Context) error {
 		connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
 		log.Println("[TRACE] Trying to create maintenance client with: ", connStr)
