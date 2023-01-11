@@ -145,6 +145,7 @@ const Child = ({
             showPanelControls &&
             (panelDefinition.title || panelDefinition.display_type === "table")
           }
+          showPanelStatus={false}
         >
           <Input {...panelDefinition} />
         </Panel>

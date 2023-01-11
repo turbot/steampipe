@@ -2,13 +2,24 @@ import usePanelControls from "./usePanelControls";
 import { BaseChartProps } from "../components/dashboards/charts/types";
 import { CardProps } from "../components/dashboards/Card";
 import { createContext, ReactNode, useContext, useMemo, useState } from "react";
+import {
+  DashboardInputs,
+  DashboardRunState,
+  PanelDefinition,
+  PanelDependenciesByStatus,
+  PanelsMap,
+} from "../types";
 import { FlowProps } from "../components/dashboards/flows/types";
+import { getNodeAndEdgeDataFormat } from "../components/dashboards/common/useNodeAndEdgeData";
 import { GraphProps } from "../components/dashboards/graphs/types";
 import { HierarchyProps } from "../components/dashboards/hierarchies/types";
 import { ImageProps } from "../components/dashboards/Image";
-import { InputProps } from "../components/dashboards/inputs/types";
+import {
+  InputProperties,
+  InputProps,
+} from "../components/dashboards/inputs/types";
 import { IPanelControl } from "../components/dashboards/layout/Panel/PanelControls";
-import { PanelDefinition, PanelDependenciesByStatus } from "../types";
+import { NodeAndEdgeProperties } from "../components/dashboards/common/types";
 import { TableProps } from "../components/dashboards/Table";
 import { TextProps } from "../components/dashboards/Text";
 import { useDashboard } from "./useDashboard";
@@ -27,6 +38,7 @@ type IPanelContext = {
     | TextProps;
   dependencies: PanelDefinition[];
   dependenciesByStatus: PanelDependenciesByStatus;
+  inputPanelsAwaitingValue: PanelDefinition[];
   panelControls: IPanelControl[];
   panelInformation: ReactNode | null;
   showPanelControls: boolean;
@@ -54,57 +66,160 @@ type PanelProviderProps = {
 
 const PanelContext = createContext<IPanelContext | null>(null);
 
+const recordDependency = (
+  definition: PanelDefinition,
+  panelsMap: PanelsMap,
+  selectedDashboardInputs: DashboardInputs,
+  dependencies: PanelDefinition[],
+  dependenciesByStatus: PanelDependenciesByStatus,
+  inputPanelsAwaitingValue: PanelDefinition[],
+  recordedInputPanels: {}
+) => {
+  // Record this panel as a dependency
+  dependencies.push(definition);
+
+  // Keep track of this panel by its status
+  const statuses =
+    dependenciesByStatus[definition.status as DashboardRunState] || [];
+  statuses.push(definition);
+  dependenciesByStatus[definition.status as DashboardRunState] = statuses;
+
+  // Is this panel an input? If so, does it have a value?
+  const isInput = definition.panel_type === "input";
+  const inputProperties = isInput
+    ? (definition.properties as InputProperties)
+    : null;
+  const hasInputValue =
+    isInput &&
+    inputProperties?.unqualified_name &&
+    !!selectedDashboardInputs[inputProperties?.unqualified_name];
+  if (isInput && !hasInputValue && !recordedInputPanels[definition.name]) {
+    inputPanelsAwaitingValue.push(definition);
+    recordedInputPanels[definition.name] = definition;
+  }
+
+  for (const dependency of definition?.dependencies || []) {
+    const dependencyPanel = panelsMap[dependency];
+    if (!dependencyPanel || !dependencyPanel.status) {
+      continue;
+    }
+    recordDependency(
+      dependencyPanel,
+      panelsMap,
+      selectedDashboardInputs,
+      dependencies,
+      dependenciesByStatus,
+      inputPanelsAwaitingValue,
+      recordedInputPanels
+    );
+  }
+};
+
 const PanelProvider = ({
   children,
   definition,
   showControls,
 }: PanelProviderProps) => {
-  const { panelsMap } = useDashboard();
+  const { selectedDashboardInputs, panelsMap } = useDashboard();
   const [showPanelControls, setShowPanelControls] = useState(false);
   const [showPanelInformation, setShowPanelInformation] = useState(false);
   const [panelInformation, setPanelInformation] = useState<ReactNode | null>(
     null
   );
   const { panelControls } = usePanelControls(definition, showControls);
-  const dependencies = useMemo<PanelDefinition[]>(() => {
-    if (
-      !definition ||
-      !definition.dependencies ||
-      definition.dependencies.length === 0
-    ) {
-      return [];
-    }
-    const dependencies: PanelDefinition[] = [];
-    for (const dependency of definition.dependencies) {
-      const dependencyPanel = panelsMap[dependency];
-      if (!dependencyPanel) {
-        continue;
+  const { dependencies, dependenciesByStatus, inputPanelsAwaitingValue } =
+    useMemo(() => {
+      if (!definition) {
+        return {
+          dependencies: [],
+          dependenciesByStatus: {},
+          inputPanelsAwaitingValue: [],
+        };
       }
-      dependencies.push(dependencyPanel);
-    }
-    return dependencies;
-  }, [definition, panelsMap]);
+      const dataFormat = getNodeAndEdgeDataFormat(
+        definition.properties as NodeAndEdgeProperties
+      );
+      if (
+        dataFormat === "LEGACY" &&
+        (!definition.dependencies || definition.dependencies.length === 0)
+      ) {
+        return {
+          dependencies: [],
+          dependenciesByStatus: {},
+          inputPanelsAwaitingValue: [],
+        };
+      }
+      const dependencies: PanelDefinition[] = [];
+      const dependenciesByStatus: PanelDependenciesByStatus = {};
+      const inputPanelsAwaitingValue: PanelDefinition[] = [];
+      const recordedInputPanels = {};
 
-  const dependenciesByStatus = useMemo<PanelDependenciesByStatus>(() => {
-    if (
-      !definition ||
-      !definition.dependencies ||
-      definition.dependencies.length === 0
-    ) {
-      return {} as PanelDependenciesByStatus;
-    }
-    const dependenciesByStatus: PanelDependenciesByStatus = {};
-    for (const dependency of definition.dependencies) {
-      const dependencyPanel = panelsMap[dependency];
-      if (!dependencyPanel || !dependencyPanel.status) {
-        continue;
+      if (dataFormat === "NODE_AND_EDGE") {
+        const nodeAndEdgeProperties =
+          definition.properties as NodeAndEdgeProperties;
+        for (const node of nodeAndEdgeProperties.nodes || []) {
+          const nodePanel = panelsMap[node];
+          if (!nodePanel || !nodePanel.status) {
+            continue;
+          }
+          recordDependency(
+            nodePanel,
+            panelsMap,
+            selectedDashboardInputs,
+            dependencies,
+            dependenciesByStatus,
+            inputPanelsAwaitingValue,
+            recordedInputPanels
+          );
+        }
+        for (const edge of nodeAndEdgeProperties.edges || []) {
+          const edgePanel = panelsMap[edge];
+          if (!edgePanel || !edgePanel.status) {
+            continue;
+          }
+          recordDependency(
+            edgePanel,
+            panelsMap,
+            selectedDashboardInputs,
+            dependencies,
+            dependenciesByStatus,
+            inputPanelsAwaitingValue,
+            recordedInputPanels
+          );
+        }
       }
-      const statuses = dependenciesByStatus[dependencyPanel.status] || [];
-      statuses.push(dependencyPanel);
-      dependenciesByStatus[dependencyPanel.status] = statuses;
-    }
-    return dependenciesByStatus;
-  }, [definition, panelsMap]);
+
+      for (const dependency of definition.dependencies || []) {
+        const dependencyPanel = panelsMap[dependency];
+        if (!dependencyPanel || !dependencyPanel.status) {
+          continue;
+        }
+        recordDependency(
+          dependencyPanel,
+          panelsMap,
+          selectedDashboardInputs,
+          dependencies,
+          dependenciesByStatus,
+          inputPanelsAwaitingValue,
+          recordedInputPanels
+        );
+      }
+
+      if (
+        definition.name ===
+          "aws_insights.graph.container_dashboard_s3_bucket_detail_anonymous_container_1_anonymous_graph_0" &&
+        dataFormat === "NODE_AND_EDGE"
+      ) {
+        console.log({
+          status: definition.status,
+          dependencies,
+          dependenciesByStatus,
+          inputPanelsAwaitingValue,
+        });
+      }
+
+      return { dependencies, dependenciesByStatus, inputPanelsAwaitingValue };
+    }, [definition, panelsMap, selectedDashboardInputs]);
 
   return (
     <PanelContext.Provider
@@ -112,6 +227,7 @@ const PanelProvider = ({
         definition,
         dependencies,
         dependenciesByStatus,
+        inputPanelsAwaitingValue,
         panelControls,
         panelInformation,
         showPanelControls,

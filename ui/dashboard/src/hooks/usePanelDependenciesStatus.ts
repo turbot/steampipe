@@ -1,15 +1,13 @@
-import { InputProperties } from "../components/dashboards/inputs/types";
-import { PanelDependencyStatuses } from "../components/dashboards/common/types";
 import { PanelDefinition } from "../types";
+import { PanelDependencyStatuses } from "../components/dashboards/common/types";
 import { useDashboard } from "./useDashboard";
 import { useMemo } from "react";
 import { usePanel } from "./usePanel";
 
 const usePanelDependenciesStatus = () => {
-  const { dependenciesByStatus } = usePanel();
+  const { dependenciesByStatus, inputPanelsAwaitingValue } = usePanel();
   const { selectedDashboardInputs } = useDashboard();
   return useMemo<PanelDependencyStatuses>(() => {
-    const inputPanelsAwaitingValue: PanelDefinition[] = [];
     const initializedPanels: PanelDefinition[] = [];
     const blockedPanels: PanelDefinition[] = [];
     const runningPanels: PanelDefinition[] = [];
@@ -19,18 +17,7 @@ const usePanelDependenciesStatus = () => {
     let total = 0;
     for (const panels of Object.values(dependenciesByStatus)) {
       for (const panel of panels) {
-        const isInput = panel.panel_type === "input";
-        const inputProperties = isInput
-          ? (panel.properties as InputProperties)
-          : null;
-        const hasInputValue =
-          isInput &&
-          inputProperties?.unqualified_name &&
-          !!selectedDashboardInputs[inputProperties?.unqualified_name];
         total += 1;
-        if (isInput && !hasInputValue) {
-          inputPanelsAwaitingValue.push(panel);
-        }
         if (panel.status === "initialized") {
           initializedPanels.push(panel);
         } else if (panel.status === "blocked") {
@@ -77,7 +64,7 @@ const usePanelDependenciesStatus = () => {
       inputsAwaitingValue: inputPanelsAwaitingValue,
       status,
     };
-  }, [dependenciesByStatus, selectedDashboardInputs]);
+  }, [dependenciesByStatus, inputPanelsAwaitingValue, selectedDashboardInputs]);
 };
 
 export default usePanelDependenciesStatus;
