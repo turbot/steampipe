@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/pkg/errors"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -37,25 +38,27 @@ func WaitForPool(ctx context.Context, db *pgxpool.Pool) (err error) {
 
 // WaitForConnection waits for the db to start accepting connections and returns true
 // returns false if the dbClient does not start within a stipulated time,
-func WaitForConnection(ctx context.Context, db *pgx.Conn) (err error) {
+func WaitForConnection(ctx context.Context, connection *pgx.Conn) (err error) {
 	utils.LogTime("db.waitForConnection start")
 	defer utils.LogTime("db.waitForConnection end")
 
 	pingTimer := time.NewTicker(constants.ServicePingInterval)
-	timeoutAt := time.After(constants.DBConnectionTimeout)
-	defer pingTimer.Stop()
+	timeoutCtx, cancel := context.WithTimeout(ctx, constants.DBConnectionTimeout)
+	defer func() {
+		cancel()
+		// prevent the timer from leaking
+		pingTimer.Stop()
+	}()
 
 	for {
 		select {
-		case <-ctx.Done():
-			return ctx.Err()
+		case <-timeoutCtx.Done():
+			return errors.Wrap(ctx.Err(), "WaitForConnection timed out")
 		case <-pingTimer.C:
-			err = db.Ping(ctx)
+			err = connection.Ping(timeoutCtx)
 			if err == nil {
 				return
 			}
-		case <-timeoutAt:
-			return
 		}
 	}
 }
