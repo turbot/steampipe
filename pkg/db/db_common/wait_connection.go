@@ -53,7 +53,7 @@ func WaitForConnection(ctx context.Context, connection *pgx.Conn) (err error) {
 	for {
 		select {
 		case <-timeoutCtx.Done():
-			return errors.Wrap(ctx.Err(), "WaitForConnection timed out")
+			return errors.Wrap(ctx.Err(), "could not setup connection")
 		case <-pingTimer.C:
 			err = connection.Ping(timeoutCtx)
 			if err == nil {
