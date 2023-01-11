@@ -932,8 +932,8 @@ github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
 github.com/sergi/go-diff v1.1.0 h1:we8PVUC3FE2uYfodKH/nBHMSetSfHDR6scGdBi+erh0=
 github.com/sergi/go-diff v1.1.0/go.mod h1:STckp+ISIX8hZLjrqAeVduY0gWCT9IjLuqbuNXdaHfM=
-github.com/sethvargo/go-retry v0.1.0 h1:8sPqlWannzcReEcYjHSNw9becsiYudcwTD7CasGjQaI=
-github.com/sethvargo/go-retry v0.1.0/go.mod h1:JzIOdZqQDNpPkQDmcqgtteAcxFLtYpNF/zJCM1ysDg8=
+github.com/sethvargo/go-retry v0.2.4 h1:T+jHEQy/zKJf5s95UkguisicE0zuF9y7+/vgz08Ocec=
+github.com/sethvargo/go-retry v0.2.4/go.mod h1:1afjQuvh7s4gflMObvjLPaWgluLLyhA1wmVZ6KLpICw=
 github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18 h1:DAYUYH5869yV94zvCES9F51oYtN5oGlwjxJJz7ZCnik=
 github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18/go.mod h1:nkxAfR/5quYxwPZhyDxgasBMnRtBZd0FCEpawpjMUFg=
 github.com/shirou/gopsutil v3.21.11+incompatible h1:+1+c1VGhc88SSonWP6foOcLhvnKlUeu/erjjvaPEYiI=
@@ -1025,8 +1025,8 @@ github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50 h1:
 github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
 github.com/turbot/steampipe-cloud-sdk-go v0.4.0 h1:ewDymSmTZSHwlqOBBMHS0kS2GzEtHaHD8DCYYXOEKMU=
 github.com/turbot/steampipe-cloud-sdk-go v0.4.0/go.mod h1:8M2CspUHgCGqDCJV+FNn+boBPyLRHyzDinYnoZ/kZYw=
-github.com/turbot/steampipe-plugin-sdk/v5 v5.1.0-rc.0 h1:5Blv0+5NT5YEuezanrKdOGF25kyzhzmvWSRPF0PREHA=
-github.com/turbot/steampipe-plugin-sdk/v5 v5.1.0-rc.0/go.mod h1:9ut6QKFTdHvQ1Uwk6lFI9WcI4RojPbkFG8A0IXBQDpA=
+github.com/turbot/steampipe-plugin-sdk/v5 v5.2.0-rc.0 h1:TI/ub7mI5f136/MaF+LpYbuU0EOOvgSxMRsPA3DDcbs=
+github.com/turbot/steampipe-plugin-sdk/v5 v5.2.0-rc.0/go.mod h1:t47emJLJ/SXChKEo3iK2GvjhhFiNF/WF7mOK/aNUciE=
 github.com/tv42/httpunix v0.0.0-20191220191345-2ba4b9c3382c/go.mod h1:hzIxponao9Kjc7aWznkXaL4U4TWaDSs8zcsY4Ka08nM=
 github.com/ugorji/go v0.0.0-20180813092308-00b869d2f4a5/go.mod h1:hnLbHMwcvSihnDhEfx2/BzKp2xb0Y+ErdfYcrs9tkJQ=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
