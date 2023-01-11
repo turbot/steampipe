@@ -25,21 +25,25 @@ const PanelControl = ({ action, icon, title }: IPanelControl) => {
 const PanelControls = ({ controls, referenceElement }) => {
   const [popperElement, setPopperElement] = useState(null);
   // Need to define memoized / stable modifiers else the usePopper hook will infinitely re-render
-  const flip = useMemo(() => ({ name: "flip", enabled: false }), []);
+  const noFlip = useMemo(() => ({ name: "flip", enabled: false }), []);
   const offset = useMemo(
     () => ({
       name: "offset",
       options: {
-        offset: ({ popper }) => {
-          const offset = -popper.height / 2;
-          return [offset, offset];
-        },
+        // For some reason the height of the popper is not correct unless scrollbars are visible.
+        // I've sunk too much time trying to find the root cause, but luckily I only
+        // need to modify this along a fixed offset, so can hard-code this for now.
+        offset: [-14.125, -14.125],
+        // offset: ({ popper }) => {
+        // const offset = -popper.height / 2;
+        // return [offset, offset];
+        // },
       },
     }),
     []
   );
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
-    modifiers: [flip, offset],
+    modifiers: [noFlip, offset],
     placement: "top-end",
   });
 
