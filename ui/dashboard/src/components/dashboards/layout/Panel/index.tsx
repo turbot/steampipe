@@ -67,7 +67,8 @@ const Panel = ({
   );
 
   const shouldShowContents =
-    showPanelContents && inputPanelsAwaitingValue.length === 0;
+    (showPanelContents && inputPanelsAwaitingValue.length === 0) ||
+    !showPanelStatus;
   const isBlockedWithNoInputsAwaitingValue =
     definition.status === "blocked" && inputPanelsAwaitingValue.length === 0;
 
