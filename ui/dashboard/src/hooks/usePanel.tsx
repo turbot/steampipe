@@ -207,11 +207,12 @@ const PanelProvider = ({
 
       if (
         definition.name ===
-          "aws_insights.graph.container_dashboard_s3_bucket_detail_anonymous_container_1_anonymous_graph_0" &&
+          "aws_insights.graph.container_dashboard_s3_bucket_detail_anonymous_container_2_anonymous_graph_0" &&
         dataFormat === "NODE_AND_EDGE"
       ) {
         console.log({
           status: definition.status,
+          definition,
           dependencies,
           dependenciesByStatus,
           inputPanelsAwaitingValue,

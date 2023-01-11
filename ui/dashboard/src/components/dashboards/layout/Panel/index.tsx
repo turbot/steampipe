@@ -53,13 +53,23 @@ const Panel = ({
   forceBackground = false,
 }: PanelProps) => {
   const { selectedPanel } = useDashboard();
-  const { panelControls, showPanelControls, setShowPanelControls } = usePanel();
+  const {
+    inputPanelsAwaitingValue,
+    panelControls,
+    showPanelControls,
+    setShowPanelControls,
+  } = usePanel();
   const [referenceElement, setReferenceElement] = useState(null);
   const baseStyles = classNames(
     "relative col-span-12",
     getResponsivePanelWidthClass(definition.width),
     "overflow-auto"
   );
+
+  const shouldShowContents =
+    showPanelContents && inputPanelsAwaitingValue.length === 0;
+  const isBlockedWithNoInputsAwaitingValue =
+    definition.status === "blocked" && inputPanelsAwaitingValue.length === 0;
 
   return (
     <div
@@ -130,15 +140,15 @@ const Panel = ({
           )}
         >
           <PanelProgress className={definition.title ? null : "rounded-t-md"} />
-          {showPanelContents && <PanelInformation />}
+          {shouldShowContents && <PanelInformation />}
           <>
-            {showPanelStatus && (
+            {showPanelStatus && !isBlockedWithNoInputsAwaitingValue && (
               <PanelStatus
                 definition={definition as PanelDefinition}
                 showPanelError={showPanelError}
               />
             )}
-            {showPanelContents ? children : null}
+            {shouldShowContents ? children : null}
           </>
         </div>
       </section>

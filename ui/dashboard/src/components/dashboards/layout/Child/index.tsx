@@ -65,6 +65,7 @@ const Child = ({
         <Panel
           definition={panelDefinition}
           showPanelContents={
+            panelDefinition.status === "blocked" ||
             panelDefinition.status === "running" ||
             panelDefinition.status === "complete"
           }
@@ -90,6 +91,7 @@ const Child = ({
           definition={panelDefinition}
           showControls={showPanelControls}
           showPanelContents={
+            panelDefinition.status === "blocked" ||
             panelDefinition.status === "running" ||
             panelDefinition.status === "complete"
           }
@@ -114,6 +116,7 @@ const Child = ({
         <Panel
           definition={panelDefinition}
           showPanelContents={
+            panelDefinition.status === "blocked" ||
             panelDefinition.status === "running" ||
             panelDefinition.status === "complete"
           }
