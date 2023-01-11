@@ -17,14 +17,17 @@ const nodeOrEdgeTitle = (nodeOrEdge: NodeStatus | EdgeStatus) =>
   nodeOrEdge?.category?.name ||
   nodeOrEdge.id;
 
-const BlockedRow = ({ title }) => (
+const WaitingRow = ({ title }) => (
   <div className="flex items-center space-x-1">
-    <Icon className="w-3.5 h-3.5 text-foreground-light shrink-0" icon="block" />
+    <Icon
+      className="w-3.5 h-3.5 text-foreground-light shrink-0"
+      icon="pending"
+    />
     <span className="block truncate">{title}</span>
   </div>
 );
 
-const PendingRow = ({ title }) => (
+const RunningRow = ({ title }) => (
   <div className="flex items-center space-x-1">
     <LoadingIndicator className="w-3.5 h-3.5 shrink-0" />
     <span className="block truncate">{title}</span>
@@ -57,7 +60,7 @@ const NodeAndEdgePanelInformation = ({
     <div className="space-y-1">
       <div>
         {statuses.complete.total} complete, {statuses.running.total} running,{" "}
-        {statuses.blocked.total} blocked, {statuses.error.total}{" "}
+        {statuses.blocked.total} waiting, {statuses.error.total}{" "}
         {statuses.error.total === 1 ? "error" : "errors"}.
       </div>
       {statuses.initialized.total === 0 &&
@@ -71,37 +74,37 @@ const NodeAndEdgePanelInformation = ({
           </span>
         )}
       {statuses.running.withs.map((withStatus, idx) => (
-        <PendingRow
+        <RunningRow
           key={`with:${withStatus.id}-${idx}`}
           title={`with: ${withStatus.title || withStatus.id}`}
         />
       ))}
       {statuses.running.nodes.map((node, idx) => (
-        <PendingRow
+        <RunningRow
           key={`node:${node.id}-${idx}`}
           title={`node: ${nodeOrEdgeTitle(node)}`}
         />
       ))}
       {statuses.running.edges.map((edge, idx) => (
-        <PendingRow
+        <RunningRow
           key={`edge:${edge.id}-${idx}`}
           title={`edge: ${nodeOrEdgeTitle(edge)}`}
         />
       ))}
       {statuses.blocked.withs.map((withStatus, idx) => (
-        <BlockedRow
+        <WaitingRow
           key={`with:${withStatus.id}-${idx}`}
           title={`with: ${withStatus.title || withStatus.id}`}
         />
       ))}
       {statuses.blocked.nodes.map((node, idx) => (
-        <BlockedRow
+        <WaitingRow
           key={`node:${node.id}-${idx}`}
           title={`node: ${nodeOrEdgeTitle(node)}`}
         />
       ))}
       {statuses.blocked.edges.map((edge, idx) => (
-        <BlockedRow
+        <WaitingRow
           key={`edge:${edge.id}-${idx}`}
           title={`edge: ${nodeOrEdgeTitle(edge)}`}
         />
@@ -132,5 +135,3 @@ const NodeAndEdgePanelInformation = ({
 );
 
 export default NodeAndEdgePanelInformation;
-
-export { ErrorRow, PendingRow };
