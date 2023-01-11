@@ -30,10 +30,10 @@ func NewInitData(ctx context.Context) *InitData {
 	defer statushooks.Done(ctx)
 
 	// load the workspace
-	w, err := workspace.LoadWorkspacePromptingForVariables(ctx)
-	if err != nil {
+	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
+	if errAndWarnings.GetError() != nil {
 		return &InitData{
-			InitData: *initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", err.Error())),
+			InitData: *initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", errAndWarnings.GetError().Error())),
 		}
 	}
 
@@ -41,6 +41,7 @@ func NewInitData(ctx context.Context) *InitData {
 	i := &InitData{
 		InitData: *initialisation.NewInitData(w),
 	}
+	i.Result.AddWarnings(errAndWarnings.Warnings...)
 
 	if !w.ModfileExists() {
 		i.Result.Error = workspace.ErrorNoModDefinition
@@ -51,7 +52,7 @@ func NewInitData(ctx context.Context) *InitData {
 		viper.Set(constants.ArgProgress, false)
 	}
 	// set color schema
-	err = initialiseCheckColorScheme()
+	err := initialiseCheckColorScheme()
 	if err != nil {
 		i.Result.Error = err
 		return i

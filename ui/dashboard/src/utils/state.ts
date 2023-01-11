@@ -1,7 +1,4 @@
 import dayjs from "dayjs";
-import get from "lodash/get";
-import paths from "deepdash/paths";
-import set from "lodash/set";
 import sortBy from "lodash/sortBy";
 import {
   AvailableDashboard,
@@ -14,48 +11,12 @@ import {
   PanelLog,
   PanelsLog,
   PanelsMap,
-  SQLDataMap,
 } from "../types";
 import {
   EdgeProperties,
   KeyValueStringPairs,
   NodeProperties,
 } from "../components/dashboards/common/types";
-
-const addDataToPanels = (
-  panels: PanelsMap,
-  sqlDataMap: SQLDataMap
-): PanelsMap => {
-  const sqlPaths = paths(panels, { leavesOnly: true }).filter((path) =>
-    path.toString().endsWith(".sql")
-  );
-  for (const sqlPath of sqlPaths) {
-    const panelPath = sqlPath.toString().substring(0, sqlPath.indexOf(".sql"));
-    const panel = get(panels, panelPath);
-    if (!panel) {
-      continue;
-    }
-    const args = panel.args || [];
-    const sql = panel.sql;
-    if (!sql) {
-      continue;
-    }
-    const key = getSqlDataMapKey(sql, args);
-    // @ts-ignore
-    const data = sqlDataMap[key];
-    if (!data) {
-      continue;
-    }
-
-    const dataPath = `${panelPath}.data`;
-    // We don't want to retain panel data for inputs as it causes issues with selection
-    // of incorrect values for select controls without placeholders
-    if (panel && panel.panel_type !== "input") {
-      set(panels, dataPath, data);
-    }
-  }
-  return { ...panels };
-};
 
 const buildDashboards = (
   dashboards: AvailableDashboardsDictionary,
@@ -244,42 +205,6 @@ const buildSelectedDashboardInputsFromSearchParams = (searchParams) => {
   return selectedDashboardInputs;
 };
 
-const buildSqlDataMap = (panels: PanelsMap): SQLDataMap => {
-  const sqlPaths = paths(panels, { leavesOnly: true }).filter((path) => {
-    return path.toString().endsWith(".sql");
-  });
-  const sqlDataMap = {};
-  for (const sqlPath of sqlPaths) {
-    // @ts-ignore
-    const sql: string = get(panels, sqlPath);
-    const panelPath = sqlPath
-      .toString()
-      .substring(0, sqlPath.lastIndexOf(".sql"));
-    const panel = get(panels, panelPath);
-    if (!panel) {
-      continue;
-    }
-    const data = panel.data;
-    if (!data) {
-      continue;
-    }
-    const args = panel.args || [];
-    const key = getSqlDataMapKey(sql, args);
-    if (!sqlDataMap[key]) {
-      sqlDataMap[key] = data;
-    }
-  }
-  return sqlDataMap;
-};
-
-const getSqlDataMapKey = (sql: string, args?: any[]) => {
-  return `sql:${sql}${
-    args && args.length > 0
-      ? `:args:${args.map((a) => a.toString()).join(",")}`
-      : ""
-  }`;
-};
-
 const updateSelectedDashboard = (
   selectedDashboard: AvailableDashboard | null,
   newDashboards: AvailableDashboard[]
@@ -319,12 +244,10 @@ const wrapDefinitionInArtificialDashboard = (
 };
 
 export {
-  addDataToPanels,
   addUpdatedPanelLogs,
   buildDashboards,
   buildPanelsLog,
   buildSelectedDashboardInputsFromSearchParams,
-  buildSqlDataMap,
   panelLogTitle,
   updatePanelsLogFromCompletedPanels,
   updateSelectedDashboard,

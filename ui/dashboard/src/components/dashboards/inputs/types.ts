@@ -15,6 +15,7 @@ export type InputProperties = {
   label?: string;
   options?: SelectInputOption[];
   placeholder?: string;
+  unqualified_name: string;
 };
 
 export type InputProps = BaseInputProps & {

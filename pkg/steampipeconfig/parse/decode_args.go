@@ -178,6 +178,21 @@ func identifyRuntimeDependenciesFromObject(attr *hcl.Attribute, targetProperty, 
 }
 
 func getRuntimeDepFromExpression(expr hcl.Expression, targetProperty, parentProperty string) (*modconfig.RuntimeDependency, error) {
+	isArray, propertyPath, err := propertyPathFromExpression(expr)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &modconfig.RuntimeDependency{
+		PropertyPath:       propertyPath,
+		ParentPropertyName: parentProperty,
+		TargetPropertyName: &targetProperty,
+		IsArray:            isArray,
+	}
+	return ret, nil
+}
+
+func propertyPathFromExpression(expr hcl.Expression) (bool, *modconfig.ParsedPropertyPath, error) {
 	var propertyPathStr string
 	var isArray bool
 
@@ -198,34 +213,27 @@ dep_loop:
 			break dep_loop
 		case *hclsyntax.TupleConsExpr:
 			// TACTICAL
-			// handle the case where an arg value is given as a runtime depdency inside an array, for example
+			// handle the case where an arg value is given as a runtime dependency inside an array, for example
 			// arns = [input.arn]
 			// this is a common pattern where a runtime depdency gives a scalar value, but an array is needed for the arg
 			// NOTE: this code only supports a SINGLE item in the array
 			if len(e.Exprs) != 1 {
-				return nil, fmt.Errorf("unsupported runtime dependency expression - only a single runtime depdency item may be wrapped in an array")
+				return false, nil, fmt.Errorf("unsupported runtime dependency expression - only a single runtime depdency item may be wrapped in an array")
 			}
 			isArray = true
 			expr = e.Exprs[0]
 			// fall through to rerun loop with updated expr
 		default:
 			// unhandled expression type
-			return nil, fmt.Errorf("unexpected runtime dependency expression type")
+			return false, nil, fmt.Errorf("unexpected runtime dependency expression type")
 		}
 	}
 
 	propertyPath, err := modconfig.ParseResourcePropertyPath(propertyPathStr)
 	if err != nil {
-		return nil, err
+		return false, nil, err
 	}
-
-	ret := &modconfig.RuntimeDependency{
-		PropertyPath:       propertyPath,
-		ParentPropertyName: parentProperty,
-		TargetPropertyName: &targetProperty,
-		IsArray:            isArray,
-	}
-	return ret, nil
+	return isArray, propertyPath, nil
 }
 
 func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int, parentProperty string) (*modconfig.RuntimeDependency, error) {
@@ -236,15 +244,15 @@ func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int, parentPr
 	}
 	for i, item := range argsExpr.Exprs {
 		if i == idx {
-			propertyPath, err := modconfig.ParseResourcePropertyPath(hclhelpers.TraversalAsString(item.(*hclsyntax.ScopeTraversalExpr).Traversal))
+			isArray, propertyPath, err := propertyPathFromExpression(item)
 			if err != nil {
 				return nil, err
 			}
-
 			ret := &modconfig.RuntimeDependency{
 				PropertyPath:        propertyPath,
 				ParentPropertyName:  parentProperty,
 				TargetPropertyIndex: &idx,
+				IsArray:             isArray,
 			}
 
 			return ret, nil

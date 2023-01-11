@@ -24,10 +24,10 @@ type InitData struct {
 // InitData.Done closes after asynchronous initialization completes
 func NewInitData(ctx context.Context, args []string) *InitData {
 	// load the workspace
-	w, err := workspace.LoadWorkspacePromptingForVariables(ctx)
-	if err != nil {
+	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
+	if errAndWarnings.GetError() != nil {
 		return &InitData{
-			InitData: *initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", err.Error())),
+			InitData: *initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", errAndWarnings.GetError().Error())),
 		}
 	}
 
@@ -35,6 +35,8 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 		InitData: *initialisation.NewInitData(w),
 		Loaded:   make(chan struct{}),
 	}
+	// add any warnings
+	i.Result.AddWarnings(errAndWarnings.Warnings...)
 
 	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
 		i.RegisterExporters(queryExporters()...)

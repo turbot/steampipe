@@ -93,10 +93,6 @@ export const PanelStoryDecorator = ({
           dashboard: "storybook.dashboard.storybook_dashboard_wrapper",
         },
 
-        sqlDataMap: {
-          storybook: definition.data,
-        },
-
         dashboardTags: {
           keys: [],
         },

@@ -155,32 +155,32 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 
 // ParseMod parses all source hcl files for the mod path and associated resources, and returns the mod object
 // NOTE: the mod definition has already been parsed (or a default created) and is in opts.RunCtx.RootMod
-func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modconfig.MappableResource, parseCtx *ModParseContext) (*modconfig.Mod, error) {
+func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableResource, parseCtx *ModParseContext) (*modconfig.Mod, *modconfig.ErrorAndWarnings) {
 	body, diags := ParseHclFiles(fileData)
 	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
+		return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to load all mod source files", diags))
 	}
 
 	content, moreDiags := body.Content(WorkspaceBlockSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
-		return nil, plugin.DiagsToError("Failed to load mod", diags)
+		return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to load mod", diags))
 	}
 
 	mod := parseCtx.CurrentMod
 	if mod == nil {
-		return nil, fmt.Errorf("ParseMod called with no Current Mod set in ModParseContext")
+		return nil, modconfig.NewErrorsAndWarning(fmt.Errorf("ParseMod called with no Current Mod set in ModParseContext"))
 	}
 	// get names of all resources defined in hcl which may also be created as pseudo resources
 	hclResources, err := loadMappableResourceNames(content)
 	if err != nil {
-		return nil, err
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
 	// if variables were passed in runcontext, add to the mod
 	for _, v := range parseCtx.Variables {
 		if diags = mod.AddResource(v); diags.HasErrors() {
-			return nil, plugin.DiagsToError("Failed to add resource to mod", diags)
+			return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to add resource to mod", diags))
 		}
 	}
 
@@ -193,8 +193,11 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	// add the mod to the run context
 	// - this it to ensure all pseudo resources get added and build the eval context with the variables we just added
 	if diags = parseCtx.AddMod(mod); diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to add mod to run context", diags)
+		return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to add mod to run context", diags))
 	}
+
+	// collect warnings as we parse
+	var res = &modconfig.ErrorAndWarnings{}
 
 	// we may need to decode more than once as we gather dependencies as we go
 	// continue decoding as long as the number of unresolved blocks decreases
@@ -202,8 +205,10 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 	for attempts := 0; ; attempts++ {
 		diags = decode(parseCtx)
 		if diags.HasErrors() {
-			return nil, plugin.DiagsToError("Failed to decode all mod hcl files", diags)
+			return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to decode all mod hcl files", diags))
 		}
+		// now retrieve the warning strings
+		res.AddWarning(plugin.DiagsToWarnings(diags)...)
 
 		// if there are no unresolved blocks, we are done
 		unresolvedBlocks := len(parseCtx.UnresolvedBlocks)
@@ -214,18 +219,16 @@ func ParseMod(modPath string, fileData map[string][]byte, pseudoResources []modc
 		// if the number of unresolved blocks has NOT reduced, fail
 		if prevUnresolvedBlocks != 0 && unresolvedBlocks >= prevUnresolvedBlocks {
 			str := parseCtx.FormatDependencies()
-			return nil, fmt.Errorf("failed to resolve mod dependencies after %d attempts\nDependencies:\n%s", attempts+1, str)
+			return nil, modconfig.NewErrorsAndWarning(fmt.Errorf("failed to resolve mod dependencies after %d attempts\nDependencies:\n%s", attempts+1, str))
 		}
 		// update prevUnresolvedBlocks
 		prevUnresolvedBlocks = unresolvedBlocks
 	}
 
 	// now tell mod to build tree of controls.
-	if err := mod.BuildResourceTree(parseCtx.LoadedDependencyMods); err != nil {
-		return nil, err
-	}
+	res.Error = mod.BuildResourceTree(parseCtx.LoadedDependencyMods)
 
-	return mod, nil
+	return mod, res
 }
 
 // parse a yaml file into a hcl.File object

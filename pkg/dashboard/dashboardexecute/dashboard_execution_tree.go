@@ -228,6 +228,13 @@ func (e *DashboardExecutionTree) ChildCompleteChan() chan dashboardtypes.Dashboa
 	return e.runComplete
 }
 
+// ChildStatusChanged implements DashboardParent
+func (*DashboardExecutionTree) ChildStatusChanged(context.Context) {}
+
+func (*DashboardExecutionTree) GetBlockingDescendants() []string {
+	return nil
+}
+
 func (e *DashboardExecutionTree) Cancel() {
 	// if we have not completed, and already have a cancel function - cancel
 	if e.GetRunStatus() != dashboardtypes.RunInitialized || e.cancel == nil {

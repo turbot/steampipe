@@ -14,31 +14,31 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, error) {
+func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *modconfig.ErrorAndWarnings) {
 	workspacePath := viper.GetString(constants.ArgModLocation)
 	t := time.Now()
 	defer func() {
 		log.Printf("[TRANCE] Workspace load took %dms\n", time.Since(t).Milliseconds())
 	}()
-	w, err := Load(ctx, workspacePath)
-	if err == nil {
-		return w, nil
+	w, errAndWarnings := Load(ctx, workspacePath)
+	if errAndWarnings.GetError() == nil {
+		return w, errAndWarnings
 	}
-	missingVariablesError, ok := err.(modconfig.MissingVariableError)
+	missingVariablesError, ok := errAndWarnings.GetError().(modconfig.MissingVariableError)
 	// if there was an error which is NOT a MissingVariableError, return it
 	if !ok {
-		return nil, err
+		return nil, errAndWarnings
 	}
 	// if interactive input is disabled, return the missing variables error
 	if !viper.GetBool(constants.ArgInput) {
-		return nil, missingVariablesError
+		return nil, modconfig.NewErrorsAndWarning(missingVariablesError)
 	}
 	// so we have missing variables - prompt for them
 	// first hide spinner if it is there
 	statushooks.Done(ctx)
 	if err := promptForMissingVariables(ctx, missingVariablesError.MissingVariables, workspacePath); err != nil {
 		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
-		return nil, err
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 	// ok we should have all variables now - reload workspace
 	return Load(ctx, workspacePath)

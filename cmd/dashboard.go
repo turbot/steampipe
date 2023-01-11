@@ -239,13 +239,13 @@ func initDashboard(ctx context.Context) *initialisation.InitData {
 }
 
 func getInitData(ctx context.Context) *initialisation.InitData {
-	w, err := workspace.LoadWorkspacePromptingForVariables(ctx)
-	if err != nil {
-		return initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", err.Error()))
+	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
+	if errAndWarnings.GetError() != nil {
+		return initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", errAndWarnings.GetError().Error()))
 	}
 
-	i := initialisation.NewInitData(w).
-		Init(ctx, constants.InvokerDashboard)
+	i := initialisation.NewInitData(w).Init(ctx, constants.InvokerDashboard)
+	i.Result.AddWarnings(errAndWarnings.Warnings...)
 
 	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
 		i.RegisterExporters(dashboardExporters()...)

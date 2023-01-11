@@ -1,6 +1,7 @@
-import { TableColumnDisplay, TableColumnWrap } from "../Table";
 import { ColorOverride, LeafNodeDataRow } from "./index";
+import { DashboardRunState, PanelDefinition } from "../../../types";
 import { Graph } from "graphlib";
+import { TableColumnDisplay, TableColumnWrap } from "../Table";
 
 export type CategoryFields = {
   [name: string]: CategoryField;
@@ -124,4 +125,17 @@ export type RowRenderResult = {
     result?: string;
     error?: string;
   };
+};
+
+export type PanelDependencyByStatus = {
+  [key in DashboardRunState]: {
+    total: number;
+    panels: PanelDefinition[];
+  };
+};
+
+export type PanelDependencyStatuses = {
+  status: PanelDependencyByStatus;
+  inputsAwaitingValue: PanelDefinition[];
+  total: number;
 };

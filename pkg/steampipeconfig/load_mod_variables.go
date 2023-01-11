@@ -18,9 +18,9 @@ import (
 func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext) (*modconfig.ModVariableMap, error) {
 	// only load mod and variables blocks
 	parseCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
-	mod, err := LoadMod(variablePath, parseCtx)
-	if err != nil {
-		return nil, err
+	mod, errAndWarnings := LoadMod(variablePath, parseCtx)
+	if errAndWarnings.GetError() != nil {
+		return nil, errAndWarnings.GetError()
 	}
 
 	variableMap := modconfig.NewModVariableMap(mod, parseCtx.LoadedDependencyMods)

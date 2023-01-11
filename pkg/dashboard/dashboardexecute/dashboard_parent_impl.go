@@ -6,12 +6,16 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"log"
+	"sync"
 )
 
 type DashboardParentImpl struct {
 	DashboardTreeRunImpl
+	// are we blocked by a child run
+	BlockingChildren  []string `json:"blocking_children,omitempty"`
 	children          []dashboardtypes.DashboardTreeRun
 	childCompleteChan chan dashboardtypes.DashboardTreeRun
+	childStatusLock   sync.Mutex
 }
 
 func (r *DashboardParentImpl) initialiseChildren(ctx context.Context) error {
@@ -99,4 +103,58 @@ func (r *DashboardParentImpl) waitForChildrenAsync() chan error {
 		}()
 	}
 	return doneChan
+}
+
+func (r *DashboardParentImpl) ChildStatusChanged(ctx context.Context) {
+	// this function may be called asyncronously by children
+	r.childStatusLock.Lock()
+	defer r.childStatusLock.Unlock()
+
+	// if we are currently blocked by a child or we are currently in running state,
+	// call setRunning() to determine whether any of our children are now blocked
+	if len(r.BlockingChildren) > 0 || r.GetRunStatus() == dashboardtypes.RunRunning {
+		log.Printf("[TRACE] %s ChildStatusChanged - calling setRunning to see if we are still running, status %s len(blockedByChildren) %d", r.Name, r.GetRunStatus(), len(r.BlockingChildren))
+
+		// try setting our status to running again
+		r.setRunning(ctx)
+	}
+}
+
+// override DashboardTreeRunImpl) setStatus(
+func (r *DashboardParentImpl) setRunning(ctx context.Context) {
+	status := dashboardtypes.RunRunning
+	// if we are trying to set status to running, check if any of our children are blocked,
+	// and if so set our status to blocked
+
+	// if any children are blocked, we are blocked
+	prevBlockingChildrenCount := len(r.BlockingChildren)
+	r.BlockingChildren = nil
+	for _, c := range r.children {
+		if c.GetRunStatus() == dashboardtypes.RunBlocked {
+			if p, ok := c.(dashboardtypes.DashboardParent); ok {
+				r.BlockingChildren = append(r.BlockingChildren, p.GetBlockingDescendants()...)
+			} else {
+				r.BlockingChildren = append(r.BlockingChildren, c.GetName())
+			}
+			status = dashboardtypes.RunBlocked
+		}
+	}
+
+	// set status if it has changed or if blocking children have changed
+	if status != r.GetRunStatus() || prevBlockingChildrenCount != len(r.BlockingChildren) {
+		log.Printf("[TRACE] %s setRunning - setting state %s, len(blockedByChildren) %d", r.Name, status, len(r.BlockingChildren))
+		r.DashboardTreeRunImpl.setStatus(ctx, status)
+	} else {
+		log.Printf("[TRACE] %s setRunning - state unchanged %s, len(blockedByChildren) %d", r.Name, status, len(r.BlockingChildren))
+	}
+}
+
+func (r *DashboardParentImpl) GetBlockingDescendants() []string {
+	if r.GetRunStatus() != dashboardtypes.RunBlocked {
+		return nil
+	}
+	if len(r.BlockingChildren) == 0 {
+		return []string{r.Name}
+	}
+	return r.BlockingChildren
 }

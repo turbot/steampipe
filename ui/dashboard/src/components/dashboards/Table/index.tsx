@@ -529,6 +529,8 @@ const LineView = (props: TableProps) => {
 
   useEffect(() => {
     if (!props.data || !props.data.columns || !props.data.rows) {
+      setColumns([]);
+      setRows([]);
       return;
     }
     const newColumns: TableColumnInfo[] = [];
@@ -545,15 +547,6 @@ const LineView = (props: TableProps) => {
       };
       newColumns.push(newColDef);
     });
-
-    // const newRows: LineModeRows[] = [];
-    // props.data.rows.forEach((row) => {
-    //   const rowObj = {};
-    //   newColumns.forEach((col, index) => {
-    //     rowObj[col.name] = row[index];
-    //   });
-    //   newRows.push({ row, obj: rowObj });
-    // });
 
     setColumns(newColumns);
     setRows(props.data.rows);

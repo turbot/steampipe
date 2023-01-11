@@ -60,8 +60,8 @@ func (r *CheckRun) Execute(ctx context.Context) {
 	utils.LogTime("CheckRun.execute start")
 	defer utils.LogTime("CheckRun.execute end")
 
-	// set status (this sends update event)
-	r.setStatus(ctx, dashboardtypes.RunRunning)
+	// set status to running (this sends update event)
+	r.setRunning(ctx)
 
 	// create a context with a DashboardEventControlHooks to report control execution progress
 	ctx = controlstatus.AddControlHooksToContext(ctx, NewDashboardEventControlHooks(r))

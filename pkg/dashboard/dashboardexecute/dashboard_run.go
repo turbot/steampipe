@@ -83,6 +83,9 @@ func (r *DashboardRun) Execute(ctx context.Context) {
 	err := <-r.waitForChildrenAsync()
 	log.Printf("[TRACE] Execute run %s all children complete, error: %v", r.Name, err)
 
+	// try to set status as running (will be set to blocked if any children are blocked)
+	r.setRunning(ctx)
+
 	if err == nil {
 		// set complete status on dashboard
 		r.SetComplete(ctx)
