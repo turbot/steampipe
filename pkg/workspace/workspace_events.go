@@ -78,12 +78,12 @@ func (w *Workspace) handleDashboardEvent() {
 
 func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common.Client, ev []fsnotify.Event) {
 	log.Printf("[TRACE] handleFileWatcherEvent")
-	prevResourceMaps, resourceMaps, err := w.reloadResourceMaps(ctx)
+	prevResourceMaps, resourceMaps, errAndWarnings := w.reloadResourceMaps(ctx)
 
-	if err != nil {
+	if errAndWarnings.GetError() != nil {
 		log.Printf("[TRACE] handleFileWatcherEvent reloadResourceMaps returned error - call PublishDashboardEvent")
 		// publish error event
-		w.PublishDashboardEvent(ctx, &dashboardevents.WorkspaceError{Error: err})
+		w.PublishDashboardEvent(ctx, &dashboardevents.WorkspaceError{Error: errAndWarnings.GetError()})
 		log.Printf("[TRACE] back from PublishDashboardEvent")
 		return
 	}
@@ -102,7 +102,7 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 	w.raiseDashboardChangedEvents(ctx, resourceMaps, prevResourceMaps)
 }
 
-func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ResourceMaps, *modconfig.ResourceMaps, error) {
+func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ResourceMaps, *modconfig.ResourceMaps, *modconfig.ErrorAndWarnings) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
@@ -115,15 +115,15 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Resource
 	}
 
 	// now reload the workspace
-	err := w.loadWorkspaceMod(ctx)
-	if err != nil {
+	errAndWarnings := w.loadWorkspaceMod(ctx)
+	if errAndWarnings.GetError() != nil {
 		// check the existing watcher error - if we are already in an error state, do not show error
 		if w.watcherError == nil {
-			w.fileWatcherErrorHandler(ctx, error_helpers.PrefixError(err, "failed to reload workspace"))
+			w.fileWatcherErrorHandler(ctx, error_helpers.PrefixError(errAndWarnings.GetError(), "failed to reload workspace"))
 		}
 		// now set watcher error to new error
-		w.watcherError = err
-		return nil, nil, err
+		w.watcherError = errAndWarnings.GetError()
+		return nil, nil, errAndWarnings
 	}
 	// clear watcher error
 	w.watcherError = nil
@@ -131,7 +131,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Resource
 	// reload the resource maps
 	resourceMaps := w.Mod.ResourceMaps
 
-	return prevResourceMaps, resourceMaps, nil
+	return prevResourceMaps, resourceMaps, errAndWarnings
 
 }
 

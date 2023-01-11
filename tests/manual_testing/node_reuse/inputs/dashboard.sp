@@ -13,7 +13,8 @@ dashboard "inputs" {
   }
 
   table {
-    query = query.q1
+    param "foo" {}
+    sql = "select $1"
     args  = {
       arn = self.input.i1.value
     }
@@ -30,4 +31,5 @@ dashboard "inputs" {
 query "q1"{
   sql = "select arn from aws_account where arn = $1"
   param "arn" {   }
+  search_path="test"
 }
