@@ -1,0 +1,27 @@
+[
+ {
+  "auto_generated": false,
+  "description": null,
+  "documentation": null,
+  "end_line_number": 58,
+  "file_name": "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/tests/acceptance/test_data/introspection_table_mod/resources.sp",
+  "is_anonymous": false,
+  "mod_name": "introspection_table_mod",
+  "path": [
+   [
+    "mod.introspection_table_mod",
+    "introspection_table_mod.dashboard.sample_dashboard_1",
+    "introspection_table_mod.container.sample_conatiner_1",
+    "introspection_table_mod.text.sample_text_1"
+   ]
+  ],
+  "resource_name": "sample_text_1",
+  "source_definition": "\t\ttext \"sample_text_1\" {\n\t\t\ttitle = \"Sample text 1\"\n\t\t}",
+  "start_line_number": 56,
+  "tags": null,
+  "title": "Sample text 1",
+  "type": null,
+  "value": null,
+  "width": null
+ }
+]

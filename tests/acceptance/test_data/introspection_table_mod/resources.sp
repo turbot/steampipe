@@ -37,3 +37,90 @@ benchmark "sample_benchmark_1" {
 	]
 }
 
+dashboard "sample_dashboard_1" {
+  title = "Sample dashboard 1"
+  description = "Sample dashboard to test introspection functionality"
+
+  container "sample_conatiner_1" {
+		card "sample_card_1" {
+			title = "Sample card 1"
+		}
+
+		image "sample_image_1" {
+			title = "Sample image 1"
+			width = 3
+  		src = "https://steampipe.io/images/logo.png"
+  		alt = "steampipe"
+		}
+
+		text "sample_text_1" {
+			title = "Sample text 1"
+		}
+
+    chart "sample_chart_1" {
+      sql = "select 1 as chart"
+      width = 5
+      title = "Sample chart 1"
+    }
+
+    flow "sample_flow_1" {
+      title = "Sample flow 1"
+      width = 3
+
+      node "sample_node_1" {
+        sql = <<-EOQ
+          select 1 as node
+        EOQ
+      }
+      edge "sample_edge_1" {
+        sql = <<-EOQ
+          select 1 as edge
+        EOQ
+      }
+    }
+
+    graph "sample_graph_1" {
+      title = "Sample graph 1"
+      width = 5
+
+      node "sample_node_2" {
+        sql = <<-EOQ
+          select 1 as node
+        EOQ
+      }
+      edge "sample_edge_2" {
+        sql = <<-EOQ
+          select 1 as edge
+        EOQ
+      }
+    }
+
+    hierarchy "sample_hierarchy_1" {
+      title = "Sample hierarchy 1"
+      width = 5
+
+      node "sample_node_3" {
+        sql = <<-EOQ
+          select 1 as node
+        EOQ
+      }
+      edge "sample_edge_3" {
+        sql = <<-EOQ
+          select 1 as edge
+        EOQ
+      }
+    }
+
+    table "sample_table_1" {
+      sql = "select 1 as table"
+      width = 4
+      title = "Sample table 1"
+    }
+
+    input "sample_input_1" {
+      sql = "select 1 as input"
+      width = 2
+      title = "Sample input 1"
+    }
+  }
+}

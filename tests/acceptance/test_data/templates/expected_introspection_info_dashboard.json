@@ -1,0 +1,34 @@
+[
+ {
+  "auto_generated": false,
+  "children": [
+   "introspection_table_mod.container.sample_conatiner_1"
+  ],
+  "description": "Sample dashboard to test introspection functionality",
+  "display": null,
+  "documentation": null,
+  "end_line_number": 126,
+  "file_name": "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/tests/acceptance/test_data/introspection_table_mod/resources.sp",
+  "inputs": [
+   {
+    "name": "sample_input_1",
+    "unqualified_name": "input.sample_input_1"
+   }
+  ],
+  "is_anonymous": false,
+  "mod_name": "introspection_table_mod",
+  "path": [
+   [
+    "mod.introspection_table_mod",
+    "introspection_table_mod.dashboard.sample_dashboard_1"
+   ]
+  ],
+  "resource_name": "sample_dashboard_1",
+  "source_definition": "dashboard \"sample_dashboard_1\" {\n  title = \"Sample dashboard 1\"\n  description = \"Sample dashboard to test introspection functionality\"\n\n  container \"sample_conatiner_1\" {\n\t\tcard \"sample_card_1\" {\n\t\t\ttitle = \"Sample card 1\"\n\t\t}\n\n\t\timage \"sample_image_1\" {\n\t\t\ttitle = \"Sample image 1\"\n\t\t\twidth = 3\n  \t\tsrc = \"https://steampipe.io/images/logo.png\"\n  \t\talt = \"steampipe\"\n\t\t}\n\n\t\ttext \"sample_text_1\" {\n\t\t\ttitle = \"Sample text 1\"\n\t\t}\n\n    chart \"sample_chart_1\" {\n      sql = \"select 1 as chart\"\n      width = 5\n      title = \"Sample chart 1\"\n    }\n\n    flow \"sample_flow_1\" {\n      title = \"Sample flow 1\"\n      width = 3\n\n      node \"sample_node_1\" {\n        sql = <<-EOQ\n          select 1 as node\n        EOQ\n      }\n      edge \"sample_edge_1\" {\n        sql = <<-EOQ\n          select 1 as edge\n        EOQ\n      }\n    }\n\n    graph \"sample_graph_1\" {\n      title = \"Sample graph 1\"\n      width = 5\n\n      node \"sample_node_2\" {\n        sql = <<-EOQ\n          select 1 as node\n        EOQ\n      }\n      edge \"sample_edge_2\" {\n        sql = <<-EOQ\n          select 1 as edge\n        EOQ\n      }\n    }\n\n    hierarchy \"sample_hierarchy_1\" {\n      title = \"Sample hierarchy 1\"\n      width = 5\n\n      node \"sample_node_3\" {\n        sql = <<-EOQ\n          select 1 as node\n        EOQ\n      }\n      edge \"sample_edge_3\" {\n        sql = <<-EOQ\n          select 1 as edge\n        EOQ\n      }\n    }\n\n    table \"sample_table_1\" {\n      sql = \"select 1 as table\"\n      width = 4\n      title = \"Sample table 1\"\n    }\n\n    input \"sample_input_1\" {\n      sql = \"select 1 as input\"\n      width = 2\n      title = \"Sample input 1\"\n    }\n  }\n}",
+  "start_line_number": 40,
+  "tags": null,
+  "title": "Sample dashboard 1",
+  "url_path": "/introspection_table_mod.dashboard.sample_dashboard_1",
+  "width": null
+ }
+]

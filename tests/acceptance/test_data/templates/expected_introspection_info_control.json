@@ -1,0 +1,32 @@
+[
+ {
+  "args": {
+   "args_list": null,
+   "refs": null
+  },
+  "auto_generated": false,
+  "description": "Sample control to test introspection functionality",
+  "documentation": null,
+  "end_line_number": 30,
+  "file_name": "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/tests/acceptance/test_data/introspection_table_mod/resources.sp",
+  "is_anonymous": false,
+  "mod_name": "introspection_table_mod",
+  "params": null,
+  "path": [
+   [
+    "mod.introspection_table_mod",
+    "introspection_table_mod.benchmark.sample_benchmark_1",
+    "introspection_table_mod.control.sample_control_1"
+   ]
+  ],
+  "resource_name": "sample_control_1",
+  "severity": "high",
+  "source_definition": "control \"sample_control_1\" {\n  title = \"Sample control 1\"\n  description = \"Sample control to test introspection functionality\"\n  query = query.sample_query_1\n  severity = \"high\"\n}",
+  "sql": null,
+  "start_line_number": 25,
+  "tags": null,
+  "title": "Sample control 1",
+  "type": null,
+  "width": null
+ }
+]

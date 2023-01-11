@@ -1,0 +1,37 @@
+[
+ {
+  "auto_generated": false,
+  "default_value": "steampipe_var",
+  "description": "",
+  "documentation": null,
+  "end_line_number": 4,
+  "file_name": "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/tests/acceptance/test_data/introspection_table_mod/resources.sp",
+  "is_anonymous": false,
+  "mod_name": "introspection_table_mod",
+  "path": [
+   [
+    "mod.introspection_table_mod",
+    "introspection_table_mod.var.sample_var_1"
+   ],
+   [
+    "mod.introspection_table_mod",
+    "introspection_table_mod.var.sample_var_1"
+   ],
+   [
+    "mod.introspection_table_mod",
+    "introspection_table_mod.var.sample_var_1"
+   ]
+  ],
+  "resource_name": "sample_var_1",
+  "source_definition": "variable \"sample_var_1\"{\n\ttype = string\n\tdefault = \"steampipe_var\"\n}",
+  "start_line_number": 1,
+  "tags": null,
+  "title": null,
+  "value": "steampipe_var",
+  "value_source": "config",
+  "value_source_end_line_number": 1,
+  "value_source_file_name": "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/tests/acceptance/test_data/introspection_table_mod/resources.sp",
+  "value_source_start_line_number": 1,
+  "var_type": "string"
+ }
+]

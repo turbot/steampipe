@@ -1,0 +1,27 @@
+[
+ {
+  "auto_generated": false,
+  "children": [
+   "introspection_table_mod.control.sample_control_1"
+  ],
+  "description": "Sample benchmark to test introspection functionality",
+  "documentation": null,
+  "end_line_number": 38,
+  "file_name": "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/tests/acceptance/test_data/introspection_table_mod/resources.sp",
+  "is_anonymous": false,
+  "mod_name": "introspection_table_mod",
+  "path": [
+   [
+    "mod.introspection_table_mod",
+    "introspection_table_mod.benchmark.sample_benchmark_1"
+   ]
+  ],
+  "resource_name": "sample_benchmark_1",
+  "source_definition": "benchmark \"sample_benchmark_1\" {\n\ttitle = \"Sample benchmark 1\"\n\tdescription = \"Sample benchmark to test introspection functionality\"\n\tchildren = [\n\t\tcontrol.sample_control_1\n\t]\n}",
+  "start_line_number": 32,
+  "tags": null,
+  "title": "Sample benchmark 1",
+  "type": null,
+  "width": null
+ }
+]

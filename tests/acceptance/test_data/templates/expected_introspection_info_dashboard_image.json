@@ -1,0 +1,30 @@
+[
+ {
+  "alt": "steampipe",
+  "args": null,
+  "auto_generated": false,
+  "description": null,
+  "documentation": null,
+  "end_line_number": 54,
+  "file_name": "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/tests/acceptance/test_data/introspection_table_mod/resources.sp",
+  "is_anonymous": false,
+  "mod_name": "introspection_table_mod",
+  "params": null,
+  "path": [
+   [
+    "mod.introspection_table_mod",
+    "introspection_table_mod.dashboard.sample_dashboard_1",
+    "introspection_table_mod.container.sample_conatiner_1",
+    "introspection_table_mod.text.sample_text_1"
+   ]
+  ],
+  "resource_name": "sample_image_1",
+  "source_definition": "\t\timage \"sample_image_1\" {\n\t\t\ttitle = \"Sample image 1\"\n\t\t\twidth = 3\n  \t\tsrc = \"https://steampipe.io/images/logo.png\"\n  \t\talt = \"steampipe\"\n\t\t}",
+  "sql": null,
+  "src": "https://steampipe.io/images/logo.png",
+  "start_line_number": 49,
+  "tags": null,
+  "title": "Sample image 1",
+  "width": "3"
+ }
+]
