@@ -90,10 +90,10 @@ const getCardRunningStatus = (
       const inputTitle =
         firstInput.title ||
         (firstInput.properties as InputProperties).unqualified_name;
-      title = `Awaiting input value: ${inputTitle}`;
+      title = `Awaiting value: ${inputTitle}`;
       component = (
         <>
-          Awaiting input value:{" "}
+          Awaiting value:{" "}
           <HashLink
             className="text-link"
             to={`${location.pathname}${
