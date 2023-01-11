@@ -2,11 +2,14 @@ package db_common
 
 import (
 	"context"
+	"errors"
+	"log"
 	"time"
 
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/pkg/errors"
+	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -42,23 +45,29 @@ func WaitForConnection(ctx context.Context, connection *pgx.Conn) (err error) {
 	utils.LogTime("db.waitForConnection start")
 	defer utils.LogTime("db.waitForConnection end")
 
-	pingTimer := time.NewTicker(constants.ServicePingInterval)
 	timeoutCtx, cancel := context.WithTimeout(ctx, constants.DBConnectionTimeout)
 	defer func() {
 		cancel()
-		// prevent the timer from leaking
-		pingTimer.Stop()
 	}()
 
-	for {
-		select {
-		case <-timeoutCtx.Done():
-			return errors.Wrap(ctx.Err(), "could not setup connection")
-		case <-pingTimer.C:
-			err = connection.Ping(timeoutCtx)
-			if err == nil {
-				return
+	return retry.Do(ctx, retry.WithMaxDuration(
+		constants.DBConnectionTimeout,
+		retry.NewConstant(
+			constants.ServicePingInterval,
+		),
+	), func(ctx context.Context) error {
+		err := retry.RetryableError(connection.Ping(timeoutCtx))
+		if err != nil {
+			if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.SQLState() == "57P03" {
+				log.Println("[TRACE] faced a 'cannot_connect_now (57P03):", errors.Unwrap(err))
+				// 57P03 is a fatal error that comes up when the database is still starting up
+				// let's delay for sometime before trying again
+				// using the PingInterval here - can use any other value if required
+				time.Sleep(constants.ServicePingInterval)
+				log.Println("[TRACE] checking again")
 			}
+			return retry.RetryableError(err)
 		}
-	}
+		return nil
+	})
 }

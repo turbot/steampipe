@@ -2,14 +2,12 @@ package db_local
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
@@ -119,9 +117,6 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		retry.NewConstant(200*time.Millisecond),
 	)
 
-	ctx, cancel := context.WithTimeout(ctx, constants.DBConnectionTimeout)
-	defer cancel()
-
 	var conn *pgx.Conn
 	var err error
 
@@ -140,33 +135,10 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	backoff = retry.WithMaxRetries(
-		5,
-		retry.NewConstant(200*time.Millisecond),
-	)
-
-	err = retry.Do(ctx, backoff, func(rCtx context.Context) error {
-		waitErr := db_common.WaitForConnection(rCtx, conn)
-
-		if waitErr != nil {
-			if pgErr, ok := waitErr.(*pgconn.PgError); ok && pgErr.SQLState() == "57P03" {
-				log.Println("[TRACE] faced a 'cannot_connect_now (57P03):", errors.Unwrap(waitErr))
-				// 57P03 is a fatal error that comes up when the database is still starting up
-				// let's delay for sometime before trying again
-				// using the PingInterval here - can use any other value if required
-				time.Sleep(constants.ServicePingInterval)
-				log.Println("[TRACE] checking again")
-			}
-			return retry.RetryableError(waitErr)
-		}
-		return nil
-	})
-
+	err = db_common.WaitForConnection(ctx, conn)
 	if err != nil {
 		conn.Close(ctx)
 		return nil, err
 	}
 	return conn, nil
-
 }
