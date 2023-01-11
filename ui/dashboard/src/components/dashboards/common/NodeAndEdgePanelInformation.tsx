@@ -17,6 +17,13 @@ const nodeOrEdgeTitle = (nodeOrEdge: NodeStatus | EdgeStatus) =>
   nodeOrEdge?.category?.name ||
   nodeOrEdge.id;
 
+const BlockedRow = ({ title }) => (
+  <div className="flex items-center space-x-1">
+    <Icon className="w-3.5 h-3.5 text-foreground-light shrink-0" icon="block" />
+    <span className="block truncate">{title}</span>
+  </div>
+);
+
 const PendingRow = ({ title }) => (
   <div className="flex items-center space-x-1">
     <LoadingIndicator className="w-3.5 h-3.5 shrink-0" />
@@ -50,8 +57,8 @@ const NodeAndEdgePanelInformation = ({
     <div className="space-y-1">
       <div>
         {statuses.complete.total} complete, {statuses.running.total} running,{" "}
-        {statuses.error.total} {statuses.error.total === 1 ? "error" : "errors"}
-        .
+        {statuses.blocked.total} blocked, {statuses.error.total}{" "}
+        {statuses.error.total === 1 ? "error" : "errors"}.
       </div>
       {statuses.initialized.total === 0 &&
         statuses.blocked.total === 0 &&
@@ -77,6 +84,24 @@ const NodeAndEdgePanelInformation = ({
       ))}
       {statuses.running.edges.map((edge, idx) => (
         <PendingRow
+          key={`edge:${edge.id}-${idx}`}
+          title={`edge: ${nodeOrEdgeTitle(edge)}`}
+        />
+      ))}
+      {statuses.blocked.withs.map((withStatus, idx) => (
+        <BlockedRow
+          key={`with:${withStatus.id}-${idx}`}
+          title={`with: ${withStatus.title || withStatus.id}`}
+        />
+      ))}
+      {statuses.blocked.nodes.map((node, idx) => (
+        <BlockedRow
+          key={`node:${node.id}-${idx}`}
+          title={`node: ${nodeOrEdgeTitle(node)}`}
+        />
+      ))}
+      {statuses.blocked.edges.map((edge, idx) => (
+        <BlockedRow
           key={`edge:${edge.id}-${idx}`}
           title={`edge: ${nodeOrEdgeTitle(edge)}`}
         />

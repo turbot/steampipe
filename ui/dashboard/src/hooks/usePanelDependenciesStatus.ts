@@ -7,6 +7,7 @@ import { usePanel } from "./usePanel";
 const usePanelDependenciesStatus = () => {
   const { dependenciesByStatus, inputPanelsAwaitingValue } = usePanel();
   const { selectedDashboardInputs } = useDashboard();
+
   return useMemo<PanelDependencyStatuses>(() => {
     const initializedPanels: PanelDefinition[] = [];
     const blockedPanels: PanelDefinition[] = [];
