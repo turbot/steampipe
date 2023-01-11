@@ -28,18 +28,18 @@ const Child = ({
     case "card":
       const Card = getComponent("card");
       return (
-        <Panel definition={panelDefinition} showControls={showPanelControls}>
+        <Panel
+          definition={panelDefinition}
+          showControls={showPanelControls}
+          showPanelStatus={false}
+        >
           <Card {...panelDefinition} />
         </Panel>
       );
     case "chart":
       const Chart = getComponent("chart");
       return (
-        <Panel
-          definition={panelDefinition}
-          ready={!!panelDefinition.data}
-          showControls={showPanelControls}
-        >
+        <Panel definition={panelDefinition} showControls={showPanelControls}>
           <Chart {...panelDefinition} />
         </Panel>
       );
@@ -64,8 +64,11 @@ const Child = ({
       return (
         <Panel
           definition={panelDefinition}
-          ready={format === "NODE_AND_EDGE" || !!panelDefinition.data}
-          showControls={showPanelControls}
+          showPanelStatus={
+            format === "LEGACY" ||
+            panelDefinition.status === "cancelled" ||
+            panelDefinition.status === "error"
+          }
           // Node and edge format will show error info on the panel information
           showPanelError={format === "LEGACY"}
         >
@@ -81,8 +84,12 @@ const Child = ({
       return (
         <Panel
           definition={panelDefinition}
-          ready={format === "NODE_AND_EDGE" || !!panelDefinition.data}
           showControls={showPanelControls}
+          showPanelStatus={
+            format === "LEGACY" ||
+            panelDefinition.status === "cancelled" ||
+            panelDefinition.status === "error"
+          }
           // Node and edge format will show error info on the panel information
           showPanelError={format === "LEGACY"}
         >
@@ -98,8 +105,11 @@ const Child = ({
       return (
         <Panel
           definition={panelDefinition}
-          ready={format === "NODE_AND_EDGE" || !!panelDefinition.data}
-          showControls={showPanelControls}
+          showPanelStatus={
+            format === "LEGACY" ||
+            panelDefinition.status === "cancelled" ||
+            panelDefinition.status === "error"
+          }
           // Node and edge format will show error info on the panel information
           showPanelError={format === "LEGACY"}
         >
@@ -110,15 +120,7 @@ const Child = ({
     case "image":
       const Image = getComponent("image");
       return (
-        <Panel
-          definition={panelDefinition}
-          ready={
-            panelDefinition.sql
-              ? !!panelDefinition.data
-              : !!panelDefinition.properties?.src
-          }
-          showControls={showPanelControls}
-        >
+        <Panel definition={panelDefinition} showControls={showPanelControls}>
           <Image {...panelDefinition} />
         </Panel>
       );
@@ -131,6 +133,7 @@ const Child = ({
             showPanelControls &&
             (panelDefinition.title || panelDefinition.display_type === "table")
           }
+          showPanelStatus={false}
         >
           <Input {...panelDefinition} />
         </Panel>
@@ -138,11 +141,7 @@ const Child = ({
     case "table":
       const Table = getComponent("table");
       return (
-        <Panel
-          definition={panelDefinition}
-          ready={!!panelDefinition.data}
-          showControls={showPanelControls}
-        >
+        <Panel definition={panelDefinition} showControls={showPanelControls}>
           <Table {...panelDefinition} />
         </Panel>
       );

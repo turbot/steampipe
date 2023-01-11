@@ -1,10 +1,9 @@
 import get from "lodash/get";
+import useDashboardVersionCheck from "./useDashboardVersionCheck";
 import {
-  addDataToPanels,
   buildDashboards,
   buildPanelsLog,
   buildSelectedDashboardInputsFromSearchParams,
-  buildSqlDataMap,
   updatePanelsLogFromCompletedPanels,
   updateSelectedDashboard,
   wrapDefinitionInArtificialDashboard,
@@ -32,7 +31,6 @@ import {
   ExecutionStartedSchemaMigrator,
 } from "../utils/schema";
 import { useCallback, useReducer } from "react";
-import useDashboardVersionCheck from "./useDashboardVersionCheck";
 
 const reducer = (state: IDashboardContext, action) => {
   switch (action.type) {
@@ -104,7 +102,7 @@ const reducer = (state: IDashboardContext, action) => {
           migratedEvent.panels,
           migratedEvent.start_time
         ),
-        panelsMap: addDataToPanels(migratedEvent.panels, state.sqlDataMap),
+        panelsMap: migratedEvent.panels,
         dashboard,
         execution_id: migratedEvent.execution_id,
         refetchDashboard: false,
@@ -141,8 +139,6 @@ const reducer = (state: IDashboardContext, action) => {
 
       const panelsMap = migratePanelStatuses(panels, action.schema_version);
 
-      // Build map of SQL to data
-      const sqlDataMap = buildSqlDataMap(panelsMap);
       // Replace the whole dashboard as this event contains everything
       return {
         ...state,
@@ -154,7 +150,6 @@ const reducer = (state: IDashboardContext, action) => {
         ),
         panelsMap,
         dashboard,
-        sqlDataMap,
         progress: 100,
         snapshot: action.snapshot,
         state: "complete",
@@ -233,7 +228,6 @@ const reducer = (state: IDashboardContext, action) => {
         snapshot: null,
         snapshotFileName: null,
         snapshotId: null,
-        sqlDataMap: {},
         state: null,
         selectedDashboard: action.dashboard,
         selectedPanel: null,
@@ -373,8 +367,6 @@ const getInitialState = (searchParams, defaults: any = {}) => {
           get(defaults, "search.groupBy.value", "service"),
       },
     },
-
-    sqlDataMap: {},
 
     execution_id: null,
 

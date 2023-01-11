@@ -1,56 +1,40 @@
-import sortBy from "lodash/sortBy";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import { classNames } from "../../utils/styles";
 import { DashboardActions } from "../../types";
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { Listbox, Transition } from "@headlessui/react";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useParams } from "react-router-dom";
 
+const options = [
+  {
+    groupBy: "tag",
+    tag: "category",
+    label: "Category",
+  },
+  { groupBy: "mod", tag: "", label: "Mod" },
+  {
+    groupBy: "tag",
+    tag: "service",
+    label: "Service",
+  },
+  {
+    groupBy: "tag",
+    tag: "type",
+    label: "Type",
+  },
+];
+
+const findOption = (groupBy) => {
+  if (groupBy.value === "tag") {
+    return options.find((o) => o.tag === groupBy.tag);
+  }
+  return options.find((o) => o.groupBy === "mod");
+};
+
 const DashboardTagGroupSelect = () => {
   const { availableDashboardsLoaded, dispatch, search } = useDashboard();
   const { dashboard_name } = useParams();
-
-  const options = useMemo(() => {
-    const o = [
-      { groupBy: "mod", tag: "", label: "Mod" },
-      {
-        groupBy: "tag",
-        tag: "category",
-        label: "Category",
-      },
-      {
-        groupBy: "tag",
-        tag: "service",
-        label: "Service",
-      },
-      {
-        groupBy: "tag",
-        tag: "type",
-        label: "Type",
-      },
-    ];
-    // for (const dashboardTagKey of dashboardTags.keys) {
-    //   if (!o.find((i) => i.tag === dashboardTagKey)) {
-    //     o.push({
-    //       groupBy: "tag",
-    //       tag: dashboardTagKey,
-    //       label: startCase(dashboardTagKey),
-    //     });
-    //   }
-    // }
-    return sortBy(o, ["label"]);
-  }, []);
-
-  const findOption = useCallback(
-    (groupBy) => {
-      if (groupBy.value === "tag") {
-        return options.find((o) => o.tag === groupBy.tag);
-      }
-      return options.find((o) => o.groupBy === "mod");
-    },
-    [options]
-  );
 
   const [value, setValue] = useState(() => findOption(search.groupBy));
 
@@ -66,7 +50,7 @@ const DashboardTagGroupSelect = () => {
 
   useEffect(() => {
     setValue(findOption(search.groupBy));
-  }, [findOption, search.groupBy]);
+  }, [search.groupBy]);
 
   if (
     !availableDashboardsLoaded ||

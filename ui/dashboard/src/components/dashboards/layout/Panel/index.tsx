@@ -1,4 +1,4 @@
-import Error from "../../Error";
+import PanelStatus from "./PanelStatus";
 import PanelControls from "./PanelControls";
 import PanelInformation from "./PanelInformation";
 import PanelProgress from "./PanelProgress";
@@ -38,8 +38,8 @@ type PanelProps = {
     | TextProps;
   showControls?: boolean;
   showPanelError?: boolean;
+  showPanelStatus?: boolean;
   forceBackground?: boolean;
-  ready?: boolean;
 };
 
 const Panel = ({
@@ -48,21 +48,35 @@ const Panel = ({
   definition,
   showControls = true,
   showPanelError = true,
+  showPanelStatus = true,
   forceBackground = false,
-  ready = true,
 }: PanelProps) => {
   const { selectedPanel } = useDashboard();
-  const { panelControls, showPanelControls, setShowPanelControls } = usePanel();
+  const {
+    inputPanelsAwaitingValue,
+    panelControls,
+    showPanelControls,
+    setShowPanelControls,
+  } = usePanel();
   const [referenceElement, setReferenceElement] = useState(null);
-
   const baseStyles = classNames(
     "relative col-span-12",
     getResponsivePanelWidthClass(definition.width),
     "overflow-auto"
   );
 
-  const ErrorComponent = Error;
+  if (inputPanelsAwaitingValue.length > 0) {
+    return null;
+  }
+
   const PlaceholderComponent = Placeholder.component;
+
+  const shouldShowLoader =
+    showPanelStatus &&
+    definition.status !== "cancelled" &&
+    definition.status !== "error" &&
+    definition.status !== "complete";
+
   const showPanelContents =
     !definition.error || (definition.error && !showPanelError);
 
@@ -72,20 +86,8 @@ const Panel = ({
       ref={setReferenceElement}
       id={definition.name}
       className={baseStyles}
-      onMouseEnter={
-        showControls
-          ? () => {
-              setShowPanelControls(true);
-            }
-          : undefined
-      }
-      onMouseLeave={
-        showControls
-          ? () => {
-              setShowPanelControls(false);
-            }
-          : undefined
-      }
+      onMouseEnter={showControls ? () => setShowPanelControls(true) : undefined}
+      onMouseLeave={() => setShowPanelControls(false)}
     >
       <section
         aria-labelledby={
@@ -129,7 +131,10 @@ const Panel = ({
             "relative",
             definition.title &&
               ((definition.panel_type !== "input" &&
-                definition.panel_type !== "table") ||
+                // @ts-ignore
+                definition.status !== "complete") ||
+                (definition.panel_type !== "input" &&
+                  definition.panel_type !== "table") ||
                 (definition.panel_type === "table" &&
                   definition.display_type === "line"))
               ? "border-t border-divide"
@@ -144,24 +149,21 @@ const Panel = ({
           )}
         >
           <PanelProgress className={definition.title ? null : "rounded-t-md"} />
-          {showPanelContents && <PanelInformation />}
+          <PanelInformation />
           <PlaceholderComponent
             animate={definition.status === "running"}
-            ready={
-              ready ||
-              definition.status === "complete" ||
-              definition.status === "error"
-            }
+            ready={!shouldShowLoader}
           >
-            <ErrorComponent
-              className={definition.title ? "rounded-t-none" : null}
-              error={
-                showPanelError &&
-                definition.status === "error" &&
-                definition.error
-              }
-            />
-            <>{showPanelContents ? children : null}</>
+            <>
+              {((showPanelError && definition.status === "error") ||
+                showPanelStatus) && (
+                <PanelStatus
+                  definition={definition as PanelDefinition}
+                  showPanelError={showPanelError}
+                />
+              )}
+              {showPanelContents && children}
+            </>
           </PlaceholderComponent>
         </div>
       </section>

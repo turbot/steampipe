@@ -60,9 +60,14 @@ const getDataFormat = (data: LeafNodeData): CardDataFormat => {
   return "simple";
 };
 
-const useCardState = ({ data, sql, display_type, properties }: CardProps) => {
+const useCardState = ({
+  data,
+  display_type,
+  properties,
+  status,
+}: CardProps) => {
   const [calculatedProperties, setCalculatedProperties] = useState<CardState>({
-    loading: !!sql,
+    loading: status === "running",
     label: properties.label || null,
     value: isNumber(properties.value)
       ? properties.value
@@ -73,18 +78,15 @@ const useCardState = ({ data, sql, display_type, properties }: CardProps) => {
   });
 
   useEffect(() => {
-    if (!data) {
-      return;
-    }
-
     if (
+      !data ||
       !data.columns ||
       !data.rows ||
       data.columns.length === 0 ||
       data.rows.length === 0
     ) {
       setCalculatedProperties({
-        loading: false,
+        loading: status === "running",
         label: properties.label || null,
         value: isNumber(properties.value)
           ? properties.value
@@ -127,7 +129,7 @@ const useCardState = ({ data, sql, display_type, properties }: CardProps) => {
         href: formalHref || properties.href || null,
       });
     }
-  }, [data, display_type, properties]);
+  }, [data, display_type, properties, status]);
 
   return calculatedProperties;
 };

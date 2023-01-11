@@ -1,17 +1,21 @@
 dashboard "many_withs" {
+  input "i1" {
+    sql = <<-EOQ
+          select arn as label, arn as value from aws_account
+        EOQ
+    placeholder = "enter a val"
+  }
+
+
   title         = "Many Withs"
   with "n1" {
    query = query.q1
   }
   with "n2" {
     sql = <<-EOQ
-          select 'n2'
+          select $1
         EOQ
-  }
-  with "n3" {
-    sql = <<-EOQ
-          select 'n2'
-        EOQ
+    args = [self.input.i1.value]
   }
 
   graph {

@@ -129,7 +129,8 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	}
 
 	// set status to running (this sends update event)
-	r.setStatus(ctx, dashboardtypes.RunRunning)
+	// (if we have blocked children, this will be changed to blocked)
+	r.setRunning(ctx)
 
 	// if we have sql to execute, do it now
 	// (if we are only performing a base execution, do not run the query)
@@ -152,7 +153,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	}
 }
 
-// SetError implements DashboardTreeRun (override to set snapshothook status
+// SetError implements DashboardTreeRun (override to set snapshothook status)
 func (r *LeafRun) SetError(ctx context.Context, err error) {
 	// increment error count for snapshot hook
 	statushooks.SnapshotError(ctx)
