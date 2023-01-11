@@ -6,7 +6,6 @@ import isNumber from "lodash/isNumber";
 import isObject from "lodash/isObject";
 import LoadingIndicator from "../LoadingIndicator";
 import useDeepCompareEffect from "use-deep-compare-effect";
-import usePanelDependenciesStatus from "../../../hooks/usePanelDependenciesStatus";
 import useTemplateRender from "../../../hooks/useTemplateRender";
 import {
   BasePrimitiveProps,
@@ -14,11 +13,7 @@ import {
   LeafNodeData,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import {
-  DashboardDataModeLive,
-  DashboardRunState,
-  PanelProperties,
-} from "../../../types";
+import { DashboardDataModeLive, PanelProperties } from "../../../types";
 import { getComponent, registerComponent } from "../index";
 import {
   getIconClasses,
@@ -26,15 +21,10 @@ import {
   getTextClasses,
   getWrapperClasses,
 } from "../../../utils/card";
-import { HashLink } from "react-router-hash-link";
-import { InputProperties } from "../inputs/types";
 import { isRelativeUrl } from "../../../utils/url";
-import { Location } from "react-router-dom";
-import { PanelDependencyStatuses } from "../common/types";
-import { ReactNode, useEffect, useState } from "react";
 import { ThemeNames } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
-import { useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 const Table = getComponent("table");
 
@@ -56,8 +46,7 @@ type CardDataFormat = "simple" | "formal";
 
 type CardState = {
   loading: boolean;
-  title: string | undefined;
-  label: ReactNode;
+  label: string | null;
   value: any | null;
   type: CardType;
   icon: string | null;
@@ -71,143 +60,22 @@ const getDataFormat = (data: LeafNodeData): CardDataFormat => {
   return "simple";
 };
 
-const getCardRunningStatus = (
-  panelDependenciesStatus: PanelDependencyStatuses,
-  status: DashboardRunState,
-  location: Location,
-  label: string | undefined
-) => {
-  let title: string | undefined = undefined;
-  let component: ReactNode = null;
-  let finalStatus: DashboardRunState | null = null;
-  if (status === "initialized") {
-    title = "Initialized";
-    component = title;
-    finalStatus = "initialized";
-  } else if (status === "blocked") {
-    if (panelDependenciesStatus.inputsAwaitingValue.length > 0) {
-      const firstInput = panelDependenciesStatus.inputsAwaitingValue[0];
-      const inputTitle =
-        firstInput.title ||
-        (firstInput.properties as InputProperties).unqualified_name;
-      title = `Awaiting input: ${inputTitle}`;
-      component = (
-        <>
-          Awaiting input:{" "}
-          <HashLink
-            className="text-link"
-            to={`${location.pathname}${
-              location.search ? location.search : ""
-            }#${firstInput.name}`}
-          >
-            {inputTitle}
-          </HashLink>
-        </>
-      );
-      finalStatus = "blocked";
-    }
-
-    if (
-      panelDependenciesStatus.inputsAwaitingValue.length === 0 &&
-      panelDependenciesStatus.total === 0
-    ) {
-      title = "Running...";
-      component = title;
-      finalStatus = "running";
-    }
-
-    if (
-      panelDependenciesStatus.inputsAwaitingValue.length === 0 &&
-      panelDependenciesStatus.total > 0
-    ) {
-      title = `Running ${
-        panelDependenciesStatus.status.complete.total +
-        panelDependenciesStatus.status.running.total +
-        1
-      } of ${panelDependenciesStatus.total + 1}...`;
-      component = title;
-      finalStatus = "running";
-    }
-  } else if (status === "running") {
-    if (
-      panelDependenciesStatus.inputsAwaitingValue.length === 0 &&
-      panelDependenciesStatus.total === 0
-    ) {
-      title = "Running...";
-      component = title;
-      finalStatus = "running";
-    }
-
-    if (
-      panelDependenciesStatus.inputsAwaitingValue.length === 0 &&
-      panelDependenciesStatus.total > 0
-    ) {
-      title = `Running ${
-        panelDependenciesStatus.status.complete.total +
-        panelDependenciesStatus.status.running.total +
-        1
-      } of ${panelDependenciesStatus.total + 1}...`;
-      component = title;
-      finalStatus = "running";
-    }
-  } else if (status === "cancelled") {
-    title = "Cancelled";
-    component = title;
-    finalStatus = "cancelled";
-  } else if (status === "error") {
-    title = "Error";
-    component = title;
-    finalStatus = "error";
-  } else if (status === "complete") {
-    title = label;
-    component = title;
-    finalStatus = "complete";
-  }
-
-  return {
-    title,
-    component,
-    status: finalStatus,
-  };
-};
-
 const useCardState = ({
   data,
   display_type,
   properties,
   status,
 }: CardProps) => {
-  const location = useLocation();
-  const panelDependenciesStatus = usePanelDependenciesStatus();
-
-  const [calculatedProperties, setCalculatedProperties] = useState<CardState>(
-    () => {
-      const runningStatus = getCardRunningStatus(
-        panelDependenciesStatus,
-        status,
-        location,
-        properties.label
-      );
-      return {
-        loading: runningStatus.status === "running",
-        title: runningStatus.title,
-        label: runningStatus.component,
-        value: isNumber(properties.value)
-          ? properties.value
-          : properties.value || null,
-        type: display_type || null,
-        icon: getIconForType(
-          display_type,
-          status === "initialized"
-            ? "materialsymbols-solid:start"
-            : status === "blocked"
-            ? "materialsymbols-solid:block"
-            : properties.icon
-        ),
-        href: properties.href || null,
-      };
-    }
-  );
+  const [calculatedProperties, setCalculatedProperties] = useState<CardState>({
+    loading: status === "running",
+    label: properties.label || null,
+    value: isNumber(properties.value)
+      ? properties.value
+      : properties.value || null,
+    type: display_type || null,
+    icon: getIconForType(display_type, properties.icon),
+    href: properties.href || null,
+  });
 
   useEffect(() => {
     if (
@@ -217,28 +85,14 @@ const useCardState = ({
       data.columns.length === 0 ||
       data.rows.length === 0
     ) {
-      const runningStatus = getCardRunningStatus(
-        panelDependenciesStatus,
-        status,
-        location,
-        properties.label
-      );
       setCalculatedProperties({
-        loading: runningStatus.status === "running",
-        title: runningStatus.title,
-        label: runningStatus.component,
+        loading: status === "running",
+        label: properties.label || null,
         value: isNumber(properties.value)
           ? properties.value
           : properties.value || null,
         type: display_type || null,
-        icon: getIconForType(
-          display_type,
-          status === "initialized"
-            ? "materialsymbols-solid:start"
-            : status === "blocked"
-            ? "materialsymbols-solid:block"
-            : properties.icon
-        ),
+        icon: getIconForType(display_type, properties.icon),
         href: properties.href || null,
       });
       return;
@@ -251,7 +105,6 @@ const useCardState = ({
       const row = data.rows[0];
       setCalculatedProperties({
         loading: false,
-        title: firstCol.name,
         label: firstCol.name,
         value: row[firstCol.name],
         type: display_type || null,
@@ -266,7 +119,6 @@ const useCardState = ({
       const formalHref = get(data, `rows[0].href`, null);
       setCalculatedProperties({
         loading: false,
-        title: formalLabel,
         label: formalLabel,
         value: formalValue,
         type: formalType || display_type || null,
@@ -277,14 +129,7 @@ const useCardState = ({
         href: formalHref || properties.href || null,
       });
     }
-  }, [
-    data,
-    display_type,
-    location,
-    panelDependenciesStatus,
-    properties,
-    status,
-  ]);
+  }, [data, display_type, properties, status]);
 
   return calculatedProperties;
 };
@@ -390,9 +235,16 @@ const Card = (props: CardProps) => {
             state.icon ? "ml-11" : "ml-2",
             textClasses
           )}
-          title={state.title}
+          title={state.label || undefined}
         >
-          {state.label}
+          {state.loading && "Loading..."}
+          {!state.loading && !state.label && (
+            <DashboardIcon
+              className="h-5 w-5"
+              icon="materialsymbols-outline:remove"
+            />
+          )}
+          {!state.loading && state.label}
         </p>
       </dt>
       <dd

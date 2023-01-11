@@ -3,6 +3,7 @@ import PanelControls from "./PanelControls";
 import PanelInformation from "./PanelInformation";
 import PanelProgress from "./PanelProgress";
 import PanelTitle from "../../titles/PanelTitle";
+import Placeholder from "../../Placeholder";
 import { BaseChartProps } from "../../charts/types";
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
@@ -36,7 +37,6 @@ type PanelProps = {
     | TableProps
     | TextProps;
   showControls?: boolean;
-  showPanelContents?: boolean;
   showPanelError?: boolean;
   showPanelStatus?: boolean;
   forceBackground?: boolean;
@@ -47,7 +47,6 @@ const Panel = ({
   className,
   definition,
   showControls = true,
-  showPanelContents = true,
   showPanelError = true,
   showPanelStatus = true,
   forceBackground = false,
@@ -66,11 +65,20 @@ const Panel = ({
     "overflow-auto"
   );
 
-  const shouldShowContents =
-    (showPanelContents && inputPanelsAwaitingValue.length === 0) ||
-    !showPanelStatus;
-  const isBlockedWithNoInputsAwaitingValue =
-    definition.status === "blocked" && inputPanelsAwaitingValue.length === 0;
+  if (inputPanelsAwaitingValue.length > 0) {
+    return null;
+  }
+
+  const PlaceholderComponent = Placeholder.component;
+
+  const shouldShowLoader =
+    showPanelStatus &&
+    definition.status !== "cancelled" &&
+    definition.status !== "error" &&
+    definition.status !== "complete";
+
+  const showPanelContents =
+    !definition.error || (definition.error && !showPanelError);
 
   return (
     <div
@@ -141,16 +149,22 @@ const Panel = ({
           )}
         >
           <PanelProgress className={definition.title ? null : "rounded-t-md"} />
-          {shouldShowContents && <PanelInformation />}
-          <>
-            {showPanelStatus && !isBlockedWithNoInputsAwaitingValue && (
-              <PanelStatus
-                definition={definition as PanelDefinition}
-                showPanelError={showPanelError}
-              />
-            )}
-            {shouldShowContents ? children : null}
-          </>
+          <PanelInformation />
+          <PlaceholderComponent
+            animate={definition.status === "running"}
+            ready={!shouldShowLoader}
+          >
+            <>
+              {((showPanelError && definition.status === "error") ||
+                showPanelStatus) && (
+                <PanelStatus
+                  definition={definition as PanelDefinition}
+                  showPanelError={showPanelError}
+                />
+              )}
+              {showPanelContents && children}
+            </>
+          </PlaceholderComponent>
         </div>
       </section>
     </div>

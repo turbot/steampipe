@@ -1,6 +1,6 @@
 import ErrorMessage from "../../ErrorMessage";
-import { registerComponent } from "../index";
 import { classNames } from "../../../utils/styles";
+import { registerComponent } from "../index";
 
 type ErrorProps = {
   className?: string | null;

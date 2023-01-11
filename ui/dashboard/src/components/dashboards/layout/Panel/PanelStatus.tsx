@@ -84,7 +84,7 @@ const PanelBlocked = ({ definition }) => {
           panelDependenciesStatus.total === 0 && (
             <>
               <LoadingIndicator className="w-3.5 h-3.5 text-foreground-light shrink-0" />
-              <span className="block truncate">Running...</span>
+              <span className="block truncate">Loading...</span>
             </>
           )}
         {panelDependenciesStatus.inputsAwaitingValue.length === 0 &&
@@ -92,7 +92,7 @@ const PanelBlocked = ({ definition }) => {
             <>
               <LoadingIndicator className="w-3.5 h-3.5 text-foreground-light shrink-0" />
               <span className="block truncate">
-                Running{" "}
+                Loading{" "}
                 {panelDependenciesStatus.status.complete.total +
                   panelDependenciesStatus.status.running.total +
                   1}{" "}
@@ -114,7 +114,7 @@ const PanelRunning = ({ definition }) => {
           panelDependenciesStatus.total === 0 && (
             <>
               <LoadingIndicator className="w-3.5 h-3.5 text-foreground-light shrink-0" />
-              <span className="block truncate">Running...</span>
+              <span className="block truncate">Loading...</span>
             </>
           )}
         {panelDependenciesStatus.inputsAwaitingValue.length === 0 &&
@@ -122,7 +122,7 @@ const PanelRunning = ({ definition }) => {
             <>
               <LoadingIndicator className="w-3.5 h-3.5 text-foreground-light shrink-0" />
               <span className="block truncate">
-                Running{" "}
+                Loading{" "}
                 {panelDependenciesStatus.status.complete.total +
                   panelDependenciesStatus.status.running.total +
                   1}{" "}
@@ -152,7 +152,7 @@ const PanelCancelled = ({ definition }) => {
 const PanelError = ({ definition }) => {
   return (
     <BasePanelStatus
-      className="bg-alert-light border-alert-light text-foreground"
+      className="bg-alert-light border-alert text-foreground"
       definition={definition}
     >
       <div className="flex items-center space-x-1">
