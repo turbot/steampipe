@@ -76,12 +76,14 @@ func addResourceToMod(resource modconfig.HclResource, block *hcl.Block, parseCtx
 
 func shouldAddToMod(resource modconfig.HclResource, block *hcl.Block, parseCtx *ModParseContext) bool {
 	switch resource.(type) {
-	// do not add mods, withs or inputs (inputs are added by Dashboard.InitInputs)
-	case *modconfig.Mod, *modconfig.DashboardWith, *modconfig.DashboardInput:
+	// do not add mods, withs
+	case *modconfig.Mod, *modconfig.DashboardWith:
 		return false
-	case *modconfig.DashboardCategory:
-		// if this is a dashboard category, only add top level blocks
-		// this is to allow nested categories to have the same name as top level categories
+
+	case *modconfig.DashboardCategory, *modconfig.DashboardInput:
+		// if this is a dashboard category or dashboard input, only add top level blocks
+		// this is to allow nested categories/inputs to have the same name as top level categories
+		// (nested inputs are added by Dashboard.InitInputs)
 		return parseCtx.IsTopLevelBlock(block)
 	default:
 		return true
