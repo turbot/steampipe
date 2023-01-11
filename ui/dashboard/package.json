@@ -45,12 +45,12 @@
     "react-syntax-highlighter": "15.5.0",
     "react-table": "7.8.0",
     "react-use-websocket": "4.2.0",
-    "reactflow": "11.4.0",
+    "reactflow": "11.4.1",
     "remark-gfm": "3.0.1",
     "semver": "7.3.8",
     "use-deep-compare-effect": "1.8.1",
     "uuid": "9.0.0",
-    "web-vitals": "3.1.0"
+    "web-vitals": "3.1.1"
   },
   "devDependencies": {
     "@craco/craco": "7.0.0",
@@ -66,7 +66,7 @@
     "@storybook/theming": "6.5.15",
     "@tailwindcss/forms": "0.5.3",
     "@tailwindcss/line-clamp": "0.4.2",
-    "@tailwindcss/typography": "0.5.8",
+    "@tailwindcss/typography": "0.5.9",
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "13.4.0",
     "@tsconfig/create-react-app": "1.0.3",
