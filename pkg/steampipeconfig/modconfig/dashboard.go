@@ -12,7 +12,7 @@ import (
 )
 
 const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
-const runtimeDependencyDashboardScope = "self"
+const RuntimeDependencyDashboardScope = "self"
 
 // Dashboard is a struct representing the Dashboard  resource
 type Dashboard struct {
