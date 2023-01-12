@@ -92,8 +92,8 @@ func validateParamAndQueryNotBothSet(resource modconfig.QueryProvider) hcl.Diagn
 	if len(resource.GetParams()) > 0 {
 		if resource.GetQuery() != nil {
 			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("%s has 'query' property set so cannot define param blocks", resource.Name()),
+				Severity: hcl.DiagWarning,
+				Summary:  fmt.Sprintf("Deprecated usage: %s has 'query' property set so should not define 'param' blocks", resource.Name()),
 				Subject:  resource.GetDeclRange(),
 			})
 		}
