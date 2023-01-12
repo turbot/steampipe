@@ -10,5 +10,4 @@ type DashboardParent interface {
 	GetChildren() []DashboardTreeRun
 	ChildrenComplete() bool
 	ChildStatusChanged(context.Context)
-	GetBlockingDescendants() []string
 }
