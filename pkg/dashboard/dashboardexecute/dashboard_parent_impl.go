@@ -139,9 +139,9 @@ func (r *DashboardParentImpl) setRunning(ctx context.Context) {
 
 	// set status if it has changed
 	if status != r.GetRunStatus() {
-		log.Printf("[WARN] %s setRunning - setting state %s, blockedByChild %v", r.Name, status, r.blockedByChild)
+		log.Printf("[TRACE] %s setRunning - setting state %s, blockedByChild %v", r.Name, status, r.blockedByChild)
 		r.DashboardTreeRunImpl.setStatus(ctx, status)
 	} else {
-		log.Printf("[WARN] %s setRunning - state unchanged %s, blockedByChild %v", r.Name, status, r.blockedByChild)
+		log.Printf("[TRACE] %s setRunning - state unchanged %s, blockedByChild %v", r.Name, status, r.blockedByChild)
 	}
 }
