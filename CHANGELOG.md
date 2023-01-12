@@ -1,14 +1,16 @@
 ## v0.18.0 [tbd]
 _What's new?_
-* Add support for visualisations of your data with graphs, with easily composable data structures using nodes and edges. ([tbd])
-* Improved dashboard UI panel controls for quicker access to common tasks such as downloading panel data. ([#2510](https://github.com/turbot/steampipe/issues/2510), [#2663](https://github.com/turbot/steampipe/issues/2663))
+* Add support for visualisations of your data with graphs, with easily composable data structures using nodes and edges. ([#2249](https://github.com/turbot/steampipe/issues/2249))
+* Improved dashboard UI panel controls for quicker access to common tasks such as downloading panel data. ([#2663](https://github.com/turbot/steampipe/issues/2663))
 * Add support for `with` blocks. ([#2772](https://github.com/turbot/steampipe/issues/2772))
 * Add support for `param` runtime dependencies. ([#2910](https://github.com/turbot/steampipe/issues/2910))
-* Remove usage of prepared statements - instead excute sql directly.([#2789](https://github.com/turbot/steampipe/issues/2789))
+* Add dashboard panel log to panel detail to get an understanding of the execution history of a panel. ([#2895](https://github.com/turbot/steampipe/issues/2895))
+* Remove usage of prepared statements - instead execute sql directly.([#2789](https://github.com/turbot/steampipe/issues/2789))
 * Modify the update checker to run asynchronously. ([#2770](https://github.com/turbot/steampipe/issues/2770))
 * Update steampipe_reference introspection table to include references from `with` blocks. ([#2934](https://github.com/turbot/steampipe/issues/2934))
 * Update arg validation to ignore extra named args but fail on extra positional args (currently fails if too many named args passed) ([#2783](https://github.com/turbot/steampipe/issues/2783))
 * Update dashboard states to `initialized`, `blocked`, `running`, `complete`, `error`, `canceled`. ([#2939](https://github.com/turbot/steampipe/issues/2939))
+* Update dashboard UI version mismatch logic to redirect to a version-enabled URL to get past localhost cached index.html. ([#2940](https://github.com/turbot/steampipe/issues/2940))
 * Upgrades 'pgx' to v5. ([#2776](https://github.com/turbot/steampipe/issues/2776))
 * Add a `--max-parallel` flag to `dashboard` command and set default to 10. ([#2754](https://github.com/turbot/steampipe/issues/2754))
 * When parsing query args, ensure jsonb args are passed to query as string not map.([#2802](https://github.com/turbot/steampipe/issues/2802)) 
@@ -19,6 +21,7 @@ _Bug fixes_
 * Fixes issue where value from '--separator' was not being used in CSV rendering. ([#544](https://github.com/turbot/steampipe/issues/544))
 * Fixes issue where implicit services are not shutting down when the last instance of steampipe exits. ([#2833](https://github.com/turbot/steampipe/issues/2833))
 * When editing dashboard files, after adding/fixing errors in the HCL the dashboard server will sometimes stall. ([#2952](https://github.com/turbot/steampipe/issues/2952))
+* Dashboard select/combo inputs using integer `value` do not render options. ([#2972](https://github.com/turbot/steampipe/issues/2972))
 
 _Deprecations_
 * Hcl validation is now stricter. ([#2923](https://github.com/turbot/steampipe/issues/2923))
