@@ -1,4 +1,8 @@
-import { DashboardLayoutNode, PanelDefinition } from "../../../../types";
+import {
+  DashboardLayoutNode,
+  DashboardPanelType,
+  PanelDefinition,
+} from "../../../../types";
 import { getComponent } from "../../index";
 import { getNodeAndEdgeDataFormat } from "../../common/useNodeAndEdgeData";
 import { NodeAndEdgeProperties } from "../../common/types";
@@ -6,12 +10,14 @@ import { NodeAndEdgeProperties } from "../../common/types";
 type ChildProps = {
   layoutDefinition: DashboardLayoutNode;
   panelDefinition: PanelDefinition;
+  parentType: DashboardPanelType;
   showPanelControls?: boolean;
 };
 
 const Child = ({
   layoutDefinition,
   panelDefinition,
+  parentType,
   showPanelControls = true,
 }: ChildProps) => {
   const Panel = getComponent("panel");
@@ -30,6 +36,7 @@ const Child = ({
       return (
         <Panel
           definition={panelDefinition}
+          parentType={parentType}
           showControls={showPanelControls}
           showPanelStatus={false}
         >
@@ -39,7 +46,11 @@ const Child = ({
     case "chart":
       const Chart = getComponent("chart");
       return (
-        <Panel definition={panelDefinition} showControls={showPanelControls}>
+        <Panel
+          definition={panelDefinition}
+          parentType={parentType}
+          showControls={showPanelControls}
+        >
           <Chart {...panelDefinition} />
         </Panel>
       );
@@ -52,7 +63,11 @@ const Child = ({
     case "error":
       const ErrorPanel = getComponent("error");
       return (
-        <Panel definition={panelDefinition} showControls={showPanelControls}>
+        <Panel
+          definition={panelDefinition}
+          parentType={parentType}
+          showControls={showPanelControls}
+        >
           <ErrorPanel {...panelDefinition} />
         </Panel>
       );
@@ -64,6 +79,7 @@ const Child = ({
       return (
         <Panel
           definition={panelDefinition}
+          parentType={parentType}
           showPanelStatus={
             format === "LEGACY" ||
             panelDefinition.status === "cancelled" ||
@@ -84,6 +100,7 @@ const Child = ({
       return (
         <Panel
           definition={panelDefinition}
+          parentType={parentType}
           showControls={showPanelControls}
           showPanelStatus={
             format === "LEGACY" ||
@@ -105,6 +122,7 @@ const Child = ({
       return (
         <Panel
           definition={panelDefinition}
+          parentType={parentType}
           showPanelStatus={
             format === "LEGACY" ||
             panelDefinition.status === "cancelled" ||
@@ -120,7 +138,11 @@ const Child = ({
     case "image":
       const Image = getComponent("image");
       return (
-        <Panel definition={panelDefinition} showControls={showPanelControls}>
+        <Panel
+          definition={panelDefinition}
+          parentType={parentType}
+          showControls={showPanelControls}
+        >
           <Image {...panelDefinition} />
         </Panel>
       );
@@ -129,6 +151,7 @@ const Child = ({
       return (
         <Panel
           definition={panelDefinition}
+          parentType={parentType}
           showControls={
             showPanelControls &&
             (panelDefinition.title || panelDefinition.display_type === "table")
@@ -141,14 +164,22 @@ const Child = ({
     case "table":
       const Table = getComponent("table");
       return (
-        <Panel definition={panelDefinition} showControls={showPanelControls}>
+        <Panel
+          definition={panelDefinition}
+          parentType={parentType}
+          showControls={showPanelControls}
+        >
           <Table {...panelDefinition} />
         </Panel>
       );
     case "text":
       const Text = getComponent("text");
       return (
-        <Panel definition={panelDefinition} showControls={false}>
+        <Panel
+          definition={panelDefinition}
+          parentType={parentType}
+          showControls={false}
+        >
           <Text {...panelDefinition} />
         </Panel>
       );
