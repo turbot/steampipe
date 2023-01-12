@@ -8,7 +8,6 @@
   "display": null,
   "documentation": null,
   "end_line_number": 126,
-  "file_name": "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/tests/acceptance/test_data/introspection_table_mod/resources.sp",
   "inputs": [
    {
     "name": "sample_input_1",

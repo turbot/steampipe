@@ -8,7 +8,6 @@
   "description": "Sample control to test introspection functionality",
   "documentation": null,
   "end_line_number": 30,
-  "file_name": "/Users/pskrbasu/turbot-delivery/Steampipe/steampipe/tests/acceptance/test_data/introspection_table_mod/resources.sp",
   "is_anonymous": false,
   "mod_name": "introspection_table_mod",
   "params": null,
