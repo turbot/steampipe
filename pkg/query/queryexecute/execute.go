@@ -34,7 +34,7 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) {
 	}
 }
 
-func RunBatchSession(ctx context.Context, initData *query.InitData) int {
+func RunBatchSession(ctx context.Context, initData *query.InitData) (int, error) {
 	// start cancel handler to intercept interrupts and cancel the context
 	// NOTE: use the initData Cancel function to ensure any initialisation is cancelled if needed
 	contexthelpers.StartCancelHandler(initData.Cancel)
@@ -42,7 +42,7 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) int {
 	// wait for init
 	<-initData.Loaded
 	if err := initData.Result.Error; err != nil {
-		error_helpers.FailOnError(err)
+		return -1, err
 	}
 
 	// display any initialisation messages/warnings
@@ -54,7 +54,7 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) int {
 		failures = executeQueries(ctx, initData)
 	}
 	// set global exit code
-	return failures
+	return failures, nil
 }
 
 func executeQueries(ctx context.Context, initData *query.InitData) int {

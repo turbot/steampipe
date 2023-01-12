@@ -151,8 +151,12 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 		// fall through to running a batch query
 		// set global exit code
-		failures := queryexecute.RunBatchSession(ctx, initData)
-		if failures != 0 {
+		failures, err := queryexecute.RunBatchSession(ctx, initData)
+		if err != nil {
+			exitCode = constants.ExitCodeInitializationFailed
+			error_helpers.FailOnError(err)
+		}
+		if failures > 0 {
 			exitCode = constants.ExitCodeQueryExecutionFailed
 		}
 	}
@@ -193,6 +197,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 	// wait for init
 	<-initData.Loaded
 	if err := initData.Result.Error; err != nil {
+		exitCode = constants.ExitCodeInitializationFailed
 		error_helpers.FailOnError(err)
 	}
 
