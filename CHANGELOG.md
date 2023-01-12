@@ -2,7 +2,52 @@
 _What's new?_
 * Add support for visualisations of your data with graphs, with easily composable data structures using nodes and edges. ([tbd])
 * Improved dashboard UI panel controls for quicker access to common tasks such as downloading panel data. ([#2510](https://github.com/turbot/steampipe/issues/2510), [#2663](https://github.com/turbot/steampipe/issues/2663))
+* Add support for `with` blocks. ([#2772](https://github.com/turbot/steampipe/issues/2772))
+* Add support for `param` runtime dependencies. ([#2910](https://github.com/turbot/steampipe/issues/2910))
+* Remove usage of prepared statements - instead excute sql directly.([#2789](https://github.com/turbot/steampipe/issues/2789))
+* Modify the update checker to run asynchronously. ([#2770](https://github.com/turbot/steampipe/issues/2770))
+* Update steampipe_reference introspection table to include references from `with` blocks. ([#2934](https://github.com/turbot/steampipe/issues/2934))
+* Update arg validation to ignore extra named args but fail on extra positional args (currently fails if too many named args passed) ([#2783](https://github.com/turbot/steampipe/issues/2783))
+* Update dashboard states to `initialized`, `blocked`, `running`, `complete`, `error`, `canceled`. ([#2939](https://github.com/turbot/steampipe/issues/2939))
+* Upgrades 'pgx' to v5. ([#2776](https://github.com/turbot/steampipe/issues/2776))
+* Add a `--max-parallel` flag to `dashboard` command and set default to 10. ([#2754](https://github.com/turbot/steampipe/issues/2754))
+* When parsing query args, ensure jsonb args are passed to query as string not map.([#2802](https://github.com/turbot/steampipe/issues/2802)) 
+* Update Makefile to allow overriding build output directory path 
 
+_Bug fixes_
+* Fixes issue where interactive prompt was not showing timing data for 'json', 'csv' and 'line' outputs. ([#2699](https://github.com/turbot/steampipe/issues/2699))
+* Fixes issue where value from '--separator' was not being used in CSV rendering. ([#544](https://github.com/turbot/steampipe/issues/544))
+* Fixes issue where implicit services are not shutting down when the last instance of steampipe exits. ([#2833](https://github.com/turbot/steampipe/issues/2833))
+* When editing dashboard files, after adding/fixing errors in the HCL the dashboard server will sometimes stall. ([#2952](https://github.com/turbot/steampipe/issues/2952))
+
+_Deprecations_
+* Hcl validation is now stricter. ([#2923](https://github.com/turbot/steampipe/issues/2923))
+* Add deprecation warnings for deprecated hcl properties. ([#2973](https://github.com/turbot/steampipe/issues/2973))
+* Remove `search_path` and `search_path_prefix` from `control` and `query` resources. ([#2963](https://github.com/turbot/steampipe/issues/2963))
+* Exit codes have been updated. ([#2329](https://github.com/turbot/steampipe/issues/2395))
+```
+const (
+	ExitCodeSuccessful                 = 0
+	ExitCodeControlsAlarm              = 1   // check - no runtime errors, 1 or more control alarms, no control errors
+	ExitCodeControlsError              = 2   // check - no runtime errors, 1 or more control errors
+	ExitCodePluginLoadingError         = 11  // plugin - loading error
+	ExitCodePluginListFailure          = 12  // plugin - listing failed
+	ExitCodePluginNotFound             = 13  // plugin - not found
+	ExitCodeSnapshotCreationFailed     = 21  // snapshot - creation failed
+	ExitCodeSnapshotUploadFailed       = 22  // snapshot - upload failed
+	ExitCodeServiceSetupFailure        = 31  // service - setup failed
+	ExitCodeServiceStartupFailure      = 32  // service - start failed
+	ExitCodeServiceStopFailure         = 33  // service - stop failed
+	ExitCodeQueryExecutionFailed       = 41  // query - 1 or more queries failed - change in behavior(previously the exitCode used to be the number of queries that failed)
+	ExitCodeLoginCloudConnectionFailed = 51  // login - connecting to cloud failed
+	ExitCodeInitializationFailed       = 250 // common - initialization failed
+	ExitCodeBindPortUnavailable        = 251 // common (service/dashboard) - port binding failed
+	ExitCodeNoModFile                  = 252 // common - no mod file
+	ExitCodeFileSystemAccessFailure    = 253 // common - file system access failed
+	ExitCodeInsufficientOrWrongInputs  = 254 // common - runtime error (insufficient or wrong input)
+	ExitCodeUnknownErrorPanic          = 255 // common - runtime error (unknown panic)
+)
+```
 ## v0.17.4 [2022-12-02]
 _Bug fixes_
 * Fixes issue where the `--separator` flag was not being used in the `csv` output/export for `steampipe check`. ([#544](https://github.com/turbot/steampipe/issues/544))
