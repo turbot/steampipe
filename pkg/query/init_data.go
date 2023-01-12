@@ -3,7 +3,6 @@ package query
 import (
 	"context"
 	"fmt"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
@@ -49,7 +48,7 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 		}
 	}
 
-	i = i.init(ctx, w, args)
+	go i.init(ctx, w, args)
 
 	return i
 }
@@ -85,7 +84,7 @@ func (i *InitData) Cleanup(ctx context.Context) {
 	}
 }
 
-func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []string) *InitData {
+func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []string) {
 	defer func() {
 		close(i.Loaded)
 		// clear the cancelInitialisation function
@@ -97,7 +96,7 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 	resolvedQueries, preparedStatementSource, err := w.GetQueriesFromArgs(args)
 	if err != nil {
 		i.Result.Error = err
-		return i
+		return
 	}
 	// create a cancellable context so that we can cancel the initialisation
 	ctx, cancel := context.WithCancel(ctx)
@@ -108,5 +107,5 @@ func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []stri
 
 	// and call base init
 	i.InitData.Init(ctx, constants.InvokerQuery)
-	return i
+
 }
