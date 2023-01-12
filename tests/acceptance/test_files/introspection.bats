@@ -248,3 +248,60 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$(cat output.json)" "$(cat $TEST_DATA_DIR/expected_introspection_info_dashboard_table.json)"
   rm -f output.json*
 }
+
+@test "ensure mod name in introspection table is <mod_name> not mod.<mod_name>" {
+  cd $SIMPLE_MOD_DIR
+  run steampipe query "select * from steampipe_query" --output json
+  
+  # extract the first mod_name from the list 
+  mod_name=$(echo $output | jq '.[0].mod_name')
+
+  # check if mod_name starts with "mod."
+  if [[ "$mod_name" == *"mod."* ]];
+  then
+    flag=1
+  else
+    flag=0
+  fi
+  assert_equal "$flag" "0"
+}
+
+@test "ensure query pseudo resources, i.e. sql files, have resource name <query_name> not <query.query_name>" {
+  cd $WORKSPACE_DIR
+  run steampipe query "select * from steampipe_query" --output json
+
+  # extract the first encountered sql file's file_name from the list
+  sql_file_name=$(echo $output | jq '.[].file_name' | grep ".sql" | head -1)
+
+  #extract the resource_name of the above extracted file_name
+  resource_name=$(echo $output | jq --arg FILENAME "$sql_file_name" '.[] | select(.file_name=="$FILENAME") | .resource_name')
+
+  # check if resource_name starts with "query."
+  if [[ "$resource_name" == *"query."* ]];
+  then
+    flag=1
+  else
+    flag=0
+  fi
+  assert_equal "$flag" "0"
+}
+
+@test "ensure the reference_from column is populated correctly" {
+  cd $SIMPLE_MOD_DIR
+  run steampipe query "select * from steampipe_reference" --output json
+
+  # extract the refs and the referenced_by of the variable `sample_var_1`
+  refs=$(echo $output | jq '.[] | select(.reference_to=="var.sample_var_1") | .reference_from')
+  echo $refs
+
+  assert_equal "$refs" '"query.sample_query_1"'
+}
+
+@test "introspection tables should get populated in query batch mode" {
+  cd $SIMPLE_MOD_DIR
+  run steampipe query "select * from steampipe_query" --output json
+
+  # extracting only description from the list, which is enough to prove that there is an output
+  description=$(echo $output | jq '.[].description')
+  assert_equal "$description" '"query 1 - 3 params all with defaults"'
+}
