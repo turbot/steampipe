@@ -6,7 +6,12 @@ const Table = getComponent("table");
 
 const PanelDetailData = ({ definition }: PanelDetailProps) => {
   return (
-    <Panel definition={definition} showControls={false} forceBackground={true}>
+    <Panel
+      definition={definition}
+      parentType="dashboard"
+      showControls={false}
+      forceBackground={true}
+    >
       <Table
         name={`${definition}.table.detail`}
         panel_type="table"

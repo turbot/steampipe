@@ -197,6 +197,7 @@ const Benchmark = (props: InnerCheckProps) => {
             <Panel
               key={summaryCard.name}
               definition={cardProps}
+              parentType="benchmark"
               showControls={false}
             >
               <Card {...cardProps} />
@@ -248,6 +249,7 @@ const BenchmarkTableView = ({
         data: benchmarkDataTable,
         status: benchmarkDataTable ? "complete" : "running",
       }}
+      parentType="benchmark"
     >
       <Table
         name={`${definition.name}.table`}
@@ -296,6 +298,7 @@ const Inner = ({ showControls, withTitle }) => {
           width: definition.width,
           status: "error",
         }}
+        parentType="benchmark"
       >
         <Error
           error={`Unsupported benchmark type ${definition.display_type}`}

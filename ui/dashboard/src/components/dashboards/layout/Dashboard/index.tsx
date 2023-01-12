@@ -29,8 +29,9 @@ const Dashboard = ({
     <Grid name={definition.name} width={isRoot ? 12 : definition.width}>
       {isRoot && <DashboardTitle title={definition.title} />}
       <Children
-        showPanelControls={showPanelControls}
         children={definition.children}
+        parentType="dashboard"
+        showPanelControls={showPanelControls}
       />
     </Grid>
   );

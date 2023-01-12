@@ -16,6 +16,7 @@ const PanelDetailPreview = ({
     <Child
       layoutDefinition={layoutDefinition}
       panelDefinition={panelDefinition}
+      parentType="dashboard"
       showPanelControls={false}
     />
   );

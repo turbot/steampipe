@@ -1,14 +1,20 @@
 import Child from "../Child";
-import { ContainerDefinition, PanelDefinition } from "../../../../types";
+import {
+  ContainerDefinition,
+  DashboardPanelType,
+  PanelDefinition,
+} from "../../../../types";
 import { useDashboard } from "../../../../hooks/useDashboard";
 
 type ChildrenProps = {
   children: ContainerDefinition[] | PanelDefinition[] | undefined;
+  parentType: DashboardPanelType;
   showPanelControls?: boolean;
 };
 
 const Children = ({
   children = [],
+  parentType,
   showPanelControls = true,
 }: ChildrenProps) => {
   const { panelsMap } = useDashboard();
@@ -24,6 +30,7 @@ const Children = ({
             key={definition.name}
             layoutDefinition={child}
             panelDefinition={definition}
+            parentType={parentType}
             showPanelControls={showPanelControls}
           />
         );

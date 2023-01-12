@@ -277,8 +277,9 @@ const PanelDetailLog = ({ definition }: PanelDetailProps) => (
   <Panel
     definition={{
       ...definition,
-      title: `${definition.title ? ` ${definition.title} Log` : "Log"}`,
+      title: `${definition.title ? `${definition.title} Log` : "Log"}`,
     }}
+    parentType="dashboard"
     showControls={false}
     showPanelError={false}
     forceBackground={true}

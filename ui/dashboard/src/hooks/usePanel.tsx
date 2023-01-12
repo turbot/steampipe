@@ -1,9 +1,17 @@
 import usePanelControls from "./usePanelControls";
 import { BaseChartProps } from "../components/dashboards/charts/types";
 import { CardProps } from "../components/dashboards/Card";
-import { createContext, ReactNode, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   DashboardInputs,
+  DashboardPanelType,
   DashboardRunState,
   PanelDefinition,
   PanelDependenciesByStatus,
@@ -23,6 +31,7 @@ import { NodeAndEdgeProperties } from "../components/dashboards/common/types";
 import { TableProps } from "../components/dashboards/Table";
 import { TextProps } from "../components/dashboards/Text";
 import { useDashboard } from "./useDashboard";
+import { useContainer } from "./useContainer";
 
 type IPanelContext = {
   definition:
@@ -61,6 +70,7 @@ type PanelProviderProps = {
     | PanelDefinition
     | TableProps
     | TextProps;
+  parentType: DashboardPanelType;
   showControls?: boolean;
 };
 
@@ -118,8 +128,10 @@ const recordDependency = (
 const PanelProvider = ({
   children,
   definition,
+  parentType,
   showControls,
 }: PanelProviderProps) => {
+  const { updateChildStatus } = useContainer();
   const { selectedDashboardInputs, panelsMap } = useDashboard();
   const [showPanelControls, setShowPanelControls] = useState(false);
   const [showPanelInformation, setShowPanelInformation] = useState(false);
@@ -207,6 +219,16 @@ const PanelProvider = ({
 
       return { dependencies, dependenciesByStatus, inputPanelsAwaitingValue };
     }, [definition, panelsMap, selectedDashboardInputs]);
+
+  useEffect(() => {
+    if (parentType !== "container") {
+      return;
+    }
+    updateChildStatus(
+      definition as PanelDefinition,
+      inputPanelsAwaitingValue.length === 0 ? "visible" : "hidden"
+    );
+  }, [definition, inputPanelsAwaitingValue, parentType, updateChildStatus]);
 
   return (
     <PanelContext.Provider

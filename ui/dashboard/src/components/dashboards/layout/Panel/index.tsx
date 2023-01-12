@@ -7,6 +7,7 @@ import Placeholder from "../../Placeholder";
 import { BaseChartProps } from "../../charts/types";
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
+import { DashboardPanelType, PanelDefinition } from "../../../../types";
 import { FlowProps } from "../../flows/types";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
 import { GraphProps } from "../../graphs/types";
@@ -14,7 +15,6 @@ import { HierarchyProps } from "../../hierarchies/types";
 import { ImageProps } from "../../Image";
 import { InputProps } from "../../inputs/types";
 import { memo, useState } from "react";
-import { PanelDefinition } from "../../../../types";
 import { PanelProvider, usePanel } from "../../../../hooks/usePanel";
 import { ReactNode } from "react";
 import { registerComponent } from "../../index";
@@ -36,6 +36,7 @@ type PanelProps = {
     | PanelDefinition
     | TableProps
     | TextProps;
+  parentType: DashboardPanelType;
   showControls?: boolean;
   showPanelError?: boolean;
   showPanelStatus?: boolean;
@@ -117,7 +118,8 @@ const Panel = ({
           <div
             className={classNames(
               definition.panel_type === "input" &&
-                definition.display_type !== "table"
+                definition.display_type !== "table" &&
+                !forceBackground
                 ? "pl-0 pr-2 sm:pr-4 py-2"
                 : "px-4 py-4"
             )}
@@ -176,6 +178,7 @@ const PanelWrapper = memo((props: PanelProps) => {
   return (
     <PanelProvider
       definition={props.definition}
+      parentType={props.parentType}
       showControls={props.showControls}
     >
       <Panel {...rest}>{children}</Panel>
