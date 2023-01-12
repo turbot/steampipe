@@ -140,7 +140,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe check - export html" {
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --export test.html --progress=false
-  
+
   # checking for OS type, since sed command is different for linux and OSX
   # removing the 642nd line, since it contains file locations and timestamps
   if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -161,7 +161,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe check - export md" {
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --export test.md --progress=false
-  
+
   # checking for OS type, since sed command is different for linux and OSX
   # removing the 42nd line, since it contains file locations and timestamps
   if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -259,7 +259,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   echo $output
 
-  # TODO: Find a way to store the output in a file and match it with the 
+  # TODO: Find a way to store the output in a file and match it with the
   # expected file. For now the work-around is to check whether the output
   # contains `summary`
   assert_output --partial 'Summary'
