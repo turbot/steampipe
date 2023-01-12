@@ -5,6 +5,7 @@ import { DashboardContext } from "../hooks/useDashboard";
 import {
   DashboardDataModeLive,
   DashboardPanelType,
+  DashboardRunState,
   DashboardSearch,
 } from "../types";
 import { noop } from "./func";
@@ -16,6 +17,7 @@ type PanelStoryDecoratorProps = {
   panels?: {
     [key: string]: any;
   };
+  status?: DashboardRunState;
   additionalProperties?: {
     [key: string]: any;
   };
@@ -30,20 +32,22 @@ export const PanelStoryDecorator = ({
   definition = {},
   panels = {},
   panelType,
+  status = "complete",
   additionalProperties = {},
 }: PanelStoryDecoratorProps) => {
   const { theme, wrapperRef } = useStorybookTheme();
   const { properties, ...rest } = definition;
 
   const newPanel = {
+    ...rest,
     name: `${panelType}.story`,
     panel_type: panelType,
-    ...rest,
     properties: {
       ...(properties || {}),
       ...additionalProperties,
     },
     sql: "storybook",
+    status,
   };
 
   return (
