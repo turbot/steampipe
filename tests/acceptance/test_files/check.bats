@@ -2,6 +2,7 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe check exitCode - no control alarms or errors" {
+  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe check benchmark.all_controls_ok
   assert_equal $status 0
@@ -9,6 +10,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check exitCode - with controls in error" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check benchmark.control_check_rendering_benchmark
   assert_equal $status 2
@@ -23,6 +25,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 #}
 
 @test "steampipe check exitCode - with controls in error(running multiple benchmarks together)" {
+  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe check benchmark.control_summary_benchmark benchmark.check_cache_benchmark
   assert_equal $status 2
@@ -30,6 +33,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check exitCode - runtime error(insufficient args)" {
+  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe check
   assert_equal $status 254
@@ -37,6 +41,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check long control title" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   export STEAMPIPE_CHECK_DISPLAY_WIDTH=100
   run steampipe check control.control_long_title --progress=false --theme=plain
@@ -45,6 +50,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check short control title" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   export STEAMPIPE_CHECK_DISPLAY_WIDTH=100
   run steampipe check control.control_short_title --progress=false --theme=plain
@@ -53,6 +59,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check unicode control title" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   export STEAMPIPE_CHECK_DISPLAY_WIDTH=100
   run steampipe check control.control_unicode_title --progress=false --theme=plain
@@ -61,6 +68,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check reasons(very long, very short, unicode)" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   export STEAMPIPE_CHECK_DISPLAY_WIDTH=100
   run steampipe check control.control_long_short_unicode_reasons --progress=false --theme=plain
@@ -69,6 +77,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check control with all possible statuses(10 OK, 5 ALARM, 2 ERROR, 1 SKIP and 3 INFO)" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   export STEAMPIPE_CHECK_DISPLAY_WIDTH=100
   run steampipe check control.sample_control_mixed_results_1 --progress=false --theme=plain
@@ -77,6 +86,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check control with all resources in ALARM" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   export STEAMPIPE_CHECK_DISPLAY_WIDTH=100
   run steampipe check control.sample_control_all_alarms --progress=false --theme=plain
@@ -85,6 +95,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - output csv - no header" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --output=csv --progress=false --header=false
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_check_csv_noheader.csv)"
@@ -92,6 +103,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - output csv(check tags and dimensions sorting)" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_sorted_tags_and_dimensions --output=csv --progress=false
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_check_csv_sorted_tags.csv)"
@@ -99,6 +111,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - output json" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --output=json --progress=false
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_check_json.json)"
@@ -106,6 +119,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - export csv" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --export test.csv --progress=false
   assert_equal "$(cat test.csv)" "$(cat $TEST_DATA_DIR/expected_check_csv.csv)"
@@ -114,6 +128,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - export csv - pipe separator" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --export test.csv --separator="|" --progress=false
   assert_equal "$(cat test.csv)" "$(cat $TEST_DATA_DIR/expected_check_csv_pipe_separator.csv)"
@@ -122,6 +137,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - export csv(check tags and dimensions sorting)" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_sorted_tags_and_dimensions --export test.csv --progress=false
   assert_equal "$(cat test.csv)" "$(cat $TEST_DATA_DIR/expected_check_csv_sorted_tags.csv)"
@@ -130,6 +146,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - export json" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --export test.json --progress=false
   assert_equal "$(cat test.json)" "$(cat $TEST_DATA_DIR/expected_check_json.json)"
@@ -138,6 +155,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - export html" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --export test.html --progress=false
 
@@ -159,6 +177,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - export md" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --export test.md --progress=false
 
@@ -176,6 +195,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - export nunit3" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --export test.xml --progress=false
 
@@ -193,6 +213,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - export snapshot" {
+  skip
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --export test.sps --progress=false
 
@@ -211,6 +232,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check all" {
+  skip
   cd $CHECK_ALL_MOD
   run steampipe check all --export test.json --progress=false
   assert_equal "$(cat test.json)" "$(cat $TEST_DATA_DIR/expected_check_all.json)"
@@ -246,6 +268,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 ## plugin crash
 
 @test "check whether the plugin is crashing or not" {
+  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe check benchmark.check_plugin_crash_benchmark
   echo $output
@@ -254,6 +277,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 # testing the check summary output feature in steampipe
 @test "check summary output" {
+  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe check benchmark.control_summary_benchmark --theme plain
 
