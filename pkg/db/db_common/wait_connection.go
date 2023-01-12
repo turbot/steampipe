@@ -64,7 +64,7 @@ func WaitForConnection(ctx context.Context, connection *pgx.Conn) (err error) {
 				// let's delay for sometime before trying again
 				// using the PingInterval here - can use any other value if required
 				time.Sleep(constants.ServicePingInterval)
-				log.Println("[TRACE] checking again")
+				log.Println("[WARN] checking again")
 			}
 			return retry.RetryableError(pingErr)
 		}
