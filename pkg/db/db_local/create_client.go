@@ -130,7 +130,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		log.Println("[TRACE] Trying to create maintenance client with: ", connStr)
 		dbConnection, err := pgx.Connect(rCtx, connStr)
 		if err != nil {
-			log.Println("[WARN] faced error:", err)
+			log.Println("[TRACE] faced error:", err)
 			return retry.RetryableError(err)
 		}
 		conn = dbConnection
