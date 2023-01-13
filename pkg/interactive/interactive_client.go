@@ -26,7 +26,6 @@ import (
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/metaquery"
 	"github.com/turbot/steampipe/pkg/query/queryhistory"
-	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -44,7 +43,7 @@ const (
 // InteractiveClient is a wrapper over a LocalClient and a Prompt to facilitate interactive query prompt
 type InteractiveClient struct {
 	initData                *query.InitData
-	resultsStreamer         *queryresult.ResultStreamer
+	promptResult            *RunInteractivePromptResult
 	interactiveBuffer       []string
 	interactivePrompt       *prompt.Prompt
 	interactiveQueryHistory *queryhistory.QueryHistory
@@ -75,14 +74,14 @@ func getHighlighter(theme string) *Highlighter {
 	)
 }
 
-func newInteractiveClient(ctx context.Context, initData *query.InitData, resultsStreamer *queryresult.ResultStreamer) (*InteractiveClient, error) {
+func newInteractiveClient(ctx context.Context, initData *query.InitData, result *RunInteractivePromptResult) (*InteractiveClient, error) {
 	interactiveQueryHistory, err := queryhistory.New()
 	if err != nil {
 		return nil, err
 	}
 	c := &InteractiveClient{
 		initData:                initData,
-		resultsStreamer:         resultsStreamer,
+		promptResult:            result,
 		interactiveQueryHistory: interactiveQueryHistory,
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
@@ -108,6 +107,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
+			c.promptResult.PromptErr = helpers.ToError(r)
 		}
 		// close up the SIGINT channel so that the receiver goroutine can quit
 		quitChannel <- true
@@ -119,7 +119,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 		// close the result stream
 		// this needs to be the last thing we do,
 		// as the query result display code will exit once the result stream is closed
-		c.resultsStreamer.Close()
+		c.promptResult.Streamer.Close()
 	}()
 
 	statushooks.Message(ctx,
@@ -250,6 +250,7 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			ret = v
 		default:
 			if r != nil {
+				c.promptResult.PromptErr = helpers.ToError(r)
 				// for everything else, float up the panic
 				panic(r)
 			}
@@ -423,7 +424,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 				display.DisplayErrorTiming(t)
 			}
 		} else {
-			c.resultsStreamer.StreamResult(result)
+			c.promptResult.Streamer.StreamResult(result)
 		}
 	}
 

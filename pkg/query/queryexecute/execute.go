@@ -18,20 +18,21 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-func RunInteractiveSession(ctx context.Context, initData *query.InitData) {
+func RunInteractiveSession(ctx context.Context, initData *query.InitData) error {
 	utils.LogTime("execute.RunInteractiveSession start")
 	defer utils.LogTime("execute.RunInteractiveSession end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := interactive.RunInteractivePrompt(ctx, initData)
+	result, err := interactive.RunInteractivePrompt(ctx, initData)
 	error_helpers.FailOnError(err)
 
 	// print the data as it comes
-	for r := range resultsStreamer.Results {
+	for r := range result.Streamer.Results {
 		display.ShowOutput(ctx, r)
 		// signal to the resultStreamer that we are done with this chunk of the stream
-		resultsStreamer.AllResultsRead()
+		result.Streamer.AllResultsRead()
 	}
+	return result.PromptErr
 }
 
 func RunBatchSession(ctx context.Context, initData *query.InitData) (int, error) {

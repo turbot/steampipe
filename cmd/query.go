@@ -137,7 +137,10 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	switch {
 	case interactiveMode:
-		queryexecute.RunInteractiveSession(ctx, initData)
+		err = queryexecute.RunInteractiveSession(ctx, initData)
+		if err != nil {
+			exitCode = constants.ExitCodeInitializationFailed
+		}
 	case snapshotRequired():
 		// if we are either outputting snapshot format, or sharing the results as a snapshot, execute the query
 		// as a dashboard
