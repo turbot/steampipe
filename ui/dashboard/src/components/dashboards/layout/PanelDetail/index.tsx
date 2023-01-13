@@ -80,7 +80,12 @@ const PanelDetail = ({ definition }: PanelDetailProps) => {
         selected: selectedTab.name === Tabs.DATA.name,
       });
     }
-    if (dataMode === DashboardDataModeLive && !!panelLog) {
+    if (
+      dataMode === DashboardDataModeLive &&
+      definition.panel_type !== "benchmark" &&
+      definition.panel_type !== "control" &&
+      !!panelLog
+    ) {
       tabs.push({
         ...Tabs.LOG,
         selected: selectedTab.name === Tabs.LOG.name,
