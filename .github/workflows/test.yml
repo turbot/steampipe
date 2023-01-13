@@ -16,10 +16,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Test
+      - name: Check head and base refs of the PR
         run: |
           echo ${{ github.head_ref }}
           echo ${{ github.base_ref }}
+
+      - name: Create a branch off base and merge head_ref into the branch
+        run: |
+          git checkout ${{ github.base_ref }}
+          git checkout -b test-branch-acc
+          git merge --squash ${{ github.head_ref }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: test-branch-acc
 
       - name: Unshallow
         run: git fetch
