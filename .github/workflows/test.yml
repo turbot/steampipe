@@ -18,7 +18,7 @@ jobs:
 
       - name: Test
         run: |
-          gh pr view ${{ github.event.ref }}
+          gh pr view ${GITHUB_REF##*/}
 
       - name: Unshallow
         run: git fetch
