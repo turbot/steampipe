@@ -55,7 +55,7 @@ type Workspace struct {
 	// callback function called when there is a file watcher event
 	onFileWatcherEventMessages func()
 	loadPseudoResources        bool
-	// channel used to send dashboard events to the handleDashbooardEvent goroutine
+	// channel used to send dashboard events to the handleDashboardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
 }
 

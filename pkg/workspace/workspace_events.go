@@ -20,8 +20,6 @@ var EventCount int64 = 0
 
 func (w *Workspace) PublishDashboardEvent(ctx context.Context, e dashboardevents.DashboardEvent) {
 	if w.dashboardEventChan != nil {
-		// NOTE: channel send stalls have been observed when the channel buffer was too small
-		// - timeout send after 1s and support cancellation while waiting for event send
 		var doneChan = make(chan struct{})
 		go func() {
 			// send an event onto the event bus
@@ -44,9 +42,8 @@ func (w *Workspace) PublishDashboardEvent(ctx context.Context, e dashboardevents
 func (w *Workspace) RegisterDashboardEventHandler(ctx context.Context, handler dashboardevents.DashboardEventHandler) {
 	// if no event channel has been created we need to start the event handler goroutine
 	if w.dashboardEventChan == nil {
-		// create a fairly large channel buffer - event send stalls have been observed when this buffering is too low
-		// (not fully understood yet - this is a sticking plaster)
-		w.dashboardEventChan = make(chan dashboardevents.DashboardEvent, 200)
+		// create a fairly large channel buffer
+		w.dashboardEventChan = make(chan dashboardevents.DashboardEvent, 256)
 		go w.handleDashboardEvent(ctx)
 	}
 	// now add the handler to our list
