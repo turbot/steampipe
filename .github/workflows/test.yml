@@ -134,6 +134,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
+          ref: test-branch-acc
           submodules: true
 
       - name: Set up Go
