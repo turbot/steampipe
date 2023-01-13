@@ -12,9 +12,7 @@ import {
   EXECUTION_SCHEMA_VERSION_20221222,
   EXECUTION_STARTED_SCHEMA_VERSION_LATEST,
 } from "../constants/versions";
-import {
-  migratePanelStatuses,
-} from "./dashboardEventHandlers";
+import { migratePanelStatuses } from "./dashboardEventHandlers";
 
 const executedStartedMigrations = [
   {
@@ -29,7 +27,6 @@ const executedStartedMigrations = [
         layout,
         panels = {},
         variables,
-        start_time,
       } = current;
       return {
         action,
@@ -38,7 +35,7 @@ const executedStartedMigrations = [
         layout,
         panels: migratePanelStatuses(panels, EXECUTION_SCHEMA_VERSION_20220614),
         variables,
-        start_time,
+        start_time: new Date().toISOString(),
         schema_version: EXECUTION_SCHEMA_VERSION_20221222,
       };
     },

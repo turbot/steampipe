@@ -96,7 +96,7 @@ const leafNodesUpdatedEventHandler = (action, currentSchemaVersion, state) => {
 
     const { dashboard_node, timestamp } = event;
 
-    if (!dashboard_node || !dashboard_node.status || !timestamp) {
+    if (!dashboard_node || !dashboard_node.status) {
       continue;
     }
 

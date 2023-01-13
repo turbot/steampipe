@@ -11,10 +11,90 @@ import {
 } from "../constants/versions";
 import {
   ExecutionCompleteSchemaMigrator,
+  ExecutionStartedSchemaMigrator,
   SnapshotDataToExecutionCompleteSchemaMigrator,
 } from "./schema";
 
 describe("schema", () => {
+  describe("execution_started schema migrations", () => {
+    test("Schema 20220614 to 20221222", () => {
+      const inputEvent: DashboardExecutionEventWithSchema = {
+        action: "execution_started",
+        schema_version: EXECUTION_SCHEMA_VERSION_20220614,
+        execution_id: "0x140029247e0",
+        layout: {
+          name: "aws_insights.dashboard.aws_iam_user_dashboard",
+          panel_type: "dashboard",
+          children: [
+            {
+              name: "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0",
+              panel_type: "container",
+            },
+          ],
+        },
+        panels: {
+          "aws_insights.dashboard.aws_iam_user_dashboard": {
+            name: "aws_insights.dashboard.aws_iam_user_dashboard",
+            // @ts-ignore
+            status: "ready",
+          },
+          "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0":
+            {
+              name: "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0",
+              // @ts-ignore
+              status: "ready",
+            },
+        },
+        inputs: {
+          "input.foo": "bar",
+        },
+        variables: {
+          foo: "bar",
+        },
+      };
+
+      const eventMigrator = new ExecutionStartedSchemaMigrator();
+      const migratedEvent = eventMigrator.toLatest(inputEvent);
+
+      const expectedPanels = {
+        "aws_insights.dashboard.aws_iam_user_dashboard": {
+          name: "aws_insights.dashboard.aws_iam_user_dashboard",
+          status: "running",
+        },
+        "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0":
+          {
+            name: "aws_insights.container.dashboard_aws_iam_user_dashboard_anonymous_container_0",
+            status: "running",
+          },
+      };
+
+      const expectedEvent = {
+        action: inputEvent.action,
+        schema_version: EXECUTION_COMPLETE_SCHEMA_VERSION_LATEST,
+        execution_id: inputEvent.execution_id,
+        layout: inputEvent.layout,
+        panels: expectedPanels,
+        inputs: inputEvent.inputs,
+        variables: inputEvent.variables,
+      };
+
+      expect(migratedEvent).toEqual(expect.objectContaining(expectedEvent));
+    });
+
+    test("Unsupported schema", () => {
+      const inputEvent: DashboardExecutionEventWithSchema = {
+        // @ts-ignore
+        schema_version: "20221010",
+      };
+
+      const eventMigrator = new ExecutionCompleteSchemaMigrator();
+
+      expect(() => eventMigrator.toLatest(inputEvent)).toThrow(
+        `Unsupported dashboard event schema ${inputEvent.schema_version}`
+      );
+    });
+  });
+
   describe("execution_complete schema migrations", () => {
     test("Schema 20220614 to 20221222", () => {
       const inputEvent: DashboardExecutionEventWithSchema = {
@@ -84,8 +164,8 @@ describe("schema", () => {
           inputs: inputEvent.inputs,
           variables: inputEvent.variables,
           search_path: inputEvent.search_path,
-          start_time: inputEvent.start_time,
           end_time: inputEvent.end_time,
+          start_time: inputEvent.start_time,
         },
       };
 
