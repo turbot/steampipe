@@ -6,18 +6,19 @@ env:
   STEAMPIPE_UPDATE_CHECK: false
   SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
   SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
+  GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
 jobs:
   goreleaser:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
       - name: Test
         run: |
           gh pr view ${{ github.branch }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Unshallow
         run: git fetch
