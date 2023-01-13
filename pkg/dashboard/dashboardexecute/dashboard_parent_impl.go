@@ -74,34 +74,41 @@ func (r *DashboardParentImpl) executeWithsAsync(ctx context.Context) {
 	}
 }
 
-func (r *DashboardParentImpl) waitForChildrenAsync() chan error {
+func (r *DashboardParentImpl) waitForChildrenAsync(ctx context.Context) chan error {
 	log.Printf("[TRACE] %s waitForChildrenAsync", r.Name)
 	var doneChan = make(chan error)
 	if len(r.children) == 0 {
 		log.Printf("[TRACE] %s waitForChildrenAsync - no children so we're done", r.Name)
 		// if there are no children, return a closed channel so we do not wait
 		close(doneChan)
-	} else {
-		go func() {
-			// wait for children to complete
-			var errors []error
+		return doneChan
+	}
 
-			for !(r.ChildrenComplete()) {
-				completeChild := <-r.childCompleteChan
+	go func() {
+		// wait for children to complete
+		var errors []error
+	child_loop:
+		for !(r.ChildrenComplete()) {
+			select {
+			case completeChild := <-r.childCompleteChan:
 				log.Printf("[TRACE] %s got child complete for %s", r.Name, completeChild.GetName())
 				if completeChild.GetRunStatus().IsError() {
 					errors = append(errors, completeChild.GetError())
 					log.Printf("[TRACE] %s child %s has error %v", r.Name, completeChild.GetName(), completeChild.GetError())
 				}
 				// fall through to recheck ChildrenComplete
+			case <-ctx.Done():
+				errors = append(errors, ctx.Err())
+				break child_loop
 			}
+		}
 
-			log.Printf("[TRACE]  %s ALL children and withs complete, errors: %v", r.Name, errors)
-			// so all children have completed - check for errors
-			// TODO [node_reuse] format better error https://github.com/turbot/steampipe/issues/2920
-			doneChan <- error_helpers.CombineErrors(errors...)
-		}()
-	}
+		log.Printf("[TRACE]  %s ALL children and withs complete, errors: %v", r.Name, errors)
+		// so all children have completed - check for errors
+		// TODO [node_reuse] format better error https://github.com/turbot/steampipe/issues/2920
+		doneChan <- error_helpers.CombineErrors(errors...)
+	}()
+
 	return doneChan
 }
 

@@ -378,6 +378,60 @@ func (m *ResourceMaps) Equals(other *ResourceMaps) bool {
 	return true
 }
 
+// GetResource tries to find a resource with the given name in the ResourceMaps
+// NOTE: this does NOT support inputs, which are NOT uniquely named in a mod
+func (m *ResourceMaps) GetResource(parsedName *ParsedResourceName) (resource HclResource, found bool) {
+	modName := parsedName.Mod
+	if modName == "" {
+		modName = m.Mod.ShortName
+	}
+	longName := fmt.Sprintf("%s.%s.%s", modName, parsedName.ItemType, parsedName.Name)
+
+	// NOTE: we could use WalkResources, but this is quicker
+
+	switch parsedName.ItemType {
+	case BlockTypeBenchmark:
+		resource, found = m.Benchmarks[longName]
+	case BlockTypeControl:
+		resource, found = m.Controls[longName]
+	case BlockTypeDashboard:
+		resource, found = m.Dashboards[longName]
+	case BlockTypeCard:
+		resource, found = m.DashboardCards[longName]
+	case BlockTypeCategory:
+		resource, found = m.DashboardCategories[longName]
+	case BlockTypeChart:
+		resource, found = m.DashboardCharts[longName]
+	case BlockTypeContainer:
+		resource, found = m.DashboardContainers[longName]
+	case BlockTypeEdge:
+		resource, found = m.DashboardEdges[longName]
+	case BlockTypeFlow:
+		resource, found = m.DashboardFlows[longName]
+	case BlockTypeGraph:
+		resource, found = m.DashboardGraphs[longName]
+	case BlockTypeHierarchy:
+		resource, found = m.DashboardHierarchies[longName]
+	case BlockTypeImage:
+		resource, found = m.DashboardImages[longName]
+	case BlockTypeNode:
+		resource, found = m.DashboardNodes[longName]
+	case BlockTypeTable:
+		resource, found = m.DashboardTables[longName]
+	case BlockTypeText:
+		resource, found = m.DashboardTexts[longName]
+	case BlockTypeInput:
+		// this function only supports global inputs
+		// if the input has a parent dashboard, you must use GetDashboardInput
+		resource, found = m.GlobalDashboardInputs[longName]
+	case BlockTypeQuery:
+		resource, found = m.Queries[longName]
+	case BlockTypeVariable:
+		resource, found = m.Variables[longName]
+	}
+	return resource, found
+}
+
 func (m *ResourceMaps) PopulateReferences() {
 	// only populate references if introspection is enabled
 	switch viper.GetString(constants.ArgIntrospection) {

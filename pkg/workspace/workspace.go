@@ -184,8 +184,11 @@ func (w *Workspace) Close() {
 	if w.watcher != nil {
 		w.watcher.Close()
 	}
-	if w.dashboardEventChan != nil {
-		close(w.dashboardEventChan)
+	if ch := w.dashboardEventChan; ch != nil {
+		// NOTE: set nil first
+		w.dashboardEventChan = nil
+		log.Printf("[TRACE] closing dashboardEventChan")
+		close(ch)
 	}
 }
 

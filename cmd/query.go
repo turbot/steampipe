@@ -299,7 +299,7 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 func ensureQueryResource(name string, resolvedQuery *modconfig.ResolvedQuery, w *workspace.Workspace) (queryProvider modconfig.HclResource, existingResource bool) {
 	// is this an existing resource?
 	if parsedName, err := modconfig.ParseResourceName(name); err == nil {
-		if resource, found := modconfig.GetResource(w, parsedName); found {
+		if resource, found := w.GetResourceMaps().GetResource(parsedName); found {
 			return resource, true
 		}
 	}

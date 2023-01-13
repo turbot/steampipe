@@ -177,7 +177,7 @@ func (w *Workspace) extractQueryProviderFromQueryString(input string) (modconfig
 		return nil, nil, nil
 	}
 	// ok we managed to extract a resource name - does this resource exist?
-	resource, ok := modconfig.GetResource(w, parsedResourceName)
+	resource, ok := w.GetResourceMaps().GetResource(parsedResourceName)
 	if !ok {
 		return nil, nil, nil
 	}

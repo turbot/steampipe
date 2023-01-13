@@ -41,13 +41,13 @@ func (w *Workspace) PublishDashboardEvent(ctx context.Context, e dashboardevents
 
 // RegisterDashboardEventHandler starts the event handler goroutine if necessary and
 // adds the event handler to our list
-func (w *Workspace) RegisterDashboardEventHandler(handler dashboardevents.DashboardEventHandler) {
+func (w *Workspace) RegisterDashboardEventHandler(ctx context.Context, handler dashboardevents.DashboardEventHandler) {
 	// if no event channel has been created we need to start the event handler goroutine
 	if w.dashboardEventChan == nil {
 		// create a fairly large channel buffer - event send stalls have been observed when this buffering is too low
 		// (not fully understood yet - this is a sticking plaster)
 		w.dashboardEventChan = make(chan dashboardevents.DashboardEvent, 200)
-		go w.handleDashboardEvent()
+		go w.handleDashboardEvent(ctx)
 	}
 	// now add the handler to our list
 	w.dashboardEventHandlers = append(w.dashboardEventHandlers, handler)
@@ -60,7 +60,7 @@ func (w *Workspace) UnregisterDashboardEventHandlers() {
 }
 
 // this function is run as a goroutine to call registered event handlers for all received events
-func (w *Workspace) handleDashboardEvent() {
+func (w *Workspace) handleDashboardEvent(ctx context.Context) {
 	for {
 		e := <-w.dashboardEventChan
 		atomic.AddInt64(&EventCount, -1)
@@ -71,7 +71,7 @@ func (w *Workspace) handleDashboardEvent() {
 		}
 
 		for _, handler := range w.dashboardEventHandlers {
-			handler(e)
+			handler(ctx, e)
 		}
 	}
 }
@@ -421,7 +421,7 @@ func (w *Workspace) raiseDashboardChangedEvents(ctx context.Context, resourceMap
 	if event.HasChanges() {
 		// for every changed resource, set parents as changed, up the tree
 		f := func(item modconfig.ModTreeItem) (bool, error) {
-			event.SetParentsChanged(item)
+			event.SetParentsChanged(item, prevResourceMaps)
 			return true, nil
 		}
 		event.WalkChangedResources(f)

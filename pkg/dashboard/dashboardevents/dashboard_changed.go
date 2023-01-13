@@ -306,11 +306,19 @@ func (c *DashboardChanged) WalkChangedResources(resourceFunc func(item modconfig
 	return nil
 }
 
-func (c *DashboardChanged) SetParentsChanged(item modconfig.ModTreeItem) {
+func (c *DashboardChanged) SetParentsChanged(item modconfig.ModTreeItem, prevResourceMaps *modconfig.ResourceMaps) {
+	if prevResourceMaps == nil {
+		return
+	}
+
 	parents := item.GetParents()
 	for _, parent := range parents {
-		c.AddChanged(parent)
-		c.SetParentsChanged(parent)
+		// if the parent DID NOT exist in the previous resource maps, do nothing
+		parsedResourceName, _ := modconfig.ParseResourceName(parent.Name())
+		if _, existingResource := prevResourceMaps.GetResource(parsedResourceName); existingResource {
+			c.AddChanged(parent)
+			c.SetParentsChanged(parent, nil)
+		}
 	}
 }
 

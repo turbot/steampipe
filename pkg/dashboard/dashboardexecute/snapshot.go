@@ -25,10 +25,10 @@ func GenerateSnapshot(ctx context.Context, target string, initData *initialisati
 	sessionId := ""
 	errorChannel := make(chan error)
 	resultChannel := make(chan *dashboardtypes.SteampipeSnapshot)
-	dashboardEventHandler := func(event dashboardevents.DashboardEvent) {
-		handleDashboardEvent(event, resultChannel, errorChannel)
+	dashboardEventHandler := func(ctx context.Context, event dashboardevents.DashboardEvent) {
+		handleDashboardEvent(ctx, event, resultChannel, errorChannel)
 	}
-	w.RegisterDashboardEventHandler(dashboardEventHandler)
+	w.RegisterDashboardEventHandler(ctx, dashboardEventHandler)
 	// clear event handlers again in case another snapshot will be generated in this run
 	defer w.UnregisterDashboardEventHandlers()
 
@@ -47,7 +47,7 @@ func GenerateSnapshot(ctx context.Context, target string, initData *initialisati
 	}
 }
 
-func handleDashboardEvent(event dashboardevents.DashboardEvent, resultChannel chan *dashboardtypes.SteampipeSnapshot, errorChannel chan error) {
+func handleDashboardEvent(_ context.Context, event dashboardevents.DashboardEvent, resultChannel chan *dashboardtypes.SteampipeSnapshot, errorChannel chan error) {
 	switch e := event.(type) {
 	case *dashboardevents.ExecutionError:
 		errorChannel <- e.Error

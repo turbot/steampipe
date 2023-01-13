@@ -121,7 +121,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	r.executeChildrenAsync(ctx)
 
 	// start a goroutine to wait for children to complete
-	doneChan := r.waitForChildrenAsync()
+	doneChan := r.waitForChildrenAsync(ctx)
 
 	if err := r.evaluateRuntimeDependencies(ctx); err != nil {
 		r.SetError(ctx, err)

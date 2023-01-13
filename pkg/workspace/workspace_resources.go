@@ -11,7 +11,7 @@ func (w *Workspace) GetQueryProvider(queryName string) (modconfig.QueryProvider,
 		return nil, false
 	}
 	// try to find the resource
-	if resource, ok := modconfig.GetResource(w, parsedName); ok {
+	if resource, ok := w.GetResourceMaps().GetResource(parsedName); ok {
 		// found a resource - is itr a query provider
 		if qp := resource.(modconfig.QueryProvider); ok {
 			return qp, true
