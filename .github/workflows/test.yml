@@ -18,7 +18,8 @@ jobs:
 
       - name: Test
         run: |
-          gh pr view ${GITHUB_REF##*/}
+          gh pr view ${{ github.head_ref }}
+
 
       - name: Unshallow
         run: git fetch
