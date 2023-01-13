@@ -111,6 +111,9 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn,
 // this is used in a couple of places
 //  1. During installation to setup the DBMS with foreign_server, extension et.al.
 //  2. During service start and stop to query the DBMS for parameters (connected clients, database name etc.)
+//
+// this is called immediately after the service process is started and hence
+// all special handling related to service startup failures SHOULD be handled here
 func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	utils.LogTime("db_local.createMaintenanceClient start")
 	defer utils.LogTime("db_local.createMaintenanceClient end")
@@ -130,9 +133,10 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		log.Println("[TRACE] Trying to create maintenance client with: ", connStr)
 		dbConnection, err := pgx.Connect(rCtx, connStr)
 		if err != nil {
-			log.Println("[TRACE] faced error:", err)
+			log.Println("[TRACE] could not connect:", err)
 			return retry.RetryableError(err)
 		}
+		log.Println("[TRACE] >>>>>>>>>> connected to database")
 		conn = dbConnection
 		return nil
 	})

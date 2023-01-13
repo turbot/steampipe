@@ -2,17 +2,18 @@ package db_common
 
 import (
 	"context"
-	"errors"
 	"log"
 	"time"
 
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 )
+
+var ErrServiceInRecovery = errors.New("service is in recovery mode")
 
 // WaitForPool waits for the db to start accepting connections and returns true
 // returns false if the dbClient does not start within a stipulated time,
@@ -56,16 +57,18 @@ func WaitForConnection(ctx context.Context, connection *pgx.Conn) (err error) {
 	)
 
 	retryErr := retry.Do(ctx, retryBackoff, func(ctx context.Context) error {
+		log.Println("[TRACE] >>>>>>>>>> Checking IS_IN_RECOVERY")
+		InRecoveryMode, err := PgIsInRecovery(ctx, connection)
+		if err != nil {
+			return retry.RetryableError(err)
+		}
+		log.Println("[TRACE] >>>>>>>>>> ISINRECOVERY:", InRecoveryMode)
+		if InRecoveryMode {
+			return retry.RetryableError(ErrServiceInRecovery)
+		}
+		log.Println("[TRACE] >>>>>>>>>> Pinging")
 		pingErr := connection.Ping(timeoutCtx)
 		if pingErr != nil {
-			if pgErr, ok := pingErr.(*pgconn.PgError); ok && pgErr.SQLState() == "57P03" {
-				log.Println("[TRACE] faced a 'cannot_connect_now (57P03):", errors.Unwrap(pingErr))
-				// 57P03 is a fatal error that comes up when the database is still starting up
-				// let's delay for sometime before trying again
-				// using the PingInterval here - can use any other value if required
-				time.Sleep(constants.ServicePingInterval)
-				log.Println("[TRACE] checking again")
-			}
 			return retry.RetryableError(pingErr)
 		}
 		return nil
