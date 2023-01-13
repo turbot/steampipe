@@ -23,6 +23,7 @@ jobs:
 
       - name: Create a branch off base and merge head_ref into the branch
         run: |
+          git fetch
           git checkout ${{ github.base_ref }}
           git checkout -b test-branch-acc
           git merge --squash ${{ github.head_ref }}
