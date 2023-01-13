@@ -177,12 +177,11 @@ jobs:
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
           $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
           echo "exit_code=$(echo $?)" >> $GITHUB_OUTPUT
-          steampipe service stop --force
 
       - name: Save Test Suite Logs
         uses: actions/upload-artifact@v3
         with:
-          name: test-logs
+          name: test-logs-${{ matrix.test_block }}
           path: ~/.steampipe/logs
           if-no-files-found: error
 
@@ -194,6 +193,15 @@ jobs:
         continue-on-error: false
         run: |
           if [ ${{ steps.run-test-suite.outputs.exit_code }} -eq 0 ]; then
+            exit 0
+          else
+            exit 1
+          fi
+
+      - name: Verify No Steampipe Processes Running
+        continue-on-error: false
+        run: |
+          if [ $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') -eq 0 ]; then  
             exit 0
           else
             exit 1
@@ -220,10 +228,4 @@ jobs:
         uses: geekyeggo/delete-artifact@v2
         with:
           name: build-artifact-darwin
-          failOnError: true
-
-      - name: Clean up Test Suite Logs
-        uses: geekyeggo/delete-artifact@v2
-        with:
-          name: test-logs
           failOnError: true
