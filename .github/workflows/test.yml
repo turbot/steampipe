@@ -26,7 +26,7 @@ jobs:
           git fetch
           git checkout ${{ github.base_ref }}
           git checkout -b test-branch-acc
-          git merge --squash ${{ github.head_ref }}
+          git merge --squash origin/${{ github.head_ref }}
 
       - name: Checkout
         uses: actions/checkout@v3
