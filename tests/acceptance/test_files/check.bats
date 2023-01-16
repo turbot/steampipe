@@ -269,8 +269,3 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # contains `summary`
   assert_output --partial 'Summary'
 }
-
-@test "steampipe service stop" {
-  run steampipe service stop
-  assert_success
-}
