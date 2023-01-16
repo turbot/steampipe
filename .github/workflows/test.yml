@@ -28,7 +28,7 @@ jobs:
           git config user.name "Puskar Basu"
           git checkout ${{ github.base_ref }}
           git checkout -b test-branch-acc
-          git merge --squash origin/${{ github.head_ref }}
+          git merge origin/${{ github.head_ref }}
           git push origin test-branch-acc
 
       - name: Checkout
