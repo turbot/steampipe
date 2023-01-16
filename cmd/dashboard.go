@@ -318,7 +318,7 @@ func verifyNamedResource(targetName string, w *workspace.Workspace) error {
 	if parsedName.ItemType == "" {
 		return fmt.Errorf("dashboard command cannot run arbitrary SQL")
 	}
-	if _, found := w.GetResourceMaps().GetResource(parsedName); !found {
+	if _, found := w.GetResource(parsedName); !found {
 		return fmt.Errorf("'%s' not found in %s (%s)", targetName, w.Mod.Name(), w.Path)
 	}
 	return nil

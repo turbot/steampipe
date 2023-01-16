@@ -123,8 +123,7 @@ func (r *ControlRun) GetStatusSummary() *controlstatus.StatusSummary {
 }
 
 func (r *ControlRun) Finished() bool {
-	status := r.GetRunStatus()
-	return status == dashboardtypes.RunComplete || status.IsError()
+	return r.GetRunStatus().IsFinished()
 }
 
 // MatchTag returns the value corresponding to the input key. Returns 'false' if not found

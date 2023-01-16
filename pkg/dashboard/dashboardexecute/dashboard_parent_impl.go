@@ -75,7 +75,7 @@ func (r *DashboardParentImpl) executeWithsAsync(ctx context.Context) {
 }
 
 func (r *DashboardParentImpl) waitForChildrenAsync(ctx context.Context) chan error {
-	log.Printf("[TRACE] %s waitForChildrenAsync", r.Name)
+	log.Printf("[WARN] %s waitForChildrenAsync ctx %p", r.Name, ctx)
 	var doneChan = make(chan error)
 	if len(r.children) == 0 {
 		log.Printf("[TRACE] %s waitForChildrenAsync - no children so we're done", r.Name)
@@ -91,13 +91,14 @@ func (r *DashboardParentImpl) waitForChildrenAsync(ctx context.Context) chan err
 		for !(r.ChildrenComplete()) {
 			select {
 			case completeChild := <-r.childCompleteChan:
-				log.Printf("[TRACE] %s got child complete for %s", r.Name, completeChild.GetName())
+				log.Printf("[TRACE] %s waitForChildrenAsync got child complete for %s", r.Name, completeChild.GetName())
 				if completeChild.GetRunStatus().IsError() {
 					errors = append(errors, completeChild.GetError())
 					log.Printf("[TRACE] %s child %s has error %v", r.Name, completeChild.GetName(), completeChild.GetError())
 				}
 				// fall through to recheck ChildrenComplete
 			case <-ctx.Done():
+				log.Printf("[TRACE] %s waitForChildrenAsync context cancelled", r.Name)
 				errors = append(errors, ctx.Err())
 				break child_loop
 			}

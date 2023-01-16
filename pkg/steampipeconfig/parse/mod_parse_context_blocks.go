@@ -56,7 +56,7 @@ func (r *ModParseContext) GetDecodedResourceForBlock(block *hcl.Block) (modconfi
 		// see whether the mod contains this resource already
 		parsedName, err := modconfig.ParseResourceName(name)
 		if err == nil {
-			return r.CurrentMod.GetResourceMaps().GetResource(parsedName)
+			return r.CurrentMod.GetResource(parsedName)
 		}
 	}
 	return nil, false

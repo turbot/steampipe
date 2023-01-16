@@ -235,6 +235,10 @@ func (m *Mod) GetResourceMaps() *ResourceMaps {
 	return m.ResourceMaps
 }
 
+func (m *Mod) GetResource(parsedName *ParsedResourceName) (resource HclResource, found bool) {
+	return m.ResourceMaps.GetResource(parsedName)
+}
+
 func (m *Mod) AddModDependencies(modVersions map[string]*ModVersionConstraint) {
 	m.Require.AddModDependencies(modVersions)
 }
