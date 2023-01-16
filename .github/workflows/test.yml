@@ -228,9 +228,19 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Clean up branch
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: test-branch-acc
+          submodules: true
+
+      - name: Clean up test branch
         run: |
-          git branch
+          git fetch
+          git config user.email "puskar@turbot.com"
+          git config user.name "Puskar Basu"
+          git checkout main
+          git push origin --delete test-branch-acc
 
   clean_up:
     # let's clean up the artifacts.
