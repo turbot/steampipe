@@ -151,7 +151,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 		// set complete status on dashboard
 		r.SetComplete(ctx)
 	} else {
-		log.Printf("[TRACE] %s Children complete with error: %s", r.resource.Name(), err.Error())
+		log.Printf("[TRACE] %s children complete with error: %s", r.resource.Name(), err.Error())
 		r.SetError(ctx, err)
 	}
 }

@@ -84,11 +84,12 @@ func (r *DashboardRun) Execute(ctx context.Context) {
 
 	// wait for children to complete
 	err := <-r.waitForChildrenAsync(ctx)
-	log.Printf("[TRACE] Execute run %s all children complete, error: %v", r.Name, err)
 	if err == nil {
+		log.Printf("[TRACE] Execute run %s all children complete, success", r.Name)
 		// set complete status on dashboard
 		r.SetComplete(ctx)
 	} else {
+		log.Printf("[TRACE] Execute run %s all children complete, error: %s", r.Name, err.Error())
 		r.SetError(ctx, err)
 	}
 }

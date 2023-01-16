@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"log"
 )
 
 // DashboardContainerRun is a struct representing a container run
@@ -112,9 +113,11 @@ func (r *DashboardContainerRun) Execute(ctx context.Context) {
 	// wait for children to complete
 	err := <-r.waitForChildrenAsync(ctx)
 	if err == nil {
+		log.Printf("[TRACE] %s Execute waitForChildrenAsync returned success", r.Name)
 		// set complete status on dashboard
 		r.SetComplete(ctx)
 	} else {
+		log.Printf("[TRACE] %s Execute waitForChildrenAsync returned err %s", r.Name, err.Error())
 		r.SetError(ctx, err)
 	}
 }
