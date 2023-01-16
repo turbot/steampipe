@@ -25,6 +25,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
 		fmt.Println()
+		c.promptResult.PromptErr = initResult.Error
 		error_helpers.ShowError(ctx, initResult.Error)
 		return
 	}

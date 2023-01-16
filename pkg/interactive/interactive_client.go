@@ -107,7 +107,6 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			c.promptResult.PromptErr = helpers.ToError(r)
 		}
 		// close up the SIGINT channel so that the receiver goroutine can quit
 		quitChannel <- true
@@ -250,7 +249,6 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			ret = v
 		default:
 			if r != nil {
-				c.promptResult.PromptErr = helpers.ToError(r)
 				// for everything else, float up the panic
 				panic(r)
 			}
