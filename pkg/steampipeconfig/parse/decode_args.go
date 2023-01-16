@@ -183,6 +183,12 @@ func getRuntimeDepFromExpression(expr hcl.Expression, targetProperty, parentProp
 		return nil, err
 	}
 
+	if propertyPath.ItemType == modconfig.BlockTypeInput {
+		// tactical: validate input dependency
+		if err := validateInputRuntimeDependency(propertyPath); err != nil {
+			return nil, err
+		}
+	}
 	ret := &modconfig.RuntimeDependency{
 		PropertyPath:       propertyPath,
 		ParentPropertyName: parentProperty,
@@ -248,6 +254,12 @@ func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int, parentPr
 			if err != nil {
 				return nil, err
 			}
+			// tactical: validate input dependency
+			if propertyPath.ItemType == modconfig.BlockTypeInput {
+				if err := validateInputRuntimeDependency(propertyPath); err != nil {
+					return nil, err
+				}
+			}
 			ret := &modconfig.RuntimeDependency{
 				PropertyPath:        propertyPath,
 				ParentPropertyName:  parentProperty,
@@ -259,6 +271,18 @@ func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int, parentPr
 		}
 	}
 	return nil, fmt.Errorf("could not extract runtime dependency for arg %d - not found in attribute list", idx)
+}
+
+// tactical - if runtime dependency is an input, validate it is of correct format
+// TODO - include this with the main runtime dependency validaiton, when it is rewritten https://github.com/turbot/steampipe/issues/2925
+func validateInputRuntimeDependency(propertyPath *modconfig.ParsedPropertyPath) error {
+	// input references must be of form self.input.<input_name>.value
+	if propertyPath.Scope != modconfig.RuntimeDependencyDashboardScope ||
+		len(propertyPath.PropertyPath) != 1 ||
+		propertyPath.PropertyPath[0] != "value" {
+		return fmt.Errorf("could not resolve runtime dependency resource %s", propertyPath.Original)
+	}
+	return nil
 }
 
 func decodeParam(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.ParamDef, []*modconfig.RuntimeDependency, hcl.Diagnostics) {
