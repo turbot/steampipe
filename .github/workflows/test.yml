@@ -225,6 +225,7 @@ jobs:
     # Delete the branch that was cut from the base branch to run the tests
     name: Delete branch
     needs: acceptance_test
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Clean up branch
