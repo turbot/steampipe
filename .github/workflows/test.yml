@@ -222,7 +222,7 @@ jobs:
           fi
 
   delete_branch:
-    # Delete the branch that was cut from the base branch to run the tests
+    # Delete the branch that was cut from the base branch to run the tests(should always run)
     name: Delete branch
     needs: acceptance_test
     if: always()
