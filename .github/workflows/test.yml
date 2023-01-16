@@ -221,6 +221,16 @@ jobs:
             exit 1
           fi
 
+  delete_branch:
+    # Delete the branch that was cut from the base branch to run the tests
+    name: Delete branch
+    needs: acceptance_test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clean up branch
+        run: |
+          git branch
+
   clean_up:
     # let's clean up the artifacts.
     # incase this step isn't reached,
