@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -72,20 +73,20 @@ func (r *Runner) run(ctx context.Context) {
 	utils.LogTime("task.Runner.Run start")
 	defer utils.LogTime("task.Runner.Run end")
 
-	var versionNotificationLines []string
-	var pluginNotificationLines []string
+	var availableCliVersion *CLIVersionCheckResponse
+	var availablePluginVersions map[string]plugin.VersionCheckReport
 
 	waitGroup := sync.WaitGroup{}
 
 	if r.options.runUpdateCheck {
 		// check whether an updated version is available
 		r.runJobAsync(ctx, func(c context.Context) {
-			versionNotificationLines = checkSteampipeVersion(c, r.currentState.InstallationID)
+			availableCliVersion, _ = fetchAvailableCLIVerion(ctx, r.currentState.InstallationID)
 		}, &waitGroup)
 
 		// check whether an updated version is available
 		r.runJobAsync(ctx, func(c context.Context) {
-			pluginNotificationLines = checkPluginVersions(c, r.currentState.InstallationID)
+			availablePluginVersions = plugin.GetAllUpdateReport(c, r.currentState.InstallationID)
 		}, &waitGroup)
 	}
 
@@ -105,7 +106,7 @@ func (r *Runner) run(ctx context.Context) {
 	}
 
 	// save the notifications, if any
-	if err := r.saveNotifications(versionNotificationLines, pluginNotificationLines); err != nil {
+	if err := r.saveAvailableVersions(availableCliVersion, availablePluginVersions); err != nil {
 		error_helpers.ShowWarning(fmt.Sprintf("Regular task runner failed to save pending notifications: %s", err))
 	}
 
