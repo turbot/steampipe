@@ -310,7 +310,7 @@ func startPostgresProcess(ctx context.Context, port int, listen StartListenType,
 func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, error) {
 	connection, err := createMaintenanceClient(ctx, port)
 	if err != nil {
-		return "", fmt.Errorf("%v - please try starting the service again. If the issue persists, contact Steampipe Support (https://steampipe.io)", err)
+		return "", fmt.Errorf("failed to connect to the database:: %v - please try again. If the issue persists, contact Steampipe Support (steampipe.slack.com)", err)
 	}
 	defer connection.Close(ctx)
 
