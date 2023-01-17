@@ -23,8 +23,8 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) error 
 	defer utils.LogTime("execute.RunInteractiveSession end")
 
 	// the db executor sends result data over resultsStreamer
-	result, err := interactive.RunInteractivePrompt(ctx, initData)
-	error_helpers.FailOnError(err)
+	result := interactive.RunInteractivePrompt(ctx, initData)
+	error_helpers.ShowError(ctx, result.PromptErr)
 
 	// print the data as it comes
 	for r := range result.Streamer.Results {

@@ -16,7 +16,7 @@ type RunInteractivePromptResult struct {
 }
 
 // RunInteractivePrompt starts the interactive query prompt
-func RunInteractivePrompt(ctx context.Context, initData *query.InitData) (*RunInteractivePromptResult, error) {
+func RunInteractivePrompt(ctx context.Context, initData *query.InitData) *RunInteractivePromptResult {
 	res := &RunInteractivePromptResult{
 		Streamer: queryresult.NewResultStreamer(),
 	}
@@ -26,11 +26,12 @@ func RunInteractivePrompt(ctx context.Context, initData *query.InitData) (*RunIn
 		error_helpers.ShowErrorWithMessage(ctx, err, "interactive client failed to initialize")
 		// do not bind shutdown to any cancellable context
 		db_local.ShutdownService(ctx, constants.InvokerQuery)
-		return nil, err
+		res.PromptErr = err
+		return res
 	}
 
 	// start the interactive prompt in a go routine
 	go interactiveClient.InteractivePrompt(ctx)
 
-	return res, nil
+	return res
 }
