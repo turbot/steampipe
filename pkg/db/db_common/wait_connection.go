@@ -57,18 +57,10 @@ func WaitForConnection(ctx context.Context, connection *pgx.Conn) (err error) {
 	)
 
 	retryErr := retry.Do(ctx, retryBackoff, func(ctx context.Context) error {
-		log.Println("[TRACE] >>>>>>>>>> Checking IS_IN_RECOVERY")
-		InRecoveryMode, err := PgIsInRecovery(ctx, connection)
-		if err != nil {
-			return retry.RetryableError(err)
-		}
-		log.Println("[TRACE] >>>>>>>>>> ISINRECOVERY:", InRecoveryMode)
-		if InRecoveryMode {
-			return retry.RetryableError(ErrServiceInRecovery)
-		}
 		log.Println("[TRACE] >>>>>>>>>> Pinging")
 		pingErr := connection.Ping(timeoutCtx)
 		if pingErr != nil {
+			log.Println("[TRACE] >>>>>>>>>> Pinging failed -> trying again")
 			return retry.RetryableError(pingErr)
 		}
 		return nil

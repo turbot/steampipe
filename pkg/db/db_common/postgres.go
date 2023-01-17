@@ -1,11 +1,8 @@
 package db_common
 
 import (
-	"context"
 	"fmt"
 	"strings"
-
-	"github.com/jackc/pgx/v5"
 )
 
 // PgEscapeName escapes strings which will be usaed for Podsdtgres object identifiers
@@ -31,16 +28,4 @@ func PgEscapeSearchPath(searchPath []string) []string {
 		res[idx] = PgEscapeName(strings.TrimSpace(path))
 	}
 	return res
-}
-
-// PgIsInRecovery runs the pg_is_in_recovery over the connection provided.
-// DOES NOT close the connection
-func PgIsInRecovery(ctx context.Context, connection *pgx.Conn) (bool, error) {
-	out := connection.QueryRow(ctx, "SELECT pg_is_in_recovery()")
-	var IsInRecovery bool
-	err := out.Scan(&IsInRecovery)
-	if err != nil {
-		return false, err
-	}
-	return IsInRecovery, nil
 }
