@@ -305,3 +305,37 @@ load "$LIB_BATS_SUPPORT/load.bash"
   description=$(echo $output | jq '.[].description')
   assert_equal "$description" '"query 1 - 3 params all with defaults"'
 }
+
+@test "steampipe_introspection=control" {
+  cd $SIMPLE_MOD_DIR
+  export STEAMPIPE_INTROSPECTION=control
+  steampipe query "select * from steampipe_control" --output json > output.json
+
+  # checking for OS type, since sed command is different for linux and OSX
+  # removing the 11th line, since it contains file location which would differ in github runners
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    run sed -i ".json" "11d" output.json
+  else
+    run sed -i "11d" output.json
+  fi
+
+  assert_equal "$(cat output.json)" "$(cat $TEST_DATA_DIR/expected_introspection_info_control.json)"
+  rm -f output.json*
+}
+
+@test "steampipe check --where | steampipe_introspection=control" {
+  cd $SIMPLE_MOD_DIR
+  export STEAMPIPE_INTROSPECTION=control
+  steampipe check control.sample_control_1 --where "severity in ('high')" --output json > output.json
+
+  # checking for OS type, since sed command is different for linux and OSX
+  # removing the 11th line, since it contains file location which would differ in github runners
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    run sed -i ".json" "11d" output.json
+  else
+    run sed -i "11d" output.json
+  fi
+
+  assert_equal "$(cat output.json)" "$(cat $TEST_DATA_DIR/expected_introspection_info_control.json)"
+  rm -f output.json*
+}
