@@ -42,7 +42,7 @@ func createModIntrospectionTable(ctx context.Context, workspaceResources *modcon
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
 	// get the create sql for each table type
-	modTableSql := getTableCreateSqlForResource(modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql)
+	modTableSql := getTableCreateSqlForResource(&modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql)
 
 	_, err := conn.Exec(ctx, modTableSql)
 	if err != nil {
@@ -159,6 +159,9 @@ func getTableInsertSql(workspaceResources *modconfig.ResourceMaps) string {
 	return strings.Join(insertSql, "\n")
 }
 
+// reflect on the `column` tag for this given resource and any nested structs
+// to build the introspection table creation sql
+// NOTE: ensure the object passed to this is a pointer, as otherwise the interface type casts will return false
 func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnSql []string) string {
 	columnDefinitions := append(commonColumnSql, getColumnDefinitions(s)...)
 	if qp, ok := s.(modconfig.QueryProvider); ok {
@@ -198,8 +201,8 @@ func populateControlIntrospectionTables(ctx context.Context, workspaceResources 
 
 func getCreateControlTablesSql(commonColumnSql []string) string {
 	var createSql []string
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Control{}, constants.IntrospectionTableControl, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Control{}, constants.IntrospectionTableControl, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
 
