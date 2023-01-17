@@ -65,15 +65,17 @@ jobs:
           git checkout ${{ github.base_ref }}
           git checkout -b test-branch-acc
           git merge origin/${{ github.head_ref }}
-          goreleaser release --rm-dist --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
 
-      # - name: Run GoReleaser
-      #   uses: goreleaser/goreleaser-action@v4
-      #   with:
-      #     version: latest
-      #     args: release --rm-dist --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          version: latest
+          args: release --rm-dist --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: git branch
+        run: git branch
 
       - name: Move build artifacts
         run: |
