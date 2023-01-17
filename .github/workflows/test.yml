@@ -25,7 +25,7 @@ jobs:
           echo ${{ github.head_ref }}
           echo ${{ github.base_ref }}
 
-      - name: Create a branch off base, merge head_ref into the branch and build the binary
+      - name: Create a feature branch off base, merge head_ref into the feature branch and build the binary
         run: |
           git fetch
           git config user.email "puskar@turbot.com"
@@ -102,6 +102,12 @@ jobs:
           name: build-artifact-darwin
           path: ~/artifacts/darwin.zip
           if-no-files-found: error
+
+      - name: Delete the feature branch
+        run: |
+          git checkout -
+          git branch
+          git branch -D test-branch-acc
 
   acceptance_test:
     name: Test
@@ -220,27 +226,6 @@ jobs:
           else
             exit 1
           fi
-
-  delete_branch:
-    # Delete the branch that was cut from the base branch to run the tests(should always run)
-    name: Delete branch
-    needs: acceptance_test
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: test-branch-acc
-          submodules: true
-
-      - name: Clean up test branch
-        run: |
-          git fetch
-          git config user.email "puskar@turbot.com"
-          git config user.name "Puskar Basu"
-          git checkout main
-          git push origin --delete test-branch-acc
 
   clean_up:
     # let's clean up the artifacts.
