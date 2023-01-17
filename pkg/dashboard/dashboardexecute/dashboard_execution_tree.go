@@ -239,7 +239,6 @@ func (e *DashboardExecutionTree) Cancel() {
 	}
 
 	log.Printf("[TRACE] DashboardExecutionTree Cancel  - calling cancel")
-
 	e.cancel()
 
 	// if there are any children, wait for the execution to complete

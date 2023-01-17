@@ -317,7 +317,7 @@ func (c *DashboardChanged) SetParentsChanged(item modconfig.ModTreeItem, prevRes
 		parsedResourceName, _ := modconfig.ParseResourceName(parent.Name())
 		if _, existingResource := prevResourceMaps.GetResource(parsedResourceName); existingResource {
 			c.AddChanged(parent)
-			c.SetParentsChanged(parent, nil)
+			c.SetParentsChanged(parent, prevResourceMaps)
 		}
 	}
 }
