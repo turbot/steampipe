@@ -21,7 +21,6 @@ import {
   getTextClasses,
   getWrapperClasses,
 } from "../../../utils/card";
-import { isRelativeUrl } from "../../../utils/url";
 import { ThemeNames } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
@@ -173,6 +172,12 @@ const Card = (props: CardProps) => {
     if (!templateRenderReady || state.loading || !state.href) {
       return;
     }
+
+    // We only want to do the interpolated template rendering in live views
+    if (dataMode !== DashboardDataModeLive) {
+      return;
+    }
+
     // const { label, loading, value, ...rest } = state;
     const renderData = { ...state };
     if (props.data && props.data.columns && props.data.rows) {
@@ -197,15 +202,7 @@ const Card = (props: CardProps) => {
         setRenderedHref(null);
         setRenderError(null);
       } else if (renderedResults[0].card.result) {
-        // We only want to render the HREF if it's live, or it's snapshot and absolute
-        const isRelative = isRelativeUrl(
-          renderedResults[0].card.result as string
-        );
-        setRenderedHref(
-          dataMode !== DashboardDataModeLive && isRelative
-            ? null
-            : (renderedResults[0].card.result as string)
-        );
+        setRenderedHref(renderedResults[0].card.result as string);
         setRenderError(null);
       } else if (renderedResults[0].card.error) {
         setRenderError(renderedResults[0].card.error as string);
@@ -213,7 +210,7 @@ const Card = (props: CardProps) => {
       }
     };
     doRender();
-  }, [renderTemplates, templateRenderReady, state, props.data]);
+  }, [dataMode, renderTemplates, templateRenderReady, state, props.data]);
 
   const card = (
     <div
