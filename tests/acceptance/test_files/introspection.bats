@@ -326,16 +326,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe check --where | steampipe_introspection=control" {
   cd $SIMPLE_MOD_DIR
   export STEAMPIPE_INTROSPECTION=control
-  steampipe check control.sample_control_1 --where "severity in ('high')" --output json > output.json
+  steampipe check control.sample_control_1 --where "severity in ('high')" --export output.json
 
-  # checking for OS type, since sed command is different for linux and OSX
-  # removing the 11th line, since it contains file location which would differ in github runners
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "11d" output.json
-  else
-    run sed -i "11d" output.json
-  fi
-
-  assert_equal "$(cat output.json)" "$(cat $TEST_DATA_DIR/expected_introspection_info_control.json)"
+  assert_equal "$(cat output.json)" "$(cat $TEST_DATA_DIR/expected_introspection_check_where.json)"
   rm -f output.json*
 }
