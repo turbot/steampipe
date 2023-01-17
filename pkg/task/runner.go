@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -44,7 +47,17 @@ func RunTasks(ctx context.Context, cmd *cobra.Command, args []string, options ..
 	// asynchronously run the task runner
 	go func(c context.Context) {
 		defer close(doneChannel)
-		if runner.shouldRun() {
+		// check if a legacy notifications file exists
+		exists := files.FileExists(filepaths.LegacyNotificationsFilePath())
+		if exists {
+			log.Println("[TRACE] found legacy notification file. removing")
+			// if the legacy file exists, remove it
+			os.Remove(filepaths.LegacyNotificationsFilePath())
+		}
+
+		// if the legacy file existed, then we should enforce a run, since we need
+		// to update the available version cache
+		if runner.shouldRun() || exists {
 			runner.run(c)
 		}
 	}(ctx)
@@ -91,10 +104,10 @@ func (r *Runner) run(ctx context.Context) {
 	}
 
 	// remove log files older than 7 days
-	r.runJobAsync(ctx, func(context.Context) { db_local.TrimLogs() }, &waitGroup)
+	r.runJobAsync(ctx, func(_ context.Context) { db_local.TrimLogs() }, &waitGroup)
 
 	// validate and regenerate service SSL certificates
-	r.runJobAsync(ctx, func(context.Context) { validateServiceCertificates() }, &waitGroup)
+	r.runJobAsync(ctx, func(_ context.Context) { validateServiceCertificates() }, &waitGroup)
 
 	// wait for all jobs to complete
 	waitGroup.Wait()
