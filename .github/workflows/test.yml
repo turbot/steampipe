@@ -20,6 +20,20 @@ jobs:
       - name: Unshallow
         run: git fetch
 
+      - name: Check head and base refs of the PR
+        run: |
+          echo ${{ github.head_ref }}
+          echo ${{ github.base_ref }}
+
+      - name: Create a branch off base, merge head_ref into the branch and build the binary
+        run: |
+          git fetch
+          git config user.email "puskar@turbot.com"
+          git config user.name "Puskar Basu"
+          git checkout ${{ github.base_ref }}
+          git checkout -b test-branch-acc
+          git merge origin/${{ github.head_ref }}
+
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
@@ -52,19 +66,8 @@ jobs:
           go clean -testcache
           go test -timeout 30s ./... -test.v
 
-      - name: Check head and base refs of the PR
-        run: |
-          echo ${{ github.head_ref }}
-          echo ${{ github.base_ref }}
-
-      - name: Create a branch off base, merge head_ref into the branch and build the binary
-        run: |
-          git fetch
-          git config user.email "puskar@turbot.com"
-          git config user.name "Puskar Basu"
-          git checkout ${{ github.base_ref }}
-          git checkout -b test-branch-acc
-          git merge origin/${{ github.head_ref }}
+      - name: git branch
+        run: git branch
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
@@ -188,19 +191,15 @@ jobs:
           steampipe plugin install chaos
           steampipe service stop
 
-      - name: Check version
+      - name: Run Test Suite
+        id: run-test-suite
+        timeout-minutes: 15
+        continue-on-error: true
         run: |
-          steampipe -v
-
-      # - name: Run Test Suite
-      #   id: run-test-suite
-      #   timeout-minutes: 15
-      #   continue-on-error: true
-      #   run: |
-      #     chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-      #     $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
-      #     echo "exit_code=$(echo $?)" >> $GITHUB_OUTPUT
-      #     steampipe service stop --force
+          chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
+          $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
+          echo "exit_code=$(echo $?)" >> $GITHUB_OUTPUT
+          steampipe service stop --force
 
       - name: Save Test Suite Logs
         uses: actions/upload-artifact@v3
