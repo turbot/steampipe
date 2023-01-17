@@ -331,3 +331,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$(cat output.json)" "$(cat $TEST_DATA_DIR/expected_introspection_check_where.json)"
   rm -f output.json*
 }
+
+@test "steampipe check --tag | steampipe_introspection=control" {
+  cd $SIMPLE_MOD_DIR
+  export STEAMPIPE_INTROSPECTION=control
+  steampipe check control.sample_control_1 --tag foo=bar --export output.json
+
+  assert_equal "$(cat output.json)" "$(cat $TEST_DATA_DIR/expected_introspection_check_where.json)"
+  rm -f output.json*
+}
