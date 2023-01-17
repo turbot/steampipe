@@ -4,12 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
-	"os"
-	"reflect"
-	"strings"
-	"sync"
-
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
@@ -19,10 +13,14 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/workspace"
 	"gopkg.in/olahol/melody.v1"
+	"log"
+	"os"
+	"reflect"
+	"strings"
+	"sync"
 )
 
 type Server struct {
-	context          context.Context
 	dbClient         db_common.Client
 	mutex            *sync.Mutex
 	dashboardClients map[string]*DashboardClientInfo
@@ -42,7 +40,6 @@ func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Work
 	var mutex = &sync.Mutex{}
 
 	server := &Server{
-		context:          ctx,
 		dbClient:         dbClient,
 		mutex:            mutex,
 		dashboardClients: dashboardClients,
@@ -50,7 +47,7 @@ func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Work
 		workspace:        w,
 	}
 
-	w.RegisterDashboardEventHandler(server.HandleDashboardEvent)
+	w.RegisterDashboardEventHandler(ctx, server.HandleDashboardEvent)
 	err := w.SetupWatcher(ctx, dbClient, func(c context.Context, e error) {})
 	OutputMessage(ctx, "Workspace loaded")
 
@@ -59,19 +56,19 @@ func NewServer(ctx context.Context, dbClient db_common.Client, w *workspace.Work
 
 // Start starts the API server
 // it returns a channel which is signalled when the API server terminates
-func (s *Server) Start() chan struct{} {
-	s.initAsync(s.context)
-	return startAPIAsync(s.context, s.webSocket)
+func (s *Server) Start(ctx context.Context) chan struct{} {
+	s.initAsync(ctx)
+	return startAPIAsync(ctx, s.webSocket)
 }
 
 // Shutdown stops the API server
-func (s *Server) Shutdown() {
+func (s *Server) Shutdown(ctx context.Context) {
 	log.Println("[TRACE] Server shutdown")
 
 	if s.webSocket != nil {
 		log.Println("[TRACE] closing websocket")
 		if err := s.webSocket.Close(); err != nil {
-			error_helpers.ShowErrorWithMessage(s.context, err, "Websocket shutdown failed")
+			error_helpers.ShowErrorWithMessage(ctx, err, "Websocket shutdown failed")
 		}
 		log.Println("[TRACE] closed websocket")
 	}
@@ -80,7 +77,7 @@ func (s *Server) Shutdown() {
 
 }
 
-func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
+func (s *Server) HandleDashboardEvent(ctx context.Context, event dashboardevents.DashboardEvent) {
 	var payloadError error
 	var payload []byte
 	defer func() {
@@ -101,7 +98,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 			return
 		}
 		_ = s.webSocket.Broadcast(payload)
-		OutputError(s.context, e.Error)
+		OutputError(ctx, e.Error)
 
 	case *dashboardevents.ExecutionStarted:
 		log.Printf("[TRACE] ExecutionStarted event session %s, dashboard %s", e.Session, e.Root.GetName())
@@ -110,7 +107,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 			return
 		}
 		s.writePayloadToSession(e.Session, payload)
-		OutputWait(s.context, fmt.Sprintf("Dashboard execution started: %s", e.Root.GetName()))
+		OutputWait(ctx, fmt.Sprintf("Dashboard execution started: %s", e.Root.GetName()))
 
 	case *dashboardevents.ExecutionError:
 		log.Println("[TRACE] execution error event")
@@ -120,7 +117,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		}
 
 		s.writePayloadToSession(e.Session, payload)
-		OutputError(s.context, e.Error)
+		OutputError(ctx, e.Error)
 
 	case *dashboardevents.ExecutionComplete:
 		log.Println("[TRACE] execution complete event")
@@ -130,7 +127,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		}
 		dashboardName := e.Root.GetName()
 		s.writePayloadToSession(e.Session, payload)
-		outputReady(s.context, fmt.Sprintf("Execution complete: %s", dashboardName))
+		outputReady(ctx, fmt.Sprintf("Execution complete: %s", dashboardName))
 
 	case *dashboardevents.ControlComplete:
 		log.Printf("[TRACE] ControlComplete event session %s, control %s", e.Session, e.Control.GetControlId())
@@ -205,7 +202,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 
 		// If) any deleted/new/changed dashboards, emit an available dashboards message to clients
 		if len(deletedDashboards) != 0 || len(newDashboards) != 0 || len(changedDashboards) != 0 || len(changedBenchmarks) != 0 {
-			OutputMessage(s.context, "Available Dashboards updated")
+			OutputMessage(ctx, "Available Dashboards updated")
 			payload, payloadError = buildAvailableDashboardsPayload(s.workspace.GetResourceMaps())
 			if payloadError != nil {
 				return
@@ -257,8 +254,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 			sessionMap := s.getDashboardClients()
 			for sessionId, dashboardClientInfo := range sessionMap {
 				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == changedDashboardName {
-					// 					outputMessage(s.context, fmt.Sprintf("Dashboard Changed - executing with inputs: %v", dashboardClientInfo.DashboardInputs))
-					_ = dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, changedDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
+					_ = dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, changedDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
 				}
 			}
 		}
@@ -277,8 +273,7 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 		for _, newDashboardName := range newDashboardNames {
 			for sessionId, dashboardClientInfo := range sessionMap {
 				if typeHelpers.SafeString(dashboardClientInfo.Dashboard) == newDashboardName {
-					// 					outputMessage(s.context, fmt.Sprintf("New Dashboard - executing with inputs: %v", dashboardClientInfo.DashboardInputs))
-					_ = dashboardexecute.Executor.ExecuteDashboard(s.context, sessionId, newDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
+					_ = dashboardexecute.Executor.ExecuteDashboard(ctx, sessionId, newDashboardName, dashboardClientInfo.DashboardInputs, s.workspace, s.dbClient)
 				}
 			}
 		}
@@ -296,7 +291,6 @@ func (s *Server) HandleDashboardEvent(event dashboardevents.DashboardEvent) {
 			for _, clearedInput := range e.ClearedInputs {
 				delete(sessionInfo.DashboardInputs, clearedInput)
 			}
-			// 			outputMessage(s.context, fmt.Sprintf("Input Values Cleared - dashboard inputs updated: %v", sessionInfo.DashboardInputs))
 		}
 		s.writePayloadToSession(e.Session, payload)
 	}
@@ -365,7 +359,7 @@ func (s *Server) handleMessageFunc(ctx context.Context) func(session *melody.Ses
 			error_helpers.FailOnError(err)
 
 			s.writePayloadToSession(sessionId, payload)
-			outputReady(s.context, fmt.Sprintf("Show snapshot complete: %s", snapshotName))
+			outputReady(ctx, fmt.Sprintf("Show snapshot complete: %s", snapshotName))
 		case "input_changed":
 			s.setDashboardInputsForSession(sessionId, request.Payload.InputValues)
 			_ = dashboardexecute.Executor.OnInputChanged(ctx, sessionId, request.Payload.InputValues, request.Payload.ChangedInput)
@@ -402,7 +396,6 @@ func (s *Server) setDashboardInputsForSession(sessionId string, inputs map[strin
 	dashboardClients := s.getDashboardClients()
 	if sessionInfo, ok := dashboardClients[sessionId]; ok {
 		sessionInfo.DashboardInputs = inputs
-		// 		outputMessage(s.context, fmt.Sprintf("Set Dashboard Inputs For Session: %v", sessionInfo.DashboardInputs))
 	}
 }
 
@@ -419,7 +412,6 @@ func (s *Server) setDashboardForSession(sessionId string, dashboardName string, 
 	dashboardClientInfo := s.dashboardClients[sessionId]
 	dashboardClientInfo.Dashboard = &dashboardName
 	dashboardClientInfo.DashboardInputs = inputs
-	//outputMessage(s.context, fmt.Sprintf("Set Dashboard For Session - initial inputs: %v", dashboardClientInfo.DashboardInputs))
 
 	return dashboardClientInfo
 }

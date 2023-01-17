@@ -12,7 +12,6 @@ type PluginMessageServer struct {
 }
 
 func NewPluginMessageServer(pluginManager *PluginManager) (*PluginMessageServer, error) {
-
 	res := &PluginMessageServer{
 		pluginManager: pluginManager,
 	}

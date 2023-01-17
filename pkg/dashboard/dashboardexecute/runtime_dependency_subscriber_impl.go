@@ -266,7 +266,9 @@ wait_loop:
 			errors = append(errors, err)
 		case <-doneChan:
 			break wait_loop
-
+		case <-ctx.Done():
+			errors = append(errors, ctx.Err())
+			break wait_loop
 		}
 	}
 
