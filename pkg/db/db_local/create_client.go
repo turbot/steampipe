@@ -152,7 +152,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	if err != nil {
 		conn.Close(ctx)
 		log.Println("[TRACE] >>>>>>>>>> WaitForConnection timed out")
-		return nil, errors.Wrap(err, "connection setup timed out")
+		return nil, err
 	}
 	return conn, nil
 }
