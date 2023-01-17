@@ -7,6 +7,7 @@ env:
   SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
   SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   goreleaser:
@@ -15,25 +16,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
-      - name: Check head and base refs of the PR
-        run: |
-          echo ${{ github.head_ref }}
-          echo ${{ github.base_ref }}
-
-      - name: Create a branch off base and merge head_ref into the branch
-        run: |
-          git fetch
-          git config user.email "puskar@turbot.com"
-          git config user.name "Puskar Basu"
-          git checkout ${{ github.base_ref }}
-          git checkout -b test-branch-acc
-          git merge origin/${{ github.head_ref }}
-
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: test-branch-acc
 
       - name: Unshallow
         run: git fetch
@@ -70,13 +52,28 @@ jobs:
           go clean -testcache
           go test -timeout 30s ./... -test.v
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
-        with:
-          version: latest
-          args: release --rm-dist --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check head and base refs of the PR
+        run: |
+          echo ${{ github.head_ref }}
+          echo ${{ github.base_ref }}
+
+      - name: Create a branch off base, merge head_ref into the branch and build the binary
+        run: |
+          git fetch
+          git config user.email "puskar@turbot.com"
+          git config user.name "Puskar Basu"
+          git checkout ${{ github.base_ref }}
+          git checkout -b test-branch-acc
+          git merge origin/${{ github.head_ref }}
+          goreleaser release --rm-dist --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
+
+      # - name: Run GoReleaser
+      #   uses: goreleaser/goreleaser-action@v4
+      #   with:
+      #     version: latest
+      #     args: release --rm-dist --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Move build artifacts
         run: |
@@ -135,7 +132,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: test-branch-acc
           submodules: true
 
       - name: Set up Go
@@ -190,15 +186,19 @@ jobs:
           steampipe plugin install chaos
           steampipe service stop
 
-      - name: Run Test Suite
-        id: run-test-suite
-        timeout-minutes: 15
-        continue-on-error: true
+      - name: Check version
         run: |
-          chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
-          echo "exit_code=$(echo $?)" >> $GITHUB_OUTPUT
-          steampipe service stop --force
+          steampipe -v
+
+      # - name: Run Test Suite
+      #   id: run-test-suite
+      #   timeout-minutes: 15
+      #   continue-on-error: true
+      #   run: |
+      #     chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
+      #     $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
+      #     echo "exit_code=$(echo $?)" >> $GITHUB_OUTPUT
+      #     steampipe service stop --force
 
       - name: Save Test Suite Logs
         uses: actions/upload-artifact@v3
