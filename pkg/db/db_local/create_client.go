@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
@@ -141,7 +142,8 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		log.Println("[TRACE] >>>>>>>>>> could not connect to service")
+		return nil, errors.Wrap(err, "connection setup failed")
 	}
 
 	// wait for the connection to get established
@@ -149,7 +151,8 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	err = db_common.WaitForConnection(ctx, conn)
 	if err != nil {
 		conn.Close(ctx)
-		return nil, err
+		log.Println("[TRACE] >>>>>>>>>> WaitForConnection timed out")
+		return nil, errors.Wrap(err, "connection setup timed out")
 	}
 	return conn, nil
 }
