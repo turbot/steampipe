@@ -4,12 +4,16 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -43,7 +47,17 @@ func RunTasks(ctx context.Context, cmd *cobra.Command, args []string, options ..
 	// asynchronously run the task runner
 	go func(c context.Context) {
 		defer close(doneChannel)
-		if runner.shouldRun() {
+		// check if a legacy notifications file exists
+		exists := files.FileExists(filepaths.LegacyNotificationsFilePath())
+		if exists {
+			log.Println("[TRACE] found legacy notification file. removing")
+			// if the legacy file exists, remove it
+			os.Remove(filepaths.LegacyNotificationsFilePath())
+		}
+
+		// if the legacy file existed, then we should enforce a run, since we need
+		// to update the available version cache
+		if runner.shouldRun() || exists {
 			runner.run(c)
 		}
 	}(ctx)
@@ -72,28 +86,28 @@ func (r *Runner) run(ctx context.Context) {
 	utils.LogTime("task.Runner.Run start")
 	defer utils.LogTime("task.Runner.Run end")
 
-	var versionNotificationLines []string
-	var pluginNotificationLines []string
+	var availableCliVersion *CLIVersionCheckResponse
+	var availablePluginVersions map[string]plugin.VersionCheckReport
 
 	waitGroup := sync.WaitGroup{}
 
 	if r.options.runUpdateCheck {
 		// check whether an updated version is available
 		r.runJobAsync(ctx, func(c context.Context) {
-			versionNotificationLines = checkSteampipeVersion(c, r.currentState.InstallationID)
+			availableCliVersion, _ = fetchAvailableCLIVerion(ctx, r.currentState.InstallationID)
 		}, &waitGroup)
 
 		// check whether an updated version is available
 		r.runJobAsync(ctx, func(c context.Context) {
-			pluginNotificationLines = checkPluginVersions(c, r.currentState.InstallationID)
+			availablePluginVersions = plugin.GetAllUpdateReport(c, r.currentState.InstallationID)
 		}, &waitGroup)
 	}
 
 	// remove log files older than 7 days
-	r.runJobAsync(ctx, func(context.Context) { db_local.TrimLogs() }, &waitGroup)
+	r.runJobAsync(ctx, func(_ context.Context) { db_local.TrimLogs() }, &waitGroup)
 
 	// validate and regenerate service SSL certificates
-	r.runJobAsync(ctx, func(context.Context) { validateServiceCertificates() }, &waitGroup)
+	r.runJobAsync(ctx, func(_ context.Context) { validateServiceCertificates() }, &waitGroup)
 
 	// wait for all jobs to complete
 	waitGroup.Wait()
@@ -105,7 +119,7 @@ func (r *Runner) run(ctx context.Context) {
 	}
 
 	// save the notifications, if any
-	if err := r.saveNotifications(versionNotificationLines, pluginNotificationLines); err != nil {
+	if err := r.saveAvailableVersions(availableCliVersion, availablePluginVersions); err != nil {
 		error_helpers.ShowWarning(fmt.Sprintf("Regular task runner failed to save pending notifications: %s", err))
 	}
 

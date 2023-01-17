@@ -21,7 +21,8 @@ const (
 	dashboardServerStateFileName = "dashboard_service.json"
 	stateFileName                = "update_check.json"
 	legacyStateFileName          = "update-check.json"
-	notificationsFileName        = "notifications.json"
+	availableVersionsFileName    = "available_versions.json"
+	legacyNotificationsFileName  = "notifications.json"
 )
 
 var SteampipeDir string
@@ -117,9 +118,14 @@ func StateFilePath() string {
 	return filepath.Join(EnsureInternalDir(), stateFileName)
 }
 
-// NotificationsFilePath returns the path of the notifications.json file used to store update notifications
-func NotificationsFilePath() string {
-	return filepath.Join(EnsureInternalDir(), notificationsFileName)
+// AvailableVersionsFilePath returns the path of the json file used to store cache available versions of installed plugins and the CLI
+func AvailableVersionsFilePath() string {
+	return filepath.Join(EnsureInternalDir(), availableVersionsFileName)
+}
+
+// LegacyNotificationsFilePath returns the path of the (legacy) notifications.json file used to store update notifications
+func LegacyNotificationsFilePath() string {
+	return filepath.Join(EnsureInternalDir(), legacyNotificationsFileName)
 }
 
 // ConnectionStatePath returns the path of the connections state file
