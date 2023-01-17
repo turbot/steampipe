@@ -23,7 +23,9 @@
   "source_definition": "control \"sample_control_1\" {\n  title = \"Sample control 1\"\n  description = \"Sample control to test introspection functionality\"\n  query = query.sample_query_1\n  severity = \"high\"\n}",
   "sql": null,
   "start_line_number": 25,
-  "tags": null,
+  "tags": {
+   "foo": "bar"
+  },
   "title": "Sample control 1",
   "type": null,
   "width": null
