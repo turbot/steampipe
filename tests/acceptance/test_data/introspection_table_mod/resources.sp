@@ -27,9 +27,6 @@ control "sample_control_1" {
   description = "Sample control to test introspection functionality"
   query = query.sample_query_1
   severity = "high"
-  tags = {
-    "foo": "bar"
-  }
 }
 
 benchmark "sample_benchmark_1" {

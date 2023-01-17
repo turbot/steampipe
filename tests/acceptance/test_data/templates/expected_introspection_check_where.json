@@ -33,9 +33,7 @@
       "control_id": "control.sample_control_1",
       "description": "Sample control to test introspection functionality",
       "severity": "high",
-      "tags": {
-        "foo": "bar"
-      },
+      "tags": {},
       "title": "Sample control 1",
       "run_status": 4,
       "run_error": ""
