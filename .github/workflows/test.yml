@@ -7,7 +7,6 @@ env:
   SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
   SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   goreleaser:
@@ -66,9 +65,6 @@ jobs:
           go clean -testcache
           go test -timeout 30s ./... -test.v
 
-      - name: git branch
-        run: git branch
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:
@@ -76,9 +72,6 @@ jobs:
           args: release --rm-dist --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: git branch
-        run: git branch
 
       - name: Move build artifacts
         run: |
