@@ -76,7 +76,7 @@ func (r *DashboardParentImpl) executeWithsAsync(ctx context.Context) {
 }
 
 func (r *DashboardParentImpl) waitForChildrenAsync(ctx context.Context) chan error {
-	log.Printf("[WARN] %s waitForChildrenAsync ctx %p", r.Name, ctx)
+	log.Printf("[TRACE] %s waitForChildrenAsync ctx %p", r.Name, ctx)
 	var doneChan = make(chan error)
 	if len(r.children) == 0 {
 		log.Printf("[TRACE] %s waitForChildrenAsync - no children so we're done", r.Name)
