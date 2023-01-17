@@ -274,12 +274,10 @@ func identifyRuntimeDependenciesFromArray(attr *hcl.Attribute, idx int, parentPr
 }
 
 // tactical - if runtime dependency is an input, validate it is of correct format
-// TODO - include this with the main runtime dependency validaiton, when it is rewritten https://github.com/turbot/steampipe/issues/2925
+// TODO - include this with the main runtime dependency validation, when it is rewritten https://github.com/turbot/steampipe/issues/2925
 func validateInputRuntimeDependency(propertyPath *modconfig.ParsedPropertyPath) error {
 	// input references must be of form self.input.<input_name>.value
-	if propertyPath.Scope != modconfig.RuntimeDependencyDashboardScope ||
-		len(propertyPath.PropertyPath) != 1 ||
-		propertyPath.PropertyPath[0] != "value" {
+	if propertyPath.Scope != modconfig.RuntimeDependencyDashboardScope{
 		return fmt.Errorf("could not resolve runtime dependency resource %s", propertyPath.Original)
 	}
 	return nil
