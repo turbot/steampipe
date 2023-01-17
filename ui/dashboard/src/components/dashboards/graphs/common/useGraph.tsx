@@ -2,7 +2,14 @@ import difference from "lodash/difference";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import usePrevious from "../../../../hooks/usePrevious";
 import useTemplateRender from "../../../../hooks/useTemplateRender";
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { DashboardDataModeLive } from "../../../../types";
 import { Edge, Node, useReactFlow } from "reactflow";
 import { FoldedNode, RowRenderResult } from "../../common/types";
 import { noop } from "../../../../utils/func";
@@ -49,8 +56,9 @@ type CategoryNodeMap = {
   [category: string]: Node[];
 };
 
-const GraphProvider = ({ children }) => {
+const GraphProvider = ({ children }: { children: ReactNode }) => {
   const {
+    dataMode,
     themeContext: { theme },
   } = useDashboard();
   const { fitView } = useReactFlow();
@@ -68,6 +76,11 @@ const GraphProvider = ({ children }) => {
 
   useDeepCompareEffect(() => {
     if (!templateRenderReady) {
+      return;
+    }
+
+    // We only want to do the interpolated template rendering in live views
+    if (dataMode !== DashboardDataModeLive) {
       return;
     }
 
@@ -106,7 +119,7 @@ const GraphProvider = ({ children }) => {
     };
 
     doRender();
-  }, [graphNodes, renderTemplates, templateRenderReady]);
+  }, [dataMode, graphNodes, renderTemplates, templateRenderReady]);
 
   // When the edges or nodes change, update the layout
   useEffect(() => {

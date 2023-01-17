@@ -28,7 +28,6 @@ import {
   SortAscendingIcon,
   SortDescendingIcon,
 } from "../../../constants/icons";
-import { isRelativeUrl } from "../../../utils/url";
 import { memo, useEffect, useMemo, useState } from "react";
 import { registerComponent } from "../index";
 import { RowRenderResult } from "../common/types";
@@ -128,6 +127,11 @@ const CellValue = ({
 
   // Calculate a link for this cell
   useEffect(() => {
+    // We only want to do the interpolated template rendering in live views
+    if (dataMode !== DashboardDataModeLive) {
+      return;
+    }
+
     const renderedTemplateObj = rowTemplateData[rowIndex];
     if (!renderedTemplateObj) {
       setHref(null);
@@ -142,12 +146,7 @@ const CellValue = ({
     }
     if (renderedTemplateForColumn.result) {
       // We only want to render the HREF if it's live, or it's snapshot and absolute
-      const isRelative = isRelativeUrl(renderedTemplateForColumn.result);
-      setHref(
-        dataMode !== DashboardDataModeLive && isRelative
-          ? null
-          : renderedTemplateForColumn.result
-      );
+      setHref(renderedTemplateForColumn.result);
       setError(null);
     } else if (renderedTemplateForColumn.error) {
       setHref(null);
