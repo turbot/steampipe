@@ -3,15 +3,12 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/url"
 	"time"
 
-	SemVer "github.com/Masterminds/semver"
-	"github.com/fatih/color"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
@@ -19,7 +16,7 @@ import (
 // the current version of the Steampipe CLI application
 var currentVersion = version.SteampipeVersion.String()
 
-type versionCheckResponse struct {
+type CLIVersionCheckResponse struct {
 	NewVersion   string    `json:"latest_version,omitempty"` // `json:"current_version"`
 	DownloadURL  string    `json:"download_url,omitempty"`   // `json:"download_url"`
 	ChangelogURL string    `json:"html,omitempty"`           // `json:"changelog_url"`
@@ -29,58 +26,23 @@ type versionCheckResponse struct {
 // VersionChecker :: the version checker struct composition container.
 // This MUST not be instantiated manually. Use `CreateVersionChecker` instead
 type versionChecker struct {
-	checkResult *versionCheckResponse // a channel to store the HTTP response
-	signature   string                // flags whether update check should be done
+	checkResult *CLIVersionCheckResponse // a channel to store the HTTP response
+	signature   string                   // flags whether update check should be done
 }
 
-// check if there is a new version
-func checkSteampipeVersion(ctx context.Context, id string) []string {
-	var notificationLines []string
-
+// get the latest available version of the CLI
+func fetchAvailableCLIVerion(ctx context.Context, installationId string) (*CLIVersionCheckResponse, error) {
 	v := new(versionChecker)
-	v.signature = id
-	v.doCheckRequest(ctx)
-	notificationLines, _ = v.notificationMessage()
-	return notificationLines
-}
-
-// notificationMessage returns any required update notification as an array of strings
-func (c *versionChecker) notificationMessage() ([]string, error) {
-	info := c.checkResult
-	if info == nil {
-		return nil, nil
-	}
-
-	if info.NewVersion == "" {
-		return nil, nil
-	}
-
-	newVersion, err := SemVer.NewVersion(info.NewVersion)
+	v.signature = installationId
+	err := v.doCheckRequest(ctx)
 	if err != nil {
 		return nil, err
 	}
-	currentVersion, err := SemVer.NewVersion(currentVersion)
-
-	if err != nil {
-		fmt.Println(fmt.Errorf("there's something wrong with the Current Version"))
-		fmt.Println(err)
-	}
-
-	if newVersion.GreaterThan(currentVersion) {
-		var downloadURLColor = color.New(color.FgYellow)
-		var notificationLines = []string{
-			"",
-			fmt.Sprintf("A new version of Steampipe is available! %s → %s", constants.Bold(currentVersion), constants.Bold(newVersion)),
-			fmt.Sprintf("You can update by downloading from %s", downloadURLColor.Sprint("https://steampipe.io/downloads")),
-			"",
-		}
-		return notificationLines, nil
-	}
-	return nil, nil
+	return v.checkResult, nil
 }
 
 // contact the Turbot Artifacts Server and retrieve the latest released version
-func (c *versionChecker) doCheckRequest(ctx context.Context) {
+func (c *versionChecker) doCheckRequest(ctx context.Context) error {
 	payload := utils.BuildRequestPayload(c.signature, map[string]interface{}{})
 	sendRequestTo := c.versionCheckURL()
 	timeout := 5 * time.Second
@@ -90,7 +52,7 @@ func (c *versionChecker) doCheckRequest(ctx context.Context) {
 
 	resp, err := utils.SendRequest(ctx, c.signature, "POST", sendRequestTo, payload)
 	if err != nil {
-		return
+		return err
 	}
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -100,19 +62,20 @@ func (c *versionChecker) doCheckRequest(ctx context.Context) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 204 {
-		return
+		return nil
 	}
 
 	if resp.StatusCode != 200 {
 		log.Printf("[TRACE] Unknown response during version check: %d\n", resp.StatusCode)
-		return
+		return http.NewErr(resp)
 	}
 
 	c.checkResult = c.decodeResult(bodyString)
+	return nil
 }
 
-func (c *versionChecker) decodeResult(body string) *versionCheckResponse {
-	var result versionCheckResponse
+func (c *versionChecker) decodeResult(body string) *CLIVersionCheckResponse {
+	var result CLIVersionCheckResponse
 
 	if err := json.Unmarshal([]byte(body), &result); err != nil {
 		return nil
