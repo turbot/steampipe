@@ -7,13 +7,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 )
-
-var ErrServiceInRecovery = errors.New("service is in recovery mode")
 
 // WaitForPool waits for the db to start accepting connections and returns true
 // returns false if the dbClient does not start within a stipulated time,
