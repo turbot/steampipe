@@ -9,6 +9,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -87,7 +88,13 @@ func (av *AvailableVersionCache) pluginNotificationMessage() []string {
 	var pluginsToUpdate []plugin.VersionCheckReport
 
 	for _, r := range av.PluginCache {
-		if skip, _ := plugin.SkipUpdate(r); !skip {
+		v, err := versionfile.LoadPluginVersionFile()
+		if err != nil {
+			continue
+		}
+		installedVersion := v.Plugins[r.Plugin.Name]
+		skip, _ := plugin.SkipUpdate(r)
+		if !skip && installedVersion.ImageDigest != r.CheckResponse.Digest {
 			pluginsToUpdate = append(pluginsToUpdate, r)
 		}
 	}
