@@ -38,7 +38,7 @@ func WaitForPool(ctx context.Context, db *pgxpool.Pool) (err error) {
 }
 
 // WaitForConnection PINGs the DB - retrying after a backoff of constants.ServicePingInterval - but only for constants.DBConnectionTimeout
-// returns the error from the database if the dbClient does not respond with after a timeout
+// returns the error from the database if the dbClient does not respond successfully after a timeout
 func WaitForConnection(ctx context.Context, connection *pgx.Conn) (err error) {
 	utils.LogTime("db.waitForConnection start")
 	defer utils.LogTime("db.waitForConnection end")
