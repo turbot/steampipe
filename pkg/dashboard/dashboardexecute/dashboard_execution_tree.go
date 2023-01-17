@@ -122,7 +122,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 
 	// perform any necessary initialisation
 	// (e.g. check run creates the control execution tree)
-	e.Root.Initialise(ctx)
+	e.Root.Initialise(cancelCtx)
 	if e.Root.GetError() != nil {
 		return
 	}
@@ -166,7 +166,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	log.Println("[TRACE]", "begin DashboardExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end DashboardExecutionTree.Execute")
 
-	if e.GetRunStatus() == dashboardtypes.RunComplete {
+	if e.GetRunStatus().IsFinished() {
 		// there must be no nodes to execute
 		log.Println("[TRACE]", "execution tree already complete")
 		return
@@ -233,15 +233,20 @@ func (*DashboardExecutionTree) ChildStatusChanged(context.Context) {}
 
 func (e *DashboardExecutionTree) Cancel() {
 	// if we have not completed, and already have a cancel function - cancel
-	if e.GetRunStatus() != dashboardtypes.RunInitialized || e.cancel == nil {
+	if e.GetRunStatus().IsFinished() || e.cancel == nil {
+		log.Printf("[TRACE] DashboardExecutionTree Cancel NOT cancelling status %s cancel func %p", e.GetRunStatus(), e.cancel)
 		return
 	}
+
+	log.Printf("[TRACE] DashboardExecutionTree Cancel  - calling cancel")
 	e.cancel()
 
 	// if there are any children, wait for the execution to complete
 	if !e.Root.RunComplete() {
 		<-e.runComplete
 	}
+
+	log.Printf("[TRACE] DashboardExecutionTree Cancel - all children complete")
 }
 
 func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes.SnapshotPanel {

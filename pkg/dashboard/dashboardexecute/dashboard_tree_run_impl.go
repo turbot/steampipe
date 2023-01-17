@@ -86,7 +86,7 @@ func (r *DashboardTreeRunImpl) GetError() error {
 
 // RunComplete implements DashboardTreeRun
 func (r *DashboardTreeRunImpl) RunComplete() bool {
-	return r.Status == dashboardtypes.RunComplete || r.Status.IsError()
+	return r.Status.IsFinished()
 }
 
 // GetInputsDependingOn implements DashboardTreeRun

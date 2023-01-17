@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"log"
 )
 
 // DashboardContainerRun is a struct representing a container run
@@ -93,9 +93,6 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 	return r, nil
 }
 
-// IsSnapshotPanel implements SnapshotPanel
-func (*DashboardContainerRun) IsSnapshotPanel() {}
-
 // Initialise implements DashboardTreeRun
 func (r *DashboardContainerRun) Initialise(ctx context.Context) {
 	// initialise our children
@@ -114,21 +111,16 @@ func (r *DashboardContainerRun) Execute(ctx context.Context) {
 	r.setRunning(ctx)
 
 	// wait for children to complete
-	var errors []error
-	for !r.ChildrenComplete() {
-		completeChild := <-r.childCompleteChan
-		if completeChild.GetRunStatus().IsError() {
-			errors = append(errors, completeChild.GetError())
-		}
-		// fall through to recheck ChildrenComplete
-	}
-
-	// so all children have completed - check for errors
-	err := error_helpers.CombineErrors(errors...)
+	err := <-r.waitForChildrenAsync(ctx)
 	if err == nil {
+		log.Printf("[TRACE] %s Execute waitForChildrenAsync returned success", r.Name)
 		// set complete status on dashboard
 		r.SetComplete(ctx)
 	} else {
+		log.Printf("[TRACE] %s Execute waitForChildrenAsync returned err %s", r.Name, err.Error())
 		r.SetError(ctx, err)
 	}
 }
+
+// IsSnapshotPanel implements SnapshotPanel
+func (*DashboardContainerRun) IsSnapshotPanel() {}

@@ -104,6 +104,7 @@ type DashboardLeafNode interface {
 
 type ResourceMapsProvider interface {
 	GetResourceMaps() *ResourceMaps
+	GetResource(parsedName *ParsedResourceName) (resource HclResource, found bool)
 }
 
 // NodeAndEdgeProvider must be implemented by any dashboard leaf node which supports edges and nodes

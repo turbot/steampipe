@@ -55,7 +55,7 @@ type Workspace struct {
 	// callback function called when there is a file watcher event
 	onFileWatcherEventMessages func()
 	loadPseudoResources        bool
-	// channel used to send dashboard events to the handleDashbooardEvent goroutine
+	// channel used to send dashboard events to the handleDashboardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
 }
 
@@ -184,8 +184,11 @@ func (w *Workspace) Close() {
 	if w.watcher != nil {
 		w.watcher.Close()
 	}
-	if w.dashboardEventChan != nil {
-		close(w.dashboardEventChan)
+	if ch := w.dashboardEventChan; ch != nil {
+		// NOTE: set nil first
+		w.dashboardEventChan = nil
+		log.Printf("[TRACE] closing dashboardEventChan")
+		close(ch)
 	}
 }
 

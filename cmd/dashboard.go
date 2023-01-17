@@ -155,10 +155,10 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	error_helpers.FailOnError(err)
 
 	// start the server asynchronously - this returns a chan which is signalled when the internal API server terminates
-	doneChan := server.Start()
+	doneChan := server.Start(dashboardCtx)
 
 	// cleanup
-	defer server.Shutdown()
+	defer server.Shutdown(dashboardCtx)
 
 	// server has started - update state file/start browser, as required
 	onServerStarted(serverPort, serverListen, initData.Workspace)
@@ -318,7 +318,7 @@ func verifyNamedResource(targetName string, w *workspace.Workspace) error {
 	if parsedName.ItemType == "" {
 		return fmt.Errorf("dashboard command cannot run arbitrary SQL")
 	}
-	if _, found := modconfig.GetResource(w, parsedName); !found {
+	if _, found := w.GetResource(parsedName); !found {
 		return fmt.Errorf("'%s' not found in %s (%s)", targetName, w.Mod.Name(), w.Path)
 	}
 	return nil

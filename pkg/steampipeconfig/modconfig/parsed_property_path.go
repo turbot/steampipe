@@ -10,7 +10,7 @@ type ParsedPropertyPath struct {
 	ItemType     string
 	Name         string
 	PropertyPath []string
-	// optional scope of this property path ("root or parent")
+	// optional scope of this property path ("self")
 	Scope    string
 	Original string
 }
@@ -49,7 +49,7 @@ func ParseResourcePropertyPath(propertyPath string) (*ParsedPropertyPath, error)
 	}
 
 	// special case handling for runtime dependencies which may have use the "self" qualifier
-	if parts[0] == runtimeDependencyDashboardScope {
+	if parts[0] == RuntimeDependencyDashboardScope {
 		res.Scope = parts[0]
 		parts = parts[1:]
 	}

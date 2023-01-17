@@ -273,6 +273,10 @@ func (r *ModParseContext) GetResourceMaps() *modconfig.ResourceMaps {
 	return resourceMap
 }
 
+func (m *ModParseContext) GetResource(parsedName *modconfig.ParsedResourceName) (resource modconfig.HclResource, found bool) {
+	return m.GetResourceMaps().GetResource(parsedName)
+}
+
 // eval functions
 func (r *ModParseContext) buildEvalContext() {
 	// convert variables to cty values

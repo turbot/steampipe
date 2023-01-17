@@ -14,3 +14,7 @@ const (
 func (s RunStatus) IsError() bool {
 	return s == RunError || s == RunCanceled
 }
+
+func (s RunStatus) IsFinished() bool {
+	return s == RunComplete || s.IsError()
+}
