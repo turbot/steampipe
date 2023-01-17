@@ -109,7 +109,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	}()
 
 	// if there is nothing to do, return
-	if r.Status == dashboardtypes.RunComplete {
+	if r.Status.IsFinished() {
 		return
 	}
 
@@ -121,7 +121,7 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	r.executeChildrenAsync(ctx)
 
 	// start a goroutine to wait for children to complete
-	doneChan := r.waitForChildrenAsync()
+	doneChan := r.waitForChildrenAsync(ctx)
 
 	if err := r.evaluateRuntimeDependencies(ctx); err != nil {
 		r.SetError(ctx, err)
@@ -144,11 +144,14 @@ func (r *LeafRun) Execute(ctx context.Context) {
 	// wait for all children and withs
 	err := <-doneChan
 	if err == nil {
+		log.Printf("[TRACE] %s children complete", r.resource.Name())
+
 		// aggregate our child data
 		r.combineChildData()
 		// set complete status on dashboard
 		r.SetComplete(ctx)
 	} else {
+		log.Printf("[TRACE] %s children complete with error: %s", r.resource.Name(), err.Error())
 		r.SetError(ctx, err)
 	}
 }

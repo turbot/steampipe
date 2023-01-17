@@ -41,6 +41,7 @@ func (r *DashboardParentImpl) GetChildren() []dashboardtypes.DashboardTreeRun {
 func (r *DashboardParentImpl) ChildrenComplete() bool {
 	for _, child := range r.children {
 		if !child.RunComplete() {
+			log.Printf("[TRACE] %s ChildrenComplete child %s NOT complete state %s", r.Name, child.GetName(), child.GetRunStatus())
 			return false
 		}
 	}
@@ -74,34 +75,42 @@ func (r *DashboardParentImpl) executeWithsAsync(ctx context.Context) {
 	}
 }
 
-func (r *DashboardParentImpl) waitForChildrenAsync() chan error {
+func (r *DashboardParentImpl) waitForChildrenAsync(ctx context.Context) chan error {
 	log.Printf("[TRACE] %s waitForChildrenAsync", r.Name)
 	var doneChan = make(chan error)
 	if len(r.children) == 0 {
 		log.Printf("[TRACE] %s waitForChildrenAsync - no children so we're done", r.Name)
 		// if there are no children, return a closed channel so we do not wait
 		close(doneChan)
-	} else {
-		go func() {
-			// wait for children to complete
-			var errors []error
-
-			for !(r.ChildrenComplete()) {
-				completeChild := <-r.childCompleteChan
-				log.Printf("[TRACE] %s got child complete for %s", r.Name, completeChild.GetName())
-				if completeChild.GetRunStatus().IsError() {
-					errors = append(errors, completeChild.GetError())
-					log.Printf("[TRACE] %s child %s has error %v", r.Name, completeChild.GetName(), completeChild.GetError())
-				}
-				// fall through to recheck ChildrenComplete
-			}
-
-			log.Printf("[TRACE]  %s ALL children and withs complete, errors: %v", r.Name, errors)
-			// so all children have completed - check for errors
-			// TODO [node_reuse] format better error https://github.com/turbot/steampipe/issues/2920
-			doneChan <- error_helpers.CombineErrors(errors...)
-		}()
+		return doneChan
 	}
+
+	go func() {
+		// wait for children to complete
+		var errors []error
+		for !(r.ChildrenComplete()) {
+			completeChild := <-r.childCompleteChan
+			log.Printf("[TRACE] %s waitForChildrenAsync got child complete for %s", r.Name, completeChild.GetName())
+			if completeChild.GetRunStatus().IsError() {
+				errors = append(errors, completeChild.GetError())
+				log.Printf("[TRACE] %s child %s has error %v", r.Name, completeChild.GetName(), completeChild.GetError())
+			}
+		}
+
+		log.Printf("[TRACE] %s ALL children and withs complete, errors: %v", r.Name, errors)
+
+		// so all children have completed - check for errors
+		// TODO [node_reuse] format better error https://github.com/turbot/steampipe/issues/2920
+		err := error_helpers.CombineErrors(errors...)
+
+		// if context is cancelled, just return context cancellation error
+		if ctx.Err() != nil {
+			err = ctx.Err()
+		}
+
+		doneChan <- err
+	}()
+
 	return doneChan
 }
 
@@ -122,6 +131,12 @@ func (r *DashboardParentImpl) ChildStatusChanged(ctx context.Context) {
 
 // override DashboardTreeRunImpl) setStatus(
 func (r *DashboardParentImpl) setRunning(ctx context.Context) {
+	// if the run is already complete (for example, canceled), do nothing
+	if r.GetRunStatus().IsFinished() {
+		log.Printf("[TRACE] %s setRunning - run already terminated - current state %s - NOT setting running", r.Name, r.GetRunStatus())
+		return
+	}
+
 	status := dashboardtypes.RunRunning
 	// if we are trying to set status to running, check if any of our children are blocked,
 	// and if so set our status to blocked

@@ -213,7 +213,7 @@ func resolveReferences(body hcl.Body, resourceMapsProvider modconfig.ResourceMap
 					if scopeTraversal, ok := hclVal.Expr.(*hclsyntax.ScopeTraversalExpr); ok {
 						path := hclhelpers.TraversalAsString(scopeTraversal.Traversal)
 						if parsedName, err := modconfig.ParseResourceName(path); err == nil {
-							if r, ok := modconfig.GetResource(resourceMapsProvider, parsedName); ok {
+							if r, ok := resourceMapsProvider.GetResource(parsedName); ok {
 								f := rv.FieldByName(field.Name)
 								if f.IsValid() && f.CanSet() {
 									targetVal := reflect.ValueOf(r)

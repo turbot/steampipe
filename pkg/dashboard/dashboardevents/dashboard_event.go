@@ -1,6 +1,8 @@
 package dashboardevents
 
+import "context"
+
 type DashboardEvent interface {
 	IsDashboardEvent()
 }
-type DashboardEventHandler func(DashboardEvent)
+type DashboardEventHandler func(context.Context, DashboardEvent)
