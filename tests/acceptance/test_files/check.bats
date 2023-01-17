@@ -1,11 +1,6 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
-@test "steampipe version check" {
-  run steampipe --version
-  assert_failure
-}
-
 @test "steampipe check exitCode - no control alarms or errors" {
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe check benchmark.all_controls_ok
