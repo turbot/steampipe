@@ -29,7 +29,6 @@ jobs:
           git checkout ${{ github.base_ref }}
           git checkout -b test-branch-acc
           git merge origin/${{ github.head_ref }}
-          git push origin test-branch-acc
 
       - name: Checkout
         uses: actions/checkout@v3
