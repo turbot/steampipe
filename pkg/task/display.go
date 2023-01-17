@@ -15,12 +15,12 @@ import (
 )
 
 const (
-	AvailableVersionsCacheStructVersion = 20221121
+	AvailableVersionsCacheStructVersion = 20230117
 )
 
 func (r *Runner) saveAvailableVersions(cli *CLIVersionCheckResponse, plugin map[string]plugin.VersionCheckReport) error {
-	utils.LogTime("Runner.saveNotifications start")
-	defer utils.LogTime("Runner.saveNotifications end")
+	utils.LogTime("Runner.saveAvailableVersions start")
+	defer utils.LogTime("Runner.saveAvailableVersions end")
 
 	if cli == nil && len(plugin) == 0 {
 		// nothing to save
