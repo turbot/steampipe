@@ -5,7 +5,7 @@
   "auto_generated": false,
   "description": null,
   "documentation": null,
-  "end_line_number": 54,
+  "end_line_number": 57,
   "is_anonymous": false,
   "mod_name": "introspection_table_mod",
   "params": null,
@@ -21,7 +21,7 @@
   "source_definition": "\t\timage \"sample_image_1\" {\n\t\t\ttitle = \"Sample image 1\"\n\t\t\twidth = 3\n  \t\tsrc = \"https://steampipe.io/images/logo.png\"\n  \t\talt = \"steampipe\"\n\t\t}",
   "sql": null,
   "src": "https://steampipe.io/images/logo.png",
-  "start_line_number": 49,
+  "start_line_number": 52,
   "tags": null,
   "title": "Sample image 1",
   "width": "3"

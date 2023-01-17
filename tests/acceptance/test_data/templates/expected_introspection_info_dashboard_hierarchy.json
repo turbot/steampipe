@@ -9,7 +9,7 @@
     "name": "sample_edge_3"
    }
   ],
-  "end_line_number": 112,
+  "end_line_number": 115,
   "is_anonymous": false,
   "mod_name": "introspection_table_mod",
   "nodes": [
@@ -22,7 +22,7 @@
   "resource_name": "sample_hierarchy_1",
   "source_definition": "    hierarchy \"sample_hierarchy_1\" {\n      title = \"Sample hierarchy 1\"\n      width = 5\n\n      node \"sample_node_3\" {\n        sql = <<-EOQ\n          select 1 as node\n        EOQ\n      }\n      edge \"sample_edge_3\" {\n        sql = <<-EOQ\n          select 1 as edge\n        EOQ\n      }\n    }",
   "sql": null,
-  "start_line_number": 98,
+  "start_line_number": 101,
   "tags": null,
   "title": "Sample hierarchy 1",
   "type": null,
