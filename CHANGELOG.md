@@ -3,7 +3,8 @@ _Bug fixes_
 * Fix workspace file watching events sometime causing dashboard to stall and stop responding to events. ([#3007](https://github.com/turbot/steampipe/issues/3007))
 * Fix cancelling dashboards (e.g. by pressing 'back' on the browser) sometimes leaving the dashboard server in a state where it will not respond to socket events. ([#3008](https://github.com/turbot/steampipe/issues/3008))
 * Validate that input references are of the form self.input.<input-name>.value. ([#2990](https://github.com/turbot/steampipe/issues/2990))
-* Fix `check --where` and `check --tag`. Closes #3001
+* Fix `check --where` and `check --tag`. ([#3001](https://github.com/turbot/steampipe/issues/3001))
+* Fix dashboard leaf_node_updated events for v0.17.4 CLI being ignored by v0.18.0 UI clients. ([#2994](https://github.com/turbot/steampipe/issues/2994))
 
 ## v0.18.0 [2022-01-12]
 _What's new?_
