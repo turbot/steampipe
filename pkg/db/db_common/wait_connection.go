@@ -54,10 +54,10 @@ func WaitForConnection(ctx context.Context, connection *pgx.Conn) (err error) {
 	)
 
 	retryErr := retry.Do(ctx, retryBackoff, func(ctx context.Context) error {
-		log.Println("[TRACE] >>>>>>>>>> Pinging")
+		log.Println("[TRACE] Pinging")
 		pingErr := connection.Ping(timeoutCtx)
 		if pingErr != nil {
-			log.Println("[TRACE] >>>>>>>>>> Pinging failed -> trying again")
+			log.Println("[TRACE] Pinging failed -> trying again")
 			return retry.RetryableError(pingErr)
 		}
 		return nil

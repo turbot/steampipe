@@ -137,12 +137,12 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 			log.Println("[TRACE] could not connect:", err)
 			return retry.RetryableError(err)
 		}
-		log.Println("[TRACE] >>>>>>>>>> connected to database")
+		log.Println("[TRACE] connected to database")
 		conn = dbConnection
 		return nil
 	})
 	if err != nil {
-		log.Println("[TRACE] >>>>>>>>>> could not connect to service")
+		log.Println("[TRACE] could not connect to service")
 		return nil, errors.Wrap(err, "connection setup failed")
 	}
 
@@ -151,7 +151,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	err = db_common.WaitForConnection(ctx, conn)
 	if err != nil {
 		conn.Close(ctx)
-		log.Println("[TRACE] >>>>>>>>>> WaitForConnection timed out")
+		log.Println("[TRACE] WaitForConnection timed out")
 		return nil, err
 	}
 	return conn, nil
