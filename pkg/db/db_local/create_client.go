@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/pkg/errors"
+	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -100,6 +102,56 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn,
 	}
 
 	if err := db_common.WaitForConnection(ctx, conn); err != nil {
+		return nil, err
+	}
+	return conn, nil
+}
+
+// createMaintenanceClient connects to the postgres server using the
+// maintenance database (postgres) and superuser
+// this is used in a couple of places
+//  1. During installation to setup the DBMS with foreign_server, extension et.al.
+//  2. During service start and stop to query the DBMS for parameters (connected clients, database name etc.)
+//
+// this is called immediately after the service process is started and hence
+// all special handling related to service startup failures SHOULD be handled here
+func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
+	utils.LogTime("db_local.createMaintenanceClient start")
+	defer utils.LogTime("db_local.createMaintenanceClient end")
+
+	var conn *pgx.Conn
+	var err error
+
+	backoff := retry.WithMaxDuration(
+		constants.DBConnectionTimeout,
+		retry.NewConstant(constants.DBConnectionRetryBackoff),
+	)
+
+	// create a connection to the service.
+	// Retry after a backoff, but only upto a maximum duration.
+	err = retry.Do(ctx, backoff, func(rCtx context.Context) error {
+		connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
+		log.Println("[TRACE] Trying to create maintenance client with: ", connStr)
+		dbConnection, err := pgx.Connect(rCtx, connStr)
+		if err != nil {
+			log.Println("[TRACE] could not connect:", err)
+			return retry.RetryableError(err)
+		}
+		log.Println("[TRACE] connected to database")
+		conn = dbConnection
+		return nil
+	})
+	if err != nil {
+		log.Println("[TRACE] could not connect to service")
+		return nil, errors.Wrap(err, "connection setup failed")
+	}
+
+	// wait for the connection to get established
+	// WaitForConnection retries on its own
+	err = db_common.WaitForConnection(ctx, conn)
+	if err != nil {
+		conn.Close(ctx)
+		log.Println("[TRACE] WaitForConnection timed out")
 		return nil, err
 	}
 	return conn, nil

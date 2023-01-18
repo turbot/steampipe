@@ -188,7 +188,6 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		return res.SetError(err)
 	}
 
-	// sometimes connecting to the db immediately after startup results in a dial error - so retry
 	databaseName, err := getDatabaseName(ctx, port)
 	if err != nil {
 		return res.SetError(err)
@@ -311,7 +310,7 @@ func startPostgresProcess(ctx context.Context, port int, listen StartListenType,
 func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, error) {
 	connection, err := createMaintenanceClient(ctx, port)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to connect to the database: %v - please try again or reset your steampipe database", err)
 	}
 	defer connection.Close(ctx)
 
