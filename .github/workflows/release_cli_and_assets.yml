@@ -709,6 +709,7 @@ jobs:
 
       - name: Update Homebrew core formula
         run: |
+          brew update
           brew bump-formula-pr --url https://github.com/turbot/steampipe/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz steampipe
 
   clean_up:
