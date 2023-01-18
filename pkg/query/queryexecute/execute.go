@@ -42,7 +42,7 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) (int, error)
 	// wait for init
 	<-initData.Loaded
 	if err := initData.Result.Error; err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	// display any initialisation messages/warnings
