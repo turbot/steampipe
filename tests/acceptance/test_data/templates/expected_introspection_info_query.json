@@ -1,0 +1,40 @@
+[
+ {
+  "args": null,
+  "auto_generated": false,
+  "description": "query 1 - 3 params all with defaults",
+  "documentation": null,
+  "end_line_number": 23,
+  "is_anonymous": false,
+  "mod_name": "introspection_table_mod",
+  "params": [
+   {
+    "default": "steampipe_var",
+    "description": "p1",
+    "name": "p1"
+   },
+   {
+    "default": "because_def ",
+    "description": "p2",
+    "name": "p2"
+   },
+   {
+    "default": "string",
+    "description": "p3",
+    "name": "p3"
+   }
+  ],
+  "path": [
+   [
+    "mod.introspection_table_mod",
+    "introspection_table_mod.query.sample_query_1"
+   ]
+  ],
+  "resource_name": "sample_query_1",
+  "source_definition": "query \"sample_query_1\"{\n\ttitle =\"Sample query 1\"\n\tdescription = \"query 1 - 3 params all with defaults\"\n\tsql = \"select 'ok' as status, 'steampipe' as resource, concat($1::text, $2::text, $3::text) as reason\"\n\tparam \"p1\"{\n\t\t\tdescription = \"p1\"\n\t\t\tdefault = var.sample_var_1\n\t}\n\tparam \"p2\"{\n\t\t\tdescription = \"p2\"\n\t\t\tdefault = \"because_def \"\n\t}\n\tparam \"p3\"{\n\t\t\tdescription = \"p3\"\n\t\t\tdefault = \"string\"\n\t}\n}",
+  "sql": "select 'ok' as status, 'steampipe' as resource, concat($1::text, $2::text, $3::text) as reason",
+  "start_line_number": 7,
+  "tags": null,
+  "title": "Sample query 1"
+ }
+]

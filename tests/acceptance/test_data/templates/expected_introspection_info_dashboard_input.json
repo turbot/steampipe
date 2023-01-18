@@ -1,0 +1,31 @@
+[
+ {
+  "args": null,
+  "auto_generated": false,
+  "dashboard": "introspection_table_mod.dashboard.sample_dashboard_1",
+  "description": null,
+  "documentation": null,
+  "end_line_number": 127,
+  "is_anonymous": false,
+  "label": null,
+  "mod_name": "introspection_table_mod",
+  "params": null,
+  "path": [
+   [
+    "mod.introspection_table_mod",
+    "introspection_table_mod.dashboard.sample_dashboard_1",
+    "introspection_table_mod.container.sample_conatiner_1",
+    "introspection_table_mod.text.sample_text_1"
+   ]
+  ],
+  "placeholder": null,
+  "resource_name": "sample_input_1",
+  "source_definition": "    input \"sample_input_1\" {\n      sql = \"select 1 as input\"\n      width = 2\n      title = \"Sample input 1\"\n    }",
+  "sql": "select 1 as input",
+  "start_line_number": 123,
+  "tags": null,
+  "title": "Sample input 1",
+  "type": null,
+  "width": "2"
+ }
+]

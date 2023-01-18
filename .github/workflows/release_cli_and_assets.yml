@@ -329,6 +329,7 @@ jobs:
           - "check"
           - "performance"
           - "workspace"
+          - "introspection"
           - "cloud"
           - "dashboard"
           - "dashboard_parsing_validation"
