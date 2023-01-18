@@ -697,7 +697,7 @@ jobs:
   update_homebrew_core_formula:
     name: Update Homebrew Core Formula
     needs: [build_and_release_cli]
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     env:
       Version: ${{ github.event.inputs.version }}
     steps:
@@ -708,12 +708,8 @@ jobs:
           input_string: ${{ github.event.inputs.version }}
 
       - name: Update Homebrew core formula
-        uses: dawidd6/action-homebrew-bump-formula@v3
-        with:
-          token: ${{ secrets.GH_ACCESS_TOKEN }} # should be turbot org token?
-          formula: steampipe
-          tag: ${{ github.ref }}
-          force: true
+        run: |
+          brew bump-formula-pr --url https://github.com/turbot/steampipe/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz steampipe
 
   clean_up:
     # let's clean up the artifacts.
