@@ -64,9 +64,7 @@ func (m *PluginMessageServer) runMessageListener(stream sdkproto.WrapperPlugin_E
 		message, err := stream.Recv()
 		if err != nil {
 			m.logReceiveError(err, connection)
-			// signal error and reestablish connection?
-			//return
-			continue
+			return
 		}
 		m.handleMessage(stream, message, connection)
 	}
@@ -74,7 +72,6 @@ func (m *PluginMessageServer) runMessageListener(stream sdkproto.WrapperPlugin_E
 
 func (m *PluginMessageServer) logReceiveError(err error, connection string) {
 	log.Printf("[TRACE] receive error for connection '%s': %v", connection, err)
-	// TODO this is causing very verbose error logging
 	switch {
 	case sdkgrpc.IsEOFError(err):
 		log.Printf("[TRACE] cache listener received EOF for connection '%s', returning", connection)
@@ -84,7 +81,7 @@ func (m *PluginMessageServer) logReceiveError(err error, connection string) {
 	case error_helpers.IsContextCancelledError(err):
 		// ignore
 	default:
-		log.Printf("[ERROR] error in runMessageListener for connection '%s': %v", connection, err)
+		log.Printf("[WARN] error in PluginMessageServer runMessageListener for connection '%s': %v", connection, err)
 	}
 }
 

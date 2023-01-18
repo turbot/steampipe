@@ -618,7 +618,8 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 
 	reattach := proto.NewReattachConfig(pluginName, client.ReattachConfig(), proto.SupportedOperationsFromSdk(supportedOperations), connectionNames)
 
-	//m.messageServer.AddConnection(pluginClient, pluginName, connectionNames...)
+	// add connections to message server
+	m.messageServer.AddConnection(pluginClient, pluginName, connectionNames...)
 	return client, reattach, nil
 }
 
