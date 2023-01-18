@@ -355,63 +355,63 @@ jobs:
         fi
         echo "VERSION=${trim}" >> $GITHUB_ENV
 
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        submodules: true
-        ref: ${{ github.event.ref }}
+  #   - name: Checkout
+  #     uses: actions/checkout@v3
+  #     with:
+  #       submodules: true
+  #       ref: ${{ github.event.ref }}
 
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.19
+  #   - name: Set up Go
+  #     uses: actions/setup-go@v3
+  #     with:
+  #       go-version: 1.19
 
-    - name: Setup BATS
-      uses: mig4/setup-bats@v1
-      with:
-        bats-version: 1.2.1
+  #   - name: Setup BATS
+  #     uses: mig4/setup-bats@v1
+  #     with:
+  #       bats-version: 1.2.1
 
-    - name: Prepare for downloads
-      id: prepare-for-downloads
-      run: |
-        mkdir ~/artifacts
+  #   - name: Prepare for downloads
+  #     id: prepare-for-downloads
+  #     run: |
+  #       mkdir ~/artifacts
 
-    - name: Download Darwin Build Artifacts
-      uses: actions/download-artifact@v3
-      if: ${{ matrix.platform == 'macos-latest' }}
-      with:
-        name: build-artifact-darwin
-        path: ~/artifacts
+  #   - name: Download Darwin Build Artifacts
+  #     uses: actions/download-artifact@v3
+  #     if: ${{ matrix.platform == 'macos-latest' }}
+  #     with:
+  #       name: build-artifact-darwin
+  #       path: ~/artifacts
 
-    - name: Extract Darwin Artifacts and Install Binary
-      if: ${{ matrix.platform == 'macos-latest' }}
-      run: |
-        mkdir ~/build
-        unzip ~/artifacts/darwin.zip -d ~/build
+  #   - name: Extract Darwin Artifacts and Install Binary
+  #     if: ${{ matrix.platform == 'macos-latest' }}
+  #     run: |
+  #       mkdir ~/build
+  #       unzip ~/artifacts/darwin.zip -d ~/build
 
-    - name: Set PATH
-      run: |
-        echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
+  #   - name: Set PATH
+  #     run: |
+  #       echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
 
-    - name: Go install jd
-      run: |
-        go install github.com/josephburnett/jd@latest
+  #   - name: Go install jd
+  #     run: |
+  #       go install github.com/josephburnett/jd@latest
 
-    - name: Install DB
-      id: install-db
-      continue-on-error: false
-      run: |
-        steampipe service start
-        steampipe plugin install chaos
-        steampipe service stop
+  #   - name: Install DB
+  #     id: install-db
+  #     continue-on-error: false
+  #     run: |
+  #       steampipe service start
+  #       steampipe plugin install chaos
+  #       steampipe service stop
 
-    - name: Run Test Suite
-      id: run-test-suite
-      timeout-minutes: 15
-      run: |
-        chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-        $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
-        steampipe service stop --force
+  #   - name: Run Test Suite
+  #     id: run-test-suite
+  #     timeout-minutes: 15
+  #     run: |
+  #       chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
+  #       $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
+  #       steampipe service stop --force
 #
 #  docker_acceptance_test_debian:
 #   name: Acceptance tests(Docker - Debian)
@@ -623,76 +623,96 @@ jobs:
     #     gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm --project steampipe
     #     gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb --project steampipe
 
-  create_pr_in_homebrew:
-    name: Create PR in homebrew-tap
-    needs: [ensure_branch_in_homebrew, build_and_release_cli]
-    runs-on: ubuntu-latest
-    env:
-      Version: ${{ github.event.inputs.version }}
-    steps:
-      - name: Parse semver string
-        id: semver_parser
-        uses: booxmedialtd/ws-action-parse-semver@v1
-        with:
-          input_string: ${{ github.event.inputs.version }}
+  # create_pr_in_homebrew:
+  #   name: Create PR in homebrew-tap
+  #   needs: [ensure_branch_in_homebrew, build_and_release_cli]
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     Version: ${{ github.event.inputs.version }}
+  #   steps:
+  #     - name: Parse semver string
+  #       id: semver_parser
+  #       uses: booxmedialtd/ws-action-parse-semver@v1
+  #       with:
+  #         input_string: ${{ github.event.inputs.version }}
 
-      - name: Checkout
-        if: steps.semver_parser.outputs.prerelease == ''
-        uses: actions/checkout@v3
-        with:
-          repository: turbot/homebrew-tap
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
-          ref: main
+  #     - name: Checkout
+  #       if: steps.semver_parser.outputs.prerelease == ''
+  #       uses: actions/checkout@v3
+  #       with:
+  #         repository: turbot/homebrew-tap
+  #         token: ${{ secrets.GH_ACCESS_TOKEN }}
+  #         ref: main
 
-      - name: Create a new branch off the base branch
-        if: steps.semver_parser.outputs.prerelease == ''
-        run: |
-          git fetch --all
-          git checkout bump-brew
-          git checkout -b $VERSION
-          git push --set-upstream origin $VERSION
+  #     - name: Create a new branch off the base branch
+  #       if: steps.semver_parser.outputs.prerelease == ''
+  #       run: |
+  #         git fetch --all
+  #         git checkout bump-brew
+  #         git checkout -b $VERSION
+  #         git push --set-upstream origin $VERSION
 
-      - name: Close pull request if already exists
-        if: steps.semver_parser.outputs.prerelease == ''
-        run: |
-          gh pr close $VERSION
-        continue-on-error: true
+  #     - name: Close pull request if already exists
+  #       if: steps.semver_parser.outputs.prerelease == ''
+  #       run: |
+  #         gh pr close $VERSION
+  #       continue-on-error: true
 
-      - name: Create pull request
-        if: steps.semver_parser.outputs.prerelease == ''
-        run: |
-          gh pr create --base main --head $VERSION --title "$Version" --body "Update formula"
+  #     - name: Create pull request
+  #       if: steps.semver_parser.outputs.prerelease == ''
+  #       run: |
+  #         gh pr create --base main --head $VERSION --title "$Version" --body "Update formula"
 
-  update_pr_for_versioning:
-    name: Update PR
-    needs: [create_pr_in_homebrew]
-    runs-on: ubuntu-latest
-    env:
-      Version: ${{ github.event.inputs.version }}
-    steps:
-      - name: Parse semver string
-        id: semver_parser
-        uses: booxmedialtd/ws-action-parse-semver@v1
-        with:
-          input_string: ${{ github.event.inputs.version }}
+  # update_pr_for_versioning:
+  #   name: Update PR
+  #   needs: [create_pr_in_homebrew]
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     Version: ${{ github.event.inputs.version }}
+  #   steps:
+  #     - name: Parse semver string
+  #       id: semver_parser
+  #       uses: booxmedialtd/ws-action-parse-semver@v1
+  #       with:
+  #         input_string: ${{ github.event.inputs.version }}
 
-      - name: Checkout
-        if: steps.semver_parser.outputs.prerelease == ''
-        uses: actions/checkout@v3
-        with:
-          repository: turbot/homebrew-tap
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
-          ref: ${{ github.event.inputs.version }}
+  #     - name: Checkout
+  #       if: steps.semver_parser.outputs.prerelease == ''
+  #       uses: actions/checkout@v3
+  #       with:
+  #         repository: turbot/homebrew-tap
+  #         token: ${{ secrets.GH_ACCESS_TOKEN }}
+  #         ref: ${{ github.event.inputs.version }}
 
-      - name: Update live version
-        if: steps.semver_parser.outputs.prerelease == ''
-        run: |
-          scripts/formula_versioning.sh
-          git config --global user.email "puskar@turbot.com"
-          git config --global user.name "Puskar Basu"
-          git add .
-          git commit -m "Versioning brew formulas"
-          git push origin $VERSION
+  #     - name: Update live version
+  #       if: steps.semver_parser.outputs.prerelease == ''
+  #       run: |
+  #         scripts/formula_versioning.sh
+  #         git config --global user.email "puskar@turbot.com"
+  #         git config --global user.name "Puskar Basu"
+  #         git add .
+  #         git commit -m "Versioning brew formulas"
+  #         git push origin $VERSION
+
+  # update_homebrew_core_formula:
+  #   name: Update Homebrew Core Formula
+  #   needs: [build_and_release_cli]
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     Version: ${{ github.event.inputs.version }}
+  #   steps:
+  #     - name: Parse semver string
+  #       id: semver_parser
+  #       uses: booxmedialtd/ws-action-parse-semver@v1
+  #       with:
+  #         input_string: ${{ github.event.inputs.version }}
+
+  #     - name: Update Homebrew core formula
+  #       uses: dawidd6/action-homebrew-bump-formula@v3
+  #       with:
+  #         token: ${{ secrets.GH_ACCESS_TOKEN }} # should be turbot org token?
+  #         formula: steampipe
+  #         tag: ${{ github.event.inputs.version }}
 
   clean_up:
     # let's clean up the artifacts.

@@ -1,0 +1,78 @@
+name: Update Homebrew Formula
+
+on:
+  release:
+    types: [created]
+
+env:
+  GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+  VERSION: ${{ github.event.release.tag_name }}
+
+jobs:
+  turbot_tap:
+    runs-on: ubuntu-latest
+    env:
+      Version: ${{ github.event.release.tag_name }}
+    steps:
+      - name: Parse semver string
+        id: semver_parser
+        uses: booxmedialtd/ws-action-parse-semver@v1
+        with:
+          input_string: ${{ github.event.release.tag_name }}
+
+      - name: Checkout
+        if: steps.semver_parser.outputs.prerelease == ''
+        uses: actions/checkout@v3
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: main
+
+      - name: Create a new branch off the base branch
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          git fetch --all
+          git checkout bump-brew
+          git checkout -b $VERSION
+          git push --set-upstream origin $VERSION
+
+      - name: Close pull request if already exists
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          gh pr close $VERSION
+        continue-on-error: true
+
+      - name: Create pull request
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          gh pr create --base main --head $VERSION --title "$Version" --body "Update formula"
+
+      - name: Update live version # versioned formula
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          scripts/formula_versioning.sh
+          git config --global user.email "puskar@turbot.com"
+          git config --global user.name "Puskar Basu"
+          git add .
+          git commit -m "Versioning brew formulas"
+          git push origin $VERSION
+
+  homebrew_core:
+    name: Update Homebrew Core Formula
+    needs: [build_and_release_cli]
+    runs-on: ubuntu-latest
+    env:
+      Version: ${{ github.event.release.tag_name }}
+    steps:
+      - name: Parse semver string
+        id: semver_parser
+        uses: booxmedialtd/ws-action-parse-semver@v1
+        with:
+          input_string: ${{ github.event.release.tag_name }}
+
+      - name: Update Homebrew core formula
+        uses: dawidd6/action-homebrew-bump-formula@v3
+        with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }} # should be turbot org token?
+          formula: steampipe
+          tag: ${{ github.event.release.tag_name }}
