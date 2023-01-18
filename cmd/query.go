@@ -135,26 +135,29 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 	defer initData.Cleanup(ctx)
 
+	var failures int
 	switch {
 	case interactiveMode:
-		queryexecute.RunInteractiveSession(ctx, initData)
+		err = queryexecute.RunInteractiveSession(ctx, initData)
 	case snapshotRequired():
 		// if we are either outputting snapshot format, or sharing the results as a snapshot, execute the query
 		// as a dashboard
-		failures := executeSnapshotQuery(initData, ctx)
-		if failures != 0 {
-			exitCode = constants.ExitCodeQueryExecutionFailed
-		}
+		failures = executeSnapshotQuery(initData, ctx)
 	default:
 		// NOTE: disable any status updates - we do not want 'loading' output from any queries
 		ctx = statushooks.DisableStatusHooks(ctx)
 
 		// fall through to running a batch query
 		// set global exit code
-		failures := queryexecute.RunBatchSession(ctx, initData)
-		if failures != 0 {
-			exitCode = constants.ExitCodeQueryExecutionFailed
-		}
+		failures, err = queryexecute.RunBatchSession(ctx, initData)
+	}
+
+	// check for err and set the exit code else set the exit code if some queries failed
+	if err != nil {
+		exitCode = constants.ExitCodeInitializationFailed
+		error_helpers.ShowError(ctx, err)
+	} else if failures > 0 {
+		exitCode = constants.ExitCodeQueryExecutionFailed
 	}
 }
 
@@ -193,6 +196,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 	// wait for init
 	<-initData.Loaded
 	if err := initData.Result.Error; err != nil {
+		exitCode = constants.ExitCodeInitializationFailed
 		error_helpers.FailOnError(err)
 	}
 
