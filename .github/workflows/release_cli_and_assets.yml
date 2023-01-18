@@ -713,6 +713,7 @@ jobs:
           token: ${{ secrets.GH_ACCESS_TOKEN }} # should be turbot org token?
           formula: steampipe
           tag: ${{ github.event.inputs.version }}
+          force: true
 
   clean_up:
     # let's clean up the artifacts.
