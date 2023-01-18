@@ -169,16 +169,15 @@ const Card = (props: CardProps) => {
   }, [state.loading, state.href, renderError, renderedHref]);
 
   useDeepCompareEffect(() => {
-    if (!templateRenderReady || state.loading || !state.href) {
-      return;
-    }
-
     // We only want to do the interpolated template rendering in live views
     if (dataMode !== DashboardDataModeLive) {
       return;
     }
 
-    // const { label, loading, value, ...rest } = state;
+    if (!templateRenderReady || state.loading || !state.href) {
+      return;
+    }
+
     const renderData = { ...state };
     if (props.data && props.data.columns && props.data.rows) {
       const row = props.data.rows[0];

@@ -18,11 +18,7 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import {
-  DashboardDataMode,
-  DashboardDataModeLive,
-  PanelDefinition,
-} from "../../../types";
+import { DashboardDataModeLive, PanelDefinition } from "../../../types";
 import {
   ErrorIcon,
   SortAscendingIcon,
@@ -104,7 +100,6 @@ const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow[]) => {
 
 type CellValueProps = {
   column: TableColumnInfo;
-  dataMode: DashboardDataMode;
   rowIndex: number;
   rowTemplateData: RowRenderResult[];
   value: any;
@@ -113,7 +108,6 @@ type CellValueProps = {
 
 const CellValue = ({
   column,
-  dataMode,
   rowIndex,
   rowTemplateData,
   value,
@@ -127,12 +121,8 @@ const CellValue = ({
 
   // Calculate a link for this cell
   useEffect(() => {
-    // We only want to do the interpolated template rendering in live views
-    if (dataMode !== DashboardDataModeLive) {
-      return;
-    }
-
     const renderedTemplateObj = rowTemplateData[rowIndex];
+
     if (!renderedTemplateObj) {
       setHref(null);
       setError(null);
@@ -152,7 +142,7 @@ const CellValue = ({
       setHref(null);
       setError(renderedTemplateForColumn.error);
     }
-  }, [column, dataMode, rowIndex, rowTemplateData]);
+  }, [column, rowIndex, rowTemplateData]);
 
   let cellContent;
   const dataType = column.data_type.toLowerCase();
@@ -391,6 +381,12 @@ const TableView = ({
     );
 
   useDeepCompareEffect(() => {
+    // We only want to do the interpolated template rendering in live views
+    if (dataMode !== DashboardDataModeLive) {
+      setRowTemplateData([]);
+      return;
+    }
+
     if (!templateRenderReady || columns.length === 0 || rows.length === 0) {
       setRowTemplateData([]);
       return;
@@ -412,7 +408,7 @@ const TableView = ({
     };
 
     doRender();
-  }, [columns, rows, renderTemplates, templateRenderReady]);
+  }, [columns, dataMode, renderTemplates, rows, templateRenderReady]);
 
   return (
     <>
@@ -482,7 +478,6 @@ const TableView = ({
                   >
                     <MemoCellValue
                       column={cell.column}
-                      dataMode={dataMode}
                       rowIndex={index}
                       rowTemplateData={rowTemplateData}
                       value={cell.value}
@@ -552,6 +547,12 @@ const LineView = (props: TableProps) => {
   }, [props.data, props.properties]);
 
   useDeepCompareEffect(() => {
+    // We only want to do the interpolated template rendering in live views
+    if (dataMode !== DashboardDataModeLive) {
+      setRowTemplateData([]);
+      return;
+    }
+
     if (!templateRenderReady || columns.length === 0 || rows.length === 0) {
       setRowTemplateData([]);
       return;
@@ -567,13 +568,12 @@ const LineView = (props: TableProps) => {
         setRowTemplateData([]);
         return;
       }
-      const data = rows.map((row) => row.obj);
-      const renderedResults = await renderTemplates(templates, data);
+      const renderedResults = await renderTemplates(templates, rows);
       setRowTemplateData(renderedResults);
     };
 
     doRender();
-  }, [columns, rows, renderTemplates, templateRenderReady]);
+  }, [columns, dataMode, renderTemplates, rows, templateRenderReady]);
 
   if (columns.length === 0 || rows.length === 0) {
     return null;
@@ -601,7 +601,6 @@ const LineView = (props: TableProps) => {
                   >
                     <MemoCellValue
                       column={col}
-                      dataMode={dataMode}
                       rowIndex={rowIndex}
                       rowTemplateData={rowTemplateData}
                       value={row[col.name]}

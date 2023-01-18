@@ -75,12 +75,12 @@ const GraphProvider = ({ children }: { children: ReactNode }) => {
   });
 
   useDeepCompareEffect(() => {
-    if (!templateRenderReady) {
+    // We only want to do the interpolated template rendering in live views
+    if (dataMode !== DashboardDataModeLive) {
       return;
     }
 
-    // We only want to do the interpolated template rendering in live views
-    if (dataMode !== DashboardDataModeLive) {
+    if (!templateRenderReady) {
       return;
     }
 

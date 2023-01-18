@@ -10,7 +10,6 @@ import {
 import { classNames } from "../../../../utils/styles";
 import { DashboardDataModeLive } from "../../../../types";
 import { ErrorIcon } from "../../../../constants/icons";
-import { isRelativeUrl } from "../../../../utils/url";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
@@ -53,7 +52,6 @@ const RowPropertyItemValue = ({
 }: RowPropertyItemProps) => {
   const {
     components: { ExternalLink },
-    dataMode,
   } = useDashboard();
   const [href, setHref] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,19 +68,13 @@ const RowPropertyItemValue = ({
       return;
     }
     if (renderedTemplateForField.result) {
-      // We only want to render the HREF if it's live, or it's snapshot and absolute
-      const isRelative = isRelativeUrl(renderedTemplateForField.result);
-      setHref(
-        dataMode !== DashboardDataModeLive && isRelative
-          ? null
-          : renderedTemplateForField.result
-      );
+      setHref(renderedTemplateForField.result);
       setError(null);
     } else if (renderedTemplateForField.error) {
       setHref(null);
       setError(renderedTemplateForField.error);
     }
-  }, [dataMode, name, rowTemplateData]);
+  }, [name, rowTemplateData]);
 
   const wrapClassName = wrap ? "whitespace-normal" : "truncate";
   const linkClassName = classNames("link-highlight", wrapClassName);
@@ -175,11 +167,18 @@ const RowPropertyItem = ({
 };
 
 const RowProperties = ({ properties = {}, fields }: RowPropertiesProps) => {
+  const { dataMode } = useDashboard();
   const [rowTemplateData, setRowTemplateData] =
     useState<RowRenderResult | null>(null);
   const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
 
   useDeepCompareEffect(() => {
+    // We only want to do the interpolated template rendering in live views
+    if (dataMode !== DashboardDataModeLive) {
+      setRowTemplateData(null);
+      return;
+    }
+
     if (!templateRenderReady || isEmpty(fields) || !properties) {
       setRowTemplateData(null);
       return;
@@ -192,11 +191,6 @@ const RowProperties = ({ properties = {}, fields }: RowPropertiesProps) => {
           templates[name] = field.href;
         }
       }
-      // const templates = Object.fromEntries(
-      //   fields
-      //     .filter((col) => col.display !== "none" && !!col.href_template)
-      //     .map((col) => [col.name, col.href_template as string])
-      // );
       if (isEmpty(templates) || !properties) {
         setRowTemplateData(null);
         return;
@@ -206,7 +200,7 @@ const RowProperties = ({ properties = {}, fields }: RowPropertiesProps) => {
     };
 
     doRender();
-  }, [fields, properties, renderTemplates, templateRenderReady]);
+  }, [dataMode, fields, properties, renderTemplates, templateRenderReady]);
 
   return (
     <div className="space-y-2">
