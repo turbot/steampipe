@@ -10,20 +10,28 @@ import (
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
 
-// RunInteractivePrompt starts the interactive query prompt
-func RunInteractivePrompt(ctx context.Context, initData *query.InitData) (*queryresult.ResultStreamer, error) {
-	resultsStreamer := queryresult.NewResultStreamer()
+type RunInteractivePromptResult struct {
+	Streamer  *queryresult.ResultStreamer
+	PromptErr error
+}
 
-	interactiveClient, err := newInteractiveClient(ctx, initData, resultsStreamer)
+// RunInteractivePrompt starts the interactive query prompt
+func RunInteractivePrompt(ctx context.Context, initData *query.InitData) *RunInteractivePromptResult {
+	res := &RunInteractivePromptResult{
+		Streamer: queryresult.NewResultStreamer(),
+	}
+
+	interactiveClient, err := newInteractiveClient(ctx, initData, res)
 	if err != nil {
 		error_helpers.ShowErrorWithMessage(ctx, err, "interactive client failed to initialize")
 		// do not bind shutdown to any cancellable context
 		db_local.ShutdownService(ctx, constants.InvokerQuery)
-		return nil, err
+		res.PromptErr = err
+		return res
 	}
 
 	// start the interactive prompt in a go routine
 	go interactiveClient.InteractivePrompt(ctx)
 
-	return resultsStreamer, nil
+	return res
 }

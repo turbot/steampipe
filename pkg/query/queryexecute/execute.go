@@ -18,23 +18,23 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-func RunInteractiveSession(ctx context.Context, initData *query.InitData) {
+func RunInteractiveSession(ctx context.Context, initData *query.InitData) error {
 	utils.LogTime("execute.RunInteractiveSession start")
 	defer utils.LogTime("execute.RunInteractiveSession end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := interactive.RunInteractivePrompt(ctx, initData)
-	error_helpers.FailOnError(err)
+	result := interactive.RunInteractivePrompt(ctx, initData)
 
 	// print the data as it comes
-	for r := range resultsStreamer.Results {
+	for r := range result.Streamer.Results {
 		display.ShowOutput(ctx, r)
 		// signal to the resultStreamer that we are done with this chunk of the stream
-		resultsStreamer.AllResultsRead()
+		result.Streamer.AllResultsRead()
 	}
+	return result.PromptErr
 }
 
-func RunBatchSession(ctx context.Context, initData *query.InitData) int {
+func RunBatchSession(ctx context.Context, initData *query.InitData) (int, error) {
 	// start cancel handler to intercept interrupts and cancel the context
 	// NOTE: use the initData Cancel function to ensure any initialisation is cancelled if needed
 	contexthelpers.StartCancelHandler(initData.Cancel)
@@ -42,7 +42,7 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) int {
 	// wait for init
 	<-initData.Loaded
 	if err := initData.Result.Error; err != nil {
-		error_helpers.FailOnError(err)
+		return 0, err
 	}
 
 	// display any initialisation messages/warnings
@@ -53,8 +53,8 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) int {
 		// if we have resolved any queries, run them
 		failures = executeQueries(ctx, initData)
 	}
-	// set global exit code
-	return failures
+	// return the number of failures
+	return failures, nil
 }
 
 func executeQueries(ctx context.Context, initData *query.InitData) int {

@@ -453,6 +453,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe plugin install ibm
   steampipe plugin install oci
   steampipe plugin install azure
+  steampipe plugin install azuread
 
   # create a directory to install the mods
   target_directory=$(mktemp -d)
@@ -508,12 +509,14 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f $STEAMPIPE_INSTALL_DIR/config/ibm.spc
   rm -f $STEAMPIPE_INSTALL_DIR/config/oci.spc
   rm -f $STEAMPIPE_INSTALL_DIR/config/azure.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/azuread.spc
   
   # uninstall the plugins
   steampipe plugin uninstall aws
   steampipe plugin uninstall ibm
   steampipe plugin uninstall oci
   steampipe plugin uninstall azure
+  steampipe plugin uninstall azuread
 
   # rerun steampipe to make sure they are removed from steampipe
   steampipe query "select 1"
