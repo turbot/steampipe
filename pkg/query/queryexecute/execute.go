@@ -24,7 +24,6 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) error 
 
 	// the db executor sends result data over resultsStreamer
 	result := interactive.RunInteractivePrompt(ctx, initData)
-	error_helpers.ShowError(ctx, result.PromptErr)
 
 	// print the data as it comes
 	for r := range result.Streamer.Results {
@@ -54,7 +53,7 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) (int, error)
 		// if we have resolved any queries, run them
 		failures = executeQueries(ctx, initData)
 	}
-	// set global exit code
+	// return the number of failures
 	return failures, nil
 }
 
