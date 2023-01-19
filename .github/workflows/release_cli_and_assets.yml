@@ -727,7 +727,7 @@ jobs:
     # refer:
     #   https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts#downloading-and-deleting-artifacts-after-a-workflow-run-is-complete
     name: Clean Up Artifacts
-    needs: [update_pr_for_versioning,update_homebrew_core_formula]
+    needs: [update_homebrew_core_formula]
     runs-on: ubuntu-latest
     steps:
     - name: Clean up Linux Build
