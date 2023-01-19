@@ -707,19 +707,19 @@ jobs:
         with:
           input_string: ${{ github.event.inputs.version }}
 
-      - name: Update Homebrew Core Formula
-        uses: mislav/bump-homebrew-formula-action@v2
-        with:
-          formula-name: steampipe
-          tag-name: ${{ github.event.inputs.version }}
-          download-url: https://github.com/turbot/steampipe/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz
-          commit-message: |
-            {{formulaName}} $VERSION
+      # - name: Update Homebrew Core Formula
+      #   uses: mislav/bump-homebrew-formula-action@v2
+      #   with:
+      #     formula-name: steampipe
+      #     tag-name: ${{ github.event.inputs.version }}
+      #     download-url: https://github.com/turbot/steampipe/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz
+      #     commit-message: |
+      #       {{formulaName}} $VERSION
 
-      # - name: Update Homebrew core formula
-      #   run: |
-      #     brew update
-      #     brew bump-formula-pr --url https://github.com/turbot/steampipe/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz steampipe
+      - name: Update Homebrew core formula
+        run: |
+          brew update
+          brew bump-formula-pr --url https://github.com/turbot/steampipe/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz steampipe --force
 
   clean_up:
     # let's clean up the artifacts.
