@@ -623,76 +623,76 @@ jobs:
     #     gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm --project steampipe
     #     gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb --project steampipe
 
-  create_pr_in_homebrew:
-    name: Create PR in homebrew-tap
-    needs: [ensure_branch_in_homebrew, build_and_release_cli]
-    runs-on: ubuntu-latest
-    env:
-      Version: ${{ github.event.inputs.version }}
-    steps:
-      - name: Parse semver string
-        id: semver_parser
-        uses: booxmedialtd/ws-action-parse-semver@v1
-        with:
-          input_string: ${{ github.event.inputs.version }}
+  # create_pr_in_homebrew:
+  #   name: Create PR in homebrew-tap
+  #   needs: [ensure_branch_in_homebrew, build_and_release_cli]
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     Version: ${{ github.event.inputs.version }}
+  #   steps:
+  #     - name: Parse semver string
+  #       id: semver_parser
+  #       uses: booxmedialtd/ws-action-parse-semver@v1
+  #       with:
+  #         input_string: ${{ github.event.inputs.version }}
 
-      - name: Checkout
-        if: steps.semver_parser.outputs.prerelease == ''
-        uses: actions/checkout@v3
-        with:
-          repository: turbot/homebrew-tap
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
-          ref: main
+  #     - name: Checkout
+  #       if: steps.semver_parser.outputs.prerelease == ''
+  #       uses: actions/checkout@v3
+  #       with:
+  #         repository: turbot/homebrew-tap
+  #         token: ${{ secrets.GH_ACCESS_TOKEN }}
+  #         ref: main
 
-      - name: Create a new branch off the base branch
-        if: steps.semver_parser.outputs.prerelease == ''
-        run: |
-          git fetch --all
-          git checkout bump-brew
-          git checkout -b $VERSION
-          git push --set-upstream origin $VERSION
+  #     - name: Create a new branch off the base branch
+  #       if: steps.semver_parser.outputs.prerelease == ''
+  #       run: |
+  #         git fetch --all
+  #         git checkout bump-brew
+  #         git checkout -b $VERSION
+  #         git push --set-upstream origin $VERSION
 
-      - name: Close pull request if already exists
-        if: steps.semver_parser.outputs.prerelease == ''
-        run: |
-          gh pr close $VERSION
-        continue-on-error: true
+  #     - name: Close pull request if already exists
+  #       if: steps.semver_parser.outputs.prerelease == ''
+  #       run: |
+  #         gh pr close $VERSION
+  #       continue-on-error: true
 
-      - name: Create pull request
-        if: steps.semver_parser.outputs.prerelease == ''
-        run: |
-          gh pr create --base main --head $VERSION --title "$Version" --body "Update formula"
+  #     - name: Create pull request
+  #       if: steps.semver_parser.outputs.prerelease == ''
+  #       run: |
+  #         gh pr create --base main --head $VERSION --title "$Version" --body "Update formula"
 
-  update_pr_for_versioning:
-    name: Update PR
-    needs: [create_pr_in_homebrew]
-    runs-on: ubuntu-latest
-    env:
-      Version: ${{ github.event.inputs.version }}
-    steps:
-      - name: Parse semver string
-        id: semver_parser
-        uses: booxmedialtd/ws-action-parse-semver@v1
-        with:
-          input_string: ${{ github.event.inputs.version }}
+  # update_pr_for_versioning:
+  #   name: Update PR
+  #   needs: [create_pr_in_homebrew]
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     Version: ${{ github.event.inputs.version }}
+  #   steps:
+  #     - name: Parse semver string
+  #       id: semver_parser
+  #       uses: booxmedialtd/ws-action-parse-semver@v1
+  #       with:
+  #         input_string: ${{ github.event.inputs.version }}
 
-      - name: Checkout
-        if: steps.semver_parser.outputs.prerelease == ''
-        uses: actions/checkout@v3
-        with:
-          repository: turbot/homebrew-tap
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
-          ref: ${{ github.event.inputs.version }}
+  #     - name: Checkout
+  #       if: steps.semver_parser.outputs.prerelease == ''
+  #       uses: actions/checkout@v3
+  #       with:
+  #         repository: turbot/homebrew-tap
+  #         token: ${{ secrets.GH_ACCESS_TOKEN }}
+  #         ref: ${{ github.event.inputs.version }}
 
-      - name: Update live version
-        if: steps.semver_parser.outputs.prerelease == ''
-        run: |
-          scripts/formula_versioning.sh
-          git config --global user.email "puskar@turbot.com"
-          git config --global user.name "Puskar Basu"
-          git add .
-          git commit -m "Versioning brew formulas"
-          git push origin $VERSION
+  #     - name: Update live version
+  #       if: steps.semver_parser.outputs.prerelease == ''
+  #       run: |
+  #         scripts/formula_versioning.sh
+  #         git config --global user.email "puskar@turbot.com"
+  #         git config --global user.name "Puskar Basu"
+  #         git add .
+  #         git commit -m "Versioning brew formulas"
+  #         git push origin $VERSION
 
   update_homebrew_core_formula:
     name: Update Homebrew Core Formula
@@ -707,10 +707,18 @@ jobs:
         with:
           input_string: ${{ github.event.inputs.version }}
 
-      - name: Update Homebrew core formula
-        run: |
-          brew update
-          brew bump-formula-pr --url https://github.com/turbot/steampipe/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz steampipe
+      - name: Update Homebrew Core Formula
+        uses: mislav/bump-homebrew-formula-action@v2
+        with:
+          formula-name: steampipe
+          download-url: https://github.com/turbot/steampipe/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz
+          commit-message: |
+            {{formulaName}} $VERSION
+
+      # - name: Update Homebrew core formula
+      #   run: |
+      #     brew update
+      #     brew bump-formula-pr --url https://github.com/turbot/steampipe/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz steampipe
 
   clean_up:
     # let's clean up the artifacts.
