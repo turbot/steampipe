@@ -694,35 +694,6 @@ jobs:
   #         git commit -m "Versioning brew formulas"
   #         git push origin $VERSION
 
-  update_homebrew_core_formula:
-    name: Update Homebrew Core Formula
-    needs: [build_and_release_cli]
-    runs-on: macos-latest
-    env:
-      Version: ${{ github.event.inputs.version }}
-    steps:
-      - name: Parse semver string
-        id: semver_parser
-        uses: booxmedialtd/ws-action-parse-semver@v1
-        with:
-          input_string: ${{ github.event.inputs.version }}
-
-      # - name: Update Homebrew Core Formula
-      #   uses: mislav/bump-homebrew-formula-action@v2
-      #   with:
-      #     formula-name: steampipe
-      #     tag-name: ${{ github.event.inputs.version }}
-      #     download-url: https://github.com/turbot/steampipe/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz
-      #     commit-message: |
-      #       {{formulaName}} $VERSION
-
-      - name: Update Homebrew core formula
-        env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-        run: |
-          brew update
-          brew bump-formula-pr --url https://github.com/turbot/steampipe/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz steampipe --force
-
   clean_up:
     # let's clean up the artifacts.
     # in case this step isn't reached,
@@ -730,7 +701,7 @@ jobs:
     # refer:
     #   https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts#downloading-and-deleting-artifacts-after-a-workflow-run-is-complete
     name: Clean Up Artifacts
-    needs: [update_homebrew_core_formula]
+    needs: [build_and_release_cli]
     runs-on: ubuntu-latest
     steps:
     - name: Clean up Linux Build
