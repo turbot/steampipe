@@ -20,11 +20,21 @@ func ColumnNames(columns []*queryresult.ColumnDef) []string {
 	return colNames
 }
 
+type columnValueSettings struct{ nullString string }
+
+type ColumnValueOption func(opt *columnValueSettings)
+
+func WithNullString(nullString string) ColumnValueOption {
+	return func(opt *columnValueSettings) {
+		opt.nullString = nullString
+	}
+}
+
 // ColumnValuesAsString converts a slice of columns into strings
-func ColumnValuesAsString(values []interface{}, columns []*queryresult.ColumnDef) ([]string, error) {
+func ColumnValuesAsString(values []interface{}, columns []*queryresult.ColumnDef, opts ...ColumnValueOption) ([]string, error) {
 	rowAsString := make([]string, len(columns))
 	for idx, val := range values {
-		val, err := ColumnValueAsString(val, columns[idx])
+		val, err := ColumnValueAsString(val, columns[idx], opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -34,7 +44,12 @@ func ColumnValuesAsString(values []interface{}, columns []*queryresult.ColumnDef
 }
 
 // ColumnValueAsString converts column value to string
-func ColumnValueAsString(val interface{}, col *queryresult.ColumnDef) (result string, err error) {
+func ColumnValueAsString(val interface{}, col *queryresult.ColumnDef, opts ...ColumnValueOption) (result string, err error) {
+	opt := &columnValueSettings{nullString: constants.NullString}
+	for _, o := range opts {
+		o(opt)
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			result = fmt.Sprintf("%v", val)
@@ -42,7 +57,7 @@ func ColumnValueAsString(val interface{}, col *queryresult.ColumnDef) (result st
 	}()
 
 	if val == nil {
-		return constants.NullString, nil
+		return opt.nullString, nil
 	}
 
 	//log.Printf("[TRACE] ColumnValueAsString type %s", colType.DatabaseTypeName())
