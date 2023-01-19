@@ -717,6 +717,8 @@ jobs:
       #       {{formulaName}} $VERSION
 
       - name: Update Homebrew core formula
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
         run: |
           brew update
           brew bump-formula-pr --url https://github.com/turbot/steampipe/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz steampipe --force
