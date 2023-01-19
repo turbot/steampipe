@@ -90,12 +90,6 @@ jobs:
     name: Update Homebrew Core Formula
     runs-on: macos-latest
     steps:
-      - name: Parse semver string
-        id: semver_parser
-        uses: booxmedialtd/ws-action-parse-semver@v1
-        with:
-          input_string: ${{ env.STEAMPIPE_VERSION }}
-
       - name: Update Homebrew core formula
         uses: dawidd6/action-homebrew-bump-formula@v3
         with:
