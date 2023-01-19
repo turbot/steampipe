@@ -711,6 +711,7 @@ jobs:
         uses: mislav/bump-homebrew-formula-action@v2
         with:
           formula-name: steampipe
+          tag-name: ${{ github.event.inputs.version }}
           download-url: https://github.com/turbot/steampipe/archive/refs/tags/${{ github.event.inputs.version }}.tar.gz
           commit-message: |
             {{formulaName}} $VERSION
