@@ -146,6 +146,55 @@ where
 - You can bundle connections (e.g. for many AWS accounts) using an [aggregator](https://steampipe.io/docs/managing/connections?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#using-aggregators).
  
  </details>
+
+ <details>
+ <summary>Build and develop the CLI</summary>
+
+Prerequisites:
+
+- [Golang](https://golang.org/doc/install) Version 1.19 or higher.
+
+Clone:
+
+```sh
+git clone git@github.com:turbot/steampipe
+cd steampipe
+```
+
+Build, which automatically installs the new version to your `/usr/local/bin/steampipe` directory:
+
+```
+make
+```
+
+Check the verison
+
+```
+$ steampipe -v
+steampipe version 0.18.1
+```
+
+Install a plugin
+
+```
+$ steampipe plugin install steampipe
+```
+
+Try it!
+
+```
+steampipe query
+> .inspect steampipe
++-----------------------------------+-----------------------------------+
+| TABLE                             | DESCRIPTION                       |
++-----------------------------------+-----------------------------------+
+| steampipe_registry_plugin         | Steampipe Registry Plugins        |
+| steampipe_registry_plugin_version | Steampipe Registry Plugin Version |
++-----------------------------------+-----------------------------------+
+
+> select * from steampipe_registry_plugin;
+```
+</details>
   
 ## Steampipe Mods: Dashboards and benchmarks
 
