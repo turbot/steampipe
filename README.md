@@ -152,7 +152,7 @@ where
 
 Prerequisites:
 
-- [Golang](https://golang.org/doc/install) Version 1.16 or higher.
+- [Golang](https://golang.org/doc/install) Version 1.19 or higher.
 
 Clone:
 
