@@ -171,7 +171,7 @@ Check the verison
 
 ```
 $ steampipe -v
-steampipe version 0.7.0
+steampipe version 0.18.1
 ```
 
 Install a plugin
