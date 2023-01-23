@@ -1,3 +1,7 @@
+## v0.18.2 [TBD]
+_Bug fixes_
+* Fix dashboard property blocks not taking effect in node/edge property tooltips. ([#3026](https://github.com/turbot/steampipe/issues/3026))
+
 ## v0.18.1 [2022-01-18]
 _Bug fixes_
 * Fix workspace file watching events sometime causing dashboard to stall and stop responding to events. ([#3007](https://github.com/turbot/steampipe/issues/3007))
