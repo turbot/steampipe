@@ -129,7 +129,6 @@ func (m *PluginManager) Get(req *proto.GetRequest) (*proto.GetResponse, error) {
 		}
 	}
 
-	log.Printf("[TRACE] PluginManager Get returning %+v", resp)
 	return resp, nil
 }
 
@@ -625,7 +624,8 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 	reattach := proto.NewReattachConfig(pluginName, client.ReattachConfig(), proto.SupportedOperationsFromSdk(supportedOperations), connectionNames)
 
 	// add connections to message server
-	m.messageServer.AddConnection(pluginClient, pluginName, connectionNames...)
+	_ = m.messageServer.AddConnection(pluginClient, pluginName, connectionNames...)
+	// TODO KAI how to handle error here
 	return client, reattach, nil
 }
 

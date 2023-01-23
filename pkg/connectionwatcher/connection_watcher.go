@@ -103,6 +103,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	}
 
 	// display any refresh warnings
+	// TODO send warnings on warning_stream (to FDW???)
 	refreshResult.ShowWarnings()
 }
 
