@@ -9,8 +9,8 @@ import usePaginatedList from "../../../../hooks/usePaginatedList";
 import { buildLabelTextShadow } from "./utils";
 import {
   Category,
-  CategoryFields,
   CategoryFold,
+  CategoryProperties,
   FoldedNode,
   KeyValuePairs,
   KeyValueStringPairs,
@@ -26,7 +26,7 @@ type AssetNodeProps = {
   data: {
     category?: Category;
     color?: string;
-    fields?: CategoryFields;
+    properties?: CategoryProperties;
     fold?: CategoryFold;
     href?: string;
     icon?: string;
@@ -230,7 +230,7 @@ const AssetNode = ({
   data: {
     category,
     color,
-    fields,
+    properties,
     fold,
     icon,
     isFolded,
@@ -425,7 +425,7 @@ const AssetNode = ({
         <Tooltip
           overlay={
             <RowProperties
-              fields={fields || null}
+              propertySettings={properties || null}
               properties={row_data.properties}
             />
           }

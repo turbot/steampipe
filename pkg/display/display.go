@@ -278,7 +278,7 @@ func displayCSV(ctx context.Context, result *queryresult.Result) {
 	// print the data as it comes
 	// define function display each csv row
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
-		rowAsString, _ := ColumnValuesAsString(row, result.Cols)
+		rowAsString, _ := ColumnValuesAsString(row, result.Cols, WithNullString(""))
 		_ = csvWriter.Write(rowAsString)
 	}
 

@@ -74,7 +74,7 @@ const populateCategoryWithDefaults = (
     name: category.name,
     color: getColorOverride(category.color, themeColors),
     depth: category.depth,
-    fields: category.fields,
+    properties: category.properties,
     fold: {
       threshold:
         category.fold && isNumber(category.fold.threshold)
