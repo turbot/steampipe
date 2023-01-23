@@ -85,3 +85,15 @@ jobs:
           git fetch --all
           gh pr merge $STEAMPIPE_VERSION --squash --delete-branch
           git push origin --delete bump-brew
+
+  update_homebrew_core_formula:
+    name: Update Homebrew Core Formula
+    runs-on: macos-latest
+    steps:
+      - name: Update Homebrew core formula
+        uses: dawidd6/action-homebrew-bump-formula@v3
+        with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }} # should be turbot org token?
+          formula: steampipe
+          tag: ${{ env.STEAMPIPE_VERSION }}
+          force: true
