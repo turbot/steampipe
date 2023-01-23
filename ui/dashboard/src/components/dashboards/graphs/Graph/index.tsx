@@ -172,7 +172,7 @@ const buildGraphNodesAndEdges = (
             ? categories[node.category]
             : null,
         color: categoryColor,
-        fields: matchingCategory ? matchingCategory.fields : null,
+        properties: matchingCategory ? matchingCategory.properties : null,
         href: matchingCategory ? matchingCategory.href : null,
         icon: matchingCategory ? matchingCategory.icon : null,
         fold: matchingCategory ? matchingCategory.fold : null,
@@ -238,7 +238,7 @@ const buildGraphNodesAndEdges = (
             ? categories[edge.category]
             : null,
         color,
-        fields: matchingCategory ? matchingCategory.fields : null,
+        properties: matchingCategory ? matchingCategory.properties : null,
         labelOpacity,
         lineOpacity,
         row_data: edge.row_data,

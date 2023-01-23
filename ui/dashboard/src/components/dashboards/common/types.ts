@@ -3,11 +3,11 @@ import { DashboardRunState, PanelDefinition } from "../../../types";
 import { Graph } from "graphlib";
 import { TableColumnDisplay, TableColumnWrap } from "../Table";
 
-export type CategoryFields = {
-  [name: string]: CategoryField;
+export type CategoryProperties = {
+  [name: string]: CategoryProperty;
 };
 
-export type CategoryField = {
+export type CategoryProperty = {
   name: string;
   href?: string | null;
   display?: TableColumnDisplay;
@@ -48,7 +48,7 @@ export type Category = {
   name?: string;
   color?: ColorOverride;
   depth?: number;
-  fields?: CategoryFields;
+  properties?: CategoryProperties;
   fold?: CategoryFold;
   href?: string;
   icon?: string;

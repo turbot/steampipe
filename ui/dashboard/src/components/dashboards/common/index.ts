@@ -672,8 +672,8 @@ const buildNodesAndEdges = (
         if (has(overrides, "depth")) {
           categorySettings.depth = overrides.depth;
         }
-        if (has(overrides, "fields")) {
-          categorySettings.fields = overrides.fields;
+        if (has(overrides, "properties")) {
+          categorySettings.properties = overrides.properties;
         }
         if (has(overrides, "icon")) {
           categorySettings.icon = overrides.icon;

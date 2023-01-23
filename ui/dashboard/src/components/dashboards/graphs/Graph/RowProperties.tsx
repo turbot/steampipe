@@ -3,7 +3,7 @@ import useDeepCompareEffect from "use-deep-compare-effect";
 import useTemplateRender from "../../../../hooks/useTemplateRender";
 import {
   Category,
-  CategoryFields,
+  CategoryProperties,
   KeyValuePairs,
   RowRenderResult,
 } from "../../common/types";
@@ -19,7 +19,7 @@ type RowPropertiesTitleProps = {
 };
 
 type RowPropertiesProps = {
-  fields: CategoryFields | null;
+  propertySettings: CategoryProperties | null;
   properties: KeyValuePairs | null;
 };
 
@@ -61,18 +61,18 @@ const RowPropertyItemValue = ({
       setError(null);
       return;
     }
-    const renderedTemplateForField = rowTemplateData[name];
-    if (!renderedTemplateForField) {
+    const renderedTemplateForProperty = rowTemplateData[name];
+    if (!renderedTemplateForProperty) {
       setHref(null);
       setError(null);
       return;
     }
-    if (renderedTemplateForField.result) {
-      setHref(renderedTemplateForField.result);
+    if (renderedTemplateForProperty.result) {
+      setHref(renderedTemplateForProperty.result);
       setError(null);
-    } else if (renderedTemplateForField.error) {
+    } else if (renderedTemplateForProperty.error) {
       setHref(null);
-      setError(renderedTemplateForField.error);
+      setError(renderedTemplateForProperty.error);
     }
   }, [name, rowTemplateData]);
 
@@ -158,15 +158,13 @@ const RowPropertyItem = ({
         value={value}
       />
     </div>
-    // <div className="space-x-2">
-    //   <span>{name}</span>
-    //   <span>=</span>
-    //   <span>{value}</span>
-    // </div>
   );
 };
 
-const RowProperties = ({ properties = {}, fields }: RowPropertiesProps) => {
+const RowProperties = ({
+  properties = {},
+  propertySettings,
+}: RowPropertiesProps) => {
   const { dataMode } = useDashboard();
   const [rowTemplateData, setRowTemplateData] =
     useState<RowRenderResult | null>(null);
@@ -179,16 +177,16 @@ const RowProperties = ({ properties = {}, fields }: RowPropertiesProps) => {
       return;
     }
 
-    if (!templateRenderReady || isEmpty(fields) || !properties) {
+    if (!templateRenderReady || isEmpty(propertySettings) || !properties) {
       setRowTemplateData(null);
       return;
     }
 
     const doRender = async () => {
       const templates = {};
-      for (const [name, field] of Object.entries(fields || {})) {
-        if (field.display !== "none" && field.href) {
-          templates[name] = field.href;
+      for (const [name, property] of Object.entries(propertySettings || {})) {
+        if (property.display !== "none" && property.href) {
+          templates[name] = property.href;
         }
       }
       if (isEmpty(templates) || !properties) {
@@ -200,13 +198,19 @@ const RowProperties = ({ properties = {}, fields }: RowPropertiesProps) => {
     };
 
     doRender();
-  }, [dataMode, fields, properties, renderTemplates, templateRenderReady]);
+  }, [
+    dataMode,
+    properties,
+    propertySettings,
+    renderTemplates,
+    templateRenderReady,
+  ]);
 
   return (
     <div className="space-y-2">
       {Object.entries(properties || {}).map(([key, value]) => {
-        const fieldDefinition = fields?.[key];
-        if (fieldDefinition && fieldDefinition.display === "none") {
+        const propertyDefinition = propertySettings?.[key];
+        if (propertyDefinition && propertyDefinition.display === "none") {
           return null;
         }
         return (
@@ -215,7 +219,9 @@ const RowProperties = ({ properties = {}, fields }: RowPropertiesProps) => {
             name={key}
             value={value}
             rowTemplateData={rowTemplateData}
-            wrap={fieldDefinition ? fieldDefinition.wrap === "all" : false}
+            wrap={
+              propertyDefinition ? propertyDefinition.wrap === "all" : false
+            }
           />
         );
       })}
