@@ -53,12 +53,15 @@ func ValidatePlugins(updates ConnectionDataMap, plugins map[string]*ConnectionPl
 	for updateConnectionName, connectionData := range updates {
 		if connectionData.Connection.Type == modconfig.ConnectionTypeAggregator {
 			// get the first child connection
-			childConnection := connectionData.Connection.FirstChild()
-			// check whether the plugin for this connection is validated
-			for _, p := range validatedPlugins {
-				if p.IncludesConnection(childConnection.Name) {
-					validatedUpdates[updateConnectionName] = connectionData
+			for _, childConnection := range connectionData.Connection.Connections {
+				// check whether the plugin for this connection is validated
+				for _, p := range validatedPlugins {
+					if p.IncludesConnection(childConnection.Name) {
+						validatedUpdates[updateConnectionName] = connectionData
+					}
 				}
+				// only need to handle the first connection
+				break
 			}
 
 		}

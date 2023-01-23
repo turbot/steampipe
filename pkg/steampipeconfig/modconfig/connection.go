@@ -2,14 +2,12 @@ package modconfig
 
 import (
 	"fmt"
-	"log"
-	"path"
-	"reflect"
-	"sort"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
+	"log"
+	"path"
+	"reflect"
 )
 
 const (
@@ -245,22 +243,6 @@ func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {
 			}
 		}
 	}
-}
-
-// FirstChild returns our first child (if we are an aggregator)
-// as children are stored in a map we first sort the map keys then return the first
-func (c *Connection) FirstChild() *Connection {
-	if len(c.Connections) == 0 {
-		return nil
-	}
-	var childNames = make([]string, len(c.Connections))
-	idx := 0
-	for childName := range c.Connections {
-		childNames[idx] = childName
-		idx++
-	}
-	sort.Strings(childNames)
-	return c.Connections[childNames[0]]
 }
 
 // GetResolveConnectionNames return the names of all child connections

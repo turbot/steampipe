@@ -307,7 +307,7 @@ To get information about the columns in a table, run %s
 
 func listConnections(ctx context.Context, input *HandlerInput) error {
 	header := []string{"connection", "plugin"}
-	rows := [][]string{}
+	var rows [][]string
 
 	for _, schema := range input.Schema.GetSchemas() {
 		if schema == input.Schema.TemporarySchemaName {
@@ -339,7 +339,7 @@ To get information about the columns in a table, run %s
 
 func inspectConnection(connectionName string, input *HandlerInput) bool {
 	header := []string{"table", "description"}
-	rows := [][]string{}
+	var rows [][]string
 
 	schema, found := input.Schema.Schemas[connectionName]
 

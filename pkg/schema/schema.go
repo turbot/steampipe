@@ -45,7 +45,7 @@ type ColumnSchema struct {
 
 // GetSchemas returns all foreign schema names
 func (m *Metadata) GetSchemas() []string {
-	schemas := []string{}
+	var schemas []string
 	for schema := range m.Schemas {
 		schemas = append(schemas, schema)
 	}
