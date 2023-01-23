@@ -97,6 +97,7 @@ require (
 	github.com/eko/gocache/v3 v3.1.2 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/garyburd/redigo v1.6.3 // indirect
+	github.com/gertd/wild v0.0.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
@@ -243,5 +244,5 @@ replace (
 	github.com/deislabs/oras => github.com/oras-project/oras v0.9.0
 	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
 	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
- 	github.com/turbot/steampipe-plugin-sdk/v5 => /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
- )
+	github.com/turbot/steampipe-plugin-sdk/v5 => /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
+)

@@ -52,12 +52,15 @@ var ConnectionBlockSchema = &hcl.BodySchema{
 			Name: "connections",
 		},
 	},
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type:       "options",
-			LabelNames: []string{"type"},
-		},
-	},
+	//Blocks: []hcl.BlockHeaderSchema{
+	//	{
+	//		Type:       "options",
+	//		LabelNames: []string{"type"},
+	//	},
+	//	{
+	//		Type: "table",
+	//	},
+	//},
 }
 
 // WorkspaceBlockSchema is the top level schema for all workspace resources

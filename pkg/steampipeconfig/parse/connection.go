@@ -18,6 +18,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 	if diags.HasErrors() {
 		return nil, diags
 	}
+	restBody := rest.(*hclsyntax.Body)
 
 	// get connection name
 	connection := modconfig.NewConnection(block)
@@ -52,27 +53,45 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 		connection.ConnectionNames = connections
 	}
 
-	// check for nested options
-	for _, connectionBlock := range connectionContent.Blocks {
+	// check for nested options and table aggregation specs
+	// NOTE:L we need to use 'rest' to parse the blocks, rather than including them in the ConnectionBlockSchema,
+	// as block labels are optional
+	for _, connectionBlock := range restBody.Blocks {
 		switch connectionBlock.Type {
 		case "options":
 			// if we already found settings, fail
-			opts, moreDiags := DecodeOptions(connectionBlock)
+			opts, moreDiags := DecodeOptions(connectionBlock.AsHCLBlock())
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				break
 			}
-			moreDiags = connection.SetOptions(opts, connectionBlock)
+			moreDiags = connection.SetOptions(opts, connectionBlock.AsHCLBlock())
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
+		case "table":
+			// table block is only valid for aggregator connection
+			if connection.Type != modconfig.ConnectionTypeAggregator {
+				diags.Append(&hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "only aggregator connections can define 'table' blocks",
+					Subject:  &block.DefRange})
+				break
+			}
+			tableAggregationSpec, moreDiags := decodeTableAggregationSpec(connectionBlock.AsHCLBlock())
+			if moreDiags.HasErrors() {
+				diags = append(diags, moreDiags...)
+				break
+			}
+			connection.TableAggregationSpecs = append(connection.TableAggregationSpecs, tableAggregationSpec)
 
 		default:
+			subject := connectionBlock.DefRange()
 			// this can probably never happen
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  fmt.Sprintf("invalid block type '%s' - only 'options' blocks are supported for Connections", connectionBlock.Type),
-				Subject:  &connectionBlock.DefRange,
+				Subject:  &subject,
 			})
 		}
 	}
@@ -85,6 +104,30 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 	}
 
 	return connection, diags
+}
+
+// DecodeOptions decodes an options block
+func decodeTableAggregationSpec(block *hcl.Block) (*modconfig.TableAggregationSpec, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	res := &modconfig.TableAggregationSpec{}
+
+	diags = gohcl.DecodeBody(block.Body, nil, res)
+	if diags.HasErrors() {
+		return nil, diags
+	}
+
+	if len(block.Labels) > 0 {
+		// it is NOT valid for a table blockto have both a label and a match attribute
+		if res.Match != "" {
+			diags.Append(&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "table blocks cannot have both a label and a 'match' attribute",
+				Subject:  &block.DefRange})
+		}
+		res.Match = block.Labels[0]
+	}
+
+	return res, nil
 }
 
 // build a hcl string with all attributes in the conneciton config which are NOT specified in the coneciton block schema

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"log"
 	"path"
@@ -13,6 +14,24 @@ import (
 const (
 	ConnectionTypeAggregator = "aggregator"
 )
+
+type TableAggregationSpecs []*TableAggregationSpec
+
+func (s TableAggregationSpecs) ToProto() []*sdkproto.TableAggregationSpec {
+	res := make([]*sdkproto.TableAggregationSpec, len(s))
+	for i, t := range s {
+		res[i] = &sdkproto.TableAggregationSpec{
+			Match:       t.Match,
+			Connections: t.Connections,
+		}
+	}
+	return res
+}
+
+type TableAggregationSpec struct {
+	Match       string   `hcl:"match,optional"`
+	Connections []string `hcl:"connections"`
+}
 
 // Connection is a struct representing the partially parsed connection
 //
@@ -36,6 +55,9 @@ type Connection struct {
 	Connections map[string]*Connection `json:"-"`
 	// unparsed HCL of plugin specific connection config
 	Config string `json:"config,omitempty"`
+
+	// // table aggregation specs
+	TableAggregationSpecs TableAggregationSpecs
 
 	// options
 	Options   *options.Connection `json:"options,omitempty"`
