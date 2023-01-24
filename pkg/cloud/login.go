@@ -12,7 +12,6 @@ import (
 	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/sperr"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
 )
@@ -36,15 +35,7 @@ func WebLogin(ctx context.Context) (string, error) {
 	fmt.Printf("Verify login at %s\n", browserUrl)
 	err = utils.OpenBrowser(browserUrl)
 	if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
 		return "", sperr.WrapWithMessage(err, "failed to open login webpage")
-=======
-		return "", sperr.Wrapf(err, "failed to open login webpage")
->>>>>>> 8c406c28 (updates to codes)
-=======
-		return "", sperr.WrapWithMessage(err, "failed to open login webpage")
->>>>>>> 3d96f2c4 (usage)
 	}
 
 	return id, nil
@@ -82,15 +73,7 @@ func LoadToken() (string, error) {
 	}
 	tokenBytes, err := os.ReadFile(tokenPath)
 	if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
 		return "", sperr.WrapWithMessage(err, "failed to load token file '%s'", tokenPath)
-=======
-		return "", sperr.Wrapf(err, "failed to load token file '%s'", tokenPath)
->>>>>>> 8c406c28 (updates to codes)
-=======
-		return "", sperr.WrapWithMessage(err, "failed to load token file '%s'", tokenPath)
->>>>>>> 3d96f2c4 (usage)
 	}
 	return string(tokenBytes), nil
 }
