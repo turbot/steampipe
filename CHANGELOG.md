@@ -1,4 +1,6 @@
 ## v0.18.2 [TBD]
+_Improvements_
+* Improve the auto-generated named of benchmark summary cards in snapshots. ([#3034](https://github.com/turbot/steampipe/issues/3034))
 _Bug fixes_
 * Fix dashboard property blocks not taking effect in node/edge property tooltips. ([#3026](https://github.com/turbot/steampipe/issues/3026))
 
