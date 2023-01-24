@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/sperr"
 )
 
 func loginCmd() *cobra.Command {
@@ -25,7 +26,8 @@ func loginCmd() *cobra.Command {
 		Long:             `Login to Steampipe Cloud.`,
 	}
 
-	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, false, "Help for dashboard", cmdconfig.FlagOptions.WithShortHand("h"))
+	cmdconfig.OnCmd(cmd).
+		AddBoolFlag(constants.ArgHelp, false, "Help for dashboard", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
 }
@@ -77,14 +79,16 @@ func getToken(ctx context.Context, id string) (loginToken string, err error) {
 			if err == nil {
 				return loginToken, nil
 			}
+		}
+		if err != nil {
 			// a code was entered but it failed - inc retry count
 			log.Printf("[TRACE] GetLoginToken failed with %s", err.Error())
-			retries++
 		}
+		retries++
 
 		// if we have used our retries, break out before displaying wanring - we will display an error
 		if retries == 3 {
-			return "", fmt.Errorf("Too many attempts.")
+			return "", sperr.New("Too many attempts.")
 		}
 
 		if err != nil {
@@ -96,7 +100,7 @@ func getToken(ctx context.Context, id string) (loginToken string, err error) {
 
 func displayLoginMessage(ctx context.Context, token string) {
 	userName, err := cloud.GetUserName(ctx, token)
-	error_helpers.FailOnErrorWithMessage(err, "Failed to read user name")
+	error_helpers.FailOnError(sperr.WrapWithMessage(err, "failed to read user name"))
 
 	fmt.Println()
 	fmt.Printf("Logged in as: %s\n", constants.Bold(userName))
@@ -115,7 +119,7 @@ func promptUserForString(prompt string) (string, error) {
 
 	err := scanner.Err()
 	if err != nil {
-		return "", err
+		return "", sperr.Wrap(err)
 	}
 	code := scanner.Text()
 

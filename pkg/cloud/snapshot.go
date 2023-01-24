@@ -3,29 +3,31 @@ package cloud
 import (
 	"context"
 	"fmt"
+	"log"
+	"path"
+	"strings"
+
 	"github.com/spf13/viper"
 	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"log"
-	"path"
-	"strings"
+	"github.com/turbot/steampipe/sperr"
 )
 
 func PublishSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
 	snapshotLocation := viper.GetString(constants.ArgSnapshotLocation)
 	// snapshotLocation must be set (validation should ensure this)
 	if snapshotLocation == "" {
-		return "", fmt.Errorf("to share a snapshot, snapshot-locationmust be set")
+		return "", sperr.New("to share a snapshot, snapshot-location must be set")
 	}
 
 	// if snapshot location is a workspace handle, upload it
 	if steampipeconfig.IsCloudWorkspaceIdentifier(snapshotLocation) {
 		url, err := uploadSnapshot(ctx, snapshot, share)
 		if err != nil {
-			return "", err
+			return "", sperr.Wrap(err)
 		}
 		return fmt.Sprintf("\nSnapshot uploaded to %s\n", url), nil
 	}
@@ -33,7 +35,7 @@ func PublishSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnap
 	// otherwise assume snapshot location is a file path
 	filePath, err := exportSnapshot(snapshot)
 	if err != nil {
-		return "", err
+		return "", sperr.Wrap(err)
 	}
 	return fmt.Sprintf("\nSnapshot saved to %s\n", filePath), nil
 }
@@ -47,7 +49,7 @@ func exportSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) (string, error) 
 
 	err := exporter.Export(context.Background(), snapshot, filePath)
 	if err != nil {
-		return "", err
+		return "", sperr.Wrap(err)
 	}
 	return filePath, nil
 }
@@ -58,7 +60,7 @@ func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnaps
 	cloudWorkspace := viper.GetString(constants.ArgSnapshotLocation)
 	parts := strings.Split(cloudWorkspace, "/")
 	if len(parts) != 2 {
-		return "", fmt.Errorf("failed to resolve username and workspace handle from workspace %s", cloudWorkspace)
+		return "", sperr.New("failed to resolve username and workspace handle from workspace %s", cloudWorkspace)
 	}
 	identityHandle := parts[0]
 	workspaceHandle := parts[1]
@@ -67,7 +69,7 @@ func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnaps
 	// get the identity
 	identity, _, err := client.Identities.Get(ctx, identityHandle).Execute()
 	if err != nil {
-		return "", err
+		return "", sperr.Wrap(err)
 	}
 
 	workspaceType := identity.Type
@@ -86,7 +88,7 @@ func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnaps
 
 	cloudSnapshot, err := snapshot.AsCloudSnapshot()
 	if err != nil {
-		return "", err
+		return "", sperr.Wrap(err)
 	}
 
 	// strip verbose/sensitive fields
@@ -102,7 +104,7 @@ func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnaps
 		uploadedSnapshot, _, err = client.OrgWorkspaceSnapshots.Create(ctx, identityHandle, workspaceHandle).Request(req).Execute()
 	}
 	if err != nil {
-		return "", err
+		return "", sperr.Wrap(err)
 	}
 
 	snapshotId := uploadedSnapshot.Id

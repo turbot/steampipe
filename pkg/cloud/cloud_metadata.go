@@ -7,6 +7,7 @@ import (
 
 	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/sperr"
 )
 
 func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string) (*steampipeconfig.CloudMetadata, error) {
@@ -14,7 +15,7 @@ func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string
 
 	parts := strings.Split(workspaceDatabaseString, "/")
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid 'workspace-database' argument '%s' - must be either a connection string or in format <identity>/<workspace>", workspaceDatabaseString)
+		return nil, sperr.New("invalid 'workspace-database' argument '%s' - must be either a connection string or in format <identity>/<workspace>", workspaceDatabaseString)
 	}
 	identityHandle := parts[0]
 	workspaceHandle := parts[1]
@@ -22,7 +23,7 @@ func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string
 	// get the identity
 	identity, _, err := client.Identities.Get(ctx, identityHandle).Execute()
 	if err != nil {
-		return nil, err
+		return nil, sperr.Wrap(err)
 	}
 
 	// get the workspace
@@ -34,7 +35,7 @@ func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, sperr.Wrap(err)
 	}
 
 	workspaceHost := cloudWorkspace.GetHost()
@@ -42,12 +43,12 @@ func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string
 
 	actor, _, err := client.Actors.Get(ctx).Execute()
 	if err != nil {
-		return nil, err
+		return nil, sperr.Wrap(err)
 	}
 
 	password, _, err := client.Users.GetDBPassword(ctx, actor.GetHandle()).Execute()
 	if err != nil {
-		return nil, err
+		return nil, sperr.Wrap(err)
 	}
 
 	connectionString := fmt.Sprintf("postgresql://%s:%s@%s-%s.%s:9193/%s", actor.Handle, password.Password, identityHandle, workspaceHandle, workspaceHost, databaseName)

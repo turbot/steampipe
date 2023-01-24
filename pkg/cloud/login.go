@@ -3,16 +3,17 @@ package cloud
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"os"
+	"path"
+
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
 	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
-	"os"
-	"path"
+	"github.com/turbot/steampipe/sperr"
 )
 
 var UnconfirmedError = "Not confirmed"
@@ -24,7 +25,7 @@ func WebLogin(ctx context.Context) (string, error) {
 
 	tempTokenReq, _, err := client.Auth.LoginTokenCreate(ctx).Execute()
 	if err != nil {
-		return "", fmt.Errorf("failed to create login token: %s", err)
+		return "", sperr.WrapWithMessage(err, "failed to create login token")
 	}
 	id := tempTokenReq.Id
 	// add in id query string
@@ -34,10 +35,10 @@ func WebLogin(ctx context.Context) (string, error) {
 	fmt.Printf("Verify login at %s\n", browserUrl)
 	err = utils.OpenBrowser(browserUrl)
 	if err != nil {
-		return "", fmt.Errorf("failed to open login webpage: %s", err)
+		return "", sperr.WrapWithMessage(err, "failed to open login webpage")
 	}
-	return id, nil
 
+	return id, nil
 }
 
 // GetLoginToken uses the login id and code and retrieves an authentication token
@@ -48,13 +49,13 @@ func GetLoginToken(ctx context.Context, id, code string) (string, error) {
 		if apiErr, ok := err.(steampipecloud.GenericOpenAPIError); ok {
 			var body = map[string]any{}
 			if err := json.Unmarshal(apiErr.Body(), &body); err == nil {
-				return "", errors.New(body["detail"].(string))
+				return "", sperr.New("%s", body["detail"])
 			}
 		}
-		return "", err
+		return "", sperr.Wrap(err)
 	}
 	if tokenResp.GetToken() == "" && tokenResp.GetState() == "pending" {
-		return "", fmt.Errorf("login request has not been confirmed - select 'Verify' and enter the verification code")
+		return "", sperr.New("login request has not been confirmed - select 'Verify' and enter the verification code")
 	}
 	return tokenResp.GetToken(), nil
 }
@@ -62,7 +63,7 @@ func GetLoginToken(ctx context.Context, id, code string) (string, error) {
 // SaveToken writes the token to  ~/.steampipe/internal/{cloud-host}.sptt
 func SaveToken(token string) error {
 	tokenPath := tokenFilePath(viper.GetString(constants.ArgCloudHost))
-	return os.WriteFile(tokenPath, []byte(token), 0600)
+	return sperr.Wrap(os.WriteFile(tokenPath, []byte(token), 0600))
 }
 
 func LoadToken() (string, error) {
@@ -72,7 +73,7 @@ func LoadToken() (string, error) {
 	}
 	tokenBytes, err := os.ReadFile(tokenPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to load token file '%s': %s", tokenPath, err.Error())
+		return "", sperr.WrapWithMessage(err, "failed to load token file '%s'", tokenPath)
 	}
 	return string(tokenBytes), nil
 }
@@ -81,7 +82,7 @@ func GetUserName(ctx context.Context, token string) (string, error) {
 	client := newSteampipeCloudClient(token)
 	actor, _, err := client.Actors.Get(ctx).Execute()
 	if err != nil {
-		return "", err
+		return "", sperr.Wrap(err)
 	}
 	return getActorName(actor), nil
 }
