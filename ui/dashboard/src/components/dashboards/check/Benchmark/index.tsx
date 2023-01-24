@@ -84,7 +84,7 @@ const Benchmark = (props: InnerCheckProps) => {
     );
     const summary_cards = [
       {
-        name: `${props.definition.name}.container.summary.ok-${totalSummary.ok}`,
+        name: `${props.definition.name}.container.summary.ok`,
         width: 2,
         display_type: totalSummary.ok > 0 ? "ok" : null,
         properties: {
@@ -94,7 +94,7 @@ const Benchmark = (props: InnerCheckProps) => {
         },
       },
       {
-        name: `${props.definition.name}.container.summary.alarm-${totalSummary.alarm}`,
+        name: `${props.definition.name}.container.summary.alarm`,
         width: 2,
         display_type: totalSummary.alarm > 0 ? "alert" : null,
         properties: {
@@ -104,7 +104,7 @@ const Benchmark = (props: InnerCheckProps) => {
         },
       },
       {
-        name: `${props.definition.name}.container.summary.error-${totalSummary.error}`,
+        name: `${props.definition.name}.container.summary.error`,
         width: 2,
         display_type: totalSummary.error > 0 ? "alert" : null,
         properties: {
@@ -114,7 +114,7 @@ const Benchmark = (props: InnerCheckProps) => {
         },
       },
       {
-        name: `${props.definition.name}.container.summary.info-${totalSummary.info}`,
+        name: `${props.definition.name}.container.summary.info`,
         width: 2,
         display_type: totalSummary.info > 0 ? "info" : null,
         properties: {
@@ -124,7 +124,7 @@ const Benchmark = (props: InnerCheckProps) => {
         },
       },
       {
-        name: `${props.definition.name}.container.summary.skip-${totalSummary.skip}`,
+        name: `${props.definition.name}.container.summary.skip`,
         width: 2,
         properties: {
           label: "Skipped",
@@ -144,7 +144,7 @@ const Benchmark = (props: InnerCheckProps) => {
     if (criticalRaw !== undefined || highRaw !== undefined) {
       const total = critical + high;
       summary_cards.push({
-        name: `${props.definition.name}.container.summary.severity-${total}`,
+        name: `${props.definition.name}.container.summary.severity`,
         width: 2,
         display_type: total > 0 ? "severity" : "",
         properties: {
