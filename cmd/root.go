@@ -119,6 +119,8 @@ func InitCmd() {
 	cwd, err := os.Getwd()
 	error_helpers.FailOnError(err)
 
+	rootCmd.SetVersionTemplate(fmt.Sprintf("Steampipe v%s\n", version.SteampipeVersion.String()))
+
 	rootCmd.PersistentFlags().String(constants.ArgInstallDir, filepaths.DefaultInstallDir, "Path to the Config Directory")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceChDir, cwd, "Path to the workspace working directory")
 	rootCmd.PersistentFlags().String(constants.ArgModLocation, cwd, "Path to the workspace working directory")
