@@ -137,6 +137,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	client := initData.Client
 	totalAlarms, totalErrors := 0, 0
 	var durations []time.Duration
+	var exportMsg []string
 
 	shouldShare := viper.GetBool(constants.ArgShare)
 	shouldUpload := viper.GetBool(constants.ArgSnapshot)
@@ -168,7 +169,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		exportName := parsedName.ToFullNameWithMod(w.Mod.ShortName)
 
 		exportArgs := viper.GetStringSlice(constants.ArgExport)
-		err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
+		exportMsg, err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
 		error_helpers.FailOnError(err)
 
 		// if the share args are set, create a snapshot and share it
@@ -185,6 +186,13 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	if shouldPrintTiming() {
 		printTiming(args, durations)
+	}
+
+	// print the location where the file is exported if progress=true
+	if len(exportMsg) > 0 && viper.GetBool(constants.ArgProgress) {
+		fmt.Printf("\n")
+		fmt.Println(strings.Join(exportMsg, "\n"))
+		fmt.Printf("\n")
 	}
 
 	// set the defined exit code after successful execution
