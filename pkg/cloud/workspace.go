@@ -16,11 +16,8 @@ import (
 func GetUserWorkspaceHandle(ctx context.Context, token string) (string, error) {
 	client := newSteampipeCloudClient(token)
 	actor, _, err := client.Actors.Get(ctx).Execute()
-	if err.Error() == "400 Bad Request" {
-		return "", fmt.Errorf("Invalid token.\nPlease run %s or setup a token.", constants.Bold(fmt.Sprintf("steampipe login")))
-	}
 	if err != nil {
-		return "", sperr.Wrap(err)
+		return "", sperr.WrapWithMessage(err, fmt.Sprintf("Invalid token.\nPlease run %s or setup a token.", constants.Bold("steampipe login")))
 	}
 	userHandler := actor.Handle
 	workspacesResponse, _, err := client.UserWorkspaces.List(ctx, userHandler).Execute()
