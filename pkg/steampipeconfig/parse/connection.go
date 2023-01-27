@@ -97,7 +97,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 				subject := connectionBlock.DefRange()
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("invalid block type '%s' - only 'options' blocks are supported for Connections", connectionBlock.Type),
+					Summary:  fmt.Sprintf("invalid block type '%s' - only 'options' and 'table' blocks are supported for Connections", connectionBlock.Type),
 					Subject:  &subject,
 				})
 			}
