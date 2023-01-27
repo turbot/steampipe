@@ -3,6 +3,7 @@ package db_common
 import (
 	"context"
 	"fmt"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
