@@ -2,6 +2,8 @@ package cloud
 
 import (
 	"fmt"
+	"net/url"
+
 	"github.com/spf13/viper"
 	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -22,6 +24,10 @@ func newSteampipeCloudClient(token string) *steampipecloud.APIClient {
 }
 
 func getLoginTokenConfirmUIUrl() string {
-	return fmt.Sprintf("https://%s/login/token", viper.GetString(constants.ArgCloudHost))
-
+	url := url.URL{
+		Scheme: "https",
+		Host:   viper.GetString(constants.ArgCloudHost),
+		Path:   "/login/token",
+	}
+	return url.String()
 }
