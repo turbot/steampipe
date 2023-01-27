@@ -8,7 +8,6 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/filewatcher"
 	"github.com/turbot/go-kit/helpers"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -18,10 +17,10 @@ import (
 type ConnectionWatcher struct {
 	fileWatcherErrorHandler   func(error)
 	watcher                   *filewatcher.FileWatcher
-	onConnectionConfigChanged func(configMap map[string]*sdkproto.ConnectionConfig)
+	onConnectionConfigChanged func(configMap ConnectionConfigMap)
 }
 
-func NewConnectionWatcher(onConnectionChanged func(configMap map[string]*sdkproto.ConnectionConfig)) (*ConnectionWatcher, error) {
+func NewConnectionWatcher(onConnectionChanged func(configMap ConnectionConfigMap)) (*ConnectionWatcher, error) {
 	w := &ConnectionWatcher{
 		onConnectionConfigChanged: onConnectionChanged,
 	}
@@ -103,6 +102,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	}
 
 	// display any refresh warnings
+	// TODO send warnings on warning_stream (to FDW???)
 	refreshResult.ShowWarnings()
 }
 

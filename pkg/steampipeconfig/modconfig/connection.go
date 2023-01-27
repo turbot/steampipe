@@ -2,19 +2,36 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/go-kit/helpers"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"log"
 	"path"
 	"reflect"
-	"sort"
-
-	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
 
 const (
 	ConnectionTypeAggregator = "aggregator"
 )
+
+type TableAggregationSpecs []*TableAggregationSpec
+
+func (s TableAggregationSpecs) ToProto() []*sdkproto.TableAggregationSpec {
+	res := make([]*sdkproto.TableAggregationSpec, len(s))
+	for i, t := range s {
+		res[i] = &sdkproto.TableAggregationSpec{
+			Match:       t.Match,
+			Connections: t.Connections,
+		}
+	}
+	return res
+}
+
+type TableAggregationSpec struct {
+	Match       string   `hcl:"match,optional"`
+	Connections []string `hcl:"connections"`
+}
 
 // Connection is a struct representing the partially parsed connection
 //
@@ -38,6 +55,9 @@ type Connection struct {
 	Connections map[string]*Connection `json:"-"`
 	// unparsed HCL of plugin specific connection config
 	Config string `json:"config,omitempty"`
+
+	// // table aggregation specs
+	TableAggregationSpecs TableAggregationSpecs
 
 	// options
 	Options   *options.Connection `json:"options,omitempty"`
@@ -245,22 +265,6 @@ func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {
 			}
 		}
 	}
-}
-
-// FirstChild returns our first child (if we are an aggregator)
-// as children are stored in a map we first sort the map keys then return the first
-func (c *Connection) FirstChild() *Connection {
-	if len(c.Connections) == 0 {
-		return nil
-	}
-	var childNames = make([]string, len(c.Connections))
-	idx := 0
-	for childName := range c.Connections {
-		childNames[idx] = childName
-		idx++
-	}
-	sort.Strings(childNames)
-	return c.Connections[childNames[0]]
 }
 
 // GetResolveConnectionNames return the names of all child connections

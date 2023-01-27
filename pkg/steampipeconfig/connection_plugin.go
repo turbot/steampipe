@@ -166,13 +166,12 @@ func CreateConnectionPlugins(connectionsToCreate []*modconfig.Connection) (reque
 	return requestedConnectionPluginMap, res
 }
 
+// requestedConnectionPluginMap is a map of connection plugins, keyed by connection name
+// the connection names which are the keys of this map are the connections
+// which were _requested_ in the parent CreateConnectionPlugins call (i.e. not necessarily all connections)
+// NOTE: the connection plugins may provide  _more_ connections that those requested
+// - we need to populate the schema for _all_ of them
 func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*ConnectionPlugin) error {
-
-	// requestedConnectionPluginMap is a map of connection plugins, keyed by connection name
-	// the connection names which are the keys of this map are the connections
-	// which were _requested_ in the parent CreateConnectionPlugins call (i.e. not necessarily all connections)
-	// NOTE: the connection plugins may provide  _more_ connections that those requested
-	// - we need to populate the schema for _all_ of them
 
 	// build a map keyed by _all_ connection names provided by the connection plugins
 	connectionPluginMap := fullConnectionPluginMap(requestedConnectionPluginMap)
@@ -218,45 +217,6 @@ func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*Co
 		return error_helpers.CombineErrors(errors...)
 	}
 	return nil
-
-	// we will only need to fetch the schema once for each plugin (apart from plugins with dynamic schema)
-
-	// map of plugin schemas - add schema for each plugin with a static schema
-
-	//
-
-	// we first new to build a map of schemas for each plugin
-	//
-	////log.Printf("[TRACE] populateConnectionPluginSchemas for %d connections", len(connections))
-	//staticSchemaMap, dynamicSchemaMap, err := buildPluginSchemaMap(connectionNames, pluginMap)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//// now build a map of connection to schema mode
-	//schemaModeMap := buildSchemaModeMap(connectionPluginMap, pluginSchemaMap)
-	//
-	//// now build a ConnectionSchemaMap object for the connections we are updating
-	//// - we can use this to identify the minimal set of schemas we need to fetch
-	//connectionSchemaMap := NewConnectionSchemaMapForConnections(connections, schemaModeMap)
-	//
-	//// for every connection with unique schema, fetch the schema and then set in all connections which share this schema
-	//for _, c := range connectionSchemaMap.UniqueSchemas() {
-	//	connectionPlugin, ok := connectionPluginMap[c]
-	//	if !ok {
-	//		// we must have had issues loading this plugin
-	//		continue
-	//	}
-	//	// retrieve the plugin schema from the schema map
-	//	pluginName := connectionPlugin.PluginName
-	//	schema := pluginSchemaMap[pluginName]
-	//	// now set this schema for all connections which share it
-	//	for _, connectionUsingSchema := range connectionSchemaMap[c] {
-	//		connectionPluginMap[connectionUsingSchema].ConnectionMap[connectionUsingSchema].Schema = schema
-	//	}
-	//}
-	//log.Printf("[WARN] populateConnectionPluginSchemas 5")
-	//return nil
 }
 
 // given a map of connection names to the connectionPlugins which proivide them,
@@ -275,103 +235,8 @@ func fullConnectionPluginMap(sparseConnectionPluginMap map[string]*ConnectionPlu
 	return connectionNameMap
 }
 
-//func populateMultiConnectionPluginSchemas(connections []*modconfig.Connection, connectionPluginMap map[string]*ConnectionPlugin, multiConnectionPlugins map[string]*ConnectionPlugin) error {
-//
-//	// we will only need to fetch the schema once for each plugin (apart from plugins with dynamic schema)
-//	// we first new to build a map of schemas for each plugin
-//
-//	pluginSchemaMap, err := buildPluginSchemaMap(connectionPluginMap)
-//	if err != nil {
-//		return err
-//	}
-//
-//	// now build a map of connection to schema mode
-//	schemaModeMap := buildSchemaModeMap(connectionPluginMap, pluginSchemaMap)
-//
-//	// now build a ConnectionSchemaMap object for the connections we are updating
-//	// - we can use this to identify the minimal set of schemas we need to fetch
-//	connectionSchemaMap := NewConnectionSchemaMapForConnections(connections, schemaModeMap)
-//
-//	// for every connection with unique schema, fetch the schema and then set in all connections which share this schema
-//	for _, c := range connectionSchemaMap.UniqueSchemas() {
-//		connectionPlugin, ok := connectionPluginMap[c]
-//		if !ok {
-//			// we must have had issues loading this plugin
-//			continue
-//		}
-//		// retrieve the plugin schema from the schema map
-//		pluginName := connectionPlugin.PluginName
-//		schema := pluginSchemaMap[pluginName]
-//		// now set this schema for all connections which share it
-//		for _, connectionUsingSchema := range connectionSchemaMap[c] {
-//			connectionPluginMap[connectionUsingSchema].Schema = schema
-//		}
-//	}
-//	return nil
-//}
-
-// build a map of plugin schemas, keyed by plugin name
-// NOTE: if a plugin has dynamic schema, we will later need to fetch the schema for _all_ connections
-//func buildPluginSchemaMap(pluginMap *connectionPluginMap) (error) {
-//	var errors []error
-//
-//	// build map of the static schemas, keyed by plugin
-//	staticSchemas := make(map[string]*sdkproto.Schema)
-//
-//	for connectionName, connectionPlugin := range pluginMap.connectionNameMap {
-//		// does this plugin  exist in the static schema map?
-//		schema, ok := staticSchemas[connectionPlugin.PluginName]
-//		if !ok {
-//			// if not, fetch the schema
-//			var err error
-//			schema, err = connectionPlugin.PluginClient.GetSchema(connectionName)
-//			if err != nil {
-//				log.Printf("[TRACE] failed to get schema for connection '%s': %s", connectionName, err)
-//				errors = append(errors, err)
-//				continue
-//			}
-//
-//			// if the schema is static, add to static schema map
-//			if schema.Mode == sdkplugin.SchemaModeStatic {
-//				staticSchemas[connectionPlugin.PluginName] = schema
-//			}
-//		}
-//
-//		// set the schema on the connection plugin
-//		connectionPlugin.ConnectionMap[connectionName].Schema = schema
-//
-//	}
-//	if len(errors) > 0 {
-//		return utils.CombineErrors(errors...)
-//	}
-//	return nil
-//}
-//
-//func buildPluginMaps(connectionPluginMap map[string]*ConnectionPlugin) (pluginConnectionMap map[string][]string, pluginNameMap map[string]*ConnectionPlugin) {
-//	pluginConnectionMap = make(map[string][]string)
-//	pluginNameMap = make(map[string]*ConnectionPlugin)
-//	for _, connectionPlugin := range connectionPluginMap {
-//		connectionNames := connectionPlugin.GetConnectionNames()
-//		pluginConnectionMap[connectionPlugin.PluginName] = append(pluginConnectionMap[connectionPlugin.PluginName], connectionNames...)
-//		if _, ok := pluginNameMap[connectionPlugin.PluginName]; !ok {
-//			pluginNameMap[connectionPlugin.PluginName] = connectionPlugin
-//		}
-//	}
-//	return
-//}
-//
-//func buildSchemaModeMap(connectionPluginMap map[string]*ConnectionPlugin, pluginSchemaMap map[string]*sdkproto.Schema) map[string]string {
-//	schemaModeMap := make(map[string]string, len(connectionPluginMap))
-//
-//	for connectionName, connectionPlugin := range connectionPluginMap {
-//		schema := pluginSchemaMap[connectionPlugin.PluginName]
-//		schemaModeMap[connectionName] = schema.Mode
-//	}
-//	return schemaModeMap
-//}
-
+// createConnectionPlugin sttaches to the plugin process
 func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.ReattachConfig) (*ConnectionPlugin, error) {
-
 	log.Printf("[TRACE] createConnectionPlugin for connection %s", connection.Name)
 	pluginName := connection.Plugin
 	connectionName := connection.Name

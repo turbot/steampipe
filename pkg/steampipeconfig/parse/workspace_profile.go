@@ -156,7 +156,7 @@ func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseCon
 			// this should never happen
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("invalid block type '%s' - only 'options' blocks are supported for Connections", block.Type),
+				Summary:  fmt.Sprintf("invalid block type '%s' - only 'options' blocks are supported for workspace profiles", block.Type),
 				Subject:  &block.DefRange,
 			})
 		}

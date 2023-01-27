@@ -83,6 +83,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 		if err != nil {
 			res.Error = err
 			res.Status = ServiceFailedToStart
+			return res
 		}
 		defer rootClient.Close(ctx)
 		// so db is already running - ensure it contains command schema

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/connectionwatcher"
 	"log"
 	"os"
 	"os/exec"
@@ -54,7 +55,7 @@ type PluginManager struct {
 	// NOTE - for legacy plugins, one entry in this map may correspond to multiple running plugins
 	pluginConnectionConfigMap map[string][]*sdkproto.ConnectionConfig
 	// map of connection configs, keyed by connection name
-	connectionConfigMap map[string]*sdkproto.ConnectionConfig
+	connectionConfigMap connectionwatcher.ConnectionConfigMap
 	// map of max cache size, keyed by plugin name
 	pluginCacheSizeMap map[string]int64
 
@@ -129,11 +130,10 @@ func (m *PluginManager) Get(req *proto.GetRequest) (*proto.GetResponse, error) {
 		}
 	}
 
-	log.Printf("[TRACE] PluginManager Get returning %+v", resp)
 	return resp, nil
 }
 
-func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*sdkproto.ConnectionConfig) {
+func (m *PluginManager) SetConnectionConfigMap(configMap connectionwatcher.ConnectionConfigMap) {
 	m.mut.Lock()
 	defer m.mut.Unlock()
 
@@ -170,9 +170,9 @@ func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.Shutdo
 	return &proto.ShutdownResponse{}, nil
 }
 
-func (m *PluginManager) handleConnectionConfigChanges(configMap map[string]*sdkproto.ConnectionConfig) error {
+func (m *PluginManager) handleConnectionConfigChanges(newConfigMap map[string]*sdkproto.ConnectionConfig) error {
 	// now determine whether there are any new or deleted connections
-	addedConnections, deletedConnections, changedConnections := m.getConnectionChanges(configMap)
+	addedConnections, deletedConnections, changedConnections := m.connectionConfigMap.Diff(newConfigMap)
 
 	requestMap := make(map[string]*sdkproto.UpdateConnectionConfigsRequest)
 
@@ -184,7 +184,7 @@ func (m *PluginManager) handleConnectionConfigChanges(configMap map[string]*sdkp
 	// for updated connections just add to request map
 	m.handleUpdatedConnections(changedConnections, requestMap)
 	// update connectionConfigMap
-	m.connectionConfigMap = configMap
+	m.connectionConfigMap = newConfigMap
 
 	// rebuild pluginConnectionConfigMap
 	m.populatePluginConnectionConfigs()
@@ -318,38 +318,21 @@ func (m *PluginManager) getPlugin(connectionConfig *sdkproto.ConnectionConfig) (
 	pluginName := connectionConfig.Plugin
 	log.Printf("[TRACE] PluginManager getPlugin %s connection '%s'\n", pluginName, connectionName)
 
-	// reason for starting the plugin (if we need to
+	// reason for starting the plugin (if we need to)
 	var reason string
 
 	// is this plugin already running
 	// lock access to plugin map
 	m.mut.Lock()
-	p, ok := m.connectionPluginMap[connectionName]
-	if ok {
-		log.Printf("[TRACE] connection %s found in connectionPluginMap\n", connectionName)
-	} else {
-		// so there is no entry in connectionPluginMap for this connection - check whether there is an entry in either
-		// - pluginMultiConnectionMap (indicating this is a multi connection plugin which has been loaded for another connection
-		// - loadingPlugins (indicating this is a plugin which is still loading and we do not yet know if it supports multi connection
-		p, ok = m.pluginMultiConnectionMap[pluginName]
-		if ok {
-			log.Printf("[TRACE] %s found in pluginMultiConnectionMap\n", pluginName)
-		}
-	}
-	if !ok {
-		p, ok = m.loadingPlugins[pluginName]
-		if ok {
-			log.Printf("[TRACE] %s found in loadingPlugins\n", pluginName)
-		}
-	}
+	runningPlugin := m.isPluginRunning(connectionName, pluginName)
 	// do we now have a plugin?
-	if ok {
+	if runningPlugin != nil {
 		// unlock access to map to allow other getPlugin calls to proceed
 		m.mut.Unlock()
 		var reattach *proto.ReattachConfig
 
 		// wait for plugin to load, verify it is running and check it provides the required connection
-		reason, reattach, err = m.verifyLoadingPlugin(connectionName, p)
+		reason, reattach, err = m.verifyLoadingPlugin(connectionName, runningPlugin)
 		if reason == "" {
 			return reattach, err
 		}
@@ -387,7 +370,7 @@ func (m *PluginManager) getPlugin(connectionConfig *sdkproto.ConnectionConfig) (
 
 	// NOTE: at this point, m.mut is locked
 	// put in a placeholder so no other thread tries to create start this plugin
-	m.addLoadingPlugin(connectionName, p, pluginName)
+	m.addLoadingPlugin(connectionName, pluginName)
 
 	// unlock access to map
 	m.mut.Unlock()
@@ -418,6 +401,29 @@ func (m *PluginManager) getPlugin(connectionConfig *sdkproto.ConnectionConfig) (
 
 	// and return
 	return reattach, nil
+}
+
+func (m *PluginManager) isPluginRunning(connectionName string, pluginName string) *runningPlugin {
+	p, ok := m.connectionPluginMap[connectionName]
+	if ok {
+		log.Printf("[TRACE] connection %s found in connectionPluginMap\n", connectionName)
+		return p
+	}
+	// so there is no entry in connectionPluginMap for this connection - check whether there is an entry in either
+	// - pluginMultiConnectionMap (indicating this is a multi connection plugin which has been loaded for another connection
+	// - loadingPlugins (indicating this is a plugin which is still loading and we do not yet know if it supports multi connection
+	p, ok = m.pluginMultiConnectionMap[pluginName]
+	if ok {
+		log.Printf("[TRACE] %s found in pluginMultiConnectionMap\n", pluginName)
+		return p
+	}
+	p, ok = m.loadingPlugins[pluginName]
+	if ok {
+		log.Printf("[TRACE] %s found in loadingPlugins\n", pluginName)
+		return p
+	}
+
+	return nil
 }
 
 // wait for plugin to load, verify it is running and check it provides the required connection
@@ -455,10 +461,10 @@ func (m *PluginManager) verifyLoadingPlugin(connectionName string, p *runningPlu
 	return reason, nil, nil
 }
 
-func (m *PluginManager) addLoadingPlugin(connectionName string, p *runningPlugin, pluginName string) {
+func (m *PluginManager) addLoadingPlugin(connectionName string, pluginName string) {
 	// add a new running plugin to both connectionPluginMap and pluginMap
 	// NOTE: m.mut must be locked before calling this
-	p = &runningPlugin{
+	p := &runningPlugin{
 		pluginName:  pluginName,
 		initialized: make(chan struct{}, 1),
 	}
@@ -619,7 +625,8 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 	reattach := proto.NewReattachConfig(pluginName, client.ReattachConfig(), proto.SupportedOperationsFromSdk(supportedOperations), connectionNames)
 
 	// add connections to message server
-	m.messageServer.AddConnection(pluginClient, pluginName, connectionNames...)
+	_ = m.messageServer.AddConnection(pluginClient, pluginName, connectionNames...)
+	// TODO KAI how to handle error here
 	return client, reattach, nil
 }
 
@@ -695,31 +702,6 @@ func (m *PluginManager) updateConnectionSchema(ctx context.Context, connection s
 		log.Printf("[TRACE] error refreshing connections: %s", refreshResult.Error)
 		return
 	}
-}
-
-func (m *PluginManager) getConnectionChanges(newConfigMap map[string]*sdkproto.ConnectionConfig) (addedConnections, deletedConnections, changedConnections map[string][]*sdkproto.ConnectionConfig) {
-	// results are maps os  connections keyed by plugin
-	addedConnections = make(map[string][]*sdkproto.ConnectionConfig)
-	deletedConnections = make(map[string][]*sdkproto.ConnectionConfig)
-	changedConnections = make(map[string][]*sdkproto.ConnectionConfig)
-
-	// TODO if anything other than the plugin specific connection config has changed,
-	// treat as a deletion and addition of a new connection
-	// https://github.com/turbot/steampipe/issues/2348
-
-	for currentName, currentConnection := range m.connectionConfigMap {
-		if newConnection, ok := newConfigMap[currentName]; !ok {
-			deletedConnections[currentConnection.Plugin] = append(deletedConnections[currentConnection.Plugin], currentConnection)
-		} else if currentConnection.Config != newConnection.Config {
-			changedConnections[currentConnection.Plugin] = append(changedConnections[currentConnection.Plugin], newConnection)
-		}
-	}
-	for newName, newConnection := range newConfigMap {
-		if _, ok := m.connectionConfigMap[newName]; !ok {
-			addedConnections[newConnection.Plugin] = append(addedConnections[newConnection.Plugin], newConnection)
-		}
-	}
-	return
 }
 
 func (m *PluginManager) nonAggregatorConnectionCount() int {

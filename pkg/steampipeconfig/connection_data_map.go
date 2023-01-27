@@ -86,7 +86,7 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 	// map of missing plugins, keyed by plugin, value is list of conections using missing plugin
 	missingPluginMap := make(map[string][]modconfig.Connection)
 
-	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration start")
+	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration start")
 	// populate file mod time for each referenced plugin
 	for name, connection := range connectionMap {
 		remoteSchema := connection.Plugin
@@ -112,7 +112,7 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 
 		requiredConnections[name] = NewConnectionData(remoteSchema, connection, modTime)
 	}
-	utils.LogTime("steampipeconfig.getRequiredConnections config-iteration end")
+	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration end")
 
 	return requiredConnections, missingPluginMap, nil
 }

@@ -43,6 +43,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 		log.Printf("[WARN] failed to load connection config: %s", err.Error())
 		os.Exit(1)
 	}
+
 	configMap := connectionwatcher.NewConnectionConfigMap(steampipeConfig.Connections)
 	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
 

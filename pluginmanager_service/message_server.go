@@ -51,7 +51,6 @@ func (m *PluginMessageServer) openMessageStream(pluginClient *sdkgrpc.PluginClie
 	log.Printf("[TRACE] calling EstablishMessageStream")
 
 	stream, err := pluginClient.EstablishMessageStream()
-	log.Printf("[WARN] EstablishMessageStream returned %v %v", stream, err)
 	return stream, err
 
 }

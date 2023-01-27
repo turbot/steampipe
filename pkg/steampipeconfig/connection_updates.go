@@ -164,12 +164,12 @@ func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugi
 	// put connections into a map to avoid dupes
 	var connectionMap = make(map[string]*modconfig.Connection, len(updateConnections))
 	for _, connection := range updateConnections {
-		// if this connection is an aggregator, instantiate its first child connection instead
-		if connection.Type == modconfig.ConnectionTypeAggregator {
-			connection = connection.FirstChild()
-		}
 
 		connectionMap[connection.Name] = connection
+		// if this connection is an aggregator, add all its children
+		for _, child := range connection.Connections {
+			connectionMap[child.Name] = child
+		}
 	}
 	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
 	// - remove these from list of plugins to create
