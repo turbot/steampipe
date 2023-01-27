@@ -132,23 +132,29 @@ func (m *Manager) getExportTarget(export, executionName string) (*Target, error)
 	return nil, fmt.Errorf("formatter satisfying '%s' not found", export)
 }
 
-func (m *Manager) DoExport(ctx context.Context, targetName string, source ExportSourceData, exports []string) error {
+func (m *Manager) DoExport(ctx context.Context, targetName string, source ExportSourceData, exports []string) ([]string, error) {
+	var errors []error
+	var msg string
+	var expLocation []string
+
 	if len(exports) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	targets, err := m.resolveTargetsFromArgs(exports, targetName)
+
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	var errors []error
 	for _, target := range targets {
-		if err := target.Export(ctx, source); err != nil {
+		if msg, err = target.Export(ctx, source); err != nil {
 			errors = append(errors, err)
+		} else {
+			expLocation = append(expLocation, msg)
 		}
 	}
-	return error_helpers.CombineErrors(errors...)
+	return expLocation, error_helpers.CombineErrors(errors...)
 }
 
 func (m *Manager) ValidateExportFormat(exports []string) error {

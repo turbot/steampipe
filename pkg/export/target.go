@@ -1,12 +1,22 @@
 package export
 
-import "context"
+import (
+	"context"
+	"fmt"
+	"os"
+)
 
 type Target struct {
 	exporter Exporter
 	filePath string
 }
 
-func (t *Target) Export(ctx context.Context, input ExportSourceData) error {
-	return t.exporter.Export(ctx, input, t.filePath)
+func (t *Target) Export(ctx context.Context, input ExportSourceData) (string, error) {
+	err := t.exporter.Export(ctx, input, t.filePath)
+	if err != nil {
+		return "", err
+	} else {
+		pwd, _ := os.Getwd()
+		return fmt.Sprintf("File exported to %s/%s", pwd, t.filePath), nil
+	}
 }
