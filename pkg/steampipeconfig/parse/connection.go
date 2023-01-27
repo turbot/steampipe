@@ -58,7 +58,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 	for _, connectionBlock := range connectionContent.Blocks {
 		if connectionBlock.Type != modconfig.BlockTypeOptions {
 			// not expected - ConnectionBlockSchema only defines options
-			panic(fmt.Sprintf("unexpected block type %s in decoded connection config"))
+			panic(fmt.Sprintf("unexpected block type %s in decoded connection config", connectionBlock.Type))
 		}
 
 		opts, moreDiags := DecodeOptions(connectionBlock)
@@ -76,7 +76,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 	if restBody, ok := rest.(*hclsyntax.Body); ok {
 		for _, connectionBlock := range restBody.Blocks {
 			switch connectionBlock.Type {
-			case "table":
+			case modconfig.BlockTypeTable:
 				// table block is only valid for aggregator connection
 				if connection.Type != modconfig.ConnectionTypeAggregator {
 					diags.Append(&hcl.Diagnostic{
@@ -91,7 +91,8 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 					break
 				}
 				connection.TableAggregationSpecs = append(connection.TableAggregationSpecs, tableAggregationSpec)
-
+			case modconfig.BlockTypeOptions:
+				// ignore
 			default:
 				subject := connectionBlock.DefRange()
 				diags = append(diags, &hcl.Diagnostic{
