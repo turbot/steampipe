@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/connectionwatcher"
 	"log"
 	"os"
 	"os/exec"
@@ -54,7 +55,7 @@ type PluginManager struct {
 	// NOTE - for legacy plugins, one entry in this map may correspond to multiple running plugins
 	pluginConnectionConfigMap map[string][]*sdkproto.ConnectionConfig
 	// map of connection configs, keyed by connection name
-	connectionConfigMap map[string]*sdkproto.ConnectionConfig
+	connectionConfigMap connectionwatcher.ConnectionConfigMap
 	// map of max cache size, keyed by plugin name
 	pluginCacheSizeMap map[string]int64
 
@@ -132,7 +133,7 @@ func (m *PluginManager) Get(req *proto.GetRequest) (*proto.GetResponse, error) {
 	return resp, nil
 }
 
-func (m *PluginManager) SetConnectionConfigMap(configMap map[string]*sdkproto.ConnectionConfig) {
+func (m *PluginManager) SetConnectionConfigMap(configMap connectionwatcher.ConnectionConfigMap) {
 	m.mut.Lock()
 	defer m.mut.Unlock()
 
@@ -169,9 +170,9 @@ func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.Shutdo
 	return &proto.ShutdownResponse{}, nil
 }
 
-func (m *PluginManager) handleConnectionConfigChanges(configMap map[string]*sdkproto.ConnectionConfig) error {
+func (m *PluginManager) handleConnectionConfigChanges(newConfigMap map[string]*sdkproto.ConnectionConfig) error {
 	// now determine whether there are any new or deleted connections
-	addedConnections, deletedConnections, changedConnections := m.getConnectionChanges(configMap)
+	addedConnections, deletedConnections, changedConnections := m.connectionConfigMap.Diff(newConfigMap)
 
 	requestMap := make(map[string]*sdkproto.UpdateConnectionConfigsRequest)
 
@@ -183,7 +184,7 @@ func (m *PluginManager) handleConnectionConfigChanges(configMap map[string]*sdkp
 	// for updated connections just add to request map
 	m.handleUpdatedConnections(changedConnections, requestMap)
 	// update connectionConfigMap
-	m.connectionConfigMap = configMap
+	m.connectionConfigMap = newConfigMap
 
 	// rebuild pluginConnectionConfigMap
 	m.populatePluginConnectionConfigs()
@@ -701,31 +702,6 @@ func (m *PluginManager) updateConnectionSchema(ctx context.Context, connection s
 		log.Printf("[TRACE] error refreshing connections: %s", refreshResult.Error)
 		return
 	}
-}
-
-func (m *PluginManager) getConnectionChanges(newConfigMap map[string]*sdkproto.ConnectionConfig) (addedConnections, deletedConnections, changedConnections map[string][]*sdkproto.ConnectionConfig) {
-	// results are maps os  connections keyed by plugin
-	addedConnections = make(map[string][]*sdkproto.ConnectionConfig)
-	deletedConnections = make(map[string][]*sdkproto.ConnectionConfig)
-	changedConnections = make(map[string][]*sdkproto.ConnectionConfig)
-
-	// TODO if anything other than the plugin specific connection config has changed,
-	// treat as a deletion and addition of a new connection
-	// https://github.com/turbot/steampipe/issues/2348
-
-	for currentName, currentConnection := range m.connectionConfigMap {
-		if newConnection, ok := newConfigMap[currentName]; !ok {
-			deletedConnections[currentConnection.Plugin] = append(deletedConnections[currentConnection.Plugin], currentConnection)
-		} else if currentConnection.Config != newConnection.Config {
-			changedConnections[currentConnection.Plugin] = append(changedConnections[currentConnection.Plugin], newConnection)
-		}
-	}
-	for newName, newConnection := range newConfigMap {
-		if _, ok := m.connectionConfigMap[newName]; !ok {
-			addedConnections[newConnection.Plugin] = append(addedConnections[newConnection.Plugin], newConnection)
-		}
-	}
-	return
 }
 
 func (m *PluginManager) nonAggregatorConnectionCount() int {

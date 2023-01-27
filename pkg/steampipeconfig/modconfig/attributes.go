@@ -3,6 +3,7 @@ package modconfig
 import (
 	"log"
 	"reflect"
+	"runtime/debug"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/hashicorp/terraform/configs/configschema"
@@ -17,6 +18,7 @@ func GetCtyTypes(item interface{}) map[string]cty.Type {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("[WARN] GetCtyTypes failed with panic: %v", r)
+			log.Printf("[WARN] stack: %s", debug.Stack())
 		}
 	}()
 	var res = make(map[string]cty.Type)
