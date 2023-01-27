@@ -1,3 +1,11 @@
+## v0.19.0 [tbd]
+_What's new?_
+* Add support for aggregator connections with dynamic tables. ([#2886](https://github.com/turbot/steampipe/issues/2886))
+* Support updating of dynamic plugin schemas based on file watching events (e.g. a new csv file is created in a waytched location) ([#2767](https://github.com/turbot/steampipe/issues/2767))
+* Adds an `sperr` error package along with sample implementation with the login cmd. ([#497](https://github.com/turbot/steampipe/issues/497))
+* Show the exported file location when --progress flag is enabled. ([#2860](https://github.com/turbot/steampipe/issues/2860))
+
+
 ## v0.18.2 [2022-01-27]
 _Bug fixes_
 * Fix dashboard property blocks not taking effect in node/edge property tooltips. ([#3026](https://github.com/turbot/steampipe/issues/3026))
