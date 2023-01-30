@@ -66,7 +66,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 	case constants.OutputFormatJSON:
 		rowErr = displayJSON(ctx, result)
 	case constants.OutputFormatCSV:
-		displayCSV(ctx, result)
+		rowErr = displayCSV(ctx, result)
 	case constants.OutputFormatLine:
 		displayLine(ctx, result)
 	case constants.OutputFormatTable:
@@ -272,7 +272,8 @@ func displayJSON(ctx context.Context, result *queryresult.Result) int {
 	return rowErrors
 }
 
-func displayCSV(ctx context.Context, result *queryresult.Result) {
+func displayCSV(ctx context.Context, result *queryresult.Result) int {
+	rowErrors := 0
 	csvWriter := csv.NewWriter(os.Stdout)
 	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
 
@@ -290,13 +291,15 @@ func displayCSV(ctx context.Context, result *queryresult.Result) {
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
 		error_helpers.ShowError(ctx, err)
-		return
+		rowErrors++
+		return rowErrors
 	}
 
 	csvWriter.Flush()
 	if csvWriter.Error() != nil {
 		error_helpers.ShowErrorWithMessage(ctx, csvWriter.Error(), "unable to print csv")
 	}
+	return rowErrors
 }
 
 func displayTable(ctx context.Context, result *queryresult.Result) int {
