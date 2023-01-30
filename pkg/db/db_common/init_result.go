@@ -32,7 +32,7 @@ func (r *InitResult) HasMessages() bool {
 }
 
 func (r *InitResult) DisplayMessages() {
-	if r.DisplayWarning == nil {
+	if r.DisplayMessage == nil {
 		r.DisplayMessage = func(ctx context.Context, m string) {
 			fmt.Println(m)
 		}

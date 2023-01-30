@@ -39,10 +39,11 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	}
 
 	if initResult.HasMessages() {
-		c.interactivePrompt.ClearLine()
+		// hide the prompt in the next prompt render cycle
 		c.hidePrompt = true
-		fmt.Println()
+		c.interactivePrompt.ClearLine()
 		initResult.DisplayMessages()
+		// shpw the prompt back
 		c.hidePrompt = false
 		// We need to render the prompt here to make sure that it comes back
 		// after the messages have been displayed
