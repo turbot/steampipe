@@ -34,7 +34,7 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) error 
 	return result.PromptErr
 }
 
-func RunBatchSession(ctx context.Context, initData *query.InitData) (int, error) {
+func RunBatchSession(ctx context.Context, initData *query.InitData) (int, int, error) {
 	// start cancel handler to intercept interrupts and cancel the context
 	// NOTE: use the initData Cancel function to ensure any initialisation is cancelled if needed
 	contexthelpers.StartCancelHandler(initData.Cancel)
@@ -42,22 +42,22 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) (int, error)
 	// wait for init
 	<-initData.Loaded
 	if err := initData.Result.Error; err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	// display any initialisation messages/warnings
 	initData.Result.DisplayMessages()
 
-	failures := 0
+	failures, rowErrors := 0, 0
 	if len(initData.Queries) > 0 {
 		// if we have resolved any queries, run them
-		failures = executeQueries(ctx, initData)
+		failures, rowErrors = executeQueries(ctx, initData)
 	}
-	// return the number of failures
-	return failures, nil
+	// return the number of query failures and the number of rows that returned errors
+	return failures, rowErrors, nil
 }
 
-func executeQueries(ctx context.Context, initData *query.InitData) int {
+func executeQueries(ctx context.Context, initData *query.InitData) (int, int) {
 	utils.LogTime("queryexecute.executeQueries start")
 	defer utils.LogTime("queryexecute.executeQueries end")
 
@@ -67,10 +67,12 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 	// build ordered list of queries
 	// (ordered for testing repeatability)
 	var queryNames = utils.SortedMapKeys(initData.Queries)
+	rowErrors := 0 // get the number of rows that returned an error
+	var err error
 
 	for i, name := range queryNames {
 		q := initData.Queries[name]
-		if err := executeQuery(ctx, initData.Client, q); err != nil {
+		if err, rowErrors = executeQuery(ctx, initData.Client, q); err != nil {
 			failures++
 			error_helpers.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queryNames), error_helpers.DecodePgError(err)))
 			// if timing flag is enabled, show the time taken for the query to fail
@@ -85,26 +87,27 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 		}
 	}
 
-	return failures
+	return failures, rowErrors
 }
 
-func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *modconfig.ResolvedQuery) error {
+func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *modconfig.ResolvedQuery) (error, int) {
 	utils.LogTime("query.execute.executeQuery start")
 	defer utils.LogTime("query.execute.executeQuery end")
 
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db_common.ExecuteQuery(ctx, client, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
 	if err != nil {
-		return err
+		return err, 0
 	}
 
+	rowErr := 0 // get the number of rows that returned an error
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		display.ShowOutput(ctx, r, display.ShowTimingOnOutput(constants.OutputFormatTable))
+		rowErr = display.ShowOutput(ctx, r, display.ShowTimingOnOutput(constants.OutputFormatTable))
 		// signal to the resultStreamer that we are done with this result
 		resultsStreamer.AllResultsRead()
 	}
-	return nil
+	return nil, rowErr
 }
 
 // if we are displaying csv with no header, do not include lines between the query results

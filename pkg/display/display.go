@@ -53,7 +53,8 @@ func EnableTiming() DisplayOption {
 }
 
 // ShowOutput displays the output using the proper formatter as applicable
-func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) {
+func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) int {
+	rowErr := 0
 	options := &DisplayConfiguration{
 		timing: cmdconfig.Viper().GetBool(constants.ArgTiming),
 	}
@@ -69,13 +70,14 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 	case constants.OutputFormatLine:
 		displayLine(ctx, result)
 	case constants.OutputFormatTable:
-		displayTable(ctx, result)
+		rowErr = displayTable(ctx, result)
 	}
 
 	if options.timing {
 		fmt.Println(buildTimingString(result))
 	}
 
+	return rowErr
 }
 
 type ShowWrappedTableOptions struct {
@@ -294,7 +296,8 @@ func displayCSV(ctx context.Context, result *queryresult.Result) {
 	}
 }
 
-func displayTable(ctx context.Context, result *queryresult.Result) {
+func displayTable(ctx context.Context, result *queryresult.Result) int {
+	rowErrors := 0
 	// the buffer to put the output data in
 	outbuf := bytes.NewBufferString("")
 
@@ -337,6 +340,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 		// display the error
 		fmt.Println()
 		error_helpers.ShowError(ctx, err)
+		rowErrors++
 		fmt.Println()
 	}
 	// write out the table to the buffer
@@ -344,6 +348,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 
 	// page out the table
 	ShowPaged(ctx, outbuf.String())
+	return rowErrors
 }
 
 func buildTimingString(result *queryresult.Result) string {
