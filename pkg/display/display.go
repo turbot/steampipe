@@ -64,7 +64,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 
 	switch cmdconfig.Viper().GetString(constants.ArgOutput) {
 	case constants.OutputFormatJSON:
-		displayJSON(ctx, result)
+		rowErr = displayJSON(ctx, result)
 	case constants.OutputFormatCSV:
 		displayCSV(ctx, result)
 	case constants.OutputFormatLine:
@@ -241,7 +241,8 @@ func getTerminalColumnsRequiredForString(str string) int {
 	return colsRequired
 }
 
-func displayJSON(ctx context.Context, result *queryresult.Result) {
+func displayJSON(ctx context.Context, result *queryresult.Result) int {
+	rowErrors := 0
 	var jsonOutput []map[string]interface{}
 
 	// define function to add each row to the JSON output
@@ -257,7 +258,8 @@ func displayJSON(ctx context.Context, result *queryresult.Result) {
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
 		error_helpers.ShowError(ctx, err)
-		return
+		rowErrors++
+		return rowErrors
 	}
 	// display the JSON
 	encoder := json.NewEncoder(os.Stdout)
@@ -265,8 +267,9 @@ func displayJSON(ctx context.Context, result *queryresult.Result) {
 	encoder.SetEscapeHTML(false)
 	if err := encoder.Encode(jsonOutput); err != nil {
 		fmt.Print("Error displaying result as JSON", err)
-		return
+		return 0
 	}
+	return rowErrors
 }
 
 func displayCSV(ctx context.Context, result *queryresult.Result) {
