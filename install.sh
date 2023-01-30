@@ -46,7 +46,7 @@ else
 fi
 
 if [ $# -eq 0 ]; then
-	steampipe_uri="https://github.com/turbot/steampipe/releases/download/v0.19.0-alpha.0/steampipe_${target}"
+	steampipe_uri="https://github.com/turbot/steampipe/releases/download/v0.19.0-alpha.1/steampipe_${target}"
 else
 	steampipe_uri="https://github.com/turbot/steampipe/releases/download/${1}/steampipe_${target}"
 fi
