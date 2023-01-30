@@ -68,7 +68,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 	case constants.OutputFormatCSV:
 		rowErr = displayCSV(ctx, result)
 	case constants.OutputFormatLine:
-		displayLine(ctx, result)
+		rowErr = displayLine(ctx, result)
 	case constants.OutputFormatTable:
 		rowErr = displayTable(ctx, result)
 	}
@@ -170,9 +170,9 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 	return colConfigs, headerRow
 }
 
-func displayLine(ctx context.Context, result *queryresult.Result) {
+func displayLine(ctx context.Context, result *queryresult.Result) int {
 
-	maxColNameLength := 0
+	maxColNameLength, rowErrors := 0, 0
 	for _, col := range result.Cols {
 		thisLength := utf8.RuneCountInString(col.Name)
 		if thisLength > maxColNameLength {
@@ -227,8 +227,10 @@ func displayLine(ctx context.Context, result *queryresult.Result) {
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
 		error_helpers.ShowError(ctx, err)
-		return
+		rowErrors++
+		return rowErrors
 	}
+	return rowErrors
 }
 
 func getTerminalColumnsRequiredForString(str string) int {
