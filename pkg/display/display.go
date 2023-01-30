@@ -76,7 +76,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 	if options.timing {
 		fmt.Println(buildTimingString(result))
 	}
-
+	// return the number of rows that returned errors
 	return rowErr
 }
 
