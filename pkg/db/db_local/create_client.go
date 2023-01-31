@@ -101,7 +101,7 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn,
 		return nil, err
 	}
 
-	if err := db_common.WaitForConnection(ctx, conn); err != nil {
+	if err := db_common.WaitForConnectionPing(ctx, conn); err != nil {
 		return nil, err
 	}
 	return conn, nil
@@ -146,9 +146,20 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		return nil, errors.Wrap(err, "connection setup failed")
 	}
 
+	// wait for recovery to complete
+	// the database may enter recovery mode if it detects that
+	// it wasn't shutdown gracefully.
+	// For large databases, this can take long
+	err = db_common.WaitForRecovery(ctx, conn)
+	if err != nil {
+		conn.Close(ctx)
+		log.Println("[TRACE] WaitForRecovery timed out")
+		return nil, err
+	}
+
 	// wait for the connection to get established
-	// WaitForConnection retries on its own
-	err = db_common.WaitForConnection(ctx, conn)
+	// WaitForConnectionPing retries on its own
+	err = db_common.WaitForConnectionPing(ctx, conn)
 	if err != nil {
 		conn.Close(ctx)
 		log.Println("[TRACE] WaitForConnection timed out")
