@@ -5,12 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/constants"
 	"os"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/shiena/ansicolor"
+	sdk_error_helpers "github.com/turbot/steampipe-plugin-sdk/v5/error_helpers"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/statushooks"
 )
 
@@ -118,30 +119,7 @@ func ShowWarning(warning string) {
 }
 
 func CombineErrorsWithPrefix(prefix string, errors ...error) error {
-	if len(errors) == 0 {
-		return nil
-	}
-
-	if allErrorsNil(errors...) {
-		return nil
-	}
-
-	if len(errors) == 1 {
-		if len(prefix) == 0 {
-			return errors[0]
-		} else {
-			return fmt.Errorf("%s - %s", prefix, errors[0].Error())
-		}
-	}
-
-	combinedErrorString := []string{prefix}
-	for _, e := range errors {
-		if e == nil {
-			continue
-		}
-		combinedErrorString = append(combinedErrorString, e.Error())
-	}
-	return fmt.Errorf(strings.Join(combinedErrorString, "\n\t"))
+	return sdk_error_helpers.CombineErrorsWithPrefix(prefix, errors...)
 }
 
 func allErrorsNil(errors ...error) bool {
@@ -154,7 +132,7 @@ func allErrorsNil(errors ...error) bool {
 }
 
 func CombineErrors(errors ...error) error {
-	return CombineErrorsWithPrefix("", errors...)
+	return sdk_error_helpers.CombineErrors(errors...)
 }
 
 func PrefixError(err error, prefix string) error {

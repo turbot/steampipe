@@ -78,15 +78,3 @@ func WrapPreparedStatementError(err error) error {
 	}
 	return err
 }
-
-// EnrichPreparedStatementError checks if the given error is a prepared statement error and if so,
-// add in the given query name
-// be printed on the console
-func EnrichPreparedStatementError(err error, queryName string, creationError error, declRange *hcl.Range) error {
-	var preparedStatementError *PreparedStatementError
-	if errors.As(err, &preparedStatementError) {
-		preparedStatementError.Enrich(queryName, creationError, declRange)
-		return preparedStatementError
-	}
-	return err
-}

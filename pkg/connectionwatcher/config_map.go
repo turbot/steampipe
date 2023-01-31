@@ -16,6 +16,7 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) Conn
 			PluginShortName:  v.PluginShortName,
 			Config:           v.Config,
 			ChildConnections: v.GetResolveConnectionNames(),
+			DeclRange:             v.DeclRange.AsProto(),
 		}
 	}
 
@@ -27,10 +28,6 @@ func (m ConnectionConfigMap) Diff(otherMap ConnectionConfigMap) (addedConnection
 	addedConnections = make(map[string][]*sdkproto.ConnectionConfig)
 	deletedConnections = make(map[string][]*sdkproto.ConnectionConfig)
 	changedConnections = make(map[string][]*sdkproto.ConnectionConfig)
-
-	// TODO if anything other than the plugin specific connection config has changed,
-	// treat as a deletion and addition of a new connection
-	// https://github.com/turbot/steampipe/issues/2348
 
 	for name, connection := range m {
 		if otherConnection, ok := otherMap[name]; !ok {
