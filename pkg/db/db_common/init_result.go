@@ -3,6 +3,7 @@ package db_common
 import (
 	"context"
 	"fmt"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -31,7 +32,7 @@ func (r *InitResult) HasMessages() bool {
 }
 
 func (r *InitResult) DisplayMessages() {
-	if r.DisplayWarning == nil {
+	if r.DisplayMessage == nil {
 		r.DisplayMessage = func(ctx context.Context, m string) {
 			fmt.Println(m)
 		}

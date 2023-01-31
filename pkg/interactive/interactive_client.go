@@ -62,8 +62,9 @@ type InteractiveClient struct {
 	// the schema metadata - this is loaded asynchronously during init
 	schemaMetadata *schema.Metadata
 	highlighter    *Highlighter
-	hidePrompt     bool
 	suggestions    []prompt.Suggest
+	// hidePrompt is used to render a blank as the prompt prefix
+	hidePrompt bool
 }
 
 func getHighlighter(theme string) *Highlighter {
@@ -121,9 +122,11 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 		c.promptResult.Streamer.Close()
 	}()
 
-	statushooks.Message(ctx,
+	statushooks.Message(
+		ctx,
 		fmt.Sprintf("Welcome to Steampipe v%s", version.SteampipeVersion.String()),
-		fmt.Sprintf("For more information, type %s", constants.Bold(".help")))
+		fmt.Sprintf("For more information, type %s", constants.Bold(".help")),
+	)
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors
 	promptResultChan := make(chan utils.InteractiveExitStatus, 1)
