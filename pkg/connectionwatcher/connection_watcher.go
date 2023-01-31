@@ -9,6 +9,7 @@ import (
 	"github.com/turbot/go-kit/filewatcher"
 	"github.com/turbot/go-kit/helpers"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -94,6 +95,19 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 
 	// set the global steampipe config
 	steampipeconfig.GlobalConfig = config
+
+	// The only configurations from GlobalConfig which have
+	// impact during Refresh are Database options and the Connections
+	// themselves.
+	//
+	// It is safe to ignore the Workspace Profile here since this
+	// code runs in the plugin-manager and has been started with the
+	// install-dir properly set from the active Workspace Profile
+	//
+	// Workspace Profile does not have any setting which can alter
+	// behavior in service mode (namely search path). Therefore, it is safe
+	// to use the GlobalConfig here and ignore Workspace Profile in general
+	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
 
 	// now refresh connections and search paths
 	refreshResult := client.RefreshConnectionAndSearchPaths(ctx)
