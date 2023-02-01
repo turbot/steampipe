@@ -312,7 +312,7 @@ func ensureQueryResource(name string, resolvedQuery *modconfig.ResolvedQuery, w 
 	shortName := "command_line_query"
 
 	// this is NOT a named query - create the query using RawSql
-	q := modconfig.NewQuery(&hcl.Block{}, w.Mod, shortName).(*modconfig.Query)
+	q := modconfig.NewQuery(&hcl.Block{Type: "query"}, w.Mod, shortName).(*modconfig.Query)
 	q.SQL = utils.ToStringPointer(resolvedQuery.RawSQL)
 	q.SetArgs(resolvedQuery.QueryArgs())
 	// add empty metadata
