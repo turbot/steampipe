@@ -45,7 +45,7 @@ func NewDashboardGraph(block *hcl.Block, mod *Mod, shortName string) HclResource
 						ShortName:       shortName,
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-						DeclRange:       block.DefRange,
+						DeclRange:       BlockRange(block),
 						blockType:       block.Type,
 					},
 					Mod: mod,

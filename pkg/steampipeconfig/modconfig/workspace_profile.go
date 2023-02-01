@@ -55,20 +55,22 @@ func (p *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hc
 		}
 		p.GeneralOptions = o
 	default:
+		subject := BlockRange(block)
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("invalid nested option type %s - only 'connection' options blocks are supported for Connections", reflect.TypeOf(o).Name()),
-			Subject:  &block.DefRange,
+			Subject:  &subject,
 		})
 	}
 	return diags
 }
 
 func duplicateOptionsBlockDiag(block *hcl.Block) *hcl.Diagnostic {
+	subject := BlockRange(block)
 	return &hcl.Diagnostic{
 		Severity: hcl.DiagError,
 		Summary:  fmt.Sprintf("duplicate %s options block", block.Type),
-		Subject:  &block.DefRange,
+		Subject:  &subject,
 	}
 }
 

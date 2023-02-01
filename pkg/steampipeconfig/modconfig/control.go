@@ -41,7 +41,7 @@ func NewControl(block *hcl.Block, mod *Mod, shortName string) HclResource {
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 						ShortName:       shortName,
-						DeclRange:       block.DefRange,
+						DeclRange:       BlockRange(block),
 						blockType:       block.Type,
 					},
 					Mod: mod,

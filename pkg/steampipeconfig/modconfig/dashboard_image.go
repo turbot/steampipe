@@ -36,7 +36,7 @@ func NewDashboardImage(block *hcl.Block, mod *Mod, shortName string) HclResource
 						ShortName:       shortName,
 						FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-						DeclRange:       block.DefRange,
+						DeclRange:       BlockRange(block),
 						blockType:       block.Type,
 					},
 					Mod: mod,

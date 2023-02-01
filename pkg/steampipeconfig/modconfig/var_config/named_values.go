@@ -36,7 +36,7 @@ type Variable struct {
 func DecodeVariableBlock(block *hcl.Block, content *hcl.BodyContent, override bool) (*Variable, hcl.Diagnostics) {
 	v := &Variable{
 		Name:      block.Labels[0],
-		DeclRange: block.DefRange,
+		DeclRange: block.Body.(*hclsyntax.Body).SrcRange,
 	}
 	var diags hcl.Diagnostics
 

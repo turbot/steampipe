@@ -118,7 +118,7 @@ func NewPos(sourcePos hcl.Pos) Pos {
 func NewConnection(block *hcl.Block) *Connection {
 	return &Connection{
 		Name:      block.Labels[0],
-		DeclRange: NewRange(block.TypeRange),
+		DeclRange: NewRange(BlockRange(block)),
 	}
 }
 
@@ -143,10 +143,11 @@ func (c *Connection) SetOptions(opts options.Options, block *hcl.Block) hcl.Diag
 	case *options.Connection:
 		c.Options = o
 	default:
+		subject := BlockRange(block)
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("invalid nested option type %s - only 'connection' options blocks are supported for Connections", reflect.TypeOf(o).Name()),
-			Subject:  &block.DefRange,
+			Subject:  &subject,
 		})
 	}
 	return diags

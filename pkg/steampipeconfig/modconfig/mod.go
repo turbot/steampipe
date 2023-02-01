@@ -187,10 +187,11 @@ func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvid
 		// ensure that both 'require' and 'requires' were not set
 		for _, b := range block.Body.(*hclsyntax.Body).Blocks {
 			if b.Type == BlockTypeRequire {
+				subject := BlockRange(block)
 				return hcl.Diagnostics{&hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "Both 'require' and legacy 'requires' blocks are defined",
-					Subject:  &block.DefRange,
+					Subject:  &subject,
 				}}
 			}
 		}
@@ -203,10 +204,11 @@ func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvid
 	}
 	err := m.Require.initialise()
 	if err != nil {
+		subject := BlockRange(block)
 		return hcl.Diagnostics{&hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  err.Error(),
-			Subject:  &block.DefRange,
+			Subject:  &subject,
 		}}
 	}
 	return nil

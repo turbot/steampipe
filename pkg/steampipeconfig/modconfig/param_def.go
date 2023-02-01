@@ -25,7 +25,7 @@ func NewParamDef(block *hcl.Block) *ParamDef {
 	return &ParamDef{
 		ShortName:       block.Labels[0],
 		UnqualifiedName: fmt.Sprintf("param.%s", block.Labels[0]),
-		DeclRange:       block.DefRange,
+		DeclRange:       BlockRange(block),
 	}
 }
 
