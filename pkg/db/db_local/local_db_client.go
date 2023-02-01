@@ -332,7 +332,7 @@ func (c *LocalDbClient) setUserSearchPath(ctx context.Context) error {
 
 	// get all roles which are a member of steampipe_users
 	query := fmt.Sprintf(`select usename from pg_user where pg_has_role(usename, '%s', 'member')`, constants.DatabaseUsersRole)
-	res, err := c.ExecuteSync(context.Background(), query)
+	res, err := c.ExecuteSync(ctx, query)
 	if err != nil {
 		return err
 	}
