@@ -1,6 +1,7 @@
 package dashboardexecute
 
 import (
+	"fmt"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/workspace"
@@ -8,6 +9,10 @@ import (
 )
 
 // GetReferencedVariables builds map of variables values containing only those mod variables which are referenced
+// NOTE: we refer to variables in depdencyt mods in the format which is valid for an SPVARS filer, i.e.
+// <mod>.<var-name>
+// the VariableValues map will contain these variables with the name format <mod>.var.<var-name>,
+// so we must convert the name
 func GetReferencedVariables(root dashboardtypes.DashboardTreeRun, w *workspace.Workspace) map[string]string {
 	var referencedVariables = make(map[string]string)
 
@@ -16,12 +21,13 @@ func GetReferencedVariables(root dashboardtypes.DashboardTreeRun, w *workspace.W
 			parts := strings.Split(ref.To, ".")
 			if len(parts) == 2 && parts[0] == "var" {
 				varName := parts[1]
+				varValueName := varName
 				// NOTE: if the ref is NOT for the workspace mod, then use the fully qualifed name
-				if refMod := ref.GetMetadata().ModName; refMod != w.Mod.Name() {
-					// NOTE: for variables we use "var" in the full name, not the block name "variable
-					varName = modconfig.BuildFullResourceName(refMod, "var", varName)
+				if refMod := ref.GetMetadata().ModName; refMod != w.Mod.ShortName {
+					varValueName = fmt.Sprintf("%s.var.%s", refMod, varName)
+					varName = fmt.Sprintf("%s.%s", refMod, varName)
 				}
-				referencedVariables[varName] = w.VariableValues[varName]
+				referencedVariables[varName] = w.VariableValues[varValueName]
 			}
 		}
 	}
