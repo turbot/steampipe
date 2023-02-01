@@ -1,3 +1,10 @@
+## v0.18.3 [2022-02-01]
+_Bug fixes_
+* Fix issue where `search_path` is not getting set from connection-config watching in service mode. ([#3047](https://github.com/turbot/steampipe/issues/3047))
+* Fix issue where extra newline was added to interactive prompt before messages were printed. ([#3027](https://github.com/turbot/steampipe/issues/3027))
+* Fix issue where when running a dashboard from a dependent mod, default variable vals are not being included in the snapshot. ([#2730](https://github.com/turbot/steampipe/issues/2730))
+* Update `--version` output to match the startup message. ([#3028](https://github.com/turbot/steampipe/issues/3028))
+
 ## v0.18.2 [2022-01-27]
 _Bug fixes_
 * Fix dashboard property blocks not taking effect in node/edge property tooltips. ([#3026](https://github.com/turbot/steampipe/issues/3026))
