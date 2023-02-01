@@ -204,13 +204,14 @@ jobs:
       - name: Save Test Suite Logs
         uses: actions/upload-artifact@v3
         with:
-          name: test-logs-${{ matrix.test_block }}
+          name: test-logs-${{ matrix.test_block }}-${{ matrix.platform }}
           path: ~/.steampipe/logs
           if-no-files-found: error
 
       - name: Verify No Steampipe Processes Running
         continue-on-error: false
         run: |
+          ps aux | grep steampipe | grep -v bats | grep -v grep
           if [ $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') -eq 0 ]; then  
             exit 0
           else
