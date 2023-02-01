@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"log"
 	"os"
 	"path/filepath"
@@ -152,6 +153,11 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 				diags = append(diags, moreDiags...)
 				continue
 			}
+
+			srcRange := block.Body.(*hclsyntax.Body).SrcRange
+
+			connection.Config = string(fileData[srcRange.Filename][srcRange.Start.Byte:srcRange.End.Byte])
+
 			_, alreadyThere := steampipeConfig.Connections[connection.Name]
 			if alreadyThere {
 				return fmt.Errorf("duplicate connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename)
@@ -172,7 +178,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 				continue
 			}
 			// set options on steampipe config
-			// if options are already set, this will merge the new options over the top of the existing options
+			// if options are already setπ, this will merge the new options over the top of the existing options
 			// i.e. new options have precedence
 			steampipeConfig.SetOptions(opts)
 		}
