@@ -2,10 +2,11 @@ package cmdconfig
 
 import (
 	"fmt"
-	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"os"
+
+	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/types"
@@ -25,8 +26,10 @@ func BootstrapViper(loader *steampipeconfig.WorkspaceProfileLoader) error {
 	// set defaults from defaultWorkspaceProfile
 	SetDefaultsFromConfig(loader.DefaultProfile.ConfigMap())
 
-	// set defaults from env vars
-	setDefaultsFromEnv()
+	// set defaults for install dir and mod location from env vars
+	// this needs to be done since the workspace profile definitions exist in the
+	// default install dir
+	setDirectoryDefaultsFromEnv()
 
 	// NOTE: if an explicit workspace profile was set, default the mod location and install dir _now_
 	// All other workspace profile values are defaults _after defaulting to the connection config options
@@ -99,8 +102,20 @@ type envMapping struct {
 	varType string
 }
 
+// set default values of INSTALL_DIR and ModLocation from env vars
+func setDirectoryDefaultsFromEnv() {
+	envMappings := map[string]envMapping{
+		constants.EnvInstallDir:     {constants.ArgInstallDir, "string"},
+		constants.EnvWorkspaceChDir: {constants.ArgModLocation, "string"},
+	}
+
+	for k, v := range envMappings {
+		SetDefaultFromEnv(k, v.configVar, v.varType)
+	}
+}
+
 // set default values from env vars
-func setDefaultsFromEnv() {
+func SetDefaultsFromEnv() {
 	// NOTE: EnvWorkspaceProfile has already been set as a viper default as we have already loaded workspace profiles
 	// (EnvInstallDir has already been set at same time but we set it again to make sure it has the correct precedence)
 

@@ -202,8 +202,13 @@ func initGlobalConfig() {
 	// set viper defaults from this config
 	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
 
+	// set the rest of the defaults from ENV
+	// ENV takes precedence over any default configuration
+	cmdconfig.SetDefaultsFromEnv()
+
 	// if an explicit workspace profile was set, add to viper as highest precedence default
 	// NOTE: if install_dir/mod_location are set these will already have been passed to viper by BootstrapViper
+	// since the "ConfiguredProfile" is passed in through a cmdline flag, it will always take precedence
 	if loader.ConfiguredProfile != nil {
 		cmdconfig.SetDefaultsFromConfig(loader.ConfiguredProfile.ConfigMap())
 	}
