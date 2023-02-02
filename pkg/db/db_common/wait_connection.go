@@ -15,50 +15,95 @@ import (
 
 var ErrRecoveryMode = errors.New("service is in recovery mode")
 
+type waitConfig struct {
+	retryInterval time.Duration
+	timeout       time.Duration
+}
+
+type WaitOption func(w *waitConfig)
+
+func WithRetryInterval(d time.Duration) WaitOption {
+	return func(w *waitConfig) {
+		w.retryInterval = d
+	}
+}
+func WithTimeout(d time.Duration) WaitOption {
+	return func(w *waitConfig) {
+		w.timeout = d
+	}
+}
+
+func WaitForConnection(ctx context.Context, connStr string, options ...WaitOption) (conn *pgx.Conn, err error) {
+	utils.LogTime("db_common.waitForConnection start")
+	defer utils.LogTime("db.waitForConnection end")
+
+	config := &waitConfig{
+		retryInterval: constants.DBConnectionRetryBackoff,
+		timeout:       constants.DBConnectionTimeout,
+	}
+
+	for _, o := range options {
+		o(config)
+	}
+
+	backoff := retry.WithMaxDuration(
+		config.timeout,
+		retry.NewConstant(config.retryInterval),
+	)
+
+	// create a connection to the service.
+	// Retry after a backoff, but only upto a maximum duration.
+	err = retry.Do(ctx, backoff, func(rCtx context.Context) error {
+		log.Println("[TRACE] Trying to create client with: ", connStr)
+		dbConnection, err := pgx.Connect(rCtx, connStr)
+		if err != nil {
+			log.Println("[TRACE] could not connect:", err)
+			return retry.RetryableError(err)
+		}
+		log.Println("[TRACE] connected to database")
+		conn = dbConnection
+		return nil
+	})
+
+	return conn, err
+}
+
 // WaitForPool waits for the db to start accepting connections and returns true
 // returns false if the dbClient does not start within a stipulated time,
-func WaitForPool(ctx context.Context, db *pgxpool.Pool) (err error) {
+func WaitForPool(ctx context.Context, db *pgxpool.Pool, waitOptions ...WaitOption) (err error) {
 	utils.LogTime("db.waitForConnection start")
 	defer utils.LogTime("db.waitForConnection end")
 
-	pingTimer := time.NewTicker(constants.ServicePingInterval)
-	timeoutAt := time.After(constants.DBConnectionTimeout)
-	defer pingTimer.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-pingTimer.C:
-			err = db.Ping(ctx)
-			if err == nil {
-				return
-			}
-		case <-timeoutAt:
-			return
-		}
+	connection, err := db.Acquire(ctx)
+	if err != nil {
+		return err
 	}
+	return WaitForConnectionPing(ctx, connection.Conn(), waitOptions...)
 }
 
 // WaitForConnectionPing PINGs the DB - retrying after a backoff of constants.ServicePingInterval - but only for constants.DBConnectionTimeout
 // returns the error from the database if the dbClient does not respond successfully after a timeout
-func WaitForConnectionPing(ctx context.Context, connection *pgx.Conn) (err error) {
-	utils.LogTime("db.waitForConnection start")
+func WaitForConnectionPing(ctx context.Context, connection *pgx.Conn, waitOptions ...WaitOption) (err error) {
+	utils.LogTime("db_common.waitForConnection start")
 	defer utils.LogTime("db.waitForConnection end")
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, constants.DBConnectionTimeout)
-	defer func() {
-		cancel()
-	}()
+	config := &waitConfig{
+		retryInterval: constants.ServicePingInterval,
+		timeout:       constants.DBConnectionTimeout,
+	}
+
+	for _, o := range waitOptions {
+		o(config)
+	}
 
 	retryBackoff := retry.WithMaxDuration(
-		constants.DBConnectionTimeout,
-		retry.NewConstant(constants.ServicePingInterval),
+		config.timeout,
+		retry.NewConstant(config.retryInterval),
 	)
 
 	retryErr := retry.Do(ctx, retryBackoff, func(ctx context.Context) error {
 		log.Println("[TRACE] Pinging")
-		pingErr := connection.Ping(timeoutCtx)
+		pingErr := connection.Ping(ctx)
 		if pingErr != nil {
 			log.Println("[TRACE] Pinging failed -> trying again")
 			return retry.RetryableError(pingErr)
@@ -71,21 +116,25 @@ func WaitForConnectionPing(ctx context.Context, connection *pgx.Conn) (err error
 
 // WaitForRecovery returns an error (ErrRecoveryMode) if the service stays in recovery
 // mode for more than constants.DBRecoveryWaitTimeout
-func WaitForRecovery(ctx context.Context, connection *pgx.Conn) (err error) {
+func WaitForRecovery(ctx context.Context, connection *pgx.Conn, waitOptions ...WaitOption) (err error) {
 	utils.LogTime("db_common.WaitForRecovery start")
 	defer utils.LogTime("db_common.WaitForRecovery end")
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, constants.DBRecoveryWaitTimeout)
-	defer func() {
-		cancel()
-	}()
+	config := &waitConfig{
+		retryInterval: constants.ServicePingInterval,
+		timeout:       constants.DBRecoveryTimeout,
+	}
+
+	for _, o := range waitOptions {
+		o(config)
+	}
 
 	retryBackoff := retry.WithMaxDuration(
-		constants.DBRecoveryWaitTimeout,
-		retry.NewConstant(constants.ServicePingInterval),
+		config.timeout,
+		retry.NewConstant(config.retryInterval),
 	)
 
-	retryErr := retry.Do(timeoutCtx, retryBackoff, func(ctx context.Context) error {
+	retryErr := retry.Do(ctx, retryBackoff, func(ctx context.Context) error {
 		log.Println("[TRACE] checking for recovery mode")
 		row := connection.QueryRow(ctx, "select pg_is_in_recovery();")
 		var isInRecovery bool
@@ -93,6 +142,7 @@ func WaitForRecovery(ctx context.Context, connection *pgx.Conn) (err error) {
 			return retry.RetryableError(scanErr)
 		}
 		if isInRecovery {
+			log.Println("[TRACE] service is in recovery")
 			return retry.RetryableError(ErrRecoveryMode)
 		}
 		return nil
