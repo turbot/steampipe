@@ -57,6 +57,9 @@ const (
 	ArgModLocation          = "mod-location"
 	ArgSnapshotLocation     = "snapshot-location"
 	ArgSnapshotTitle        = "snapshot-title"
+
+	ArgServiceRecoveryTimeout   = "recovery-timeout"
+	ArgServiceConnectionTimeout = "connection-timeout"
 )
 
 // metaquery mode arguments
