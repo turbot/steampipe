@@ -249,10 +249,11 @@
     }
   },
   {
-    "test": "env variables set(3)",
+    "test": "default workspace location set and env variables set(3)",
     "description": "",
     "setup": {
       "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options",
         "STEAMPIPE_MAX_PARALLEL=10",
         "STEAMPIPE_QUERY_TIMEOUT=100",
         "STEAMPIPE_TELEMETRY=none",
