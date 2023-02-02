@@ -9,9 +9,11 @@ import (
 
 // Database
 type Database struct {
-	Port       *int    `hcl:"port"`
-	Listen     *string `hcl:"listen"`
-	SearchPath *string `hcl:"search_path"`
+	Port           *int    `hcl:"port"`
+	Listen         *string `hcl:"listen"`
+	SearchPath     *string `hcl:"search_path"`
+	RecoveryWait   *int    `hcl:"recovery_wait"`
+	ConnectionWait *int    `hcl:"connection_wait"`
 }
 
 // ConfigMap :: create a config map to pass to viper
@@ -27,6 +29,12 @@ func (d *Database) ConfigMap() map[string]interface{} {
 	if d.SearchPath != nil {
 		// convert from string to array
 		res[constants.ArgSearchPath] = searchPathToArray(*d.SearchPath)
+	}
+	if d.ConnectionWait != nil {
+		res[constants.ArgServiceConnectionTimeout] = d.ConnectionWait
+	}
+	if d.RecoveryWait != nil {
+		res[constants.ArgServiceRecoveryTimeout] = d.RecoveryWait
 	}
 	return res
 }
