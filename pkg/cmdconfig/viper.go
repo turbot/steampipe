@@ -107,6 +107,7 @@ func setDirectoryDefaultsFromEnv() {
 	envMappings := map[string]envMapping{
 		constants.EnvInstallDir:     {constants.ArgInstallDir, "string"},
 		constants.EnvWorkspaceChDir: {constants.ArgModLocation, "string"},
+		constants.EnvModLocation:    {constants.ArgModLocation, "string"},
 	}
 
 	for k, v := range envMappings {
