@@ -84,11 +84,13 @@ func SetDefaultsFromConfig(configMap map[string]interface{}) {
 // for keys which do not have a corresponding command flag, we need a separate defaulting mechanism
 func setBaseDefaults() {
 	defaults := map[string]interface{}{
-		constants.ArgUpdateCheck:    true,
-		constants.ArgTelemetry:      constants.TelemetryInfo,
-		constants.ArgDatabasePort:   constants.DatabaseDefaultPort,
-		constants.ArgMaxCacheSizeMb: constants.DefaultMaxCacheSizeMb,
-		constants.ArgAutoComplete:   true,
+		constants.ArgUpdateCheck:              true,
+		constants.ArgTelemetry:                constants.TelemetryInfo,
+		constants.ArgDatabasePort:             constants.DatabaseDefaultPort,
+		constants.ArgMaxCacheSizeMb:           constants.DefaultMaxCacheSizeMb,
+		constants.ArgAutoComplete:             true,
+		constants.ArgServiceRecoveryTimeout:   constants.DBRecoveryTimeout,
+		constants.ArgServiceConnectionTimeout: constants.DBConnectionTimeout,
 	}
 
 	for k, v := range defaults {
@@ -136,6 +138,8 @@ func SetDefaultsFromEnv() {
 		constants.EnvCheckDisplayWidth: {constants.ArgCheckDisplayWidth, "int"},
 		constants.EnvMaxParallel:       {constants.ArgMaxParallel, "int"},
 		constants.EnvQueryTimeout:      {constants.ArgDatabaseQueryTimeout, "int"},
+		constants.EnvConnectionTimeout: {constants.ArgServiceConnectionTimeout, "int"},
+		constants.EnvRecoveryTimeout:   {constants.ArgServiceRecoveryTimeout, "int"},
 	}
 
 	for k, v := range envMappings {
