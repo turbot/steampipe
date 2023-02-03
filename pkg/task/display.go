@@ -95,6 +95,10 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 	if err != nil {
 		return err
 	}
+	// table can be nil if there are no notifications to display
+	if table == nil {
+		return nil
+	}
 
 	fmt.Println()
 	table.Render()
