@@ -121,7 +121,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// enable spinner only in interactive mode
+	// enable paging only in interactive mode
 	interactiveMode := len(args) == 0
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
