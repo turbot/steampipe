@@ -253,7 +253,7 @@ const CellValue = ({
       </span>
     );
   } else if (dataType === "text") {
-    if (value.match("^https?://")) {
+    if (!!value.match && value.match("^https?://")) {
       cellContent = (
         <ExternalLink
           className="link-highlight tabular-nums"
@@ -264,7 +264,7 @@ const CellValue = ({
         </ExternalLink>
       );
     }
-    const mdMatch = value.match("^\\[(.*)\\]\\((https?://.*)\\)$");
+    const mdMatch = !!value.match && value.match("^\\[(.*)\\]\\((https?://.*)\\)$");
     if (mdMatch) {
       cellContent = (
         <ExternalLink

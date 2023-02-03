@@ -1,3 +1,7 @@
+## v0.18.4 [TBD]
+_Bug fixes_
+* Fix dashboard panel detail crash when viewing data tables with non-string values in text columns. ([#3071](https://github.com/turbot/steampipe/issues/3071))
+
 ## v0.18.3 [2022-02-01]
 _Bug fixes_
 * Fix issue where `search_path` is not getting set from connection-config watching in service mode. ([#3047](https://github.com/turbot/steampipe/issues/3047))
