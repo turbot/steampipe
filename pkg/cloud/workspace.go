@@ -3,6 +3,8 @@ package cloud
 import (
 	"context"
 	"fmt"
+
+	"github.com/turbot/steampipe/pkg/constants"
 )
 
 // GetUserWorkspaceHandle returns the handle of the user workspace
@@ -14,7 +16,7 @@ func GetUserWorkspaceHandle(ctx context.Context, token string) (string, error) {
 	client := newSteampipeCloudClient(token)
 	actor, _, err := client.Actors.Get(ctx).Execute()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("Invalid token.\nPlease run %s or setup a token.", constants.Bold("steampipe login"))
 	}
 	userHandler := actor.Handle
 	workspacesResponse, _, err := client.UserWorkspaces.List(ctx, userHandler).Execute()
