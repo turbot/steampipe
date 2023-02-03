@@ -98,12 +98,12 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 		}
 	}
 	//// convert the remaining config to a hcl string to pass to the plugin
-	//config, moreDiags := pluginConnectionConfigToHclString(rest, connectionContent)
-	//if moreDiags.HasErrors() {
-	//	diags = append(diags, moreDiags...)
-	//} else {
-	//	connection.Config = config
-	//}
+	config, moreDiags := pluginConnectionConfigToHclString(rest, connectionContent)
+	if moreDiags.HasErrors() {
+		diags = append(diags, moreDiags...)
+	} else {
+		connection.Config = config
+	}
 
 	return connection, diags
 

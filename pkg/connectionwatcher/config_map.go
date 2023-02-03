@@ -17,6 +17,7 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) Conn
 			Config:           v.Config,
 			ChildConnections: v.GetResolveConnectionNames(),
 			DeclRange:             v.DeclRange.AsProto(),
+			RawConfig:             v.RawConfig,
 		}
 	}
 

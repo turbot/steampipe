@@ -42,6 +42,8 @@ type Connection struct {
 	ResolvedConnectionNames []string `json:"resolved_connections,omitempty"`
 	// unparsed HCL of plugin specific connection config
 	Config string `json:"config,omitempty"`
+	// unparsed HCL of full connection config
+	RawConfig string `json:"raw_config,omitempty"`
 
 	// options
 	Options   *options.Connection `json:"options,omitempty"`

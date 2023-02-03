@@ -156,7 +156,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 
 			srcRange := block.Body.(*hclsyntax.Body).SrcRange
 
-			connection.Config = string(fileData[srcRange.Filename][srcRange.Start.Byte:srcRange.End.Byte])
+			connection.RawConfig = string(fileData[srcRange.Filename][srcRange.Start.Byte:srcRange.End.Byte])
 
 			_, alreadyThere := steampipeConfig.Connections[connection.Name]
 			if alreadyThere {
