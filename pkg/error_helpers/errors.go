@@ -1,5 +1,9 @@
 package error_helpers
 
-import "errors"
+import (
+	"fmt"
 
-var MissingCloudTokenError = errors.New("Not authenticated for Steampipe Cloud.\nPlease run 'steampipe login' or setup a token.")
+	"github.com/turbot/steampipe/pkg/constants"
+)
+
+var MissingCloudTokenError = fmt.Errorf("Not authenticated for Steampipe Cloud.\nPlease run %s or setup a token.", constants.Bold("steampipe login"))

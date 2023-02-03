@@ -148,11 +148,10 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		ctx = statushooks.DisableStatusHooks(ctx)
 
 		// fall through to running a batch query
-		// set global exit code
 		failures, err = queryexecute.RunBatchSession(ctx, initData)
 	}
 
-	// check for err and set the exit code else set the exit code if some queries failed
+	// check for err and set the exit code else set the exit code if some queries failed or some rows returned an error
 	if err != nil {
 		exitCode = constants.ExitCodeInitializationFailed
 		error_helpers.ShowError(ctx, err)
@@ -318,7 +317,7 @@ func ensureQueryResource(name string, resolvedQuery *modconfig.ResolvedQuery, w 
 	shortName := "command_line_query"
 
 	// this is NOT a named query - create the query using RawSql
-	q := modconfig.NewQuery(&hcl.Block{}, w.Mod, shortName).(*modconfig.Query)
+	q := modconfig.NewQuery(&hcl.Block{Type: modconfig.BlockTypeQuery}, w.Mod, shortName).(*modconfig.Query)
 	q.SQL = utils.ToStringPointer(resolvedQuery.RawSQL)
 	q.SetArgs(resolvedQuery.QueryArgs())
 	// add empty metadata

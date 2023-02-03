@@ -5,6 +5,16 @@ _What's new?_
 * Adds an `sperr` error package along with sample implementation with the login cmd. ([#497](https://github.com/turbot/steampipe/issues/497))
 * Show the exported file location when --progress flag is enabled. ([#2860](https://github.com/turbot/steampipe/issues/2860))
 
+## v0.18.4 [2022-02-03]
+_Bug fixes_
+* Fix dashboard panel detail crash when viewing data tables with non-string values in text columns. ([#3071](https://github.com/turbot/steampipe/issues/3071))
+* Fixes issue where steampipe notifies of available update even if plugin is updated. ([#2998](https://github.com/turbot/steampipe/issues/2998))
+* Fix issue where snapshot creation was failing for command line queries in batch mode. ([#2943](https://github.com/turbot/steampipe/issues/2943))
+* Add a helpful error message when snapshot sharing fails because of an invalid token. ([#2944](https://github.com/turbot/steampipe/issues/2944))
+* Fix query batch mode returning zero exit code when rows return errors. ([#3044](https://github.com/turbot/steampipe/issues/3044))
+* Fixes issue where options from `default.spc` were taking precedence over environment variable settings. ([#3060](https://github.com/turbot/steampipe/issues/3060))
+
+## v0.18.3 [2022-02-01]
 _Bug fixes_
 * Fix issue where `search_path` is not getting set from connection-config watching in service mode. ([#3047](https://github.com/turbot/steampipe/issues/3047))
 * Fix issue where extra newline was added to interactive prompt before messages were printed. ([#3027](https://github.com/turbot/steampipe/issues/3027))
