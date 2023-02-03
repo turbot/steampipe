@@ -148,11 +148,10 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		ctx = statushooks.DisableStatusHooks(ctx)
 
 		// fall through to running a batch query
-		// set global exit code
 		failures, err = queryexecute.RunBatchSession(ctx, initData)
 	}
 
-	// check for err and set the exit code else set the exit code if some queries failed
+	// check for err and set the exit code else set the exit code if some queries failed or some rows returned an error
 	if err != nil {
 		exitCode = constants.ExitCodeInitializationFailed
 		error_helpers.ShowError(ctx, err)

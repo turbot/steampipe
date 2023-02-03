@@ -53,7 +53,8 @@ func EnableTiming() DisplayOption {
 }
 
 // ShowOutput displays the output using the proper formatter as applicable
-func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) {
+func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) int {
+	rowErrors := 0
 	options := &DisplayConfiguration{
 		timing: cmdconfig.Viper().GetBool(constants.ArgTiming),
 	}
@@ -63,19 +64,20 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 
 	switch cmdconfig.Viper().GetString(constants.ArgOutput) {
 	case constants.OutputFormatJSON:
-		displayJSON(ctx, result)
+		rowErrors = displayJSON(ctx, result)
 	case constants.OutputFormatCSV:
-		displayCSV(ctx, result)
+		rowErrors = displayCSV(ctx, result)
 	case constants.OutputFormatLine:
-		displayLine(ctx, result)
+		rowErrors = displayLine(ctx, result)
 	case constants.OutputFormatTable:
-		displayTable(ctx, result)
+		rowErrors = displayTable(ctx, result)
 	}
 
 	if options.timing {
 		fmt.Println(buildTimingString(result))
 	}
-
+	// return the number of rows that returned errors
+	return rowErrors
 }
 
 type ShowWrappedTableOptions struct {
@@ -168,9 +170,9 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 	return colConfigs, headerRow
 }
 
-func displayLine(ctx context.Context, result *queryresult.Result) {
+func displayLine(ctx context.Context, result *queryresult.Result) int {
 
-	maxColNameLength := 0
+	maxColNameLength, rowErrors := 0, 0
 	for _, col := range result.Cols {
 		thisLength := utf8.RuneCountInString(col.Name)
 		if thisLength > maxColNameLength {
@@ -225,8 +227,10 @@ func displayLine(ctx context.Context, result *queryresult.Result) {
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
 		error_helpers.ShowError(ctx, err)
-		return
+		rowErrors++
+		return rowErrors
 	}
+	return rowErrors
 }
 
 func getTerminalColumnsRequiredForString(str string) int {
@@ -239,7 +243,8 @@ func getTerminalColumnsRequiredForString(str string) int {
 	return colsRequired
 }
 
-func displayJSON(ctx context.Context, result *queryresult.Result) {
+func displayJSON(ctx context.Context, result *queryresult.Result) int {
+	rowErrors := 0
 	var jsonOutput []map[string]interface{}
 
 	// define function to add each row to the JSON output
@@ -255,7 +260,8 @@ func displayJSON(ctx context.Context, result *queryresult.Result) {
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
 		error_helpers.ShowError(ctx, err)
-		return
+		rowErrors++
+		return rowErrors
 	}
 	// display the JSON
 	encoder := json.NewEncoder(os.Stdout)
@@ -263,11 +269,13 @@ func displayJSON(ctx context.Context, result *queryresult.Result) {
 	encoder.SetEscapeHTML(false)
 	if err := encoder.Encode(jsonOutput); err != nil {
 		fmt.Print("Error displaying result as JSON", err)
-		return
+		return 0
 	}
+	return rowErrors
 }
 
-func displayCSV(ctx context.Context, result *queryresult.Result) {
+func displayCSV(ctx context.Context, result *queryresult.Result) int {
+	rowErrors := 0
 	csvWriter := csv.NewWriter(os.Stdout)
 	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
 
@@ -285,16 +293,19 @@ func displayCSV(ctx context.Context, result *queryresult.Result) {
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
 		error_helpers.ShowError(ctx, err)
-		return
+		rowErrors++
+		return rowErrors
 	}
 
 	csvWriter.Flush()
 	if csvWriter.Error() != nil {
 		error_helpers.ShowErrorWithMessage(ctx, csvWriter.Error(), "unable to print csv")
 	}
+	return rowErrors
 }
 
-func displayTable(ctx context.Context, result *queryresult.Result) {
+func displayTable(ctx context.Context, result *queryresult.Result) int {
+	rowErrors := 0
 	// the buffer to put the output data in
 	outbuf := bytes.NewBufferString("")
 
@@ -337,6 +348,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 		// display the error
 		fmt.Println()
 		error_helpers.ShowError(ctx, err)
+		rowErrors++
 		fmt.Println()
 	}
 	// write out the table to the buffer
@@ -344,6 +356,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) {
 
 	// page out the table
 	ShowPaged(ctx, outbuf.String())
+	return rowErrors
 }
 
 func buildTimingString(result *queryresult.Result) string {
