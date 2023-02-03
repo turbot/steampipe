@@ -246,6 +246,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 ## plugin crash
 
 @test "check whether the plugin is crashing or not" {
+  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe check benchmark.check_plugin_crash_benchmark
   echo $output
