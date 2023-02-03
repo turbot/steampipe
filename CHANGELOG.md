@@ -5,7 +5,7 @@ _What's new?_
 * Adds an `sperr` error package along with sample implementation with the login cmd. ([#497](https://github.com/turbot/steampipe/issues/497))
 * Show the exported file location when --progress flag is enabled. ([#2860](https://github.com/turbot/steampipe/issues/2860))
 
-## v0.18.4 [2022-02-03]
+## v0.18.4 [2023-02-03]
 _Bug fixes_
 * Fix dashboard panel detail crash when viewing data tables with non-string values in text columns. ([#3071](https://github.com/turbot/steampipe/issues/3071))
 * Fixes issue where steampipe notifies of available update even if plugin is updated. ([#2998](https://github.com/turbot/steampipe/issues/2998))
@@ -14,18 +14,18 @@ _Bug fixes_
 * Fix query batch mode returning zero exit code when rows return errors. ([#3044](https://github.com/turbot/steampipe/issues/3044))
 * Fixes issue where options from `default.spc` were taking precedence over environment variable settings. ([#3060](https://github.com/turbot/steampipe/issues/3060))
 
-## v0.18.3 [2022-02-01]
+## v0.18.3 [2023-02-01]
 _Bug fixes_
 * Fix issue where `search_path` is not getting set from connection-config watching in service mode. ([#3047](https://github.com/turbot/steampipe/issues/3047))
 * Fix issue where extra newline was added to interactive prompt before messages were printed. ([#3027](https://github.com/turbot/steampipe/issues/3027))
 * Fix issue where when running a dashboard from a dependent mod, default variable vals are not being included in the snapshot. ([#2730](https://github.com/turbot/steampipe/issues/2730))
 * Update `--version` output to match the startup message. ([#3028](https://github.com/turbot/steampipe/issues/3028))
 
-## v0.18.2 [2022-01-27]
+## v0.18.2 [2023-01-27]
 _Bug fixes_
 * Fix dashboard property blocks not taking effect in node/edge property tooltips. ([#3026](https://github.com/turbot/steampipe/issues/3026))
 
-## v0.18.1 [2022-01-18]
+## v0.18.1 [2023-01-18]
 _Bug fixes_
 * Fix workspace file watching events sometime causing dashboard to stall and stop responding to events. ([#3007](https://github.com/turbot/steampipe/issues/3007))
 * Fix cancelling dashboards (e.g. by pressing 'back' on the browser) sometimes leaving the dashboard server in a state where it will not respond to socket events. ([#3008](https://github.com/turbot/steampipe/issues/3008))
@@ -37,7 +37,7 @@ _Bug fixes_
 * Fix dashboard table interpolated template rendering not working in line view. ([#3014](https://github.com/turbot/steampipe/issues/3014))
 * Fix HCL validation to allow benchmark and control blocks in dashboard. ([#3015](https://github.com/turbot/steampipe/issues/3015))
 
-## v0.18.0 [2022-01-12]
+## v0.18.0 [2023-01-12]
 _What's new?_
 * Add support for visualisations of your data with graphs, with easily composable data structures using nodes and edges. ([#2249](https://github.com/turbot/steampipe/issues/2249))
 * Improved dashboard UI panel controls for quicker access to common tasks such as downloading panel data. ([#2663](https://github.com/turbot/steampipe/issues/2663))

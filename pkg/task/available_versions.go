@@ -29,6 +29,10 @@ func (av *AvailableVersionCache) asTable() (*tablewriter.Table, error) {
 		return []string{line}
 	})
 
+	if len(notificationLines) == 0 {
+		return nil, nil
+	}
+
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{})                // no headers please
 	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
