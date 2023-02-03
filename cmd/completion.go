@@ -61,8 +61,8 @@ func includeZshHelp(base string) string {
 	if runtime.GOOS == "darwin" {
 		buildUp = fmt.Sprintf(`%s
   Zsh:
-    # Load for every session (requires shell restart):
-    $ steampipe completion zsh > "${fpath[1]}/steampipe"
+    # Load for every session:
+    $ steampipe completion zsh > "${fpath[1]}/_steampipe" && compinit
 `, buildUp)
 	}
 
