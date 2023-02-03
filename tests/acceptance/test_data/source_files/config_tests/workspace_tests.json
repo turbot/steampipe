@@ -501,17 +501,17 @@
     },
     "expected": {
       "autocomplete": true,
-      "header": true,
+      "header": false,
       "max-parallel": 10,
       "multi": true,
-      "output": "table",
+      "output": "csv",
       "query-timeout": 100,
-      "search-path": "[ xyz ]",
-      "search-path-prefix": "[ pqr ]",
-      "separator": "+",
+      "search-path": "[ abc ]",
+      "search-path-prefix": "[ abc, def ]",
+      "separator": ";",
       "telemetry": "none",
       "update-check": true,
-      "watch": true
+      "watch": false
     }
   }
 ]
