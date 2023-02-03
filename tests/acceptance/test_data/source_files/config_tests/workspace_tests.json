@@ -449,5 +449,42 @@
       "update-check": true,
       "watch": true
     }
+  },
+  {
+    "test": "config/default.spc, env variables passed all command line args passed(8)",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_MAX_PARALLEL=10",
+        "STEAMPIPE_QUERY_TIMEOUT=100",
+        "STEAMPIPE_TELEMETRY=none",
+        "STEAMPIPE_UPDATE_CHECK=true"
+      ],
+      "args": [
+        "--workspace=sample",
+        "--header=true",
+        "--output=table",
+        "--query-timeout=190",
+        "--search-path=xyz",
+        "--search-path-prefix=pqr",
+        "--separator=+",
+        "--timing=true", 
+        "--watch=true"
+      ]
+    },
+    "expected": {
+      "autocomplete": true,
+      "header": true,
+      "max-parallel": 10,
+      "multi": true,
+      "output": "table",
+      "query-timeout": 190,
+      "search-path": "[ xyz ]",
+      "search-path-prefix": "[ pqr ]",
+      "separator": "+",
+      "telemetry": "none",
+      "update-check": true,
+      "watch": true
+    }
   }
 ]
