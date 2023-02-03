@@ -54,7 +54,7 @@ func EnableTiming() DisplayOption {
 
 // ShowOutput displays the output using the proper formatter as applicable
 func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) int {
-	rowErr := 0
+	rowErrors := 0
 	options := &DisplayConfiguration{
 		timing: cmdconfig.Viper().GetBool(constants.ArgTiming),
 	}
@@ -64,20 +64,20 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 
 	switch cmdconfig.Viper().GetString(constants.ArgOutput) {
 	case constants.OutputFormatJSON:
-		rowErr = displayJSON(ctx, result)
+		rowErrors = displayJSON(ctx, result)
 	case constants.OutputFormatCSV:
-		rowErr = displayCSV(ctx, result)
+		rowErrors = displayCSV(ctx, result)
 	case constants.OutputFormatLine:
-		rowErr = displayLine(ctx, result)
+		rowErrors = displayLine(ctx, result)
 	case constants.OutputFormatTable:
-		rowErr = displayTable(ctx, result)
+		rowErrors = displayTable(ctx, result)
 	}
 
 	if options.timing {
 		fmt.Println(buildTimingString(result))
 	}
 	// return the number of rows that returned errors
-	return rowErr
+	return rowErrors
 }
 
 type ShowWrappedTableOptions struct {

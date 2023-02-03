@@ -101,14 +101,14 @@ func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *m
 		return err, 0
 	}
 
-	rowErr := 0 // get the number of rows that returned an error
+	rowErrors := 0 // get the number of rows that returned an error
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		rowErr = display.ShowOutput(ctx, r, display.ShowTimingOnOutput(constants.OutputFormatTable))
+		rowErrors = display.ShowOutput(ctx, r, display.ShowTimingOnOutput(constants.OutputFormatTable))
 		// signal to the resultStreamer that we are done with this result
 		resultsStreamer.AllResultsRead()
 	}
-	return nil, rowErr
+	return nil, rowErrors
 }
 
 // if we are displaying csv with no header, do not include lines between the query results
