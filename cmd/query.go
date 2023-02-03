@@ -135,7 +135,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 	defer initData.Cleanup(ctx)
 
-	var failures, rowErrors int
+	var failures int
 	switch {
 	case interactiveMode:
 		err = queryexecute.RunInteractiveSession(ctx, initData)
@@ -148,14 +148,14 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		ctx = statushooks.DisableStatusHooks(ctx)
 
 		// fall through to running a batch query
-		failures, rowErrors, err = queryexecute.RunBatchSession(ctx, initData)
+		failures, err = queryexecute.RunBatchSession(ctx, initData)
 	}
 
 	// check for err and set the exit code else set the exit code if some queries failed or some rows returned an error
 	if err != nil {
 		exitCode = constants.ExitCodeInitializationFailed
 		error_helpers.ShowError(ctx, err)
-	} else if failures > 0 || rowErrors != 0 {
+	} else if failures > 0 {
 		exitCode = constants.ExitCodeQueryExecutionFailed
 	}
 }
