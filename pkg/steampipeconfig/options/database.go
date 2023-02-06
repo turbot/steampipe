@@ -76,5 +76,15 @@ func (d *Database) String() string {
 	} else {
 		str = append(str, fmt.Sprintf("  SearchPath: %s", *d.SearchPath))
 	}
+	if d.ConnectionTimeout == nil {
+		str = append(str, "  ConnectionTimeout: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  ConnectionTimeout: %d", *d.ConnectionTimeout))
+	}
+	if d.RecoveryTimeout == nil {
+		str = append(str, "  RecoveryTimeout: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  RecoveryTimeout: %d", *d.RecoveryTimeout))
+	}
 	return strings.Join(str, "\n")
 }

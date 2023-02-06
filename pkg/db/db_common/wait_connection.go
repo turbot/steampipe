@@ -78,6 +78,7 @@ func WaitForPool(ctx context.Context, db *pgxpool.Pool, waitOptions ...WaitOptio
 	if err != nil {
 		return err
 	}
+	defer connection.Release()
 	return WaitForConnectionPing(ctx, connection.Conn(), waitOptions...)
 }
 

@@ -89,8 +89,8 @@ func setBaseDefaults() {
 		constants.ArgDatabasePort:             constants.DatabaseDefaultPort,
 		constants.ArgMaxCacheSizeMb:           constants.DefaultMaxCacheSizeMb,
 		constants.ArgAutoComplete:             true,
-		constants.ArgServiceRecoveryTimeout:   constants.DBRecoveryTimeout,
-		constants.ArgServiceConnectionTimeout: constants.DBConnectionTimeout,
+		constants.ArgServiceRecoveryTimeout:   constants.DBRecoveryTimeout.Seconds(),
+		constants.ArgServiceConnectionTimeout: constants.DBConnectionTimeout.Seconds(),
 	}
 
 	for k, v := range defaults {

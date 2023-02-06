@@ -125,7 +125,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		ctx,
 		connStr,
 		db_common.WithRetryInterval(constants.DBRecoveryRetryBackoff),
-		db_common.WithTimeout(viper.GetDuration(constants.ArgServiceConnectionTimeout)*time.Second),
+		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgServiceConnectionTimeout))*time.Second),
 	)
 	if err != nil {
 		log.Println("[TRACE] could not connect to service")
