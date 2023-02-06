@@ -26,13 +26,6 @@ type ConnectionData struct {
 	SchemaHash string `json:"schema_hash,omitempty"`
 	// the creation time of the plugin file (only used for local plugins)
 	ModTime time.Time `json:"mod_time"`
-
-	// legacy properties included for backwards compatibility with v0.13
-	LegacyPlugin     string                `json:"Plugin,omitempty"`
-	LegacyConnection *modconfig.Connection `json:"Connection,omitempty"`
-	LegacySchemaMode string                `json:"SchemaMode,omitempty"`
-	LegacySchemaHash string                `json:"SchemaHash,omitempty"`
-	LegacyModTime    time.Time             `json:"ModTime,omitempty"`
 }
 
 func NewConnectionData(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionData {
@@ -48,27 +41,6 @@ func NewConnectionData(remoteSchema string, connection *modconfig.Connection, cr
 // by checking if the StructVersion is populated
 func (d *ConnectionData) IsValid() bool {
 	return d.StructVersion > 0
-}
-
-// MigrateLegacy migrates the legacy properties into new properties
-func (d *ConnectionData) MigrateLegacy() {
-	d.StructVersion = ConnectionDataStructVersion
-	d.Plugin = d.LegacyPlugin
-	d.SchemaMode = d.LegacySchemaMode
-	d.SchemaHash = d.LegacySchemaHash
-	d.ModTime = d.LegacyModTime
-	d.Connection = d.LegacyConnection
-	d.Connection.MigrateLegacy()
-}
-
-// MaintainLegacy keeps the values of the legacy properties intact while
-// refreshing connections
-func (d *ConnectionData) MaintainLegacy() {
-	d.LegacyPlugin = d.Plugin
-	d.LegacySchemaMode = d.SchemaMode
-	d.LegacySchemaHash = d.SchemaHash
-	d.LegacyModTime = d.ModTime
-	d.LegacyConnection = d.Connection
 }
 
 func (d *ConnectionData) Equals(other *ConnectionData) bool {

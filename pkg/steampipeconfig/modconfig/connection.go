@@ -2,14 +2,15 @@ package modconfig
 
 import (
 	"fmt"
+	"log"
+	"path"
+	"reflect"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"golang.org/x/exp/maps"
-	"log"
-	"path"
-	"reflect"
 )
 
 const (
@@ -66,43 +67,6 @@ type Connection struct {
 	// options
 	Options   *options.Connection `json:"options,omitempty"`
 	DeclRange Range               `json:"decl_range,omitempty"`
-
-	// legacy properties included for backwards compatibility with v0.13
-	LegacyName            string              `json:"Name,omitempty"`
-	LegacyPluginShortName string              `json:"PluginShortName,omitempty"`
-	LegacyPlugin          string              `json:"Plugin,omitempty"`
-	LegacyType            string              `json:"Type,omitempty"`
-	LegacyConnectionNames []string            `json:"Connections,omitempty"`
-	LegacyConfig          string              `json:"Config,omitempty"`
-	LegacyOptions         *options.Connection `json:"Options,omitempty"`
-	LegacyDeclRange       hcl.Range           `json:"DeclRange,omitempty"`
-}
-
-// MigrateLegacy migrates the legacy properties into new properties
-func (c *Connection) MigrateLegacy() {
-	c.Name = c.LegacyName
-	c.Plugin = c.LegacyPlugin
-	c.PluginShortName = c.LegacyPluginShortName
-	c.Type = c.LegacyType
-	c.ConnectionNames = c.LegacyConnectionNames
-	c.Config = c.LegacyConfig
-	c.DeclRange = NewRange(c.LegacyDeclRange)
-	if c.LegacyOptions != nil {
-		c.Options = c.LegacyOptions
-		c.Options.MigrateLegacy()
-	}
-}
-
-// MaintainLegacy keeps the values of the legacy properties intact while
-// refreshing connections
-func (c *Connection) MaintainLegacy() {
-	c.LegacyName = c.Name
-	c.LegacyPlugin = c.Plugin
-	c.LegacyPluginShortName = c.PluginShortName
-	c.LegacyType = c.Type
-	c.LegacyConnectionNames = c.ConnectionNames
-	c.LegacyConfig = c.Config
-	c.LegacyDeclRange = c.DeclRange.GetLegacy()
 }
 
 // Range represents a span of characters between two positions in a source file.
