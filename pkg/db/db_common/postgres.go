@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// PgEscapeName escapes strings which will be usaed for Podsdtgres object identifiers
+// PgEscapeName escapes strings which will be used for Podsdtgres object identifiers
 // (table names, column names, schema names)
 func PgEscapeName(name string) string {
 	// first escape all quotes by prefixing an addition quote

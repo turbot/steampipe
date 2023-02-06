@@ -195,7 +195,11 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 
 func getCommentsQueryForPlugin(connectionName string, p *steampipeconfig.ConnectionPlugin) string {
 	var statements strings.Builder
+
 	for t, schema := range p.ConnectionMap[connectionName].Schema.Schema {
+		listKeyColumns := schema.ListCallKeyColumnMap()
+		getKeyColumns := schema.GetCallKeyColumnMap()
+
 		table := db_common.PgEscapeName(t)
 		schemaName := db_common.PgEscapeName(connectionName)
 		if schema.Description != "" {
@@ -203,11 +207,36 @@ func getCommentsQueryForPlugin(connectionName string, p *steampipeconfig.Connect
 			statements.WriteString(fmt.Sprintf("COMMENT ON FOREIGN TABLE %s.%s is %s;\n", schemaName, table, tableDescription))
 		}
 		for _, c := range schema.Columns {
-			if c.Description != "" {
+			// is this a keu column
+			getRequire := ""
+			listRequire := ""
+			var columnDescriptionBuilder strings.Builder
+			columnDescriptionBuilder.WriteString(c.Description)
+
+			if getKeyColumn, ok := getKeyColumns[c.Name]; ok {
+				getRequire = getKeyColumn.Require
+			}
+			if listKeyColumn, ok := listKeyColumns[c.Name]; ok {
+				listRequire = listKeyColumn.Require
+			}
+			if len(getRequire)+len(listRequire) > 0 {
+
+				columnDescriptionBuilder.WriteString(" (Key column: ")
+				if len(getRequire) > 0 {
+					columnDescriptionBuilder.WriteString(fmt.Sprintf("get call: %s ", getRequire))
+				}
+				if len(listRequire) > 0 {
+					columnDescriptionBuilder.WriteString(fmt.Sprintf("list call: %s ", listRequire))
+				}
+				columnDescriptionBuilder.WriteString(")")
+			}
+			columnDescription := columnDescriptionBuilder.String()
+			if columnDescription != "" {
 				column := db_common.PgEscapeName(c.Name)
-				columnDescription := db_common.PgEscapeString(c.Description)
+				columnDescription = db_common.PgEscapeString(c.Description)
 				statements.WriteString(fmt.Sprintf("COMMENT ON COLUMN %s.%s.%s is %s;\n", schemaName, table, column, columnDescription))
 			}
+
 		}
 	}
 	return statements.String()
