@@ -6,6 +6,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
+	"golang.org/x/exp/maps"
 	"log"
 	"path"
 	"reflect"
@@ -50,14 +51,17 @@ type Connection struct {
 	// this is a list of names or wildcards which are resolved to connections
 	// (only valid for "aggregator" type)
 	ConnectionNames []string `json:"connections,omitempty"`
-	// a list of the resolved child connections
+	// a map of the resolved child connections
 	// (only valid for "aggregator" type)
 	Connections map[string]*Connection `json:"-"`
+	// a list of the names resolved child connections
+	// (only valid for "aggregator" type)
+	ResolvedConnectionNames []string `json:"resolved_connections,omitempty"`
 	// unparsed HCL of plugin specific connection config
 	Config string `json:"config,omitempty"`
 
 	// // table aggregation specs
-	TableAggregationSpecs TableAggregationSpecs
+	TableAggregationSpecs TableAggregationSpecs `json:"table_aggregation_specs,omitempty"`
 
 	// options
 	Options   *options.Connection `json:"options,omitempty"`
@@ -265,6 +269,7 @@ func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {
 			}
 		}
 	}
+	c.ResolvedConnectionNames = maps.Keys(c.Connections)
 }
 
 // GetResolveConnectionNames return the names of all child connections
