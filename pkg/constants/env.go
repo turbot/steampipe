@@ -8,8 +8,8 @@ const (
 	EnvServicePassword = "STEAMPIPE_DATABASE_PASSWORD"
 	EnvMaxParallel     = "STEAMPIPE_MAX_PARALLEL"
 
-	EnvConnectionTimeout = "STEAMPIPE_CONNECTION_WAIT"
-	EnvRecoveryTimeout   = "STEAMPIPE_RECOVERY_WAIT"
+	EnvConnectionTimeout = "STEAMPIPE_CONNECTION_TIMEOUT"
+	EnvRecoveryTimeout   = "STEAMPIPE_RECOVERY_TIMEOUT"
 
 	EnvSnapshotLocation  = "STEAMPIPE_SNAPSHOT_LOCATION"
 	EnvWorkspaceDatabase = "STEAMPIPE_WORKSPACE_DATABASE"
