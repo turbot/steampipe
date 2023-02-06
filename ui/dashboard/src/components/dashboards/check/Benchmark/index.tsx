@@ -150,7 +150,7 @@ const Benchmark = (props: InnerCheckProps) => {
         properties: {
           label: "Critical / High",
           value: total.toString(),
-          icon: "materialsymbols-solid:exclamation",
+          icon: "materialsymbols-solid:warning",
         },
       });
     }

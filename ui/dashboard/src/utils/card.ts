@@ -33,7 +33,7 @@ const getIconForType = (type, icon) => {
     case "info":
       return "materialsymbols-solid:info";
     case "severity":
-      return "materialsymbols-solid:exclamation";
+      return "materialsymbols-solid:warning";
     default:
       return null;
   }
