@@ -5,10 +5,10 @@ import (
 	"log"
 	"path"
 	"reflect"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"golang.org/x/exp/maps"
 )
@@ -16,24 +16,6 @@ import (
 const (
 	ConnectionTypeAggregator = "aggregator"
 )
-
-type TableAggregationSpecs []*TableAggregationSpec
-
-func (s TableAggregationSpecs) ToProto() []*sdkproto.TableAggregationSpec {
-	res := make([]*sdkproto.TableAggregationSpec, len(s))
-	for i, t := range s {
-		res[i] = &sdkproto.TableAggregationSpec{
-			Match:       t.Match,
-			Connections: t.Connections,
-		}
-	}
-	return res
-}
-
-type TableAggregationSpec struct {
-	Match       string   `hcl:"match,optional"`
-	Connections []string `hcl:"connections"`
-}
 
 // Connection is a struct representing the partially parsed connection
 //
@@ -133,7 +115,11 @@ func (c *Connection) Equals(other *Connection) bool {
 		connectionOptionsEqual = c.Options.Equals(other.Options)
 	}
 	return c.Name == other.Name &&
+		c.Plugin == other.Plugin &&
+		c.Type == other.Type &&
+		strings.Join(c.ConnectionNames, ",") == strings.Join(other.ConnectionNames, ",") &&
 		connectionOptionsEqual &&
+		c.TableAggregationSpecs.Equals(other.TableAggregationSpecs) &&
 		c.Config == other.Config
 }
 

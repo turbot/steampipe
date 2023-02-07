@@ -18,6 +18,7 @@ import (
 type ConnectionPluginData struct {
 	Name    string
 	Config  string
+	Type    string
 	Options *options.Connection
 	Schema  *sdkproto.Schema
 }
@@ -34,10 +35,11 @@ type ConnectionPlugin struct {
 	SupportedOperations *proto.SupportedOperations
 }
 
-func (p ConnectionPlugin) addConnection(name string, config string, connectionOptions *options.Connection) {
+func (p ConnectionPlugin) addConnection(name string, config string, connectionOptions *options.Connection, connectionType string) {
 	p.ConnectionMap[name] = &ConnectionPluginData{
 		Name:    name,
 		Config:  config,
+		Type:    connectionType,
 		Options: connectionOptions,
 	}
 }
@@ -184,11 +186,14 @@ func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*Co
 	log.Printf("[TRACE] populateConnectionPluginSchemas")
 
 	for connectionName, connectionPlugin := range connectionPluginMap {
-		log.Printf("[TRACE] populateConnectionPluginSchemas: connectionName: %s", connectionName)
+		// if this is an aggregator we must fetch the schema
+		isAggregator := connectionPlugin.ConnectionMap[connectionName].Type == modconfig.ConnectionTypeAggregator
+		log.Printf("[TRACE] populateConnectionPluginSchemas: connectionName: %s: isAggregator: %v", connectionName, isAggregator)
 		// does this plugin  exist in the static schema map?
 		schema, ok := staticSchemas[connectionPlugin.PluginName]
-		if !ok {
-			log.Printf("[TRACE] schema does not exist in list of static schemas, fetching")
+
+		if isAggregator || !ok {
+			log.Printf("[TRACE] fetching schema for connection %s, isAggregator: %v, gotSchema: %v", connectionName, isAggregator, ok)
 			log.Printf("[TRACE] GetSchema %s", connectionName)
 
 			// if not, fetch the schema
@@ -240,8 +245,6 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 	log.Printf("[TRACE] createConnectionPlugin for connection %s", connection.Name)
 	pluginName := connection.Plugin
 	connectionName := connection.Name
-	connectionConfig := connection.Config
-	connectionOptions := connection.Options
 
 	log.Printf("[TRACE] plugin manager returned reattach config for connection '%s' - pid %d",
 		connectionName, reattach.Pid)
@@ -266,7 +269,7 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 	// if multiple connections are NOT supported, add the config for our one and only connection
 	if reattach.SupportedOperations == nil || !reattach.SupportedOperations.MultipleConnections {
 		log.Printf("[TRACE] multiple connections NOT supported - adding single connection '%s' to ConnectionPlugin", connectionName)
-		connectionPlugin.addConnection(connectionName, connectionConfig, connectionOptions)
+		connectionPlugin.addConnection(connectionName, connection.Config, connection.Options, connection.Type)
 	} else {
 		log.Printf("[TRACE] multiple connections ARE supported - adding all connections to ConnectionPlugin: %v", reattach.Connections)
 		// now identify all connections serviced by this plugin
@@ -279,7 +282,7 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 			if !ok {
 				return nil, fmt.Errorf("no connection config loaded for '%s'", c)
 			}
-			connectionPlugin.addConnection(c, config.Config, config.Options)
+			connectionPlugin.addConnection(c, config.Config, config.Options, config.Type)
 		}
 	}
 
