@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // GetTableAutoCompleteSuggestions derives and returns tables for typeahead
@@ -80,7 +81,7 @@ func GetTableAutoCompleteSuggestions(schema *schema.Metadata, connectionMap *ste
 	}
 
 	for _, table := range qualifiedTablesToAdd {
-		s = append(s, prompt.Suggest{Text: table, Description: "Table", Output: sanitiseTableName(table)})
+		s = append(s, prompt.Suggest{Text: table, Description: "Table", Output: table})
 	}
 
 	return s
@@ -94,7 +95,7 @@ func sanitiseTableName(strToEscape string) string {
 	tokens := helpers.SplitByRune(strToEscape, '.')
 	escaped := []string{}
 	for _, token := range tokens {
-		if strings.ContainsAny(token, " -") {
+		if strings.ContainsAny(token, " -") || utils.ContainsUpper(token) {
 			token = db_common.PgEscapeName(token)
 		}
 		escaped = append(escaped, token)
