@@ -51,6 +51,7 @@ func (d *ConnectionData) Equals(other *ConnectionData) bool {
 	}
 
 	return d.Plugin == other.Plugin &&
+		d.Connection.Equals(other.Connection) &&
 		d.ModTime.Equal(other.ModTime) &&
 		d.Connection.Equals(other.Connection)
 }
