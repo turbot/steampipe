@@ -331,10 +331,8 @@ func (r *ControlRun) waitForResults(ctx context.Context) {
 			}
 			// if the row is in error then we terminate the run
 			if row.Error != nil {
-				// set error status and summary
+				// set error status (parent summary will be set from parent defer)
 				r.setError(ctx, row.Error)
-				// update the result group status with our status - this will be passed all the way up the execution tree
-				r.Group.updateSummary(r.Summary)
 				return
 			}
 
