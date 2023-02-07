@@ -293,7 +293,6 @@ func migrateLegacyFiles() error {
 	}
 	return error_helpers.CombineErrors(
 		migrate.Migrate(&statefile.State{}, filepaths.LegacyStateFilePath()),
-		migrate.Migrate(&steampipeconfig.ConnectionDataMap{}, filepaths.ConnectionStatePath()),
 		migrate.Migrate(&versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath()),
 		migrate.Migrate(&versionfile.DatabaseVersionFile{}, filepaths.DatabaseVersionFilePath()),
 	)

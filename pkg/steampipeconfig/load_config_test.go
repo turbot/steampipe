@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
@@ -66,24 +65,6 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 							Byte:   10,
 						},
 					},
-					LegacyName:            "",
-					LegacyPluginShortName: "",
-					LegacyPlugin:          "",
-					LegacyType:            "",
-					LegacyConfig:          "",
-					LegacyDeclRange: hcl.Range{
-						Filename: "",
-						Start: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
-						},
-						End: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
-						},
-					},
 				},
 				"aws_dmi_002": {
 					Name:            "aws_dmi_002",
@@ -102,24 +83,6 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 							Line:   1,
 							Column: 11,
 							Byte:   10,
-						},
-					},
-					LegacyName:            "",
-					LegacyPluginShortName: "",
-					LegacyPlugin:          "",
-					LegacyType:            "",
-					LegacyConfig:          "",
-					LegacyDeclRange: hcl.Range{
-						Filename: "",
-						Start: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
-						},
-						End: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
 						},
 					},
 				},
@@ -153,24 +116,6 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 							Byte:   10,
 						},
 					},
-					LegacyName:            "",
-					LegacyPluginShortName: "",
-					LegacyPlugin:          "",
-					LegacyType:            "",
-					LegacyConfig:          "",
-					LegacyDeclRange: hcl.Range{
-						Filename: "",
-						Start: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
-						},
-						End: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
-						},
-					},
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
@@ -200,24 +145,6 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 							Line:   1,
 							Column: 11,
 							Byte:   10,
-						},
-					},
-					LegacyName:            "",
-					LegacyPluginShortName: "",
-					LegacyPlugin:          "",
-					LegacyType:            "",
-					LegacyConfig:          "",
-					LegacyDeclRange: hcl.Range{
-						Filename: "",
-						Start: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
-						},
-						End: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
 						},
 					},
 				},
@@ -274,24 +201,6 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 							Byte:   10,
 						},
 					},
-					LegacyName:            "",
-					LegacyPluginShortName: "",
-					LegacyPlugin:          "",
-					LegacyType:            "",
-					LegacyConfig:          "",
-					LegacyDeclRange: hcl.Range{
-						Filename: "",
-						Start: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
-						},
-						End: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
-						},
-					},
 				},
 			},
 			DefaultConnectionOptions: &options.Connection{
@@ -340,24 +249,6 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 							Line:   1,
 							Column: 11,
 							Byte:   10,
-						},
-					},
-					LegacyName:            "",
-					LegacyPluginShortName: "",
-					LegacyPlugin:          "",
-					LegacyType:            "",
-					LegacyConfig:          "",
-					LegacyDeclRange: hcl.Range{
-						Filename: "",
-						Start: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
-						},
-						End: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
 						},
 					},
 				},
@@ -410,24 +301,6 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 							Line:   1,
 							Column: 11,
 							Byte:   10,
-						},
-					},
-					LegacyName:            "",
-					LegacyPluginShortName: "",
-					LegacyPlugin:          "",
-					LegacyType:            "",
-					LegacyConfig:          "",
-					LegacyDeclRange: hcl.Range{
-						Filename: "",
-						Start: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
-						},
-						End: hcl.Pos{
-							Line:   0,
-							Column: 0,
-							Byte:   0,
 						},
 					},
 				},

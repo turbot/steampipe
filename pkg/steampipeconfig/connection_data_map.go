@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/migrate"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -25,18 +24,8 @@ func (m ConnectionDataMap) IsValid() bool {
 	return true
 }
 
-func (m ConnectionDataMap) MigrateFrom() migrate.Migrateable {
-	for _, v := range m {
-		v.MigrateLegacy()
-	}
-	return m
-}
-
 func (m ConnectionDataMap) Save() error {
 	connFilePath := filepaths.ConnectionStatePath()
-	for _, v := range m {
-		v.MaintainLegacy()
-	}
 	connFileJSON, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		log.Println("[ERROR]", "Error while writing state file", err)
