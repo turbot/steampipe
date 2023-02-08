@@ -20,10 +20,6 @@ type State struct {
 	LastCheck      string `json:"last_checked"`    // an RFC3339 encoded time stamp
 	InstallationID string `json:"installation_id"` // a UUIDv4 string
 	StructVersion  int64  `json:"struct_version"`
-
-	// legacy properties included for backwards compatibility with v0.13
-	LegacyLastCheck      string `json:"lastChecked"`
-	LegacyInstallationID string `json:"installationId"`
 }
 
 func newState() State {
@@ -61,9 +57,6 @@ func (s *State) Save() error {
 	s.StructVersion = StateStructVersion
 
 	s.LastCheck = nowTimeString()
-	s.LegacyLastCheck = nowTimeString()
-	// maintain the legacy properties for backward compatibility
-	s.MaintainLegacy()
 	// ensure internal dirs exists
 	_ = os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
 	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), filepaths.StateFileName())
@@ -83,17 +76,10 @@ func (s *State) IsValid() bool {
 func (s *State) MigrateFrom() migrate.Migrateable {
 	// save the existing property values to the new legacy properties
 	s.StructVersion = StateStructVersion
-	s.LastCheck = s.LegacyLastCheck
-	s.InstallationID = s.LegacyInstallationID
+	s.LastCheck = nowTimeString()
+	s.InstallationID = newInstallationID()
 
 	return s
-}
-
-// MaintainLegacy keeps the values of the legacy properties for backward
-// compatibility
-func (s *State) MaintainLegacy() {
-	s.LegacyLastCheck = s.LastCheck
-	s.LegacyInstallationID = s.InstallationID
 }
 
 func newInstallationID() string {
