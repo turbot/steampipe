@@ -1,6 +1,8 @@
 package utils
 
-import "strings"
+import (
+	"strings"
+)
 
 // UnquoteStringArray removes quote marks from elements of string array
 func UnquoteStringArray(stringArray []string) []string {
