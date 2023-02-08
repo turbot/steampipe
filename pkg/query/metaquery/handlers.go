@@ -260,23 +260,37 @@ func inspect(ctx context.Context, input *HandlerInput) error {
 		// join them up
 		tableOrConnection = strings.Join(input.args(), " ")
 	}
+
+	// remove all double quotes (if any)
+	tableOrConnection = strings.Join(
+		strings.Split(tableOrConnection, "\""),
+		"",
+	)
+
 	// arg can be one of <connection_name> or <connection_name>.<table_name>
-	split := strings.Split(tableOrConnection, ".")
-	for i, s := range split {
-		// trim escaping
-		s = strings.TrimSpace(s)
-		s = strings.TrimPrefix(s, `"`)
-		s = strings.TrimSuffix(s, `"`)
+	tokens := strings.SplitN(tableOrConnection, ".", 2)
 
-		split[i] = s
-	}
+	// here tokens could be schema.tablename
+	// or table.name
+	// or both
 
-	if len(split) == 1 {
+	if len(tokens) > 0 {
 		// only a connection name (or maybe unqualified table name)
 		schemaFound := inspectConnection(tableOrConnection, input)
 
 		// there was no schema
 		if !schemaFound {
+			// we couldn't find a schema with the name
+			// try a prefix search with the schema name
+			// for schema := range input.Schema.Schemas {
+			// 	if strings.HasPrefix(tableOrConnection, schema) {
+			// 		tableName := strings.TrimPrefix(tableOrConnection, fmt.Sprintf("%s.", schema))
+			// 		return inspectTable(schema, tableName, input)
+			// 	}
+			// }
+
+			// still here - the last sledge hammer is to go through
+			// the schema names one by one
 			searchPath, _ := input.Executor.GetCurrentSearchPath(ctx)
 
 			// add the temporary schema to the search_path so that it becomes searchable
@@ -290,8 +304,16 @@ func inspect(ctx context.Context, input *HandlerInput) error {
 				if helpers.StringSliceContains(tablesInThisSchema, tableOrConnection) {
 					return inspectTable(schema, tableOrConnection, input)
 				}
+
+				// check against the fully qualified name of the table
+				for _, table := range input.Schema.Schemas[schema] {
+					if tableOrConnection == table.FullName {
+						return inspectTable(schema, table.Name, input)
+					}
+				}
 			}
-			return fmt.Errorf("Could not find connection or table called %s. Is the plugin installed? Is the connection configured?", tableOrConnection)
+
+			return fmt.Errorf("could not find connection or table called '%s'. Is the plugin installed? Is the connection configured?", tableOrConnection)
 		}
 
 		fmt.Printf(`
@@ -302,7 +324,7 @@ To get information about the columns in a table, run %s
 	}
 
 	// this is a fully qualified table name
-	return inspectTable(split[0], split[1], input)
+	return inspectTable(tokens[0], tokens[1], input)
 }
 
 func listConnections(ctx context.Context, input *HandlerInput) error {
