@@ -13,7 +13,7 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-var ErrRecoveryMode = errors.New("service is in recovery mode")
+var ErrServiceInRecoveryMode = errors.New("service is in recovery mode")
 
 type waitConfig struct {
 	retryInterval time.Duration
@@ -140,11 +140,12 @@ func WaitForRecovery(ctx context.Context, connection *pgx.Conn, waitOptions ...W
 		row := connection.QueryRow(ctx, "select pg_is_in_recovery();")
 		var isInRecovery bool
 		if scanErr := row.Scan(&isInRecovery); scanErr != nil {
+			log.Println("[ERROR] checking for recover mode", scanErr)
 			return retry.RetryableError(scanErr)
 		}
 		if isInRecovery {
 			log.Println("[TRACE] service is in recovery")
-			return retry.RetryableError(ErrRecoveryMode)
+			return retry.RetryableError(ErrServiceInRecoveryMode)
 		}
 		return nil
 	})

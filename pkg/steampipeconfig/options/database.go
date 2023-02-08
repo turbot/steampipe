@@ -9,11 +9,10 @@ import (
 
 // Database
 type Database struct {
-	Port              *int    `hcl:"port"`
-	Listen            *string `hcl:"listen"`
-	SearchPath        *string `hcl:"search_path"`
-	RecoveryTimeout   *int    `hcl:"recovery_timeout"`
-	ConnectionTimeout *int    `hcl:"connection_timeout"`
+	Port                *int    `hcl:"port"`
+	Listen              *string `hcl:"listen"`
+	SearchPath          *string `hcl:"search_path"`
+	ServiceStartTimeout *int    `hcl:"service_start_timeout"`
 }
 
 // ConfigMap :: create a config map to pass to viper
@@ -30,11 +29,10 @@ func (d *Database) ConfigMap() map[string]interface{} {
 		// convert from string to array
 		res[constants.ArgSearchPath] = searchPathToArray(*d.SearchPath)
 	}
-	if d.ConnectionTimeout != nil {
-		res[constants.ArgServiceConnectionTimeout] = d.ConnectionTimeout
-	}
-	if d.RecoveryTimeout != nil {
-		res[constants.ArgServiceRecoveryTimeout] = d.RecoveryTimeout
+	if d.ServiceStartTimeout != nil {
+		res[constants.ArgServiceStartTimeout] = d.ServiceStartTimeout
+	} else {
+		res[constants.ArgServiceStartTimeout] = constants.DBConnectionTimeout.Seconds()
 	}
 	return res
 }
@@ -76,15 +74,10 @@ func (d *Database) String() string {
 	} else {
 		str = append(str, fmt.Sprintf("  SearchPath: %s", *d.SearchPath))
 	}
-	if d.ConnectionTimeout == nil {
-		str = append(str, "  ConnectionTimeout: nil")
+	if d.ServiceStartTimeout == nil {
+		str = append(str, "  ServiceStartTimeout: nil")
 	} else {
-		str = append(str, fmt.Sprintf("  ConnectionTimeout: %d", *d.ConnectionTimeout))
-	}
-	if d.RecoveryTimeout == nil {
-		str = append(str, "  RecoveryTimeout: nil")
-	} else {
-		str = append(str, fmt.Sprintf("  RecoveryTimeout: %d", *d.RecoveryTimeout))
+		str = append(str, fmt.Sprintf("  ServiceStartTimeout: %d", *d.ServiceStartTimeout))
 	}
 	return strings.Join(str, "\n")
 }
