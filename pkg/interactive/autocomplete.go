@@ -95,6 +95,8 @@ func sanitiseTableName(strToEscape string) string {
 	tokens := helpers.SplitByRune(strToEscape, '.')
 	escaped := []string{}
 	for _, token := range tokens {
+		// if string contains spaces or special characters(-) or upper case characters, escape it,
+		// as Postgres by default converts to lower case
 		if strings.ContainsAny(token, " -") || utils.ContainsUpper(token) {
 			token = db_common.PgEscapeName(token)
 		}
