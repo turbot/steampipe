@@ -1,6 +1,7 @@
 package db_common
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -37,15 +38,15 @@ func BuildSchemaMetadata(rows pgx.Rows) (_ *schema.Metadata, err error) {
 
 	utils.LogTime("db.buildSchemaMetadata.iteration start")
 	for _, record := range records {
-		_, schemaFound := schemaMetadata.Schemas[record.TableSchema]
-		if !schemaFound {
+		if _, schemaFound := schemaMetadata.Schemas[record.TableSchema]; !schemaFound {
 			schemaMetadata.Schemas[record.TableSchema] = map[string]schema.TableSchema{}
 		}
-		_, tblFound := schemaMetadata.Schemas[record.TableSchema][record.TableName]
-		if !tblFound {
+
+		if _, tblFound := schemaMetadata.Schemas[record.TableSchema][record.TableName]; !tblFound {
 			schemaMetadata.Schemas[record.TableSchema][record.TableName] = schema.TableSchema{
-				Name:        record.TableName,
 				Schema:      record.TableSchema,
+				Name:        record.TableName,
+				FullName:    fmt.Sprintf("%s.%s", record.TableSchema, record.TableName),
 				Description: record.TableDescription,
 				Columns:     map[string]schema.ColumnSchema{},
 			}
