@@ -120,7 +120,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	utils.LogTime("db_local.createMaintenanceClient start")
 	defer utils.LogTime("db_local.createMaintenanceClient end")
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(viper.GetInt(constants.ArgServiceStartTimeout))*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second)
 	defer cancel()
 
 	connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
@@ -128,7 +128,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		timeoutCtx,
 		connStr,
 		db_common.WithRetryInterval(constants.DBRecoveryRetryBackoff),
-		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgServiceStartTimeout))*time.Second),
+		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second),
 	)
 	if err != nil {
 		log.Println("[TRACE] could not connect to service")
@@ -140,7 +140,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		timeoutCtx,
 		conn,
 		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
-		db_common.WithTimeout(viper.GetDuration(constants.ArgServiceStartTimeout)*time.Second),
+		db_common.WithTimeout(viper.GetDuration(constants.ArgDatabaseStartTimeout)*time.Second),
 	)
 	if err != nil {
 		conn.Close(ctx)

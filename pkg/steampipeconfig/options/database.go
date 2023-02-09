@@ -30,9 +30,9 @@ func (d *Database) ConfigMap() map[string]interface{} {
 		res[constants.ArgSearchPath] = searchPathToArray(*d.SearchPath)
 	}
 	if d.ServiceStartTimeout != nil {
-		res[constants.ArgServiceStartTimeout] = d.ServiceStartTimeout
+		res[constants.ArgDatabaseStartTimeout] = d.ServiceStartTimeout
 	} else {
-		res[constants.ArgServiceStartTimeout] = constants.DBConnectionTimeout.Seconds()
+		res[constants.ArgDatabaseStartTimeout] = constants.DBStartTimeout.Seconds()
 	}
 	return res
 }

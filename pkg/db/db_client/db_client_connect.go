@@ -55,7 +55,7 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 		ctx,
 		dbPool,
 		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
-		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgServiceStartTimeout))*time.Second),
+		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second),
 	)
 	if err != nil {
 		return err

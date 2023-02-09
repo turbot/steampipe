@@ -43,7 +43,7 @@ func DisplayConfig() {
 		constants.ArgListenAddress,
 		constants.ArgSearchPath,
 		constants.ArgDatabaseQueryTimeout,
-		constants.ArgServiceStartTimeout,
+		constants.ArgDatabaseStartTimeout,
 		// general
 		constants.ArgUpdateCheck,
 		constants.ArgMaxParallel,

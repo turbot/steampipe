@@ -39,7 +39,7 @@ func WaitForConnection(ctx context.Context, connStr string, options ...WaitOptio
 
 	config := &waitConfig{
 		retryInterval: constants.DBConnectionRetryBackoff,
-		timeout:       constants.DBConnectionTimeout,
+		timeout:       constants.DBStartTimeout,
 	}
 
 	for _, o := range options {
@@ -90,7 +90,7 @@ func WaitForConnectionPing(ctx context.Context, connection *pgx.Conn, waitOption
 
 	config := &waitConfig{
 		retryInterval: constants.ServicePingInterval,
-		timeout:       constants.DBConnectionTimeout,
+		timeout:       constants.DBStartTimeout,
 	}
 
 	for _, o := range waitOptions {
