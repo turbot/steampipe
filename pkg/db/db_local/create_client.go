@@ -152,8 +152,11 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	// the database may enter recovery mode if it detects that
 	// it wasn't shutdown gracefully.
 	// For large databases, this can take long
+	// We want to wait for a LONG time for this to complete
+	// Use the context that was given - since that is tied to os.Signal
+	// and can be interrupted
 	err = db_common.WaitForRecovery(
-		timeoutCtx,
+		ctx,
 		conn,
 		db_common.WithRetryInterval(constants.DBRecoveryRetryBackoff),
 		db_common.WithTimeout(constants.DBRecoveryTimeout),
@@ -161,7 +164,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	if err != nil {
 		conn.Close(ctx)
 		log.Println("[TRACE] WaitForRecovery timed out")
-		return nil, err
+		return nil, sperr.Wrap(err, sperr.WithMessage("timed out waiting for recovery to complete"))
 	}
 
 	return conn, nil
