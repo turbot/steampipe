@@ -123,17 +123,22 @@ func WaitForRecovery(ctx context.Context, connection *pgx.Conn, waitOptions ...W
 
 	config := &waitConfig{
 		retryInterval: constants.ServicePingInterval,
-		timeout:       constants.DBRecoveryTimeout,
+		timeout:       time.Duration(0),
 	}
 
 	for _, o := range waitOptions {
 		o(config)
 	}
 
-	retryBackoff := retry.WithMaxDuration(
-		config.timeout,
-		retry.NewConstant(config.retryInterval),
-	)
+	var retryBackoff retry.Backoff
+	if config.timeout == 0 {
+		retryBackoff = retry.NewConstant(config.retryInterval)
+	} else {
+		retryBackoff = retry.WithMaxDuration(
+			config.timeout,
+			retry.NewConstant(config.retryInterval),
+		)
+	}
 
 	retryErr := retry.Do(ctx, retryBackoff, func(ctx context.Context) error {
 		log.Println("[TRACE] checking for recovery mode")

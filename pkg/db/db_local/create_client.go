@@ -159,7 +159,6 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		ctx,
 		conn,
 		db_common.WithRetryInterval(constants.DBRecoveryRetryBackoff),
-		db_common.WithTimeout(constants.DBRecoveryTimeout),
 	)
 	if err != nil {
 		conn.Close(ctx)
