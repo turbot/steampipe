@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -145,6 +146,9 @@ func WaitForRecovery(ctx context.Context, connection *pgx.Conn, waitOptions ...W
 		row := connection.QueryRow(ctx, "select pg_is_in_recovery();")
 		var isInRecovery bool
 		if scanErr := row.Scan(&isInRecovery); scanErr != nil {
+			if error_helpers.IsContextCancelledError(scanErr) {
+				return scanErr
+			}
 			log.Println("[ERROR] checking for recover mode", scanErr)
 			return retry.RetryableError(scanErr)
 		}
