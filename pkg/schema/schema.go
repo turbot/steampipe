@@ -29,6 +29,7 @@ type TableSchema struct {
 	// map {columnName -> columnschema}
 	Columns     map[string]ColumnSchema
 	Name        string
+	FullName    string
 	Schema      string
 	Description string
 }
