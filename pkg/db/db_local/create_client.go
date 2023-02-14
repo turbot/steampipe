@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/pkg/errors"
-	"github.com/sethvargo/go-retry"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/sperr"
 )
 
 func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
@@ -101,7 +102,7 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn,
 		return nil, err
 	}
 
-	if err := db_common.WaitForConnection(ctx, conn); err != nil {
+	if err := db_common.WaitForConnectionPing(ctx, conn); err != nil {
 		return nil, err
 	}
 	return conn, nil
@@ -119,40 +120,51 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	utils.LogTime("db_local.createMaintenanceClient start")
 	defer utils.LogTime("db_local.createMaintenanceClient end")
 
-	var conn *pgx.Conn
-	var err error
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second)
+	defer cancel()
 
-	backoff := retry.WithMaxDuration(
-		constants.DBConnectionTimeout,
-		retry.NewConstant(constants.DBConnectionRetryBackoff),
+	connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
+	conn, err := db_common.WaitForConnection(
+		timeoutCtx,
+		connStr,
+		db_common.WithRetryInterval(constants.DBRecoveryRetryBackoff),
+		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second),
 	)
-
-	// create a connection to the service.
-	// Retry after a backoff, but only upto a maximum duration.
-	err = retry.Do(ctx, backoff, func(rCtx context.Context) error {
-		connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
-		log.Println("[TRACE] Trying to create maintenance client with: ", connStr)
-		dbConnection, err := pgx.Connect(rCtx, connStr)
-		if err != nil {
-			log.Println("[TRACE] could not connect:", err)
-			return retry.RetryableError(err)
-		}
-		log.Println("[TRACE] connected to database")
-		conn = dbConnection
-		return nil
-	})
 	if err != nil {
 		log.Println("[TRACE] could not connect to service")
-		return nil, errors.Wrap(err, "connection setup failed")
+		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
 	}
 
-	// wait for the connection to get established
-	// WaitForConnection retries on its own
-	err = db_common.WaitForConnection(ctx, conn)
+	// wait for db to start accepting queries on this connection
+	err = db_common.WaitForConnectionPing(
+		timeoutCtx,
+		conn,
+		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
+		db_common.WithTimeout(viper.GetDuration(constants.ArgDatabaseStartTimeout)*time.Second),
+	)
 	if err != nil {
 		conn.Close(ctx)
-		log.Println("[TRACE] WaitForConnection timed out")
+		log.Println("[TRACE] Ping timed out")
 		return nil, err
 	}
+
+	// wait for recovery to complete
+	// the database may enter recovery mode if it detects that
+	// it wasn't shutdown gracefully.
+	// For large databases, this can take long
+	// We want to wait for a LONG time for this to complete
+	// Use the context that was given - since that is tied to os.Signal
+	// and can be interrupted
+	err = db_common.WaitForRecovery(
+		ctx,
+		conn,
+		db_common.WithRetryInterval(constants.DBRecoveryRetryBackoff),
+	)
+	if err != nil {
+		conn.Close(ctx)
+		log.Println("[TRACE] WaitForRecovery timed out")
+		return nil, sperr.Wrap(err, sperr.WithMessage("timed out waiting for recovery to complete"))
+	}
+
 	return conn, nil
 }

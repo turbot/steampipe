@@ -84,11 +84,12 @@ func SetDefaultsFromConfig(configMap map[string]interface{}) {
 // for keys which do not have a corresponding command flag, we need a separate defaulting mechanism
 func setBaseDefaults() {
 	defaults := map[string]interface{}{
-		constants.ArgUpdateCheck:    true,
-		constants.ArgTelemetry:      constants.TelemetryInfo,
-		constants.ArgDatabasePort:   constants.DatabaseDefaultPort,
-		constants.ArgMaxCacheSizeMb: constants.DefaultMaxCacheSizeMb,
-		constants.ArgAutoComplete:   true,
+		constants.ArgUpdateCheck:          true,
+		constants.ArgTelemetry:            constants.TelemetryInfo,
+		constants.ArgDatabasePort:         constants.DatabaseDefaultPort,
+		constants.ArgMaxCacheSizeMb:       constants.DefaultMaxCacheSizeMb,
+		constants.ArgAutoComplete:         true,
+		constants.ArgDatabaseStartTimeout: constants.DBStartTimeout.Seconds(),
 	}
 
 	for k, v := range defaults {
@@ -122,20 +123,21 @@ func SetDefaultsFromEnv() {
 
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
-		constants.EnvInstallDir:        {constants.ArgInstallDir, "string"},
-		constants.EnvWorkspaceChDir:    {constants.ArgModLocation, "string"},
-		constants.EnvModLocation:       {constants.ArgModLocation, "string"},
-		constants.EnvIntrospection:     {constants.ArgIntrospection, "string"},
-		constants.EnvTelemetry:         {constants.ArgTelemetry, "string"},
-		constants.EnvUpdateCheck:       {constants.ArgUpdateCheck, "bool"},
-		constants.EnvCloudHost:         {constants.ArgCloudHost, "string"},
-		constants.EnvCloudToken:        {constants.ArgCloudToken, "string"},
-		constants.EnvSnapshotLocation:  {constants.ArgSnapshotLocation, "string"},
-		constants.EnvWorkspaceDatabase: {constants.ArgWorkspaceDatabase, "string"},
-		constants.EnvServicePassword:   {constants.ArgServicePassword, "string"},
-		constants.EnvCheckDisplayWidth: {constants.ArgCheckDisplayWidth, "int"},
-		constants.EnvMaxParallel:       {constants.ArgMaxParallel, "int"},
-		constants.EnvQueryTimeout:      {constants.ArgDatabaseQueryTimeout, "int"},
+		constants.EnvInstallDir:           {constants.ArgInstallDir, "string"},
+		constants.EnvWorkspaceChDir:       {constants.ArgModLocation, "string"},
+		constants.EnvModLocation:          {constants.ArgModLocation, "string"},
+		constants.EnvIntrospection:        {constants.ArgIntrospection, "string"},
+		constants.EnvTelemetry:            {constants.ArgTelemetry, "string"},
+		constants.EnvUpdateCheck:          {constants.ArgUpdateCheck, "bool"},
+		constants.EnvCloudHost:            {constants.ArgCloudHost, "string"},
+		constants.EnvCloudToken:           {constants.ArgCloudToken, "string"},
+		constants.EnvSnapshotLocation:     {constants.ArgSnapshotLocation, "string"},
+		constants.EnvWorkspaceDatabase:    {constants.ArgWorkspaceDatabase, "string"},
+		constants.EnvServicePassword:      {constants.ArgServicePassword, "string"},
+		constants.EnvCheckDisplayWidth:    {constants.ArgCheckDisplayWidth, "int"},
+		constants.EnvMaxParallel:          {constants.ArgMaxParallel, "int"},
+		constants.EnvQueryTimeout:         {constants.ArgDatabaseQueryTimeout, "int"},
+		constants.EnvDatabaseStartTimeout: {constants.ArgDatabaseStartTimeout, "int"},
 	}
 
 	for k, v := range envMappings {

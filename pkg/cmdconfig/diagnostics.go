@@ -3,13 +3,14 @@ package cmdconfig
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"sort"
+	"strings"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"os"
-	"sort"
-	"strings"
 )
 
 // DisplayConfig prints all config set via WorkspaceProfile or HCL options
@@ -42,6 +43,7 @@ func DisplayConfig() {
 		constants.ArgListenAddress,
 		constants.ArgSearchPath,
 		constants.ArgDatabaseQueryTimeout,
+		constants.ArgDatabaseStartTimeout,
 		// general
 		constants.ArgUpdateCheck,
 		constants.ArgMaxParallel,
