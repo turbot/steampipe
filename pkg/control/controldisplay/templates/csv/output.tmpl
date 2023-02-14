@@ -3,7 +3,7 @@
 group_id{{ render_context.Config.Separator }}title{{ render_context.Config.Separator }}description{{ render_context.Config.Separator }}control_id{{ render_context.Config.Separator }}control_title{{ render_context.Config.Separator }}control_description{{ render_context.Config.Separator }}reason{{ render_context.Config.Separator }}resource{{ render_context.Config.Separator }}status{{ render_context.Config.Separator }}severity{{ range .Data.Root.DimensionKeys }}{{ render_context.Config.Separator }}{{ . }}{{ end }}{{range .Data.Root.AllTagKeys }}{{ render_context.Config.Separator }}{{ . }}{{ end }}
 {{ end -}}
 {{ template "result_group_template" .Data.Root }}
-{{ end }}
+{{- end }}
 
 {{ define "result_group_template" -}}
   {{- range .ControlRuns -}}
