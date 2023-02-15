@@ -283,8 +283,8 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 
 	// start a goroutine to stream the results as rows
 	go func() {
-		rowVals := make([]interface{}, len(chartRun.Data.Columns))
 		for _, d := range chartRun.Data.Rows {
+			rowVals := make([]interface{}, len(chartRun.Data.Columns))
 			for i, c := range chartRun.Data.Columns {
 				rowVals[i] = d[c.Name]
 			}
