@@ -284,6 +284,9 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 	// start a goroutine to stream the results as rows
 	go func() {
 		for _, d := range chartRun.Data.Rows {
+			// we need to allocate a new slice everytime, since this gets read
+			// asynchronously on the other end and we need to make sure that we don't overwrite
+			// data already sent
 			rowVals := make([]interface{}, len(chartRun.Data.Columns))
 			for i, c := range chartRun.Data.Columns {
 				rowVals[i] = d[c.Name]
