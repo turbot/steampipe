@@ -3,13 +3,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 # These set of tests are skipped locally
 # To run these tests locally set the SPIPETOOLS_TOKEN env var.
-# These tests will be skipped locally unless the above env var is set.
+# These tests will be skipped locally unless the below env var is set.
 
 function setup() {
   if [[ -z "${SPIPETOOLS_TOKEN}" ]]; then
     skip
-  else
-    echo "SPIPETOOLS_TOKEN is set..."
   fi
 }
 
@@ -31,6 +29,7 @@ function setup() {
   cat output.csv
 
   assert_equal "$(cat output.csv)" "$(cat $TEST_DATA_DIR/expected_static_query_csv_snapshot_mode.csv)"
+  rm -f output.*
 }
 
 @test "snapshot mode - query output json" {
@@ -48,6 +47,7 @@ function setup() {
   cat output.json
 
   assert_equal "$(cat output.json)" "$(cat $TEST_DATA_DIR/expected_static_query_json_snapshot_mode.json)"
+  rm -f output.*
 }
 
 @test "snapshot mode - query output table" {
@@ -65,9 +65,5 @@ function setup() {
   cat output.txt
 
   assert_equal "$(cat output.txt)" "$(cat $TEST_DATA_DIR/expected_static_query_table_snapshot_mode.txt)"
-}
-
-function teardown() {
-  rm -f output.* 
-  cd -
+  rm -f output.*
 }
