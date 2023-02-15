@@ -1,0 +1,13 @@
+status,resource,reason
+ok,1,ok
+alarm,2,alarm
+ok,3,ok
+alarm,4,alarm
+error,5,error
+alarm,6,alarm
+info,7,info
+alarm,8,alarm
+ok,9,ok
+alarm,10,alarm
+skip,11,skip
+alarm,12,alarm
