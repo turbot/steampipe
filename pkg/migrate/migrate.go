@@ -2,6 +2,7 @@ package migrate
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -24,7 +25,7 @@ func Migrate(migrateable Migrateable, oldPath string) error {
 	// Deserialize into old struct
 	err = json.Unmarshal(stateFileContent, &migrateable)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse %s - %v", oldPath, err)
 	}
 
 	// check whether we successfully derserialized into the new struct
