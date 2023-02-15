@@ -124,6 +124,7 @@ jobs:
           - "workspace"
           - "introspection"
           - "cloud"
+          - "snapshot"
           - "dashboard"
           - "dashboard_parsing_validation"
           - "exit_codes"

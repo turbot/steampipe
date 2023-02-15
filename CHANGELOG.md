@@ -5,6 +5,13 @@ _What's new?_
 * Adds an `sperr` error package along with sample implementation with the login cmd. ([#497](https://github.com/turbot/steampipe/issues/497))
 * Show the exported file location when --progress flag is enabled. ([#2860](https://github.com/turbot/steampipe/issues/2860))
 
+## v0.18.6 [2023-02-15]
+_Bug fixes_
+* Fix issue where inspect would not work with table names with a '.' (dot). ([#2455](https://github.com/turbot/steampipe/issues/2455))
+* Fix issue where autocomplete does not quote table names that need to be quoted. ([#3065](https://github.com/turbot/steampipe/issues/3065))
+* Fix issue where check csv output was appending an extra line at the end. ([#3106](https://github.com/turbot/steampipe/issues/3106))
+* Fixes issue where snapshot mode in query leads to duplicate rows in console/file output. ([#3112](https://github.com/turbot/steampipe/issues/3112))
+
 ## v0.18.5 [2023-02-07]
 _Bug fixes_
 * Fix double counting of control errors in benchmark summary. ([#3084](https://github.com/turbot/steampipe/issues/3084))
