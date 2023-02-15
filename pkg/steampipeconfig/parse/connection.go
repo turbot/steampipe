@@ -85,12 +85,6 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 						Subject:  &block.DefRange})
 					break
 				}
-				tableAggregationSpec, moreDiags := decodeTableAggregationSpec(connectionBlock.AsHCLBlock())
-				if moreDiags.HasErrors() {
-					diags = append(diags, moreDiags...)
-					break
-				}
-				connection.TableAggregationSpecs = append(connection.TableAggregationSpecs, tableAggregationSpec)
 			case modconfig.BlockTypeOptions:
 				// ignore
 			default:
@@ -113,30 +107,6 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 
 	return connection, diags
 
-}
-
-// DecodeOptions decodes an options block
-func decodeTableAggregationSpec(block *hcl.Block) (*modconfig.TableAggregationSpec, hcl.Diagnostics) {
-	var diags hcl.Diagnostics
-	res := &modconfig.TableAggregationSpec{}
-
-	diags = gohcl.DecodeBody(block.Body, nil, res)
-	if diags.HasErrors() {
-		return nil, diags
-	}
-
-	if len(block.Labels) > 0 {
-		// it is NOT valid for a table blockto have both a label and a match attribute
-		if res.Match != "" {
-			diags.Append(&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "table blocks cannot have both a label and a 'match' attribute",
-				Subject:  &block.DefRange})
-		}
-		res.Match = block.Labels[0]
-	}
-
-	return res, nil
 }
 
 // build a hcl string with all attributes in the conneciton config which are NOT specified in the coneciton block schema

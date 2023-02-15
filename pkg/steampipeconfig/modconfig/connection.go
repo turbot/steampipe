@@ -43,9 +43,6 @@ type Connection struct {
 	// unparsed HCL of plugin specific connection config
 	Config string `json:"config,omitempty"`
 
-	// // table aggregation specs
-	TableAggregationSpecs TableAggregationSpecs `json:"table_aggregation_specs,omitempty"`
-
 	// options
 	Options   *options.Connection `json:"options,omitempty"`
 	DeclRange Range               `json:"decl_range,omitempty"`
@@ -119,7 +116,6 @@ func (c *Connection) Equals(other *Connection) bool {
 		c.Type == other.Type &&
 		strings.Join(c.ConnectionNames, ",") == strings.Join(other.ConnectionNames, ",") &&
 		connectionOptionsEqual &&
-		c.TableAggregationSpecs.Equals(other.TableAggregationSpecs) &&
 		c.Config == other.Config
 }
 
