@@ -48,7 +48,8 @@ require (
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
 	github.com/turbot/go-kit v0.5.0
 	github.com/turbot/steampipe-cloud-sdk-go v0.5.0
-	github.com/turbot/steampipe-plugin-sdk/v5 v5.2.0-rc.7
+	// raw_connection_config
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.2.0-rc.6.0.20230216124746-aa5c659ecc67
 	github.com/xlab/treeprint v1.1.0
 	github.com/zclconf/go-cty v1.12.1
 	github.com/zclconf/go-cty-yaml v1.0.3
@@ -99,6 +100,7 @@ require (
 	github.com/eko/gocache/v3 v3.1.2 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/garyburd/redigo v1.6.3 // indirect
+	github.com/gertd/wild v0.0.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
