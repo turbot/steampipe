@@ -1,6 +1,6 @@
-New package `sperr`
+# New package `sperr`
 
-# `sperr.Error`
+## `sperr.Error`
 
 An `sperr.Error` is a stateful object with a `StackTrace` till the point of creation with a stack depth of `32` (`32` picked OTA)
 

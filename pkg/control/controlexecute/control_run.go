@@ -188,7 +188,6 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 	defer log.Printf("[TRACE] end ControlRun.Start: %s\n", r.Control.Name())
 
 	control := r.Control
-	log.Printf("[TRACE] control start, %s\n", control.Name())
 
 	startTime := time.Now()
 
