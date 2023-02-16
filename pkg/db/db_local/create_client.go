@@ -157,7 +157,6 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	// We want to wait for a LONG time for this to complete
 	// Use the context that was given - since that is tied to os.Signal
 	// and can be interrupted
-	statushooks.SetStatus(ctx, "Waiting for recovery")
 	err = db_common.WaitForRecovery(
 		ctx,
 		conn,

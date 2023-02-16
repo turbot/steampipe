@@ -21,7 +21,9 @@ import (
 )
 
 type InitData struct {
-	Status          string
+	// the current state that init is in
+	Status string
+	// if non-nil, this is called everytime the status changes
 	OnStatusChanged func(string)
 
 	Workspace *workspace.Workspace
