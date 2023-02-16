@@ -10,8 +10,8 @@ func NewInitStatusHook(initData *InitData) *InitStatusHook {
 	return hooks
 }
 
-func (h *InitStatusHook) SetStatus(arg string) {
-	h.initData.SetStatus(arg)
+func (h *InitStatusHook) SetStatus(status string) {
+	h.initData.SetStatus(status)
 }
 func (h *InitStatusHook) Done()             {}
 func (h *InitStatusHook) Message(...string) {}
