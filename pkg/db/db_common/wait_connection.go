@@ -3,6 +3,7 @@ package db_common
 import (
 	"context"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -11,6 +12,7 @@ import (
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -141,6 +143,11 @@ func WaitForRecovery(ctx context.Context, connection *pgx.Conn, waitOptions ...W
 		)
 	}
 
+	// this is to make sure that we set the
+	// "recovering" status only once, even if it's
+	// called from inside the retry loop
+	recoveryStatusUpdateOnce := &sync.Once{}
+
 	retryErr := retry.Do(ctx, retryBackoff, func(ctx context.Context) error {
 		log.Println("[TRACE] checking for recovery mode")
 		row := connection.QueryRow(ctx, "select pg_is_in_recovery();")
@@ -154,6 +161,11 @@ func WaitForRecovery(ctx context.Context, connection *pgx.Conn, waitOptions ...W
 		}
 		if isInRecovery {
 			log.Println("[TRACE] service is in recovery")
+
+			recoveryStatusUpdateOnce.Do(func() {
+				statushooks.SetStatus(ctx, "Database is recovering. This may take some time.")
+			})
+
 			return retry.RetryableError(ErrServiceInRecoveryMode)
 		}
 		return nil

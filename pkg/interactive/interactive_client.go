@@ -459,7 +459,12 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfi
 			c.cancelActiveQueryIfAny()
 		}()
 
-		statushooks.SetStatus(ctx, "Initializing...")
+		// show the current status of initialization in the spinner
+		statushooks.SetStatus(ctx, c.initData.Status)
+		// set up initdata so that we can update the spinner when the status changes
+		c.initData.InitData.OnStatusChanged = func(newStatus string) {
+			statushooks.SetStatus(ctx, newStatus)
+		}
 		// wait for client initialisation to complete
 		err := c.waitForInitData(queryCtx)
 		statushooks.Done(ctx)

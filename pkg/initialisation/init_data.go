@@ -3,7 +3,6 @@ package initialisation
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
@@ -13,6 +12,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/statushooks"
@@ -21,6 +21,11 @@ import (
 )
 
 type InitData struct {
+	// the current state that init is in
+	Status string
+	// if non-nil, this is called everytime the status changes
+	OnStatusChanged func(string)
+
 	Workspace *workspace.Workspace
 	Client    db_common.Client
 	Result    *db_common.InitResult
@@ -30,6 +35,13 @@ type InitData struct {
 
 	ShutdownTelemetry func()
 	ExportManager     *export.Manager
+}
+
+func (i *InitData) SetStatus(newStatus string) {
+	i.Status = newStatus
+	if i.OnStatusChanged != nil {
+		i.OnStatusChanged(newStatus)
+	}
 }
 
 func NewErrorInitData(err error) *InitData {
@@ -56,7 +68,11 @@ func (i *InitData) RegisterExporters(exporters ...export.Exporter) *InitData {
 	return i
 }
 
-func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *InitData) {
+func (i *InitData) Init(parentCtx context.Context, invoker constants.Invoker) (res *InitData) {
+	// create a context with the init hook in - which can be sent down to lower level operations
+	hook := NewInitStatusHook(i)
+	ctx := statushooks.AddStatusHooksToContext(parentCtx, hook)
+
 	defer func() {
 		if r := recover(); r != nil {
 			i.Result.Error = helpers.ToError(r)
@@ -69,6 +85,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 	// return ourselves
 	res = i
 
+	i.SetStatus("Initializing")
+
 	// initialise telemetry
 	shutdownTelemetry, err := telemetry.Init(constants.AppName)
 	if err != nil {
@@ -79,6 +97,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 
 	// install mod dependencies if needed
 	if viper.GetBool(constants.ArgModInstall) {
+		i.SetStatus("Installing workspace dependencies")
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgModLocation)}
 		_, err := modinstaller.InstallWorkspaceDependencies(opts)
 		if err != nil {
@@ -97,6 +116,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 	// set cloud metadata (may be nil)
 	i.Workspace.CloudMetadata = cloudMetadata
 
+	i.SetStatus("Checking for required plugins")
 	// check if the required plugins are installed
 	err = i.Workspace.CheckRequiredPluginsInstalled()
 	if err != nil {
@@ -155,8 +175,10 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) (res *In
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
 func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (client db_common.Client, err error) {
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
+		statushooks.SetStatus(ctx, "Connecting to Remote Steampipe")
 		client, err = db_client.NewDbClient(ctx, connectionString, onConnectionCallback)
 	} else {
+		statushooks.SetStatus(ctx, "Starting local Steampipe")
 		client, err = db_local.GetLocalClient(ctx, invoker, onConnectionCallback)
 	}
 	return client, err
