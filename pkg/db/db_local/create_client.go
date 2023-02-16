@@ -12,6 +12,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
 )
@@ -124,6 +125,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	defer cancel()
 
 	connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
+	statushooks.SetStatus(ctx, "Waiting for connection")
 	conn, err := db_common.WaitForConnection(
 		timeoutCtx,
 		connStr,
@@ -155,6 +157,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	// We want to wait for a LONG time for this to complete
 	// Use the context that was given - since that is tied to os.Signal
 	// and can be interrupted
+	statushooks.SetStatus(ctx, "Waiting for recovery")
 	err = db_common.WaitForRecovery(
 		ctx,
 		conn,
