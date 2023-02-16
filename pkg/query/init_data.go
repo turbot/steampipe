@@ -7,6 +7,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/initialisation"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -46,6 +47,10 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 			i.Result.Error = err
 			return i
 		}
+	}
+	if len(args) == 0 {
+		// NOTE: disable any status updates - we do not want any intialisation spinners
+		ctx = statushooks.DisableStatusHooks(ctx)
 	}
 
 	go i.init(ctx, w, args)

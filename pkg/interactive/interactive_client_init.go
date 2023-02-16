@@ -39,9 +39,16 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	}
 
 	if initResult.HasMessages() {
-		// hide the prompt in the next prompt render cycle
-		c.hidePrompt = true
+		// clear the prompt
+		// NOTE: this must be done BEFORE setting hidePrompt
+		// otherwise the cursor calculations in go-prompt do not work and multi-line test is not cleared
 		c.interactivePrompt.ClearLine()
+		// set the flag hide the prompt prefix in the next prompt render cycle
+		c.hidePrompt = true
+		// call ClearLine to render the empty prefix
+		c.interactivePrompt.ClearLine()
+
+		// display messages
 		initResult.DisplayMessages()
 		// show the prompt again
 		c.hidePrompt = false
@@ -90,11 +97,6 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 			c.initData.Result.Error = err
 		}
 	}
-
-	// Trigger a re-render of the prompt, so that the prompt actually shows up,
-	// since the prompt may have been removed by the installation spinner
-	c.interactivePrompt.Render()
-
 }
 
 func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {
