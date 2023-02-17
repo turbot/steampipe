@@ -3,7 +3,6 @@ package initialisation
 import (
 	"context"
 	"fmt"
-
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -50,9 +49,8 @@ func NewErrorInitData(err error) *InitData {
 	}
 }
 
-func NewInitData(w *workspace.Workspace) *InitData {
+func NewInitData() *InitData {
 	i := &InitData{
-		Workspace:     w,
 		Result:        &db_common.InitResult{},
 		ExportManager: export.NewManager(),
 	}
@@ -68,11 +66,7 @@ func (i *InitData) RegisterExporters(exporters ...export.Exporter) *InitData {
 	return i
 }
 
-func (i *InitData) Init(parentCtx context.Context, invoker constants.Invoker) (res *InitData) {
-	// create a context with the init hook in - which can be sent down to lower level operations
-	hook := NewInitStatusHook(i)
-	ctx := statushooks.AddStatusHooksToContext(parentCtx, hook)
-
+func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	defer func() {
 		if r := recover(); r != nil {
 			i.Result.Error = helpers.ToError(r)
@@ -82,8 +76,6 @@ func (i *InitData) Init(parentCtx context.Context, invoker constants.Invoker) (r
 			i.Result.Error = ctx.Err()
 		}
 	}()
-	// return ourselves
-	res = i
 
 	i.SetStatus("Initializing")
 
