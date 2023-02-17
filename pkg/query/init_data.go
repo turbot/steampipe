@@ -2,7 +2,6 @@ package query
 
 import (
 	"context"
-	"fmt"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
@@ -24,36 +23,11 @@ type InitData struct {
 // It also starts an asynchronous population of the object
 // InitData.Done closes after asynchronous initialization completes
 func NewInitData(ctx context.Context, args []string) *InitData {
-	// load the workspace
-	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
-	if errAndWarnings.GetError() != nil {
-		return &InitData{
-			InitData: *initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", errAndWarnings.GetError().Error())),
-		}
-	}
-
 	i := &InitData{
-		InitData: *initialisation.NewInitData(w),
+		InitData: *initialisation.NewInitData(),
 		Loaded:   make(chan struct{}),
 	}
-	// add any warnings
-	i.Result.AddWarnings(errAndWarnings.Warnings...)
-
-	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
-		i.RegisterExporters(queryExporters()...)
-
-		// validate required export formats
-		if err := i.ExportManager.ValidateExportFormat(viper.GetStringSlice(constants.ArgExport)); err != nil {
-			i.Result.Error = err
-			return i
-		}
-	}
-	if len(args) == 0 {
-		// NOTE: disable any status updates - we do not want any intialisation spinners
-		ctx = statushooks.DisableStatusHooks(ctx)
-	}
-
-	go i.init(ctx, w, args)
+	go i.init(ctx, args)
 
 	return i
 }
@@ -89,14 +63,41 @@ func (i *InitData) Cleanup(ctx context.Context) {
 	}
 }
 
-func (i *InitData) init(ctx context.Context, w *workspace.Workspace, args []string) {
+func (i *InitData) init(parentCtx context.Context, args []string) {
 	defer func() {
 		close(i.Loaded)
 		// clear the cancelInitialisation function
 		i.cancelInitialisation = nil
 	}()
+	// create a context with the init hook in - which can be sent down to lower level operations
+	hook := initialisation.NewInitStatusHook(&i.InitData)
+	ctx := statushooks.AddStatusHooksToContext(parentCtx, hook)
+
+	// validate export args
+	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
+		i.RegisterExporters(queryExporters()...)
+
+		// validate required export formats
+		if err := i.ExportManager.ValidateExportFormat(viper.GetStringSlice(constants.ArgExport)); err != nil {
+			i.Result.Error = err
+			return
+		}
+	}
+
+	statushooks.SetStatus(ctx, "Loading workspace")
+	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
+	if errAndWarnings.GetError() != nil {
+		i.Result.Error = errAndWarnings.GetError()
+		return
+	}
+	i.Result.AddWarnings(errAndWarnings.Warnings...)
+	i.Workspace = w
+
 	// set max DB connections to 1
 	viper.Set(constants.ArgMaxParallel, 1)
+
+	statushooks.SetStatus(ctx, "Resolving arguments")
+
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
 	resolvedQueries, preparedStatementSource, err := w.GetQueriesFromArgs(args)
 	if err != nil {
