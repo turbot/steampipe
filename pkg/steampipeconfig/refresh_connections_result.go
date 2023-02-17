@@ -13,6 +13,7 @@ type RefreshConnectionResult struct {
 	modconfig.ErrorAndWarnings
 	UpdatedConnections bool
 	Updates            *ConnectionUpdates
+	FailedConnections  map[string]string
 }
 
 func (r *RefreshConnectionResult) Merge(other *RefreshConnectionResult) {
@@ -26,6 +27,11 @@ func (r *RefreshConnectionResult) Merge(other *RefreshConnectionResult) {
 		r.Error = other.Error
 	}
 	r.Warnings = append(r.Warnings, other.Warnings...)
+	for c, err := range other.FailedConnections {
+		if _, ok := r.FailedConnections[c]; !ok {
+			r.AddFailedConnection(c, err)
+		}
+	}
 }
 
 func (r *RefreshConnectionResult) String() string {
@@ -38,4 +44,12 @@ func (r *RefreshConnectionResult) String() string {
 	}
 	op.WriteString(fmt.Sprintf("UpdatedConnections: %v\n", r.UpdatedConnections))
 	return op.String()
+}
+
+func (r *RefreshConnectionResult) AddFailedConnection(c string, failure string) {
+	if r.FailedConnections == nil {
+		r.FailedConnections = make(map[string]string)
+	}
+
+	r.FailedConnections[c] = failure
 }

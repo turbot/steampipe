@@ -69,7 +69,7 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 	requiredSearchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 
-	searchPath, err := c.ContructSearchPath(ctx, requiredSearchPath, searchPathPrefix)
+	searchPath, err := c.ConstructSearchPath(ctx, requiredSearchPath, searchPathPrefix)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func (c *DbClient) GetRequiredSessionSearchPath() []string {
 	return c.requiredSessionSearchPath
 }
 
-func (c *DbClient) ContructSearchPath(ctx context.Context, customSearchPath, searchPathPrefix []string) ([]string, error) {
+func (c *DbClient) ConstructSearchPath(ctx context.Context, customSearchPath, searchPathPrefix []string) ([]string, error) {
 	// strip empty elements from search path and prefix
 	customSearchPath = helpers.RemoveFromStringSlice(customSearchPath, "")
 	searchPathPrefix = helpers.RemoveFromStringSlice(searchPathPrefix, "")

@@ -38,6 +38,11 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context, forceUpdateConne
 		if res.Error == nil && connectionUpdates.ConnectionStateModified || res.UpdatedConnections {
 			// now serialise the connection state
 
+			// NOTE: remove any connection which failed
+			for c := range res.FailedConnections {
+				delete(connectionUpdates.RequiredConnectionState, c)
+			}
+
 			// update required connections with the schema mode from the connection state and schema hash from the hash map
 			if err := connectionUpdates.RequiredConnectionState.Save(); err != nil {
 				res.Error = err

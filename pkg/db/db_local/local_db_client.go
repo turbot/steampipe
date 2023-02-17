@@ -159,8 +159,8 @@ func (c *LocalDbClient) GetRequiredSessionSearchPath() []string {
 	return c.client.GetRequiredSessionSearchPath()
 }
 
-func (c *LocalDbClient) ContructSearchPath(ctx context.Context, requiredSearchPath, searchPathPrefix []string) ([]string, error) {
-	return c.client.ContructSearchPath(ctx, requiredSearchPath, searchPathPrefix)
+func (c *LocalDbClient) ConstructSearchPath(ctx context.Context, requiredSearchPath, searchPathPrefix []string) ([]string, error) {
+	return c.client.ConstructSearchPath(ctx, requiredSearchPath, searchPathPrefix)
 }
 
 // GetSchemaFromDB for LocalDBClient optimises the schema extraction by extracting schema
