@@ -199,6 +199,11 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 	fmt.Println(treeString)
 }
 
+// VerifyMod Location
+func verifyModLocation() {
+
+}
+
 // init
 func modInitCmd() *cobra.Command {
 	var cmd = &cobra.Command{
@@ -225,6 +230,7 @@ func runModInitCmd(cmd *cobra.Command, _ []string) {
 	workspacePath := viper.GetString(constants.ArgModLocation)
 	if parse.ModfileExists(workspacePath) {
 		fmt.Println("Working folder already contains a mod definition file")
+		// add function VerifyModLocation to check if it's in the home directory
 		return
 	}
 	mod := modconfig.CreateDefaultMod(workspacePath)
