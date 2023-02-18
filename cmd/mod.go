@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -200,8 +201,14 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 }
 
 // VerifyMod Location
-func verifyModLocation() {
+func verifyModLocation(workspacepath string, homedir string) bool {
+	if workspacepath == homedir {
+		fmt.Println("Are you sure you want to continue? Y/N")
+		modLocationinHome := true
+		return modLocationinHome
+	}
 
+	return false
 }
 
 // init
@@ -228,9 +235,12 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 	workspacePath := viper.GetString(constants.ArgModLocation)
+	// Add testing so I can run this and verify
+	home, _ := os.UserHomeDir()
+	verifyModLocation(workspacePath, home)
 	if parse.ModfileExists(workspacePath) {
 		fmt.Println("Working folder already contains a mod definition file")
-		// add function VerifyModLocation to check if it's in the home directory
+
 		return
 	}
 	mod := modconfig.CreateDefaultMod(workspacePath)
