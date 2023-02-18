@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -203,9 +204,25 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 // VerifyMod Location
 func verifyModLocation(workspacepath string, homedir string) bool {
 	if workspacepath == homedir {
-		fmt.Println("Are you sure you want to continue? Y/N")
-		modLocationinHome := true
-		return modLocationinHome
+		fmt.Println("It looks like you're in the home directory, are you sure you want to continue? Y/N")
+		var userConfirm rune
+		_, err := fmt.Scanf("%c", &userConfirm)
+		if err != nil {
+			log.Fatal(err)
+		}
+		keepMod := userConfirm == 'Y' || userConfirm == 'y'
+
+		if keepMod == true {
+			fmt.Println("continuing installation")
+			return keepMod
+		} else {
+			fmt.Println("Stopping mod installation")
+			// Not sure what's the best way to exit here, this is probably too aggressive but I'm new here :)
+			os.Exit(0)
+			return false
+		}
+
+		//return modLocationinHome
 	}
 
 	return false
