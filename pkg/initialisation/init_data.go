@@ -3,6 +3,7 @@ package initialisation
 import (
 	"context"
 	"fmt"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -155,10 +156,10 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
 func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (client db_common.Client, err error) {
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
-		statushooks.SetStatus(ctx, "Connecting to Remote Steampipe")
+		statushooks.SetStatus(ctx, "Connecting to remote Steampipe database")
 		client, err = db_client.NewDbClient(ctx, connectionString, onConnectionCallback)
 	} else {
-		statushooks.SetStatus(ctx, "Starting local Steampipe")
+		statushooks.SetStatus(ctx, "Starting local Steampipe database")
 		client, err = db_local.GetLocalClient(ctx, invoker, onConnectionCallback)
 	}
 	return client, err
