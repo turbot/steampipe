@@ -409,7 +409,6 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 	progressBars.Stop()
 	refreshConnectionsIfNecessary(ctx, updateResults, false)
-	fmt.Println()
 	display.PrintInstallReports(updateResults, true)
 
 	// a concluding blank line - since we always output multiple lines
