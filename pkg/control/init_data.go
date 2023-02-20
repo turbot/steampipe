@@ -24,15 +24,11 @@ type InitData struct {
 // NewInitData returns a new InitData object
 // It also starts an asynchronous population of the object
 // InitData.Done closes after asynchronous initialization completes
-func NewInitData(parentCtx context.Context) *InitData {
+func NewInitData(ctx context.Context) *InitData {
 	// create InitData, but do not initialize yet, since 'viper' is not completely setup
 	i := &InitData{
 		InitData: *initialisation.NewInitData(),
 	}
-
-	// create a context with the init hook in - which can be sent down to lower level operations
-	hook := initialisation.NewInitStatusHook(&i.InitData)
-	ctx := statushooks.AddStatusHooksToContext(parentCtx, hook)
 
 	statushooks.SetStatus(ctx, "Loading workspace")
 	defer statushooks.Done(ctx)

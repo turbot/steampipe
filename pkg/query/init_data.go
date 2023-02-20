@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
@@ -13,6 +14,12 @@ import (
 
 type InitData struct {
 	initialisation.InitData
+
+	// the current state that init is in
+	Status string
+	// if non-nil, this is called everytime the status changes
+	OnStatusChanged func(string)
+
 	cancelInitialisation context.CancelFunc
 	Loaded               chan struct{}
 	// map of query name to resolved query (key is the query text for command line queries)
@@ -30,6 +37,13 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 	go i.init(ctx, args)
 
 	return i
+}
+
+func (i *InitData) SetStatus(newStatus string) {
+	i.Status = newStatus
+	if i.OnStatusChanged != nil {
+		i.OnStatusChanged(newStatus)
+	}
 }
 
 func queryExporters() []export.Exporter {
@@ -69,8 +83,9 @@ func (i *InitData) init(parentCtx context.Context, args []string) {
 		// clear the cancelInitialisation function
 		i.cancelInitialisation = nil
 	}()
+
 	// create a context with the init hook in - which can be sent down to lower level operations
-	hook := initialisation.NewInitStatusHook(&i.InitData)
+	hook := NewQueryInitStatusHook(i)
 	ctx := statushooks.AddStatusHooksToContext(parentCtx, hook)
 
 	// validate export args

@@ -20,11 +20,6 @@ import (
 )
 
 type InitData struct {
-	// the current state that init is in
-	Status string
-	// if non-nil, this is called everytime the status changes
-	OnStatusChanged func(string)
-
 	Workspace *workspace.Workspace
 	Client    db_common.Client
 	Result    *db_common.InitResult
@@ -34,13 +29,6 @@ type InitData struct {
 
 	ShutdownTelemetry func()
 	ExportManager     *export.Manager
-}
-
-func (i *InitData) SetStatus(newStatus string) {
-	i.Status = newStatus
-	if i.OnStatusChanged != nil {
-		i.OnStatusChanged(newStatus)
-	}
 }
 
 func NewErrorInitData(err error) *InitData {
@@ -77,7 +65,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		}
 	}()
 
-	i.SetStatus("Initializing")
+	statushooks.SetStatus(ctx, "Initializing")
 
 	// initialise telemetry
 	shutdownTelemetry, err := telemetry.Init(constants.AppName)
@@ -89,7 +77,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 
 	// install mod dependencies if needed
 	if viper.GetBool(constants.ArgModInstall) {
-		i.SetStatus("Installing workspace dependencies")
+		statushooks.SetStatus(ctx, "Installing workspace dependencies")
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgModLocation)}
 		_, err := modinstaller.InstallWorkspaceDependencies(opts)
 		if err != nil {
@@ -108,7 +96,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	// set cloud metadata (may be nil)
 	i.Workspace.CloudMetadata = cloudMetadata
 
-	i.SetStatus("Checking for required plugins")
+	statushooks.SetStatus(ctx, "Checking for required plugins")
 	// check if the required plugins are installed
 	err = i.Workspace.CheckRequiredPluginsInstalled()
 	if err != nil {
