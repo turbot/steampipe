@@ -222,8 +222,21 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 
 	// if the service was started
 	if startResult.Status == db_local.ServiceStarted {
+
+		//
+		// this is required since RefreshConnectionAndSearchPaths may end up
+		// displaying warnings
+		//
+		// At the moment warnings is implemented in error_helpers.ShowWarning
+		// which does not have access to the working context and in effect the
+		// status spinner
+		//
+		// TODO: fix this
+		statushooks.Done(ctx)
+		muteCtx := statushooks.DisableStatusHooks(ctx)
+
 		// do
-		err = db_local.RefreshConnectionAndSearchPaths(ctx, invoker)
+		err = db_local.RefreshConnectionAndSearchPaths(muteCtx, invoker)
 		if err != nil {
 			_, err1 := db_local.StopServices(ctx, false, constants.InvokerService)
 			if err1 != nil {
@@ -419,7 +432,7 @@ to force a restart.
 	viper.Set(constants.ArgServicePassword, currentDbState.Password)
 
 	// start db
-	dbStartResult := db_local.StartServices(cmd.Context(), currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
+	dbStartResult := db_local.StartServices(ctx, currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
 	error_helpers.FailOnError(dbStartResult.Error)
 	if dbStartResult.Status == db_local.ServiceFailedToStart {
 		exitCode = constants.ExitCodeServiceStartupFailure
@@ -427,8 +440,19 @@ to force a restart.
 		return
 	}
 
+	// this is required since RefreshConnectionAndSearchPaths may end up
+	// displaying warnings
+	//
+	// At the moment warnings is implemented in error_helpers.ShowWarning
+	// which does not have access to the working context and in effect the
+	// status spinner
+	//
+	// TODO: fix this
+	statushooks.Done(ctx)
+	muteCtx := statushooks.DisableStatusHooks(ctx)
+
 	// refresh connections
-	err = db_local.RefreshConnectionAndSearchPaths(cmd.Context(), constants.InvokerService)
+	err = db_local.RefreshConnectionAndSearchPaths(muteCtx, constants.InvokerService)
 	if err != nil {
 		exitCode = constants.ExitCodeServiceSetupFailure
 		error_helpers.FailOnError(err)
