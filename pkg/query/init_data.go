@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -102,7 +103,7 @@ func (i *InitData) init(parentCtx context.Context, args []string) {
 	statushooks.SetStatus(ctx, "Loading workspace")
 	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
 	if errAndWarnings.GetError() != nil {
-		i.Result.Error = errAndWarnings.GetError()
+		i.Result.Error = fmt.Errorf("failed to load workspace: %s", errAndWarnings.GetError().Error())
 		return
 	}
 	i.Result.AddWarnings(errAndWarnings.Warnings...)
