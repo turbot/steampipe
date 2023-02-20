@@ -8,8 +8,29 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
+type variableInfo struct {
+	Name         string `json:"name"`
+	Type         string `json:"type"`
+	Description  string `json:"description"`
+	ValueDefault string `json:"value_default"`
+	Value        string `json:"value"`
+	ModName      string `json:"mod_name"`
+}
+
 func ShowVarsListJson(vars []*modconfig.Variable) {
-	jsonOutput, err := json.MarshalIndent(vars, "", "  ")
+	var jsonStructs []variableInfo
+	for _, v := range vars {
+		jv := variableInfo{
+			Name:         v.ShortName,
+			Type:         v.TypeString,
+			Description:  v.GetDescription(),
+			ValueDefault: fmt.Sprintf("%v", v.DefaultGo),
+			Value:        fmt.Sprintf("%v", v.ValueGo),
+			ModName:      v.ModName,
+		}
+		jsonStructs = append(jsonStructs, jv)
+	}
+	jsonOutput, err := json.MarshalIndent(jsonStructs, "", "  ")
 	error_helpers.FailOnErrorWithMessage(err, "failed to marshal variables to JSON")
 
 	fmt.Println(string(jsonOutput))
