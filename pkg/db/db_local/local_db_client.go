@@ -101,149 +101,177 @@ func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) 
 			metadata.Schemas[s] = exemplarSchema
 		}
 	}
-
 	return metadata, nil
+
 }
-//
-//
-//func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
-//	statushooks.SetStatus(ctx, "Refreshing connections")
-//	res := c.refreshConnections(ctx, forceUpdateConnectionNames...)
-//	if res.Error != nil {
-//		return res
-//	}
-//
-//	statushooks.SetStatus(ctx, "Setting up functions")
-//	if err := refreshFunctions(ctx); err != nil {
-//		res.Error = err
-//		return res
-//	}
-//
-//	statushooks.SetStatus(ctx, "Loading schema")
-//	// reload the foreign schemas, in case they have changed
-//	if err := c.LoadSchemaNames(ctx); err != nil {
-//		res.Error = err
-//		return res
-//	}
-//
-//	cloneSchema := `-- Function: clone_foreign_schema(text, text)
-//
-//-- DROP FUNCTION clone_foreign_schema(text, text);
-//-- SELECT * FROM clone_foreign_schema('aws', 'aws2')
-//CREATE OR REPLACE FUNCTION clone_foreign_schema(
-//    source_schema text,
-//    dest_schema text)
-//    RETURNS text AS
-//$BODY$
-//
-//DECLARE
-//    src_oid          oid;
-//    object           text;
-//    dest_table       text;
-//    table_sql      text;
-//    columns_sql      text;
-//    type_            text;
-//    column_          text;
-//    res              text;
-//BEGIN
-//
-//    -- Check that source_schema exists
-//    SELECT oid INTO src_oid
-//    FROM pg_namespace
-//    WHERE nspname = source_schema;
-//    IF NOT FOUND
-//    THEN
-//        RAISE EXCEPTION 'source schema % does not exist!', source_schema;
-//        RETURN '';
-//    END IF;
-//
-//--     Check that dest_schema exists
-//    PERFORM nspname
-//    FROM pg_namespace
-//    WHERE nspname = dest_schema;
-//    IF NOT FOUND
-//    THEN
-//        RAISE EXCEPTION 'dest schema % does not exists!', dest_schema;
-//        RETURN '';
-//    END IF;
-//
-//-- Create tables
-//    FOR object IN
-//        SELECT TABLE_NAME::text
-//        FROM information_schema.tables
-//        WHERE table_schema = source_schema
-//          AND table_type = 'FOREIGN'
-//
-//        LOOP
-//            columns_sql := '';
-//
-//            FOR column_, type_ IN
-//                SELECT column_name::text, data_type::text
-//                FROM information_schema.COLUMNS
-//                WHERE table_schema = source_schema
-//                  AND TABLE_NAME = object
-//
-//                LOOP
-//
-//                    IF columns_sql <> ''
-//                    THEN
-//                        columns_sql = columns_sql || ',';
-//
-//                    END IF;
-//                    columns_sql = columns_sql || column_ || ' ' || type_;
-//
-//                END LOOP;
-//
-//            dest_table := '"' || dest_schema || '".' || quote_ident(object);
-//            table_sql :='CREATE FOREIGN TABLE ' || dest_table || ' (' || columns_sql || ') SERVER steampipe';
-//            EXECUTE table_sql;
-//
-//            select CONCAT(res, table_sql, ';') into res;
-//
-//
-//        END LOOP;
-//
-//
-//    RETURN res;
-//
-//END
-//
-//$BODY$
-//    LANGUAGE plpgsql VOLATILE
-//                     COST 100;
-//`
-//	_, err := executeSqlAsRoot(ctx, cloneSchema)
-//
-//	statushooks.SetStatus(ctx, "Loading steampipe connections")
-//	// load the connection state and cache it!
-//	connectionMap, _, err := steampipeconfig.GetConnectionState(c.ForeignSchemaNames())
-//	if err != nil {
-//		res.Error = err
-//		return res
-//	}
-//	res.ConnectionMap = connectionMap
-//	// set user search path first - client may fall back to using it
-//	statushooks.SetStatus(ctx, "Setting up search path")
-//
-//	// we need to send a muted ctx here since this function selects from the database
-//	// which by default puts up a "Loading" spinner. We don't want that here
-//	mutedCtx := statushooks.DisableStatusHooks(ctx)
-//	err = c.setUserSearchPath(mutedCtx)
-//	if err != nil {
-//		res.Error = err
-//		return res
-//	}
-//
-//	if err := c.SetRequiredSessionSearchPath(ctx); err != nil {
-//		res.Error = err
-//		return res
-//	}
-//
-//	// if there is an unprocessed db backup file, restore it now
-//	if err := restoreDBBackup(ctx); err != nil {
-//		res.Error = err
-//		return res
-//	}
-//
-//	return res
-//}
+
+func (c *LocalDbClient) buildSchemasQuery(schemas []string) string {
+	for idx, s := range schemas {
+		schemas[idx] = fmt.Sprintf("'%s'", s)
+	}
+
+	// build the schemas filter clause
+	schemaClause := ""
+	if len(schemas) > 0 {
+		schemaClause = fmt.Sprintf(`
+    cols.table_schema in (%s)
+	OR`, strings.Join(schemas, ","))
+	}
+
+	query := fmt.Sprintf(`
+SELECT
+    table_name,
+    column_name,
+    column_default,
+    is_nullable,
+    data_type,
+	udt_name,
+    table_schema,
+    (COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
+    (COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
+FROM
+    information_schema.columns cols
+LEFT JOIN
+    pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
+LEFT JOIN
+    pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
+WHERE %s
+	LEFT(cols.table_schema,8) = 'pg_temp_'
+`, schemaClause)
+	return query
+}
+
+func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
+	statushooks.SetStatus(ctx, "Refreshing connections")
+	res := c.refreshConnections(ctx, forceUpdateConnectionNames...)
+	if res.Error != nil {
+		return res
+	}
+
+	statushooks.SetStatus(ctx, "Setting up functions")
+	if err := refreshFunctions(ctx); err != nil {
+		res.Error = err
+		return res
+	}
+
+	statushooks.SetStatus(ctx, "Loading schema")
+	// reload the foreign schemas, in case they have changed
+	if err := c.LoadSchemaNames(ctx); err != nil {
+		res.Error = err
+		return res
+	}
+
+	cloneSchema := `-- Function: clone_foreign_schema(text, text)
+
+-- DROP FUNCTION clone_foreign_schema(text, text);
+-- SELECT * FROM clone_foreign_schema('aws', 'aws2')
+CREATE OR REPLACE FUNCTION clone_foreign_schema(
+    source_schema text,
+    dest_schema text,
+    plugin_name text)
+    RETURNS text AS
+$BODY$
+
+DECLARE
+    src_oid          oid;
+    object           text;
+    dest_table       text;
+    table_sql      text;
+    columns_sql      text;
+    type_            text;
+    column_          text;
+    res              text;
+BEGIN
+
+    -- Check that source_schema exists
+    SELECT oid INTO src_oid
+    FROM pg_namespace
+    WHERE nspname = source_schema;
+    IF NOT FOUND
+    THEN
+        RAISE EXCEPTION 'source schema % does not exist!', source_schema;
+        RETURN '';
+    END IF;
+
+-- Create schema
+    EXECUTE 'DROP SCHEMA IF EXISTS ' ||  dest_schema || ' CASCADE';
+    EXECUTE 'CREATE SCHEMA ' || dest_schema;
+    EXECUTE 'COMMENT ON SCHEMA ' || dest_schema || 'IS  ''steampipe plugin: ' || plugin_name;
+    EXECUTE 'GRANT USAGE ON SCHEMA ' || dest_schema || ' TO steampipe_users';
+    EXECUTE 'ALTER DEFAULT PRIVILEGES IN SCHEMA ' || dest_schema || 'GRANT SELECT ON TABLES TO steampipe_users';
+
+-- Create tables
+    FOR object IN
+        SELECT TABLE_NAME::text
+        FROM information_schema.tables
+        WHERE table_schema = source_schema
+          AND table_type = 'FOREIGN'
+
+        LOOP
+            columns_sql := '';
+
+            FOR column_, type_ IN
+                SELECT column_name::text, data_type::text
+                FROM information_schema.COLUMNS
+                WHERE table_schema = source_schema
+                  AND TABLE_NAME = object
+
+                LOOP
+
+                    IF columns_sql <> ''
+                    THEN
+                        columns_sql = columns_sql || ',';
+
+                    END IF;
+                    columns_sql = columns_sql || column_ || ' ' || type_;
+
+                END LOOP;
+
+            dest_table := '"' || dest_schema || '".' || quote_ident(object);
+            table_sql :='CREATE FOREIGN TABLE ' || dest_table || ' (' || columns_sql || ') SERVER steampipe';
+            EXECUTE table_sql;
+
+            SELECT CONCAT(res, table_sql, ';') into res;
+        END LOOP;
+    RETURN res;
+END
+
+$BODY$
+    LANGUAGE plpgsql VOLATILE
+                     COST 100;
+`
+	_, err := executeSqlAsRoot(ctx, cloneSchema)
+
+	statushooks.SetStatus(ctx, "Loading steampipe connections")
+	// load the connection state and cache it!
+	connectionMap, _, err := steampipeconfig.GetConnectionState(c.ForeignSchemaNames())
+	if err != nil {
+		res.Error = err
+		return res
+	}
+	res.ConnectionMap = connectionMap
+	// set user search path first - client may fall back to using it
+	statushooks.SetStatus(ctx, "Setting up search path")
+
+	// we need to send a muted ctx here since this function selects from the database
+	// which by default puts up a "Loading" spinner. We don't want that here
+	mutedCtx := statushooks.DisableStatusHooks(ctx)
+	err = c.setUserSearchPath(mutedCtx)
+	if err != nil {
+		res.Error = err
+		return res
+	}
+
+	if err := c.SetRequiredSessionSearchPath(ctx); err != nil {
+		res.Error = err
+		return res
+	}
+
+	// if there is an unprocessed db backup file, restore it now
+	if err := restoreDBBackup(ctx); err != nil {
+		res.Error = err
+		return res
+	}
+
+	return res
+}

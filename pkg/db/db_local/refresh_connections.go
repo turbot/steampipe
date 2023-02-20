@@ -194,10 +194,17 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
 		// if this schema is already in the plugin map, clone from it
 		// TODO take dynamic into account!!!
-		exemplarSchema, _ := pluginMap[connectionData.Plugin]
+		var q string
+		if exemplarSchema, ok := pluginMap[connectionData.Plugin]; ok {
+			// Clone the foreign schema into this connection.
+			q = fmt.Sprintf("select clone_foreign_schema('%s', '%s');", exemplarSchema, connectionName)
+		} else {
+			q = getUpdateConnectionQuery(connectionName, remoteSchema)
+		}
+
 		statements := []string{
 			"lock table pg_namespace;",
-			getUpdateConnectionQuery(connectionName, remoteSchema, exemplarSchema),
+			q,
 		}
 		_, err := executeSqlInTransaction(ctx, rootClient, statements...)
 		if err != nil {
@@ -262,7 +269,7 @@ func getCommentsQueryForPlugin(connectionName string, p *steampipeconfig.Connect
 	return statements.String()
 }
 
-func getUpdateConnectionQuery(localSchema, remoteSchema, exemplarSchema string) string {
+func getUpdateConnectionQuery(localSchema, remoteSchema string) string {
 	// escape the name
 	localSchema = db_common.PgEscapeName(localSchema)
 
@@ -288,15 +295,10 @@ func getUpdateConnectionQuery(localSchema, remoteSchema, exemplarSchema string) 
 	// should not actually do anything at this point.)
 	statements.WriteString(fmt.Sprintf("grant select on all tables in schema %s to steampipe_users;\n", localSchema))
 
-	if exemplarSchema != "" {
-		// Clone the foreign schema into this connection.
-		statements.WriteString(fmt.Sprintf("select clone_foreign_schema('%s', '%s');", exemplarSchema, localSchema))
-	} else {
-		log.Printf("[WARN] import foreign schema %s", localSchema)
-		// Import the foreign schema into this connection.
-		options := ""
-		statements.WriteString(fmt.Sprintf("import foreign schema \"%s\" from server steampipe into %s%s;\n", remoteSchema, localSchema, options))
-	}
+	log.Printf("[WARN] import foreign schema %s", localSchema)
+	// Import the foreign schema into this connection.
+	options := ""
+	statements.WriteString(fmt.Sprintf("import foreign schema \"%s\" from server steampipe into %s%s;\n", remoteSchema, localSchema, options))
 
 	return statements.String()
 }
