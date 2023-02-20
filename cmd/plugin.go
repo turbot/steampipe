@@ -216,7 +216,6 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
 
-	statusSpinner := statushooks.NewStatusSpinner()
 	progressBars := uiprogress.New()
 	installWaitGroup := &sync.WaitGroup{}
 	dataChannel := make(chan *display.PluginInstallReport, len(plugins))
@@ -237,9 +236,10 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	}
 
 	progressBars.Stop()
-	statusSpinner.UpdateSpinnerMessage("Refreshing connections...")
+
+	statushooks.SetStatus(ctx, "Refreshing connections...")
 	refreshConnectionsIfNecessary(ctx, installReports, true)
-	statusSpinner.Done()
+	statushooks.Done(ctx)
 	display.PrintInstallReports(installReports, false)
 
 	// a concluding blank line - since we always output multiple lines
@@ -373,13 +373,14 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		return
 	}
-	statusSpinner := statushooks.NewStatusSpinner(statushooks.WithMessage("Checking for available updates"))
 
-	timeoutCtx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
+	statushooks.SetStatus(ctx, "Checking for available updates")
+	defer statushooks.Done(ctx)
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	reports := plugin.GetUpdateReport(timeoutCtx, state.InstallationID, runUpdatesFor)
-	statusSpinner.Done()
 
 	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
@@ -528,7 +529,7 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 }
 
 // start service if necessary and refresh connections
-func refreshConnectionsIfNecessary(ctx context.Context, reports display.PluginInstallReports, shouldReload bool) error {
+func refreshConnectionsIfNecessary(parentCtx context.Context, reports display.PluginInstallReports, shouldReload bool) error {
 	// get count of skipped reports
 	skipped := 0
 	for _, report := range reports {
@@ -552,6 +553,10 @@ func refreshConnectionsIfNecessary(ctx context.Context, reports display.PluginIn
 		steampipeconfig.GlobalConfig = config
 	}
 
+	// create a new context with spinner disabled so that
+	// updates from the underlying layers don't end up in the
+	// ui
+	ctx := statushooks.DisableStatusHooks(parentCtx)
 	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
 	if err != nil {
 		return err
@@ -667,9 +672,9 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	}
 
 	reports := display.PluginRemoveReports{}
-	spinner := statushooks.NewStatusSpinner(statushooks.WithMessage(fmt.Sprintf("Uninstalling %s", utils.Pluralize("plugin", len(args)))))
+	statushooks.SetStatus(ctx, fmt.Sprintf("Uninstalling %s", utils.Pluralize("plugin", len(args))))
 	for _, p := range args {
-		spinner.SetStatus(fmt.Sprintf("Uninstalling %s", p))
+		statushooks.SetStatus(ctx, fmt.Sprintf("Uninstalling %s", p))
 		if report, err := plugin.Remove(ctx, p, connectionMap); err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				exitCode = constants.ExitCodePluginNotFound
@@ -680,7 +685,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 			reports = append(reports, *report)
 		}
 	}
-	spinner.Done()
+	statushooks.Done(ctx)
 	reports.Print()
 }
 

@@ -1,4 +1,4 @@
-package statushooks
+package cmd
 
 import (
 	"fmt"
@@ -10,14 +10,14 @@ import (
 	"github.com/karrick/gows"
 )
 
-//
 // spinner format:
 // <spinner><space><message><space><dot><dot><dot><cursor>
-// 		1	   1   [.......]   1     1    1    1     1
-// We need at least seven characters to show the spinner properly
+//
+//	1	   1   [.......]   1     1    1    1     1
+//
+// # We need at least seven characters to show the spinner properly
 //
 // Not using the (…) character, since it is too small
-//
 const minSpinnerWidth = 7
 
 // StatusSpinner is a struct which implements StatusHooks, and uses a spinner to display status messages
@@ -41,7 +41,14 @@ func WithDelay(delay time.Duration) StatusSpinnerOpt {
 	}
 }
 
-func NewStatusSpinner(opts ...StatusSpinnerOpt) *StatusSpinner {
+// this is used in the root command to setup a default cmd execution context
+// with a status spinner built in
+// to update this, use the statushooks.AddStatusHooksToContext
+//
+// We should never create a StatusSpinner directly. To use a spinner
+// DO NOT use a StatusSpinner directly, since using it may have
+// unintended side-effect around the spinner lifecycle
+func newStatusSpinnerHook(opts ...StatusSpinnerOpt) *StatusSpinner {
 	res := &StatusSpinner{}
 
 	res.spinner = spinner.New(
@@ -65,6 +72,24 @@ func (s *StatusSpinner) SetStatus(msg string) {
 	}
 }
 
+func (s *StatusSpinner) Message(msgs ...string) {
+	if s.spinner.Active() {
+		s.spinner.Stop()
+		defer s.spinner.Start()
+	}
+	for _, msg := range msgs {
+		fmt.Println(msg)
+	}
+}
+
+// Done implements StatusHooks
+func (s *StatusSpinner) Done() {
+	if s.cancel != nil {
+		close(s.cancel)
+	}
+	s.closeSpinner()
+}
+
 func (s *StatusSpinner) startSpinner() {
 	if s.cancel != nil {
 		// if there is a cancel channel, we are already waiting for the service to start after a delay
@@ -85,24 +110,6 @@ func (s *StatusSpinner) startSpinner() {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}()
-}
-
-func (s *StatusSpinner) Message(msgs ...string) {
-	if s.spinner.Active() {
-		s.spinner.Stop()
-		defer s.spinner.Start()
-	}
-	for _, msg := range msgs {
-		fmt.Println(msg)
-	}
-}
-
-// Done implements StatusHooks
-func (s *StatusSpinner) Done() {
-	if s.cancel != nil {
-		close(s.cancel)
-	}
-	s.closeSpinner()
 }
 
 // UpdateSpinnerMessage updates the message of the given spinner
