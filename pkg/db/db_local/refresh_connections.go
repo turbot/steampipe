@@ -1,5 +1,6 @@
 package db_local
 
+import "C"
 import (
 	"context"
 	"fmt"
@@ -12,9 +13,13 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
+	"log"
+	"strings"
 )
 
 func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
@@ -179,24 +184,26 @@ func executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *stea
 func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) error {
 	utils.LogTime("db.executeUpdateQueries start")
 	defer utils.LogTime("db.executeUpdateQueries end")
-	idx := 0
 	numUpdates := len(updates)
-
-	var builder strings.Builder
-
-	// TODO execute in single transaction???
+	idx := 1
+	pluginMap := make(map[string]string)
 	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
 	for connectionName, connectionData := range updates {
+		statushooks.SetStatus(ctx, fmt.Sprintf("Creating %d of %d %s", idx, numUpdates, utils.Pluralize("connection", numUpdates)))
+
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
+		// if this schema is already in the plugin map, clone from it
+		// TODO take dynamic into account!!!
+		exemplarSchema, _ := pluginMap[connectionData.Plugin]
 		statements := []string{
 			"lock table pg_namespace;",
-			getUpdateConnectionQuery(connectionName, remoteSchema),
+			getUpdateConnectionQuery(connectionName, remoteSchema, exemplarSchema),
 		}
 		_, err := executeSqlInTransaction(ctx, rootClient, statements...)
 		if err != nil {
 			return err
 		}
-		idx++
+		pluginMap[connectionData.Plugin] = connectionName
 	}
 
 	log.Printf("[TRACE] all update queries executed")
@@ -216,19 +223,19 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 	}
 
 	if viper.GetBool(constants.ArgSchemaComments) {
-		idx = 0
-		builder.Reset()
-		numCommentsUpdates := len(validatedPlugins)
-		log.Printf("[TRACE] executing %d comment %s", numCommentsUpdates, utils.Pluralize("query", numCommentsUpdates))
-
-		statements := []string{"lock table pg_namespace;"}
-		for connectionName, connectionPlugin := range validatedPlugins {
-			statements = append(statements, getCommentsQueryForPlugin(connectionName, connectionPlugin))
-		}
-		_, err := executeSqlInTransaction(ctx, rootClient, statements...)
-		if err != nil {
-			return err
-		}
+		//idx = 0
+		//builder.Reset()
+		//numCommentsUpdates := len(validatedPlugins)
+		//log.Printf("[TRACE] executing %d comment %s", numCommentsUpdates, utils.Pluralize("query", numCommentsUpdates))
+		//
+		//statements := []string{"lock table pg_namespace;"}
+		//for connectionName, connectionPlugin := range validatedPlugins {
+		//	statements = append(statements, getCommentsQueryForPlugin(connectionName, connectionPlugin))
+		//}
+		//_, err := executeSqlInTransaction(ctx, rootClient, statements...)
+		//if err != nil {
+		//	return err
+		//}
 	}
 
 	log.Printf("[TRACE] executeUpdateQueries complete")
@@ -255,7 +262,7 @@ func getCommentsQueryForPlugin(connectionName string, p *steampipeconfig.Connect
 	return statements.String()
 }
 
-func getUpdateConnectionQuery(localSchema, remoteSchema string) string {
+func getUpdateConnectionQuery(localSchema, remoteSchema, exemplarSchema string) string {
 	// escape the name
 	localSchema = db_common.PgEscapeName(localSchema)
 
@@ -281,8 +288,15 @@ func getUpdateConnectionQuery(localSchema, remoteSchema string) string {
 	// should not actually do anything at this point.)
 	statements.WriteString(fmt.Sprintf("grant select on all tables in schema %s to steampipe_users;\n", localSchema))
 
-	// Import the foreign schema into this connection.
-	statements.WriteString(fmt.Sprintf("import foreign schema \"%s\" from server steampipe into %s;\n", remoteSchema, localSchema))
+	if exemplarSchema != "" {
+		// Clone the foreign schema into this connection.
+		statements.WriteString(fmt.Sprintf("select clone_foreign_schema('%s', '%s');", exemplarSchema, localSchema))
+	} else {
+		log.Printf("[WARN] import foreign schema %s", localSchema)
+		// Import the foreign schema into this connection.
+		options := ""
+		statements.WriteString(fmt.Sprintf("import foreign schema \"%s\" from server steampipe into %s%s;\n", remoteSchema, localSchema, options))
+	}
 
 	return statements.String()
 }

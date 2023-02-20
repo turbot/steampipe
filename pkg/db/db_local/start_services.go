@@ -571,7 +571,7 @@ func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
 func ensureCommandSchema(ctx context.Context, rootClient *pgx.Conn) error {
 	commandSchemaStatements := []string{
 		"lock table pg_namespace;",
-		getUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
+		getUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema, ""),
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableCache),
 		fmt.Sprintf("grant select on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableScanMetadata),
 	}
