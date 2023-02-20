@@ -104,6 +104,9 @@ func logRefreshConnectionResults(updates *steampipeconfig.ConnectionUpdates, res
 }
 
 func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *steampipeconfig.ConnectionUpdates) *steampipeconfig.RefreshConnectionResult {
+	utils.LogTime("db.executeConnectionUpdateQueries start")
+	defer utils.LogTime("db.executeConnectionUpdateQueries start")
+
 	res := &steampipeconfig.RefreshConnectionResult{}
 	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
@@ -133,6 +136,7 @@ func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, conn
 	}
 
 	for c := range connectionUpdates.Delete {
+		utils.LogTime("delete connection start")
 		log.Printf("[TRACE] delete connection %s\n ", c)
 		query := getDeleteConnectionQuery(c)
 		_, err := rootClient.Exec(ctx, query)
@@ -140,12 +144,15 @@ func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, conn
 			res.Error = err
 			return res
 		}
+		utils.LogTime("delete connection end")
 	}
 
 	return res
 }
 
 func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) error {
+	utils.LogTime("db.executeUpdateQueries start")
+	defer utils.LogTime("db.executeUpdateQueries end")
 	idx := 0
 	numUpdates := len(updates)
 

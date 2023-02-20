@@ -13,7 +13,9 @@ type Client interface {
 	Close(ctx context.Context) error
 
 	ForeignSchemaNames() []string
-	LoadForeignSchemaNames(ctx context.Context) error
+	AllSchemaNames() []string
+
+	LoadSchemaNames(ctx context.Context) error
 	ConnectionMap() *steampipeconfig.ConnectionDataMap
 
 	GetCurrentSearchPath(context.Context) ([]string, error)

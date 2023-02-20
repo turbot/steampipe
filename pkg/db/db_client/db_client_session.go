@@ -3,7 +3,12 @@ package db_client
 import (
 	"context"
 	"fmt"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
+	"sort"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -24,10 +29,25 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 		}
 	}()
 
+	schemaNames := c.AllSchemaNames()
+
+	// TODO LOCKING????
 	// reload foreign schema names in case they changed based on a connection watcher event
-	if err := c.LoadForeignSchemaNames(ctx); err != nil {
+	if err := c.LoadSchemaNames(ctx); err != nil {
 		sessionResult.Error = err
 		return
+	}
+	newSchemaNames := c.AllSchemaNames()
+
+	sort.Strings(schemaNames)
+	sort.Strings(newSchemaNames)
+	if strings.Join(schemaNames, ",") != strings.Join(newSchemaNames, ",") {
+		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "dashboard")
+		if err != nil {
+			sessionResult.Error = err
+			return
+		}
+		steampipeconfig.GlobalConfig = config
 	}
 
 	// get a database connection and query its backend pid
