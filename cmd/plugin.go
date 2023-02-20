@@ -374,14 +374,12 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	statushooks.SetStatus(ctx, "Checking for available updates")
-	defer statushooks.Done(ctx)
-
 	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
+	statushooks.SetStatus(ctx, "Checking for available updates")
 	reports := plugin.GetUpdateReport(timeoutCtx, state.InstallationID, runUpdatesFor)
-
+	statushooks.Done(ctx)
 	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
 		// in which case we get back an empty map
@@ -409,11 +407,8 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	for updateResult := range dataChannel {
 		updateResults = append(updateResults, updateResult)
 	}
-	// prevent fdw update message
-	nullStatusHookCtx := statushooks.DisableStatusHooks(ctx)
-	refreshConnectionsIfNecessary(nullStatusHookCtx, updateResults, false)
 	progressBars.Stop()
-	fmt.Println()
+	refreshConnectionsIfNecessary(ctx, updateResults, false)
 	display.PrintInstallReports(updateResults, true)
 
 	// a concluding blank line - since we always output multiple lines
