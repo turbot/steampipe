@@ -8,7 +8,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-type json_var struct {
+type variableInfo struct {
 	Name         string `json:"name"`
 	Type         string `json:"type"`
 	Description  string `json:"description"`
@@ -18,9 +18,9 @@ type json_var struct {
 }
 
 func ShowVarsListJson(vars []*modconfig.Variable) {
-	var jsonStructs []json_var
+	var jsonStructs []variableInfo
 	for _, v := range vars {
-		jv := json_var{
+		jv := variableInfo{
 			Name:         v.ShortName,
 			Type:         v.TypeString,
 			Description:  v.GetDescription(),
