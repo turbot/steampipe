@@ -161,11 +161,7 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, for
 		return res
 	}
 
-	cloneSchema := `-- Function: clone_foreign_schema(text, text)
-
--- DROP FUNCTION clone_foreign_schema(text, text);
--- SELECT * FROM clone_foreign_schema('aws', 'aws2')
-CREATE OR REPLACE FUNCTION clone_foreign_schema(
+	cloneSchema := `CREATE OR REPLACE FUNCTION clone_foreign_schema(
     source_schema text,
     dest_schema text,
     plugin_name text)
@@ -196,9 +192,9 @@ BEGIN
 -- Create schema
     EXECUTE 'DROP SCHEMA IF EXISTS ' ||  dest_schema || ' CASCADE';
     EXECUTE 'CREATE SCHEMA ' || dest_schema;
-    EXECUTE 'COMMENT ON SCHEMA ' || dest_schema || 'IS  ''steampipe plugin: ' || plugin_name;
+--     EXECUTE 'COMMENT ON SCHEMA ' || dest_schema || 'IS  ''steampipe plugin: ' || plugin_name || '''';
     EXECUTE 'GRANT USAGE ON SCHEMA ' || dest_schema || ' TO steampipe_users';
-    EXECUTE 'ALTER DEFAULT PRIVILEGES IN SCHEMA ' || dest_schema || 'GRANT SELECT ON TABLES TO steampipe_users';
+    EXECUTE 'ALTER DEFAULT PRIVILEGES IN SCHEMA ' || dest_schema || ' GRANT SELECT ON TABLES TO steampipe_users';
 
 -- Create tables
     FOR object IN
@@ -217,14 +213,11 @@ BEGIN
                   AND TABLE_NAME = object
 
                 LOOP
-
                     IF columns_sql <> ''
                     THEN
                         columns_sql = columns_sql || ',';
-
                     END IF;
-                    columns_sql = columns_sql || column_ || ' ' || type_;
-
+                    columns_sql = columns_sql || quote_ident(column_) || ' ' || type_;
                 END LOOP;
 
             dest_table := '"' || dest_schema || '".' || quote_ident(object);

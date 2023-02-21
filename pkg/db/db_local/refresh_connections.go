@@ -196,9 +196,11 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 		// TODO take dynamic into account!!!
 		var q string
 		if exemplarSchema, ok := pluginMap[connectionData.Plugin]; ok {
+			//log.Printf("[WARN] clone %s into %s", exemplarSchema, connectionName)
 			// Clone the foreign schema into this connection.
-			q = fmt.Sprintf("select clone_foreign_schema('%s', '%s');", exemplarSchema, connectionName)
+			q = fmt.Sprintf("select clone_foreign_schema('%s', '%s', '%s');", exemplarSchema, connectionName, connectionData.Plugin)
 		} else {
+			log.Printf("[WARN] import foreign schema %s", connectionName)
 			q = getUpdateConnectionQuery(connectionName, remoteSchema)
 		}
 
@@ -295,7 +297,6 @@ func getUpdateConnectionQuery(localSchema, remoteSchema string) string {
 	// should not actually do anything at this point.)
 	statements.WriteString(fmt.Sprintf("grant select on all tables in schema %s to steampipe_users;\n", localSchema))
 
-	log.Printf("[WARN] import foreign schema %s", localSchema)
 	// Import the foreign schema into this connection.
 	options := ""
 	statements.WriteString(fmt.Sprintf("import foreign schema \"%s\" from server steampipe into %s%s;\n", remoteSchema, localSchema, options))
