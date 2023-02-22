@@ -2,8 +2,17 @@
 _What's new?_
 * Add support for aggregator connections with dynamic tables. ([#2886](https://github.com/turbot/steampipe/issues/2886))
 * Support updating of dynamic plugin schemas based on file watching events (e.g. a new csv file is created in a waytched location) ([#2767](https://github.com/turbot/steampipe/issues/2767))
-* Adds an `sperr` error package along with sample implementation with the login cmd. ([#497](https://github.com/turbot/steampipe/issues/497))
-* Show the exported file location when --progress flag is enabled. ([#2860](https://github.com/turbot/steampipe/issues/2860))
+* Make database start timeout configurable. ([#3038](https://github.com/turbot/steampipe/issues/3038))
+* When initialising interactive mode, instead of showing `Initializing...`, show the current status. ([#3108](https://github.com/turbot/steampipe/issues/3108))
+* Show the exported file location when `--progress` flag is enabled. ([#2860](https://github.com/turbot/steampipe/issues/2860))
+* For aggregator connections, add child connection names to connections.json. ([#3079](https://github.com/turbot/steampipe/issues/3079))
+* Cleanup connection state file to remove legacy properties. ([#3086](https://github.com/turbot/steampipe/issues/3086))
+* Make workspace loading asynchronous. ([#3123](https://github.com/turbot/steampipe/issues/3123))
+
+_Bug fixes_
+* Fixes issue where variables list command was not including description in JSON output. ([#3114](https://github.com/turbot/steampipe/issues/3114))
+* Ensure version display is consistent between startup and `--v` flag. ([#3031](https://github.com/turbot/steampipe/issues/3031))
+* When a plugin fails to load, remove connections for that plugin from the connection state file. ([#3124](https://github.com/turbot/steampipe/issues/3124))
 
 ## v0.18.6 [2023-02-15]
 _Bug fixes_
