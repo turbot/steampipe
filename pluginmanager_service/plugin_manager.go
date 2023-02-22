@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -147,8 +146,7 @@ func (m *PluginManager) SetConnectionConfigMap(configMap connectionwatcher.Conne
 }
 
 func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {
-	log.Printf("[TRACE] PluginManager Shutdown")
-	debug.PrintStack()
+	log.Printf("[INFO] PluginManager Shutdown")
 
 	m.mut.Lock()
 	defer func() {
@@ -164,7 +162,7 @@ func (m *PluginManager) Shutdown(req *proto.ShutdownRequest) (resp *proto.Shutdo
 			// shouldn't happen but has been observed in error situations
 			continue
 		}
-		log.Printf("[TRACE] killing plugin %s (%v)", name, p.reattach.Pid)
+		log.Printf("[INFO] PluginManager killing plugin %s (%v)", name, p.reattach.Pid)
 		p.client.Kill()
 	}
 	return &proto.ShutdownResponse{}, nil
