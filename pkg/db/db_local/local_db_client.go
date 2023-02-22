@@ -88,9 +88,14 @@ func (c *LocalDbClient) ForeignSchemaNames() []string {
 	return c.client.ForeignSchemaNames()
 }
 
-// LoadForeignSchemaNames implements Client
-func (c *LocalDbClient) LoadForeignSchemaNames(ctx context.Context) error {
-	return c.client.LoadForeignSchemaNames(ctx)
+// AllSchemaNames implements Client
+func (c *LocalDbClient) AllSchemaNames() []string {
+	return c.client.AllSchemaNames()
+}
+
+// LoadSchemaNames implements Client
+func (c *LocalDbClient) LoadSchemaNames(ctx context.Context) error {
+	return c.client.LoadSchemaNames(ctx)
 }
 
 func (c *LocalDbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
@@ -275,7 +280,7 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, for
 	}
 
 	// reload the foreign schemas, in case they have changed
-	if err := c.LoadForeignSchemaNames(ctx); err != nil {
+	if err := c.LoadSchemaNames(ctx); err != nil {
 		res.Error = err
 		return res
 	}

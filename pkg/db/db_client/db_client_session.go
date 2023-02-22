@@ -6,7 +6,12 @@ import (
 	"log"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common.AcquireSessionResult) {
@@ -24,10 +29,22 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 		}
 	}()
 
-	// reload foreign schema names in case they changed based on a connection watcher event
-	if err := c.LoadForeignSchemaNames(ctx); err != nil {
+	// save the current value of schema names, then reload the names and check for differences
+	schemaNames := c.AllSchemaNames()
+
+	// reload schema names in case they changed based on a connection watcher event
+	if err := c.LoadSchemaNames(ctx); err != nil {
 		sessionResult.Error = err
 		return
+	}
+
+	// if the schemas have changes, reset the desired search path
+	newSchemaNames := c.AllSchemaNames()
+	if !utils.StringSlicesEqual(schemaNames, newSchemaNames) {
+		if err := c.updateRequiredSearchPath(ctx); err != nil {
+			sessionResult.Error = err
+			return
+		}
 	}
 
 	// get a database connection and query its backend pid
@@ -64,6 +81,20 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	}
 
 	return sessionResult
+}
+
+// reload Steampipe config, update viper and re-set required search path
+func (c *DbClient) updateRequiredSearchPath(ctx context.Context) error {
+	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "dashboard")
+	if err != nil {
+		return err
+	}
+	steampipeconfig.GlobalConfig = config
+	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
+	if err := c.SetRequiredSessionSearchPath(ctx); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {

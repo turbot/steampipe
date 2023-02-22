@@ -38,6 +38,9 @@ type DbClient struct {
 
 	// list of connection schemas
 	foreignSchemaNames []string
+	// list of all local schemas
+	allSchemaNames []string
+
 	// if a custom search path or a prefix is used, store it here
 	customSearchPath []string
 	searchPathPrefix []string
@@ -83,7 +86,7 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 	}
 
 	// populate foreign schema names - this wil be updated whenever we acquire a session or refresh connections
-	if err := client.LoadForeignSchemaNames(ctx); err != nil {
+	if err := client.LoadSchemaNames(ctx); err != nil {
 		client.Close(ctx)
 		return nil, err
 	}
@@ -130,8 +133,13 @@ func (c *DbClient) ForeignSchemaNames() []string {
 	return c.foreignSchemaNames
 }
 
-// LoadForeignSchemaNames implements Client
-func (c *DbClient) LoadForeignSchemaNames(ctx context.Context) error {
+// AllSchemaNames implements Client
+func (c *DbClient) AllSchemaNames() []string {
+	return c.allSchemaNames
+}
+
+// LoadSchemaNames implements Client
+func (c *DbClient) LoadSchemaNames(ctx context.Context) error {
 	res, err := c.pool.Query(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
 	if err != nil {
 		return err
@@ -149,6 +157,21 @@ func (c *DbClient) LoadForeignSchemaNames(ctx context.Context) error {
 		}
 	}
 	c.foreignSchemaNames = foreignSchemaNames
+
+	res, err = c.pool.Query(ctx, "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' ORDER BY schema_name;")
+	if err != nil {
+		return err
+	}
+	var allSchemaNames []string
+	for res.Next() {
+		if err := res.Scan(&schema); err != nil {
+			return err
+		}
+		// ignore command schema
+		allSchemaNames = append(allSchemaNames, schema)
+	}
+	c.allSchemaNames = allSchemaNames
+
 	return nil
 }
 
