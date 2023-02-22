@@ -158,7 +158,7 @@ func (c *DbClient) LoadSchemaNames(ctx context.Context) error {
 	}
 	c.foreignSchemaNames = foreignSchemaNames
 
-	res, err = c.pool.Query(ctx, "SELECT schema_name FROM information_schema.schemata;")
+	res, err = c.pool.Query(ctx, "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' ORDER BY schema_name;")
 	if err != nil {
 		return err
 	}
