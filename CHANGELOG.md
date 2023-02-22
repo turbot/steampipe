@@ -1,7 +1,7 @@
 ## v0.19.0 [tbd]
 _What's new?_
 * Add support for aggregator connections with dynamic tables. ([#2886](https://github.com/turbot/steampipe/issues/2886))
-* Support updating of dynamic plugin schemas based on file watching events (e.g. a new csv file is created in a waytched location) ([#2767](https://github.com/turbot/steampipe/issues/2767))
+* Support updating of dynamic plugin schemas based on file watching events (e.g. a new csv file is created in a watched location) ([#2767](https://github.com/turbot/steampipe/issues/2767))
 * Make database start timeout configurable. ([#3038](https://github.com/turbot/steampipe/issues/3038))
 * When initialising interactive mode, instead of showing `Initializing...`, show the current status. ([#3077](https://github.com/turbot/steampipe/issues/3077))
 * Show the exported file location when `--progress` flag is enabled. ([#2860](https://github.com/turbot/steampipe/issues/2860))
