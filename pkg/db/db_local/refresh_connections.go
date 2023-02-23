@@ -4,6 +4,11 @@ import "C"
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"log"
+	"strings"
+	"sync"
+
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"log"
 	"strings"
@@ -188,8 +193,15 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 	idx := 1
 	pluginMap := make(map[string]string)
 	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
+	var wg sync.WaitGroup
+	var pluginMapMut sync.Mutex
+	var doneChan = make(chan struct{})
+	var errChan = make(chan (error))
 	for connectionName, connectionData := range updates {
-		statushooks.SetStatus(ctx, fmt.Sprintf("Creating %d of %d %s", idx, numUpdates, utils.Pluralize("connection", numUpdates)))
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			statushooks.SetStatus(ctx, fmt.Sprintf("Creating %d of %d %s", idx, numUpdates, utils.Pluralize("connection", numUpdates)))
 
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
 		// if this schema is already in the plugin map, clone from it
@@ -208,11 +220,33 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 			"lock table pg_namespace;",
 			q,
 		}
-		_, err := executeSqlInTransaction(ctx, rootClient, statements...)
-		if err != nil {
-			return err
+		_, err := executeSqlInTransaction(ctx, rootPool, statements...)
+			if err != nil {
+				errChan <- err
+				return
+
+			}
+			pluginMapMut.Lock()
+			pluginMap[connectionData.Plugin] = connectionName
+			pluginMapMut.Unlock()
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(doneChan)
+	}()
+
+	var errors []error
+connection_loop:
+	for {
+
+		select {
+		case err := <-errChan:
+			errors = append(errors, err)
+		case <-doneChan:
+			break connection_loop
 		}
-		pluginMap[connectionData.Plugin] = connectionName
 	}
 
 	log.Printf("[TRACE] all update queries executed")
