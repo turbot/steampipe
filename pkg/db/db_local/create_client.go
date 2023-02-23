@@ -121,15 +121,16 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	utils.LogTime("db_local.createMaintenanceClient start")
 	defer utils.LogTime("db_local.createMaintenanceClient end")
 
+	connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
+
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second)
 	defer cancel()
 
-	connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
 	statushooks.SetStatus(ctx, "Waiting for connection")
 	conn, err := db_common.WaitForConnection(
 		timeoutCtx,
 		connStr,
-		db_common.WithRetryInterval(constants.DBRecoveryRetryBackoff),
+		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
 		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second),
 	)
 	if err != nil {
@@ -147,7 +148,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	if err != nil {
 		conn.Close(ctx)
 		log.Println("[TRACE] Ping timed out")
-		return nil, err
+		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
 	}
 
 	// wait for recovery to complete
@@ -165,7 +166,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	if err != nil {
 		conn.Close(ctx)
 		log.Println("[TRACE] WaitForRecovery timed out")
-		return nil, sperr.Wrap(err, sperr.WithMessage("timed out waiting for recovery to complete"))
+		return nil, sperr.Wrap(err, sperr.WithMessage("could not complete recovery"))
 	}
 
 	return conn, nil
