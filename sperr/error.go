@@ -126,10 +126,13 @@ func (e *Error) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		io.WriteString(s, e.Error())
-		io.WriteString(s, "\n")
 
 		printStack := s.Flag('#')
 		printDetail := printStack || s.Flag('+')
+
+		if printDetail || printStack {
+			io.WriteString(s, "\n")
+		}
 
 		if printDetail {
 			io.WriteString(s, "\nDetails:\n")
