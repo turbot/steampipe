@@ -109,6 +109,65 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 	return conn, nil
 }
 
+// createConnectionPool
+func createConnectionPool(ctx context.Context, opts *CreateDbOptions) (*pgxpool.Pool, error) {
+	utils.LogTime("db_client.establishConnectionPool start")
+	defer utils.LogTime("db_client.establishConnectionPool end")
+
+	psqlInfo, err := getLocalSteampipeConnectionString(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	connConfig, err := pgxpool.ParseConfig(psqlInfo)
+	if err != nil {
+		return nil, err
+	}
+	//err = db_common.AddRootCertToConfig(&connConfig.ConnConfig, getRootCertLocation())
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+
+	const (
+		connMaxIdleTime = 1 * time.Minute
+		connMaxLifetime = 10 * time.Minute
+	)
+	minConnections := 2
+	maxConnections := 25 //db_common.MaxDbConnections()
+	if minConnections > maxConnections {
+		minConnections = maxConnections
+	}
+
+	connConfig.MaxConns = int32(maxConnections)
+	connConfig.MinConns = int32(minConnections)
+	connConfig.MaxConnLifetime = connMaxLifetime
+	connConfig.MaxConnIdleTime = connMaxIdleTime
+
+	// set an app name so that we can track database connections from this Steampipe execution
+	// this is used to determine whether the database can safely be closed
+	connConfig.ConnConfig.Config.RuntimeParams = map[string]string{
+		"application_name": runtime.PgClientAppName,
+	}
+
+	// this returns connection pool
+	dbPool, err := pgxpool.NewWithConfig(context.Background(), connConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db_common.WaitForPool(
+		ctx,
+		dbPool,
+		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
+		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return dbPool, nil
+}
+
 // createMaintenanceClient connects to the postgres server using the
 // maintenance database (postgres) and superuser
 // this is used in a couple of places

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"log"
 	"strings"
 	"sync"
@@ -193,59 +194,40 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 	idx := 1
 	pluginMap := make(map[string]string)
 	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
-	var wg sync.WaitGroup
-	var pluginMapMut sync.Mutex
-	var doneChan = make(chan struct{})
-	var errChan = make(chan (error))
+
+	cloneableConnections := make(steampipeconfig.ConnectionDataMap)
 	for connectionName, connectionData := range updates {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			statushooks.SetStatus(ctx, fmt.Sprintf("Creating %d of %d %s", idx, numUpdates, utils.Pluralize("connection", numUpdates)))
+		statushooks.SetStatus(ctx, fmt.Sprintf("Creating %d of %d %s", idx, numUpdates, utils.Pluralize("connection", numUpdates)))
 
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
 		// if this schema is already in the plugin map, clone from it
 		// TODO take dynamic into account!!!
 		var q string
-		if exemplarSchema, ok := pluginMap[connectionData.Plugin]; ok {
-			//log.Printf("[WARN] clone %s into %s", exemplarSchema, connectionName)
-			// Clone the foreign schema into this connection.
-			q = fmt.Sprintf("select clone_foreign_schema('%s', '%s', '%s');", exemplarSchema, connectionName, connectionData.Plugin)
-		} else {
-			log.Printf("[WARN] import foreign schema %s", connectionName)
-			q = getUpdateConnectionQuery(connectionName, remoteSchema)
+		if _, ok := pluginMap[connectionData.Plugin]; ok {
+			// TODO take dynamic into account!!!
+
+			cloneableConnections[connectionName] = connectionData
+			continue
 		}
+		log.Printf("[WARN] import foreign schema %s", connectionName)
+		q = getUpdateConnectionQuery(connectionName, remoteSchema)
 
 		statements := []string{
 			"lock table pg_namespace;",
 			q,
 		}
 		_, err := executeSqlInTransaction(ctx, rootPool, statements...)
-			if err != nil {
-				errChan <- err
-				return
 
-			}
-			pluginMapMut.Lock()
-			pluginMap[connectionData.Plugin] = connectionName
-			pluginMapMut.Unlock()
-		}()
+
+		if err != nil {
+			return err
+		}
+		pluginMap[connectionData.Plugin] = connectionName
 	}
 
-	go func() {
-		wg.Wait()
-		close(doneChan)
-	}()
-
-	var errors []error
-connection_loop:
-	for {
-
-		select {
-		case err := <-errChan:
-			errors = append(errors, err)
-		case <-doneChan:
-			break connection_loop
+	if len(cloneableConnections) > 0 {
+		if err := cloneConnectionSchemas(ctx, rootPool, pluginMap, cloneableConnections); err != nil {
+			return err
 		}
 	}
 
@@ -285,6 +267,59 @@ connection_loop:
 	return nil
 }
 
+func cloneConnectionSchemas(ctx context.Context, rootPool *pgxpool.Pool, pluginMap map[string]string, cloneableConnections steampipeconfig.ConnectionDataMap) error {
+	var wg sync.WaitGroup
+	var doneChan = make(chan struct{})
+	var errChan = make(chan error)
+	var pluginMapMut sync.Mutex
+
+	for n, d := range cloneableConnections {
+		wg.Add(1)
+
+		go func(connectionName string, connectionData *steampipeconfig.ConnectionData) {
+			//log.Printf("[WARN] start clone connection %s", connectionName)
+			defer wg.Done()
+			//statushooks.SetStatus(ctx, fmt.Sprintf("Creating %d of %d %s", idx, numUpdates, utils.Pluralize("connection", numUpdates)))
+
+			// this schema is already in the plugin map, clone from it
+			exemplarSchema := pluginMap[connectionData.Plugin]
+
+			// Clone the foreign schema into this connection.
+			q := fmt.Sprintf("select clone_foreign_schema('%s', '%s', '%s');", exemplarSchema, connectionName, connectionData.Plugin)
+			res, err := rootPool.Exec(ctx, q)
+			//log.Printf("[WARN] clone connection %s query returned", connectionName)
+			log.Println(res)
+
+			if err != nil {
+				errChan <- err
+				return
+
+			}
+			pluginMapMut.Lock()
+			pluginMap[connectionData.Plugin] = connectionName
+			pluginMapMut.Unlock()
+		}(n, d)
+	}
+
+	go func() {
+		wg.Wait()
+		close(doneChan)
+	}()
+
+	var errors []error
+connection_loop:
+	for {
+
+		select {
+		case err := <-errChan:
+			errors = append(errors, err)
+		case <-doneChan:
+			break connection_loop
+		}
+	}
+
+	return error_helpers.CombineErrors(errors...)
+}
 func getCommentsQueryForPlugin(connectionName string, p *steampipeconfig.ConnectionPlugin) string {
 	var statements strings.Builder
 	for t, schema := range p.ConnectionMap[connectionName].Schema.Schema {
