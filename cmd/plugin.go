@@ -685,12 +685,15 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 }
 
 func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult, error) {
+	statushooks.SetStatus(ctx, "Fetching connection map")
+	defer statushooks.Done(ctx)
 	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer client.Close(ctx)
-	res := client.RefreshConnectionAndSearchPaths(ctx)
+
+	res := client.RefreshConnectionAndSearchPaths(statushooks.DisableStatusHooks(ctx))
 	if res.Error != nil {
 		return nil, nil, res.Error
 	}
