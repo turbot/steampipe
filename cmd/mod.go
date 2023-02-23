@@ -202,8 +202,9 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 }
 
 // VerifyMod Location
-func verifyModLocation(workspacepath string, homedir string) bool {
-	if workspacepath == homedir {
+func verifyModLocation(workspacepath string) bool {
+	home, _ := os.UserHomeDir()
+	if workspacepath == home {
 		fmt.Println("It looks like you're in the home directory, are you sure you want to continue? Y/N")
 		var userConfirm rune
 		_, err := fmt.Scanf("%c", &userConfirm)
@@ -217,12 +218,10 @@ func verifyModLocation(workspacepath string, homedir string) bool {
 			return keepMod
 		} else {
 			fmt.Println("Stopping mod installation")
-			// Not sure what's the best way to exit here, this is probably too aggressive but I'm new here :)
+			// Not sure what's the best way to exit here, this is probably too aggressive, but I'm new here :)
 			os.Exit(0)
 			return false
 		}
-
-		//return modLocationinHome
 	}
 
 	return false
@@ -252,12 +251,9 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 	workspacePath := viper.GetString(constants.ArgModLocation)
-	// Add testing so I can run this and verify
-	home, _ := os.UserHomeDir()
-	verifyModLocation(workspacePath, home)
+	verifyModLocation(workspacePath)
 	if parse.ModfileExists(workspacePath) {
 		fmt.Println("Working folder already contains a mod definition file")
-
 		return
 	}
 	mod := modconfig.CreateDefaultMod(workspacePath)
