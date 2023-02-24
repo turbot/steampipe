@@ -16,9 +16,9 @@ echo "Working directory: $WD"
 echo "Install directory: $STEAMPIPE_INSTALL_DIR"
 steampipe query "select 1 as setup_complete"
 echo "Installation complete at $STEAMPIPE_INSTALL_DIR"
-echo "Installing CHAOS"
-steampipe plugin install chaos
-echo "Installed CHAOS"
+echo "Installing CHAOS and CHAOSDYNAMIC"
+steampipe plugin install chaos chaosdynamic
+echo "Installed CHAOS and CHAOSDYNAMIC"
 
 if [ $# -eq 0 ]; then
   # Run all test files
