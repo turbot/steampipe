@@ -26,13 +26,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "dynamic aggregator - column mismatch" {
-  skip
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_mismatch.spc
 
-  run steampipe query "select c1,c2,c3 from dyn_agg.t1 order by c3" --output json
+  run steampipe query "select c1,c2,c3 from dyn_agg.t1 order by c1,c2,c3" --output json
   echo $output
 
-  rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_same_table_cols.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_mismatch.spc
   assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_mismatch.json)"
 }
 
