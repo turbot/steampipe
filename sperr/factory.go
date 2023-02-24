@@ -1,6 +1,7 @@
 package sperr
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -124,14 +125,13 @@ func inferMessageFromError(err error) string {
 		errors.Is(err, sql.ErrTxDone) {
 		// all of these errors are errors.New with a string argument all prefixed with 'sql: '
 		constructedMsg = strings.TrimPrefix(err.Error(), "sql:")
+	} else if errors.Is(err, context.DeadlineExceeded) {
+		constructedMsg = "exceeded allowed timeout"
+	} else if errors.Is(err, context.Canceled) {
+		constructedMsg = "operation cancelled"
 	}
 
 	// Errors we need to wrap around and produce beautiful messages
-	// context.DeadlineExceeded
-	// context.TimeoutExceeded
-	// sql.ErrConnDone
-	// sql.ErrNoRows
-	// sql.ErrTxDone
 	// plugin.ErrChecksumsDoNotMatch
 	// plugin.ErrProcessNotFound
 	// plugin.ErrSecureConfigAndReattach
