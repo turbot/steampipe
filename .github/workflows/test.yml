@@ -116,6 +116,7 @@ jobs:
           - "search_path"
           - "chaos_and_query"
           - "dynamic_schema"
+          - "dynamic_aggregators"
           - "cache"
           - "mod_install"
           - "mod"
