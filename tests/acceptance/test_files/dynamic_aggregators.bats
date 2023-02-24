@@ -36,7 +36,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_mismatch.json)"
 }
 
-@test "dynamic aggregator - column type mismatch" {
+@test "dynamic aggregator - column type mismatch(string and int)" {
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch.spc
 
   run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
@@ -44,4 +44,34 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch.spc
   assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch.json)"
+}
+
+@test "dynamic aggregator - column type mismatch(string and double)" {
+  cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_2.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_2.spc
+
+  run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
+  echo $output
+
+  rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_2.spc
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_2.json)"
+}
+
+@test "dynamic aggregator - column type mismatch(string and bool)" {
+  cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_3.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_3.spc
+
+  run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
+  echo $output
+
+  rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_3.spc
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_3.json)"
+}
+
+@test "dynamic aggregator - column type mismatch(string and ipaddr)" {
+  cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_4.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_4.spc
+
+  run steampipe query "select c1, c2 from dyn_agg.t1 order by c1,c2" --output json
+  echo $output
+
+  rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_4.spc
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_4.json)"
 }
