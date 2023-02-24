@@ -7,9 +7,8 @@ import (
 )
 
 type queryCompletionInfo struct {
-	Table         string
-	EditingTable  bool
-	EditingColumn bool
+	Table        string
+	EditingTable bool
 }
 
 func getQueryInfo(text string) *queryCompletionInfo {
@@ -17,20 +16,14 @@ func getQueryInfo(text string) *queryCompletionInfo {
 	prevWord := getPreviousWord(text)
 
 	return &queryCompletionInfo{
-		Table:         table,
-		EditingTable:  isEditingTable(prevWord),
-		EditingColumn: isEditingColumn(prevWord, table),
+		Table:        table,
+		EditingTable: isEditingTable(prevWord),
 	}
 }
 
 func isEditingTable(prevWord string) bool {
 	var editingTable = prevWord == "from"
 	return editingTable
-}
-
-func isEditingColumn(prevWord string, table string) bool {
-	var editingColumn = prevWord == "where" || prevWord == "and" || prevWord == "or" && table != ""
-	return editingColumn
 }
 
 func getTable(text string) string {

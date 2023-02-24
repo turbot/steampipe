@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -62,9 +61,11 @@ type InteractiveClient struct {
 	// the schema metadata - this is loaded asynchronously during init
 	schemaMetadata *schema.Metadata
 	highlighter    *Highlighter
-	suggestions    []prompt.Suggest
 	// hidePrompt is used to render a blank as the prompt prefix
-	hidePrompt bool
+	hidePrompt       bool
+
+	querySuggestions []prompt.Suggest
+	tableSuggestions []prompt.Suggest
 }
 
 func getHighlighter(theme string) *Highlighter {
@@ -153,58 +154,6 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 			c.runInteractivePromptAsync(ctx, &promptResultChan)
 		}
 	}
-}
-
-func (c *InteractiveClient) initialiseSuggestions() {
-	var res []prompt.Suggest
-
-	workspaceModName := c.initData.Workspace.Mod.Name()
-	resourceFunc := func(item modconfig.HclResource) (continueWalking bool, err error) {
-		continueWalking = true
-
-		qp, ok := item.(modconfig.QueryProvider)
-		if !ok {
-			return
-		}
-		modTreeItem, ok := item.(modconfig.ModTreeItem)
-		if !ok {
-			return
-		}
-		if qp.GetQuery() == nil && qp.GetSQL() == nil {
-			return
-		}
-		rm := item.(modconfig.ResourceWithMetadata)
-		if rm.IsAnonymous() {
-			return
-		}
-		isLocal := modTreeItem.GetMod().Name() == workspaceModName
-		itemType := item.BlockType()
-		// only include global inputs
-		if itemType == modconfig.BlockTypeInput {
-			if _, ok := c.initData.Workspace.Mod.ResourceMaps.GlobalDashboardInputs[item.Name()]; !ok {
-				return
-			}
-		}
-		// special case for query
-		if itemType == modconfig.BlockTypeQuery {
-			itemType = "named query"
-		}
-		name := qp.Name()
-		if isLocal {
-			name = qp.GetUnqualifiedName()
-		}
-
-		res = append(res, c.addSuggestion(itemType, qp.GetDescription(), name))
-		return
-	}
-
-	c.workspace().GetResourceMaps().WalkResources(resourceFunc)
-
-	// sort the suggestions
-	sort.Slice(res, func(i, j int) bool {
-		return res[i].Text < res[j].Text
-	})
-	c.suggestions = res
 }
 
 // ClosePrompt cancels the running prompt, setting the action to take after close
@@ -590,55 +539,34 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		return nil
 	}
 
-	text := strings.TrimLeft(strings.ToLower(d.Text), " ")
-
-	if len(c.interactiveBuffer) > 0 {
-		text = strings.Join(append(c.interactiveBuffer, text), " ")
+	text := strings.TrimLeft(strings.ToLower(d.CurrentLine()), " ")
+	if len(text) == 0 && !c.autocompleteOnEmpty {
+		// if nothing has been typed yet, no point
+		// giving suggestions
+		return nil
 	}
 
 	var s []prompt.Suggest
 
-	if len(d.CurrentLine()) == 0 && !c.autocompleteOnEmpty {
-		// if nothing has been typed yet, no point
-		// giving suggestions
-		return s
-	}
-
-	if isFirstWord(text) {
+	switch {
+	case isFirstWord(text):
 		// add all we know that can be the first words
-
 		// named queries
-		s = append(s, c.suggestions...)
+		s = append(s, c.querySuggestions...)
 		// "select"
 		s = append(s, prompt.Suggest{Text: "select", Output: "select"}, prompt.Suggest{Text: "with", Output: "with"})
-
 		// metaqueries
 		s = append(s, metaquery.PromptSuggestions()...)
-
-	} else if metaquery.IsMetaQuery(text) {
-		client := c.client()
+	case metaquery.IsMetaQuery(text):
 		suggestions := metaquery.Complete(&metaquery.CompleterInput{
 			Query:            text,
-			TableSuggestions: GetTableAutoCompleteSuggestions(c.schemaMetadata, client.ConnectionMap()),
+			TableSuggestions: c.tableSuggestions,
 		})
-
 		s = append(s, suggestions...)
-	} else {
-		queryInfo := getQueryInfo(text)
-
-		// only add table suggestions if the client is initialised
-		if queryInfo.EditingTable && c.isInitialised() && c.schemaMetadata != nil {
-			s = append(s, GetTableAutoCompleteSuggestions(c.schemaMetadata, c.initData.Client.ConnectionMap())...)
+	default:
+		if queryInfo := getQueryInfo(text); queryInfo.EditingTable {
+			s = append(s, c.tableSuggestions...)
 		}
-
-		// Not sure this is working. comment out for now!
-		// if queryInfo.EditingColumn {
-		// 	fmt.Println(queryInfo.Table)
-		// 	for _, column := range schemaMetadata.ColumnMap[queryInfo.Table] {
-		// 		s = append(s, prompt.Suggest{Text: column})
-		// 	}
-		// }
-
 	}
 
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
