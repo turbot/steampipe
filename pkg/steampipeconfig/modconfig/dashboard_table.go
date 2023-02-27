@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
 
@@ -89,7 +90,7 @@ func (t *DashboardTable) Equals(other *DashboardTable) bool {
 }
 
 // OnDecoded implements HclResource
-func (t *DashboardTable) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (t *DashboardTable) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	t.setBaseProperties()
 	// populate columns map
 	if len(t.ColumnList) > 0 {
@@ -98,7 +99,7 @@ func (t *DashboardTable) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMap
 			t.Columns[c.Name] = c
 		}
 	}
-	return nil
+	return t.QueryProviderImpl.OnDecoded(block, resourceMapProvider)
 }
 
 func (t *DashboardTable) Diff(other *DashboardTable) *DashboardTreeItemDiffs {
