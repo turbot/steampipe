@@ -18,6 +18,7 @@
     "introspection_table_mod.control.sample_control_1"
    ]
   ],
+  "query": "introspection_table_mod.query.sample_query_1",
   "resource_name": "sample_control_1",
   "severity": "high",
   "source_definition": "control \"sample_control_1\" {\n  title = \"Sample control 1\"\n  description = \"Sample control to test introspection functionality\"\n  query = query.sample_query_1\n  severity = \"high\"\n  tags = {\n    \"foo\": \"bar\"\n  }\n}",

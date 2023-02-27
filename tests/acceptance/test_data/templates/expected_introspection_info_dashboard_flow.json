@@ -19,6 +19,7 @@
   ],
   "params": null,
   "path": null,
+  "query": null,
   "resource_name": "sample_flow_1",
   "source_definition": "    flow \"sample_flow_1\" {\n      title = \"Sample flow 1\"\n      width = 3\n\n      node \"sample_node_1\" {\n        sql = <<-EOQ\n          select 1 as node\n        EOQ\n      }\n      edge \"sample_edge_1\" {\n        sql = <<-EOQ\n          select 1 as edge\n        EOQ\n      }\n    }",
   "sql": null,
