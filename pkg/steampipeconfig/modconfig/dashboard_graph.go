@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -71,7 +72,7 @@ func (g *DashboardGraph) OnDecoded(block *hcl.Block, resourceMapProvider Resourc
 	if len(g.Edges) > 0 {
 		g.EdgeNames = g.Edges.Names()
 	}
-	return nil
+	return g.QueryProviderImpl.OnDecoded(block, resourceMapProvider)
 }
 
 // TODO [node_reuse] Add DashboardLeafNodeImpl and move this there https://github.com/turbot/steampipe/issues/2926
