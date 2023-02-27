@@ -17,7 +17,7 @@ type QueryProviderImpl struct {
 	Query     *Query      `cty:"query" hcl:"query" json:"-"`
 	Args      *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
 	Params    []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
-	QueryName string      `column:"query,text" json:"-"`
+	QueryName *string     `column:"query,text" json:"-"`
 
 	withs               []*DashboardWith
 	disableCtySerialise bool
@@ -181,6 +181,6 @@ func (q *QueryProviderImpl) OnDecoded(block *hcl.Block, resourceMapProvider Reso
 
 func (q *QueryProviderImpl) populateQueryName() {
 	if q.Query != nil {
-		q.QueryName = q.Query.FullName
+		q.QueryName = &q.Query.FullName
 	}
 }
