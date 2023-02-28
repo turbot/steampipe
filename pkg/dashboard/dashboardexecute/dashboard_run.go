@@ -3,9 +3,10 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"log"
 )
 
 // DashboardRun is a struct representing a container run
@@ -44,7 +45,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 	r.RuntimeDependencyPublisherImpl = NewRuntimeDependencyPublisherImpl(dashboard, parent, r, executionTree)
 	// add r into execution tree BEFORE creating child runs or initialising runtime depdencies
 	// - this is so child runs can find this dashboard run
-	executionTree.runs[r.Name] = r
+	executionTree.runs[r.DashboardName] = r
 
 	// set inputs map on RuntimeDependencyPublisherImpl BEFORE creating child runs
 	r.inputs = dashboard.GetInputs()
