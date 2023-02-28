@@ -17,3 +17,9 @@ func UnquoteStringArray(stringArray []string) []string {
 func StringSlicesEqual(l, r []string) bool {
 	return strings.Join(l, ",") == strings.Join(r, ",")
 }
+
+// RemoveElementFromSlice takes a slice of strings and an index to remove,
+// and returns a new slice with the specified element removed.
+func RemoveElementFromSlice(slice []string, s int) []string {
+	return append(slice[:s], slice[s+1:]...)
+}
