@@ -9,6 +9,8 @@ import (
 	typehelpers "github.com/turbot/go-kit/types"
 )
 
+const SnapshotQueryTableName = "custom.table.results"
+
 // DashboardTable is a struct representing a leaf dashboard node
 type DashboardTable struct {
 	ResourceWithMetadataImpl
@@ -52,7 +54,7 @@ func NewDashboardTable(block *hcl.Block, mod *Mod, shortName string) HclResource
 // NewQueryDashboardTable creates a Table to wrap a query.
 // This is used in order to execute queries as dashboards
 func NewQueryDashboardTable(qp QueryProvider) (*DashboardTable, error) {
-	parsedName, err := ParseResourceName("custom.table.results")
+	parsedName, err := ParseResourceName(SnapshotQueryTableName)
 	if err != nil {
 		return nil, err
 	}

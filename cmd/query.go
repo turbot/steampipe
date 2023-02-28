@@ -266,13 +266,8 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 }
 
 func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) (*queryresult.Result, error) {
-	// find chart node - we expect only 1
-	parsedName, err := modconfig.ParseResourceName(name)
-	if err != nil {
-		return nil, err
-	}
-	tableName := modconfig.BuildFullResourceName(parsedName.Mod, modconfig.BlockTypeTable, parsedName.Name)
-	tablePanel, ok := snap.Panels[tableName]
+	// the table of a snapshot query has a fixed name
+	tablePanel, ok := snap.Panels[modconfig.SnapshotQueryTableName]
 	if !ok {
 		return nil, fmt.Errorf("dashboard does not contain table result for query")
 	}
