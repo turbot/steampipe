@@ -3,6 +3,7 @@ package steampipeconfig
 import (
 	"fmt"
 	"github.com/gertd/go-pluralize"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"log"
 	"os"
 	"path/filepath"
@@ -94,31 +95,38 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 	// this is needed as the connection config is also loaded by the FDW which has no access to viper
 	steampipeConfig.setDefaultConnectionOptions()
 
-	// TODO store/display warnings
 	// now validate the config
-	errAndWarnings := steampipeConfig.Validate()
-	logValidationWarnings(errAndWarnings.Warnings)
-	if errAndWarnings.Error != nil {
-		return nil, errAndWarnings.Error
-	}
+	warnings, errors := steampipeConfig.Validate()
+	logValidationResult(warnings, errors)
+
 	return steampipeConfig, nil
 }
 
-func logValidationWarnings(warnings []string) {
-	count := len(warnings)
+func logValidationResult(warnings []string, errors []string) {
+	if len(warnings) > 0 {
+		error_helpers.ShowWarning(buildValidationLogString(warnings, "warning"))
+		log.Printf("[TRACE] %s", buildValidationLogString(warnings, "warning"))
+	}
+	if len(errors) > 0 {
+		error_helpers.ShowWarning(buildValidationLogString(errors, "error"))
+		log.Printf("[TRACE] %s", buildValidationLogString(errors, "error"))
+	}
+}
+
+func buildValidationLogString(items []string, validationType string) string {
+	count := len(items)
 	if count == 0 {
-		return
+		return ""
 	}
 	var str strings.Builder
-	str.WriteString(fmt.Sprintf("connection config has has %d validation %s\n",
+	str.WriteString(fmt.Sprintf("connection config has has %d validation %s:\n",
 		count,
-		pluralize.NewClient().Pluralize("warning", count, false),
+		pluralize.NewClient().Pluralize(validationType, count, false),
 	))
-	for _, w := range warnings {
+	for _, w := range items {
 		str.WriteString(fmt.Sprintf("\t %s\n", w))
 	}
-	log.Printf("[INFO] %s", str.String())
-
+	return str.String()
 }
 
 // load config from the given folder and update steampipeConfig

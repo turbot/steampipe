@@ -194,7 +194,7 @@ func initGlobalConfig() {
 	// load the connection config and HCL options
 	var cmdName = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name()
 	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmdName)
-	error_helpers.FailOnError(err)
+	error_helpers.FailOnErrorWithMessage(err, "Failed to load config")
 
 	// store global config
 	steampipeconfig.GlobalConfig = config
