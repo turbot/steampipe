@@ -59,9 +59,14 @@ func NewDashboard(block *hcl.Block, mod *Mod, shortName string) HclResource {
 // NewQueryDashboard creates a dashboard to wrap a query/control
 // this is used for snapshot generation
 func NewQueryDashboard(qp QueryProvider) (*Dashboard, error) {
-	parsedName, err := getQueryDashboardName(qp)
+	parsedName, title, err := getQueryDashboardName(qp)
 	if err != nil {
 		return nil, err
+	}
+
+	// for query dashboard use generated title, for control use original title
+	if qp.BlockType() != BlockTypeQuery {
+		title = qp.GetTitle()
 	}
 
 	var dashboard = &Dashboard{
@@ -73,7 +78,7 @@ func NewQueryDashboard(qp QueryProvider) (*Dashboard, error) {
 				ShortName:       parsedName.Name,
 				FullName:        parsedName.ToFullName(),
 				UnqualifiedName: parsedName.ToResourceName(),
-				Title:           utils.ToStringPointer(qp.GetTitle()),
+				Title:           utils.ToStringPointer(title),
 				Description:     utils.ToStringPointer(qp.GetDescription()),
 				Documentation:   utils.ToStringPointer(qp.GetDocumentation()),
 				Tags:            qp.GetTags(),
@@ -94,7 +99,7 @@ func NewQueryDashboard(qp QueryProvider) (*Dashboard, error) {
 	return dashboard, nil
 }
 
-func getQueryDashboardName(qp QueryProvider) (*ParsedResourceName, error) {
+func getQueryDashboardName(qp QueryProvider) (*ParsedResourceName, string, error) {
 	var sql string
 	if q := qp.GetQuery(); q != nil {
 		sql = typehelpers.SafeString(q.GetSQL())
@@ -103,15 +108,20 @@ func getQueryDashboardName(qp QueryProvider) (*ParsedResourceName, error) {
 	}
 	hash, err := utils.Base36Hash(sql, 8)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	dashboardName := fmt.Sprintf("custom.dashboard.sql_%s", hash)
 
 	parsed, err := ParseResourceName(dashboardName)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return parsed, nil
+	title := getQueryDashboardTitle(hash)
+	return parsed, title, nil
+}
+
+func getQueryDashboardTitle(queryHash string) string {
+	return fmt.Sprintf("Custom Query [%s]", queryHash)
 }
 
 func (d *Dashboard) setUrlPath() {
