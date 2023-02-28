@@ -2,17 +2,22 @@
 _What's new?_
 * Add support for aggregator connections with dynamic tables. ([#2886](https://github.com/turbot/steampipe/issues/2886))
 * Support updating of dynamic plugin schemas based on file watching events (e.g. a new csv file is created in a watched location) ([#2767](https://github.com/turbot/steampipe/issues/2767))
+* Optimize autocomplete. ([#3149](https://github.com/turbot/steampipe/issues/3149))
+* Make workspace loading asynchronous. ([#3123](https://github.com/turbot/steampipe/issues/3123))
 * Make database start timeout configurable. ([#3038](https://github.com/turbot/steampipe/issues/3038))
 * When initialising interactive mode, instead of showing `Initializing...`, show the current status. ([#3077](https://github.com/turbot/steampipe/issues/3077))
 * Show the exported file location when `--progress` flag is enabled. ([#2860](https://github.com/turbot/steampipe/issues/2860))
 * For aggregator connections, add child connection names to connections.json. ([#3079](https://github.com/turbot/steampipe/issues/3079))
+* Aggregator connection with no child connections should only be a warning - not an error. ([#3155](https://github.com/turbot/steampipe/issues/3155))
 * Cleanup connection state file to remove legacy properties. ([#3086](https://github.com/turbot/steampipe/issues/3086))
-* Make workspace loading asynchronous. ([#3123](https://github.com/turbot/steampipe/issues/3123))
 
-_Bug fixes_
+
+  _Bug fixes_
+* Steampipe config validation failure no longer prevents Steampipe commands from running - instead invalid connections are removed. ([#3156](https://github.com/turbot/steampipe/issues/3156))
 * Fixes issue where variables list command was not including description in JSON output. ([#3114](https://github.com/turbot/steampipe/issues/3114))
 * Ensure version display is consistent between startup and `--v` flag. ([#3031](https://github.com/turbot/steampipe/issues/3031))
 * When a plugin fails to load, remove connections for that plugin from the connection state file. ([#3124](https://github.com/turbot/steampipe/issues/3124))
+* Fix running a single dashboard from the command line failing if the dashboard needs inputs and the dashboard name is not fully qualified.  ([#3168](https://github.com/turbot/steampipe/issues/3168),[#3154](https://github.com/turbot/steampipe/issues/3154))
 
 ## v0.18.6 [2023-02-15]
 _Bug fixes_
