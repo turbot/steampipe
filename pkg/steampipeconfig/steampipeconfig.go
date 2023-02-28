@@ -38,8 +38,8 @@ func NewSteampipeConfig(commandName string) *SteampipeConfig {
 	}
 }
 
-func (c *SteampipeConfig) Validate() error {
-	var validationErrors []string
+func (c *SteampipeConfig) Validate() *modconfig.ErrorAndWarnings {
+	var validationWarnings, validationErrors []string
 	for _, connection := range c.Connections {
 
 		// if the connection is an aggregator, populate the child connections
@@ -47,12 +47,17 @@ func (c *SteampipeConfig) Validate() error {
 		if connection.Type == modconfig.ConnectionTypeAggregator {
 			connection.PopulateChildren(c.Connections)
 		}
-		validationErrors = append(validationErrors, connection.Validate(c.Connections)...)
+		w, e := connection.Validate(c.Connections)
+		validationWarnings = append(validationWarnings, w...)
+		validationErrors = append(validationErrors, e...)
+	}
+	var res = &modconfig.ErrorAndWarnings{
+		Warnings: validationWarnings,
 	}
 	if len(validationErrors) > 0 {
-		return fmt.Errorf("config validation failed with %d %s: \n  - %s", len(validationErrors), utils.Pluralize("error", len(validationErrors)), strings.Join(validationErrors, "\n  - "))
+		res.Error = fmt.Errorf("config validation failed with %d %s: \n  - %s", len(validationErrors), utils.Pluralize("error", len(validationErrors)), strings.Join(validationErrors, "\n  - "))
 	}
-	return nil
+	return res
 }
 
 // ConfigMap creates a config map to pass to viper

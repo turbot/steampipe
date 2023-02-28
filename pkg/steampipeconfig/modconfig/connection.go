@@ -143,28 +143,30 @@ func (c *Connection) String() string {
 // Validate verifies the Type property is valid,
 // if this is an aggregator connection, there must be at least one child, and no duplicates
 // if this is NOT an aggregator, there must be no children
-func (c *Connection) Validate(connectionMap map[string]*Connection) []string {
+func (c *Connection) Validate(map[string]*Connection) (warnings []string, errors []string) {
 	validConnectionTypes := []string{"", ConnectionTypeAggregator}
 	if !helpers.StringSliceContains(validConnectionTypes, c.Type) {
-		return []string{fmt.Sprintf("connection '%s' has invalid connection type '%s'", c.Name, c.Type)}
+		return nil, []string{fmt.Sprintf("connection '%s' has invalid connection type '%s'", c.Name, c.Type)}
 	}
+
 	if c.Type == ConnectionTypeAggregator {
-		return c.ValidateAggregatorConnection(connectionMap)
+		return c.ValidateAggregatorConnection()
 	}
+
 	// this is NOT an aggregator group - there should be no children
 	var validationErrors []string
 
 	if len(c.ConnectionNames) != 0 {
 		validationErrors = append(validationErrors, fmt.Sprintf("connection '%s' has %d children, but is not of type 'aggregator'", c.Name, len(c.ConnectionNames)))
 	}
-	return validationErrors
+	return nil, validationErrors
 
 }
 
-func (c *Connection) ValidateAggregatorConnection(connectionMap map[string]*Connection) []string {
+func (c *Connection) ValidateAggregatorConnection() (warnings, errors []string) {
 	if len(c.Connections) == 0 {
-		/// there should be at least one connection
-		return []string{fmt.Sprintf("aggregator connection '%s' has no children", c.Name)}
+		/// there should be at least one connection - raise as warning
+		return []string{fmt.Sprintf("aggregator connection '%s' has no children", c.Name)}, nil
 	}
 
 	var validationErrors []string
@@ -182,7 +184,7 @@ func (c *Connection) ValidateAggregatorConnection(connectionMap map[string]*Conn
 		}
 
 	}
-	return validationErrors
+	return nil, validationErrors
 }
 
 func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {

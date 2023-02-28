@@ -2,9 +2,11 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"github.com/gertd/go-pluralize"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -92,11 +94,31 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 	// this is needed as the connection config is also loaded by the FDW which has no access to viper
 	steampipeConfig.setDefaultConnectionOptions()
 
+	// TODO store/display warnings
 	// now validate the config
-	if err := steampipeConfig.Validate(); err != nil {
-		return nil, err
+	errAndWarnings := steampipeConfig.Validate()
+	logValidationWarnings(errAndWarnings.Warnings)
+	if errAndWarnings.Error != nil {
+		return nil, errAndWarnings.Error
 	}
 	return steampipeConfig, nil
+}
+
+func logValidationWarnings(warnings []string) {
+	count := len(warnings)
+	if count == 0 {
+		return
+	}
+	var str strings.Builder
+	str.WriteString(fmt.Sprintf("connection config has has %d validation %s\n",
+		count,
+		pluralize.NewClient().Pluralize("warning", count, false),
+	))
+	for _, w := range warnings {
+		str.WriteString(fmt.Sprintf("\t %s\n", w))
+	}
+	log.Printf("[INFO] %s", str.String())
+
 }
 
 // load config from the given folder and update steampipeConfig
