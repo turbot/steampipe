@@ -92,6 +92,8 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		}
 		// wrap this in a chart and a dashboard
 		dashboard, err := modconfig.NewQueryDashboard(query)
+		// TACTICAL - set the execution tree dashboard name from the query dashboard
+		e.dashboardName = dashboard.Name()
 		if err != nil {
 			return nil, err
 		}

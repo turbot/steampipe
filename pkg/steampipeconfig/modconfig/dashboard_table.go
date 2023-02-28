@@ -9,6 +9,8 @@ import (
 	typehelpers "github.com/turbot/go-kit/types"
 )
 
+const SnapshotQueryTableName = "custom.table.results"
+
 // DashboardTable is a struct representing a leaf dashboard node
 type DashboardTable struct {
 	ResourceWithMetadataImpl
@@ -51,18 +53,12 @@ func NewDashboardTable(block *hcl.Block, mod *Mod, shortName string) HclResource
 
 // NewQueryDashboardTable creates a Table to wrap a query.
 // This is used in order to execute queries as dashboards
-func NewQueryDashboardTable(q ModTreeItem) (*DashboardTable, error) {
-	parsedName, err := ParseResourceName(q.Name())
+func NewQueryDashboardTable(qp QueryProvider) (*DashboardTable, error) {
+	parsedName, err := ParseResourceName(SnapshotQueryTableName)
 	if err != nil {
 		return nil, err
 	}
 
-	queryProvider, ok := q.(QueryProvider)
-	if !ok {
-		return nil, fmt.Errorf("rersource passed to NewQueryDashboardTable must implement QueryProvider")
-	}
-
-	tableName := BuildFullResourceName(q.GetMod().ShortName, BlockTypeTable, parsedName.Name)
 	c := &DashboardTable{
 		ResourceWithMetadataImpl: ResourceWithMetadataImpl{
 			metadata: &ResourceMetadata{},
@@ -72,16 +68,16 @@ func NewQueryDashboardTable(q ModTreeItem) (*DashboardTable, error) {
 				ModTreeItemImpl: ModTreeItemImpl{
 					HclResourceImpl: HclResourceImpl{
 						ShortName:       parsedName.Name,
-						FullName:        tableName,
-						UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeTable, parsedName),
-						Title:           utils.ToStringPointer(q.GetTitle()),
+						FullName:        parsedName.ToFullName(),
+						UnqualifiedName: parsedName.ToResourceName(),
+						Title:           utils.ToStringPointer(qp.GetTitle()),
 						blockType:       BlockTypeTable,
 					},
-					Mod: q.GetMod(),
+					Mod: qp.GetMod(),
 				},
 			},
-			Query: queryProvider.GetQuery(),
-			SQL:   queryProvider.GetSQL(),
+			Query: qp.GetQuery(),
+			SQL:   qp.GetSQL(),
 		},
 	}
 	return c, nil

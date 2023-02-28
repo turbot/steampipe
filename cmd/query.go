@@ -208,7 +208,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 			resolvedQuery := initData.Queries[name]
 			// if a manual query is being run (i.e. not a named query), convert into a query and add to workspace
 			// this is to allow us to use existing dashboard execution code
-			queryProvider, existingResource := ensureQueryResource(name, resolvedQuery, initData.Workspace)
+			queryProvider, existingResource := ensureSnapshotQueryResource(name, resolvedQuery, initData.Workspace)
 
 			// we need to pass the embedded initData to  GenerateSnapshot
 			baseInitData := &initData.InitData
@@ -266,13 +266,8 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 }
 
 func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) (*queryresult.Result, error) {
-	// find chart node - we expect only 1
-	parsedName, err := modconfig.ParseResourceName(name)
-	if err != nil {
-		return nil, err
-	}
-	tableName := modconfig.BuildFullResourceName(parsedName.Mod, modconfig.BlockTypeTable, parsedName.Name)
-	tablePanel, ok := snap.Panels[tableName]
+	// the table of a snapshot query has a fixed name
+	tablePanel, ok := snap.Panels[modconfig.SnapshotQueryTableName]
 	if !ok {
 		return nil, fmt.Errorf("dashboard does not contain table result for query")
 	}
@@ -308,7 +303,7 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) 
 
 // convert the given command line query into a query resource and add to workspace
 // this is to allow us to use existing dashboard execution code
-func ensureQueryResource(name string, resolvedQuery *modconfig.ResolvedQuery, w *workspace.Workspace) (queryProvider modconfig.HclResource, existingResource bool) {
+func ensureSnapshotQueryResource(name string, resolvedQuery *modconfig.ResolvedQuery, w *workspace.Workspace) (queryProvider modconfig.HclResource, existingResource bool) {
 	// is this an existing resource?
 	if parsedName, err := modconfig.ParseResourceName(name); err == nil {
 		if resource, found := w.GetResource(parsedName); found {
