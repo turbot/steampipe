@@ -116,6 +116,7 @@ jobs:
           - "search_path"
           - "chaos_and_query"
           - "dynamic_schema"
+          - "dynamic_aggregators"
           - "cache"
           - "mod_install"
           - "mod"
@@ -190,7 +191,7 @@ jobs:
         continue-on-error: false
         run: |
           steampipe service start
-          steampipe plugin install chaos
+          steampipe plugin install chaos chaosdynamic
           steampipe service stop
 
       - name: Run Test Suite
