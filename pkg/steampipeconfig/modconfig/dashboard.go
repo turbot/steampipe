@@ -58,12 +58,11 @@ func NewDashboard(block *hcl.Block, mod *Mod, shortName string) HclResource {
 
 // NewQueryDashboard creates a dashboard to wrap a query/control
 // this is used for snapshot generation
-func NewQueryDashboard(q ModTreeItem) (*Dashboard, error) {
-	parsedName, err := ParseResourceName(q.Name())
+func NewQueryDashboard(qp QueryProvider) (*Dashboard, error) {
+	parsedName, err := getQueryDashboardName(qp)
 	if err != nil {
 		return nil, err
 	}
-	dashboardName := BuildFullResourceName(q.GetMod().ShortName, BlockTypeDashboard, parsedName.Name)
 
 	var dashboard = &Dashboard{
 		ResourceWithMetadataImpl: ResourceWithMetadataImpl{
@@ -72,27 +71,47 @@ func NewQueryDashboard(q ModTreeItem) (*Dashboard, error) {
 		ModTreeItemImpl: ModTreeItemImpl{
 			HclResourceImpl: HclResourceImpl{
 				ShortName:       parsedName.Name,
-				FullName:        dashboardName,
-				UnqualifiedName: fmt.Sprintf("%s.%s", BlockTypeDashboard, parsedName),
-				Title:           utils.ToStringPointer(q.GetTitle()),
-				Description:     utils.ToStringPointer(q.GetDescription()),
-				Documentation:   utils.ToStringPointer(q.GetDocumentation()),
-				Tags:            q.GetTags(),
+				FullName:        parsedName.ToFullName(),
+				UnqualifiedName: parsedName.ToResourceName(),
+				Title:           utils.ToStringPointer(qp.GetTitle()),
+				Description:     utils.ToStringPointer(qp.GetDescription()),
+				Documentation:   utils.ToStringPointer(qp.GetDocumentation()),
+				Tags:            qp.GetTags(),
 				blockType:       BlockTypeDashboard,
 			},
-			Mod: q.GetMod(),
+			Mod: qp.GetMod(),
 		},
 	}
 
 	dashboard.setUrlPath()
 
-	chart, err := NewQueryDashboardTable(q)
+	table, err := NewQueryDashboardTable(qp)
 	if err != nil {
 		return nil, err
 	}
-	dashboard.children = []ModTreeItem{chart}
+	dashboard.children = []ModTreeItem{table}
 
 	return dashboard, nil
+}
+
+func getQueryDashboardName(qp QueryProvider) (*ParsedResourceName, error) {
+	var sql string
+	if q := qp.GetQuery(); q != nil {
+		sql = typehelpers.SafeString(q.GetSQL())
+	} else {
+		sql = typehelpers.SafeString(qp.GetSQL())
+	}
+	hash, err := utils.Base36Hash(sql, 8)
+	if err != nil {
+		return nil, err
+	}
+	dashboardName := fmt.Sprintf("custom.dashboard.sql_%s", hash)
+
+	parsed, err := ParseResourceName(dashboardName)
+	if err != nil {
+		return nil, err
+	}
+	return parsed, nil
 }
 
 func (d *Dashboard) setUrlPath() {
