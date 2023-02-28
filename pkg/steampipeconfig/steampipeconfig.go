@@ -12,7 +12,6 @@ import (
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
@@ -38,21 +37,25 @@ func NewSteampipeConfig(commandName string) *SteampipeConfig {
 	}
 }
 
-func (c *SteampipeConfig) Validate() error {
-	var validationErrors []string
-	for _, connection := range c.Connections {
-
+// Validate validates all connections
+// connections with validation errors are removed
+func (c *SteampipeConfig) Validate() (validationWarnings, validationErrors []string) {
+	for connectionName, connection := range c.Connections {
 		// if the connection is an aggregator, populate the child connections
 		// this resolves any wildcards in the connection list
 		if connection.Type == modconfig.ConnectionTypeAggregator {
 			connection.PopulateChildren(c.Connections)
 		}
-		validationErrors = append(validationErrors, connection.Validate(c.Connections)...)
+		w, e := connection.Validate(c.Connections)
+		validationWarnings = append(validationWarnings, w...)
+		validationErrors = append(validationErrors, e...)
+		// if this connection validation remove
+		if len(e) > 0 {
+			delete(c.Connections, connectionName)
+		}
 	}
-	if len(validationErrors) > 0 {
-		return fmt.Errorf("config validation failed with %d %s: \n  - %s", len(validationErrors), utils.Pluralize("error", len(validationErrors)), strings.Join(validationErrors, "\n  - "))
-	}
-	return nil
+
+	return
 }
 
 // ConfigMap creates a config map to pass to viper

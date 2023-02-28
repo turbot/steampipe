@@ -2,9 +2,12 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"github.com/gertd/go-pluralize"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -93,10 +96,37 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 	steampipeConfig.setDefaultConnectionOptions()
 
 	// now validate the config
-	if err := steampipeConfig.Validate(); err != nil {
-		return nil, err
-	}
+	warnings, errors := steampipeConfig.Validate()
+	logValidationResult(warnings, errors)
+
 	return steampipeConfig, nil
+}
+
+func logValidationResult(warnings []string, errors []string) {
+	if len(warnings) > 0 {
+		error_helpers.ShowWarning(buildValidationLogString(warnings, "warning"))
+		log.Printf("[TRACE] %s", buildValidationLogString(warnings, "warning"))
+	}
+	if len(errors) > 0 {
+		error_helpers.ShowWarning(buildValidationLogString(errors, "error"))
+		log.Printf("[TRACE] %s", buildValidationLogString(errors, "error"))
+	}
+}
+
+func buildValidationLogString(items []string, validationType string) string {
+	count := len(items)
+	if count == 0 {
+		return ""
+	}
+	var str strings.Builder
+	str.WriteString(fmt.Sprintf("connection config has has %d validation %s:\n",
+		count,
+		pluralize.NewClient().Pluralize(validationType, count, false),
+	))
+	for _, w := range items {
+		str.WriteString(fmt.Sprintf("\t %s\n", w))
+	}
+	return str.String()
 }
 
 // load config from the given folder and update steampipeConfig
