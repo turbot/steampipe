@@ -1,4 +1,4 @@
-package cmd
+package statushooks
 
 import (
 	"fmt"
@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/fatih/color"
 	"github.com/karrick/gows"
+	"github.com/turbot/steampipe/pkg/constants"
 )
 
 // spinner format:
@@ -48,7 +50,7 @@ func WithDelay(delay time.Duration) StatusSpinnerOpt {
 // We should never create a StatusSpinner directly. To use a spinner
 // DO NOT use a StatusSpinner directly, since using it may have
 // unintended side-effect around the spinner lifecycle
-func newStatusSpinnerHook(opts ...StatusSpinnerOpt) *StatusSpinner {
+func NewStatusSpinnerHook(opts ...StatusSpinnerOpt) *StatusSpinner {
 	res := &StatusSpinner{}
 
 	res.spinner = spinner.New(
@@ -67,9 +69,6 @@ func newStatusSpinnerHook(opts ...StatusSpinnerOpt) *StatusSpinner {
 // SetStatus implements StatusHooks
 func (s *StatusSpinner) SetStatus(msg string) {
 	s.UpdateSpinnerMessage(msg)
-	if !s.spinner.Active() {
-		s.startSpinner()
-	}
 }
 
 func (s *StatusSpinner) Message(msgs ...string) {
@@ -82,12 +81,30 @@ func (s *StatusSpinner) Message(msgs ...string) {
 	}
 }
 
-// Done implements StatusHooks
-func (s *StatusSpinner) Done() {
+func (s *StatusSpinner) Warn(msg string) {
+	if s.spinner.Active() {
+		s.spinner.Stop()
+		defer s.spinner.Start()
+	}
+	fmt.Fprintf(color.Output, "%s: %v\n", constants.ColoredWarn, msg)
+}
+
+// Hide implements StatusHooks
+func (s *StatusSpinner) Hide() {
 	if s.cancel != nil {
 		close(s.cancel)
 	}
 	s.closeSpinner()
+}
+
+func (s *StatusSpinner) Show() {
+	s.spinner.Start()
+}
+
+// UpdateSpinnerMessage updates the message of the given spinner
+func (s *StatusSpinner) UpdateSpinnerMessage(newMessage string) {
+	newMessage = s.truncateSpinnerMessageToScreen(newMessage)
+	s.spinner.Suffix = fmt.Sprintf(" %s", newMessage)
 }
 
 func (s *StatusSpinner) startSpinner() {
@@ -110,12 +127,6 @@ func (s *StatusSpinner) startSpinner() {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}()
-}
-
-// UpdateSpinnerMessage updates the message of the given spinner
-func (s *StatusSpinner) UpdateSpinnerMessage(newMessage string) {
-	newMessage = s.truncateSpinnerMessageToScreen(newMessage)
-	s.spinner.Suffix = fmt.Sprintf(" %s", newMessage)
 }
 
 func (s *StatusSpinner) closeSpinner() {

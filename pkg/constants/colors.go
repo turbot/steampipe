@@ -1,7 +1,13 @@
 package constants
 
 import (
+	"github.com/fatih/color"
 	"github.com/logrusorgru/aurora"
+)
+
+var (
+	ColoredErr  = color.RedString("Error")
+	ColoredWarn = color.YellowString("Warning")
 )
 
 // Colors is a map of string to aurora colour value

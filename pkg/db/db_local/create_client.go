@@ -138,6 +138,8 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
 	}
 
+	time.Sleep(2 * time.Second)
+
 	// wait for db to start accepting queries on this connection
 	err = db_common.WaitForConnectionPing(
 		timeoutCtx,

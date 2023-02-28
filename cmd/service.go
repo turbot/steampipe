@@ -20,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
 )
@@ -159,6 +160,8 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
+	statushooks.Show(ctx)
+
 	ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt, os.Kill)
 	defer cancel()
 
@@ -222,28 +225,14 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 
 	// if the service was started
 	if startResult.Status == db_local.ServiceStarted {
-
-		//
-		// this is required since RefreshConnectionAndSearchPaths may end up
-		// displaying warnings
-		//
-		// At the moment warnings is implemented in error_helpers.ShowWarning
-		// which does not have access to the working context and in effect the
-		// status spinner
-		//
-		// TODO: fix this
-		statushooks.Done(ctx)
-		muteCtx := statushooks.DisableStatusHooks(ctx)
-
-		// do
-		err = db_local.RefreshConnectionAndSearchPaths(muteCtx, invoker)
-		if err != nil {
-			_, err1 := db_local.StopServices(ctx, false, constants.InvokerService)
-			if err1 != nil {
-				error_helpers.ShowError(ctx, err1)
-				exitCode = constants.ExitCodeServiceSetupFailure
+		refreshResult, err := refreshConnectionsWithLocalClient(ctx, invoker)
+		if refreshResult.GetError() != nil || err != nil {
+			_, stopErr := db_local.StopServices(ctx, false, constants.InvokerService)
+			if stopErr != nil {
+				error_helpers.ShowError(ctx, stopErr)
 			}
-			error_helpers.FailOnError(err)
+			exitCode = constants.ExitCodeServiceSetupFailure
+			error_helpers.FailOnError(error_helpers.CombineErrors(err, refreshResult.GetError()))
 		}
 	}
 
@@ -268,6 +257,7 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 		}
 	}
 
+	statushooks.Done(ctx)
 	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, dashboardState, !servicesStarted)
 
 	if viper.GetBool(constants.ArgForeground) {
@@ -390,6 +380,8 @@ func runServiceRestartCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
+	statushooks.Show(ctx)
+
 	// get current db statue
 	currentDbState, err := db_local.GetState()
 	error_helpers.FailOnError(err)
@@ -448,22 +440,16 @@ to force a restart.
 		return
 	}
 
-	// this is required since RefreshConnectionAndSearchPaths may end up
-	// displaying warnings
-	//
-	// At the moment warnings is implemented in error_helpers.ShowWarning
-	// which does not have access to the working context and in effect the
-	// status spinner
-	//
-	// TODO: fix this
-	statushooks.Done(ctx)
-	muteCtx := statushooks.DisableStatusHooks(ctx)
-
 	// refresh connections
-	err = db_local.RefreshConnectionAndSearchPaths(muteCtx, constants.InvokerService)
-	if err != nil {
+	refreshResult, err := refreshConnectionsWithLocalClient(ctx, constants.InvokerService)
+	if refreshResult.GetError() != nil || err != nil {
+		// we don't want to stop the service here, since this is a restart
+		// and the service has already been restarted
+		// the worst-case here is that we will end up with a service
+		// without refreshed connections - for which the error is shown
+		// at least we are not pulling the service out from under
 		exitCode = constants.ExitCodeServiceSetupFailure
-		error_helpers.FailOnError(err)
+		error_helpers.FailOnError(error_helpers.CombineErrors(err, refreshResult.GetError()))
 	}
 
 	// if the dashboard was running, start it
@@ -475,6 +461,8 @@ to force a restart.
 		currentDashboardState, err = dashboardserver.GetDashboardServiceState()
 		error_helpers.FailOnError(err)
 	}
+
+	statushooks.Done(ctx)
 
 	printStatus(ctx, dbStartResult.DbState, dbStartResult.PluginManagerState, currentDashboardState, false)
 }
@@ -831,4 +819,15 @@ Not shutting down service as there as clients connected.
 
 To force shutdown, press Ctrl+C again.
 	`
+}
+
+// refreshConnectionsWithLocalClient creates a local client and refreshed connections and search paths
+func refreshConnectionsWithLocalClient(ctx context.Context, invoker constants.Invoker) (*steampipeconfig.RefreshConnectionResult, error) {
+	client, err := db_local.NewLocalClient(ctx, invoker, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close(ctx)
+
+	return client.RefreshConnectionAndSearchPaths(ctx), nil
 }

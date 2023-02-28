@@ -3,8 +3,9 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"log"
+
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
