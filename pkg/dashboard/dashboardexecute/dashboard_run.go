@@ -3,9 +3,10 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"log"
 )
 
 // DashboardRun is a struct representing a container run
