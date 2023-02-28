@@ -45,7 +45,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 	r.RuntimeDependencyPublisherImpl = NewRuntimeDependencyPublisherImpl(dashboard, parent, r, executionTree)
 	// add r into execution tree BEFORE creating child runs or initialising runtime depdencies
 	// - this is so child runs can find this dashboard run
-	executionTree.runs[r.DashboardName] = r
+	executionTree.runs[r.Name] = r
 
 	// set inputs map on RuntimeDependencyPublisherImpl BEFORE creating child runs
 	r.inputs = dashboard.GetInputs()

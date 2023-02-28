@@ -280,9 +280,12 @@ func runSingleDashboard(ctx context.Context, targetName string, inputs map[strin
 	}
 	// targetName must be a named resource
 	// parse the name to verify
-	if err := verifyNamedResource(targetName, initData.Workspace); err != nil {
+	targetResource, err := verifyNamedResource(targetName, initData.Workspace)
+	if err != nil {
 		return err
 	}
+	// update name to make sure it is fully qualified
+	targetName = targetResource.Name()
 
 	// if there is a usage warning we display it
 	initData.Result.DisplayMessages()
@@ -318,18 +321,19 @@ func runSingleDashboard(ctx context.Context, targetName string, inputs map[strin
 	return nil
 }
 
-func verifyNamedResource(targetName string, w *workspace.Workspace) error {
+func verifyNamedResource(targetName string, w *workspace.Workspace) (modconfig.HclResource, error) {
 	parsedName, err := modconfig.ParseResourceName(targetName)
 	if err != nil {
-		return fmt.Errorf("dashboard command cannot run arbitrary SQL")
+		return nil, fmt.Errorf("dashboard command cannot run arbitrary SQL")
 	}
 	if parsedName.ItemType == "" {
-		return fmt.Errorf("dashboard command cannot run arbitrary SQL")
+		return nil, fmt.Errorf("dashboard command cannot run arbitrary SQL")
 	}
-	if _, found := w.GetResource(parsedName); !found {
-		return fmt.Errorf("'%s' not found in %s (%s)", targetName, w.Mod.Name(), w.Path)
+	if r, found := w.GetResource(parsedName); !found {
+		return nil, fmt.Errorf("'%s' not found in %s (%s)", targetName, w.Mod.Name(), w.Path)
+	} else {
+		return r, nil
 	}
-	return nil
 }
 
 func publishSnapshotIfNeeded(ctx context.Context, snapshot *dashboardtypes.SteampipeSnapshot) error {

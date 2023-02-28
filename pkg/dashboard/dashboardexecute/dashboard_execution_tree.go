@@ -23,9 +23,10 @@ type DashboardExecutionTree struct {
 	dashboardName string
 	sessionId     string
 	client        db_common.Client
-	runs          map[string]dashboardtypes.DashboardTreeRun
-	workspace     *workspace.Workspace
-	runComplete   chan dashboardtypes.DashboardTreeRun
+	// map of executing runs, keyed by full name
+	runs        map[string]dashboardtypes.DashboardTreeRun
+	workspace   *workspace.Workspace
+	runComplete chan dashboardtypes.DashboardTreeRun
 
 	// map of subscribers to notify when an input value changes
 	cancel      context.CancelFunc
