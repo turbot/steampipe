@@ -829,5 +829,7 @@ func refreshConnectionsWithLocalClient(ctx context.Context, invoker constants.In
 	}
 	defer client.Close(ctx)
 
+	statushooks.SetStatus(ctx, "Refreshing connections")
+
 	return client.RefreshConnectionAndSearchPaths(ctx), nil
 }
