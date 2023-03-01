@@ -11,13 +11,14 @@ _What's new?_
 * Aggregator connection with no child connections should only be a warning - not an error. ([#3155](https://github.com/turbot/steampipe/issues/3155))
 * Cleanup connection state file to remove legacy properties. ([#3086](https://github.com/turbot/steampipe/issues/3086))
 
-
-  _Bug fixes_
+_Bug fixes_
 * Steampipe config validation failure no longer prevents Steampipe commands from running - instead invalid connections are removed. ([#3156](https://github.com/turbot/steampipe/issues/3156))
 * Fixes issue where variables list command was not including description in JSON output. ([#3114](https://github.com/turbot/steampipe/issues/3114))
 * Ensure version display is consistent between startup and `--v` flag. ([#3031](https://github.com/turbot/steampipe/issues/3031))
 * When a plugin fails to load, remove connections for that plugin from the connection state file. ([#3124](https://github.com/turbot/steampipe/issues/3124))
-* Fix running a single dashboard from the command line failing if the dashboard needs inputs and the dashboard name is not fully qualified.  ([#3168](https://github.com/turbot/steampipe/issues/3168),[#3154](https://github.com/turbot/steampipe/issues/3154))
+* Fix running a single dashboard from the command line failing if the dashboard needs inputs and the dashboard name is not fully qualified. ([#3168](https://github.com/turbot/steampipe/issues/3168),[#3154](https://github.com/turbot/steampipe/issues/3154))
+* Fix workspace load crash for invalid mod definition. ([#3174](https://github.com/turbot/steampipe/issues/3174))
+* Limit should not be pushed down if there are unconverted restrictions. ([#291](https://github.com/turbot/steampipe-postgres-fdw/issues/291))
 
 ## v0.18.6 [2023-02-15]
 _Bug fixes_
