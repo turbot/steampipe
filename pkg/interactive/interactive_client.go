@@ -62,7 +62,7 @@ type InteractiveClient struct {
 	schemaMetadata *schema.Metadata
 	highlighter    *Highlighter
 	// hidePrompt is used to render a blank as the prompt prefix
-	hidePrompt       bool
+	hidePrompt bool
 
 	querySuggestions []prompt.Suggest
 	tableSuggestions []prompt.Suggest
@@ -146,6 +146,10 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 			c.interactiveQueryHistory.Persist()
 			// check post-close action
 			if c.afterClose == AfterPromptCloseExit {
+				// clear prompt so any messages/warnings can be displayed without the prompt
+				c.hidePrompt = true
+				c.interactivePrompt.ClearLine()
+
 				return
 			}
 			// create new context with a cancellation func
