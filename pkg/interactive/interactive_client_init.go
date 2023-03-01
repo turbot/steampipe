@@ -3,6 +3,7 @@ package interactive
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 	"time"
 
@@ -39,6 +40,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	}
 
 	if initResult.HasMessages() {
+		statushooks.Done(ctx)
 		// clear the prompt
 		// NOTE: this must be done BEFORE setting hidePrompt
 		// otherwise the cursor calculations in go-prompt do not work and multi-line test is not cleared
