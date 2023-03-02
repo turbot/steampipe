@@ -13,7 +13,7 @@ import (
 
 func (c *InteractiveClient) initialiseSuggestions() {
 	c.initialiseTableSuggestions()
-	c.initialiseTableSuggestions()
+	c.initialiseQuerySuggestions()
 }
 
 func (c *InteractiveClient) initialiseQuerySuggestions() {
