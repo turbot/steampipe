@@ -266,25 +266,26 @@ WHERE %s
 // local only functions
 
 func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
-	// NOTE: disable any status updates - we do not want 'loading' output from any queries
-	ctx = statushooks.DisableStatusHooks(ctx)
-
+	statushooks.SetStatus(ctx, "Refreshing connections")
 	res := c.refreshConnections(ctx, forceUpdateConnectionNames...)
 	if res.Error != nil {
 		return res
 	}
 
+	statushooks.SetStatus(ctx, "Setting up functions")
 	if err := refreshFunctions(ctx); err != nil {
 		res.Error = err
 		return res
 	}
 
+	statushooks.SetStatus(ctx, "Loading schema")
 	// reload the foreign schemas, in case they have changed
 	if err := c.LoadSchemaNames(ctx); err != nil {
 		res.Error = err
 		return res
 	}
 
+	statushooks.SetStatus(ctx, "Loading steampipe connections")
 	// load the connection state and cache it!
 	connectionMap, _, err := steampipeconfig.GetConnectionState(c.ForeignSchemaNames())
 	if err != nil {
@@ -293,7 +294,12 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, for
 	}
 	c.connectionMap = &connectionMap
 	// set user search path first - client may fall back to using it
-	err = c.setUserSearchPath(ctx)
+	statushooks.SetStatus(ctx, "Setting up search path")
+
+	// we need to send a muted ctx here since this function selects from the database
+	// which by default puts up a "Loading" spinner. We don't want that here
+	mutedCtx := statushooks.DisableStatusHooks(ctx)
+	err = c.setUserSearchPath(mutedCtx)
 	if err != nil {
 		res.Error = err
 		return res

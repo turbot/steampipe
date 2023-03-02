@@ -125,6 +125,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		i.Result.AddMessage(fmt.Sprintf(format, a...))
 	})
 
+	statushooks.SetStatus(ctx, "Connecting to steampipe")
 	client, err := GetDbClient(getClientCtx, invoker, ensureSessionData)
 	if err != nil {
 		i.Result.Error = err
@@ -133,6 +134,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	i.Client = client
 
 	// refresh connections
+	statushooks.SetStatus(ctx, "Refreshing connections")
 	refreshResult := i.Client.RefreshConnectionAndSearchPaths(ctx)
 	if refreshResult.Error != nil {
 		i.Result.Error = refreshResult.Error
@@ -149,8 +151,6 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	}
 	// add refresh connection warnings
 	i.Result.AddWarnings(refreshResult.Warnings...)
-
-	return
 }
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
