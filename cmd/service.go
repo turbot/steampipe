@@ -819,3 +819,13 @@ Not shutting down service as there as clients connected.
 To force shutdown, press Ctrl+C again.
 	`
 }
+
+func refreshConnectionAndSearchPaths(ctx context.Context, invoker constants.Invoker) (*steampipeconfig.RefreshConnectionResult, error) {
+	client, err := db_local.NewLocalClient(ctx, invoker, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close(ctx)
+	refreshResult := client.RefreshConnectionAndSearchPaths(ctx)
+	return refreshResult, nil
+}
