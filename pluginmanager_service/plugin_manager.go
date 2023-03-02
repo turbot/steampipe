@@ -19,6 +19,7 @@ import (
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkshared "github.com/turbot/steampipe-plugin-sdk/v5/grpc/shared"
+	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -622,8 +623,17 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 
 	reattach := proto.NewReattachConfig(pluginName, client.ReattachConfig(), proto.SupportedOperationsFromSdk(supportedOperations), connectionNames)
 
-	// add connections to message server
-	_ = m.messageServer.AddConnection(pluginClient, pluginName, connectionNames...)
+	//
+	// if this plugin has a dynamic schema, add connections to message server
+	schema, err := pluginClient.GetSchema(connectionName)
+	if err != nil {
+		log.Printf("[WARN] failed to set fetch schema: %s", err.Error())
+		return nil, nil, err
+	}
+
+	if schema.Mode == sdkplugin.SchemaModeDynamic {
+		_ = m.messageServer.AddConnection(pluginClient, pluginName, connectionNames...)
+	}
 	// TODO KAI how to handle error here
 	return client, reattach, nil
 }

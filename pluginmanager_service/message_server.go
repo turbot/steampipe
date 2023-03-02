@@ -26,6 +26,7 @@ func (m *PluginMessageServer) AddConnection(pluginClient *sdkgrpc.PluginClient, 
 		if err != nil {
 			return err
 		}
+
 		// if no cache stream was returned, this plugin cannot support cache streams
 		if cacheStream == nil {
 			return nil
