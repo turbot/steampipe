@@ -20,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
 )
@@ -220,37 +221,28 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// if the service was started
-	if startResult.Status == db_local.ServiceStarted {
-
-		//
-		// this is required since RefreshConnectionAndSearchPaths may end up
-		// displaying warnings
-		//
-		// At the moment warnings is implemented in error_helpers.ShowWarning
-		// which does not have access to the working context and in effect the
-		// status spinner
-		//
-		// TODO: fix this
-		statushooks.Done(ctx)
-		muteCtx := statushooks.DisableStatusHooks(ctx)
-
-		// do
-		err = db_local.RefreshConnectionAndSearchPaths(muteCtx, invoker)
-		if err != nil {
-			_, err1 := db_local.StopServices(ctx, false, constants.InvokerService)
-			if err1 != nil {
-				error_helpers.ShowError(ctx, err1)
-				exitCode = constants.ExitCodeServiceSetupFailure
-			}
-			error_helpers.FailOnError(err)
-		}
-	}
-
 	servicesStarted := startResult.Status == db_local.ServiceStarted
+
+	// if the service was started
+	if servicesStarted {
+		statushooks.SetStatus(ctx, "Refreshing connections")
+		// do
+		result, err := refreshConnectionAndSearchPaths(ctx, invoker)
+		if err != nil || result.GetError() != nil {
+			_, stopError := db_local.StopServices(ctx, false, constants.InvokerService)
+			if stopError != nil {
+				error_helpers.ShowError(ctx, stopError)
+			}
+			exitCode = constants.ExitCodeServiceSetupFailure
+			error_helpers.FailOnError(error_helpers.CombineErrors(err, result.GetError()))
+		}
+		statushooks.Done(ctx)
+		result.ShowWarnings()
+	}
 
 	var dashboardState *dashboardserver.DashboardServiceState
 	if viper.GetBool(constants.ArgDashboard) {
+		statushooks.SetStatus(ctx, "Starting dashboard server")
 		dashboardState, err = dashboardserver.GetDashboardServiceState()
 		if err != nil {
 			tryToStopServices(ctx)
@@ -440,26 +432,18 @@ to force a restart.
 		return
 	}
 
-	// this is required since RefreshConnectionAndSearchPaths may end up
-	// displaying warnings
-	//
-	// At the moment warnings is implemented in error_helpers.ShowWarning
-	// which does not have access to the working context and in effect the
-	// status spinner
-	//
-	// TODO: fix this
-	statushooks.Done(ctx)
-	muteCtx := statushooks.DisableStatusHooks(ctx)
-
-	// refresh connections
-	err = db_local.RefreshConnectionAndSearchPaths(muteCtx, constants.InvokerService)
-	if err != nil {
+	statushooks.SetStatus(ctx, "Refreshing connections")
+	result, err := refreshConnectionAndSearchPaths(ctx, constants.InvokerService)
+	if err != nil || result.GetError() != nil {
 		exitCode = constants.ExitCodeServiceSetupFailure
-		error_helpers.FailOnError(err)
+		error_helpers.FailOnError(error_helpers.CombineErrors(err, result.GetError()))
 	}
+	statushooks.Done(ctx)
+	result.ShowWarnings()
 
 	// if the dashboard was running, start it
 	if currentDashboardState != nil {
+		statushooks.SetStatus(ctx, "Starting dashboard server")
 		err = dashboardserver.RunForService(ctx, dashboardserver.ListenType(currentDashboardState.ListenType), dashboardserver.ListenPort(currentDashboardState.Port))
 		error_helpers.FailOnError(err)
 
