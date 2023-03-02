@@ -121,7 +121,7 @@ func getQueryDashboardName(qp QueryProvider) (*ParsedResourceName, string, error
 }
 
 func getQueryDashboardTitle(queryHash string) string {
-	return fmt.Sprintf("Custom Query [%s]", queryHash)
+	return fmt.Sprintf("Custom query [%s]", queryHash)
 }
 
 func (d *Dashboard) setUrlPath() {
