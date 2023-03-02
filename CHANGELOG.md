@@ -10,6 +10,7 @@ _What's new?_
 * For aggregator connections, add child connection names to connections.json. ([#3079](https://github.com/turbot/steampipe/issues/3079))
 * Aggregator connection with no child connections should only be a warning - not an error. ([#3155](https://github.com/turbot/steampipe/issues/3155))
 * Cleanup connection state file to remove legacy properties. ([#3086](https://github.com/turbot/steampipe/issues/3086))
+* Dashboard server should emit updated dashboard metadata when available dashboards changes. ([#3182](https://github.com/turbot/steampipe/issues/3182))
 
 _Bug fixes_
 * Steampipe config validation failure no longer prevents Steampipe commands from running - instead invalid connections are removed. ([#3156](https://github.com/turbot/steampipe/issues/3156))
@@ -19,6 +20,7 @@ _Bug fixes_
 * Fix running a single dashboard from the command line failing if the dashboard needs inputs and the dashboard name is not fully qualified. ([#3168](https://github.com/turbot/steampipe/issues/3168),[#3154](https://github.com/turbot/steampipe/issues/3154))
 * Fix workspace load crash for invalid mod definition. ([#3174](https://github.com/turbot/steampipe/issues/3174))
 * Limit should not be pushed down if there are unconverted restrictions. ([#291](https://github.com/turbot/steampipe-postgres-fdw/issues/291))
+* Dashboard text inputs are not correctly themed in Steampipe Cloud dashboard UI dark mode. ([#3181](https://github.com/turbot/steampipe/issues/3181)) 
 
 ## v0.18.6 [2023-02-15]
 _Bug fixes_
