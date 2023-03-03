@@ -65,7 +65,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	// this is a file system event handler and not bound to any context
 	ctx := context.Background()
 
-	log.Printf("[WARN] ConnectionWatcher handleFileWatcherEvent")
+	log.Printf("[TRACE] ConnectionWatcher handleFileWatcherEvent")
 	config, err := steampipeconfig.LoadConnectionConfig()
 	if err != nil {
 		log.Printf("[WARN] error loading updated connection config: %s", err.Error())
@@ -121,7 +121,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	// display any refresh warnings
 	// TODO send warnings on warning_stream
 	refreshResult.ShowWarnings()
-	log.Printf("[WARN] File watch event done")
+	log.Printf("[TRACE] File watch event done")
 }
 
 func (w *ConnectionWatcher) Close() {
