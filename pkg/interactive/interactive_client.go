@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"os"
@@ -619,32 +620,24 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 }
 
 func (c *InteractiveClient) listen(ctx context.Context) error {
-	//// todo acquire pool directly
-	sessionResult := c.client().AcquireSession(ctx)
-	if sessionResult.Error != nil {
-		return fmt.Errorf("error acquiring database connection to listen to notifications, %s", sessionResult.Error.Error())
-	}
-	defer sessionResult.Session.Close(error_helpers.IsContextCanceled(ctx))
-
-	conn := sessionResult.Session.Connection
-
-	listenSql := fmt.Sprintf("listen %s", constants.NotificationConnectionUpdate)
-	_, err := conn.Exec(context.Background(), listenSql)
-	if err != nil {
-		log.Printf("[WARN] Error listening to schema channel: %s", err)
-		return err
-	}
-
 	for {
+		conn, err := c.getNotificationConnection(ctx)
+		if err != nil {
+			return err
+		}
+
 		log.Printf("[WARN] Wait for notification")
 		notification, err := conn.Conn().WaitForNotification(ctx)
 		if err != nil {
 			log.Printf("[WARN] Error waiting for notification: %s", err)
 		}
+		conn.Release()
+
 		if ctx.Err() != nil {
 			log.Printf("[WARN] CANCELLLED")
 			break
 		}
+
 		c.handleConnectionUpdateNotification(ctx, notification)
 	}
 	log.Printf("[WARN] DONE")
@@ -652,7 +645,27 @@ func (c *InteractiveClient) listen(ctx context.Context) error {
 	return nil
 }
 
+func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgxpool.Conn, error) {
+	// todo acquire pool directly
+	sessionResult := c.client().AcquireSession(ctx)
+
+	if sessionResult.Error != nil {
+		return nil, fmt.Errorf("error acquiring database connection to listen to notifications, %s", sessionResult.Error.Error())
+	}
+
+	conn := sessionResult.Session.Connection
+
+	listenSql := fmt.Sprintf("listen %s", constants.NotificationConnectionUpdate)
+	_, err := conn.Exec(context.Background(), listenSql)
+	if err != nil {
+		log.Printf("[WARN] Error listening to schema channel: %s", err)
+		return nil, err
+	}
+	return conn, nil
+}
+
 func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, notification *pgconn.Notification) {
+
 	log.Printf("[WARN] handleConnectionUpdateNotification: %s", notification.Payload)
 	n := &steampipeconfig.ConnectionUpdateNotification{}
 	err := json.Unmarshal([]byte(notification.Payload), n)
