@@ -14,6 +14,7 @@ type RefreshConnectionResult struct {
 	UpdatedConnections bool
 	Updates            *ConnectionUpdates
 	FailedConnections  map[string]string
+	ConnectionMap      ConnectionDataMap
 }
 
 func (r *RefreshConnectionResult) Merge(other *RefreshConnectionResult) {

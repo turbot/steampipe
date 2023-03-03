@@ -3,6 +3,7 @@ package interactive
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -15,6 +16,8 @@ import (
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
 	"github.com/c-bata/go-prompt"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -27,6 +30,7 @@ import (
 	"github.com/turbot/steampipe/pkg/query/queryhistory"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
@@ -51,6 +55,11 @@ type InteractiveClient struct {
 	// NOTE: should ONLY be called by cancelActiveQueryIfAny
 	cancelActiveQuery context.CancelFunc
 	cancelPrompt      context.CancelFunc
+	// this cancellation is used to stop the pg notification listener which
+	// we use to get connection config updates from the plugin manager
+	// this is tied to a context which remaing valid throughout the life of the
+	// interactive session
+	cancelNotificationListener context.CancelFunc
 	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
 	// flag set when initialisation is complete (with or without errors)
@@ -94,6 +103,7 @@ func newInteractiveClient(ctx context.Context, initData *query.InitData, result 
 	// asynchronously wait for init to complete
 	// we start this immediately rather than lazy loading as we want to handle errors asap
 	go c.readInitDataStream(ctx)
+
 	return c, nil
 }
 
@@ -150,6 +160,10 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 				c.hidePrompt = true
 				c.interactivePrompt.ClearLine()
 
+				// stop the notification listener
+				if c.cancelNotificationListener != nil {
+					c.cancelNotificationListener()
+				}
 				return
 			}
 			// create new context with a cancellation func
@@ -246,8 +260,7 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			Key: prompt.ControlD,
 			Fn: func(b *prompt.Buffer) {
 				if b.Text() == "" {
-					// just set after close action - go prompt will handle the prompt shutdown
-					c.afterClose = AfterPromptCloseExit
+					c.ClosePrompt(AfterPromptCloseExit)
 				}
 			},
 		}),
@@ -368,6 +381,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 		c.cancelActiveQueryIfAny()
 
 	} else {
+
 		// otherwise execute query
 		t := time.Now()
 		result, err := c.client().Execute(queryCtx, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
@@ -503,7 +517,7 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 		Query:       query,
 		Executor:    client,
 		Schema:      c.schemaMetadata,
-		Connections: client.ConnectionMap(),
+		Connections: c.initData.ConnectionMap,
 		Prompt:      c.interactivePrompt,
 		ClosePrompt: func() { c.afterClose = AfterPromptCloseExit },
 	})
@@ -611,4 +625,97 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 		}
 	}()
 	return quitChannel
+}
+
+func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) error {
+	log.Printf("[TRACE] InteractiveClient listenToPgNotifications")
+	for ctx.Err() == nil {
+		conn, err := c.getNotificationConnection(ctx)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("[TRACE] Wait for notification")
+		notification, err := conn.Conn().WaitForNotification(ctx)
+		if err != nil && !error_helpers.IsContextCancelledError(err) {
+			log.Printf("[INFO] Error waiting for notification: %s", err)
+		}
+		conn.Release()
+
+		if notification != nil {
+			c.handleConnectionUpdateNotification(ctx, notification)
+		}
+	}
+	log.Printf("[TRACE] InteractiveClient listenToPgNotifications DONE")
+
+	return nil
+}
+
+func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgxpool.Conn, error) {
+	sessionResult := c.client().AcquireSession(ctx)
+
+	if sessionResult.Error != nil {
+		return nil, fmt.Errorf("error acquiring database connection to listenToPgNotifications to notifications, %s", sessionResult.Error.Error())
+	}
+
+	conn := sessionResult.Session.Connection
+
+	listenSql := fmt.Sprintf("listen %s", constants.NotificationConnectionUpdate)
+	_, err := conn.Exec(context.Background(), listenSql)
+	if err != nil {
+		log.Printf("[INFO] Error listening to schema channel: %s", err)
+		conn.Release()
+		return nil, err
+	}
+	return conn, nil
+}
+
+func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, notification *pgconn.Notification) {
+	if notification == nil {
+		return
+	}
+	log.Printf("[TRACE] handleConnectionUpdateNotification: %s", notification.Payload)
+	n := &steampipeconfig.ConnectionUpdateNotification{}
+	err := json.Unmarshal([]byte(notification.Payload), n)
+	if err != nil {
+		log.Printf("[INFO] Error unmarshalling notification: %s", err)
+		return
+	}
+
+	// reload the connection data map
+	// first load foreign schema names
+	if err := c.client().LoadSchemaNames(ctx); err != nil {
+		log.Printf("[INFO] Error loading foreign schema names: %v", err)
+	}
+	// now reload state
+	connectionMap, _, err := steampipeconfig.GetConnectionState(c.client().ForeignSchemaNames())
+	if err != nil {
+		log.Printf("[INFO] Error loading connection state: %v", err)
+		return
+	}
+	// and save it
+	c.initData.ConnectionMap = connectionMap
+
+	// reload config before reloading schema
+	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "query")
+	if err != nil {
+		log.Printf("[WARN] Error reloading config: %s", err)
+		return
+	}
+	steampipeconfig.GlobalConfig = config
+
+	// reload schema
+	if err := c.loadSchema(); err != nil {
+		log.Printf("[INFO] Error unmarshalling notification: %s", err)
+		return
+	}
+	// reinitialise autocomplete suggestions
+	c.initialiseSuggestions()
+
+	// refresh the db session inside an execution lock
+	c.executionLock.Lock()
+	defer c.executionLock.Unlock()
+
+	c.client().RefreshSessions(ctx)
+	log.Printf("[TRACE] completed refresh session")
 }

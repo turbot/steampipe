@@ -12,10 +12,10 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -30,6 +30,7 @@ type InitData struct {
 
 	ShutdownTelemetry func()
 	ExportManager     *export.Manager
+	ConnectionMap     steampipeconfig.ConnectionDataMap
 }
 
 func NewErrorInitData(err error) *InitData {
@@ -140,15 +141,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		i.Result.Error = refreshResult.Error
 		return
 	}
+	i.ConnectionMap = refreshResult.ConnectionMap
 
-	// force creation of session data - se we see any prepared statement errors at once
-	sessionResult := i.Client.AcquireSession(ctx)
-	i.Result.AddWarnings(sessionResult.Warnings...)
-	if sessionResult.Error != nil {
-		i.Result.Error = fmt.Errorf("error acquiring database connection, %s", sessionResult.Error.Error())
-	} else {
-		sessionResult.Session.Close(error_helpers.IsContextCanceled(ctx))
-	}
 	// add refresh connection warnings
 	i.Result.AddWarnings(refreshResult.Warnings...)
 }

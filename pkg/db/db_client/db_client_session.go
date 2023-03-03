@@ -80,6 +80,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 		return sessionResult
 	}
 
+	sessionResult.Error = ctx.Err()
 	return sessionResult
 }
 

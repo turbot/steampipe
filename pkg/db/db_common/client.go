@@ -3,7 +3,6 @@ package db_common
 import (
 	"context"
 	"database/sql"
-
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -14,9 +13,7 @@ type Client interface {
 
 	ForeignSchemaNames() []string
 	AllSchemaNames() []string
-
 	LoadSchemaNames(ctx context.Context) error
-	ConnectionMap() *steampipeconfig.ConnectionDataMap
 
 	GetCurrentSearchPath(context.Context) ([]string, error)
 	GetCurrentSearchPathForDbConnection(context.Context, *sql.Conn) ([]string, error)

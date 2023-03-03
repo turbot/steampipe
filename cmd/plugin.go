@@ -699,7 +699,7 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 	}
 
 	pluginConnectionMap := make(map[string][]modconfig.Connection)
-	for _, v := range *client.ConnectionMap() {
+	for _, v := range res.ConnectionMap {
 		_, found := pluginConnectionMap[v.Plugin]
 		if !found {
 			pluginConnectionMap[v.Plugin] = []modconfig.Connection{}

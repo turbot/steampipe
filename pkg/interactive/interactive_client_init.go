@@ -3,7 +3,6 @@ package interactive
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -59,6 +59,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		c.interactivePrompt.Render()
 	}
 
+	// initialise autocomplete suggestions
 	c.initialiseSuggestions()
 	// tell the workspace to reset the prompt after displaying async filewatcher messages
 	c.initData.Workspace.SetOnFileWatcherEventMessages(func() {
@@ -99,6 +100,11 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 			c.initData.Result.Error = err
 		}
 	}
+
+	// create a cancellation context used to cancel the listen thread when we exit
+	listenCtx, cancel := context.WithCancel(ctx)
+	go c.listenToPgNotifications(listenCtx)
+	c.cancelNotificationListener = cancel
 }
 
 func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {
