@@ -641,11 +641,14 @@ func (c *InteractiveClient) listen(ctx context.Context) error {
 		if err != nil {
 			log.Printf("[WARN] Error waiting for notification: %s", err)
 		}
-		go c.handleConnectionUpdateNotification(ctx, notification)
 		if ctx.Err != nil {
+			log.Printf("[WARN] CANCELLLED")
 			break
 		}
+		go c.handleConnectionUpdateNotification(ctx, notification)
 	}
+	log.Printf("[WARN] DONE")
+
 	return nil
 }
 
