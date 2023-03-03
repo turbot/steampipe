@@ -628,17 +628,17 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 }
 
 func (c *InteractiveClient) listen(ctx context.Context) error {
-	log.Printf("[WARN] listen")
+	log.Printf("[TRACE] InteractiveClient listen")
 	for ctx.Err() == nil {
 		conn, err := c.getNotificationConnection(ctx)
 		if err != nil {
 			return err
 		}
 
-		log.Printf("[WARN] Wait for notification")
+		log.Printf("[TRACE] Wait for notification")
 		notification, err := conn.Conn().WaitForNotification(ctx)
-		if err != nil {
-			log.Printf("[WARN] Error waiting for notification: %s", err)
+		if err != nil && !error_helpers.IsContextCancelledError(err) {
+			log.Printf("[INFO] Error waiting for notification: %s", err)
 		}
 		conn.Release()
 
@@ -646,7 +646,7 @@ func (c *InteractiveClient) listen(ctx context.Context) error {
 			c.handleConnectionUpdateNotification(ctx, notification)
 		}
 	}
-	log.Printf("[WARN] DONE")
+	log.Printf("[TRACE] InteractiveClient listen DONE")
 
 	return nil
 }
@@ -674,23 +674,23 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	if notification == nil {
 		return
 	}
-	log.Printf("[WARN] handleConnectionUpdateNotification: %s", notification.Payload)
+	log.Printf("[TRACE] handleConnectionUpdateNotification: %s", notification.Payload)
 	n := &steampipeconfig.ConnectionUpdateNotification{}
 	err := json.Unmarshal([]byte(notification.Payload), n)
 	if err != nil {
-		log.Printf("[WARN] Error unmarshalling notification: %s", err)
+		log.Printf("[INFO] Error unmarshalling notification: %s", err)
 		return
 	}
 
 	// reload the connection data map
 	// first load foreign schema names
 	if err := c.client().LoadSchemaNames(ctx); err != nil {
-		log.Printf("[WARN] Error loading foreign schema names: %v", err)
+		log.Printf("[INFO] Error loading foreign schema names: %v", err)
 	}
 	// now reload state
 	connectionMap, _, err := steampipeconfig.GetConnectionState(c.client().ForeignSchemaNames())
 	if err != nil {
-		log.Printf("[WARN] Error loading connection state: %v", err)
+		log.Printf("[INFO] Error loading connection state: %v", err)
 		return
 	}
 	// and save it
@@ -705,7 +705,7 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	steampipeconfig.GlobalConfig = config
 
 	if err := c.loadSchema(); err != nil {
-		log.Printf("[WARN] Error unmarshalling notification: %s", err)
+		log.Printf("[INFO] Error unmarshalling notification: %s", err)
 		return
 	}
 
@@ -716,5 +716,5 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	defer c.executionLock.Unlock()
 
 	c.client().RefreshSessions(ctx)
-	log.Printf("[WARN] completed refresh session")
+	log.Printf("[TRACE] completed refresh session")
 }
