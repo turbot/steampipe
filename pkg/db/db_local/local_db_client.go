@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
 	"strings"
 
@@ -263,7 +264,9 @@ WHERE %s
 	return query
 }
 
-// local only functions
+func (c *LocalDbClient) Pool() *pgxpool.Pool {
+	return c.client.Pool()
+}
 
 func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
 	statushooks.SetStatus(ctx, "Refreshing connections")

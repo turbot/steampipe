@@ -3,7 +3,10 @@ package interactive
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"os"
 	"os/signal"
@@ -94,6 +97,7 @@ func newInteractiveClient(ctx context.Context, initData *query.InitData, result 
 	// asynchronously wait for init to complete
 	// we start this immediately rather than lazy loading as we want to handle errors asap
 	go c.readInitDataStream(ctx)
+
 	return c, nil
 }
 
@@ -368,6 +372,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 		c.cancelActiveQueryIfAny()
 
 	} else {
+
 		// otherwise execute query
 		t := time.Now()
 		result, err := c.client().Execute(queryCtx, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
@@ -611,4 +616,56 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 		}
 	}()
 	return quitChannel
+}
+
+func (c *InteractiveClient) listen(ctx context.Context) error {
+	//// todo acquire pool directly
+	sessionResult := c.client().AcquireSession(ctx)
+	if sessionResult.Error != nil {
+		return fmt.Errorf("error acquiring database connection to listen to notifications, %s", sessionResult.Error.Error())
+	}
+	defer sessionResult.Session.Close(error_helpers.IsContextCanceled(ctx))
+
+	conn := sessionResult.Session.Connection
+
+	listenSql := fmt.Sprintf("listen %s", constants.NotificationConnectionUpdate)
+	_, err := conn.Exec(context.Background(), listenSql)
+	if err != nil {
+		log.Printf("[WARN] Error listening to schema channel: %s", err)
+		return err
+	}
+
+	for {
+		log.Printf("[WARN] Wait for notification")
+		notification, err := conn.Conn().WaitForNotification(ctx)
+		if err != nil {
+			log.Printf("[WARN] Error waiting for notification: %s", err)
+		}
+		go c.handleConnectionUpdateNotification(ctx, notification)
+		if ctx.Err != nil {
+			break
+		}
+	}
+	return nil
+}
+
+func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, notification *pgconn.Notification) {
+	log.Printf("[WARN] handleConnectionUpdateNotification: %s", notification.Payload)
+	n := &steampipeconfig.ConnectionUpdateNotification{}
+	err := json.Unmarshal([]byte(notification.Payload), n)
+	if err != nil {
+		log.Printf("[WARN] Error unmarshalling notification: %s", err)
+		return
+	}
+	if err := c.loadSchema(); err != nil {
+		log.Printf("[WARN] Error unmarshalling notification: %s", err)
+		return
+	}
+
+	// refresh the session inside an execution lock
+	c.executionLock.Lock()
+	defer c.executionLock.Unlock()
+
+	c.client().RefreshSessions(ctx)
+	log.Printf("[WARN] completed refresh session")
 }

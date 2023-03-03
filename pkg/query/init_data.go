@@ -3,7 +3,6 @@ package query
 import (
 	"context"
 	"fmt"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
@@ -109,8 +108,9 @@ func (i *InitData) init(parentCtx context.Context, args []string) {
 	i.Result.AddWarnings(errAndWarnings.Warnings...)
 	i.Workspace = w
 
-	// set max DB connections to 1
-	viper.Set(constants.ArgMaxParallel, 1)
+	// TODO do  not bother limiting??
+	// set max DB connections to 2 (one for the query, one for the notification channel)
+	viper.Set(constants.ArgMaxParallel, 10)
 
 	statushooks.SetStatus(ctx, "Resolving arguments")
 

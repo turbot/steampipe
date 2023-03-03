@@ -3,6 +3,7 @@ package db_common
 import (
 	"context"
 	"database/sql"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/schema"
@@ -40,4 +41,6 @@ type Client interface {
 	GetSchemaFromDB(context.Context) (*schema.Metadata, error)
 	// remote client will have empty implementation
 	RefreshConnectionAndSearchPaths(context.Context, ...string) *steampipeconfig.RefreshConnectionResult
+
+	Pool() *pgxpool.Pool
 }

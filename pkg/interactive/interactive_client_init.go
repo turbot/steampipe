@@ -99,6 +99,8 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 			c.initData.Result.Error = err
 		}
 	}
+
+	go c.listen(ctx)
 }
 
 func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {

@@ -15,13 +15,15 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
+type ConnectionChangedFunc func(configMap ConnectionConfigMap, refreshResult *steampipeconfig.RefreshConnectionResult)
+
 type ConnectionWatcher struct {
 	fileWatcherErrorHandler   func(error)
 	watcher                   *filewatcher.FileWatcher
-	onConnectionConfigChanged func(configMap ConnectionConfigMap)
+	onConnectionConfigChanged ConnectionChangedFunc
 }
 
-func NewConnectionWatcher(onConnectionChanged func(configMap ConnectionConfigMap)) (*ConnectionWatcher, error) {
+func NewConnectionWatcher(onConnectionChanged ConnectionChangedFunc) (*ConnectionWatcher, error) {
 	w := &ConnectionWatcher{
 		onConnectionConfigChanged: onConnectionChanged,
 	}
@@ -63,7 +65,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	// this is a file system event handler and not bound to any context
 	ctx := context.Background()
 
-	log.Printf("[TRACE] ConnectionWatcher handleFileWatcherEvent")
+	log.Printf("[WARN] ConnectionWatcher handleFileWatcherEvent")
 	config, err := steampipeconfig.LoadConnectionConfig()
 	if err != nil {
 		log.Printf("[WARN] error loading updated connection config: %s", err.Error())
@@ -80,12 +82,6 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	log.Printf("[TRACE] loaded updated config")
 
 	log.Printf("[TRACE] calling onConnectionConfigChanged")
-	// convert config to format expected by plugin manager
-	// (plugin manager cannot reference steampipe config to avoid circular deps)
-	configMap := NewConnectionConfigMap(config.Connections)
-	// call on changed callback
-	// (this calls pluginmanager.SetConnectionConfigMap)
-	w.onConnectionConfigChanged(configMap)
 
 	log.Printf("[TRACE] calling RefreshConnectionAndSearchPaths")
 
@@ -114,10 +110,16 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 		log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
 		return
 	}
+	// call on changed callback
+	// convert config to format expected by plugin manager
+	// (plugin manager cannot reference steampipe config to avoid circular deps)
+	configMap := NewConnectionConfigMap(config.Connections)
+	w.onConnectionConfigChanged(configMap, refreshResult)
 
 	// display any refresh warnings
 	// TODO send warnings on warning_stream (to FDW???)
 	refreshResult.ShowWarnings()
+	log.Printf("[WARN] File watch event done")
 }
 
 func (w *ConnectionWatcher) Close() {
