@@ -54,9 +54,26 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		initResult.DisplayMessages()
 		// show the prompt again
 		c.hidePrompt = false
+
 		// We need to render the prompt here to make sure that it comes back
-		// after the messages have been displayed
-		c.interactivePrompt.Render()
+		// after the messages have been displayed (only if there's no execution)
+		//
+		// We check for query execution by TRYING to acquire the same lock that
+		// execution locks on
+		//
+		// If we can acquire a lock, that means that there's no
+		// query execution underway - and it is safe to render the prompt
+		//
+		// otherwise, that query execution is waiting for this init to finish
+		// and as such will be out of the prompt - in which case, we shouldn't
+		// re-render the prompt
+		//
+		// the prompt will be re-rendered when the query execution finished
+		if c.executionLock.TryLock() {
+			c.interactivePrompt.Render()
+			// release the lock
+			c.executionLock.Unlock()
+		}
 	}
 
 	// initialise autocomplete suggestions
