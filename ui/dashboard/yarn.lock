@@ -2877,10 +2877,10 @@
   dependencies:
     "@floating-ui/core" "^1.0.1"
 
-"@headlessui/react@1.7.12":
-  version "1.7.12"
-  resolved "https://registry.yarnpkg.com/@headlessui/react/-/react-1.7.12.tgz#9ab2baa3c4f632782631e00937f9531a34033619"
-  integrity sha512-FhSx5V+Qp0GvbTpaxyS+ymGDDNntCacClWsk/d8Upbr19g3AsPbjfPk4+m2CgJGcuCB5Dz7LpUIOAbvQTyjL2g==
+"@headlessui/react@1.7.13":
+  version "1.7.13"
+  resolved "https://registry.yarnpkg.com/@headlessui/react/-/react-1.7.13.tgz#fd150b394954e9f1d86ed2340cffd1217d6e7628"
+  integrity sha512-9n+EQKRtD9266xIHXdY5MfiXPDfYwl7zBM7KOx2Ae3Gdgxy8QML1FkCMjq6AsOf0l6N9uvI4HcFtuFlenaldKg==
   dependencies:
     client-only "^0.0.1"
 
@@ -3146,10 +3146,10 @@
     "@types/yargs" "^17.0.8"
     chalk "^4.0.0"
 
-"@material-symbols/svg-300@0.4.5":
-  version "0.4.5"
-  resolved "https://registry.yarnpkg.com/@material-symbols/svg-300/-/svg-300-0.4.5.tgz#ad89c4b641b9dfe7a7821d945acd2cbc439fedd6"
-  integrity sha512-T8DWmggksu+GWRYgMY1uQSfA5XrC5whzleRC6mM9+EdnZ0CoWQx1djOD4VdNV5Y72qQPXmMgBM5HvlMhyyBrhg==
+"@material-symbols/svg-300@0.4.6":
+  version "0.4.6"
+  resolved "https://registry.yarnpkg.com/@material-symbols/svg-300/-/svg-300-0.4.6.tgz#ba609a34dd2195e742c23c8b567c7552100f6cc2"
+  integrity sha512-znOkGAPp6qEyhNHhX8GCq6A4nSBciNge4QeDL6+BejeghVMA93+YSjs7C69t+2I8ecYUifCpKhwc/vKEATkjlw==
 
 "@mdx-js/mdx@^1.6.22":
   version "1.6.22"
@@ -5082,10 +5082,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.25.tgz#527051f3c2f77aa52e5dc74e45a3da5fb2301448"
   integrity sha512-wANk6fBrUwdpY4isjWrKTufkrXdu1D2YHCot2fD/DfWxF5sMrVSA+KN7ydckvaTCh0HiqX9IVl0L5/ZoXg5M7w==
 
-"@types/node@18.14.2":
-  version "18.14.2"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.14.2.tgz#c076ed1d7b6095078ad3cf21dfeea951842778b1"
-  integrity sha512-1uEQxww3DaghA0RxqHx0O0ppVlo43pJhepY51OxuQIKHpjbnYLA7vcdwioNPzIqmC2u3I/dmylcqjlh0e7AyUA==
+"@types/node@18.14.5":
+  version "18.14.5"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.14.5.tgz#4a13a6445862159303fc38586598a9396fc408b3"
+  integrity sha512-CRT4tMK/DHYhw1fcCEBwME9CSaZNclxfzVMe7GsO6ULSwsttbj70wSiX6rZdIjGblu93sTJxLdhNIT85KKI7Qw==
 
 "@types/node@^14.0.10 || ^16.0.0", "@types/node@^14.14.20 || ^16.0.0":
   version "16.11.15"
