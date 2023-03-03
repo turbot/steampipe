@@ -634,7 +634,7 @@ func (c *InteractiveClient) listen(ctx context.Context) error {
 			return err
 		}
 
-		log.Printf("[WARN] Wait for notification")
+		//log.Printf("[WARN] Wait for notification")
 		notification, err := conn.Conn().WaitForNotification(ctx)
 		if err != nil {
 			log.Printf("[WARN] Error waiting for notification: %s", err)
@@ -648,7 +648,7 @@ func (c *InteractiveClient) listen(ctx context.Context) error {
 
 		c.handleConnectionUpdateNotification(ctx, notification)
 	}
-	log.Printf("[WARN] DONE")
+	//log.Printf("[WARN] DONE")
 
 	return nil
 }
