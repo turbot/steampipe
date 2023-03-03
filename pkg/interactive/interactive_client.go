@@ -681,6 +681,14 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 		log.Printf("[WARN] Error unmarshalling notification: %s", err)
 		return
 	}
+	// reload config before reloading schema
+	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "query")
+	if err != nil {
+		log.Printf("[WARN] Error reloading config: %s", err)
+		return
+	}
+	steampipeconfig.GlobalConfig = config
+
 	if err := c.loadSchema(); err != nil {
 		log.Printf("[WARN] Error unmarshalling notification: %s", err)
 		return

@@ -81,7 +81,7 @@ func (c *InteractiveClient) initialiseTableSuggestions() {
 	// schema names
 	var schemasToAdd []string
 	// unqualified table names - initialise to the introspection table names
-	unqualifiedTablesToAdd := []string{}
+	var unqualifiedTablesToAdd []string
 	// fully qualified table names
 	var qualifiedTablesToAdd []string
 
