@@ -160,6 +160,10 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 				c.hidePrompt = true
 				c.interactivePrompt.ClearLine()
 
+				// stop the notification listener
+				if c.cancelNotificationListener != nil {
+					c.cancelNotificationListener()
+				}
 				return
 			}
 			// create new context with a cancellation func
@@ -174,10 +178,6 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
 	c.afterClose = afterClose
 	c.cancelPrompt()
-	if afterClose == AfterPromptCloseExit && c.cancelNotificationListener != nil {
-		// stop the notification listener
-		c.cancelNotificationListener()
-	}
 }
 
 // retrieve both the raw query result and a sanitised version in list form
@@ -627,8 +627,8 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 	return quitChannel
 }
 
-func (c *InteractiveClient) listen(ctx context.Context) error {
-	log.Printf("[TRACE] InteractiveClient listen")
+func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) error {
+	log.Printf("[TRACE] InteractiveClient listenToPgNotifications")
 	for ctx.Err() == nil {
 		conn, err := c.getNotificationConnection(ctx)
 		if err != nil {
@@ -646,17 +646,16 @@ func (c *InteractiveClient) listen(ctx context.Context) error {
 			c.handleConnectionUpdateNotification(ctx, notification)
 		}
 	}
-	log.Printf("[TRACE] InteractiveClient listen DONE")
+	log.Printf("[TRACE] InteractiveClient listenToPgNotifications DONE")
 
 	return nil
 }
 
 func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgxpool.Conn, error) {
-	// todo acquire pool directly
 	sessionResult := c.client().AcquireSession(ctx)
 
 	if sessionResult.Error != nil {
-		return nil, fmt.Errorf("error acquiring database connection to listen to notifications, %s", sessionResult.Error.Error())
+		return nil, fmt.Errorf("error acquiring database connection to listenToPgNotifications to notifications, %s", sessionResult.Error.Error())
 	}
 
 	conn := sessionResult.Session.Connection
@@ -664,7 +663,8 @@ func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgx
 	listenSql := fmt.Sprintf("listen %s", constants.NotificationConnectionUpdate)
 	_, err := conn.Exec(context.Background(), listenSql)
 	if err != nil {
-		log.Printf("[WARN] Error listening to schema channel: %s", err)
+		log.Printf("[INFO] Error listening to schema channel: %s", err)
+		conn.Release()
 		return nil, err
 	}
 	return conn, nil
@@ -704,14 +704,15 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	}
 	steampipeconfig.GlobalConfig = config
 
+	// reload schema
 	if err := c.loadSchema(); err != nil {
 		log.Printf("[INFO] Error unmarshalling notification: %s", err)
 		return
 	}
-
+	// reinitialise autocomplete suggestions
 	c.initialiseSuggestions()
 
-	// refresh the session inside an execution lock
+	// refresh the db session inside an execution lock
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 

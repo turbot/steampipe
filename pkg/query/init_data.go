@@ -108,10 +108,6 @@ func (i *InitData) init(parentCtx context.Context, args []string) {
 	i.Result.AddWarnings(errAndWarnings.Warnings...)
 	i.Workspace = w
 
-	// TODO do  not bother limiting??
-	// set max DB connections to 2 (one for the query, one for the notification channel)
-	viper.Set(constants.ArgMaxParallel, 10)
-
 	statushooks.SetStatus(ctx, "Resolving arguments")
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace

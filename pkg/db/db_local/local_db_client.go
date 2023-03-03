@@ -7,7 +7,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
@@ -23,7 +22,6 @@ import (
 type LocalDbClient struct {
 	client  *db_client.DbClient
 	invoker constants.Invoker
-	//connectionMap *steampipeconfig.ConnectionDataMap
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
@@ -258,10 +256,6 @@ WHERE %s
 	LEFT(cols.table_schema,8) = 'pg_temp_'
 `, schemaClause)
 	return query
-}
-
-func (c *LocalDbClient) Pool() *pgxpool.Pool {
-	return c.client.Pool()
 }
 
 func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {

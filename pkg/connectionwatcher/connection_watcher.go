@@ -116,8 +116,6 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 		w.onSchemaChanged(refreshResult)
 	}
 
-	log.Printf("[TRACE] calling onConnectionConfigChanged")
-
 	// display any refresh warnings
 	// TODO send warnings on warning_stream
 	refreshResult.ShowWarnings()

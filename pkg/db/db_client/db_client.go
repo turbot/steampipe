@@ -203,10 +203,6 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	return nil
 }
 
-func (c *DbClient) Pool() *pgxpool.Pool {
-	return c.pool
-}
-
 // RefreshConnectionAndSearchPaths implements Client
 func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context, _ ...string) *steampipeconfig.RefreshConnectionResult {
 	// base db client does not refresh connections, it just sets search path
