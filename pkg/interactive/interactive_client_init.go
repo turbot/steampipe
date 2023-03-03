@@ -3,7 +3,6 @@ package interactive
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -100,7 +100,9 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 		}
 	}
 
-	go c.listen(ctx)
+	listenCtx, cancel := context.WithCancel(ctx)
+	go c.listen(listenCtx)
+	c.cancelNotificationListener = cancel
 }
 
 func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {

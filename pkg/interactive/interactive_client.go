@@ -5,9 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"os"
 	"os/signal"
@@ -19,6 +16,8 @@ import (
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
 	"github.com/c-bata/go-prompt"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -31,6 +30,7 @@ import (
 	"github.com/turbot/steampipe/pkg/query/queryhistory"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
@@ -53,8 +53,9 @@ type InteractiveClient struct {
 	autocompleteOnEmpty     bool
 	// the cancellation function for the active query - may be nil
 	// NOTE: should ONLY be called by cancelActiveQueryIfAny
-	cancelActiveQuery context.CancelFunc
-	cancelPrompt      context.CancelFunc
+	cancelActiveQuery          context.CancelFunc
+	cancelPrompt               context.CancelFunc
+	cancelNotificationListener context.CancelFunc
 	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
 	// flag set when initialisation is complete (with or without errors)
@@ -169,6 +170,10 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
 	c.afterClose = afterClose
 	c.cancelPrompt()
+	if afterClose == AfterPromptCloseExit {
+		// stop the notification listener
+		c.cancelNotificationListener()
+	}
 }
 
 // retrieve both the raw query result and a sanitised version in list form
@@ -620,7 +625,7 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 }
 
 func (c *InteractiveClient) listen(ctx context.Context) error {
-	for {
+	for ctx.Err() == nil {
 		conn, err := c.getNotificationConnection(ctx)
 		if err != nil {
 			return err
