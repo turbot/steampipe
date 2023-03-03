@@ -170,7 +170,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
 	c.afterClose = afterClose
 	c.cancelPrompt()
-	if afterClose == AfterPromptCloseExit {
+	if afterClose == AfterPromptCloseExit && c.cancelNotificationListener != nil {
 		// stop the notification listener
 		c.cancelNotificationListener()
 	}
