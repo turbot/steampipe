@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
@@ -183,7 +183,7 @@ func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, 
 	query := c.buildSchemasQuery(schemas)
 
 	acquireSessionResult := c.AcquireSession(ctx)
-	if acquireSessionResult.Error != nil {
+	if acquireSessionResult.Error != nil && acquireSessionResult.Session != nil {
 		acquireSessionResult.Session.Close(false)
 		return nil, err
 	}

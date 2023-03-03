@@ -53,8 +53,12 @@ type InteractiveClient struct {
 	autocompleteOnEmpty     bool
 	// the cancellation function for the active query - may be nil
 	// NOTE: should ONLY be called by cancelActiveQueryIfAny
-	cancelActiveQuery          context.CancelFunc
-	cancelPrompt               context.CancelFunc
+	cancelActiveQuery context.CancelFunc
+	cancelPrompt      context.CancelFunc
+	// this cancellation is used to stop the pg notification listener which
+	// we use to get connection config updates from the plugin manager
+	// this is tied to a context which remaing valid throughout the life of the
+	// interactive session
 	cancelNotificationListener context.CancelFunc
 	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
@@ -256,8 +260,7 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 			Key: prompt.ControlD,
 			Fn: func(b *prompt.Buffer) {
 				if b.Text() == "" {
-					// just set after close action - go prompt will handle the prompt shutdown
-					c.afterClose = AfterPromptCloseExit
+					c.ClosePrompt(AfterPromptCloseExit)
 				}
 			},
 		}),
