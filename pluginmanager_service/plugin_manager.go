@@ -135,13 +135,10 @@ func (m *PluginManager) Get(req *proto.GetRequest) (*proto.GetResponse, error) {
 	return resp, nil
 }
 
-// OnConnectionConfigChanged is the callback function invoked by the connectoin watcher
-func (m *PluginManager) OnConnectionConfigChanged(configMap connectionwatcher.ConnectionConfigMap, refreshResult *steampipeconfig.RefreshConnectionResult) {
+// OnConnectionConfigChanged is the callback function invoked by the connection watcher when the config changed
+func (m *PluginManager) OnConnectionConfigChanged(configMap connectionwatcher.ConnectionConfigMap) {
 	m.mut.Lock()
 	defer m.mut.Unlock()
-
-	// this is a file system event handler and not bound to any context
-	ctx := context.Background()
 
 	names := utils.SortedMapKeys(configMap)
 	log.Printf("[TRACE] OnConnectionConfigChanged: %s", strings.Join(names, ","))
@@ -150,18 +147,24 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connectionwatcher.Co
 	if err != nil {
 		log.Printf("[WARN] handleConnectionConfigChanges returned error: %s", err.Error())
 	}
-	if refreshResult.UpdatedConnections {
-		client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher, nil)
-		if err != nil {
-			log.Printf("[TRACE] error creating client to handle updated connection config: %s", err.Error())
-		}
-		defer client.Close(ctx)
-		notification := steampipeconfig.NewConnectionUpdateNotification(refreshResult.Updates)
-		if err != nil {
-			log.Printf("[WARN] Error sending notification: %s", err)
-		} else {
-			m.notifySchemaChange(notification, client)
-		}
+
+}
+
+// OnSchemaChanged is the callback function invoked by the connection watcher when connections are added or removed
+func (m *PluginManager) OnSchemaChanged(refreshResult *steampipeconfig.RefreshConnectionResult) {
+	// this is a file system event handler and not bound to any context
+	ctx := context.Background()
+
+	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher, nil)
+	if err != nil {
+		log.Printf("[TRACE] error creating client to handle updated connection config: %s", err.Error())
+	}
+	defer client.Close(ctx)
+	notification := steampipeconfig.NewConnectionUpdateNotification(refreshResult.Updates)
+	if err != nil {
+		log.Printf("[WARN] Error sending notification: %s", err)
+	} else {
+		m.notifySchemaChange(notification, client)
 	}
 }
 

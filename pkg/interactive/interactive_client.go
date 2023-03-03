@@ -628,6 +628,7 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 }
 
 func (c *InteractiveClient) listen(ctx context.Context) error {
+	log.Printf("[WARN] listen")
 	for ctx.Err() == nil {
 		conn, err := c.getNotificationConnection(ctx)
 		if err != nil {
@@ -641,12 +642,9 @@ func (c *InteractiveClient) listen(ctx context.Context) error {
 		}
 		conn.Release()
 
-		if ctx.Err() != nil {
-			log.Printf("[WARN] CANCELLLED")
-			break
+		if notification != nil {
+			c.handleConnectionUpdateNotification(ctx, notification)
 		}
-
-		c.handleConnectionUpdateNotification(ctx, notification)
 	}
 	log.Printf("[WARN] DONE")
 
@@ -673,7 +671,9 @@ func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgx
 }
 
 func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, notification *pgconn.Notification) {
-
+	if notification == nil {
+		return
+	}
 	log.Printf("[WARN] handleConnectionUpdateNotification: %s", notification.Payload)
 	n := &steampipeconfig.ConnectionUpdateNotification{}
 	err := json.Unmarshal([]byte(notification.Payload), n)

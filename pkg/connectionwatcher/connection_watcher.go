@@ -15,17 +15,17 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
-type ConnectionChangedFunc func(configMap ConnectionConfigMap, refreshResult *steampipeconfig.RefreshConnectionResult)
-
 type ConnectionWatcher struct {
 	fileWatcherErrorHandler   func(error)
 	watcher                   *filewatcher.FileWatcher
-	onConnectionConfigChanged ConnectionChangedFunc
+	onConnectionConfigChanged func(ConnectionConfigMap)
+	onSchemaChanged           func(*steampipeconfig.RefreshConnectionResult)
 }
 
-func NewConnectionWatcher(onConnectionChanged ConnectionChangedFunc) (*ConnectionWatcher, error) {
+func NewConnectionWatcher(onConnectionChanged func(ConnectionConfigMap), onSchemaChanged func(*steampipeconfig.RefreshConnectionResult)) (*ConnectionWatcher, error) {
 	w := &ConnectionWatcher{
 		onConnectionConfigChanged: onConnectionChanged,
+		onSchemaChanged:           onSchemaChanged,
 	}
 
 	watcherOptions := &filewatcher.WatcherOptions{
@@ -79,17 +79,17 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	}
 	defer client.Close(ctx)
 
-	log.Printf("[TRACE] loaded updated config")
-
-	log.Printf("[TRACE] calling onConnectionConfigChanged")
-
-	log.Printf("[TRACE] calling RefreshConnectionAndSearchPaths")
-
 	// We need to update the viper config and GlobalConfig
 	// as these are both used by RefreshConnectionAndSearchPaths
 
 	// set the global steampipe config
 	steampipeconfig.GlobalConfig = config
+
+	// call on changed callback - we must call this BEFORE calling refresh connections
+	// convert config to format expected by plugin manager
+	// (plugin manager cannot reference steampipe config to avoid circular deps)
+	configMap := NewConnectionConfigMap(config.Connections)
+	w.onConnectionConfigChanged(configMap)
 
 	// The only configurations from GlobalConfig which have
 	// impact during Refresh are Database options and the Connections
@@ -104,20 +104,22 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	// to use the GlobalConfig here and ignore Workspace Profile in general
 	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
 
+	log.Printf("[TRACE] calling RefreshConnectionAndSearchPaths")
 	// now refresh connections and search paths
 	refreshResult := client.RefreshConnectionAndSearchPaths(ctx)
 	if refreshResult.Error != nil {
 		log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
 		return
 	}
-	// call on changed callback
-	// convert config to format expected by plugin manager
-	// (plugin manager cannot reference steampipe config to avoid circular deps)
-	configMap := NewConnectionConfigMap(config.Connections)
-	w.onConnectionConfigChanged(configMap, refreshResult)
+	// if the connections were added or removed, call the schema changed callback
+	if refreshResult.UpdatedConnections {
+		w.onSchemaChanged(refreshResult)
+	}
+
+	log.Printf("[TRACE] calling onConnectionConfigChanged")
 
 	// display any refresh warnings
-	// TODO send warnings on warning_stream (to FDW???)
+	// TODO send warnings on warning_stream
 	refreshResult.ShowWarnings()
 	log.Printf("[WARN] File watch event done")
 }
