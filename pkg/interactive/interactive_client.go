@@ -683,6 +683,8 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 		return
 	}
 
+	c.initialiseSuggestions()
+
 	// refresh the session inside an execution lock
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
