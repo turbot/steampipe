@@ -124,10 +124,6 @@ func (c *DbClient) Close(context.Context) error {
 	return nil
 }
 
-func (c *DbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
-	return &steampipeconfig.ConnectionDataMap{}
-}
-
 // ForeignSchemaNames implements Client
 func (c *DbClient) ForeignSchemaNames() []string {
 	return c.foreignSchemaNames

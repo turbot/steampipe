@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -29,6 +30,7 @@ type InitData struct {
 
 	ShutdownTelemetry func()
 	ExportManager     *export.Manager
+	ConnectionMap     steampipeconfig.ConnectionDataMap
 }
 
 func NewErrorInitData(err error) *InitData {
@@ -139,6 +141,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		i.Result.Error = refreshResult.Error
 		return
 	}
+	i.ConnectionMap = refreshResult.ConnectionMap
 
 	// add refresh connection warnings
 	i.Result.AddWarnings(refreshResult.Warnings...)

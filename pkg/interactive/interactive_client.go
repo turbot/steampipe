@@ -517,7 +517,7 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 		Query:       query,
 		Executor:    client,
 		Schema:      c.schemaMetadata,
-		Connections: client.ConnectionMap(),
+		Connections: c.initData.ConnectionMap,
 		Prompt:      c.interactivePrompt,
 		ClosePrompt: func() { c.afterClose = AfterPromptCloseExit },
 	})
@@ -681,6 +681,21 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 		log.Printf("[WARN] Error unmarshalling notification: %s", err)
 		return
 	}
+
+	// reload the connection data map
+	// first load foreign schema names
+	if err := c.client().LoadSchemaNames(ctx); err != nil {
+		log.Printf("[WARN] Error loading foreign schema names: %v", err)
+	}
+	// now reload state
+	connectionMap, _, err := steampipeconfig.GetConnectionState(c.client().ForeignSchemaNames())
+	if err != nil {
+		log.Printf("[WARN] Error loading connection state: %v", err)
+		return
+	}
+	// and save it
+	c.initData.ConnectionMap = connectionMap
+
 	// reload config before reloading schema
 	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "query")
 	if err != nil {

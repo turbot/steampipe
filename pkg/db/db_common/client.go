@@ -15,9 +15,7 @@ type Client interface {
 
 	ForeignSchemaNames() []string
 	AllSchemaNames() []string
-
 	LoadSchemaNames(ctx context.Context) error
-	ConnectionMap() *steampipeconfig.ConnectionDataMap
 
 	GetCurrentSearchPath(context.Context) ([]string, error)
 	GetCurrentSearchPathForDbConnection(context.Context, *sql.Conn) ([]string, error)

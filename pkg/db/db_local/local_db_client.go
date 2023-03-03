@@ -21,9 +21,9 @@ import (
 
 // LocalDbClient wraps over DbClient
 type LocalDbClient struct {
-	client        *db_client.DbClient
-	invoker       constants.Invoker
-	connectionMap *steampipeconfig.ConnectionDataMap
+	client  *db_client.DbClient
+	invoker constants.Invoker
+	//connectionMap *steampipeconfig.ConnectionDataMap
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
@@ -97,10 +97,6 @@ func (c *LocalDbClient) AllSchemaNames() []string {
 // LoadSchemaNames implements Client
 func (c *LocalDbClient) LoadSchemaNames(ctx context.Context) error {
 	return c.client.LoadSchemaNames(ctx)
-}
-
-func (c *LocalDbClient) ConnectionMap() *steampipeconfig.ConnectionDataMap {
-	return c.connectionMap
 }
 
 func (c *LocalDbClient) RefreshSessions(ctx context.Context) *db_common.AcquireSessionResult {
@@ -295,7 +291,7 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, for
 		res.Error = err
 		return res
 	}
-	c.connectionMap = &connectionMap
+	res.ConnectionMap = connectionMap
 	// set user search path first - client may fall back to using it
 	statushooks.SetStatus(ctx, "Setting up search path")
 

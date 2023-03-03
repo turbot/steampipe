@@ -35,7 +35,7 @@ type HandlerInput struct {
 	Query       string
 	Executor    QueryExecutor
 	Schema      *schema.Metadata
-	Connections *steampipeconfig.ConnectionDataMap
+	Connections steampipeconfig.ConnectionDataMap
 	Prompt      *prompt.Prompt
 	ClosePrompt func()
 }
@@ -335,7 +335,7 @@ func listConnections(ctx context.Context, input *HandlerInput) error {
 		if schema == input.Schema.TemporarySchemaName {
 			continue
 		}
-		plugin, found := (*input.Connections)[schema]
+		plugin, found := input.Connections[schema]
 		if found {
 			rows = append(rows, []string{schema, plugin.Plugin})
 		} else {

@@ -76,7 +76,6 @@ func (c *InteractiveClient) initialiseTableSuggestions() {
 	}
 
 	var s []prompt.Suggest
-	connectionMap := c.initData.Client.ConnectionMap()
 
 	// schema names
 	var schemasToAdd []string
@@ -95,7 +94,7 @@ func (c *InteractiveClient) initialiseTableSuggestions() {
 		// all other schema are ignored.
 		// therefore, the only schema which will not have a connection is `public`
 		var pluginOfThisSchema string
-		schemaConnection, hasConnectionForSchema := (*connectionMap)[schemaName]
+		schemaConnection, hasConnectionForSchema := c.initData.ConnectionMap[schemaName]
 		if hasConnectionForSchema {
 			pluginOfThisSchema = stripVersionFromPluginName(schemaConnection.Plugin)
 		}
