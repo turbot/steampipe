@@ -6,7 +6,7 @@
   "scripts": {
     "setup-material-symbols": "node scripts/setupMaterialSymbols.js",
     "start": "if-node-version '>= 17' && craco --openssl-legacy-provider start || craco start",
-    "build": "GENERATE_SOURCEMAP=false if-node-version '>= 17' && craco --openssl-legacy-provider build || craco build",
+    "build": "if-node-version '>= 17' && GENERATE_SOURCEMAP=false craco --openssl-legacy-provider build || GENERATE_SOURCEMAP=false craco build",
     "test": "craco test",
     "eject": "react-scripts eject",
     "prettify": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
