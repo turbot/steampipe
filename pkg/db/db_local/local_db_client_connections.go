@@ -3,6 +3,9 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -11,8 +14,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
-	"log"
-	"strings"
 )
 
 // RefreshConnections loads required connections from config
@@ -162,35 +163,6 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
 		builder.WriteString(getUpdateConnectionQuery(connectionName, remoteSchema))
-		//
-		//rootClient1, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
-		//rootClient2, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
-		//rootClient3, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
-		//rootClient4, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
-		//var wg sync.WaitGroup
-		//wg.Add(4)
-		//go func() {
-		//	_, err := rootClient1.Exec(ctx, builder.String())
-		//	log.Printf("[WARN] execute update 1 %v ", err)
-		//	wg.Done()
-		//}()
-		//go func() {
-		//	_, err := rootClient2.Exec(ctx, builder.String())
-		//	log.Printf("[WARN] execute update 1 %v ", err)
-		//	wg.Done()
-		//}()
-		//go func() {
-		//	_, err := rootClient3.Exec(ctx, builder.String())
-		//	log.Printf("[WARN] execute update 1 %v ", err)
-		//	wg.Done()
-		//}()
-		//go func() {
-		//	_, err := rootClient4.Exec(ctx, builder.String())
-		//	log.Printf("[WARN] execute update 1 %v ", err)
-		//	wg.Done()
-		//}()
-		//
-		//wg.Wait()
 
 		_, err := rootClient.Exec(ctx, builder.String())
 		builder.Reset()
@@ -200,7 +172,7 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 		idx++
 	}
 
-	log.Printf("[WARN] all update queries executed")
+	log.Printf("[TRACE] all update queries executed")
 
 	for _, failure := range failures {
 		log.Printf("[TRACE] remove schema for connection failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)

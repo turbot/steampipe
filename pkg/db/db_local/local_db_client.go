@@ -343,7 +343,7 @@ func (c *LocalDbClient) setUserSearchPath(ctx context.Context) error {
 
 	// set the search path for all these roles
 	var queries = []string{
-		"lock table pg_user",
+		"lock table pg_user;",
 	}
 	for _, row := range res.Rows {
 		rowResult := row.(*queryresult.RowResult)
