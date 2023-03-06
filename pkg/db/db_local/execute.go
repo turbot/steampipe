@@ -22,7 +22,6 @@ func executeSqlInTransaction(ctx context.Context, conn *pgx.Conn, statements ...
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(ctx)
 	for _, statement := range statements {
 		result, err := tx.Exec(ctx, statement)
 		if err != nil {

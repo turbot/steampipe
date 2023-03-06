@@ -123,5 +123,5 @@ func (s *PluginManagerState) kill() error {
 }
 
 func (s *PluginManagerState) delete() {
-	os.Remove(filepaths.PluginManagerStateFilePath())
+	_ = os.Remove(filepaths.PluginManagerStateFilePath())
 }
