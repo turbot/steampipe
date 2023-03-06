@@ -518,15 +518,13 @@ func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
 // create the command schema and grant insert permission
 func ensureCommandSchema(ctx context.Context, rootClient *pgx.Conn) error {
 	commandSchemaStatements := []string{
+		"lock table pg_namespace;",
 		getUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableCache),
 		fmt.Sprintf("grant select on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableScanMetadata),
 	}
-
-	for _, statement := range commandSchemaStatements {
-		if _, err := rootClient.Exec(ctx, statement); err != nil {
-			return err
-		}
+	if _, err := executeSqlInTransaction(ctx, rootClient, commandSchemaStatements...); err != nil {
+		return err
 	}
 	return nil
 }
