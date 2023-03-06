@@ -490,7 +490,7 @@ func ensurePgExtensions(ctx context.Context, rootClient *pgx.Conn) error {
 		"ltree",
 	}
 
-	errors := []error{}
+	var errors []error
 	for _, extn := range extensions {
 		_, err := rootClient.Exec(ctx, fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
 		if err != nil {
@@ -532,8 +532,11 @@ func ensureCommandSchema(ctx context.Context, rootClient *pgx.Conn) error {
 // ensures that the 'steampipe_users' role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
 func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *pgx.Conn) error {
-	_, err := rootClient.Exec(ctx, fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
-	if err != nil {
+	statements := []string{
+		"lock table pg_namespace;",
+		fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser),
+	}
+	if _, err := executeSqlInTransaction(ctx, rootClient, statements...); err != nil {
 		return err
 	}
 	return nil
