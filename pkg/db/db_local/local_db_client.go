@@ -342,7 +342,9 @@ func (c *LocalDbClient) setUserSearchPath(ctx context.Context) error {
 	}
 
 	// set the search path for all these roles
-	var queries []string
+	var queries = []string{
+		"lock table pg_user",
+	}
 	for _, row := range res.Rows {
 		rowResult := row.(*queryresult.RowResult)
 		user := string(rowResult.Data[0].(string))
@@ -355,9 +357,9 @@ func (c *LocalDbClient) setUserSearchPath(ctx context.Context) error {
 			strings.Join(escapedSearchPath, ","),
 		))
 	}
-	query = strings.Join(queries, "\n")
-	log.Printf("[TRACE] user search path sql: %s", query)
-	_, err = executeSqlAsRoot(ctx, query)
+
+	log.Printf("[TRACE] user search path sql: %v", queries)
+	_, err = executeSqlAsRoot(ctx, queries...)
 	if err != nil {
 		return err
 	}

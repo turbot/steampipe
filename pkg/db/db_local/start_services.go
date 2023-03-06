@@ -426,12 +426,11 @@ func traceoutServiceLogs(logChannel chan string, stopLogStreamFn func()) {
 }
 
 func setServicePassword(ctx context.Context, password string) error {
-	connection, err := createLocalDbClient(ctx, &CreateDbOptions{DatabaseName: "postgres", Username: constants.DatabaseSuperUser})
-	if err != nil {
-		return err
+	statements := []string{
+		"lock table pg_user;",
+		fmt.Sprintf(`alter user steampipe with password '%s';`, password),
 	}
-	defer connection.Close(ctx)
-	_, err = connection.Exec(ctx, fmt.Sprintf(`alter user steampipe with password '%s'`, password))
+	_, err := executeSqlAsRoot(ctx, statements...)
 	return err
 }
 
