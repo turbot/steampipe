@@ -40,7 +40,13 @@ func generateSnapshot(resource string, wg *sync.WaitGroup) {
 
 func TestConcurrentSnapshots(t *testing.T) {
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(9)
+	go generateSnapshot("aws_insights.dashboard.iam_group_dashboard", &wg)
+	go generateSnapshot("aws_insights.dashboard.iam_role_dashboard", &wg)
+	go generateSnapshot("aws_insights.dashboard.iam_user_dashboard", &wg)
+	go generateSnapshot("aws_insights.dashboard.iam_group_dashboard", &wg)
+	go generateSnapshot("aws_insights.dashboard.iam_role_dashboard", &wg)
+	go generateSnapshot("aws_insights.dashboard.iam_user_dashboard", &wg)
 	go generateSnapshot("aws_insights.dashboard.iam_group_dashboard", &wg)
 	go generateSnapshot("aws_insights.dashboard.iam_role_dashboard", &wg)
 	go generateSnapshot("aws_insights.dashboard.iam_user_dashboard", &wg)
