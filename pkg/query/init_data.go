@@ -108,6 +108,9 @@ func (i *InitData) init(parentCtx context.Context, args []string) {
 	i.Result.AddWarnings(errAndWarnings.Warnings...)
 	i.Workspace = w
 
+	// set max DB connections to 2 - 1 for the persistent connection reading pg notificaitons, and 1 for queries
+	viper.Set(constants.ArgMaxParallel, 2)
+
 	statushooks.SetStatus(ctx, "Resolving arguments")
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
