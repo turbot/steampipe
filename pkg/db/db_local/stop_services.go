@@ -99,7 +99,7 @@ func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	utils.LogTime("db_local.GetClientCount start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetClientCount end"))
 
-	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}
