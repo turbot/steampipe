@@ -1,0 +1,82 @@
+{
+  "end_time": "2023-03-01T17:05:36.15964+05:30",
+  "inputs": {
+      "input.new_input": "test"
+  },
+  "layout": {
+      "children": [
+          {
+              "name": "dashboard_inputs.dashboard.testing_dashboard_inputs.input.new_input",
+              "panel_type": "input"
+          },
+          {
+              "name": "dashboard_inputs.table.dashboard_testing_dashboard_inputs_anonymous_table_0",
+              "panel_type": "table"
+          }
+      ],
+      "name": "dashboard_inputs.dashboard.testing_dashboard_inputs",
+      "panel_type": "dashboard"
+  },
+  "panels": {
+      "dashboard_inputs.dashboard.testing_dashboard_inputs": {
+          "dashboard": "dashboard_inputs.dashboard.testing_dashboard_inputs",
+          "name": "dashboard_inputs.dashboard.testing_dashboard_inputs",
+          "panel_type": "dashboard",
+          "status": "complete",
+          "title": "Dashboard input testing"
+      },
+      "dashboard_inputs.dashboard.testing_dashboard_inputs.input.new_input": {
+          "dashboard": "dashboard_inputs.dashboard.testing_dashboard_inputs",
+          "display_type": "text",
+          "name": "dashboard_inputs.dashboard.testing_dashboard_inputs.input.new_input",
+          "panel_type": "input",
+          "properties": {
+              "name": "new_input",
+              "unqualified_name": "input.new_input"
+          },
+          "status": "complete",
+          "title": "Enter a text:",
+          "width": 4
+      },
+      "dashboard_inputs.table.dashboard_testing_dashboard_inputs_anonymous_table_0": {
+          "dashboard": "dashboard_inputs.dashboard.testing_dashboard_inputs",
+          "data": {
+              "columns": [
+                  {
+                      "data_type": "TEXT",
+                      "name": "column 1"
+                  },
+                  {
+                      "data_type": "TEXT",
+                      "name": "column 2"
+                  }
+              ],
+              "rows": [
+                  {
+                      "column 1": "value1",
+                      "column 2": "value1"
+                  }
+              ]
+          },
+          "dependencies": [
+              "dashboard_inputs.dashboard.testing_dashboard_inputs.input.new_input"
+          ],
+          "display_type": "line",
+          "name": "dashboard_inputs.table.dashboard_testing_dashboard_inputs_anonymous_table_0",
+          "panel_type": "table",
+          "properties": {
+              "columns": {
+                  "Alternative Names": {
+                      "name": "Alternative Names",
+                      "wrap": "all"
+                  }
+              },
+              "name": "dashboard_testing_dashboard_inputs_anonymous_table_0"
+          },
+          "status": "complete"
+      }
+  },
+  "schema_version": "20221222",
+  "start_time": "2023-03-01T17:05:36.151229+05:30",
+  "variables": {}
+}

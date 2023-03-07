@@ -94,3 +94,20 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # check if there is no diff returned by the script
   assert_equal "$diff" ""
 }
+
+@test "dashboard with 'input' and test --dashboard-input arg" {
+  # run a dashboard and shapshot the output
+  run steampipe dashboard dashboard.testing_dashboard_inputs --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_inputs" --dashboard-input new_input=test
+
+  # get the patch diff between the two snapshots
+  run jd -f patch $SNAPSHOTS_DIR/expected_sps_testing_dashboard_inputs.json test.sps
+
+  # run the script to evaluate the patch
+  # returns nothing if there is no diff(except start_time, end_time & search_path)
+  diff=$($FILE_PATH/test_files/json_patch.sh $output)
+  echo $diff
+  rm -f test.sps
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
+}
