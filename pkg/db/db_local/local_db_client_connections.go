@@ -108,7 +108,7 @@ func (c *LocalDbClient) executeConnectionUpdateQueries(ctx context.Context, conn
 	defer utils.LogTime("db.executeConnectionUpdateQueries start")
 
 	res := &steampipeconfig.RefreshConnectionResult{}
-	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		res.Error = err
 		return res
@@ -178,7 +178,8 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 	for _, failure := range failures {
 		log.Printf("[TRACE] remove schema for connection failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
 		if failure.ShouldDropIfExists {
-			statements := []string{"lock table pg_namespace;",
+			statements := []string{
+				"lock table pg_namespace;",
 				getDeleteConnectionQuery(failure.ConnectionName),
 			}
 			_, err := executeSqlInTransaction(ctx, rootClient, statements...)

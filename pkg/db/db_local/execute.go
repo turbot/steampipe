@@ -8,7 +8,7 @@ import (
 )
 
 func executeSqlAsRoot(ctx context.Context, statements ...string) ([]pgconn.CommandTag, error) {
-	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}

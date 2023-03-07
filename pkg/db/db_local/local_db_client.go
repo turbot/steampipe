@@ -67,7 +67,7 @@ func NewLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 }
 
 // Close implements Client
-// close the connection to the database and shuts down the backend
+// close the connection to the database and shuts down the backend if we are the last connection
 func (c *LocalDbClient) Close(ctx context.Context) error {
 	log.Printf("[TRACE] close local client %p", c)
 	if c.client != nil {

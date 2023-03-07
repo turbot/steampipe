@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"log"
 	"os"
 	"path/filepath"
@@ -27,7 +29,7 @@ func pluginManagerCmd() *cobra.Command {
 		Run:    runPluginManagerCmd,
 		Hidden: true,
 	}
-	cmdconfig.OnCmd(cmd)
+	cmdconfig.OnCmd(cmd).AddStringFlag(constants.ArgAppName, "", "The app name to use for database connections")
 
 	return cmd
 }
@@ -42,6 +44,12 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Printf("[WARN] failed to load connection config: %s", err.Error())
 		os.Exit(1)
+	}
+
+	// the CLI will pass the Postgress AppName to use for db clients - this is to ensure the CLI does not hold up
+	// shutting down the DB because of connections we have open (but will close)
+	if viper.IsSet(constants.ArgAppName) {
+		runtime.PgClientAppName = viper.GetString(constants.ArgAppName)
 	}
 
 	configMap := connectionwatcher.NewConnectionConfigMap(steampipeConfig.Connections)

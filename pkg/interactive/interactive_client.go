@@ -16,13 +16,14 @@ import (
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
 	"github.com/c-bata/go-prompt"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query"
@@ -60,6 +61,7 @@ type InteractiveClient struct {
 	// this is tied to a context which remaing valid throughout the life of the
 	// interactive session
 	cancelNotificationListener context.CancelFunc
+
 	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
 	// flag set when initialisation is complete (with or without errors)
@@ -629,42 +631,41 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 
 func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) error {
 	log.Printf("[TRACE] InteractiveClient listenToPgNotifications")
+	conn, err := c.getNotificationConnection(ctx)
+
 	for ctx.Err() == nil {
-		conn, err := c.getNotificationConnection(ctx)
 		if err != nil {
 			return err
 		}
 
 		log.Printf("[TRACE] Wait for notification")
-		notification, err := conn.Conn().WaitForNotification(ctx)
+		notification, err := conn.WaitForNotification(ctx)
 		if err != nil && !error_helpers.IsContextCancelledError(err) {
 			log.Printf("[INFO] Error waiting for notification: %s", err)
 		}
-		conn.Release()
 
 		if notification != nil {
 			c.handlePostgresNotification(ctx, notification)
 		}
+		log.Printf("[TRACE] Handled notification")
 	}
-	log.Printf("[TRACE] InteractiveClient listenToPgNotifications DONE")
+	conn.Close(ctx)
 
+	log.Printf("[TRACE] InteractiveClient listenToPgNotifications DONE")
 	return nil
 }
 
-func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgxpool.Conn, error) {
-	sessionResult := c.client().AcquireSession(ctx)
-
-	if sessionResult.Error != nil {
-		return nil, fmt.Errorf("error acquiring database connection to listenToPgNotifications to notifications, %s", sessionResult.Error.Error())
+func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgx.Conn, error) {
+	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseUser})
+	if err != nil {
+		return nil, err
 	}
 
-	conn := sessionResult.Session.Connection
-
 	listenSql := fmt.Sprintf("listen %s", constants.PostgresNotificationChannel)
-	_, err := conn.Exec(context.Background(), listenSql)
+	_, err = conn.Exec(context.Background(), listenSql)
 	if err != nil {
 		log.Printf("[INFO] Error listening to schema channel: %s", err)
-		conn.Release()
+		conn.Close(ctx)
 		return nil, err
 	}
 	return conn, nil
@@ -692,6 +693,7 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 		c.handleConnectionUpdateNotification(ctx, schemaUpdateNotification)
 	}
 }
+
 func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, notification *steampipeconfig.SchemaUpdateNotification) {
 	// at present, we do not actually use the payload, we just do a brute force reload
 	// as an optimization we could look at the updates and only reload the required schemas
