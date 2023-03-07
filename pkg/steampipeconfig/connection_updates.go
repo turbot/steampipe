@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"golang.org/x/exp/maps"
 	"log"
 	"sort"
 	"strings"
@@ -209,6 +210,12 @@ func (u *ConnectionUpdates) String() string {
 		op.WriteString(fmt.Sprintf("Connection state EMPTY\n"))
 	}
 	return op.String()
+}
+
+func (u *ConnectionUpdates) AsNotification() *SchemaUpdateNotification {
+	return NewSchemaUpdateNotification(
+		maps.Keys(u.Update),
+		maps.Keys(u.Delete))
 }
 
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, error) {

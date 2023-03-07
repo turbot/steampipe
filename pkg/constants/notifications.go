@@ -1,5 +1,5 @@
 package constants
 
 const (
-	NotificationConnectionUpdate = "connection_update"
+	PostgresNotificationChannel = "steampipe_notification"
 )

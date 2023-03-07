@@ -643,7 +643,7 @@ func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) error {
 		conn.Release()
 
 		if notification != nil {
-			c.handleConnectionUpdateNotification(ctx, notification)
+			c.handlePostgresNotification(ctx, notification)
 		}
 	}
 	log.Printf("[TRACE] InteractiveClient listenToPgNotifications DONE")
@@ -660,7 +660,7 @@ func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgx
 
 	conn := sessionResult.Session.Connection
 
-	listenSql := fmt.Sprintf("listen %s", constants.NotificationConnectionUpdate)
+	listenSql := fmt.Sprintf("listen %s", constants.PostgresNotificationChannel)
 	_, err := conn.Exec(context.Background(), listenSql)
 	if err != nil {
 		log.Printf("[INFO] Error listening to schema channel: %s", err)
@@ -670,17 +670,31 @@ func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgx
 	return conn, nil
 }
 
-func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, notification *pgconn.Notification) {
+func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, notification *pgconn.Notification) {
 	if notification == nil {
 		return
 	}
 	log.Printf("[TRACE] handleConnectionUpdateNotification: %s", notification.Payload)
-	n := &steampipeconfig.ConnectionUpdateNotification{}
+	n := &steampipeconfig.PostgresNotification{}
 	err := json.Unmarshal([]byte(notification.Payload), n)
 	if err != nil {
 		log.Printf("[INFO] Error unmarshalling notification: %s", err)
 		return
 	}
+	switch n.Type {
+	case steampipeconfig.PgNotificationSchemaUpdate:
+		// unmarshal the notification again, into the correct type
+		schemaUpdateNotification := &steampipeconfig.SchemaUpdateNotification{}
+		if err := json.Unmarshal([]byte(notification.Payload), schemaUpdateNotification); err != nil {
+			log.Printf("[INFO] Error unmarshalling notification: %s", err)
+			return
+		}
+		c.handleConnectionUpdateNotification(ctx, schemaUpdateNotification)
+	}
+}
+func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, notification *steampipeconfig.SchemaUpdateNotification) {
+	// at present, we do not actually use the payload, we just do a brute force reload
+	// as an optimization we could look at the updates and only reload the required schemas
 
 	// reload the connection data map
 	// first load foreign schema names
