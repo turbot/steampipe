@@ -8,7 +8,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.0
 	github.com/alecthomas/chroma v0.10.0
 	github.com/bgentry/speakeasy v0.1.0
-	github.com/briandowns/spinner v1.21.0
+	github.com/briandowns/spinner v1.23.0
 	github.com/c-bata/go-prompt v0.2.6
 	github.com/containerd/containerd v1.4.13
 	github.com/deislabs/oras v0.9.0
