@@ -108,7 +108,7 @@ func (s *PluginManagerState) kill() error {
 		return err
 	}
 	if process == nil {
-		log.Println("[TRACE] tried to kill plugin_manager, but couldn't find process")
+		log.Printf("[TRACE] tried to kill plugin_manager, but couldn't find process (%d)", s.Pid)
 		return nil
 	}
 	// kill the plugin manager process by sending a SIGTERM (to give it a chance to clean up its children)
@@ -123,5 +123,5 @@ func (s *PluginManagerState) kill() error {
 }
 
 func (s *PluginManagerState) delete() {
-	os.Remove(filepaths.PluginManagerStateFilePath())
+	_ = os.Remove(filepaths.PluginManagerStateFilePath())
 }

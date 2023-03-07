@@ -158,14 +158,15 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 
 	var builder strings.Builder
 
+	// TODO execute in single transaction???
 	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
 	for connectionName, connectionData := range updates {
-
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
-		builder.WriteString(getUpdateConnectionQuery(connectionName, remoteSchema))
-
-		_, err := rootClient.Exec(ctx, builder.String())
-		builder.Reset()
+		statements := []string{
+			"lock table pg_namespace;",
+			getUpdateConnectionQuery(connectionName, remoteSchema),
+		}
+		_, err := executeSqlInTransaction(ctx, rootClient, statements...)
 		if err != nil {
 			return err
 		}
@@ -177,8 +178,10 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 	for _, failure := range failures {
 		log.Printf("[TRACE] remove schema for connection failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
 		if failure.ShouldDropIfExists {
-			query := getDeleteConnectionQuery(failure.ConnectionName)
-			_, err := rootClient.Exec(ctx, query)
+			statements := []string{"lock table pg_namespace;",
+				getDeleteConnectionQuery(failure.ConnectionName),
+			}
+			_, err := executeSqlInTransaction(ctx, rootClient, statements...)
 			if err != nil {
 				return err
 			}
@@ -191,11 +194,11 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 		numCommentsUpdates := len(validatedPlugins)
 		log.Printf("[TRACE] executing %d comment %s", numCommentsUpdates, utils.Pluralize("query", numCommentsUpdates))
 
+		statements := []string{"lock table pg_namespace;"}
 		for connectionName, connectionPlugin := range validatedPlugins {
-			builder.WriteString(getCommentsQueryForPlugin(connectionName, connectionPlugin))
-
+			statements = append(statements, getCommentsQueryForPlugin(connectionName, connectionPlugin))
 		}
-		_, err := rootClient.Exec(ctx, builder.String())
+		_, err := executeSqlInTransaction(ctx, rootClient, statements...)
 		if err != nil {
 			return err
 		}
