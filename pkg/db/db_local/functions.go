@@ -30,6 +30,7 @@ func refreshFunctions(ctx context.Context) error {
 	defer utils.LogTime("db.refreshFunctions end")
 
 	queries := []string{
+		"lock table pg_namespace;",
 		fmt.Sprintf(`create schema if not exists %s;`, constants.FunctionSchema),
 		fmt.Sprintf(`grant usage on schema %s to %s;`, constants.FunctionSchema, constants.DatabaseUsersRole),
 	}

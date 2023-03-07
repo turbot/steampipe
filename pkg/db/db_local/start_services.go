@@ -431,7 +431,11 @@ func setServicePassword(ctx context.Context, password string) error {
 		return err
 	}
 	defer connection.Close(ctx)
-	_, err = connection.Exec(ctx, fmt.Sprintf(`alter user steampipe with password '%s'`, password))
+	statements := []string{
+		"lock table pg_user;",
+		fmt.Sprintf(`alter user steampipe with password '%s';`, password),
+	}
+	_, err = executeSqlInTransaction(ctx, connection, statements...)
 	return err
 }
 
@@ -491,7 +495,7 @@ func ensurePgExtensions(ctx context.Context, rootClient *pgx.Conn) error {
 		"ltree",
 	}
 
-	errors := []error{}
+	var errors []error
 	for _, extn := range extensions {
 		_, err := rootClient.Exec(ctx, fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
 		if err != nil {
@@ -519,15 +523,13 @@ func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
 // create the command schema and grant insert permission
 func ensureCommandSchema(ctx context.Context, rootClient *pgx.Conn) error {
 	commandSchemaStatements := []string{
+		"lock table pg_namespace;",
 		getUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableCache),
 		fmt.Sprintf("grant select on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableScanMetadata),
 	}
-
-	for _, statement := range commandSchemaStatements {
-		if _, err := rootClient.Exec(ctx, statement); err != nil {
-			return err
-		}
+	if _, err := executeSqlInTransaction(ctx, rootClient, commandSchemaStatements...); err != nil {
+		return err
 	}
 	return nil
 }
@@ -535,8 +537,11 @@ func ensureCommandSchema(ctx context.Context, rootClient *pgx.Conn) error {
 // ensures that the 'steampipe_users' role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
 func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *pgx.Conn) error {
-	_, err := rootClient.Exec(ctx, fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser))
-	if err != nil {
+	statements := []string{
+		"lock table pg_namespace;",
+		fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser),
+	}
+	if _, err := executeSqlInTransaction(ctx, rootClient, statements...); err != nil {
 		return err
 	}
 	return nil
