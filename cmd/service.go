@@ -428,6 +428,12 @@ to force a restart.
 		error_helpers.FailOnErrorWithMessage(err, "could not stop dashboard service")
 	}
 
+	err = db_local.EnsureDBInstalled(ctx)
+	if err != nil {
+		exitCode = constants.ExitCodeServiceStartupFailure
+		error_helpers.FailOnError(err)
+	}
+
 	// set the password in 'viper' so that it can be used by 'service start'
 	viper.Set(constants.ArgServicePassword, currentDbState.Password)
 
