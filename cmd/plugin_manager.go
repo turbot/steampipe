@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"log"
 	"os"
 	"path/filepath"
@@ -28,7 +29,6 @@ func pluginManagerCmd() *cobra.Command {
 		Hidden: true,
 	}
 	cmdconfig.OnCmd(cmd)
-
 	return cmd
 }
 
@@ -44,6 +44,12 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	// add a prefix to the PgClientAppName so that out DB connecitons are not treated as
+	// another Steampipe instance connected to the DB
+	// (as our lifecycle is managed by the db service,
+	// so we will be shut down when the service is stopped)
+	runtime.PgClientAppName = "pm_" + runtime.PgClientAppName
+
 	configMap := connectionwatcher.NewConnectionConfigMap(steampipeConfig.Connections)
 	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
 
@@ -56,7 +62,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	if shouldRunConnectionWatcher() {
 		log.Printf("[INFO] starting connection watcher")
 
-		connectionWatcher, err := connectionwatcher.NewConnectionWatcher(pluginManager.OnConnectionConfigChanged, pluginManager.OnSchemaChanged)
+		connectionWatcher, err := connectionwatcher.NewConnectionWatcher(pluginManager.OnConnectionConfigChanged, pluginManager.OnConnectionsChanged)
 		if err != nil {
 			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
 			error_helpers.ShowError(ctx, err)

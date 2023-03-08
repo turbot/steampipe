@@ -69,14 +69,14 @@ type CreateDbOptions struct {
 	DatabaseName, Username string
 }
 
-// createLocalDbClient connects and returns a connection to the given database using
+// CreateLocalDbConnection connects and returns a connection to the given database using
 // the provided username
 // if the database is not provided (empty), it connects to the default database in the service
 // that was created during installation.
 // NOTE: no session data callback is used - no sesison data will be present
-func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn, error) {
-	utils.LogTime("db.createLocalDbClient start")
-	defer utils.LogTime("db.createLocalDbClient end")
+func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn, error) {
+	utils.LogTime("db.CreateLocalDbConnection start")
+	defer utils.LogTime("db.CreateLocalDbConnection end")
 
 	psqlInfo, err := getLocalSteampipeConnectionString(opts)
 	if err != nil {

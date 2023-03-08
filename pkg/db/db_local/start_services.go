@@ -79,7 +79,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 	if res.DbState == nil {
 		res = startDB(ctx, port, listen, invoker)
 	} else {
-		rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
+		rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
 		if err != nil {
 			res.Error = err
 			res.Status = ServiceFailedToStart
@@ -221,7 +221,7 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 }
 
 func ensureService(ctx context.Context, databaseName string) error {
-	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
+	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
@@ -426,7 +426,7 @@ func traceoutServiceLogs(logChannel chan string, stopLogStreamFn func()) {
 }
 
 func setServicePassword(ctx context.Context, password string) error {
-	connection, err := createLocalDbClient(ctx, &CreateDbOptions{DatabaseName: "postgres", Username: constants.DatabaseSuperUser})
+	connection, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: "postgres", Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
