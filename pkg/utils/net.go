@@ -3,8 +3,13 @@ package utils
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 )
+
+func GetFirstListenAddress(listenAddresses string) string {
+	return strings.TrimSpace(strings.Split(listenAddresses, ",")[0])
+}
 
 func LocalAddresses() ([]string, error) {
 	addresses := []string{}
@@ -32,9 +37,9 @@ func LocalAddresses() ([]string, error) {
 	return addresses, nil
 }
 
-func IsPortBindable(port int) error {
+func IsPortBindable(host string, port int) error {
 	timeout := 5 * time.Millisecond
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", fmt.Sprintf("%d", port)), timeout)
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, fmt.Sprintf("%d", port)), timeout)
 	if err != nil {
 		return nil
 	}

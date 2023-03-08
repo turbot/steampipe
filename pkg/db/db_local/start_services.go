@@ -61,18 +61,21 @@ const (
 	ListenTypeLocal = "local"
 )
 
-// IsValid is a validator for StartListenType known values
-func (slt StartListenType) IsValid() error {
+// ToListenAddresses is transforms StartListenType known aliases into their actual value
+func (slt StartListenType) ToListenAddresses() string {
 	switch slt {
-	case ListenTypeNetwork, ListenTypeLocal:
-		return nil
+	case ListenTypeNetwork:
+		return "*"
+	case ListenTypeLocal:
+		return "localhost"
 	}
-	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
+	return string(slt)
 }
 
-func StartServices(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) *StartResult {
+func StartServices(ctx context.Context, listenAddresses string, port int, invoker constants.Invoker) *StartResult {
 	utils.LogTime("db_local.StartServices start")
 	defer utils.LogTime("db_local.StartServices end")
+	log.Println(fmt.Sprintf("[TRACE] StartServices - listenAddresses=%s, port=%d", listenAddresses, port))
 
 	res := &StartResult{}
 
@@ -90,7 +93,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 	}
 
 	if res.DbState == nil {
-		res = startDB(ctx, port, listen, invoker)
+		res = startDB(ctx, listenAddresses, port, invoker)
 		if res.Error != nil {
 			return res
 		}
@@ -198,8 +201,8 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 }
 
 // StartDB starts the database if not already running
-func startDB(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) (res *StartResult) {
-	log.Printf("[TRACE] StartDB invoker %s", invoker)
+func startDB(ctx context.Context, listenAddresses string, port int, invoker constants.Invoker) (res *StartResult) {
+	log.Printf("[TRACE] StartDB invoker %s (listenAddresses=%s, port=%d)", invoker, listenAddresses, port)
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
 	var postgresCmd *exec.Cmd
@@ -237,8 +240,8 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		error_helpers.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
 	}
 
-	if err := utils.IsPortBindable(port); err != nil {
-		return res.SetError(fmt.Errorf("cannot listen on port %d", constants.Bold(port)))
+	if err := utils.IsPortBindable(listenAddresses, port); err != nil {
+		return res.SetError(fmt.Errorf("cannot listen on listenAddresses %s and port %d", constants.Bold(listenAddresses), constants.Bold(port)))
 	}
 
 	if err := migrateLegacyPasswordFile(); err != nil {
@@ -250,20 +253,20 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		return res.SetError(err)
 	}
 
-	postgresCmd, err = startPostgresProcess(ctx, port, listen, invoker)
+	postgresCmd, err = startPostgresProcess(ctx, listenAddresses, port, invoker)
 	if err != nil {
 		return res.SetError(err)
 	}
 
 	// create a RunningInfo with empty database name
 	// we need this to connect to the service using 'root', required retrieve the name of the installed database
-	res.DbState = newRunningDBInstanceInfo(postgresCmd, port, "", password, listen, invoker)
+	res.DbState = newRunningDBInstanceInfo(postgresCmd, listenAddresses, port, "", password, invoker)
 	err = res.DbState.Save()
 	if err != nil {
 		return res.SetError(err)
 	}
 
-	databaseName, err := getDatabaseName(ctx, port)
+	databaseName, err := getDatabaseName(ctx, listenAddresses, port)
 	if err != nil {
 		return res.SetError(err)
 	}
@@ -324,8 +327,8 @@ func ensureService(ctx context.Context, databaseName string) error {
 }
 
 // getDatabaseName connects to the service and retrieves the database name
-func getDatabaseName(ctx context.Context, port int) (string, error) {
-	databaseName, err := retrieveDatabaseNameFromService(ctx, port)
+func getDatabaseName(ctx context.Context, host string, port int) (string, error) {
+	databaseName, err := retrieveDatabaseNameFromService(ctx, host, port)
 	if err != nil {
 		return "", err
 	}
@@ -351,15 +354,9 @@ func resolvePassword() (string, error) {
 	return password, nil
 }
 
-func startPostgresProcess(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) (*exec.Cmd, error) {
+func startPostgresProcess(ctx context.Context, listenAddresses string, port int, invoker constants.Invoker) (*exec.Cmd, error) {
 	if error_helpers.IsContextCanceled(ctx) {
 		return nil, ctx.Err()
-	}
-
-	listenAddresses := "localhost"
-
-	if listen == ListenTypeNetwork {
-		listenAddresses = "*"
 	}
 
 	if err := writePGConf(ctx); err != nil {
@@ -377,8 +374,8 @@ func startPostgresProcess(ctx context.Context, port int, listen StartListenType,
 	return postgresCmd, nil
 }
 
-func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, error) {
-	connection, err := createMaintenanceClient(ctx, port)
+func retrieveDatabaseNameFromService(ctx context.Context, host string, port int) (string, error) {
+	connection, err := createMaintenanceClient(ctx, host, port)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to the database: %v - please try again or reset your steampipe database", err)
 	}

@@ -22,9 +22,9 @@ func GetState() (*RunningDBInstanceInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("[TRACE] GetState - loadRunningInstanceInfo returned %#v\n", info)
 
 	if info == nil {
-		log.Println("[TRACE] GetRunStatus - loadRunningInstanceInfo returned nil ")
 		// we do not have a info file
 		return nil, errorIfUnknownService()
 	}
@@ -34,7 +34,7 @@ func GetState() (*RunningDBInstanceInfo, error) {
 		return nil, err
 	}
 	if !pidExists {
-		log.Printf("[TRACE] GetRunStatus - pid %v does not exist\n", info.Pid)
+		log.Printf("[TRACE] GetState - pid %v does not exist\n", info.Pid)
 		// nothing to do here
 		os.Remove(filepaths.RunningInfoFilePath())
 		return nil, nil

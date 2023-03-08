@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/turbot/go-kit/files"
 	"io/fs"
 	"log"
 	"os"
@@ -13,6 +12,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/turbot/go-kit/files"
 
 	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -35,6 +36,7 @@ const (
 // backup archive and the name of the installed database
 type pgRunningInfo struct {
 	cmd    *exec.Cmd
+	host   string
 	port   int
 	dbName string
 }
@@ -59,7 +61,7 @@ const (
 
 // prepareBackup creates a backup file of the public schema for the current database, if we are migrating
 // if a backup was taken, this returns the name of the database that was backed up
-func prepareBackup(ctx context.Context) (*string, error) {
+func prepareBackup(ctx context.Context, host string) (*string, error) {
 	found, location, err := findDifferentPgInstallation(ctx)
 	if err != nil {
 		log.Println("[TRACE] Error while finding different PG Version:", err)
@@ -79,7 +81,7 @@ func prepareBackup(ctx context.Context) (*string, error) {
 		return nil, err
 	}
 
-	runConfig, err := startDatabaseInLocation(ctx, location)
+	runConfig, err := startDatabaseInLocation(ctx, host, location)
 	if err != nil {
 		log.Printf("[TRACE] Error while starting old db in %s: %v", location, err)
 		return nil, err
@@ -132,7 +134,7 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 		// only backup the database used by steampipe
 		fmt.Sprintf("--dbname=%s", config.dbName),
 		// connection parameters
-		"--host=localhost",
+		fmt.Sprintf("--host=%s", config.host),
 		fmt.Sprintf("--port=%d", config.port),
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)
@@ -148,19 +150,19 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 
 // startDatabaseInLocation starts up the postgres binary in a specific installation directory
 // returns a pgRunningInfo instance
-func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningInfo, error) {
+func startDatabaseInLocation(ctx context.Context, host, location string) (*pgRunningInfo, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")
-	port, err := getNextFreePort()
+	port, err := getNextFreePort(host)
 	if err != nil {
 		return nil, err
 	}
 	cmd := exec.CommandContext(
 		ctx,
 		binaryLocation,
-		// by this time, we are sure that the port if free to listen to
+		// by this time, we are sure that the port is free to listen to
 		"-p", fmt.Sprint(port),
-		"-c", "listen_addresses=localhost",
+		"-c", fmt.Sprintf("listen_addresses=%s", host),
 		// NOTE: If quoted, the application name includes the quotes. Worried about
 		// having spaces in the APPNAME, but leaving it unquoted since currently
 		// the APPNAME is hardcoded to be steampipe.
@@ -177,9 +179,9 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		return nil, err
 	}
 
-	runConfig := &pgRunningInfo{cmd: cmd, port: port}
+	runConfig := &pgRunningInfo{cmd: cmd, host: host, port: port}
 
-	dbName, err := getDatabaseName(ctx, port)
+	dbName, err := getDatabaseName(ctx, host, port)
 	if err != nil {
 		runConfig.stop(ctx)
 		return nil, err
@@ -325,7 +327,7 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 		// the database name
 		fmt.Sprintf("--dbname=%s", info.Database),
 		// connection parameters
-		"--host=localhost",
+		fmt.Sprintf("--host=%s", utils.GetFirstListenAddress(info.ListenAddresses)),
 		fmt.Sprintf("--port=%d", info.Port),
 		fmt.Sprintf("--username=%s", info.User),
 	)
