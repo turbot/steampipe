@@ -737,7 +737,7 @@ func (m *PluginManager) notifySchemaChange(notification any, client *db_local.Lo
 		return
 	}
 
-	log.Printf("[WARN] Send update notification")
+	log.Printf("[TRACE] Send update notification")
 
 	sql := fmt.Sprintf("select pg_notify('%s', $1)", constants.PostgresNotificationChannel)
 	_, err = client.ExecuteSync(context.Background(), sql, notificationBytes)
