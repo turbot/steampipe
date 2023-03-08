@@ -18,6 +18,7 @@
     "introspection_table_mod.control.sample_control_1"
    ]
   ],
+  "qualified_resource_name": "introspection_table_mod.control.sample_control_1",
   "query": "introspection_table_mod.query.sample_query_1",
   "resource_name": "sample_control_1",
   "severity": "high",

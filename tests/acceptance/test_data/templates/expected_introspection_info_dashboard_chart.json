@@ -18,6 +18,7 @@
     "introspection_table_mod.text.sample_text_1"
    ]
   ],
+  "qualified_resource_name": "introspection_table_mod.chart.sample_chart_1",
   "query": null,
   "resource_name": "sample_chart_1",
   "series": null,

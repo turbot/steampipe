@@ -11,7 +11,7 @@ type HclResourceImpl struct {
 	// required to allow partial decoding
 	HclResourceRemain hcl.Body `hcl:",remain" json:"-"`
 
-	FullName        string            `cty:"name" json:"-"`
+	FullName        string            `cty:"name" column:"qualified_resource_name,text" json:"-"`
 	Title           *string           `cty:"title" hcl:"title" column:"title,text" json:"-"`
 	ShortName       string            `cty:"short_name" hcl:"name,label" json:"name"`
 	UnqualifiedName string            `cty:"unqualified_name" json:"-"`

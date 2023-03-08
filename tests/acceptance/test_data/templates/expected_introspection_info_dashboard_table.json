@@ -17,6 +17,7 @@
     "introspection_table_mod.text.sample_text_1"
    ]
   ],
+  "qualified_resource_name": "introspection_table_mod.table.sample_table_1",
   "query": null,
   "resource_name": "sample_table_1",
   "source_definition": "    table \"sample_table_1\" {\n      sql = \"select 1 as table\"\n      width = 4\n      title = \"Sample table 1\"\n    }",

@@ -21,6 +21,7 @@
     "introspection_table_mod.var.sample_var_1"
    ]
   ],
+  "qualified_resource_name": "introspection_table_mod.var.sample_var_1",
   "resource_name": "sample_var_1",
   "source_definition": "variable \"sample_var_1\"{\n\ttype = string\n\tdefault = \"steampipe_var\"\n}",
   "start_line_number": 1,
