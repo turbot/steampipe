@@ -83,16 +83,6 @@ func emptyModResources() *ResourceMaps {
 	}
 }
 
-// ModResourcesForQueries creates a ResourceMaps object containing just the specified queries
-// This is used to just create necessary prepared statements when executing batch queries
-func ModResourcesForQueries(queryProviders []QueryProvider, mod *Mod) *ResourceMaps {
-	res := NewModResources(mod)
-	for _, p := range queryProviders {
-		res.addControlOrQuery(p)
-	}
-	return res
-}
-
 // QueryProviders returns a slice of all QueryProviders
 func (m *ResourceMaps) QueryProviders() []QueryProvider {
 	res := make([]QueryProvider, m.queryProviderCount())

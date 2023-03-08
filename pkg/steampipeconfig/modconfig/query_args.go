@@ -10,7 +10,7 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-// QueryArgs is a struct which contains the arguments used to invoke a prepared statement
+// QueryArgs is a struct which contains the arguments used to invoke a query
 // these may either be passed by name, in a map, or as a list of positional args
 // NOTE: if both are present the named parameters are used
 type QueryArgs struct {

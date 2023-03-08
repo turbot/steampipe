@@ -10,100 +10,101 @@ import (
 )
 
 // NOTE: all query arg values must be JSON representations
-type parsePreparedStatementInvocationTest struct {
+type parseQueryInvocationTest struct {
 	input    string
-	expected parsePreparedStatementInvocationResult
+	expected parseQueryInvocationResult
 }
 
-type parsePreparedStatementInvocationResult struct {
+type parseQueryInvocationResult struct {
 	queryName string
 	args      *modconfig.QueryArgs
 }
 
 var emptyParams = modconfig.NewQueryArgs()
-var testCasesParsePreparedStatementInvocation = map[string]parsePreparedStatementInvocationTest{
+var testCasesParseQueryInvocation = map[string]parseQueryInvocationTest{
 	"no brackets": {
 		input:    `query.q1`,
-		expected: parsePreparedStatementInvocationResult{"query.q1", emptyParams},
+		expected: parseQueryInvocationResult{"query.q1", emptyParams},
 	},
 	"no params": {
 		input:    `query.q1()`,
-		expected: parsePreparedStatementInvocationResult{"query.q1", emptyParams},
+		expected: parseQueryInvocationResult{"query.q1", emptyParams},
 	},
 	"invalid params 1": {
 		input: `query.q1(foo)`,
-		expected: parsePreparedStatementInvocationResult{
+		expected: parseQueryInvocationResult{
 			queryName: `query.q1`,
 			args:      &modconfig.QueryArgs{},
 		},
 	},
 	"invalid params 4": {
 		input: `query.q1("foo",  "bar"])`,
-		expected: parsePreparedStatementInvocationResult{
+		expected: parseQueryInvocationResult{
 			queryName: `query.q1`,
-			args:      &modconfig.QueryArgs{},
+
+			args: &modconfig.QueryArgs{},
 		},
 	},
 
 	"single positional param": {
 		input: `query.q1("foo")`,
-		expected: parsePreparedStatementInvocationResult{
+		expected: parseQueryInvocationResult{
 			queryName: `query.q1`,
 			args:      &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("foo")}},
 		},
 	},
 	"single positional param extra spaces": {
 		input: `query.q1("foo"   )   `,
-		expected: parsePreparedStatementInvocationResult{
+		expected: parseQueryInvocationResult{
 			queryName: `query.q1`,
 			args:      &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("foo")}},
 		},
 	},
 	"multiple positional params": {
 		input: `query.q1("foo", "bar", "foo-bar")`,
-		expected: parsePreparedStatementInvocationResult{
+		expected: parseQueryInvocationResult{
 			queryName: `query.q1`,
 			args:      &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("foo"), utils.ToStringPointer("bar"), utils.ToStringPointer("foo-bar")}},
 		},
 	},
 	"multiple positional params extra spaces": {
 		input: `query.q1("foo",   "bar",    "foo-bar"   )`,
-		expected: parsePreparedStatementInvocationResult{
+		expected: parseQueryInvocationResult{
 			queryName: `query.q1`,
 			args:      &modconfig.QueryArgs{ArgList: []*string{utils.ToStringPointer("foo"), utils.ToStringPointer("bar"), utils.ToStringPointer("foo-bar")}},
 		},
 	},
 	"single named param": {
 		input: `query.q1(p1 => "foo")`,
-		expected: parsePreparedStatementInvocationResult{
+		expected: parseQueryInvocationResult{
 			queryName: `query.q1`,
 			args:      &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "foo"}},
 		},
 	},
 	"single named param extra spaces": {
 		input: `query.q1(  p1  =>  "foo"  ) `,
-		expected: parsePreparedStatementInvocationResult{
+		expected: parseQueryInvocationResult{
 			queryName: `query.q1`,
 			args:      &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "foo"}},
 		},
 	},
 	"multiple named params": {
 		input: `query.q1(p1 => "foo", p2 => "bar")`,
-		expected: parsePreparedStatementInvocationResult{
+		expected: parseQueryInvocationResult{
 			queryName: `query.q1`,
 			args:      &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "foo", "p2": "bar"}},
 		},
 	},
 	"multiple named params extra spaces": {
 		input: ` query.q1 ( p1 => "foo" ,  p2  => "bar"     ) `,
-		expected: parsePreparedStatementInvocationResult{
+		expected: parseQueryInvocationResult{
 			queryName: `query.q1`,
 			args:      &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "foo", "p2": "bar"}},
 		},
 	},
 	"named param with dot in value": {
 		input: `query.q1(p1 => "foo.bar")`,
-		expected: parsePreparedStatementInvocationResult{
+		expected: parseQueryInvocationResult{
 			queryName: `query.q1`,
 			args:      &modconfig.QueryArgs{ArgMap: map[string]string{"p1": "foo.bar"}},
 		},
@@ -111,7 +112,7 @@ var testCasesParsePreparedStatementInvocation = map[string]parsePreparedStatemen
 }
 
 func TestParseQueryInvocation(t *testing.T) {
-	for name, test := range testCasesParsePreparedStatementInvocation {
+	for name, test := range testCasesParseQueryInvocation {
 		queryName, args, _ := ParseQueryInvocation(test.input)
 
 		if queryName != test.expected.queryName || !test.expected.args.Equals(args) {

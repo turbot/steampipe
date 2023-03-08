@@ -60,7 +60,7 @@ type WithProvider interface {
 	GetWith(string) (*DashboardWith, bool)
 }
 
-// QueryProvider must be implemented by resources which supports prepared statements, i.e. Control and Query
+// QueryProvider must be implemented by resources which have query/sql
 type QueryProvider interface {
 	RuntimeDependencyProvider
 	GetArgs() *QueryArgs

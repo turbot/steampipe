@@ -306,7 +306,7 @@ func (s *RuntimeDependencySubscriberImpl) findRuntimeDependencyForParentProperty
 	return res[0]
 }
 
-// resolve the sql for this leaf run into the source sql (i.e. NOT the prepared statement name) and resolved args
+// resolve the sql for this leaf run into the source sql and resolved args
 func (s *RuntimeDependencySubscriberImpl) resolveSQLAndArgs() error {
 	log.Printf("[TRACE] %s: resolveSQLAndArgs", s.resource.Name())
 	queryProvider, ok := s.resource.(modconfig.QueryProvider)

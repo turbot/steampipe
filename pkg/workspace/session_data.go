@@ -3,15 +3,15 @@ package workspace
 import (
 	"context"
 	"errors"
-
 	"github.com/jackc/pgx/v5"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-// EnsureSessionData determines whether session scoped data (introspection tables and prepared statements)
-// exists for this session, and if not, creates it
-func EnsureSessionData(ctx context.Context, source *SessionDataSource, conn *pgx.Conn) (error) {
+// EnsureSessionData determines whether introspection tables
+// exists for this session, and if not, creates them if needed
+func EnsureSessionData(ctx context.Context, source *modconfig.ResourceMaps, conn *pgx.Conn) error {
 	utils.LogTime("workspace.EnsureSessionData start")
 	defer utils.LogTime("workspace.EnsureSessionData end")
 
@@ -22,18 +22,15 @@ func EnsureSessionData(ctx context.Context, source *SessionDataSource, conn *pgx
 	// check for introspection tables
 	// if the steampipe_mod table is missing, assume we have no session data - go ahead and create it
 	row := conn.QueryRow(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema LIKE 'pg_temp%' AND table_name='steampipe_mod' ")
-
 	var count int
-	err := row.Scan(&count)
-	if err != nil {
+	if err := row.Scan(&count); err != nil {
 		return err
 	}
 	if count == 0 {
-
-		err = db_common.CreateIntrospectionTables(ctx, source.IntrospectionTableSource(), conn)
-		if err != nil {
+		if err := db_common.CreateIntrospectionTables(ctx, source, conn); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }

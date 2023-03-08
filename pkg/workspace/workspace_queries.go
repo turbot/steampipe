@@ -18,34 +18,26 @@ import (
 // GetQueriesFromArgs retrieves queries from args
 //
 // For each arg check if it is a named query or a file, before falling back to treating it as sql
-func (w *Workspace) GetQueriesFromArgs(args []string) (map[string]*modconfig.ResolvedQuery, *modconfig.ResourceMaps, error) {
+func (w *Workspace) GetQueriesFromArgs(args []string) (map[string]*modconfig.ResolvedQuery, error) {
 	utils.LogTime("execute.GetQueriesFromArgs start")
 	defer utils.LogTime("execute.GetQueriesFromArgs end")
 
 	var queries = make(map[string]*modconfig.ResolvedQuery)
-	var queryProviders []modconfig.QueryProvider
-	// build map of just the required prepared statement providers
 	for _, arg := range args {
 		resolvedQuery, queryProvider, err := w.ResolveQueryAndArgsFromSQLString(arg)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if len(resolvedQuery.ExecuteSQL) > 0 {
 			// default name to the query text
 			queryName := resolvedQuery.ExecuteSQL
 			if queryProvider != nil {
 				queryName = queryProvider.Name()
-				queryProviders = append(queryProviders, queryProvider)
 			}
 			queries[queryName] = resolvedQuery
-
 		}
 	}
-	var preparedStatementSource *modconfig.ResourceMaps
-	if len(queries) > 0 {
-		preparedStatementSource = modconfig.ModResourcesForQueries(queryProviders, w.Mod)
-	}
-	return queries, preparedStatementSource, nil
+	return queries, nil
 }
 
 // ResolveQueryAndArgsFromSQLString attempts to resolve 'arg' to a query and query args

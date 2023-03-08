@@ -16,7 +16,6 @@ import (
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -24,9 +23,6 @@ type InitData struct {
 	Workspace *workspace.Workspace
 	Client    db_common.Client
 	Result    *db_common.InitResult
-
-	// used for query only
-	PreparedStatementSource *modconfig.ResourceMaps
 
 	ShutdownTelemetry func()
 	ExportManager     *export.Manager
@@ -112,11 +108,12 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		return
 	}
 
-	// setup the session data - prepared statements and introspection tables
-	sessionDataSource := workspace.NewSessionDataSource(i.Workspace, i.PreparedStatementSource)
-	// define db connection callback function
-	ensureSessionData := func(ctx context.Context, conn *pgx.Conn) error {
-		return workspace.EnsureSessionData(ctx, sessionDataSource, conn)
+	// if introspection tables are enabled, setup the session data callback
+	var ensureSessionData db_client.DbConnectionCallback
+	if viper.GetString(constants.ArgIntrospection) != constants.IntrospectionNone {
+		ensureSessionData = func(ctx context.Context, conn *pgx.Conn) error {
+			return workspace.EnsureSessionData(ctx, i.Workspace.GetResourceMaps(), conn)
+		}
 	}
 
 	// get a client

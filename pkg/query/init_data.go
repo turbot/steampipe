@@ -114,7 +114,7 @@ func (i *InitData) init(parentCtx context.Context, args []string) {
 	statushooks.SetStatus(ctx, "Resolving arguments")
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-	resolvedQueries, preparedStatementSource, err := w.GetQueriesFromArgs(args)
+	resolvedQueries, err := w.GetQueriesFromArgs(args)
 	if err != nil {
 		i.Result.Error = err
 		return
@@ -124,7 +124,6 @@ func (i *InitData) init(parentCtx context.Context, args []string) {
 	// and store it
 	i.cancelInitialisation = cancel
 	i.Queries = resolvedQueries
-	i.PreparedStatementSource = preparedStatementSource
 
 	// and call base init
 	i.InitData.Init(ctx, constants.InvokerQuery)
