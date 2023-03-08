@@ -58,7 +58,6 @@ const (
 	ArgSnapshotLocation     = "snapshot-location"
 	ArgSnapshotTitle        = "snapshot-title"
 	ArgDatabaseStartTimeout = "database-start-timeout"
-	ArgAppName              = "app-name"
 )
 
 // metaquery mode arguments

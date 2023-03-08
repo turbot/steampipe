@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"log"
 	"os"
@@ -29,8 +28,7 @@ func pluginManagerCmd() *cobra.Command {
 		Run:    runPluginManagerCmd,
 		Hidden: true,
 	}
-	cmdconfig.OnCmd(cmd).AddStringFlag(constants.ArgAppName, "", "The app name to use for database connections")
-
+	cmdconfig.OnCmd(cmd)
 	return cmd
 }
 
@@ -46,11 +44,11 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// the CLI will pass the Postgress AppName to use for db clients - this is to ensure the CLI does not hold up
-	// shutting down the DB because of connections we have open (but will close)
-	if viper.IsSet(constants.ArgAppName) {
-		runtime.PgClientAppName = viper.GetString(constants.ArgAppName)
-	}
+	// add a prefix to the PgClientAppName so that out DB connecitons are not treated as
+	// another Steampipe instance connected to the DB
+	// (as our lifecycle is managed by the db service,
+	// so we will be shut down when the service is stopped)
+	runtime.PgClientAppName = "pm_" + runtime.PgClientAppName
 
 	configMap := connectionwatcher.NewConnectionConfigMap(steampipeConfig.Connections)
 	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
@@ -64,7 +62,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	if shouldRunConnectionWatcher() {
 		log.Printf("[INFO] starting connection watcher")
 
-		connectionWatcher, err := connectionwatcher.NewConnectionWatcher(pluginManager.OnConnectionConfigChanged, pluginManager.OnSchemaChanged)
+		connectionWatcher, err := connectionwatcher.NewConnectionWatcher(pluginManager.OnConnectionConfigChanged, pluginManager.OnConnectionsChanged)
 		if err != nil {
 			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
 			error_helpers.ShowError(ctx, err)

@@ -662,7 +662,7 @@ func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgx
 	}
 
 	listenSql := fmt.Sprintf("listen %s", constants.PostgresNotificationChannel)
-	_, err = conn.Exec(context.Background(), listenSql)
+	_, err = conn.Exec(ctx, listenSql)
 	if err != nil {
 		log.Printf("[INFO] Error listening to schema channel: %s", err)
 		conn.Close(ctx)
@@ -698,6 +698,7 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	// at present, we do not actually use the payload, we just do a brute force reload
 	// as an optimization we could look at the updates and only reload the required schemas
 
+	log.Printf("[TRACE] handleConnectionUpdateNotification")
 	// reload the connection data map
 	// first load foreign schema names
 	if err := c.client().LoadSchemaNames(ctx); err != nil {
@@ -729,6 +730,7 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	c.initialiseSuggestions()
 
 	// refresh the db session inside an execution lock
+	// we do this to avoid the postgres `cached plan must not change result type`` error
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
