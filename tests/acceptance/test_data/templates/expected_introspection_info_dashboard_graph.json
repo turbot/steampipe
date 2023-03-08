@@ -20,7 +20,7 @@
   ],
   "params": null,
   "path": null,
-  "qualified_resource_name": "introspection_table_mod.graph.sample_graph_1",
+  "qualified_name": "introspection_table_mod.graph.sample_graph_1",
   "query": null,
   "resource_name": "sample_graph_1",
   "source_definition": "    graph \"sample_graph_1\" {\n      title = \"Sample graph 1\"\n      width = 5\n\n      node \"sample_node_2\" {\n        sql = <<-EOQ\n          select 1 as node\n        EOQ\n      }\n      edge \"sample_edge_2\" {\n        sql = <<-EOQ\n          select 1 as edge\n        EOQ\n      }\n    }",
