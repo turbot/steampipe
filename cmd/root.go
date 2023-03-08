@@ -40,7 +40,7 @@ var tasksCancelFn context.CancelFunc
 var rootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
 	Version: version.SteampipeVersion.String(),
-	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+	PersistentPostRun: func(_ *cobra.Command, _ []string) {
 		utils.LogTime("cmd.PersistentPostRun start")
 		defer utils.LogTime("cmd.PersistentPostRun end")
 		if waitForTasksChannel != nil {
