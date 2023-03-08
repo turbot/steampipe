@@ -566,7 +566,7 @@ func refreshConnectionsIfNecessary(parentCtx context.Context, reports display.Pl
 	return nil
 }
 
-func runPluginListCmd(cmd *cobra.Command, args []string) {
+func runPluginListCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 	utils.LogTime("runPluginListCmd list")
 	defer func() {

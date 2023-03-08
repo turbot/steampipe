@@ -212,7 +212,7 @@ func modInitCmd() *cobra.Command {
 	return cmd
 }
 
-func runModInitCmd(cmd *cobra.Command, args []string) {
+func runModInitCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 	utils.LogTime("cmd.runModInitCmd")
 	defer func() {
