@@ -31,7 +31,12 @@ jobs:
           git config user.name "Puskar Basu"
           git checkout ${{ github.base_ref }}
           git checkout -b test-branch-acc
-          git merge origin/${{ github.head_ref }}
+          git merge ${{ github.head_ref }}
+
+      - name: Check branch details
+        run: |
+          git branch
+          git log
 
       - name: Set up Go
         uses: actions/setup-go@v3
