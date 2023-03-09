@@ -27,7 +27,7 @@ require (
 	github.com/hashicorp/terraform v0.15.1
 	github.com/jackc/pgconn v1.14.0
 	github.com/jackc/pgx/v5 v5.3.0
-	github.com/jedib0t/go-pretty/v6 v6.4.4
+	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/karrick/gows v0.3.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/mattn/go-isatty v0.0.17
