@@ -27,8 +27,6 @@ jobs:
       - name: Create a feature branch off base, merge head_ref into the feature branch and build the binary
         run: |
           git fetch
-          git config user.email "puskar@turbot.com"
-          git config user.name "Puskar Basu"
           git checkout ${{ github.base_ref }}
           git checkout -b test-branch-acc
           git fetch --all
