@@ -1,3 +1,7 @@
+## v0.19.1 [2023-03-09]
+_Bug fixes_
+* Fix `service stop` failing if invoked directly after a schema change notification. ([#3206](https://github.com/turbot/steampipe/issues/3206))
+ 
 ## v0.19.0 [2023-03-09]
 _What's new?_
 * Add support for aggregator connections with dynamic tables. ([#2886](https://github.com/turbot/steampipe/issues/2886))

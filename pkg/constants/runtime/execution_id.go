@@ -9,6 +9,7 @@ import (
 )
 
 var (
-	ExecutionID     = helpers.GetMD5Hash(fmt.Sprintf("%d", time.Now().Nanosecond()))[:4]
-	PgClientAppName = fmt.Sprintf("%s_%s", constants.AppName, ExecutionID)
+	ExecutionID                        = helpers.GetMD5Hash(fmt.Sprintf("%d", time.Now().Nanosecond()))[:4]
+	PgClientAppName                    = fmt.Sprintf("%s_%s", constants.AppName, ExecutionID)
+	PgClientAppNamePluginManagerPrefix = "pm_"
 )
