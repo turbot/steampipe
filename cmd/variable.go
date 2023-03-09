@@ -6,14 +6,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/cmdconfig"
-	"github.com/turbot/steampipe/constants"
-	"github.com/turbot/steampipe/display"
-	"github.com/turbot/steampipe/utils"
-	"github.com/turbot/steampipe/workspace"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/display"
+	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/workspace"
 )
 
-//  Variable management commands
+// Variable management commands
 func variableCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "variable [command]",
@@ -49,9 +49,9 @@ Example:
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag("outdated", "", false, "Check each variable in the list for updates").
-		AddBoolFlag(constants.ArgHelp, "h", false, "Help for variable list").
-		AddStringFlag(constants.ArgOutput, "", constants.OutputFormatTable, "Select a console output format: table or json")
+		AddBoolFlag("outdated", false, "Check each variable in the list for updates").
+		AddBoolFlag(constants.ArgHelp, false, "Help for variable list", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddStringFlag(constants.ArgOutput, constants.OutputFormatTable, "Select a console output format: table or json")
 
 	return cmd
 }
@@ -60,7 +60,7 @@ func runVariableListCmd(cmd *cobra.Command, args []string) {
 	ctx := cmd.Context()
 	defer func() {
 		if r := recover(); r != nil {
-			utils.ShowError(ctx, helpers.ToError(r))
+			error_helpers.ShowError(ctx, helpers.ToError(r))
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
@@ -68,15 +68,15 @@ func runVariableListCmd(cmd *cobra.Command, args []string) {
 	// validate output arg
 	output := viper.GetString(constants.ArgOutput)
 	if !helpers.StringSliceContains([]string{constants.OutputFormatTable, constants.OutputFormatJSON}, output) {
-		utils.ShowError(ctx, fmt.Errorf("output flag must be either 'json' or 'table'"))
+		error_helpers.ShowError(ctx, fmt.Errorf("output flag must be either 'json' or 'table'"))
 		return
 	}
 
-	workspacePath := viper.GetString(constants.ArgWorkspaceChDir)
+	workspacePath := viper.GetString(constants.ArgModLocation)
 
 	vars, err := workspace.LoadVariables(ctx, workspacePath)
 	// load the workspace
-	utils.FailOnErrorWithMessage(err, "failed to load workspace")
+	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
 
 	if viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON {
 		display.ShowVarsListJson(vars)

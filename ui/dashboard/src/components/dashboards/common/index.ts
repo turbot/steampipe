@@ -1,58 +1,64 @@
 import has from "lodash/has";
-import { ChartProperties, ChartTransform, ChartType } from "../charts";
-import { CheckExecutionTree } from "../check/common";
-import { FlowCategories, FlowProperties, FlowType } from "../flows";
-import { getColumnIndex } from "../../../utils/data";
-import { HierarchyProperties, HierarchyType } from "../hierarchies";
+import isEmpty from "lodash/isEmpty";
+import {
+  Category,
+  CategoryMap,
+  Edge,
+  EdgeMap,
+  KeyValuePairs,
+  Node,
+  NodeCategoryMap,
+  NodeMap,
+  NodesAndEdges,
+} from "./types";
+import { ChartProperties, ChartTransform, ChartType } from "../charts/types";
+import { DashboardRunState } from "../../../types";
+import { ExpandedNodes } from "../graphs/common/useGraph";
+import { FlowProperties, FlowType } from "../flows/types";
+import { getColumn } from "../../../utils/data";
+import { Graph, json } from "graphlib";
+import { GraphProperties, GraphType, NodeAndEdgeData } from "../graphs/types";
+import { HierarchyProperties, HierarchyType } from "../hierarchies/types";
 
 export type Width = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
-export interface BasePrimitiveProps {
+export type BasePrimitiveProps = {
   base?: string;
+  dashboard: string;
   name: string;
-  node_type: string;
+  panel_type: string;
+  display_type?: string;
   title?: string;
   width?: Width;
-}
+};
 
-export interface LeafNodeDataColumn {
+export type LeafNodeDataColumn = {
   name: string;
-  data_type_name: string;
-}
+  data_type: string;
+};
 
-// export interface HierarchyDataRow {
-//   id: string;
-//   category: string;
-//   parent: string | null;
-//   name: string | null;
-// }
-//
-// export interface HierarchyDataRowEdge {
-//   source: string;
-//   target: string;
-//   value: number;
-// }
+export type LeafNodeDataRow = {
+  [key: string]: any;
+};
 
-export type LeafNodeDataRow = any[];
-
-export interface LeafNodeData {
+export type LeafNodeData = {
   columns: LeafNodeDataColumn[];
   rows: LeafNodeDataRow[];
-}
+};
 
-export interface ExecutablePrimitiveProps {
+export type ExecutablePrimitiveProps = {
   sql?: string;
   data?: LeafNodeData;
-  execution_tree?: CheckExecutionTree;
   error?: Error;
-}
+  status: DashboardRunState;
+};
 
 export type ColorOverride = "alert" | "info" | "ok" | string;
 
-export type EChartsType = "bar" | "line" | "pie" | "sankey";
+export type EChartsType = "bar" | "line" | "pie" | "sankey" | "tree" | "graph";
 
 const toEChartsType = (
-  type: ChartType | FlowType | HierarchyType
+  type: ChartType | FlowType | GraphType | HierarchyType
 ): EChartsType => {
   // A column chart in chart.js is a bar chart with different options
   if (type === "column") {
@@ -65,11 +71,11 @@ const toEChartsType = (
   return type as EChartsType;
 };
 
-interface ChartDatasetResponse {
+type ChartDatasetResponse = {
   dataset: any[][];
   rowSeriesLabels: string[];
   transform: ChartTransform;
-}
+};
 
 const crosstabDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
   if (data.columns.length < 3) {
@@ -80,9 +86,9 @@ const crosstabDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
   const xAxisLabels: string[] = [];
   const seriesLabels: string[] = [];
   for (const row of data.rows) {
-    const xAxisLabel = row[0];
-    const seriesName = row[1];
-    const seriesValue = row[2];
+    const xAxisLabel = row[data.columns[0].name];
+    const seriesName = row[data.columns[1].name];
+    const seriesValue = row[data.columns[2].name];
 
     if (!xAxis[xAxisLabel]) {
       xAxis[xAxisLabel] = {};
@@ -126,20 +132,23 @@ const crosstabDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
 
 const defaultDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
   return {
-    dataset: [data.columns.map((col) => col.name), ...data.rows],
+    dataset: [
+      data.columns.map((col) => col.name),
+      ...data.rows.map((row) => data.columns.map((col) => row[col.name])),
+    ],
     rowSeriesLabels: [],
     transform: "none",
   };
 };
 
-const isNumericCol = (data_type_name: string | null | undefined) => {
-  if (!data_type_name) {
+const isNumericCol = (data_type: string | null | undefined) => {
+  if (!data_type) {
     return false;
   }
   return (
-    data_type_name.toLowerCase().indexOf("int") >= 0 ||
-    data_type_name.toLowerCase().indexOf("float") >= 0 ||
-    data_type_name.toLowerCase().indexOf("numeric") >= 0
+    data_type.toLowerCase().indexOf("int") >= 0 ||
+    data_type.toLowerCase().indexOf("float") >= 0 ||
+    data_type.toLowerCase().indexOf("numeric") >= 0
   );
 };
 
@@ -148,9 +157,9 @@ const automaticDataTransform = (data: LeafNodeData): ChartDatasetResponse => {
   // If that's 3 columns, with the first 2 non-numeric and the last numeric, we'll apply
   // a crosstab transform, else we'll apply the default transform
   if (data.columns.length === 3) {
-    const col1Type = data.columns[0].data_type_name;
-    const col2Type = data.columns[1].data_type_name;
-    const col3Type = data.columns[2].data_type_name;
+    const col1Type = data.columns[0].data_type;
+    const col2Type = data.columns[1].data_type;
+    const col3Type = data.columns[2].data_type;
     if (
       !isNumericCol(col1Type) &&
       !isNumericCol(col2Type) &&
@@ -183,113 +192,6 @@ const buildChartDataset = (
       return automaticDataTransform(data);
   }
 };
-
-// const buildSeriesInputs = (rawData, seriesDataFormat, seriesDataType) => {
-//   const seriesDataLookup: SeriesTimeLookup = {};
-//   const seriesDataTotalLookup: TotalLookup = {};
-//   const seriesLabels: string[] = [];
-//   const timeSeriesLabels: string[] = [];
-//   if (seriesDataFormat === "row") {
-//     if (seriesDataType === "time") {
-//       for (const row of rawData.slice(1)) {
-//         const timeRaw = row[0];
-//         const formattedTime = moment(timeRaw).format("DD MMM YYYY");
-//         const series = row[1];
-//         const value = row[2];
-//         seriesDataLookup[formattedTime] = seriesDataLookup[formattedTime] || {};
-//         const timeEntry = seriesDataLookup[formattedTime];
-//         timeEntry[series] = timeEntry[series] || {};
-//         const seriesEntry = timeEntry[series];
-//         seriesEntry.value = value;
-//         if (timeSeriesLabels.indexOf(formattedTime) === -1) {
-//           timeSeriesLabels.push(formattedTime);
-//         }
-//         if (value !== 0 && seriesLabels.indexOf(series) === -1) {
-//           seriesLabels.push(series);
-//         }
-//
-//         seriesDataTotalLookup[formattedTime] = seriesDataTotalLookup[
-//           formattedTime
-//         ] || {
-//           min: 0,
-//           max: 0,
-//         };
-//         if (value > 0) {
-//           seriesDataTotalLookup[formattedTime].max += value;
-//         }
-//         if (value < 0) {
-//           seriesDataTotalLookup[formattedTime].min += value;
-//         }
-//       }
-//     }
-//   }
-//
-//   return {
-//     seriesDataLookup,
-//     seriesDataTotalLookup,
-//     seriesLabels,
-//     timeSeriesLabels,
-//   };
-// };
-
-// const buildSeriesDataInputs = (rawData, seriesDataFormat, seriesDataType) => {
-//   const {
-//     seriesDataLookup,
-//     seriesDataTotalLookup,
-//     seriesLabels,
-//     timeSeriesLabels,
-//   } = buildSeriesInputs(rawData, seriesDataFormat, seriesDataType);
-//   const datasets: SeriesData[] = [];
-//
-//   for (
-//     let seriesLabelIndex = 0;
-//     seriesLabelIndex < seriesLabels.length;
-//     seriesLabelIndex++
-//   ) {
-//     const seriesLabel = seriesLabels[seriesLabelIndex];
-//     const data: any[] = [];
-//
-//     for (const timeSeriesLabel of timeSeriesLabels) {
-//       const timeSeriesEntry = seriesDataLookup[timeSeriesLabel];
-//       const seriesEntry = timeSeriesEntry[seriesLabel];
-//       data.push(seriesEntry ? seriesEntry.value : null);
-//     }
-//
-//     datasets.push({
-//       name: seriesLabel,
-//       data,
-//       // backgroundColor: themeColors[seriesLabelIndex],
-//     });
-//   }
-//
-//   let min = 0;
-//   let max = 0;
-//   for (const {
-//     min: seriesDataMinTotal,
-//     max: seriesDataMaxTotal,
-//   } of Object.values(seriesDataTotalLookup)) {
-//     if (seriesDataMinTotal < min) {
-//       min = seriesDataMinTotal;
-//     }
-//     if (seriesDataMaxTotal > max) {
-//       max = seriesDataMaxTotal;
-//     }
-//   }
-//
-//   min = adjustMinValue(min);
-//   max = adjustMaxValue(max);
-//
-//   const data = {
-//     labels: timeSeriesLabels,
-//     datasets,
-//   };
-//
-//   return {
-//     data,
-//     min,
-//     max,
-//   };
-// };
 
 const adjust = (value, divisor, direction = "asc") => {
   const remainder = value % divisor;
@@ -348,124 +250,463 @@ const adjustMaxValue = (initial) => {
   return max;
 };
 
-interface Node {
-  id: string;
-  title?: string;
-  category?: string;
-  depth?: number;
-}
-
-interface Edge {
-  from_id: string;
-  to_id: string;
-  category?: string;
-}
-
-interface NodeMap {
-  [id: string]: Node;
-}
-
-interface EdgeMap {
-  [edge_id: string]: boolean;
-}
-
-interface Category {
-  color: string | null;
-}
-
-interface CategoryMap {
-  [category: string]: Category;
-}
-
-interface NodesAndEdgesMetadata {
-  has_multiple_roots: boolean;
-  contains_duplicate_edges: boolean;
-}
-
-export interface NodesAndEdges {
-  nodes: Node[];
-  root_nodes: NodeMap;
-  edges: Edge[];
-  categories: CategoryMap;
-  metadata?: NodesAndEdgesMetadata;
-  next_color_index: number;
-}
-
-const recordEdge = (edge_lookup, from_id, to_id, title, category) => {
+const recordEdge = (
+  edge_lookup,
+  from_id: string,
+  to_id: string,
+  title: string | null = null,
+  category: string | null = null,
+  row_data: LeafNodeDataRow | null = null
+) => {
   let duplicate_edge = false;
   // Find any existing edge
-  const edge_id = `${from_id}:${to_id}`;
+  const edge_id = `${from_id}_${to_id}`;
   const existingNode = edge_lookup[edge_id];
-  if (existingNode) {
-    duplicate_edge = true;
-  } else {
-    edge_lookup[edge_id] = true;
-  }
 
-  const edge = {
+  const edge: Edge = {
     id: edge_id,
     from_id,
     to_id,
     title,
     category,
+    row_data,
+    isFolded: false,
   };
+
+  if (existingNode) {
+    duplicate_edge = true;
+  } else {
+    edge_lookup[edge_id] = edge;
+  }
+
   return {
     edge,
     duplicate_edge,
   };
 };
 
+const createNode = (
+  node_lookup,
+  nodes_by_category,
+  id: string,
+  title: string | null = null,
+  category: string | null = null,
+  depth: number | null = null,
+  row_data: LeafNodeDataRow | null = null,
+  categories: CategoryMap = {},
+  isFolded: boolean = false
+) => {
+  let symbol: string | null = null;
+  let href: string | null = null;
+  if (category && categories) {
+    const matchingCategory = categories[category];
+    if (matchingCategory && matchingCategory.icon) {
+      symbol = matchingCategory.icon;
+    }
+    if (matchingCategory && matchingCategory.href) {
+      href = matchingCategory.href;
+    }
+  }
+
+  const node: Node = {
+    id,
+    category,
+    title,
+    depth,
+    row_data,
+    symbol,
+    href,
+    isFolded,
+  };
+  node_lookup[id] = node;
+
+  if (category) {
+    nodes_by_category[category] = nodes_by_category[category] || {};
+    nodes_by_category[category][id] = node;
+  }
+  return node;
+};
+
+const getCategoriesWithFold = (categories: CategoryMap): CategoryMap => {
+  if (!categories) {
+    return {};
+  }
+  return Object.entries(categories)
+    .filter(([_, info]) => !!info.fold)
+    .reduce((res, [category, info]) => {
+      res[category] = info;
+      return res;
+    }, {});
+};
+
+const foldNodesAndEdges = (
+  nodesAndEdges: NodesAndEdges,
+  expandedNodes: ExpandedNodes = {}
+): NodesAndEdges => {
+  const categoriesWithFold = getCategoriesWithFold(nodesAndEdges.categories);
+
+  if (isEmpty(categoriesWithFold)) {
+    return nodesAndEdges;
+  }
+
+  const newNodesAndEdges = {
+    ...nodesAndEdges,
+  };
+
+  const graph = json.read(json.write(nodesAndEdges.graph));
+
+  for (const [category, info] of Object.entries(categoriesWithFold)) {
+    // Keep track of the number of folded nodes we've added
+    let foldedNodeCount = 0;
+
+    // Find all nodes of this given category
+    const nodesForCategory = nodesAndEdges.nodeCategoryMap[category];
+
+    // If we have no nodes for this category, continue
+    if (!nodesForCategory) {
+      continue;
+    }
+
+    // If the number of nodes for this category is less than the threshold, it's
+    // not possible that any would require folding, regardless of the graph structure
+    const categoryNodesById = Object.entries(nodesForCategory);
+
+    if (categoryNodesById.length < (info.fold?.threshold || 0)) {
+      continue;
+    }
+
+    // Now we're here we know that we have enough nodes of this category in the
+    // graph that it "might" be possible to fold, but we'll examine the
+    // node and edge structure now to determine that
+
+    const categoryEdgeGroupings: KeyValuePairs = {};
+
+    // Iterate over the category nodes
+    for (const [, node] of categoryNodesById) {
+      let sourceNodes: string[] = [];
+      let targetNodes: string[] = [];
+
+      // Get all the in edges to this node
+      const inEdges = graph.inEdges(node.id);
+
+      // Get all the out edges from this node
+      const outEdges = graph.outEdges(node.id);
+
+      // Record the nodes pointing to this node
+      for (const inEdge of inEdges || []) {
+        sourceNodes.push(inEdge.v);
+      }
+
+      // Record the nodes this node points to
+      for (const outEdge of outEdges || []) {
+        targetNodes.push(outEdge.w);
+      }
+
+      // Sort to ensure consistent
+      sourceNodes = sourceNodes.sort();
+      targetNodes = targetNodes.sort();
+
+      // Build a key that we can uniquely identify each unique combo category / source nodes / target nodes
+      // and record all the nodes for that key. If we have any keys that have >= fold threshold, fold them
+      const categoryGroupingKey = `category:${node.category}`;
+      const edgeSourceGroupingKey =
+        sourceNodes.length > 0 ? `source:${sourceNodes.join(",")}` : null;
+      const edgeTargetGroupingKey =
+        targetNodes.length > 0 ? `target:${targetNodes.join(",")}` : null;
+      const edgeGroupingKey = `${categoryGroupingKey}${
+        edgeSourceGroupingKey ? `_${edgeSourceGroupingKey}` : ""
+      }${edgeTargetGroupingKey ? `_${edgeTargetGroupingKey}` : ""}`;
+      categoryEdgeGroupings[edgeGroupingKey] = categoryEdgeGroupings[
+        edgeGroupingKey
+      ] || {
+        category: info,
+        threshold: info.fold?.threshold,
+        nodes: [],
+        source: sourceNodes,
+        target: targetNodes,
+      };
+      categoryEdgeGroupings[edgeGroupingKey].nodes.push(node);
+    }
+
+    // Find any nodes that can be folded
+    for (const [, groupingInfo] of Object.entries(categoryEdgeGroupings)
+      // @ts-ignore
+      .filter(
+        ([_, g]) =>
+          g.threshold !== null &&
+          g.threshold !== undefined &&
+          g.nodes.length >= g.threshold
+      )) {
+      const removedNodes: any[] = [];
+
+      // Create a structure to capture the category and title of each edge that
+      // is being folded into this node. Later, if they are all the same, we can
+      // use that same category and title for the new folded edge.
+      const deletedSourceEdges = { categories: {}, titles: {} };
+      const deletedTargetEdges = { categories: {}, titles: {} };
+
+      // We want to fold nodes that are not expanded
+      for (const node of groupingInfo.nodes) {
+        // This node is expanded, don't fold it
+        if (expandedNodes[node.id]) {
+          continue;
+        }
+
+        // Remove this node
+        graph.removeNode(node.id);
+        delete newNodesAndEdges.nodeMap[node.id];
+        delete newNodesAndEdges.nodeCategoryMap[category][node.id];
+        // Remove edges pointing to this node
+        for (const sourceNode of groupingInfo.source) {
+          const sourceEdgeKey = `${sourceNode}_${node.id}`;
+          const sourceEdge = newNodesAndEdges.edgeMap[sourceEdgeKey];
+          const sourceEdgeTitle = sourceEdge.title || "none";
+          const sourceEdgeCategory = sourceEdge.category || "none";
+          deletedSourceEdges.categories[sourceEdgeCategory] =
+            deletedSourceEdges.categories[sourceEdgeCategory] || 0;
+          deletedSourceEdges.categories[sourceEdgeCategory]++;
+          deletedSourceEdges.titles[sourceEdgeTitle] =
+            deletedSourceEdges.titles[sourceEdgeTitle] || 0;
+          deletedSourceEdges.titles[sourceEdgeTitle]++;
+          delete newNodesAndEdges.edgeMap[sourceEdgeKey];
+          graph.removeEdge(sourceNode, node.id);
+        }
+        // Remove edges coming from this node
+        for (const targetNode of groupingInfo.target) {
+          const targetEdgeKey = `${node.id}_${targetNode}`;
+          const targetEdge = newNodesAndEdges.edgeMap[targetEdgeKey];
+          const targetEdgeTitle =
+            targetEdge.title || targetEdge.category || "none";
+          const targetEdgeCategory = targetEdge.category || "none";
+          deletedTargetEdges.categories[targetEdgeCategory] =
+            deletedTargetEdges.categories[targetEdgeCategory] || 0;
+          deletedTargetEdges.categories[targetEdgeCategory]++;
+          deletedTargetEdges.titles[targetEdgeTitle] =
+            deletedTargetEdges.titles[targetEdgeTitle] || 0;
+          deletedTargetEdges.titles[targetEdgeTitle]++;
+          delete newNodesAndEdges.edgeMap[targetEdgeKey];
+          graph.removeEdge(node.id, targetNode);
+        }
+        removedNodes.push({ id: node.id, title: node.title });
+      }
+
+      // Now let's add a folded node
+      if (removedNodes.length > 0) {
+        const foldedNode = {
+          id: `fold-${category}-${++foldedNodeCount}`,
+          category,
+          icon: info.fold?.icon,
+          title: info.fold?.title ? info.fold.title : null,
+          isFolded: true,
+          foldedNodes: removedNodes,
+          row_data: null,
+          href: null,
+          depth: null,
+          symbol: null,
+        };
+        graph.setNode(foldedNode.id);
+        newNodesAndEdges.nodeCategoryMap[category][foldedNode.id] = foldedNode;
+        newNodesAndEdges.nodeMap[foldedNode.id] = foldedNode;
+
+        // We want to add the color and category if all edges to this node have a common color or category
+        const deletedSourceEdgeCategoryKeys = Object.keys(
+          deletedSourceEdges.categories
+        );
+        const deletedSourceEdgeTitleKeys = Object.keys(
+          deletedSourceEdges.titles
+        );
+        const sourceEdgeCategory =
+          deletedSourceEdgeCategoryKeys.length === 1 &&
+          deletedSourceEdgeCategoryKeys[0] !== "none"
+            ? deletedSourceEdgeCategoryKeys[0]
+            : null;
+        const sourceEdgeTitle =
+          deletedSourceEdgeTitleKeys.length === 1 &&
+          deletedSourceEdgeTitleKeys[0] !== "none"
+            ? deletedSourceEdgeTitleKeys[0]
+            : null;
+
+        // Add the source edges back to the folded node
+        for (const sourceNode of groupingInfo.source) {
+          graph.setEdge(sourceNode, foldedNode.id);
+          const edge: Edge = {
+            id: `${sourceNode}_${foldedNode.id}`,
+            from_id: sourceNode,
+            to_id: foldedNode.id,
+            category: sourceEdgeCategory,
+            title: sourceEdgeTitle,
+            isFolded: true,
+            row_data: null,
+          };
+          newNodesAndEdges.edgeMap[edge.id] = edge;
+        }
+
+        // We want to add the category and title if all edges from this node have a common category or title
+        const deletedTargetEdgeCategoryKeys = Object.keys(
+          deletedTargetEdges.categories
+        );
+        const deletedTargetEdgeTitleKeys = Object.keys(
+          deletedTargetEdges.titles
+        );
+        const targetEdgeCategory =
+          deletedTargetEdgeCategoryKeys.length === 1 &&
+          deletedTargetEdgeCategoryKeys[0] !== "none"
+            ? deletedTargetEdgeCategoryKeys[0]
+            : null;
+        const targetEdgeTitle =
+          deletedTargetEdgeTitleKeys.length === 1 &&
+          deletedTargetEdgeTitleKeys[0] !== "none"
+            ? deletedTargetEdgeTitleKeys[0]
+            : null;
+
+        // Add the target edges back from the folded node
+        for (const targetNode of groupingInfo.target) {
+          graph.setEdge(foldedNode.id, targetNode);
+          const edge = {
+            id: `${foldedNode.id}_${targetNode}`,
+            from_id: foldedNode.id,
+            to_id: targetNode,
+            category: targetEdgeCategory,
+            title: targetEdgeTitle,
+          };
+          newNodesAndEdges.edgeMap[edge.id] = edge;
+        }
+      }
+    }
+  }
+
+  return {
+    ...newNodesAndEdges,
+    nodes: graph.nodes().map((nodeId) => newNodesAndEdges.nodeMap[nodeId]),
+    edges: graph
+      .edges()
+      .map((edgeObj) => newNodesAndEdges.edgeMap[`${edgeObj.v}_${edgeObj.w}`]),
+  };
+};
+
 const buildNodesAndEdges = (
-  rawData: LeafNodeData | undefined,
-  properties: FlowProperties | HierarchyProperties | undefined,
-  namedColors
+  categories: CategoryMap = {},
+  rawData: NodeAndEdgeData | undefined,
+  properties: FlowProperties | GraphProperties | HierarchyProperties = {},
+  namedThemeColors = {},
+  defaultCategoryColor = true
 ): NodesAndEdges => {
   if (!rawData || !rawData.columns || !rawData.rows) {
     return {
+      graph: new Graph(),
       nodes: [],
-      root_nodes: {},
       edges: [],
+      nodeCategoryMap: {},
+      nodeMap: {},
+      edgeMap: {},
+      root_nodes: {},
       categories: {},
       next_color_index: 0,
     };
   }
 
-  let categoryProperties: FlowCategories = {};
+  const graph = new Graph({ directed: true });
+
+  let categoryProperties = {};
   if (properties && properties.categories) {
     categoryProperties = properties.categories;
   }
 
-  const id_index = getColumnIndex(rawData.columns, "id");
-  const from_index = getColumnIndex(rawData.columns, "from_id");
-  const to_index = getColumnIndex(rawData.columns, "to_id");
-  const title_index = getColumnIndex(rawData.columns, "title");
-  const category_index = getColumnIndex(rawData.columns, "category");
-  const depth_index = getColumnIndex(rawData.columns, "depth");
+  const id_col = getColumn(rawData.columns, "id");
+  const from_col = getColumn(rawData.columns, "from_id");
+  const to_col = getColumn(rawData.columns, "to_id");
 
-  if (id_index === -1 && from_index === -1 && to_index === -1) {
-    throw new Error("No node or edge rows defined in the dataset");
+  if (!id_col && !from_col && !to_col) {
+    return {
+      graph: new Graph(),
+      nodes: [],
+      edges: [],
+      nodeCategoryMap: {},
+      nodeMap: {},
+      edgeMap: {},
+      root_nodes: {},
+      categories: {},
+      next_color_index: 0,
+    };
   }
 
   const node_lookup: NodeMap = {};
   const root_node_lookup: NodeMap = {};
+  const nodes_by_category: NodeCategoryMap = {};
   const edge_lookup: EdgeMap = {};
   const nodes: Node[] = [];
   const edges: Edge[] = [];
-  const categories: CategoryMap = {};
 
   let contains_duplicate_edges = false;
   let colorIndex = 0;
 
   rawData.rows.forEach((row) => {
-    const node_id = id_index > -1 ? row[id_index] : null;
-    const from_id = from_index > -1 ? row[from_index] : null;
-    const to_id = to_index > -1 ? row[to_index] : null;
-    const title = title_index > -1 ? row[title_index] : null;
-    const category = category_index > -1 ? row[category_index] : null;
-    const depth = depth_index > -1 ? row[depth_index] : null;
+    const node_id: string | null =
+      has(row, "id") && row.id !== null && row.id !== undefined
+        ? row.id.toString()
+        : null;
+    const from_id: string | null =
+      has(row, "from_id") && row.from_id !== null && row.from_id !== undefined
+        ? row.from_id.toString()
+        : null;
+    const to_id: string | null =
+      has(row, "to_id") && row.to_id !== null && row.to_id !== undefined
+        ? row.to_id.toString()
+        : null;
+    const title: string | null = row.title || null;
+    const category: string | null = row.category || null;
+    const depth: number | null =
+      typeof row.depth === "number" ? row.depth : null;
+
+    if (category && !categories[category]) {
+      const overrides = categoryProperties[category];
+      const categorySettings: Category = {};
+      if (overrides) {
+        const overrideColor = overrides.color;
+        // @ts-ignore
+        categorySettings.color = overrideColor
+          ? overrideColor
+          : defaultCategoryColor
+          ? themeColors[colorIndex++]
+          : null;
+        if (has(overrides, "depth")) {
+          categorySettings.depth = overrides.depth;
+        }
+        if (has(overrides, "properties")) {
+          categorySettings.properties = overrides.properties;
+        }
+        if (has(overrides, "icon")) {
+          categorySettings.icon = overrides.icon;
+        }
+        if (has(overrides, "href")) {
+          categorySettings.href = overrides.href;
+        }
+        if (has(overrides, "fold")) {
+          categorySettings.fold = overrides.fold;
+        }
+      } else {
+        // @ts-ignore
+        categorySettings.color = defaultCategoryColor
+          ? themeColors[colorIndex++]
+          : null;
+      }
+      categories[category] = categorySettings;
+    }
+
+    // 5 types of row:
+    //
+    // id                  = node         1      1
+    // from_id & id        = node & edge  1 2    3
+    // id & to_id          = node & edge  1 4    5
+    // from_id & to_id     = edge         2 4    6
+    // id, from_id & to_id = node & edge  1 2 4  7
+
+    const nodeAndEdgeMask =
+      (node_id ? 1 : 0) + (from_id ? 2 : 0) + (to_id ? 4 : 0);
+    const allowedNodeAndEdgeMasks = [1, 3, 5, 6, 7];
 
     // We must have at least a node id or an edge from_id / to_id pairing
-    if (node_id === null && from_id === null && to_id === null) {
+    if (!allowedNodeAndEdgeMasks.includes(nodeAndEdgeMask)) {
       return new Error(
         `Encountered dataset row with no node or edge definition: ${JSON.stringify(
           row
@@ -474,70 +715,145 @@ const buildNodesAndEdges = (
     }
 
     // If this row is a node
-    if (node_id !== null) {
+    if (!!node_id) {
       const existingNode = node_lookup[node_id];
 
-      if (!existingNode) {
-        const node = {
-          id: node_id,
-          title,
-          category,
-          depth,
-        };
-        node_lookup[node_id] = node;
+      // Even if the node already existed, it will only have minimal info, as it
+      // could only have been created implicitly through an edge definition, so
+      // build a full node and update it
+      const node = createNode(
+        node_lookup,
+        nodes_by_category,
+        node_id,
+        title,
+        category,
+        depth,
+        row,
+        categories
+      );
 
+      // Ensure that any existing references to this node are also updated
+      if (existingNode) {
+        const nodeIndex = nodes.findIndex((n) => n.id === node.id);
+        if (nodeIndex >= 0) {
+          nodes[nodeIndex] = node;
+        }
+        if (root_node_lookup[node.id]) {
+          root_node_lookup[node.id] = node;
+        }
+      } else {
+        graph.setNode(node_id);
         nodes.push(node);
 
         // Record this as a root node for now - we may remove that once we process the edges
         root_node_lookup[node_id] = node;
-      } else {
-        existingNode.title = title;
-        existingNode.category = category;
-        existingNode.depth = depth;
       }
 
-      // If this also has an implicit edge
-      if (from_id !== null) {
+      // If this has an edge from another node
+      if (!!from_id && !to_id) {
         // If we've previously recorded this as a root node, remove it
         delete root_node_lookup[node_id];
+
+        const existingNode = node_lookup[from_id];
+        if (!existingNode) {
+          const node = createNode(
+            node_lookup,
+            nodes_by_category,
+            from_id,
+            null,
+            null,
+            null,
+            null,
+            {}
+          );
+          graph.setNode(from_id);
+          nodes.push(node);
+
+          // Record this as a root node for now - we may remove that once we process the edges
+          root_node_lookup[from_id] = node;
+        }
 
         const { edge, duplicate_edge } = recordEdge(
           edge_lookup,
           from_id,
-          node_id,
-          null,
-          null
+          node_id
         );
         if (duplicate_edge) {
           contains_duplicate_edges = true;
         }
+        graph.setEdge(from_id, node_id);
+        edges.push(edge);
+      }
+      // Else if this has an edge to another node
+      else if (!!to_id && !from_id) {
+        // If we've previously recorded the target as a root node, remove it
+        delete root_node_lookup[to_id];
+
+        const existingNode = node_lookup[to_id];
+        if (!existingNode) {
+          const node = createNode(
+            node_lookup,
+            nodes_by_category,
+            to_id,
+            null,
+            null,
+            null,
+            null,
+            {}
+          );
+          graph.setNode(to_id);
+          nodes.push(node);
+        }
+
+        const { edge, duplicate_edge } = recordEdge(
+          edge_lookup,
+          node_id,
+          to_id
+        );
+        if (duplicate_edge) {
+          contains_duplicate_edges = true;
+        }
+        graph.setEdge(node_id, to_id);
         edges.push(edge);
       }
     }
-    // Else if it looks like an edge
-    else if (from_id !== null && to_id !== null) {
+
+    // If this row looks like an edge
+    if (!!from_id && !!to_id) {
       // If we've previously recorded this as a root node, remove it
       delete root_node_lookup[to_id];
 
       // Record implicit nodes from edge definition
       const existingFromNode = node_lookup[from_id];
       if (!existingFromNode) {
-        const node = {
-          id: from_id,
-          title: from_id,
-        };
-        node_lookup[from_id] = node;
+        const node = createNode(
+          node_lookup,
+          nodes_by_category,
+          from_id,
+          null,
+          null,
+          null,
+          null,
+          {}
+        );
+        graph.setNode(from_id);
         nodes.push(node);
         // Record this as a root node for now - we may remove that once we process the edges
         root_node_lookup[from_id] = node;
       }
       const existingToNode = node_lookup[to_id];
       if (!existingToNode) {
-        const node = {
-          id: to_id,
-          title: to_id,
-        };
-        node_lookup[to_id] = node;
+        const node = createNode(
+          node_lookup,
+          nodes_by_category,
+          to_id,
+          null,
+          null,
+          null,
+          null,
+          {}
+        );
+        graph.setNode(to_id);
         nodes.push(node);
       }
 
@@ -546,36 +862,25 @@ const buildNodesAndEdges = (
         from_id,
         to_id,
         title,
-        category
+        category,
+        nodeAndEdgeMask === 6 ? row : null
       );
       if (duplicate_edge) {
         contains_duplicate_edges = true;
       }
+      graph.setEdge(from_id, to_id);
       edges.push(edge);
-    }
-
-    if (category && !categories[category]) {
-      const overrides = categoryProperties[category];
-      const categorySettings = { color: null, depth: null };
-      if (overrides) {
-        // @ts-ignore
-        categorySettings.color = getColorOverride(overrides.color, namedColors);
-        // @ts-ignore
-        categorySettings.depth = has(overrides, "depth")
-          ? overrides.depth
-          : null;
-      } else {
-        // @ts-ignore
-        categorySettings.color = themeColors[colorIndex++];
-      }
-      categories[category] = categorySettings;
     }
   });
 
   return {
+    graph,
     nodes,
-    root_nodes: root_node_lookup,
     edges,
+    nodeCategoryMap: nodes_by_category,
+    nodeMap: node_lookup,
+    edgeMap: edge_lookup,
+    root_nodes: root_node_lookup,
     categories,
     metadata: {
       has_multiple_roots: Object.keys(root_node_lookup).length > 1,
@@ -591,7 +896,7 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
   const nodeDepths = {};
 
   nodesAndEdges.edges.forEach((edge) => {
-    let categoryOverrides;
+    let categoryOverrides: Category = {};
     if (edge.category && nodesAndEdges.categories[edge.category]) {
       categoryOverrides = nodesAndEdges.categories[edge.category];
     }
@@ -617,7 +922,7 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
     });
   });
 
-  nodesAndEdges.nodes.forEach((node, index) => {
+  nodesAndEdges.nodes.forEach((node) => {
     let categoryOverrides;
     if (node.category && nodesAndEdges.categories[node.category]) {
       categoryOverrides = nodesAndEdges.categories[node.category];
@@ -635,7 +940,12 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
         color:
           categoryOverrides && categoryOverrides.color
             ? categoryOverrides.color
-            : themeColors[nodesAndEdges.next_color_index++],
+            : themeColors[
+                has(nodesAndEdges, "next_color_index")
+                  ? // @ts-ignore
+                    nodesAndEdges.next_color_index++
+                  : 0
+              ],
       },
     };
     data.push(dataNode);
@@ -645,83 +955,15 @@ const buildSankeyDataInputs = (nodesAndEdges: NodesAndEdges) => {
     data,
     links,
   };
-
-  // const objectData = rawData.rows.map((dataRow) => {
-  //   const row: HierarchyDataRow = {
-  //     parent: null,
-  //     category: "",
-  //     id: "",
-  //     name: "",
-  //   };
-  //   for (let colIndex = 0; colIndex < rawData.columns.length; colIndex++) {
-  //     const column = rawData.columns[colIndex];
-  //     row[column.name] = dataRow[colIndex];
-  //   }
-  //
-  //   if (row.category && !categories[row.category]) {
-  //     let color;
-  //     if (
-  //       properties &&
-  //       properties.categories &&
-  //       properties.categories[row.category] &&
-  //       properties.categories[row.category].color
-  //     ) {
-  //       color = properties.categories[row.category].color;
-  //       colorIndex++;
-  //     } else {
-  //       color = themeColors[colorIndex++];
-  //     }
-  //     categories[row.category] = { color };
-  //   }
-  //
-  //   if (!usedIds[row.id]) {
-  //     builtData.push({
-  //       ...row,
-  //       itemStyle: {
-  //         // @ts-ignore
-  //         color: getColorOverride(categories[row.category].color, themeColors),
-  //       },
-  //     });
-  //     usedIds[row.id] = true;
-  //   }
-  //   return row;
-  // });
-  // const edges: HierarchyDataRowEdge[] = [];
-  // const edgeValues = {};
-  // for (const d of objectData) {
-  //   // TODO remove <null> after Kai fixes base64 issue and removes col string conversion
-  //   if (d.parent === null || d.parent === "<null>") {
-  //     d.parent = null;
-  //     continue;
-  //   }
-  //   edges.push({ source: d.parent, target: d.id, value: 0.01 });
-  //   edgeValues[d.parent] = (edgeValues[d.parent] || 0) + 0.01;
-  // }
-  // for (const e of edges) {
-  //   var v = 0;
-  //   if (edgeValues[e.target]) {
-  //     for (const e2 of edges) {
-  //       if (e.target === e2.source) {
-  //         v += edgeValues[e2.target] || 0.01;
-  //       }
-  //     }
-  //     e.value = v;
-  //   }
-  // }
-  //
-  // return {
-  //   data: builtData,
-  //   links: edges,
-  // };
 };
 
-interface Item {
+type Item = {
   [key: string]: any;
-}
+};
 
-interface TreeItem {
+type TreeItem = {
   [key: string]: Item | TreeItem[] | any;
-}
+};
 
 // Taken from https://github.com/philipstanislaus/performant-array-to-tree
 const nodesAndEdgesToTree = (nodesAndEdges: NodesAndEdges): TreeItem[] => {
@@ -786,94 +1028,6 @@ const nodesAndEdgesToTree = (nodesAndEdges: NodesAndEdges): TreeItem[] => {
   return Object.values(lookup).filter(
     (node) => nodesAndEdges.root_nodes[node.id]
   );
-
-  // idea of this loop:
-  // whenever an item has a parent, but the parent is not yet in the lookup object, we store a preliminary parent
-  // in the lookup object and fill it with the data of the parent later
-  // if an item has no parentId, add it as a root element to rootItems
-  // for (const rawRow of rawData.rows) {
-  //   const row: HierarchyDataRow = {
-  //     parent: null,
-  //     category: "",
-  //     id: "",
-  //     name: "",
-  //   };
-  //   for (let colIndex = 0; colIndex < rawData.columns.length; colIndex++) {
-  //     const column = rawData.columns[colIndex];
-  //     row[column.name] = rawRow[colIndex];
-  //   }
-  //
-  //   const itemId = row.id;
-  //   const parentId = row.parent;
-  //
-  //   if (rootParentIds[itemId]) {
-  //     throw new Error(
-  //       `The row contains a node whose parent both exists in another node and is in ` +
-  //         `\`rootParentIds\` (\`itemId\`: "${itemId}", \`rootParentIds\`: ${Object.keys(
-  //           rootParentIds
-  //         )
-  //           .map((r) => `"${r}"`)
-  //           .join(", ")}).`
-  //     );
-  //   }
-  //
-  //   // look whether item already exists in the lookup table
-  //   if (!Object.prototype.hasOwnProperty.call(lookup, itemId)) {
-  //     // item is not yet there, so add a preliminary item (its data will be added later)
-  //     lookup[itemId] = { children: [] };
-  //   }
-  //
-  //   // if we track orphans, delete this item from the orphan set if it is in it
-  //   if (orphanIds) {
-  //     orphanIds.delete(itemId);
-  //   }
-  //
-  //   // add the current item's data to the item in the lookup table
-  //
-  //   lookup[itemId] = {
-  //     ...row,
-  //     children: lookup[itemId].children,
-  //   };
-  //
-  //   const treeItem = lookup[itemId];
-  //
-  //   if (
-  //     parentId === null ||
-  //     parentId === undefined ||
-  //     rootParentIds[parentId]
-  //   ) {
-  //     // is a root item
-  //     rootItems.push(treeItem);
-  //   } else {
-  //     // has a parent
-  //
-  //     // look whether the parent already exists in the lookup table
-  //     if (!Object.prototype.hasOwnProperty.call(lookup, parentId)) {
-  //       // parent is not yet there, so add a preliminary parent (its data will be added later)
-  //       lookup[parentId] = { children: [] };
-  //
-  //       // if we track orphans, add the generated parent to the orphan list
-  //       if (orphanIds) {
-  //         orphanIds.add(parentId);
-  //       }
-  //     }
-  //
-  //     // add the current item to the parent
-  //     lookup[parentId].children.push(treeItem);
-  //   }
-  // }
-
-  // if (orphanIds?.size) {
-  //   throw new Error(
-  //     `The items array contains orphans that point to the following parentIds: ` +
-  //       `[${Array.from(
-  //         orphanIds
-  //       )}]. These parentIds do not exist in the items array. Hint: prevent orphans to result ` +
-  //       `in an error by passing the following option: { throwIfOrphans: false }`
-  //   );
-  // }
-
-  // return rootItems;
 };
 
 const buildTreeDataInputs = (nodesAndEdges: NodesAndEdges) => {
@@ -945,6 +1099,7 @@ export {
   buildNodesAndEdges,
   buildSankeyDataInputs,
   buildTreeDataInputs,
+  foldNodesAndEdges,
   getColorOverride,
   isNumericCol,
   themeColors,

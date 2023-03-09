@@ -1,6 +1,11 @@
+import { isValidElement } from "react";
+
 const getErrorMessage = (error: any, fallbackMessage: string) => {
   if (!error) {
     return fallbackMessage;
+  }
+  if (isValidElement(error)) {
+    return error;
   }
   if (typeof error === "string") {
     return error;
@@ -14,10 +19,10 @@ const getErrorMessage = (error: any, fallbackMessage: string) => {
   return fallbackMessage;
 };
 
-interface ErrorMessageProps {
+type ErrorMessageProps = {
   error?: any;
   fallbackMessage?: string;
-}
+};
 
 const ErrorMessage = ({
   error,

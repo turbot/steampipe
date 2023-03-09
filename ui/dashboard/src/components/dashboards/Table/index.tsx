@@ -1,6 +1,8 @@
+import ControlDimension from "../check/Benchmark/ControlDimension";
 import isEmpty from "lodash/isEmpty";
 import isObject from "lodash/isObject";
 import useDeepCompareEffect from "use-deep-compare-effect";
+import useTemplateRender from "../../../hooks/useTemplateRender";
 import {
   AlarmIcon,
   InfoIcon,
@@ -16,33 +18,31 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { ControlDimension } from "../check/Benchmark";
+import { DashboardDataModeLive, PanelDefinition } from "../../../types";
 import {
   ErrorIcon,
   SortAscendingIcon,
   SortDescendingIcon,
 } from "../../../constants/icons";
 import { memo, useEffect, useMemo, useState } from "react";
-import {
-  RowRenderResult,
-  renderInterpolatedTemplates,
-} from "../../../utils/template";
-import { ThemeNames } from "../../../hooks/useTheme";
+import { registerComponent } from "../index";
+import { RowRenderResult } from "../common/types";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useSortBy, useTable } from "react-table";
 
-type TableColumnDisplay = "all" | "none";
-type TableColumnWrap = "all" | "none";
+export type TableColumnDisplay = "all" | "none";
+export type TableColumnWrap = "all" | "none";
 
-interface TableColumnInfo {
+type TableColumnInfo = {
   Header: string;
   accessor: string;
   name: string;
-  data_type_name: string;
+  data_type: string;
   display?: "all" | "none";
   wrap: TableColumnWrap;
   href_template?: string;
-}
+  sortType?: any;
+};
 
 const getColumns = (
   cols: LeafNodeDataColumn[],
@@ -73,8 +73,11 @@ const getColumns = (
       Header: col.name,
       accessor: col.name,
       name: col.name,
-      data_type_name: col.data_type_name,
+      data_type: col.data_type,
       wrap: colWrap,
+      // Boolean data types do not sort under the default alphanumeric sorting logic of react-table
+      // On the next column type that needs specialising we'll move this out into a function / hook
+      sortType: col.data_type === "BOOL" ? "basic" : "alphanumeric",
     };
     if (colHref) {
       colInfo.href_template = colHref;
@@ -84,7 +87,7 @@ const getColumns = (
   return { columns, hiddenColumns };
 };
 
-const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow) => {
+const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow[]) => {
   if (!columns || columns.length === 0) {
     return [];
   }
@@ -92,22 +95,16 @@ const getData = (columns: TableColumnInfo[], rows: LeafNodeDataRow) => {
   if (!rows || rows.length === 0) {
     return [];
   }
-  return rows.map((r) => {
-    const rowData = {};
-    for (let colIndex = 0; colIndex < r.length; colIndex++) {
-      rowData[columns[colIndex].accessor] = r[colIndex];
-    }
-    return rowData;
-  });
+  return rows;
 };
 
-interface CellValueProps {
+type CellValueProps = {
   column: TableColumnInfo;
   rowIndex: number;
   rowTemplateData: RowRenderResult[];
   value: any;
   showTitle?: boolean;
-}
+};
 
 const CellValue = ({
   column,
@@ -125,6 +122,7 @@ const CellValue = ({
   // Calculate a link for this cell
   useEffect(() => {
     const renderedTemplateObj = rowTemplateData[rowIndex];
+
     if (!renderedTemplateObj) {
       setHref(null);
       setError(null);
@@ -137,6 +135,7 @@ const CellValue = ({
       return;
     }
     if (renderedTemplateForColumn.result) {
+      // We only want to render the HREF if it's live, or it's snapshot and absolute
       setHref(renderedTemplateForColumn.result);
       setError(null);
     } else if (renderedTemplateForColumn.error) {
@@ -146,7 +145,7 @@ const CellValue = ({
   }, [column, rowIndex, rowTemplateData]);
 
   let cellContent;
-  const dataType = column.data_type_name.toLowerCase();
+  const dataType = column.data_type.toLowerCase();
   if (value === null || value === undefined) {
     cellContent = href ? (
       <ExternalLink
@@ -254,7 +253,7 @@ const CellValue = ({
       </span>
     );
   } else if (dataType === "text") {
-    if (value.match("^https?://")) {
+    if (!!value.match && value.match("^https?://")) {
       cellContent = (
         <ExternalLink
           className="link-highlight tabular-nums"
@@ -265,7 +264,7 @@ const CellValue = ({
         </ExternalLink>
       );
     }
-    const mdMatch = value.match("^\\[(.*)\\]\\((https?://.*)\\)$");
+    const mdMatch = !!value.match && value.match("^\\[(.*)\\]\\((https?://.*)\\)$");
     if (mdMatch) {
       cellContent = (
         <ExternalLink
@@ -342,11 +341,11 @@ const CellValue = ({
 
 const MemoCellValue = memo(CellValue);
 
-interface TableColumnOptions {
+type TableColumnOptions = {
   display?: TableColumnDisplay;
   href?: string;
   wrap?: TableColumnWrap;
-}
+};
 
 type TableColumns = {
   [column: string]: TableColumnOptions;
@@ -355,15 +354,15 @@ type TableColumns = {
 type TableType = "table" | "line" | null;
 
 export type TableProperties = {
-  type?: TableType;
   columns?: TableColumns;
 };
 
-export type BaseTableProps = BasePrimitiveProps & ExecutablePrimitiveProps;
-
-export type TableProps = BaseTableProps & {
-  properties?: TableProperties;
-};
+export type TableProps = PanelDefinition &
+  BasePrimitiveProps &
+  ExecutablePrimitiveProps & {
+    display_type?: TableType;
+    properties?: TableProperties;
+  };
 
 const TableView = ({
   rowData,
@@ -371,9 +370,8 @@ const TableView = ({
   hiddenColumns,
   hasTopBorder = false,
 }) => {
-  const {
-    themeContext: { theme },
-  } = useDashboard();
+  const { dataMode } = useDashboard();
+  const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
 
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow, rows } =
@@ -383,6 +381,17 @@ const TableView = ({
     );
 
   useDeepCompareEffect(() => {
+    // We only want to do the interpolated template rendering in live views
+    if (dataMode !== DashboardDataModeLive) {
+      setRowTemplateData([]);
+      return;
+    }
+
+    if (!templateRenderReady || columns.length === 0 || rows.length === 0) {
+      setRowTemplateData([]);
+      return;
+    }
+
     const doRender = async () => {
       const templates = Object.fromEntries(
         columns
@@ -394,20 +403,12 @@ const TableView = ({
         return;
       }
       const data = rows.map((row) => row.values);
-      const renderedResults = await renderInterpolatedTemplates(
-        templates,
-        data
-      );
-      setRowTemplateData(renderedResults);
+      const renderedResults = await renderTemplates(templates, data);
+      setRowTemplateData(renderedResults || []);
     };
 
-    if (columns.length === 0 || rows.length === 0) {
-      setRowTemplateData([]);
-      return;
-    }
-
     doRender();
-  }, [columns, rows]);
+  }, [columns, dataMode, renderTemplates, rows, templateRenderReady]);
 
   return (
     <>
@@ -415,21 +416,10 @@ const TableView = ({
         {...getTableProps()}
         className={classNames(
           "min-w-full divide-y divide-table-divide overflow-hidden",
-          hasTopBorder
-            ? theme.name === ThemeNames.STEAMPIPE_DARK
-              ? "border-t border-table-divide"
-              : "border-t border-background"
-            : null
+          hasTopBorder ? "border-t border-divide" : null
         )}
       >
-        <thead
-          className={classNames(
-            "bg-table-head text-table-head",
-            theme.name === ThemeNames.STEAMPIPE_DARK
-              ? "border-b border-table-divide"
-              : "border-b border-background"
-          )}
-        >
+        <thead className="text-table-head border-b border-divide">
           {headerGroups.map((headerGroup) => (
             <tr {...headerGroup.getHeaderGroupProps()}>
               {headerGroup.headers.map((column) => (
@@ -438,7 +428,7 @@ const TableView = ({
                   scope="col"
                   className={classNames(
                     "py-3 text-left text-sm font-normal tracking-wider whitespace-nowrap pl-4",
-                    isNumericCol(column.data_type_name) ? "text-right" : null
+                    isNumericCol(column.data_type) ? "text-right" : null
                   )}
                 >
                   {column.render("Header")}
@@ -480,11 +470,9 @@ const TableView = ({
                     {...cell.getCellProps()}
                     className={classNames(
                       "px-4 py-4 align-top content-center text-sm",
-                      isNumericCol(cell.column.data_type_name)
-                        ? "text-right"
-                        : "",
+                      isNumericCol(cell.column.data_type) ? "text-right" : "",
                       cell.column.wrap === "all"
-                        ? "break-all"
+                        ? "break-keep"
                         : "whitespace-nowrap"
                     )}
                   >
@@ -526,22 +514,17 @@ const TableViewWrapper = (props: TableProps) => {
   ) : null;
 };
 
-interface LineModeRow {
-  [key: string]: any;
-}
-
-interface LineModeRows {
-  row: LeafNodeDataRow;
-  obj: LineModeRow;
-}
-
 const LineView = (props: TableProps) => {
+  const { dataMode } = useDashboard();
+  const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
   const [columns, setColumns] = useState<TableColumnInfo[]>([]);
-  const [rows, setRows] = useState<LineModeRows[]>([]);
+  const [rows, setRows] = useState<LeafNodeDataRow[]>([]);
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
 
   useEffect(() => {
     if (!props.data || !props.data.columns || !props.data.rows) {
+      setColumns([]);
+      setRows([]);
       return;
     }
     const newColumns: TableColumnInfo[] = [];
@@ -559,20 +542,22 @@ const LineView = (props: TableProps) => {
       newColumns.push(newColDef);
     });
 
-    const newRows: LineModeRows[] = [];
-    props.data.rows.forEach((row) => {
-      const rowObj = {};
-      newColumns.forEach((col, index) => {
-        rowObj[col.name] = row[index];
-      });
-      newRows.push({ row, obj: rowObj });
-    });
-
     setColumns(newColumns);
-    setRows(newRows);
+    setRows(props.data.rows);
   }, [props.data, props.properties]);
 
   useDeepCompareEffect(() => {
+    // We only want to do the interpolated template rendering in live views
+    if (dataMode !== DashboardDataModeLive) {
+      setRowTemplateData([]);
+      return;
+    }
+
+    if (!templateRenderReady || columns.length === 0 || rows.length === 0) {
+      setRowTemplateData([]);
+      return;
+    }
+
     const doRender = async () => {
       const templates = Object.fromEntries(
         columns
@@ -583,21 +568,12 @@ const LineView = (props: TableProps) => {
         setRowTemplateData([]);
         return;
       }
-      const data = rows.map((row) => row.obj);
-      const renderedResults = await renderInterpolatedTemplates(
-        templates,
-        data
-      );
+      const renderedResults = await renderTemplates(templates, rows);
       setRowTemplateData(renderedResults);
     };
 
-    if (columns.length === 0 || rows.length === 0) {
-      setRowTemplateData([]);
-      return;
-    }
-
     doRender();
-  }, [columns, rows]);
+  }, [columns, dataMode, renderTemplates, rows, templateRenderReady]);
 
   if (columns.length === 0 || rows.length === 0) {
     return null;
@@ -605,12 +581,11 @@ const LineView = (props: TableProps) => {
 
   return (
     <div className="px-4 py-3 space-y-4">
-      {rows.map((rowInfo, rowIndex) => {
+      {rows.map((row, rowIndex) => {
         return (
           <div key={rowIndex} className="space-y-2">
-            {rowInfo.row.map((cellValue, columnIndex) => {
-              const col = columns[columnIndex];
-              if (!col || col.display === "none") {
+            {columns.map((col) => {
+              if (col.display === "none") {
                 return null;
               }
               return (
@@ -621,14 +596,14 @@ const LineView = (props: TableProps) => {
                   <span
                     className={classNames(
                       "block",
-                      col.wrap === "all" ? "break-words" : "truncate"
+                      col.wrap === "all" ? "break-keep" : "truncate"
                     )}
                   >
                     <MemoCellValue
                       column={col}
                       rowIndex={rowIndex}
                       rowTemplateData={rowTemplateData}
-                      value={cellValue}
+                      value={row[col.name]}
                       showTitle
                     />
                   </span>
@@ -643,11 +618,13 @@ const LineView = (props: TableProps) => {
 };
 
 const Table = (props: TableProps) => {
-  if (props.properties && props.properties.type === "line") {
+  if (props.display_type === "line") {
     return <LineView {...props} />;
   }
   return <TableViewWrapper {...props} />;
 };
+
+registerComponent("table", Table);
 
 export default Table;
 

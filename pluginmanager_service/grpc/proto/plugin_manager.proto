@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+option go_package = ".;proto";
+
+package proto;
+
+// Interface exported by the server.
+service PluginManager {
+  rpc Get(GetRequest) returns (GetResponse) {}
+  rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {}
+}
+
+message GetRequest {
+  repeated string connections = 1;
+}
+
+message GetResponse {
+  map<string, ReattachConfig> reattach_map = 1;
+  map<string, string> failure_map = 2;
+}
+
+message ShutdownRequest {}
+
+message ShutdownResponse {}
+
+message ReattachConfig {
+  string protocol         = 1;
+  int64  protocol_version = 2;
+  NetAddr addr            = 3;
+  int64 pid               = 4;
+  SupportedOperations supported_operations = 5;
+  repeated string connections = 6;
+  string plugin = 7;
+}
+
+// NOTE: this must be consistent with GetSupportedOperationsResponse in steampipe-plugin-sdk/grpc/proto/plugin.proto
+message SupportedOperations {
+  bool query_cache = 1;
+  bool multiple_connections = 2;
+  bool message_stream = 3;
+}
+
+message NetAddr {
+  string Network = 1; // name of the network (for example, "tcp", "udp")
+  string Address = 2; // string form of address (for example, "192.0.2.1:25", "[2001:db8::1]:80")
+}

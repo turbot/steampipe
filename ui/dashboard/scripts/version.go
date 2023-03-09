@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/turbot/steampipe/version"
+	"github.com/turbot/steampipe/pkg/version"
 	"io/ioutil"
 )
 

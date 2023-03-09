@@ -1,78 +1,62 @@
-import Children from "../common/Children";
-import LayoutPanel from "../common/LayoutPanel";
-import { classNames } from "../../../../utils/styles";
+import Children from "../Children";
+import ContainerTitle from "../../titles/ContainerTitle";
+import Grid from "../Grid";
+import { ContainerDefinition } from "../../../../types";
 import {
-  ContainerDefinition,
-  DashboardActions,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
-import { useState } from "react";
-import { ZoomIcon } from "../../../../constants/icons";
+  ContainerProvider,
+  useContainer,
+} from "../../../../hooks/useContainer";
+import { registerComponent } from "../../index";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
-interface ContainerProps {
-  allowChildPanelExpand?: boolean;
-  allowExpand?: boolean;
-  definition: ContainerDefinition;
-  expandDefinition: ContainerDefinition;
-  withNarrowVertical?: boolean;
-  withTitle?: boolean;
-}
+type ContainerProps = {
+  layoutDefinition?: ContainerDefinition;
+  definition?: ContainerDefinition;
+};
 
-const Container = ({
-  allowChildPanelExpand = true,
-  allowExpand = false,
-  definition,
-  expandDefinition,
-  withNarrowVertical,
-  withTitle,
-}: ContainerProps) => {
-  const [showZoomIcon, setShowZoomIcon] = useState(false);
-  const { dispatch } = useDashboard();
+const Container = ({ definition }) => {
+  const { showTitle } = useContainer();
   return (
-    <LayoutPanel
-      allowExpand={allowExpand}
-      className="relative"
-      definition={definition}
-      events={{
-        onMouseEnter: allowExpand
-          ? () => {
-              setShowZoomIcon(true);
-            }
-          : undefined,
-
-        onMouseLeave: allowExpand
-          ? () => {
-              setShowZoomIcon(false);
-            }
-          : undefined,
-      }}
-      withNarrowVertical={withNarrowVertical}
-      withTitle={withTitle}
-    >
-      <>
-        {showZoomIcon && (
-          <div
-            className={classNames(
-              "absolute cursor-pointer z-50 right-1 top-1 text-black-scale-4"
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-              dispatch({
-                type: DashboardActions.SELECT_PANEL,
-                panel: { ...expandDefinition },
-              });
-            }}
-          >
-            <ZoomIcon className="h-5 w-5" />
-          </div>
-        )}
-      </>
-      <Children
-        allowPanelExpand={allowChildPanelExpand}
-        children={definition.children}
-      />
-    </LayoutPanel>
+    <Grid name={definition.name} width={definition.width}>
+      {showTitle && <ContainerTitle title={definition.title} />}
+      <Children children={definition?.children || []} parentType="container" />
+    </Grid>
   );
 };
+
+const ContainerWrapper = (props: ContainerProps) => {
+  const { panelsMap } = useDashboard();
+
+  if (!props.definition && !props.layoutDefinition) {
+    return null;
+  }
+
+  const panelDefinition = props.definition
+    ? props.definition
+    : props.layoutDefinition && panelsMap[props.layoutDefinition.name]
+    ? panelsMap[props.layoutDefinition.name]
+    : props.layoutDefinition;
+
+  if (!panelDefinition) {
+    return null;
+  }
+
+  return (
+    <ContainerProvider>
+      <Container
+        definition={{
+          ...panelDefinition,
+          children: props.definition
+            ? props.definition.children
+            : props.layoutDefinition
+            ? props.layoutDefinition.children
+            : [],
+        }}
+      />
+    </ContainerProvider>
+  );
+};
+
+registerComponent("container", ContainerWrapper);
 
 export default Container;

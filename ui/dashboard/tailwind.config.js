@@ -3,22 +3,6 @@ module.exports = {
   darkMode: "class",
   theme: {
     extend: {
-      backgroundColor: {
-        app: "var(--color-bg-app)",
-        counter: "var(--color-bg-counter)",
-        report: "var(--color-bg-report)",
-        "table-head": "var(--color-bg-table-head)",
-      },
-      divideColor: {
-        default: "var(--color-border-divide)",
-      },
-      textColor: {
-        "alert-inverse": "var(--color-alert-inverse)",
-        "info-inverse": "var(--color-info-inverse)",
-        "ok-inverse": "var(--color-ok-inverse)",
-        default: "var(--color-text-default)",
-        "table-head": "var(--color-table-head)",
-      },
       colors: {
         dashboard: "var(--color-dashboard)",
         "dashboard-panel": "var(--color-dashboard-panel)",
@@ -26,12 +10,16 @@ module.exports = {
         "foreground-light": "var(--color-foreground-light)",
         "foreground-lighter": "var(--color-foreground-lighter)",
         "foreground-lightest": "var(--color-foreground-lightest)",
+        divide: "var(--color-divide)",
         alert: "var(--color-alert)",
         "alert-light": "var(--color-alert-light)",
+        "alert-inverse": "var(--color-alert-inverse)",
         orange: "var(--color-orange)",
         yellow: "var(--color-yellow)",
         ok: "var(--color-ok)",
+        "ok-inverse": "var(--color-ok-inverse)",
         info: "var(--color-info)",
+        "info-inverse": "var(--color-info-inverse)",
         skip: "var(--color-skip)",
         link: "var(--color-link)",
         "table-border": "var(--color-table-border)",
@@ -55,8 +43,8 @@ module.exports = {
       maxHeight: {
         "1/2-screen": "50vh",
       },
-      screens: {
-        print: { raw: "print" },
+      spacing: {
+        "4.5": "1.125rem"
       },
       typography: (theme) => ({
         DEFAULT: {
@@ -86,5 +74,9 @@ module.exports = {
       }),
     },
   },
-  plugins: [require("@tailwindcss/forms"), require("@tailwindcss/typography")],
+  plugins: [
+    require("@tailwindcss/forms"),
+    require("@tailwindcss/line-clamp"),
+    require("@tailwindcss/typography"),
+  ],
 };

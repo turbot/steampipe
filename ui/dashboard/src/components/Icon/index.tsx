@@ -1,40 +1,36 @@
-import kebabCase from "lodash/kebabCase";
-import * as outlineIconExports from "@heroicons/react/outline";
-import * as solidIconExports from "@heroicons/react/solid";
+import useDashboardIcons from "../../hooks/useDashboardIcons";
 
-const icons = {};
-
-const convertIconName = (name) => {
-  let condensedName = name;
-  const iconOccurrence = name.lastIndexOf("Icon");
-  if (iconOccurrence >= 0) {
-    condensedName = condensedName.substring(0, iconOccurrence);
-  }
-  return kebabCase(condensedName);
-};
-
-Object.entries(outlineIconExports).forEach(([name, exported]) => {
-  const iconName = convertIconName(name);
-  icons[iconName] = exported;
-  icons[`heroicons-outline:${iconName}`] = exported;
-});
-
-Object.entries(solidIconExports).forEach(([name, exported]) => {
-  const iconName = convertIconName(name);
-  icons[`heroicons-solid:${iconName}`] = exported;
-});
-
-interface IconProps {
+type IconProps = {
   className?: string;
   icon: string;
-}
+  style?: any;
+  title?: string;
+};
 
-const Icon = ({ className = "h-6 w-6", icon }: IconProps) => {
-  const MatchingIcon = icons[icon];
+const Icon = ({ className = "h-6 w-6", icon, style, title }: IconProps) => {
+  const icons = useDashboardIcons();
+  let MatchingIcon = icons.materialSymbols[icon];
+
+  if (MatchingIcon) {
+    return (
+      <MatchingIcon
+        className={className}
+        style={{
+          fill: "currentColor",
+          color: style ? style.color : undefined,
+        }}
+        title={title}
+      />
+    );
+  } else {
+    MatchingIcon = icons.heroIcons[icon];
+  }
+
   if (!MatchingIcon) {
     return null;
   }
-  return <MatchingIcon className={className} />;
+
+  return <MatchingIcon className={className} style={style} title={title} />;
 };
 
 export default Icon;

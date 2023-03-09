@@ -1,0 +1,89 @@
+{
+  "end_time": "2023-02-28T15:12:51.219684Z",
+  "inputs": {},
+  "layout": {
+    "children": [
+      {
+        "children": [
+          {
+            "name": "dashboard_cards.card.card1",
+            "panel_type": "card"
+          },
+          {
+            "name": "dashboard_cards.card.card2",
+            "panel_type": "card"
+          }
+        ],
+        "name": "dashboard_cards.container.dashboard_testing_card_blocks_anonymous_container_0",
+        "panel_type": "container"
+      }
+    ],
+    "name": "dashboard_cards.dashboard.testing_card_blocks",
+    "panel_type": "dashboard"
+  },
+  "panels": {
+    "dashboard_cards.card.card1": {
+      "dashboard": "dashboard_cards.dashboard.testing_card_blocks",
+      "data": {
+        "columns": [
+          {
+            "data_type": "INT4",
+            "name": "card1_value"
+          }
+        ],
+        "rows": [
+          {
+            "card1_value": 1
+          }
+        ]
+      },
+      "name": "dashboard_cards.card.card1",
+      "panel_type": "card",
+      "properties": {
+        "name": "card1"
+      },
+      "status": "complete",
+      "width": 2
+    },
+    "dashboard_cards.card.card2": {
+      "dashboard": "dashboard_cards.dashboard.testing_card_blocks",
+      "data": {
+        "columns": [
+          {
+            "data_type": "INT4",
+            "name": "card2_value"
+          }
+        ],
+        "rows": [
+          {
+            "card2_value": 2
+          }
+        ]
+      },
+      "display_type": "info",
+      "name": "dashboard_cards.card.card2",
+      "panel_type": "card",
+      "properties": {
+        "name": "card2"
+      },
+      "status": "complete",
+      "width": 2
+    },
+    "dashboard_cards.container.dashboard_testing_card_blocks_anonymous_container_0": {
+      "dashboard": "dashboard_cards.dashboard.testing_card_blocks",
+      "name": "dashboard_cards.container.dashboard_testing_card_blocks_anonymous_container_0",
+      "panel_type": "container",
+      "status": "complete"
+    },
+    "dashboard_cards.dashboard.testing_card_blocks": {
+      "dashboard": "dashboard_cards.dashboard.testing_card_blocks",
+      "name": "dashboard_cards.dashboard.testing_card_blocks",
+      "panel_type": "dashboard",
+      "status": "complete",
+      "title": "Testing card blocks"
+    }
+  },
+  "schema_version": "20221222",
+  "start_time": "2023-02-28T15:12:51.208328Z",
+  "variables": {}
+}

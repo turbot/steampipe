@@ -1,22 +1,8 @@
-import jq from "jq-web";
-
-const interpolatedStringSplitter = /({{.*?}})/gs;
-const interpolatedMatcher = /{{(.*?)}}/gs;
-
-interface TemplatesMap {
-  [key: string]: string;
-}
-
-interface DataMap {
-  [key: string]: any;
-}
-
-export interface RowRenderResult {
-  [key: string]: {
-    result?: string;
-    error?: string;
-  };
-}
+import {
+  KeyValuePairs,
+  RowRenderResult,
+  TemplatesMap,
+} from "../components/dashboards/common/types";
 
 const replaceSingleQuotesWithDoubleQuotes = (str) => {
   if (!str) {
@@ -30,14 +16,12 @@ export const buildJQFilter = (template) => {
     return template;
   }
 
-  const templateParts = template
-    .split(interpolatedStringSplitter)
-    .filter((p) => p);
+  const templateParts = template.split(/({{.*?}})/gs).filter((p) => p);
   const newTemplateParts: string[] = [];
   // Iterate over each template part - we want to distinguish between regular strings and
   // interpolated strings - we'll treat them differently.
   for (const templatePart of templateParts) {
-    const interpolatedMatch = interpolatedMatcher.exec(templatePart);
+    const interpolatedMatch = /{{(.*?)}}/gs.exec(templatePart);
     // If it's a plain string, quote it
     if (!interpolatedMatch) {
       newTemplateParts.push(JSON.stringify(templatePart));
@@ -88,7 +72,8 @@ const buildCombinedJQFilter = (templates: TemplatesMap) => {
 
 const renderInterpolatedTemplates = async (
   templates: TemplatesMap,
-  data: DataMap[]
+  data: KeyValuePairs[],
+  jq: any
 ): Promise<RowRenderResult[]> => {
   try {
     const finalFilter = buildCombinedJQFilter(templates);

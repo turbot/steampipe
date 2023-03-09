@@ -1,0 +1,52 @@
+[
+  {
+    "name": "query test 1",
+    "run": [
+      "steampipe query sample.sql"
+    ]
+  },
+  {
+    "name": "check test 1",
+    "run": [
+      "steampipe check all"
+    ]
+  },
+  {
+    "name": "check-query test 1",
+    "run": [
+      "steampipe check all",
+      "steampipe query sample.sql"
+    ]
+  },
+  {
+    "name": "service cycle",
+    "run": [
+      "steampipe service start",
+      "steampipe service stop"
+    ]
+  },
+  {
+    "name": "Two Steampipe instances with implicit service",
+    "run": [
+      "steampipe check all",
+      "steampipe query sample.sql"
+    ]
+  },
+  {
+    "name": "Steampipe and `pgcli` with `implicit` service",
+    "run": [
+      "steampipe check all",
+      "pgcli postgres://steampipe@localhost:9193"
+    ]
+  },
+  {
+    "name": "Steampipe and third party client with `explicit` service",
+    "run": [
+      "steampipe service start",
+      "steampipe check all",
+      "steampipe query sample.sql",
+      "pgcli postgres://steampipe@localhost:9193",
+      "steampipe service stop"
+    ]
+  }
+]

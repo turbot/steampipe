@@ -1,0 +1,33 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically wh.en used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Ignore JetBrains files
+.idea
+
+# Ignore swap files
+*.swo
+*.swp
+
+# Parliament IAM permissions outputs
+scripts/generate_parliament_iam_permissions/__pycache__
+scripts/generate_parliament_iam_permissions/docs
+scripts/generate_parliament_iam_permissions/generate_go_file.
+
+# Ignore node dependencies
+node_modules
+
+# Ignore file types
+.vscode/launch.json

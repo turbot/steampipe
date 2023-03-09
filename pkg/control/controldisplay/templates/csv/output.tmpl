@@ -1,0 +1,55 @@
+{{ define "output" }}
+{{- if render_context.Config.RenderHeader -}}
+group_id{{ render_context.Config.Separator }}title{{ render_context.Config.Separator }}description{{ render_context.Config.Separator }}control_id{{ render_context.Config.Separator }}control_title{{ render_context.Config.Separator }}control_description{{ render_context.Config.Separator }}reason{{ render_context.Config.Separator }}resource{{ render_context.Config.Separator }}status{{ render_context.Config.Separator }}severity{{ range .Data.Root.DimensionKeys }}{{ render_context.Config.Separator }}{{ . }}{{ end }}{{range .Data.Root.AllTagKeys }}{{ render_context.Config.Separator }}{{ . }}{{ end }}
+{{ end -}}
+{{ template "result_group_template" .Data.Root }}
+{{- end }}
+
+{{ define "result_group_template" -}}
+  {{- range .ControlRuns -}}
+    {{- template "control_run_template" . }}
+  {{- end -}}
+  {{- range .Groups -}}
+    {{- template "result_group_template" . -}}
+  {{- end -}}
+{{- end }}
+
+{{ define "control_run_template" }}
+{{- if .RunErrorString }}{{ template "control_error_template" . }}
+{{ else }}{{ range .Rows }}{{ template "control_row_template" . }}
+{{ end }}{{ end }}{{ end }}
+
+{{ define "control_error_template" -}}
+  {{- $run := . -}}
+  {{ toCsvCell .Group.GroupId }}{{ render_context.Config.Separator }}{{ toCsvCell .Group.Title }}{{ render_context.Config.Separator }}{{ toCsvCell .Group.Description -}}{{ render_context.Config.Separator }}{{ toCsvCell .ControlId }}{{ render_context.Config.Separator }}{{ toCsvCell .Title }}{{ render_context.Config.Separator }}{{ toCsvCell .Description -}}{{ render_context.Config.Separator }}{{ toCsvCell .RunErrorString -}}{{ render_context.Config.Separator }}{{ render_context.Config.Separator }}{{ toCsvCell "error" -}}{{ render_context.Config.Separator }}{{ range .Tree.Root.DimensionKeys }}{{ render_context.Config.Separator }}{{ end }}{{ range .Tree.Root.AllTagKeys }}{{ render_context.Config.Separator }}{{ toCsvCell (index $run.Tags .) }}{{ end }}
+{{- end }}
+
+{{ define "control_row_template" -}}
+  {{- template "group_details" . }}{{ render_context.Config.Separator }}{{ template "control_details" . }}{{ render_context.Config.Separator }}{{ template "reason_resource_status" . }}{{ render_context.Config.Separator }}{{ template "control_severity" . }}{{ template "dimensions" . }}{{ template "tags" . -}}
+{{- end }}
+
+{{ define "group_details" -}}
+  {{ toCsvCell .Run.Group.GroupId }}{{ render_context.Config.Separator }}{{ toCsvCell .Run.Group.Title }}{{ render_context.Config.Separator }}{{ toCsvCell .Run.Group.Description -}}
+{{- end }}
+
+{{ define "control_details" -}}
+  {{ toCsvCell .Run.ControlId }}{{ render_context.Config.Separator }}{{ toCsvCell .Run.Title }}{{ render_context.Config.Separator }}{{ toCsvCell .Run.Description -}}
+{{- end }}
+
+{{ define "control_severity" -}}
+  {{ toCsvCell .Run.Severity -}}
+{{- end }}
+
+{{ define "reason_resource_status" -}}
+  {{ toCsvCell .Reason }}{{ render_context.Config.Separator }}{{ toCsvCell .Resource }}{{ render_context.Config.Separator }}{{ toCsvCell .Status -}}
+{{- end }}
+
+{{ define "dimensions" -}}
+  {{- $row := . -}}
+  {{- range .Run.Tree.Root.DimensionKeys }}{{ render_context.Config.Separator }}{{ toCsvCell ($row.GetDimensionValue .) }}{{ end -}}
+{{- end }}
+
+{{ define "tags" -}}
+  {{- $row := . -}}
+  {{- range .Run.Tree.Root.AllTagKeys }}{{ render_context.Config.Separator }}{{ toCsvCell (index $row.Run.Tags .) }}{{ end -}}
+{{- end }}

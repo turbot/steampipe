@@ -1,6 +1,8 @@
 import ErrorPanel from "../../Error";
-import Inputs, { InputProperties } from "../index";
-import { PanelDefinition } from "../../../../hooks/useDashboard";
+import { getInputComponent } from "../index";
+import { InputProperties } from "../types";
+import { PanelDefinition } from "../../../../types";
+import { registerComponent } from "../../index";
 
 export type InputDefinition = PanelDefinition & {
   properties: InputProperties;
@@ -8,12 +10,13 @@ export type InputDefinition = PanelDefinition & {
 
 const renderInput = (definition: InputDefinition) => {
   const {
-    properties: { name, type = "select" },
+    display_type = "select",
+    properties: { unqualified_name: name },
   } = definition;
-  const input = Inputs[type];
+  const input = getInputComponent(display_type);
 
   if (!input) {
-    return <ErrorPanel error={`Unknown input type ${type}`} />;
+    return <ErrorPanel error={`Unknown input type ${display_type}`} />;
   }
 
   const Component = input.component;
@@ -24,4 +27,4 @@ const RenderInput = (props: InputDefinition) => {
   return renderInput(props);
 };
 
-export { RenderInput };
+registerComponent("input", RenderInput);

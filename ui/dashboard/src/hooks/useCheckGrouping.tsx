@@ -4,13 +4,12 @@ import ControlErrorNode from "../components/dashboards/check/common/node/Control
 import ControlNode from "../components/dashboards/check/common/node/ControlNode";
 import ControlResultNode from "../components/dashboards/check/common/node/ControlResultNode";
 import ControlRunningNode from "../components/dashboards/check/common/node/ControlRunningNode";
-import get from "lodash/get";
 import KeyValuePairNode from "../components/dashboards/check/common/node/KeyValuePairNode";
 import RootNode from "../components/dashboards/check/common/node/RootNode";
+import usePrevious from "./usePrevious";
 import {
   CheckDisplayGroup,
   CheckDisplayGroupType,
-  CheckGroup,
   CheckNode,
   CheckResult,
   CheckSummary,
@@ -24,34 +23,34 @@ import {
   useReducer,
 } from "react";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
-import { ElementType, IActions, PanelDefinition } from "./useDashboard";
+import { ElementType, IActions, PanelDefinition } from "../types";
+import { useDashboard } from "./useDashboard";
 import { useSearchParams } from "react-router-dom";
 
 type CheckGroupingActionType = ElementType<typeof checkGroupingActions>;
 
-export interface CheckGroupNodeState {
+export type CheckGroupNodeState = {
   expanded: boolean;
-}
+};
 
-export interface CheckGroupNodeStates {
+export type CheckGroupNodeStates = {
   [name: string]: CheckGroupNodeState;
-}
+};
 
-export interface CheckGroupingAction {
+export type CheckGroupingAction = {
   type: CheckGroupingActionType;
   [key: string]: any;
-}
+};
 
-interface ICheckGroupingContext {
+type ICheckGroupingContext = {
   benchmark: BenchmarkType | null;
   definition: PanelDefinition;
   grouping: CheckNode | null;
   groupingsConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
   nodeStates: CheckGroupNodeStates;
-  rootBenchmark: CheckGroup;
   dispatch(action: CheckGroupingAction): void;
-}
+};
 
 const CheckGroupingActions: IActions = {
   COLLAPSE_ALL_NODES: "collapse_all_nodes",
@@ -67,16 +66,36 @@ const CheckGroupingContext = createContext<ICheckGroupingContext | null>(null);
 
 const addBenchmarkTrunkNode = (
   benchmark_trunk: BenchmarkType[],
-  children: CheckNode[]
-) => {
+  children: CheckNode[],
+  benchmarkChildrenLookup: { [name: string]: CheckNode[] }
+): CheckNode => {
   const currentNode = benchmark_trunk.length > 0 ? benchmark_trunk[0] : null;
+  let newChildren: CheckNode[];
+  if (benchmark_trunk.length > 1) {
+    newChildren = [
+      addBenchmarkTrunkNode(
+        benchmark_trunk.slice(1),
+        children,
+        benchmarkChildrenLookup
+      ),
+    ];
+  } else {
+    newChildren = children;
+  }
+  if (!!currentNode?.name) {
+    const existingChildren =
+      benchmarkChildrenLookup[currentNode?.name || "Other"];
+    if (existingChildren) {
+      existingChildren.push(...newChildren);
+    } else {
+      benchmarkChildrenLookup[currentNode?.name || "Other"] = newChildren;
+    }
+  }
   return new BenchmarkNode(
     currentNode?.sort || "Other",
     currentNode?.name || "Other",
     currentNode?.title || "Other",
-    benchmark_trunk.length > 1
-      ? [addBenchmarkTrunkNode(benchmark_trunk.slice(1), children)]
-      : children
+    newChildren
   );
 };
 
@@ -114,7 +133,8 @@ const getCheckGroupingKey = (
 const getCheckGroupingNode = (
   checkResult: CheckResult,
   group: CheckDisplayGroup,
-  children: CheckNode[]
+  children: CheckNode[],
+  benchmarkChildrenLookup: { [name: string]: CheckNode[] }
 ): CheckNode => {
   switch (group.type) {
     case "dimension":
@@ -163,8 +183,12 @@ const getCheckGroupingNode = (
       );
     case "benchmark":
       return checkResult.benchmark_trunk.length > 1
-        ? addBenchmarkTrunkNode(checkResult.benchmark_trunk.slice(1), children)
-        : children;
+        ? addBenchmarkTrunkNode(
+            checkResult.benchmark_trunk.slice(1),
+            children,
+            benchmarkChildrenLookup
+          )
+        : children[0];
     case "control":
       return new ControlNode(
         checkResult.control.sort,
@@ -195,17 +219,20 @@ const groupCheckItems = (
   temp: { _: CheckNode[] },
   checkResult: CheckResult,
   groupingsConfig: CheckDisplayGroup[],
-  checkNodeStates: CheckGroupNodeStates
+  checkNodeStates: CheckGroupNodeStates,
+  benchmarkChildrenLookup: { [name: string]: CheckNode[] }
 ) => {
   return groupingsConfig
     .filter((groupConfig) => groupConfig.type !== "result")
-    .reduce(function (cumulativeGrouping, currentGroupingConfig) {
+    .reduce((cumulativeGrouping, currentGroupingConfig) => {
+      // Get this items grouping key - e.g. control or benchmark name
       const groupKey = getCheckGroupingKey(checkResult, currentGroupingConfig);
 
       if (!groupKey) {
         return cumulativeGrouping;
       }
 
+      // Collapse all benchmark trunk nodes
       if (currentGroupingConfig.type === "benchmark") {
         checkResult.benchmark_trunk.forEach(
           (benchmark) =>
@@ -221,19 +248,42 @@ const groupCheckItems = (
 
       if (!cumulativeGrouping[groupKey]) {
         cumulativeGrouping[groupKey] = { _: [] };
+
         const groupingNode = getCheckGroupingNode(
           checkResult,
           currentGroupingConfig,
-          cumulativeGrouping[groupKey]._
+          cumulativeGrouping[groupKey]._,
+          benchmarkChildrenLookup
         );
 
         if (groupingNode) {
           if (currentGroupingConfig.type === "benchmark") {
+            // For benchmarks we need to get the benchmark nodes including the trunk
             addBenchmarkGroupingNode(cumulativeGrouping._, groupingNode);
           } else {
             cumulativeGrouping._.push(groupingNode);
           }
         }
+      }
+
+      // If the grouping key for this has already been logged by another result,
+      // use the existing children from that - this covers cases where we may have
+      // benchmark 1 -> benchmark 2 -> control 1
+      // benchmark 1 -> control 2
+      // ...when we build the benchmark grouping node for control 1, its key will be
+      // for benchmark 2, but we'll add a hierarchical grouping node for benchmark 1 -> benchmark 2
+      // When we come to get the benchmark grouping node for control 2, we'll need to add
+      // the control to the existing children of benchmark 1
+      if (
+        currentGroupingConfig.type === "benchmark" &&
+        benchmarkChildrenLookup[groupKey]
+      ) {
+        const groupingEntry = cumulativeGrouping[groupKey];
+        const { _, ...rest } = groupingEntry || {};
+        cumulativeGrouping[groupKey] = {
+          _: benchmarkChildrenLookup[groupKey],
+          ...rest,
+        };
       }
 
       return cumulativeGrouping[groupKey];
@@ -300,17 +350,17 @@ const reducer = (state: CheckGroupNodeStates, action) => {
   }
 };
 
-interface CheckGroupingProviderProps {
+type CheckGroupingProviderProps = {
   children: null | JSX.Element | JSX.Element[];
   definition: PanelDefinition;
-}
+};
 
 const CheckGroupingProvider = ({
   children,
   definition,
 }: CheckGroupingProviderProps) => {
+  const { panelsMap } = useDashboard();
   const [nodeStates, dispatch] = useReducer(reducer, { nodes: {} });
-  const rootBenchmark = get(definition, "execution_tree.root.groups[0]", null);
   const [searchParams] = useSearchParams();
 
   const groupingsConfig = useMemo(() => {
@@ -334,81 +384,113 @@ const CheckGroupingProvider = ({
       return groupings;
     } else {
       return [
-        // { type: "status" },
-        // { type: "reason" },
-        // { type: "resource" },
-        // { type: "status" },
-        // { type: "severity" },
-        // { type: "dimension", value: "account_id" },
-        // { type: "dimension", value: "region" },
-        // { type: "tag", value: "service" },
-        // { type: "tag", value: "cis_type" },
-        // { type: "tag", value: "cis_level" },
         { type: "benchmark" },
         { type: "control" },
         { type: "result" },
       ] as CheckDisplayGroup[];
     }
-  }, [rootBenchmark, searchParams]);
+  }, [searchParams]);
 
-  const [benchmark, grouping, firstChildSummaries, tempNodeStates] =
-    useMemo(() => {
-      if (!rootBenchmark) {
-        return [null, null, [], {}];
-      }
+  const [
+    benchmark,
+    panelDefinition,
+    grouping,
+    firstChildSummaries,
+    tempNodeStates,
+  ] = useMemo(() => {
+    if (!definition) {
+      return [null, null, null, [], {}];
+    }
 
-      const b = new BenchmarkType(
-        "0",
-        rootBenchmark.group_id,
-        rootBenchmark.title,
-        rootBenchmark.description,
-        rootBenchmark.groups,
-        rootBenchmark.controls,
-        []
+    // @ts-ignore
+    const nestedBenchmarks = definition.children?.filter(
+      (child) => child.panel_type === "benchmark"
+    );
+    const nestedControls =
+      definition.panel_type === "control"
+        ? [definition]
+        : // @ts-ignore
+          definition.children?.filter(
+            (child) => child.panel_type === "control"
+          );
+
+    const rootBenchmarkPanel = panelsMap[definition.name];
+    const b = new BenchmarkType(
+      "0",
+      rootBenchmarkPanel.name,
+      rootBenchmarkPanel.title,
+      rootBenchmarkPanel.description,
+      nestedBenchmarks,
+      nestedControls,
+      panelsMap,
+      []
+    );
+
+    const checkNodeStates: CheckGroupNodeStates = {};
+    const result: CheckNode[] = [];
+    const temp = { _: result };
+    const benchmarkChildrenLookup = {};
+
+    // We'll loop over each control result and build up the grouped nodes from there
+    b.all_control_results.forEach((checkResult) => {
+      // Build a grouping node - this will be the leaf node down from the root group
+      // e.g. benchmark -> control (where control is the leaf)
+      const grouping = groupCheckItems(
+        temp,
+        checkResult,
+        groupingsConfig,
+        checkNodeStates,
+        benchmarkChildrenLookup
       );
+      // Build and add a check result node to the children of the trailing group.
+      // This will be used to calculate totals and severity, amongst other things.
+      const node = getCheckResultNode(checkResult);
+      grouping._.push(node);
+    });
 
-      const checkNodeStates: CheckGroupNodeStates = {};
-      const result: CheckNode[] = [];
-      const temp = { _: result };
-      b.all_control_results.forEach((checkResult) => {
-        const grouping = groupCheckItems(
-          temp,
-          checkResult,
-          groupingsConfig,
-          checkNodeStates
-        );
-        const node = getCheckResultNode(checkResult);
-        grouping._.push(node);
-      });
+    const results = new RootNode(result);
 
-      const results = new RootNode(result);
+    const firstChildSummaries: CheckSummary[] = [];
+    for (const child of results.children) {
+      firstChildSummaries.push(child.summary);
+    }
 
-      const firstChildSummaries: CheckSummary[] = [];
-      for (const child of results.children) {
-        firstChildSummaries.push(child.summary);
-      }
+    return [
+      b,
+      { ...rootBenchmarkPanel, children: definition.children },
+      results,
+      firstChildSummaries,
+      checkNodeStates,
+    ] as const;
+  }, [definition, groupingsConfig, panelsMap]);
 
-      return [b, results, firstChildSummaries, checkNodeStates] as const;
-    }, [groupingsConfig, rootBenchmark]);
+  const previousGroupings = usePrevious({ groupingsConfig });
 
   useEffect(() => {
+    if (
+      previousGroupings &&
+      // @ts-ignore
+      previousGroupings.groupingsConfig === groupingsConfig
+    ) {
+      return;
+    }
     dispatch({
       type: CheckGroupingActions.UPDATE_NODES,
       nodes: tempNodeStates,
     });
-  }, [groupingsConfig]);
+  }, [previousGroupings, groupingsConfig, tempNodeStates]);
 
   return (
     <CheckGroupingContext.Provider
       value={{
         benchmark,
-        definition,
+        // @ts-ignore
+        definition: panelDefinition,
         dispatch,
         firstChildSummaries,
         grouping,
         groupingsConfig,
         nodeStates,
-        rootBenchmark,
       }}
     >
       {children}
@@ -447,5 +529,3 @@ export {
 //     return r[a[k]];
 //   }, temp)._.push({ Id: a.Id });
 // });
-//
-// console.log(result);

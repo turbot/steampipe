@@ -1,32 +1,59 @@
-import Children from "../common/Children";
-import LayoutPanel from "../common/LayoutPanel";
+import Children from "../Children";
+import DashboardProgress from "./DashboardProgress";
+import DashboardTitle from "../../titles/DashboardTitle";
+import Grid from "../Grid";
 import PanelDetail from "../PanelDetail";
-import {
-  DashboardDefinition,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
+import SnapshotRenderComplete from "../../../snapshot/SnapshotRenderComplete";
+import { DashboardDataModeLive, DashboardDefinition } from "../../../../types";
+import { registerComponent } from "../../index";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
-interface DashboardProps {
+type DashboardProps = {
   definition: DashboardDefinition;
+  isRoot?: boolean;
+  showPanelControls?: boolean;
   withPadding?: boolean;
-}
+};
+
+type DashboardWrapperProps = {
+  showPanelControls?: boolean;
+};
 
 // TODO allow full-screen of a panel
-const Dashboard = ({ definition, withPadding = false }: DashboardProps) => (
-  <LayoutPanel
-    definition={definition}
-    isDashboard={true}
-    withPadding={withPadding}
-  >
-    <Children children={definition.children} />
-  </LayoutPanel>
-);
+const Dashboard = ({
+  definition,
+  isRoot = true,
+  showPanelControls = true,
+}: DashboardProps) => {
+  const grid = (
+    <Grid name={definition.name} width={isRoot ? 12 : definition.width}>
+      {isRoot && <DashboardTitle title={definition.title} />}
+      <Children
+        children={definition.children}
+        parentType="dashboard"
+        showPanelControls={showPanelControls}
+      />
+    </Grid>
+  );
+  return (
+    <>
+      {isRoot ? <DashboardProgress /> : null}
+      {isRoot ? <div className="h-full overflow-y-auto p-4">{grid}</div> : grid}
+    </>
+  );
+};
 
-const DashboardWrapper = () => {
-  const { dashboard, search, selectedDashboard, selectedPanel } =
+const DashboardWrapper = ({
+  showPanelControls = true,
+}: DashboardWrapperProps) => {
+  const { dashboard, dataMode, search, selectedDashboard, selectedPanel } =
     useDashboard();
 
-  if (search.value || !dashboard || !selectedDashboard) {
+  if (
+    search.value ||
+    !dashboard ||
+    (!selectedDashboard && dataMode === DashboardDataModeLive)
+  ) {
     return null;
   }
 
@@ -34,8 +61,19 @@ const DashboardWrapper = () => {
     return <PanelDetail definition={selectedPanel} />;
   }
 
-  return <Dashboard definition={dashboard} withPadding={true} />;
+  return (
+    <>
+      <Dashboard
+        definition={dashboard}
+        showPanelControls={showPanelControls}
+        withPadding={true}
+      />
+      <SnapshotRenderComplete />
+    </>
+  );
 };
+
+registerComponent("dashboard", Dashboard);
 
 export default DashboardWrapper;
 

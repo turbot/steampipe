@@ -3,6 +3,8 @@ import gfm from "remark-gfm"; // Support for strikethrough, tables, tasklists an
 import ReactMarkdown from "react-markdown";
 import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 import { classNames } from "../../../utils/styles";
+import { PanelDefinition } from "../../../types";
+import { registerComponent } from "../index";
 
 const getLongPanelClasses = () => {
   // switch (type) {
@@ -22,10 +24,11 @@ const getShortPanelClasses = () => {
   // }
 };
 
-export type TextProps = BasePrimitiveProps &
+export type TextProps = PanelDefinition &
+  BasePrimitiveProps &
   ExecutablePrimitiveProps & {
+    display_type?: "raw" | "markdown" | "html";
     properties: {
-      type?: "raw" | "markdown" | "html";
       value: string;
     };
   };
@@ -48,7 +51,7 @@ const Markdown = ({ value }) => {
         <div className={panelClasses}>
           <div
             className={classNames(
-              "p-2 sm:p-1 prose prose-sm max-w-none break-all",
+              "p-2 sm:p-1 prose prose-sm max-w-none break-keep",
               proseHeadings
             )}
           >
@@ -57,7 +60,7 @@ const Markdown = ({ value }) => {
         </div>
       ) : (
         <article
-          className={classNames(panelClasses, "break-all", proseHeadings)}
+          className={classNames(panelClasses, "break-keep", proseHeadings)}
         >
           <ReactMarkdown remarkPlugins={[gfm]}>{value}</ReactMarkdown>
         </article>
@@ -70,7 +73,7 @@ const Raw = ({ value }) => {
   if (!value) {
     return null;
   }
-  return <pre className="whitespace-pre-wrap break-all">{value}</pre>;
+  return <pre className="whitespace-pre-wrap break-keep">{value}</pre>;
 };
 
 const renderText = (type, value) => {
@@ -84,9 +87,12 @@ const renderText = (type, value) => {
   }
 };
 
-const Text = (props: TextProps) => {
-  const type = props.properties.type ? props.properties.type : "markdown";
-  return renderText(type, props.properties ? props.properties.value : null);
-};
+const Text = (props: TextProps) =>
+  renderText(
+    props.display_type || "markdown",
+    props.properties ? props.properties.value : null
+  );
+
+registerComponent("text", Text);
 
 export default Text;

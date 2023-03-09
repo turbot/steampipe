@@ -9,7 +9,7 @@ const story = {
 export default story;
 
 const Template = (args) => (
-  <PanelStoryDecorator definition={args} nodeType="error" />
+  <PanelStoryDecorator definition={args} panelType="error" />
 );
 
 export const NoError = Template.bind({});

@@ -8,9 +8,9 @@ import {
 import { CheckNode } from "../common";
 import { useCallback, useEffect, useState } from "react";
 
-interface CheckGroupingProps {
+type CheckGroupingProps = {
   node: CheckNode;
-}
+};
 
 const CheckGrouping = ({ node }: CheckGroupingProps) => {
   const { dispatch, nodeStates } = useCheckGrouping();
@@ -18,20 +18,18 @@ const CheckGrouping = ({ node }: CheckGroupingProps) => {
     useState<CheckGroupNodeStates | null>(null);
 
   const expand = useCallback(() => {
-    // console.log("Capturing and expanding", nodeStates);
     setRestoreNodeStates(nodeStates);
     dispatch({ type: CheckGroupingActions.EXPAND_ALL_NODES });
-  }, [nodeStates]);
+  }, [dispatch, nodeStates]);
 
   const restore = useCallback(() => {
-    // console.log("Restoring", restoreNodeStates);
     if (restoreNodeStates) {
       dispatch({
         type: CheckGroupingActions.UPDATE_NODES,
         nodes: restoreNodeStates,
       });
     }
-  }, [restoreNodeStates]);
+  }, [dispatch, restoreNodeStates]);
 
   useEffect(() => {
     window.onbeforeprint = expand;

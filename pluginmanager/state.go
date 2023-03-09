@@ -7,10 +7,10 @@ import (
 	"syscall"
 
 	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/filepaths"
-	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
-	"github.com/turbot/steampipe/utils"
+	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/utils"
+	pb "github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
 )
 
 const PluginManagerStructVersion = 20220411
@@ -41,7 +41,7 @@ func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *
 func LoadPluginManagerState() (*PluginManagerState, error) {
 	// always return empty state
 	s := new(PluginManagerState)
-	if !helpers.FileExists(filepaths.PluginManagerStateFilePath()) {
+	if !filehelpers.FileExists(filepaths.PluginManagerStateFilePath()) {
 		log.Printf("[TRACE] plugin manager state file not found")
 		return s, nil
 	}
@@ -108,7 +108,7 @@ func (s *PluginManagerState) kill() error {
 		return err
 	}
 	if process == nil {
-		log.Println("[TRACE] tried to kill plugin_manager, but couldn't find process")
+		log.Printf("[TRACE] tried to kill plugin_manager, but couldn't find process (%d)", s.Pid)
 		return nil
 	}
 	// kill the plugin manager process by sending a SIGTERM (to give it a chance to clean up its children)
@@ -123,5 +123,5 @@ func (s *PluginManagerState) kill() error {
 }
 
 func (s *PluginManagerState) delete() {
-	os.Remove(filepaths.PluginManagerStateFilePath())
+	_ = os.Remove(filepaths.PluginManagerStateFilePath())
 }

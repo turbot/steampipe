@@ -22,7 +22,7 @@
   --color-skip-animate: rgba(156, 163, 175, 0.8); /* #b4bac3 */
   --color-skip-inverse: theme("colors.white");
 
-  /* Primary colours */
+  /* Primary colors */
   --color-success: #0070f3;
   --color-error: #e00;
   --color-warning: #f9a825;
@@ -44,7 +44,7 @@
   --color-secondary: var(--color-black-scale-5);
 
   /* General colors */
-  --color-divider: theme("colors.gray.300");
+  --color-divide: theme("colors.gray.100");
   --color-nav: #fafbfc;
   --color-nav-border: #dee2e6;
 
@@ -53,7 +53,7 @@
 
   /* Borders */
   --color-table-border: theme("colors.gray.200");
-  --color-table-divide: theme("colors.gray.100");
+  --color-table-divide: var(--color-dashboard);
   --color-table-head: var(--color-black-scale-6);
   --color-table-alternating-row: #fcfcfc;
 }
@@ -78,12 +78,12 @@
   --color-skip-animate: rgba(156, 163, 175, 0.8); /* #b4bac3 */
   --color-skip-inverse: theme("colors.white");
 
-  /* Primary colours */
+  /* Primary colors */
   --color-success: #0070f3;
   --color-error: red;
   --color-warning: #f9a825;
   --color-dashboard: #1e2329;
-  --color-dashboard-panel: #2d333b; /*var(--color-black-scale-1);*/
+  --color-dashboard-panel: #262b32; /* #2d333b;*/ /*var(--color-black-scale-1);*/
   --color-foreground: #fff;
   --color-foreground-light: #ccc;
   --color-foreground-lighter: #888;
@@ -100,7 +100,7 @@
   --color-secondary: var(--color-black-scale-5);
 
   /* General colors */
-  --color-divider: theme("colors.gray.300");
+  --color-divide: var(--color-black-scale-2);
   --color-nav: var(--color-dashboard);
   --color-nav-border: #333;
 
@@ -109,7 +109,7 @@
 
   /* Borders */
   --color-table-border: theme("colors.gray.700");
-  --color-table-divide: theme("colors.gray.800");
+  --color-table-divide: var(--color-black-scale-2);
   --color-table-head: var(--color-black-scale-6);
   --color-table-alternating-row: #23282f;
 }
@@ -119,7 +119,7 @@
     font-size: 14px;
   }
 
-  [type='text'] {
+  [type="text"] {
     background-color: var(--color-dashboard-panel);
   }
 }
@@ -156,68 +156,79 @@
 }
 
 .summary-chart-error-animate {
-  background-image:
-          repeating-linear-gradient(
-                  -45deg,
-                  var(--color-alert),
-                  var(--color-alert) 0.5rem,
-                  var(--color-alert-animate) 0.5rem,
-                  var(--color-alert-animate) 1.25rem
-          );
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-alert),
+    var(--color-alert) 0.5rem,
+    var(--color-alert-animate) 0.5rem,
+    var(--color-alert-animate) 1.25rem
+  );
   background-size: 200% 200%;
   animation: barberpole 10s linear infinite;
 }
 
 .summary-chart-alarm-animate {
-  background-image:
-          repeating-linear-gradient(
-                  -45deg,
-                  var(--color-alert-animate),
-                  var(--color-alert-animate) 0.5rem,
-                  var(--color-alert) 0.5rem,
-                  var(--color-alert) 1.25rem
-          );
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-alert-animate),
+    var(--color-alert-animate) 0.5rem,
+    var(--color-alert) 0.5rem,
+    var(--color-alert) 1.25rem
+  );
   background-size: 200% 200%;
   animation: barberpole 10s linear infinite;
 }
 
 .summary-chart-ok-animate {
-  background-image:
-          repeating-linear-gradient(
-                  -45deg,
-                  var(--color-ok-animate),
-                  var(--color-ok-animate) 0.5rem,
-                  var(--color-ok) 0.5rem,
-                  var(--color-ok) 1.25rem
-          );
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-ok-animate),
+    var(--color-ok-animate) 0.5rem,
+    var(--color-ok) 0.5rem,
+    var(--color-ok) 1.25rem
+  );
   background-size: 200% 200%;
   animation: barberpole 10s linear infinite;
 }
 
 .summary-chart-info-animate {
-  background-image:
-          repeating-linear-gradient(
-                  -45deg,
-                  var(--color-info-animate),
-                  var(--color-info-animate) 0.5rem,
-                  var(--color-info) 0.5rem,
-                  var(--color-info) 1.25rem
-          );
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-info-animate),
+    var(--color-info-animate) 0.5rem,
+    var(--color-info) 0.5rem,
+    var(--color-info) 1.25rem
+  );
   background-size: 200% 200%;
   animation: barberpole 10s linear infinite;
 }
 
 .summary-chart-skip-animate {
-  background-image:
-          repeating-linear-gradient(
-                  -45deg,
-                  var(--color-skip-animate),
-                  var(--color-skip-animate) 0.5rem,
-                  var(--color-skip) 0.5rem,
-                  var(--color-skip) 1.25rem
-          );
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-skip-animate),
+    var(--color-skip-animate) 0.5rem,
+    var(--color-skip) 0.5rem,
+    var(--color-skip) 1.25rem
+  );
   background-size: 200% 200%;
   animation: barberpole 10s linear infinite;
+}
+
+.dashboard-loading-animate {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-skip-animate),
+    var(--color-skip-animate) 0.5rem,
+    var(--color-skip) 0.5rem,
+    var(--color-skip) 1.25rem
+  );
+  background-size: 200% 200%;
+  animation: barberpole 10s linear infinite;
+}
+
+.react-flow__handle {
+  display: none;
 }
 
 @keyframes barberpole {
@@ -227,7 +238,8 @@
 }
 
 @keyframes ping {
-  75%, 100% {
+  75%,
+  100% {
     transform: scale(1.75);
     opacity: 0;
   }

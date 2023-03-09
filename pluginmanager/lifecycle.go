@@ -9,10 +9,11 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/steampipe-plugin-sdk/v3/logging"
-	"github.com/turbot/steampipe/filepaths"
-	pb "github.com/turbot/steampipe/pluginmanager/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/pluginmanager/grpc/shared"
+	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/filepaths"
+	pb "github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/pluginmanager_service/grpc/shared"
 )
 
 // StartNewInstance loads the plugin manager state, stops any previous instance and instantiates a new plugin manager
@@ -42,7 +43,9 @@ func StartNewInstance(steampipeExecutablePath string) error {
 func start(steampipeExecutablePath string) error {
 	// note: we assume the install dir has been assigned to file_paths.SteampipeDir
 	// - this is done both by the FDW and Steampipe
-	pluginManagerCmd := exec.Command(steampipeExecutablePath, "plugin-manager", "--install-dir", filepaths.SteampipeDir)
+	pluginManagerCmd := exec.Command(steampipeExecutablePath,
+		"plugin-manager",
+		"--"+constants.ArgInstallDir, filepaths.SteampipeDir)
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
@@ -90,7 +93,7 @@ func Stop() error {
 
 // stop the running plugin manager instance
 func stop(state *PluginManagerState) error {
-	log.Printf("[TRACE] plugin manager stop")
+	log.Printf("[INFO] plugin manager stop")
 	pluginManager, err := NewPluginManagerClient(state)
 	if err != nil {
 		return err

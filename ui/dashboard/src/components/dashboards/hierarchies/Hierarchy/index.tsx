@@ -1,21 +1,18 @@
 import ErrorPanel from "../../Error";
-import get from "lodash/get";
-import Hierarchies, {
-  HierarchyProperties,
-  HierarchyType,
-} from "../../hierarchies";
 import merge from "lodash/merge";
-import set from "lodash/set";
+import useChartThemeColors from "../../../../hooks/useChartThemeColors";
+import useNodeAndEdgeData from "../../common/useNodeAndEdgeData";
 import {
   buildNodesAndEdges,
   buildTreeDataInputs,
   LeafNodeData,
-  NodesAndEdges,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
-import { HierarchyProps } from "../index";
-import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
-import { useEffect, useState } from "react";
+import { getHierarchyComponent } from "..";
+import { HierarchyProperties, HierarchyProps, HierarchyType } from "../types";
+import { NodesAndEdges } from "../../common/types";
+import { registerComponent } from "../../index";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
 const getCommonBaseOptions = () => ({
   animation: false,
@@ -25,10 +22,7 @@ const getCommonBaseOptions = () => ({
   },
 });
 
-const getCommonBaseOptionsForHierarchyType = (
-  type: HierarchyType = "tree",
-  namedColors
-) => {
+const getCommonBaseOptionsForHierarchyType = (type: HierarchyType = "tree") => {
   switch (type) {
     default:
       return {};
@@ -40,7 +34,7 @@ const getSeriesForHierarchyType = (
   data: LeafNodeData | undefined,
   properties: HierarchyProperties | undefined,
   nodesAndEdges: NodesAndEdges,
-  namedColors
+  themeColors
 ) => {
   if (!data) {
     return {};
@@ -60,7 +54,7 @@ const getSeriesForHierarchyType = (
           right: "20%",
           symbolSize: 7,
           label: {
-            color: namedColors.foreground,
+            color: themeColors.foreground,
             position: "left",
             verticalAlign: "middle",
             align: "right",
@@ -94,107 +88,90 @@ const getOptionOverridesForHierarchyType = (
     return {};
   }
 
-  let overrides = {};
-
-  return overrides;
+  return {};
 };
 
-const buildHierarchyOptions = (
-  props: HierarchyProps,
-  theme,
-  themeWrapperRef
-) => {
-  // We need to get the theme CSS variable values - these are accessible on the theme root element and below in the tree
-  // @ts-ignore
-  const style = window.getComputedStyle(themeWrapperRef);
-  const foreground = style.getPropertyValue("--color-foreground");
-  const foregroundLightest = style.getPropertyValue(
-    "--color-foreground-lightest"
-  );
-  const alert = style.getPropertyValue("--color-alert");
-  const info = style.getPropertyValue("--color-info");
-  const ok = style.getPropertyValue("--color-ok");
-  const namedColors = {
-    foreground,
-    foregroundLightest,
-    alert,
-    info,
-    ok,
-  };
-
+const buildHierarchyOptions = (props: HierarchyProps, themeColors) => {
   const nodesAndEdges = buildNodesAndEdges(
+    props.categories,
     props.data,
     props.properties,
-    namedColors
+    themeColors
   );
 
   return merge(
     getCommonBaseOptions(),
-    getCommonBaseOptionsForHierarchyType(props.properties?.type, namedColors),
+    getCommonBaseOptionsForHierarchyType(props.display_type),
     getSeriesForHierarchyType(
-      props.properties?.type,
+      props.display_type,
       props.data,
       props.properties,
       nodesAndEdges,
-      namedColors
+      themeColors
     ),
-    getOptionOverridesForHierarchyType(props.properties?.type, props.properties)
+    getOptionOverridesForHierarchyType(props.display_type, props.properties)
   );
 };
 
 const HierarchyWrapper = (props: HierarchyProps) => {
-  const [, setRandomVal] = useState(0);
+  const themeColors = useChartThemeColors();
   const {
-    themeContext: { theme, wrapperRef },
+    themeContext: { wrapperRef },
   } = useDashboard();
 
-  // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
-  useEffect(() => setRandomVal(Math.random()), [theme.name]);
+  const nodeAndEdgeData = useNodeAndEdgeData(
+    props.data,
+    props.properties,
+    props.status
+  );
 
   if (!wrapperRef) {
     return null;
   }
 
-  if (!props.data) {
+  if (
+    !nodeAndEdgeData ||
+    !nodeAndEdgeData.data ||
+    !nodeAndEdgeData.data.rows ||
+    nodeAndEdgeData.data.rows.length === 0
+  ) {
     return null;
   }
 
   return (
     <Chart
-      options={buildHierarchyOptions(props, theme, wrapperRef)}
-      type={props.properties ? props.properties.type : "tree"}
+      options={buildHierarchyOptions(
+        {
+          ...props,
+          categories: nodeAndEdgeData.categories,
+          data: nodeAndEdgeData.data,
+          properties: nodeAndEdgeData.properties,
+        },
+        themeColors
+      )}
+      type={props.display_type || "tree"}
     />
   );
 };
 
-type HierarchyDefinition = PanelDefinition & {
-  properties: HierarchyProps;
-};
-
-const renderHierarchy = (definition: HierarchyDefinition) => {
+const renderHierarchy = (definition: HierarchyProps) => {
   // We default to tree diagram if not specified
-  if (!get(definition, "properties.type")) {
-    // @ts-ignore
-    definition = set(definition, "properties.type", "tree");
-  }
-  const {
-    properties: { type },
-  } = definition;
+  const { display_type = "tree" } = definition;
 
-  const hierarchy = Hierarchies[type];
+  const hierarchy = getHierarchyComponent(display_type);
 
   if (!hierarchy) {
-    return <ErrorPanel error={`Unknown hierarchy type ${type}`} />;
+    return <ErrorPanel error={`Unknown hierarchy type ${display_type}`} />;
   }
 
   const Component = hierarchy.component;
   return <Component {...definition} />;
 };
 
-const RenderHierarchy = (props: HierarchyDefinition) => {
+const RenderHierarchy = (props: HierarchyProps) => {
   return renderHierarchy(props);
 };
 
-export default HierarchyWrapper;
+registerComponent("hierarchy", RenderHierarchy);
 
-export { RenderHierarchy };
+export default HierarchyWrapper;

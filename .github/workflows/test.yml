@@ -1,12 +1,12 @@
 name: Steampipe Acceptance Tests
 on:
-  push:
-    branches:
-      - main
   pull_request:
 
 env:
   STEAMPIPE_UPDATE_CHECK: false
+  SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
+  SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
+  GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
 jobs:
   goreleaser:
@@ -19,16 +19,30 @@ jobs:
       - name: Unshallow
         run: git fetch
 
+      - name: Check head and base refs of the PR
+        run: |
+          echo ${{ github.head_ref }}
+          echo ${{ github.base_ref }}
+
+      - name: Create a feature branch off base, merge head_ref into the feature branch and build the binary
+        run: |
+          git fetch
+          git config user.email "puskar@turbot.com"
+          git config user.name "Puskar Basu"
+          git checkout ${{ github.base_ref }}
+          git checkout -b test-branch-acc
+          git merge origin/${{ github.head_ref }}
+
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
-          
+          go-version: 1.19
+
       - name: Fetching Go Cache Paths
         id: go-cache-paths
         run: |
-          echo "::set-output name=go-build::$(go env GOCACHE)"
-          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
+          echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+          echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
 
       # used to speedup go test
       - name: Go Build Cache
@@ -45,24 +59,17 @@ jobs:
         with:
           path: ${{ steps.go-cache-paths.outputs.go-mod }}
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
-          
-      - name: go mod tidy
-        uses: evantorrie/mott-the-tidier@v1-beta
-        with:
-          gomods: |
-            **/go.mod
-            -tools/go.mod
 
       - name: Run CLI Unit Tests
         run: |
           go clean -testcache
-          go test -timeout 30s ./...
+          go test -timeout 30s ./... -test.v
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
-          args: release --rm-dist --skip-publish
+          args: release --rm-dist --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -89,18 +96,56 @@ jobs:
           path: ~/artifacts/darwin.zip
           if-no-files-found: error
 
+      - name: Delete the feature branch
+        run: |
+          git checkout -
+          git branch
+          git branch -D test-branch-acc
+
   acceptance_test:
-    name: Acceptance tests
+    name: Test
     needs: goreleaser
     strategy:
+      fail-fast: false
       matrix:
-        platform: [macos-latest]
+        platform: [macos-latest, ubuntu-latest]
+        test_block:
+          - "migration"
+          - "service_and_plugin"
+          - "service"
+          - "search_path"
+          - "chaos_and_query"
+          - "dynamic_schema"
+          - "dynamic_aggregators"
+          - "cache"
+          - "mod_install"
+          - "mod"
+          - "check"
+          - "performance"
+          - "workspace"
+          - "introspection"
+          - "cloud"
+          - "snapshot"
+          - "dashboard"
+          - "dashboard_parsing_validation"
+          - "exit_codes"
+          - "force_stop"
+        exclude:
+          - platform: macos-latest
+            test_block: migration
+          - platform: macos-latest
+            test_block: force_stop
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           submodules: true
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
 
       - name: Prepare for downloads
         id: prepare-for-downloads
@@ -137,10 +182,16 @@ jobs:
         run: |
           echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats/libexec" >> $GITHUB_ENV
 
+      - name: Go install jd
+        run: |
+          go install github.com/josephburnett/jd@latest
+
       - name: Install DB
+        id: install-db
         continue-on-error: false
         run: |
           steampipe service start
+          steampipe plugin install chaos chaosdynamic
           steampipe service stop
 
       - name: Run Test Suite
@@ -149,19 +200,36 @@ jobs:
         continue-on-error: true
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          steampipe service stop --force
-      
+          $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
+          echo "exit_code=$(echo $?)" >> $GITHUB_OUTPUT
+          echo ">> here"
+
       - name: Save Test Suite Logs
         uses: actions/upload-artifact@v3
         with:
-          name: test-logs
+          name: test-logs-${{ matrix.test_block }}-${{ matrix.platform }}
           path: ~/.steampipe/logs
           if-no-files-found: error
-      
+
+      - name: Check steampipe processes running
+        continue-on-error: true
+        run: |
+          ps -ef | grep "steampipe"
+
+      - name: Verify No Steampipe Processes Running
+        continue-on-error: false
+        run: |
+          if [ $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') -eq 0 ]; then  
+            exit 0
+          else
+            exit 1
+          fi
+
       # This job checks whether the test suite has passed or not.
-      # Since the exit_code is set only when the bats test suite pass, so we have added the if-conditional block 
+      # Since the exit_code is set only when the bats test suite pass,
+      # we have added the if-conditional block
       - name: Check Test Passed/Failed
+        if: ${{ success() }}
         continue-on-error: false
         run: |
           if [ ${{ steps.run-test-suite.outputs.exit_code }} -eq 0 ]; then
@@ -169,6 +237,7 @@ jobs:
           else
             exit 1
           fi
+
 
   clean_up:
     # let's clean up the artifacts.
@@ -178,28 +247,17 @@ jobs:
     #   https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts#downloading-and-deleting-artifacts-after-a-workflow-run-is-complete
     name: Clean Up Artifacts
     needs: acceptance_test
+    if: ${{ needs.acceptance_test.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Clean up Linux Build
-        uses: geekyeggo/delete-artifact@v1
+        uses: geekyeggo/delete-artifact@v2
         with:
           name: build-artifact-linux
           failOnError: true
 
       - name: Clean up Darwin Build
-        uses: geekyeggo/delete-artifact@v1
+        uses: geekyeggo/delete-artifact@v2
         with:
           name: build-artifact-darwin
-          failOnError: true
-
-      - name: Clean up Test Suite
-        uses: geekyeggo/delete-artifact@v1
-        with:
-          name: test-artifact
-          failOnError: true
-
-      - name: Clean up Test Suite Logs
-        uses: geekyeggo/delete-artifact@v1
-        with:
-          name: test-logs
           failOnError: true

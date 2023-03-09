@@ -1,0 +1,62 @@
+[
+ {
+  "reason": "ok",
+  "resource": 1,
+  "status": "ok"
+ },
+ {
+  "reason": "alarm",
+  "resource": 2,
+  "status": "alarm"
+ },
+ {
+  "reason": "ok",
+  "resource": 3,
+  "status": "ok"
+ },
+ {
+  "reason": "alarm",
+  "resource": 4,
+  "status": "alarm"
+ },
+ {
+  "reason": "error",
+  "resource": 5,
+  "status": "error"
+ },
+ {
+  "reason": "alarm",
+  "resource": 6,
+  "status": "alarm"
+ },
+ {
+  "reason": "info",
+  "resource": 7,
+  "status": "info"
+ },
+ {
+  "reason": "alarm",
+  "resource": 8,
+  "status": "alarm"
+ },
+ {
+  "reason": "ok",
+  "resource": 9,
+  "status": "ok"
+ },
+ {
+  "reason": "alarm",
+  "resource": 10,
+  "status": "alarm"
+ },
+ {
+  "reason": "skip",
+  "resource": 11,
+  "status": "skip"
+ },
+ {
+  "reason": "alarm",
+  "resource": 12,
+  "status": "alarm"
+ }
+]

@@ -1,10 +1,12 @@
 import { ClearIcon, SubmitIcon } from "../../../../constants/icons";
-import { DashboardActions, useDashboard } from "../../../../hooks/useDashboard";
-import { IInput, InputProps } from "../index";
+import { DashboardActions, DashboardDataModeLive } from "../../../../types";
+import { registerInputComponent } from "../index";
+import { IInput, InputProps } from "../types";
+import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
 const TextInput = (props: InputProps) => {
-  const { dispatch, selectedDashboardInputs } = useDashboard();
+  const { dataMode, dispatch, selectedDashboardInputs } = useDashboard();
   const stateValue = selectedDashboardInputs[props.name];
   const [value, setValue] = useState<string>(() => {
     return stateValue || "";
@@ -49,6 +51,8 @@ const TextInput = (props: InputProps) => {
     setIsDirty(false);
   }, [stateValue]);
 
+  const readOnly = dataMode !== DashboardDataModeLive;
+
   return (
     <div>
       {props.properties.label && (
@@ -61,7 +65,7 @@ const TextInput = (props: InputProps) => {
           type="text"
           name={props.name}
           id={props.name}
-          className="flex-1 block w-full bg-background-panel rounded-md border border-black-scale-3 pr-8 overflow-x-auto text-sm md:text-base disabled:bg-black-scale-1"
+          className="flex-1 block w-full bg-dashboard-panel rounded-md border border-black-scale-3 pr-8 overflow-x-auto text-sm md:text-base disabled:bg-black-scale-1 focus:ring-0"
           onChange={updateValue}
           onKeyPress={(e) => {
             if (e.key !== "Enter") {
@@ -70,9 +74,10 @@ const TextInput = (props: InputProps) => {
             submit();
           }}
           placeholder={props.properties.placeholder}
+          readOnly={readOnly}
           value={value}
         />
-        {value && isDirty && (
+        {value && isDirty && !readOnly && (
           <div
             className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-foreground-light"
             onClick={submit}
@@ -81,7 +86,7 @@ const TextInput = (props: InputProps) => {
             <SubmitIcon className="h-4 w-4" />
           </div>
         )}
-        {value && !isDirty && (
+        {value && !isDirty && !readOnly && (
           <div
             className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-foreground-light"
             onClick={clear}
@@ -99,5 +104,7 @@ const definition: IInput = {
   type: "text",
   component: TextInput,
 };
+
+registerInputComponent(definition.type, definition);
 
 export default definition;

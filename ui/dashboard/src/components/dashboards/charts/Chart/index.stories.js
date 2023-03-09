@@ -9,20 +9,20 @@ const story = {
 export default story;
 
 const Template = (args) => (
-  <PanelStoryDecorator definition={args} nodeType="chart" />
+  <PanelStoryDecorator definition={args} panelType="chart" />
 );
 
 export const DefaultsToColumn = Template.bind({});
 DefaultsToColumn.args = {
   data: {
     columns: [
-      { name: "Type", data_type_name: "TEXT" },
-      { name: "Count", data_type_name: "INT8" },
+      { name: "Type", data_type: "TEXT" },
+      { name: "Count", data_type: "INT8" },
     ],
     rows: [
-      ["User", 12],
-      ["Policy", 93],
-      ["Role", 48],
+      { Type: "User", Count: 12 },
+      { Type: "Policy", Count: 93 },
+      { Type: "Role", Count: 48 },
     ],
   },
 };

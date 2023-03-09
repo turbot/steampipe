@@ -1,0 +1,44 @@
+{
+  "group_id": "root_result_group",
+  "title": "Sample control 1",
+  "description": "",
+  "tags": {},
+  "summary": {
+    "status": {
+      "alarm": 0,
+      "ok": 1,
+      "info": 0,
+      "skip": 0,
+      "error": 0
+    }
+  },
+  "groups": [],
+  "controls": [
+    {
+      "summary": {
+        "alarm": 0,
+        "ok": 1,
+        "info": 0,
+        "skip": 0,
+        "error": 0
+      },
+      "results": [
+        {
+          "reason": "steampipe_varbecause_def string",
+          "resource": "steampipe",
+          "status": "ok",
+          "dimensions": null
+        }
+      ],
+      "control_id": "control.sample_control_1",
+      "description": "Sample control to test introspection functionality",
+      "severity": "high",
+      "tags": {
+        "foo": "bar"
+      },
+      "title": "Sample control 1",
+      "run_status": 4,
+      "run_error": ""
+    }
+  ]
+} 

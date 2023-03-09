@@ -1,5 +1,10 @@
 import Benchmark from "./Benchmark";
-import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../../common";
+import {
+  BasePrimitiveProps,
+  ExecutablePrimitiveProps,
+  LeafNodeData,
+} from "../../common";
+import { DashboardRunState } from "../../../../types";
 
 export type CheckNodeType =
   | "benchmark"
@@ -16,7 +21,7 @@ export type CheckNodeType =
   | "status"
   | "tag";
 
-export interface CheckNode {
+export type CheckNode = {
   sort: string;
   name: string;
   title: string;
@@ -26,12 +31,10 @@ export interface CheckNode {
   severity_summary: CheckSeveritySummary;
   summary: CheckSummary;
   children?: CheckNode[];
-  results?: CheckResult[];
+  data?: LeafNodeData;
   error?: string;
   merge?: (other: CheckNode) => void;
-}
-
-export type CheckNodeStatusRaw = 1 | 2 | 4 | 8;
+};
 
 export type CheckNodeStatus = "running" | "complete";
 
@@ -43,34 +46,31 @@ export type CheckSeveritySummary =
       [key in CheckSeverity]: number;
     };
 
-export interface CheckSummary {
+export type CheckSummary = {
   alarm: number;
   ok: number;
   info: number;
   skip: number;
   error: number;
-}
-export interface CheckLeafNodeDataGroupSummary {
-  status: CheckSummary;
-}
+};
 
-export interface CheckDynamicValueMap {
+export type CheckDynamicValueMap = {
   [dimension: string]: boolean;
-}
+};
 
-export interface CheckDynamicColsMap {
+export type CheckDynamicColsMap = {
   dimensions: CheckDynamicValueMap;
   tags: CheckDynamicValueMap;
-}
+};
 
-export interface CheckTags {
+export type CheckTags = {
   [key: string]: string;
-}
+};
 
-interface CheckResultDimension {
+type CheckResultDimension = {
   key: string;
   value: string;
-}
+};
 
 export type CheckResultStatus =
   | "alarm"
@@ -82,7 +82,7 @@ export type CheckResultStatus =
 
 export type CheckResultType = "loading" | "error" | "empty" | "result";
 
-export interface CheckResult {
+export type CheckResult = {
   dimensions: CheckResultDimension[];
   tags: CheckTags;
   control: CheckNode;
@@ -93,44 +93,25 @@ export interface CheckResult {
   severity?: CheckSeverity;
   error?: string;
   type: CheckResultType;
-}
+};
 
-export interface CheckControl {
-  control_id: string;
+type CheckControlRunProperties = {
+  severity?: CheckSeverity | undefined;
+};
+
+export type CheckControlRun = {
+  name: string;
   title?: string;
   description?: string;
+  panel_type: "control";
+  properties?: CheckControlRunProperties;
   severity?: CheckSeverity | undefined;
   tags?: CheckTags;
-  results: CheckResult[];
+  data: LeafNodeData;
   summary: CheckSummary;
-  run_status: CheckNodeStatusRaw;
-  run_error?: string;
-}
-
-export type CheckGroupType = "benchmark" | "table";
-
-export interface CheckGroup {
-  group_id: string;
-  title?: string;
-  description?: string;
-  tags?: CheckTags;
-  type: CheckGroupType;
-  summary: CheckLeafNodeDataGroupSummary;
-  groups?: CheckGroup[];
-  controls?: CheckControl[];
-}
-
-interface CheckLeafNodeProgress {
-  summary: CheckSummary;
-}
-
-export interface CheckExecutionTree {
-  start_time: string;
-  end_time: string;
-  control_runs: CheckControl[];
-  progress: CheckLeafNodeProgress;
-  root: CheckGroup;
-}
+  status: DashboardRunState;
+  error?: string;
+};
 
 export type CheckDisplayGroupType =
   | "benchmark"
@@ -143,10 +124,10 @@ export type CheckDisplayGroupType =
   | "severity"
   | "status";
 
-export interface CheckDisplayGroup {
+export type CheckDisplayGroup = {
   type: CheckDisplayGroupType;
   value?: string;
-}
+};
 
 export type BenchmarkTreeProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {

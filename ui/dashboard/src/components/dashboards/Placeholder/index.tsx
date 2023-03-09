@@ -2,7 +2,7 @@ import ReactPlaceholder from "react-placeholder";
 import "react-placeholder/lib/reactPlaceholder.css";
 
 type PlaceholderProps = {
-  animate: boolean;
+  animate?: boolean;
   children: null | JSX.Element | JSX.Element[];
   ready: boolean;
   type?: "rect" | "text" | "textRow" | "media" | "round" | undefined;

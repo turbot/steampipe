@@ -1,56 +1,40 @@
-import sortBy from "lodash/sortBy";
-import { CheckIcon, SelectorIcon } from "@heroicons/react/solid";
+import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/24/solid";
 import { classNames } from "../../utils/styles";
-import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { DashboardActions } from "../../types";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { Listbox, Transition } from "@headlessui/react";
+import { useDashboard } from "../../hooks/useDashboard";
 import { useParams } from "react-router-dom";
 
+const options = [
+  {
+    groupBy: "tag",
+    tag: "category",
+    label: "Category",
+  },
+  { groupBy: "mod", tag: "", label: "Mod" },
+  {
+    groupBy: "tag",
+    tag: "service",
+    label: "Service",
+  },
+  {
+    groupBy: "tag",
+    tag: "type",
+    label: "Type",
+  },
+];
+
+const findOption = (groupBy) => {
+  if (groupBy.value === "tag") {
+    return options.find((o) => o.tag === groupBy.tag);
+  }
+  return options.find((o) => o.groupBy === "mod");
+};
+
 const DashboardTagGroupSelect = () => {
-  const { availableDashboardsLoaded, dashboardTags, dispatch, search } =
-    useDashboard();
+  const { availableDashboardsLoaded, dispatch, search } = useDashboard();
   const { dashboard_name } = useParams();
-
-  const options = useMemo(() => {
-    const o = [
-      { groupBy: "mod", tag: "", label: "Mod" },
-      {
-        groupBy: "tag",
-        tag: "category",
-        label: "Category",
-      },
-      {
-        groupBy: "tag",
-        tag: "service",
-        label: "Service",
-      },
-      {
-        groupBy: "tag",
-        tag: "type",
-        label: "Type",
-      },
-    ];
-    // for (const dashboardTagKey of dashboardTags.keys) {
-    //   if (!o.find((i) => i.tag === dashboardTagKey)) {
-    //     o.push({
-    //       groupBy: "tag",
-    //       tag: dashboardTagKey,
-    //       label: startCase(dashboardTagKey),
-    //     });
-    //   }
-    // }
-    return sortBy(o, ["label"]);
-  }, [dashboardTags.keys]);
-
-  const findOption = useCallback(
-    (groupBy) => {
-      if (groupBy.value === "tag") {
-        return options.find((o) => o.tag === groupBy.tag);
-      }
-      return options.find((o) => o.groupBy === "mod");
-    },
-    [options]
-  );
 
   const [value, setValue] = useState(() => findOption(search.groupBy));
 
@@ -66,7 +50,7 @@ const DashboardTagGroupSelect = () => {
 
   useEffect(() => {
     setValue(findOption(search.groupBy));
-  }, [findOption, search.groupBy]);
+  }, [search.groupBy]);
 
   if (
     !availableDashboardsLoaded ||
@@ -81,14 +65,14 @@ const DashboardTagGroupSelect = () => {
       {({ open }) => (
         <>
           <div className="relative">
-            <Listbox.Button className="relative w-full bg-dashboard-panel border border-table-border rounded-md pl-3 pr-7 md:pr-10 py-2 text-left text-sm md:text-base cursor-default focus:outline-none focus:ring-1">
+            <Listbox.Button className="relative w-full bg-dashboard-panel border border-table-border rounded-md pl-3 pr-7 md:pr-10 py-2 text-left text-sm md:text-base cursor-pointer focus:ring-1 focus:ring-text-link">
               {/*@ts-ignore*/}
               <span className="block truncate">
                 <span className="hidden md:inline mr-1">Group by:</span>
                 {value.label}
               </span>
               <span className="absolute inset-y-0 right-0 flex items-center pr-1 md:pr-2 pointer-events-none">
-                <SelectorIcon
+                <ChevronUpDownIcon
                   className="h-5 w-5 text-gray-400"
                   aria-hidden="true"
                 />
@@ -117,7 +101,7 @@ const DashboardTagGroupSelect = () => {
                     }
                     value={option}
                   >
-                    {({ selected, active }) => (
+                    {({ selected }) => (
                       <>
                         <span className="block truncate">{option.label}</span>
                         {selected ? (

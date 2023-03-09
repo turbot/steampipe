@@ -6,7 +6,7 @@ import {
   CloudDashboardWorkspaceMetadata,
   DashboardMetadata,
   ModDashboardMetadata,
-} from "./useDashboard";
+} from "../types";
 import {
   createContext,
   useCallback,
@@ -16,19 +16,18 @@ import {
 } from "react";
 import { useTheme } from "./useTheme";
 
-// noinspection JSUnusedLocalSymbols
-interface AnalyticsProperties {
+type AnalyticsProperties = {
   [key: string]: any;
-}
+};
 
-interface IAnalyticsContext {
+type IAnalyticsContext = {
   reset: () => void;
-  track: (string, AnalyticsProperties) => void;
-}
+  track: (string, properties: AnalyticsProperties) => void;
+};
 
-interface SelectedDashboardStates {
+type SelectedDashboardStates = {
   selectedDashboard: AvailableDashboard | null;
-}
+};
 
 const AnalyticsContext = createContext<IAnalyticsContext>({
   reset: () => {},
@@ -49,7 +48,7 @@ const useAnalyticsProvider = () => {
 
   const identify = useCallback((actor) => {
     // @ts-ignore
-    if (window.heap) {
+    if (window.heap && window.heap.identify) {
       // @ts-ignore
       window.heap.identify(actor.id);
     }
@@ -57,7 +56,7 @@ const useAnalyticsProvider = () => {
 
   const reset = useCallback(() => {
     // @ts-ignore
-    if (window.heap) {
+    if (window.heap && window.heap.resetIdentity) {
       // @ts-ignore
       window.heap.resetIdentity();
     }
@@ -86,13 +85,16 @@ const useAnalyticsProvider = () => {
         ...properties,
       };
       // @ts-ignore
-      window.heap && window.heap.track(event, finalProperties);
+      if (window.heap && window.heap.track) {
+        // @ts-ignore
+        window.heap.track(event, finalProperties);
+      }
     },
     [enabled, initialised, identity, workspace, localStorageTheme, theme.name]
   );
 
   useEffect(() => {
-    if (!metadata) {
+    if (initialised || !metadata) {
       return;
     }
 
@@ -102,14 +104,14 @@ const useAnalyticsProvider = () => {
       !!process.env.REACT_APP_HEAP_ID;
 
     // @ts-ignore
-    if (enabled && window.heap) {
+    if (enabled && window.heap && window.heap.load) {
       // @ts-ignore
       window.heap.load(process.env.REACT_APP_HEAP_ID);
     }
 
     setEnabled(enabled);
     setInitialised(true);
-  }, [metadata]);
+  }, [initialised, metadata, setEnabled, setInitialised]);
 
   useEffect(() => {
     if (!metadata || !initialised) {
@@ -131,7 +133,15 @@ const useAnalyticsProvider = () => {
     } else if (enabled) {
       reset();
     }
-  }, [metadata, enabled, initialised]);
+  }, [
+    enabled,
+    identify,
+    initialised,
+    metadata,
+    reset,
+    setIdentity,
+    setWorkspace,
+  ]);
 
   // @ts-ignore
   const previousSelectedDashboardStates: SelectedDashboardStates = usePrevious({
@@ -155,13 +165,13 @@ const useAnalyticsProvider = () => {
     ) {
       let mod: ModDashboardMetadata;
       if (selectedDashboard.mod_full_name === metadata.mod.full_name) {
-        mod = get(metadata, "mod", {} as ModDashboardMetadata);
+        mod = get(metadata, "mod", {}) as ModDashboardMetadata;
       } else {
         mod = get(
           metadata,
           `installed_mods["${selectedDashboard.mod_full_name}"]`,
-          {} as ModDashboardMetadata
-        );
+          {}
+        ) as ModDashboardMetadata;
       }
       track("cli.ui.dashboard.select", {
         "mod.title": mod
@@ -173,7 +183,13 @@ const useAnalyticsProvider = () => {
         dashboard: selectedDashboard.short_name,
       });
     }
-  }, [enabled, metadata, previousSelectedDashboardStates, selectedDashboard]);
+  }, [
+    enabled,
+    metadata,
+    previousSelectedDashboardStates,
+    selectedDashboard,
+    track,
+  ]);
 
   return {
     reset,

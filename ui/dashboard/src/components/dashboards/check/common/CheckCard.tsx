@@ -2,13 +2,13 @@ import IntegerDisplay from "../../../IntegerDisplay";
 import LoadingIndicator from "../../LoadingIndicator";
 import startCase from "lodash/startCase";
 import { classNames } from "../../../../utils/styles";
-import { getTextClasses, getWrapperClasses } from "../../Card";
+import { getTextClasses, getWrapperClasses } from "../../../../utils/card";
 
-interface ControlCardProps {
+type ControlCardProps = {
   loading: boolean;
   status: "alarm" | "error" | "info" | "ok" | "skip";
   value: number;
-}
+};
 
 const getCardStyle = (status) => {
   switch (status) {

@@ -27,7 +27,7 @@ const SearchInput = forwardRef(
         <input
           className={classNames(
             className,
-            "flex-1 block w-full bg-dashboard-panel rounded-md border px-8 overflow-x-auto text-sm md:text-base disabled:bg-black-scale-1",
+            "flex-1 block w-full bg-dashboard-panel rounded-md border px-8 overflow-x-auto text-sm md:text-base disabled:bg-black-scale-1 focus:ring-0",
             theme.name === ThemeNames.STEAMPIPE_DARK
               ? "border-gray-700"
               : "border-[#e7e9ed]"

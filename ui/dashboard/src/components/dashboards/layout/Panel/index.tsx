@@ -1,184 +1,191 @@
-import Error from "../../Error";
-import get from "lodash/get";
+import PanelStatus from "./PanelStatus";
+import PanelControls from "./PanelControls";
+import PanelInformation from "./PanelInformation";
+import PanelProgress from "./PanelProgress";
+import PanelTitle from "../../titles/PanelTitle";
 import Placeholder from "../../Placeholder";
-import { BaseChartProps } from "../../charts";
+import { BaseChartProps } from "../../charts/types";
 import { CardProps } from "../../Card";
 import { classNames } from "../../../../utils/styles";
+import { DashboardPanelType, PanelDefinition } from "../../../../types";
+import { FlowProps } from "../../flows/types";
 import { getResponsivePanelWidthClass } from "../../../../utils/layout";
-import { HierarchyProps } from "../../hierarchies";
+import { GraphProps } from "../../graphs/types";
+import { HierarchyProps } from "../../hierarchies/types";
 import { ImageProps } from "../../Image";
-import { InputProps } from "../../inputs";
+import { InputProps } from "../../inputs/types";
 import { memo, useState } from "react";
-import {
-  DashboardActions,
-  PanelDefinition,
-  useDashboard,
-} from "../../../../hooks/useDashboard";
-import { PanelProvider } from "../../../../hooks/usePanel";
+import { PanelProvider, usePanel } from "../../../../hooks/usePanel";
+import { ReactNode } from "react";
+import { registerComponent } from "../../index";
 import { TableProps } from "../../Table";
-import { ThemeNames } from "../../../../hooks/useTheme";
 import { TextProps } from "../../Text";
-import { ZoomIcon } from "../../../../constants/icons";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
-interface PanelProps {
-  children: null | JSX.Element | JSX.Element[];
+type PanelProps = {
+  children: ReactNode;
+  className?: string;
   definition:
     | BaseChartProps
     | CardProps
+    | FlowProps
+    | GraphProps
     | HierarchyProps
     | ImageProps
     | InputProps
     | PanelDefinition
     | TableProps
     | TextProps;
-  allowExpand?: boolean;
+  parentType: DashboardPanelType;
+  showControls?: boolean;
+  showPanelError?: boolean;
+  showPanelStatus?: boolean;
   forceBackground?: boolean;
-  ready?: boolean;
-  withOverflow?: boolean;
-  withTitle?: boolean;
-}
+};
 
 const Panel = ({
   children,
+  className,
   definition,
-  allowExpand = true,
+  showControls = true,
+  showPanelError = true,
+  showPanelStatus = true,
   forceBackground = false,
-  ready = true,
-  withOverflow = false,
-  withTitle = true,
 }: PanelProps) => {
-  const [showZoomIcon, setShowZoomIcon] = useState(false);
-  const [zoomIconClassName, setZoomIconClassName] =
-    useState("text-black-scale-4");
+  const { selectedPanel } = useDashboard();
   const {
-    dispatch,
-    themeContext: { theme },
-  } = useDashboard();
-
+    inputPanelsAwaitingValue,
+    panelControls,
+    showPanelControls,
+    setShowPanelControls,
+  } = usePanel();
+  const [referenceElement, setReferenceElement] = useState(null);
   const baseStyles = classNames(
     "relative col-span-12",
     getResponsivePanelWidthClass(definition.width),
     "overflow-auto"
   );
 
-  const ErrorComponent = Error;
+  if (inputPanelsAwaitingValue.length > 0) {
+    return null;
+  }
+
   const PlaceholderComponent = Placeholder.component;
 
-  return (
-    <PanelProvider
-      definition={definition}
-      allowExpand={allowExpand}
-      setZoomIconClassName={setZoomIconClassName}
-    >
-      <div
-        id={definition.name}
-        className={baseStyles}
-        onMouseEnter={
-          allowExpand
-            ? () => {
-                setShowZoomIcon(true);
-              }
-            : undefined
-        }
-        onMouseLeave={
-          allowExpand
-            ? () => {
-                setShowZoomIcon(false);
-              }
-            : undefined
-        }
-      >
-        <section
-          aria-labelledby={
-            withTitle && definition.title
-              ? `${definition.name}-title`
-              : undefined
-          }
-          className={classNames(
-            "col-span-12 m-0.5",
-            forceBackground ||
-              (definition.node_type !== "image" &&
-                definition.node_type !== "card" &&
-                definition.node_type !== "input") ||
-              ((definition.node_type === "image" ||
-                definition.node_type === "card" ||
-                definition.node_type === "input") &&
-                get(definition, "properties.type") === "table")
-              ? "bg-dashboard-panel print:bg-white shadow-sm rounded-md"
-              : null
-          )}
-        >
-          {showZoomIcon && (
-            <div
-              className={classNames(
-                "absolute cursor-pointer z-50 right-1 top-1",
-                zoomIconClassName
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                dispatch({
-                  type: DashboardActions.SELECT_PANEL,
-                  panel: { ...definition },
-                });
-              }}
-            >
-              <ZoomIcon className="h-5 w-5" />
-            </div>
-          )}
-          {withTitle && definition.title && (
-            <div
-              className={classNames(
-                definition.node_type === "input" &&
-                  get(definition, "properties.type") !== "table"
-                  ? "pl-0 pr-2 sm:pr-4 py-2"
-                  : "px-4 py-4"
-              )}
-            >
-              <h3
-                id={`${definition.name}-title`}
-                className="truncate"
-                title={definition.title}
-              >
-                {definition.title}
-              </h3>
-            </div>
-          )}
+  const shouldShowLoader =
+    showPanelStatus &&
+    definition.status !== "cancelled" &&
+    definition.status !== "error" &&
+    definition.status !== "complete";
 
+  const showPanelContents =
+    !definition.error || (definition.error && !showPanelError);
+
+  return (
+    <div
+      // @ts-ignore
+      ref={setReferenceElement}
+      id={definition.name}
+      className={baseStyles}
+      onMouseEnter={showControls ? () => setShowPanelControls(true) : undefined}
+      onMouseLeave={() => setShowPanelControls(false)}
+    >
+      <section
+        aria-labelledby={
+          definition.title ? `${definition.name}-title` : undefined
+        }
+        className={classNames(
+          "col-span-12 m-0.5",
+          forceBackground ||
+            (definition.panel_type !== "image" &&
+              definition.panel_type !== "card" &&
+              definition.panel_type !== "input") ||
+            ((definition.panel_type === "image" ||
+              definition.panel_type === "card" ||
+              definition.panel_type === "input") &&
+              definition.display_type === "table")
+            ? "bg-dashboard-panel print:bg-white shadow-sm rounded-md"
+            : null
+        )}
+      >
+        {showPanelControls && (
+          <PanelControls
+            referenceElement={referenceElement}
+            controls={panelControls}
+          />
+        )}
+        {definition.title && (
           <div
             className={classNames(
-              withTitle &&
-                definition.title &&
-                ((definition.node_type !== "input" &&
-                  definition.node_type !== "table") ||
-                  (definition.node_type === "table" &&
-                    get(definition, "properties.type") === "line"))
-                ? classNames(
-                    "border-t",
-                    theme.name === ThemeNames.STEAMPIPE_DARK
-                      ? "border-table-divide"
-                      : "border-background"
-                  )
-                : null,
-              withOverflow ||
-                (definition.node_type === "table" &&
-                  get(definition, "properties.type") !== "line") ||
-                get(definition, "properties.type") === "table"
-                ? "overflow-x-auto"
-                : "overflow-x-hidden"
+              definition.panel_type === "input" &&
+                definition.display_type !== "table" &&
+                !forceBackground
+                ? "pl-0 pr-2 sm:pr-4 py-2"
+                : "px-4 py-4"
             )}
           >
-            <PlaceholderComponent
-              animate={!!children}
-              ready={ready || !!definition.error}
-            >
-              <ErrorComponent error={definition.error} />
-              <>{!definition.error ? children : null}</>
-            </PlaceholderComponent>
+            <PanelTitle name={definition.name} title={definition.title} />
           </div>
-        </section>
-      </div>
-    </PanelProvider>
+        )}
+
+        <div
+          className={classNames(
+            "relative",
+            definition.title &&
+              ((definition.panel_type !== "input" &&
+                // @ts-ignore
+                definition.status !== "complete") ||
+                (definition.panel_type !== "input" &&
+                  definition.panel_type !== "table") ||
+                (definition.panel_type === "table" &&
+                  definition.display_type === "line"))
+              ? "border-t border-divide"
+              : null,
+            selectedPanel ||
+              (definition.panel_type === "table" &&
+                definition.display_type !== "line") ||
+              definition.display_type === "table"
+              ? "overflow-x-auto"
+              : "overflow-x-hidden",
+            className
+          )}
+        >
+          <PanelProgress className={definition.title ? null : "rounded-t-md"} />
+          <PanelInformation />
+          <PlaceholderComponent
+            animate={definition.status === "running"}
+            ready={!shouldShowLoader}
+          >
+            <>
+              {((showPanelError && definition.status === "error") ||
+                showPanelStatus) && (
+                <PanelStatus
+                  definition={definition as PanelDefinition}
+                  showPanelError={showPanelError}
+                />
+              )}
+              {showPanelContents && children}
+            </>
+          </PlaceholderComponent>
+        </div>
+      </section>
+    </div>
   );
 };
 
-export default memo(Panel);
+const PanelWrapper = memo((props: PanelProps) => {
+  const { children, ...rest } = props;
+  return (
+    <PanelProvider
+      definition={props.definition}
+      parentType={props.parentType}
+      showControls={props.showControls}
+    >
+      <Panel {...rest}>{children}</Panel>
+    </PanelProvider>
+  );
+});
+
+registerComponent("panel", PanelWrapper);
+
+export default PanelWrapper;

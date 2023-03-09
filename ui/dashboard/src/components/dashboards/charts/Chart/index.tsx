@@ -1,26 +1,13 @@
-import Charts, {
-  ChartProperties,
-  ChartProps,
-  ChartSeries,
-  ChartSeriesOptions,
-  ChartTransform,
-  ChartType,
-} from "../index";
 import ErrorPanel from "../../Error";
-import get from "lodash/get";
 import has from "lodash/has";
 import merge from "lodash/merge";
+import Placeholder from "../../Placeholder";
 import React, { useEffect, useRef, useState } from "react";
 import ReactEChartsCore from "echarts-for-react/lib/core";
 import set from "lodash/set";
+import useChartThemeColors from "../../../../hooks/useChartThemeColors";
 import useMediaMode from "../../../../hooks/useMediaMode";
-import {
-  BarChart,
-  LineChart,
-  PieChart,
-  SankeyChart,
-  TreeChart,
-} from "echarts/charts";
+import useTemplateRender from "../../../../hooks/useTemplateRender";
 import {
   buildChartDataset,
   getColorOverride,
@@ -28,36 +15,22 @@ import {
   themeColors,
   Width,
 } from "../../common";
-import { CanvasRenderer } from "echarts/renderers";
-import {
-  DatasetComponent,
-  GridComponent,
-  LegendComponent,
-  TitleComponent,
-  TooltipComponent,
-} from "echarts/components";
 import { EChartsOption } from "echarts-for-react/src/types";
-import { FlowType } from "../../flows";
-import { HierarchyType } from "../../hierarchies";
-import { LabelLayout } from "echarts/features";
-import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
-import { Theme } from "../../../../hooks/useTheme";
-import * as echarts from "echarts/core";
-
-echarts.use([
-  BarChart,
-  CanvasRenderer,
-  DatasetComponent,
-  GridComponent,
-  LabelLayout,
-  LegendComponent,
-  LineChart,
-  PieChart,
-  SankeyChart,
-  TitleComponent,
-  TooltipComponent,
-  TreeChart,
-]);
+import {
+  ChartProperties,
+  ChartProps,
+  ChartSeries,
+  ChartSeriesOptions,
+  ChartTransform,
+  ChartType,
+} from "../types";
+import { FlowType } from "../../flows/types";
+import { getChartComponent } from "..";
+import { GraphType } from "../../graphs/types";
+import { HierarchyType } from "../../hierarchies/types";
+import { registerComponent } from "../../index";
+import { useDashboard } from "../../../../hooks/useDashboard";
+import { useNavigate } from "react-router-dom";
 
 const getThemeColorsWithPointOverrides = (
   type: ChartType = "column",
@@ -620,34 +593,13 @@ const getSeriesForChartType = (
   return series;
 };
 
-const buildChartOptions = (
-  props: ChartProps,
-  theme: Theme,
-  themeWrapperRef: ((instance: null) => void) | React.RefObject<null>
-) => {
-  // We need to get the theme CSS variable values - these are accessible on the theme root element and below in the tree
-  // @ts-ignore
-  const style = window.getComputedStyle(themeWrapperRef);
-  const foreground = style.getPropertyValue("--color-foreground");
-  const foregroundLightest = style.getPropertyValue(
-    "--color-foreground-lightest"
-  );
-  const alert = style.getPropertyValue("--color-alert");
-  const info = style.getPropertyValue("--color-info");
-  const ok = style.getPropertyValue("--color-ok");
-  const themeColors = {
-    foreground,
-    foregroundLightest,
-    alert,
-    info,
-    ok,
-  };
+const buildChartOptions = (props: ChartProps, themeColors: any) => {
   const { dataset, rowSeriesLabels, transform } = buildChartDataset(
     props.data,
     props.properties
   );
   const series = getSeriesForChartType(
-    props.properties?.type,
+    props.display_type || "column",
     props.data,
     props.properties,
     rowSeriesLabels,
@@ -657,14 +609,17 @@ const buildChartOptions = (
   return merge(
     getCommonBaseOptions(),
     getCommonBaseOptionsForChartType(
-      props.properties?.type,
+      props.display_type || "column",
       props.width,
       dataset,
       series,
       props.properties?.series,
       themeColors
     ),
-    getOptionOverridesForChartType(props.properties?.type, props.properties),
+    getOptionOverridesForChartType(
+      props.display_type || "column",
+      props.properties
+    ),
     { series },
     {
       dataset: {
@@ -674,15 +629,44 @@ const buildChartOptions = (
   );
 };
 
-interface ChartComponentProps {
+type ChartComponentProps = {
   options: EChartsOption;
-  type: ChartType | FlowType | HierarchyType;
-}
+  type: ChartType | FlowType | GraphType | HierarchyType;
+};
+
+const handleClick = async (params: any, navigate, renderTemplates) => {
+  const componentType = params.componentType;
+  if (componentType !== "series") {
+    return;
+  }
+  const dataType = params.dataType;
+
+  switch (dataType) {
+    case "node":
+      if (!params.data.href) {
+        return;
+      }
+      const renderedResults = await renderTemplates(
+        { graph_node: params.data.href as string },
+        [params.data]
+      );
+      let rowRenderResult = renderedResults[0];
+      navigate(rowRenderResult.graph_node.result);
+  }
+};
 
 const Chart = ({ options, type }: ChartComponentProps) => {
+  const [echarts, setEcharts] = useState<any | null>(null);
+  const navigate = useNavigate();
   const chartRef = useRef<ReactEChartsCore>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const mediaMode = useMediaMode();
+  const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
+
+  // Dynamically import echarts from its own bundle
+  useEffect(() => {
+    import("./echarts").then((m) => setEcharts(m.echarts));
+  }, []);
 
   useEffect(() => {
     if (!chartRef.current || !options) {
@@ -690,7 +674,7 @@ const Chart = ({ options, type }: ChartComponentProps) => {
     }
 
     const echartInstance = chartRef.current.getEchartsInstance();
-    const dataURL = echartInstance.getDataURL();
+    const dataURL = echartInstance.getDataURL({});
     if (dataURL === imageUrl) {
       return;
     }
@@ -701,40 +685,46 @@ const Chart = ({ options, type }: ChartComponentProps) => {
     return null;
   }
 
+  const eventsDict = {
+    click: (params) => handleClick(params, navigate, renderTemplates),
+  };
+
+  const PlaceholderComponent = Placeholder.component;
+
   return (
-    <>
-      {mediaMode !== "print" && (
-        <div className="relative">
-          <ReactEChartsCore
-            ref={chartRef}
-            echarts={echarts}
-            className="chart-canvas"
-            option={options}
-            notMerge={true}
-            lazyUpdate={true}
-            style={
-              type === "pie" || type === "donut" ? { height: "250px" } : {}
-            }
-          />
-        </div>
-      )}
-      {mediaMode === "print" && imageUrl && (
-        <div>
-          <img alt="Chart" className="max-w-full max-h-full" src={imageUrl} />
-        </div>
-      )}
-    </>
+    <PlaceholderComponent ready={!!echarts && templateRenderReady}>
+      <>
+        {mediaMode !== "print" && (
+          <div className="relative">
+            <ReactEChartsCore
+              ref={chartRef}
+              echarts={echarts}
+              className="chart-canvas"
+              onEvents={eventsDict}
+              option={options}
+              notMerge={true}
+              lazyUpdate={true}
+              style={
+                type === "pie" || type === "donut" ? { height: "250px" } : {}
+              }
+            />
+          </div>
+        )}
+        {mediaMode === "print" && imageUrl && (
+          <div>
+            <img alt="Chart" className="max-w-full max-h-full" src={imageUrl} />
+          </div>
+        )}
+      </>
+    </PlaceholderComponent>
   );
 };
 
 const ChartWrapper = (props: ChartProps) => {
-  const [, setRandomVal] = useState(0);
   const {
-    themeContext: { theme, wrapperRef },
+    themeContext: { wrapperRef },
   } = useDashboard();
-
-  // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
-  useEffect(() => setRandomVal(Math.random()), [theme.name]);
+  const themeColors = useChartThemeColors();
 
   if (!wrapperRef) {
     return null;
@@ -746,40 +736,32 @@ const ChartWrapper = (props: ChartProps) => {
 
   return (
     <Chart
-      options={buildChartOptions(props, theme, wrapperRef)}
-      type={props.properties ? props.properties.type : "column"}
+      options={buildChartOptions(props, themeColors)}
+      type={props.display_type || "column"}
     />
   );
 };
 
-type ChartDefinition = PanelDefinition & {
-  properties: ChartProperties;
-};
-
-const renderChart = (definition: ChartDefinition) => {
+const renderChart = (definition: ChartProps) => {
   // We default to column charts if not specified
-  if (!get(definition, "properties.type")) {
-    // @ts-ignore
-    definition = set(definition, "properties.type", "column");
-  }
-  const {
-    properties: { type },
-  } = definition;
+  const { display_type = "column" } = definition;
 
-  const chart = Charts[type];
+  const chart = getChartComponent(display_type);
 
   if (!chart) {
-    return <ErrorPanel error={`Unknown chart type ${type}`} />;
+    return <ErrorPanel error={`Unknown chart type ${display_type}`} />;
   }
 
   const Component = chart.component;
   return <Component {...definition} />;
 };
 
-const RenderChart = (props: ChartDefinition) => {
+const RenderChart = (props: ChartProps) => {
   return renderChart(props);
 };
 
+registerComponent("chart", RenderChart);
+
 export default ChartWrapper;
 
-export { Chart, RenderChart };
+export { Chart };

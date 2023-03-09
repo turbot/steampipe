@@ -1,18 +1,19 @@
 import colorConvert from "color-convert";
+import { getColorOverride } from "../components/dashboards/common";
 
 const minColumn = 16;
 const maxColumn = 51;
 const minRow = 0;
 const maxRow = 5;
 
-interface Color {
+type Color = {
   ansi256: number;
   hex: string;
-}
+};
 
-interface ColorDictionary {
+type ColorDictionary = {
   [key: number]: boolean;
-}
+};
 
 export class ColorGenerator {
   private readonly startingColumn: number;
@@ -136,11 +137,23 @@ export class ColorGenerator {
 const stringColorMap = {};
 const colorGenerator = new ColorGenerator(16, 0);
 
-export const stringToColour = (str: string): string => {
+export const stringToColor = (str: string): string => {
   if (stringColorMap[str]) {
     return stringColorMap[str];
   }
   const color = colorGenerator.nextColor().hex;
   stringColorMap[str] = color;
   return color;
+};
+
+export const hexToRgb = (hex: string) => {
+  return colorConvert.hex.rgb(hex);
+};
+
+export const colorToRgb = (input: string, themeColors: any) => {
+  const convertedColor = getColorOverride(input, themeColors);
+  if (convertedColor.startsWith("#")) {
+    return colorConvert.hex.rgb(convertedColor);
+  }
+  return colorConvert.keyword.rgb(convertedColor);
 };

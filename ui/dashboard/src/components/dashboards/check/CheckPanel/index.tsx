@@ -1,4 +1,5 @@
 import CheckSummaryChart from "../CheckSummaryChart";
+import ControlDimension from "../Benchmark/ControlDimension";
 import ControlEmptyResultNode from "../common/node/ControlEmptyResultNode";
 import ControlErrorNode from "../common/node/ControlErrorNode";
 import ControlResultNode from "../common/node/ControlResultNode";
@@ -25,52 +26,49 @@ import {
   CheckSeveritySummary,
 } from "../common";
 import { classNames } from "../../../../utils/styles";
-import { ControlDimension } from "../Benchmark";
-import { ThemeNames } from "../../../../hooks/useTheme";
-import { useDashboard } from "../../../../hooks/useDashboard";
 import { useMemo } from "react";
 
-interface CheckChildrenProps {
+type CheckChildrenProps = {
   depth: number;
   children: CheckNode[];
-}
+};
 
-interface CheckResultsProps {
+type CheckResultsProps = {
   empties: ControlEmptyResultNode[];
   errors: ControlErrorNode[];
   results: ControlResultNode[];
-}
+};
 
-interface CheckPanelProps {
+type CheckPanelProps = {
   depth: number;
   node: CheckNode;
-}
+};
 
-interface CheckPanelSeverityProps {
+type CheckPanelSeverityProps = {
   severity_summary: CheckSeveritySummary;
-}
+};
 
-interface CheckPanelSeverityBadgeProps {
+type CheckPanelSeverityBadgeProps = {
   label: string;
   count: number;
   title: string;
-}
+};
 
-interface CheckEmptyResultRowProps {
+type CheckEmptyResultRowProps = {
   node: ControlEmptyResultNode;
-}
+};
 
-interface CheckResultRowProps {
+type CheckResultRowProps = {
   result: CheckResult;
-}
+};
 
-interface CheckErrorRowProps {
+type CheckErrorRowProps = {
   error: string;
-}
+};
 
-interface CheckResultRowStatusIconProps {
+type CheckResultRowStatusIconProps = {
   status: CheckResultStatus;
-}
+};
 
 const getMargin = (depth) => {
   switch (depth) {
@@ -197,21 +195,14 @@ const CheckErrorRow = ({ error }: CheckErrorRowProps) => {
 };
 
 const CheckResults = ({ empties, errors, results }: CheckResultsProps) => {
-  const {
-    themeContext: { theme },
-  } = useDashboard();
-
-  if (!empties || !errors || !results) {
+  if (empties.length === 0 && errors.length === 0 && results.length === 0) {
     return null;
   }
 
   return (
     <div
       className={classNames(
-        "border-t shadow-sm rounded-b-md divide-y divide-table-divide print:break-before-avoid-page print:break-after-avoid-page print:break-inside-auto",
-        theme.name === ThemeNames.STEAMPIPE_DARK
-          ? "border-table-divide"
-          : "border-background"
+        "border-t shadow-sm rounded-b-md divide-y divide-table-divide border-divide print:shadow-none print:border print:break-before-avoid-page print:break-after-avoid-page print:break-inside-auto"
       )}
     >
       {empties.map((emptyNode) => (
@@ -222,7 +213,15 @@ const CheckResults = ({ empties, errors, results }: CheckResultsProps) => {
       ))}
       {results.map((resultNode) => (
         <CheckResultRow
-          key={`${resultNode.result.control.name}-${resultNode.result.resource}`}
+          key={`${resultNode.result.control.name}-${
+            resultNode.result.resource
+          }${
+            resultNode.result.dimensions
+              ? `-${resultNode.result.dimensions
+                  .map((d) => `${d.key}=${d.value}`)
+                  .join("-")}`
+              : ""
+          }`}
           result={resultNode.result}
         />
       ))}
@@ -286,7 +285,6 @@ const CheckPanel = ({ depth, node }: CheckPanelProps) => {
   const expanded = nodeStates[node.name]
     ? nodeStates[node.name].expanded
     : false;
-  // console.log({ name: node.name, nodes: nodeStates, expanded });
 
   const [child_nodes, error_nodes, empty_nodes, result_nodes, can_be_expanded] =
     useMemo(() => {
@@ -334,13 +332,13 @@ const CheckPanel = ({ depth, node }: CheckPanelProps) => {
       >
         <section
           className={classNames(
-            "bg-dashboard-panel print:bg-white shadow-sm rounded-md",
+            "bg-dashboard-panel shadow-sm rounded-md border-divide print:border print:bg-white print:shadow-none",
             can_be_expanded ? "cursor-pointer" : null,
             expanded &&
               (empty_nodes.length > 0 ||
                 error_nodes.length > 0 ||
                 result_nodes.length > 0)
-              ? "rounded-b-none"
+              ? "rounded-b-none border-b-0"
               : null
           )}
           onClick={() =>

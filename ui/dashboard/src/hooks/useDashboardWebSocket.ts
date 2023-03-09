@@ -1,150 +1,95 @@
+import isEmpty from "lodash/isEmpty";
+import useWebSocket, { ReadyState } from "react-use-websocket";
+import {
+  DashboardDataMode,
+  DashboardDataModeCLISnapshot,
+  DashboardDataModeLive,
+  IActions,
+  ReceivedSocketMessagePayload,
+} from "../types";
 import { useCallback, useEffect, useRef } from "react";
-import { ElementType, IActions } from "./useDashboard";
-
-interface ReceivedSocketMessagePayload {
-  action: string;
-  [key: string]: any;
-}
-
-interface ReceivedSocketMessage {
-  data: string;
-}
-
-interface IWebSocket {
-  ready: boolean;
-  send: (message: SocketMessage) => void;
-}
 
 export const SocketActions: IActions = {
   CLEAR_DASHBOARD: "clear_dashboard",
+  GET_AVAILABLE_DASHBOARDS: "get_available_dashboards",
+  GET_DASHBOARD_METADATA: "get_dashboard_metadata",
   SELECT_DASHBOARD: "select_dashboard",
+  SELECT_SNAPSHOT: "select_snapshot",
   INPUT_CHANGED: "input_changed",
 };
 
-const socketMessages = Object.values(SocketActions);
+const useDashboardWebSocket = (
+  dataMode: DashboardDataMode,
+  dispatch: (action: any) => void,
+  eventHandler: (event: ReceivedSocketMessagePayload) => void,
+  socketUrlFactory?: () => Promise<string>
+) => {
+  const didUnmount = useRef(false);
+  // const [socketUrl, setSocketUrl] = useState<string | null>(
+  //   !socketUrlFactory ? getSocketServerUrl() : null
+  // );
 
-type SocketMessageType = ElementType<typeof socketMessages>;
-
-interface SocketMessagePayloadInputValues {
-  [key: string]: any;
-}
-
-interface SocketMessagePayloadDashboard {
-  full_name: string;
-}
-
-interface SocketMessagePayload {
-  dashboard: SocketMessagePayloadDashboard;
-  input_values: SocketMessagePayloadInputValues;
-  changed_input?: string;
-}
-
-export interface SocketMessage {
-  action: SocketMessageType;
-  payload?: SocketMessagePayload;
-}
-
-const getSocketServerUrl = () => {
-  // In this scenario the browser will be at http://localhost:3000,
-  // therefore we have no idea what host + port the dashboard server
-  // is on, so assume it's the default
-  if (process.env.NODE_ENV === "development") {
-    return "ws://localhost:9194/ws";
-  }
-  // Otherwise, it's a production build, so use the URL details
-  const url = new URL(window.location.toString());
-  return `${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}/ws`
-};
-
-const createSocket = async (socketFactory): Promise<WebSocket> => {
-  if (socketFactory) {
-    return await socketFactory();
-  }
-  return new WebSocket(getSocketServerUrl());
-};
-
-const useDashboardWebSocket = (dispatch, socketFactory): IWebSocket => {
-  const webSocket = useRef<WebSocket | null>(null);
-
-  const onSocketError = (evt: any) => {
-    console.error(evt);
-  };
-
-  const onSocketMessage = (message: ReceivedSocketMessage) => {
-    const { action, ...rest }: ReceivedSocketMessagePayload = JSON.parse(
-      message.data
-    );
-    dispatch({ type: action, ...rest });
-  };
-
-  useEffect(() => {
-    const doConnect = async () => {
-      let keepAliveTimerId: NodeJS.Timeout;
-      webSocket.current = await createSocket(socketFactory);
-      webSocket.current.onerror = onSocketError;
-      webSocket.current.onmessage = onSocketMessage;
-      webSocket.current.onopen = () => {
-        const keepAlive = async () => {
-          if (!webSocket.current) {
-            return;
-          }
-
-          const timeout = 30000;
-          if (webSocket.current.readyState === webSocket.current.CLOSED) {
-            webSocket.current = await createSocket(socketFactory);
-            webSocket.current.onerror = onSocketError;
-            webSocket.current.onmessage = onSocketMessage;
-          }
-          if (webSocket.current.readyState === webSocket.current.OPEN) {
-            webSocket.current.send(JSON.stringify({ action: "keep_alive" }));
-          }
-          keepAliveTimerId = setTimeout(keepAlive, timeout);
-        };
-
-        if (
-          !webSocket.current ||
-          webSocket.current.readyState !== webSocket.current.OPEN
-        ) {
-          return;
-        }
-
-        // Send message to ask for dashboard metadata
-        webSocket.current.send(
-          JSON.stringify({
-            action: "get_dashboard_metadata",
-          })
-        );
-
-        // Send message to ask for available dashboards
-        webSocket.current.send(
-          JSON.stringify({
-            action: "get_available_dashboards",
-          })
-        );
-        keepAlive();
-      };
-      return () => {
-        clearTimeout(keepAliveTimerId);
-        webSocket.current && webSocket.current.close();
-      };
-    };
-    doConnect();
-  }, []);
-
-  const send = useCallback((message) => {
-    // TODO log this?
-    if (!webSocket.current) {
-      return;
+  const getSocketServerUrl = useCallback(async () => {
+    if (socketUrlFactory) {
+      return socketUrlFactory();
     }
 
-    webSocket.current.send(JSON.stringify(message));
+    // In this scenario the browser will be at http://localhost:3000,
+    // therefore we have no idea what host + port the dashboard server
+    // is on, so assume it's the default
+    if (process.env.NODE_ENV === "development") {
+      return "ws://localhost:9194/ws";
+    }
+    // Otherwise, it's a production build, so use the URL details
+    const url = new URL(window.location.toString());
+    return `${url.protocol === "https:" ? "wss" : "ws"}://${url.host}/ws`;
+  }, [socketUrlFactory]);
+
+  const { lastJsonMessage, readyState, sendJsonMessage } = useWebSocket(
+    getSocketServerUrl,
+    {
+      shouldReconnect: () => {
+        /*
+            useWebSocket will handle unmounting for you, but this is an example of a
+            case in which you would not want it to automatically reconnect
+          */
+        return !didUnmount.current;
+      },
+      reconnectAttempts: 10,
+      reconnectInterval: 3000,
+    },
+    dataMode === DashboardDataModeLive ||
+      dataMode === DashboardDataModeCLISnapshot
+  );
+
+  useEffect(() => {
+    if (!lastJsonMessage || isEmpty(lastJsonMessage)) {
+      return;
+    }
+    const typedEvent = lastJsonMessage as ReceivedSocketMessagePayload;
+    if (!typedEvent || !typedEvent.action) {
+      return;
+    }
+    eventHandler(typedEvent);
+  }, [eventHandler, lastJsonMessage]);
+
+  useEffect(() => {
+    if (readyState !== ReadyState.OPEN || !sendJsonMessage) {
+      return;
+    }
+    sendJsonMessage({ action: SocketActions.GET_DASHBOARD_METADATA });
+    sendJsonMessage({ action: SocketActions.GET_AVAILABLE_DASHBOARDS });
+  }, [readyState, sendJsonMessage]);
+
+  useEffect(() => {
+    return () => {
+      didUnmount.current = true;
+    };
   }, []);
 
   return {
-    ready: webSocket.current
-      ? webSocket.current.readyState === webSocket.current.OPEN
-      : false,
-    send,
+    ready: readyState === ReadyState.OPEN,
+    send: sendJsonMessage,
   };
 };
 

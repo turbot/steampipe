@@ -1,6 +1,7 @@
 import SearchInput from "../SearchInput";
-import { DashboardActions, useDashboard } from "../../hooks/useDashboard";
+import { DashboardActions } from "../../types";
 import { useCallback } from "react";
+import { useDashboard } from "../../hooks/useDashboard";
 
 const DashboardSearch = () => {
   const {
@@ -18,7 +19,7 @@ const DashboardSearch = () => {
   );
 
   return (
-    <div className="w-32 sm:w-56 md:w-72 lg:w-96">
+    <div className="w-full sm:w-56 md:w-72 lg:w-96">
       <SearchInput
         //@ts-ignore
         disabled={!metadata || !availableDashboardsLoaded}

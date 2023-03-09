@@ -1,21 +1,19 @@
-import addons, { mockChannel } from "@storybook/addons";
 import React, { createContext, useContext, useState } from "react";
-import useLocalStorage from "./useLocalStorage";
-import useMediaQuery from "./useMediaQuery";
+import addons, { mockChannel } from "@storybook/addons";
 import { useDarkMode } from "storybook-dark-mode";
 
 if (!addons.hasChannel()) {
   addons.setChannel(mockChannel());
 }
 
-export interface Theme {
+export type Theme = {
   name: string;
   label: string;
-}
+};
 
-interface IThemes {
+type IThemes = {
   [key: string]: Theme;
-}
+};
 
 const ThemeNames = {
   STEAMPIPE_DEFAULT: "steampipe-default",
@@ -33,13 +31,13 @@ const Themes: IThemes = {
   },
 };
 
-interface IThemeContext {
+type IThemeContext = {
   theme: Theme;
   setWithFooterPadding(newValue: boolean): void;
   setWrapperRef(element: any): void;
   withFooterPadding: boolean;
   wrapperRef: React.Ref<null>;
-}
+};
 
 const ThemeContext = createContext<IThemeContext | undefined>(undefined);
 

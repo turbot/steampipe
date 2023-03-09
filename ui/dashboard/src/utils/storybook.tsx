@@ -1,11 +1,23 @@
+import "../utils/registerComponents";
 import Dashboard from "../components/dashboards/layout/Dashboard";
 import { buildComponentsMap } from "../components";
-import { DashboardContext, DashboardSearch } from "../hooks/useDashboard";
+import { DashboardContext } from "../hooks/useDashboard";
+import {
+  DashboardDataModeLive,
+  DashboardPanelType,
+  DashboardRunState,
+  DashboardSearch,
+} from "../types";
 import { noop } from "./func";
+import { useStorybookTheme } from "../hooks/useStorybookTheme";
 
 type PanelStoryDecoratorProps = {
   definition: any;
-  nodeType: "card" | "chart" | "container" | "table" | "text";
+  panelType: DashboardPanelType;
+  panels?: {
+    [key: string]: any;
+  };
+  status?: DashboardRunState;
   additionalProperties?: {
     [key: string]: any;
   };
@@ -18,14 +30,30 @@ const stubDashboardSearch: DashboardSearch = {
 
 export const PanelStoryDecorator = ({
   definition = {},
-  nodeType,
+  panels = {},
+  panelType,
+  status = "complete",
   additionalProperties = {},
 }: PanelStoryDecoratorProps) => {
+  const { theme, wrapperRef } = useStorybookTheme();
   const { properties, ...rest } = definition;
+
+  const newPanel = {
+    ...rest,
+    name: `${panelType}.story`,
+    panel_type: panelType,
+    properties: {
+      ...(properties || {}),
+      ...additionalProperties,
+    },
+    sql: "storybook",
+    status,
+  };
 
   return (
     <DashboardContext.Provider
       value={{
+        versionMismatchCheck: false,
         metadata: {
           mod: {
             title: "Storybook",
@@ -37,7 +65,9 @@ export const PanelStoryDecorator = ({
         },
         availableDashboardsLoaded: true,
         closePanelDetail: noop,
-        dispatch: () => {},
+        dataMode: DashboardDataModeLive,
+        snapshotId: null,
+        dispatch: noop,
         error: null,
         dashboards: [],
         dashboardsMap: {},
@@ -53,27 +83,18 @@ export const PanelStoryDecorator = ({
         },
         selectedDashboardInputs: {},
         lastChangedInput: null,
+        execution_id: null,
+        panelsLog: {},
+        panelsMap: {
+          [newPanel.name]: newPanel,
+          ...panels,
+        },
         dashboard: {
           artificial: false,
           name: "storybook.dashboard.storybook_dashboard_wrapper",
-          children: [
-            {
-              name: `${nodeType}.story`,
-              node_type: nodeType,
-              ...rest,
-              properties: {
-                ...(properties || {}),
-                ...additionalProperties,
-              },
-              sql: "storybook",
-            },
-          ],
-          node_type: "dashboard",
+          children: [newPanel],
+          panel_type: "dashboard",
           dashboard: "storybook.dashboard.storybook_dashboard_wrapper",
-        },
-
-        sqlDataMap: {
-          storybook: definition.data,
         },
 
         dashboardTags: {
@@ -90,18 +111,21 @@ export const PanelStoryDecorator = ({
         },
 
         themeContext: {
-          theme: {
-            label: "Steampipe Default",
-            name: "steampipe-default",
-          },
+          theme,
           setTheme: noop,
-          wrapperRef: null,
+          wrapperRef,
         },
 
         components: buildComponentsMap(),
+        refetchDashboard: false,
+        state: "complete",
+        progress: 100,
+        render: { headless: false, snapshotCompleteDiv: false },
+        snapshot: null,
+        snapshotFileName: null,
       }}
     >
-      <Dashboard />
+      <Dashboard showPanelControls={false} />
     </DashboardContext.Provider>
   );
 };

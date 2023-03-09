@@ -1,18 +1,19 @@
 import ErrorPanel from "../../Error";
-import Flows, { FlowProperties, FlowProps, FlowType } from "../index";
-import get from "lodash/get";
 import merge from "lodash/merge";
-import set from "lodash/set";
+import useChartThemeColors from "../../../../hooks/useChartThemeColors";
+import useNodeAndEdgeData from "../../common/useNodeAndEdgeData";
 import {
   buildNodesAndEdges,
   buildSankeyDataInputs,
   LeafNodeData,
-  NodesAndEdges,
   toEChartsType,
 } from "../../common";
 import { Chart } from "../../charts/Chart";
-import { PanelDefinition, useDashboard } from "../../../../hooks/useDashboard";
-import { useEffect, useState } from "react";
+import { FlowProperties, FlowProps, FlowType } from "../types";
+import { getFlowComponent } from "..";
+import { NodesAndEdges } from "../../common/types";
+import { registerComponent } from "../../index";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
 const getCommonBaseOptions = () => ({
   animation: false,
@@ -22,10 +23,7 @@ const getCommonBaseOptions = () => ({
   },
 });
 
-const getCommonBaseOptionsForFlowType = (
-  type: FlowType = "sankey",
-  namedColors
-) => {
+const getCommonBaseOptionsForFlowType = (type: FlowType = "sankey") => {
   switch (type) {
     case "sankey":
       return {};
@@ -39,7 +37,7 @@ const getSeriesForFlowType = (
   data: LeafNodeData | undefined,
   properties: FlowProperties | undefined,
   nodesAndEdges: NodesAndEdges,
-  namedColors
+  themeColors
 ) => {
   if (!data) {
     return {};
@@ -55,7 +53,7 @@ const getSeriesForFlowType = (
           type: toEChartsType(type),
           layout: "none",
           draggable: true,
-          label: { color: namedColors.foreground, formatter: "{b}" },
+          label: { color: themeColors.foreground, formatter: "{b}" },
           emphasis: {
             focus: "adjacency",
             blurScope: "coordinateSystem",
@@ -86,103 +84,89 @@ const getOptionOverridesForFlowType = (
     return {};
   }
 
-  let overrides = {};
-
-  return overrides;
+  return {};
 };
 
-const buildFlowOptions = (props: FlowProps, theme, themeWrapperRef) => {
-  // We need to get the theme CSS variable values - these are accessible on the theme root element and below in the tree
-  // @ts-ignore
-  const style = window.getComputedStyle(themeWrapperRef);
-  const foreground = style.getPropertyValue("--color-foreground");
-  const foregroundLightest = style.getPropertyValue(
-    "--color-foreground-lightest"
-  );
-  const alert = style.getPropertyValue("--color-alert");
-  const info = style.getPropertyValue("--color-info");
-  const ok = style.getPropertyValue("--color-ok");
-  const namedColors = {
-    foreground,
-    foregroundLightest,
-    alert,
-    info,
-    ok,
-  };
-
+const buildFlowOptions = (props: FlowProps, themeColors) => {
   const nodesAndEdges = buildNodesAndEdges(
+    props.categories,
     props.data,
     props.properties,
-    namedColors
+    themeColors
   );
 
   return merge(
     getCommonBaseOptions(),
-    getCommonBaseOptionsForFlowType(props.properties?.type, namedColors),
+    getCommonBaseOptionsForFlowType(props.display_type),
     getSeriesForFlowType(
-      props.properties?.type,
+      props.display_type,
       props.data,
       props.properties,
       nodesAndEdges,
-      namedColors
+      themeColors
     ),
-    getOptionOverridesForFlowType(props.properties?.type, props.properties)
+    getOptionOverridesForFlowType(props.display_type, props.properties)
   );
 };
 
 const FlowWrapper = (props: FlowProps) => {
-  const [, setRandomVal] = useState(0);
+  const themeColors = useChartThemeColors();
   const {
-    themeContext: { theme, wrapperRef },
+    themeContext: { wrapperRef },
   } = useDashboard();
-
-  // This is annoying, but unless I force a refresh the theme doesn't stay in sync when you switch
-  useEffect(() => setRandomVal(Math.random()), [theme.name]);
+  const nodeAndEdgeData = useNodeAndEdgeData(
+    props.data,
+    props.properties,
+    props.status
+  );
 
   if (!wrapperRef) {
     return null;
   }
 
-  if (!props.data) {
+  if (
+    !nodeAndEdgeData ||
+    !nodeAndEdgeData.data ||
+    !nodeAndEdgeData.data.rows ||
+    nodeAndEdgeData.data.rows.length === 0
+  ) {
     return null;
   }
 
   return (
     <Chart
-      options={buildFlowOptions(props, theme, wrapperRef)}
-      type={props.properties ? props.properties.type : "sankey"}
+      options={buildFlowOptions(
+        {
+          ...props,
+          categories: nodeAndEdgeData.categories,
+          data: nodeAndEdgeData.data,
+          properties: nodeAndEdgeData.properties,
+        },
+        themeColors
+      )}
+      type={props.display_type || "sankey"}
     />
   );
 };
 
-type FlowDefinition = PanelDefinition & {
-  properties: FlowProps;
-};
-
-const renderFlow = (definition: FlowDefinition) => {
+const renderFlow = (definition: FlowProps) => {
   // We default to sankey diagram if not specified
-  if (!get(definition, "properties.type")) {
-    // @ts-ignore
-    definition = set(definition, "properties.type", "sankey");
-  }
-  const {
-    properties: { type },
-  } = definition;
+  const { display_type = "sankey" } = definition;
 
-  const flow = Flows[type];
+  const flow = getFlowComponent(display_type);
 
   if (!flow) {
-    return <ErrorPanel error={`Unknown flow type ${type}`} />;
+    return <ErrorPanel error={`Unknown flow type ${display_type}`} />;
   }
 
   const Component = flow.component;
   return <Component {...definition} />;
 };
 
-const RenderFlow = (props: FlowDefinition) => {
+const RenderFlow = (props: FlowProps) => {
   return renderFlow(props);
 };
 
-export default FlowWrapper;
+registerComponent("flow", RenderFlow);
 
-export { RenderFlow };
+export default FlowWrapper;

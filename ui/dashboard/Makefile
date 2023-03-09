@@ -17,3 +17,10 @@ clean:
 	pwd
 	[ ! -e ../../report/reportassets/assets.zip ] || rm ../../report/reportassets/assets.zip
 	rm -rf build
+
+run-local:
+	yarn install
+	yarn start
+
+setup:
+	yarn setup-material-symbols

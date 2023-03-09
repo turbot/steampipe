@@ -3,14 +3,14 @@ import useLocalStorage from "./useLocalStorage";
 import useMediaQuery from "./useMediaQuery";
 import { classNames } from "../utils/styles";
 
-export interface Theme {
+export type Theme = {
   name: string;
   label: string;
-}
+};
 
-interface IThemes {
+type IThemes = {
   [key: string]: Theme;
-}
+};
 
 const ThemeNames = {
   STEAMPIPE_DEFAULT: "steampipe-default",
@@ -28,7 +28,7 @@ const Themes: IThemes = {
   },
 };
 
-interface IThemeContext {
+type IThemeContext = {
   localStorageTheme: string | null;
   theme: Theme;
   withFooterPadding: boolean;
@@ -36,7 +36,7 @@ interface IThemeContext {
   setTheme(theme: string): void;
   setWithFooterPadding(newValue: boolean): void;
   setWrapperRef(element: any): void;
-}
+};
 
 const ThemeContext = createContext<IThemeContext | undefined>(undefined);
 
@@ -85,9 +85,35 @@ const FullHeightThemeWrapper = ({ children }) => {
     <div
       ref={setWrapperRef}
       className={classNames(
-        `min-h-screen flex flex-col theme-${theme.name} bg-dashboard print:bg-white print:theme-steampipe-default text-foreground print:text-black`,
-        withFooterPadding ? "pb-8" : ""
+        `h-screen flex flex-col theme-${theme.name} bg-dashboard print:bg-white print:theme-steampipe-default text-foreground print:text-black overflow-y-hidden`,
+        withFooterPadding ? "pb-4" : ""
       )}
+    >
+      {children}
+    </div>
+  );
+};
+
+const ThemeWrapper = ({ children }) => {
+  const { setWrapperRef, theme } = useTheme();
+  return (
+    <div
+      ref={setWrapperRef}
+      className={classNames(
+        `theme-${theme.name} bg-dashboard print:bg-white print:theme-steampipe-default text-foreground print:text-black`
+      )}
+    >
+      {children}
+    </div>
+  );
+};
+
+const ModalThemeWrapper = ({ children }) => {
+  const { setWrapperRef, theme } = useTheme();
+  return (
+    <div
+      ref={setWrapperRef}
+      className={`theme-${theme.name} print:bg-white print:theme-steampipe-default text-foreground print:text-black`}
     >
       {children}
     </div>
@@ -102,4 +128,12 @@ const useTheme = () => {
   return context;
 };
 
-export { FullHeightThemeWrapper, Themes, ThemeNames, ThemeProvider, useTheme };
+export {
+  FullHeightThemeWrapper,
+  ModalThemeWrapper,
+  Themes,
+  ThemeNames,
+  ThemeProvider,
+  ThemeWrapper,
+  useTheme,
+};

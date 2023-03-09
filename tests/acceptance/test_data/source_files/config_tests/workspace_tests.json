@@ -1,0 +1,517 @@
+[
+  {
+    "test": "default workspace profile location env variable set",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles"
+      ],
+      "args": []
+    },
+    "expected": {
+      "cloud-host": "latestpipe.turbot.io/",
+      "cloud-token": "spt_012faketoken34567890_012faketoken3456789099999",
+      "install-dir": "sp_install_dir_default",
+      "mod-location": "sp_install_dir_default",
+      "snapshot-location": "snaps",
+      "workspace": "default",
+      "workspace-database": "fk43e7"
+    }
+  },
+  {
+    "test": "default workspace profile location env variable set, all env variables set and all command line arguments set",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
+        "STEAMPIPE_CLOUD_HOST=testpipe.turbot.io",
+        "STEAMPIPE_MOD_LOCATION=sp_install_dir_env",
+        "STEAMPIPE_INSTALL_DIR=sp_install_dir_env",
+        "STEAMPIPE_CLOUD_TOKEN=spt_012faketoken34567890_012faketoken3456789099996",
+        "STEAMPIPE_SNAPSHOT_LOCATION=snapshot",
+        "STEAMPIPE_WORKSPACE_DATABASE=fk/43e7"
+      ],
+      "args": [
+        "--install-dir=sp_install_dir_default",
+        "--mod-location=sp_install_dir_default",
+        "--cloud-host=fastestpipe.turbot.io",
+        "--cloud-token=spt_012faketoken34567890_012faketoken3456789099990",
+        "--snapshot-location=snaps",
+        "--workspace-database=fk43e9"
+      ]
+    },
+    "expected": {
+      "cloud-host": "fastestpipe.turbot.io",
+      "cloud-token": "spt_012faketoken34567890_012faketoken3456789099990",
+      "install-dir": "sp_install_dir_default",
+      "mod-location": "sp_install_dir_default",
+      "snapshot-location": "snaps",
+      "workspace": "default",
+      "workspace-database": "fk43e9"
+    }
+  },
+  {
+    "test": "env variables set",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_CLOUD_HOST=latestpipe.turbot.io/",
+        "STEAMPIPE_INSTALL_DIR=sp_install_dir_env",
+        "STEAMPIPE_MOD_LOCATION=sp_install_dir_env",
+        "STEAMPIPE_CLOUD_TOKEN=spt_012faketoken34567890_012faketoken3456789099999",
+        "STEAMPIPE_SNAPSHOT_LOCATION=snaps",
+        "STEAMPIPE_WORKSPACE_DATABASE=fk43e7"
+      ],
+      "args": []
+    },
+    "expected": {
+      "cloud-host": "latestpipe.turbot.io/",
+      "cloud-token": "spt_012faketoken34567890_012faketoken3456789099999",
+      "install-dir": "sp_install_dir_env",
+      "mod-location": "sp_install_dir_env",
+      "snapshot-location": "snaps",
+      "workspace": "default",
+      "workspace-database": "fk43e7"
+    }
+  },
+  {
+    "test": "default workspace profile location env variable set and --workspace arg passed",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles"
+      ],
+      "args": [
+        "--workspace=sample"
+      ]
+    },
+    "expected": {
+      "cloud-host": "testpipe.turbot.io",
+      "cloud-token": "spt_012faketoken34567890_012faketoken3456789099999",
+      "install-dir": "sp_install_dir_sample",
+      "mod-location": "sp_install_dir_sample",
+      "snapshot-location": "snap",
+      "workspace": "sample",
+      "workspace-database": "fk43e8"
+    }
+  },
+  {
+    "test": "all command line arguments set",
+    "description": "",
+    "setup": {
+      "env": [],
+      "args": [
+        "--install-dir=sp_install_dir_sample",
+        "--mod-location=sp_install_dir_sample",
+        "--cloud-host=fastestpipe.turbot.io",
+        "--cloud-token=spt_012faketoken34567890_012faketoken3456789099990",
+        "--snapshot-location=snaps",
+        "--workspace-database=fk43e9"
+      ]
+    },
+    "expected": {
+      "cloud-host": "fastestpipe.turbot.io",
+      "cloud-token": "spt_012faketoken34567890_012faketoken3456789099990",
+      "install-dir": "sp_install_dir_sample",
+      "mod-location": "sp_install_dir_sample",
+      "snapshot-location": "snaps",
+      "workspace": "default",
+      "workspace-database": "fk43e9"
+    }
+  },
+  {
+    "test": "default workspace profile location env variable set and all env variables set",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
+        "STEAMPIPE_CLOUD_HOST=fastestpipe.turbot.io/",
+        "STEAMPIPE_INSTALL_DIR=sp_install_dir_env",
+        "STEAMPIPE_MOD_LOCATION=sp_install_dir_env",
+        "STEAMPIPE_CLOUD_TOKEN=spt_012faketoken34567890_012faketoken3456789099996",
+        "STEAMPIPE_SNAPSHOT_LOCATION=snapshot",
+        "STEAMPIPE_WORKSPACE_DATABASE=ab43e6"
+      ],
+      "args": []
+    },
+    "expected": {
+      "cloud-host": "fastestpipe.turbot.io/",
+      "cloud-token": "spt_012faketoken34567890_012faketoken3456789099996",
+      "install-dir": "sp_install_dir_env",
+      "mod-location": "sp_install_dir_env",
+      "snapshot-location": "snapshot",
+      "workspace": "default",
+      "workspace-database": "ab43e6"
+    }
+  },
+  {
+    "test": "default workspace profile location env variable set, all env variables set and --workspace arg passed",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
+        "STEAMPIPE_CLOUD_HOST=fastestpipe.turbot.io/",
+        "STEAMPIPE_INSTALL_DIR=sp_install_dir_env",
+        "STEAMPIPE_MOD_LOCATION=sp_install_dir_env",
+        "STEAMPIPE_CLOUD_TOKEN=spt_012faketoken34567890_012faketoken3456789099996",
+        "STEAMPIPE_SNAPSHOT_LOCATION=snapshot",
+        "STEAMPIPE_WORKSPACE_DATABASE=ab43e6"
+      ],
+      "args": [
+        "--workspace=sample"
+      ]
+    },
+    "expected": {
+      "cloud-host": "testpipe.turbot.io",
+      "cloud-token": "spt_012faketoken34567890_012faketoken3456789099999",
+      "install-dir": "sp_install_dir_sample",
+      "mod-location": "sp_install_dir_sample",
+      "snapshot-location": "snap",
+      "workspace": "sample",
+      "workspace-database": "fk43e8"
+    }
+  },
+  {
+    "test": "all env variables set and --workspace arg passed",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
+        "STEAMPIPE_CLOUD_HOST=fastestpipe.turbot.io/",
+        "STEAMPIPE_INSTALL_DIR=sp_install_dir_env",
+        "STEAMPIPE_MOD_LOCATION=sp_install_dir_env",
+        "STEAMPIPE_CLOUD_TOKEN=spt_012faketoken34567890_012faketoken3456789099996",
+        "STEAMPIPE_SNAPSHOT_LOCATION=snapshot",
+        "STEAMPIPE_WORKSPACE_DATABASE=ab43e6"
+      ],
+      "args": [
+        "--workspace=sample"
+      ]
+    },
+    "expected": {
+      "cloud-host": "testpipe.turbot.io",
+      "cloud-token": "spt_012faketoken34567890_012faketoken3456789099999",
+      "install-dir": "sp_install_dir_sample",
+      "mod-location": "sp_install_dir_sample",
+      "snapshot-location": "snap",
+      "workspace": "sample",
+      "workspace-database": "fk43e8"
+    }
+  },
+  {
+    "test": "default workspace profile location env variable set and all command line arguments set",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles"
+      ],
+      "args": [
+        "--install-dir=sp_install_dir_default",
+        "--mod-location=sp_install_dir_default",
+        "--cloud-host=fastestpipe.turbot.io",
+        "--cloud-token=spt_012faketoken34567890_012faketoken3456789099990",
+        "--snapshot-location=snaps",
+        "--workspace-database=fk43e9"
+      ]
+    },
+    "expected": {
+      "cloud-host": "fastestpipe.turbot.io",
+      "cloud-token": "spt_012faketoken34567890_012faketoken3456789099990",
+      "install-dir": "sp_install_dir_default",
+      "mod-location": "sp_install_dir_default",
+      "snapshot-location": "snaps",
+      "workspace": "default",
+      "workspace-database": "fk43e9"
+    }
+  },
+  {
+    "test": "options set in default workspace profile(2)",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options"
+      ],
+      "args": []
+    },
+    "expected": {
+      "autocomplete": false,
+      "header": false,
+      "max-parallel": null,
+      "multi": true,
+      "output": "json",
+      "query-timeout": 0,
+      "search-path": "[ ]",
+      "search-path-prefix": "[ abc ]",
+      "separator": "|",
+      "telemetry": "info",
+      "update-check": "false",
+      "watch": false
+    }
+  },
+  {
+    "test": "default workspace location set and env variables set(3)",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options",
+        "STEAMPIPE_MAX_PARALLEL=10",
+        "STEAMPIPE_QUERY_TIMEOUT=100",
+        "STEAMPIPE_TELEMETRY=none",
+        "STEAMPIPE_UPDATE_CHECK=true"
+      ],
+      "args": []
+    },
+    "expected": {
+      "max-parallel": 10,
+      "query-timeout": 100,
+      "telemetry": "none",
+      "update-check": true
+    }
+  },
+  {
+    "test": "default workspace location set and --workspace arg passed(4)",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options"
+      ],
+      "args": [
+        "--workspace=sample"
+      ]
+    },
+    "expected": {
+      "autocomplete": true,
+      "header": false,
+      "max-parallel": 10,
+      "multi": true,
+      "output": "csv",
+      "query-timeout": 100,
+      "search-path": "[ abc ]",
+      "search-path-prefix": "[ abc, def ]",
+      "separator": ";",
+      "telemetry": "none",
+      "update-check": "true",
+      "watch": false
+    }
+  },
+  {
+    "test": "all command line args passed(5)",
+    "description": "",
+    "setup": {
+      "env": [],
+      "args": [
+        "--header=true",
+        "--output=table",
+        "--query-timeout=190",
+        "--search-path=abc",
+        "--search-path-prefix=def",
+        "--separator=+",
+        "--timing=true", 
+        "--watch=true"
+      ]
+    },
+    "expected": {
+      "autocomplete": false,
+      "header": true,
+      "max-parallel": 10,
+      "multi": true,
+      "output": "table",
+      "query-timeout": 190,
+      "search-path": "[ abc ]",
+      "search-path-prefix": "[ def ]",
+      "separator": "+",
+      "telemetry": "none",
+      "update-check": "true",
+      "watch": true
+    }
+  },
+  {
+    "test": "options set in default workspace profile and env variables passed(6)",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options",
+        "STEAMPIPE_MAX_PARALLEL=10",
+        "STEAMPIPE_QUERY_TIMEOUT=100",
+        "STEAMPIPE_TELEMETRY=none",
+        "STEAMPIPE_UPDATE_CHECK=true"
+      ],
+      "args": []
+    },
+    "expected": {
+      "autocomplete": false,
+      "header": false,
+      "max-parallel": 10,
+      "multi": true,
+      "output": "json",
+      "query-timeout": 100,
+      "search-path": "[ ]",
+      "search-path-prefix": "[ abc ]",
+      "separator": "|",
+      "telemetry": "none",
+      "update-check": true,
+      "watch": false
+    }
+  },
+  {
+    "test": "options set in default workspace profile, env variables passed and --workspace arg passed(7)",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options",
+        "STEAMPIPE_MAX_PARALLEL=10",
+        "STEAMPIPE_QUERY_TIMEOUT=100",
+        "STEAMPIPE_TELEMETRY=none",
+        "STEAMPIPE_UPDATE_CHECK=true"
+      ],
+      "args": [
+        "--workspace=sample"
+      ]
+    },
+    "expected": {
+      "autocomplete": true,
+      "header": false,
+      "max-parallel": 10,
+      "multi": true,
+      "output": "csv",
+      "query-timeout": 100,
+      "search-path": "[ abc ]",
+      "search-path-prefix": "[ abc, def ]",
+      "separator": ";",
+      "telemetry": "none",
+      "update-check": true,
+      "watch": false
+    }
+  },
+  {
+    "test": "options set in default workspace profile, env variables passed and STEAMPIPE_WORKSPACE env passed(8)",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options",
+        "STEAMPIPE_WORKSPACE=sample",
+        "STEAMPIPE_MAX_PARALLEL=10",
+        "STEAMPIPE_QUERY_TIMEOUT=100",
+        "STEAMPIPE_TELEMETRY=none",
+        "STEAMPIPE_UPDATE_CHECK=true"
+      ],
+      "args": []
+    },
+    "expected": {
+      "autocomplete": true,
+      "header": false,
+      "max-parallel": 10,
+      "multi": true,
+      "output": "csv",
+      "query-timeout": 100,
+      "search-path": "[ abc ]",
+      "search-path-prefix": "[ abc, def ]",
+      "separator": ";",
+      "telemetry": "none",
+      "update-check": true,
+      "watch": false
+    }
+  },
+  {
+    "test": "options set in default workspace profile, env variables passed, --workspace arg passed and all command line args passed(8)",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options",
+        "STEAMPIPE_MAX_PARALLEL=10",
+        "STEAMPIPE_QUERY_TIMEOUT=100",
+        "STEAMPIPE_TELEMETRY=none",
+        "STEAMPIPE_UPDATE_CHECK=true"
+      ],
+      "args": [
+        "--workspace=sample",
+        "--header=true",
+        "--output=table",
+        "--query-timeout=190",
+        "--search-path=xyz",
+        "--search-path-prefix=pqr",
+        "--separator=+",
+        "--timing=true", 
+        "--watch=true"
+      ]
+    },
+    "expected": {
+      "autocomplete": true,
+      "header": true,
+      "max-parallel": 10,
+      "multi": true,
+      "output": "table",
+      "query-timeout": 190,
+      "search-path": "[ xyz ]",
+      "search-path-prefix": "[ pqr ]",
+      "separator": "+",
+      "telemetry": "none",
+      "update-check": true,
+      "watch": true
+    }
+  },
+  {
+    "test": "config/default.spc, env variables passed all command line args passed(8)",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_MAX_PARALLEL=10",
+        "STEAMPIPE_QUERY_TIMEOUT=100",
+        "STEAMPIPE_TELEMETRY=none",
+        "STEAMPIPE_UPDATE_CHECK=true"
+      ],
+      "args": [
+        "--workspace=sample",
+        "--header=true",
+        "--output=table",
+        "--query-timeout=190",
+        "--search-path=xyz",
+        "--search-path-prefix=pqr",
+        "--separator=+",
+        "--timing=true", 
+        "--watch=true"
+      ]
+    },
+    "expected": {
+      "autocomplete": true,
+      "header": true,
+      "max-parallel": 10,
+      "multi": true,
+      "output": "table",
+      "query-timeout": 190,
+      "search-path": "[ xyz ]",
+      "search-path-prefix": "[ pqr ]",
+      "separator": "+",
+      "telemetry": "none",
+      "update-check": true,
+      "watch": true
+    }
+  },
+  {
+    "test": "config/default.spc, env variables",
+    "description": "",
+    "setup": {
+      "env": [
+        "STEAMPIPE_MAX_PARALLEL=10",
+        "STEAMPIPE_QUERY_TIMEOUT=100",
+        "STEAMPIPE_TELEMETRY=none",
+        "STEAMPIPE_UPDATE_CHECK=true"
+      ],
+      "args": []
+    },
+    "expected": {
+      "autocomplete": true,
+      "header": false,
+      "max-parallel": 10,
+      "multi": true,
+      "output": "csv",
+      "query-timeout": 100,
+      "search-path": "[ abc ]",
+      "search-path-prefix": "[ abc, def ]",
+      "separator": ";",
+      "telemetry": "none",
+      "update-check": true,
+      "watch": false
+    }
+  }
+]

@@ -1,23 +1,24 @@
 import Panel from "../Panel";
-import Table from "../../Table";
+import { getComponent } from "../../index";
 import { PanelDetailProps } from "./index";
 
-const PanelDetailPreview = ({ definition }: PanelDetailProps) => {
+const Table = getComponent("table");
+
+const PanelDetailData = ({ definition }: PanelDetailProps) => {
   return (
     <Panel
       definition={definition}
-      allowExpand={false}
+      parentType="dashboard"
+      showControls={false}
       forceBackground={true}
-      withOverflow={true}
-      withTitle={false}
     >
       <Table
         name={`${definition}.table.detail`}
-        node_type="table"
+        panel_type="table"
         data={definition.data}
       />
     </Panel>
   );
 };
 
-export default PanelDetailPreview;
+export default PanelDetailData;

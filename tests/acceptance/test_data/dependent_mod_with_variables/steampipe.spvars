@@ -1,0 +1,8 @@
+
+local_set_in_file = "select 'm1.dupe_name_var_set_in_file' as a"
+
+m1.dep_mod_var1 = "select 'm1.dep_mod_var_set_in_file' as a"
+
+m1.dupe_name_var = "select 'm1.dupe_name_var_set_in_file' as a"
+
+dupe_name_var = "select 'dupe_name_var_set_in_file' as a"

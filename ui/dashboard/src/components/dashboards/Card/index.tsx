@@ -1,73 +1,39 @@
+import DashboardIcon from "../common/DashboardIcon";
 import get from "lodash/get";
 import has from "lodash/has";
-import Icon from "../../Icon";
 import IntegerDisplay from "../../IntegerDisplay";
 import isNumber from "lodash/isNumber";
 import isObject from "lodash/isObject";
 import LoadingIndicator from "../LoadingIndicator";
-import Table from "../Table";
 import useDeepCompareEffect from "use-deep-compare-effect";
+import useTemplateRender from "../../../hooks/useTemplateRender";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
   LeafNodeData,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { getColumnIndex } from "../../../utils/data";
-import { renderInterpolatedTemplates } from "../../../utils/template";
+import { DashboardDataModeLive, PanelProperties } from "../../../types";
+import { getComponent, registerComponent } from "../index";
+import {
+  getIconClasses,
+  getIconForType,
+  getTextClasses,
+  getWrapperClasses,
+} from "../../../utils/card";
 import { ThemeNames } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
-import { usePanel } from "../../../hooks/usePanel";
 
-const getWrapperClasses = (type) => {
-  switch (type) {
-    case "alert":
-      return "bg-alert";
-    case "info":
-      return "bg-info";
-    case "ok":
-      return "bg-ok";
-    case "severity":
-      return "bg-yellow";
-    default:
-      return "bg-dashboard-panel print:bg-white shadow-sm print:shadow-none print:border print:border-gray-100";
-  }
-};
+const Table = getComponent("table");
 
-const getIconClasses = (type) => {
-  switch (type) {
-    case "info":
-    case "ok":
-    case "alert":
-    case "severity":
-      return "text-white opacity-40 text-3xl";
-    default:
-      return "text-black-scale-4 text-3xl";
-  }
-};
+export type CardType = "alert" | "info" | "ok" | "table" | null;
 
-const getTextClasses = (type) => {
-  switch (type) {
-    case "alert":
-      return "text-alert-inverse";
-    case "info":
-      return "text-info-inverse";
-    case "ok":
-      return "text-ok-inverse";
-    case "severity":
-      return "text-white";
-    default:
-      return null;
-  }
-};
-
-type CardType = "alert" | "info" | "ok" | "table" | null;
-
-export type CardProps = BasePrimitiveProps &
+export type CardProps = PanelProperties &
+  Omit<BasePrimitiveProps, "display_type"> &
   ExecutablePrimitiveProps & {
+    display_type?: CardType;
     properties: {
-      type?: CardType;
       label?: string;
       value?: string;
       icon?: string;
@@ -77,14 +43,14 @@ export type CardProps = BasePrimitiveProps &
 
 type CardDataFormat = "simple" | "formal";
 
-interface CardState {
+type CardState = {
   loading: boolean;
   label: string | null;
   value: any | null;
   type: CardType;
   icon: string | null;
   href: string | null;
-}
+};
 
 const getDataFormat = (data: LeafNodeData): CardDataFormat => {
   if (data.columns.length > 1) {
@@ -93,60 +59,39 @@ const getDataFormat = (data: LeafNodeData): CardDataFormat => {
   return "simple";
 };
 
-const getIconForType = (type, icon) => {
-  if (!type && !icon) {
-    return null;
-  }
-
-  if (icon) {
-    return icon;
-  }
-
-  switch (type) {
-    case "alert":
-      return "heroicons-solid:exclamation-circle";
-    case "ok":
-      return "heroicons-solid:check-circle";
-    case "info":
-      return "heroicons-solid:information-circle";
-    case "severity":
-      return "heroicons-solid:exclamation";
-    default:
-      return null;
-  }
-};
-
-const useCardState = ({ data, sql, properties }: CardProps) => {
+const useCardState = ({
+  data,
+  display_type,
+  properties,
+  status,
+}: CardProps) => {
   const [calculatedProperties, setCalculatedProperties] = useState<CardState>({
-    loading: !!sql,
+    loading: status === "running",
     label: properties.label || null,
     value: isNumber(properties.value)
       ? properties.value
       : properties.value || null,
-    type: properties.type || null,
-    icon: getIconForType(properties.type, properties.icon),
+    type: display_type || null,
+    icon: getIconForType(display_type, properties.icon),
     href: properties.href || null,
   });
 
   useEffect(() => {
-    if (!data) {
-      return;
-    }
-
     if (
+      !data ||
       !data.columns ||
       !data.rows ||
       data.columns.length === 0 ||
       data.rows.length === 0
     ) {
       setCalculatedProperties({
-        loading: false,
+        loading: status === "running",
         label: properties.label || null,
         value: isNumber(properties.value)
           ? properties.value
           : properties.value || null,
-        type: properties.type || null,
-        icon: getIconForType(properties.type, properties.icon),
+        type: display_type || null,
+        icon: getIconForType(display_type, properties.icon),
         href: properties.href || null,
       });
       return;
@@ -160,40 +105,30 @@ const useCardState = ({ data, sql, properties }: CardProps) => {
       setCalculatedProperties({
         loading: false,
         label: firstCol.name,
-        value: row[0],
-        type: properties.type || null,
-        icon: getIconForType(properties.type, properties.icon),
+        value: row[firstCol.name],
+        type: display_type || null,
+        icon: getIconForType(display_type, properties.icon),
         href: properties.href || null,
       });
     } else {
-      const labelColIndex = getColumnIndex(data.columns, "label");
-      const formalLabel =
-        labelColIndex >= 0 ? get(data, `rows[0][${labelColIndex}]`) : null;
-      const valueColIndex = getColumnIndex(data.columns, "value");
-      const formalValue =
-        valueColIndex >= 0 ? get(data, `rows[0][${valueColIndex}]`) : null;
-      const typeColIndex = getColumnIndex(data.columns, "type");
-      const formalType =
-        typeColIndex >= 0 ? get(data, `rows[0][${typeColIndex}]`) : null;
-      const iconColIndex = getColumnIndex(data.columns, "icon");
-      const formalIcon =
-        iconColIndex >= 0 ? get(data, `rows[0][${iconColIndex}]`) : null;
-      const hrefColIndex = getColumnIndex(data.columns, "href");
-      const formalHref =
-        hrefColIndex >= 0 ? get(data, `rows[0][${hrefColIndex}]`) : null;
+      const formalLabel = get(data, "rows[0].label", null);
+      const formalValue = get(data, `rows[0].value`, null);
+      const formalType = get(data, `rows[0].type`, null);
+      const formalIcon = get(data, `rows[0].icon`, null);
+      const formalHref = get(data, `rows[0].href`, null);
       setCalculatedProperties({
         loading: false,
         label: formalLabel,
         value: formalValue,
-        type: formalType || properties.type || null,
+        type: formalType || display_type || null,
         icon: getIconForType(
-          formalType || properties.type,
+          formalType || display_type,
           formalIcon || properties.icon
         ),
         href: formalHref || properties.href || null,
       });
     }
-  }, [data, properties]);
+  }, [data, display_type, properties, status]);
 
   return calculatedProperties;
 };
@@ -213,41 +148,48 @@ const Label = ({ value }) => {
 const Card = (props: CardProps) => {
   const {
     components: { ExternalLink },
+    dataMode,
   } = useDashboard();
   const state = useCardState(props);
+  const [renderError, setRenderError] = useState<string | null>(null);
   const [renderedHref, setRenderedHref] = useState<string | null>(
     state.href || null
   );
-  const [, setRenderError] = useState<string | null>(null);
   const textClasses = getTextClasses(state.type);
-  const { setZoomIconClassName } = usePanel();
   const {
     themeContext: { theme },
   } = useDashboard();
+  const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
 
   useEffect(() => {
-    setZoomIconClassName(textClasses ? textClasses : "");
-  }, [setZoomIconClassName, textClasses]);
+    if ((state.loading || !state.href) && (renderError || renderedHref)) {
+      setRenderError(null);
+      setRenderedHref(null);
+    }
+  }, [state.loading, state.href, renderError, renderedHref]);
 
   useDeepCompareEffect(() => {
-    if (state.loading || !state.href) {
-      setRenderedHref(null);
-      setRenderError(null);
+    // We only want to do the interpolated template rendering in live views
+    if (dataMode !== DashboardDataModeLive) {
       return;
     }
-    // const { label, loading, value, ...rest } = state;
+
+    if (!templateRenderReady || state.loading || !state.href) {
+      return;
+    }
+
     const renderData = { ...state };
     if (props.data && props.data.columns && props.data.rows) {
       const row = props.data.rows[0];
-      props.data.columns.forEach((col, index) => {
+      props.data.columns.forEach((col) => {
         if (!has(renderData, col.name)) {
-          renderData[col.name] = row[index];
+          renderData[col.name] = row[col.name];
         }
       });
     }
 
     const doRender = async () => {
-      const renderedResults = await renderInterpolatedTemplates(
+      const renderedResults = await renderTemplates(
         { card: state.href as string },
         [renderData]
       );
@@ -267,7 +209,7 @@ const Card = (props: CardProps) => {
       }
     };
     doRender();
-  }, [state, props.data]);
+  }, [dataMode, renderTemplates, templateRenderReady, state, props.data]);
 
   const card = (
     <div
@@ -278,12 +220,10 @@ const Card = (props: CardProps) => {
     >
       <dt>
         <div className="absolute">
-          {state.icon && (
-            <Icon
-              className={classNames(getIconClasses(state.type), "h-8 w-8")}
-              icon={state.icon}
-            />
-          )}
+          <DashboardIcon
+            className={classNames(getIconClasses(state.type), "h-8 w-8")}
+            icon={state.icon}
+          />
         </div>
         <p
           className={classNames(
@@ -295,7 +235,10 @@ const Card = (props: CardProps) => {
         >
           {state.loading && "Loading..."}
           {!state.loading && !state.label && (
-            <Icon className="h-5 w-5" icon="heroicons-solid:minus" />
+            <DashboardIcon
+              className="h-5 w-5"
+              icon="materialsymbols-outline:remove"
+            />
           )}
           {!state.loading && state.label}
         </p>
@@ -325,7 +268,10 @@ const Card = (props: CardProps) => {
           )}
           {!state.loading &&
             (state.value === null || state.value === undefined) && (
-              <Icon className="h-10 w-10" icon="heroicons-solid:minus" />
+              <DashboardIcon
+                className="h-10 w-10"
+                icon="materialsymbols-outline:remove"
+              />
             )}
           {state.value !== null &&
             state.value !== undefined &&
@@ -340,7 +286,7 @@ const Card = (props: CardProps) => {
     </div>
   );
 
-  if (renderedHref) {
+  if (dataMode === DashboardDataModeLive && renderedHref) {
     return (
       <ExternalLink className="" to={renderedHref}>
         {card}
@@ -352,7 +298,7 @@ const Card = (props: CardProps) => {
 };
 
 const CardWrapper = (props: CardProps) => {
-  if (get(props, "properties.type") === "table") {
+  if (props.display_type === "table") {
     // @ts-ignore
     return <Table {...props} />;
   }
@@ -360,6 +306,6 @@ const CardWrapper = (props: CardProps) => {
   return <Card {...props} />;
 };
 
-export default CardWrapper;
+registerComponent("card", CardWrapper);
 
-export { getTextClasses, getWrapperClasses };
+export default CardWrapper;

@@ -1,76 +1,79 @@
 import get from "lodash/get";
 import sortBy from "lodash/sortBy";
+import CallToActions from "../CallToActions";
+import LoadingIndicator from "../dashboards/LoadingIndicator";
 import {
   AvailableDashboard,
   AvailableDashboardsDictionary,
   DashboardAction,
   DashboardActions,
   ModDashboardMetadata,
-  useDashboard,
-} from "../../hooks/useDashboard";
-import CallToActions from "../CallToActions";
-import LoadingIndicator from "../dashboards/LoadingIndicator";
-import { Fragment, useEffect, useMemo, useState } from "react";
+} from "../../types";
+import { classNames } from "../../utils/styles";
 import { default as lodashGroupBy } from "lodash/groupBy";
-import { stringToColour } from "../../utils/color";
+import { Fragment, useEffect, useState } from "react";
+import { stringToColor } from "../../utils/color";
+import { useDashboard } from "../../hooks/useDashboard";
 import { useParams } from "react-router-dom";
 
-interface DashboardListSection {
+type DashboardListSection = {
   title: string;
   dashboards: AvailableDashboardWithMod[];
-}
+};
 
 type AvailableDashboardWithMod = AvailableDashboard & {
   mod?: ModDashboardMetadata;
 };
 
-interface DashboardTagProps {
+type DashboardTagProps = {
   tagKey: string;
   tagValue: string;
-  dispatch: (action: DashboardAction) => void;
-  searchValue: string;
-}
+  dispatch?: (action: DashboardAction) => void;
+  searchValue?: string;
+};
 
-interface SectionProps {
+type SectionProps = {
   title: string;
   dashboards: AvailableDashboardWithMod[];
   dispatch: (action: DashboardAction) => void;
   searchValue: string;
-}
+};
 
 const DashboardTag = ({
   tagKey,
   tagValue,
   dispatch,
   searchValue,
-}: DashboardTagProps) => {
-  const searchWithTag = useMemo(() => {
-    const existingSearch = searchValue.trim();
-    return existingSearch
-      ? existingSearch.indexOf(tagValue) < 0
-        ? `${existingSearch} ${tagValue}`
-        : existingSearch
-      : tagValue;
-  }, [tagValue, searchValue]);
+}: DashboardTagProps) => (
+  <span
+    className={classNames(
+      "rounded-md text-xs",
+      dispatch ? "cursor-pointer" : null
+    )}
+    onClick={
+      dispatch
+        ? () => {
+            const existingSearch = searchValue ? searchValue.trim() : "";
+            const searchWithTag = existingSearch
+              ? existingSearch.indexOf(tagValue) < 0
+                ? `${existingSearch} ${tagValue}`
+                : existingSearch
+              : tagValue;
+            dispatch({
+              type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
+              value: searchWithTag,
+            });
+          }
+        : undefined
+    }
+    style={{ color: stringToColor(tagValue) }}
+    title={`${tagKey} = ${tagValue}`}
+  >
+    {tagValue}
+  </span>
+);
 
-  return (
-    <span
-      className="cursor-pointer rounded-md text-xs"
-      onClick={() =>
-        dispatch({
-          type: DashboardActions.SET_DASHBOARD_SEARCH_VALUE,
-          value: searchWithTag,
-        })
-      }
-      style={{ color: stringToColour(tagValue) }}
-      title={`${tagKey} = ${tagValue}`}
-    >
-      {tagValue}
-    </span>
-  );
-};
-
-const BenchmarkTitlePart = ({ benchmark }) => {
+const TitlePart = ({ part }) => {
   const {
     components: { ExternalLink },
   } = useDashboard();
@@ -78,9 +81,9 @@ const BenchmarkTitlePart = ({ benchmark }) => {
   return (
     <ExternalLink
       className="link-highlight hover:underline"
-      to={`/${benchmark.full_name}`}
+      to={`/${part.full_name}`}
     >
-      {benchmark.title || benchmark.short_name}
+      {part.title || part.short_name}
     </ExternalLink>
   );
 };
@@ -118,25 +121,10 @@ const BenchmarkTitle = ({ benchmark, searchValue }) => {
           {!!index && (
             <span className="px-1 text-sm text-foreground-lighter">{">"}</span>
           )}
-          <BenchmarkTitlePart benchmark={part} />
+          <TitlePart part={part} />
         </Fragment>
       ))}
     </>
-  );
-};
-
-const DashboardTitle = ({ dashboard }) => {
-  const {
-    components: { ExternalLink },
-  } = useDashboard();
-
-  return (
-    <ExternalLink
-      className="link-highlight hover:underline"
-      to={`/${dashboard.full_name}`}
-    >
-      {dashboard.title || dashboard.short_name}
-    </ExternalLink>
   );
 };
 
@@ -152,9 +140,8 @@ const Section = ({
       {dashboards.map((dashboard) => (
         <div key={dashboard.full_name} className="flex space-x-2 items-center">
           <div className="md:col-span-6 truncate">
-            {dashboard.type === "dashboard" && (
-              <DashboardTitle dashboard={dashboard} />
-            )}
+            {(dashboard.type === "dashboard" ||
+              dashboard.type === "snapshot") && <TitlePart part={dashboard} />}
             {dashboard.type === "benchmark" && (
               <BenchmarkTitle benchmark={dashboard} searchValue={searchValue} />
             )}
@@ -181,9 +168,9 @@ const Section = ({
   );
 };
 
-interface GroupedDashboards {
+type GroupedDashboards = {
   [key: string]: AvailableDashboardWithMod[];
-}
+};
 
 const useGroupedDashboards = (dashboards, group_by, metadata) => {
   const [sections, setSections] = useState<DashboardListSection[]>([]);
@@ -301,13 +288,13 @@ const DashboardList = () => {
       const dashboardMod = dashboard.mod_full_name;
       let mod: ModDashboardMetadata;
       if (dashboardMod === metadata.mod.full_name) {
-        mod = get(metadata, "mod", {} as ModDashboardMetadata);
+        mod = get(metadata, "mod", {}) as ModDashboardMetadata;
       } else {
         mod = get(
           metadata,
           `installed_mods["${dashboardMod}"]`,
-          {} as ModDashboardMetadata
-        );
+          {}
+        ) as ModDashboardMetadata;
       }
       let dashboardWithMod: AvailableDashboardWithMod;
       dashboardWithMod = { ...dashboard };
@@ -333,8 +320,8 @@ const DashboardList = () => {
   }, [
     availableDashboardsLoaded,
     dashboards,
-    dashboardsMap,
     dispatch,
+    dashboardsMap,
     metadata,
   ]);
 
@@ -447,3 +434,5 @@ const DashboardListWrapper = ({ wrapperClassName = "" }) => {
 };
 
 export default DashboardListWrapper;
+
+export { DashboardTag };

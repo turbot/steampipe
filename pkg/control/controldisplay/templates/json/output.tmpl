@@ -1,0 +1,94 @@
+{{ define "output" -}}
+	{{- template "root_template" .Data.Root -}}
+{{ end }}
+
+{{ define "root_template" }}
+{
+	"group_id": {{ toPrettyJson .GroupId }},
+	"title": {{ toPrettyJson .Title }},
+	"description": {{ toPrettyJson .Description }},
+	"tags": {{ toPrettyJson .Tags }},
+	"summary": {{ toPrettyJson .Summary }},
+	"groups": {{ if .Groups }}[
+		{{- range .Groups -}}
+			{{- template "result_group_template" . -}}
+		{{ end }}
+	], {{ else }} [], {{ end -}}
+	"controls": {{ if .ControlRuns }}[
+		{{- range .ControlRuns -}}
+			{{- template "control_run_template" . -}}
+		{{ end }}
+	] {{ else }} null {{ end -}}
+} {{ end -}}
+
+{{/* sub template for result groups */}}
+{{ define "result_group_template" }}
+{{- $first_group_rendered := false -}}
+{{- $first_control_rendered := false -}}
+{
+	"group_id": {{ toPrettyJson .GroupId }},
+	"title": {{ toPrettyJson .Title }},
+	"description": {{ toPrettyJson .Description }},
+	"tags": {{ toPrettyJson .Tags }},
+	"summary": {{ toPrettyJson .Summary }},
+	"groups": {{ if .Groups }}[
+		{{- range .Groups -}}
+			{{ if $first_group_rendered -}},{{- end -}}
+			{{- template "result_group_template" . -}}
+			{{- $first_group_rendered = true -}}
+		{{ end }}
+	], {{ else }} [], {{ end }}
+	"controls": {{ if .ControlRuns }}[
+		{{- range .ControlRuns -}}
+			{{ if $first_control_rendered -}},{{- end -}}
+			{{- template "control_run_template" . -}}
+			{{- $first_control_rendered = true -}}
+		{{ end }}
+	] {{ else }} null {{ end }}
+} {{ end -}}
+
+{{/* sub template for control runs */}}
+{{ define "control_run_template" }}
+{{- $first_row_rendered := false -}}
+{
+	"summary": {{ toPrettyJson .Summary }},
+	"results": {{ if .Rows }}[
+		{{- range .Rows -}}
+			{{ if $first_row_rendered -}},{{- end -}}
+			{{- template "control_row_template" . -}}
+			{{- $first_row_rendered = true -}}
+		{{ end }}
+	], {{ else }} null, {{ end }}
+	"control_id": {{ toPrettyJson .ControlId }},
+	"description": {{ toPrettyJson .Description }},
+	"severity": {{ toPrettyJson .Severity }},
+	"tags": {{ toPrettyJson .Tags }},
+	"title": {{ toPrettyJson .Title }},
+	"run_status": {{ template "run_status_map" .RunStatus }},
+	"run_error": {{ toPrettyJson .RunErrorString }}
+} {{- end -}}
+
+{{/* sub template for control rows */}}
+{{ define "control_row_template" }}
+{
+	"reason": {{ toPrettyJson .Reason }},
+	"resource": {{ toPrettyJson .Resource }},
+	"status": {{ toPrettyJson .Status }},
+	"dimensions": {{ toPrettyJson .Dimensions }}
+} {{ end }}
+
+{{/* sub template for control run status mapping */}}
+{{ define "run_status_map" }}
+	{{- if eq . "ready" -}}
+		1
+	{{- end -}}
+	{{- if eq . "started" -}}
+		2
+	{{- end -}}
+	{{- if eq . "complete" -}}
+		4
+	{{- end -}}
+	{{- if eq . "error" -}}
+		8
+	{{- end -}}
+{{- end -}}
