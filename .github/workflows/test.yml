@@ -10,7 +10,7 @@ env:
 
 jobs:
   goreleaser:
-    name: Build
+    name: Build test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
