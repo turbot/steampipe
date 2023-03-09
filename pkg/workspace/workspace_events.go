@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -84,13 +86,15 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 		log.Printf("[TRACE] back from PublishDashboardEvent")
 		return
 	}
-	// if resources have changed, update introspection tables and prepared statements
+	// if resources have changed, update introspection tables
 	if !prevResourceMaps.Equals(resourceMaps) {
-		res := client.RefreshSessions(context.Background())
-		if res.Error != nil || len(res.Warnings) > 0 {
-			fmt.Println()
-			error_helpers.ShowErrorWithMessage(ctx, res.Error, "error when refreshing session data")
-			error_helpers.ShowWarning(strings.Join(res.Warnings, "\n"))
+		if viper.GetString(constants.ArgIntrospection) != constants.IntrospectionNone {
+			res := client.RefreshSessions(context.Background())
+			if res.Error != nil || len(res.Warnings) > 0 {
+				fmt.Println()
+				error_helpers.ShowErrorWithMessage(ctx, res.Error, "error when refreshing session data")
+				error_helpers.ShowWarning(strings.Join(res.Warnings, "\n"))
+			}
 		}
 		if w.onFileWatcherEventMessages != nil {
 			w.onFileWatcherEventMessages()

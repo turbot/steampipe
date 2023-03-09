@@ -22,18 +22,13 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 		connMaxIdleTime = 1 * time.Minute
 		connMaxLifetime = 10 * time.Minute
 	)
-	minConnections := 2
 	maxConnections := maxDbConnections()
-	if minConnections > maxConnections {
-		minConnections = maxConnections
-	}
 
 	config, err := pgxpool.ParseConfig(c.connectionString)
 	if err != nil {
 		return err
 	}
 	config.MaxConns = int32(maxConnections)
-	config.MinConns = int32(minConnections)
 	config.MaxConnLifetime = connMaxLifetime
 	config.MaxConnIdleTime = connMaxIdleTime
 	if c.onConnectionCallback != nil {

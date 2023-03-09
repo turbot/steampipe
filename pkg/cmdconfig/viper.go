@@ -90,6 +90,7 @@ func setBaseDefaults() {
 		constants.ArgMaxCacheSizeMb:       constants.DefaultMaxCacheSizeMb,
 		constants.ArgAutoComplete:         true,
 		constants.ArgDatabaseStartTimeout: constants.DBStartTimeout.Seconds(),
+		constants.ArgIntrospection:        constants.IntrospectionNone,
 	}
 
 	for k, v := range defaults {

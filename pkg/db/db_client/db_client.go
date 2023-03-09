@@ -27,9 +27,6 @@ type DbClient struct {
 	// concurrency management for db session access
 	parallelSessionInitLock *semaphore.Weighted
 
-	// a wait group which lets others wait for any running DBSession init to complete
-	sessionInitWaitGroup *sync.WaitGroup
-
 	// map of database sessions, keyed to the backend_pid in postgres
 	// used to update session search path where necessary
 	sessions map[uint32]*db_common.DatabaseSession
@@ -68,9 +65,6 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 	}
 
 	client := &DbClient{
-		// a waitgroup to keep track of active session initializations
-		// so that we don't try to shutdown while an init is underway
-		sessionInitWaitGroup: wg,
 		// a weighted semaphore to control the maximum number parallel
 		// initializations under way
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
@@ -115,7 +109,6 @@ func (c *DbClient) shouldShowTiming() bool {
 func (c *DbClient) Close(context.Context) error {
 	log.Printf("[TRACE] DbClient.Close %v", c.pool)
 	if c.pool != nil {
-		c.sessionInitWaitGroup.Wait()
 		// clear the sessions map - so that we can't reuse it
 		c.sessions = nil
 		c.pool.Close()
@@ -190,9 +183,6 @@ func (c *DbClient) RefreshSessions(ctx context.Context) *db_common.AcquireSessio
 func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	utils.LogTime("db_client.refreshDbClient start")
 	defer utils.LogTime("db_client.refreshDbClient end")
-
-	// wait for any pending inits to finish
-	c.sessionInitWaitGroup.Wait()
 
 	// close the connection pool and recreate
 	c.pool.Close()

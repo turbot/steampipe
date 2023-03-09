@@ -27,8 +27,7 @@ func WrapError(err error) error {
 	if err == nil {
 		return nil
 	}
-	return HandleCancelError(
-		WrapPreparedStatementError(err))
+	return HandleCancelError(err)
 }
 
 func FailOnError(err error) {
