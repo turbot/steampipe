@@ -31,6 +31,7 @@ jobs:
           git config user.name "Puskar Basu"
           git checkout ${{ github.base_ref }}
           git checkout -b test-branch-acc
+          git fetch
           git merge ${{ github.head_ref }}
 
       - name: Check branch details
