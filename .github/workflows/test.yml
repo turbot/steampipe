@@ -19,20 +19,6 @@ jobs:
       - name: Unshallow
         run: git fetch
 
-      - name: Check head and base refs of the PR
-        run: |
-          echo ${{ github.head_ref }}
-          echo ${{ github.base_ref }}
-
-      - name: Create a feature branch off base, merge head_ref into the feature branch and build the binary
-        run: |
-          git fetch
-          git config user.email "puskar@turbot.com"
-          git config user.name "Puskar Basu"
-          git checkout ${{ github.base_ref }}
-          git checkout -b test-branch-acc
-          git merge origin/${{ github.head_ref }}
-
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
@@ -95,12 +81,6 @@ jobs:
           name: build-artifact-darwin
           path: ~/artifacts/darwin.zip
           if-no-files-found: error
-
-      - name: Delete the feature branch
-        run: |
-          git checkout -
-          git branch
-          git branch -D test-branch-acc
 
   acceptance_test:
     name: Test
