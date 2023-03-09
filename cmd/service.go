@@ -582,7 +582,8 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 			error_helpers.FailOnErrorWithMessage(err, "service stop failed")
 		}
 
-		if connectedClients.TotalClients > 0 {
+		// if there are any clients connected (apart from plugin manager clients), do not exit
+		if connectedClients.TotalClients-connectedClients.PluginManagerClients > 0 {
 			printClientsConnected()
 			return
 		}

@@ -48,7 +48,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	// another Steampipe instance connected to the DB
 	// (as our lifecycle is managed by the db service,
 	// so we will be shut down when the service is stopped)
-	runtime.PgClientAppName = "pm_" + runtime.PgClientAppName
+	runtime.PgClientAppName = runtime.PgClientAppNamePluginManagerPrefix + runtime.PgClientAppName
 
 	configMap := connectionwatcher.NewConnectionConfigMap(steampipeConfig.Connections)
 	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
