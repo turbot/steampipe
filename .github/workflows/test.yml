@@ -25,12 +25,12 @@ jobs:
           echo ${{ github.base_ref }}
 
       - name: Create a feature branch off base, merge head_ref into the feature branch and build the binary
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           git fetch
           git checkout ${{ github.base_ref }}
           git checkout -b test-branch-acc
-          git fetch --all
-          git merge ${{ github.head_ref }}
+          git merge origin/${{ github.head_ref }}
 
       - name: Check branch details
         run: |
@@ -101,6 +101,7 @@ jobs:
           if-no-files-found: error
 
       - name: Delete the feature branch
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           git checkout -
           git branch
