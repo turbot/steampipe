@@ -1,8 +1,7 @@
-## v0.19.0 [tbd]
+## v0.19.0 [2023-03-09]
 _What's new?_
 * Add support for aggregator connections with dynamic tables. ([#2886](https://github.com/turbot/steampipe/issues/2886))
 * Support updating of dynamic plugin schemas based on file watching events (e.g. a new csv file is created in a watched location) ([#2767](https://github.com/turbot/steampipe/issues/2767))
-* Optimize autocomplete. ([#3149](https://github.com/turbot/steampipe/issues/3149))
 * Make workspace loading asynchronous. ([#3123](https://github.com/turbot/steampipe/issues/3123))
 * Make database start timeout configurable. ([#3038](https://github.com/turbot/steampipe/issues/3038))
 * When initialising interactive mode, instead of showing `Initializing...`, show the current status. ([#3077](https://github.com/turbot/steampipe/issues/3077))
@@ -11,6 +10,7 @@ _What's new?_
 * Aggregator connection with no child connections should only be a warning - not an error. ([#3155](https://github.com/turbot/steampipe/issues/3155))
 * Cleanup connection state file to remove legacy properties. ([#3086](https://github.com/turbot/steampipe/issues/3086))
 * Dashboard server should emit updated dashboard metadata when available dashboards changes. ([#3182](https://github.com/turbot/steampipe/issues/3182))
+* Update interactive prompt `.inspect` output and autocomplete based on changes to connection config or dynamic schema updates. ([#3184](https://github.com/turbot/steampipe/issues/3184))
 
 _Bug fixes_
 * Steampipe config validation failure no longer prevents Steampipe commands from running - instead invalid connections are removed. ([#3156](https://github.com/turbot/steampipe/issues/3156))
@@ -20,7 +20,10 @@ _Bug fixes_
 * Fix running a single dashboard from the command line failing if the dashboard needs inputs and the dashboard name is not fully qualified. ([#3168](https://github.com/turbot/steampipe/issues/3168),[#3154](https://github.com/turbot/steampipe/issues/3154))
 * Fix workspace load crash for invalid mod definition. ([#3174](https://github.com/turbot/steampipe/issues/3174))
 * Limit should not be pushed down if there are unconverted restrictions. ([#291](https://github.com/turbot/steampipe-postgres-fdw/issues/291))
-* Dashboard text inputs are not correctly themed in Steampipe Cloud dashboard UI dark mode. ([#3181](https://github.com/turbot/steampipe/issues/3181)) 
+* Dashboard text inputs are not correctly themed in Steampipe Cloud dashboard UI dark mode. ([#3181](https://github.com/turbot/steampipe/issues/3181))
+* Fix nil reference panic in FDW when a scan fails to start - do not add an iterator to Hub.runningIterators until scan is started successfully. ([#298](https://github.com/turbot/steampipe-postgres-fdw/issues/298))
+* Fix `tuple concurrently updated ` error when running multiple instances of steampipe dashboard concurrently. ([#3188](https://github.com/turbot/steampipe/issues/3188))
+* Fix Postgres error "cached plan must not change result type" when dynamic plugin schema changes. ([#3185](https://github.com/turbot/steampipe/issues/3185))
 
 ## v0.18.6 [2023-02-15]
 _Bug fixes_
