@@ -4,7 +4,7 @@ import "C"
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"log"
 	"strings"
@@ -187,7 +187,7 @@ func executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *stea
 	return res
 }
 
-func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) error {
+func executeUpdateQueries(ctx context.Context, conn *pgx.Conn, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) error {
 	utils.LogTime("db.executeUpdateQueries start")
 	defer utils.LogTime("db.executeUpdateQueries end")
 	numUpdates := len(updates)
@@ -202,22 +202,17 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
 		// if this schema is already in the plugin map, clone from it
 		// TODO take dynamic into account!!!
-		var q string
 		if _, ok := pluginMap[connectionData.Plugin]; ok {
-			// TODO take dynamic into account!!!
-
 			cloneableConnections[connectionName] = connectionData
 			continue
 		}
 		log.Printf("[WARN] import foreign schema %s", connectionName)
-		q = getUpdateConnectionQuery(connectionName, remoteSchema)
 
 		statements := []string{
 			"lock table pg_namespace;",
-			q,
+			getUpdateConnectionQuery(connectionName, remoteSchema),
 		}
-		_, err := executeSqlInTransaction(ctx, rootPool, statements...)
-
+		_, err := executeSqlInTransaction(ctx, conn, statements...)
 
 		if err != nil {
 			return err
@@ -226,7 +221,7 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 	}
 
 	if len(cloneableConnections) > 0 {
-		if err := cloneConnectionSchemas(ctx, rootPool, pluginMap, cloneableConnections); err != nil {
+		if err := cloneConnectionSchemas(ctx, conn, pluginMap, cloneableConnections); err != nil {
 			return err
 		}
 	}
@@ -267,7 +262,8 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 	return nil
 }
 
-func cloneConnectionSchemas(ctx context.Context, rootPool *pgxpool.Pool, pluginMap map[string]string, cloneableConnections steampipeconfig.ConnectionDataMap) error {
+func cloneConnectionSchemas(ctx context.Context, conn *pgx.Conn, pluginMap map[string]string, cloneableConnections steampipeconfig.ConnectionDataMap) error {
+	// TODO lock????
 	var wg sync.WaitGroup
 	var doneChan = make(chan struct{})
 	var errChan = make(chan error)
@@ -286,7 +282,7 @@ func cloneConnectionSchemas(ctx context.Context, rootPool *pgxpool.Pool, pluginM
 
 			// Clone the foreign schema into this connection.
 			q := fmt.Sprintf("select clone_foreign_schema('%s', '%s', '%s');", exemplarSchema, connectionName, connectionData.Plugin)
-			res, err := rootPool.Exec(ctx, q)
+			res, err := conn.Exec(ctx, q)
 			//log.Printf("[WARN] clone connection %s query returned", connectionName)
 			log.Println(res)
 
