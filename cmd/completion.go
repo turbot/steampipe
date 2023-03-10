@@ -84,7 +84,7 @@ func includeFishHelp(base string) string {
 	return buildUp
 }
 
-func completionHelp(cmd *cobra.Command, args []string) {
+func completionHelp(cmd *cobra.Command, _ []string) {
 	helpString := ""
 
 	if runtime.GOOS == "darwin" {

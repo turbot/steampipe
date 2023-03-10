@@ -23,8 +23,8 @@ const minSpinnerWidth = 7
 // StatusSpinner is a struct which implements StatusHooks, and uses a spinner to display status messages
 type StatusSpinner struct {
 	spinner *spinner.Spinner
-	delay   time.Duration
 	cancel  chan struct{}
+	delay   time.Duration
 }
 
 type StatusSpinnerOpt func(*StatusSpinner)
