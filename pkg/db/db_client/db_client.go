@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"sort"
 	"strings"
 	"sync"
 
@@ -131,36 +130,22 @@ func (c *DbClient) AllSchemaNames() []string {
 
 // LoadSchemaNames implements Client
 func (c *DbClient) LoadSchemaNames(ctx context.Context) error {
-	res, err := c.pool.Query(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
+	conn, err := c.pool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
-	// clear foreign schemas
-	var foreignSchemaNames []string
-	var schema string
-	for res.Next() {
-		if err := res.Scan(&schema); err != nil {
-			return err
-		}
-		// ignore command schema
-		if schema != constants.CommandSchema {
-			foreignSchemaNames = append(foreignSchemaNames, schema)
-		}
-	}
-	c.foreignSchemaNames = foreignSchemaNames
+	defer conn.Release()
 
-	res, err = c.pool.Query(ctx, "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' ORDER BY schema_name;")
+	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn.Conn())
 	if err != nil {
 		return err
 	}
-	var allSchemaNames []string
-	for res.Next() {
-		if err := res.Scan(&schema); err != nil {
-			return err
-		}
-		// ignore command schema
-		allSchemaNames = append(allSchemaNames, schema)
+	allSchemaNames, err := db_common.LoadSchemaNames(ctx, conn.Conn())
+	if err != nil {
+		return err
 	}
+
+	c.foreignSchemaNames = foreignSchemaNames
 	c.allSchemaNames = allSchemaNames
 
 	return nil
@@ -220,22 +205,6 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) (*sch
 	metadata.SearchPath = searchPath
 
 	return metadata, nil
-}
-
-// GetDefaultSearchPath builds default search path from the connection schemas, book-ended with public and internal
-func (c *DbClient) GetDefaultSearchPath(ctx context.Context) []string {
-	// get foreign schema names
-	searchPath := c.foreignSchemaNames
-
-	sort.Strings(searchPath)
-	// add the 'public' schema as the first schema in the search_path. This makes it
-	// easier for users to build and work with their own tables, and since it's normally
-	// empty, doesn't make using steampipe tables any more difficult.
-	searchPath = append([]string{"public"}, searchPath...)
-	// add 'internal' schema as last schema in the search path
-	searchPath = append(searchPath, constants.FunctionSchema)
-
-	return searchPath
 }
 
 // refreshDbClient terminates the current connection and opens up a new connection to the service.

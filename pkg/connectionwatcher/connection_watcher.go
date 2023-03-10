@@ -2,6 +2,7 @@ package connectionwatcher
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"log"
 
 	"github.com/fsnotify/fsnotify"
@@ -106,7 +107,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 
 	log.Printf("[TRACE] calling RefreshConnectionAndSearchPathsWithLocalClient")
 	// now refresh connections and search paths
-	refreshResult := db_local.RefreshConnectionAndSearchPaths(ctx, client)
+	refreshResult := db_common.RefreshConnectionAndSearchPaths(ctx, client)
 	if refreshResult.Error != nil {
 		log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
 		return

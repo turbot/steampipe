@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/db/db_common"
+	"log"
 	"strings"
 	"sync"
 	"time"
