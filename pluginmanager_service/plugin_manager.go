@@ -717,7 +717,7 @@ func (m *PluginManager) updateConnectionSchema(ctx context.Context, connection s
 	}
 	defer client.Close(ctx)
 
-	refreshResult := client.RefreshConnectionAndSearchPaths(ctx, connection)
+	refreshResult := db_local.RefreshConnectionAndSearchPaths(ctx, client, connection)
 	if refreshResult.Error != nil {
 		log.Printf("[TRACE] error refreshing connections: %s", refreshResult.Error)
 		return

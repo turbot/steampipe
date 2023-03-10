@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 	"strings"
 
@@ -15,6 +16,56 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
+
+func RefreshConnectionAndSearchPaths(ctx context.Context, c *LocalDbClient, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
+	statushooks.SetStatus(ctx, "Refreshing connections")
+	res := c.refreshConnections(ctx, forceUpdateConnectionNames...)
+	if res.Error != nil {
+		return res
+	}
+
+	statushooks.SetStatus(ctx, "Setting up functions")
+	if err := refreshFunctions(ctx); err != nil {
+		res.Error = err
+		return res
+	}
+
+	statushooks.SetStatus(ctx, "Loading schema")
+	// reload the foreign schemas, in case they have changed
+	if err := c.LoadSchemaNames(ctx); err != nil {
+		res.Error = err
+		return res
+	}
+
+	statushooks.SetStatus(ctx, "Loading steampipe connections")
+	//// load the connection state and cache it!
+	connectionMap, _, err := steampipeconfig.GetConnectionState(c.ForeignSchemaNames())
+	if err != nil {
+		res.Error = err
+		return res
+	}
+	res.ConnectionMap = connectionMap
+	//set user search path first - clispent may fall back to using it
+	statushooks.SetStatus(ctx, "Setting up search path")
+
+	// we need to send a muted ctx here since this function selects from the database
+	// which by default puts up a "Loading" spinner. We don't want that here
+	mutedCtx := statushooks.DisableStatusHooks(ctx)
+	err = c.setUserSearchPath(mutedCtx)
+	if err != nil {
+		res.Error = err
+		return res
+	}
+
+	// TODO KAI MOVE THIS SOMEWHERE ELSE OR DELETE
+	// if there is an unprocessed db backup file, restore it now
+	//if err := restoreDBBackup(ctx); err != nil {
+	//	res.Error = err
+	//	return res
+	//}
+
+	return res
+}
 
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections

@@ -2,8 +2,10 @@ package db_client
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
@@ -79,7 +81,7 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		return nil, err
 	}
 
-	// populate foreign schema names - this wil be updated whenever we acquire a session or refresh connections
+	// populate foreign schema names - this wil be updated whenever we acquire a session
 	if err := client.LoadSchemaNames(ctx); err != nil {
 		client.Close(ctx)
 		return nil, err
@@ -179,20 +181,6 @@ func (c *DbClient) RefreshSessions(ctx context.Context) *db_common.AcquireSessio
 	return sessionResult
 }
 
-// refreshDbClient terminates the current connection and opens up a new connection to the service.
-func (c *DbClient) refreshDbClient(ctx context.Context) error {
-	utils.LogTime("db_client.refreshDbClient start")
-	defer utils.LogTime("db_client.refreshDbClient end")
-
-	// close the connection pool and recreate
-	c.pool.Close()
-	if err := c.establishConnectionPool(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // RefreshConnectionAndSearchPaths implements Client
 func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context, _ ...string) *steampipeconfig.RefreshConnectionResult {
 	// base db client does not refresh connections, it just sets search path
@@ -206,13 +194,13 @@ func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context, _ ...str
 
 // GetSchemaFromDB requests for all columns of tables backed by steampipe plugins
 // and creates golang struct representations from the result
-func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error) {
+func (c *DbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) (*schema.Metadata, error) {
 	utils.LogTime("db_client.GetSchemaFromDB start")
 	defer utils.LogTime("db_client.GetSchemaFromDB end")
 	connection, err := c.pool.Acquire(ctx)
 	error_helpers.FailOnError(err)
 
-	query := c.buildSchemasQuery()
+	query := c.buildSchemasQuery(schemas...)
 
 	tablesResult, err := connection.Query(ctx, query)
 	if err != nil {
@@ -250,22 +238,41 @@ func (c *DbClient) GetDefaultSearchPath(ctx context.Context) []string {
 	return searchPath
 }
 
-func (c *DbClient) buildSchemasQuery() string {
-	query := `
-WITH distinct_schema AS (
-	SELECT DISTINCT(foreign_table_schema) 
-	FROM 
-		information_schema.foreign_tables 
-	WHERE 
-		foreign_table_schema <> 'steampipe_command'
-)
+// refreshDbClient terminates the current connection and opens up a new connection to the service.
+func (c *DbClient) refreshDbClient(ctx context.Context) error {
+	utils.LogTime("db_client.refreshDbClient start")
+	defer utils.LogTime("db_client.refreshDbClient end")
+
+	// close the connection pool and recreate
+	c.pool.Close()
+	if err := c.establishConnectionPool(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *DbClient) buildSchemasQuery(schemas ...string) string {
+	for idx, s := range schemas {
+		schemas[idx] = fmt.Sprintf("'%s'", s)
+	}
+
+	// build the schemas filter clause
+	schemaClause := ""
+	if len(schemas) > 0 {
+		schemaClause = fmt.Sprintf(`
+    cols.table_schema in (%s)
+	OR`, strings.Join(schemas, ","))
+	}
+
+	query := fmt.Sprintf(`
 SELECT
     table_name,
     column_name,
     column_default,
     is_nullable,
     data_type,
-    udt_name,
+	udt_name,
     table_schema,
     (COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
     (COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
@@ -275,11 +282,8 @@ LEFT JOIN
     pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
 LEFT JOIN
     pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
-WHERE
-	cols.table_schema in (select * from distinct_schema)
-	OR
-    LEFT(cols.table_schema,8) = 'pg_temp_'
-
-`
+WHERE %s
+	LEFT(cols.table_schema,8) = 'pg_temp_'
+`, schemaClause)
 	return query
 }

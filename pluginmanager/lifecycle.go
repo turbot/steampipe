@@ -38,7 +38,7 @@ func StartNewInstance(steampipeExecutablePath string) error {
 
 // start plugin manager, without checking it is already running
 // we need to be provided with the exe path as we have no way of knowing where the steampipe exe it
-// when ther plugin mananager is first started by steampipe, we derive the exe path from the running process and
+// when the plugin mananager is first started by steampipe, we derive the exe path from the running process and
 // store it in the plugin manager state file - then if the fdw needs to start the plugin manager it knows how to
 func start(steampipeExecutablePath string) error {
 	// note: we assume the install dir has been assigned to file_paths.SteampipeDir
@@ -129,7 +129,7 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	// if we did not load it and there was no error, it means the plugin manager is not running
 	// we cannot start it as we do not know the correct steampipe exe path - which is stored in the state
 	// this is not expected - we would expect the plugin manager to have been started with the datatbase
-	if state == nil {
+	if state.Executable == "" {
 		return nil, fmt.Errorf("plugin manager is not running and there is no state file")
 	}
 	// if the plugin manager is not running, it must have crashed/terminated

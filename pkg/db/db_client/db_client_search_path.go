@@ -9,9 +9,11 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
 // GetCurrentSearchPath implements Client
@@ -111,6 +113,20 @@ func (c *DbClient) ConstructSearchPath(ctx context.Context, customSearchPath, se
 	requiredSearchPath = c.addSearchPathPrefix(searchPathPrefix, requiredSearchPath)
 
 	return requiredSearchPath, nil
+}
+
+// reload Steampipe config, update viper and re-set required search path
+func (c *DbClient) updateRequiredSearchPath(ctx context.Context) error {
+	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "dashboard")
+	if err != nil {
+		return err
+	}
+	steampipeconfig.GlobalConfig = config
+	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
+	if err := c.SetRequiredSessionSearchPath(ctx); err != nil {
+		return err
+	}
+	return nil
 }
 
 // ensure the search path for the database session is as required

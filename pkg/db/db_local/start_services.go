@@ -19,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
 )
@@ -28,6 +29,7 @@ type StartResult struct {
 	Error              error
 	DbState            *RunningDBInstanceInfo
 	PluginManagerState *pluginmanager.PluginManagerState
+	RefreshResult      *steampipeconfig.RefreshConnectionResult
 	Status             StartDbStatus
 }
 
@@ -97,6 +99,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 		return res
 	}
 
+	// start the plugin manager if needed
 	res.PluginManagerState, res.Error = pluginmanager.LoadPluginManagerState()
 	if res.Error != nil {
 		res.Status = ServiceFailedToStart
@@ -104,7 +107,6 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 	}
 
 	if !res.PluginManagerState.Running {
-		// start the plugin manager
 		// get the location of the currently running steampipe process
 		executable, err := os.Executable()
 		if err != nil {
@@ -116,6 +118,21 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 			return res.SetError(err)
 		}
 		res.Status = ServiceStarted
+	}
+
+	// TODO KAI TEMPORARY
+	client, err := NewLocalClient(ctx, invoker, nil)
+	if err != nil {
+		res.Status = ServiceFailedToStart
+		return res
+	}
+
+	// refresh connections and search paths
+	res.RefreshResult = RefreshConnectionAndSearchPaths(ctx, client)
+	if res.RefreshResult.Error != nil {
+		res.Status = ServiceFailedToStart
+		res.Error = res.RefreshResult.Error
+		return res
 	}
 
 	return res
@@ -221,33 +238,33 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 }
 
 func ensureService(ctx context.Context, databaseName string) error {
-	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
+	connection, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
-	defer rootClient.Close(ctx)
+	defer connection.Close(ctx)
 
 	// ensure the foreign server exists in the database
-	err = ensureSteampipeServer(ctx, rootClient)
+	err = ensureSteampipeServer(ctx, connection)
 	if err != nil {
 		return err
 	}
 
 	// ensure that the necessary extensions are installed in the database
-	err = ensurePgExtensions(ctx, rootClient)
+	err = ensurePgExtensions(ctx, connection)
 	if err != nil {
 		// there was a problem with the installation
 		return err
 	}
 
 	// ensure permissions for writing to temp tables
-	err = ensureTempTablePermissions(ctx, databaseName, rootClient)
+	err = ensureTempTablePermissions(ctx, databaseName, connection)
 	if err != nil {
 		return err
 	}
 
 	// ensure the db contains command schema
-	err = ensureCommandSchema(ctx, rootClient)
+	err = ensureCommandSchema(ctx, connection)
 	if err != nil {
 		return err
 	}

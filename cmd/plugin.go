@@ -231,15 +231,38 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		installWaitGroup.Wait()
 		close(dataChannel)
 	}()
+
+	installCount := 0
 	for report := range dataChannel {
 		installReports = append(installReports, report)
+		if !report.Skipped {
+			installCount++
+		}
 	}
 
 	progressBars.Stop()
 
-	statushooks.SetStatus(ctx, "Refreshing connections...")
-	refreshConnectionsIfNecessary(ctx, installReports, true)
-	statushooks.Done(ctx)
+	if installCount > 0 {
+		statushooks.SetStatus(ctx, "Refreshing connections...")
+
+		// reload the config, since an installation MUST have created a new config file
+		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
+		if err != nil {
+			error_helpers.ShowWarning(fmt.Sprintf("Failed to reload config - install report may be incomplete (%s)", err.Error()))
+		} else {
+			steampipeconfig.GlobalConfig = config
+		}
+
+		// TODO mute ctx???
+
+		res := db_local.RefreshConnectionAndSearchPathsWithLocalClient(ctx, constants.InvokerPlugin)
+		res.ShowWarnings()
+		if res.Error != nil {
+			error_helpers.ShowWarning(fmt.Sprintf("Failed to refresh connections - install report may be incomplete (%s)", err.Error()))
+		}
+		statushooks.Done(ctx)
+	}
 	display.PrintInstallReports(installReports, false)
 
 	// a concluding blank line - since we always output multiple lines
@@ -404,11 +427,20 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		updateWaitGroup.Wait()
 		close(dataChannel)
 	}()
+	installCount := 0
+
 	for updateResult := range dataChannel {
 		updateResults = append(updateResults, updateResult)
+		if !updateResult.Skipped {
+			installCount++
+		}
 	}
 	progressBars.Stop()
-	refreshConnectionsIfNecessary(ctx, updateResults, false)
+	if installCount > 0 {
+		res := db_local.RefreshConnectionAndSearchPathsWithLocalClient(ctx, constants.InvokerPlugin)
+		res.ShowWarnings()
+		error_helpers.ShowWarning(fmt.Sprintf("Failed to refresh connections - update report may be incomplete (%s)", err.Error()))
+	}
 	display.PrintInstallReports(updateResults, true)
 
 	// a concluding blank line - since we always output multiple lines
@@ -523,50 +555,7 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 	return plugins, nil
 }
 
-// start service if necessary and refresh connections
-func refreshConnectionsIfNecessary(parentCtx context.Context, reports display.PluginInstallReports, shouldReload bool) error {
-	// get count of skipped reports
-	skipped := 0
-	for _, report := range reports {
-		if report.Skipped {
-			skipped++
-		}
-	}
-	if skipped == len(reports) {
-		// if all were skipped,
-		// no point continuing
-		return nil
-	}
-
-	// reload the config, since an installation MUST have created a new config file
-	if shouldReload {
-		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
-		if err != nil {
-			return err
-		}
-		steampipeconfig.GlobalConfig = config
-	}
-
-	// create a new context with spinner disabled so that
-	// updates from the underlying layers don't end up in the
-	// ui
-	ctx := statushooks.DisableStatusHooks(parentCtx)
-	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
-	if err != nil {
-		return err
-	}
-	defer client.Close(ctx)
-	res := client.RefreshConnectionAndSearchPaths(ctx)
-	if res.Error != nil {
-		return res.Error
-	}
-	// display any initialisation warnings
-	res.ShowWarnings()
-	return nil
-}
-
-func runPluginListCmd(cmd *cobra.Command, _ []string) {
+func runPluginListCmd(cmd *cobra.Command, args []string) {
 	ctx := cmd.Context()
 	utils.LogTime("runPluginListCmd list")
 	defer func() {
@@ -577,9 +566,9 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
-	pluginConnectionMap, res, err := getPluginConnectionMap(ctx)
-	if err != nil {
-		error_helpers.ShowErrorWithMessage(ctx, err, "plugin listing failed")
+	pluginConnectionMap, res := getPluginConnectionMap(ctx)
+	if res.Error != nil {
+		error_helpers.ShowErrorWithMessage(ctx, res.Error, "plugin listing failed")
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
@@ -659,9 +648,9 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	connectionMap, _, err := getPluginConnectionMap(ctx)
-	if err != nil {
-		error_helpers.ShowError(ctx, err)
+	connectionMap, res := getPluginConnectionMap(ctx)
+	if res.Error != nil {
+		error_helpers.ShowError(ctx, res.Error)
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
@@ -684,18 +673,18 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	reports.Print()
 }
 
-func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult, error) {
+func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult) {
 	statushooks.SetStatus(ctx, "Fetching connection map")
 	defer statushooks.Done(ctx)
 	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, steampipeconfig.NewErrorRefreshConnectionResult(err)
 	}
 	defer client.Close(ctx)
 
-	res := client.RefreshConnectionAndSearchPaths(statushooks.DisableStatusHooks(ctx))
+	res := db_local.RefreshConnectionAndSearchPaths(statushooks.DisableStatusHooks(ctx), client)
 	if res.Error != nil {
-		return nil, nil, res.Error
+		return nil, res
 	}
 
 	pluginConnectionMap := make(map[string][]modconfig.Connection)
@@ -707,5 +696,5 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 		pluginConnectionMap[v.Plugin] = append(pluginConnectionMap[v.Plugin], *v.Connection)
 	}
 
-	return pluginConnectionMap, res, nil
+	return pluginConnectionMap, res
 }

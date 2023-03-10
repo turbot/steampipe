@@ -17,6 +17,10 @@ type RefreshConnectionResult struct {
 	ConnectionMap      ConnectionDataMap
 }
 
+func NewErrorRefreshConnectionResult(err error) *RefreshConnectionResult {
+	return &RefreshConnectionResult{ErrorAndWarnings: *modconfig.NewErrorsAndWarning(err)}
+}
+
 func (r *RefreshConnectionResult) Merge(other *RefreshConnectionResult) {
 	if other == nil {
 		return
