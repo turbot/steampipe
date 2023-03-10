@@ -22,7 +22,7 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 		connMaxIdleTime = 1 * time.Minute
 		connMaxLifetime = 10 * time.Minute
 	)
-	maxConnections := maxDbConnections()
+	maxConnections := db_common.MaxDbConnections()
 
 	config, err := pgxpool.ParseConfig(c.connectionString)
 	if err != nil {
@@ -62,12 +62,4 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	}
 	c.pool = dbPool
 	return nil
-}
-
-func maxDbConnections() int {
-	maxParallel := constants.DefaultMaxConnections
-	if viper.IsSet(constants.ArgMaxParallel) {
-		maxParallel = viper.GetInt(constants.ArgMaxParallel)
-	}
-	return maxParallel
 }

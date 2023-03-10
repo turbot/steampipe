@@ -49,8 +49,9 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 
 	psqlInfoMap := map[string]string{
 		// Connect to the database using the first listen address, which is usually localhost
-		"host":   info.Listen[0],
-		"port":   fmt.Sprintf("%d", info.Port),
+		"host": info.Listen[0],
+		"port": fmt.Sprintf("%d", info.Port),
+		// TODO HACKCKCKCKCK
 		"user":   "root",
 		"dbname": opts.DatabaseName,
 	}
@@ -74,7 +75,7 @@ type CreateDbOptions struct {
 // the provided username
 // if the database is not provided (empty), it connects to the default database in the service
 // that was created during installation.
-// NOTE: no session data callback is used - no sesison data will be present
+// NOTE: no session data callback is used - no session data will be present
 func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn, error) {
 	utils.LogTime("db.CreateLocalDbConnection start")
 	defer utils.LogTime("db.CreateLocalDbConnection end")
@@ -134,14 +135,9 @@ func createConnectionPool(ctx context.Context, opts *CreateDbOptions) (*pgxpool.
 		connMaxIdleTime = 1 * time.Minute
 		connMaxLifetime = 10 * time.Minute
 	)
-	minConnections := 2
-	maxConnections := 25 //db_common.MaxDbConnections()
-	if minConnections > maxConnections {
-		minConnections = maxConnections
-	}
+	maxConnections := 50 //db_common.MaxDbConnections()
 
 	connConfig.MaxConns = int32(maxConnections)
-	connConfig.MinConns = int32(minConnections)
 	connConfig.MaxConnLifetime = connMaxLifetime
 	connConfig.MaxConnIdleTime = connMaxIdleTime
 
