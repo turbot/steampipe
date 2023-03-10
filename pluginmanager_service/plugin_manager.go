@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/turbot/steampipe/pkg/connectionwatcher"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"os"
@@ -717,7 +718,7 @@ func (m *PluginManager) updateConnectionSchema(ctx context.Context, connection s
 	}
 	defer client.Close(ctx)
 
-	refreshResult := db_local.RefreshConnectionAndSearchPaths(ctx, client, connection)
+	refreshResult := db_common.RefreshConnectionAndSearchPaths(ctx, client, connection)
 	if refreshResult.Error != nil {
 		log.Printf("[TRACE] error refreshing connections: %s", refreshResult.Error)
 		return

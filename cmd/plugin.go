@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"log"
 	"strings"
 	"sync"
@@ -682,7 +683,7 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 	}
 	defer client.Close(ctx)
 
-	res := db_local.RefreshConnectionAndSearchPaths(statushooks.DisableStatusHooks(ctx), client)
+	res := db_common.RefreshConnectionAndSearchPaths(statushooks.DisableStatusHooks(ctx), client)
 	if res.Error != nil {
 		return nil, res
 	}

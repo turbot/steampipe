@@ -106,7 +106,7 @@ func (c *DbClient) ConstructSearchPath(ctx context.Context, customSearchPath, se
 		// so no search path was set in config
 		c.customSearchPath = nil
 		// use the default search path
-		requiredSearchPath = c.GetDefaultSearchPath(ctx)
+		requiredSearchPath = db_common.GetDefaultSearchPath(ctx, c.foreignSchemaNames)
 	}
 
 	// add in the prefix if present
@@ -135,7 +135,7 @@ func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_comm
 	// first, if we are NOT using a custom search path, reload the steampipe user search path
 	if len(c.customSearchPath) == 0 {
 		// rebuild required search path using the prefix, if any
-		requiredSearchPath := c.addSearchPathPrefix(c.searchPathPrefix, c.GetDefaultSearchPath(ctx))
+		requiredSearchPath := c.addSearchPathPrefix(c.searchPathPrefix, db_common.GetDefaultSearchPath(ctx, c.foreignSchemaNames))
 		// escape the required search path and store on client
 		c.requiredSessionSearchPath = db_common.PgEscapeSearchPath(requiredSearchPath)
 		log.Printf("[TRACE] updated the required search path to %s", strings.Join(c.requiredSessionSearchPath, ","))
