@@ -428,6 +428,8 @@ to force a restart.
 		error_helpers.FailOnErrorWithMessage(err, "could not stop dashboard service")
 	}
 
+	// the DB must be installed and therefore is a noop,
+	// and EnsureDBInstalled also checks and installs the latest FDW
 	err = db_local.EnsureDBInstalled(ctx)
 	if err != nil {
 		exitCode = constants.ExitCodeServiceStartupFailure
