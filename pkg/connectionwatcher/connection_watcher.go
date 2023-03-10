@@ -80,7 +80,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	defer client.Close(ctx)
 
 	// We need to update the viper config and GlobalConfig
-	// as these are both used by RefreshConnectionAndSearchPaths
+	// as these are both used by RefreshConnectionAndSearchPathsWithLocalClient
 
 	// set the global steampipe config
 	steampipeconfig.GlobalConfig = config
@@ -104,9 +104,9 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	// to use the GlobalConfig here and ignore Workspace Profile in general
 	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
 
-	log.Printf("[TRACE] calling RefreshConnectionAndSearchPaths")
+	log.Printf("[TRACE] calling RefreshConnectionAndSearchPathsWithLocalClient")
 	// now refresh connections and search paths
-	refreshResult := client.RefreshConnectionAndSearchPaths(ctx)
+	refreshResult := db_local.RefreshConnectionAndSearchPaths(ctx, client)
 	if refreshResult.Error != nil {
 		log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
 		return

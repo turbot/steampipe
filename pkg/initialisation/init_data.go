@@ -116,6 +116,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		}
 	}
 
+	// TODO get refresh results back from service start
+
 	// get a client
 	// add a message rendering function to the context - this is used for the fdw update message and
 	// allows us to render it as a standard initialisation message
@@ -131,23 +133,15 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	}
 	i.Client = client
 
-	// refresh connections
-	statushooks.SetStatus(ctx, "Refreshing connections")
-	refreshResult := i.Client.RefreshConnectionAndSearchPaths(ctx)
-	if refreshResult.Error != nil {
-		i.Result.Error = refreshResult.Error
-		return
-	}
 	// load the connection state and cache it!
 	connectionMap, _, err := steampipeconfig.GetConnectionState(client.ForeignSchemaNames())
 	if err != nil {
 		i.Result.Error = err
 		return
 	}
+
 	i.ConnectionMap = connectionMap
 
-	// add refresh connection warnings
-	i.Result.AddWarnings(refreshResult.Warnings...)
 }
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient

@@ -6,11 +6,7 @@ import (
 	"log"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -82,20 +78,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	sessionResult.Error = ctx.Err()
 	return sessionResult
-}
-
-// reload Steampipe config, update viper and re-set required search path
-func (c *DbClient) updateRequiredSearchPath(ctx context.Context) error {
-	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "dashboard")
-	if err != nil {
-		return err
-	}
-	steampipeconfig.GlobalConfig = config
-	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
-	if err := c.SetRequiredSessionSearchPath(ctx); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {

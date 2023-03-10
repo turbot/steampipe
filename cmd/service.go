@@ -238,19 +238,7 @@ func startService(ctx context.Context, port int, serviceListen db_local.StartLis
 		}
 	}
 
-	// if the service was started
-	dbServiceStarted = startResult.Status == db_local.ServiceStarted
-	if dbServiceStarted {
-		refreshResult := refreshConnectionsWithLocalClient(ctx, invoker)
-		if refreshResult.GetError() != nil {
-			_, stopErr := db_local.StopServices(ctx, false, constants.InvokerService)
-			if stopErr != nil {
-				error_helpers.ShowError(ctx, sperr.WrapWithRootMessage(stopErr, "couldn't stop service after it was started"))
-			}
-			exitCode = constants.ExitCodeServiceSetupFailure
-			error_helpers.FailOnError(refreshResult.GetError())
-		}
-	}
+	dbServiceStarted := startResult.Status == db_local.ServiceStarted
 
 	var dashboardState *dashboardserver.DashboardServiceState
 	if viper.GetBool(constants.ArgDashboard) {
@@ -457,16 +445,23 @@ to force a restart.
 		return
 	}
 
+	// this is required since RefreshConnectionAndSearchPathsWithLocalClient may end up
+	// displaying warnings
+	//
+	// At the moment warnings is implemented in error_helpers.ShowWarning
+	// which does not have access to the working context and in effect the
+	// status spinner
+	//
+	// TODO: fix this
+	statushooks.Done(ctx)
+	muteCtx := statushooks.DisableStatusHooks(ctx)
+
 	// refresh connections
-	refreshResult := refreshConnectionsWithLocalClient(ctx, constants.InvokerService)
-	if refreshResult.GetError() != nil {
-		// we don't want to stop the service here, since this is a restart
-		// and the service has already been restarted
-		// the worst-case here is that we will end up with a service
-		// without refreshed connections - for which the error is shown
-		// at least we are not pulling the service out from under
+	res := db_local.RefreshConnectionAndSearchPathsWithLocalClient(muteCtx, constants.InvokerService)
+	res.ShowWarnings()
+	if res.Error != nil {
 		exitCode = constants.ExitCodeServiceSetupFailure
-		error_helpers.FailOnError(refreshResult.GetError())
+		error_helpers.FailOnError(res.Error)
 	}
 
 	// if the dashboard was running, start it
