@@ -50,7 +50,7 @@ Examples:
   # Run a specific query directly
   steampipe query "select * from cloud"`,
 
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		ValidArgsFunction: func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			w, err := workspace.LoadResourceNames(viper.GetString(constants.ArgModLocation))
 			if err != nil {
 				return []string{}, cobra.ShellCompDirectiveError
@@ -238,7 +238,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 				fmt.Println(string(jsonOutput))
 			default:
 				// otherwise convert the snapshot into a query result
-				result, err := snapshotToQueryResult(snap, queryProvider.Name())
+				result, err := snapshotToQueryResult(snap)
 				error_helpers.FailOnErrorWithMessage(err, "failed to display result as snapshot")
 				display.ShowOutput(ctx, result, display.DisableTiming())
 			}
@@ -265,7 +265,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 	return 0
 }
 
-func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot, name string) (*queryresult.Result, error) {
+func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot) (*queryresult.Result, error) {
 	// the table of a snapshot query has a fixed name
 	tablePanel, ok := snap.Panels[modconfig.SnapshotQueryTableName]
 	if !ok {

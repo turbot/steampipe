@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connectionwatcher"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -32,7 +32,7 @@ func pluginManagerCmd() *cobra.Command {
 	return cmd
 }
 
-func runPluginManagerCmd(cmd *cobra.Command, args []string) {
+func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 	logger := createPluginManagerLog()
 
