@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 	"fmt"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
@@ -14,11 +15,6 @@ import (
 
 type InitData struct {
 	initialisation.InitData
-
-	// // the current state that init is in
-	// Status string
-	// // if non-nil, this is called everytime the status changes
-	// OnStatusChanged func(string)
 
 	cancelInitialisation context.CancelFunc
 	Loaded               chan struct{}
