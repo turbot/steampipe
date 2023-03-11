@@ -289,3 +289,64 @@ SingleSeriesYAxisNoLabels.args = {
     },
   },
 };
+
+export const TimeSeries = Template.bind({});
+TimeSeries.storyName = "Single Time Series";
+TimeSeries.args = {
+  data: {
+    columns: [
+      { name: "time", data_type: "TEXT" },
+      { name: "count", data_type: "INT8" },
+    ],
+    rows: [
+      { time: "2023-01", count: 20 },
+      { time: "2023-02", count: 32 },
+      { time: "2023-04", count: -15 },
+      { time: "2023-05", count: 18 },
+      { time: "2023-06", count: -9 },
+      { time: "2023-12", count: 3 },
+    ],
+  },
+  properties: {
+    axes: {
+      x: {
+        type: "time",
+      }
+    },
+  },
+};
+
+export const MultiTimeSeries = Template.bind({});
+MultiTimeSeries.storyName = "Multiple Time Series with Overrides";
+MultiTimeSeries.args = {
+  data: {
+    columns: [
+      { name: "time", data_type: "TEXT" },
+      { name: "Success", data_type: "INT8" },
+      { name: "Failure", data_type: "INT8" },
+    ],
+    rows: [
+      { time: "2023-01", Success: 20, Failure: 0 },
+      { time: "2023-02", Success: 0, Failure: 32 },
+      { time: "2023-04", Success: 15, Failure: 3 },
+      { time: "2023-05", Success: 18, Failure: 15 },
+      { time: "2023-06", Success: 0, Failure: 9 },
+      { time: "2023-12", Success: 3, Failure: 3 },
+    ],
+  },
+  properties: {
+    axes: {
+      x: {
+        type: "time",
+      }
+    },
+    series: {
+      Success: {
+        color: "green"
+      },
+      Failure: {
+        color: "red"
+      },
+    }
+  },
+};
