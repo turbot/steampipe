@@ -432,6 +432,26 @@ const getOptionOverridesForChartType = (
           overrides = set(overrides, "xAxis.name", xAxisTitleValue);
         }
       }
+
+      // X Axis type setting (for timeseries plots)
+      // Valid chart types: column, area, line (bar, donut and pie make no sense)
+      if (["column", "area", "line"].includes(type) && has(properties, "axes.x.type") && properties.axes.x.type === "time") {
+        // Enable interpreting the X axis as time: its values can be epoch ints, ISO8601 prefixes
+        // See https://echarts.apache.org/en/option.html#series-line.data for the correct formats
+        overrides = set(overrides, "xAxis.type", "time");
+        // Always use axis trigger, since item trigger doesn't show the timestamp
+        overrides = set(overrides, "tooltip.trigger", "axis");
+        // X axis min setting (for timeseries)
+        if (has(properties, "axes.x.min")) {
+          // ECharts wants millis since epoch, not seconds
+          overrides = set(overrides, "xAxis.min", properties.axes.x.min * 1000); 
+        }
+        // Y axis max setting (for timeseries)
+        if (has(properties, "axes.x.max")) {
+          // ECharts wants millis since epoch, not seconds
+          overrides = set(overrides, "xAxis.max", properties.axes.x.max * 1000);
+        }
+      }
     }
 
     // Y axis settings
@@ -537,6 +557,11 @@ const getSeriesForChartType = (
             ? {}
             : { stack: "total" }),
           itemStyle: { color: seriesColor },
+          // Per https://stackoverflow.com/a/56116442, when using time series you have to manually encode each series
+          // We assume that the first dimension/column is the timestamp
+          ...(properties?.axes?.x?.type === "time"
+            ? {encode: {x: 0, y: seriesName}}
+            : {}),
           // label: {
           //   show: true,
           //   position: 'outside'
@@ -559,6 +584,11 @@ const getSeriesForChartType = (
           ...(properties && properties.grouping === "compare"
             ? {}
             : { stack: "total" }),
+          // Per https://stackoverflow.com/a/56116442, when using time series you have to manually encode each series
+          // We assume that the first dimension/column is the timestamp
+          ...(properties?.axes?.x?.type === "time"
+            ? {encode: {x: 0, y: seriesName}}
+            : {}),
           areaStyle: {},
           emphasis: {
             focus: "series",
@@ -571,6 +601,11 @@ const getSeriesForChartType = (
           name: seriesName,
           type: "line",
           itemStyle: { color: seriesColor },
+          // Per https://stackoverflow.com/a/56116442, when using time series you have to manually encode each series
+          // We assume that the first dimension/column is the timestamp
+          ...(properties?.axes?.x?.type === "time"
+            ? {encode: {x: 0, y: seriesName}}
+            : {}),
         });
         break;
       case "pie":
