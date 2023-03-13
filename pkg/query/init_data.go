@@ -73,10 +73,6 @@ func (i *InitData) init(ctx context.Context, args []string) {
 		i.cancelInitialisation = nil
 	}()
 
-	// create a context with the init hook in - which can be sent down to lower level operations
-	// hook := NewQueryInitStatusHook(i)
-	// ctx := statushooks.AddStatusHooksToContext(parentCtx, hook)
-
 	// validate export args
 	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
 		i.RegisterExporters(queryExporters()...)
