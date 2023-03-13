@@ -435,7 +435,7 @@ const getOptionOverridesForChartType = (
 
       // X Axis type setting (for timeseries plots)
       // Valid chart types: column, area, line (bar, donut and pie make no sense)
-      if (["column", "area", "line"].includes(type) && has(properties, "axes.x.type") && properties.axes.x.type === "time") {
+      if (["column", "area", "line"].includes(type) && properties.axes.x.type === "time") {
         // Enable interpreting the X axis as time: its values can be epoch ints, ISO8601 prefixes
         // See https://echarts.apache.org/en/option.html#series-line.data for the correct formats
         overrides = set(overrides, "xAxis.type", "time");
