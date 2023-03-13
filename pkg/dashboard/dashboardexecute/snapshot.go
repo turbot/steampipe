@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 func GenerateSnapshot(ctx context.Context, target string, initData *initialisation.InitData, inputs map[string]any) (snapshot *dashboardtypes.SteampipeSnapshot, err error) {
