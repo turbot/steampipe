@@ -1,5 +1,6 @@
 import LineChart from "./index";
 import { PanelStoryDecorator } from "../../../../utils/storybook";
+import { MultiTimeSeriesDefaults, MultiTimeSeriesGroupedDefaults, SingleTimeSeriesDefaults } from "../Chart/index.stories";
 
 const story = {
   title: "Charts/Line",
@@ -255,37 +256,11 @@ SingleSeriesYAxisNoLabels.args = {
   },
 };
 
+export const TimeSeries = Template.bind({});
+TimeSeries.storyName = "Single Time Series";
+TimeSeries.args = SingleTimeSeriesDefaults;
+
+// Line charts cannot stack, use Area for that
 export const MultiTimeSeries = Template.bind({});
 MultiTimeSeries.storyName = "Multiple Time Series";
-MultiTimeSeries.args = {
-  data: {
-    columns: [
-      { name: "time", data_type: "TEXT" },
-      { name: "Success", data_type: "INT8" },
-      { name: "Failure", data_type: "INT8" },
-    ],
-    rows: [
-      { time: "2023-01", Success: 20, Failure: 0 },
-      { time: "2023-02", Success: 0, Failure: 32 },
-      { time: "2023-04", Success: 15, Failure: 3 },
-      { time: "2023-05", Success: 18, Failure: 15 },
-      { time: "2023-06", Success: 0, Failure: 9 },
-      { time: "2023-12", Success: 3, Failure: 3 },
-    ],
-  },
-  properties: {
-    axes: {
-      x: {
-        type: "time",
-      }
-    },
-    series: {
-      Success: {
-        color: "green"
-      },
-      Failure: {
-        color: "red"
-      },
-    }
-  },
-};
+MultiTimeSeries.args = MultiTimeSeriesDefaults;
