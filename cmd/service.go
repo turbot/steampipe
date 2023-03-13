@@ -183,7 +183,7 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 		error_helpers.FailOnError(invoker.IsValid())
 	}
 
-	startResult, dashboardState, dbServiceStarted := doStartService(ctx, port, serviceListen, invoker)
+	startResult, dashboardState, dbServiceStarted := startService(ctx, port, serviceListen, invoker)
 
 	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, dashboardState, !dbServiceStarted)
 
@@ -192,7 +192,7 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 	}
 }
 
-func doStartService(ctx context.Context, port int, serviceListen db_local.StartListenType, invoker constants.Invoker) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState, dbServiceStarted bool) {
+func startService(ctx context.Context, port int, serviceListen db_local.StartListenType, invoker constants.Invoker) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState, dbServiceStarted bool) {
 	statushooks.Show(ctx)
 	defer statushooks.Done(ctx)
 
@@ -387,14 +387,14 @@ func runServiceRestartCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
-	dbStartResult, currentDashboardState := doServiceRestart(ctx)
+	dbStartResult, currentDashboardState := restartService(ctx)
 
 	if dbStartResult != nil {
 		printStatus(ctx, dbStartResult.DbState, dbStartResult.PluginManagerState, currentDashboardState, false)
 	}
 }
 
-func doServiceRestart(ctx context.Context) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState) {
+func restartService(ctx context.Context) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState) {
 	statushooks.Show(ctx)
 	defer statushooks.Done(ctx)
 
