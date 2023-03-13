@@ -28,6 +28,8 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// MinConns should default to 0, but when not set, it actually get very high values (e.g. 80217984)
+	config.MinConns = 0
 	config.MaxConns = int32(maxConnections)
 	config.MaxConnLifetime = connMaxLifetime
 	config.MaxConnIdleTime = connMaxIdleTime
