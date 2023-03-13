@@ -698,8 +698,14 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 		return nil, nil, res.Error
 	}
 
+	// load the connection state and cache it!
+	connectionMap, _, err := steampipeconfig.GetConnectionState(nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	pluginConnectionMap := make(map[string][]modconfig.Connection)
-	for _, v := range res.ConnectionMap {
+	for _, v := range connectionMap {
 		_, found := pluginConnectionMap[v.Plugin]
 		if !found {
 			pluginConnectionMap[v.Plugin] = []modconfig.Connection{}

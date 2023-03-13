@@ -138,7 +138,13 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		i.Result.Error = refreshResult.Error
 		return
 	}
-	i.ConnectionMap = refreshResult.ConnectionMap
+	// load the connection state and cache it!
+	connectionMap, _, err := steampipeconfig.GetConnectionState(client.ForeignSchemaNames())
+	if err != nil {
+		i.Result.Error = err
+		return
+	}
+	i.ConnectionMap = connectionMap
 
 	// add refresh connection warnings
 	i.Result.AddWarnings(refreshResult.Warnings...)

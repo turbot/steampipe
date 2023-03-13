@@ -2,8 +2,9 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"strings"
+
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -14,7 +15,6 @@ type RefreshConnectionResult struct {
 	UpdatedConnections bool
 	Updates            *ConnectionUpdates
 	FailedConnections  map[string]string
-	ConnectionMap      ConnectionDataMap
 }
 
 func (r *RefreshConnectionResult) Merge(other *RefreshConnectionResult) {
