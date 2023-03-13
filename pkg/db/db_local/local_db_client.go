@@ -7,6 +7,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"log"
 )
@@ -17,55 +18,34 @@ type LocalDbClient struct {
 	invoker constants.Invoker
 }
 
-type LocalClientConfiguration struct {
-	ensureDBInstalled bool
-}
-
-type LocalClientOption = func(config *LocalClientConfiguration)
-
-func WithEnsureDB(val bool) LocalClientOption {
-	return func(config *LocalClientConfiguration) {
-		config.ensureDBInstalled = val
-	}
-}
-
 // GetLocalClient starts service if needed and creates a new LocalDbClient
-func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...LocalClientOption) (*LocalDbClient, error) {
+func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (*LocalDbClient, *modconfig.ErrorAndWarnings) {
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
-	config := &LocalClientConfiguration{
-		// default to checking for db installation
-		ensureDBInstalled: true,
-	}
-	for _, o := range opts {
-		o(config)
+	// start db if necessary
+	if err := EnsureDBInstalled(ctx); err != nil {
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
-	if config.ensureDBInstalled {
-		// start db if necessary
-		if err := EnsureDBInstalled(ctx); err != nil {
-			return nil, err
-		}
-
-		startResult := StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), ListenTypeLocal, invoker)
-		if startResult.Error != nil {
-			return nil, startResult.Error
-		}
+	startResult := StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), ListenTypeLocal, invoker)
+	if startResult.Error != nil {
+		return nil, &startResult.ErrorAndWarnings
 	}
 
-	client, err := NewLocalClient(ctx, invoker, onConnectionCallback)
-	if err != nil && config.ensureDBInstalled {
+	client, err := newLocalClient(ctx, invoker, onConnectionCallback)
+	if err != nil {
 		ShutdownService(ctx, invoker)
+		startResult.Error = err
 	}
-	return client, err
+	return client, &startResult.ErrorAndWarnings
 }
 
-// NewLocalClient verifies that the local database instance is running and returns a LocalDbClient to interact with it
+// newLocalClient verifies that the local database instance is running and returns a LocalDbClient to interact with it
 // (This FAILS if local service is not running - use GetLocalClient to start service first)
-func NewLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (*LocalDbClient, error) {
-	utils.LogTime("db.NewLocalClient start")
-	defer utils.LogTime("db.NewLocalClient end")
+func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (*LocalDbClient, error) {
+	utils.LogTime("db.newLocalClient start")
+	defer utils.LogTime("db.newLocalClient end")
 
 	connString, err := getLocalSteampipeConnectionString(nil)
 	if err != nil {
@@ -83,7 +63,7 @@ func NewLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 }
 
 // Close implements Client
-// close the connection to the database and shuts down the backend if we are the last connection
+// close the connection to the database and shuts down the db service if we are the last connection
 func (c *LocalDbClient) Close(ctx context.Context) error {
 	if err := c.DbClient.Close(ctx); err != nil {
 		return err
@@ -124,6 +104,3 @@ func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) 
 
 	return metadata, nil
 }
-
-// SetUserSearchPath sets the search path for the all steampipe users of the db service
-// do this by finding all users assigned to the role steampipe_users and set their search path
