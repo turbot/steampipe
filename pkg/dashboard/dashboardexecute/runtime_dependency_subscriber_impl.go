@@ -3,29 +3,29 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
+	"log"
+	"sync"
+
 	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
-	"log"
-	"sync"
 )
 
 type RuntimeDependencySubscriberImpl struct {
 	// all RuntimeDependencySubscribers are also publishers as they have args/params
 	RuntimeDependencyPublisherImpl
-
-	// map of runtime dependencies, keyed by dependency long name
-	runtimeDependencies map[string]*dashboardtypes.ResolvedRuntimeDependency
-	// a list of the (scoped) names of any runtime dependencies that we rely on
-	RuntimeDependencyNames []string `json:"dependencies,omitempty"`
-	RawSQL                 string   `json:"sql,omitempty"`
-	executeSQL             string
 	// if the underlying resource has a base resource, create a RuntimeDependencySubscriberImpl instance to handle
 	// generation and publication of runtime depdencies from the base resource
 	baseDependencySubscriber *RuntimeDependencySubscriberImpl
+	// map of runtime dependencies, keyed by dependency long name
+	runtimeDependencies map[string]*dashboardtypes.ResolvedRuntimeDependency
+	RawSQL              string `json:"sql,omitempty"`
+	executeSQL          string
+	// a list of the (scoped) names of any runtime dependencies that we rely on
+	RuntimeDependencyNames []string `json:"dependencies,omitempty"`
 }
 
 func NewRuntimeDependencySubscriber(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, run dashboardtypes.DashboardTreeRun, executionTree *DashboardExecutionTree) *RuntimeDependencySubscriberImpl {
