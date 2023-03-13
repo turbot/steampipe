@@ -162,8 +162,6 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
-	statushooks.Show(ctx)
-
 	ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt, os.Kill)
 	defer cancel()
 
@@ -185,6 +183,19 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 		error_helpers.FailOnError(invoker.IsValid())
 	}
 
+	startResult, dashboardState, dbServiceStarted := doStartService(ctx, port, serviceListen, invoker)
+
+	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, dashboardState, !dbServiceStarted)
+
+	if viper.GetBool(constants.ArgForeground) {
+		runServiceInForeground(ctx)
+	}
+}
+
+func doStartService(ctx context.Context, port int, serviceListen db_local.StartListenType, invoker constants.Invoker) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState, dbServiceStarted bool) {
+	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
+
 	err := db_local.EnsureDBInstalled(ctx)
 	if err != nil {
 		exitCode = constants.ExitCodeServiceStartupFailure
@@ -204,6 +215,7 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 		return
 	}
 
+	// if the service is already running, then service start should make the service persistent
 	if startResult.Status == db_local.ServiceAlreadyRunning {
 
 		// check that we have the same port and listen parameters
@@ -226,7 +238,7 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 	}
 
 	// if the service was started
-	dbServiceStarted := startResult.Status == db_local.ServiceStarted
+	dbServiceStarted = startResult.Status == db_local.ServiceStarted
 	if dbServiceStarted {
 		refreshResult := refreshConnectionsWithLocalClient(ctx, invoker)
 		if refreshResult.GetError() != nil {
@@ -257,13 +269,7 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 			dbServiceStarted = true
 		}
 	}
-
-	statushooks.Done(ctx)
-	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, dashboardState, !dbServiceStarted)
-
-	if viper.GetBool(constants.ArgForeground) {
-		runServiceInForeground(ctx)
-	}
+	return startResult, dashboardState, dbServiceStarted
 }
 
 func tryToStopServices(ctx context.Context) {
@@ -381,7 +387,16 @@ func runServiceRestartCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
+	dbStartResult, currentDashboardState := doServiceRestart(ctx)
+
+	if dbStartResult != nil {
+		printStatus(ctx, dbStartResult.DbState, dbStartResult.PluginManagerState, currentDashboardState, false)
+	}
+}
+
+func doServiceRestart(ctx context.Context) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState) {
 	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
 
 	// get current db statue
 	currentDbState, err := db_local.GetState()
@@ -463,9 +478,7 @@ to force a restart.
 		error_helpers.FailOnError(err)
 	}
 
-	statushooks.Done(ctx)
-
-	printStatus(ctx, dbStartResult.DbState, dbStartResult.PluginManagerState, currentDashboardState, false)
+	return dbStartResult, currentDashboardState
 }
 
 func runServiceStatusCmd(cmd *cobra.Command, _ []string) {
