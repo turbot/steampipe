@@ -178,15 +178,15 @@ func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnS
 	// So for a steampipe_query table, we will exclude the query column.
 	// Here we are removing the column named query from the 'columnDefinitions' slice.
 	if tableName == "steampipe_query" {
-		var idx int
 		// find the index of the element 'query' and store in idx
 		for i, col := range columnDefinitions {
 			if col == "  query  text" {
-				idx = i
+				// remove the idx element from 'columnDefinitions' slice
+				columnDefinitions = utils.RemoveElementFromSlice(columnDefinitions, i)
+				break
 			}
 		}
-		// remove the idx element from 'columnDefinitions' slice
-		columnDefinitions = utils.RemoveElementFromSlice(columnDefinitions, idx)
+
 	}
 
 	tableSql := fmt.Sprintf(`create temp table %s (

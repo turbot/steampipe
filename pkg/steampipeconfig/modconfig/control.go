@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zclconf/go-cty/cty"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // Control is a struct representing the Control resource
