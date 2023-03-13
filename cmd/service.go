@@ -629,7 +629,6 @@ to force a shutdown.
 		`)
 
 	}
-
 }
 
 func showAllStatus(ctx context.Context) {
