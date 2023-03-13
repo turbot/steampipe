@@ -26,9 +26,9 @@ import (
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
 type StartResult struct {
 	Error              error
-	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
 	PluginManagerState *pluginmanager.PluginManagerState
+	Status             StartDbStatus
 }
 
 func (r *StartResult) SetError(err error) *StartResult {
