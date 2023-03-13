@@ -19,6 +19,8 @@
    ]
   ],
   "placeholder": null,
+  "qualified_name": "introspection_table_mod.input.sample_input_1",
+  "query": null,
   "resource_name": "sample_input_1",
   "source_definition": "    input \"sample_input_1\" {\n      sql = \"select 1 as input\"\n      width = 2\n      title = \"Sample input 1\"\n    }",
   "sql": "select 1 as input",

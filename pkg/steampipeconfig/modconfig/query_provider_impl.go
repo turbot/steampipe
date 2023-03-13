@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
@@ -12,10 +13,11 @@ type QueryProviderImpl struct {
 	RuntimeDependencyProviderImpl
 	QueryProviderRemain hcl.Body `hcl:",remain" json:"-"`
 
-	SQL    *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
-	Query  *Query      `cty:"query" hcl:"query" json:"-"`
-	Args   *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
-	Params []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
+	SQL       *string     `cty:"sql" hcl:"sql" column:"sql,text" json:"-"`
+	Query     *Query      `cty:"query" hcl:"query" json:"-"`
+	Args      *QueryArgs  `cty:"args" column:"args,jsonb" json:"-"`
+	Params    []*ParamDef `cty:"params" column:"params,jsonb" json:"-"`
+	QueryName *string     `column:"query,text" json:"-"`
 
 	withs               []*DashboardWith
 	disableCtySerialise bool
@@ -169,4 +171,16 @@ func (q *QueryProviderImpl) setBaseProperties() {
 
 func (q *QueryProviderImpl) getBaseImpl() *QueryProviderImpl {
 	return q.base.(QueryProvider).GetQueryProviderImpl()
+}
+
+func (q *QueryProviderImpl) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	q.populateQueryName()
+
+	return nil
+}
+
+func (q *QueryProviderImpl) populateQueryName() {
+	if q.Query != nil {
+		q.QueryName = &q.Query.FullName
+	}
 }

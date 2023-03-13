@@ -15,6 +15,7 @@
     "introspection_table_mod.benchmark.sample_benchmark_1"
    ]
   ],
+  "qualified_name": "introspection_table_mod.benchmark.sample_benchmark_1",
   "resource_name": "sample_benchmark_1",
   "source_definition": "benchmark \"sample_benchmark_1\" {\n\ttitle = \"Sample benchmark 1\"\n\tdescription = \"Sample benchmark to test introspection functionality\"\n\tchildren = [\n\t\tcontrol.sample_control_1\n\t]\n}",
   "start_line_number": 35,

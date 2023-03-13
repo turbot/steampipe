@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
@@ -56,7 +57,7 @@ func (i *DashboardImage) Equals(other *DashboardImage) bool {
 // OnDecoded implements HclResource
 func (i *DashboardImage) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	i.setBaseProperties()
-	return nil
+	return i.QueryProviderImpl.OnDecoded(block, resourceMapProvider)
 }
 
 func (i *DashboardImage) Diff(other *DashboardImage) *DashboardTreeItemDiffs {

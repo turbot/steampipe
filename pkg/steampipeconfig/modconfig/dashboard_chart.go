@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
@@ -69,7 +70,7 @@ func (c *DashboardChart) OnDecoded(block *hcl.Block, resourceMapProvider Resourc
 			c.Series[s.Name] = s
 		}
 	}
-	return nil
+	return c.QueryProviderImpl.OnDecoded(block, resourceMapProvider)
 }
 
 func (c *DashboardChart) Diff(other *DashboardChart) *DashboardTreeItemDiffs {

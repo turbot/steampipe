@@ -2,13 +2,13 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/zclconf/go-cty/cty"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // Control is a struct representing the Control resource
@@ -163,7 +163,7 @@ func (c *Control) GetParentNames() []string {
 func (c *Control) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties()
 
-	return nil
+	return c.QueryProviderImpl.OnDecoded(block, resourceMapProvider)
 }
 
 // GetWidth implements DashboardLeafNode

@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/turbot/steampipe/pkg/utils"
@@ -62,7 +63,7 @@ func (c *DashboardCard) Equals(other *DashboardCard) bool {
 // OnDecoded implements HclResource
 func (c *DashboardCard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
 	c.setBaseProperties()
-	return nil
+	return c.QueryProviderImpl.OnDecoded(block, resourceMapProvider)
 }
 
 func (c *DashboardCard) Diff(other *DashboardCard) *DashboardTreeItemDiffs {

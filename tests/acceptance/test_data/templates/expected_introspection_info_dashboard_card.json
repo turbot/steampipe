@@ -18,6 +18,8 @@
     "introspection_table_mod.text.sample_text_1"
    ]
   ],
+  "qualified_name": "introspection_table_mod.card.sample_card_1",
+  "query": null,
   "resource_name": "sample_card_1",
   "source_definition": "\t\tcard \"sample_card_1\" {\n\t\t\ttitle = \"Sample card 1\"\n\t\t}",
   "sql": null,

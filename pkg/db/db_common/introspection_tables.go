@@ -156,6 +156,21 @@ func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnS
 		columnDefinitions = append(columnDefinitions, getColumnDefinitions(hr.GetHclResourceImpl())...)
 	}
 
+	// Query cannot define 'query' as a property.
+	// So for a steampipe_query table, we will exclude the query column.
+	// Here we are removing the column named query from the 'columnDefinitions' slice.
+	if tableName == "steampipe_query" {
+		// find the index of the element 'query' and store in idx
+		for i, col := range columnDefinitions {
+			if col == "  query  text" {
+				// remove the idx element from 'columnDefinitions' slice
+				columnDefinitions = utils.RemoveElementFromSlice(columnDefinitions, i)
+				break
+			}
+		}
+
+	}
+
 	tableSql := fmt.Sprintf(`create temp table %s (
 %s
 );`, tableName, strings.Join(columnDefinitions, ",\n"))

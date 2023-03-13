@@ -52,10 +52,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # removing the 8th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
     run sed -i ".json" "8d" output.json
-    run sed -i ".json" "32d" output.json
+    run sed -i ".json" "33d" output.json
   else
     run sed -i "8d" output.json
-    run sed -i "32d" output.json
+    run sed -i "33d" output.json
   fi
 
   assert_equal "$(cat output.json)" "$(cat $TEST_DATA_DIR/expected_introspection_info_variable.json)"
