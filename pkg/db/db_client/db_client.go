@@ -80,7 +80,7 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		return nil, err
 	}
 
-	// populate foreign schema names - this wil be updated whenever we acquire a session
+	// populate foreign schema names - this will be updated whenever we acquire a session
 	if err := client.LoadSchemaNames(ctx); err != nil {
 		client.Close(ctx)
 		return nil, err

@@ -120,15 +120,8 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 		res.Status = ServiceStarted
 	}
 
-	// TODO KAI TEMPORARY
-	client, err := NewLocalClient(ctx, invoker, nil)
-	if err != nil {
-		res.Status = ServiceFailedToStart
-		return res
-	}
-
 	// refresh connections and search paths
-	res.RefreshResult = RefreshConnectionAndSearchPaths(ctx, client)
+	res.RefreshResult = RefreshConnectionAndSearchPaths(ctx)
 	if res.RefreshResult.Error != nil {
 		res.Status = ServiceFailedToStart
 		res.Error = res.RefreshResult.Error

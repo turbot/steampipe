@@ -452,17 +452,18 @@ to force a restart.
 	// which does not have access to the working context and in effect the
 	// status spinner
 	//
-	// TODO: fix this
 	statushooks.Done(ctx)
-	muteCtx := statushooks.DisableStatusHooks(ctx)
+
+	// TODO KAI verify ok to delete
+	//muteCtx := statushooks.DisableStatusHooks(ctx)
 
 	// refresh connections
-	res := db_local.RefreshConnectionAndSearchPathsWithLocalClient(muteCtx, constants.InvokerService)
-	res.ShowWarnings()
-	if res.Error != nil {
-		exitCode = constants.ExitCodeServiceSetupFailure
-		error_helpers.FailOnError(res.Error)
-	}
+	//res := db_local.RefreshConnectionAndSearchPathsWithLocalClient(muteCtx, constants.InvokerService)
+	//res.ShowWarnings()
+	//if res.Error != nil {
+	//	exitCode = constants.ExitCodeServiceSetupFailure
+	//	error_helpers.FailOnError(res.Error)
+	//}
 
 	// if the dashboard was running, start it
 	if currentDashboardState != nil {
