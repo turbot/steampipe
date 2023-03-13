@@ -17,29 +17,52 @@ type LocalDbClient struct {
 	invoker constants.Invoker
 }
 
+type LocalClientConfiguration struct {
+	ensureDBInstalled bool
+}
+
+type LocalClientOption = func(config *LocalClientConfiguration)
+
+func WithEnsureDB(val bool) LocalClientOption {
+	return func(config *LocalClientConfiguration) {
+		config.ensureDBInstalled = val
+	}
+}
+
 // GetLocalClient starts service if needed and creates a new LocalDbClient
-func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (*LocalDbClient, error) {
+func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...LocalClientOption) (*LocalDbClient, error) {
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
-	// start db if necessary
-	if err := EnsureDBInstalled(ctx); err != nil {
-		return nil, err
+	config := &LocalClientConfiguration{
+		// default to checking for db installation
+		ensureDBInstalled: true,
+	}
+	for _, o := range opts {
+		o(config)
 	}
 
-	startResult := StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), ListenTypeLocal, invoker)
-	if startResult.Error != nil {
-		return nil, startResult.Error
+	if config.ensureDBInstalled {
+		// start db if necessary
+		if err := EnsureDBInstalled(ctx); err != nil {
+			return nil, err
+		}
+
+		startResult := StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), ListenTypeLocal, invoker)
+		if startResult.Error != nil {
+			return nil, startResult.Error
+		}
 	}
 
 	client, err := NewLocalClient(ctx, invoker, onConnectionCallback)
-	if err != nil {
+	if err != nil && config.ensureDBInstalled {
 		ShutdownService(ctx, invoker)
 	}
 	return client, err
 }
 
 // NewLocalClient verifies that the local database instance is running and returns a LocalDbClient to interact with it
+// (This FAILS if local service is not running - use GetLocalClient to start service first)
 func NewLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (*LocalDbClient, error) {
 	utils.LogTime("db.NewLocalClient start")
 	defer utils.LogTime("db.NewLocalClient end")
@@ -74,6 +97,7 @@ func (c *LocalDbClient) Close(ctx context.Context) error {
 
 // GetSchemaFromDB for LocalDBClient optimises the schema extraction by extracting schema
 // information for connections backed by distinct plugins and then fanning back out.
+// NOTE: we can only do this optimisation for a LOCAL db connection as we have access to connection config
 func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) (*schema.Metadata, error) {
 	// build a ConnectionSchemaMap object to identify the schemas to load
 	connectionSchemaMap, err := steampipeconfig.NewConnectionSchemaMap()

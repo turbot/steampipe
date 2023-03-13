@@ -17,19 +17,11 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-// RefreshConnectionAndSearchPathsWithLocalClient creates a local client and refreshed connections and search paths
-func RefreshConnectionAndSearchPathsWithLocalClient(ctx context.Context, invoker constants.Invoker) *steampipeconfig.RefreshConnectionResult {
-	client, err := NewLocalClient(ctx, invoker, nil)
+func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
+	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return steampipeconfig.NewErrorRefreshConnectionResult(err)
 	}
-	defer client.Close(ctx)
-	refreshResult := RefreshConnectionAndSearchPaths(ctx, client)
-	return refreshResult
-}
-
-func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
-	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 
 	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn)
 	if err != nil {

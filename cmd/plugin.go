@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"log"
 	"strings"
 	"sync"
@@ -257,11 +256,11 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 		// TODO mute ctx???
 
-		res := db_local.RefreshConnectionAndSearchPathsWithLocalClient(ctx, constants.InvokerPlugin)
-		res.ShowWarnings()
-		if res.Error != nil {
-			error_helpers.ShowWarning(fmt.Sprintf("Failed to refresh connections - install report may be incomplete (%s)", err.Error()))
-		}
+		//res := db_local.RefreshConnectionAndSearchPaths(ctx)
+		//res.ShowWarnings()
+		//if res.Error != nil {
+		//	error_helpers.ShowWarning(fmt.Sprintf("Failed to refresh connections - install report may be incomplete (%s)", res.Error.Error()))
+		//}
 		statushooks.Done(ctx)
 	}
 	display.PrintInstallReports(installReports, false)
@@ -437,11 +436,14 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 	progressBars.Stop()
-	if installCount > 0 {
-		res := db_local.RefreshConnectionAndSearchPathsWithLocalClient(ctx, constants.InvokerPlugin)
-		res.ShowWarnings()
-		error_helpers.ShowWarning(fmt.Sprintf("Failed to refresh connections - update report may be incomplete (%s)", err.Error()))
-	}
+
+	// todo ensure connections are refreshed
+	//if installCount > 0 {
+	//	res := db_local.RefreshConnectionAndSearchPaths(ctx)
+	//	res.ShowWarnings()
+	//	error_helpers.ShowWarning(fmt.Sprintf("Failed to refresh connections - update report may be incomplete (%s)", err.Error()))
+	//}
+
 	display.PrintInstallReports(updateResults, true)
 
 	// a concluding blank line - since we always output multiple lines
@@ -677,13 +679,18 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult) {
 	statushooks.SetStatus(ctx, "Fetching connection map")
 	defer statushooks.Done(ctx)
-	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
-	if err != nil {
+
+	// NOTE: start db if necessary
+	if err := db_local.EnsureDBInstalled(ctx); err != nil {
 		return nil, steampipeconfig.NewErrorRefreshConnectionResult(err)
 	}
-	defer client.Close(ctx)
+	startResult := db_local.StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), db_local.ListenTypeLocal, constants.InvokerPlugin)
+	if startResult.Error != nil {
+		return nil, steampipeconfig.NewErrorRefreshConnectionResult(startResult.Error)
+	}
+	defer db_local.ShutdownService(ctx, constants.InvokerPlugin)
 
-	res := db_common.RefreshConnectionAndSearchPaths(statushooks.DisableStatusHooks(ctx), client)
+	res := db_local.RefreshConnectionAndSearchPaths(statushooks.DisableStatusHooks(ctx))
 	if res.Error != nil {
 		return nil, res
 	}
