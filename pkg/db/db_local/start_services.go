@@ -19,18 +19,17 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
 )
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
 type StartResult struct {
-	Error              error
+	modconfig.ErrorAndWarnings
+	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
 	PluginManagerState *pluginmanager.PluginManagerState
-	RefreshResult      *steampipeconfig.RefreshConnectionResult
-	Status             StartDbStatus
 }
 
 func (r *StartResult) SetError(err error) *StartResult {
@@ -121,10 +120,13 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 	}
 
 	// refresh connections and search paths
-	res.RefreshResult = RefreshConnectionAndSearchPaths(ctx)
-	if res.RefreshResult.Error != nil {
+	refreshResult := RefreshConnectionAndSearchPaths(ctx)
+	// add warning from refresh
+	res.AddWarning(refreshResult.Warnings...)
+
+	if refreshResult.Error != nil {
 		res.Status = ServiceFailedToStart
-		res.Error = res.RefreshResult.Error
+		res.Error = refreshResult.Error
 		return res
 	}
 

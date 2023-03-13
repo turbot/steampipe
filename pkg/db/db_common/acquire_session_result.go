@@ -1,8 +1,8 @@
 package db_common
 
-// TODO KAI use ErrorsAndWarnings
+import "github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+
 type AcquireSessionResult struct {
-	Session  *DatabaseSession
-	Error    error
-	Warnings []string
+	modconfig.ErrorAndWarnings
+	Session *DatabaseSession
 }
