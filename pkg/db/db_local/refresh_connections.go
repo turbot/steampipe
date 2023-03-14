@@ -33,14 +33,6 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionN
 		return res
 	}
 
-	// TODO KAI DO WE REALLY NEED THIS???
-	// MOVE TO SERVICE STARTUP
-	//statushooks.SetStatus(ctx, "Setting up functions")
-	//if err := refreshFunctions(ctx); err != nil {
-	//	res.Error = err
-	//	return res
-	//}
-
 	statushooks.SetStatus(ctx, "Loading steampipe connections")
 	//set user search path first - client may fall back to using it
 	statushooks.SetStatus(ctx, "Setting up search path")

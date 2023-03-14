@@ -442,15 +442,6 @@ to force a restart.
 		return
 	}
 
-	// this is required since RefreshConnectionAndSearchPathsWithLocalClient may end up
-	// displaying warnings
-	//
-	// At the moment warnings is implemented in error_helpers.ShowWarning
-	// which does not have access to the working context and in effect the
-	// status spinner
-	//
-	statushooks.Done(ctx)
-
 	// if the dashboard was running, start it
 	if currentDashboardState != nil {
 		err = dashboardserver.RunForService(ctx, dashboardserver.ListenType(currentDashboardState.ListenType), dashboardserver.ListenPort(currentDashboardState.Port))
