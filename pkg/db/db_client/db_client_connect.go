@@ -29,6 +29,9 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 		return err
 	}
 	// MinConns should default to 0, but when not set, it actually get very high values (e.g. 80217984)
+	// this leads to a huge number of connections getting created
+	// TODO BINAEK dig into this and figure out why this is happening.
+	// We need to be sure that it is not an issue with service management
 	config.MinConns = 0
 	config.MaxConns = int32(maxConnections)
 	config.MaxConnLifetime = connMaxLifetime

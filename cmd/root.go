@@ -370,7 +370,7 @@ func createRootContext() context.Context {
 	var statusRenderer statushooks.StatusHooks = statushooks.NullHooks
 	// if the client is a TTY, inject a status spinner
 	if isatty.IsTerminal(os.Stdout.Fd()) {
-		statusRenderer = newStatusSpinnerHook()
+		statusRenderer = statushooks.NewStatusSpinnerHook()
 	}
 
 	ctx := statushooks.AddStatusHooksToContext(context.Background(), statusRenderer)

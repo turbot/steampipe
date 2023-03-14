@@ -4,19 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/constants"
 	"os"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/shiena/ansicolor"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/statushooks"
-)
-
-var (
-	colorErr  = color.RedString("Error")
-	colorWarn = color.YellowString("Warning")
 )
 
 func init() {
@@ -50,7 +45,7 @@ func ShowError(ctx context.Context, err error) {
 	}
 	err = HandleCancelError(err)
 	statushooks.Done(ctx)
-	fmt.Fprintf(color.Output, "%s: %v\n", colorErr, TransformErrorToSteampipe(err))
+	fmt.Fprintf(color.Output, "%s: %v\n", constants.ColoredErr, TransformErrorToSteampipe(err))
 }
 
 // ShowErrorWithMessage displays the given error nicely with the given message
@@ -60,7 +55,7 @@ func ShowErrorWithMessage(ctx context.Context, err error, message string) {
 	}
 	err = HandleCancelError(err)
 	statushooks.Done(ctx)
-	fmt.Fprintf(color.Output, "%s: %s - %v\n", colorErr, message, TransformErrorToSteampipe(err))
+	fmt.Fprintf(color.Output, "%s: %s - %v\n", constants.ColoredErr, message, TransformErrorToSteampipe(err))
 }
 
 // TransformErrorToSteampipe removes the pq: and rpc error prefixes along
@@ -113,7 +108,7 @@ func ShowWarning(warning string) {
 	if len(warning) == 0 {
 		return
 	}
-	fmt.Fprintf(color.Output, "%s: %v\n", colorWarn, warning)
+	fmt.Fprintf(color.Output, "%s: %v\n", constants.ColoredWarn, warning)
 }
 
 func CombineErrorsWithPrefix(prefix string, errors ...error) error {
