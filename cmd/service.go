@@ -20,11 +20,8 @@ import (
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
-	"github.com/turbot/steampipe/sperr"
 )
 
 func serviceCmd() *cobra.Command {
@@ -238,7 +235,7 @@ func startService(ctx context.Context, port int, serviceListen db_local.StartLis
 		}
 	}
 
-	dbServiceStarted := startResult.Status == db_local.ServiceStarted
+	dbServiceStarted = startResult.Status == db_local.ServiceStarted
 
 	var dashboardState *dashboardserver.DashboardServiceState
 	if viper.GetBool(constants.ArgDashboard) {
@@ -818,21 +815,4 @@ Not shutting down service as there as clients connected.
 
 To force shutdown, press Ctrl+C again.
 	`
-}
-
-// refreshConnectionsWithLocalClient creates a local client and refreshed connections and search paths
-func refreshConnectionsWithLocalClient(ctx context.Context, invoker constants.Invoker) *steampipeconfig.RefreshConnectionResult {
-	client, err := db_local.NewLocalClient(ctx, invoker, nil)
-	if err != nil {
-		return &steampipeconfig.RefreshConnectionResult{
-			ErrorAndWarnings: modconfig.ErrorAndWarnings{
-				Error: err,
-			},
-		}
-	}
-	defer client.Close(ctx)
-
-	statushooks.SetStatus(ctx, "Refreshing connections")
-
-	return client.RefreshConnectionAndSearchPaths(ctx)
 }
