@@ -60,13 +60,6 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionN
 		return res
 	}
 
-	// TODO KAI MOVE THIS SOMEWHERE ELSE OR DELETE
-	// if there is an unprocessed db backup file, restore it now
-	//if err := restoreDBBackup(ctx); err != nil {
-	//	res.Error = err
-	//	return res
-	//}
-
 	return res
 }
 

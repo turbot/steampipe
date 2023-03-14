@@ -85,6 +85,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	statushooks.SetStatus(ctx, "Preparing backups...")
 
+	// TODO KAI DELETE ME
 	// call prepareBackup to generate the db dump file if necessary
 	// NOTE: this returns the existing database name - we use this when creating the new database
 	dbName, err := prepareBackup(ctx)
@@ -266,6 +267,7 @@ func needsInit() bool {
 	return !filehelpers.FileExists(getPgHbaConfLocation())
 }
 
+// TODO KAI REMOVE oldDbName
 func runInstall(ctx context.Context, oldDbName *string) error {
 	utils.LogTime("db_local.runInstall start")
 	defer utils.LogTime("db_local.runInstall end")
@@ -350,6 +352,7 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	return nil
 }
 
+// TODO KAI REMOVE oldDbName
 func resolveDatabaseName(oldDbName *string) string {
 	// resolve the name of the database that is to be installed
 	// use the application constant as default
