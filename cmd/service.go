@@ -184,8 +184,9 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 	}
 
 	startResult, dashboardState, dbServiceStarted := startService(ctx, port, serviceListen, invoker)
+	alreadyRunning := !dbServiceStarted
 
-	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, dashboardState, !dbServiceStarted)
+	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, dashboardState, alreadyRunning)
 
 	if viper.GetBool(constants.ArgForeground) {
 		runServiceInForeground(ctx)
