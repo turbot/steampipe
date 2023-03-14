@@ -147,13 +147,19 @@ func postServiceStart(ctx context.Context) *modconfig.ErrorAndWarnings {
 		return modconfig.NewErrorsAndWarning(err)
 	}
 
-	//// create the clone_foreign_schema function
-	//if _, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL); err != nil {
-	//	return modconfig.NewErrorsAndWarning(err)
-	//}
+	// create the clone_foreign_schema function
+	if _, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL); err != nil {
+		return modconfig.NewErrorsAndWarning(err)
+	}
 
 	statushooks.SetStatus(ctx, "Setting up functions")
 	if err := refreshFunctions(ctx); err != nil {
+		return modconfig.NewErrorsAndWarning(err)
+	}
+
+	// create the clone_foreign_schema function
+	_, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL)
+	if err != nil {
 		return modconfig.NewErrorsAndWarning(err)
 	}
 
