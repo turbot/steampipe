@@ -4,7 +4,7 @@ import { PanelStoryDecorator } from "../../../../utils/storybook";
 const story = {
   title: "Charts/Chart",
   component: Chart,
-  excludeStories: ["SingleTimeSeriesDefaults", "MultiTimeSeriesDefaults", "MultiTimeSeriesGroupedDefaults"]
+  excludeStories: ["SingleTimeSeriesDefaults", "MultiTimeSeriesDefaults", "MultiTimeSeriesGroupedDefaults", "MultiTimeSeriesCrosstabDefaults"]
 };
 
 export default story;
