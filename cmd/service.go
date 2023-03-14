@@ -454,17 +454,6 @@ to force a restart.
 	//
 	statushooks.Done(ctx)
 
-	// TODO KAI verify ok to delete
-	//muteCtx := statushooks.DisableStatusHooks(ctx)
-
-	// refresh connections
-	//res := db_local.RefreshConnectionAndSearchPathsWithLocalClient(muteCtx, constants.InvokerService)
-	//res.ShowWarnings()
-	//if res.Error != nil {
-	//	exitCode = constants.ExitCodeServiceSetupFailure
-	//	error_helpers.FailOnError(res.Error)
-	//}
-
 	// if the dashboard was running, start it
 	if currentDashboardState != nil {
 		err = dashboardserver.RunForService(ctx, dashboardserver.ListenType(currentDashboardState.ListenType), dashboardserver.ListenPort(currentDashboardState.Port))
