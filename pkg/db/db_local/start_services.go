@@ -136,6 +136,12 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 		return res
 	}
 
+	// if there is an unprocessed db backup file, restore it now
+	if err := restoreDBBackup(ctx); err != nil {
+		res.Error = err
+		return res
+	}
+
 	return res
 }
 
