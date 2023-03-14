@@ -14,7 +14,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/schema"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/sync/semaphore"
 )
@@ -85,6 +84,9 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		client.Close(ctx)
 		return nil, err
 	}
+
+	// initialise the required search path
+	client.SetRequiredSessionSearchPath(ctx)
 
 	return client, nil
 }
@@ -163,17 +165,6 @@ func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireS
 	res = c.AcquireSession(ctx)
 	if res.Session != nil {
 		res.Session.Close(error_helpers.IsContextCanceled(ctx))
-	}
-	return res
-}
-
-// RefreshConnectionAndSearchPaths implements Client
-func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context, _ ...string) *steampipeconfig.RefreshConnectionResult {
-	// base db client does not refresh connections, it just sets search path
-	// (only local db client refreshed connections)
-	res := &steampipeconfig.RefreshConnectionResult{}
-	if err := c.SetRequiredSessionSearchPath(ctx); err != nil {
-		res.Error = err
 	}
 	return res
 }
