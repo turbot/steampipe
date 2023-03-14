@@ -8,6 +8,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"log"
+	"strings"
 )
 
 func setUserSearchPath(ctx context.Context, conn *pgx.Conn, foreignSchemaNames []string) error {
@@ -26,7 +27,7 @@ func setUserSearchPath(ctx context.Context, conn *pgx.Conn, foreignSchemaNames [
 	}
 
 	// escape the schema names
-	//escapedSearchPath := db_common.PgEscapeSearchPath(searchPath)
+	escapedSearchPath := db_common.PgEscapeSearchPath(searchPath)
 
 	log.Println("[TRACE] setting user search path to", searchPath)
 
@@ -38,21 +39,23 @@ func setUserSearchPath(ctx context.Context, conn *pgx.Conn, foreignSchemaNames [
 	}
 
 	// set the search path for all these roles
-	// TODO FIX THIS
 	var queries = []string{
 		"lock table pg_user;",
 	}
+
 	for rows.Next() {
-		//rowResult := row.(*queryresult.RowResult)
-		//user := string(rowResult.Data[0].(string))
-		//if user == "root" {
-		//	continue
-		//}
-		//queries = append(queries, fmt.Sprintf(
-		//	"alter user %s set search_path to %s;",
-		//	db_common.PgEscapeName(user),
-		//	strings.Join(escapedSearchPath, ","),
-		//))
+		var user string
+		if err := rows.Scan(&user); err != nil {
+			return err
+		}
+		if user == "root" {
+			continue
+		}
+		queries = append(queries, fmt.Sprintf(
+			"alter user %s set search_path to %s;",
+			db_common.PgEscapeName(user),
+			strings.Join(escapedSearchPath, ","),
+		))
 	}
 
 	log.Printf("[TRACE] user search path sql: %v", queries)

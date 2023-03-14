@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 	"os"
 	"os/exec"
@@ -123,10 +124,15 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 	refreshResult := RefreshConnectionAndSearchPaths(ctx)
 	// add warning from refresh
 	res.AddWarning(refreshResult.Warnings...)
-
 	if refreshResult.Error != nil {
 		res.Status = ServiceFailedToStart
 		res.Error = refreshResult.Error
+		return res
+	}
+
+	statushooks.SetStatus(ctx, "Setting up functions")
+	if err := refreshFunctions(ctx); err != nil {
+		res.Error = err
 		return res
 	}
 

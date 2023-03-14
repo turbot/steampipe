@@ -3,11 +3,11 @@ package db_common
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/constants"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -46,7 +46,7 @@ func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, erro
 	if err != nil {
 		return nil, err
 	}
-	// clear foreign schemas
+
 	var foreignSchemaNames []string
 	var schema string
 	for res.Next() {
