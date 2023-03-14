@@ -54,7 +54,7 @@ require (
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.7.0
 	google.golang.org/grpc v1.53.0
-	google.golang.org/protobuf v1.29.0
+	google.golang.org/protobuf v1.29.1
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
 	sigs.k8s.io/yaml v1.3.0
 )
