@@ -53,7 +53,6 @@ type ChartXAxisOptions = {
   labels: ChartLabelOptions;
   min: number;
   max: number;
-  type: "category" | "time"
 };
 
 type ChartYAxisOptions = {
