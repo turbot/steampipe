@@ -12,7 +12,7 @@ require (
 	github.com/c-bata/go-prompt v0.2.6
 	github.com/containerd/containerd v1.4.13
 	github.com/deislabs/oras v0.9.0
-	github.com/fatih/color v1.14.1
+	github.com/fatih/color v1.15.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gertd/go-pluralize v0.2.1
 	github.com/gin-contrib/static v0.0.1
@@ -197,7 +197,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.10.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.16.0 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.107.0 // indirect
