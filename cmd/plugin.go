@@ -587,6 +587,9 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 	missingPluginMap := res.Updates.MissingPlugins
 	log.Printf("[TRACE] missing plugins: %v", missingPluginMap)
 
+	failedPluginMap := res.FailedConnections
+	log.Printf("[TRACE] failed plugins: %v", failedPluginMap)
+
 	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
 		error_helpers.ShowErrorWithMessage(ctx, err, "plugin listing failed")
@@ -609,15 +612,18 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 		}
 
 		// List missing plugins
-		headers := []string{"Missing Plugin", "Connections"}
+		headers := []string{"Failed Plugin", "Connections", "Reason"}
 		var conns = []string{}
 		var missingRows [][]string
 		for p, item := range missingPluginMap {
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ",")})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), "Missing plugin"})
 			conns = []string{}
+		}
+		for q := range failedPluginMap {
+			missingRows = append(missingRows, []string{q, "", "Failed to start plugin"})
 		}
 		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
 	} else {
@@ -699,6 +705,7 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 	}
 
 	// load the connection state and cache it!
+	// passing nil so that we dont prune conns ...
 	connectionMap, _, err := steampipeconfig.GetConnectionState(nil)
 	if err != nil {
 		return nil, nil, err

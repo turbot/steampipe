@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/cobra"
@@ -36,18 +37,7 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context, forceUpdateConne
 	//  - connections have been updated
 	defer func() {
 		if res.Error == nil && connectionUpdates.ConnectionStateModified || res.UpdatedConnections {
-			// now serialise the connection state
-
-			// NOTE: update any connection which failed
-			for c, e := range res.FailedConnections {
-				connectionUpdates.RequiredConnectionState[c].Loaded = false
-				connectionUpdates.RequiredConnectionState[c].Error = e
-			}
-
-			// update required connections with the schema mode from the connection state and schema hash from the hash map
-			if err := connectionUpdates.RequiredConnectionState.Save(); err != nil {
-				res.Error = err
-			}
+			serialiseConnectionState(res, connectionUpdates)
 		}
 	}()
 
@@ -85,6 +75,33 @@ func (c *LocalDbClient) refreshConnections(ctx context.Context, forceUpdateConne
 	res.UpdatedConnections = true
 
 	return res
+}
+
+func serialiseConnectionState(res *steampipeconfig.RefreshConnectionResult, connectionUpdates *steampipeconfig.ConnectionUpdates) {
+	// now serialise the connection state
+	connectionState := make(steampipeconfig.ConnectionDataMap, len(connectionUpdates.RequiredConnectionState))
+	for k, v := range connectionUpdates.RequiredConnectionState {
+		connectionState[k] = v
+	}
+	// NOTE: add any connection which failed
+	for c, err := range res.FailedConnections {
+		connectionState[c].Loaded = false
+		connectionState[c].Error = err
+	}
+	for pluginName, connections := range connectionUpdates.MissingPlugins {
+		// add in missing connections
+		for _, c := range connections {
+			connectionData := steampipeconfig.NewConnectionData(pluginName, &c, time.Now())
+			connectionData.Loaded = false
+			connectionData.Error = "Missing"
+			connectionState[c.Name] = connectionData
+		}
+	}
+
+	// update connection state and write the missing and failed plugin connections
+	if err := connectionState.Save(); err != nil {
+		res.Error = err
+	}
 }
 
 func logRefreshConnectionResults(updates *steampipeconfig.ConnectionUpdates, res *steampipeconfig.RefreshConnectionResult) {
