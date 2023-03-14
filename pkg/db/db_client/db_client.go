@@ -152,18 +152,19 @@ func (c *DbClient) LoadSchemaNames(ctx context.Context) error {
 }
 
 // RefreshSessions terminates the current connections and creates a new one - repopulating session data
-func (c *DbClient) RefreshSessions(ctx context.Context) *db_common.AcquireSessionResult {
+func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireSessionResult) {
 	utils.LogTime("db_client.RefreshSessions start")
 	defer utils.LogTime("db_client.RefreshSessions end")
 
 	if err := c.refreshDbClient(ctx); err != nil {
-		return &db_common.AcquireSessionResult{Error: err}
+		res.Error = err
+		return res
 	}
-	sessionResult := c.AcquireSession(ctx)
-	if sessionResult.Session != nil {
-		sessionResult.Session.Close(error_helpers.IsContextCanceled(ctx))
+	res = c.AcquireSession(ctx)
+	if res.Session != nil {
+		res.Session.Close(error_helpers.IsContextCanceled(ctx))
 	}
-	return sessionResult
+	return res
 }
 
 // RefreshConnectionAndSearchPaths implements Client

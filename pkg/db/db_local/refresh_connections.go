@@ -34,6 +34,7 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionN
 	}
 
 	// TODO KAI DO WE REALLY NEED THIS???
+	// MOVE TO SERVICE STARTUP
 	//statushooks.SetStatus(ctx, "Setting up functions")
 	//if err := refreshFunctions(ctx); err != nil {
 	//	res.Error = err
@@ -41,14 +42,7 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionN
 	//}
 
 	statushooks.SetStatus(ctx, "Loading steampipe connections")
-	//// load the connection state and cache it!
-	connectionMap, _, err := steampipeconfig.GetConnectionState(foreignSchemaNames)
-	if err != nil {
-		res.Error = err
-		return res
-	}
-	res.ConnectionMap = connectionMap
-	//set user search path first - clispent may fall back to using it
+	//set user search path first - client may fall back to using it
 	statushooks.SetStatus(ctx, "Setting up search path")
 
 	// we need to send a muted ctx here since this function selects from the database
