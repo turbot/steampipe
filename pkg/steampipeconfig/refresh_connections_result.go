@@ -14,7 +14,6 @@ type RefreshConnectionResult struct {
 	UpdatedConnections bool
 	Updates            *ConnectionUpdates
 	FailedConnections  map[string]string
-	ConnectionMap      ConnectionDataMap
 }
 
 func NewErrorRefreshConnectionResult(err error) *RefreshConnectionResult {

@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"strings"
 	"sync"
 	"time"
@@ -254,6 +254,10 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			steampipeconfig.GlobalConfig = config
 		}
 
+		// TODO KAI
+		//what if service running and spc file already exists
+		//maybe plugin manager need to to watch plugin dir also
+
 		// TODO mute ctx???
 
 		//res := db_local.RefreshConnectionAndSearchPaths(ctx)
@@ -437,13 +441,6 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 	progressBars.Stop()
 
-	// todo ensure connections are refreshed
-	//if installCount > 0 {
-	//	res := db_local.RefreshConnectionAndSearchPaths(ctx)
-	//	res.ShowWarnings()
-	//	error_helpers.ShowWarning(fmt.Sprintf("Failed to refresh connections - update report may be incomplete (%s)", err.Error()))
-	//}
-
 	display.PrintInstallReports(updateResults, true)
 
 	// a concluding blank line - since we always output multiple lines
@@ -569,15 +566,17 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	pluginConnectionMap, res := getPluginConnectionMap(ctx)
-	if res.Error != nil {
-		error_helpers.ShowErrorWithMessage(ctx, res.Error, "plugin listing failed")
+	pluginConnectionMap, err := getPluginConnectionMap(ctx)
+	if err != nil {
+		error_helpers.ShowErrorWithMessage(ctx, err, "plugin listing failed")
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
 
-	missingPluginMap := res.Updates.MissingPlugins
-	log.Printf("[TRACE] missing plugins: %v", missingPluginMap)
+	// TODO KAI HANDLE MISSING
+	//missingPluginMap := res.Updates.MissingPlugins
+	//log.Printf("[TRACE] missing plugins: %v", missingPluginMap)
+	var missingPluginMap = make(map[string][]modconfig.Connection)
 
 	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
@@ -588,6 +587,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 	// If there are missing plugins which have connections left over, list them
 	// along with installed plugins
+
 	if len(missingPluginMap) != 0 {
 		// List installed plugins
 		if len(list) != 0 {
@@ -622,11 +622,11 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// display any initialisation warnings
-	if len(res.Warnings) > 0 {
-		fmt.Println()
-		res.ShowWarnings()
-		fmt.Printf("\n")
-	}
+	//if len(res.Warnings) > 0 {
+	//	fmt.Println()
+	//	res.ShowWarnings()
+	//	fmt.Printf("\n")
+	//}
 }
 
 func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
@@ -653,7 +653,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 	connectionMap, res := getPluginConnectionMap(ctx)
 	if res.Error != nil {
-		error_helpers.ShowError(ctx, res.Error)
+		error_helpers.ShowError(ctx, res)
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
@@ -676,27 +676,37 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	reports.Print()
 }
 
-func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult) {
+func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, error) {
 	statushooks.SetStatus(ctx, "Fetching connection map")
 	defer statushooks.Done(ctx)
 
 	// NOTE: start db if necessary
 	if err := db_local.EnsureDBInstalled(ctx); err != nil {
-		return nil, steampipeconfig.NewErrorRefreshConnectionResult(err)
+		return nil, err
 	}
 	startResult := db_local.StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), db_local.ListenTypeLocal, constants.InvokerPlugin)
 	if startResult.Error != nil {
-		return nil, steampipeconfig.NewErrorRefreshConnectionResult(startResult.Error)
+		return nil, startResult.Error
 	}
 	defer db_local.ShutdownService(ctx, constants.InvokerPlugin)
 
-	res := db_local.RefreshConnectionAndSearchPaths(statushooks.DisableStatusHooks(ctx))
-	if res.Error != nil {
-		return nil, res
+	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close(ctx)
+	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn)
+	if err != nil {
+		return nil, err
+	}
+
+	connectionMap, _, err := steampipeconfig.GetConnectionState(foreignSchemaNames)
+	if err != nil {
+		return nil, err
 	}
 
 	pluginConnectionMap := make(map[string][]modconfig.Connection)
-	for _, v := range res.ConnectionMap {
+	for _, v := range connectionMap {
 		_, found := pluginConnectionMap[v.Plugin]
 		if !found {
 			pluginConnectionMap[v.Plugin] = []modconfig.Connection{}
@@ -704,5 +714,5 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 		pluginConnectionMap[v.Plugin] = append(pluginConnectionMap[v.Plugin], *v.Connection)
 	}
 
-	return pluginConnectionMap, res
+	return pluginConnectionMap, err
 }
