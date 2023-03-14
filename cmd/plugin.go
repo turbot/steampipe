@@ -651,9 +651,9 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	connectionMap, res := getPluginConnectionMap(ctx)
-	if res.Error != nil {
-		error_helpers.ShowError(ctx, res)
+	connectionMap, err := getPluginConnectionMap(ctx)
+	if err != nil {
+		error_helpers.ShowError(ctx, err)
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
