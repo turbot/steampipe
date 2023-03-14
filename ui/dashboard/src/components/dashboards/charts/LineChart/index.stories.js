@@ -1,6 +1,6 @@
 import LineChart from "./index";
 import { PanelStoryDecorator } from "../../../../utils/storybook";
-import { MultiTimeSeriesDefaults, MultiTimeSeriesGroupedDefaults, SingleTimeSeriesDefaults } from "../Chart/index.stories";
+import { MultiTimeSeriesDefaults, SingleTimeSeriesDefaults, MultiTimeSeriesCrosstabDefaults } from "../Chart/index.stories";
 
 const story = {
   title: "Charts/Line",
@@ -264,3 +264,7 @@ TimeSeries.args = SingleTimeSeriesDefaults;
 export const MultiTimeSeries = Template.bind({});
 MultiTimeSeries.storyName = "Multiple Time Series";
 MultiTimeSeries.args = MultiTimeSeriesDefaults;
+
+export const MultiTimeSeriesCrosstab = Template.bind({});
+MultiTimeSeriesCrosstab.storyName = "Multiple Time Series (crosstabbed)";
+MultiTimeSeriesCrosstab.args = MultiTimeSeriesCrosstabDefaults;

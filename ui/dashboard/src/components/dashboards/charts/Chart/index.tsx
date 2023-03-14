@@ -144,6 +144,7 @@ const getCommonBaseOptionsForChartType = (
   type: ChartType | undefined,
   width: Width | undefined,
   dataset: any[][],
+  shouldBeTimeSeries,
   series: any[],
   seriesOverrides: ChartSeries | undefined,
   themeColors
@@ -209,10 +210,10 @@ const getCommonBaseOptionsForChartType = (
             color: themeColors.foreground,
           },
         },
-        // Declare an x-axis (category axis).
-        // The category map the first row in the dataset by default.
+        // Declare an x-axis (category or time axis, depending on the type of the first column).
+        // The category/time map the first row in the dataset by default.
         xAxis: {
-          type: "category",
+          type: shouldBeTimeSeries ? "time" : "category",
           boundaryGap: type !== "area",
           axisLabel: {
             color: themeColors.foreground,
@@ -258,10 +259,10 @@ const getCommonBaseOptionsForChartType = (
             color: themeColors.foreground,
           },
         },
-        // Declare an x-axis (category axis).
-        // The category map the first row in the dataset by default.
+        // Declare an x-axis (category or time axis, depending on the value of the first column).
+        // The category/time map the first row in the dataset by default.
         xAxis: {
-          type: "category",
+          type: shouldBeTimeSeries ? "time" : "category",
           axisLabel: {
             color: themeColors.foreground,
             rotate: getXAxisLabelRotation(dataset.length - 1),
@@ -287,6 +288,7 @@ const getCommonBaseOptionsForChartType = (
           nameLocation: "center",
           nameTextStyle: { color: themeColors.foreground },
         },
+        ...(shouldBeTimeSeries ? {tooltip: {trigger: "axis"}} : {})
       };
     case "pie":
       return {
@@ -327,7 +329,8 @@ const getCommonBaseOptionsForChartType = (
 
 const getOptionOverridesForChartType = (
   type: ChartType = "column",
-  properties: ChartProperties | undefined
+  properties: ChartProperties | undefined,
+  shouldBeTimeSeries: boolean,
 ) => {
   if (!properties) {
     return {};
@@ -433,14 +436,9 @@ const getOptionOverridesForChartType = (
         }
       }
 
-      // X Axis type setting (for timeseries plots)
+      // X Axis range setting (for timeseries plots)
       // Valid chart types: column, area, line (bar, donut and pie make no sense)
-      if (["column", "area", "line"].includes(type) && properties.axes.x.type === "time") {
-        // Enable interpreting the X axis as time: its values can be epoch ints, ISO8601 prefixes
-        // See https://echarts.apache.org/en/option.html#series-line.data for the correct formats
-        overrides = set(overrides, "xAxis.type", "time");
-        // Always use axis trigger, since item trigger doesn't show the timestamp
-        overrides = set(overrides, "tooltip.trigger", "axis");
+      if (["column", "area", "line"].includes(type) && shouldBeTimeSeries) {
         // X axis min setting (for timeseries)
         if (has(properties, "axes.x.min")) {
           // ECharts wants millis since epoch, not seconds
@@ -520,6 +518,7 @@ const getSeriesForChartType = (
   properties: ChartProperties | undefined,
   rowSeriesLabels: string[],
   transform: ChartTransform,
+  shouldBeTimeSeries: boolean,
   themeColors
 ) => {
   if (!data) {
@@ -559,7 +558,7 @@ const getSeriesForChartType = (
           itemStyle: { color: seriesColor },
           // Per https://stackoverflow.com/a/56116442, when using time series you have to manually encode each series
           // We assume that the first dimension/column is the timestamp
-          ...(properties?.axes?.x?.type === "time"
+          ...(shouldBeTimeSeries
             ? {encode: {x: 0, y: seriesName}}
             : {}),
           // label: {
@@ -586,7 +585,7 @@ const getSeriesForChartType = (
             : { stack: "total" }),
           // Per https://stackoverflow.com/a/56116442, when using time series you have to manually encode each series
           // We assume that the first dimension/column is the timestamp
-          ...(properties?.axes?.x?.type === "time"
+          ...(shouldBeTimeSeries
             ? {encode: {x: 0, y: seriesName}}
             : {}),
           areaStyle: {},
@@ -603,7 +602,7 @@ const getSeriesForChartType = (
           itemStyle: { color: seriesColor },
           // Per https://stackoverflow.com/a/56116442, when using time series you have to manually encode each series
           // We assume that the first dimension/column is the timestamp
-          ...(properties?.axes?.x?.type === "time"
+          ...(shouldBeTimeSeries
             ? {encode: {x: 0, y: seriesName}}
             : {}),
         });
@@ -633,12 +632,14 @@ const buildChartOptions = (props: ChartProps, themeColors: any) => {
     props.data,
     props.properties
   );
+  const treatAsTimeSeries = ["timestamp", "timestamptz", "date"].includes(props.data?.columns[0].data_type.toLowerCase() || "")
   const series = getSeriesForChartType(
     props.display_type || "column",
     props.data,
     props.properties,
     rowSeriesLabels,
     transform,
+    treatAsTimeSeries,
     themeColors
   );
   return merge(
@@ -647,13 +648,15 @@ const buildChartOptions = (props: ChartProps, themeColors: any) => {
       props.display_type || "column",
       props.width,
       dataset,
+      treatAsTimeSeries,
       series,
       props.properties?.series,
       themeColors
     ),
     getOptionOverridesForChartType(
       props.display_type || "column",
-      props.properties
+      props.properties,
+      treatAsTimeSeries,
     ),
     { series },
     {

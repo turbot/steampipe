@@ -63,7 +63,6 @@ type DashboardChartAxesX struct {
 	Labels *DashboardChartLabels    `cty:"labels" hcl:"labels,block" json:"labels,omitempty"`
 	Min    *int                     `cty:"min" hcl:"min" json:"min,omitempty"`
 	Max    *int                     `cty:"max" hcl:"max" json:"max,omitempty"`
-	Type   *string                  `cty:"type" hcl:"type" json:"type,omitempty"`
 }
 
 func (x *DashboardChartAxesX) Equals(other *DashboardChartAxesX) bool {
