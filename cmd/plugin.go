@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"strings"
 	"sync"
 	"time"
@@ -662,7 +661,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 
 	connectionMap, _, _, res := getPluginConnectionMap(ctx)
 	if res.Error != nil {
-		error_helpers.ShowError(ctx, res)
+		error_helpers.ShowError(ctx, res.Error)
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
@@ -689,22 +688,15 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 	statushooks.SetStatus(ctx, "Fetching connection map")
 	defer statushooks.Done(ctx)
 
-	// NOTE: start db if necessary
+	// NOTE: start db if necessary -0 this will call refresh connections
 	if err := db_local.EnsureDBInstalled(ctx); err != nil {
-		return nil, err
+		return nil, nil, nil, modconfig.NewErrorsAndWarning(err)
 	}
 	startResult := db_local.StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), db_local.ListenTypeLocal, constants.InvokerPlugin)
 	if startResult.Error != nil {
-		return nil, startResult.Error
+		return nil, nil, nil, &startResult.ErrorAndWarnings
 	}
 	defer db_local.ShutdownService(ctx, constants.InvokerPlugin)
-	// keeping refreshConnections for now, since it is needed in plugin list
-	// TODO: remove refreshConnections from here and use db_local.CreateLocalDbConnection
-	refreshResult := client.RefreshConnectionAndSearchPaths(statushooks.DisableStatusHooks(ctx))
-	res = &refreshResult.ErrorAndWarnings
-	if res.Error != nil {
-		return nil, nil, nil, res
-	}
 
 	// load the connection state and cache it!
 	// passing nil so that we dont prune connections(connectionMap is now the connection state
