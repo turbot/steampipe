@@ -93,7 +93,7 @@ func serialiseConnectionState(res *steampipeconfig.RefreshConnectionResult, conn
 		for _, c := range connections {
 			connectionData := steampipeconfig.NewConnectionData(pluginName, &c, time.Now())
 			connectionData.Loaded = false
-			connectionData.Error = "plugin missing"
+			connectionData.Error = "plugin not installed"
 			connectionState[c.Name] = connectionData
 		}
 	}

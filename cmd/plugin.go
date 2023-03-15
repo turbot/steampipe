@@ -591,7 +591,7 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 		return
 	}
 
-	// remove the failed/missing plugins from `list` since we don't want them in the installed table
+	// remove the failed plugins from `list` since we don't want them in the installed table
 	for pluginName := range failedPluginMap {
 		for i := 0; i < len(list); i++ {
 			if list[i].Name == pluginName {
@@ -632,7 +632,7 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), "plugin missing"})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), "plugin not installed"})
 			conns = []string{}
 		}
 		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
@@ -733,7 +733,7 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 				failedPluginMap[j.Plugin] = []*modconfig.Connection{}
 			}
 			failedPluginMap[j.Plugin] = append(failedPluginMap[j.Plugin], j.Connection)
-		} else if !j.Loaded && j.Error == "plugin missing" {
+		} else if !j.Loaded && j.Error == "plugin not installed" {
 			if _, ok := missingPluginMap[j.Plugin]; !ok {
 				missingPluginMap[j.Plugin] = []*modconfig.Connection{}
 			}
