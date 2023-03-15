@@ -144,7 +144,7 @@ const getCommonBaseOptionsForChartType = (
   type: ChartType | undefined,
   width: Width | undefined,
   dataset: any[][],
-  shouldBeTimeSeries,
+  shouldBeTimeSeries: boolean,
   series: any[],
   seriesOverrides: ChartSeries | undefined,
   themeColors
