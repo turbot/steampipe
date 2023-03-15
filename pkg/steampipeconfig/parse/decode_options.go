@@ -21,6 +21,8 @@ func DecodeOptions(block *hcl.Block) (options.Options, hcl.Diagnostics) {
 		dest = &options.Terminal{}
 	case options.GeneralBlock:
 		dest = &options.General{}
+	case options.QueryBlock:
+		dest = &options.Query{}
 	default:
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
