@@ -84,16 +84,16 @@ func serialiseConnectionState(res *steampipeconfig.RefreshConnectionResult, conn
 		connectionState[k] = v
 	}
 	// NOTE: add any connection which failed
-	for c, err := range res.FailedConnections {
+	for c := range res.FailedConnections {
 		connectionState[c].Loaded = false
-		connectionState[c].Error = err
+		connectionState[c].Error = "plugin failed to start"
 	}
 	for pluginName, connections := range connectionUpdates.MissingPlugins {
 		// add in missing connections
 		for _, c := range connections {
 			connectionData := steampipeconfig.NewConnectionData(pluginName, &c, time.Now())
 			connectionData.Loaded = false
-			connectionData.Error = "Missing"
+			connectionData.Error = "plugin missing"
 			connectionState[c.Name] = connectionData
 		}
 	}

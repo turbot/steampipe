@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -577,18 +576,12 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
-	pluginConnectionMap, res, err := getPluginConnectionMap(ctx)
+	pluginConnectionMap, failedPluginMap, err := getPluginConnectionMap(ctx)
 	if err != nil {
 		error_helpers.ShowErrorWithMessage(ctx, err, "plugin listing failed")
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
-
-	missingPluginMap := res.Updates.MissingPlugins
-	log.Printf("[TRACE] missing plugins: %v", missingPluginMap)
-
-	failedPluginMap := res.FailedConnections
-	log.Printf("[TRACE] failed plugins: %v", failedPluginMap)
 
 	list, err := plugin.List(pluginConnectionMap)
 	if err != nil {
@@ -599,7 +592,7 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 
 	// If there are missing plugins which have connections left over, list them
 	// along with installed plugins
-	if len(missingPluginMap) != 0 {
+	if len(failedPluginMap) != 0 {
 		// List installed plugins
 		if len(list) != 0 {
 			headers := []string{"Installed Plugin", "Version", "Connections"}
@@ -612,18 +605,15 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 		}
 
 		// List missing plugins
-		headers := []string{"Failed Plugin", "Connections", "Reason"}
+		headers := []string{"Failed Plugin", "Connections"}
 		var conns = []string{}
 		var missingRows [][]string
-		for p, item := range missingPluginMap {
+		for p, item := range failedPluginMap {
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), "Missing plugin"})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ",")})
 			conns = []string{}
-		}
-		for q := range failedPluginMap {
-			missingRows = append(missingRows, []string{q, "", "Failed to start plugin"})
 		}
 		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
 	} else {
@@ -636,11 +626,11 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 	}
 
 	// display any initialisation warnings
-	if len(res.Warnings) > 0 {
-		fmt.Println()
-		res.ShowWarnings()
-		fmt.Printf("\n")
-	}
+	// if len(res.Warnings) > 0 {
+	// 	fmt.Println()
+	// 	res.ShowWarnings()
+	// 	fmt.Printf("\n")
+	// }
 }
 
 func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
@@ -690,19 +680,24 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	reports.Print()
 }
 
-func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult, error) {
+func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, map[string][]*modconfig.Connection, error) {
 	statushooks.SetStatus(ctx, "Fetching connection map")
 	defer statushooks.Done(ctx)
-	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
+	// NOTE: start db if necessary
+	if err := db_local.EnsureDBInstalled(ctx); err != nil {
+		return nil, nil, err
+	}
+	startResult := db_local.StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), db_local.ListenTypeLocal, constants.InvokerPlugin)
+	if startResult.Error != nil {
+		return nil, nil, startResult.Error
+	}
+	defer db_local.ShutdownService(ctx, constants.InvokerPlugin)
+
+	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, nil, err
 	}
-	defer client.Close(ctx)
-
-	res := client.RefreshConnectionAndSearchPaths(statushooks.DisableStatusHooks(ctx))
-	if res.Error != nil {
-		return nil, nil, res.Error
-	}
+	defer conn.Close(ctx)
 
 	// load the connection state and cache it!
 	// passing nil so that we dont prune conns ...
@@ -711,6 +706,18 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 		return nil, nil, err
 	}
 
+	// create the map of failed/missing plugins
+	failedPluginMap := map[string][]*modconfig.Connection{}
+	for _, j := range connectionMap {
+		if !j.Loaded {
+			if _, ok := failedPluginMap[j.Plugin]; !ok {
+				failedPluginMap[j.Plugin] = []*modconfig.Connection{}
+			}
+			failedPluginMap[j.Plugin] = append(failedPluginMap[j.Plugin], j.Connection)
+		}
+	}
+
+	// create the map of available/loaded plugins
 	pluginConnectionMap := make(map[string][]modconfig.Connection)
 	for _, v := range connectionMap {
 		_, found := pluginConnectionMap[v.Plugin]
@@ -720,5 +727,5 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 		pluginConnectionMap[v.Plugin] = append(pluginConnectionMap[v.Plugin], *v.Connection)
 	}
 
-	return pluginConnectionMap, res, nil
+	return pluginConnectionMap, failedPluginMap, nil
 }
