@@ -68,11 +68,20 @@ func (slt StartListenType) IsValid() error {
 	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
 }
 
-func StartServices(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) (startResult *StartResult) {
+func StartServices(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) *StartResult {
 	utils.LogTime("db_local.StartServices start")
 	defer utils.LogTime("db_local.StartServices end")
 
 	res := &StartResult{}
+
+	// if we were not successful, stop services again
+	defer func() {
+		if res.Status == ServiceStarted && res.Error != nil {
+			StopServices(ctx, false, invoker)
+			res.Status = ServiceFailedToStart
+		}
+	}()
+
 	res.DbState, res.Error = GetState()
 	if res.Error != nil {
 		return res
@@ -120,29 +129,43 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 		res.Status = ServiceStarted
 	}
 
-	// refresh connections and search paths
-	refreshResult := RefreshConnectionAndSearchPaths(ctx)
-	// add warning from refresh
-	res.AddWarning(refreshResult.Warnings...)
-	if refreshResult.Error != nil {
-		res.Status = ServiceFailedToStart
-		res.Error = refreshResult.Error
-		return res
+	// execute post startup setup
+	errorsAndWarnings := postServiceStart(ctx)
+
+	res.AddWarning(errorsAndWarnings.Warnings...)
+	if errorsAndWarnings.Error != nil {
+		// NOTE do not update res.Status - this will be ddone by defer block
+		res.Error = errorsAndWarnings.Error
 	}
+
+	return res
+}
+
+func postServiceStart(ctx context.Context) *modconfig.ErrorAndWarnings {
+	statushooks.SetStatus(ctx, "Setting up functions")
+	if err := refreshFunctions(ctx); err != nil {
+		return modconfig.NewErrorsAndWarning(err)
+	}
+
+	//// create the clone_foreign_schema function
+	//if _, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL); err != nil {
+	//	return modconfig.NewErrorsAndWarning(err)
+	//}
 
 	statushooks.SetStatus(ctx, "Setting up functions")
 	if err := refreshFunctions(ctx); err != nil {
-		res.Error = err
-		return res
+		return modconfig.NewErrorsAndWarning(err)
 	}
 
 	// if there is an unprocessed db backup file, restore it now
 	if err := restoreDBBackup(ctx); err != nil {
-		res.Error = err
-		return res
+		return modconfig.NewErrorsAndWarning(err)
 	}
+	// refresh connections and search paths
+	refreshResult := RefreshConnectionAndSearchPaths(ctx)
 
-	return res
+	// assign res from the underlying ErrorAndWarnings of refreshResult
+	return &refreshResult.ErrorAndWarnings
 }
 
 // StartDB starts the database if not already running
