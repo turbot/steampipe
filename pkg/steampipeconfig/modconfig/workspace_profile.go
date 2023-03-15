@@ -29,7 +29,6 @@ type WorkspaceProfile struct {
 	// options
 	QueryOptions      *options.Query
 	GeneralOptions    *options.General
-	TerminalOptions   *options.Terminal
 	ConnectionOptions *options.Connection
 	DeclRange         hcl.Range
 }
@@ -51,11 +50,6 @@ func (p *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hc
 			diags = append(diags, duplicateOptionsBlockDiag(block))
 		}
 		p.ConnectionOptions = o
-	case *options.Terminal:
-		if p.TerminalOptions != nil {
-			diags = append(diags, duplicateOptionsBlockDiag(block))
-		}
-		p.TerminalOptions = o
 	case *options.General:
 		if p.GeneralOptions != nil {
 			diags = append(diags, duplicateOptionsBlockDiag(block))
@@ -162,9 +156,6 @@ func (p *WorkspaceProfile) ConfigMap(commandName string) map[string]interface{} 
 	// 'database.search-path', 'terminal.search-path' AND 'search-path' (which will be equal to 'terminal.search-path')
 	if p.GeneralOptions != nil {
 		res.PopulateConfigMapForOptions(p.GeneralOptions)
-	}
-	if p.TerminalOptions != nil {
-		res.PopulateConfigMapForOptions(p.TerminalOptions)
 	}
 	if p.ConnectionOptions != nil {
 		res.PopulateConfigMapForOptions(p.ConnectionOptions)
