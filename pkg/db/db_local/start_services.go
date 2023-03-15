@@ -163,20 +163,11 @@ func postServiceStart(ctx context.Context) *modconfig.ErrorAndWarnings {
 		return modconfig.NewErrorsAndWarning(err)
 	}
 
-	// refresh connections and search paths
-	refreshResult := RefreshConnectionAndSearchPaths(ctx)
-	// add warning from refresh
-	res.AddWarning(refreshResult.Warnings...)
-	if refreshResult.Error != nil {
-		res.Status = ServiceFailedToStart
-		res.Error = refreshResult.Error
-		return res
-	}
-
 	// if there is an unprocessed db backup file, restore it now
 	if err := restoreDBBackup(ctx); err != nil {
 		return modconfig.NewErrorsAndWarning(err)
 	}
+
 	// refresh connections and search paths
 	refreshResult := RefreshConnectionAndSearchPaths(ctx)
 
