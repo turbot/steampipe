@@ -243,7 +243,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	progressBars.Stop()
 
 	if installCount > 0 {
-		// reload the config, since an installation MUST have created a new config file
+		// TODO do we need to refresh connections here
+
+		// reload the config, since an installation should have created a new config file
 		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
 		if err != nil {
@@ -252,17 +254,6 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			steampipeconfig.GlobalConfig = config
 		}
 
-		// TODO KAI
-		//what if service running and spc file already exists
-		//maybe plugin manager need to to watch plugin dir also
-
-		// TODO mute ctx???
-
-		//res := db_local.RefreshConnectionAndSearchPaths(ctx)
-		//res.ShowWarnings()
-		//if res.Error != nil {
-		//	error_helpers.ShowWarning(fmt.Sprintf("Failed to refresh connections - install report may be incomplete (%s)", res.Error.Error()))
-		//}
 		statushooks.Done(ctx)
 	}
 	display.PrintInstallReports(installReports, false)
@@ -701,7 +692,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) {
 	statushooks.SetStatus(ctx, "Fetching connection map")
 
-	// NOTE: start db if necessary -0 this will call refresh connections
+	// NOTE: start db if necessary - this will call refresh connections
 	if err := db_local.EnsureDBInstalled(ctx); err != nil {
 		return nil, nil, nil, modconfig.NewErrorsAndWarning(err)
 	}
