@@ -1,7 +1,9 @@
 package steampipeconfig
 
 import (
+	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"golang.org/x/exp/maps"
 	"log"
 	"sort"
@@ -27,11 +29,12 @@ type ConnectionUpdates struct {
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
-func NewConnectionUpdates(schemaNames []string, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
+func NewConnectionUpdates(ctx context.Context, schemaNames []string, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
 	utils.LogTime("NewConnectionUpdates start")
 	defer utils.LogTime("NewConnectionUpdates end")
 
 	res := &RefreshConnectionResult{}
+	statushooks.SetStatus(ctx, "Loading connection state")
 	// build connection data for all required connections
 	// NOTE: this will NOT populate SchemaMode for the connections, as we need to load the schema for that
 	// this will be updated below on the call to updateRequiredStateWithSchemaProperties
@@ -58,6 +61,8 @@ func NewConnectionUpdates(schemaNames []string, forceUpdateConnectionNames ...st
 	updates.currentConnectionState = currentConnectionState
 	updates.ConnectionStateModified = stateModified
 
+	statushooks.SetStatus(ctx, "Loading dynamic schema hashes")
+
 	// for any connections with dynamic schema, we need to reload their schema
 	// instantiate connection plugins for all connections with dynamic schema - this will retrieve their current schema
 	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, err := getSchemaHashesForDynamicSchemas(requiredConnectionState, currentConnectionState)
@@ -65,6 +70,8 @@ func NewConnectionUpdates(schemaNames []string, forceUpdateConnectionNames ...st
 		res.Error = err
 		return nil, res
 	}
+
+	statushooks.SetStatus(ctx, "Identify connections to update")
 
 	// connections to create/update
 	for name, requiredConnectionData := range requiredConnectionState {
@@ -79,6 +86,7 @@ func NewConnectionUpdates(schemaNames []string, forceUpdateConnectionNames ...st
 		}
 	}
 
+	statushooks.SetStatus(ctx, "Identify connections to delete")
 	// connections to delete - any connection which is in connection state but NOT required connections
 	for connection, requiredPlugin := range currentConnectionState {
 		if _, ok := requiredConnectionState[connection]; !ok {
@@ -99,6 +107,7 @@ func NewConnectionUpdates(schemaNames []string, forceUpdateConnectionNames ...st
 		}
 	}
 
+	statushooks.SetStatus(ctx, "Connecting to plugins")
 	//  instantiate connection plugins for all updates
 	otherRes := updates.populateConnectionPlugins(connectionsPluginsWithDynamicSchema)
 	res.Merge(otherRes)
@@ -142,6 +151,9 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 }
 
 func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) *RefreshConnectionResult {
+	utils.LogTime("populateConnectionPlugins start")
+	defer utils.LogTime("populateConnectionPlugins end")
+
 	// get list of connections to update:
 	// - exclude connections already created
 	// - for any aggregator connections, instantiate the first child connection instead

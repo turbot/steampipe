@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"golang.org/x/sync/semaphore"
 	"log"
 	"strings"
 	"sync"
@@ -63,7 +64,7 @@ func refreshConnections(ctx context.Context, foreignSchemaNames []string, forceU
 
 	// determine any necessary connection updates
 	var connectionUpdates *steampipeconfig.ConnectionUpdates
-	connectionUpdates, res = steampipeconfig.NewConnectionUpdates(foreignSchemaNames, forceUpdateConnectionNames...)
+	connectionUpdates, res = steampipeconfig.NewConnectionUpdates(ctx, foreignSchemaNames, forceUpdateConnectionNames...)
 	defer logRefreshConnectionResults(connectionUpdates, res)
 	if res.Error != nil {
 		return res
@@ -146,7 +147,7 @@ func executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *stea
 	defer utils.LogTime("db.executeConnectionUpdateQueries start")
 
 	res := &steampipeconfig.RefreshConnectionResult{}
-	pool, err := createConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	pool, err := createConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser}, 50)
 	if err != nil {
 		res.Error = err
 		return res
@@ -200,7 +201,7 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*s
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
 		// if this schema is static, and is already in the plugin map, clone from it
 		_, haveExemplarSchema := pluginMap[connectionData.Plugin]
-		if connectionData.SchemaMode == plugin.SchemaModeDynamic && haveExemplarSchema {
+		if connectionData.SchemaMode != plugin.SchemaModeDynamic && haveExemplarSchema {
 			cloneableConnections[connectionName] = connectionData
 			continue
 		}
@@ -244,6 +245,7 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*s
 		if err != nil {
 			return err
 		}
+		defer conn.Release()
 		numCommentsUpdates := len(validatedPlugins)
 		log.Printf("[TRACE] executing %d comment %s", numCommentsUpdates, utils.Pluralize("query", numCommentsUpdates))
 
@@ -269,13 +271,37 @@ func cloneConnectionSchemas(ctx context.Context, pool *pgxpool.Pool, pluginMap m
 
 	var pluginMapMut sync.Mutex
 
+	sem := semaphore.NewWeighted(int64(pool.Config().MaxConns / 2))
+	var errors []error
+
+	go func() {
+		for {
+
+			select {
+			case err := <-errChan:
+				errors = append(errors, err)
+			case connectionName := <-progressChan:
+				if connectionName == "" {
+					return
+				}
+				idx++
+				statushooks.SetStatus(ctx, fmt.Sprintf("Cloning %d of %d %s", idx, numUpdates, utils.Pluralize("connection", numUpdates)))
+
+			}
+		}
+	}()
 	for n, d := range cloneableConnections {
 		wg.Add(1)
-
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
 		// use semaphore to limit goroutines
 		go func(connectionName string, connectionData *steampipeconfig.ConnectionData) {
 			//log.Printf("[WARN] start clone connection %s", connectionName)
-			defer wg.Done()
+			defer func() {
+				wg.Done()
+				sem.Release(1)
+			}()
 
 			// this schema is already in the plugin map, clone from it
 			exemplarSchemaName := pluginMap[connectionData.Plugin]
@@ -299,28 +325,8 @@ func cloneConnectionSchemas(ctx context.Context, pool *pgxpool.Pool, pluginMap m
 
 	}
 
-	go func() {
-		wg.Wait()
-		close(progressChan)
-	}()
-
-	var errors []error
-connection_loop:
-	for {
-
-		select {
-		case err := <-errChan:
-			errors = append(errors, err)
-		case connectionName := <-progressChan:
-			if connectionName == "" {
-				break connection_loop
-			}
-			idx++
-			if idx%5 == 0 {
-				statushooks.SetStatus(ctx, fmt.Sprintf("Creating %d of %d %s", idx, numUpdates, utils.Pluralize("connection", numUpdates)))
-			}
-		}
-	}
+	wg.Wait()
+	close(progressChan)
 
 	return error_helpers.CombineErrors(errors...)
 }

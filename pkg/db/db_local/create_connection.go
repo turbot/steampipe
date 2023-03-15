@@ -111,7 +111,9 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 }
 
 // createConnectionPool
-func createConnectionPool(ctx context.Context, opts *CreateDbOptions) (*pgxpool.Pool, error) {
+
+func createConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnections int) (*pgxpool.Pool, error) {
+
 	utils.LogTime("db_client.establishConnectionPool start")
 	defer utils.LogTime("db_client.establishConnectionPool end")
 
@@ -129,8 +131,8 @@ func createConnectionPool(ctx context.Context, opts *CreateDbOptions) (*pgxpool.
 		connMaxIdleTime = 1 * time.Minute
 		connMaxLifetime = 10 * time.Minute
 	)
-	maxConnections := 50 //db_common.MaxDbConnections()
 
+	connConfig.MinConns = 0
 	connConfig.MaxConns = int32(maxConnections)
 	connConfig.MaxConnLifetime = connMaxLifetime
 	connConfig.MaxConnIdleTime = connMaxIdleTime

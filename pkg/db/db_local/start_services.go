@@ -43,7 +43,7 @@ func (r *StartResult) SetError(err error) *StartResult {
 type StartDbStatus int
 
 const (
-	// start from 10 to prevent confusion with int zero-value
+	// start from 1 to prevent confusion with int zero-value
 	ServiceStarted StartDbStatus = iota + 1
 	ServiceAlreadyRunning
 	ServiceFailedToStart
@@ -161,6 +161,16 @@ func postServiceStart(ctx context.Context) *modconfig.ErrorAndWarnings {
 	_, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL)
 	if err != nil {
 		return modconfig.NewErrorsAndWarning(err)
+	}
+
+	// refresh connections and search paths
+	refreshResult := RefreshConnectionAndSearchPaths(ctx)
+	// add warning from refresh
+	res.AddWarning(refreshResult.Warnings...)
+	if refreshResult.Error != nil {
+		res.Status = ServiceFailedToStart
+		res.Error = refreshResult.Error
+		return res
 	}
 
 	// if there is an unprocessed db backup file, restore it now
