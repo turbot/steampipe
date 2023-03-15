@@ -14,14 +14,14 @@ import (
 type PluginRemoveReport struct {
 	Image       *ociinstaller.SteampipeImageRef
 	ShortName   string
-	Connections []modconfig.Connection
+	Connections []*modconfig.Connection
 }
 
 type PluginRemoveReports []PluginRemoveReport
 
 func (r PluginRemoveReports) Print() {
 	length := len(r)
-	staleConnections := []modconfig.Connection{}
+	var staleConnections []*modconfig.Connection
 	if length > 0 {
 		fmt.Printf("\nUninstalled %s:\n", utils.Pluralize("plugin", length))
 		for _, report := range r {

@@ -279,20 +279,14 @@ func (c *LocalDbClient) RefreshConnectionAndSearchPaths(ctx context.Context, for
 	}
 
 	statushooks.SetStatus(ctx, "Loading steampipe connections")
-	// load the connection state and cache it!
-	connectionMap, _, err := steampipeconfig.GetConnectionState(c.ForeignSchemaNames())
-	if err != nil {
-		res.Error = err
-		return res
-	}
-	res.ConnectionMap = connectionMap
+
 	// set user search path first - client may fall back to using it
 	statushooks.SetStatus(ctx, "Setting up search path")
 
 	// we need to send a muted ctx here since this function selects from the database
 	// which by default puts up a "Loading" spinner. We don't want that here
 	mutedCtx := statushooks.DisableStatusHooks(ctx)
-	err = c.setUserSearchPath(mutedCtx)
+	err := c.setUserSearchPath(mutedCtx)
 	if err != nil {
 		res.Error = err
 		return res
