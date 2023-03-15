@@ -2,11 +2,13 @@ package modconfig
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/zclconf/go-cty/cty"
-	"reflect"
 )
 
 type WorkspaceProfile struct {
@@ -19,8 +21,13 @@ type WorkspaceProfile struct {
 	WorkspaceDatabase *string           `hcl:"workspace_database,optional" cty:"workspace_database"`
 	QueryTimeout      *int              `hcl:"query_timeout,optional" cty:"query_timeout"`
 	Base              *WorkspaceProfile `hcl:"base"`
+	SearchPath        *string           `hcl:"search_path" cty:"search_path"`
+	SearchPathPrefix  *string           `hcl:"search_path_prefix" cty:"search_path_prefix"`
+	Watch             *bool             `hcl:"watch" cty:"watch"`
+	MaxParallel       *int              `hcl:"max_parallel" cty:"max-parallel"`
 
 	// options
+	QueryOptions      *options.Query
 	GeneralOptions    *options.General
 	TerminalOptions   *options.Terminal
 	ConnectionOptions *options.Connection
@@ -54,6 +61,11 @@ func (p *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hc
 			diags = append(diags, duplicateOptionsBlockDiag(block))
 		}
 		p.GeneralOptions = o
+	case *options.Query:
+		if p.QueryOptions != nil {
+			diags = append(diags, duplicateOptionsBlockDiag(block))
+		}
+		p.QueryOptions = o
 	default:
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -111,10 +123,22 @@ func (p *WorkspaceProfile) setBaseProperties() {
 	if p.QueryTimeout == nil {
 		p.QueryTimeout = p.Base.QueryTimeout
 	}
+	if p.SearchPath == nil {
+		p.SearchPath = p.Base.SearchPath
+	}
+	if p.SearchPathPrefix == nil {
+		p.SearchPathPrefix = p.Base.SearchPathPrefix
+	}
+	if p.Watch == nil {
+		p.Watch = p.Base.Watch
+	}
+	if p.MaxParallel == nil {
+		p.MaxParallel = p.Base.MaxParallel
+	}
 }
 
 // ConfigMap creates a config map containing all options to pass to viper
-func (p *WorkspaceProfile) ConfigMap() map[string]interface{} {
+func (p *WorkspaceProfile) ConfigMap(commandName string) map[string]interface{} {
 	res := ConfigMap{}
 	// add non-empty properties to config map
 
@@ -125,6 +149,10 @@ func (p *WorkspaceProfile) ConfigMap() map[string]interface{} {
 	res.SetStringItem(p.SnapshotLocation, constants.ArgSnapshotLocation)
 	res.SetStringItem(p.WorkspaceDatabase, constants.ArgWorkspaceDatabase)
 	res.SetIntItem(p.QueryTimeout, constants.ArgDatabaseQueryTimeout)
+	res.SetBoolItem(p.Watch, constants.ArgWatch)
+	res.SetIntItem(p.MaxParallel, constants.ArgMaxParallel)
+	res.SetStringSliceItem(searchPathToArray(*p.SearchPath), constants.ArgSearchPath)
+	res.SetStringSliceItem(searchPathToArray(*p.SearchPathPrefix), constants.ArgSearchPathPrefix)
 
 	// now add options
 	// build flat config map with order or precedence (low to high): general, terminal, connection
@@ -141,6 +169,19 @@ func (p *WorkspaceProfile) ConfigMap() map[string]interface{} {
 	if p.ConnectionOptions != nil {
 		res.PopulateConfigMapForOptions(p.ConnectionOptions)
 	}
+	if commandName == "query" && p.QueryOptions != nil {
+		res.PopulateConfigMapForOptions(p.QueryOptions)
+	}
 
 	return res
+}
+
+func searchPathToArray(searchPathString string) []string {
+	// convert comma separated list to array
+	searchPath := strings.Split(searchPathString, ",")
+	// strip whitespace
+	for i, s := range searchPath {
+		searchPath[i] = strings.TrimSpace(s)
+	}
+	return searchPath
 }
