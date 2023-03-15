@@ -19,12 +19,12 @@ func Viper() *viper.Viper {
 }
 
 // BootstrapViper sets up viper with the essential path config (workspace-chdir and install-dir)
-func BootstrapViper(loader *steampipeconfig.WorkspaceProfileLoader) error {
+func BootstrapViper(loader *steampipeconfig.WorkspaceProfileLoader, cmdName string) error {
 	// set defaults  for keys which do not have a corresponding command flag
 	setBaseDefaults()
 
 	// set defaults from defaultWorkspaceProfile
-	SetDefaultsFromConfig(loader.DefaultProfile.ConfigMap())
+	SetDefaultsFromConfig(loader.DefaultProfile.ConfigMap(cmdName))
 
 	// set defaults for install dir and mod location from env vars
 	// this needs to be done since the workspace profile definitions exist in the
