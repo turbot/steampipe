@@ -151,9 +151,9 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connectionwatcher.Co
 }
 
 // OnConnectionsChanged is the callback function invoked by the connection watcher when connections are added or removed
-func (m *PluginManager) OnConnectionsChanged(refreshResult *steampipeconfig.RefreshConnectionResult, client *db_local.LocalDbClient) {
+func (m *PluginManager) OnConnectionsChanged(ctx context.Context, refreshResult *steampipeconfig.RefreshConnectionResult) {
 	notification := refreshResult.Updates.AsNotification()
-	m.notifySchemaChange(notification, client)
+	m.notifySchemaChange(ctx, notification)
 }
 
 func (m *PluginManager) Shutdown(*proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {
@@ -708,29 +708,28 @@ func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginCl
 
 // update the schema for the specified connection
 // called from the message server after receiving a PluginMessageType_SCHEMA_UPDATED message from plugin
-func (m *PluginManager) updateConnectionSchema(ctx context.Context, connection string) {
-	log.Printf("[TRACE] updateConnectionSchema connection %s", connection)
-	// now refresh connections and search paths
-	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher, nil)
-	if err != nil {
-		log.Printf("[TRACE] error creating client to handle updated connection config: %s", err.Error())
-	}
-	defer client.Close(ctx)
+func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionName string) {
+	log.Printf("[TRACE] updateConnectionSchema connection %s", connectionName)
 
-	refreshResult := client.RefreshConnectionAndSearchPaths(ctx, connection)
+	refreshResult := db_local.RefreshConnectionAndSearchPaths(ctx, connectionName)
 	if refreshResult.Error != nil {
 		log.Printf("[TRACE] error refreshing connections: %s", refreshResult.Error)
 		return
 	}
 
 	// also send a postgres notification
-	notification := steampipeconfig.NewSchemaUpdateNotification([]string{connection}, nil)
+	notification := steampipeconfig.NewSchemaUpdateNotification([]string{connectionName}, nil)
 
-	m.notifySchemaChange(notification, client)
+	m.notifySchemaChange(ctx, notification)
 }
 
 // send a postgres notification that the schema has chganged
-func (m *PluginManager) notifySchemaChange(notification any, client *db_local.LocalDbClient) {
+func (m *PluginManager) notifySchemaChange(ctx context.Context, notification any) {
+	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
+	if err != nil {
+
+	}
+
 	notificationBytes, err := json.Marshal(notification)
 	if err != nil {
 		log.Printf("[TRACE] error marshalling Postgres notification: %s", err.Error())
@@ -740,7 +739,7 @@ func (m *PluginManager) notifySchemaChange(notification any, client *db_local.Lo
 	log.Printf("[TRACE] Send update notification")
 
 	sql := fmt.Sprintf("select pg_notify('%s', $1)", constants.PostgresNotificationChannel)
-	_, err = client.ExecuteSync(context.Background(), sql, notificationBytes)
+	_, err = conn.Exec(context.Background(), sql, notificationBytes)
 	if err != nil {
 		log.Printf("[WARN] Error sending notification: %s", err)
 	}

@@ -9,9 +9,11 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
 // GetCurrentSearchPath implements Client
@@ -104,7 +106,7 @@ func (c *DbClient) ConstructSearchPath(ctx context.Context, customSearchPath, se
 		// so no search path was set in config
 		c.customSearchPath = nil
 		// use the default search path
-		requiredSearchPath = c.GetDefaultSearchPath(ctx)
+		requiredSearchPath = db_common.GetDefaultSearchPath(ctx, c.foreignSchemaNames)
 	}
 
 	// add in the prefix if present
@@ -113,13 +115,27 @@ func (c *DbClient) ConstructSearchPath(ctx context.Context, customSearchPath, se
 	return requiredSearchPath, nil
 }
 
+// reload Steampipe config, update viper and re-set required search path
+func (c *DbClient) updateRequiredSearchPath(ctx context.Context) error {
+	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "dashboard")
+	if err != nil {
+		return err
+	}
+	steampipeconfig.GlobalConfig = config
+	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
+	if err := c.SetRequiredSessionSearchPath(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ensure the search path for the database session is as required
 func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_common.DatabaseSession) error {
 	log.Printf("[TRACE] ensureSessionSearchPath")
 	// first, if we are NOT using a custom search path, reload the steampipe user search path
 	if len(c.customSearchPath) == 0 {
 		// rebuild required search path using the prefix, if any
-		requiredSearchPath := c.addSearchPathPrefix(c.searchPathPrefix, c.GetDefaultSearchPath(ctx))
+		requiredSearchPath := c.addSearchPathPrefix(c.searchPathPrefix, db_common.GetDefaultSearchPath(ctx, c.foreignSchemaNames))
 		// escape the required search path and store on client
 		c.requiredSessionSearchPath = db_common.PgEscapeSearchPath(requiredSearchPath)
 		log.Printf("[TRACE] updated the required search path to %s", strings.Join(c.requiredSessionSearchPath, ","))

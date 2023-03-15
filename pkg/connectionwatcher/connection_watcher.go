@@ -19,10 +19,10 @@ type ConnectionWatcher struct {
 	fileWatcherErrorHandler   func(error)
 	watcher                   *filewatcher.FileWatcher
 	onConnectionConfigChanged func(ConnectionConfigMap)
-	onSchemaChanged           func(*steampipeconfig.RefreshConnectionResult, *db_local.LocalDbClient)
+	onSchemaChanged           func(context.Context, *steampipeconfig.RefreshConnectionResult)
 }
 
-func NewConnectionWatcher(onConnectionChanged func(ConnectionConfigMap), onSchemaChanged func(*steampipeconfig.RefreshConnectionResult, *db_local.LocalDbClient)) (*ConnectionWatcher, error) {
+func NewConnectionWatcher(onConnectionChanged func(ConnectionConfigMap), onSchemaChanged func(context.Context, *steampipeconfig.RefreshConnectionResult)) (*ConnectionWatcher, error) {
 	w := &ConnectionWatcher{
 		onConnectionConfigChanged: onConnectionChanged,
 		onSchemaChanged:           onSchemaChanged,
@@ -73,14 +73,8 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	}
 	log.Printf("[TRACE] loaded updated config")
 
-	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher, nil)
-	if err != nil {
-		log.Printf("[WARN] error creating client to handle updated connection config: %s", err.Error())
-	}
-	defer client.Close(ctx)
-
 	// We need to update the viper config and GlobalConfig
-	// as these are both used by RefreshConnectionAndSearchPaths
+	// as these are both used by RefreshConnectionAndSearchPathsWithLocalClient
 
 	// set the global steampipe config
 	steampipeconfig.GlobalConfig = config
@@ -104,16 +98,16 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	// to use the GlobalConfig here and ignore Workspace Profile in general
 	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
 
-	log.Printf("[TRACE] calling RefreshConnectionAndSearchPaths")
+	log.Printf("[TRACE] calling RefreshConnectionAndSearchPathsWithLocalClient")
 	// now refresh connections and search paths
-	refreshResult := client.RefreshConnectionAndSearchPaths(ctx)
+	refreshResult := db_local.RefreshConnectionAndSearchPaths(ctx)
 	if refreshResult.Error != nil {
 		log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
 		return
 	}
 	// if the connections were added or removed, call the schema changed callback
 	if refreshResult.UpdatedConnections {
-		w.onSchemaChanged(refreshResult, client)
+		w.onSchemaChanged(ctx, refreshResult)
 	}
 
 	// display any refresh warnings

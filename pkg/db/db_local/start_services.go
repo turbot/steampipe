@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 	"os"
 	"os/exec"
@@ -19,16 +20,17 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pluginmanager"
 )
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
 type StartResult struct {
-	Error              error
+	modconfig.ErrorAndWarnings
+	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
 	PluginManagerState *pluginmanager.PluginManagerState
-	Status             StartDbStatus
 }
 
 func (r *StartResult) SetError(err error) *StartResult {
@@ -66,11 +68,20 @@ func (slt StartListenType) IsValid() error {
 	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
 }
 
-func StartServices(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) (startResult *StartResult) {
+func StartServices(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) *StartResult {
 	utils.LogTime("db_local.StartServices start")
 	defer utils.LogTime("db_local.StartServices end")
 
 	res := &StartResult{}
+
+	// if we were not successful, stop services again
+	defer func() {
+		if res.Status == ServiceStarted && res.Error != nil {
+			StopServices(ctx, false, invoker)
+			res.Status = ServiceFailedToStart
+		}
+	}()
+
 	res.DbState, res.Error = GetState()
 	if res.Error != nil {
 		return res
@@ -97,6 +108,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 		return res
 	}
 
+	// start the plugin manager if needed
 	res.PluginManagerState, res.Error = pluginmanager.LoadPluginManagerState()
 	if res.Error != nil {
 		res.Status = ServiceFailedToStart
@@ -104,7 +116,6 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 	}
 
 	if !res.PluginManagerState.Running {
-		// start the plugin manager
 		// get the location of the currently running steampipe process
 		executable, err := os.Executable()
 		if err != nil {
@@ -118,7 +129,43 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 		res.Status = ServiceStarted
 	}
 
+	// execute post startup setup
+	errorsAndWarnings := postServiceStart(ctx)
+
+	res.AddWarning(errorsAndWarnings.Warnings...)
+	if errorsAndWarnings.Error != nil {
+		// NOTE do not update res.Status - this will be ddone by defer block
+		res.Error = errorsAndWarnings.Error
+	}
+
 	return res
+}
+
+func postServiceStart(ctx context.Context) *modconfig.ErrorAndWarnings {
+	statushooks.SetStatus(ctx, "Setting up functions")
+	if err := refreshFunctions(ctx); err != nil {
+		return modconfig.NewErrorsAndWarning(err)
+	}
+
+	//// create the clone_foreign_schema function
+	//if _, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL); err != nil {
+	//	return modconfig.NewErrorsAndWarning(err)
+	//}
+
+	statushooks.SetStatus(ctx, "Setting up functions")
+	if err := refreshFunctions(ctx); err != nil {
+		return modconfig.NewErrorsAndWarning(err)
+	}
+
+	// if there is an unprocessed db backup file, restore it now
+	if err := restoreDBBackup(ctx); err != nil {
+		return modconfig.NewErrorsAndWarning(err)
+	}
+	// refresh connections and search paths
+	refreshResult := RefreshConnectionAndSearchPaths(ctx)
+
+	// assign res from the underlying ErrorAndWarnings of refreshResult
+	return &refreshResult.ErrorAndWarnings
 }
 
 // StartDB starts the database if not already running
@@ -221,33 +268,33 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 }
 
 func ensureService(ctx context.Context, databaseName string) error {
-	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
+	connection, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
-	defer rootClient.Close(ctx)
+	defer connection.Close(ctx)
 
 	// ensure the foreign server exists in the database
-	err = ensureSteampipeServer(ctx, rootClient)
+	err = ensureSteampipeServer(ctx, connection)
 	if err != nil {
 		return err
 	}
 
 	// ensure that the necessary extensions are installed in the database
-	err = ensurePgExtensions(ctx, rootClient)
+	err = ensurePgExtensions(ctx, connection)
 	if err != nil {
 		// there was a problem with the installation
 		return err
 	}
 
 	// ensure permissions for writing to temp tables
-	err = ensureTempTablePermissions(ctx, databaseName, rootClient)
+	err = ensureTempTablePermissions(ctx, databaseName, connection)
 	if err != nil {
 		return err
 	}
 
 	// ensure the db contains command schema
-	err = ensureCommandSchema(ctx, rootClient)
+	err = ensureCommandSchema(ctx, connection)
 	if err != nil {
 		return err
 	}

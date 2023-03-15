@@ -23,3 +23,4 @@
 ## .steampipe/plugins
 
 - `versions.json` - Stores information about all the plugins installed. Contains information like version, image_digest, binary_digest, binary_arch, installedFrom etc. Removing this file would result in losing your plugin information(incorrect version), and you would need to re-install all your plugins.
+``

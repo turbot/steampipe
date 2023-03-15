@@ -3,6 +3,7 @@ package initialisation
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
@@ -124,42 +125,35 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	})
 
 	statushooks.SetStatus(ctx, "Connecting to steampipe")
-	client, err := GetDbClient(getClientCtx, invoker, ensureSessionData)
-	if err != nil {
+	client, errorsAndWarnings := GetDbClient(getClientCtx, invoker, ensureSessionData)
+	if errorsAndWarnings.Error != nil {
 		i.Result.Error = err
 		return
 	}
+	i.Result.AddWarnings(errorsAndWarnings.Warnings...)
 	i.Client = client
 
-	// refresh connections
-	statushooks.SetStatus(ctx, "Refreshing connections")
-	refreshResult := i.Client.RefreshConnectionAndSearchPaths(ctx)
-	if refreshResult.Error != nil {
-		i.Result.Error = refreshResult.Error
-		return
-	}
 	// load the connection state and cache it!
 	connectionMap, _, err := steampipeconfig.GetConnectionState(client.ForeignSchemaNames())
 	if err != nil {
 		i.Result.Error = err
 		return
 	}
+
 	i.ConnectionMap = connectionMap
 
-	// add refresh connection warnings
-	i.Result.AddWarnings(refreshResult.Warnings...)
 }
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
-func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (client db_common.Client, err error) {
+func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (db_common.Client, *modconfig.ErrorAndWarnings) {
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		statushooks.SetStatus(ctx, "Connecting to remote Steampipe database")
-		client, err = db_client.NewDbClient(ctx, connectionString, onConnectionCallback)
-	} else {
-		statushooks.SetStatus(ctx, "Starting local Steampipe database")
-		client, err = db_local.GetLocalClient(ctx, invoker, onConnectionCallback)
+		client, err := db_client.NewDbClient(ctx, connectionString, onConnectionCallback)
+		return client, modconfig.NewErrorsAndWarning(err)
 	}
-	return client, err
+
+	statushooks.SetStatus(ctx, "Starting local Steampipe database")
+	return db_local.GetLocalClient(ctx, invoker, onConnectionCallback)
 }
 
 func (i *InitData) Cleanup(ctx context.Context) {

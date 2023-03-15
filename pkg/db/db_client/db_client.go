@@ -2,8 +2,9 @@ package db_client
 
 import (
 	"context"
+	"fmt"
 	"log"
-	"sort"
+	"strings"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
@@ -13,7 +14,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/schema"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/sync/semaphore"
 )
@@ -79,11 +79,14 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		return nil, err
 	}
 
-	// populate foreign schema names - this wil be updated whenever we acquire a session or refresh connections
+	// populate foreign schema names - this will be updated whenever we acquire a session
 	if err := client.LoadSchemaNames(ctx); err != nil {
 		client.Close(ctx)
 		return nil, err
 	}
+
+	// initialise the required search path
+	client.SetRequiredSessionSearchPath(ctx)
 
 	return client, nil
 }
@@ -129,90 +132,52 @@ func (c *DbClient) AllSchemaNames() []string {
 
 // LoadSchemaNames implements Client
 func (c *DbClient) LoadSchemaNames(ctx context.Context) error {
-	res, err := c.pool.Query(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
+	conn, err := c.pool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
-	// clear foreign schemas
-	var foreignSchemaNames []string
-	var schema string
-	for res.Next() {
-		if err := res.Scan(&schema); err != nil {
-			return err
-		}
-		// ignore command schema
-		if schema != constants.CommandSchema {
-			foreignSchemaNames = append(foreignSchemaNames, schema)
-		}
-	}
-	c.foreignSchemaNames = foreignSchemaNames
+	defer conn.Release()
 
-	res, err = c.pool.Query(ctx, "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' ORDER BY schema_name;")
+	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn.Conn())
 	if err != nil {
 		return err
 	}
-	var allSchemaNames []string
-	for res.Next() {
-		if err := res.Scan(&schema); err != nil {
-			return err
-		}
-		// ignore command schema
-		allSchemaNames = append(allSchemaNames, schema)
+	allSchemaNames, err := db_common.LoadSchemaNames(ctx, conn.Conn())
+	if err != nil {
+		return err
 	}
+
+	c.foreignSchemaNames = foreignSchemaNames
 	c.allSchemaNames = allSchemaNames
 
 	return nil
 }
 
 // RefreshSessions terminates the current connections and creates a new one - repopulating session data
-func (c *DbClient) RefreshSessions(ctx context.Context) *db_common.AcquireSessionResult {
+func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireSessionResult) {
 	utils.LogTime("db_client.RefreshSessions start")
 	defer utils.LogTime("db_client.RefreshSessions end")
 
 	if err := c.refreshDbClient(ctx); err != nil {
-		return &db_common.AcquireSessionResult{Error: err}
-	}
-	sessionResult := c.AcquireSession(ctx)
-	if sessionResult.Session != nil {
-		sessionResult.Session.Close(error_helpers.IsContextCanceled(ctx))
-	}
-	return sessionResult
-}
-
-// refreshDbClient terminates the current connection and opens up a new connection to the service.
-func (c *DbClient) refreshDbClient(ctx context.Context) error {
-	utils.LogTime("db_client.refreshDbClient start")
-	defer utils.LogTime("db_client.refreshDbClient end")
-
-	// close the connection pool and recreate
-	c.pool.Close()
-	if err := c.establishConnectionPool(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// RefreshConnectionAndSearchPaths implements Client
-func (c *DbClient) RefreshConnectionAndSearchPaths(ctx context.Context, _ ...string) *steampipeconfig.RefreshConnectionResult {
-	// base db client does not refresh connections, it just sets search path
-	// (only local db client refreshed connections)
-	res := &steampipeconfig.RefreshConnectionResult{}
-	if err := c.SetRequiredSessionSearchPath(ctx); err != nil {
 		res.Error = err
+		return res
+	}
+	res = c.AcquireSession(ctx)
+	if res.Session != nil {
+		res.Session.Close(error_helpers.IsContextCanceled(ctx))
 	}
 	return res
 }
 
 // GetSchemaFromDB requests for all columns of tables backed by steampipe plugins
 // and creates golang struct representations from the result
-func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error) {
+func (c *DbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) (*schema.Metadata, error) {
 	utils.LogTime("db_client.GetSchemaFromDB start")
 	defer utils.LogTime("db_client.GetSchemaFromDB end")
 	connection, err := c.pool.Acquire(ctx)
 	error_helpers.FailOnError(err)
 
-	query := c.buildSchemasQuery()
+	query := c.buildSchemasQuery(schemas...)
 
 	tablesResult, err := connection.Query(ctx, query)
 	if err != nil {
@@ -234,38 +199,41 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*schema.Metadata, error
 	return metadata, nil
 }
 
-// GetDefaultSearchPath builds default search path from the connection schemas, book-ended with public and internal
-func (c *DbClient) GetDefaultSearchPath(ctx context.Context) []string {
-	// get foreign schema names
-	searchPath := c.foreignSchemaNames
+// refreshDbClient terminates the current connection and opens up a new connection to the service.
+func (c *DbClient) refreshDbClient(ctx context.Context) error {
+	utils.LogTime("db_client.refreshDbClient start")
+	defer utils.LogTime("db_client.refreshDbClient end")
 
-	sort.Strings(searchPath)
-	// add the 'public' schema as the first schema in the search_path. This makes it
-	// easier for users to build and work with their own tables, and since it's normally
-	// empty, doesn't make using steampipe tables any more difficult.
-	searchPath = append([]string{"public"}, searchPath...)
-	// add 'internal' schema as last schema in the search path
-	searchPath = append(searchPath, constants.FunctionSchema)
+	// close the connection pool and recreate
+	c.pool.Close()
+	if err := c.establishConnectionPool(ctx); err != nil {
+		return err
+	}
 
-	return searchPath
+	return nil
 }
 
-func (c *DbClient) buildSchemasQuery() string {
-	query := `
-WITH distinct_schema AS (
-	SELECT DISTINCT(foreign_table_schema) 
-	FROM 
-		information_schema.foreign_tables 
-	WHERE 
-		foreign_table_schema <> 'steampipe_command'
-)
+func (c *DbClient) buildSchemasQuery(schemas ...string) string {
+	for idx, s := range schemas {
+		schemas[idx] = fmt.Sprintf("'%s'", s)
+	}
+
+	// build the schemas filter clause
+	schemaClause := ""
+	if len(schemas) > 0 {
+		schemaClause = fmt.Sprintf(`
+    cols.table_schema in (%s)
+	OR`, strings.Join(schemas, ","))
+	}
+
+	query := fmt.Sprintf(`
 SELECT
     table_name,
     column_name,
     column_default,
     is_nullable,
     data_type,
-    udt_name,
+	udt_name,
     table_schema,
     (COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
     (COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
@@ -275,11 +243,8 @@ LEFT JOIN
     pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
 LEFT JOIN
     pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
-WHERE
-	cols.table_schema in (select * from distinct_schema)
-	OR
-    LEFT(cols.table_schema,8) = 'pg_temp_'
-
-`
+WHERE %s
+	LEFT(cols.table_schema,8) = 'pg_temp_'
+`, schemaClause)
 	return query
 }
