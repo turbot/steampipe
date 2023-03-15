@@ -576,6 +576,7 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
+	// get the maps of available and failed/missing plugins
 	pluginConnectionMap, failedPluginMap, err := getPluginConnectionMap(ctx)
 	if err != nil {
 		error_helpers.ShowErrorWithMessage(ctx, err, "plugin listing failed")
@@ -590,8 +591,18 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 		return
 	}
 
+	// remove the failed/missing plugins from `list` since we don't want them in the installed table
+	for pluginName := range failedPluginMap {
+		for i := 0; i < len(list); i++ {
+			if list[i].Name == pluginName {
+				list = append(list[:i], list[i+1:]...)
+				i-- // Decrement the loop index since we just removed an element
+			}
+		}
+	}
+
 	// If there are missing plugins which have connections left over, list them
-	// along with installed plugins
+	// along with installed plugins. Also the plugins that failed to load.
 	if len(failedPluginMap) != 0 {
 		// List installed plugins
 		if len(list) != 0 {
@@ -604,7 +615,7 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 			fmt.Printf("\n")
 		}
 
-		// List missing plugins
+		// List missing/failed plugins
 		headers := []string{"Failed Plugin", "Connections"}
 		var conns = []string{}
 		var missingRows [][]string
