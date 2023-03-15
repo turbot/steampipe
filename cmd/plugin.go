@@ -577,7 +577,7 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 	}()
 
 	// get the maps of available and failed/missing plugins
-	pluginConnectionMap, failedPluginMap, missingPluginMap, err := getPluginConnectionMap(ctx)
+	pluginConnectionMap, res, failedPluginMap, missingPluginMap, err := getPluginConnectionMap(ctx)
 	if err != nil {
 		error_helpers.ShowErrorWithMessage(ctx, err, "plugin listing failed")
 		exitCode = constants.ExitCodePluginListFailure
@@ -646,11 +646,11 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 	}
 
 	// display any initialisation warnings
-	// if len(res.Warnings) > 0 {
-	// 	fmt.Println()
-	// 	res.ShowWarnings()
-	// 	fmt.Printf("\n")
-	// }
+	if len(res.Warnings) > 0 {
+		fmt.Println()
+		res.ShowWarnings()
+		fmt.Printf("\n")
+	}
 }
 
 func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
@@ -675,7 +675,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	connectionMap, _, _, err := getPluginConnectionMap(ctx)
+	connectionMap, _, _, _, err := getPluginConnectionMap(ctx)
 	if err != nil {
 		error_helpers.ShowError(ctx, err)
 		exitCode = constants.ExitCodePluginListFailure
@@ -700,31 +700,28 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	reports.Print()
 }
 
-func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, map[string][]*modconfig.Connection, map[string][]*modconfig.Connection, error) {
+func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult, map[string][]*modconfig.Connection, map[string][]*modconfig.Connection, error) {
 	statushooks.SetStatus(ctx, "Fetching connection map")
 	defer statushooks.Done(ctx)
-	// NOTE: start db if necessary
-	if err := db_local.EnsureDBInstalled(ctx); err != nil {
-		return nil, nil, nil, err
-	}
-	startResult := db_local.StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), db_local.ListenTypeLocal, constants.InvokerPlugin)
-	if startResult.Error != nil {
-		return nil, nil, nil, startResult.Error
-	}
-	defer db_local.ShutdownService(ctx, constants.InvokerPlugin)
-
-	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
+	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
-	defer conn.Close(ctx)
+	defer client.Close(ctx)
+
+	// keeping refreshConnections for now, since it is needed in plugin list
+	// TODO: remove refreshConnections from here and use db_local.CreateLocalDbConnection
+	res := client.RefreshConnectionAndSearchPaths(statushooks.DisableStatusHooks(ctx))
+	if res.Error != nil {
+		return nil, nil, nil, nil, res.Error
+	}
 
 	// load the connection state and cache it!
 	// passing nil so that we dont prune connections(connectionMap is now the connection state
 	// containing all connections)
 	connectionMap, _, err := steampipeconfig.GetConnectionState(nil)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// create the map of failed/missing plugins
@@ -754,5 +751,5 @@ func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connect
 		pluginConnectionMap[v.Plugin] = append(pluginConnectionMap[v.Plugin], *v.Connection)
 	}
 
-	return pluginConnectionMap, failedPluginMap, missingPluginMap, nil
+	return pluginConnectionMap, res, failedPluginMap, missingPluginMap, nil
 }
