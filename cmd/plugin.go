@@ -692,6 +692,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) {
 	statushooks.SetStatus(ctx, "Fetching connection map")
 
+	res = &modconfig.ErrorAndWarnings{}
 	// NOTE: start db if necessary - this will call refresh connections
 	if err := db_local.EnsureDBInstalled(ctx); err != nil {
 		return nil, nil, nil, modconfig.NewErrorsAndWarning(err)
