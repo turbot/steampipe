@@ -167,12 +167,8 @@ func executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *stea
 	utils.LogTime("db.executeConnectionUpdateQueries start")
 	defer utils.LogTime("db.executeConnectionUpdateQueries start")
 
-	poolSize := len(connectionUpdates.Update)
-	if poolSize > 250 {
-		poolSize = 250
-	}
 	res := &steampipeconfig.RefreshConnectionResult{}
-	pool, err := createConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser}, poolSize)
+	pool, err := createConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser}, 25)
 	if err != nil {
 		res.Error = err
 		return res
