@@ -1,5 +1,6 @@
 import ColumnChart from "./index";
 import { PanelStoryDecorator } from "../../../../utils/storybook";
+import { MultiTimeSeriesDefaults, MultiTimeSeriesGroupedDefaults, SingleTimeSeriesDefaults, MultiTimeSeriesCrosstabDefaults } from "../Chart/index.stories";
 
 const story = {
   title: "Charts/Column",
@@ -289,3 +290,19 @@ SingleSeriesYAxisNoLabels.args = {
     },
   },
 };
+
+export const TimeSeries = Template.bind({});
+TimeSeries.storyName = "Single Time Series";
+TimeSeries.args = SingleTimeSeriesDefaults;
+
+export const MultiTimeSeries = Template.bind({});
+MultiTimeSeries.storyName = "Multiple Time Series with Overrides (stacked)";
+MultiTimeSeries.args = MultiTimeSeriesDefaults;
+
+export const MultiTimeSeriesGrouped = Template.bind({});
+MultiTimeSeriesGrouped.storyName = "Multiple Time Series (grouped)";
+MultiTimeSeriesGrouped.args = MultiTimeSeriesGroupedDefaults;
+
+export const MultiTimeSeriesCrosstab = Template.bind({});
+MultiTimeSeriesCrosstab.storyName = "Multiple Time Series (crosstabbed)";
+MultiTimeSeriesCrosstab.args = MultiTimeSeriesCrosstabDefaults;

@@ -1,5 +1,6 @@
 import LineChart from "./index";
 import { PanelStoryDecorator } from "../../../../utils/storybook";
+import { MultiTimeSeriesDefaults, SingleTimeSeriesDefaults, MultiTimeSeriesCrosstabDefaults } from "../Chart/index.stories";
 
 const story = {
   title: "Charts/Line",
@@ -254,3 +255,16 @@ SingleSeriesYAxisNoLabels.args = {
     },
   },
 };
+
+export const TimeSeries = Template.bind({});
+TimeSeries.storyName = "Single Time Series";
+TimeSeries.args = SingleTimeSeriesDefaults;
+
+// Line charts cannot stack, use Area for that
+export const MultiTimeSeries = Template.bind({});
+MultiTimeSeries.storyName = "Multiple Time Series";
+MultiTimeSeries.args = MultiTimeSeriesDefaults;
+
+export const MultiTimeSeriesCrosstab = Template.bind({});
+MultiTimeSeriesCrosstab.storyName = "Multiple Time Series (crosstabbed)";
+MultiTimeSeriesCrosstab.args = MultiTimeSeriesCrosstabDefaults;
