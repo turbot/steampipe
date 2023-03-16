@@ -2,7 +2,9 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/zclconf/go-cty/cty"
 	"strings"
 
@@ -121,6 +123,9 @@ func getQueryDashboardName(qp QueryProvider) (*ParsedResourceName, string, error
 }
 
 func getQueryDashboardTitle(queryHash string) string {
+	if titleArg := viper.GetString(constants.ArgSnapshotTitle); titleArg != "" {
+		return titleArg
+	}
 	return fmt.Sprintf("Custom query [%s]", queryHash)
 }
 
