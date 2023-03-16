@@ -3,6 +3,7 @@ package steampipeconfig
 import (
 	"time"
 
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -59,4 +60,9 @@ func (d *ConnectionData) Equals(other *ConnectionData) bool {
 		d.Connection.Equals(other.Connection) &&
 		d.ModTime.Equal(other.ModTime) &&
 		d.Connection.Equals(other.Connection)
+}
+
+func (d *ConnectionData) CanCloneSchema() bool {
+	return d.SchemaMode != plugin.SchemaModeDynamic &&
+		d.Connection.Type != modconfig.ConnectionTypeAggregator
 }

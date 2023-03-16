@@ -3,16 +3,19 @@ package db_local
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/db/db_common"
+	"golang.org/x/sync/semaphore"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -28,14 +31,16 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionN
 	if err != nil {
 		return steampipeconfig.NewErrorRefreshConnectionResult(err)
 	}
+
 	statushooks.SetStatus(ctx, "Refreshing connections")
-	res := refreshConnections(ctx, conn, foreignSchemaNames, forceUpdateConnectionNames...)
+	res := refreshConnections(ctx, foreignSchemaNames, forceUpdateConnectionNames...)
 	if res.Error != nil {
 		return res
 	}
 
 	statushooks.SetStatus(ctx, "Loading steampipe connections")
-	//set user search path first - client may fall back to using it
+
+	// set user search path first - client may fall back to using it
 	statushooks.SetStatus(ctx, "Setting up search path")
 
 	// we need to send a muted ctx here since this function selects from the database
@@ -53,13 +58,13 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionN
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func refreshConnections(ctx context.Context, conn *pgx.Conn, foreignSchemaNames []string, forceUpdateConnectionNames ...string) (res *steampipeconfig.RefreshConnectionResult) {
+func refreshConnections(ctx context.Context, foreignSchemaNames []string, forceUpdateConnectionNames ...string) (res *steampipeconfig.RefreshConnectionResult) {
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
 	// determine any necessary connection updates
 	var connectionUpdates *steampipeconfig.ConnectionUpdates
-	connectionUpdates, res = steampipeconfig.NewConnectionUpdates(foreignSchemaNames, forceUpdateConnectionNames...)
+	connectionUpdates, res = steampipeconfig.NewConnectionUpdates(ctx, foreignSchemaNames, forceUpdateConnectionNames...)
 	defer logRefreshConnectionResults(connectionUpdates, res)
 	if res.Error != nil {
 		return res
@@ -102,7 +107,7 @@ func refreshConnections(ctx context.Context, conn *pgx.Conn, foreignSchemaNames 
 	}
 
 	// now build list of necessary queries to perform the update
-	queryRes := executeConnectionUpdateQueries(ctx, connectionUpdates, conn)
+	queryRes := executeConnectionUpdateQueries(ctx, connectionUpdates)
 	// merge results into local results
 	res.Merge(queryRes)
 	if res.Error != nil {
@@ -158,11 +163,17 @@ func logRefreshConnectionResults(updates *steampipeconfig.ConnectionUpdates, res
 	log.Printf("[INFO] refresh connections: \n%s\n", helpers.Tabify(op.String(), "    "))
 }
 
-func executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *steampipeconfig.ConnectionUpdates, conn *pgx.Conn) *steampipeconfig.RefreshConnectionResult {
+func executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *steampipeconfig.ConnectionUpdates) *steampipeconfig.RefreshConnectionResult {
 	utils.LogTime("db.executeConnectionUpdateQueries start")
 	defer utils.LogTime("db.executeConnectionUpdateQueries start")
 
 	res := &steampipeconfig.RefreshConnectionResult{}
+	pool, err := createConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser}, 25)
+	if err != nil {
+		res.Error = err
+		return res
+	}
+	defer pool.Close()
 
 	numUpdates := len(connectionUpdates.Update)
 	log.Printf("[TRACE] executeConnectionUpdateQueries: num updates %d", numUpdates)
@@ -175,7 +186,7 @@ func executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *stea
 		}
 
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
-		err := executeUpdateQueries(ctx, conn, validationFailures, validatedUpdates, validatedPlugins)
+		err := executeUpdateQueries(ctx, pool, validationFailures, validatedUpdates, validatedPlugins)
 		if err != nil {
 			log.Printf("[TRACE] executeUpdateQueries returned error: %v", err)
 			res.Error = err
@@ -183,42 +194,58 @@ func executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *stea
 		}
 	}
 
-	for c := range connectionUpdates.Delete {
-		utils.LogTime("delete connection start")
-		log.Printf("[TRACE] delete connection %s\n ", c)
-		query := getDeleteConnectionQuery(c)
-		_, err := conn.Exec(ctx, query)
-		if err != nil {
-			res.Error = err
-			return res
-		}
-		utils.LogTime("delete connection end")
-	}
+	if len(connectionUpdates.Delete) > 0 {
+		statushooks.SetStatus(ctx, fmt.Sprintf("Deleting %d %s", len(connectionUpdates.Delete), utils.Pluralize("connection", numUpdates)))
 
+		for c := range connectionUpdates.Delete {
+			utils.LogTime("delete connection start")
+			log.Printf("[TRACE] delete connection %s\n ", c)
+			query := getDeleteConnectionQuery(c)
+			_, err := pool.Exec(ctx, query)
+			if err != nil {
+				res.Error = err
+				return res
+			}
+			utils.LogTime("delete connection end")
+		}
+	}
 	return res
 }
 
-func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) error {
+func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) error {
 	utils.LogTime("db.executeUpdateQueries start")
 	defer utils.LogTime("db.executeUpdateQueries end")
-	idx := 0
 	numUpdates := len(updates)
-
-	var builder strings.Builder
-
-	// TODO execute in single transaction???
+	idx := 1
+	pluginMap := make(map[string]string)
 	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
+
+	cloneableConnections := make(steampipeconfig.ConnectionDataMap)
+	statushooks.SetStatus(ctx, fmt.Sprintf("Creating %d %s", numUpdates, utils.Pluralize("connection", numUpdates)))
 	for connectionName, connectionData := range updates {
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
-		statements := []string{
-			"lock table pg_namespace;",
-			getUpdateConnectionQuery(connectionName, remoteSchema),
+		// if this schema is static, and is already in the plugin map, clone from it
+		_, haveExemplarSchema := pluginMap[connectionData.Plugin]
+		if haveExemplarSchema && connectionData.CanCloneSchema() {
+			cloneableConnections[connectionName] = connectionData
+			continue
 		}
-		_, err := executeSqlInTransaction(ctx, rootClient, statements...)
+
+		_, err := pool.Exec(ctx, getUpdateConnectionQuery(connectionName, remoteSchema))
+
 		if err != nil {
 			return err
 		}
+
+		statushooks.SetStatus(ctx, fmt.Sprintf("Created %d of %d %s (%s)", idx, numUpdates, utils.Pluralize("connection", numUpdates), connectionName))
+		pluginMap[connectionData.Plugin] = connectionName
 		idx++
+	}
+
+	if len(cloneableConnections) > 0 {
+		if err := cloneConnectionSchemas(ctx, pool, pluginMap, cloneableConnections, idx, numUpdates); err != nil {
+			return err
+		}
 	}
 
 	log.Printf("[TRACE] all update queries executed")
@@ -226,11 +253,7 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 	for _, failure := range failures {
 		log.Printf("[TRACE] remove schema for connection failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
 		if failure.ShouldDropIfExists {
-			statements := []string{
-				"lock table pg_namespace;",
-				getDeleteConnectionQuery(failure.ConnectionName),
-			}
-			_, err := executeSqlInTransaction(ctx, rootClient, statements...)
+			_, err := pool.Exec(ctx, getDeleteConnectionQuery(failure.ConnectionName))
 			if err != nil {
 				return err
 			}
@@ -239,7 +262,11 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 
 	if viper.GetBool(constants.ArgSchemaComments) {
 		idx = 0
-		builder.Reset()
+		conn, err := pool.Acquire(ctx)
+		if err != nil {
+			return err
+		}
+		defer conn.Release()
 		numCommentsUpdates := len(validatedPlugins)
 		log.Printf("[TRACE] executing %d comment %s", numCommentsUpdates, utils.Pluralize("query", numCommentsUpdates))
 
@@ -247,7 +274,7 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 		for connectionName, connectionPlugin := range validatedPlugins {
 			statements = append(statements, getCommentsQueryForPlugin(connectionName, connectionPlugin))
 		}
-		_, err := executeSqlInTransaction(ctx, rootClient, statements...)
+		_, err = executeSqlInTransaction(ctx, conn.Conn(), statements...)
 		if err != nil {
 			return err
 		}
@@ -257,6 +284,72 @@ func executeUpdateQueries(ctx context.Context, rootClient *pgx.Conn, failures []
 	return nil
 }
 
+func cloneConnectionSchemas(ctx context.Context, pool *pgxpool.Pool, pluginMap map[string]string, cloneableConnections steampipeconfig.ConnectionDataMap, idx int, numUpdates int) error {
+	var wg sync.WaitGroup
+	var progressChan = make(chan string)
+	var errChan = make(chan error)
+
+	var pluginMapMut sync.Mutex
+
+	sem := semaphore.NewWeighted(int64(pool.Config().MaxConns))
+	var errors []error
+
+	go func() {
+		for {
+
+			select {
+			case err := <-errChan:
+				errors = append(errors, err)
+			case connectionName := <-progressChan:
+				if connectionName == "" {
+					return
+				}
+				statushooks.SetStatus(ctx, fmt.Sprintf("Cloned %d of %d %s (%s)", idx, numUpdates, utils.Pluralize("connection", numUpdates), connectionName))
+				idx++
+
+			}
+		}
+	}()
+	for n, d := range cloneableConnections {
+		wg.Add(1)
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return err
+		}
+		// use semaphore to limit goroutines
+		go func(connectionName string, connectionData *steampipeconfig.ConnectionData) {
+			//log.Printf("[WARN] start clone connection %s", connectionName)
+			defer func() {
+				wg.Done()
+				sem.Release(1)
+			}()
+
+			// this schema is already in the plugin map, clone from it
+			exemplarSchemaName := pluginMap[connectionData.Plugin]
+
+			// Clone the foreign schema into this connection.
+			q := fmt.Sprintf("select clone_foreign_schema('%s', '%s', '%s');", exemplarSchemaName, connectionName, connectionData.Plugin)
+			res, err := pool.Exec(ctx, q)
+			//log.Printf("[WARN] clone connection %s query returned", connectionName)
+			log.Println(res)
+
+			if err != nil {
+				errChan <- err
+				return
+
+			}
+			pluginMapMut.Lock()
+			pluginMap[connectionData.Plugin] = connectionName
+			pluginMapMut.Unlock()
+			progressChan <- connectionName
+		}(n, d)
+
+	}
+
+	wg.Wait()
+	close(progressChan)
+
+	return error_helpers.CombineErrors(errors...)
+}
 func getCommentsQueryForPlugin(connectionName string, p *steampipeconfig.ConnectionPlugin) string {
 	var statements strings.Builder
 	for t, schema := range p.ConnectionMap[connectionName].Schema.Schema {
