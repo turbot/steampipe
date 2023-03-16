@@ -151,8 +151,8 @@ func (p *WorkspaceProfile) ConfigMap(commandName string) map[string]interface{} 
 	res.SetIntItem(p.QueryTimeout, constants.ArgDatabaseQueryTimeout)
 	res.SetBoolItem(p.Watch, constants.ArgWatch)
 	res.SetIntItem(p.MaxParallel, constants.ArgMaxParallel)
-	res.SetStringSliceItem(searchPathToArray(*p.SearchPath), constants.ArgSearchPath)
-	res.SetStringSliceItem(searchPathToArray(*p.SearchPathPrefix), constants.ArgSearchPathPrefix)
+	res.SetStringSliceItem(searchPathToArray(p.SearchPath), constants.ArgSearchPath)
+	res.SetStringSliceItem(searchPathToArray(p.SearchPathPrefix), constants.ArgSearchPathPrefix)
 
 	// now add options
 	// build flat config map with order or precedence (low to high): general, terminal, connection
@@ -176,9 +176,12 @@ func (p *WorkspaceProfile) ConfigMap(commandName string) map[string]interface{} 
 	return res
 }
 
-func searchPathToArray(searchPathString string) []string {
+func searchPathToArray(searchPathString *string) []string {
+	if searchPathString == nil {
+		return []string{}
+	}
 	// convert comma separated list to array
-	searchPath := strings.Split(searchPathString, ",")
+	searchPath := strings.Split(*searchPathString, ",")
 	// strip whitespace
 	for i, s := range searchPath {
 		searchPath[i] = strings.TrimSpace(s)
