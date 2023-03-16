@@ -1,0 +1,86 @@
+package options
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/turbot/steampipe/pkg/constants"
+)
+
+// General
+type Check struct {
+	Output    *string `hcl:"output"`
+	Separator *string `hcl:"separator"`
+	Header    *bool   `hcl:"header"`
+	Timing    *bool   `hcl:"timing"`
+}
+
+// ConfigMap :: create a config map to pass to viper
+func (t *Check) ConfigMap() map[string]interface{} {
+	// only add keys which are non null
+	res := map[string]interface{}{}
+	if t.Output != nil {
+		res[constants.ArgOutput] = t.Output
+	}
+	if t.Separator != nil {
+		res[constants.ArgSeparator] = t.Separator
+	}
+	if t.Header != nil {
+		res[constants.ArgHeader] = t.Header
+	}
+	if t.Timing != nil {
+		res[constants.ArgTiming] = t.Timing
+	}
+	return res
+}
+
+// Merge :: merge other options over the the top of this options object
+// i.e. if a property is set in otherOptions, it takes precedence
+func (t *Check) Merge(otherOptions Options) {
+	if _, ok := otherOptions.(*Query); !ok {
+		return
+	}
+	switch o := otherOptions.(type) {
+	case *Query:
+		if o.Output != nil {
+			t.Output = o.Output
+		}
+		if o.Separator != nil {
+			t.Separator = o.Separator
+		}
+		if o.Header != nil {
+			t.Header = o.Header
+		}
+		if o.Timing != nil {
+			t.Timing = o.Timing
+		}
+	}
+}
+
+func (t *Check) String() string {
+	if t == nil {
+		return ""
+	}
+	var str []string
+	if t.Output == nil {
+		str = append(str, "  Output: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  Output: %s", *t.Output))
+	}
+	if t.Separator == nil {
+		str = append(str, "  Separator: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  Separator: %s", *t.Separator))
+	}
+	if t.Header == nil {
+		str = append(str, "  Header: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  Header: %v", *t.Header))
+	}
+	if t.Timing == nil {
+		str = append(str, "  Timing: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  Timing: %v", *t.Timing))
+	}
+	return strings.Join(str, "\n")
+}

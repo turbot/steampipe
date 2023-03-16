@@ -4,6 +4,7 @@ package options
 const (
 	ConnectionBlock = "connection"
 	QueryBlock      = "query"
+	CheckBlock      = "check"
 	DatabaseBlock   = "database"
 	GeneralBlock    = "general"
 	TerminalBlock   = "terminal"

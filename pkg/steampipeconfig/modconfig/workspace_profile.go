@@ -28,6 +28,7 @@ type WorkspaceProfile struct {
 
 	// options
 	QueryOptions      *options.Query
+	CheckOptions      *options.Check
 	GeneralOptions    *options.General
 	ConnectionOptions *options.Connection
 	DeclRange         hcl.Range
@@ -60,6 +61,11 @@ func (p *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hc
 			diags = append(diags, duplicateOptionsBlockDiag(block))
 		}
 		p.QueryOptions = o
+	case *options.Check:
+		if p.CheckOptions != nil {
+			diags = append(diags, duplicateOptionsBlockDiag(block))
+		}
+		p.CheckOptions = o
 	default:
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -162,6 +168,9 @@ func (p *WorkspaceProfile) ConfigMap(commandName string) map[string]interface{} 
 	}
 	if commandName == "query" && p.QueryOptions != nil {
 		res.PopulateConfigMapForOptions(p.QueryOptions)
+	}
+	if commandName == "check" && p.CheckOptions != nil {
+		res.PopulateConfigMapForOptions(p.CheckOptions)
 	}
 
 	return res
