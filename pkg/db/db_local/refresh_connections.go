@@ -231,9 +231,6 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*s
 			continue
 		}
 
-		//log.Printf("[WARN] import foreign schema %s", connectionName)
-
-		// todo if we end up needing locking use pool.BeginTx()
 		_, err := pool.Exec(ctx, getUpdateConnectionQuery(connectionName, remoteSchema))
 
 		if err != nil {
@@ -256,8 +253,6 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*s
 	for _, failure := range failures {
 		log.Printf("[TRACE] remove schema for connection failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
 		if failure.ShouldDropIfExists {
-
-			// todo if we end up needing locking use pool.BeginTx()
 			_, err := pool.Exec(ctx, getDeleteConnectionQuery(failure.ConnectionName))
 			if err != nil {
 				return err
@@ -290,7 +285,6 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*s
 }
 
 func cloneConnectionSchemas(ctx context.Context, pool *pgxpool.Pool, pluginMap map[string]string, cloneableConnections steampipeconfig.ConnectionDataMap, idx int, numUpdates int) error {
-	// TODO lock????
 	var wg sync.WaitGroup
 	var progressChan = make(chan string)
 	var errChan = make(chan error)
