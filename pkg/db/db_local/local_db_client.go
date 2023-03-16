@@ -101,6 +101,5 @@ func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) 
 			metadata.Schemas[s] = exemplarSchema
 		}
 	}
-
 	return metadata, nil
 }

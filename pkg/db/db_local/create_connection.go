@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
@@ -73,7 +74,7 @@ type CreateDbOptions struct {
 // the provided username
 // if the database is not provided (empty), it connects to the default database in the service
 // that was created during installation.
-// NOTE: no session data callback is used - no sesison data will be present
+// NOTE: no session data callback is used - no session data will be present
 func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn, error) {
 	utils.LogTime("db.CreateLocalDbConnection start")
 	defer utils.LogTime("db.CreateLocalDbConnection end")
@@ -107,6 +108,57 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 		return nil, err
 	}
 	return conn, nil
+}
+
+// createConnectionPool
+
+func createConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnections int) (*pgxpool.Pool, error) {
+
+	utils.LogTime("db_client.establishConnectionPool start")
+	defer utils.LogTime("db_client.establishConnectionPool end")
+
+	psqlInfo, err := getLocalSteampipeConnectionString(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	connConfig, err := pgxpool.ParseConfig(psqlInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	const (
+		connMaxIdleTime = 1 * time.Minute
+		connMaxLifetime = 10 * time.Minute
+	)
+
+	connConfig.MinConns = 0
+	connConfig.MaxConns = int32(maxConnections)
+	connConfig.MaxConnLifetime = connMaxLifetime
+	connConfig.MaxConnIdleTime = connMaxIdleTime
+
+	// set an app name so that we can track database connections from this Steampipe execution
+	// this is used to determine whether the database can safely be closed
+	connConfig.ConnConfig.Config.RuntimeParams = map[string]string{
+		"application_name": runtime.PgClientAppName,
+	}
+
+	// this returns connection pool
+	dbPool, err := pgxpool.NewWithConfig(context.Background(), connConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db_common.WaitForPool(
+		ctx,
+		dbPool,
+		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
+		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return dbPool, nil
 }
 
 // createMaintenanceClient connects to the postgres server using the

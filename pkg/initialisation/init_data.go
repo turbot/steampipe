@@ -3,8 +3,6 @@ package initialisation
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -17,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -127,7 +126,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	statushooks.SetStatus(ctx, "Connecting to steampipe")
 	client, errorsAndWarnings := GetDbClient(getClientCtx, invoker, ensureSessionData)
 	if errorsAndWarnings.Error != nil {
-		i.Result.Error = err
+		i.Result.Error = errorsAndWarnings.Error
 		return
 	}
 	i.Result.AddWarnings(errorsAndWarnings.Warnings...)

@@ -43,7 +43,7 @@ func (r *StartResult) SetError(err error) *StartResult {
 type StartDbStatus int
 
 const (
-	// start from 10 to prevent confusion with int zero-value
+	// start from 1 to prevent confusion with int zero-value
 	ServiceStarted StartDbStatus = iota + 1
 	ServiceAlreadyRunning
 	ServiceFailedToStart
@@ -147,13 +147,19 @@ func postServiceStart(ctx context.Context) *modconfig.ErrorAndWarnings {
 		return modconfig.NewErrorsAndWarning(err)
 	}
 
-	//// create the clone_foreign_schema function
-	//if _, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL); err != nil {
-	//	return modconfig.NewErrorsAndWarning(err)
-	//}
+	// create the clone_foreign_schema function
+	if _, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL); err != nil {
+		return modconfig.NewErrorsAndWarning(err)
+	}
 
 	statushooks.SetStatus(ctx, "Setting up functions")
 	if err := refreshFunctions(ctx); err != nil {
+		return modconfig.NewErrorsAndWarning(err)
+	}
+
+	// create the clone_foreign_schema function
+	_, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL)
+	if err != nil {
 		return modconfig.NewErrorsAndWarning(err)
 	}
 
@@ -161,6 +167,7 @@ func postServiceStart(ctx context.Context) *modconfig.ErrorAndWarnings {
 	if err := restoreDBBackup(ctx); err != nil {
 		return modconfig.NewErrorsAndWarning(err)
 	}
+
 	// refresh connections and search paths
 	refreshResult := RefreshConnectionAndSearchPaths(ctx)
 

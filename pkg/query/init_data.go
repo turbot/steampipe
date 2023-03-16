@@ -3,7 +3,6 @@ package query
 import (
 	"context"
 	"fmt"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
@@ -112,5 +111,4 @@ func (i *InitData) init(ctx context.Context, args []string) {
 
 	// and call base init
 	i.InitData.Init(ctx, constants.InvokerQuery)
-
 }
