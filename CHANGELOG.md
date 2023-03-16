@@ -1,7 +1,7 @@
 ## v0.19.2 [2023-03-16]
+_What's new?_
 * When creating a query snapshot, respect the `snapshot-title` arg when assigning a title to the dashboard. ([#3233](https://github.com/turbot/steampipe/issues/3233))
 
-_Bug fixes_
 ## v0.19.1 [2023-03-09]
 _Bug fixes_
 * Fix `service stop` failing if invoked directly after a schema change notification. ([#3206](https://github.com/turbot/steampipe/issues/3206))
