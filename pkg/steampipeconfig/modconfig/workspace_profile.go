@@ -151,8 +151,8 @@ func (p *WorkspaceProfile) ConfigMap(commandName string) map[string]interface{} 
 	res.SetIntItem(p.QueryTimeout, constants.ArgDatabaseQueryTimeout)
 	res.SetBoolItem(p.Watch, constants.ArgWatch)
 	res.SetIntItem(p.MaxParallel, constants.ArgMaxParallel)
-	res.SetStringSliceItem(searchPathToArray(p.SearchPath), constants.ArgSearchPath)
-	res.SetStringSliceItem(searchPathToArray(p.SearchPathPrefix), constants.ArgSearchPathPrefix)
+	res.SetStringSliceItem(stringToSlice(p.SearchPath, ","), constants.ArgSearchPath)
+	res.SetStringSliceItem(stringToSlice(p.SearchPathPrefix, ","), constants.ArgSearchPathPrefix)
 
 	// now add options
 	// build flat config map with order or precedence (low to high): general, terminal, connection
@@ -176,12 +176,15 @@ func (p *WorkspaceProfile) ConfigMap(commandName string) map[string]interface{} 
 	return res
 }
 
-func searchPathToArray(searchPathString *string) []string {
-	if searchPathString == nil {
-		return []string{}
+// stringToSlice checks that `str` is `nil` and returns a string slice with `str`
+// separated with `separator`
+// If `str` is `nil`, this returns a `nil`
+func stringToSlice(str *string, separator string) []string {
+	if str == nil {
+		return nil
 	}
 	// convert comma separated list to array
-	searchPath := strings.Split(*searchPathString, ",")
+	searchPath := strings.Split(*str, separator)
 	// strip whitespace
 	for i, s := range searchPath {
 		searchPath[i] = strings.TrimSpace(s)
