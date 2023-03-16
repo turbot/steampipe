@@ -219,6 +219,9 @@ func (p *WorkspaceProfile) ConfigMap(cmd *cobra.Command) map[string]interface{} 
 	if commandName == "query" && p.QueryOptions != nil {
 		res.PopulateConfigMapForOptions(p.QueryOptions)
 	}
+	if commandName == "check" && p.CheckOptions != nil {
+		res.PopulateConfigMapForOptions(p.CheckOptions)
+	}
 
 	return res
 }
