@@ -2,8 +2,7 @@ import useSelectInputValues from "./useSelectInputValues";
 import { DashboardRunState } from "../../../../types";
 import { LeafNodeData } from "../../common";
 import { renderHook } from "@testing-library/react";
-import { SelectInputOption } from "../types";
-import { SelectOption } from "../SelectInput";
+import { SelectInputOption, SelectOption } from "../types";
 
 const options = [
   {

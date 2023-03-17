@@ -1,8 +1,7 @@
 import { DashboardRunState } from "../../../../types";
 import { getColumn } from "../../../../utils/data";
 import { LeafNodeData } from "../../common";
-import { SelectInputOption } from "../types";
-import { SelectOption } from "../SelectInput";
+import { SelectInputOption, SelectOption } from "../types";
 import { useMemo } from "react";
 
 const useSelectInputValues = (
