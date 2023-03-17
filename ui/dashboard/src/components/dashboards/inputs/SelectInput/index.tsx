@@ -13,7 +13,8 @@ import { useEffect, useState } from "react";
 
 export type SelectOption = {
   label: string;
-  value: string;
+  value: string | null;
+  tags?: object;
 };
 
 type SelectInputProps = InputProps & {

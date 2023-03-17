@@ -35,8 +35,8 @@ const useSelectInputValues = (
         const label = row[labelCol.name];
         const value = row[valueCol.name];
         return {
-          label: label !== undefined ? label.toString() : null,
-          value: value !== undefined ? value.toString() : null,
+          label: !!label ? label.toString() : "",
+          value: !!value ? value.toString() : null,
           tags: tagsCol ? row[tagsCol.name] : {},
         };
       });
