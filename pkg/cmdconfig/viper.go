@@ -8,6 +8,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -19,12 +20,12 @@ func Viper() *viper.Viper {
 }
 
 // BootstrapViper sets up viper with the essential path config (workspace-chdir and install-dir)
-func BootstrapViper(loader *steampipeconfig.WorkspaceProfileLoader, cmdName string) error {
+func BootstrapViper(loader *steampipeconfig.WorkspaceProfileLoader, cmd *cobra.Command) error {
 	// set defaults  for keys which do not have a corresponding command flag
 	setBaseDefaults()
 
 	// set defaults from defaultWorkspaceProfile
-	SetDefaultsFromConfig(loader.DefaultProfile.ConfigMap(cmdName))
+	SetDefaultsFromConfig(loader.DefaultProfile.ConfigMap(cmd))
 
 	// set defaults for install dir and mod location from env vars
 	// this needs to be done since the workspace profile definitions exist in the

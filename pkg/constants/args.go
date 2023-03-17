@@ -49,6 +49,8 @@ const (
 	ArgInput                = "input"
 	ArgDashboardInput       = "dashboard-input"
 	ArgMaxCacheSizeMb       = "max-cache-size-mb"
+	ArgCache                = "cache"
+	ArgCacheTtl             = "cache-ttl"
 	ArgIntrospection        = "introspection"
 	ArgShare                = "share"
 	ArgSnapshot             = "snapshot"

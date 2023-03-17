@@ -1,0 +1,104 @@
+package options
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/turbot/steampipe/pkg/constants"
+)
+
+type WorkspaceProfileDashboard struct {
+	// workspace profile
+	Browser *bool `hcl:"browser"`
+}
+
+type GlobalDashboard struct {
+	// server settings
+	Port   *int    `hcl:"port"`
+	Listen *string `hcl:"listen"`
+}
+
+// ConfigMap :: create a config map to pass to viper
+func (d *WorkspaceProfileDashboard) ConfigMap() map[string]interface{} {
+	// only add keys which are non null
+	res := map[string]interface{}{}
+	if d.Browser != nil {
+		res[constants.ArgBrowser] = d.Browser
+	}
+	return res
+}
+
+// Merge :: merge other options over the the top of this options object
+// i.e. if a property is set in otherOptions, it takes precedence
+func (d *WorkspaceProfileDashboard) Merge(otherOptions Options) {
+	if _, ok := otherOptions.(*WorkspaceProfileDashboard); !ok {
+		return
+	}
+	switch o := otherOptions.(type) {
+	case *WorkspaceProfileDashboard:
+		if o.Browser != nil {
+			d.Browser = o.Browser
+		}
+	}
+}
+
+func (d *WorkspaceProfileDashboard) String() string {
+	if d == nil {
+		return ""
+	}
+	var str []string
+	if d.Browser == nil {
+		str = append(str, "  Browser: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  Browser: %v", *d.Browser))
+	}
+	return strings.Join(str, "\n")
+}
+
+// ConfigMap :: create a config map to pass to viper
+func (d *GlobalDashboard) ConfigMap() map[string]interface{} {
+	// only add keys which are non null
+	res := map[string]interface{}{}
+	if d.Port != nil {
+		res[constants.ArgDashboardPort] = d.Port
+	}
+	if d.Listen != nil {
+		res[constants.ArgDashboardListen] = d.Listen
+	}
+	return res
+}
+
+// Merge :: merge other options over the the top of this options object
+// i.e. if a property is set in otherOptions, it takes precedence
+func (d *GlobalDashboard) Merge(otherOptions Options) {
+	if _, ok := otherOptions.(*GlobalDashboard); !ok {
+		return
+	}
+	switch o := otherOptions.(type) {
+	case *GlobalDashboard:
+		if o.Port != nil {
+			d.Port = o.Port
+		}
+		if o.Listen != nil {
+			d.Listen = o.Listen
+		}
+	}
+}
+
+func (d *GlobalDashboard) String() string {
+	if d == nil {
+		return ""
+	}
+	var str []string
+	if d.Port == nil {
+		str = append(str, "  Port: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  Port: %d", *d.Port))
+	}
+	if d.Listen == nil {
+		str = append(str, "  Listen: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  Listen: %s", *d.Listen))
+	}
+	return strings.Join(str, "\n")
+}

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/zclconf/go-cty/cty"
@@ -17,21 +18,26 @@ type WorkspaceProfile struct {
 	CloudToken        *string           `hcl:"cloud_token,optional" cty:"cloud_token"`
 	InstallDir        *string           `hcl:"install_dir,optional" cty:"install_dir"`
 	ModLocation       *string           `hcl:"mod_location,optional" cty:"mod_location"`
+	QueryTimeout      *int              `hcl:"query_timeout,optional" cty:"query_timeout"`
 	SnapshotLocation  *string           `hcl:"snapshot_location,optional" cty:"snapshot_location"`
 	WorkspaceDatabase *string           `hcl:"workspace_database,optional" cty:"workspace_database"`
-	QueryTimeout      *int              `hcl:"query_timeout,optional" cty:"query_timeout"`
-	Base              *WorkspaceProfile `hcl:"base"`
 	SearchPath        *string           `hcl:"search_path" cty:"search_path"`
 	SearchPathPrefix  *string           `hcl:"search_path_prefix" cty:"search_path_prefix"`
 	Watch             *bool             `hcl:"watch" cty:"watch"`
 	MaxParallel       *int              `hcl:"max_parallel" cty:"max-parallel"`
+	Introspection     *bool             `hcl:"introspection" cty:"introspection"`
+	Input             *bool             `hcl:"input" cty:"input"`
+	Progress          *bool             `hcl:"progress" cty:"progress"`
+	Theme             *string           `hcl:"theme" cty:"theme"`
+	Cache             *bool             `hcl:"cache" cty:"cache"`
+	CacheTTL          *int              `hcl:"cache_ttl" cty:"cache_ttl"`
+	Base              *WorkspaceProfile `hcl:"base"`
 
 	// options
-	QueryOptions      *options.Query
-	CheckOptions      *options.Check
-	GeneralOptions    *options.General
-	ConnectionOptions *options.Connection
-	DeclRange         hcl.Range
+	QueryOptions     *options.Query
+	CheckOptions     *options.Check
+	DashboardOptions *options.WorkspaceProfileDashboard
+	DeclRange        hcl.Range
 }
 
 func NewWorkspaceProfile(block *hcl.Block) *WorkspaceProfile {
@@ -46,16 +52,6 @@ func NewWorkspaceProfile(block *hcl.Block) *WorkspaceProfile {
 func (p *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	switch o := opts.(type) {
-	case *options.Connection:
-		if p.ConnectionOptions != nil {
-			diags = append(diags, duplicateOptionsBlockDiag(block))
-		}
-		p.ConnectionOptions = o
-	case *options.General:
-		if p.GeneralOptions != nil {
-			diags = append(diags, duplicateOptionsBlockDiag(block))
-		}
-		p.GeneralOptions = o
 	case *options.Query:
 		if p.QueryOptions != nil {
 			diags = append(diags, duplicateOptionsBlockDiag(block))
@@ -66,6 +62,11 @@ func (p *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hc
 			diags = append(diags, duplicateOptionsBlockDiag(block))
 		}
 		p.CheckOptions = o
+	case *options.WorkspaceProfileDashboard:
+		if p.DashboardOptions != nil {
+			diags = append(diags, duplicateOptionsBlockDiag(block))
+		}
+		p.DashboardOptions = o
 	default:
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -135,10 +136,28 @@ func (p *WorkspaceProfile) setBaseProperties() {
 	if p.MaxParallel == nil {
 		p.MaxParallel = p.Base.MaxParallel
 	}
+	if p.Introspection == nil {
+		p.Introspection = p.Base.Introspection
+	}
+	if p.Input == nil {
+		p.Input = p.Base.Input
+	}
+	if p.Progress == nil {
+		p.Progress = p.Base.Progress
+	}
+	if p.Theme == nil {
+		p.Theme = p.Base.Theme
+	}
+	if p.Cache == nil {
+		p.Cache = p.Base.Cache
+	}
+	if p.CacheTTL == nil {
+		p.CacheTTL = p.Base.CacheTTL
+	}
 }
 
 // ConfigMap creates a config map containing all options to pass to viper
-func (p *WorkspaceProfile) ConfigMap(commandName string) map[string]interface{} {
+func (p *WorkspaceProfile) ConfigMap(cmd *cobra.Command) map[string]interface{} {
 	res := ConfigMap{}
 	// add non-empty properties to config map
 
@@ -153,24 +172,21 @@ func (p *WorkspaceProfile) ConfigMap(commandName string) map[string]interface{} 
 	res.SetIntItem(p.MaxParallel, constants.ArgMaxParallel)
 	res.SetStringSliceItem(stringToSlice(p.SearchPath, ","), constants.ArgSearchPath)
 	res.SetStringSliceItem(stringToSlice(p.SearchPathPrefix, ","), constants.ArgSearchPathPrefix)
+	res.SetBoolItem(p.Introspection, constants.ArgIntrospection)
+	res.SetBoolItem(p.Input, constants.ArgInput)
+	res.SetBoolItem(p.Progress, constants.ArgProgress)
+	res.SetStringItem(p.Theme, constants.ArgTheme)
+	res.SetBoolItem(p.Cache, constants.ArgCache)
+	res.SetIntItem(p.CacheTTL, constants.ArgCacheTtl)
 
-	// now add options
-	// build flat config map with order or precedence (low to high): general, terminal, connection
-	// this means if (for example) 'search-path' is set in both terminal and connection options,
-	// the value from connection options will have precedence
-	// however, we also store all values scoped by their options type, so we will store:
-	// 'database.search-path', 'terminal.search-path' AND 'search-path' (which will be equal to 'terminal.search-path')
-	if p.GeneralOptions != nil {
-		res.PopulateConfigMapForOptions(p.GeneralOptions)
-	}
-	if p.ConnectionOptions != nil {
-		res.PopulateConfigMapForOptions(p.ConnectionOptions)
-	}
-	if commandName == "query" && p.QueryOptions != nil {
+	if cmd.Name() == "query" && p.QueryOptions != nil {
 		res.PopulateConfigMapForOptions(p.QueryOptions)
 	}
-	if commandName == "check" && p.CheckOptions != nil {
+	if cmd.Name() == "check" && p.CheckOptions != nil {
 		res.PopulateConfigMapForOptions(p.CheckOptions)
+	}
+	if cmd.Name() == "dashboard" && p.DashboardOptions != nil {
+		res.PopulateConfigMapForOptions(p.DashboardOptions)
 	}
 
 	return res
