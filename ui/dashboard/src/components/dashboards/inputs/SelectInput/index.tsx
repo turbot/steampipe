@@ -2,7 +2,7 @@ import Select from "react-select";
 import useSelectInputStyles from "../common/useSelectInputStyles";
 import useSelectInputValues from "../common/useSelectInputValues";
 import { DashboardActions, DashboardDataModeLive } from "../../../../types";
-import { InputProps } from "../types";
+import { InputProps, SelectOption } from "../types";
 import {
   MultiValueLabelWithTags,
   OptionWithTags,
@@ -10,12 +10,6 @@ import {
 } from "../common/Common";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
-
-export type SelectOption = {
-  label: string;
-  value: string | null;
-  tags?: object;
-};
 
 type SelectInputProps = InputProps & {
   multi?: boolean;
