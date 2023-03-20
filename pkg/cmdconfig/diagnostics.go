@@ -61,7 +61,7 @@ func DisplayConfig() {
 		// iterate once more for the non-serializable values
 		for k, v := range res {
 			if _, err := json.Marshal(v); err != nil {
-				res[k] = fmt.Sprintf("[[[ Cannot Serialize ::: %v ]]]", err)
+				res[k] = fmt.Sprintf("%v", v)
 			}
 		}
 		jsonBytes, err := json.MarshalIndent(res, "", " ")
