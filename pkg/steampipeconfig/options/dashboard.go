@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
@@ -16,6 +17,17 @@ type GlobalDashboard struct {
 	// server settings
 	Port   *int    `hcl:"port"`
 	Listen *string `hcl:"listen"`
+}
+
+func (t *WorkspaceProfileDashboard) SetBaseProperties(otherOptions Options) {
+	if helpers.IsNil(otherOptions) {
+		return
+	}
+	if o, ok := otherOptions.(*WorkspaceProfileDashboard); ok {
+		if t.Browser == nil && o.Browser != nil {
+			t.Browser = o.Browser
+		}
+	}
 }
 
 // ConfigMap :: create a config map to pass to viper

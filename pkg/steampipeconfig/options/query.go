@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
@@ -15,6 +16,32 @@ type Query struct {
 	Multi        *bool   `hcl:"multi" cty:"query_multi"`
 	Timing       *bool   `hcl:"timing" cty:"query_timing"`
 	AutoComplete *bool   `hcl:"autocomplete" cty:"query_autocomplete"`
+}
+
+func (t *Query) SetBaseProperties(otherOptions Options) {
+	if helpers.IsNil(otherOptions) {
+		return
+	}
+	if o, ok := otherOptions.(*Query); ok {
+		if t.Output == nil && o.Output != nil {
+			t.Output = o.Output
+		}
+		if t.Separator == nil && o.Separator != nil {
+			t.Separator = o.Separator
+		}
+		if t.Header == nil && o.Header != nil {
+			t.Header = o.Header
+		}
+		if t.Multi == nil && o.Multi != nil {
+			t.Multi = o.Multi
+		}
+		if t.Timing == nil && o.Timing != nil {
+			t.Timing = o.Timing
+		}
+		if t.AutoComplete == nil && o.AutoComplete != nil {
+			t.AutoComplete = o.AutoComplete
+		}
+	}
 }
 
 // ConfigMap :: create a config map to pass to viper

@@ -154,6 +154,21 @@ func (p *WorkspaceProfile) setBaseProperties() {
 	if p.CacheTTL == nil {
 		p.CacheTTL = p.Base.CacheTTL
 	}
+	if p.QueryOptions == nil {
+		p.QueryOptions = p.Base.QueryOptions
+	} else {
+		p.QueryOptions.SetBaseProperties(p.Base.QueryOptions)
+	}
+	if p.CheckOptions == nil {
+		p.CheckOptions = p.Base.CheckOptions
+	} else {
+		p.CheckOptions.SetBaseProperties(p.Base.CheckOptions)
+	}
+	if p.DashboardOptions == nil {
+		p.DashboardOptions = p.Base.DashboardOptions
+	} else {
+		p.DashboardOptions.SetBaseProperties(p.Base.DashboardOptions)
+	}
 }
 
 // ConfigMap creates a config map containing all options to pass to viper

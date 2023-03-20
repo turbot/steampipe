@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
@@ -13,6 +14,26 @@ type Check struct {
 	Separator *string `hcl:"separator" cty:"check_separator"`
 	Header    *bool   `hcl:"header" cty:"check_header"`
 	Timing    *bool   `hcl:"timing" cty:"check_timing"`
+}
+
+func (t *Check) SetBaseProperties(otherOptions Options) {
+	if helpers.IsNil(otherOptions) {
+		return
+	}
+	if o, ok := otherOptions.(*Check); ok {
+		if t.Output == nil && o.Output != nil {
+			t.Output = o.Output
+		}
+		if t.Separator == nil && o.Separator != nil {
+			t.Separator = o.Separator
+		}
+		if t.Separator == nil && o.Separator != nil {
+			t.Separator = o.Separator
+		}
+		if t.Header == nil && o.Header != nil {
+			t.Header = o.Header
+		}
+	}
 }
 
 // ConfigMap :: create a config map to pass to viper
