@@ -74,7 +74,6 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 		res.PopulateConfigMapForOptions(c.DatabaseOptions)
 	}
 	if c.TerminalOptions != nil {
-		// TODO: BINAEK : Add deprecation warning here
 		res.PopulateConfigMapForOptions(c.TerminalOptions)
 	}
 
