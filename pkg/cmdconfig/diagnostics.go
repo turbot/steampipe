@@ -38,6 +38,10 @@ func DisplayConfig() {
 		constants.ArgCloudToken,
 		constants.ArgDatabaseQueryTimeout,
 
+		// cache
+		constants.ArgCache,
+		constants.ArgCacheTtl,
+
 		// database
 		constants.ArgDatabasePort,
 		constants.ArgListenAddress,
@@ -54,7 +58,7 @@ func DisplayConfig() {
 		constants.ArgHeader,
 		constants.ArgMultiLine,
 		constants.ArgTiming,
-		// constants.ArgSearchPath,
+		constants.ArgSearchPath,
 		constants.ArgSearchPathPrefix,
 		constants.ArgWatch,
 		constants.ArgAutoComplete,
