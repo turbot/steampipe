@@ -42,8 +42,8 @@ jobs:
           build-args: |
             TARGETVERSION=${{ env.STEAMPIPE_VERSION }}
           tags: |
-            turbot/steampipe:${{ steps.generate_docker_tag.outputs.docker_tag }}
-            turbot/steampipe:latest
+            ghcr.io/turbot/steampipe:${{ steps.generate_docker_tag.outputs.docker_tag }}
+            ghcr.io/turbot/steampipe:latest
           
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
