@@ -140,6 +140,9 @@ func SetDefaultsFromEnv() {
 		constants.EnvMaxParallel:          {constants.ArgMaxParallel, "int"},
 		constants.EnvQueryTimeout:         {constants.ArgDatabaseQueryTimeout, "int"},
 		constants.EnvDatabaseStartTimeout: {constants.ArgDatabaseStartTimeout, "int"},
+
+		constants.EnvCacheEnabled: {constants.ArgCache, "bool"},
+		constants.EnvCacheTTL:     {constants.ArgCacheTtl, "int"},
 	}
 
 	for k, v := range envMappings {
