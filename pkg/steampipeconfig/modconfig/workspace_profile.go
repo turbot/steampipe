@@ -154,6 +154,15 @@ func (p *WorkspaceProfile) setBaseProperties() {
 	if p.CacheTTL == nil {
 		p.CacheTTL = p.Base.CacheTTL
 	}
+
+	// nested inheritance strategy:
+	//
+	// if my nested struct is a nil
+	//		-> use the base struct
+	//
+	// if I am not nil (and base is not nil)
+	//		-> only inherit the properties which are nil in me and not in base
+	//
 	if p.QueryOptions == nil {
 		p.QueryOptions = p.Base.QueryOptions
 	} else {
