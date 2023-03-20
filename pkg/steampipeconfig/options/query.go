@@ -9,12 +9,12 @@ import (
 
 // General
 type Query struct {
-	Output       *string `hcl:"output"`
-	Separator    *string `hcl:"separator"`
-	Header       *bool   `hcl:"header"`
-	Multi        *bool   `hcl:"multi"`
-	Timing       *bool   `hcl:"timing"`
-	AutoComplete *bool   `hcl:"autocomplete"`
+	Output       *string `hcl:"output" cty:"query_output"`
+	Separator    *string `hcl:"separator" cty:"query_separator"`
+	Header       *bool   `hcl:"header" cty:"query_header"`
+	Multi        *bool   `hcl:"multi" cty:"query_multi"`
+	Timing       *bool   `hcl:"timing" cty:"query_timing"`
+	AutoComplete *bool   `hcl:"autocomplete" cty:"query_autocomplete"`
 }
 
 // ConfigMap :: create a config map to pass to viper

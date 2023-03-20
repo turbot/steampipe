@@ -9,10 +9,10 @@ import (
 
 // General
 type Check struct {
-	Output    *string `hcl:"output"`
-	Separator *string `hcl:"separator"`
-	Header    *bool   `hcl:"header"`
-	Timing    *bool   `hcl:"timing"`
+	Output    *string `hcl:"output" cty:"check_output"`
+	Separator *string `hcl:"separator" cty:"check_separator"`
+	Header    *bool   `hcl:"header" cty:"check_header"`
+	Timing    *bool   `hcl:"timing" cty:"check_timing"`
 }
 
 // ConfigMap :: create a config map to pass to viper

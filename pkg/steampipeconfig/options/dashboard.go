@@ -9,7 +9,7 @@ import (
 
 type WorkspaceProfileDashboard struct {
 	// workspace profile
-	Browser *bool `hcl:"browser"`
+	Browser *bool `hcl:"browser" cty:"profile_dashboard_browser"`
 }
 
 type GlobalDashboard struct {

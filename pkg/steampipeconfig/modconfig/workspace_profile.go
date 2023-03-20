@@ -34,9 +34,9 @@ type WorkspaceProfile struct {
 	Base              *WorkspaceProfile `hcl:"base"`
 
 	// options
-	QueryOptions     *options.Query
-	CheckOptions     *options.Check
-	DashboardOptions *options.WorkspaceProfileDashboard
+	QueryOptions     *options.Query                     `cty:"query-options"`
+	CheckOptions     *options.Check                     `cty:"check-options"`
+	DashboardOptions *options.WorkspaceProfileDashboard `cty:"dashboard-options"`
 	DeclRange        hcl.Range
 }
 
