@@ -60,7 +60,7 @@ BEGIN
                 END LOOP;
 
             dest_table := '"' || dest_schema || '".' || quote_ident(object);
-            table_sql :='CREATE FOREIGN TABLE ' || dest_table || ' (' || columns_sql || ') SERVER steampipe';
+            table_sql :='CREATE FOREIGN TABLE ' || dest_table || ' (' || columns_sql || ') SERVER steampipe OPTIONS (table '|| $$'$$ || quote_ident(object) || $$'$$ || ') ';
             EXECUTE table_sql;
 
             SELECT CONCAT(res, table_sql, ';') into res;
