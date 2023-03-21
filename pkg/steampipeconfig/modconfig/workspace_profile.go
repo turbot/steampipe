@@ -194,8 +194,8 @@ func (p *WorkspaceProfile) ConfigMap(cmd *cobra.Command) map[string]interface{} 
 	res.SetIntItem(p.QueryTimeout, constants.ArgDatabaseQueryTimeout)
 	res.SetBoolItem(p.Watch, constants.ArgWatch)
 	res.SetIntItem(p.MaxParallel, constants.ArgMaxParallel)
-	res.SetStringSliceItem(stringToSlice(p.SearchPath, ","), constants.ArgSearchPath)
-	res.SetStringSliceItem(stringToSlice(p.SearchPathPrefix, ","), constants.ArgSearchPathPrefix)
+	res.SetStringSliceItem(searchPathFromString(p.SearchPath, ","), constants.ArgSearchPath)
+	res.SetStringSliceItem(searchPathFromString(p.SearchPathPrefix, ","), constants.ArgSearchPathPrefix)
 	res.SetBoolItem(p.Introspection, constants.ArgIntrospection)
 	res.SetBoolItem(p.Input, constants.ArgInput)
 	res.SetBoolItem(p.Progress, constants.ArgProgress)
@@ -203,23 +203,23 @@ func (p *WorkspaceProfile) ConfigMap(cmd *cobra.Command) map[string]interface{} 
 	res.SetBoolItem(p.Cache, constants.ArgCache)
 	res.SetIntItem(p.CacheTTL, constants.ArgCacheTtl)
 
-	if cmd.Name() == "query" && p.QueryOptions != nil {
+	if cmd.Name() == constants.CmdNameQuery && p.QueryOptions != nil {
 		res.PopulateConfigMapForOptions(p.QueryOptions)
 	}
-	if cmd.Name() == "check" && p.CheckOptions != nil {
+	if cmd.Name() == constants.CmdNameCheck && p.CheckOptions != nil {
 		res.PopulateConfigMapForOptions(p.CheckOptions)
 	}
-	if cmd.Name() == "dashboard" && p.DashboardOptions != nil {
+	if cmd.Name() == constants.CmdNameDashboard && p.DashboardOptions != nil {
 		res.PopulateConfigMapForOptions(p.DashboardOptions)
 	}
 
 	return res
 }
 
-// stringToSlice checks that `str` is `nil` and returns a string slice with `str`
+// searchPathFromString checks that `str` is `nil` and returns a string slice with `str`
 // separated with `separator`
 // If `str` is `nil`, this returns a `nil`
-func stringToSlice(str *string, separator string) []string {
+func searchPathFromString(str *string, separator string) []string {
 	if str == nil {
 		return nil
 	}

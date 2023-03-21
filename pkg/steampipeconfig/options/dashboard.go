@@ -30,7 +30,7 @@ func (t *WorkspaceProfileDashboard) SetBaseProperties(otherOptions Options) {
 	}
 }
 
-// ConfigMap :: create a config map to pass to viper
+// ConfigMap creates a config map that can be merged with viper
 func (d *WorkspaceProfileDashboard) ConfigMap() map[string]interface{} {
 	// only add keys which are non null
 	res := map[string]interface{}{}
@@ -67,7 +67,7 @@ func (d *WorkspaceProfileDashboard) String() string {
 	return strings.Join(str, "\n")
 }
 
-// ConfigMap :: create a config map to pass to viper
+// ConfigMap creates a config map that can be merged with viper
 func (d *GlobalDashboard) ConfigMap() map[string]interface{} {
 	// only add keys which are non null
 	res := map[string]interface{}{}
