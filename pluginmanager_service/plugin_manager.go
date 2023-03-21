@@ -651,14 +651,26 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 	if supportedOperations.MultipleConnections {
 		// send the connection config for all connections for this plugin
 		// this returns a list of all connections provided by this plugin
-		connectionNames, err = m.setAllConnectionConfigs(pluginClient, pluginName)
+		connectionNames, err = m.setAllConnectionConfigs(pluginClient, pluginName, supportedOperations)
+		if err != nil {
+			log.Printf("[WARN] failed to set connection config: %s", err.Error())
+			return nil, nil, err
+		}
 	} else {
 		// send the connection config using legacy single connection function
 		err = m.setSingleConnectionConfig(pluginClient, connectionName)
+		if err != nil {
+			log.Printf("[WARN] failed to set connection config: %s", err.Error())
+			return nil, nil, err
+		}
 	}
-	if err != nil {
-		log.Printf("[WARN] failed to set connection config: %s", err.Error())
-		return nil, nil, err
+	// if this plugin supports setting cache options, do so
+	if supportedOperations.SetCacheOptions {
+		err = m.setCacheOptions(pluginClient)
+		if err != nil {
+			log.Printf("[WARN] failed to set cache options: %s", err.Error())
+			return nil, nil, err
+		}
 	}
 
 	reattach := proto.NewReattachConfig(pluginName, client.ReattachConfig(), proto.SupportedOperationsFromSdk(supportedOperations), connectionNames)
@@ -702,16 +714,21 @@ func (m *PluginManager) getConnectionsForPlugin(pluginName string) []string {
 
 // set connection config for multiple connection, for compatible plugins
 // NOTE: we DO NOT set connection config for aggregator connections
-func (m *PluginManager) setAllConnectionConfigs(pluginClient *sdkgrpc.PluginClient, pluginName string) ([]string, error) {
+func (m *PluginManager) setAllConnectionConfigs(pluginClient *sdkgrpc.PluginClient, pluginName string, supportedOperations *sdkproto.GetSupportedOperationsResponse) ([]string, error) {
 	configs, ok := m.pluginConnectionConfigMap[pluginName]
 	if !ok {
 		// should never happen
 		return nil, fmt.Errorf("no config loaded for plugin '%s'", pluginName)
 	}
 	req := &sdkproto.SetAllConnectionConfigsRequest{
-		Configs:        configs,
-		MaxCacheSizeMb: m.pluginCacheSizeMap[pluginName],
+		Configs: configs,
 	}
+	// if plugin _does not_ support setting the cache options separately, pass the max size now
+	// (if it does support SetCacheOptions, it will be called after we return)
+	if !supportedOperations.SetCacheOptions {
+		req.MaxCacheSizeMb = m.pluginCacheSizeMap[pluginName]
+	}
+
 	// build list of connections
 	connections := make([]string, len(configs))
 	for i, config := range configs {
@@ -734,6 +751,17 @@ func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginCl
 	}
 
 	return pluginClient.SetConnectionConfig(req)
+}
+
+func (m *PluginManager) setCacheOptions(pluginClient *sdkgrpc.PluginClient) error {
+	req := &sdkproto.SetCacheOptionsRequest{
+		Enabled:    false,
+		Ttl:        0,
+		DefaultTtl: 0,
+		MaxSizeMb:  0,
+	}
+	_, err := pluginClient.SetCacheOptions(req)
+	return err
 }
 
 // update the schema for the specified connection
