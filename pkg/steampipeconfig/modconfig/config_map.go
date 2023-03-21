@@ -2,23 +2,38 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"reflect"
 	"strings"
+
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
 
 type ConfigMap map[string]interface{}
 
-// SetStringItem checks is string pointer is non-nul and if so, add to map with given key
+// SetStringItem checks is string pointer is non-nil and if so, add to map with given key
 func (m ConfigMap) SetStringItem(argValue *string, argName string) {
 	if argValue != nil {
 		m[argName] = *argValue
 	}
 }
 
-// SetIntItem checks is int pointer is non-nul and if so, add to map with given key
+// SetStringSliceItem checks is string slice pointer is non-nil and if so, add to map with given key
+func (m ConfigMap) SetStringSliceItem(argValue []string, argName string) {
+	if argValue != nil {
+		m[argName] = argValue
+	}
+}
+
+// SetIntItem checks is int pointer is non-nil and if so, add to map with given key
 func (m ConfigMap) SetIntItem(argValue *int, argName string) {
+	if argValue != nil {
+		m[argName] = *argValue
+	}
+}
+
+// SetBoolItem checks is bool pointer is non-nil and if so, add to map with given key
+func (m ConfigMap) SetBoolItem(argValue *bool, argName string) {
 	if argValue != nil {
 		m[argName] = *argValue
 	}

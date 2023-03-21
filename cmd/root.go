@@ -184,16 +184,16 @@ func initGlobalConfig() {
 	// set global workspace profile
 	steampipeconfig.GlobalWorkspaceProfile = loader.GetActiveWorkspaceProfile()
 
+	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	// set-up viper with defaults from the env and default workspace profile
-	err = cmdconfig.BootstrapViper(loader)
+	err = cmdconfig.BootstrapViper(loader, cmd)
 	error_helpers.FailOnError(err)
 
 	// set global containing the configured install dir (create directory if needed)
 	ensureInstallDir(viper.GetString(constants.ArgInstallDir))
 
 	// load the connection config and HCL options
-	var cmdName = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name()
-	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmdName)
+	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
 	error_helpers.FailOnError(err)
 
 	// store global config
@@ -210,7 +210,7 @@ func initGlobalConfig() {
 	// NOTE: if install_dir/mod_location are set these will already have been passed to viper by BootstrapViper
 	// since the "ConfiguredProfile" is passed in through a cmdline flag, it will always take precedence
 	if loader.ConfiguredProfile != nil {
-		cmdconfig.SetDefaultsFromConfig(loader.ConfiguredProfile.ConfigMap())
+		cmdconfig.SetDefaultsFromConfig(loader.ConfiguredProfile.ConfigMap(cmd))
 	}
 
 	// NOTE: we need to resolve the token separately

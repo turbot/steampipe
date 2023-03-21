@@ -3,6 +3,9 @@ package options
 // hcl options block types
 const (
 	ConnectionBlock = "connection"
+	QueryBlock      = "query"
+	CheckBlock      = "check"
+	DashboardBlock  = "dashboard"
 	DatabaseBlock   = "database"
 	GeneralBlock    = "general"
 	TerminalBlock   = "terminal"

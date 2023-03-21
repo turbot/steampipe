@@ -24,7 +24,19 @@ load "$LIB_BATS_SUPPORT/load.bash"
     unset STEAMPIPE_INSTALL_DIR
     cwd=$(pwd)
     export STEAMPIPE_DIAGNOSTICS=config_json
-    cmd='steampipe query "select 1"'
+
+    # check the command(query/check/dashboard) and prepare the steampipe
+    # command accordingly
+    cmd=$(echo $tests | jq -c ".[${i}]" | jq ".cmd")
+    if [[ $cmd == '"query"' ]]; then
+      sp_cmd='steampipe query "select 1"'
+    elif [[ $cmd == '"check"' ]]; then
+      sp_cmd='steampipe check all'
+    elif [[ $cmd == '"dashboard"' ]]; then
+      sp_cmd='steampipe dashboard'
+    fi
+    # echo $sp_cmd
+
     # key=$(echo $i)
     echo -e "\n"
     test_name=$(echo $tests | jq -c ".[${i}]" | jq ".test")
@@ -43,14 +55,14 @@ load "$LIB_BATS_SUPPORT/load.bash"
     args=$(echo $tests | jq -c ".[${i}]" | jq ".setup.args")
     echo $args
 
-    # construct the steampipe query command to be run with the args
+    # construct the steampipe command to be run with the args
     for arg in $(echo "${args}" | jq -r '.[]'); do
-      cmd="${cmd} ${arg}"
+      sp_cmd="${sp_cmd} ${arg}"
     done
-    # echo $cmd
+    # echo $sp_cmd
 
     # get the actual config by running the constructed steampipe command
-    run $cmd
+    run $sp_cmd
     actual_config=$(echo $output | jq -c '.')
     # echo $actual_config
 

@@ -4,24 +4,48 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
-// Terminal
-type Terminal struct {
-	Output           *string `hcl:"output"`
-	Separator        *string `hcl:"separator"`
-	Header           *bool   `hcl:"header"`
-	Multi            *bool   `hcl:"multi"`
-	Timing           *bool   `hcl:"timing"`
-	SearchPath       *string `hcl:"search_path"`
-	SearchPathPrefix *string `hcl:"search_path_prefix"`
-	Watch            *bool   `hcl:"watch"`
-	AutoComplete     *bool   `hcl:"autocomplete"`
+// General
+type Query struct {
+	Output       *string `hcl:"output" cty:"query_output"`
+	Separator    *string `hcl:"separator" cty:"query_separator"`
+	Header       *bool   `hcl:"header" cty:"query_header"`
+	Multi        *bool   `hcl:"multi" cty:"query_multi"`
+	Timing       *bool   `hcl:"timing" cty:"query_timing"`
+	AutoComplete *bool   `hcl:"autocomplete" cty:"query_autocomplete"`
+}
+
+func (t *Query) SetBaseProperties(otherOptions Options) {
+	if helpers.IsNil(otherOptions) {
+		return
+	}
+	if o, ok := otherOptions.(*Query); ok {
+		if t.Output == nil && o.Output != nil {
+			t.Output = o.Output
+		}
+		if t.Separator == nil && o.Separator != nil {
+			t.Separator = o.Separator
+		}
+		if t.Header == nil && o.Header != nil {
+			t.Header = o.Header
+		}
+		if t.Multi == nil && o.Multi != nil {
+			t.Multi = o.Multi
+		}
+		if t.Timing == nil && o.Timing != nil {
+			t.Timing = o.Timing
+		}
+		if t.AutoComplete == nil && o.AutoComplete != nil {
+			t.AutoComplete = o.AutoComplete
+		}
+	}
 }
 
 // ConfigMap creates a config map that can be merged with viper
-func (t *Terminal) ConfigMap() map[string]interface{} {
+func (t *Query) ConfigMap() map[string]interface{} {
 	// only add keys which are non null
 	res := map[string]interface{}{}
 	if t.Output != nil {
@@ -39,28 +63,20 @@ func (t *Terminal) ConfigMap() map[string]interface{} {
 	if t.Timing != nil {
 		res[constants.ArgTiming] = t.Timing
 	}
-	if t.SearchPath != nil {
-		// convert from string to array
-		res[constants.ArgSearchPath] = searchPathToArray(*t.SearchPath)
-	}
-	if t.SearchPathPrefix != nil {
-		// convert from string to array
-		res[constants.ArgSearchPathPrefix] = searchPathToArray(*t.SearchPathPrefix)
-	}
-	if t.Watch != nil {
-		res[constants.ArgWatch] = t.Watch
-	}
 	if t.AutoComplete != nil {
 		res[constants.ArgAutoComplete] = t.AutoComplete
 	}
 	return res
 }
 
-// merge other options over the the top of this options object
+// Merge :: merge other options over the the top of this options object
 // i.e. if a property is set in otherOptions, it takes precedence
-func (t *Terminal) Merge(otherOptions Options) {
+func (t *Query) Merge(otherOptions Options) {
+	if _, ok := otherOptions.(*Query); !ok {
+		return
+	}
 	switch o := otherOptions.(type) {
-	case *Terminal:
+	case *Query:
 		if o.Output != nil {
 			t.Output = o.Output
 		}
@@ -76,28 +92,19 @@ func (t *Terminal) Merge(otherOptions Options) {
 		if o.Timing != nil {
 			t.Timing = o.Timing
 		}
-		if o.SearchPath != nil {
-			t.SearchPath = o.SearchPath
-		}
-		if o.SearchPathPrefix != nil {
-			t.SearchPathPrefix = o.SearchPathPrefix
-		}
-		if o.Watch != nil {
-			t.Watch = o.Watch
-		}
 		if o.AutoComplete != nil {
 			t.AutoComplete = o.AutoComplete
 		}
 	}
 }
 
-func (t *Terminal) String() string {
+func (t *Query) String() string {
 	if t == nil {
 		return ""
 	}
 	var str []string
 	if t.Output == nil {
-		str = append(str, "  LogLevel: nil")
+		str = append(str, "  Output: nil")
 	} else {
 		str = append(str, fmt.Sprintf("  Output: %s", *t.Output))
 	}
@@ -121,35 +128,10 @@ func (t *Terminal) String() string {
 	} else {
 		str = append(str, fmt.Sprintf("  Timing: %v", *t.Timing))
 	}
-	if t.SearchPath == nil {
-		str = append(str, "  SearchPath: nil")
-	} else {
-		str = append(str, fmt.Sprintf("  SearchPath: %s", *t.SearchPath))
-	}
-	if t.SearchPathPrefix == nil {
-		str = append(str, "  SearchPathPrefix: nil")
-	} else {
-		str = append(str, fmt.Sprintf("  SearchPathPrefix: %s", *t.SearchPathPrefix))
-	}
-	if t.Watch == nil {
-		str = append(str, "  Watch: nil")
-	} else {
-		str = append(str, fmt.Sprintf("  Watch: %v", *t.Watch))
-	}
 	if t.AutoComplete == nil {
 		str = append(str, "  AutoComplete: nil")
 	} else {
 		str = append(str, fmt.Sprintf("  AutoComplete: %v", *t.AutoComplete))
 	}
 	return strings.Join(str, "\n")
-}
-
-func searchPathToArray(searchPathString string) []string {
-	// convert comma separated list to array
-	searchPath := strings.Split(searchPathString, ",")
-	// strip whitespace
-	for i, s := range searchPath {
-		searchPath[i] = strings.TrimSpace(s)
-	}
-	return searchPath
 }
