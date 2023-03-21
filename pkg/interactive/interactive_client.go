@@ -628,7 +628,9 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) error {
 	log.Printf("[TRACE] InteractiveClient listenToPgNotifications")
 	conn, err := c.getNotificationConnection(ctx)
-
+	if err != nil {
+		return err
+	}
 	for ctx.Err() == nil {
 		if err != nil {
 			return err
