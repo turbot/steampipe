@@ -108,6 +108,7 @@ jobs:
           - "snapshot"
           - "dashboard"
           - "dashboard_parsing_validation"
+          - "schema_cloning"
           - "exit_codes"
           - "force_stop"
         exclude:
