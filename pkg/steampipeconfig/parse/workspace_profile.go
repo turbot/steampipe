@@ -143,7 +143,7 @@ func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseCon
 		switch block.Type {
 		case "options":
 			// if we already found settings, fail
-			opts, moreDiags := DecodeOptions(block)
+			opts, moreDiags := DecodeOptions(block, AsWorkspaceProfileOption())
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				break
