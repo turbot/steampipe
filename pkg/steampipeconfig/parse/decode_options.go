@@ -11,9 +11,7 @@ import (
 // DecodeOptions decodes an options block
 func DecodeOptions(block *hcl.Block, settings ...WithDecodeSetting) (options.Options, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
-
 	config := NewDecodeOptionsConfig()
-
 	for _, applySetting := range settings {
 		applySetting(config)
 	}
