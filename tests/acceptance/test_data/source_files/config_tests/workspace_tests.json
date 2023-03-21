@@ -234,15 +234,15 @@
       "args": []
     },
     "expected": {
-      "autocomplete": false,
-      "header": false,
-      "max-parallel": null,
-      "multi": true,
-      "output": "json",
+      "query.autocomplete": false,
+      "query.header": false,
+      "query.multi": true,
+      "query.output": "json",
       "query-timeout": 0,
       "search-path": "[ ]",
       "search-path-prefix": "[ abc ]",
-      "separator": "|",
+      "query.separator": "|",
+      "query.timing": true,
       "telemetry": "info",
       "update-check": "false",
       "watch": false
@@ -280,15 +280,14 @@
       ]
     },
     "expected": {
-      "autocomplete": true,
-      "header": false,
-      "max-parallel": 10,
-      "multi": true,
-      "output": "csv",
-      "query-timeout": 100,
+      "query.autocomplete": true,
+      "query.header": false,
+      "query.multi": true,
+      "query.output": "csv",
       "search-path": "[ abc ]",
       "search-path-prefix": "[ abc, def ]",
-      "separator": ";",
+      "query.separator": ";",
+      "query.timing": true,
       "telemetry": "none",
       "update-check": "true",
       "watch": false
@@ -311,10 +310,8 @@
       ]
     },
     "expected": {
-      "autocomplete": false,
+      "query.autocomplete": false,
       "header": true,
-      "max-parallel": 10,
-      "multi": true,
       "output": "table",
       "query-timeout": 190,
       "search-path": "[ abc ]",
@@ -339,15 +336,15 @@
       "args": []
     },
     "expected": {
-      "autocomplete": false,
-      "header": false,
+      "query.autocomplete": false,
+      "query.header": false,
       "max-parallel": 10,
-      "multi": true,
-      "output": "json",
+      "query.multi": true,
+      "query.output": "json",
       "query-timeout": 100,
       "search-path": "[ ]",
       "search-path-prefix": "[ abc ]",
-      "separator": "|",
+      "query.separator": "|",
       "telemetry": "none",
       "update-check": true,
       "watch": false
