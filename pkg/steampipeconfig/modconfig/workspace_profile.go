@@ -32,17 +32,6 @@ type WorkspaceProfile struct {
 	Cache             *bool             `hcl:"cache" cty:"cache"`
 	CacheTTL          *int              `hcl:"cache_ttl" cty:"cache_ttl"`
 	Base              *WorkspaceProfile `hcl:"base"`
-	SearchPath        *string           `hcl:"search_path" cty:"search_path"`
-	SearchPathPrefix  *string           `hcl:"search_path_prefix" cty:"search_path_prefix"`
-	Watch             *bool             `hcl:"watch" cty:"watch"`
-	MaxParallel       *int              `hcl:"max_parallel" cty:"max-parallel"`
-	Introspection     *bool             `hcl:"introspection" cty:"introspection"`
-	Input             *bool             `hcl:"input" cty:"input"`
-	Progress          *bool             `hcl:"progress" cty:"progress"`
-	Theme             *string           `hcl:"theme" cty:"theme"`
-	Cache             *bool             `hcl:"cache" cty:"cache"`
-	CacheTTL          *int              `hcl:"cache_ttl" cty:"cache_ttl"`
-	Base              *WorkspaceProfile `hcl:"base"`
 
 	// options
 	QueryOptions     *options.Query                     `cty:"query-options"`
@@ -221,15 +210,6 @@ func (p *WorkspaceProfile) ConfigMap(cmd *cobra.Command) map[string]interface{} 
 		res.PopulateConfigMapForOptions(p.CheckOptions)
 	}
 	if cmd.Name() == constants.CmdNameDashboard && p.DashboardOptions != nil {
-		res.PopulateConfigMapForOptions(p.DashboardOptions)
-	}
-	if commandName == "query" && p.QueryOptions != nil {
-		res.PopulateConfigMapForOptions(p.QueryOptions)
-	}
-	if cmd.Name() == "check" && p.CheckOptions != nil {
-		res.PopulateConfigMapForOptions(p.CheckOptions)
-	}
-	if cmd.Name() == "dashboard" && p.DashboardOptions != nil {
 		res.PopulateConfigMapForOptions(p.DashboardOptions)
 	}
 
