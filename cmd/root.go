@@ -64,11 +64,24 @@ var rootCmd = &cobra.Command{
 		viper.Set(constants.ConfigKeyActiveCommandArgs, args)
 		viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
 
+		// create a logger before initGlobalConfig - we may need to reinitialize the logger
+		// depending on the value of the log_level value in global general options
 		createLogger()
 
 		// set up the global viper config with default values from
 		// config files and ENV variables
 		initGlobalConfig()
+
+		// if the log level was set in the general config
+		if logLevelNeedsReset() {
+			// set my environment to the desired log level
+			error_helpers.FailOnErrorWithMessage(
+				os.Setenv(logging.EnvLogLevel, viper.GetString(constants.ArgLogLevel)),
+				"Failed to setup logging",
+			)
+			// recreate the logger with the new log level
+			createLogger()
+		}
 
 		var taskUpdateCtx context.Context
 		taskUpdateCtx, tasksCancelFn = context.WithCancel(cmd.Context())
@@ -111,6 +124,11 @@ Getting started:
 
   Documentation available at https://steampipe.io/docs
  `,
+}
+
+func logLevelNeedsReset() bool {
+	_, envLogLevelIsSet := os.LookupEnv(logging.EnvLogLevel)
+	return (steampipeconfig.GlobalConfig.GeneralOptions.LogLevel != nil && !envLogLevelIsSet)
 }
 
 func InitCmd() {
