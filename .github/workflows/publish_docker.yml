@@ -33,7 +33,7 @@ jobs:
         run: |
           echo "docker_tag=${STEAMPIPE_VERSION#"v"}" >> $GITHUB_OUTPUT
           
-      - name: Build and Push to Docker Hub
+      - name: Build and Push to Container Registry
         id: docker_build
         uses: docker/build-push-action@v4
         with:
@@ -43,7 +43,6 @@ jobs:
             TARGETVERSION=${{ env.STEAMPIPE_VERSION }}
           tags: |
             ghcr.io/turbot/steampipe:${{ steps.generate_docker_tag.outputs.docker_tag }}
-            ghcr.io/turbot/steampipe:latest
           
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
