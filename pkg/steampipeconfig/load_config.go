@@ -2,45 +2,48 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"github.com/gertd/go-pluralize"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/gertd/go-pluralize"
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/sperr"
 )
 
 var GlobalConfig *SteampipeConfig
 var defaultConfigFileName = "default.spc"
 
 // LoadSteampipeConfig loads the HCL connection config and workspace options
-func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConfig, error) {
+func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConfig, *modconfig.ErrorAndWarnings) {
 	utils.LogTime("steampipeconfig.LoadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
 
-	_ = ensureDefaultConfigFile(filepaths.EnsureConfigDir())
-	config, err := loadSteampipeConfig(modLocation, commandName)
-	if err != nil {
-		return nil, err
+	if err := ensureDefaultConfigFile(filepaths.EnsureConfigDir()); err != nil {
+		return nil, modconfig.NewErrorsAndWarning(
+			sperr.WrapWithMessage(
+				err,
+				"could not create default config",
+			),
+		)
 	}
-	return config, nil
+	return loadSteampipeConfig(modLocation, commandName)
 }
 
 // LoadConnectionConfig loads the connection config but not the workspace options
 // this is called by the fdw
-func LoadConnectionConfig() (*SteampipeConfig, error) {
+func LoadConnectionConfig() (*SteampipeConfig, *modconfig.ErrorAndWarnings) {
 	return LoadSteampipeConfig("", "")
 }
 
@@ -55,13 +58,14 @@ func ensureDefaultConfigFile(configFolder string) error {
 	return nil
 }
 
-func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfig *SteampipeConfig, err error) {
+func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfig *SteampipeConfig, errorsAndWarnings *modconfig.ErrorAndWarnings) {
 	utils.LogTime("steampipeconfig.loadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.loadSteampipeConfig end")
 
+	errorsAndWarnings = modconfig.NewErrorsAndWarning(nil)
 	defer func() {
 		if r := recover(); r != nil {
-			err = helpers.ToError(r)
+			errorsAndWarnings = modconfig.NewErrorsAndWarning(helpers.ToError(r))
 		}
 	}()
 
@@ -70,8 +74,12 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 	// load config from the installation folder -  load all spc files from config directory
 	include := filehelpers.InclusionsFromExtensions(constants.ConnectionConfigExtensions)
 	loadOptions := &loadConfigOptions{include: include}
-	if err := loadConfig(filepaths.EnsureConfigDir(), steampipeConfig, loadOptions); err != nil {
-		return nil, err
+	if ew := loadConfig(filepaths.EnsureConfigDir(), steampipeConfig, loadOptions); ew != nil {
+		if ew.GetError() != nil {
+			return nil, ew.WrapErrorWithMessage("failed to load config")
+		}
+		// merge the warning from this call
+		errorsAndWarnings.AddWarning(ew.Warnings...)
 	}
 
 	// now load config from the workspace folder, if provided
@@ -79,15 +87,20 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 	// check workspace folder exists
 	if modLocation != "" {
 		if _, err := os.Stat(modLocation); os.IsNotExist(err) {
-			return nil, fmt.Errorf("mod location '%s' does not exist", modLocation)
+			return nil, modconfig.NewErrorsAndWarning(fmt.Errorf("mod location '%s' does not exist", modLocation))
 		}
 
 		// only include workspace.spc from workspace directory
 		include = filehelpers.InclusionsFromFiles([]string{filepaths.WorkspaceConfigFileName})
 		// update load options to ONLY allow terminal options
 		loadOptions = &loadConfigOptions{include: include, allowedOptions: []string{options.TerminalBlock}}
-		if err := loadConfig(modLocation, steampipeConfig, loadOptions); err != nil {
-			return nil, fmt.Errorf("failed to load workspace config: %v", err)
+		if ew := loadConfig(modLocation, steampipeConfig, loadOptions); ew != nil {
+			if ew.GetError() != nil {
+				return nil, ew.WrapErrorWithMessage("failed to load workspace config")
+			}
+
+			// merge the warning from this call
+			errorsAndWarnings.AddWarning(ew.Warnings...)
 		}
 	}
 
@@ -99,7 +112,7 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 	warnings, errors := steampipeConfig.Validate()
 	logValidationResult(warnings, errors)
 
-	return steampipeConfig, nil
+	return steampipeConfig, errorsAndWarnings
 }
 
 func logValidationResult(warnings []string, errors []string) {
@@ -136,7 +149,7 @@ type loadConfigOptions struct {
 	allowedOptions []string
 }
 
-func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loadConfigOptions) error {
+func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loadConfigOptions) *modconfig.ErrorAndWarnings {
 	// get all the config files in the directory
 	configPaths, err := filehelpers.ListFiles(configFolder, &filehelpers.ListOptions{
 		Flags:   filehelpers.FilesFlat,
@@ -145,7 +158,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 
 	if err != nil {
 		log.Printf("[WARN] loadConfig: failed to get config file paths: %v\n", err)
-		return err
+		return modconfig.NewErrorsAndWarning(err)
 	}
 	if len(configPaths) == 0 {
 		return nil
@@ -154,19 +167,19 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 	fileData, diags := parse.LoadFileData(configPaths...)
 	if diags.HasErrors() {
 		log.Printf("[WARN] loadConfig: failed to load all config files: %v\n", err)
-		return plugin.DiagsToError("Failed to load all config files", diags)
+		return modconfig.DiagsToErrorsAndWarnings("Failed to load all config files", diags)
 	}
 
 	body, diags := parse.ParseHclFiles(fileData)
 	if diags.HasErrors() {
-		return plugin.DiagsToError("Failed to load all config files", diags)
+		return modconfig.DiagsToErrorsAndWarnings("Failed to load all config files", diags)
 	}
 
 	// do a partial decode
 	content, moreDiags := body.Content(parse.ConfigBlockSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
-		return plugin.DiagsToError("Failed to load config", diags)
+		return modconfig.DiagsToErrorsAndWarnings("Failed to load config", diags)
 	}
 
 	// store block types which we have found in this folder - each is only allowed once
@@ -184,17 +197,17 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			}
 			_, alreadyThere := steampipeConfig.Connections[connection.Name]
 			if alreadyThere {
-				return fmt.Errorf("duplicate connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename)
+				return modconfig.NewErrorsAndWarning(sperr.New("duplicate connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename))
 			}
 			if ok, errorMessage := schema.IsSchemaNameValid(connection.Name); !ok {
-				return fmt.Errorf("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage)
+				return modconfig.NewErrorsAndWarning(sperr.New("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage))
 			}
 			steampipeConfig.Connections[connection.Name] = connection
 
 		case modconfig.BlockTypeOptions:
 			// check this options type is permitted based on the options passed in
 			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
-				return err
+				return modconfig.NewErrorsAndWarning(err)
 			}
 			opts, moreDiags := parse.DecodeOptions(block)
 			if moreDiags.HasErrors() {
@@ -204,14 +217,30 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			// set options on steampipe config
 			// if options are already set, this will merge the new options over the top of the existing options
 			// i.e. new options have precedence
-			steampipeConfig.SetOptions(opts)
+			e := steampipeConfig.SetOptions(opts)
+			if e.GetError() != nil {
+				// we should never get an error here, since SetOptions
+				// only sets warnings
+				// putting this here only for good-practice
+				return e
+			}
+			if len(e.Warnings) > 0 {
+				for _, warning := range e.Warnings {
+					diags = append(diags, &hcl.Diagnostic{
+						Severity: hcl.DiagWarning,
+						Summary:  warning,
+						Subject:  &block.DefRange,
+					})
+				}
+			}
 		}
 	}
 
 	if diags.HasErrors() {
-		return plugin.DiagsToError("Failed to load config", diags)
+		return modconfig.DiagsToErrorsAndWarnings("Failed to load config", diags)
 	}
-	return nil
+
+	return modconfig.DiagsToErrorsAndWarnings("", diags)
 }
 
 func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loadConfigOptions) error {

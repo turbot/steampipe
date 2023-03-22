@@ -38,9 +38,9 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 
 	log.Printf("[INFO] starting plugin manager")
 	// build config map
-	steampipeConfig, err := steampipeconfig.LoadConnectionConfig()
-	if err != nil {
-		log.Printf("[WARN] failed to load connection config: %s", err.Error())
+	steampipeConfig, ew := steampipeconfig.LoadConnectionConfig()
+	if ew.GetError() != nil {
+		log.Printf("[WARN] failed to load connection config: %v", ew.GetError())
 		os.Exit(1)
 	}
 
