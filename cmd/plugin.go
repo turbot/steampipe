@@ -247,9 +247,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 		// reload the config, since an installation should have created a new config file
 		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-		config, ew := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
-		if ew.GetError() != nil {
-			error_helpers.ShowWarning(fmt.Sprintf("Failed to reload config - install report may be incomplete (%s)", ew.GetError()))
+		config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
+		if errorsAndWarnings.GetError() != nil {
+			error_helpers.ShowWarning(fmt.Sprintf("Failed to reload config - install report may be incomplete (%s)", errorsAndWarnings.GetError()))
 		} else {
 			steampipeconfig.GlobalConfig = config
 		}

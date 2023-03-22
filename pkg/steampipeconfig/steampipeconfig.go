@@ -80,9 +80,9 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	return res
 }
 
-func (c *SteampipeConfig) SetOptions(opts options.Options) *modconfig.ErrorAndWarnings {
+func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *modconfig.ErrorAndWarnings) {
 
-	ew := modconfig.NewErrorsAndWarning(nil)
+	errorsAndWarnings = modconfig.NewErrorsAndWarning(nil)
 
 	switch o := opts.(type) {
 	case *options.Connection:
@@ -99,7 +99,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) *modconfig.ErrorAndWa
 		}
 	case *options.Terminal:
 		// Deprecation :: Remove in 0.21
-		ew.AddWarning(deprecationWarning("terminal options"))
+		errorsAndWarnings.AddWarning(deprecationWarning("terminal options"))
 
 		// NOTE: do not load terminal options for check command
 		// this is a short term workaround to handle the clashing 'output' argument
@@ -121,10 +121,10 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) *modconfig.ErrorAndWa
 		}
 		// Deprecation :: Remove in 0.21
 		if c.GeneralOptions.MaxParallel != nil {
-			ew.AddWarning(deprecationWarning("'max_parallel' in general options"))
+			errorsAndWarnings.AddWarning(deprecationWarning("'max_parallel' in general options"))
 		}
 	}
-	return ew
+	return errorsAndWarnings
 }
 
 func deprecationWarning(subject string) string {

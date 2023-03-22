@@ -710,9 +710,9 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	c.initData.ConnectionMap = connectionMap
 
 	// reload config before reloading schema
-	config, ew := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "query")
-	if ew.GetError() != nil {
-		log.Printf("[WARN] Error reloading config: %v", ew.GetError())
+	config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "query")
+	if errorsAndWarnings.GetError() != nil {
+		log.Printf("[WARN] Error reloading config: %v", errorsAndWarnings.GetError())
 		return
 	}
 	steampipeconfig.GlobalConfig = config
