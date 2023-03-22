@@ -20,7 +20,7 @@ func DecodeOptions(block *hcl.Block, settings ...WithDecodeSetting) (options.Opt
 	if !ok {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("Invalid options type '%s'", block.Labels[0]),
+			Summary:  fmt.Sprintf("Unexpected options type '%s'", block.Labels[0]),
 			Subject:  &block.DefRange,
 		})
 		return nil, diags
@@ -53,8 +53,9 @@ func NewDecodeOptionsConfig() *DecodeOptionsConfig {
 	return config
 }
 
-func AsWorkspaceProfileOption() WithDecodeSetting {
+// WithOverride overrides the default block mapping for a single block type
+func WithOverride(blockName string, destination options.Options) WithDecodeSetting {
 	return func(doc *DecodeOptionsConfig) {
-		doc.mapping[options.DashboardBlock] = &options.WorkspaceProfileDashboard{}
+		doc.mapping[blockName] = destination
 	}
 }

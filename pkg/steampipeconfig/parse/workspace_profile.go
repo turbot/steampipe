@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
 
 func LoadWorkspaceProfiles(workspaceProfilePath string) (profileMap map[string]*modconfig.WorkspaceProfile, err error) {
@@ -122,6 +123,13 @@ func decodeWorkspaceProfiles(parseCtx *WorkspaceProfileParseContext) (map[string
 	return profileMap, diags
 }
 
+// decodeWorkspaceProfileOption decodes an options block as a workspace profile property
+// setting the necessary overrides for special handling of the "dashboard" option which is different
+// from the global "dashboard" option
+func decodeWorkspaceProfileOption(block *hcl.Block) (options.Options, hcl.Diagnostics) {
+	return DecodeOptions(block, WithOverride(constants.CmdNameDashboard, &options.WorkspaceProfileDashboard{}))
+}
+
 func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseContext) (*modconfig.WorkspaceProfile, *decodeResult) {
 	res := newDecodeResult()
 	// get shell resource
@@ -138,12 +146,20 @@ func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseCon
 	if len(diags) > 0 {
 		res.handleDecodeDiags(diags)
 	}
-
+	foundOptions := []string{}
 	for _, block := range workspaceProfileOptions.Blocks {
 		switch block.Type {
 		case "options":
-			// if we already found settings, fail
-			opts, moreDiags := DecodeOptions(block, AsWorkspaceProfileOption())
+			optionsBlockType := block.Labels[0]
+			if helpers.StringSliceContains(foundOptions, optionsBlockType) {
+				// fail
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Subject:  &block.DefRange,
+					Summary:  fmt.Sprintf("Duplicate options type '%s'", optionsBlockType),
+				})
+			}
+			opts, moreDiags := decodeWorkspaceProfileOption(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				break
@@ -152,7 +168,7 @@ func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseCon
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
-
+			foundOptions = append(foundOptions, optionsBlockType)
 		default:
 			// this should never happen
 			diags = append(diags, &hcl.Diagnostic{
