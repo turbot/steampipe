@@ -9,6 +9,7 @@ on:
 env:
   STEAMPIPE_VERSION: ${{ github.event.inputs.release }}
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+  GH_PUBLISH_ACCESS_TOKEN: ${{ secrets.GH_PUBLISH_ACCESS_TOKEN }}
 
 jobs:
   publish_docker:  
@@ -26,7 +27,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GH_PUBLISH_ACCESS_TOKEN }}
       
       - name: Clean Version for Tag
         id: generate_docker_tag
