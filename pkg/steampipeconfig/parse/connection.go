@@ -70,7 +70,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 			if connection.Options != nil {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagWarning,
-					Summary:  "connection options have been deprecated and will be removed in subsequent version of steampipe",
+					Summary:  "connection options have been deprecated and will be removed in subsequent versions of steampipe",
 					Subject:  &connectionBlock.DefRange,
 				})
 			}
