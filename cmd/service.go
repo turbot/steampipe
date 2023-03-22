@@ -249,7 +249,7 @@ func startService(ctx context.Context, port int, serviceListen db_local.StartLis
 			dashboardState, err = startDashboardServer(ctx)
 			if err != nil {
 				tryToStopServices(ctx)
-				exitCode = constants.ExitCodeFileSystemAccessFailure
+				exitCode = constants.ExitCodeServiceStartupFailure
 				error_helpers.FailOnError(err)
 			}
 			dbServiceStarted = true
