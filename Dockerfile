@@ -32,7 +32,7 @@ ENV STEAMPIPE_UPDATE_CHECK=false
 ENV STEAMPIPE_TELEMETRY=none
 
 # Run steampipe service once
-RUN steampipe service start --dashboard
+RUN steampipe service start
 # and stop it
 RUN steampipe service stop
 
