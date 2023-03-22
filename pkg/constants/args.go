@@ -35,6 +35,7 @@ const (
 	ArgProgress             = "progress"
 	ArgExport               = "export"
 	ArgMaxParallel          = "max-parallel"
+	ArgLogLevel             = "log-level"
 	ArgDryRun               = "dry-run"
 	ArgWhere                = "where"
 	ArgTag                  = "tag"

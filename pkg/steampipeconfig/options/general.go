@@ -28,6 +28,9 @@ func (g *General) ConfigMap() map[string]interface{} {
 	if g.MaxParallel != nil {
 		res[constants.ArgMaxParallel] = g.MaxParallel
 	}
+	if g.LogLevel != nil {
+		res[constants.ArgLogLevel] = g.LogLevel
+	}
 
 	return res
 }
