@@ -58,6 +58,13 @@ var rootCmd = &cobra.Command{
 		utils.LogTime("cmd.root.PersistentPreRun start")
 		defer utils.LogTime("cmd.root.PersistentPreRun end")
 
+		defer func() {
+			if r := recover(); r != nil {
+				error_helpers.ShowError(cmd.Context(), helpers.ToError(r))
+				debug.PrintStack()
+			}
+		}()
+
 		handleArgDeprecations()
 
 		viper.Set(constants.ConfigKeyActiveCommand, cmd)
@@ -134,7 +141,7 @@ Getting started:
 //	the GlobalConfig has a loglevel set
 func logLevelNeedsReset() bool {
 	_, envLogLevelIsSet := os.LookupEnv(logging.EnvLogLevel)
-	return (steampipeconfig.GlobalConfig.GeneralOptions.LogLevel != nil && !envLogLevelIsSet)
+	return (steampipeconfig.GlobalConfig.GeneralOptions != nil && steampipeconfig.GlobalConfig.GeneralOptions.LogLevel != nil && !envLogLevelIsSet)
 }
 
 func InitCmd() {
