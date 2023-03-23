@@ -3,7 +3,6 @@ package pluginmanager_service
 import (
 	"context"
 	"crypto/md5"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -163,8 +162,14 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connectionwatcher.Co
 
 // OnConnectionsChanged is the callback function invoked by the connection watcher when connections are added or removed
 func (m *PluginManager) OnConnectionsChanged(ctx context.Context, refreshResult *steampipeconfig.RefreshConnectionResult) {
+	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
+	if err != nil {
+		log.Printf("[WARN] failed to send schema update notification: %s", err)
+	}
+
 	notification := refreshResult.Updates.AsNotification()
-	m.notifySchemaChange(ctx, notification)
+
+	db_local.SendPostgresNotification(ctx, conn, notification)
 }
 
 func (m *PluginManager) Shutdown(*proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {
@@ -778,28 +783,14 @@ func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionNa
 	// also send a postgres notification
 	notification := steampipeconfig.NewSchemaUpdateNotification([]string{connectionName}, nil)
 
-	m.notifySchemaChange(ctx, notification)
-}
-
-// send a postgres notification that the schema has chganged
-func (m *PluginManager) notifySchemaChange(ctx context.Context, notification any) {
 	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
-
+		log.Printf("[WARN] failed to send schema update notification: %s", err)
 	}
 
-	notificationBytes, err := json.Marshal(notification)
+	err = db_local.SendPostgresNotification(ctx, conn, notification)
 	if err != nil {
-		log.Printf("[TRACE] error marshalling Postgres notification: %s", err.Error())
-		return
-	}
-
-	log.Printf("[TRACE] Send update notification")
-
-	sql := fmt.Sprintf("select pg_notify('%s', $1)", constants.PostgresNotificationChannel)
-	_, err = conn.Exec(context.Background(), sql, notificationBytes)
-	if err != nil {
-		log.Printf("[WARN] Error sending notification: %s", err)
+		log.Printf("[WARN] failed to send schema update notification: %s", err)
 	}
 }
 
