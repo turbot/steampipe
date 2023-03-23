@@ -98,13 +98,13 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *m
 			c.DatabaseOptions.Merge(o)
 		}
 	case *options.Terminal:
-		// Deprecation :: Remove in 0.21
+		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
 		errorsAndWarnings.AddWarning(deprecationWarning("terminal options"))
 
 		// NOTE: do not load terminal options for check command
 		// this is a short term workaround to handle the clashing 'output' argument
 		// this will be refactored
-		// Deprecation :: Remove in 0.21
+		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
 		if c.commandName == "check" {
 			break
 		}
@@ -119,7 +119,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *m
 		} else {
 			c.GeneralOptions.Merge(o)
 		}
-		// Deprecation :: Remove in 0.21
+		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
 		if c.GeneralOptions.MaxParallel != nil {
 			errorsAndWarnings.AddWarning(deprecationWarning("'max_parallel' in general options"))
 		}

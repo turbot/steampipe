@@ -9,14 +9,14 @@ import (
 )
 
 // DecodeOptions decodes an options block
-func DecodeOptions(block *hcl.Block, settings ...WithDecodeSetting) (options.Options, hcl.Diagnostics) {
+func DecodeOptions(block *hcl.Block, overrides ...BlockMappingOverride) (options.Options, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
-	config := NewDecodeOptionsConfig()
-	for _, applySetting := range settings {
-		applySetting(config)
+	mapping := defaultOptionsBlockMapping()
+	for _, applyOverride := range overrides {
+		applyOverride(mapping)
 	}
 
-	destination, ok := config.mapping[block.Labels[0]]
+	destination, ok := mapping[block.Labels[0]]
 	if !ok {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -34,14 +34,10 @@ func DecodeOptions(block *hcl.Block, settings ...WithDecodeSetting) (options.Opt
 	return destination, nil
 }
 
-type DecodeOptionsConfig struct {
-	mapping map[string]options.Options
-}
-type WithDecodeSetting func(*DecodeOptionsConfig)
+type OptionsBlockMapping = map[string]options.Options
 
-func NewDecodeOptionsConfig() *DecodeOptionsConfig {
-	config := new(DecodeOptionsConfig)
-	config.mapping = map[string]options.Options{
+func defaultOptionsBlockMapping() OptionsBlockMapping {
+	mapping := OptionsBlockMapping{
 		options.ConnectionBlock: &options.Connection{},
 		options.DatabaseBlock:   &options.Database{},
 		options.TerminalBlock:   &options.Terminal{},
@@ -50,12 +46,14 @@ func NewDecodeOptionsConfig() *DecodeOptionsConfig {
 		options.CheckBlock:      &options.Check{},
 		options.DashboardBlock:  &options.GlobalDashboard{},
 	}
-	return config
+	return mapping
 }
 
+type BlockMappingOverride func(OptionsBlockMapping)
+
 // WithOverride overrides the default block mapping for a single block type
-func WithOverride(blockName string, destination options.Options) WithDecodeSetting {
-	return func(doc *DecodeOptionsConfig) {
-		doc.mapping[blockName] = destination
+func WithOverride(blockName string, destination options.Options) BlockMappingOverride {
+	return func(mapping OptionsBlockMapping) {
+		mapping[blockName] = destination
 	}
 }

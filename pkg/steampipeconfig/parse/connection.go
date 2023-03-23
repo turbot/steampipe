@@ -67,6 +67,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 				diags = append(diags, moreDiags...)
 			}
 
+			// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
 			if connection.Options != nil {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagWarning,

@@ -146,12 +146,15 @@ func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseCon
 	if len(diags) > 0 {
 		res.handleDecodeDiags(diags)
 	}
-	foundOptions := []string{}
+	// use a map keyed by a string for fast lookup
+	// we use an empty struct as the value type, so that
+	// we don't use up unnecessary memory
+	foundOptions := map[string]struct{}{}
 	for _, block := range workspaceProfileOptions.Blocks {
 		switch block.Type {
 		case "options":
 			optionsBlockType := block.Labels[0]
-			if helpers.StringSliceContains(foundOptions, optionsBlockType) {
+			if _, found := foundOptions[optionsBlockType]; found {
 				// fail
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
@@ -168,7 +171,7 @@ func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseCon
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
-			foundOptions = append(foundOptions, optionsBlockType)
+			foundOptions[optionsBlockType] = struct{}{}
 		default:
 			// this should never happen
 			diags = append(diags, &hcl.Diagnostic{

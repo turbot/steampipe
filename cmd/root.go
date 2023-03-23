@@ -75,6 +75,8 @@ var rootCmd = &cobra.Command{
 		// if the log level was set in the general config
 		if logLevelNeedsReset() {
 			// set my environment to the desired log level
+			// so that this gets inherited by any other process
+			// started by this process (postgres/plugin-manager)
 			error_helpers.FailOnErrorWithMessage(
 				os.Setenv(logging.EnvLogLevel, viper.GetString(constants.ArgLogLevel)),
 				"Failed to setup logging",
@@ -126,6 +128,10 @@ Getting started:
  `,
 }
 
+// the log level will need resetting if
+//
+//	this process does not have a log level set in it's environment
+//	the GlobalConfig has a loglevel set
 func logLevelNeedsReset() bool {
 	_, envLogLevelIsSet := os.LookupEnv(logging.EnvLogLevel)
 	return (steampipeconfig.GlobalConfig.GeneralOptions.LogLevel != nil && !envLogLevelIsSet)
@@ -213,6 +219,8 @@ func initGlobalConfig() {
 	// load the connection config and HCL options
 	config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
 	error_helpers.FailOnError(errorsAndWarnings.GetError())
+
+	// show any deprecation warnings
 	errorsAndWarnings.ShowWarnings()
 
 	// store global config

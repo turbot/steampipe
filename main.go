@@ -16,12 +16,11 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-var exitCode int
+var exitCode int = constants.ExitCodeSuccessful
 
 func main() {
 	ctx := context.Background()
 	utils.LogTime("main start")
-	exitCode = constants.ExitCodeSuccessful
 	defer func() {
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))

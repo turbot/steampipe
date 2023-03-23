@@ -66,13 +66,13 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	ctx := context.Background()
 
 	log.Printf("[TRACE] ConnectionWatcher handleFileWatcherEvent")
-	config, err := steampipeconfig.LoadConnectionConfig()
-	if err.GetError() != nil {
-		log.Printf("[WARN] error loading updated connection config: %v", err.GetError())
+	config, errorsAndWarnings := steampipeconfig.LoadConnectionConfig()
+	if errorsAndWarnings.GetError() != nil {
+		log.Printf("[WARN] error loading updated connection config: %v", errorsAndWarnings.GetError())
 		return
 	}
-	if len(err.Warnings) > 0 {
-		log.Printf("[WARN] loading updated connection config succeeded with warnings: %v", err.Warnings)
+	if len(errorsAndWarnings.Warnings) > 0 {
+		log.Printf("[WARN] loading updated connection config succeeded with warnings: %v", errorsAndWarnings.Warnings)
 	}
 	log.Printf("[TRACE] loaded updated config")
 
