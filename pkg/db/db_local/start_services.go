@@ -240,7 +240,7 @@ func startDB(ctx context.Context, listenAddresses string, port int, invoker cons
 		error_helpers.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
 	}
 
-	if err := utils.IsPortBindable(listenAddresses, port); err != nil {
+	if err := utils.IsPortBindable(utils.GetFirstListenAddress(listenAddresses), port); err != nil {
 		return res.SetError(fmt.Errorf("cannot listen on listenAddresses %s and port %d", constants.Bold(listenAddresses), constants.Bold(port)))
 	}
 
