@@ -6,8 +6,6 @@ import (
 	"golang.org/x/exp/maps"
 	"golang.org/x/sync/semaphore"
 	"log"
-	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -169,15 +167,16 @@ func logRefreshConnectionResults(updates *steampipeconfig.ConnectionUpdates, res
 func executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *steampipeconfig.ConnectionUpdates) *steampipeconfig.RefreshConnectionResult {
 	utils.LogTime("db.executeConnectionUpdateQueries start")
 	defer utils.LogTime("db.executeConnectionUpdateQueries start")
-	numConnections, _ := strconv.Atoi(os.Getenv("numConnections"))
-	log.Printf("[WARN] conn count: %d", numConnections)
+
+	poolsize := 25
+	//log.Printf("[WARN] poolsize %d", poolsize)
 	res := &steampipeconfig.RefreshConnectionResult{}
-	pool, err := createConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser}, numConnections)
+	pool, err := createConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
 	if err != nil {
 		res.Error = err
 		return res
 	}
-	defer pool.Close()
+	// NOTE: pool is closed by executeDeleteQueries
 
 	numUpdates := len(connectionUpdates.Update)
 	log.Printf("[TRACE] executeConnectionUpdateQueries: num updates %d", numUpdates)
@@ -198,22 +197,29 @@ func executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *stea
 		}
 	}
 
-	if len(connectionUpdates.Delete) > 0 {
-		statushooks.SetStatus(ctx, fmt.Sprintf("Deleting %d %s", len(connectionUpdates.Delete), utils.Pluralize("connection", numUpdates)))
+	// asyncronously delete connections
+	go func() {
+		executeDeleteQueries(ctx, pool, connectionUpdates.Delete)
+		pool.Close()
+	}()
 
-		for c := range connectionUpdates.Delete {
-			utils.LogTime("delete connection start")
-			log.Printf("[TRACE] delete connection %s\n ", c)
-			query := getDeleteConnectionQuery(c)
-			_, err := pool.Exec(ctx, query)
-			if err != nil {
-				res.Error = err
-				return res
-			}
-			utils.LogTime("delete connection end")
-		}
-	}
 	return res
+}
+
+func executeDeleteQueries(ctx context.Context, pool *pgxpool.Pool, deletions steampipeconfig.ConnectionDataMap) error {
+	statushooks.SetStatus(ctx, fmt.Sprintf("Deleting %d %s", len(deletions), utils.Pluralize("connection", len(deletions))))
+
+	for c := range deletions {
+		utils.LogTime("delete connection start")
+		log.Printf("[TRACE] delete connection %s\n ", c)
+		query := getDeleteConnectionQuery(c)
+		_, err := pool.Exec(ctx, query)
+		if err != nil {
+			return err
+		}
+		utils.LogTime("delete connection end")
+	}
+	return nil
 }
 
 func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*steampipeconfig.ValidationFailure, updates steampipeconfig.ConnectionDataMap, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) error {
@@ -221,7 +227,7 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*s
 	defer utils.LogTime("db.executeUpdateQueries end")
 	numUpdates := len(updates)
 	idx := 1
-	pluginMap := make(map[string]string)
+	exemplarSchemaMap := make(map[string]string)
 	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
 
 	cloneableConnections := make(steampipeconfig.ConnectionDataMap)
@@ -229,7 +235,7 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*s
 	for connectionName, connectionData := range updates {
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
 		// if this schema is static, and is already in the plugin map, clone from it
-		_, haveExemplarSchema := pluginMap[connectionData.Plugin]
+		_, haveExemplarSchema := exemplarSchemaMap[connectionData.Plugin]
 		if haveExemplarSchema && connectionData.CanCloneSchema() {
 			cloneableConnections[connectionName] = connectionData
 			continue
@@ -242,14 +248,17 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*s
 		}
 
 		statushooks.SetStatus(ctx, fmt.Sprintf("Created %d of %d %s (%s)", idx, numUpdates, utils.Pluralize("connection", numUpdates), connectionName))
-		pluginMap[connectionData.Plugin] = connectionName
+		exemplarSchemaMap[connectionData.Plugin] = connectionName
 		idx++
 	}
 
 	if len(cloneableConnections) > 0 {
-		if err := cloneConnectionSchemas(ctx, pool, pluginMap, cloneableConnections, idx, numUpdates); err != nil {
+		statushooks.SetStatus(ctx, fmt.Sprintf("Cloning %d %s", len(cloneableConnections), utils.Pluralize("connection", len(cloneableConnections))))
+		//log.Printf("[WARN] cloneConnectionSchemas")
+		if err := cloneConnectionSchemas(ctx, pool, exemplarSchemaMap, cloneableConnections, idx, numUpdates); err != nil {
 			return err
 		}
+		//log.Printf("[WARN] cloneConnectionSchemas DONE")
 	}
 
 	log.Printf("[TRACE] all update queries executed")
@@ -267,9 +276,11 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*s
 	if viper.GetBool(constants.ArgSchemaComments) {
 		// execute comments asyncronously
 		go func() {
+			log.Printf("[WARN] start comments")
 			idx = 0
 			conn, err := pool.Acquire(ctx)
 			if err != nil {
+				log.Printf("[WARN] comments error %v", err)
 				// todo send error notification
 				return
 			}
@@ -277,16 +288,22 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*s
 			numCommentsUpdates := len(validatedPlugins)
 			log.Printf("[TRACE] executing %d comment %s", numCommentsUpdates, utils.Pluralize("query", numCommentsUpdates))
 
-			statements := []string{"lock table pg_namespace;"}
+			//statements := []string{"lock table pg_namespace;"}
 			for connectionName, connectionPlugin := range validatedPlugins {
-				statements = append(statements, getCommentsQueryForPlugin(connectionName, connectionPlugin))
+				_, err = executeSqlInTransaction(ctx, conn.Conn(), "lock table pg_namespace;", getCommentsQueryForPlugin(connectionName, connectionPlugin))
+				if err != nil {
+					// todo send error notification
+					return
+				}
+				//statements = append(statements, getCommentsQueryForPlugin(connectionName, connectionPlugin))
 			}
-			_, err = executeSqlInTransaction(ctx, conn.Conn(), statements...)
-			if err != nil {
-				// todo send error notification
-				return
-			}
+			//_, err = executeSqlInTransaction(ctx, conn.Conn(), statements...)
+			//if err != nil {
+			//	// todo send error notification
+			//	return
+			//}
 
+			log.Printf("[WARN] comments complete, sending notify")
 			// also send a postgres notification
 			notification := steampipeconfig.NewSchemaUpdateNotification(maps.Keys(validatedPlugins), nil)
 
@@ -294,6 +311,8 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*s
 			if err != nil {
 				log.Printf("[WARN] failed to send schema update notification: %s", err)
 			}
+
+			log.Printf("[WARN] comments complete, sent notify")
 		}()
 	}
 
@@ -367,6 +386,7 @@ func cloneConnectionSchemas(ctx context.Context, pool *pgxpool.Pool, pluginMap m
 
 	return error_helpers.CombineErrors(errors...)
 }
+
 func getCommentsQueryForPlugin(connectionName string, p *steampipeconfig.ConnectionPlugin) string {
 	var statements strings.Builder
 	for t, schema := range p.ConnectionMap[connectionName].Schema.Schema {
