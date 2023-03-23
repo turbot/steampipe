@@ -680,11 +680,11 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 	if notification == nil {
 		return
 	}
-	log.Printf("[TRACE] handleConnectionUpdateNotification: %s", notification.Payload)
+	log.Printf("[WARN] handleConnectionUpdateNotification: %s", notification.Payload)
 	n := &steampipeconfig.PostgresNotification{}
 	err := json.Unmarshal([]byte(notification.Payload), n)
 	if err != nil {
-		log.Printf("[INFO] Error unmarshalling notification: %s", err)
+		log.Printf("[WARN] Error unmarshalling notification: %s", err)
 		return
 	}
 	switch n.Type {
@@ -692,7 +692,7 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 		// unmarshal the notification again, into the correct type
 		schemaUpdateNotification := &steampipeconfig.SchemaUpdateNotification{}
 		if err := json.Unmarshal([]byte(notification.Payload), schemaUpdateNotification); err != nil {
-			log.Printf("[INFO] Error unmarshalling notification: %s", err)
+			log.Printf("[WARN] Error unmarshalling notification: %s", err)
 			return
 		}
 		c.handleConnectionUpdateNotification(ctx, schemaUpdateNotification)
