@@ -3,8 +3,11 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"golang.org/x/sync/semaphore"
 	"log"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -166,9 +169,10 @@ func logRefreshConnectionResults(updates *steampipeconfig.ConnectionUpdates, res
 func executeConnectionUpdateQueries(ctx context.Context, connectionUpdates *steampipeconfig.ConnectionUpdates) *steampipeconfig.RefreshConnectionResult {
 	utils.LogTime("db.executeConnectionUpdateQueries start")
 	defer utils.LogTime("db.executeConnectionUpdateQueries start")
-
+	numConnections, _ := strconv.Atoi(os.Getenv("numConnections"))
+	log.Printf("[WARN] conn count: %d", numConnections)
 	res := &steampipeconfig.RefreshConnectionResult{}
-	pool, err := createConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser}, 25)
+	pool, err := createConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser}, numConnections)
 	if err != nil {
 		res.Error = err
 		return res
@@ -261,23 +265,36 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, failures []*s
 	}
 
 	if viper.GetBool(constants.ArgSchemaComments) {
-		idx = 0
-		conn, err := pool.Acquire(ctx)
-		if err != nil {
-			return err
-		}
-		defer conn.Release()
-		numCommentsUpdates := len(validatedPlugins)
-		log.Printf("[TRACE] executing %d comment %s", numCommentsUpdates, utils.Pluralize("query", numCommentsUpdates))
+		// execute comments asyncronously
+		go func() {
+			idx = 0
+			conn, err := pool.Acquire(ctx)
+			if err != nil {
+				// todo send error notification
+				return
+			}
+			defer conn.Release()
+			numCommentsUpdates := len(validatedPlugins)
+			log.Printf("[TRACE] executing %d comment %s", numCommentsUpdates, utils.Pluralize("query", numCommentsUpdates))
 
-		statements := []string{"lock table pg_namespace;"}
-		for connectionName, connectionPlugin := range validatedPlugins {
-			statements = append(statements, getCommentsQueryForPlugin(connectionName, connectionPlugin))
-		}
-		_, err = executeSqlInTransaction(ctx, conn.Conn(), statements...)
-		if err != nil {
-			return err
-		}
+			statements := []string{"lock table pg_namespace;"}
+			for connectionName, connectionPlugin := range validatedPlugins {
+				statements = append(statements, getCommentsQueryForPlugin(connectionName, connectionPlugin))
+			}
+			_, err = executeSqlInTransaction(ctx, conn.Conn(), statements...)
+			if err != nil {
+				// todo send error notification
+				return
+			}
+
+			// also send a postgres notification
+			notification := steampipeconfig.NewSchemaUpdateNotification(maps.Keys(validatedPlugins), nil)
+
+			err = SendPostgresNotification(ctx, conn.Conn(), notification)
+			if err != nil {
+				log.Printf("[WARN] failed to send schema update notification: %s", err)
+			}
+		}()
 	}
 
 	log.Printf("[TRACE] executeUpdateQueries complete")
