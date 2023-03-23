@@ -58,17 +58,39 @@ var rootCmd = &cobra.Command{
 		utils.LogTime("cmd.root.PersistentPreRun start")
 		defer utils.LogTime("cmd.root.PersistentPreRun end")
 
+		defer func() {
+			if r := recover(); r != nil {
+				error_helpers.ShowError(cmd.Context(), helpers.ToError(r))
+				debug.PrintStack()
+			}
+		}()
+
 		handleArgDeprecations()
 
 		viper.Set(constants.ConfigKeyActiveCommand, cmd)
 		viper.Set(constants.ConfigKeyActiveCommandArgs, args)
 		viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
 
+		// create a logger before initGlobalConfig - we may need to reinitialize the logger
+		// depending on the value of the log_level value in global general options
 		createLogger()
 
 		// set up the global viper config with default values from
 		// config files and ENV variables
 		initGlobalConfig()
+
+		// if the log level was set in the general config
+		if logLevelNeedsReset() {
+			// set my environment to the desired log level
+			// so that this gets inherited by any other process
+			// started by this process (postgres/plugin-manager)
+			error_helpers.FailOnErrorWithMessage(
+				os.Setenv(logging.EnvLogLevel, viper.GetString(constants.ArgLogLevel)),
+				"Failed to setup logging",
+			)
+			// recreate the logger with the new log level
+			createLogger()
+		}
 
 		var taskUpdateCtx context.Context
 		taskUpdateCtx, tasksCancelFn = context.WithCancel(cmd.Context())
@@ -111,6 +133,15 @@ Getting started:
 
   Documentation available at https://steampipe.io/docs
  `,
+}
+
+// the log level will need resetting if
+//
+//	this process does not have a log level set in it's environment
+//	the GlobalConfig has a loglevel set
+func logLevelNeedsReset() bool {
+	_, envLogLevelIsSet := os.LookupEnv(logging.EnvLogLevel)
+	return (steampipeconfig.GlobalConfig.GeneralOptions != nil && steampipeconfig.GlobalConfig.GeneralOptions.LogLevel != nil && !envLogLevelIsSet)
 }
 
 func InitCmd() {
@@ -193,8 +224,11 @@ func initGlobalConfig() {
 	ensureInstallDir(viper.GetString(constants.ArgInstallDir))
 
 	// load the connection config and HCL options
-	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
-	error_helpers.FailOnError(err)
+	config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
+	error_helpers.FailOnError(errorsAndWarnings.GetError())
+
+	// show any deprecation warnings
+	errorsAndWarnings.ShowWarnings()
 
 	// store global config
 	steampipeconfig.GlobalConfig = config

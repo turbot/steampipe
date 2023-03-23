@@ -9,37 +9,51 @@ import (
 )
 
 // DecodeOptions decodes an options block
-func DecodeOptions(block *hcl.Block) (options.Options, hcl.Diagnostics) {
+func DecodeOptions(block *hcl.Block, overrides ...BlockMappingOverride) (options.Options, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
-	var dest options.Options
-	switch block.Labels[0] {
-	case options.ConnectionBlock:
-		dest = &options.Connection{}
-	case options.DatabaseBlock:
-		dest = &options.Database{}
-	case options.TerminalBlock:
-		dest = &options.Terminal{}
-	case options.GeneralBlock:
-		dest = &options.General{}
-	case options.QueryBlock:
-		dest = &options.Query{}
-	case options.CheckBlock:
-		dest = &options.Check{}
-	case options.DashboardBlock:
-		dest = &options.WorkspaceProfileDashboard{}
-	default:
+	mapping := defaultOptionsBlockMapping()
+	for _, applyOverride := range overrides {
+		applyOverride(mapping)
+	}
+
+	destination, ok := mapping[block.Labels[0]]
+	if !ok {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("Invalid options type '%s'", block.Labels[0]),
+			Summary:  fmt.Sprintf("Unexpected options type '%s'", block.Labels[0]),
 			Subject:  &block.DefRange,
 		})
 		return nil, diags
 	}
 
-	diags = gohcl.DecodeBody(block.Body, nil, dest)
+	diags = gohcl.DecodeBody(block.Body, nil, destination)
 	if diags.HasErrors() {
 		return nil, diags
 	}
 
-	return dest, nil
+	return destination, nil
+}
+
+type OptionsBlockMapping = map[string]options.Options
+
+func defaultOptionsBlockMapping() OptionsBlockMapping {
+	mapping := OptionsBlockMapping{
+		options.ConnectionBlock: &options.Connection{},
+		options.DatabaseBlock:   &options.Database{},
+		options.TerminalBlock:   &options.Terminal{},
+		options.GeneralBlock:    &options.General{},
+		options.QueryBlock:      &options.Query{},
+		options.CheckBlock:      &options.Check{},
+		options.DashboardBlock:  &options.GlobalDashboard{},
+	}
+	return mapping
+}
+
+type BlockMappingOverride func(OptionsBlockMapping)
+
+// WithOverride overrides the default block mapping for a single block type
+func WithOverride(blockName string, destination options.Options) BlockMappingOverride {
+	return func(mapping OptionsBlockMapping) {
+		mapping[blockName] = destination
+	}
 }

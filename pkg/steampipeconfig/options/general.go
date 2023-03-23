@@ -12,6 +12,7 @@ type General struct {
 	UpdateCheck *string `hcl:"update_check"`
 	MaxParallel *int    `hcl:"max_parallel"`
 	Telemetry   *string `hcl:"telemetry"`
+	LogLevel    *string `hcl:"log_level"`
 }
 
 // ConfigMap creates a config map that can be merged with viper
@@ -26,6 +27,9 @@ func (g *General) ConfigMap() map[string]interface{} {
 	}
 	if g.MaxParallel != nil {
 		res[constants.ArgMaxParallel] = g.MaxParallel
+	}
+	if g.LogLevel != nil {
+		res[constants.ArgLogLevel] = g.LogLevel
 	}
 
 	return res

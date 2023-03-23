@@ -117,9 +117,9 @@ func (c *DbClient) ConstructSearchPath(ctx context.Context, customSearchPath, se
 
 // reload Steampipe config, update viper and re-set required search path
 func (c *DbClient) updateRequiredSearchPath(ctx context.Context) error {
-	config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "dashboard")
-	if err != nil {
-		return err
+	config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "dashboard")
+	if errorsAndWarnings.GetError() != nil {
+		return errorsAndWarnings.GetError()
 	}
 	steampipeconfig.GlobalConfig = config
 	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
