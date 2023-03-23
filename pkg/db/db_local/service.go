@@ -22,9 +22,9 @@ func GetState() (*RunningDBInstanceInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("[TRACE] GetState - loadRunningInstanceInfo returned %#v\n", info)
 
 	if info == nil {
+		log.Println("[TRACE] GetRunStatus - loadRunningInstanceInfo returned nil ")
 		// we do not have a info file
 		return nil, errorIfUnknownService()
 	}
