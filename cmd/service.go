@@ -61,7 +61,7 @@ connection from any Postgres compatible database client.`,
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, false, "Help for service start", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddIntFlag(constants.ArgDatabasePort, constants.DatabaseDefaultPort, "Database service port").
-		AddStringFlag(constants.ArgDatabaseListenAddresses, string(db_local.ListenTypeNetwork), "Accept connections from: `local` (an alias for `localhost` only), `network` (an alias for `*`), or (postgres)").
+		AddStringFlag(constants.ArgDatabaseListenAddresses, string(db_local.ListenTypeNetwork), "Accept connections from: `local` (an alias for `localhost` only), `network` (an alias for `*`), , or a comma separated list of hosts and/or IP addresses").
 		AddStringFlag(constants.ArgServicePassword, "", "Set the database password for this session").
 		// default is false and hides the database user password from service start prompt
 		AddBoolFlag(constants.ArgServiceShowPassword, false, "View database password for connecting from another machine").
