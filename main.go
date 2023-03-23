@@ -21,10 +21,13 @@ var exitCode int
 func main() {
 	ctx := context.Background()
 	utils.LogTime("main start")
-	exitCode := constants.ExitCodeSuccessful
+	exitCode = constants.ExitCodeSuccessful
 	defer func() {
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
+			if exitCode == 0 {
+				exitCode = constants.ExitCodeUnknownErrorPanic
+			}
 		}
 		utils.LogTime("main end")
 		utils.DisplayProfileData()
