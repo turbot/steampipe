@@ -362,9 +362,6 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 
 	line = strings.TrimSpace(line)
 
-	statushooks.Show(ctx)
-	defer statushooks.Done(ctx)
-
 	resolvedQuery := c.getQuery(ctx, line)
 	if resolvedQuery == nil {
 		// we failed to resolve a query, or are in the middle of a multi-line entry
@@ -379,13 +376,20 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	queryCtx := c.createQueryContext(ctx)
 
 	if metaquery.IsMetaQuery(resolvedQuery.ExecuteSQL) {
+		c.hidePrompt = true
+		c.interactivePrompt.Render()
+
 		if err := c.executeMetaquery(queryCtx, resolvedQuery.ExecuteSQL); err != nil {
 			error_helpers.ShowError(ctx, err)
 		}
+		c.hidePrompt = false
+
 		// cancel the context
 		c.cancelActiveQueryIfAny()
 
 	} else {
+		statushooks.Show(ctx)
+		defer statushooks.Done(ctx)
 
 		// otherwise execute query
 		t := time.Now()
