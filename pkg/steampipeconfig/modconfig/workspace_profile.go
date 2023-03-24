@@ -200,7 +200,6 @@ func (p *WorkspaceProfile) ConfigMap(cmd *cobra.Command) map[string]interface{} 
 	res.SetBoolItem(p.Input, constants.ArgInput)
 	res.SetBoolItem(p.Progress, constants.ArgProgress)
 	res.SetStringItem(p.Theme, constants.ArgTheme)
-	res.SetBoolItem(p.Cache, constants.ArgCache)
 	res.SetBoolItem(p.Cache, constants.ArgClientCacheEnabled)
 	res.SetIntItem(p.CacheTTL, constants.ArgCacheTtl)
 

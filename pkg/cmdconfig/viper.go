@@ -146,10 +146,6 @@ func SetDefaultsFromEnv() {
 		constants.EnvCacheEnabled: {[]string{
 			constants.ArgClientCacheEnabled,
 			constants.ArgServiceCacheEnabled,
-			// leave this around for legacy purposes
-			// it doesn't look like this is getting used anywhere
-			// we need to figure out what to do with this
-			constants.ArgCache,
 		}, Bool},
 	}
 
