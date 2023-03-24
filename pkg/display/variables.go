@@ -9,24 +9,24 @@ import (
 )
 
 type variableInfo struct {
-	Name         string `json:"name"`
-	Type         string `json:"type"`
-	Description  string `json:"description"`
-	ValueDefault string `json:"value_default"`
-	Value        string `json:"value"`
-	ModName      string `json:"mod_name"`
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Description string `json:"description"`
+	Default     any    `json:"value_default"`
+	Value       any    `json:"value"`
+	ModName     string `json:"mod_name"`
 }
 
 func ShowVarsListJson(vars []*modconfig.Variable) {
 	var jsonStructs []variableInfo
 	for _, v := range vars {
 		jv := variableInfo{
-			Name:         v.ShortName,
-			Type:         v.TypeString,
-			Description:  v.GetDescription(),
-			ValueDefault: fmt.Sprintf("%v", v.DefaultGo),
-			Value:        fmt.Sprintf("%v", v.ValueGo),
-			ModName:      v.ModName,
+			Name:        v.ShortName,
+			Type:        v.TypeString,
+			Description: v.GetDescription(),
+			Default:     v.DefaultGo,
+			Value:       v.ValueGo,
+			ModName:     v.ModName,
 		}
 		jsonStructs = append(jsonStructs, jv)
 	}
