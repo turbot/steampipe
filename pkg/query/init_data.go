@@ -60,12 +60,11 @@ func (i *InitData) Cleanup(ctx context.Context) {
 	// if a client was initialised, close it
 	if i.Client != nil {
 		i.Client.Close(ctx)
-		if viper.IsSet(constants.ArgClientCacheEnabled) {
-			if viper.GetBool(constants.ArgClientCacheEnabled) {
-				i.Client.CacheOn(ctx)
-			} else {
-				i.Client.CacheOff(ctx)
-			}
+
+		// if the cache is set on the workspace profile
+		// and is set to false, then override the default cache setting of the connection
+		if viper.IsSet(constants.ArgClientCacheEnabled) && !viper.GetBool(constants.ArgClientCacheEnabled) {
+			i.Client.CacheOff(ctx)
 		}
 	}
 	if i.ShutdownTelemetry != nil {
