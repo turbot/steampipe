@@ -283,7 +283,7 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 		viper.SetDefault(constants.ArgCloudToken, *loader.DefaultProfile.CloudToken)
 	}
 	// 3) env var (STEAMIPE_CLOUD_TOKEN )
-	cmdconfig.SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgCloudToken, "string")
+	cmdconfig.SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgCloudToken, cmdconfig.String)
 
 	// 4) explicit workspace profile
 	if p := loader.ConfiguredProfile; p != nil && p.CloudToken != nil {
@@ -294,9 +294,9 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 
 func loadWorkspaceProfile() (*steampipeconfig.WorkspaceProfileLoader, error) {
 	// set viper default for workspace profile, using STEAMPIPE_WORKSPACE env var
-	cmdconfig.SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, "string")
+	cmdconfig.SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, cmdconfig.String)
 	// set viper default for install dir, using STEAMPIPE_INSTALL_DIR env var
-	cmdconfig.SetDefaultFromEnv(constants.EnvInstallDir, constants.ArgInstallDir, "string")
+	cmdconfig.SetDefaultFromEnv(constants.EnvInstallDir, constants.ArgInstallDir, cmdconfig.String)
 
 	// resolve the workspace profile dir
 	installDir, err := filehelpers.Tildefy(viper.GetString(constants.ArgInstallDir))
