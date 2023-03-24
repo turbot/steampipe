@@ -100,21 +100,20 @@ func setBaseDefaults() {
 }
 
 type envMapping struct {
-	configVar string
-	// "string", "int", "bool"
-	varType string
+	configVar []string
+	varType   EnvVarType
 }
 
 // set default values of INSTALL_DIR and ModLocation from env vars
 func setDirectoryDefaultsFromEnv() {
 	envMappings := map[string]envMapping{
-		constants.EnvInstallDir:     {constants.ArgInstallDir, "string"},
-		constants.EnvWorkspaceChDir: {constants.ArgModLocation, "string"},
-		constants.EnvModLocation:    {constants.ArgModLocation, "string"},
+		constants.EnvInstallDir:     {[]string{constants.ArgInstallDir}, String},
+		constants.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, String},
+		constants.EnvModLocation:    {[]string{constants.ArgModLocation}, String},
 	}
 
-	for k, v := range envMappings {
-		SetDefaultFromEnv(k, v.configVar, v.varType)
+	for envVar, mapping := range envMappings {
+		setConfigFromEnv(envVar, mapping.configVar, mapping.varType)
 	}
 }
 
@@ -125,40 +124,56 @@ func SetDefaultsFromEnv() {
 
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
-		constants.EnvInstallDir:           {constants.ArgInstallDir, "string"},
-		constants.EnvWorkspaceChDir:       {constants.ArgModLocation, "string"},
-		constants.EnvModLocation:          {constants.ArgModLocation, "string"},
-		constants.EnvIntrospection:        {constants.ArgIntrospection, "string"},
-		constants.EnvTelemetry:            {constants.ArgTelemetry, "string"},
-		constants.EnvUpdateCheck:          {constants.ArgUpdateCheck, "bool"},
-		constants.EnvCloudHost:            {constants.ArgCloudHost, "string"},
-		constants.EnvCloudToken:           {constants.ArgCloudToken, "string"},
-		constants.EnvSnapshotLocation:     {constants.ArgSnapshotLocation, "string"},
-		constants.EnvWorkspaceDatabase:    {constants.ArgWorkspaceDatabase, "string"},
-		constants.EnvServicePassword:      {constants.ArgServicePassword, "string"},
-		constants.EnvCheckDisplayWidth:    {constants.ArgCheckDisplayWidth, "int"},
-		constants.EnvMaxParallel:          {constants.ArgMaxParallel, "int"},
-		constants.EnvQueryTimeout:         {constants.ArgDatabaseQueryTimeout, "int"},
-		constants.EnvDatabaseStartTimeout: {constants.ArgDatabaseStartTimeout, "int"},
-		constants.EnvCacheEnabled:         {constants.ArgCache, "bool"},
-		constants.EnvCacheTTL:             {constants.ArgCacheTtl, "int"},
+		constants.EnvInstallDir:           {[]string{constants.ArgInstallDir}, String},
+		constants.EnvWorkspaceChDir:       {[]string{constants.ArgModLocation}, String},
+		constants.EnvModLocation:          {[]string{constants.ArgModLocation}, String},
+		constants.EnvIntrospection:        {[]string{constants.ArgIntrospection}, String},
+		constants.EnvTelemetry:            {[]string{constants.ArgTelemetry}, String},
+		constants.EnvUpdateCheck:          {[]string{constants.ArgUpdateCheck}, Bool},
+		constants.EnvCloudHost:            {[]string{constants.ArgCloudHost}, String},
+		constants.EnvCloudToken:           {[]string{constants.ArgCloudToken}, String},
+		constants.EnvSnapshotLocation:     {[]string{constants.ArgSnapshotLocation}, String},
+		constants.EnvWorkspaceDatabase:    {[]string{constants.ArgWorkspaceDatabase}, String},
+		constants.EnvServicePassword:      {[]string{constants.ArgServicePassword}, String},
+		constants.EnvCheckDisplayWidth:    {[]string{constants.ArgCheckDisplayWidth}, Int},
+		constants.EnvMaxParallel:          {[]string{constants.ArgMaxParallel}, Int},
+		constants.EnvQueryTimeout:         {[]string{constants.ArgDatabaseQueryTimeout}, Int},
+		constants.EnvDatabaseStartTimeout: {[]string{constants.ArgDatabaseStartTimeout}, Int},
+		constants.EnvCacheTTL:             {[]string{constants.ArgCacheTtl}, Int},
+		constants.EnvCacheMaxTTL:          {[]string{constants.ArgCacheMaxTtl}, Int},
+
+		// we need this value to go into different locations
+		constants.EnvCacheEnabled: {[]string{
+			constants.ArgClientCacheEnabled,
+			constants.ArgServiceCacheEnabled,
+			// leave this around for legacy purposes
+			// it doesn't look like this is getting used anywhere
+			// we need to figure out what to do with this
+			constants.ArgCache,
+		}, Bool},
 	}
 
-	for k, v := range envMappings {
-		SetDefaultFromEnv(k, v.configVar, v.varType)
+	for envVar, v := range envMappings {
+		setConfigFromEnv(envVar, v.configVar, v.varType)
 	}
 }
 
-func SetDefaultFromEnv(k string, configVar string, varType string) {
+func setConfigFromEnv(envVar string, configs []string, varType EnvVarType) {
+	for _, configVar := range configs {
+		SetDefaultFromEnv(envVar, configVar, varType)
+	}
+}
+
+func SetDefaultFromEnv(k string, configVar string, varType EnvVarType) {
 	if val, ok := os.LookupEnv(k); ok {
 		switch varType {
-		case "string":
+		case String:
 			viper.SetDefault(configVar, val)
-		case "bool":
+		case Bool:
 			if boolVal, err := types.ToBool(val); err == nil {
 				viper.SetDefault(configVar, boolVal)
 			}
-		case "int":
+		case Int:
 			if intVal, err := types.ToInt64(val); err == nil {
 				viper.SetDefault(configVar, intVal)
 			}
