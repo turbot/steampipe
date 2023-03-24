@@ -17,7 +17,6 @@ type Database struct {
 	SearchPathPrefix *string `hcl:"search_path_prefix"`
 	Cache            *bool   `hcl:"cache"`
 	CacheMaxTtl      *int    `hcl:"cache_max_ttl"`
-	CacheDefaultTtl  *int    `hcl:"cache_default_ttl"`
 	CacheMaxSizeMb   *int    `hcl:"cache_max_size_mb"`
 }
 
@@ -39,6 +38,20 @@ func (d *Database) ConfigMap() map[string]interface{} {
 		res[constants.ArgDatabaseStartTimeout] = d.StartTimeout
 	} else {
 		res[constants.ArgDatabaseStartTimeout] = constants.DBStartTimeout.Seconds()
+	}
+
+	if d.SearchPathPrefix != nil {
+		// convert from string to array
+		res[constants.ArgSearchPathPrefix] = searchPathToArray(*d.SearchPathPrefix)
+	}
+	if d.Cache != nil {
+		res[constants.ArgServiceCacheEnabled] = d.Cache
+	}
+	if d.CacheMaxTtl != nil {
+		res[constants.ArgCacheMaxTtl] = d.CacheMaxTtl
+	}
+	if d.CacheMaxSizeMb != nil {
+		res[constants.ArgMaxCacheSizeMb] = d.CacheMaxSizeMb
 	}
 	return res
 }
