@@ -362,6 +362,9 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 
 	line = strings.TrimSpace(line)
 
+	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
+
 	resolvedQuery := c.getQuery(ctx, line)
 	if resolvedQuery == nil {
 		// we failed to resolve a query, or are in the middle of a multi-line entry
