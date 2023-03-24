@@ -754,11 +754,11 @@ func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginCl
 }
 
 func (m *PluginManager) setCacheOptions(pluginClient *sdkgrpc.PluginClient) error {
+	// TODO set from viper
 	req := &sdkproto.SetCacheOptionsRequest{
-		Enabled:    false,
-		Ttl:        0,
-		DefaultTtl: 0,
-		MaxSizeMb:  0,
+		Enabled:   false,
+		Ttl:       100,
+		MaxSizeMb: 100,
 	}
 	_, err := pluginClient.SetCacheOptions(req)
 	return err
