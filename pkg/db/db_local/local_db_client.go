@@ -23,11 +23,11 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
-	listenAddresses := StartListenType(ListenTypeLocal).ToListenAddresses()
+	listenAddresses := StartListenType(viper.GetString(constants.ArgDatabaseListenAddresses)).ToListenAddresses()
 	port := viper.GetInt(constants.ArgDatabasePort)
 	log.Println(fmt.Sprintf("[TRACE] GetLocalClient - listenAddresses=%s, port=%d", listenAddresses, port))
 	// start db if necessary
-	if err := EnsureDBInstalled(ctx, listenAddresses); err != nil {
+	if err := EnsureDBInstalled(ctx); err != nil {
 		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 

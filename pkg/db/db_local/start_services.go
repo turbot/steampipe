@@ -266,7 +266,7 @@ func startDB(ctx context.Context, listenAddresses string, port int, invoker cons
 		return res.SetError(err)
 	}
 
-	databaseName, err := getDatabaseName(ctx, listenAddresses, port)
+	databaseName, err := getDatabaseName(ctx, port)
 	if err != nil {
 		return res.SetError(err)
 	}
@@ -327,8 +327,8 @@ func ensureService(ctx context.Context, databaseName string) error {
 }
 
 // getDatabaseName connects to the service and retrieves the database name
-func getDatabaseName(ctx context.Context, host string, port int) (string, error) {
-	databaseName, err := retrieveDatabaseNameFromService(ctx, host, port)
+func getDatabaseName(ctx context.Context, port int) (string, error) {
+	databaseName, err := retrieveDatabaseNameFromService(ctx, port)
 	if err != nil {
 		return "", err
 	}
@@ -374,8 +374,8 @@ func startPostgresProcess(ctx context.Context, listenAddresses string, port int,
 	return postgresCmd, nil
 }
 
-func retrieveDatabaseNameFromService(ctx context.Context, host string, port int) (string, error) {
-	connection, err := createMaintenanceClient(ctx, host, port)
+func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, error) {
+	connection, err := createMaintenanceClient(ctx, port)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to the database: %v - please try again or reset your steampipe database", err)
 	}

@@ -8,7 +8,11 @@ import (
 )
 
 func GetFirstListenAddress(listenAddresses string) string {
-	return strings.TrimSpace(strings.Split(listenAddresses, ",")[0])
+	listenAddress := strings.TrimSpace(strings.Split(listenAddresses, ",")[0])
+	if listenAddress == "*" {
+		listenAddress = "127.0.0.1"
+	}
+	return listenAddress
 }
 
 func LocalAddresses() ([]string, error) {

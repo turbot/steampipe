@@ -190,7 +190,7 @@ func startService(ctx context.Context, listenAddresses string, port int, invoker
 	defer statushooks.Done(ctx)
 	log.Println(fmt.Sprintf("[TRACE] startService - listenAddresses=%s", listenAddresses))
 
-	err := db_local.EnsureDBInstalled(ctx, listenAddresses)
+	err := db_local.EnsureDBInstalled(ctx)
 	if err != nil {
 		exitCode = constants.ExitCodeServiceStartupFailure
 		error_helpers.FailOnError(err)
@@ -420,7 +420,7 @@ to force a restart.
 
 	// the DB must be installed and therefore is a noop,
 	// and EnsureDBInstalled also checks and installs the latest FDW
-	err = db_local.EnsureDBInstalled(ctx, currentDbState.ListenAddresses)
+	err = db_local.EnsureDBInstalled(ctx)
 	if err != nil {
 		exitCode = constants.ExitCodeServiceStartupFailure
 		error_helpers.FailOnError(err)

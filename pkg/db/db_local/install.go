@@ -36,9 +36,8 @@ If you need to restore the contents of your public schema, please open an issue 
 }
 
 // EnsureDBInstalled makes sure that the embedded pg database is installed and running
-func EnsureDBInstalled(ctx context.Context, listenAddresses string) (err error) {
+func EnsureDBInstalled(ctx context.Context) (err error) {
 	utils.LogTime("db_local.EnsureDBInstalled start")
-	log.Println(fmt.Sprintf("[TRACE] EnsureDBInstalled - listenAddresses=%s", listenAddresses))
 
 	ensureMux.Lock()
 
@@ -55,7 +54,7 @@ func EnsureDBInstalled(ctx context.Context, listenAddresses string) (err error) 
 
 	if IsInstalled() {
 		// check if the FDW need updating, and init the db id required
-		err := prepareDb(ctx, listenAddresses)
+		err := prepareDb(ctx)
 		return err
 	}
 
@@ -87,7 +86,7 @@ func EnsureDBInstalled(ctx context.Context, listenAddresses string) (err error) 
 
 	// call prepareBackup to generate the db dump file if necessary
 	// NOTE: this returns the existing database name - we use this when creating the new database
-	dbName, err := prepareBackup(ctx, listenAddresses)
+	dbName, err := prepareBackup(ctx)
 	if err != nil {
 		if errors.Is(err, errDbInstanceRunning) {
 			// remove the installation - otherwise, the backup won't get triggered, even if the user stops the service
@@ -106,7 +105,7 @@ func EnsureDBInstalled(ctx context.Context, listenAddresses string) (err error) 
 	}
 
 	// run the database installation
-	err = runInstall(ctx, listenAddresses, dbName)
+	err = runInstall(ctx, dbName)
 	if err != nil {
 		return err
 	}
@@ -174,7 +173,7 @@ func IsInstalled() bool {
 }
 
 // prepareDb updates the db binaries and FDW if needed, and inits the database if required
-func prepareDb(ctx context.Context, host string) error {
+func prepareDb(ctx context.Context) error {
 	// load the db version info file
 	utils.LogTime("db_local.LoadDatabaseVersionFile start")
 	versionInfo, err := versionfile.LoadDatabaseVersionFile()
@@ -221,7 +220,7 @@ func prepareDb(ctx context.Context, host string) error {
 	if needsInit() {
 		statushooks.SetStatus(ctx, "Cleanup any Steampipe processes…")
 		killInstanceIfAny(ctx)
-		if err := runInstall(ctx, host, nil); err != nil {
+		if err := runInstall(ctx, nil); err != nil {
 			return err
 		}
 	}
@@ -264,7 +263,7 @@ func needsInit() bool {
 	return !filehelpers.FileExists(getPgHbaConfLocation())
 }
 
-func runInstall(ctx context.Context, host string, oldDbName *string) error {
+func runInstall(ctx context.Context, oldDbName *string) error {
 	utils.LogTime("db_local.runInstall start")
 	defer utils.LogTime("db_local.runInstall end")
 
@@ -284,20 +283,20 @@ func runInstall(ctx context.Context, host string, oldDbName *string) error {
 	}
 
 	statushooks.SetStatus(ctx, "Starting database…")
-	port, err := getNextFreePort(host)
+	port, err := getNextFreePort()
 	if err != nil {
 		log.Printf("[TRACE] getNextFreePort failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")
 	}
 
-	process, err := startServiceForInstall(host, port)
+	process, err := startServiceForInstall(port)
 	if err != nil {
 		log.Printf("[TRACE] startServiceForInstall failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")
 	}
 
 	statushooks.SetStatus(ctx, "Connection to database…")
-	client, err := createMaintenanceClient(ctx, host, port)
+	client, err := createMaintenanceClient(ctx, port)
 	if err != nil {
 		return fmt.Errorf("Connection to database... FAILED!")
 	}
@@ -361,12 +360,12 @@ func resolveDatabaseName(oldDbName *string) string {
 	return databaseName
 }
 
-func startServiceForInstall(host string, port int) (*psutils.Process, error) {
+func startServiceForInstall(port int) (*psutils.Process, error) {
 	postgresCmd := exec.Command(
 		getPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port if free to listen to
 		"-p", fmt.Sprint(port),
-		"-c", fmt.Sprintf("listen_addresses=%s", host),
+		"-c", "listen_addresses=127.0.0.1",
 		// NOTE: If quoted, the application name includes the quotes. Worried about
 		// having spaces in the APPNAME, but leaving it unquoted since currently
 		// the APPNAME is hardcoded to be steampipe.
@@ -389,10 +388,10 @@ func startServiceForInstall(host string, port int) (*psutils.Process, error) {
 	return psutils.NewProcess(int32(postgresCmd.Process.Pid))
 }
 
-func getNextFreePort(host string) (int, error) {
+func getNextFreePort() (int, error) {
 	utils.LogTime("db_local.install.getNextFreePort start")
 	defer utils.LogTime("db_local.install.getNextFreePort end")
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:0", host))
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return -1, err
 	}
