@@ -121,9 +121,9 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardListen))
 	error_helpers.FailOnError(serverListen.IsValid())
 
-	serverHost := string(serverListen)
-	if serverListen == dashboardserver.ListenTypeNetwork {
-		serverHost = "0.0.0.0"
+	serverHost := ""
+	if serverListen == dashboardserver.ListenTypeLocal {
+		serverHost = "127.0.0.1"
 	}
 	if err := utils.IsPortBindable(serverHost, int(serverPort)); err != nil {
 		exitCode = constants.ExitCodeBindPortUnavailable
