@@ -70,6 +70,21 @@ func (d *Database) Merge(otherOptions Options) {
 		if o.SearchPath != nil {
 			d.SearchPath = o.SearchPath
 		}
+		if o.StartTimeout != nil {
+			d.StartTimeout = o.StartTimeout
+		}
+		if o.SearchPathPrefix != nil {
+			d.SearchPathPrefix = o.SearchPathPrefix
+		}
+		if o.Cache != nil {
+			d.Cache = o.Cache
+		}
+		if o.CacheMaxSizeMb != nil {
+			d.CacheMaxSizeMb = o.CacheMaxSizeMb
+		}
+		if o.CacheMaxTtl != nil {
+			d.CacheMaxTtl = o.CacheMaxTtl
+		}
 	}
 }
 
@@ -97,6 +112,26 @@ func (d *Database) String() string {
 		str = append(str, "  ServiceStartTimeout: nil")
 	} else {
 		str = append(str, fmt.Sprintf("  ServiceStartTimeout: %d", *d.StartTimeout))
+	}
+	if d.SearchPathPrefix == nil {
+		str = append(str, "  SearchPathPrefix: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  SearchPathPrefix: %s", *d.SearchPathPrefix))
+	}
+	if d.Cache == nil {
+		str = append(str, "  Cache: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  Cache: %t", *d.Cache))
+	}
+	if d.CacheMaxSizeMb == nil {
+		str = append(str, "  CacheMaxSizeMb: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  CacheMaxSizeMb: %d", *d.CacheMaxSizeMb))
+	}
+	if d.CacheMaxTtl == nil {
+		str = append(str, "  CacheMaxTtl: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  CacheMaxTtl: %d", *d.CacheMaxTtl))
 	}
 	return strings.Join(str, "\n")
 }
