@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 	"fmt"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
@@ -59,6 +60,13 @@ func (i *InitData) Cleanup(ctx context.Context) {
 	// if a client was initialised, close it
 	if i.Client != nil {
 		i.Client.Close(ctx)
+		if viper.IsSet(constants.ArgClientCacheEnabled) {
+			if viper.GetBool(constants.ArgClientCacheEnabled) {
+				i.Client.CacheOn(ctx)
+			} else {
+				i.Client.CacheOff(ctx)
+			}
+		}
 	}
 	if i.ShutdownTelemetry != nil {
 		i.ShutdownTelemetry()
