@@ -1,6 +1,7 @@
 package modinstaller
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -35,7 +36,7 @@ type ModInstaller struct {
 	dryRun bool
 }
 
-func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
+func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, error) {
 	i := &ModInstaller{
 		workspacePath: opts.WorkspacePath,
 		command:       opts.Command,
@@ -46,7 +47,7 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	}
 
 	// load workspace mod, creating a default if needed
-	workspaceMod, err := i.loadModfile(i.workspacePath, true)
+	workspaceMod, err := i.loadModfile(ctx, i.workspacePath, true)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +82,7 @@ func (i *ModInstaller) setModsPath() error {
 	return nil
 }
 
-func (i *ModInstaller) UninstallWorkspaceDependencies() error {
+func (i *ModInstaller) UninstallWorkspaceDependencies(ctx context.Context) error {
 	workspaceMod := i.workspaceMod
 
 	// remove required dependencies from the mod file
@@ -94,7 +95,7 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 	}
 
 	// uninstall by calling Install
-	if err := i.installMods(workspaceMod.Require.Mods, workspaceMod); err != nil {
+	if err := i.installMods(ctx, workspaceMod.Require.Mods, workspaceMod); err != nil {
 		return err
 	}
 
@@ -129,7 +130,7 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 }
 
 // InstallWorkspaceDependencies installs all dependencies of the workspace mod
-func (i *ModInstaller) InstallWorkspaceDependencies() (err error) {
+func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err error) {
 	workspaceMod := i.workspaceMod
 	defer func() {
 		// tidy unused mods
@@ -154,7 +155,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies() (err error) {
 		workspaceMod.AddModDependencies(i.mods)
 	}
 
-	if err := i.installMods(workspaceMod.Require.Mods, workspaceMod); err != nil {
+	if err := i.installMods(ctx, workspaceMod.Require.Mods, workspaceMod); err != nil {
 		return err
 	}
 
@@ -187,13 +188,13 @@ func (i *ModInstaller) GetModList() string {
 	return i.installData.Lock.GetModList(i.workspaceMod.GetModDependencyPath())
 }
 
-func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) error {
+func (i *ModInstaller) installMods(ctx context.Context, mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) error {
 	// clean up the temp location
 	defer os.RemoveAll(i.tmpPath)
 
 	var errors []error
 	for _, requiredModVersion := range mods {
-		modToUse, err := i.getCurrentlyInstalledVersionToUse(requiredModVersion, parent, i.updating())
+		modToUse, err := i.getCurrentlyInstalledVersionToUse(ctx, requiredModVersion, parent, i.updating())
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -202,7 +203,7 @@ func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, paren
 		// if the mod is not installed or needs updating, pass shouldUpdate=true into installModDependencesRecursively
 		// this ensures that we update any dependencies which have updates available
 		shouldUpdate := modToUse == nil
-		if err := i.installModDependencesRecursively(requiredModVersion, modToUse, parent, shouldUpdate); err != nil {
+		if err := i.installModDependencesRecursively(ctx, requiredModVersion, modToUse, parent, shouldUpdate); err != nil {
 			errors = append(errors, err)
 		}
 	}
@@ -226,7 +227,7 @@ func (i *ModInstaller) buildInstallError(errors []error) error {
 	return err
 }
 
-func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modconfig.ModVersionConstraint, dependencyMod *modconfig.Mod, parent *modconfig.Mod, shouldUpdate bool) error {
+func (i *ModInstaller) installModDependencesRecursively(ctx context.Context, requiredModVersion *modconfig.ModVersionConstraint, dependencyMod *modconfig.Mod, parent *modconfig.Mod, shouldUpdate bool) error {
 	// get available versions for this mod
 	includePrerelease := requiredModVersion.Constraint.IsPrerelease()
 	availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name, includePrerelease)
@@ -245,7 +246,7 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 		}
 
 		// install the mod
-		dependencyMod, err = i.install(resolvedRef, parent)
+		dependencyMod, err = i.install(ctx, resolvedRef, parent)
 		if err != nil {
 			return err
 		}
@@ -266,12 +267,12 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 	// now update the parent to dependency mod and install its child dependencies
 	parent = dependencyMod
 	for _, dep := range dependencyMod.Require.Mods {
-		childDependencyMod, err := i.getCurrentlyInstalledVersionToUse(dep, parent, shouldUpdate)
+		childDependencyMod, err := i.getCurrentlyInstalledVersionToUse(ctx, dep, parent, shouldUpdate)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		if err := i.installModDependencesRecursively(dep, childDependencyMod, parent, shouldUpdate); err != nil {
+		if err := i.installModDependencesRecursively(ctx, dep, childDependencyMod, parent, shouldUpdate); err != nil {
 			errors = append(errors, err)
 			continue
 		}
@@ -280,7 +281,7 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 	return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("%d child %s failed to install", len(errors), utils.Pluralize("dependency", len(errors))), errors...)
 }
 
-func (i *ModInstaller) getCurrentlyInstalledVersionToUse(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod, forceUpdate bool) (*modconfig.Mod, error) {
+func (i *ModInstaller) getCurrentlyInstalledVersionToUse(ctx context.Context, requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod, forceUpdate bool) (*modconfig.Mod, error) {
 	// do we have an installed version of this mod matching the required mod constraint
 	installedVersion, err := i.installData.Lock.GetLockedModVersion(requiredModVersion, parent)
 	if err != nil {
@@ -302,7 +303,7 @@ func (i *ModInstaller) getCurrentlyInstalledVersionToUse(requiredModVersion *mod
 	}
 
 	// load the existing mod and return
-	return i.loadDependencyMod(installedVersion)
+	return i.loadDependencyMod(ctx, installedVersion)
 }
 
 // determine if we should update this mod, and if so whether there is an update available
@@ -348,7 +349,7 @@ func (i *ModInstaller) getModRefSatisfyingConstraints(modVersion *modconfig.ModV
 }
 
 // install a mod
-func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod) (_ *modconfig.Mod, err error) {
+func (i *ModInstaller) install(ctx context.Context, dependency *ResolvedModRef, parent *modconfig.Mod) (_ *modconfig.Mod, err error) {
 	var modDef *modconfig.Mod
 	// get the temp location to install the mod to
 	fullName := dependency.FullName()
@@ -368,7 +369,7 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 	}
 
 	// now load the installed mod and return it
-	modDef, err = i.loadModfile(tempDestPath, false)
+	modDef, err = i.loadModfile(ctx, tempDestPath, false)
 	if err != nil {
 		return nil, err
 	}
@@ -427,9 +428,9 @@ func (i *ModInstaller) getDependencyDestPath(dependencyFullName string) string {
 	return filepath.Join(i.modsPath, dependencyFullName)
 }
 
-func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionConstraint) (*modconfig.Mod, error) {
+func (i *ModInstaller) loadDependencyMod(ctx context.Context, modVersion *versionmap.ResolvedVersionConstraint) (*modconfig.Mod, error) {
 	modPath := i.getDependencyDestPath(modconfig.ModVersionFullName(modVersion.Name, modVersion.Version))
-	modDef, err := i.loadModfile(modPath, false)
+	modDef, err := i.loadModfile(ctx, modPath, false)
 	if err != nil {
 		return nil, err
 	}
@@ -449,8 +450,11 @@ func (i *ModInstaller) setModDependencyPath(mod *modconfig.Mod, modPath string) 
 	return
 }
 
-func (i *ModInstaller) loadModfile(modPath string, createDefault bool) (*modconfig.Mod, error) {
+func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, createDefault bool) (*modconfig.Mod, error) {
 	if !parse.ModfileExists(modPath) {
+		if !VerifyModLocation(ctx, modPath) {
+			error_helpers.FailOnError(fmt.Errorf("Mod installation cancelled"))
+		}
 		if createDefault {
 			mod := modconfig.CreateDefaultMod(i.workspacePath)
 			return mod, nil

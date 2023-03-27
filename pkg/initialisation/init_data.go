@@ -99,7 +99,7 @@ func (i *InitData) Init(parentCtx context.Context, invoker constants.Invoker) (r
 	if viper.GetBool(constants.ArgModInstall) {
 		i.SetStatus("Installing workspace dependencies")
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgModLocation)}
-		_, err := modinstaller.InstallWorkspaceDependencies(opts)
+		_, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 		if err != nil {
 			i.Result.Error = err
 			return

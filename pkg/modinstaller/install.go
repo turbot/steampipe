@@ -1,11 +1,13 @@
 package modinstaller
 
 import (
+	"context"
+
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-func InstallWorkspaceDependencies(opts *InstallOpts) (_ *InstallData, err error) {
+func InstallWorkspaceDependencies(ctx context.Context, opts *InstallOpts) (_ *InstallData, err error) {
 	utils.LogTime("cmd.InstallWorkspaceDependencies")
 	defer func() {
 		utils.LogTime("cmd.InstallWorkspaceDependencies end")
@@ -15,12 +17,12 @@ func InstallWorkspaceDependencies(opts *InstallOpts) (_ *InstallData, err error)
 	}()
 
 	// install workspace dependencies
-	installer, err := NewModInstaller(opts)
+	installer, err := NewModInstaller(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := installer.InstallWorkspaceDependencies(); err != nil {
+	if err := installer.InstallWorkspaceDependencies(ctx); err != nil {
 		return nil, err
 	}
 

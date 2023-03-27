@@ -1,9 +1,8 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"log"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -11,6 +10,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/modinstaller"
@@ -90,7 +90,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 
 	// if any mod names were passed as args, convert into formed mod names
 	opts := newInstallOpts(cmd, args...)
-	installData, err := modinstaller.InstallWorkspaceDependencies(opts)
+	installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
 
 	fmt.Println(modinstaller.BuildInstallSummary(installData))
@@ -161,7 +161,7 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 
 	opts := newInstallOpts(cmd, args...)
 
-	installData, err := modinstaller.InstallWorkspaceDependencies(opts)
+	installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
 
 	fmt.Println(modinstaller.BuildInstallSummary(installData))
@@ -191,7 +191,7 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 	opts := newInstallOpts(cmd)
-	installer, err := modinstaller.NewModInstaller(opts)
+	installer, err := modinstaller.NewModInstaller(ctx, opts)
 	error_helpers.FailOnError(err)
 
 	treeString := installer.GetModList()
@@ -199,32 +199,6 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 		fmt.Println()
 	}
 	fmt.Println(treeString)
-}
-
-// VerifyMod Location
-func verifyModLocation(workspacepath string) bool {
-	home, _ := os.UserHomeDir()
-	if workspacepath == home {
-		fmt.Println("It looks like you're in the home directory, are you sure you want to continue? Y/N")
-		var userConfirm rune
-		_, err := fmt.Scanf("%c", &userConfirm)
-		if err != nil {
-			log.Fatal(err)
-		}
-		keepMod := userConfirm == 'Y' || userConfirm == 'y'
-
-		if keepMod == true {
-			fmt.Println("continuing installation")
-			return keepMod
-		} else {
-			fmt.Println("Stopping mod installation")
-			// Not sure what's the best way to exit here, this is probably too aggressive, but I'm new here :)
-			os.Exit(0)
-			return false
-		}
-	}
-
-	return false
 }
 
 // init
@@ -241,8 +215,12 @@ func modInitCmd() *cobra.Command {
 }
 
 func runModInitCmd(cmd *cobra.Command, args []string) {
-	ctx := cmd.Context()
 	utils.LogTime("cmd.runModInitCmd")
+
+	// setup a cancel context and start cancel handler
+	ctx, cancel := context.WithCancel(cmd.Context())
+	contexthelpers.StartCancelHandler(cancel)
+
 	defer func() {
 		utils.LogTime("cmd.runModInitCmd end")
 		if r := recover(); r != nil {
@@ -251,15 +229,21 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 	workspacePath := viper.GetString(constants.ArgModLocation)
-	verifyModLocation(workspacePath)
-	if parse.ModfileExists(workspacePath) {
-		fmt.Println("Working folder already contains a mod definition file")
+	cont := modinstaller.VerifyModLocation(ctx, workspacePath)
+	if cont {
+		if parse.ModfileExists(workspacePath) {
+			fmt.Println("Working folder already contains a mod definition file")
+			return
+		}
+		mod := modconfig.CreateDefaultMod(workspacePath)
+		err := mod.Save()
+		error_helpers.FailOnError(err)
+		fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
+	} else {
+		exitCode = constants.ExitCodeModInitFailed
+		error_helpers.ShowError(ctx, fmt.Errorf("Mod initialisation cancelled"))
 		return
 	}
-	mod := modconfig.CreateDefaultMod(workspacePath)
-	err := mod.Save()
-	error_helpers.FailOnError(err)
-	fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
 }
 
 // helpers
