@@ -50,6 +50,10 @@ const (
 	// CommandSchema is the schema which is used to send commands to the FDW
 	CommandSchema = "steampipe_command"
 
+	CommandTableSettings            = "settings"
+	CommandTableSettingsKeyColumn   = "name"
+	CommandTableSettingsValueColumn = "value"
+
 	CommandTableCache                = "cache"
 	CommandTableCacheOperationColumn = "operation"
 	CommandCacheOn                   = "cache_on"
