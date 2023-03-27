@@ -722,6 +722,8 @@ func (m *PluginManager) setAllConnectionConfigs(pluginClient *sdkgrpc.PluginClie
 	}
 	req := &sdkproto.SetAllConnectionConfigsRequest{
 		Configs: configs,
+		// NOTE: set MaxCacheSizeMb to -1so that query cache is not created until we call SetCacheOptions (if supported)
+		MaxCacheSizeMb: -1,
 	}
 	// if plugin _does not_ support setting the cache options separately, pass the max size now
 	// (if it does support SetCacheOptions, it will be called after we return)
