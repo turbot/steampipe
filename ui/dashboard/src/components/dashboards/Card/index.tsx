@@ -13,7 +13,7 @@ import {
   LeafNodeData,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { DashboardDataModeLive, PanelProperties } from "../../../types";
+import { PanelProperties } from "../../../types";
 import { getComponent, registerComponent } from "../index";
 import {
   getIconClasses,
@@ -146,10 +146,7 @@ const Label = ({ value }) => {
 };
 
 const Card = (props: CardProps) => {
-  const {
-    components: { ExternalLink },
-    dataMode,
-  } = useDashboard();
+  const ExternalLink = getComponent("external_link");
   const state = useCardState(props);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [renderedHref, setRenderedHref] = useState<string | null>(
@@ -169,11 +166,6 @@ const Card = (props: CardProps) => {
   }, [state.loading, state.href, renderError, renderedHref]);
 
   useDeepCompareEffect(() => {
-    // We only want to do the interpolated template rendering in live views
-    if (dataMode !== DashboardDataModeLive) {
-      return;
-    }
-
     if (!templateRenderReady || state.loading || !state.href) {
       return;
     }
@@ -209,7 +201,7 @@ const Card = (props: CardProps) => {
       }
     };
     doRender();
-  }, [dataMode, renderTemplates, templateRenderReady, state, props.data]);
+  }, [renderTemplates, templateRenderReady, state, props.data]);
 
   const card = (
     <div
@@ -286,12 +278,8 @@ const Card = (props: CardProps) => {
     </div>
   );
 
-  if (dataMode === DashboardDataModeLive && renderedHref) {
-    return (
-      <ExternalLink className="" to={renderedHref}>
-        {card}
-      </ExternalLink>
-    );
+  if (renderedHref) {
+    return <ExternalLink to={renderedHref}>{card}</ExternalLink>;
   }
 
   return card;

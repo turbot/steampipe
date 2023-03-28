@@ -18,16 +18,15 @@ import {
   LeafNodeDataRow,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { DashboardDataModeLive, PanelDefinition } from "../../../types";
 import {
   ErrorIcon,
   SortAscendingIcon,
   SortDescendingIcon,
 } from "../../../constants/icons";
 import { memo, useEffect, useMemo, useState } from "react";
-import { registerComponent } from "../index";
+import { getComponent, registerComponent } from "../index";
+import { PanelDefinition } from "../../../types";
 import { RowRenderResult } from "../common/types";
-import { useDashboard } from "../../../hooks/useDashboard";
 import { useSortBy, useTable } from "react-table";
 
 export type TableColumnDisplay = "all" | "none";
@@ -113,9 +112,7 @@ const CellValue = ({
   value,
   showTitle = false,
 }: CellValueProps) => {
-  const {
-    components: { ExternalLink },
-  } = useDashboard();
+  const ExternalLink = getComponent("external_link");
   const [href, setHref] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -135,7 +132,6 @@ const CellValue = ({
       return;
     }
     if (renderedTemplateForColumn.result) {
-      // We only want to render the HREF if it's live, or it's snapshot and absolute
       setHref(renderedTemplateForColumn.result);
       setError(null);
     } else if (renderedTemplateForColumn.error) {
@@ -264,7 +260,8 @@ const CellValue = ({
         </ExternalLink>
       );
     }
-    const mdMatch = !!value.match && value.match("^\\[(.*)\\]\\((https?://.*)\\)$");
+    const mdMatch =
+      !!value.match && value.match("^\\[(.*)\\]\\((https?://.*)\\)$");
     if (mdMatch) {
       cellContent = (
         <ExternalLink
@@ -370,7 +367,6 @@ const TableView = ({
   hiddenColumns,
   hasTopBorder = false,
 }) => {
-  const { dataMode } = useDashboard();
   const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
   const [rowTemplateData, setRowTemplateData] = useState<RowRenderResult[]>([]);
 
@@ -381,12 +377,6 @@ const TableView = ({
     );
 
   useDeepCompareEffect(() => {
-    // We only want to do the interpolated template rendering in live views
-    if (dataMode !== DashboardDataModeLive) {
-      setRowTemplateData([]);
-      return;
-    }
-
     if (!templateRenderReady || columns.length === 0 || rows.length === 0) {
       setRowTemplateData([]);
       return;
@@ -408,7 +398,7 @@ const TableView = ({
     };
 
     doRender();
-  }, [columns, dataMode, renderTemplates, rows, templateRenderReady]);
+  }, [columns, renderTemplates, rows, templateRenderReady]);
 
   return (
     <>
@@ -515,7 +505,6 @@ const TableViewWrapper = (props: TableProps) => {
 };
 
 const LineView = (props: TableProps) => {
-  const { dataMode } = useDashboard();
   const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
   const [columns, setColumns] = useState<TableColumnInfo[]>([]);
   const [rows, setRows] = useState<LeafNodeDataRow[]>([]);
@@ -547,12 +536,6 @@ const LineView = (props: TableProps) => {
   }, [props.data, props.properties]);
 
   useDeepCompareEffect(() => {
-    // We only want to do the interpolated template rendering in live views
-    if (dataMode !== DashboardDataModeLive) {
-      setRowTemplateData([]);
-      return;
-    }
-
     if (!templateRenderReady || columns.length === 0 || rows.length === 0) {
       setRowTemplateData([]);
       return;
@@ -573,7 +556,7 @@ const LineView = (props: TableProps) => {
     };
 
     doRender();
-  }, [columns, dataMode, renderTemplates, rows, templateRenderReady]);
+  }, [columns, renderTemplates, rows, templateRenderReady]);
 
   if (columns.length === 0 || rows.length === 0) {
     return null;

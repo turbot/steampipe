@@ -1,8 +1,16 @@
 import { Link } from "react-router-dom";
+import {
+  DashboardDataModeCLISnapshot,
+  DashboardDataModeCloudSnapshot,
+} from "../../types";
+import { ReactNode } from "react";
+import { registerComponent } from "../dashboards";
+import { useDashboard } from "../../hooks/useDashboard";
 
 type ExternalLinkProps = {
-  children: null | JSX.Element | JSX.Element[];
+  children: ReactNode;
   className?: string;
+  ignoreDataMode?: boolean;
   target?: string;
   title?: string;
   to: string;
@@ -12,11 +20,14 @@ type ExternalLinkProps = {
 const ExternalLink = ({
   children,
   className = "link-highlight",
+  ignoreDataMode = false,
   target = "_blank",
   title,
   to,
   withReferrer = false,
 }: ExternalLinkProps) => {
+  const { dataMode } = useDashboard();
+
   if (!to) {
     return null;
   }
@@ -36,11 +47,20 @@ const ExternalLink = ({
     );
   }
 
+  if (
+    (!ignoreDataMode && dataMode === DashboardDataModeCLISnapshot) ||
+    dataMode === DashboardDataModeCloudSnapshot
+  ) {
+    return children || null;
+  }
+
   return (
     <Link to={to} className={className} title={title}>
       {children}
     </Link>
   );
 };
+
+registerComponent("external_link", ExternalLink);
 
 export default ExternalLink;

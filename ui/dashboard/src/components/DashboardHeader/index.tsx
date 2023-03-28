@@ -5,12 +5,10 @@ import SaveSnapshotButton from "../SaveSnapshotButton";
 import SteampipeLogo from "./SteampipeLogo";
 import ThemeToggle from "../ThemeToggle";
 import { classNames } from "../../utils/styles";
-import { useDashboard } from "../../hooks/useDashboard";
+import { getComponent } from "../dashboards";
 
 const DashboardHeader = () => {
-  const {
-    components: { ExternalLink },
-  } = useDashboard();
+  const ExternalLink = getComponent("external_link");
   return (
     <div
       className={classNames(
@@ -27,6 +25,7 @@ const DashboardHeader = () => {
       <div className="space-x-2 sm:space-x-4 md:space-x-8 flex items-center justify-end">
         <ExternalLink
           className="text-base text-foreground-lighter hover:text-foreground"
+          ignoreDataMode
           to="https://hub.steampipe.io"
           withReferrer={true}
         >
@@ -34,6 +33,7 @@ const DashboardHeader = () => {
         </ExternalLink>
         <ExternalLink
           className="text-base text-foreground-lighter hover:text-foreground"
+          ignoreDataMode
           to="https://steampipe.io/docs"
           withReferrer={true}
         >
