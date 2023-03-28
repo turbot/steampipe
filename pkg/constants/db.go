@@ -44,8 +44,16 @@ const (
 
 // schema names
 const (
-	// FunctionSchema is the schema container for all steampipe helper functions
-	FunctionSchema = "internal"
+	// InternalSchema is the schema container for all steampipe helper functions, and connection state table
+	InternalSchema = "internal"
+
+	// ConnectionStateTable is the table used to store steampipe connection state
+	ConnectionStateTable    = "connection_state"
+	ConnectionStatePending  = "pending"
+	ConnectionStateReady    = "ready"
+	ConnectionStateUpdating = "updating"
+	ConnectionStateDeleting = "deleting"
+	ConnectionStateError    = "error"
 
 	// CommandSchema is the schema which is used to send commands to the FDW
 	CommandSchema = "steampipe_command"
@@ -82,7 +90,7 @@ end;
 
 var ReservedConnectionNames = []string{
 	"public",
-	FunctionSchema,
+	InternalSchema,
 }
 
 // introspection table names

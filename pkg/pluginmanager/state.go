@@ -9,8 +9,8 @@ import (
 	"github.com/hashicorp/go-plugin"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/utils"
-	pb "github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
 )
 
 const PluginManagerStructVersion = 20220411

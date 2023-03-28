@@ -8,6 +8,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/sperr"
 )
 
 /**
@@ -25,19 +26,30 @@ ORDER BY
 
 **/
 
-func refreshFunctions(ctx context.Context) error {
-	utils.LogTime("db.refreshFunctions start")
-	defer utils.LogTime("db.refreshFunctions end")
+func setupInternal(ctx context.Context) error {
+	utils.LogTime("db.setupInternal start")
+	defer utils.LogTime("db.setupInternal end")
 
 	queries := []string{
 		"lock table pg_namespace;",
-		fmt.Sprintf(`create schema if not exists %s;`, constants.FunctionSchema),
-		fmt.Sprintf(`grant usage on schema %s to %s;`, constants.FunctionSchema, constants.DatabaseUsersRole),
+		fmt.Sprintf(`create schema if not exists %s;`, constants.InternalSchema),
+		fmt.Sprintf(`grant usage on schema %s to %s;`, constants.InternalSchema, constants.DatabaseUsersRole),
+		// create connection state table
+		fmt.Sprintf(`create table if not exists %s.connection_state (
+    			name text primary key,
+    			status text,
+    			details text,
+    			comments_set bool default false,
+    			last_change timestamptz);`, constants.InternalSchema),
+		// set all existing connections to pending
+		fmt.Sprintf(`update %s.%s set status = '%s'`, constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStatePending),
+		fmt.Sprintf(`grant select on table %s.%s to %s;`, constants.InternalSchema, constants.ConnectionStateTable, constants.DatabaseUsersRole),
 	}
 	queries = append(queries, getFunctionAddStrings(constants.Functions)...)
 	if _, err := executeSqlAsRoot(ctx, queries...); err != nil {
-		return err
+		return sperr.WrapWithMessage(err, "failed to initialise functions")
 	}
+
 	return nil
 }
 
@@ -70,7 +82,7 @@ $$
 %s
 $$;
 `,
-		constants.FunctionSchema,
+		constants.InternalSchema,
 		function.Name,
 		strings.Join(inputParams, ","),
 		function.Returns,

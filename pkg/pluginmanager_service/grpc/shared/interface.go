@@ -3,9 +3,9 @@ package shared
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 
 	"github.com/hashicorp/go-plugin"
-	pb "github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
 	"google.golang.org/grpc"
 )
 
@@ -25,8 +25,9 @@ var Handshake = plugin.HandshakeConfig{
 
 // PluginManager is the interface for the plugin manager service
 type PluginManager interface {
-	Get(req *pb.GetRequest) (*pb.GetResponse, error)
-	Shutdown(req *pb.ShutdownRequest) (*pb.ShutdownResponse, error)
+	Get(req *proto.GetRequest) (*proto.GetResponse, error)
+	RefreshConnections(req *proto.RefreshConnectionsRequest) (*proto.RefreshConnectionsResponse, error)
+	Shutdown(req *proto.ShutdownRequest) (*proto.ShutdownResponse, error)
 }
 
 // PluginManagerPlugin is the implementation of plugin.GRPCServer so we can serve/consume this.
@@ -39,11 +40,11 @@ type PluginManagerPlugin struct {
 
 func (p *PluginManagerPlugin) GRPCServer(_ *plugin.GRPCBroker, s *grpc.Server) error {
 	//fmt.Println("GRPCServer")
-	pb.RegisterPluginManagerServer(s, &GRPCServer{Impl: p.Impl})
+	proto.RegisterPluginManagerServer(s, &GRPCServer{Impl: p.Impl})
 	return nil
 }
 
 // GRPCClient returns a GRPCClient, called by Dispense
 func (p *PluginManagerPlugin) GRPCClient(ctx context.Context, _ *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
-	return &GRPCClient{client: pb.NewPluginManagerClient(c), ctx: ctx}, nil
+	return &GRPCClient{client: proto.NewPluginManagerClient(c), ctx: ctx}, nil
 }

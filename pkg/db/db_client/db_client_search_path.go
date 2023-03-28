@@ -98,7 +98,7 @@ func (c *DbClient) ConstructSearchPath(ctx context.Context, customSearchPath, se
 	// if a search path was passed, add 'internal' to the end
 	if len(customSearchPath) > 0 {
 		// add 'internal' schema as last schema in the search path
-		customSearchPath = append(customSearchPath, constants.FunctionSchema)
+		customSearchPath = append(customSearchPath, constants.InternalSchema)
 		// store the modified custom search path on the client
 		c.customSearchPath = customSearchPath
 		requiredSearchPath = c.customSearchPath

@@ -17,7 +17,7 @@ func GetDefaultSearchPath(ctx context.Context, foreignSchemaNames []string) []st
 	// empty, doesn't make using steampipe tables any more difficult.
 	searchPath = append([]string{"public"}, searchPath...)
 	// add 'internal' schema as last schema in the search path
-	searchPath = append(searchPath, constants.FunctionSchema)
+	searchPath = append(searchPath, constants.InternalSchema)
 
 	return searchPath
 }

@@ -3,6 +3,7 @@ package db_common
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -38,6 +39,7 @@ func LoadSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, error) {
 		}
 		allSchemaNames = append(allSchemaNames, schema)
 	}
+	sort.Strings(allSchemaNames)
 	return allSchemaNames, nil
 }
 
@@ -58,7 +60,7 @@ func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, erro
 			foreignSchemaNames = append(foreignSchemaNames, schema)
 		}
 	}
-
+	sort.Strings(foreignSchemaNames)
 	return foreignSchemaNames, nil
 }
 

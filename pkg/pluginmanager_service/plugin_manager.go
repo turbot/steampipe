@@ -25,22 +25,22 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/pluginmanager_service/grpc/shared"
 )
 
 type runningPlugin struct {
 	pluginName  string
 	client      *plugin.Client
-	reattach    *proto.ReattachConfig
+	reattach    *pb.ReattachConfig
 	initialized chan struct{}
 }
 
 // PluginManager is the implementation of grpc.PluginManager
 type PluginManager struct {
-	proto.UnimplementedPluginManagerServer
+	pb.UnimplementedPluginManagerServer
 
 	// map of multi connection running plugins keyed by plugin name
 	pluginMultiConnectionMap map[string]*runningPlugin
@@ -106,9 +106,9 @@ func (m *PluginManager) Serve() {
 	})
 }
 
-func (m *PluginManager) Get(req *proto.GetRequest) (*proto.GetResponse, error) {
-	resp := &proto.GetResponse{
-		ReattachMap: make(map[string]*proto.ReattachConfig),
+func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
+	resp := &pb.GetResponse{
+		ReattachMap: make(map[string]*pb.ReattachConfig),
 		FailureMap:  make(map[string]string),
 	}
 
@@ -145,6 +145,16 @@ func (m *PluginManager) Get(req *proto.GetRequest) (*proto.GetResponse, error) {
 	return resp, nil
 }
 
+func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.RefreshConnectionsResponse, error) {
+	resp := &pb.RefreshConnectionsResponse{}
+	refreshResult := db_local.RefreshConnectionAndSearchPaths(context.Background())
+	if refreshResult.Error != nil {
+		return nil, refreshResult.Error
+	}
+
+	return resp, nil
+}
+
 // OnConnectionConfigChanged is the callback function invoked by the connection watcher when the config changed
 func (m *PluginManager) OnConnectionConfigChanged(configMap connectionwatcher.ConnectionConfigMap) {
 	m.mut.Lock()
@@ -172,7 +182,7 @@ func (m *PluginManager) OnConnectionsChanged(ctx context.Context, refreshResult 
 	db_local.SendPostgresNotification(ctx, conn, notification)
 }
 
-func (m *PluginManager) Shutdown(*proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {
+func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
 	log.Printf("[INFO] PluginManager Shutdown")
 
 	m.mut.Lock()
@@ -192,7 +202,7 @@ func (m *PluginManager) Shutdown(*proto.ShutdownRequest) (resp *proto.ShutdownRe
 		log.Printf("[INFO] PluginManager killing plugin %s (%v)", name, p.reattach.Pid)
 		p.client.Kill()
 	}
-	return &proto.ShutdownResponse{}, nil
+	return &pb.ShutdownResponse{}, nil
 }
 
 func (m *PluginManager) handleConnectionConfigChanges(newConfigMap map[string]*sdkproto.ConnectionConfig) error {
@@ -354,7 +364,7 @@ func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdk
 		if runningPlugin != nil {
 			// unlock access to map to allow other ensurePlugin calls to proceed
 			m.mut.Unlock()
-			var reattach *proto.ReattachConfig
+			var reattach *pb.ReattachConfig
 
 			// wait for plugin to load, verify it is running and check it provides the required connection
 			reason, reattach, err = m.verifyLoadingPlugin(connectionName, runningPlugin)
@@ -470,7 +480,7 @@ func (m *PluginManager) isPluginRunning(connectionName string, pluginName string
 }
 
 // wait for plugin to load, verify it is running and check it provides the required connection
-func (m *PluginManager) verifyLoadingPlugin(connectionName string, p *runningPlugin) (string, *proto.ReattachConfig, error) {
+func (m *PluginManager) verifyLoadingPlugin(connectionName string, p *runningPlugin) (string, *pb.ReattachConfig, error) {
 	var reason string
 	// so we have a plugin in our map for this connection - is it started?
 	err := m.waitForPluginLoad(p)
@@ -517,7 +527,7 @@ func (m *PluginManager) addLoadingPlugin(connectionName string, pluginName strin
 }
 
 // create reattach config for plugin, store to map for all connections and close initialized channel
-func (m *PluginManager) storePluginToMap(connection string, client *plugin.Client, reattach *proto.ReattachConfig) {
+func (m *PluginManager) storePluginToMap(connection string, client *plugin.Client, reattach *pb.ReattachConfig) {
 	// lock access to map
 	m.mut.Lock()
 	defer m.mut.Unlock()
@@ -583,7 +593,7 @@ func (m *PluginManager) setPluginCacheSizeMap() {
 	}
 }
 
-func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ *proto.ReattachConfig, err error) {
+func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ *pb.ReattachConfig, err error) {
 	log.Printf("[TRACE] ************ start plugin %s ********************\n", connectionName)
 
 	// get connection config
@@ -677,7 +687,7 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 		}
 	}
 
-	reattach := proto.NewReattachConfig(pluginName, client.ReattachConfig(), proto.SupportedOperationsFromSdk(supportedOperations), connectionNames)
+	reattach := pb.NewReattachConfig(pluginName, client.ReattachConfig(), pb.SupportedOperationsFromSdk(supportedOperations), connectionNames)
 
 	//
 	// if this plugin has a dynamic schema, add connections to message server
