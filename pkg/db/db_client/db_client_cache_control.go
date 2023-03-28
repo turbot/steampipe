@@ -15,19 +15,16 @@ func (c *DbClient) SetCacheTtl(ctx context.Context, duration time.Duration) erro
 
 // CacheOn implements Client
 func (c *DbClient) CacheOn(ctx context.Context) error {
-	// insert into steampipe_command.settings ("name","value") values ('cache','true')
 	return c.executeCacheCommand(ctx, "cache", "true")
 }
 
 // CacheOff implements Client
 func (c *DbClient) CacheOff(ctx context.Context) error {
-	// insert into steampipe_command.settings ("name","value") values ('cache','false')
 	return c.executeCacheCommand(ctx, "cache", "false")
 }
 
 // CacheClear implements Client
 func (c *DbClient) CacheClear(ctx context.Context) error {
-	// insert into steampipe_command.settings ("name","value") values ('cache_clear_time','')
 	return c.executeCacheCommand(ctx, "cache_clear_time", "")
 }
 
