@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PluginManagerClient interface {
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
+	RefreshConnections(ctx context.Context, in *RefreshConnectionsRequest, opts ...grpc.CallOption) (*RefreshConnectionsResponse, error)
 	Shutdown(ctx context.Context, in *ShutdownRequest, opts ...grpc.CallOption) (*ShutdownResponse, error)
 }
 
@@ -43,6 +44,15 @@ func (c *pluginManagerClient) Get(ctx context.Context, in *GetRequest, opts ...g
 	return out, nil
 }
 
+func (c *pluginManagerClient) RefreshConnections(ctx context.Context, in *RefreshConnectionsRequest, opts ...grpc.CallOption) (*RefreshConnectionsResponse, error) {
+	out := new(RefreshConnectionsResponse)
+	err := c.cc.Invoke(ctx, "/proto.PluginManager/RefreshConnections", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *pluginManagerClient) Shutdown(ctx context.Context, in *ShutdownRequest, opts ...grpc.CallOption) (*ShutdownResponse, error) {
 	out := new(ShutdownResponse)
 	err := c.cc.Invoke(ctx, "/proto.PluginManager/Shutdown", in, out, opts...)
@@ -57,6 +67,7 @@ func (c *pluginManagerClient) Shutdown(ctx context.Context, in *ShutdownRequest,
 // for forward compatibility
 type PluginManagerServer interface {
 	Get(context.Context, *GetRequest) (*GetResponse, error)
+	RefreshConnections(context.Context, *RefreshConnectionsRequest) (*RefreshConnectionsResponse, error)
 	Shutdown(context.Context, *ShutdownRequest) (*ShutdownResponse, error)
 	mustEmbedUnimplementedPluginManagerServer()
 }
@@ -67,6 +78,9 @@ type UnimplementedPluginManagerServer struct {
 
 func (UnimplementedPluginManagerServer) Get(context.Context, *GetRequest) (*GetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedPluginManagerServer) RefreshConnections(context.Context, *RefreshConnectionsRequest) (*RefreshConnectionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RefreshConnections not implemented")
 }
 func (UnimplementedPluginManagerServer) Shutdown(context.Context, *ShutdownRequest) (*ShutdownResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Shutdown not implemented")
@@ -102,6 +116,24 @@ func _PluginManager_Get_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PluginManager_RefreshConnections_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RefreshConnectionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PluginManagerServer).RefreshConnections(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.PluginManager/RefreshConnections",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PluginManagerServer).RefreshConnections(ctx, req.(*RefreshConnectionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PluginManager_Shutdown_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ShutdownRequest)
 	if err := dec(in); err != nil {
@@ -130,6 +162,10 @@ var PluginManager_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _PluginManager_Get_Handler,
+		},
+		{
+			MethodName: "RefreshConnections",
+			Handler:    _PluginManager_RefreshConnections_Handler,
 		},
 		{
 			MethodName: "Shutdown",

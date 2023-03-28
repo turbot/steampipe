@@ -19,7 +19,7 @@ func setUserSearchPath(ctx context.Context, conn *pgx.Conn, foreignSchemaNames [
 	if viper.IsSet(constants.ConfigKeyDatabaseSearchPath) {
 		searchPath = viper.GetStringSlice(constants.ConfigKeyDatabaseSearchPath)
 		// add 'internal' schema as last schema in the search path
-		searchPath = append(searchPath, constants.FunctionSchema)
+		searchPath = append(searchPath, constants.InternalSchema)
 	} else {
 		// no config set - set user search path to default
 		// - which is all the connection names, book-ended with public and internal

@@ -1,15 +1,15 @@
 package pluginmanager
 
 import (
-	"github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	"io"
 	"log"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
-	pb "github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/pluginmanager_service/grpc/shared"
+	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 )
 
 // PluginManagerClient is the client used by steampipe to access the plugin manager
@@ -69,6 +69,14 @@ func (c *PluginManagerClient) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 	res, err := c.manager.Get(req)
 	if err != nil {
 		return nil, grpc.HandleGrpcError(err, "PluginManager", "Get")
+	}
+	return res, nil
+}
+
+func (c *PluginManagerClient) RefreshConnections(req *pb.RefreshConnectionsRequest) (*pb.RefreshConnectionsResponse, error) {
+	res, err := c.manager.RefreshConnections(req)
+	if err != nil {
+		return nil, grpc.HandleGrpcError(err, "PluginManager", "RefreshConnections")
 	}
 	return res, nil
 }

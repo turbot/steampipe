@@ -62,7 +62,7 @@ func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
 		if err != nil {
 			return err
 		}
-		currentPath = helpers.RemoveFromStringSlice(currentPath, constants.FunctionSchema)
+		currentPath = helpers.RemoveFromStringSlice(currentPath, constants.InternalSchema)
 
 		display.ShowWrappedTable(
 			[]string{"search_path"},

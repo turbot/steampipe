@@ -20,9 +20,12 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	pluginmanager "github.com/turbot/steampipe/pkg/pluginmanager"
+	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/pluginmanager"
+	"github.com/turbot/steampipe/sperr"
 )
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
@@ -126,53 +129,48 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
 			return res.SetError(err)
 		}
+
 		res.Status = ServiceStarted
 	}
 
 	// execute post startup setup
-	errorsAndWarnings := postServiceStart(ctx)
-
-	res.AddWarning(errorsAndWarnings.Warnings...)
-	if errorsAndWarnings.Error != nil {
-		// NOTE do not update res.Status - this will be ddone by defer block
-		res.Error = errorsAndWarnings.Error
+	err := postServiceStart(ctx)
+	if err != nil {
+		// NOTE do not update res.Status - this will be done by defer block
+		res.Error = err
 	}
 
 	return res
 }
 
-func postServiceStart(ctx context.Context) *modconfig.ErrorAndWarnings {
+func postServiceStart(ctx context.Context) error {
 	statushooks.SetStatus(ctx, "Setting up functions")
-	if err := refreshFunctions(ctx); err != nil {
-		return modconfig.NewErrorsAndWarning(err)
+	if err := setupInternal(ctx); err != nil {
+		return err
 	}
 
 	// create the clone_foreign_schema function
 	if _, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL); err != nil {
-		return modconfig.NewErrorsAndWarning(err)
-	}
-
-	statushooks.SetStatus(ctx, "Setting up functions")
-	if err := refreshFunctions(ctx); err != nil {
-		return modconfig.NewErrorsAndWarning(err)
-	}
-
-	// create the clone_foreign_schema function
-	_, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL)
-	if err != nil {
-		return modconfig.NewErrorsAndWarning(err)
+		return sperr.WrapWithMessage(err, "failed to create clone_foreign_schema function")
 	}
 
 	// if there is an unprocessed db backup file, restore it now
 	if err := restoreDBBackup(ctx); err != nil {
-		return modconfig.NewErrorsAndWarning(err)
+		return sperr.WrapWithMessage(err, "failed to migrate db public schema")
 	}
 
-	// refresh connections and search paths
-	refreshResult := RefreshConnectionAndSearchPaths(ctx)
+	// call initial refresh connections
+	// get plugin manager
+	pluginManager, err := pluginmanager.GetPluginManager()
+	if err != nil {
+		return err
+	}
 
-	// assign res from the underlying ErrorAndWarnings of refreshResult
-	return &refreshResult.ErrorAndWarnings
+	// ask the plugin manager to refresh connections
+	// execute async and ignore result (if there is an error we will receive a PG notification
+	go pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
+
+	return nil
 }
 
 // StartDB starts the database if not already running
@@ -202,8 +200,6 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 			}
 		}
 	}()
-
-	log.Printf("[TRACE] StartDB started plugin manager")
 
 	// remove the stale info file, ignoring errors - will overwrite anyway
 	_ = removeRunningInstanceInfo()
