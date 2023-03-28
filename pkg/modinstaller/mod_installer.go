@@ -452,7 +452,7 @@ func (i *ModInstaller) setModDependencyPath(mod *modconfig.Mod, modPath string) 
 
 func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, createDefault bool) (*modconfig.Mod, error) {
 	if !parse.ModfileExists(modPath) {
-		if !VerifyModLocation(ctx, modPath) {
+		if !ValidateModLocation(ctx, modPath) {
 			error_helpers.FailOnError(fmt.Errorf("Mod installation cancelled"))
 		}
 		if createDefault {
