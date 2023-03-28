@@ -2,6 +2,7 @@ package metaquery
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
@@ -151,6 +152,45 @@ var allowedArgValues = func(caseSensitive bool, allowedValues ...string) validat
 			}
 		}
 		return ValidationResult{ShouldRun: true}
+	}
+}
+
+var allIntTypeValues = func() validator {
+	return func(args []string) ValidationResult {
+		for _, arg := range args {
+			if _, err := strconv.Atoi(arg); err != nil {
+				return ValidationResult{
+					Err:       err,
+					ShouldRun: false,
+					Message:   fmt.Sprintf("'%v' cannot be cast into an int", arg),
+				}
+			}
+		}
+
+		return ValidationResult{
+			ShouldRun: true,
+		}
+	}
+}
+
+var allIntAtLeast = func(minimumValue int) validator {
+	return func(args []string) ValidationResult {
+		if res := allIntTypeValues()(args); res.Err != nil {
+			return res
+		}
+		for _, arg := range args {
+			if val, err := strconv.Atoi(arg); err != nil && val < minimumValue {
+				return ValidationResult{
+					Err:       err,
+					ShouldRun: false,
+					Message:   fmt.Sprintf("expected '%d' to be greater than '%d'", val, minimumValue),
+				}
+			}
+		}
+
+		return ValidationResult{
+			ShouldRun: true,
+		}
 	}
 }
 
