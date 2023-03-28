@@ -15,6 +15,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -756,9 +757,9 @@ func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginCl
 func (m *PluginManager) setCacheOptions(pluginClient *sdkgrpc.PluginClient) error {
 	// TODO set from viper
 	req := &sdkproto.SetCacheOptionsRequest{
-		Enabled:   false,
-		Ttl:       100,
-		MaxSizeMb: 100,
+		Enabled:   viper.GetBool(constants.ArgServiceCacheEnabled),
+		Ttl:       viper.GetInt64(constants.ArgCacheMaxTtl),
+		MaxSizeMb: viper.GetInt64(constants.ArgMaxCacheSizeMb),
 	}
 	_, err := pluginClient.SetCacheOptions(req)
 	return err
