@@ -310,10 +310,8 @@ func (m *PluginManager) handleUpdatedConnections(updatedConnections map[string][
 			req = &sdkproto.UpdateConnectionConfigsRequest{}
 		}
 
-		for _, connection := range connections {
-			// add to updateConnectionConfigsRequest
-			req.Changed = append(req.Changed, connection)
-		}
+		// add to updateConnectionConfigsRequest
+		req.Changed = append(req.Changed, connections...)
 		// write back to map
 		requestMap[p] = req
 	}
