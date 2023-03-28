@@ -155,31 +155,20 @@ var allowedArgValues = func(caseSensitive bool, allowedValues ...string) validat
 	}
 }
 
-var allIntTypeValues = func() validator {
+var allIntAtLeast = func(minimumValue int) validator {
 	return func(args []string) ValidationResult {
 		for _, arg := range args {
-			if _, err := strconv.Atoi(arg); err != nil {
+			val, err := strconv.Atoi(arg)
+			if err != nil {
 				return ValidationResult{
 					Err:       err,
 					ShouldRun: false,
 					Message:   fmt.Sprintf("'%v' cannot be cast into an int", arg),
+					// ÷	Message:   fmt.Sprintf("expected '%d' to be greater than '%d'", val, minimumValue),
 				}
 			}
-		}
 
-		return ValidationResult{
-			ShouldRun: true,
-		}
-	}
-}
-
-var allIntAtLeast = func(minimumValue int) validator {
-	return func(args []string) ValidationResult {
-		if res := allIntTypeValues()(args); res.Err != nil {
-			return res
-		}
-		for _, arg := range args {
-			if val, err := strconv.Atoi(arg); err != nil && val < minimumValue {
+			if val < minimumValue {
 				return ValidationResult{
 					Err:       err,
 					ShouldRun: false,
