@@ -75,6 +75,11 @@ func (slt StartListenType) ToListenAddresses() string {
 func StartServices(ctx context.Context, listenAddresses string, port int, invoker constants.Invoker) *StartResult {
 	utils.LogTime("db_local.StartServices start")
 	defer utils.LogTime("db_local.StartServices end")
+
+	if !utils.ListenAddressesContainsOneOfAddresses(listenAddresses, []string{"127.0.0.1", "*", "localhost"}) {
+		log.Println("[TRACE] StartServices - prepending 127.0.0.1 to listenAddresses")
+		listenAddresses = "127.0.0.1," + listenAddresses
+	}
 	log.Println(fmt.Sprintf("[TRACE] StartServices - listenAddresses=%s, port=%d", listenAddresses, port))
 
 	res := &StartResult{}
@@ -364,6 +369,7 @@ func startPostgresProcess(ctx context.Context, listenAddresses string, port int,
 	}
 
 	postgresCmd := createCmd(ctx, port, listenAddresses)
+	log.Printf("[TRACE] startPostgresProcess - postgres command: %s", postgresCmd)
 
 	setupLogCollection(postgresCmd)
 	err := postgresCmd.Start()
@@ -423,12 +429,9 @@ func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) (
 func createCmd(ctx context.Context, port int, listenAddresses string) *exec.Cmd {
 	postgresCmd := exec.Command(
 		getPostgresBinaryExecutablePath(),
-		// by this time, we are sure that the port if free to listen to
+		// by this time, we are sure that the port is free to listen to
 		"-p", fmt.Sprint(port),
-		"-c", fmt.Sprintf("listen_addresses=\"%s\"", listenAddresses),
-		// NOTE: If quoted, the application name includes the quotes. Worried about
-		// having spaces in the APPNAME, but leaving it unquoted since currently
-		// the APPNAME is hardcoded to be steampipe.
+		"-c", fmt.Sprintf("listen_addresses=%s", listenAddresses),
 		"-c", fmt.Sprintf("application_name=%s", constants.AppName),
 		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
 

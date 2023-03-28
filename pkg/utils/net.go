@@ -15,6 +15,19 @@ func GetFirstListenAddress(listenAddresses string) string {
 	return listenAddress
 }
 
+func ListenAddressesContainsOneOfAddresses(listenAddresses string, addresses []string) bool {
+	listenAddressesList := strings.Split(listenAddresses, ",")
+	for i := range listenAddressesList {
+		listenAddress := strings.TrimSpace(listenAddressesList[i])
+		for j := range addresses {
+			if addresses[j] == listenAddress {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func LocalAddresses() ([]string, error) {
 	addresses := []string{}
 	ifaces, err := net.Interfaces()
