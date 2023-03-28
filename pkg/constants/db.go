@@ -54,12 +54,6 @@ const (
 	CommandTableSettingsKeyColumn   = "name"
 	CommandTableSettingsValueColumn = "value"
 
-	CommandTableCache                = "cache"
-	CommandTableCacheOperationColumn = "operation"
-	CommandCacheOn                   = "cache_on"
-	CommandCacheOff                  = "cache_off"
-	CommandCacheClear                = "cache_clear"
-
 	CommandTableScanMetadata = "scan_metadata"
 )
 
