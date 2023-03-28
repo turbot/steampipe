@@ -177,8 +177,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe test database config with listen IPv6 address option(hcl)" {
-  cp $SRC_DATA_DIR/database_options_listen_placeholder.spc $STEAMPIPE_INSTALL_DIR/config/database_options_listen.spc
   IPV6_ADDR=$(ifconfig | grep -Eo 'inet6 (addr:)?([0-9a-f]*:){7}[0-9a-f]*' | grep -Eo '([0-9a-f]*:){7}[0-9a-f]*' | head -n 1)
+
+  if [ -z "$IPV6_ADDR" ]; then
+    skip "No IPv6 address is available, skipping test."
+  fi
+
+  cp $SRC_DATA_DIR/database_options_listen_placeholder.spc $STEAMPIPE_INSTALL_DIR/config/database_options_listen.spc
   sed -i.bak "s/LISTEN_PLACEHOLDER/$IPV6_ADDR/" $STEAMPIPE_INSTALL_DIR/config/database_options_listen.spc
 
   run steampipe service start
