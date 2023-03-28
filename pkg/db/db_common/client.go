@@ -3,6 +3,8 @@ package db_common
 import (
 	"context"
 	"database/sql"
+	"time"
+
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/schema"
 )
@@ -31,6 +33,7 @@ type Client interface {
 	CacheOn(context.Context) error
 	CacheOff(context.Context) error
 	CacheClear(context.Context) error
+	SetCacheTtl(ctx context.Context, duration time.Duration) error
 
 	RefreshSessions(ctx context.Context) *AcquireSessionResult
 	GetSchemaFromDB(context.Context, ...string) (*schema.Metadata, error)
