@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -17,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/sperr"
 )
 
 var commonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.CmdExit}
@@ -28,6 +31,7 @@ type QueryExecutor interface {
 	CacheOn(context.Context) error
 	CacheOff(context.Context) error
 	CacheClear(context.Context) error
+	SetCacheTtl(ctx context.Context, duration time.Duration) error
 }
 
 // HandlerInput :: input interface for the metaquery handler
@@ -133,6 +137,15 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 	}
 
 	return fmt.Errorf("invalid command")
+}
+
+// sets the cache TTL
+func cacheTTL(ctx context.Context, input *HandlerInput) error {
+	seconds, err := strconv.Atoi(input.args()[0])
+	if err != nil {
+		return sperr.WrapWithMessage(err, "valid value is the number of seconds")
+	}
+	return input.Executor.SetCacheTtl(ctx, time.Duration(seconds)*time.Second)
 }
 
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
