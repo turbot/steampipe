@@ -32,12 +32,12 @@ type QueryExecutor interface {
 
 // HandlerInput :: input interface for the metaquery handler
 type HandlerInput struct {
-	Query       string
 	Executor    QueryExecutor
 	Schema      *schema.Metadata
 	Connections steampipeconfig.ConnectionDataMap
 	Prompt      *prompt.Prompt
 	ClosePrompt func()
+	Query       string
 }
 type PromptControl interface {
 	Clear()
