@@ -3,6 +3,7 @@ import "../components/dashboards/layout/Panel";
 import "../components/dashboards/layout/Container";
 
 // General
+import "../components/ExternalLink";
 import "../components/dashboards/Error";
 import "../components/dashboards/Table";
 import "../components/dashboards/Text";
