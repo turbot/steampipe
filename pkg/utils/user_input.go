@@ -3,15 +3,15 @@ package utils
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 // UserConfirmation asks the user for input regarding whether to continue or not
 func UserConfirmation() bool {
-	var userConfirm rune
-	_, err := fmt.Scanf("%c", &userConfirm)
+	var userConfirm string
+	_, err := fmt.Scanf("%s", &userConfirm)
 	if err != nil {
 		log.Fatal(err)
 	}
-	keepMod := userConfirm == 'Y' || userConfirm == 'y'
-	return keepMod
+	return strings.ToUpper(userConfirm) == "Y"
 }
