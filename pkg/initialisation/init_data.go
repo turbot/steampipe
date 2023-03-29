@@ -3,6 +3,7 @@ package initialisation
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
@@ -131,6 +132,21 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	}
 	i.Result.AddWarnings(errorsAndWarnings.Warnings...)
 	i.Client = client
+	// if the cache is set on the workspace profile
+	// and is set to false, then override the default cache setting of the connection
+	if viper.IsSet(constants.ArgClientCacheEnabled) && !viper.GetBool(constants.ArgClientCacheEnabled) {
+		if e := i.Client.CacheOff(ctx); e != nil {
+			i.Result.Error = e
+			return
+		}
+	}
+	if viper.IsSet(constants.ArgCacheTtl) {
+		ttl := time.Duration(viper.GetInt(constants.ArgCacheTtl)) * time.Second
+		if e := i.Client.SetCacheTtl(ctx, ttl); e != nil {
+			i.Result.Error = e
+			return
+		}
+	}
 
 	// load the connection state and cache it!
 	connectionMap, _, err := steampipeconfig.GetConnectionState(client.ForeignSchemaNames())
