@@ -120,7 +120,7 @@ func refreshConnections(ctx context.Context, foreignSchemaNames []string, forceU
 	}
 
 	// now build list of necessary queries to perform the update
-	queryRes := executeConnectionUpdateQueries(ctx, tableUpdater)
+	queryRes := executeConnectionQueries(ctx, tableUpdater)
 	// merge results into local results
 	res.Merge(queryRes)
 	if res.Error != nil {
@@ -150,12 +150,12 @@ func logRefreshConnectionResults(updates *steampipeconfig.ConnectionUpdates, res
 	log.Printf("[INFO] refresh connections: \n%s\n", helpers.Tabify(op.String(), "    "))
 }
 
-func executeConnectionUpdateQueries(ctx context.Context, tableUpdater *connectionStateTableUpdater) *steampipeconfig.RefreshConnectionResult {
+func executeConnectionQueries(ctx context.Context, tableUpdater *connectionStateTableUpdater) *steampipeconfig.RefreshConnectionResult {
 	// retrieve updates from the table updater
 	connectionUpdates := tableUpdater.updates
 
-	utils.LogTime("db.executeConnectionUpdateQueries start")
-	defer utils.LogTime("db.executeConnectionUpdateQueries start")
+	utils.LogTime("db.executeConnectionQueries start")
+	defer utils.LogTime("db.executeConnectionQueries start")
 
 	poolsize := 25
 	//log.Printf("[WARN] poolsize %d", poolsize)
@@ -167,11 +167,10 @@ func executeConnectionUpdateQueries(ctx context.Context, tableUpdater *connectio
 	defer pool.Close()
 
 	numUpdates := len(connectionUpdates.Update)
-	log.Printf("[TRACE] executeConnectionUpdateQueries: num updates %d", numUpdates)
+	log.Printf("[TRACE] executeConnectionQueries: num updates %d", numUpdates)
 
 	res := &steampipeconfig.RefreshConnectionResult{}
 	if numUpdates > 0 {
-
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
 		res = executeUpdateQueries(ctx, pool, tableUpdater)
 		if res.Error != nil {
@@ -218,21 +217,21 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, tableUpdater 
 			continue
 		}
 
-		_, err := pool.Exec(ctx, getUpdateConnectionQuery(connectionName, remoteSchema))
-		if err != nil {
-			tableUpdater.onConnectionError(ctx, connectionName, err)
+		// execute update query, and update the connection state table, in a transaction
+		sql := getUpdateConnectionQuery(connectionName, remoteSchema)
+		if err := executeUpdateQuery(ctx, pool, tableUpdater, sql, connectionName); err != nil {
 			errors = append(errors, err)
 		}
 
 		statushooks.SetStatus(ctx, fmt.Sprintf("Created %d of %d %s (%s)", idx, numUpdates, utils.Pluralize("connection", numUpdates), connectionName))
 		exemplarSchemaMap[connectionData.Plugin] = connectionName
 		idx++
-		tableUpdater.onConnectionUpdated(ctx, connectionName)
 	}
 	if len(errors) > 0 {
 		res.Error = error_helpers.CombineErrors(errors...)
 		return res
 	}
+
 	if len(cloneableConnections) > 0 {
 		statushooks.SetStatus(ctx, fmt.Sprintf("Cloning %d %s", len(cloneableConnections), utils.Pluralize("connection", len(cloneableConnections))))
 		if err := cloneConnectionSchemas(ctx, pool, exemplarSchemaMap, cloneableConnections, idx, numUpdates, tableUpdater); err != nil {
@@ -285,6 +284,35 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, tableUpdater 
 	return res
 }
 
+func executeUpdateQuery(ctx context.Context, pool *pgxpool.Pool, tableUpdater *connectionStateTableUpdater, sql, connectionName string) (err error) {
+	// create a transaction
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return sperr.WrapWithMessage(err, "failed to create transaction to perform update query")
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	// execute update sql
+	_, err = tx.Exec(ctx, sql)
+	if err != nil {
+		tableUpdater.onConnectionError(ctx, tx, connectionName, err)
+		return err
+	}
+
+	// update state table (inside transaction)
+	err = tableUpdater.onConnectionUpdated(ctx, tx, connectionName)
+	if err != nil {
+		return sperr.WrapWithMessage(err, "failed to update connection state table")
+	}
+	return nil
+}
+
 func executeDeleteQueries(ctx context.Context, pool *pgxpool.Pool, deletions steampipeconfig.ConnectionDataMap, tableUpdater *connectionStateTableUpdater) error {
 	statushooks.SetStatus(ctx, fmt.Sprintf("Deleting %d %s", len(deletions), utils.Pluralize("connection", len(deletions))))
 
@@ -292,19 +320,44 @@ func executeDeleteQueries(ctx context.Context, pool *pgxpool.Pool, deletions ste
 	for c := range deletions {
 		utils.LogTime("delete connection start")
 		log.Printf("[TRACE] delete connection %s\n ", c)
-		query := getDeleteConnectionQuery(c)
-		_, err := pool.Exec(ctx, query)
+
+		err := executeDeleteQuery(ctx, pool, tableUpdater, c)
 		if err != nil {
-			tableUpdater.onConnectionError(ctx, c, sperr.WrapWithMessage(err, "failed to delete connection"))
 			errors = append(errors, err)
-		} else {
-			tableUpdater.onConnectionDeleted(ctx, c)
 		}
 		utils.LogTime("delete connection end")
 	}
 
-	tableUpdater.finishedDeleting(ctx)
 	return error_helpers.CombineErrors(errors...)
+}
+func executeDeleteQuery(ctx context.Context, pool *pgxpool.Pool, tableUpdater *connectionStateTableUpdater, connectionName string) (err error) {
+	sql := getDeleteConnectionQuery(connectionName)
+	// create a transaction
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return sperr.WrapWithMessage(err, "failed to create transaction to perform delete query")
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	// execute delete sql
+	_, err = tx.Exec(ctx, sql)
+	if err != nil {
+		tableUpdater.onConnectionError(ctx, tx, connectionName, err)
+		return err
+	}
+
+	// delete state table (inside transaction)
+	err = tableUpdater.onConnectionDeleted(ctx, tx, connectionName)
+	if err != nil {
+		return sperr.WrapWithMessage(err, "failed to delete connection state table")
+	}
+	return nil
 }
 
 func cloneConnectionSchemas(ctx context.Context, pool *pgxpool.Pool, pluginMap map[string]string, cloneableConnections steampipeconfig.ConnectionDataMap, idx int, numUpdates int, tableUpdater *connectionStateTableUpdater) error {
@@ -326,15 +379,11 @@ func cloneConnectionSchemas(ctx context.Context, pool *pgxpool.Pool, pluginMap m
 			select {
 			case connectionError := <-errChan:
 				errors = append(errors, connectionError.err)
-				tableUpdater.onConnectionError(ctx, connectionError.name, connectionError.err)
+				tableUpdater.onConnectionError(ctx, nil, connectionError.name, connectionError.err)
 			case connectionName := <-progressChan:
 				if connectionName == "" {
-					// send any remaining buffered updates to the table state
-					tableUpdater.finishedUpdating(ctx)
 					return
 				}
-				tableUpdater.onConnectionUpdated(ctx, connectionName)
-				statushooks.SetStatus(ctx, fmt.Sprintf("Cloned %d of %d %s (%s)", idx, numUpdates, utils.Pluralize("connection", numUpdates), connectionName))
 				idx++
 
 			}
@@ -357,19 +406,17 @@ func cloneConnectionSchemas(ctx context.Context, pool *pgxpool.Pool, pluginMap m
 			exemplarSchemaName := pluginMap[connectionData.Plugin]
 
 			// Clone the foreign schema into this connection.
-			q := fmt.Sprintf("select clone_foreign_schema('%s', '%s', '%s');", exemplarSchemaName, connectionName, connectionData.Plugin)
-			res, err := pool.Exec(ctx, q)
-			//log.Printf("[WARN] clone connection %s query returned", connectionName)
-			log.Println(res)
-
-			if err != nil {
+			sql := fmt.Sprintf("select clone_foreign_schema('%s', '%s', '%s');", exemplarSchemaName, connectionName, connectionData.Plugin)
+			// execute clone query, and update the connection state table, in a transaction
+			if err := executeUpdateQuery(ctx, pool, tableUpdater, sql, connectionName); err != nil {
 				errChan <- connectionError{connectionName, err}
 				return
-
 			}
+
 			pluginMapMut.Lock()
 			pluginMap[connectionData.Plugin] = connectionName
 			pluginMapMut.Unlock()
+
 			progressChan <- connectionName
 		}(n, d)
 

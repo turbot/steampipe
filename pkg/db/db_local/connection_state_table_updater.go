@@ -3,26 +3,28 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
+	"sync"
 )
 
-// update the table every 5 connections
+// send a notification every 5 connections
 const updatePageSize = 5
 
 type connectionStateTableUpdater struct {
-	numUpdates int
-	updates    *steampipeconfig.ConnectionUpdates
+	updates *steampipeconfig.ConnectionUpdates
 
-	updatedConnections []string
-	deletedConnections []string
+	updateCountLock    sync.Mutex
+	deleteCountLock    sync.Mutex
+	updatedConnections int
+	deletedConnections int
 }
 
 func newConnectionStateTableUpdater(updates *steampipeconfig.ConnectionUpdates) *connectionStateTableUpdater {
 	return &connectionStateTableUpdater{
-		numUpdates: len(updates.Update),
-		updates:    updates,
+		updates: updates,
 	}
 }
 
@@ -49,73 +51,55 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionUpdated(ctx context.Context, name string) error {
-	u.updatedConnections = append(u.updatedConnections, name)
-	if len(u.updatedConnections) >= updatePageSize {
+func (u *connectionStateTableUpdater) onConnectionUpdated(ctx context.Context, tx pgx.Tx, name string) error {
+	sql := getUpdateConnectionStateSql(name, constants.ConnectionStateReady)
+	_, err := tx.Exec(ctx, sql)
+	if err != nil {
+		return err
+	}
+
+	// this may be called from multiple goroutines
+	u.updateCountLock.Lock()
+	u.updatedConnections++
+	if u.updatedConnections >= updatePageSize {
 		log.Printf("[WARN] onConnectionUpdated updating page")
-		return u.writeUpdatedConnections(ctx)
+		// TODO KAI send notification
+		//statushooks.SetStatus(ctx, fmt.Sprintf("Cloned %d of %d %s (%s)", idx, numUpdates, utils.Pluralize("connection", numUpdates), connectionName))
+		u.updatedConnections = 0
 	}
+	u.updateCountLock.Unlock()
+
 	return nil
 }
 
-func (u *connectionStateTableUpdater) finishedUpdating(ctx context.Context) error {
-	log.Printf("[WARN] finishedUpdating")
-	return u.writeUpdatedConnections(ctx)
-}
-
-func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, name string) error {
-	u.deletedConnections = append(u.deletedConnections, name)
-	if len(u.deletedConnections) >= updatePageSize {
-		log.Printf("[WARN] onConnectionDeleted deleting page")
-		return u.removeDeletedConnections(ctx)
+func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, tx pgx.Tx, name string) error {
+	sql := getDeleteConnectionStateSql(name)
+	_, err := tx.Exec(ctx, sql)
+	if err != nil {
+		return err
 	}
+	// this may be called from multiple goroutines
+	u.deleteCountLock.Lock()
+
+	u.deletedConnections++
+	if u.deletedConnections >= updatePageSize {
+		log.Printf("[WARN] onConnectionDeleted updating page")
+		// TODO KAI send notification
+
+		u.deletedConnections = 0
+	}
+	u.deleteCountLock.Unlock()
+
 	return nil
-
 }
 
-func (u *connectionStateTableUpdater) finishedDeleting(ctx context.Context) error {
-	log.Printf("[WARN] finishedUpdfinishedDeletingating")
-	return u.removeDeletedConnections(ctx)
-}
-
-func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, connectionName string, err error) error {
+func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, tx pgx.Tx, connectionName string, err error) error {
 	sql := getConnectionStateErrorSql(connectionName, err)
-	if _, err := executeSqlAsRoot(ctx, sql); err != nil {
+	if _, err := tx.Exec(ctx, sql); err != nil {
 		return err
 	}
 	return nil
 	// TODO KAI send notification
-}
-
-func (u *connectionStateTableUpdater) writeUpdatedConnections(ctx context.Context) error {
-	// TODO KAI send notification
-	var queries []string
-	for _, c := range u.updatedConnections {
-		queries = append(queries, getUpdateConnectionStateSql(c, constants.ConnectionStateReady))
-	}
-	if _, err := executeSqlAsRoot(ctx, queries...); err != nil {
-		return err
-	}
-	// clear page of updated connections
-	u.updatedConnections = nil
-	return nil
-}
-
-func (u *connectionStateTableUpdater) removeDeletedConnections(ctx context.Context) error {
-	var queries []string
-	for _, c := range u.deletedConnections {
-		queries = append(queries, getDeleteConnectionStateSql(c))
-	}
-	if _, err := executeSqlAsRoot(ctx, queries...); err != nil {
-		return err
-	}
-	return nil
-}
-
-func getDeleteConnectionStateSql(connectionName string) string {
-	return fmt.Sprintf(`delete from %s.%s where name = '%s'`,
-		constants.InternalSchema, constants.ConnectionStateTable,
-		connectionName)
 }
 
 func getConnectionStateErrorSql(connectionName string, err error) string {
@@ -148,4 +132,7 @@ DO
 		constants.InternalSchema, constants.ConnectionStateTable,
 		connectionName, state,
 		state)
+}
+func getDeleteConnectionStateSql(connectionName string) string {
+	return fmt.Sprintf(`DELETE FROM %s.%s WHERE NAME='%s'`, connectionName)
 }
