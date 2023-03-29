@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -27,6 +29,7 @@ import (
 	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/task"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
@@ -70,7 +73,7 @@ var rootCmd = &cobra.Command{
 
 		// set up the global viper config with default values from
 		// config files and ENV variables
-		initGlobalConfig()
+		ew := initGlobalConfig()
 
 		// if the log level was set in the general config
 		if logLevelNeedsReset() {
@@ -96,6 +99,10 @@ var rootCmd = &cobra.Command{
 			// (we can use the update-check viper config here, since initGlobalConfig has already set it up
 			// with values from the config files and ENV settings - update-check cannot be set from the command line)
 			task.WithUpdateCheck(viper.GetBool(constants.ArgUpdateCheck)),
+			// show deprecation warnings
+			task.WithPreHook(func(_ context.Context) {
+				displayDeprecationWarnings(ew)
+			}),
 		)
 
 		// set the max memory
@@ -197,7 +204,7 @@ func hideRootFlags(flags ...string) {
 }
 
 // initConfig reads in config file and ENV variables if set.
-func initGlobalConfig() {
+func initGlobalConfig() *modconfig.ErrorAndWarnings {
 	utils.LogTime("cmd.root.initGlobalConfig start")
 	defer utils.LogTime("cmd.root.initGlobalConfig end")
 
@@ -217,11 +224,11 @@ func initGlobalConfig() {
 	ensureInstallDir(viper.GetString(constants.ArgInstallDir))
 
 	// load the connection config and HCL options
-	config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
-	error_helpers.FailOnError(errorsAndWarnings.GetError())
+	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
+	error_helpers.FailOnError(loadConfigErrorsAndWarnings.GetError())
 
 	// show any deprecation warnings
-	errorsAndWarnings.ShowWarnings()
+	// loadConfigErrorsAndWarnings.ShowWarnings()
 
 	// store global config
 	steampipeconfig.GlobalConfig = config
@@ -253,6 +260,8 @@ func initGlobalConfig() {
 	// migrate all legacy config files to use snake casing (migrated in v0.14.0)
 	err = migrateLegacyFiles()
 	error_helpers.FailOnErrorWithMessage(err, "failed to migrate steampipe data files")
+
+	return loadConfigErrorsAndWarnings
 }
 
 func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error {
@@ -402,4 +411,13 @@ func createRootContext() context.Context {
 
 	ctx := statushooks.AddStatusHooksToContext(context.Background(), statusRenderer)
 	return ctx
+}
+
+// displayDeprecationWarnings shows the deprecated warnings in a formatted way
+func displayDeprecationWarnings(errorsAndWarnings *modconfig.ErrorAndWarnings) {
+	fmt.Println(color.YellowString(fmt.Sprintf("Deprecation %s:", utils.Pluralize("warning", len(errorsAndWarnings.Warnings)))))
+	for _, warning := range errorsAndWarnings.Warnings {
+		fmt.Printf("• %s\n", warning)
+	}
+	fmt.Println()
 }
