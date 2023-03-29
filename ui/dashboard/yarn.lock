@@ -18377,10 +18377,10 @@ web-namespaces@^1.0.0:
   resolved "https://registry.npmjs.org/web-namespaces/-/web-namespaces-1.1.4.tgz"
   integrity sha512-wYxSGajtmoP4WxfejAPIr4l0fVh+jeMXZb08wNc0tMg6xsfZXj3cECqIK0G7ZAqUq0PP8WlMDtaOGVBTAWztNw==
 
-web-vitals@3.1.1:
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/web-vitals/-/web-vitals-3.1.1.tgz#bb124a03df7a135617f495c5bb7dbc30ecf2cce3"
-  integrity sha512-qvllU+ZeQChqzBhZ1oyXmWsjJ8a2jHYpH8AMaVuf29yscOPZfTQTjQFRX6+eADTdsDE8IanOZ0cetweHMs8/2A==
+web-vitals@3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/web-vitals/-/web-vitals-3.3.0.tgz#2e14bcbb3acf71d00c49519ab92cc517511476d5"
+  integrity sha512-GZsEmJBNclIpViS/7QVOTr7Kbt4BgLeR7kQ5zCCtJVuiWsA+K6xTXaoEXssvl8yYFICEyNmA2Nr+vgBYTnS4bA==
 
 webidl-conversions@^3.0.0:
   version "3.0.1"
