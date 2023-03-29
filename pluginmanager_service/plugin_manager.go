@@ -755,7 +755,6 @@ func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginCl
 }
 
 func (m *PluginManager) setCacheOptions(pluginClient *sdkgrpc.PluginClient) error {
-	// TODO set from viper
 	req := &sdkproto.SetCacheOptionsRequest{
 		Enabled:   viper.GetBool(constants.ArgServiceCacheEnabled),
 		Ttl:       viper.GetInt64(constants.ArgCacheMaxTtl),
