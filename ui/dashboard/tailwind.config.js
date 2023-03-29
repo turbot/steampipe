@@ -44,7 +44,7 @@ module.exports = {
         "1/2-screen": "50vh",
       },
       spacing: {
-        "4.5": "1.125rem"
+        4.5: "1.125rem",
       },
       typography: (theme) => ({
         DEFAULT: {
@@ -74,9 +74,5 @@ module.exports = {
       }),
     },
   },
-  plugins: [
-    require("@tailwindcss/forms"),
-    require("@tailwindcss/line-clamp"),
-    require("@tailwindcss/typography"),
-  ],
+  plugins: [require("@tailwindcss/forms"), require("@tailwindcss/typography")],
 };
