@@ -229,21 +229,20 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 	workspacePath := viper.GetString(constants.ArgModLocation)
-	cont := modinstaller.ValidateModLocation(ctx, workspacePath)
-	if cont {
-		if parse.ModfileExists(workspacePath) {
-			fmt.Println("Working folder already contains a mod definition file")
-			return
-		}
-		mod := modconfig.CreateDefaultMod(workspacePath)
-		err := mod.Save()
-		error_helpers.FailOnError(err)
-		fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
-	} else {
+	if !modinstaller.ValidateModLocation(ctx, workspacePath) {
 		exitCode = constants.ExitCodeModInitFailed
 		error_helpers.ShowError(ctx, fmt.Errorf("Mod initialisation cancelled"))
 		return
 	}
+
+	if parse.ModfileExists(workspacePath) {
+		fmt.Println("Working folder already contains a mod definition file")
+		return
+	}
+	mod := modconfig.CreateDefaultMod(workspacePath)
+	err := mod.Save()
+	error_helpers.FailOnError(err)
+	fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
 }
 
 // helpers
