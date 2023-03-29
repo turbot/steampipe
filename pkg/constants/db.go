@@ -54,6 +54,10 @@ const (
 	CommandTableSettingsKeyColumn   = "name"
 	CommandTableSettingsValueColumn = "value"
 
+	CommandTableSettingsCacheKey          = "cache"
+	CommandTableSettingsCacheTtlKey       = "cache_ttl"
+	CommandTableSettingsCacheClearTimeKey = "cache_clear_time"
+
 	CommandTableScanMetadata = "scan_metadata"
 )
 

@@ -113,13 +113,13 @@ func setSearchPathPrefix(ctx context.Context, input *HandlerInput) error {
 }
 
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
-func setHeader(ctx context.Context, input *HandlerInput) error {
+func setHeader(_ context.Context, input *HandlerInput) error {
 	cmdconfig.Viper().Set(constants.ArgHeader, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
 // set the ArgMulti viper key with the boolean value evaluated from arg[0]
-func setMultiLine(ctx context.Context, input *HandlerInput) error {
+func setMultiLine(_ context.Context, input *HandlerInput) error {
 	cmdconfig.Viper().Set(constants.ArgMultiLine, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
@@ -145,31 +145,34 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 	if err != nil {
 		return sperr.WrapWithMessage(err, "valid value is the number of seconds")
 	}
+	if seconds < 0 {
+		return sperr.New("ttl must be greater than 0")
+	}
 	return input.Executor.SetCacheTtl(ctx, time.Duration(seconds)*time.Second)
 }
 
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
-func setTiming(ctx context.Context, input *HandlerInput) error {
+func setTiming(_ context.Context, input *HandlerInput) error {
 	cmdconfig.Viper().Set(constants.ArgTiming, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
 // set the value of `viperKey` in `viper` with the value from `args[0]`
 func setViperConfigFromArg(viperKey string) handler {
-	return func(ctx context.Context, input *HandlerInput) error {
+	return func(_ context.Context, input *HandlerInput) error {
 		cmdconfig.Viper().Set(viperKey, input.args()[0])
 		return nil
 	}
 }
 
 // exit
-func doExit(ctx context.Context, input *HandlerInput) error {
+func doExit(_ context.Context, input *HandlerInput) error {
 	input.ClosePrompt()
 	return nil
 }
 
 // help
-func doHelp(ctx context.Context, input *HandlerInput) error {
+func doHelp(_ context.Context, _ *HandlerInput) error {
 	commonCmdRows := getMetaQueryHelpRows(commonCmds, false)
 	var advanceCmds []string
 	for cmd := range metaQueryDefinitions {
@@ -211,7 +214,7 @@ func getMetaQueryHelpRows(cmds []string, arrange bool) [][]string {
 }
 
 // list all the tables in the schema
-func listTables(ctx context.Context, input *HandlerInput) error {
+func listTables(_ context.Context, input *HandlerInput) error {
 
 	if len(input.args()) == 0 {
 		schemas := input.Schema.GetSchemas()
@@ -340,7 +343,7 @@ To get information about the columns in a table, run %s
 	return inspectTable(tokens[0], tokens[1], input)
 }
 
-func listConnections(ctx context.Context, input *HandlerInput) error {
+func listConnections(_ context.Context, input *HandlerInput) error {
 	header := []string{"connection", "plugin"}
 	var rows [][]string
 
@@ -396,7 +399,7 @@ func inspectConnection(connectionName string, input *HandlerInput) bool {
 	return true
 }
 
-func clearScreen(ctx context.Context, input *HandlerInput) error {
+func clearScreen(_ context.Context, input *HandlerInput) error {
 	input.Prompt.ClearScreen()
 	return nil
 }
@@ -452,7 +455,7 @@ func buildTable(rows [][]string, autoMerge bool) string {
 	return t.Render()
 }
 
-func setAutoComplete(ctx context.Context, input *HandlerInput) error {
+func setAutoComplete(_ context.Context, input *HandlerInput) error {
 	cmdconfig.Viper().Set(constants.ArgAutoComplete, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
