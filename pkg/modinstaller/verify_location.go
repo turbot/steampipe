@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -22,8 +22,7 @@ func ValidateModLocation(ctx context.Context, workspacePath string) bool {
 
 	// check if running in home directory
 	if workspacePath == home {
-		error_helpers.ShowWarning(fmt.Sprintf("You're in the home directory. It's recommended to create a new directory and run %s from there.\nDo you want to continue? (y/n)", constants.Bold(fmt.Sprintf("steampipe mod %s", cmd.Name()))))
-		return utils.UserConfirmation()
+		return utils.UserConfirmation(fmt.Sprintf("%s: You're in the home directory. It's recommended to create a new directory and run %s from there.\nDo you want to continue? (y/n)", color.YellowString("Warning"), constants.Bold(fmt.Sprintf("steampipe mod %s", cmd.Name()))))
 	}
 	// else check if running in a directory containing lot of sql and sp files
 	fileList, _ := filehelpers.ListFiles(workspacePath, &filehelpers.ListOptions{
@@ -32,8 +31,7 @@ func ValidateModLocation(ctx context.Context, workspacePath string) bool {
 		MaxResults: MaxResults,
 	})
 	if len(fileList) == MaxResults {
-		error_helpers.ShowWarning(fmt.Sprintf("You're in a directory with a lot of files or subdirectories (>10 files that are not .sql or .sp). It's recommended to create a new directory and run %s from there.\nDo you want to continue? (y/n)", constants.Bold(fmt.Sprintf("steampipe mod %s", cmd.Name()))))
-		return utils.UserConfirmation()
+		return utils.UserConfirmation(fmt.Sprintf("%s: You're in a directory with a lot of files or subdirectories (>10 files that are not .sql or .sp). It's recommended to create a new directory and run %s from there.\nDo you want to continue? (y/n)", color.YellowString("Warning"), constants.Bold(fmt.Sprintf("steampipe mod %s", cmd.Name()))))
 	}
 
 	return true
