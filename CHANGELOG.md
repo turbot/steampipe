@@ -4,7 +4,7 @@ _Bug fixes_
 * Fix dashboard UI crash when select inputs return null labels or values. ([#3244](https://github.com/turbot/steampipe/issues/3244))
 
 ## v0.19.2 [2023-03-16]
-_What's new?_
+_Bug fixes_
 * When creating a query snapshot, respect the `snapshot-title` arg when assigning a title to the dashboard. ([#3233](https://github.com/turbot/steampipe/issues/3233))
 
 ## v0.19.1 [2023-03-09]
