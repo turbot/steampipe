@@ -44,7 +44,7 @@ func LoadSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, error) {
 }
 
 func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, error) {
-	res, err := conn.Query(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
+	res, err := conn.Query(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables WHERE foreign_server_name='steampipe'")
 	if err != nil {
 		return nil, err
 	}
