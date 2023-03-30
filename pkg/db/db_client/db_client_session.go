@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -65,9 +68,26 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	// make sure that we close the acquired session, in case of error
 	defer func() {
 		if sessionResult.Error != nil && databaseConnection != nil {
+			sessionResult.Session = nil
 			databaseConnection.Release()
 		}
 	}()
+
+	// if the cache is set on the workspace profile
+	// then override the default cache setting of the connection
+	if viper.IsSet(constants.ArgClientCacheEnabled) {
+		if err := db_common.SetCacheEnabled(ctx, viper.GetBool(constants.ArgClientCacheEnabled), databaseConnection.Conn()); err != nil {
+			sessionResult.Error = err
+			return sessionResult
+		}
+	}
+	if viper.IsSet(constants.ArgCacheTtl) {
+		ttl := time.Duration(viper.GetInt(constants.ArgCacheTtl)) * time.Second
+		if err := db_common.SetCacheTtl(ctx, ttl, databaseConnection.Conn()); err != nil {
+			sessionResult.Error = err
+			return sessionResult
+		}
+	}
 
 	// update required session search path if needed
 	err = c.ensureSessionSearchPath(ctx, session)
