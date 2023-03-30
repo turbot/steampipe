@@ -308,7 +308,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     # remove the config file
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos2.json
 
-    assert_output --partial 'Error: duplicate connection name'
+    assert_output --partial 'duplicate connection name'
 }
 
 @test "steampipe yaml connection config" {
