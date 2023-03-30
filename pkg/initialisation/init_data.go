@@ -81,8 +81,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgModLocation)}
 		if _, err := modinstaller.InstallWorkspaceDependencies(opts); err != nil {
 			i.Result.Error = err
+			return
 		}
-		return
 	}
 
 	// retrieve cloud metadata
