@@ -126,6 +126,7 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 	if sessionResult.Error != nil {
 		return sessionResult.Error
 	}
+	conn := sessionResult.Session.Connection.Conn()
 	defer func() {
 		// we need to do this in a closure, otherwise the ctx will be evaluated immediately
 		// and not in call-time
@@ -133,11 +134,11 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 	}()
 	switch command {
 	case constants.ArgOn:
-		return db_common.SetCacheEnabled(ctx, true, sessionResult.Session.Connection.Conn())
+		return db_common.SetCacheEnabled(ctx, true, conn)
 	case constants.ArgOff:
-		return db_common.SetCacheEnabled(ctx, false, sessionResult.Session.Connection.Conn())
+		return db_common.SetCacheEnabled(ctx, false, conn)
 	case constants.ArgClear:
-		return db_common.CacheClear(ctx, sessionResult.Session.Connection.Conn())
+		return db_common.CacheClear(ctx, conn)
 	}
 
 	return fmt.Errorf("invalid command")
