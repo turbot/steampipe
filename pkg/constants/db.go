@@ -6,7 +6,7 @@ import (
 	"github.com/turbot/steampipe/pkg/schema"
 )
 
-// dbClient constants
+// Client constants
 const (
 	// MaxParallelClientInits is the number of clients to initialize in parallel
 	// if we start initializing all clients together, it leads to bad performance on all
