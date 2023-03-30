@@ -61,7 +61,6 @@ var rootCmd = &cobra.Command{
 		defer func() {
 			if r := recover(); r != nil {
 				error_helpers.ShowError(cmd.Context(), helpers.ToError(r))
-				debug.PrintStack()
 			}
 		}()
 
