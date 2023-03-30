@@ -99,7 +99,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *m
 		}
 	case *options.Terminal:
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
-		errorsAndWarnings.AddWarning(deprecationWarning("terminal options"))
+		errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("%s", constants.Bold("terminal options"))))
 
 		// NOTE: ignore terminal options if current command is not query
 		// this is a short term workaround to handle the clashing 'output' argument
@@ -121,7 +121,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *m
 		}
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
 		if c.GeneralOptions.MaxParallel != nil {
-			errorsAndWarnings.AddWarning(deprecationWarning("'max_parallel' in general options"))
+			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants.Bold("max_parallel"), constants.Bold("general options"))))
 		}
 	}
 	return errorsAndWarnings

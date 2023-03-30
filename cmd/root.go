@@ -416,10 +416,9 @@ func createRootContext() context.Context {
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way
 func displayDeprecationWarnings(errorsAndWarnings *modconfig.ErrorAndWarnings) {
 	if len(errorsAndWarnings.Warnings) > 0 {
-		fmt.Println(color.YellowString(fmt.Sprintf("Deprecation %s:", utils.Pluralize("warning", len(errorsAndWarnings.Warnings)))))
+		fmt.Println(color.YellowString(fmt.Sprintf("\nDeprecation %s:", utils.Pluralize("warning", len(errorsAndWarnings.Warnings)))))
 		for _, warning := range errorsAndWarnings.Warnings {
-			fmt.Printf("• %s\n", warning)
+			fmt.Printf("%s\n\n", warning)
 		}
-		fmt.Println()
 	}
 }
