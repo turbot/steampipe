@@ -19,6 +19,7 @@ const (
 	EnvCheckDisplayWidth = "STEAMPIPE_CHECK_DISPLAY_WIDTH"
 	EnvCacheEnabled      = "STEAMPIPE_CACHE"
 	EnvCacheTTL          = "STEAMPIPE_CACHE_TTL"
+	EnvCacheMaxTTL       = "STEAMPIPE_CACHE_MAX_TTL"
 	EnvCacheMaxSize      = "STEAMPIPE_CACHE_MAX_SIZE_MB"
 	EnvQueryTimeout      = "STEAMPIPE_QUERY_TIMEOUT"
 

@@ -6,7 +6,7 @@ import (
 	"github.com/turbot/steampipe/pkg/schema"
 )
 
-// dbClient constants
+// Client constants
 const (
 	// MaxParallelClientInits is the number of clients to initialize in parallel
 	// if we start initializing all clients together, it leads to bad performance on all
@@ -32,7 +32,7 @@ const (
 // constants for installing db and fdw images
 const (
 	DatabaseVersion = "14.2.0"
-	FdwVersion      = "1.6.2"
+	FdwVersion      = "1.7.0-rc.0"
 
 	// PostgresImageRef is the OCI Image ref for the database binaries
 	PostgresImageRef    = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
@@ -50,11 +50,13 @@ const (
 	// CommandSchema is the schema which is used to send commands to the FDW
 	CommandSchema = "steampipe_command"
 
-	CommandTableCache                = "cache"
-	CommandTableCacheOperationColumn = "operation"
-	CommandCacheOn                   = "cache_on"
-	CommandCacheOff                  = "cache_off"
-	CommandCacheClear                = "cache_clear"
+	CommandTableSettings            = "settings"
+	CommandTableSettingsKeyColumn   = "name"
+	CommandTableSettingsValueColumn = "value"
+
+	CommandTableSettingsCacheKey          = "cache"
+	CommandTableSettingsCacheTtlKey       = "cache_ttl"
+	CommandTableSettingsCacheClearTimeKey = "cache_clear_time"
 
 	CommandTableScanMetadata = "scan_metadata"
 )

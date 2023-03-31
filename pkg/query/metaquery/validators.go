@@ -13,8 +13,8 @@ import (
 // ValidationResult :: response for Validate
 type ValidationResult struct {
 	Err       error
-	ShouldRun bool
 	Message   string
+	ShouldRun bool
 }
 
 type validator func(val []string) ValidationResult

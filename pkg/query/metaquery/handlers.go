@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -14,30 +16,23 @@ import (
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/sperr"
 )
 
 var commonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.CmdExit}
 
-// QueryExecutor :: this is a container interface which allows us to call into the db/Client object
-type QueryExecutor interface {
-	SetRequiredSessionSearchPath(context.Context) error
-	GetCurrentSearchPath(context.Context) ([]string, error)
-	CacheOn(context.Context) error
-	CacheOff(context.Context) error
-	CacheClear(context.Context) error
-}
-
 // HandlerInput :: input interface for the metaquery handler
 type HandlerInput struct {
-	Query       string
-	Executor    QueryExecutor
+	Client      db_common.Client
 	Schema      *schema.Metadata
 	Connections steampipeconfig.ConnectionDataMap
 	Prompt      *prompt.Prompt
 	ClosePrompt func()
+	Query       string
 }
 type PromptControl interface {
 	Clear()
@@ -63,7 +58,7 @@ func Handle(ctx context.Context, input *HandlerInput) error {
 
 func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
 	if len(input.args()) == 0 {
-		currentPath, err := input.Executor.GetCurrentSearchPath(ctx)
+		currentPath, err := input.Client.GetCurrentSearchPath(ctx)
 		if err != nil {
 			return err
 		}
@@ -88,7 +83,7 @@ func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
 
 		// now that the viper is set, call back into the client (exposed via QueryExecutor) which
 		// already knows how to setup the search_paths with the viper values
-		return input.Executor.SetRequiredSessionSearchPath(ctx)
+		return input.Client.SetRequiredSessionSearchPath(ctx)
 	}
 	return nil
 }
@@ -105,17 +100,17 @@ func setSearchPathPrefix(ctx context.Context, input *HandlerInput) error {
 
 	// now that the viper is set, call back into the client (exposed via QueryExecutor) which
 	// already knows how to setup the search_paths with the viper values
-	return input.Executor.SetRequiredSessionSearchPath(ctx)
+	return input.Client.SetRequiredSessionSearchPath(ctx)
 }
 
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
-func setHeader(ctx context.Context, input *HandlerInput) error {
+func setHeader(_ context.Context, input *HandlerInput) error {
 	cmdconfig.Viper().Set(constants.ArgHeader, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
 // set the ArgMulti viper key with the boolean value evaluated from arg[0]
-func setMultiLine(ctx context.Context, input *HandlerInput) error {
+func setMultiLine(_ context.Context, input *HandlerInput) error {
 	cmdconfig.Viper().Set(constants.ArgMultiLine, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
@@ -123,40 +118,78 @@ func setMultiLine(ctx context.Context, input *HandlerInput) error {
 // controls the cache in the connected FDW
 func cacheControl(ctx context.Context, input *HandlerInput) error {
 	command := input.args()[0]
+	// just get the active session from the connection pool
+	// and set the cache parameters on it.
+	// this works because the interactive client
+	// always has only one active connection due to the way it works
+	sessionResult := input.Client.AcquireSession(ctx)
+	if sessionResult.Error != nil {
+		return sessionResult.Error
+	}
+	conn := sessionResult.Session.Connection.Conn()
+	defer func() {
+		// we need to do this in a closure, otherwise the ctx will be evaluated immediately
+		// and not in call-time
+		sessionResult.Session.Close(false)
+	}()
 	switch command {
 	case constants.ArgOn:
-		return input.Executor.CacheOn(ctx)
+		viper.Set(constants.ArgClientCacheEnabled, true)
+		return db_common.SetCacheEnabled(ctx, true, sessionResult.Session.Connection.Conn())
 	case constants.ArgOff:
-		return input.Executor.CacheOff(ctx)
+		viper.Set(constants.ArgClientCacheEnabled, false)
+		return db_common.SetCacheEnabled(ctx, false, sessionResult.Session.Connection.Conn())
 	case constants.ArgClear:
-		return input.Executor.CacheClear(ctx)
+		return db_common.CacheClear(ctx, conn)
 	}
 
 	return fmt.Errorf("invalid command")
 }
 
+// sets the cache TTL
+func cacheTTL(ctx context.Context, input *HandlerInput) error {
+	seconds, err := strconv.Atoi(input.args()[0])
+	if err != nil {
+		return sperr.WrapWithMessage(err, "valid value is the number of seconds")
+	}
+	if seconds < 0 {
+		return sperr.New("ttl must be greater than 0")
+	}
+	sessionResult := input.Client.AcquireSession(ctx)
+	if sessionResult.Error != nil {
+		return sessionResult.Error
+	}
+	defer func() {
+		// we need to do this in a closure, otherwise the ctx will be evaluated immediately
+		// and not in call-time
+		sessionResult.Session.Close(false)
+		viper.Set(constants.ArgCacheTtl, seconds)
+	}()
+	return db_common.SetCacheTtl(ctx, time.Duration(seconds)*time.Second, sessionResult.Session.Connection.Conn())
+}
+
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
-func setTiming(ctx context.Context, input *HandlerInput) error {
+func setTiming(_ context.Context, input *HandlerInput) error {
 	cmdconfig.Viper().Set(constants.ArgTiming, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
 // set the value of `viperKey` in `viper` with the value from `args[0]`
 func setViperConfigFromArg(viperKey string) handler {
-	return func(ctx context.Context, input *HandlerInput) error {
+	return func(_ context.Context, input *HandlerInput) error {
 		cmdconfig.Viper().Set(viperKey, input.args()[0])
 		return nil
 	}
 }
 
 // exit
-func doExit(ctx context.Context, input *HandlerInput) error {
+func doExit(_ context.Context, input *HandlerInput) error {
 	input.ClosePrompt()
 	return nil
 }
 
 // help
-func doHelp(ctx context.Context, input *HandlerInput) error {
+func doHelp(_ context.Context, _ *HandlerInput) error {
 	commonCmdRows := getMetaQueryHelpRows(commonCmds, false)
 	var advanceCmds []string
 	for cmd := range metaQueryDefinitions {
@@ -198,7 +231,7 @@ func getMetaQueryHelpRows(cmds []string, arrange bool) [][]string {
 }
 
 // list all the tables in the schema
-func listTables(ctx context.Context, input *HandlerInput) error {
+func listTables(_ context.Context, input *HandlerInput) error {
 
 	if len(input.args()) == 0 {
 		schemas := input.Schema.GetSchemas()
@@ -226,7 +259,7 @@ To get information about the columns in a table, run %s
 		// treat this as a wild card
 		regexp, err := regexp.Compile(arg)
 		if err != nil {
-			return fmt.Errorf("Invalid search string %s", arg)
+			return fmt.Errorf("invalid search string %s", arg)
 		}
 		header := []string{"Table", "Schema"}
 		rows := [][]string{}
@@ -291,7 +324,7 @@ func inspect(ctx context.Context, input *HandlerInput) error {
 
 			// still here - the last sledge hammer is to go through
 			// the schema names one by one
-			searchPath, _ := input.Executor.GetCurrentSearchPath(ctx)
+			searchPath, _ := input.Client.GetCurrentSearchPath(ctx)
 
 			// add the temporary schema to the search_path so that it becomes searchable
 			// for the next step
@@ -327,7 +360,7 @@ To get information about the columns in a table, run %s
 	return inspectTable(tokens[0], tokens[1], input)
 }
 
-func listConnections(ctx context.Context, input *HandlerInput) error {
+func listConnections(_ context.Context, input *HandlerInput) error {
 	header := []string{"connection", "plugin"}
 	var rows [][]string
 
@@ -383,7 +416,7 @@ func inspectConnection(connectionName string, input *HandlerInput) bool {
 	return true
 }
 
-func clearScreen(ctx context.Context, input *HandlerInput) error {
+func clearScreen(_ context.Context, input *HandlerInput) error {
 	input.Prompt.ClearScreen()
 	return nil
 }
@@ -394,11 +427,11 @@ func inspectTable(connectionName string, tableName string, input *HandlerInput) 
 
 	schema, found := input.Schema.Schemas[connectionName]
 	if !found {
-		return fmt.Errorf("Could not find connection called '%s'", connectionName)
+		return fmt.Errorf("could not find connection called '%s'", connectionName)
 	}
 	tableSchema, found := schema[tableName]
 	if !found {
-		return fmt.Errorf("Could not find table '%s' in '%s'", tableName, connectionName)
+		return fmt.Errorf("could not find table '%s' in '%s'", tableName, connectionName)
 	}
 
 	for _, columnSchema := range tableSchema.Columns {
@@ -439,7 +472,7 @@ func buildTable(rows [][]string, autoMerge bool) string {
 	return t.Render()
 }
 
-func setAutoComplete(ctx context.Context, input *HandlerInput) error {
+func setAutoComplete(_ context.Context, input *HandlerInput) error {
 	cmdconfig.Viper().Set(constants.ArgAutoComplete, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }

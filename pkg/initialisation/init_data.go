@@ -3,6 +3,7 @@ package initialisation
 import (
 	"context"
 	"fmt"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -77,8 +78,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	if viper.GetBool(constants.ArgModInstall) {
 		statushooks.SetStatus(ctx, "Installing workspace dependencies")
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgModLocation)}
-		_, err := modinstaller.InstallWorkspaceDependencies(opts)
-		if err != nil {
+		if _, err := modinstaller.InstallWorkspaceDependencies(opts); err != nil {
 			i.Result.Error = err
 			return
 		}
