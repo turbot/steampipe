@@ -19,7 +19,7 @@ import (
 
 type ConnectionUpdates struct {
 	Update         ConnectionDataMap
-	Delete         ConnectionDataMap
+	Delete         []string
 	MissingPlugins map[string][]modconfig.Connection
 	// the connections which will exist after the update
 	RequiredConnectionState ConnectionDataMap
@@ -29,7 +29,7 @@ type ConnectionUpdates struct {
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
-func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
+func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, foreignSchemaNames []string, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
 	utils.LogTime("NewConnectionUpdates start")
 	defer utils.LogTime("NewConnectionUpdates end")
 
@@ -50,7 +50,6 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 
 	updates := &ConnectionUpdates{
 		Update:                  ConnectionDataMap{},
-		Delete:                  ConnectionDataMap{},
 		MissingPlugins:          missingPlugins,
 		RequiredConnectionState: requiredConnectionState,
 	}
@@ -95,10 +94,21 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 
 	statushooks.SetStatus(ctx, "Identify connections to delete")
 	// connections to delete - any connection which is in connection state but NOT required connections
-	for connection, requiredPlugin := range currentConnectionState {
-		if _, ok := requiredConnectionState[connection]; !ok {
-			log.Printf("[TRACE] connection %s is no longer required\n", connection)
-			updates.Delete[connection] = requiredPlugin
+	for name := range currentConnectionState {
+		if _, ok := requiredConnectionState[name]; !ok {
+			log.Printf("[TRACE] connection %s in current state but not in required state - marking for deletion\n", name)
+			updates.Delete = append(updates.Delete, name)
+		}
+	}
+	// if there are any foreign schemas which do not exist in currentConnectionState OR requiredConnectionState,
+	// add them into deletions
+	// (if they exist in required current state but not required stste, they will already be marked for deletion)
+	for _, name := range foreignSchemaNames {
+		_, existsInCurrentState := currentConnectionState[name]
+		_, existsInRequiredState := requiredConnectionState[name]
+		if !existsInCurrentState && !existsInRequiredState {
+			log.Printf("[TRACE] connection %s exists in db foreign schemas state but not current or required state - marking for deletion\n", name)
+			updates.Delete = append(updates.Delete, name)
 		}
 	}
 
@@ -215,7 +225,8 @@ func (u *ConnectionUpdates) HasUpdates() bool {
 func (u *ConnectionUpdates) String() string {
 	var op strings.Builder
 	update := utils.SortedMapKeys(u.Update)
-	delete := utils.SortedMapKeys(u.Delete)
+	delete := u.Delete
+	sort.Strings(delete)
 	stateConnections := utils.SortedMapKeys(u.RequiredConnectionState)
 	if len(update) > 0 {
 		op.WriteString(fmt.Sprintf("Update: %s\n", strings.Join(update, ",")))
@@ -234,7 +245,7 @@ func (u *ConnectionUpdates) String() string {
 func (u *ConnectionUpdates) AsNotification() *SchemaUpdateNotification {
 	return NewSchemaUpdateNotification(
 		maps.Keys(u.Update),
-		maps.Keys(u.Delete))
+		u.Delete)
 }
 
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, error) {

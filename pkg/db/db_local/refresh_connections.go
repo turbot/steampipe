@@ -26,8 +26,14 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionN
 		return steampipeconfig.NewErrorRefreshConnectionResult(err)
 	}
 
+	// load foreign schema names to pass
+	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn)
+	if err != nil {
+		return steampipeconfig.NewErrorRefreshConnectionResult(err)
+	}
+
 	statushooks.SetStatus(ctx, "Refreshing connections")
-	res := refreshConnections(ctx, forceUpdateConnectionNames...)
+	res := refreshConnections(ctx, foreignSchemaNames, forceUpdateConnectionNames...)
 	if res.Error != nil {
 		return res
 	}
@@ -36,12 +42,6 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionN
 
 	// set user search path first - client may fall back to using it
 	statushooks.SetStatus(ctx, "Setting up search path")
-
-	// load foreign schema names to pass to setUserSearchPath
-	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn)
-	if err != nil {
-		return steampipeconfig.NewErrorRefreshConnectionResult(err)
-	}
 
 	// we need to send a muted ctx here since this function selects from the database
 	// which by default puts up a "Loading" spinner. We don't want that here
@@ -58,7 +58,7 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionN
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func refreshConnections(ctx context.Context, forceUpdateConnectionNames ...string) (res *steampipeconfig.RefreshConnectionResult) {
+func refreshConnections(ctx context.Context, foreignSchemaNames []string, forceUpdateConnectionNames ...string) (res *steampipeconfig.RefreshConnectionResult) {
 	//log.Printf("[WARN] refreshConnections")
 	//
 	//time.Sleep(10 * time.Second)
@@ -75,7 +75,7 @@ func refreshConnections(ctx context.Context, forceUpdateConnectionNames ...strin
 
 	// determine any necessary connection updates
 	var connectionUpdates *steampipeconfig.ConnectionUpdates
-	connectionUpdates, res = steampipeconfig.NewConnectionUpdates(ctx, pool, forceUpdateConnectionNames...)
+	connectionUpdates, res = steampipeconfig.NewConnectionUpdates(ctx, pool, foreignSchemaNames, forceUpdateConnectionNames...)
 	defer logRefreshConnectionResults(connectionUpdates, res)
 	if res.Error != nil {
 		// TODO kai send error PG notification
@@ -315,11 +315,11 @@ func executeUpdateQuery(ctx context.Context, pool *pgxpool.Pool, tableUpdater *c
 	return nil
 }
 
-func executeDeleteQueries(ctx context.Context, pool *pgxpool.Pool, deletions steampipeconfig.ConnectionDataMap, tableUpdater *connectionStateTableUpdater) error {
+func executeDeleteQueries(ctx context.Context, pool *pgxpool.Pool, deletions []string, tableUpdater *connectionStateTableUpdater) error {
 	statushooks.SetStatus(ctx, fmt.Sprintf("Deleting %d %s", len(deletions), utils.Pluralize("connection", len(deletions))))
 
 	var errors []error
-	for c := range deletions {
+	for _, c := range deletions {
 		utils.LogTime("delete connection start")
 		log.Printf("[TRACE] delete connection %s\n ", c)
 
