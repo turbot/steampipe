@@ -1,6 +1,7 @@
 package steampipeconfig
 
 import (
+	typehelpers "github.com/turbot/go-kit/types"
 	"time"
 
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -10,27 +11,33 @@ import (
 // ConnectionDataStructVersion is used to force refreshing connections
 // If we need to force a connection refresh (for example if any of the underlying schema generation code changes),
 // updating this version will force all connections to refresh, as the deserialized data will have an old version
-var ConnectionDataStructVersion int64 = 20230313
+var ConnectionDataStructVersion int64 = 20230330
 
 // ConnectionData is a struct containing all details for a connection
 // - the plugin name and checksum, the connection config and options
 // json tags needed as this is stored in the connection state file
 type ConnectionData struct {
-	StructVersion int64 `json:"struct_version,omitempty"`
+	StructVersion int64 `json:"struct_version,omitempty" db:"-"`
+	// the connection name
+	ConnectionName string `json:"connection,omitempty"  db:"name"`
+	// the connection object
+	Connection *modconfig.Connection `json:"connection,omitempty"  db:"-"`
 	// the fully qualified name of the plugin
-	Plugin string `json:"plugin,omitempty"`
-	// the underlying connection object
-	Connection *modconfig.Connection `json:"connection,omitempty"`
+	Plugin string `json:"plugin,omitempty"  db:"plugin"`
+	// the connection state (pending, updating, deleting, error, ready)
+	ConnectionState string `json:"state,omitempty"  db:"state"`
+	// error (if there is one - make a pointer to supprt null)
+	ConnectionError *string `json:"error,omitempty" db:"error"`
 	// schema mode - static or dynamic
-	SchemaMode string `json:"schema_mode,omitempty"`
-	// the hash of the connection schema
-	SchemaHash string `json:"schema_hash,omitempty"`
-	// the creation time of the plugin file (only used for local plugins)
-	ModTime time.Time `json:"mod_time"`
+	SchemaMode string `json:"schema_mode,omitempty" db:"schema_mode"`
+	// the hash of the connection schema - this is used to determine if a dynamic schema has changed
+	SchemaHash string `json:"schema_hash,omitempty" db:"schema_hash"`
+	// the creation time of the plugin file
+	PluginModTime time.Time `json:"plugin_mod_time" db:"plugin_mod_time"`
+	//// the update time of the connection
+	//ConnectionModTime time.Time `json:"conneciton_mod_time"`
 	// loaded is false if the plugin failed to load
-	Loaded bool `json:"loaded"`
-	// error to be populated if we failed to start/load plugin
-	Error string `json:"error,omitempty"`
+	//Loaded bool `json:"loaded"`
 }
 
 func NewConnectionData(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionData {
@@ -38,8 +45,8 @@ func NewConnectionData(remoteSchema string, connection *modconfig.Connection, cr
 		StructVersion: ConnectionDataStructVersion,
 		Plugin:        remoteSchema,
 		Connection:    connection,
-		ModTime:       creationTime,
-		Loaded:        true,
+		PluginModTime: creationTime,
+		//Loaded:        true,
 	}
 }
 
@@ -57,12 +64,24 @@ func (d *ConnectionData) Equals(other *ConnectionData) bool {
 	}
 
 	return d.Plugin == other.Plugin &&
+		d.ConnectionState == other.ConnectionState &&
+		d.Error() == other.Error() &&
+		d.SchemaMode == other.SchemaMode &&
 		d.Connection.Equals(other.Connection) &&
-		d.ModTime.Equal(other.ModTime) &&
+		d.PluginModTime.Equal(other.PluginModTime) &&
+		//d.ConnectionModTime.Equal(other.ConnectionModTime) &&
 		d.Connection.Equals(other.Connection)
 }
 
 func (d *ConnectionData) CanCloneSchema() bool {
 	return d.SchemaMode != plugin.SchemaModeDynamic &&
 		d.Connection.Type != modconfig.ConnectionTypeAggregator
+}
+
+func (d *ConnectionData) Error() string {
+	return typehelpers.SafeString(d.ConnectionError)
+
+}
+func (d *ConnectionData) SetError(err string) {
+	d.ConnectionError = &err
 }

@@ -15,7 +15,7 @@ type ConnectionSchemaMap map[string][]string
 // and calls NewConnectionSchemaMapForConnections directly, passing the schema modes)
 func NewConnectionSchemaMap() (ConnectionSchemaMap, error) {
 	connectionNames := GlobalConfig.ConnectionNames()
-	connectionState, _, err := GetConnectionState(connectionNames)
+	connectionState, err := LoadConnectionStateFile()
 	if err != nil {
 		return nil, err
 	}

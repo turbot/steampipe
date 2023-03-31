@@ -1,9 +1,16 @@
 package db_local
 
 import (
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"os"
 	"time"
 )
+
+func deleteConnectionState() {
+	os.Remove(filepaths.ConnectionStatePath())
+}
 
 func serialiseConnectionState(res *steampipeconfig.RefreshConnectionResult, connectionUpdates *steampipeconfig.ConnectionUpdates) {
 	// now serialise the connection state
@@ -13,15 +20,15 @@ func serialiseConnectionState(res *steampipeconfig.RefreshConnectionResult, conn
 	}
 	// NOTE: add any connection which failed
 	for c := range res.FailedConnections {
-		connectionState[c].Loaded = false
-		connectionState[c].Error = "plugin failed to start"
+		connectionState[c].ConnectionState = constants.ConnectionStateError
+		connectionState[c].SetError(constants.ConnectionErrorPluginFailedToStart)
 	}
 	for pluginName, connections := range connectionUpdates.MissingPlugins {
 		// add in missing connections
 		for _, c := range connections {
 			connectionData := steampipeconfig.NewConnectionData(pluginName, &c, time.Now())
-			connectionData.Loaded = false
-			connectionData.Error = "plugin not installed"
+			connectionData.ConnectionState = constants.ConnectionStateError
+			connectionData.SetError(constants.ConnectionErrorPluginNotInstalled)
 			connectionState[c.Name] = connectionData
 		}
 	}
