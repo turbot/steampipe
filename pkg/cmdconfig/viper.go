@@ -83,15 +83,24 @@ func SetDefaultsFromConfig(configMap map[string]interface{}) {
 }
 
 // for keys which do not have a corresponding command flag, we need a separate defaulting mechanism
+// any option setting, workspace profile property or env var which does not have a command line
+// MUST have a default (unless we want the zero value to take effect)
 func setBaseDefaults() {
 	defaults := map[string]interface{}{
-		constants.ArgUpdateCheck:          true,
-		constants.ArgTelemetry:            constants.TelemetryInfo,
+		// global general options
+		constants.ArgTelemetry:   constants.TelemetryInfo,
+		constants.ArgUpdateCheck: true,
+
+		// workspace profile
+		constants.ArgAutoComplete:  true,
+		constants.ArgIntrospection: constants.IntrospectionNone,
+
+		// from global database options
 		constants.ArgDatabasePort:         constants.DatabaseDefaultPort,
-		constants.ArgMaxCacheSizeMb:       constants.DefaultMaxCacheSizeMb,
-		constants.ArgAutoComplete:         true,
 		constants.ArgDatabaseStartTimeout: constants.DBStartTimeout.Seconds(),
-		constants.ArgIntrospection:        constants.IntrospectionNone,
+		constants.ArgServiceCacheEnabled:  true,
+		constants.ArgCacheMaxTtl:          300,
+		constants.ArgMaxCacheSizeMb:       constants.DefaultMaxCacheSizeMb,
 	}
 
 	for k, v := range defaults {
