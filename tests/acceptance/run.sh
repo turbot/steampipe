@@ -60,8 +60,6 @@ then
   export STEAMPIPE_INSTALL_DIR="$HOME/.steampipe"
 fi
 
-batversion=$(bats --version)
-echo $batversion
 echo "Running with STEAMPIPE_INSTALL_DIR set to $STEAMPIPE_INSTALL_DIR"
 
 if [ $# -eq 0 ]; then
