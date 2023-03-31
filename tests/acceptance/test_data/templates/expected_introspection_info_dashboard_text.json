@@ -14,6 +14,7 @@
     "introspection_table_mod.text.sample_text_1"
    ]
   ],
+  "qualified_name": "introspection_table_mod.text.sample_text_1",
   "resource_name": "sample_text_1",
   "source_definition": "\t\ttext \"sample_text_1\" {\n\t\t\ttitle = \"Sample text 1\"\n\t\t}",
   "start_line_number": 59,

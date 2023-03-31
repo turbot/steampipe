@@ -22,17 +22,15 @@ import (
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
 func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errAndWarnings *modconfig.ErrorAndWarnings) {
-	var err error
 	defer func() {
 		if r := recover(); r != nil {
-			err = helpers.ToError(r)
-			errAndWarnings = modconfig.NewErrorsAndWarning(err)
+			errAndWarnings = modconfig.NewErrorsAndWarning(helpers.ToError(r))
 		}
 	}()
 
-	mod, err = loadModDefinition(modPath, parseCtx)
-	if errAndWarnings != nil {
-		return nil, errAndWarnings
+	mod, err := loadModDefinition(modPath, parseCtx)
+	if err != nil {
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 	// load the mod dependencies
 	if err := loadModDependencies(mod, parseCtx); err != nil {

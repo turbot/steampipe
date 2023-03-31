@@ -22,7 +22,7 @@ const (
 )
 
 // Remove removes an installed plugin
-func Remove(ctx context.Context, image string, pluginConnections map[string][]modconfig.Connection) (*display.PluginRemoveReport, error) {
+func Remove(ctx context.Context, image string, pluginConnections map[string][]*modconfig.Connection) (*display.PluginRemoveReport, error) {
 	statushooks.SetStatus(ctx, fmt.Sprintf("Removing plugin %s", image))
 	defer statushooks.Done(ctx)
 
@@ -82,7 +82,7 @@ type PluginListItem struct {
 }
 
 // List returns all installed plugins
-func List(pluginConnectionMap map[string][]modconfig.Connection) ([]PluginListItem, error) {
+func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListItem, error) {
 	var items []PluginListItem
 
 	var installedPlugins []string

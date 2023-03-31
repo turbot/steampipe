@@ -17,9 +17,9 @@ import {
 } from "../../common/types";
 import { classNames } from "../../../../utils/styles";
 import { ExpandedNodeInfo, useGraph } from "../common/useGraph";
+import { getComponent } from "../../index";
 import { Handle } from "reactflow";
 import { memo, ReactNode, useEffect, useMemo, useState } from "react";
-import { useDashboard } from "../../../../hooks/useDashboard";
 
 type AssetNodeProps = {
   id: string;
@@ -242,9 +242,7 @@ const AssetNode = ({
 }: AssetNodeProps) => {
   const { collapseNodes, expandNode, expandedNodes, renderResults } =
     useGraph();
-  const {
-    components: { ExternalLink },
-  } = useDashboard();
+  const ExternalLink = getComponent("external_link");
   const iconType = useDashboardIconType(icon);
   const [renderedHref, setRenderedHref] = useState<string | null>(null);
 
@@ -329,20 +327,6 @@ const AssetNode = ({
       </NodeControls>
     </div>
   );
-
-  // const primaryNode =
-  //   isPrimary ? (
-  //     <div
-  //       className="relative p-0.5 rounded-full border"
-  //       style={{
-  //         borderColor: color ? color : themeColors.blackScale3,
-  //       }}
-  //     >
-  //       {node}
-  //     </div>
-  //   ) : (
-  //     node
-  //   );
 
   const innerNodeLabel = (
     <div

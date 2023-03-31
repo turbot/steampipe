@@ -25,10 +25,10 @@ type Variable struct {
 	Default cty.Value `column:"default_value,jsonb" json:"-"`
 	Type    cty.Type  `column:"var_type,text" json:"-"`
 
-	TypeString string      `json:"type"`
-	DefaultGo  interface{} `json:"value_default"`
-	ValueGo    interface{} `json:"value"`
-	ModName    string      `json:"mod_name"`
+	TypeString string `json:"type"`
+	DefaultGo  any    `json:"value_default"`
+	ValueGo    any    `json:"value"`
+	ModName    string `json:"mod_name"`
 
 	// set after value resolution `column:"value,jsonb"`
 	Value                      cty.Value                      `column:"value,jsonb" json:"-"`

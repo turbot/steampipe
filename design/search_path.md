@@ -17,7 +17,7 @@ During initialisation, the `requiredSessionSearchPath` for a `DbClient` is set b
 
 When a DB session is created, the session search path is set to the `requiredSessionSearchPath` in `DbClient.ensureSessionSearchPath()`
 
-Finally, call `LoadForeignSchemaNames` which updates the client `foreignSchemas` property with a list of foreign schema
+Finally, call `LoadSchemaNames` which updates the client `foreignSchemas` property with a list of foreign schema
 
 ### RefreshConnectionAndSearchPaths implementation
 `LocalDbClient.RefreshConnectionAndSearchPaths` simplified, does this:

@@ -143,7 +143,7 @@ func serviceRestartCmd() *cobra.Command {
 	return cmd
 }
 
-func runServiceStartCmd(cmd *cobra.Command, args []string) {
+func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 	utils.LogTime("runServiceStartCmd start")
 	defer func() {
@@ -180,6 +180,20 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		error_helpers.FailOnError(invoker.IsValid())
 	}
 
+	startResult, dashboardState, dbServiceStarted := startService(ctx, port, serviceListen, invoker)
+	alreadyRunning := !dbServiceStarted
+
+	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, dashboardState, alreadyRunning)
+
+	if viper.GetBool(constants.ArgForeground) {
+		runServiceInForeground(ctx)
+	}
+}
+
+func startService(ctx context.Context, port int, serviceListen db_local.StartListenType, invoker constants.Invoker) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState, dbServiceStarted bool) {
+	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
+
 	err := db_local.EnsureDBInstalled(ctx)
 	if err != nil {
 		exitCode = constants.ExitCodeServiceStartupFailure
@@ -199,6 +213,7 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	// if the service is already running, then service start should make the service persistent
 	if startResult.Status == db_local.ServiceAlreadyRunning {
 
 		// check that we have the same port and listen parameters
@@ -220,46 +235,27 @@ func runServiceStartCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// if the service was started
-	if startResult.Status == db_local.ServiceStarted {
-		// do
-		err = db_local.RefreshConnectionAndSearchPaths(ctx, invoker)
-		if err != nil {
-			_, err1 := db_local.StopServices(ctx, false, constants.InvokerService)
-			if err1 != nil {
-				error_helpers.ShowError(ctx, err1)
-				exitCode = constants.ExitCodeServiceSetupFailure
-			}
-			error_helpers.FailOnError(err)
-		}
-	}
-
-	servicesStarted := startResult.Status == db_local.ServiceStarted
+	dbServiceStarted = startResult.Status == db_local.ServiceStarted
 
 	var dashboardState *dashboardserver.DashboardServiceState
 	if viper.GetBool(constants.ArgDashboard) {
 		dashboardState, err = dashboardserver.GetDashboardServiceState()
 		if err != nil {
 			tryToStopServices(ctx)
-			error_helpers.ShowError(ctx, err)
-			return
+			exitCode = constants.ExitCodeServiceStartupFailure
+			error_helpers.FailOnError(err)
 		}
 		if dashboardState == nil {
 			dashboardState, err = startDashboardServer(ctx)
 			if err != nil {
-				error_helpers.ShowError(ctx, err)
 				tryToStopServices(ctx)
-				return
+				exitCode = constants.ExitCodeServiceStartupFailure
+				error_helpers.FailOnError(err)
 			}
-			servicesStarted = true
+			dbServiceStarted = true
 		}
 	}
-
-	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, dashboardState, !servicesStarted)
-
-	if viper.GetBool(constants.ArgForeground) {
-		runServiceInForeground(ctx, invoker)
-	}
+	return startResult, dashboardState, dbServiceStarted
 }
 
 func tryToStopServices(ctx context.Context) {
@@ -307,7 +303,7 @@ func startDashboardServer(ctx context.Context) (*dashboardserver.DashboardServic
 	return dashboardState, err
 }
 
-func runServiceInForeground(ctx context.Context, invoker constants.Invoker) {
+func runServiceInForeground(ctx context.Context) {
 	fmt.Println("Hit Ctrl+C to stop the service")
 
 	sigIntChannel := make(chan os.Signal, 1)
@@ -361,7 +357,7 @@ func runServiceInForeground(ctx context.Context, invoker constants.Invoker) {
 	}
 }
 
-func runServiceRestartCmd(cmd *cobra.Command, args []string) {
+func runServiceRestartCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 	utils.LogTime("runServiceRestartCmd start")
 	defer func() {
@@ -376,6 +372,17 @@ func runServiceRestartCmd(cmd *cobra.Command, args []string) {
 			}
 		}
 	}()
+
+	dbStartResult, currentDashboardState := restartService(ctx)
+
+	if dbStartResult != nil {
+		printStatus(ctx, dbStartResult.DbState, dbStartResult.PluginManagerState, currentDashboardState, false)
+	}
+}
+
+func restartService(ctx context.Context) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState) {
+	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
 
 	// get current db statue
 	currentDbState, err := db_local.GetState()
@@ -415,23 +422,24 @@ to force a restart.
 		error_helpers.FailOnErrorWithMessage(err, "could not stop dashboard service")
 	}
 
+	// the DB must be installed and therefore is a noop,
+	// and EnsureDBInstalled also checks and installs the latest FDW
+	err = db_local.EnsureDBInstalled(ctx)
+	if err != nil {
+		exitCode = constants.ExitCodeServiceStartupFailure
+		error_helpers.FailOnError(err)
+	}
+
 	// set the password in 'viper' so that it can be used by 'service start'
 	viper.Set(constants.ArgServicePassword, currentDbState.Password)
 
 	// start db
-	dbStartResult := db_local.StartServices(cmd.Context(), currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
+	dbStartResult := db_local.StartServices(ctx, currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
 	error_helpers.FailOnError(dbStartResult.Error)
 	if dbStartResult.Status == db_local.ServiceFailedToStart {
 		exitCode = constants.ExitCodeServiceStartupFailure
 		fmt.Println("Steampipe service was stopped, but failed to restart.")
 		return
-	}
-
-	// refresh connections
-	err = db_local.RefreshConnectionAndSearchPaths(cmd.Context(), constants.InvokerService)
-	if err != nil {
-		exitCode = constants.ExitCodeServiceSetupFailure
-		error_helpers.FailOnError(err)
 	}
 
 	// if the dashboard was running, start it
@@ -444,10 +452,10 @@ to force a restart.
 		error_helpers.FailOnError(err)
 	}
 
-	printStatus(ctx, dbStartResult.DbState, dbStartResult.PluginManagerState, currentDashboardState, false)
+	return dbStartResult, currentDashboardState
 }
 
-func runServiceStatusCmd(cmd *cobra.Command, args []string) {
+func runServiceStatusCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 	utils.LogTime("runServiceStatusCmd status")
 	defer func() {
@@ -487,11 +495,15 @@ func composeStateError(dbStateErr error, pmStateErr error, dashboardStateErr err
 		msg = fmt.Sprintf(`%s
 	failed to get plugin manager state: %s`, msg, pmStateErr.Error())
 	}
+	if dashboardStateErr != nil {
+		msg = fmt.Sprintf(`%s
+	failed to get dashboard server state: %s`, msg, pmStateErr.Error())
+	}
 
 	return errors.New(msg)
 }
 
-func runServiceStopCmd(cmd *cobra.Command, args []string) {
+func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 	utils.LogTime("runServiceStopCmd stop")
 
@@ -558,7 +570,8 @@ func runServiceStopCmd(cmd *cobra.Command, args []string) {
 			error_helpers.FailOnErrorWithMessage(err, "service stop failed")
 		}
 
-		if connectedClients.TotalClients > 0 {
+		// if there are any clients connected (apart from plugin manager clients), do not exit
+		if connectedClients.TotalClients-connectedClients.PluginManagerClients > 0 {
 			printClientsConnected()
 			return
 		}
@@ -590,7 +603,6 @@ to force a shutdown.
 		`)
 
 	}
-
 }
 
 func showAllStatus(ctx context.Context) {

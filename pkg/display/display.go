@@ -40,8 +40,8 @@ func ShowTimingOnOutput(output string) DisplayOption {
 
 // DisableTiming disables display of timing data forcefully
 func DisableTiming() DisplayOption {
-	return func(o *DisplayConfiguration) {
-		o.timing = false
+	return func(config *DisplayConfiguration) {
+		config.timing = false
 	}
 }
 
@@ -55,11 +55,11 @@ func EnableTiming() DisplayOption {
 // ShowOutput displays the output using the proper formatter as applicable
 func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) int {
 	rowErrors := 0
-	options := &DisplayConfiguration{
+	config := &DisplayConfiguration{
 		timing: cmdconfig.Viper().GetBool(constants.ArgTiming),
 	}
 	for _, o := range opts {
-		o(options)
+		o(config)
 	}
 
 	switch cmdconfig.Viper().GetString(constants.ArgOutput) {
@@ -73,7 +73,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 		rowErrors = displayTable(ctx, result)
 	}
 
-	if options.timing {
+	if config.timing {
 		fmt.Println(buildTimingString(result))
 	}
 	// return the number of rows that returned errors

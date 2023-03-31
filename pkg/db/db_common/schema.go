@@ -1,11 +1,13 @@
 package db_common
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -20,6 +22,44 @@ type schemaRecord struct {
 	DataType          string
 	ColumnDescription string
 	TableDescription  string
+}
+
+func LoadSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, error) {
+	res, err := conn.Query(ctx, "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' ORDER BY schema_name;")
+	if err != nil {
+		return nil, err
+	}
+
+	var allSchemaNames []string
+	var schema string
+	for res.Next() {
+		if err := res.Scan(&schema); err != nil {
+			return nil, err
+		}
+		allSchemaNames = append(allSchemaNames, schema)
+	}
+	return allSchemaNames, nil
+}
+
+func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, error) {
+	res, err := conn.Query(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables")
+	if err != nil {
+		return nil, err
+	}
+
+	var foreignSchemaNames []string
+	var schema string
+	for res.Next() {
+		if err := res.Scan(&schema); err != nil {
+			return nil, err
+		}
+		// ignore command schema
+		if schema != constants.CommandSchema {
+			foreignSchemaNames = append(foreignSchemaNames, schema)
+		}
+	}
+
+	return foreignSchemaNames, nil
 }
 
 func BuildSchemaMetadata(rows pgx.Rows) (_ *schema.Metadata, err error) {

@@ -4,19 +4,25 @@ workspace "default" {
   mod_location = "sp_install_dir_default"
   snapshot_location = "snaps"
   workspace_database = "fk43e7"
-  options "terminal" {
-    multi               = true
-    output              = "json"
-    header              = false
-    separator           = "|"
-    timing              = true
-    search_path         =  ""
-    search_path_prefix  =  "abc"
-    watch  			    =  false
-    autocomplete       =  false
+  search_path =  ""
+  search_path_prefix = "abc"
+  watch = false
+  options "query" {
+    autocomplete = false
+    header = false
+    multi = true
+    output = "json"
+    separator = "|"
+    timing = true
   }
-  options "general" {
-    update_check = false
+  options "check" {
+    header = false
+    output = "json"
+    separator = "|"
+    timing = true
+  }
+  options "dashboard" {
+    browser = true
   }
 }
 
@@ -26,18 +32,24 @@ workspace "sample" {
   mod_location = "sp_install_dir_sample"
   snapshot_location = "snaps"
   workspace_database = "fk43e7"
-  options "terminal" {
-    multi               = true
-    output              = "csv"
-    header              = false
-    separator           = ";"
-    timing              = true
-    search_path         =  "abc"
-    search_path_prefix  =  "abc, def"
-    watch  			    =  false
-    autocomplete       =  true
+  search_path = "abc"
+  search_path_prefix = "abc, def"
+  watch = false
+  options "query" {
+    autocomplete =  true
+    header = false
+    multi = true
+    output = "csv"
+    separator = ";"
+    timing = true
   }
-  options "general" {
-    update_check = true
+  options "check" {
+    header = false
+    output = "csv"
+    separator = ";"
+    timing = true
+  }
+  options "dashboard" {
+    browser = true
   }
 }

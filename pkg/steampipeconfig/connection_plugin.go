@@ -111,8 +111,14 @@ func CreateConnectionPlugins(connectionsToCreate []*modconfig.Connection) (reque
 	}
 
 	// if there were any failures, display them
-	for plugin, failure := range getResponse.FailureMap {
-		res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", plugin, failure))
+	for failedPlugin, failure := range getResponse.FailureMap {
+		res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", failedPlugin, failure))
+		// figure out which connections are provided by any failed plugins
+		for _, c := range connectionsToCreate {
+			if c.Plugin == failedPlugin {
+				res.AddFailedConnection(c.Name, failure)
+			}
+		}
 	}
 
 	// now create or retrieve a connection plugin for each connection

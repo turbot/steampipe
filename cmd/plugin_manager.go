@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connectionwatcher"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -28,21 +29,26 @@ func pluginManagerCmd() *cobra.Command {
 		Hidden: true,
 	}
 	cmdconfig.OnCmd(cmd)
-
 	return cmd
 }
 
-func runPluginManagerCmd(cmd *cobra.Command, args []string) {
+func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 	logger := createPluginManagerLog()
 
 	log.Printf("[INFO] starting plugin manager")
 	// build config map
-	steampipeConfig, err := steampipeconfig.LoadConnectionConfig()
-	if err != nil {
-		log.Printf("[WARN] failed to load connection config: %s", err.Error())
+	steampipeConfig, errorsAndWarnings := steampipeconfig.LoadConnectionConfig()
+	if errorsAndWarnings.GetError() != nil {
+		log.Printf("[WARN] failed to load connection config: %v", errorsAndWarnings.GetError())
 		os.Exit(1)
 	}
+
+	// add a prefix to the PgClientAppName so that out DB connecitons are not treated as
+	// another Steampipe instance connected to the DB
+	// (as our lifecycle is managed by the db service,
+	// so we will be shut down when the service is stopped)
+	runtime.PgClientAppName = runtime.PgClientAppNamePluginManagerPrefix + runtime.PgClientAppName
 
 	configMap := connectionwatcher.NewConnectionConfigMap(steampipeConfig.Connections)
 	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
@@ -56,7 +62,7 @@ func runPluginManagerCmd(cmd *cobra.Command, args []string) {
 	if shouldRunConnectionWatcher() {
 		log.Printf("[INFO] starting connection watcher")
 
-		connectionWatcher, err := connectionwatcher.NewConnectionWatcher(pluginManager.SetConnectionConfigMap)
+		connectionWatcher, err := connectionwatcher.NewConnectionWatcher(pluginManager.OnConnectionConfigChanged, pluginManager.OnConnectionsChanged)
 		if err != nil {
 			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
 			error_helpers.ShowError(ctx, err)

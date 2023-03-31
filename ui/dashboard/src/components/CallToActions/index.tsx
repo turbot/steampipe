@@ -1,4 +1,4 @@
-import { useDashboard } from "../../hooks/useDashboard";
+import { getComponent } from "../dashboards";
 
 const items = [
   {
@@ -25,17 +25,16 @@ const items = [
 ];
 
 const CallToActions = () => {
-  const {
-    components: { ExternalLink },
-  } = useDashboard();
+  const ExternalLink = getComponent("external_link");
   return (
     <ul className="mt-4 md:mt-0 space-y-6">
       {items.map((item, itemIdx) => (
         <li key={itemIdx} className="flow-root">
           <div className="p-3 flex items-center space-x-4 rounded-md hover:bg-dashboard-panel focus-within:ring-2 focus-within:ring-blue-500">
             <ExternalLink
-              to={item.href}
               className="focus:outline-none"
+              ignoreDataMode
+              to={item.href}
               withReferrer={item.withReferrer}
             >
               <span className="text-foreground">

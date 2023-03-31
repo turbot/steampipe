@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -216,7 +216,6 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
 
-	statusSpinner := statushooks.NewStatusSpinner()
 	progressBars := uiprogress.New()
 	installWaitGroup := &sync.WaitGroup{}
 	dataChannel := make(chan *display.PluginInstallReport, len(plugins))
@@ -232,14 +231,31 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		installWaitGroup.Wait()
 		close(dataChannel)
 	}()
+
+	installCount := 0
 	for report := range dataChannel {
 		installReports = append(installReports, report)
+		if !report.Skipped {
+			installCount++
+		}
 	}
 
 	progressBars.Stop()
-	statusSpinner.UpdateSpinnerMessage("Refreshing connections...")
-	refreshConnectionsIfNecessary(ctx, installReports, true)
-	statusSpinner.Done()
+
+	if installCount > 0 {
+		// TODO do we need to refresh connections here
+
+		// reload the config, since an installation should have created a new config file
+		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+		config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
+		if errorsAndWarnings.GetError() != nil {
+			error_helpers.ShowWarning(fmt.Sprintf("Failed to reload config - install report may be incomplete (%s)", errorsAndWarnings.GetError()))
+		} else {
+			steampipeconfig.GlobalConfig = config
+		}
+
+		statushooks.Done(ctx)
+	}
 	display.PrintInstallReports(installReports, false)
 
 	// a concluding blank line - since we always output multiple lines
@@ -373,14 +389,13 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		return
 	}
-	statusSpinner := statushooks.NewStatusSpinner(statushooks.WithMessage("Checking for available updates"))
 
-	timeoutCtx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
+	statushooks.SetStatus(ctx, "Checking for available updates")
 	reports := plugin.GetUpdateReport(timeoutCtx, state.InstallationID, runUpdatesFor)
-	statusSpinner.Done()
-
+	statushooks.Done(ctx)
 	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
 		// in which case we get back an empty map
@@ -405,14 +420,16 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		updateWaitGroup.Wait()
 		close(dataChannel)
 	}()
+	installCount := 0
+
 	for updateResult := range dataChannel {
 		updateResults = append(updateResults, updateResult)
+		if !updateResult.Skipped {
+			installCount++
+		}
 	}
-	// prevent fdw update message
-	nullStatusHookCtx := statushooks.DisableStatusHooks(ctx)
-	refreshConnectionsIfNecessary(nullStatusHookCtx, updateResults, false)
 	progressBars.Stop()
-	fmt.Println()
+
 	display.PrintInstallReports(updateResults, true)
 
 	// a concluding blank line - since we always output multiple lines
@@ -527,47 +544,11 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 	return plugins, nil
 }
 
-// start service if necessary and refresh connections
-func refreshConnectionsIfNecessary(ctx context.Context, reports display.PluginInstallReports, shouldReload bool) error {
-	// get count of skipped reports
-	skipped := 0
-	for _, report := range reports {
-		if report.Skipped {
-			skipped++
-		}
-	}
-	if skipped == len(reports) {
-		// if all were skipped,
-		// no point continuing
-		return nil
-	}
-
-	// reload the config, since an installation MUST have created a new config file
-	if shouldReload {
-		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-		config, err := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
-		if err != nil {
-			return err
-		}
-		steampipeconfig.GlobalConfig = config
-	}
-
-	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
-	if err != nil {
-		return err
-	}
-	defer client.Close(ctx)
-	res := client.RefreshConnectionAndSearchPaths(ctx)
-	if res.Error != nil {
-		return res.Error
-	}
-	// display any initialisation warnings
-	res.ShowWarnings()
-	return nil
-}
-
 func runPluginListCmd(cmd *cobra.Command, args []string) {
-	ctx := cmd.Context()
+	// setup a cancel context and start cancel handler
+	ctx, cancel := context.WithCancel(cmd.Context())
+	contexthelpers.StartCancelHandler(cancel)
+
 	utils.LogTime("runPluginListCmd list")
 	defer func() {
 		utils.LogTime("runPluginListCmd end")
@@ -577,59 +558,49 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	pluginConnectionMap, res, err := getPluginConnectionMap(ctx)
-	if err != nil {
-		error_helpers.ShowErrorWithMessage(ctx, err, "plugin listing failed")
+	pluginList, failedPluginMap, missingPluginMap, res := getPluginList(ctx)
+	if res.Error != nil {
+		error_helpers.ShowErrorWithMessage(ctx, res.Error, "plugin listing failed")
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
 
-	missingPluginMap := res.Updates.MissingPlugins
-	log.Printf("[TRACE] missing plugins: %v", missingPluginMap)
-
-	list, err := plugin.List(pluginConnectionMap)
-	if err != nil {
-		error_helpers.ShowErrorWithMessage(ctx, err, "plugin listing failed")
-		exitCode = constants.ExitCodePluginListFailure
-		return
-	}
-
-	// If there are missing plugins which have connections left over, list them
-	// along with installed plugins
-	if len(missingPluginMap) != 0 {
-		// List installed plugins
-		if len(list) != 0 {
-			headers := []string{"Installed Plugin", "Version", "Connections"}
-			rows := [][]string{}
-			for _, item := range list {
-				rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
-			}
-			display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
-			fmt.Printf("\n")
+	// List installed plugins in a table
+	if len(pluginList) != 0 {
+		headers := []string{"Installed Plugin", "Version", "Connections"}
+		var rows [][]string
+		for _, item := range pluginList {
+			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
 		}
+		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+		fmt.Printf("\n")
+	}
 
-		// List missing plugins
-		headers := []string{"Missing Plugin", "Connections"}
+	// List failed/missing plugins in a separate table
+	if len(failedPluginMap) != 0 || len(missingPluginMap) != 0 {
+		// List missing/failed plugins
+		headers := []string{"Failed Plugin", "Connections", "Reason"}
 		var conns = []string{}
 		var missingRows [][]string
+		// failed plugins
+		for p, item := range failedPluginMap {
+			for _, conn := range item {
+				conns = append(conns, conn.Name)
+			}
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), "plugin failed to start"})
+			conns = []string{}
+		}
+		// missing plugins
 		for p, item := range missingPluginMap {
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ",")})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), "plugin not installed"})
 			conns = []string{}
 		}
 		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
-	} else {
-		headers := []string{"Installed Plugin", "Version", "Connections"}
-		rows := [][]string{}
-		for _, item := range list {
-			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
-		}
-		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 	}
 
-	// display any initialisation warnings
 	if len(res.Warnings) > 0 {
 		fmt.Println()
 		res.ShowWarnings()
@@ -637,8 +608,42 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
+func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) {
+	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
+
+	// get the maps of available and failed/missing plugins
+	pluginConnectionMap, failedPluginMap, missingPluginMap, res := getPluginConnectionMap(ctx)
+	if res.Error != nil {
+		return nil, nil, nil, res
+	}
+
+	// TODO do we really need to look at installed plugins - can't we just use the plugin connection map
+	// get a list of the installed plugins by inspecting the install location
+	// pass pluginConnectionMap so we can populate the connections for each plugin
+	pluginList, err := plugin.List(pluginConnectionMap)
+	if err != nil {
+		res.Error = err
+		return nil, nil, nil, res
+	}
+
+	// remove the failed plugins from `list` since we don't want them in the installed table
+	for pluginName := range failedPluginMap {
+		for i := 0; i < len(pluginList); i++ {
+			if pluginList[i].Name == pluginName {
+				pluginList = append(pluginList[:i], pluginList[i+1:]...)
+				i-- // Decrement the loop index since we just removed an element
+			}
+		}
+	}
+	return pluginList, failedPluginMap, missingPluginMap, res
+}
+
 func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
-	ctx := cmd.Context()
+	// setup a cancel context and start cancel handler
+	ctx, cancel := context.WithCancel(cmd.Context())
+	contexthelpers.StartCancelHandler(cancel)
+
 	utils.LogTime("runPluginUninstallCmd uninstall")
 
 	defer func() {
@@ -659,17 +664,17 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	connectionMap, _, err := getPluginConnectionMap(ctx)
-	if err != nil {
-		error_helpers.ShowError(ctx, err)
+	connectionMap, _, _, res := getPluginConnectionMap(ctx)
+	if res.Error != nil {
+		error_helpers.ShowError(ctx, res.Error)
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
 
 	reports := display.PluginRemoveReports{}
-	spinner := statushooks.NewStatusSpinner(statushooks.WithMessage(fmt.Sprintf("Uninstalling %s", utils.Pluralize("plugin", len(args)))))
+	statushooks.SetStatus(ctx, fmt.Sprintf("Uninstalling %s", utils.Pluralize("plugin", len(args))))
 	for _, p := range args {
-		spinner.SetStatus(fmt.Sprintf("Uninstalling %s", p))
+		statushooks.SetStatus(ctx, fmt.Sprintf("Uninstalling %s", p))
 		if report, err := plugin.Remove(ctx, p, connectionMap); err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				exitCode = constants.ExitCodePluginNotFound
@@ -680,29 +685,59 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 			reports = append(reports, *report)
 		}
 	}
-	spinner.Done()
+	statushooks.Done(ctx)
 	reports.Print()
 }
 
-func getPluginConnectionMap(ctx context.Context) (map[string][]modconfig.Connection, *steampipeconfig.RefreshConnectionResult, error) {
-	client, err := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
-	if err != nil {
-		return nil, nil, err
+func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) {
+	statushooks.SetStatus(ctx, "Fetching connection map")
+
+	res = &modconfig.ErrorAndWarnings{}
+	// NOTE: start db if necessary - this will call refresh connections
+	if err := db_local.EnsureDBInstalled(ctx); err != nil {
+		return nil, nil, nil, modconfig.NewErrorsAndWarning(err)
 	}
-	defer client.Close(ctx)
-	res := client.RefreshConnectionAndSearchPaths(ctx)
-	if res.Error != nil {
-		return nil, nil, res.Error
+	startResult := db_local.StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), db_local.ListenTypeLocal, constants.InvokerPlugin)
+	if startResult.Error != nil {
+		return nil, nil, nil, &startResult.ErrorAndWarnings
+	}
+	defer db_local.ShutdownService(ctx, constants.InvokerPlugin)
+
+	// load the connection state and cache it!
+	// passing nil so that we dont prune connections(connectionMap is now the connection state
+	// containing all connections)
+	connectionMap, _, err := steampipeconfig.GetConnectionState(nil)
+	if err != nil {
+		res.Error = err
+		return nil, nil, nil, res
 	}
 
-	pluginConnectionMap := make(map[string][]modconfig.Connection)
-	for _, v := range *client.ConnectionMap() {
+	// create the map of failed/missing plugins
+	failedPluginMap = map[string][]*modconfig.Connection{}
+	missingPluginMap = map[string][]*modconfig.Connection{}
+	for _, j := range connectionMap {
+		if !j.Loaded && j.Error == "plugin failed to start" {
+			if _, ok := failedPluginMap[j.Plugin]; !ok {
+				failedPluginMap[j.Plugin] = []*modconfig.Connection{}
+			}
+			failedPluginMap[j.Plugin] = append(failedPluginMap[j.Plugin], j.Connection)
+		} else if !j.Loaded && j.Error == "plugin not installed" {
+			if _, ok := missingPluginMap[j.Plugin]; !ok {
+				missingPluginMap[j.Plugin] = []*modconfig.Connection{}
+			}
+			missingPluginMap[j.Plugin] = append(missingPluginMap[j.Plugin], j.Connection)
+		}
+	}
+
+	// create the map of available/loaded plugins
+	pluginConnectionMap = make(map[string][]*modconfig.Connection)
+	for _, v := range connectionMap {
 		_, found := pluginConnectionMap[v.Plugin]
 		if !found {
-			pluginConnectionMap[v.Plugin] = []modconfig.Connection{}
+			pluginConnectionMap[v.Plugin] = []*modconfig.Connection{}
 		}
-		pluginConnectionMap[v.Plugin] = append(pluginConnectionMap[v.Plugin], *v.Connection)
+		pluginConnectionMap[v.Plugin] = append(pluginConnectionMap[v.Plugin], v.Connection)
 	}
 
-	return pluginConnectionMap, res, nil
+	return pluginConnectionMap, failedPluginMap, missingPluginMap, res
 }

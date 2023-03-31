@@ -9,9 +9,11 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
 // GetCurrentSearchPath implements Client
@@ -69,7 +71,7 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 	requiredSearchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 
-	searchPath, err := c.ContructSearchPath(ctx, requiredSearchPath, searchPathPrefix)
+	searchPath, err := c.ConstructSearchPath(ctx, requiredSearchPath, searchPathPrefix)
 	if err != nil {
 		return err
 	}
@@ -85,7 +87,7 @@ func (c *DbClient) GetRequiredSessionSearchPath() []string {
 	return c.requiredSessionSearchPath
 }
 
-func (c *DbClient) ContructSearchPath(ctx context.Context, customSearchPath, searchPathPrefix []string) ([]string, error) {
+func (c *DbClient) ConstructSearchPath(ctx context.Context, customSearchPath, searchPathPrefix []string) ([]string, error) {
 	// strip empty elements from search path and prefix
 	customSearchPath = helpers.RemoveFromStringSlice(customSearchPath, "")
 	searchPathPrefix = helpers.RemoveFromStringSlice(searchPathPrefix, "")
@@ -104,7 +106,7 @@ func (c *DbClient) ContructSearchPath(ctx context.Context, customSearchPath, sea
 		// so no search path was set in config
 		c.customSearchPath = nil
 		// use the default search path
-		requiredSearchPath = c.GetDefaultSearchPath(ctx)
+		requiredSearchPath = db_common.GetDefaultSearchPath(ctx, c.foreignSchemaNames)
 	}
 
 	// add in the prefix if present
@@ -113,13 +115,27 @@ func (c *DbClient) ContructSearchPath(ctx context.Context, customSearchPath, sea
 	return requiredSearchPath, nil
 }
 
+// reload Steampipe config, update viper and re-set required search path
+func (c *DbClient) updateRequiredSearchPath(ctx context.Context) error {
+	config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "dashboard")
+	if errorsAndWarnings.GetError() != nil {
+		return errorsAndWarnings.GetError()
+	}
+	steampipeconfig.GlobalConfig = config
+	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
+	if err := c.SetRequiredSessionSearchPath(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ensure the search path for the database session is as required
 func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_common.DatabaseSession) error {
 	log.Printf("[TRACE] ensureSessionSearchPath")
 	// first, if we are NOT using a custom search path, reload the steampipe user search path
 	if len(c.customSearchPath) == 0 {
 		// rebuild required search path using the prefix, if any
-		requiredSearchPath := c.addSearchPathPrefix(c.searchPathPrefix, c.GetDefaultSearchPath(ctx))
+		requiredSearchPath := c.addSearchPathPrefix(c.searchPathPrefix, db_common.GetDefaultSearchPath(ctx, c.foreignSchemaNames))
 		// escape the required search path and store on client
 		c.requiredSessionSearchPath = db_common.PgEscapeSearchPath(requiredSearchPath)
 		log.Printf("[TRACE] updated the required search path to %s", strings.Join(c.requiredSessionSearchPath, ","))

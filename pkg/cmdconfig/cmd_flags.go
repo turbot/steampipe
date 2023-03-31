@@ -39,25 +39,25 @@ func requiredOpt() flagOpt {
 }
 
 func hiddenOpt() flagOpt {
-	return func(c *cobra.Command, name, key string) {
+	return func(c *cobra.Command, name, _ string) {
 		c.Flag(name).Hidden = true
 	}
 }
 
 func deprecatedOpt(replacement string) flagOpt {
-	return func(c *cobra.Command, name, key string) {
+	return func(c *cobra.Command, name, _ string) {
 		c.Flag(name).Deprecated = fmt.Sprintf("please use %s", replacement)
 	}
 }
 
 func noOptDefValOpt(noOptDefVal string) flagOpt {
-	return func(c *cobra.Command, name, key string) {
+	return func(c *cobra.Command, name, _ string) {
 		c.Flag(name).NoOptDefVal = noOptDefVal
 	}
 }
 
 func withShortHand(shorthand string) flagOpt {
-	return func(c *cobra.Command, name, key string) {
+	return func(c *cobra.Command, name, _ string) {
 		c.Flag(name).Shorthand = shorthand
 	}
 }

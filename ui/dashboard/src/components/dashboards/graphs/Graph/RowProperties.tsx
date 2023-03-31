@@ -8,9 +8,8 @@ import {
   RowRenderResult,
 } from "../../common/types";
 import { classNames } from "../../../../utils/styles";
-import { DashboardDataModeLive } from "../../../../types";
 import { ErrorIcon } from "../../../../constants/icons";
-import { useDashboard } from "../../../../hooks/useDashboard";
+import { getComponent } from "../../index";
 import { useEffect, useState } from "react";
 
 type RowPropertiesTitleProps = {
@@ -50,9 +49,7 @@ const RowPropertyItemValue = ({
   value,
   wrap,
 }: RowPropertyItemProps) => {
-  const {
-    components: { ExternalLink },
-  } = useDashboard();
+  const ExternalLink = getComponent("external_link");
   const [href, setHref] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -165,18 +162,11 @@ const RowProperties = ({
   properties = {},
   propertySettings,
 }: RowPropertiesProps) => {
-  const { dataMode } = useDashboard();
   const [rowTemplateData, setRowTemplateData] =
     useState<RowRenderResult | null>(null);
   const { ready: templateRenderReady, renderTemplates } = useTemplateRender();
 
   useDeepCompareEffect(() => {
-    // We only want to do the interpolated template rendering in live views
-    if (dataMode !== DashboardDataModeLive) {
-      setRowTemplateData(null);
-      return;
-    }
-
     if (!templateRenderReady || isEmpty(propertySettings) || !properties) {
       setRowTemplateData(null);
       return;
@@ -198,13 +188,7 @@ const RowProperties = ({
     };
 
     doRender();
-  }, [
-    dataMode,
-    properties,
-    propertySettings,
-    renderTemplates,
-    templateRenderReady,
-  ]);
+  }, [properties, propertySettings, renderTemplates, templateRenderReady]);
 
   return (
     <div className="space-y-2">

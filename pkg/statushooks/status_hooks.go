@@ -2,6 +2,8 @@ package statushooks
 
 type StatusHooks interface {
 	SetStatus(string)
-	Done()
+	Show()
+	Warn(string)
+	Hide()
 	Message(...string)
 }

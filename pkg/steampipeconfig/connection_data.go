@@ -3,13 +3,14 @@ package steampipeconfig
 import (
 	"time"
 
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 // ConnectionDataStructVersion is used to force refreshing connections
 // If we need to force a connection refresh (for example if any of the underlying schema generation code changes),
 // updating this version will force all connections to refresh, as the deserialized data will have an old version
-var ConnectionDataStructVersion int64 = 20211125
+var ConnectionDataStructVersion int64 = 20230313
 
 // ConnectionData is a struct containing all details for a connection
 // - the plugin name and checksum, the connection config and options
@@ -26,6 +27,10 @@ type ConnectionData struct {
 	SchemaHash string `json:"schema_hash,omitempty"`
 	// the creation time of the plugin file (only used for local plugins)
 	ModTime time.Time `json:"mod_time"`
+	// loaded is false if the plugin failed to load
+	Loaded bool `json:"loaded"`
+	// error to be populated if we failed to start/load plugin
+	Error string `json:"error,omitempty"`
 }
 
 func NewConnectionData(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionData {
@@ -34,6 +39,7 @@ func NewConnectionData(remoteSchema string, connection *modconfig.Connection, cr
 		Plugin:        remoteSchema,
 		Connection:    connection,
 		ModTime:       creationTime,
+		Loaded:        true,
 	}
 }
 
@@ -54,4 +60,9 @@ func (d *ConnectionData) Equals(other *ConnectionData) bool {
 		d.Connection.Equals(other.Connection) &&
 		d.ModTime.Equal(other.ModTime) &&
 		d.Connection.Equals(other.Connection)
+}
+
+func (d *ConnectionData) CanCloneSchema() bool {
+	return d.SchemaMode != plugin.SchemaModeDynamic &&
+		d.Connection.Type != modconfig.ConnectionTypeAggregator
 }

@@ -22,18 +22,18 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 		connMaxIdleTime = 1 * time.Minute
 		connMaxLifetime = 10 * time.Minute
 	)
-	minConnections := 2
-	maxConnections := maxDbConnections()
-	if minConnections > maxConnections {
-		minConnections = maxConnections
-	}
+	maxConnections := db_common.MaxDbConnections()
 
 	config, err := pgxpool.ParseConfig(c.connectionString)
 	if err != nil {
 		return err
 	}
+	// MinConns should default to 0, but when not set, it actually get very high values (e.g. 80217984)
+	// this leads to a huge number of connections getting created
+	// TODO BINAEK dig into this and figure out why this is happening.
+	// We need to be sure that it is not an issue with service management
+	config.MinConns = 0
 	config.MaxConns = int32(maxConnections)
-	config.MinConns = int32(minConnections)
 	config.MaxConnLifetime = connMaxLifetime
 	config.MaxConnIdleTime = connMaxIdleTime
 	if c.onConnectionCallback != nil {
@@ -62,12 +62,4 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	}
 	c.pool = dbPool
 	return nil
-}
-
-func maxDbConnections() int {
-	maxParallel := constants.DefaultMaxConnections
-	if viper.IsSet(constants.ArgMaxParallel) {
-		maxParallel = viper.GetInt(constants.ArgMaxParallel)
-	}
-	return maxParallel
 }

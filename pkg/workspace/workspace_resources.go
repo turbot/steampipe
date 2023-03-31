@@ -34,6 +34,6 @@ func (w *Workspace) GetResourceMaps() *modconfig.ResourceMaps {
 	return w.Mod.ResourceMaps
 }
 
-func (m *Workspace) GetResource(parsedName *modconfig.ParsedResourceName) (resource modconfig.HclResource, found bool) {
-	return m.GetResourceMaps().GetResource(parsedName)
+func (w *Workspace) GetResource(parsedName *modconfig.ParsedResourceName) (resource modconfig.HclResource, found bool) {
+	return w.GetResourceMaps().GetResource(parsedName)
 }

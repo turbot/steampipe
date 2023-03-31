@@ -18,12 +18,14 @@ import (
 type ConnectionWatcher struct {
 	fileWatcherErrorHandler   func(error)
 	watcher                   *filewatcher.FileWatcher
-	onConnectionConfigChanged func(configMap ConnectionConfigMap)
+	onConnectionConfigChanged func(ConnectionConfigMap)
+	onSchemaChanged           func(context.Context, *steampipeconfig.RefreshConnectionResult)
 }
 
-func NewConnectionWatcher(onConnectionChanged func(configMap ConnectionConfigMap)) (*ConnectionWatcher, error) {
+func NewConnectionWatcher(onConnectionChanged func(ConnectionConfigMap), onSchemaChanged func(context.Context, *steampipeconfig.RefreshConnectionResult)) (*ConnectionWatcher, error) {
 	w := &ConnectionWatcher{
 		onConnectionConfigChanged: onConnectionChanged,
+		onSchemaChanged:           onSchemaChanged,
 	}
 
 	watcherOptions := &filewatcher.WatcherOptions{
@@ -64,36 +66,27 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	ctx := context.Background()
 
 	log.Printf("[TRACE] ConnectionWatcher handleFileWatcherEvent")
-	config, err := steampipeconfig.LoadConnectionConfig()
-	if err != nil {
-		log.Printf("[WARN] error loading updated connection config: %s", err.Error())
+	config, errorsAndWarnings := steampipeconfig.LoadConnectionConfig()
+	if errorsAndWarnings.GetError() != nil {
+		log.Printf("[WARN] error loading updated connection config: %v", errorsAndWarnings.GetError())
 		return
 	}
-	log.Printf("[TRACE] loaded updated config")
-
-	client, err := db_local.NewLocalClient(ctx, constants.InvokerConnectionWatcher, nil)
-	if err != nil {
-		log.Printf("[WARN] error creating client to handle updated connection config: %s", err.Error())
+	if len(errorsAndWarnings.Warnings) > 0 {
+		log.Printf("[WARN] loading updated connection config succeeded with warnings: %v", errorsAndWarnings.Warnings)
 	}
-	defer client.Close(ctx)
-
 	log.Printf("[TRACE] loaded updated config")
-
-	log.Printf("[TRACE] calling onConnectionConfigChanged")
-	// convert config to format expected by plugin manager
-	// (plugin manager cannot reference steampipe config to avoid circular deps)
-	configMap := NewConnectionConfigMap(config.Connections)
-	// call on changed callback
-	// (this calls pluginmanager.SetConnectionConfigMap)
-	w.onConnectionConfigChanged(configMap)
-
-	log.Printf("[TRACE] calling RefreshConnectionAndSearchPaths")
 
 	// We need to update the viper config and GlobalConfig
-	// as these are both used by RefreshConnectionAndSearchPaths
+	// as these are both used by RefreshConnectionAndSearchPathsWithLocalClient
 
 	// set the global steampipe config
 	steampipeconfig.GlobalConfig = config
+
+	// call on changed callback - we must call this BEFORE calling refresh connections
+	// convert config to format expected by plugin manager
+	// (plugin manager cannot reference steampipe config to avoid circular deps)
+	configMap := NewConnectionConfigMap(config.Connections)
+	w.onConnectionConfigChanged(configMap)
 
 	// The only configurations from GlobalConfig which have
 	// impact during Refresh are Database options and the Connections
@@ -108,16 +101,22 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
 	// to use the GlobalConfig here and ignore Workspace Profile in general
 	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
 
+	log.Printf("[TRACE] calling RefreshConnectionAndSearchPathsWithLocalClient")
 	// now refresh connections and search paths
-	refreshResult := client.RefreshConnectionAndSearchPaths(ctx)
+	refreshResult := db_local.RefreshConnectionAndSearchPaths(ctx)
 	if refreshResult.Error != nil {
 		log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
 		return
 	}
+	// if the connections were added or removed, call the schema changed callback
+	if refreshResult.UpdatedConnections {
+		w.onSchemaChanged(ctx, refreshResult)
+	}
 
 	// display any refresh warnings
-	// TODO send warnings on warning_stream (to FDW???)
+	// TODO send warnings on warning_stream
 	refreshResult.ShowWarnings()
+	log.Printf("[TRACE] File watch event done")
 }
 
 func (w *ConnectionWatcher) Close() {

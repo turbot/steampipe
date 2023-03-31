@@ -35,6 +35,7 @@ const (
 	ArgProgress             = "progress"
 	ArgExport               = "export"
 	ArgMaxParallel          = "max-parallel"
+	ArgLogLevel             = "log-level"
 	ArgDryRun               = "dry-run"
 	ArgWhere                = "where"
 	ArgTag                  = "tag"
@@ -49,6 +50,8 @@ const (
 	ArgInput                = "input"
 	ArgDashboardInput       = "dashboard-input"
 	ArgMaxCacheSizeMb       = "max-cache-size-mb"
+	ArgCache                = "cache"
+	ArgCacheTtl             = "cache-ttl"
 	ArgIntrospection        = "introspection"
 	ArgShare                = "share"
 	ArgSnapshot             = "snapshot"
@@ -57,7 +60,6 @@ const (
 	ArgModLocation          = "mod-location"
 	ArgSnapshotLocation     = "snapshot-location"
 	ArgSnapshotTitle        = "snapshot-title"
-
 	ArgDatabaseStartTimeout = "database-start-timeout"
 )
 

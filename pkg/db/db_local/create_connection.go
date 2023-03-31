@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
@@ -69,14 +70,14 @@ type CreateDbOptions struct {
 	DatabaseName, Username string
 }
 
-// createLocalDbClient connects and returns a connection to the given database using
+// CreateLocalDbConnection connects and returns a connection to the given database using
 // the provided username
 // if the database is not provided (empty), it connects to the default database in the service
 // that was created during installation.
-// NOTE: no session data callback is used - no sesison data will be present
-func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn, error) {
-	utils.LogTime("db.createLocalDbClient start")
-	defer utils.LogTime("db.createLocalDbClient end")
+// NOTE: no session data callback is used - no session data will be present
+func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn, error) {
+	utils.LogTime("db.CreateLocalDbConnection start")
+	defer utils.LogTime("db.CreateLocalDbConnection end")
 
 	psqlInfo, err := getLocalSteampipeConnectionString(opts)
 	if err != nil {
@@ -109,6 +110,57 @@ func createLocalDbClient(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn,
 	return conn, nil
 }
 
+// createConnectionPool
+
+func createConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnections int) (*pgxpool.Pool, error) {
+
+	utils.LogTime("db_client.establishConnectionPool start")
+	defer utils.LogTime("db_client.establishConnectionPool end")
+
+	psqlInfo, err := getLocalSteampipeConnectionString(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	connConfig, err := pgxpool.ParseConfig(psqlInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	const (
+		connMaxIdleTime = 1 * time.Minute
+		connMaxLifetime = 10 * time.Minute
+	)
+
+	connConfig.MinConns = 0
+	connConfig.MaxConns = int32(maxConnections)
+	connConfig.MaxConnLifetime = connMaxLifetime
+	connConfig.MaxConnIdleTime = connMaxIdleTime
+
+	// set an app name so that we can track database connections from this Steampipe execution
+	// this is used to determine whether the database can safely be closed
+	connConfig.ConnConfig.Config.RuntimeParams = map[string]string{
+		"application_name": runtime.PgClientAppName,
+	}
+
+	// this returns connection pool
+	dbPool, err := pgxpool.NewWithConfig(context.Background(), connConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db_common.WaitForPool(
+		ctx,
+		dbPool,
+		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
+		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return dbPool, nil
+}
+
 // createMaintenanceClient connects to the postgres server using the
 // maintenance database (postgres) and superuser
 // this is used in a couple of places
@@ -121,15 +173,16 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	utils.LogTime("db_local.createMaintenanceClient start")
 	defer utils.LogTime("db_local.createMaintenanceClient end")
 
+	connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
+
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second)
 	defer cancel()
 
-	connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
 	statushooks.SetStatus(ctx, "Waiting for connection")
 	conn, err := db_common.WaitForConnection(
 		timeoutCtx,
 		connStr,
-		db_common.WithRetryInterval(constants.DBRecoveryRetryBackoff),
+		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
 		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second),
 	)
 	if err != nil {
@@ -147,7 +200,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	if err != nil {
 		conn.Close(ctx)
 		log.Println("[TRACE] Ping timed out")
-		return nil, err
+		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
 	}
 
 	// wait for recovery to complete
@@ -165,7 +218,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	if err != nil {
 		conn.Close(ctx)
 		log.Println("[TRACE] WaitForRecovery timed out")
-		return nil, sperr.Wrap(err, sperr.WithMessage("timed out waiting for recovery to complete"))
+		return nil, sperr.Wrap(err, sperr.WithMessage("could not complete recovery"))
 	}
 
 	return conn, nil

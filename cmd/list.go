@@ -42,7 +42,7 @@ func getRunListSubCmd(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 		panic("parent is required")
 	}
 
-	return func(cmd *cobra.Command, args []string) {
+	return func(cmd *cobra.Command, _ []string) {
 		workspacePath := viper.GetString(constants.ArgModLocation)
 
 		w, errAndWarnings := workspace.Load(cmd.Context(), workspacePath)

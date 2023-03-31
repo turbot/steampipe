@@ -21,7 +21,11 @@ func GetConnectionState(schemaNames []string) (state ConnectionDataMap, stateMod
 	if err != nil {
 		return nil, false, err
 	}
-	return pruneConnectionState(connectionState, schemaNames)
+	// only prune connection state if schemaNames is passed
+	if schemaNames != nil {
+		return pruneConnectionState(connectionState, schemaNames)
+	}
+	return connectionState, false, nil
 }
 
 // load and parse the connection config

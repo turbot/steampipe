@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -39,6 +40,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	}
 
 	if initResult.HasMessages() {
+		statushooks.Done(ctx)
 		// clear the prompt
 		// NOTE: this must be done BEFORE setting hidePrompt
 		// otherwise the cursor calculations in go-prompt do not work and multi-line test is not cleared
@@ -52,15 +54,33 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		initResult.DisplayMessages()
 		// show the prompt again
 		c.hidePrompt = false
+
 		// We need to render the prompt here to make sure that it comes back
-		// after the messages have been displayed
-		c.interactivePrompt.Render()
+		// after the messages have been displayed (only if there's no execution)
+		//
+		// We check for query execution by TRYING to acquire the same lock that
+		// execution locks on
+		//
+		// If we can acquire a lock, that means that there's no
+		// query execution underway - and it is safe to render the prompt
+		//
+		// otherwise, that query execution is waiting for this init to finish
+		// and as such will be out of the prompt - in which case, we shouldn't
+		// re-render the prompt
+		//
+		// the prompt will be re-rendered when the query execution finished
+		if c.executionLock.TryLock() {
+			c.interactivePrompt.Render()
+			// release the lock
+			c.executionLock.Unlock()
+		}
 	}
 
+	// initialise autocomplete suggestions
 	c.initialiseSuggestions()
 	// tell the workspace to reset the prompt after displaying async filewatcher messages
 	c.initData.Workspace.SetOnFileWatcherEventMessages(func() {
-		c.initialiseSuggestions()
+		c.initialiseQuerySuggestions()
 		c.interactivePrompt.Render()
 	})
 
@@ -97,6 +117,11 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 			c.initData.Result.Error = err
 		}
 	}
+
+	// create a cancellation context used to cancel the listen thread when we exit
+	listenCtx, cancel := context.WithCancel(ctx)
+	go c.listenToPgNotifications(listenCtx)
+	c.cancelNotificationListener = cancel
 }
 
 func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {

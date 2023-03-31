@@ -16,15 +16,17 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-var exitCode int
+var exitCode int = constants.ExitCodeSuccessful
 
 func main() {
 	ctx := context.Background()
 	utils.LogTime("main start")
-	exitCode := constants.ExitCodeSuccessful
 	defer func() {
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
+			if exitCode == 0 {
+				exitCode = constants.ExitCodeUnknownErrorPanic
+			}
 		}
 		utils.LogTime("main end")
 		utils.DisplayProfileData()
@@ -47,7 +49,7 @@ func main() {
 // postgresql engine.
 func checkRoot(ctx context.Context) {
 	if os.Geteuid() == 0 {
-		exitCode = constants.ExitCodeUnknownErrorPanic
+		exitCode = constants.ExitCodeInvalidExecutionEnvironment
 		error_helpers.ShowError(ctx, fmt.Errorf(`Steampipe cannot be run as the "root" user.
 To reduce security risk, use an unprivileged user account instead.`))
 		os.Exit(exitCode)
@@ -63,7 +65,7 @@ To reduce security risk, use an unprivileged user account instead.`))
 	 */
 
 	if os.Geteuid() != os.Getuid() {
-		exitCode = constants.ExitCodeUnknownErrorPanic
+		exitCode = constants.ExitCodeInvalidExecutionEnvironment
 		error_helpers.ShowError(ctx, fmt.Errorf("real and effective user IDs must match."))
 		os.Exit(exitCode)
 	}
@@ -104,7 +106,7 @@ func checkWsl1(ctx context.Context) {
 			return
 		} else {
 			error_helpers.ShowError(ctx, fmt.Errorf("Steampipe requires WSL2, please upgrade and try again."))
-			os.Exit(1)
+			os.Exit(constants.ExitCodeInvalidExecutionEnvironment)
 		}
 	}
 }

@@ -56,7 +56,7 @@ Example:
 	return cmd
 }
 
-func runVariableListCmd(cmd *cobra.Command, args []string) {
+func runVariableListCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 	defer func() {
 		if r := recover(); r != nil {

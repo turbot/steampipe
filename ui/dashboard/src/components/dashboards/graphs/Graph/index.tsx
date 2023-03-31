@@ -452,12 +452,15 @@ const useNodeAndEdgePanelInformation = (
           completeWiths.push(withStatus);
         }
       }
-      for (const node of sortBy(Object.values(nodeAndEdgeStatus.nodes), [
+
+      const sortedNodes = sortBy(nodeAndEdgeStatus.nodes, [
         "title",
         "category.title",
         "category.name",
         "id",
-      ])) {
+      ]);
+      for (let idx = 0; idx < sortedNodes.length; idx++) {
+        const node = sortedNodes[idx] as NodeStatus;
         if (node.state === "initialized") {
           initializedNodes.push(node);
         } else if (node.state === "blocked") {
@@ -472,12 +475,15 @@ const useNodeAndEdgePanelInformation = (
           completeNodes.push(node);
         }
       }
-      for (const edge of sortBy(Object.values(nodeAndEdgeStatus.edges), [
+
+      const sortedEdges = sortBy(nodeAndEdgeStatus.edges, [
         "title",
         "category.title",
         "category.name",
         "id",
-      ])) {
+      ]);
+      for (let idx = 0; idx < sortedEdges.length; idx++) {
+        const edge = sortedEdges[idx] as EdgeStatus;
         if (edge.state === "initialized") {
           initializedEdges.push(edge);
         } else if (edge.state === "blocked") {

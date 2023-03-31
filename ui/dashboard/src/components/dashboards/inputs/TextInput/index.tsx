@@ -65,7 +65,7 @@ const TextInput = (props: InputProps) => {
           type="text"
           name={props.name}
           id={props.name}
-          className="flex-1 block w-full bg-background-panel rounded-md border border-black-scale-3 pr-8 overflow-x-auto text-sm md:text-base disabled:bg-black-scale-1 focus:ring-0"
+          className="flex-1 block w-full bg-dashboard-panel rounded-md border border-black-scale-3 pr-8 overflow-x-auto text-sm md:text-base disabled:bg-black-scale-1 focus:ring-0"
           onChange={updateValue}
           onKeyPress={(e) => {
             if (e.key !== "Enter") {

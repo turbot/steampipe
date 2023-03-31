@@ -13,9 +13,15 @@ type Database struct {
 	Listen       *string `hcl:"listen"`
 	SearchPath   *string `hcl:"search_path"`
 	StartTimeout *int    `hcl:"start_timeout"`
+
+	SearchPathPrefix *string `hcl:"search_path_prefix"`
+	Cache            *bool   `hcl:"cache"`
+	CacheMaxTtl      *int    `hcl:"cache_max_ttl"`
+	CacheDefaultTtl  *int    `hcl:"cache_default_ttl"`
+	CacheMaxSizeMb   *int    `hcl:"cache_max_size_mb"`
 }
 
-// ConfigMap :: create a config map to pass to viper
+// ConfigMap creates a config map that can be merged with viper
 func (d *Database) ConfigMap() map[string]interface{} {
 	// only add keys which are non null
 	res := map[string]interface{}{}

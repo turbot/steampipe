@@ -20,7 +20,7 @@ type Terminal struct {
 	AutoComplete     *bool   `hcl:"autocomplete"`
 }
 
-// ConfigMap :: create a config map to pass to viper
+// ConfigMap creates a config map that can be merged with viper
 func (t *Terminal) ConfigMap() map[string]interface{} {
 	// only add keys which are non null
 	res := map[string]interface{}{}

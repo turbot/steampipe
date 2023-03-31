@@ -2,6 +2,7 @@
   {
     "test": "default workspace profile location env variable set",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles"
@@ -21,6 +22,7 @@
   {
     "test": "default workspace profile location env variable set, all env variables set and all command line arguments set",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
@@ -53,6 +55,7 @@
   {
     "test": "env variables set",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_CLOUD_HOST=latestpipe.turbot.io/",
@@ -77,6 +80,7 @@
   {
     "test": "default workspace profile location env variable set and --workspace arg passed",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles"
@@ -98,6 +102,7 @@
   {
     "test": "all command line arguments set",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [],
       "args": [
@@ -122,6 +127,7 @@
   {
     "test": "default workspace profile location env variable set and all env variables set",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
@@ -147,6 +153,7 @@
   {
     "test": "default workspace profile location env variable set, all env variables set and --workspace arg passed",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
@@ -174,6 +181,7 @@
   {
     "test": "all env variables set and --workspace arg passed",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
@@ -201,6 +209,7 @@
   {
     "test": "default workspace profile location env variable set and all command line arguments set",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles"
@@ -227,6 +236,7 @@
   {
     "test": "options set in default workspace profile(2)",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options"
@@ -234,15 +244,57 @@
       "args": []
     },
     "expected": {
-      "autocomplete": false,
-      "header": false,
-      "max-parallel": null,
-      "multi": true,
-      "output": "json",
+      "query.autocomplete": false,
+      "query.header": false,
+      "query.multi": true,
+      "query.output": "json",
       "query-timeout": 0,
       "search-path": "[ ]",
       "search-path-prefix": "[ abc ]",
-      "separator": "|",
+      "query.separator": "|",
+      "query.timing": true,
+      "telemetry": "info",
+      "update-check": "false",
+      "watch": false
+    }
+  },
+  {
+    "test": "options set in default workspace profile(2) and check cmd is run(same test as above but tests check args)",
+    "description": "",
+    "cmd": "check",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options"
+      ],
+      "args": []
+    },
+    "expected": {
+      "check.header": false,
+      "check.output": "json",
+      "check.separator": "|",
+      "check.timing": true,
+      "query-timeout": 240,
+      "search-path": "[ ]",
+      "search-path-prefix": "[ abc ]",
+      "telemetry": "info",
+      "update-check": "false",
+      "watch": false
+    }
+  },
+  {
+    "test": "options set in default workspace profile(2) and dashboard cmd is run(same test as above but tests dashboard args)",
+    "description": "",
+    "cmd": "dashboard",
+    "setup": {
+      "env": [
+        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options"
+      ],
+      "args": []
+    },
+    "expected": {
+      "browser": true,
+      "search-path": "[ ]",
+      "search-path-prefix": "[ abc ]",
       "telemetry": "info",
       "update-check": "false",
       "watch": false
@@ -251,6 +303,7 @@
   {
     "test": "default workspace location set and env variables set(3)",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options",
@@ -271,6 +324,7 @@
   {
     "test": "default workspace location set and --workspace arg passed(4)",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options"
@@ -280,15 +334,14 @@
       ]
     },
     "expected": {
-      "autocomplete": true,
-      "header": false,
-      "max-parallel": 10,
-      "multi": true,
-      "output": "csv",
-      "query-timeout": 100,
+      "query.autocomplete": true,
+      "query.header": false,
+      "query.multi": true,
+      "query.output": "csv",
       "search-path": "[ abc ]",
       "search-path-prefix": "[ abc, def ]",
-      "separator": ";",
+      "query.separator": ";",
+      "query.timing": true,
       "telemetry": "none",
       "update-check": "true",
       "watch": false
@@ -297,6 +350,7 @@
   {
     "test": "all command line args passed(5)",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [],
       "args": [
@@ -311,10 +365,8 @@
       ]
     },
     "expected": {
-      "autocomplete": false,
+      "query.autocomplete": false,
       "header": true,
-      "max-parallel": 10,
-      "multi": true,
       "output": "table",
       "query-timeout": 190,
       "search-path": "[ abc ]",
@@ -328,6 +380,7 @@
   {
     "test": "options set in default workspace profile and env variables passed(6)",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options",
@@ -339,15 +392,15 @@
       "args": []
     },
     "expected": {
-      "autocomplete": false,
-      "header": false,
+      "query.autocomplete": false,
+      "query.header": false,
       "max-parallel": 10,
-      "multi": true,
-      "output": "json",
+      "query.multi": true,
+      "query.output": "json",
       "query-timeout": 100,
       "search-path": "[ ]",
       "search-path-prefix": "[ abc ]",
-      "separator": "|",
+      "query.separator": "|",
       "telemetry": "none",
       "update-check": true,
       "watch": false
@@ -356,6 +409,7 @@
   {
     "test": "options set in default workspace profile, env variables passed and --workspace arg passed(7)",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options",
@@ -386,6 +440,7 @@
   {
     "test": "options set in default workspace profile, env variables passed and STEAMPIPE_WORKSPACE env passed(8)",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options",
@@ -415,6 +470,7 @@
   {
     "test": "options set in default workspace profile, env variables passed, --workspace arg passed and all command line args passed(8)",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options",
@@ -453,6 +509,7 @@
   {
     "test": "config/default.spc, env variables passed all command line args passed(8)",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_MAX_PARALLEL=10",
@@ -490,6 +547,7 @@
   {
     "test": "config/default.spc, env variables",
     "description": "",
+    "cmd": "query",
     "setup": {
       "env": [
         "STEAMPIPE_MAX_PARALLEL=10",

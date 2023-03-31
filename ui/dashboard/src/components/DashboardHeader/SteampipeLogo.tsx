@@ -1,3 +1,4 @@
+import { getComponent } from "../dashboards";
 // @ts-ignore
 import { ReactComponent as Logo } from "./logos/steampipe-logo.svg";
 // @ts-ignore
@@ -9,13 +10,13 @@ import { useDashboard } from "../../hooks/useDashboard";
 
 const SteampipeLogo = () => {
   const {
-    components: { ExternalLink },
     themeContext: { theme },
   } = useDashboard();
+  const ExternalLink = getComponent("external_link");
 
   return (
     <div className="mr-1 md:mr-4">
-      <ExternalLink to="/">
+      <ExternalLink ignoreDataMode to="/">
         <div className="block md:hidden w-8">
           <Logo />
         </div>

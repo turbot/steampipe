@@ -19,22 +19,8 @@ jobs:
       - name: Unshallow
         run: git fetch
 
-      - name: Check head and base refs of the PR
-        run: |
-          echo ${{ github.head_ref }}
-          echo ${{ github.base_ref }}
-
-      - name: Create a feature branch off base, merge head_ref into the feature branch and build the binary
-        run: |
-          git fetch
-          git config user.email "puskar@turbot.com"
-          git config user.name "Puskar Basu"
-          git checkout ${{ github.base_ref }}
-          git checkout -b test-branch-acc
-          git merge origin/${{ github.head_ref }}
-
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: 1.19
 
@@ -96,12 +82,6 @@ jobs:
           path: ~/artifacts/darwin.zip
           if-no-files-found: error
 
-      - name: Delete the feature branch
-        run: |
-          git checkout -
-          git branch
-          git branch -D test-branch-acc
-
   acceptance_test:
     name: Test
     needs: goreleaser
@@ -116,6 +96,7 @@ jobs:
           - "search_path"
           - "chaos_and_query"
           - "dynamic_schema"
+          - "dynamic_aggregators"
           - "cache"
           - "mod_install"
           - "mod"
@@ -127,6 +108,7 @@ jobs:
           - "snapshot"
           - "dashboard"
           - "dashboard_parsing_validation"
+          - "schema_cloning"
           - "exit_codes"
           - "force_stop"
         exclude:
@@ -142,7 +124,7 @@ jobs:
           submodules: true
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: 1.19
 
@@ -190,7 +172,7 @@ jobs:
         continue-on-error: false
         run: |
           steampipe service start
-          steampipe plugin install chaos
+          steampipe plugin install chaos chaosdynamic
           steampipe service stop
 
       - name: Run Test Suite

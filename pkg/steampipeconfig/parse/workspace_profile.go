@@ -2,6 +2,8 @@ package parse
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -9,7 +11,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"log"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
 
 func LoadWorkspaceProfiles(workspaceProfilePath string) (profileMap map[string]*modconfig.WorkspaceProfile, err error) {
@@ -121,6 +123,13 @@ func decodeWorkspaceProfiles(parseCtx *WorkspaceProfileParseContext) (map[string
 	return profileMap, diags
 }
 
+// decodeWorkspaceProfileOption decodes an options block as a workspace profile property
+// setting the necessary overrides for special handling of the "dashboard" option which is different
+// from the global "dashboard" option
+func decodeWorkspaceProfileOption(block *hcl.Block) (options.Options, hcl.Diagnostics) {
+	return DecodeOptions(block, WithOverride(constants.CmdNameDashboard, &options.WorkspaceProfileDashboard{}))
+}
+
 func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseContext) (*modconfig.WorkspaceProfile, *decodeResult) {
 	res := newDecodeResult()
 	// get shell resource
@@ -137,12 +146,23 @@ func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseCon
 	if len(diags) > 0 {
 		res.handleDecodeDiags(diags)
 	}
-
+	// use a map keyed by a string for fast lookup
+	// we use an empty struct as the value type, so that
+	// we don't use up unnecessary memory
+	foundOptions := map[string]struct{}{}
 	for _, block := range workspaceProfileOptions.Blocks {
 		switch block.Type {
 		case "options":
-			// if we already found settings, fail
-			opts, moreDiags := DecodeOptions(block)
+			optionsBlockType := block.Labels[0]
+			if _, found := foundOptions[optionsBlockType]; found {
+				// fail
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Subject:  &block.DefRange,
+					Summary:  fmt.Sprintf("Duplicate options type '%s'", optionsBlockType),
+				})
+			}
+			opts, moreDiags := decodeWorkspaceProfileOption(block)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				break
@@ -151,7 +171,7 @@ func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseCon
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
-
+			foundOptions[optionsBlockType] = struct{}{}
 		default:
 			// this should never happen
 			diags = append(diags, &hcl.Diagnostic{

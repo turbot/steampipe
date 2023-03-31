@@ -78,8 +78,9 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 }
 
 type ClientCount struct {
-	SteampipeClients int
-	TotalClients     int
+	SteampipeClients     int
+	PluginManagerClients int
+	TotalClients         int
 }
 
 // GetClientCount returns the number of connections to the service from anyone other than
@@ -99,7 +100,7 @@ func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	utils.LogTime("db_local.GetClientCount start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetClientCount end"))
 
-	rootClient, err := createLocalDbClient(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}
@@ -142,6 +143,9 @@ GROUP BY application_name
 		counts.TotalClients += count
 		if strings.HasPrefix(appName, constants.AppName) {
 			counts.SteampipeClients += count
+		}
+		if strings.HasPrefix(appName, runtime.PgClientAppNamePluginManagerPrefix) {
+			counts.PluginManagerClients += count
 		}
 	}
 

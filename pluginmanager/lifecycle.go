@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	pb "github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pluginmanager_service/grpc/shared"
@@ -37,12 +38,14 @@ func StartNewInstance(steampipeExecutablePath string) error {
 
 // start plugin manager, without checking it is already running
 // we need to be provided with the exe path as we have no way of knowing where the steampipe exe it
-// when ther plugin mananager is first started by steampipe, we derive the exe path from the running process and
+// when the plugin mananager is first started by steampipe, we derive the exe path from the running process and
 // store it in the plugin manager state file - then if the fdw needs to start the plugin manager it knows how to
 func start(steampipeExecutablePath string) error {
 	// note: we assume the install dir has been assigned to file_paths.SteampipeDir
 	// - this is done both by the FDW and Steampipe
-	pluginManagerCmd := exec.Command(steampipeExecutablePath, "plugin-manager", "--install-dir", filepaths.SteampipeDir)
+	pluginManagerCmd := exec.Command(steampipeExecutablePath,
+		"plugin-manager",
+		"--"+constants.ArgInstallDir, filepaths.SteampipeDir)
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
@@ -90,7 +93,7 @@ func Stop() error {
 
 // stop the running plugin manager instance
 func stop(state *PluginManagerState) error {
-	log.Printf("[TRACE] plugin manager stop")
+	log.Printf("[INFO] plugin manager stop")
 	pluginManager, err := NewPluginManagerClient(state)
 	if err != nil {
 		return err
@@ -126,7 +129,7 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	// if we did not load it and there was no error, it means the plugin manager is not running
 	// we cannot start it as we do not know the correct steampipe exe path - which is stored in the state
 	// this is not expected - we would expect the plugin manager to have been started with the datatbase
-	if state == nil {
+	if state.Executable == "" {
 		return nil, fmt.Errorf("plugin manager is not running and there is no state file")
 	}
 	// if the plugin manager is not running, it must have crashed/terminated

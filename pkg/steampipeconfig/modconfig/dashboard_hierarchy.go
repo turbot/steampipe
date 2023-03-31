@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+
 	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
@@ -71,7 +72,7 @@ func (h *DashboardHierarchy) OnDecoded(block *hcl.Block, resourceMapProvider Res
 	if len(h.Edges) > 0 {
 		h.EdgeNames = h.Edges.Names()
 	}
-	return nil
+	return h.QueryProviderImpl.OnDecoded(block, resourceMapProvider)
 }
 
 // TODO [node_reuse] Add DashboardLeafNodeImpl and move this there https://github.com/turbot/steampipe/issues/2926

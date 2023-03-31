@@ -25,8 +25,12 @@ type InitData struct {
 // It also starts an asynchronous population of the object
 // InitData.Done closes after asynchronous initialization completes
 func NewInitData(ctx context.Context) *InitData {
+	// create InitData, but do not initialize yet, since 'viper' is not completely setup
+	i := &InitData{
+		InitData: *initialisation.NewInitData(),
+	}
 
-	statushooks.SetStatus(ctx, "Initializing...")
+	statushooks.SetStatus(ctx, "Loading workspace")
 	defer statushooks.Done(ctx)
 
 	// load the workspace
@@ -36,13 +40,8 @@ func NewInitData(ctx context.Context) *InitData {
 			InitData: *initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", errAndWarnings.GetError().Error())),
 		}
 	}
-
-	// create InitData, but do not initialize yet, since 'viper' is not completely setup
-	i := &InitData{
-		InitData: *initialisation.NewInitData(w),
-	}
+	i.Workspace = w
 	i.Result.AddWarnings(errAndWarnings.Warnings...)
-
 	if !w.ModfileExists() {
 		i.Result.Error = workspace.ErrorNoModDefinition
 	}
@@ -58,7 +57,7 @@ func NewInitData(ctx context.Context) *InitData {
 		return i
 	}
 
-	if len(i.Workspace.GetResourceMaps().Controls) == 0 {
+	if len(w.GetResourceMaps().Controls) == 0 {
 		i.Result.AddWarnings("no controls found in current workspace")
 	}
 

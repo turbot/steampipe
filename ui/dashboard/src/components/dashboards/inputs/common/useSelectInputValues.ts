@@ -1,8 +1,7 @@
 import { DashboardRunState } from "../../../../types";
 import { getColumn } from "../../../../utils/data";
 import { LeafNodeData } from "../../common";
-import { SelectInputOption } from "../types";
-import { SelectOption } from "../SelectInput";
+import { SelectInputOption, SelectOption } from "../types";
 import { useMemo } from "react";
 
 const useSelectInputValues = (
@@ -35,8 +34,8 @@ const useSelectInputValues = (
         const label = row[labelCol.name];
         const value = row[valueCol.name];
         return {
-          label: label !== undefined ? label.toString() : null,
-          value: value !== undefined ? value.toString() : null,
+          label: !!label ? label.toString() : "",
+          value: !!value ? value.toString() : null,
           tags: tagsCol ? row[tagsCol.name] : {},
         };
       });

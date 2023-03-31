@@ -12,6 +12,7 @@ import {
 import { classNames } from "../../utils/styles";
 import { default as lodashGroupBy } from "lodash/groupBy";
 import { Fragment, useEffect, useState } from "react";
+import { getComponent } from "../dashboards";
 import { stringToColor } from "../../utils/color";
 import { useDashboard } from "../../hooks/useDashboard";
 import { useParams } from "react-router-dom";
@@ -74,13 +75,11 @@ const DashboardTag = ({
 );
 
 const TitlePart = ({ part }) => {
-  const {
-    components: { ExternalLink },
-  } = useDashboard();
-
+  const ExternalLink = getComponent("external_link");
   return (
     <ExternalLink
       className="link-highlight hover:underline"
+      ignoreDataMode
       to={`/${part.full_name}`}
     >
       {part.title || part.short_name}
@@ -89,15 +88,14 @@ const TitlePart = ({ part }) => {
 };
 
 const BenchmarkTitle = ({ benchmark, searchValue }) => {
-  const {
-    components: { ExternalLink },
-    dashboardsMap,
-  } = useDashboard();
+  const { dashboardsMap } = useDashboard();
+  const ExternalLink = getComponent("external_link");
 
   if (!searchValue) {
     return (
       <ExternalLink
         className="link-highlight hover:underline"
+        ignoreDataMode
         to={`/${benchmark.full_name}`}
       >
         {benchmark.title || benchmark.short_name}

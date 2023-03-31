@@ -203,6 +203,15 @@ func (s *Server) HandleDashboardEvent(ctx context.Context, event dashboardevents
 		// If) any deleted/new/changed dashboards, emit an available dashboards message to clients
 		if len(deletedDashboards) != 0 || len(newDashboards) != 0 || len(changedDashboards) != 0 || len(changedBenchmarks) != 0 {
 			OutputMessage(ctx, "Available Dashboards updated")
+
+			// Emit dashboard metadata event in case there is a new mod - else the UI won't know about this mod
+			payload, payloadError = buildDashboardMetadataPayload(s.workspace.GetResourceMaps(), s.workspace.CloudMetadata)
+			if payloadError != nil {
+				return
+			}
+			_ = s.webSocket.Broadcast(payload)
+
+			// Emit available dashboards event
 			payload, payloadError = buildAvailableDashboardsPayload(s.workspace.GetResourceMaps())
 			if payloadError != nil {
 				return

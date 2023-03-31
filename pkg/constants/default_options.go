@@ -14,10 +14,10 @@ const DefaultConnectionConfigContent = `
 # }
 
 # options "database" {
-#   port                  = 9193    # any valid, open port number
-#   listen                = "local" # local, network
-#   search_path           =  ""     # comma-separated string
-#   service_start_timeout = 30      # maximum time it should take for service to start up (in seconds)
+#   port          = 9193    # any valid, open port number
+#   listen        = "local" # local, network
+#   search_path   =  ""     # comma-separated string
+#   start_timeout = 30      # maximum time it should take for the database service to start accepting queries (in seconds)
 # }
 
 # options "terminal" {

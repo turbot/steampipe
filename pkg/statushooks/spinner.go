@@ -7,24 +7,26 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/fatih/color"
 	"github.com/karrick/gows"
+	"github.com/turbot/steampipe/pkg/constants"
 )
 
-//
 // spinner format:
 // <spinner><space><message><space><dot><dot><dot><cursor>
-// 		1	   1   [.......]   1     1    1    1     1
-// We need at least seven characters to show the spinner properly
+//
+//	1	   1   [.......]   1     1    1    1     1
+//
+// # We need at least seven characters to show the spinner properly
 //
 // Not using the (…) character, since it is too small
-//
 const minSpinnerWidth = 7
 
 // StatusSpinner is a struct which implements StatusHooks, and uses a spinner to display status messages
 type StatusSpinner struct {
 	spinner *spinner.Spinner
-	delay   time.Duration
 	cancel  chan struct{}
+	delay   time.Duration
 }
 
 type StatusSpinnerOpt func(*StatusSpinner)
@@ -41,7 +43,14 @@ func WithDelay(delay time.Duration) StatusSpinnerOpt {
 	}
 }
 
-func NewStatusSpinner(opts ...StatusSpinnerOpt) *StatusSpinner {
+// this is used in the root command to setup a default cmd execution context
+// with a status spinner built in
+// to update this, use the statushooks.AddStatusHooksToContext
+//
+// We should never create a StatusSpinner directly. To use a spinner
+// DO NOT use a StatusSpinner directly, since using it may have
+// unintended side-effect around the spinner lifecycle
+func NewStatusSpinnerHook(opts ...StatusSpinnerOpt) *StatusSpinner {
 	res := &StatusSpinner{}
 
 	res.spinner = spinner.New(
@@ -60,9 +69,42 @@ func NewStatusSpinner(opts ...StatusSpinnerOpt) *StatusSpinner {
 // SetStatus implements StatusHooks
 func (s *StatusSpinner) SetStatus(msg string) {
 	s.UpdateSpinnerMessage(msg)
-	if !s.spinner.Active() {
-		s.startSpinner()
+}
+
+func (s *StatusSpinner) Message(msgs ...string) {
+	if s.spinner.Active() {
+		s.spinner.Stop()
+		defer s.spinner.Start()
 	}
+	for _, msg := range msgs {
+		fmt.Println(msg)
+	}
+}
+
+func (s *StatusSpinner) Warn(msg string) {
+	if s.spinner.Active() {
+		s.spinner.Stop()
+		defer s.spinner.Start()
+	}
+	fmt.Fprintf(color.Output, "%s: %v\n", constants.ColoredWarn, msg)
+}
+
+// Hide implements StatusHooks
+func (s *StatusSpinner) Hide() {
+	if s.cancel != nil {
+		close(s.cancel)
+	}
+	s.closeSpinner()
+}
+
+func (s *StatusSpinner) Show() {
+	s.spinner.Start()
+}
+
+// UpdateSpinnerMessage updates the message of the given spinner
+func (s *StatusSpinner) UpdateSpinnerMessage(newMessage string) {
+	newMessage = s.truncateSpinnerMessageToScreen(newMessage)
+	s.spinner.Suffix = fmt.Sprintf(" %s", newMessage)
 }
 
 func (s *StatusSpinner) startSpinner() {
@@ -85,30 +127,6 @@ func (s *StatusSpinner) startSpinner() {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}()
-}
-
-func (s *StatusSpinner) Message(msgs ...string) {
-	if s.spinner.Active() {
-		s.spinner.Stop()
-		defer s.spinner.Start()
-	}
-	for _, msg := range msgs {
-		fmt.Println(msg)
-	}
-}
-
-// Done implements StatusHooks
-func (s *StatusSpinner) Done() {
-	if s.cancel != nil {
-		close(s.cancel)
-	}
-	s.closeSpinner()
-}
-
-// UpdateSpinnerMessage updates the message of the given spinner
-func (s *StatusSpinner) UpdateSpinnerMessage(newMessage string) {
-	newMessage = s.truncateSpinnerMessageToScreen(newMessage)
-	s.spinner.Suffix = fmt.Sprintf(" %s", newMessage)
 }
 
 func (s *StatusSpinner) closeSpinner() {

@@ -9,7 +9,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import { DashboardDataModeLive } from "../../../../types";
 import { Edge, Node, useReactFlow } from "reactflow";
 import { FoldedNode, RowRenderResult } from "../../common/types";
 import { noop } from "../../../../utils/func";
@@ -58,7 +57,6 @@ type CategoryNodeMap = {
 
 const GraphProvider = ({ children }: { children: ReactNode }) => {
   const {
-    dataMode,
     themeContext: { theme },
   } = useDashboard();
   const { fitView } = useReactFlow();
@@ -75,11 +73,6 @@ const GraphProvider = ({ children }: { children: ReactNode }) => {
   });
 
   useDeepCompareEffect(() => {
-    // We only want to do the interpolated template rendering in live views
-    if (dataMode !== DashboardDataModeLive) {
-      return;
-    }
-
     if (!templateRenderReady) {
       return;
     }
@@ -119,7 +112,7 @@ const GraphProvider = ({ children }: { children: ReactNode }) => {
     };
 
     doRender();
-  }, [dataMode, graphNodes, renderTemplates, templateRenderReady]);
+  }, [graphNodes, renderTemplates, templateRenderReady]);
 
   // When the edges or nodes change, update the layout
   useEffect(() => {

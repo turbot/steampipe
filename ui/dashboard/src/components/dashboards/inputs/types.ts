@@ -6,6 +6,12 @@ export type BaseInputProps = PanelDefinition &
   BasePrimitiveProps &
   ExecutablePrimitiveProps;
 
+export type SelectOption = {
+  label: string;
+  value: string | null;
+  tags?: object;
+};
+
 export type SelectInputOption = {
   name: string;
   label?: string;

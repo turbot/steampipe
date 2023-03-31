@@ -56,7 +56,17 @@ func SetStatus(ctx context.Context, msg string) {
 }
 
 func Done(ctx context.Context) {
-	StatusHooksFromContext(ctx).Done()
+	hook := StatusHooksFromContext(ctx)
+	hook.SetStatus("")
+	hook.Hide()
+}
+
+func Warn(ctx context.Context, warning string) {
+	StatusHooksFromContext(ctx).Warn(warning)
+}
+
+func Show(ctx context.Context) {
+	StatusHooksFromContext(ctx).Show()
 }
 
 func Message(ctx context.Context, msgs ...string) {

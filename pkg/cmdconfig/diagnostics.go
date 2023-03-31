@@ -27,38 +27,7 @@ func DisplayConfig() {
 		return
 	}
 
-	var configArgNames = []string{
-		// workspace profile
-		constants.ArgInstallDir,
-		constants.ArgModLocation,
-		constants.ArgSnapshotLocation,
-		constants.ArgWorkspaceProfile,
-		constants.ArgWorkspaceDatabase,
-		constants.ArgCloudHost,
-		constants.ArgCloudToken,
-		constants.ArgDatabaseQueryTimeout,
-
-		// database
-		constants.ArgDatabasePort,
-		constants.ArgListenAddress,
-		constants.ArgSearchPath,
-		constants.ArgDatabaseQueryTimeout,
-		constants.ArgDatabaseStartTimeout,
-		// general
-		constants.ArgUpdateCheck,
-		constants.ArgMaxParallel,
-		constants.ArgTelemetry,
-		// terminal
-		constants.ArgOutput,
-		constants.ArgSeparator,
-		constants.ArgHeader,
-		constants.ArgMultiLine,
-		constants.ArgTiming,
-		// constants.ArgSearchPath,
-		constants.ArgSearchPathPrefix,
-		constants.ArgWatch,
-		constants.ArgAutoComplete,
-	}
+	var configArgNames = viper.AllKeys()
 	res := make(map[string]interface{}, len(configArgNames))
 
 	maxLength := 0
@@ -89,6 +58,12 @@ func DisplayConfig() {
 		}
 		fmt.Println(b.String())
 	case "config_json":
+		// iterate once more for the non-serializable values
+		for k, v := range res {
+			if _, err := json.Marshal(v); err != nil {
+				res[k] = fmt.Sprintf("%v", v)
+			}
+		}
 		jsonBytes, err := json.MarshalIndent(res, "", " ")
 		error_helpers.FailOnError(err)
 		fmt.Println(string(jsonBytes))

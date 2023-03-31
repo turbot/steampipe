@@ -31,26 +31,8 @@ func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfi
 	case constants.IntrospectionControl:
 		return populateControlIntrospectionTables(ctx, workspaceResources, conn, commonColumnSql)
 	default:
-		// just create (but do not populate) the mod introspection table
-		// - this is used to check if the session is initialised
-		return createModIntrospectionTable(ctx, workspaceResources, conn, commonColumnSql)
+		return nil
 	}
-}
-
-func createModIntrospectionTable(ctx context.Context, workspaceResources *modconfig.ResourceMaps, conn *pgx.Conn, commonColumnSql []string) error {
-	utils.LogTime("db.CreateIntrospectionTables start")
-	defer utils.LogTime("db.CreateIntrospectionTables end")
-
-	// get the create sql for each table type
-	modTableSql := getTableCreateSqlForResource(&modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql)
-
-	_, err := conn.Exec(ctx, modTableSql)
-	if err != nil {
-		return fmt.Errorf("failed to create mod introspection table: %v", err)
-	}
-
-	// return context error - this enables calling code to respond to cancellation
-	return ctx.Err()
 }
 
 func populateAllIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, conn *pgx.Conn, commonColumnSql []string) error {
@@ -172,6 +154,21 @@ func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnS
 	}
 	if hr, ok := s.(modconfig.HclResource); ok {
 		columnDefinitions = append(columnDefinitions, getColumnDefinitions(hr.GetHclResourceImpl())...)
+	}
+
+	// Query cannot define 'query' as a property.
+	// So for a steampipe_query table, we will exclude the query column.
+	// Here we are removing the column named query from the 'columnDefinitions' slice.
+	if tableName == "steampipe_query" {
+		// find the index of the element 'query' and store in idx
+		for i, col := range columnDefinitions {
+			if col == "  query  text" {
+				// remove the idx element from 'columnDefinitions' slice
+				columnDefinitions = utils.RemoveElementFromSlice(columnDefinitions, i)
+				break
+			}
+		}
+
 	}
 
 	tableSql := fmt.Sprintf(`create temp table %s (

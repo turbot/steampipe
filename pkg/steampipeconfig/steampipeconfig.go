@@ -12,7 +12,6 @@ import (
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
@@ -38,21 +37,25 @@ func NewSteampipeConfig(commandName string) *SteampipeConfig {
 	}
 }
 
-func (c *SteampipeConfig) Validate() error {
-	var validationErrors []string
-	for _, connection := range c.Connections {
-
+// Validate validates all connections
+// connections with validation errors are removed
+func (c *SteampipeConfig) Validate() (validationWarnings, validationErrors []string) {
+	for connectionName, connection := range c.Connections {
 		// if the connection is an aggregator, populate the child connections
 		// this resolves any wildcards in the connection list
 		if connection.Type == modconfig.ConnectionTypeAggregator {
 			connection.PopulateChildren(c.Connections)
 		}
-		validationErrors = append(validationErrors, connection.Validate(c.Connections)...)
+		w, e := connection.Validate(c.Connections)
+		validationWarnings = append(validationWarnings, w...)
+		validationErrors = append(validationErrors, e...)
+		// if this connection validation remove
+		if len(e) > 0 {
+			delete(c.Connections, connectionName)
+		}
 	}
-	if len(validationErrors) > 0 {
-		return fmt.Errorf("config validation failed with %d %s: \n  - %s", len(validationErrors), utils.Pluralize("error", len(validationErrors)), strings.Join(validationErrors, "\n  - "))
-	}
-	return nil
+
+	return
 }
 
 // ConfigMap creates a config map to pass to viper
@@ -77,7 +80,10 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	return res
 }
 
-func (c *SteampipeConfig) SetOptions(opts options.Options) {
+func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *modconfig.ErrorAndWarnings) {
+
+	errorsAndWarnings = modconfig.NewErrorsAndWarning(nil)
+
 	switch o := opts.(type) {
 	case *options.Connection:
 		if c.DefaultConnectionOptions == nil {
@@ -92,11 +98,15 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) {
 			c.DatabaseOptions.Merge(o)
 		}
 	case *options.Terminal:
+		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
+		errorsAndWarnings.AddWarning(deprecationWarning("terminal options"))
+
 		// NOTE: do not load terminal options for check command
 		// this is a short term workaround to handle the clashing 'output' argument
 		// this will be refactored
+		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
 		if c.commandName == "check" {
-			return
+			break
 		}
 		if c.TerminalOptions == nil {
 			c.TerminalOptions = o
@@ -109,7 +119,16 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) {
 		} else {
 			c.GeneralOptions.Merge(o)
 		}
+		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
+		if c.GeneralOptions.MaxParallel != nil {
+			errorsAndWarnings.AddWarning(deprecationWarning("'max_parallel' in general options"))
+		}
 	}
+	return errorsAndWarnings
+}
+
+func deprecationWarning(subject string) string {
+	return fmt.Sprintf("%s has been deprecated and will be removed in subsequent versions of steampipe", subject)
 }
 
 var defaultCacheEnabled = true
