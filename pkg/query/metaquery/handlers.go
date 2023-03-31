@@ -134,9 +134,11 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 	}()
 	switch command {
 	case constants.ArgOn:
-		return db_common.SetCacheEnabled(ctx, true, conn)
+		viper.Set(constants.ArgClientCacheEnabled, true)
+		return db_common.SetCacheEnabled(ctx, true, sessionResult.Session.Connection.Conn())
 	case constants.ArgOff:
-		return db_common.SetCacheEnabled(ctx, false, conn)
+		viper.Set(constants.ArgClientCacheEnabled, false)
+		return db_common.SetCacheEnabled(ctx, false, sessionResult.Session.Connection.Conn())
 	case constants.ArgClear:
 		return db_common.CacheClear(ctx, conn)
 	}
@@ -161,6 +163,7 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 		// we need to do this in a closure, otherwise the ctx will be evaluated immediately
 		// and not in call-time
 		sessionResult.Session.Close(false)
+		viper.Set(constants.ArgCacheTtl, seconds)
 	}()
 	return db_common.SetCacheTtl(ctx, time.Duration(seconds)*time.Second, sessionResult.Session.Connection.Conn())
 }
@@ -256,7 +259,7 @@ To get information about the columns in a table, run %s
 		// treat this as a wild card
 		regexp, err := regexp.Compile(arg)
 		if err != nil {
-			return fmt.Errorf("Invalid search string %s", arg)
+			return fmt.Errorf("invalid search string %s", arg)
 		}
 		header := []string{"Table", "Schema"}
 		rows := [][]string{}
@@ -424,11 +427,11 @@ func inspectTable(connectionName string, tableName string, input *HandlerInput) 
 
 	schema, found := input.Schema.Schemas[connectionName]
 	if !found {
-		return fmt.Errorf("Could not find connection called '%s'", connectionName)
+		return fmt.Errorf("could not find connection called '%s'", connectionName)
 	}
 	tableSchema, found := schema[tableName]
 	if !found {
-		return fmt.Errorf("Could not find table '%s' in '%s'", tableName, connectionName)
+		return fmt.Errorf("could not find table '%s' in '%s'", tableName, connectionName)
 	}
 
 	for _, columnSchema := range tableSchema.Columns {
