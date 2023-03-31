@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS connection_state (
 
 ## Service startup
 
-- create if does not exist
+- create table if does not exist
 - if it does exist, set all rows status to pending
 ```sql
 UPDATE connection_state SET status = 'pending'
@@ -67,3 +67,30 @@ UPDATE connection_state SET status = 'pending'
 - After client acquisistion:
   - start notification listener
   - read connection state table. If any connections are either `pending` or `updating`, wait for notifications to indicate the update is complete
+
+
+# ConnectionData
+```go
+type ConnectionData struct {
+	StructVersion int64 `json:"struct_version,omitempty"`
+	// the fully qualified name of the plugin
+	Plugin string `json:"plugin,omitempty"`
+	// the underlying connection object
+	Connection *modconfig.Connection `json:"connection,omitempty"`
+	// schema mode - static or dynamic
+	SchemaMode string `json:"schema_mode,omitempty"`
+	// the hash of the connection schema
+	SchemaHash string `json:"schema_hash,omitempty"`
+	// the creation time of the plugin file (only used for local plugins)
+	ModTime time.Time `json:"mod_time"`
+	// loaded is false if the plugin failed to load
+	Loaded bool `json:"loaded"`
+	// error to be populated if we failed to start/load plugin
+	Error string `json:"error,omitempty"`
+}
+```
+
+Currently stored in connections.json, and updated in refreshConnections
+
+## SchemaHash
+Schema has is 

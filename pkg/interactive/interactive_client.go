@@ -710,7 +710,7 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 		log.Printf("[INFO] Error loading foreign schema names: %v", err)
 	}
 	// now reload state
-	connectionMap, _, err := steampipeconfig.GetConnectionState(c.client().ForeignSchemaNames())
+	connectionMap, err := steampipeconfig.LoadConnectionStateFile()
 	if err != nil {
 		log.Printf("[INFO] Error loading connection state: %v", err)
 		return

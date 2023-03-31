@@ -32,18 +32,13 @@ func setupInternal(ctx context.Context) error {
 
 	queries := []string{
 		"lock table pg_namespace;",
-		fmt.Sprintf(`create schema if not exists %s;`, constants.InternalSchema),
-		fmt.Sprintf(`grant usage on schema %s to %s;`, constants.InternalSchema, constants.DatabaseUsersRole),
+		fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS %s;`, constants.InternalSchema),
+		fmt.Sprintf(`GRANT USAGE ON SCHEMA %s TO %s;`, constants.InternalSchema, constants.DatabaseUsersRole),
 		// create connection state table
-		fmt.Sprintf(`create table if not exists %s.connection_state (
-    			name text primary key,
-    			status text,
-    			details text,
-    			comments_set bool default false,
-    			last_change timestamptz);`, constants.InternalSchema),
+		getConnectionStateTableCreateSql(),
 		// set all existing connections to pending
-		fmt.Sprintf(`update %s.%s set status = '%s'`, constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStatePending),
-		fmt.Sprintf(`grant select on table %s.%s to %s;`, constants.InternalSchema, constants.ConnectionStateTable, constants.DatabaseUsersRole),
+		fmt.Sprintf(`UPDATE %s.%s SET STATE = '%s'`, constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStatePending),
+		fmt.Sprintf(`GRANT SELECT ON TABLE %s.%s to %s;`, constants.InternalSchema, constants.ConnectionStateTable, constants.DatabaseUsersRole),
 	}
 	queries = append(queries, getFunctionAddStrings(constants.Functions)...)
 	if _, err := executeSqlAsRoot(ctx, queries...); err != nil {
@@ -53,8 +48,24 @@ func setupInternal(ctx context.Context) error {
 	return nil
 }
 
+func getConnectionStateTableCreateSql() string {
+	return fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
+    			name TEXT PRIMARY KEY,
+-- 			    connection_type TEXT,
+-- 			    child_connections TEXT[],
+    			state TEXT NOT NULL,
+    			error TEXT NULL,
+    			plugin TEXT NOT NULL,
+    			schema_mode TEXT NOT NULL,
+    			schema_hash TEXT NULL,
+    			comments_set BOOL DEFAULT FALSE,
+    			connection_mod_time TIMESTAMPTZ NOT NULL,
+    			plugin_mod_time TIMESTAMPTZ NOT NULL
+    			);`, constants.InternalSchema, constants.ConnectionStateTable)
+}
+
 func getFunctionAddStrings(functions []schema.SQLFunc) []string {
-	addStrings := []string{}
+	var addStrings []string
 	for _, function := range functions {
 		addStrings = append(addStrings, getFunctionAddString(function))
 	}
@@ -77,7 +88,7 @@ func getFunctionAddString(function schema.SQLFunc) string {
 
 	return strings.TrimSpace(fmt.Sprintf(
 		`
-;create or replace function %s.%s (%s) returns %s language %s as
+;CREATE OR REPLACE FUNCTION %s.%s (%s) RETURNS %s LANGUAGE %s AS
 $$
 %s
 $$;

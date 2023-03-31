@@ -1,38 +1,63 @@
 package steampipeconfig
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"log"
-	"os"
-
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
+	"log"
+	"os"
 )
 
-// GetConnectionState loads the connection state file, and remove any connections which do not exist in the db
-func GetConnectionState(schemaNames []string) (state ConnectionDataMap, stateModified bool, err error) {
-	utils.LogTime("steampipeconfig.GetConnectionState start")
-	defer utils.LogTime("steampipeconfig.GetConnectionState end")
+func LoadConnectionState(ctx context.Context, pool *pgxpool.Pool) (state ConnectionDataMap, err error) {
+	query := fmt.Sprintf(`SELECT name,
+		state,
+		error,	
+		plugin,
+		schema_mode,
+		schema_hash,
+		plugin_mod_time
+	FROM  %s.%s `, constants.InternalSchema, constants.ConnectionStateTable)
 
-	// load the connection state file and filter out any connections which are not in the list of schemas
-	connectionState, err := loadConnectionStateFile()
+	rows, err := pool.Query(ctx, query)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
-	// only prune connection state if schemaNames is passed
-	if schemaNames != nil {
-		return pruneConnectionState(connectionState, schemaNames)
+
+	var res = make(ConnectionDataMap)
+
+	connectionDataList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionData])
+	if err != nil {
+		return nil, err
 	}
-	return connectionState, false, nil
+
+	for _, c := range connectionDataList {
+		// get connection config for this connection
+		connection, _ := GlobalConfig.Connections[c.ConnectionName]
+		// this will not be there for a deletion
+
+		c.StructVersion = ConnectionDataStructVersion
+		c.Connection = connection
+		res[c.ConnectionName] = &c
+	}
+
+	return res, nil
 }
 
-// load and parse the connection config
-func loadConnectionStateFile() (ConnectionDataMap, error) {
+// LoadConnectionStateFile loads the connection state file
+func LoadConnectionStateFile() (state ConnectionDataMap, err error) {
+	utils.LogTime("steampipeconfig.LoadConnectionStateFile start")
+	defer utils.LogTime("steampipeconfig.LoadConnectionStateFile end")
+
 	var connectionState ConnectionDataMap
 	connectionStatePath := filepaths.ConnectionStatePath()
 
+	// if file does not exist, return empty struct
 	if !filehelpers.FileExists(connectionStatePath) {
 		return connectionState, nil
 	}
@@ -59,18 +84,4 @@ func loadConnectionStateFile() (ConnectionDataMap, error) {
 		}
 	}
 	return connectionState, nil
-}
-
-// update connection map to remove any connections which do not exist in the list of given schemas
-// if this function removes connections, set stateModified to true
-func pruneConnectionState(connectionState ConnectionDataMap, schemaNames []string) (prunedState ConnectionDataMap, stateModified bool, err error) {
-	prunedState = make(ConnectionDataMap)
-	for _, connectionName := range schemaNames {
-		if connection, ok := connectionState[connectionName]; ok {
-			prunedState[connectionName] = connection
-		}
-
-	}
-	stateModified = len(connectionState) != len(prunedState)
-	return
 }

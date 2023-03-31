@@ -136,14 +136,14 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	i.Client = client
 
 	// load the connection state and cache it!
-	connectionMap, _, err := steampipeconfig.GetConnectionState(client.ForeignSchemaNames())
+	// (note if we are in process of refreshing connections this may be empty)
+	connectionMap, err := steampipeconfig.LoadConnectionStateFile()
 	if err != nil {
 		i.Result.Error = err
 		return
 	}
 
 	i.ConnectionMap = connectionMap
-
 }
 
 func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {

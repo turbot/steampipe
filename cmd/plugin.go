@@ -273,19 +273,19 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 		bar.Set(len(pluginInstallSteps))
 		// let the bar append itself with "Already Installed"
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			return helpers.Resize(constants.PluginAlreadyInstalled, 20)
+			return helpers.Resize(constants.InstallMessagePluginAlreadyInstalled, 20)
 		})
 		report = &display.PluginInstallReport{
 			Plugin:         pluginName,
 			Skipped:        true,
-			SkipReason:     constants.PluginAlreadyInstalled,
+			SkipReason:     constants.InstallMessagePluginAlreadyInstalled,
 			IsUpdateReport: false,
 		}
 	} else {
 		// let the bar append itself with the current installation step
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			if report != nil && report.SkipReason == constants.PluginNotFound {
-				return helpers.Resize(constants.PluginNotFound, 20)
+			if report != nil && report.SkipReason == constants.InstallMessagePluginNotFound {
+				return helpers.Resize(constants.InstallMessagePluginNotFound, 20)
 			} else {
 				if b.Current() == 0 {
 					// no install step to display yet
@@ -376,7 +376,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 				updateResults = append(updateResults, &display.PluginInstallReport{
 					Skipped:        true,
 					Plugin:         p,
-					SkipReason:     constants.PluginNotInstalled,
+					SkipReason:     constants.InstallMessagePluginNotInstalled,
 					IsUpdateReport: true,
 				})
 			}
@@ -499,7 +499,7 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		_, name, stream := ociinstaller.NewSteampipeImageRef(pluginName).GetOrgNameAndStream()
 		if isPluginNotFoundErr(err) {
 			exitCode = constants.ExitCodePluginNotFound
-			msg = constants.PluginNotFound
+			msg = constants.InstallMessagePluginNotFound
 		} else {
 			msg = err.Error()
 		}
@@ -589,7 +589,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), "plugin failed to start"})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.ConnectionErrorPluginFailedToStart})
 			conns = []string{}
 		}
 		// missing plugins
@@ -597,7 +597,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), "plugin not installed"})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.InstallMessagePluginNotInstalled})
 			conns = []string{}
 		}
 		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
@@ -706,24 +706,28 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 	defer db_local.ShutdownService(ctx, constants.InvokerPlugin)
 
 	// load the connection state and cache it!
-	// passing nil so that we dont prune connections(connectionMap is now the connection state
-	// containing all connections)
-	connectionMap, _, err := steampipeconfig.GetConnectionState(nil)
+	connectionStateMap, err := steampipeconfig.LoadConnectionStateFile()
 	if err != nil {
 		res.Error = err
 		return nil, nil, nil, res
 	}
 
+	// TODO KAI if state file empty but conneciton config is not, we need to call refresh connections
+	// (as service is not started by default for plugin commands)
+	//if len(connectionStateMap)==0 && len(steampipeconfig.GlobalConfig.Connections) != 0{
+	//
+	//}
+
 	// create the map of failed/missing plugins
 	failedPluginMap = map[string][]*modconfig.Connection{}
 	missingPluginMap = map[string][]*modconfig.Connection{}
-	for _, j := range connectionMap {
-		if !j.Loaded && j.Error == "plugin failed to start" {
+	for _, j := range connectionStateMap {
+		if j.ConnectionState == constants.ConnectionStateError && j.Error() == constants.ConnectionErrorPluginFailedToStart {
 			if _, ok := failedPluginMap[j.Plugin]; !ok {
 				failedPluginMap[j.Plugin] = []*modconfig.Connection{}
 			}
 			failedPluginMap[j.Plugin] = append(failedPluginMap[j.Plugin], j.Connection)
-		} else if !j.Loaded && j.Error == "plugin not installed" {
+		} else if j.ConnectionState == constants.ConnectionStateError && j.Error() == constants.ConnectionErrorPluginNotInstalled {
 			if _, ok := missingPluginMap[j.Plugin]; !ok {
 				missingPluginMap[j.Plugin] = []*modconfig.Connection{}
 			}
@@ -733,7 +737,7 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 
 	// create the map of available/loaded plugins
 	pluginConnectionMap = make(map[string][]*modconfig.Connection)
-	for _, v := range connectionMap {
+	for _, v := range connectionStateMap {
 		_, found := pluginConnectionMap[v.Plugin]
 		if !found {
 			pluginConnectionMap[v.Plugin] = []*modconfig.Connection{}

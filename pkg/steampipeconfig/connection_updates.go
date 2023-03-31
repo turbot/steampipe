@@ -3,6 +3,7 @@ package steampipeconfig
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"golang.org/x/exp/maps"
 	"log"
@@ -23,15 +24,16 @@ type ConnectionUpdates struct {
 	// the connections which will exist after the update
 	RequiredConnectionState ConnectionDataMap
 	// connection plugins required to perform the updates
-	ConnectionPlugins       map[string]*ConnectionPlugin
-	ConnectionStateModified bool
-	currentConnectionState  ConnectionDataMap
+	ConnectionPlugins      map[string]*ConnectionPlugin
+	CurrentConnectionState ConnectionDataMap
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
-func NewConnectionUpdates(ctx context.Context, schemaNames []string, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
+func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
 	utils.LogTime("NewConnectionUpdates start")
 	defer utils.LogTime("NewConnectionUpdates end")
+
+	log.Printf("[TRACE] NewConnectionUpdates")
 
 	res := &RefreshConnectionResult{}
 	statushooks.SetStatus(ctx, "Loading connection state")
@@ -40,9 +42,11 @@ func NewConnectionUpdates(ctx context.Context, schemaNames []string, forceUpdate
 	// this will be updated below on the call to updateRequiredStateWithSchemaProperties
 	requiredConnectionState, missingPlugins, err := NewConnectionDataMap(GlobalConfig.Connections)
 	if err != nil {
+		log.Printf("[WARN] failed to build required connection state: %s", err.Error())
 		res.Error = err
 		return nil, res
 	}
+	log.Printf("[TRACE]  built required connection state")
 
 	updates := &ConnectionUpdates{
 		Update:                  ConnectionDataMap{},
@@ -53,13 +57,14 @@ func NewConnectionUpdates(ctx context.Context, schemaNames []string, forceUpdate
 
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
-	currentConnectionState, stateModified, err := GetConnectionState(schemaNames)
+	currentConnectionState, err := LoadConnectionState(ctx, pool)
 	if err != nil {
+		log.Printf("[WARN] failed to load connection state: %s", err.Error())
 		res.Error = err
 		return nil, res
 	}
-	updates.currentConnectionState = currentConnectionState
-	updates.ConnectionStateModified = stateModified
+	log.Printf("[TRACE] loaded connection state")
+	updates.CurrentConnectionState = currentConnectionState
 
 	statushooks.SetStatus(ctx, "Loading dynamic schema hashes")
 
@@ -67,6 +72,8 @@ func NewConnectionUpdates(ctx context.Context, schemaNames []string, forceUpdate
 	// instantiate connection plugins for all connections with dynamic schema - this will retrieve their current schema
 	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, err := getSchemaHashesForDynamicSchemas(requiredConnectionState, currentConnectionState)
 	if err != nil {
+		log.Printf("[WARN] getSchemaHashesForDynamicSchemas failed: %s", err.Error())
+
 		res.Error = err
 		return nil, res
 	}
@@ -81,7 +88,7 @@ func NewConnectionUpdates(ctx context.Context, schemaNames []string, forceUpdate
 		if helpers.StringSliceContains(forceUpdateConnectionNames, name) ||
 			!schemaExistsInState ||
 			!currentConnectionData.Equals(requiredConnectionData) {
-			log.Printf("[TRACE] connection %s is out of date or missing\n", name)
+			log.Printf("[TRACE] connection %s is out of date or missing", name)
 			updates.Update[name] = requiredConnectionData
 		}
 	}
@@ -123,16 +130,16 @@ func NewConnectionUpdates(ctx context.Context, schemaNames []string, forceUpdate
 }
 
 // update requiredConnections - set the schema hash and schema mode for all elements of RequiredConnectionState
-// default to the existing state, but if anm update is required, get the updated value
-func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMap map[string]string) {
+// default to the existing state, but if an update is required, get the updated value
+func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(dynamicSchemaHashMap map[string]string) {
 	// we only need to update connections which are being updated
 	for k, v := range u.RequiredConnectionState {
-		if currentConectionState, ok := u.currentConnectionState[k]; ok {
+		if currentConectionState, ok := u.CurrentConnectionState[k]; ok {
 			v.SchemaHash = currentConectionState.SchemaHash
 			v.SchemaMode = currentConectionState.SchemaMode
 		}
 		// if the schemaHashMap contains this connection, use that value
-		if schemaHash, ok := schemaHashMap[k]; ok {
+		if schemaHash, ok := dynamicSchemaHashMap[k]; ok {
 			v.SchemaHash = schemaHash
 		}
 		// have we loaded a connection plugin for this connection
@@ -140,7 +147,7 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(schemaHashMa
 		if connectionPlugin, ok := u.ConnectionPlugins[k]; ok {
 			v.SchemaMode = connectionPlugin.ConnectionMap[k].Schema.Mode
 			// if the schema mode is dynamic and the hash is not set yet, calculate the value from the connection plugin schema
-			// this will happen the first time we load a plugin - as schemaHashMap will NOT include the has
+			// this will happen the first time we load a plugin - as schemaHashMap will NOT include the hash
 			// because we do not know yet that the plugin is dynamic
 			if v.SchemaMode == plugin.SchemaModeDynamic && v.SchemaHash == "" {
 				v.SchemaHash = pluginSchemaHash(connectionPlugin.ConnectionMap[k].Schema)
