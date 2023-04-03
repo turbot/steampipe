@@ -88,22 +88,16 @@ func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext) er
 		}
 
 		for _, requiredModVersion := range mod.Require.Mods {
-			// if we have a locked version, update the required version to reflect this
-			lockedVersion, err := parseCtx.WorkspaceLock.GetLockedModVersionConstraint(requiredModVersion, mod)
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-			if lockedVersion != nil {
-				requiredModVersion = lockedVersion
-			}
 
 			// have we already loaded a mod which satisfied this
-			if loadedMod, ok := parseCtx.LoadedDependencyMods[requiredModVersion.Name]; ok {
-				if requiredModVersion.Constraint.Check(loadedMod.Version) {
-					continue
-				}
+			loadedMod, err := parseCtx.GetLoadedDependencyMod(requiredModVersion, mod)
+			if err != nil {
+				return err
 			}
+			if loadedMod != nil {
+				continue
+			}
+
 			if err := loadModDependency(requiredModVersion, parseCtx); err != nil {
 				errors = append(errors, err)
 			}
@@ -158,9 +152,9 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	mod.ModDependencyPath = modDependency.Name
 
 	// update loaded dependency mods
-	parseCtx.LoadedDependencyMods[modDependency.Name] = mod
+	parseCtx.AddLoadedDependencyMod(mod)
 	if parseCtx.ParentParseCtx != nil {
-		parseCtx.ParentParseCtx.LoadedDependencyMods[modDependency.Name] = mod
+		parseCtx.ParentParseCtx.AddLoadedDependencyMod(mod)
 	}
 
 	return nil

@@ -8,6 +8,7 @@ import (
 	"github.com/Masterminds/semver"
 )
 
+// TODO KAI update this back to semver
 func ModVersionFullName(name string, version *semver.Version) string {
 	if version == nil {
 		return name

@@ -23,7 +23,7 @@ func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContex
 		return nil, errAndWarnings.GetError()
 	}
 
-	variableMap := modconfig.NewModVariableMap(mod, parseCtx.LoadedDependencyMods)
+	variableMap := modconfig.NewModVariableMap(mod, parseCtx.GetTopLevelDependencyMods())
 
 	return variableMap, nil
 }
@@ -75,7 +75,7 @@ func getInputVariables(variableMap map[string]*modconfig.Variable, validate bool
 		return nil, err
 	}
 
-	// build map of depedency mod variable values declared in the mod 'Require' section
+	// build map of dependency mod variable values declared in the mod 'Require' section
 	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(mod, parseCtx)
 	if err != nil {
 		return nil, err
