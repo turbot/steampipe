@@ -265,14 +265,18 @@ const CheckPanelSeverity = ({ severity_summary }: CheckPanelSeverityProps) => {
         <CheckPanelSeverityBadge
           label="Critical"
           count={critical}
-          title={`${critical.toLocaleString()} critical severity results`}
+          title={`${critical.toLocaleString()} critical severity ${
+            critical === 1 ? "result" : "results"
+          }`}
         />
       )}
       {high !== undefined && (
         <CheckPanelSeverityBadge
           label="High"
           count={high}
-          title={`${high.toLocaleString()} high severity results`}
+          title={`${high.toLocaleString()} high severity ${
+            high === 1 ? "result" : "results"
+          }`}
         />
       )}
     </>
