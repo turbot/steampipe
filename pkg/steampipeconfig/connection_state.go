@@ -37,13 +37,15 @@ func LoadConnectionState(ctx context.Context, pool *pgxpool.Pool) (state Connect
 	}
 
 	for _, c := range connectionDataList {
+		// copy into loop var
+		connectionData := c
 		// get connection config for this connection
-		connection, _ := GlobalConfig.Connections[c.ConnectionName]
+		connection, _ := GlobalConfig.Connections[connectionData.ConnectionName]
 		// this will not be there for a deletion
 
-		c.StructVersion = ConnectionDataStructVersion
-		c.Connection = connection
-		res[c.ConnectionName] = &c
+		connectionData.StructVersion = ConnectionDataStructVersion
+		connectionData.Connection = connection
+		res[c.ConnectionName] = &connectionData
 	}
 
 	return res, nil

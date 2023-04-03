@@ -1,10 +1,12 @@
 package steampipeconfig
 
 import (
-	typehelpers "github.com/turbot/go-kit/types"
+	"log"
 	"time"
 
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -42,11 +44,12 @@ type ConnectionData struct {
 
 func NewConnectionData(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionData {
 	return &ConnectionData{
-		StructVersion: ConnectionDataStructVersion,
-		Plugin:        remoteSchema,
-		Connection:    connection,
-		PluginModTime: creationTime,
-		//Loaded:        true,
+		StructVersion:   ConnectionDataStructVersion,
+		Plugin:          remoteSchema,
+		ConnectionName:  connection.Name,
+		Connection:      connection,
+		PluginModTime:   creationTime,
+		ConnectionState: constants.ConnectionStateReady,
 	}
 }
 
@@ -63,14 +66,39 @@ func (d *ConnectionData) Equals(other *ConnectionData) bool {
 		return false
 	}
 
-	return d.Plugin == other.Plugin &&
-		d.ConnectionState == other.ConnectionState &&
-		d.Error() == other.Error() &&
-		d.SchemaMode == other.SchemaMode &&
-		d.Connection.Equals(other.Connection) &&
-		d.PluginModTime.Equal(other.PluginModTime) &&
-		//d.ConnectionModTime.Equal(other.ConnectionModTime) &&
-		d.Connection.Equals(other.Connection)
+	// TODO KAI remove debug version
+
+	if d.Plugin != other.Plugin {
+		return false
+	}
+	if d.ConnectionState != other.ConnectionState {
+		return false
+	}
+	if d.Error() != other.Error() {
+		return false
+	}
+	if !d.Connection.Equals(other.Connection) {
+		return false
+	}
+	// allow for sub ms rounding errors when converting from PG
+	if d.PluginModTime.Sub(other.PluginModTime).Abs() > 1*time.Millisecond {
+		a := d.PluginModTime.Sub(other.PluginModTime)
+		log.Printf("[WARN] %v", a)
+		return false
+	}
+	//d.ConnectionModTime.Equal(other.ConnectionModTime) return false
+	if !d.Connection.Equals(other.Connection) {
+		return false
+	}
+	//}	return d.Plugin == other.Plugin &&
+	//		d.ConnectionState == other.ConnectionState &&
+	//		d.Error() == other.Error() &&
+	//		d.SchemaMode == other.SchemaMode &&
+	//		d.Connection.Equals(other.Connection) &&
+	//		d.PluginModTime.Equal(other.PluginModTime) &&
+	//		//d.ConnectionModTime.Equal(other.ConnectionModTime) &&
+	//		d.Connection.Equals(other.Connection)
+	return true
 }
 
 func (d *ConnectionData) CanCloneSchema() bool {

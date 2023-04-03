@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"golang.org/x/exp/maps"
 	"log"
@@ -22,7 +23,7 @@ type ConnectionUpdates struct {
 	Delete         []string
 	MissingPlugins map[string][]modconfig.Connection
 	// the connections which will exist after the update
-	RequiredConnectionState ConnectionDataMap
+	FinalConnectionState ConnectionDataMap
 	// connection plugins required to perform the updates
 	ConnectionPlugins      map[string]*ConnectionPlugin
 	CurrentConnectionState ConnectionDataMap
@@ -49,9 +50,9 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, foreignSchema
 	log.Printf("[TRACE]  built required connection state")
 
 	updates := &ConnectionUpdates{
-		Update:                  ConnectionDataMap{},
-		MissingPlugins:          missingPlugins,
-		RequiredConnectionState: requiredConnectionState,
+		Update:               ConnectionDataMap{},
+		MissingPlugins:       missingPlugins,
+		FinalConnectionState: requiredConnectionState,
 	}
 
 	// load the connection state file and filter out any connections which are not in the list of schemas
@@ -139,11 +140,11 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, foreignSchema
 	return updates, res
 }
 
-// update requiredConnections - set the schema hash and schema mode for all elements of RequiredConnectionState
+// update requiredConnections - set the schema hash and schema mode for all elements of FinalConnectionState
 // default to the existing state, but if an update is required, get the updated value
 func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(dynamicSchemaHashMap map[string]string) {
 	// we only need to update connections which are being updated
-	for k, v := range u.RequiredConnectionState {
+	for k, v := range u.FinalConnectionState {
 		if currentConectionState, ok := u.CurrentConnectionState[k]; ok {
 			v.SchemaHash = currentConectionState.SchemaHash
 			v.SchemaMode = currentConectionState.SchemaMode
@@ -177,6 +178,11 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	connectionsToCreate := u.getConnectionsToCreate(alreadyCreatedConnectionPlugins)
 	// now create them
 	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate)
+	// if any plugins failed to load, set those connections to error
+	for c := range res.FailedConnections {
+		u.setError(c, constants.ConnectionErrorPluginFailedToStart)
+	}
+
 	if res.Error != nil {
 		return res
 	}
@@ -227,7 +233,7 @@ func (u *ConnectionUpdates) String() string {
 	update := utils.SortedMapKeys(u.Update)
 	delete := u.Delete
 	sort.Strings(delete)
-	stateConnections := utils.SortedMapKeys(u.RequiredConnectionState)
+	stateConnections := utils.SortedMapKeys(u.FinalConnectionState)
 	if len(update) > 0 {
 		op.WriteString(fmt.Sprintf("Update: %s\n", strings.Join(update, ",")))
 	}
@@ -246,6 +252,17 @@ func (u *ConnectionUpdates) AsNotification() *SchemaUpdateNotification {
 	return NewSchemaUpdateNotification(
 		maps.Keys(u.Update),
 		u.Delete)
+}
+
+func (u *ConnectionUpdates) setError(connectionName string, error string) {
+	failedConnection, ok := u.FinalConnectionState[connectionName]
+	if !ok {
+		return
+	}
+	failedConnection.ConnectionState = constants.ConnectionStateError
+	failedConnection.SetError(error)
+	// remove from updating (in case it is there)
+	delete(u.Update, connectionName)
 }
 
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, error) {

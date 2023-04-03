@@ -124,9 +124,9 @@ func refreshConnections(ctx context.Context, foreignSchemaNames []string, forceU
 		if res.Error == nil {
 			log.Printf("[WARN] refreshConnections saving connections state file")
 			// now serialise the connection state
-			//if res.Error == nil {
-			//	serialiseConnectionState(res, connectionUpdates)
-			//}
+			if res.Error == nil {
+				serialiseConnectionState(res, connectionUpdates)
+			}
 		}
 	}()
 
@@ -332,6 +332,7 @@ func executeDeleteQueries(ctx context.Context, pool *pgxpool.Pool, deletions []s
 
 	return error_helpers.CombineErrors(errors...)
 }
+
 func executeDeleteQuery(ctx context.Context, pool *pgxpool.Pool, tableUpdater *connectionStateTableUpdater, connectionName string) (err error) {
 	sql := getDeleteConnectionQuery(connectionName)
 	// create a transaction

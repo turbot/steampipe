@@ -35,12 +35,12 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 
 	var queries []db_common.QueryWithArgs
 
-	for name, connectionData := range u.updates.RequiredConnectionState {
+	for name, connectionData := range u.updates.FinalConnectionState {
 		// set the connection data state based on whether this connection is being created or deleted
 		if _, updatingConnection := u.updates.Update[name]; updatingConnection {
 			connectionData.ConnectionState = constants.ConnectionStateUpdating
 		} else if _, deletingConnection := u.updates.Update[name]; deletingConnection {
-			connectionData.ConnectionState = constants.ConnectionStateUpdating
+			connectionData.ConnectionState = constants.ConnectionStateDeleting
 		}
 		queries = append(queries, getStartUpdateConnectionStateSql(connectionData))
 	}
@@ -52,7 +52,8 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 }
 
 func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, tx pgx.Tx, name string) error {
-	q := getUpdateConnectionStateSql(name, constants.ConnectionStateReady)
+	connection := u.updates.FinalConnectionState[name]
+	q := getConnectionReadySql(connection)
 	_, err := tx.Exec(ctx, q.Query, q.Args...)
 	if err != nil {
 		return err
@@ -128,7 +129,7 @@ func getStartUpdateConnectionStateSql(c *steampipeconfig.ConnectionData) db_comm
 		comments_set,
 		connection_mod_time,
 		plugin_mod_time)
-VALUES($1,$2,$3,$4,$5,$6,$7,now(),now()) 
+VALUES($1,$2,$3,$4,$5,$6,$7,now(),$8) 
 ON CONFLICT (name) 
 DO 
    UPDATE SET 
@@ -139,24 +140,25 @@ DO
 			  schema_hash = $6,
 			  comments_set = $7,
 			  connection_mod_time = now(),
-			  plugin_mod_time = now()
+			  plugin_mod_time = $8
 `, constants.InternalSchema, constants.ConnectionStateTable)
-	args := []any{c.Connection.Name, c.ConnectionState, c.ConnectionError, c.Plugin, c.SchemaMode, c.SchemaHash, commentsSet} /*c.PluginModTime*/ // TO DO sort out formatting}
+	args := []any{c.Connection.Name, c.ConnectionState, c.ConnectionError, c.Plugin, c.SchemaMode, c.SchemaHash, commentsSet, c.PluginModTime}
 	return db_common.QueryWithArgs{query, args}
 }
 
 // note: set comments to false as this is called from start and updateConnectionState - both before comment completion
-func getUpdateConnectionStateSql(name, state string) db_common.QueryWithArgs {
+func getConnectionReadySql(connection *steampipeconfig.ConnectionData) db_common.QueryWithArgs {
 	// upsert
 	query := fmt.Sprintf(`UPDATE %s.%s 
     SET	state = $1, 
-	 	connection_mod_time = now()
+	 	connection_mod_time = now(),
+	 	plugin_mod_time = $2
     WHERE 
-        name = $2
+        name = $3
 `,
 		constants.InternalSchema, constants.ConnectionStateTable,
 	)
-	args := []any{state, name}
+	args := []any{constants.ConnectionStateReady, connection.PluginModTime, connection.ConnectionName}
 	return db_common.QueryWithArgs{query, args}
 }
 
