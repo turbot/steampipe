@@ -14,8 +14,8 @@ func deleteConnectionState() {
 
 func serialiseConnectionState(res *steampipeconfig.RefreshConnectionResult, connectionUpdates *steampipeconfig.ConnectionUpdates) {
 	// now serialise the connection state
-	connectionState := make(steampipeconfig.ConnectionDataMap, len(connectionUpdates.RequiredConnectionState))
-	for k, v := range connectionUpdates.RequiredConnectionState {
+	connectionState := make(steampipeconfig.ConnectionDataMap, len(connectionUpdates.FinalConnectionState))
+	for k, v := range connectionUpdates.FinalConnectionState {
 		connectionState[k] = v
 	}
 	// NOTE: add any connection which failed
