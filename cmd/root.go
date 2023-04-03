@@ -58,12 +58,6 @@ var rootCmd = &cobra.Command{
 		utils.LogTime("cmd.root.PersistentPreRun start")
 		defer utils.LogTime("cmd.root.PersistentPreRun end")
 
-		defer func() {
-			if r := recover(); r != nil {
-				error_helpers.ShowError(cmd.Context(), helpers.ToError(r))
-			}
-		}()
-
 		handleArgDeprecations()
 
 		viper.Set(constants.ConfigKeyActiveCommand, cmd)
