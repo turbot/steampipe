@@ -375,15 +375,15 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 	if modDef == nil {
 		return nil, fmt.Errorf("'%s' has no mod definition file", dependency.FullName())
 	}
-	// hack set mod dependency path
-	if err := i.setModDependencyPath(modDef, i.tmpPath); err != nil {
-		return nil, err
-	}
 
 	// so we have successfully installed this dependency to the temp location, now copy to the mod location
 	if !i.dryRun {
 		destPath := i.getDependencyDestPath(fullName)
 		if err := i.copyModFromTempToModsFolder(tempDestPath, destPath); err != nil {
+			return nil, err
+		}
+		// hack set mod dependency path
+		if err := i.setModDependencyPath(modDef, destPath); err != nil {
 			return nil, err
 		}
 	}
