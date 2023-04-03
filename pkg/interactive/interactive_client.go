@@ -520,7 +520,7 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 	// validation passed, now we will run
 	return metaquery.Handle(ctx, &metaquery.HandlerInput{
 		Query:       query,
-		Executor:    client,
+		Client:      client,
 		Schema:      c.schemaMetadata,
 		Connections: c.initData.ConnectionMap,
 		Prompt:      c.interactivePrompt,

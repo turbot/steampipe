@@ -20,6 +20,7 @@ const (
 	CmdSearchPath       = ".search_path"        // Set or show search-path
 	CmdSearchPathPrefix = ".search_path_prefix" // set search path prefix
 	CmdCache            = ".cache"              // cache control
+	CmdCacheTtl         = ".cache_ttl"          // set cache ttl
 	CmdAutoComplete     = ".autocomplete"       // enable or disable auto complete
 )
 

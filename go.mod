@@ -46,7 +46,7 @@ require (
 	github.com/stevenle/topsort v0.0.0-20130922064739-8130c1d7596b
 	github.com/turbot/go-kit v0.6.0-alpha.1
 	github.com/turbot/steampipe-cloud-sdk-go v0.5.0
-	github.com/turbot/steampipe-plugin-sdk/v5 v5.3.0-rc.0
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.4.0-rc.1
 	github.com/xlab/treeprint v1.2.0
 	github.com/zclconf/go-cty v1.13.1
 	github.com/zclconf/go-cty-yaml v1.0.3
@@ -232,7 +232,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
-	golang.org/x/mod v0.8.0 // indirect
+	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	rsc.io/letsencrypt v0.0.3 // indirect
 )
