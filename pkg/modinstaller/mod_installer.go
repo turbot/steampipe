@@ -20,18 +20,23 @@ import (
 )
 
 type ModInstaller struct {
+	installData  *InstallData
 	workspaceMod *modconfig.Mod
-	modsPath     string
-	// temp location used to install dependencies
-	tmpPath       string
-	workspacePath string
+	mods         versionmap.VersionConstraintMap
 
-	installData *InstallData
+	// the final resting place of all dependency mods
+	modsPath string
+	// temp location used to install dependencies
+	tmpPath string
+	// a shadow directory for installing mods
+	// this is necessary to make mod installation transactional
+	shadowDirPath string
+
+	workspacePath string
 
 	// what command is being run
 	command string
 	// are dependencies being added to the workspace
-	mods   versionmap.VersionConstraintMap
 	dryRun bool
 }
 
@@ -78,6 +83,7 @@ func (i *ModInstaller) setModsPath() error {
 	}
 	i.tmpPath = dir
 	i.modsPath = filepaths.WorkspaceModPath(i.workspacePath)
+	i.shadowDirPath = filepaths.WorkspaceModShadowPath(i.workspacePath)
 	return nil
 }
 
@@ -187,22 +193,36 @@ func (i *ModInstaller) GetModList() string {
 	return i.installData.Lock.GetModList(i.workspaceMod.GetInstallCacheKey())
 }
 
-func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) error {
-	// clean up the temp location
-	defer os.RemoveAll(i.tmpPath)
+func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) (err error) {
+	defer func() {
+		if err == nil {
+			// everything went well
+			// replace the mods directory with the mods directory
+			os.RemoveAll(i.modsPath)
+			os.Rename(i.shadowDirPath, i.modsPath)
+		}
+		// remove any temporary directory
+		// TODO BINAEK :: now that we have a shadow directory,
+		// we shouldn't need this. try to remove this
+		// clean up the temp location
+		os.RemoveAll(i.tmpPath)
+
+		// force remove the shadow directory
+		os.RemoveAll(i.shadowDirPath)
+	}()
 
 	var errors []error
 	for _, requiredModVersion := range mods {
-		modToUse, err := i.getCurrentlyInstalledVersionToUse(requiredModVersion, parent, i.updating())
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
+		// modToUse, err := i.getCurrentlyInstalledVersionToUse(requiredModVersion, parent, i.updating())
+		// if err != nil {
+		// 	errors = append(errors, err)
+		// 	continue
+		// }
 
-		// if the mod is not installed or needs updating, pass shouldUpdate=true into installModDependencesRecursively
-		// this ensures that we update any dependencies which have updates available
-		shouldUpdate := modToUse == nil
-		if err := i.installModDependencesRecursively(requiredModVersion, modToUse, parent, shouldUpdate); err != nil {
+		// // if the mod is not installed or needs updating, pass shouldUpdate=true into installModDependencesRecursively
+		// // this ensures that we update any dependencies which have updates available
+		// shouldUpdate := modToUse == nil
+		if err := i.installModDependencesRecursively(requiredModVersion, nil, parent, true); err != nil {
 			errors = append(errors, err)
 		}
 	}
@@ -266,12 +286,12 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 	// now update the parent to dependency mod and install its child dependencies
 	parent = dependencyMod
 	for _, dep := range dependencyMod.Require.Mods {
-		childDependencyMod, err := i.getCurrentlyInstalledVersionToUse(dep, parent, shouldUpdate)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		if err := i.installModDependencesRecursively(dep, childDependencyMod, parent, shouldUpdate); err != nil {
+		// childDependencyMod, err := i.getCurrentlyInstalledVersionToUse(dep, parent, shouldUpdate)
+		// if err != nil {
+		// 	errors = append(errors, err)
+		// 	continue
+		// }
+		if err := i.installModDependencesRecursively(dep, nil, parent, shouldUpdate); err != nil {
 			errors = append(errors, err)
 			continue
 		}
@@ -378,7 +398,7 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 
 	// so we have successfully installed this dependency to the temp location, now copy to the mod location
 	if !i.dryRun {
-		destPath := i.getDependencyDestPath(fullName)
+		destPath := i.getDependencyShadowPath(fullName)
 		if err := i.copyModFromTempToModsFolder(tempDestPath, destPath); err != nil {
 			return nil, err
 		}
@@ -425,6 +445,11 @@ func (i *ModInstaller) getDependencyTmpPath(dependencyFullName string) string {
 // build the path of the temp location to copy this depednency to
 func (i *ModInstaller) getDependencyDestPath(dependencyFullName string) string {
 	return filepath.Join(i.modsPath, dependencyFullName)
+}
+
+// build the path of the temp location to copy this depednency to
+func (i *ModInstaller) getDependencyShadowPath(dependencyFullName string) string {
+	return filepath.Join(i.shadowDirPath, dependencyFullName)
 }
 
 func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionConstraint) (*modconfig.Mod, error) {

@@ -9,6 +9,7 @@ import (
 const (
 	WorkspaceDataDir        = ".steampipe"
 	WorkspaceModDir         = "mods"
+	WorkspaceModShadowDir   = "_mods_"
 	WorkspaceConfigFileName = "workspace.spc"
 	WorkspaceIgnoreFile     = ".steampipeignore"
 	ModFileName             = "mod.sp"
@@ -18,6 +19,10 @@ const (
 
 func WorkspaceModPath(workspacePath string) string {
 	return path.Join(workspacePath, WorkspaceDataDir, WorkspaceModDir)
+}
+
+func WorkspaceModShadowPath(workspacePath string) string {
+	return path.Join(workspacePath, WorkspaceDataDir, WorkspaceModShadowDir)
 }
 
 func WorkspaceLockPath(workspacePath string) string {
