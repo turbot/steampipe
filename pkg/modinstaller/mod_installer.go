@@ -222,7 +222,7 @@ func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, paren
 		// // if the mod is not installed or needs updating, pass shouldUpdate=true into installModDependencesRecursively
 		// // this ensures that we update any dependencies which have updates available
 		// shouldUpdate := modToUse == nil
-		if err := i.installModDependencesRecursively(requiredModVersion, nil, parent, true); err != nil {
+		if err := i.installModDependencesRecursively(requiredModVersion, parent); err != nil {
 			errors = append(errors, err)
 		}
 	}
@@ -246,7 +246,7 @@ func (i *ModInstaller) buildInstallError(errors []error) error {
 	return err
 }
 
-func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modconfig.ModVersionConstraint, dependencyMod *modconfig.Mod, parent *modconfig.Mod, shouldUpdate bool) error {
+func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod) error {
 	// get available versions for this mod
 	includePrerelease := requiredModVersion.Constraint.IsPrerelease()
 	availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name, includePrerelease)
@@ -255,29 +255,19 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 		return err
 	}
 
-	if dependencyMod == nil {
-		// so we ARE installing
+	// get a resolved mod ref that satisfies the version constraints
+	resolvedRef, err := i.getModRefSatisfyingConstraints(requiredModVersion, availableVersions)
+	if err != nil {
+		return err
+	}
 
-		// get a resolved mod ref that satisfies the version constraints
-		resolvedRef, err := i.getModRefSatisfyingConstraints(requiredModVersion, availableVersions)
-		if err != nil {
-			return err
-		}
-
-		// install the mod
-		dependencyMod, err = i.install(resolvedRef, parent)
-		if err != nil {
-			return err
-		}
-		if err = dependencyMod.ValidateSteampipeVersion(); err != nil {
-			return err
-		}
-	} else {
-		// so we found an existing mod which will satisfy this requirement
-
-		// update the install data
-		i.installData.addExisting(requiredModVersion.Name, dependencyMod, requiredModVersion.Constraint, parent)
-		log.Printf("[TRACE] not installing %s with version constraint %s as version %s is already installed", requiredModVersion.Name, requiredModVersion.Constraint.Original, dependencyMod.Version)
+	// install the mod
+	dependencyMod, err := i.install(resolvedRef, parent)
+	if err != nil {
+		return err
+	}
+	if err = dependencyMod.ValidateSteampipeVersion(); err != nil {
+		return err
 	}
 
 	// to get here we have the dependency mod - either we installed it or it was already installed
@@ -291,7 +281,7 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 		// 	errors = append(errors, err)
 		// 	continue
 		// }
-		if err := i.installModDependencesRecursively(dep, nil, parent, shouldUpdate); err != nil {
+		if err := i.installModDependencesRecursively(dep, parent); err != nil {
 			errors = append(errors, err)
 			continue
 		}
