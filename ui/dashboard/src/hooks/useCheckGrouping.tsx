@@ -86,7 +86,17 @@ const addBenchmarkTrunkNode = (
     const existingChildren =
       benchmarkChildrenLookup[currentNode?.name || "Other"];
     if (existingChildren) {
-      existingChildren.push(...newChildren);
+      // We only want to add children that are not already in the list,
+      // else we end up with duplicate nodes in the tree
+      for (const child of newChildren) {
+        if (
+          existingChildren &&
+          existingChildren.find((c) => c.name === child.name)
+        ) {
+          continue;
+        }
+        existingChildren.push(child);
+      }
     } else {
       benchmarkChildrenLookup[currentNode?.name || "Other"] = newChildren;
     }
