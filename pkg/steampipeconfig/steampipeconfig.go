@@ -101,11 +101,11 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *m
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
 		errorsAndWarnings.AddWarning(deprecationWarning("terminal options"))
 
-		// NOTE: do not load terminal options for check command
+		// NOTE: ignore terminal options if current command is not query
 		// this is a short term workaround to handle the clashing 'output' argument
 		// this will be refactored
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
-		if c.commandName == "check" {
+		if c.commandName != constants.CmdNameQuery {
 			break
 		}
 		if c.TerminalOptions == nil {
