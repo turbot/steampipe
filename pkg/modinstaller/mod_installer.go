@@ -213,15 +213,6 @@ func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, paren
 
 	var errors []error
 	for _, requiredModVersion := range mods {
-		// modToUse, err := i.getCurrentlyInstalledVersionToUse(requiredModVersion, parent, i.updating())
-		// if err != nil {
-		// 	errors = append(errors, err)
-		// 	continue
-		// }
-
-		// // if the mod is not installed or needs updating, pass shouldUpdate=true into installModDependencesRecursively
-		// // this ensures that we update any dependencies which have updates available
-		// shouldUpdate := modToUse == nil
 		if err := i.installModDependencesRecursively(requiredModVersion, parent); err != nil {
 			errors = append(errors, err)
 		}
@@ -276,11 +267,6 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 	// now update the parent to dependency mod and install its child dependencies
 	parent = dependencyMod
 	for _, dep := range dependencyMod.Require.Mods {
-		// childDependencyMod, err := i.getCurrentlyInstalledVersionToUse(dep, parent, shouldUpdate)
-		// if err != nil {
-		// 	errors = append(errors, err)
-		// 	continue
-		// }
 		if err := i.installModDependencesRecursively(dep, parent); err != nil {
 			errors = append(errors, err)
 			continue
@@ -288,62 +274,6 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 	}
 
 	return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("%d child %s failed to install", len(errors), utils.Pluralize("dependency", len(errors))), errors...)
-}
-
-func (i *ModInstaller) getCurrentlyInstalledVersionToUse(requiredModVersion *modconfig.ModVersionConstraint, parent *modconfig.Mod, forceUpdate bool) (*modconfig.Mod, error) {
-	// do we have an installed version of this mod matching the required mod constraint
-	installedVersion, err := i.installData.Lock.GetLockedModVersion(requiredModVersion, parent)
-	if err != nil {
-		return nil, err
-	}
-	if installedVersion == nil {
-		return nil, nil
-	}
-
-	// can we update this
-	canUpdate, err := i.canUpdateMod(installedVersion, requiredModVersion, forceUpdate)
-	if err != nil {
-		return nil, err
-
-	}
-	if canUpdate {
-		// return nil mod to indicate we should update
-		return nil, nil
-	}
-
-	// load the existing mod and return
-	return i.loadDependencyMod(installedVersion)
-}
-
-// determine if we should update this mod, and if so whether there is an update available
-func (i *ModInstaller) canUpdateMod(installedVersion *versionmap.ResolvedVersionConstraint, requiredModVersion *modconfig.ModVersionConstraint, forceUpdate bool) (bool, error) {
-	// so should we update?
-	// if forceUpdate is set or if the required version constraint is different to the locked version constraint, update
-	// TODO check * vs latest - maybe need a custom equals?
-	if forceUpdate || installedVersion.Constraint != requiredModVersion.Constraint.Original {
-		// get available versions for this mod
-		includePrerelease := requiredModVersion.Constraint.IsPrerelease()
-		availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name, includePrerelease)
-		if err != nil {
-			return false, err
-		}
-
-		return i.updateAvailable(requiredModVersion, installedVersion.Version, availableVersions)
-	}
-	return false, nil
-
-}
-
-// determine whether there is a newer mod version avoilable which satisfies the dependency version constraint
-func (i *ModInstaller) updateAvailable(requiredVersion *modconfig.ModVersionConstraint, currentVersion *semver.Version, availableVersions []*semver.Version) (bool, error) {
-	latestVersion, err := i.getModRefSatisfyingConstraints(requiredVersion, availableVersions)
-	if err != nil {
-		return false, err
-	}
-	if latestVersion.Version.GreaterThan(currentVersion) {
-		return true, nil
-	}
-	return false, nil
 }
 
 // get the most recent available mod version which satisfies the version constraint
