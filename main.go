@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-version"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/turbot/go-kit/helpers"
@@ -38,6 +39,9 @@ func main() {
 
 	// ensure steampipe is not run on WSL1
 	checkWsl1(ctx)
+
+	// check OSX kernel version
+	checkOSXVersion(ctx)
 
 	cmd.InitCmd()
 
@@ -108,5 +112,44 @@ func checkWsl1(ctx context.Context) {
 			error_helpers.ShowError(ctx, fmt.Errorf("Steampipe requires WSL2, please upgrade and try again."))
 			os.Exit(constants.ExitCodeInvalidExecutionEnvironment)
 		}
+	}
+}
+
+func checkOSXVersion(ctx context.Context) {
+	// check if macOS
+	osname, err := exec.Command("uname").Output()
+	if err != nil {
+		error_helpers.ShowErrorWithMessage(ctx, err, "failed to check OS")
+		return
+	}
+
+	// return if OS is not darwin
+	if !strings.Contains(strings.ToLower(string(osname)), "darwin") {
+		return
+	}
+
+	// get kernel version
+	output, err := exec.Command("uname", "-r").Output()
+	if err != nil {
+		error_helpers.ShowErrorWithMessage(ctx, err, "failed to get kernel version")
+		return
+	}
+
+	// get the semver version from string
+	version, err := semver.NewVersion(strings.TrimRight(string(output), "\n"))
+	if err != nil {
+		error_helpers.ShowErrorWithMessage(ctx, err, "failed to get version")
+		return
+	}
+	catalina, err := semver.NewVersion("19.0.0")
+	if err != nil {
+		error_helpers.ShowErrorWithMessage(ctx, err, "failed to get version")
+		return
+	}
+
+	// check if Darwin version is not less than Catalina(19.0.0)
+	if version.Compare(catalina) == -1 {
+		error_helpers.ShowError(ctx, fmt.Errorf("Steampipe uses PostgreSQL 14, which requires MacOS version 10.14 or higher, please upgrade and try again."))
+		os.Exit(constants.ExitCodeInvalidExecutionEnvironment)
 	}
 }
