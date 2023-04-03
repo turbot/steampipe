@@ -382,7 +382,7 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 		if err := i.copyModFromTempToModsFolder(tempDestPath, destPath); err != nil {
 			return nil, err
 		}
-		// hack set mod dependency path
+		// now the mod is installed in it's final location, set mod dependency path
 		if err := i.setModDependencyPath(modDef, destPath); err != nil {
 			return nil, err
 		}
