@@ -27,7 +27,8 @@ type ModInstaller struct {
 
 	// the final resting place of all dependency mods
 	modsPath string
-	// temp location used to install dependencies
+	// temp location used to git clone the dependencies into
+	// TODO: Binaek - look into removing this - since we use a shadow directory anyway
 	tmpPath string
 	// a shadow directory for installing mods
 	// this is necessary to make mod installation transactional
