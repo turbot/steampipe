@@ -480,7 +480,7 @@ func (m *ModParseContext) GetLoadedDependencyMod(requiredModVersion *modconfig.M
 
 func (m *ModParseContext) AddLoadedDependencyMod(mod *modconfig.Mod) {
 	// should never happen
-	if mod.ModDependencyPath == ""{
+	if mod.ModDependencyPath == "" {
 		return
 	}
 	m.loadedDependencyMods[mod.ModDependencyPath] = mod
