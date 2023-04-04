@@ -89,7 +89,7 @@ const Benchmark = (props: InnerCheckProps) => {
         display_type: totalSummary.ok > 0 ? "ok" : null,
         properties: {
           label: "OK",
-          value: totalSummary.ok.toString(),
+          value: totalSummary.ok,
           icon: "materialsymbols-solid:check_circle",
         },
       },
@@ -99,7 +99,7 @@ const Benchmark = (props: InnerCheckProps) => {
         display_type: totalSummary.alarm > 0 ? "alert" : null,
         properties: {
           label: "Alarm",
-          value: totalSummary.alarm.toString(),
+          value: totalSummary.alarm,
           icon: "materialsymbols-solid:notifications",
         },
       },
@@ -109,7 +109,7 @@ const Benchmark = (props: InnerCheckProps) => {
         display_type: totalSummary.error > 0 ? "alert" : null,
         properties: {
           label: "Error",
-          value: totalSummary.error.toString(),
+          value: totalSummary.error,
           icon: "materialsymbols-solid:error",
         },
       },
@@ -119,7 +119,7 @@ const Benchmark = (props: InnerCheckProps) => {
         display_type: totalSummary.info > 0 ? "info" : null,
         properties: {
           label: "Info",
-          value: totalSummary.info.toString(),
+          value: totalSummary.info,
           icon: "materialsymbols-solid:info",
         },
       },
@@ -128,7 +128,7 @@ const Benchmark = (props: InnerCheckProps) => {
         width: 2,
         properties: {
           label: "Skipped",
-          value: totalSummary.skip.toString(),
+          value: totalSummary.skip,
           icon: "materialsymbols-solid:arrow_circle_right",
         },
       },
@@ -149,7 +149,7 @@ const Benchmark = (props: InnerCheckProps) => {
         display_type: total > 0 ? "severity" : "",
         properties: {
           label: "Critical / High",
-          value: total.toString(),
+          value: total,
           icon: "materialsymbols-solid:warning",
         },
       });
