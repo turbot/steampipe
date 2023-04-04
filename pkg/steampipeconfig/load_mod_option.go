@@ -12,7 +12,8 @@ func WithDependencyConfig(modDependencyName string, version *semver.Version) Loa
 	return func(mod *modconfig.Mod) {
 		mod.Version = version
 		// build the ModDependencyPath from the modDependencyName and the version
-		mod.DependencyPath = fmt.Sprintf("%s@v%s", modDependencyName, version.String())
+		dependencyPath := fmt.Sprintf("%s@v%s", modDependencyName, version.String())
+		mod.DependencyPath = &dependencyPath
 		mod.DependencyName = modDependencyName
 	}
 }
