@@ -141,14 +141,14 @@ func checkOSXVersion(ctx context.Context) {
 		error_helpers.ShowErrorWithMessage(ctx, err, "failed to get version")
 		return
 	}
-	catalina, err := semver.NewVersion("19.0.0")
+	mojave, err := semver.NewVersion("18.0.0")
 	if err != nil {
 		error_helpers.ShowErrorWithMessage(ctx, err, "failed to get version")
 		return
 	}
 
-	// check if Darwin version is not less than Catalina(19.0.0)
-	if version.Compare(catalina) == -1 {
+	// check if Darwin version is not less than Mojave(Darwin version 18.0.0)
+	if version.Compare(mojave) == -1 {
 		error_helpers.ShowError(ctx, fmt.Errorf("Steampipe uses PostgreSQL 14, which requires MacOS version 10.14 or higher, please upgrade and try again."))
 		os.Exit(constants.ExitCodeInvalidExecutionEnvironment)
 	}
