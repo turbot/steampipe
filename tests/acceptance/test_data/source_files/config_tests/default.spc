@@ -15,10 +15,6 @@
 #   autocomplete        = false  
 # }
 
-options "terminal" {
-  output = "csv"
-}
-
 options "general" {
   update_check = false 
 }
