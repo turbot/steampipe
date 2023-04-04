@@ -17,6 +17,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/sperr"
 )
 
 type ModInstaller struct {
@@ -193,13 +194,43 @@ func (i *ModInstaller) GetModList() string {
 	return i.installData.Lock.GetModList(i.workspaceMod.GetInstallCacheKey())
 }
 
+// commitShadow recursively copies over the contents of the shadow directory
+// to the mods directory, replacing conflicts as it goes
+// (uses `os.Create(dest)` under the hood - which truncates the target)
+func (i *ModInstaller) commitShadow() (err error) {
+	if _, err := os.Stat(i.shadowDirPath); os.IsNotExist(err) {
+		// nothing to do here
+		// there's no shadow directory to commit
+		// this is not an error and may happen when install does not make any changes
+		return nil
+	}
+	entries, err := os.ReadDir(i.shadowDirPath)
+	if err != nil {
+		return sperr.WrapWithRootMessage(err, "could not read shadow directory")
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		source := filepath.Join(i.shadowDirPath, entry.Name())
+		destination := filepath.Join(i.modsPath, entry.Name())
+		log.Println("[TRACE] copying", source, destination)
+		if err := copy.Copy(source, destination); err != nil {
+			return sperr.WrapWithRootMessage(err, "could not commit shadow directory '%s'", entry.Name())
+		}
+	}
+	return nil
+}
+
 func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) (err error) {
+	// TODO:BINAEK:: We should look at trying to solve the "shadow directory" solution
+	// with an overlay virtual filesystem
+
 	defer func() {
 		if err == nil {
 			// everything went well
-			// replace the mods directory with the mods directory
-			os.RemoveAll(i.modsPath)
-			os.Rename(i.shadowDirPath, i.modsPath)
+			// copy whatever we installed to the mods directory
+			err = i.commitShadow()
 		}
 		// remove any temporary directory
 		// TODO BINAEK :: now that we have a shadow directory,
@@ -210,14 +241,6 @@ func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, paren
 		// force remove the shadow directory
 		os.RemoveAll(i.shadowDirPath)
 	}()
-
-	// create a shadow of the installed mods
-	log.Println("[TRACE] creating shadow")
-	if _, err := os.Stat(i.modsPath); !os.IsNotExist(err) {
-		if err := copy.Copy(i.modsPath, i.shadowDirPath); err != nil {
-			return err
-		}
-	}
 
 	var errors []error
 	for _, requiredModVersion := range mods {
@@ -327,15 +350,33 @@ func (i *ModInstaller) getCurrentlyInstalledVersionToUse(requiredModVersion *mod
 	return i.loadDependencyMod(installedVersion)
 }
 func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionConstraint) (*modconfig.Mod, error) {
-	modPath := i.getDependencyShadowPath(modconfig.ModVersionFullName(modVersion.Name, modVersion.Version))
+	modPath := i.getDependencyDestPath(modconfig.ModVersionFullName(modVersion.Name, modVersion.Version))
 	modDef, err := i.loadModfile(modPath, false)
+	if err != nil {
+		return nil, err
+	}
+	if modDef != nil {
+		log.Println("[TRACE] found dependency mod in", modPath)
+		if err := i.setModDependencyPath(modDef, modPath, i.modsPath); err != nil {
+			return nil, err
+		}
+		return modDef, nil
+	}
+
+	log.Println("[TRACE] NOT found dependency mod in", modPath)
+	log.Println("[TRACE] falling back to", modPath)
+	// we couldn't load the mod from the mods directory
+	// try to load this from the shadow directory
+	shadowModPath := i.getDependencyShadowPath(modconfig.ModVersionFullName(modVersion.Name, modVersion.Version))
+	log.Println("[TRACE] looking for dependency mod in", shadowModPath)
+	modDef, err = i.loadModfile(shadowModPath, false)
 	if err != nil {
 		return nil, err
 	}
 	if modDef == nil {
 		return nil, fmt.Errorf("failed to load mod from %s", modPath)
 	}
-	if err := i.setModDependencyPath(modDef, modPath); err != nil {
+	if err := i.setModDependencyPath(modDef, shadowModPath, i.shadowDirPath); err != nil {
 		return nil, err
 	}
 	return modDef, nil
