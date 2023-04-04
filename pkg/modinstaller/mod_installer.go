@@ -349,15 +349,16 @@ func (i *ModInstaller) getCurrentlyInstalledVersionToUse(requiredModVersion *mod
 	// load the existing mod and return
 	return i.loadDependencyMod(installedVersion)
 }
+
 func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionConstraint) (*modconfig.Mod, error) {
-	modPath := i.getDependencyDestPath(modconfig.ModVersionFullName(modVersion.Name, modVersion.Version))
+	modPath := i.getDependencyDestPath(modconfig.BuildModDependencyPath(modVersion.Name, modVersion.Version))
 	modDef, err := i.loadModfile(modPath, false)
 	if err != nil {
 		return nil, err
 	}
 	if modDef != nil {
 		log.Println("[TRACE] found dependency mod in", modPath)
-		if err := i.setModDependencyPath(modDef, modPath, i.modsPath); err != nil {
+		if err := i.setModDependencyConfig(modDef, modPath, i.modsPath); err != nil {
 			return nil, err
 		}
 		return modDef, nil
@@ -367,7 +368,7 @@ func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionC
 	log.Println("[TRACE] falling back to", modPath)
 	// we couldn't load the mod from the mods directory
 	// try to load this from the shadow directory
-	shadowModPath := i.getDependencyShadowPath(modconfig.ModVersionFullName(modVersion.Name, modVersion.Version))
+	shadowModPath := i.getDependencyShadowPath(modconfig.BuildModDependencyPath(modVersion.Name, modVersion.Version))
 	log.Println("[TRACE] looking for dependency mod in", shadowModPath)
 	modDef, err = i.loadModfile(shadowModPath, false)
 	if err != nil {
@@ -376,7 +377,7 @@ func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionC
 	if modDef == nil {
 		return nil, fmt.Errorf("failed to load mod from %s", modPath)
 	}
-	if err := i.setModDependencyPath(modDef, shadowModPath, i.shadowDirPath); err != nil {
+	if err := i.setModDependencyConfig(modDef, shadowModPath, i.shadowDirPath); err != nil {
 		return nil, err
 	}
 	return modDef, nil
@@ -460,7 +461,7 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 			return nil, err
 		}
 		// now the mod is installed in it's final location, set mod dependency path
-		if err := i.setModDependencyConfig(modDef, destPath); err != nil {
+		if err := i.setModDependencyConfig(modDef, destPath, i.shadowDirPath); err != nil {
 			return nil, err
 		}
 	}
@@ -510,25 +511,9 @@ func (i *ModInstaller) getDependencyShadowPath(dependencyFullName string) string
 	return filepath.Join(i.shadowDirPath, dependencyFullName)
 }
 
-func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionConstraint) (*modconfig.Mod, error) {
-	modPath := i.getDependencyDestPath(modconfig.BuildModDependencyPath(modVersion.Name, modVersion.Version))
-	modDef, err := i.loadModfile(modPath, false)
-	if err != nil {
-		return nil, err
-	}
-	if modDef == nil {
-		return nil, fmt.Errorf("failed to load mod from %s", modPath)
-	}
-	if err := i.setModDependencyConfig(modDef, modPath); err != nil {
-		return nil, err
-	}
-	return modDef, nil
-
-}
-
 // set the mod dependency path
-func (i *ModInstaller) setModDependencyConfig(mod *modconfig.Mod, modPath string) error {
-	dependencyPath, err := filepath.Rel(i.modsPath, modPath)
+func (i *ModInstaller) setModDependencyConfig(mod *modconfig.Mod, modPath string, relativeTo string) error {
+	dependencyPath, err := filepath.Rel(relativeTo, modPath)
 	if err != nil {
 		return err
 	}
