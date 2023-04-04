@@ -41,11 +41,14 @@ type Mod struct {
 
 	// the mod version
 	Version *semver.Version
-	// ModDependencyPath is the fully qualified mod name including version,
+	// DependencyPath is the fully qualified mod name including version,
 	// which will by the map key in the workspace lock file
 	// NOTE: this is the relative path to th emod location from the depdemncy install dir (.steampipe/mods)
 	// e.g. github.com/turbot/steampipe-mod-azure-thrifty@v1.0.0
-	ModDependencyPath string
+	DependencyPath string
+	// DependencyName return the name of the mod as a dependency, i.e. the mod dependency path, _without_ the version
+	// e.g. github.com/turbot/steampipe-mod-azure-thrifty
+	DependencyName string
 
 	// ModPath is the installation location of the mod
 	ModPath string
@@ -135,22 +138,6 @@ func CreateDefaultMod(modPath string) *Mod {
 // IsDefaultMod returns whether this mod is a default mod created for a workspace with no mod definition
 func (m *Mod) IsDefaultMod() bool {
 	return m.modFilePath == ""
-}
-
-func (m *Mod) NameWithVersion() string {
-	if m.Version == nil {
-		return m.ShortName
-	}
-	return fmt.Sprintf("%s@%s", m.ShortName, m.Version.String())
-}
-
-// GetModDependencyPath ModDependencyPath if it is set. If not it returns NameWithVersion()
-func (m *Mod) GetModDependencyPath() string {
-	if m.ModDependencyPath != "" {
-		return m.ModDependencyPath
-	}
-	// TODO kai should this just return empty string/error
-	return m.NameWithVersion()
 }
 
 // GetPaths implements ModTreeItem (override base functionality)
@@ -373,17 +360,9 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 // GetInstallCacheKey returns the key used to find this mod in a workspace lock InstallCache
 func (m *Mod) GetInstallCacheKey() string {
 	// if the ModDependencyPath is set, this is a dependency mod - use that
-	if m.ModDependencyPath != "" {
-		return m.ModDependencyPath
+	if m.DependencyPath != "" {
+		return m.DependencyPath
 	}
 	// otherwise use the short name
 	return m.ShortName
-}
-
-// DependencyName return the name of the mod as a depdency, i.e. the mod dependency path, _without_ the version
-func (m *Mod) DependencyName() string {
-	if m.ModDependencyPath == "" {
-		return ""
-	}
-	return strings.Split(m.ModDependencyPath, "@")[0]
 }

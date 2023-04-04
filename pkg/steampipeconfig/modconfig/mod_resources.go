@@ -84,7 +84,6 @@ func emptyModResources() *ResourceMaps {
 }
 
 // ModResourcesForQueries creates a ResourceMaps object containing just the specified queries
-// This is used to just create necessary prepared statements when executing batch queries
 func ModResourcesForQueries(queryProviders []QueryProvider, mod *Mod) *ResourceMaps {
 	res := NewModResources(mod)
 	for _, p := range queryProviders {
@@ -101,6 +100,22 @@ func (m *ResourceMaps) QueryProviders() []QueryProvider {
 		if queryProvider, ok := item.(QueryProvider); ok {
 			res[idx] = queryProvider
 			idx++
+		}
+		return true, nil
+	}
+
+	m.WalkResources(f)
+
+	return res
+}
+
+// TopLevelResources returns a new ResourceMaps containing only top level resources (i.e. no dependencies)
+func (m *ResourceMaps) TopLevelResources() *ResourceMaps {
+	res := NewModResources(m.Mod)
+
+	f := func(item HclResource) (bool, error) {
+		if modTreeItem, ok := item.(ModTreeItem); ok && modTreeItem.GetMod().FullName == m.Mod.FullName {
+			res.AddResource(item)
 		}
 		return true, nil
 	}

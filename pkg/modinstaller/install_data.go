@@ -64,17 +64,18 @@ func (d *InstallData) GetAvailableUpdates() (versionmap.DependencyVersionMap, er
 
 // onModInstalled is called when a dependency is satisfied by installing a mod version
 func (d *InstallData) onModInstalled(dependency *ResolvedModRef, modDef *modconfig.Mod, parent *modconfig.Mod) {
-	parentPath := parent.GetModDependencyPath()
+	parentPath := parent.GetInstallCacheKey()
 	// get the constraint from the parent (it must be there)
-	modVersion := parent.Require.GetModDependency(dependency.Name)
+	modVersionConstraint := parent.Require.GetModDependency(dependency.Name).Constraint.Original
+
 	// update lock
-	d.NewLock.InstallCache.Add(dependency.Name, modDef.ShortName, modDef.Version, modVersion.Constraint.Original, parentPath)
+	d.NewLock.InstallCache.Add(dependency.Name, modDef.ShortName, modDef.Version, modVersionConstraint, parentPath)
 }
 
 // addExisting is called when a dependency is satisfied by a mod which is already installed
 func (d *InstallData) addExisting(dependencyName string, existingDep *modconfig.Mod, constraint *versionhelpers.Constraints, parent *modconfig.Mod) {
 	// update lock
-	parentPath := parent.GetModDependencyPath()
+	parentPath := parent.GetInstallCacheKey()
 	d.NewLock.InstallCache.Add(dependencyName, existingDep.ShortName, existingDep.Version, constraint.Original, parentPath)
 }
 
@@ -107,13 +108,13 @@ func (d *InstallData) onInstallComplete() {
 }
 
 func (d *InstallData) GetUpdatedTree() treeprint.Tree {
-	return d.Upgraded.GetDependencyTree(d.WorkspaceMod.GetModDependencyPath())
+	return d.Upgraded.GetDependencyTree(d.WorkspaceMod.GetInstallCacheKey())
 }
 
 func (d *InstallData) GetInstalledTree() treeprint.Tree {
-	return d.Installed.GetDependencyTree(d.WorkspaceMod.GetModDependencyPath())
+	return d.Installed.GetDependencyTree(d.WorkspaceMod.GetInstallCacheKey())
 }
 
 func (d *InstallData) GetUninstalledTree() treeprint.Tree {
-	return d.Uninstalled.GetDependencyTree(d.WorkspaceMod.GetModDependencyPath())
+	return d.Uninstalled.GetDependencyTree(d.WorkspaceMod.GetInstallCacheKey())
 }

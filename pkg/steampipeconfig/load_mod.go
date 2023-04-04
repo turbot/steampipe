@@ -189,7 +189,7 @@ func loadModResources(modPath string, parseCtx *parse.ModParseContext) (*modconf
 		return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to load all mod files", diags))
 	}
 
-	// parse all hcl files.
+	// parse all hcl files (NOTE - this reads the CurrentMod out of ParseContext and adds to it)
 	mod, errAndWarnings := parse.ParseMod(fileData, pseudoResources, parseCtx)
 	if errAndWarnings.GetError() == nil {
 		// now add fully populated mod to the parent run context

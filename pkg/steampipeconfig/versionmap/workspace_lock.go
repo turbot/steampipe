@@ -91,7 +91,7 @@ func (l *WorkspaceLock) getInstalledMods() error {
 
 	for _, modfilePath := range modFiles {
 		// try to parse the mon name and version form the parent folder of the modfile
-		modName, version, err := l.parseModPath(modfilePath)
+		modDependencyName, version, err := l.parseModPath(modfilePath)
 		if err != nil {
 			// if we fail to parse, just ignore this modfile
 			// - it's parent is not a valid mod installation folder so it is probably a child folder of a mod
@@ -100,12 +100,12 @@ func (l *WorkspaceLock) getInstalledMods() error {
 
 		// ensure the dependency mod folder is correctly named
 		// - for old versions of steampipe the folder name would omit the patch number
-		if err := l.validateAndFixFolderNamingFormat(modName, version, modfilePath); err != nil {
+		if err := l.validateAndFixFolderNamingFormat(modDependencyName, version, modfilePath); err != nil {
 			continue
 		}
 
 		// add this mod version to the map
-		installedMods.Add(modName, version)
+		installedMods.Add(modDependencyName, version)
 	}
 
 	if len(errors) > 0 {
@@ -153,7 +153,7 @@ func (l *WorkspaceLock) setMissing() {
 		// flatten and iterate
 
 		for name, resolvedConstraint := range deps {
-			fullName := modconfig.ModVersionFullName(name, resolvedConstraint.Version)
+			fullName := modconfig.BuildModDependencyPath(name, resolvedConstraint.Version)
 
 			if !flatInstalled[fullName] {
 				// get the mod name from the constraint (fullName includes the version)
@@ -167,12 +167,12 @@ func (l *WorkspaceLock) setMissing() {
 }
 
 // extract the mod name and version from the modfile path
-func (l *WorkspaceLock) parseModPath(modfilePath string) (modName string, modVersion *semver.Version, err error) {
+func (l *WorkspaceLock) parseModPath(modfilePath string) (modDependencyName string, modVersion *semver.Version, err error) {
 	modFullName, err := filepath.Rel(l.ModInstallationPath, filepath.Dir(modfilePath))
 	if err != nil {
 		return
 	}
-	return modconfig.ParseModFullName(modFullName)
+	return modconfig.ParseModDependencyPath(modFullName)
 }
 
 func (l *WorkspaceLock) Save() error {
@@ -199,19 +199,20 @@ func (l *WorkspaceLock) Delete() error {
 // DeleteMods removes mods from the lock file then, if it is empty, deletes the file
 func (l *WorkspaceLock) DeleteMods(mods VersionConstraintMap, parent *modconfig.Mod) {
 	for modName := range mods {
-		if parentDependencies := l.InstallCache[parent.GetModDependencyPath()]; parentDependencies != nil {
+		if parentDependencies := l.InstallCache[parent.GetInstallCacheKey()]; parentDependencies != nil {
 			parentDependencies.Remove(modName)
 		}
 	}
 }
 
-// GetMod looks for a lock file entry matching the given mod name
-func (l *WorkspaceLock) GetMod(modName string, parent *modconfig.Mod) *ResolvedVersionConstraint {
+// GetMod looks for a lock file entry matching the given mod dependency name
+// (e.g.github.com/turbot/steampipe-mod-azure-thrifty
+func (l *WorkspaceLock) GetMod(modDependencyName string, parent *modconfig.Mod) *ResolvedVersionConstraint {
 	parentKey := parent.GetInstallCacheKey()
 
 	if parentDependencies := l.InstallCache[parentKey]; parentDependencies != nil {
 		// look for this mod in the lock file entries for this parent
-		return parentDependencies[modName]
+		return parentDependencies[modDependencyName]
 	}
 	return nil
 }
@@ -256,7 +257,7 @@ func (l *WorkspaceLock) EnsureLockedModVersion(requiredModVersion *modconfig.Mod
 
 	// verify the locked version satisfies the version constraint
 	if !requiredModVersion.Constraint.Check(lockedVersion.Version) {
-		return nil, fmt.Errorf("failed to resolvedependencies for %s - locked version %s does not meet the constraint %s", parent.GetModDependencyPath(), modconfig.ModVersionFullName(requiredModVersion.Name, lockedVersion.Version), requiredModVersion.Constraint.Original)
+		return nil, fmt.Errorf("failed to resolvedependencies for %s - locked version %s does not meet the constraint %s", parent.GetInstallCacheKey(), modconfig.BuildModDependencyPath(requiredModVersion.Name, lockedVersion.Version), requiredModVersion.Constraint.Original)
 	}
 
 	return lockedVersion, nil
@@ -275,7 +276,7 @@ func (l *WorkspaceLock) GetLockedModVersionConstraint(requiredModVersion *modcon
 		return nil, nil
 	}
 	// create a new ModVersionConstraint using the locked version
-	lockedVersionFullName := modconfig.ModVersionFullName(requiredModVersion.Name, lockedVersion.Version)
+	lockedVersionFullName := modconfig.BuildModDependencyPath(requiredModVersion.Name, lockedVersion.Version)
 	return modconfig.NewModVersionConstraint(lockedVersionFullName)
 }
 

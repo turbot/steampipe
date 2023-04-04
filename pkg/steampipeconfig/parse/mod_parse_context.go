@@ -39,8 +39,10 @@ type ModParseContext struct {
 	// the workspace lock data
 	WorkspaceLock *versionmap.WorkspaceLock
 
-	Flags                ParseModFlag
-	ListOptions          *filehelpers.ListOptions
+	Flags       ParseModFlag
+	ListOptions *filehelpers.ListOptions
+	// map of loaded dependency mods, keyed by DependencyPath (including version)
+	// there may be multiple versions of same mod in this map
 	loadedDependencyMods modconfig.ModMap
 
 	// Variables are populated in an initial parse pass top we store them on the run context
@@ -69,7 +71,7 @@ type ModParseContext struct {
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
-	// a map of just the top level depodency mods, keyed my full mod dependency name with no version
+	// a map of just the top level dependencies of the CurrentMod, keyed my full mod DepdencyName (with no version)
 	topLevelDependencyMods modconfig.ModMap
 }
 
@@ -172,8 +174,7 @@ func (m *ModParseContext) setDependencyVariables(dependencyVariables map[string]
 	}
 }
 
-// AddMod is used to add a mod with any pseudo resources to the eval context
-// - in practice this will be a shell mod with just pseudo resources - other resources will be added as they are parsed
+// AddMod is used to add a mod to the eval context
 func (m *ModParseContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	if len(m.UnresolvedBlocks) > 0 {
 		// should never happen
@@ -246,19 +247,20 @@ func (m *ModParseContext) AddResource(resource modconfig.HclResource) hcl.Diagno
 	return nil
 }
 
+// GetMod finds the mod with given short name, looking only in first level dependencies
+// this is used to resolve resource references
+// specifically when the 'children' property of dashboards and benchmarks refers to resource in a dependency mod
 func (m *ModParseContext) GetMod(modShortName string) *modconfig.Mod {
 	if modShortName == m.CurrentMod.ShortName {
 		return m.CurrentMod
 	}
-	// we need to iterate through dependency mods - we cannot use modShortName as key as it is short name
-	// get mod path, which is the key into the workspace lock map
-	modPath := m.CurrentMod.ModPath
-	deps := m.WorkspaceLock.InstallCache[modPath]
+	// we need to iterate through dependency mods of the current mod
+	key := m.CurrentMod.GetInstallCacheKey()
+	deps := m.WorkspaceLock.InstallCache[key]
 	for _, dep := range deps {
-		if dep.Name == modShortName {
-			// build key - name@version
-			key := dep.FullName()
-			return m.loadedDependencyMods[key]
+		depMod, ok := m.loadedDependencyMods[dep.FullName()]
+		if ok && depMod.ShortName == modShortName {
+			return depMod
 		}
 	}
 	return nil
@@ -272,9 +274,9 @@ func (m *ModParseContext) GetResourceMaps() *modconfig.ResourceMaps {
 
 	dependencyResourceMaps := make([]*modconfig.ResourceMaps, 0, len(deps))
 
-	// merge in the dependency mods
+	// merge in the top level resources of the dependency mods
 	for _, dep := range deps {
-		dependencyResourceMaps = append(dependencyResourceMaps, dep.GetResourceMaps())
+		dependencyResourceMaps = append(dependencyResourceMaps, dep.GetResourceMaps().TopLevelResources())
 	}
 
 	resourceMap = resourceMap.Merge(dependencyResourceMaps)
@@ -470,20 +472,19 @@ func (m *ModParseContext) GetLoadedDependencyMod(requiredModVersion *modconfig.M
 		return nil, err
 	}
 	if lockedVersion == nil {
-		// todo kai check this
 		return nil, fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
 	}
-	// use the full nam eof the locked version as key
+	// use the full name of the locked version as key
 	d, _ := m.loadedDependencyMods[lockedVersion.FullName()]
 	return d, nil
 }
 
 func (m *ModParseContext) AddLoadedDependencyMod(mod *modconfig.Mod) {
 	// should never happen
-	if mod.ModDependencyPath == "" {
+	if mod.DependencyPath == "" {
 		return
 	}
-	m.loadedDependencyMods[mod.ModDependencyPath] = mod
+	m.loadedDependencyMods[mod.DependencyPath] = mod
 }
 
 // GetTopLevelDependencyMods build a mod map of top level loaded dependencies, keyed by mod name
@@ -503,7 +504,7 @@ func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
 		loadedDepMod := m.loadedDependencyMods[key]
 		if loadedDepMod != nil {
 			// as key use the ModDependencyPath _without_ the version
-			m.topLevelDependencyMods[loadedDepMod.DependencyName()] = loadedDepMod
+			m.topLevelDependencyMods[loadedDepMod.DependencyName] = loadedDepMod
 		}
 	}
 	return m.topLevelDependencyMods
