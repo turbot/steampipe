@@ -26,6 +26,7 @@ func resolveChildrenFromNames(childNames []string, block *hcl.Block, supportedCh
 		}
 
 		// now get the resource from the parent mod
+		// find the mod which owns this resource - it may be either the current mod, or one of it's direct dependencies
 		var mod = parseCtx.GetMod(parsedName.Mod)
 		if mod == nil {
 			diags = append(diags, &hcl.Diagnostic{
