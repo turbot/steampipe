@@ -45,7 +45,8 @@ type Mod struct {
 	// which will by the map key in the workspace lock file
 	// NOTE: this is the relative path to th emod location from the depdemncy install dir (.steampipe/mods)
 	// e.g. github.com/turbot/steampipe-mod-azure-thrifty@v1.0.0
-	DependencyPath string
+	// (NOTE: pointer so it is nil in introspection tables if unpopulated)
+	DependencyPath *string `column:"dependency_path,text"`
 	// DependencyName return the name of the mod as a dependency, i.e. the mod dependency path, _without_ the version
 	// e.g. github.com/turbot/steampipe-mod-azure-thrifty
 	DependencyName string
@@ -360,9 +361,22 @@ func (m *Mod) CtyValue() (cty.Value, error) {
 // GetInstallCacheKey returns the key used to find this mod in a workspace lock InstallCache
 func (m *Mod) GetInstallCacheKey() string {
 	// if the ModDependencyPath is set, this is a dependency mod - use that
-	if m.DependencyPath != "" {
-		return m.DependencyPath
+	if m.DependencyPath != nil {
+		return *m.DependencyPath
 	}
 	// otherwise use the short name
 	return m.ShortName
+}
+
+// SetDependencyConfig sets DependencyPath, DependencyName and Version
+func (m *Mod) SetDependencyConfig(dependencyPath string) error {
+	// parse the dependency path to get the dependency name and version
+	dependencyName, version, err := ParseModDependencyPath(dependencyPath)
+	if err != nil {
+		return err
+	}
+	m.DependencyPath = &dependencyPath
+	m.DependencyName = dependencyName
+	m.Version = version
+	return nil
 }
