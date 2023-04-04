@@ -367,6 +367,7 @@ func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionC
 	log.Println("[TRACE] NOT found dependency mod in", modPath)
 	log.Println("[TRACE] falling back to", modPath)
 	// we couldn't load the mod from the mods directory
+	// this mod may have been installed in this installation
 	// try to load this from the shadow directory
 	shadowModPath := i.getDependencyShadowPath(modconfig.BuildModDependencyPath(modVersion.Name, modVersion.Version))
 	log.Println("[TRACE] looking for dependency mod in", shadowModPath)
