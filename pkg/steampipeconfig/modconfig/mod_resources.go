@@ -100,6 +100,22 @@ func (m *ResourceMaps) QueryProviders() []QueryProvider {
 	return res
 }
 
+// TopLevelResources returns a new ResourceMaps containing only top level resources (i.e. no dependencies)
+func (m *ResourceMaps) TopLevelResources() *ResourceMaps {
+	res := NewModResources(m.Mod)
+
+	f := func(item HclResource) (bool, error) {
+		if modTreeItem, ok := item.(ModTreeItem); ok && modTreeItem.GetMod().FullName == m.Mod.FullName {
+			res.AddResource(item)
+		}
+		return true, nil
+	}
+
+	m.WalkResources(f)
+
+	return res
+}
+
 func (m *ResourceMaps) Equals(other *ResourceMaps) bool {
 	//TODO use cmp.Equals or similar
 	if other == nil {
