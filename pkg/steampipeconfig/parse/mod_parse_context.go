@@ -69,6 +69,8 @@ type ModParseContext struct {
 	// map of ReferenceTypeValueMaps keyed by mod
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
+	// a map of just the top level depodency mods, keyed my full mod dependency name with no version
+	topLevelDependencyMods modconfig.ModMap
 }
 
 func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *ModParseContext {
@@ -477,20 +479,32 @@ func (m *ModParseContext) GetLoadedDependencyMod(requiredModVersion *modconfig.M
 }
 
 func (m *ModParseContext) AddLoadedDependencyMod(mod *modconfig.Mod) {
-	m.loadedDependencyMods[mod.NameWithVersion()] = mod
+	// should never happen
+	if mod.ModDependencyPath == ""{
+		return
+	}
+	m.loadedDependencyMods[mod.ModDependencyPath] = mod
 }
 
 // GetTopLevelDependencyMods build a mod map of top level loaded dependencies, keyed by mod name
 func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
-	modPath := m.CurrentMod.ModPath
-	deps := m.WorkspaceLock.InstallCache[modPath]
-	res := make(modconfig.ModMap, len(deps))
+	// lazy load m.topLevelDependencyMods
+	if m.topLevelDependencyMods != nil {
+		return m.topLevelDependencyMods
+	}
+	// get install cache key fpor this mod (short name for top level mod or ModDependencyPath for dep mods)
+	installCacheKey := m.CurrentMod.GetInstallCacheKey()
+	deps := m.WorkspaceLock.InstallCache[installCacheKey]
+	m.topLevelDependencyMods = make(modconfig.ModMap, len(deps))
 
 	// merge in the dependency mods
 	for _, dep := range deps {
 		key := dep.FullName()
 		loadedDepMod := m.loadedDependencyMods[key]
-		res[loadedDepMod.Name()] = loadedDepMod
+		if loadedDepMod != nil {
+			// as key use the ModDependencyPath _without_ the version
+			m.topLevelDependencyMods[loadedDepMod.DependencyName()] = loadedDepMod
+		}
 	}
-	return res
+	return m.topLevelDependencyMods
 }

@@ -21,7 +21,7 @@ import (
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errAndWarnings *modconfig.ErrorAndWarnings) {
+func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOption) (mod *modconfig.Mod, errAndWarnings *modconfig.ErrorAndWarnings) {
 	defer func() {
 		if r := recover(); r != nil {
 			errAndWarnings = modconfig.NewErrorsAndWarning(helpers.ToError(r))
@@ -32,6 +32,12 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mo
 	if err != nil {
 		return nil, modconfig.NewErrorsAndWarning(err)
 	}
+
+	// apply opts to mod
+	for _, o := range opts {
+		o(mod)
+	}
+
 	// load the mod dependencies
 	if err := loadModDependencies(mod, parseCtx); err != nil {
 		return nil, modconfig.NewErrorsAndWarning(err)
@@ -142,14 +148,11 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	childRunCtx.BlockTypes = parseCtx.BlockTypes
 	childRunCtx.ParentParseCtx = parseCtx
 
-	mod, errAndWarnings := LoadMod(dependencyPath, childRunCtx)
+	// NOTE: pass in the version and dependency path of the mod - these must be set before it loads its depdencies
+	mod, errAndWarnings := LoadMod(dependencyPath, childRunCtx, WithDependencyConfig(modDependency.Name, version))
 	if errAndWarnings.GetError() != nil {
 		return errAndWarnings.GetError()
 	}
-
-	// set the version and dependency path of the mod
-	mod.Version = version
-	mod.ModDependencyPath = modDependency.Name
 
 	// update loaded dependency mods
 	parseCtx.AddLoadedDependencyMod(mod)
@@ -199,7 +202,7 @@ func loadModResources(modPath string, parseCtx *parse.ModParseContext) (*modconf
 	return mod, errAndWarnings
 }
 
-// search the parent folder for a mod installatio which satisfied the given mod dependency
+// search the parent folder for a mod installation which satisfied the given mod dependency
 func findInstalledDependency(modDependency *modconfig.ModVersionConstraint, parentFolder string) (string, *semver.Version, error) {
 	shortDepName := filepath.Base(modDependency.Name)
 	entries, err := os.ReadDir(parentFolder)

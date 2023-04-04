@@ -34,6 +34,5 @@ func (c ResolvedVersionConstraint) IsPrerelease() bool {
 }
 
 func (c ResolvedVersionConstraint) FullName() string {
-	// TODO kai test me
-	return fmt.Sprintf("%s@%s", c.Name, c.Version.String())
+	return fmt.Sprintf("%s@v%s", c.Name, c.Version.String())
 }

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Masterminds/semver"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -96,6 +97,13 @@ func (l *WorkspaceLock) getInstalledMods() error {
 			// - it's parent is not a valid mod installation folder so it is probably a child folder of a mod
 			continue
 		}
+
+		// ensure the dependency mod folder is correctly named
+		// - for old versions of steampipe the folder name would omit the patch number
+		if err := l.validateAndFixFolderNamingFormat(modName, version, modfilePath); err != nil {
+			continue
+		}
+
 		// add this mod version to the map
 		installedMods.Add(modName, version)
 	}
@@ -104,6 +112,20 @@ func (l *WorkspaceLock) getInstalledMods() error {
 		return error_helpers.CombineErrors(errors...)
 	}
 	l.installedMods = installedMods
+	return nil
+}
+
+func (l *WorkspaceLock) validateAndFixFolderNamingFormat(modName string, version *semver.Version, modfilePath string) error {
+	// verify folder name is of correct format (i.e. including patch number)
+	modDir := filepath.Dir(modfilePath)
+	parts := strings.Split(modDir, "@")
+	currentVersionString := parts[1]
+	desiredVersionString := fmt.Sprintf("v%s", version.String())
+	if desiredVersionString != currentVersionString {
+		desiredDir := fmt.Sprintf("%s@%s", parts[0], desiredVersionString)
+		log.Printf("[TRACE] renaming dependency mod folder %s to %s", modDir, desiredDir)
+		return os.Rename(modDir, desiredDir)
+	}
 	return nil
 }
 
@@ -185,7 +207,9 @@ func (l *WorkspaceLock) DeleteMods(mods VersionConstraintMap, parent *modconfig.
 
 // GetMod looks for a lock file entry matching the given mod name
 func (l *WorkspaceLock) GetMod(modName string, parent *modconfig.Mod) *ResolvedVersionConstraint {
-	if parentDependencies := l.InstallCache[parent.GetModDependencyPath()]; parentDependencies != nil {
+	parentKey := parent.GetInstallCacheKey()
+
+	if parentDependencies := l.InstallCache[parentKey]; parentDependencies != nil {
 		// look for this mod in the lock file entries for this parent
 		return parentDependencies[modName]
 	}
