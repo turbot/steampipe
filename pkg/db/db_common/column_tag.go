@@ -10,6 +10,7 @@ type ColumnTag struct {
 	Column string
 	// the introspected go type
 	ColumnType string
+	OmitEmpty  bool
 }
 
 func newColumnTag(field reflect.StructField) (*ColumnTag, bool) {
@@ -18,10 +19,14 @@ func newColumnTag(field reflect.StructField) (*ColumnTag, bool) {
 		return nil, false
 	}
 	split := strings.Split(columnTag, ",")
-	if len(split) != 2 {
+	if len(split) < 2 {
 		return nil, false
 	}
 	column := split[0]
 	columnType := split[1]
-	return &ColumnTag{column, columnType}, true
+	var omitEmpty bool
+	if len(split) == 3 {
+		omitEmpty = split[3] == "omitempty"
+	}
+	return &ColumnTag{Column: column, ColumnType: columnType, OmitEmpty: omitEmpty}, true
 }

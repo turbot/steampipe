@@ -481,10 +481,10 @@ func (m *ModParseContext) GetLoadedDependencyMod(requiredModVersion *modconfig.M
 
 func (m *ModParseContext) AddLoadedDependencyMod(mod *modconfig.Mod) {
 	// should never happen
-	if mod.DependencyPath == "" {
+	if mod.DependencyPath == nil {
 		return
 	}
-	m.loadedDependencyMods[mod.DependencyPath] = mod
+	m.loadedDependencyMods[*mod.DependencyPath] = mod
 }
 
 // GetTopLevelDependencyMods build a mod map of top level loaded dependencies, keyed by mod name

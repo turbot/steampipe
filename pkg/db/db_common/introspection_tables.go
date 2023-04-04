@@ -284,7 +284,7 @@ func getColumnValues(item interface{}) ([]string, []string) {
 	}
 	var columns, values []string
 
-	// dereference item in vcase it is a pointer
+	// dereference item in case it is a pointer
 	item = helpers.DereferencePointer(item)
 
 	val := reflect.ValueOf(helpers.DereferencePointer(item))
@@ -349,8 +349,13 @@ func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (stri
 		return res, nil
 	case "integer", "numeric", "decimal", "boolean":
 		return typeHelpers.ToString(item), nil
-	default:
+	case "string":
 		// for string column, escape the data
+		if columnTag.OmitEmpty && item.(string) == "" {
+			item = nil
+		}
+		return PgEscapeString(typeHelpers.ToString(item)), nil
+	default:
 		return PgEscapeString(typeHelpers.ToString(item)), nil
 	}
 }
