@@ -22,12 +22,12 @@ func (m DependencyVersionMap) Add(dependencyName, alias string, dependencyVersio
 	m[parentName] = parentItems
 }
 
-// FlatMap converts the DependencyVersionMap into a ResolvedVersionMap, keyed by full name
+// FlatMap converts the DependencyVersionMap into a ResolvedVersionMap, keyed by mod dependency path
 func (m DependencyVersionMap) FlatMap() ResolvedVersionMap {
 	res := make(ResolvedVersionMap)
 	for _, deps := range m {
 		for _, dep := range deps {
-			res[modconfig.ModVersionFullName(dep.Name, dep.Version)] = dep
+			res[modconfig.BuildModDependencyPath(dep.Name, dep.Version)] = dep
 		}
 	}
 	return res
@@ -42,7 +42,7 @@ func (m DependencyVersionMap) GetDependencyTree(rootName string) treeprint.Tree 
 func (m DependencyVersionMap) buildTree(name string, tree treeprint.Tree) {
 	deps := m[name]
 	for name, version := range deps {
-		fullName := modconfig.ModVersionFullName(name, version.Version)
+		fullName := modconfig.BuildModDependencyPath(name, version.Version)
 		child := tree.AddBranch(fullName)
 		// if there are children add them
 		m.buildTree(fullName, child)

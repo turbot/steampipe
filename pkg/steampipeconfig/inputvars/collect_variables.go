@@ -144,9 +144,12 @@ func CollectVariableValuesFromModRequire(mod *modconfig.Mod, parseCtx *parse.Mod
 	res := make(InputValues)
 	if mod.Require != nil {
 		for _, depModConstraint := range mod.Require.Mods {
-			// find the short name for this mod
-			depMod, ok := parseCtx.LoadedDependencyMods[depModConstraint.Name]
-			if !ok {
+			// find the loaded dep mod which satisfies this constraint
+			depMod, err := parseCtx.GetLoadedDependencyMod(depModConstraint, mod)
+			if err != nil {
+				return nil, err
+			}
+			if depMod == nil {
 				return nil, fmt.Errorf("depency mod %s is not loaded", depMod.Name())
 			}
 

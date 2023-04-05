@@ -21,7 +21,7 @@ import (
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errAndWarnings *modconfig.ErrorAndWarnings) {
+func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOption) (mod *modconfig.Mod, errAndWarnings *modconfig.ErrorAndWarnings) {
 	defer func() {
 		if r := recover(); r != nil {
 			errAndWarnings = modconfig.NewErrorsAndWarning(helpers.ToError(r))
@@ -32,6 +32,12 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mo
 	if err != nil {
 		return nil, modconfig.NewErrorsAndWarning(err)
 	}
+
+	// apply opts to mod
+	for _, o := range opts {
+		o(mod)
+	}
+
 	// load the mod dependencies
 	if err := loadModDependencies(mod, parseCtx); err != nil {
 		return nil, modconfig.NewErrorsAndWarning(err)
@@ -88,22 +94,16 @@ func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext) er
 		}
 
 		for _, requiredModVersion := range mod.Require.Mods {
-			// if we have a locked version, update the required version to reflect this
-			lockedVersion, err := parseCtx.WorkspaceLock.GetLockedModVersionConstraint(requiredModVersion, mod)
-			if err != nil {
-				errors = append(errors, err)
-				continue
-			}
-			if lockedVersion != nil {
-				requiredModVersion = lockedVersion
-			}
 
 			// have we already loaded a mod which satisfied this
-			if loadedMod, ok := parseCtx.LoadedDependencyMods[requiredModVersion.Name]; ok {
-				if requiredModVersion.Constraint.Check(loadedMod.Version) {
-					continue
-				}
+			loadedMod, err := parseCtx.GetLoadedDependencyMod(requiredModVersion, mod)
+			if err != nil {
+				return err
 			}
+			if loadedMod != nil {
+				continue
+			}
+
 			if err := loadModDependency(requiredModVersion, parseCtx); err != nil {
 				errors = append(errors, err)
 			}
@@ -148,19 +148,16 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	childRunCtx.BlockTypes = parseCtx.BlockTypes
 	childRunCtx.ParentParseCtx = parseCtx
 
-	mod, errAndWarnings := LoadMod(dependencyPath, childRunCtx)
+	// NOTE: pass in the version and dependency path of the mod - these must be set before it loads its depdencies
+	mod, errAndWarnings := LoadMod(dependencyPath, childRunCtx, WithDependencyConfig(modDependency.Name, version))
 	if errAndWarnings.GetError() != nil {
 		return errAndWarnings.GetError()
 	}
 
-	// set the version and dependency path of the mod
-	mod.Version = version
-	mod.ModDependencyPath = modDependency.Name
-
 	// update loaded dependency mods
-	parseCtx.LoadedDependencyMods[modDependency.Name] = mod
+	parseCtx.AddLoadedDependencyMod(mod)
 	if parseCtx.ParentParseCtx != nil {
-		parseCtx.ParentParseCtx.LoadedDependencyMods[modDependency.Name] = mod
+		parseCtx.ParentParseCtx.AddLoadedDependencyMod(mod)
 	}
 
 	return nil
@@ -192,7 +189,7 @@ func loadModResources(modPath string, parseCtx *parse.ModParseContext) (*modconf
 		return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to load all mod files", diags))
 	}
 
-	// parse all hcl files.
+	// parse all hcl files (NOTE - this reads the CurrentMod out of ParseContext and adds to it)
 	mod, errAndWarnings := parse.ParseMod(fileData, pseudoResources, parseCtx)
 	if errAndWarnings.GetError() == nil {
 		// now add fully populated mod to the parent run context
@@ -205,7 +202,7 @@ func loadModResources(modPath string, parseCtx *parse.ModParseContext) (*modconf
 	return mod, errAndWarnings
 }
 
-// search the parent folder for a mod installatio which satisfied the given mod dependency
+// search the parent folder for a mod installation which satisfied the given mod dependency
 func findInstalledDependency(modDependency *modconfig.ModVersionConstraint, parentFolder string) (string, *semver.Version, error) {
 	shortDepName := filepath.Base(modDependency.Name)
 	entries, err := os.ReadDir(parentFolder)

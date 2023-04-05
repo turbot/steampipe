@@ -185,7 +185,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 }
 
 func (i *ModInstaller) GetModList() string {
-	return i.installData.Lock.GetModList(i.workspaceMod.GetModDependencyPath())
+	return i.installData.Lock.GetModList(i.workspaceMod.GetInstallCacheKey())
 }
 
 func (i *ModInstaller) installMods(ctx context.Context, mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) error {
@@ -376,15 +376,15 @@ func (i *ModInstaller) install(ctx context.Context, dependency *ResolvedModRef, 
 	if modDef == nil {
 		return nil, fmt.Errorf("'%s' has no mod definition file", dependency.FullName())
 	}
-	// hack set mod dependency path
-	if err := i.setModDependencyPath(modDef, i.tmpPath); err != nil {
-		return nil, err
-	}
 
 	// so we have successfully installed this dependency to the temp location, now copy to the mod location
 	if !i.dryRun {
 		destPath := i.getDependencyDestPath(fullName)
 		if err := i.copyModFromTempToModsFolder(tempDestPath, destPath); err != nil {
+			return nil, err
+		}
+		// now the mod is installed in it's final location, set mod dependency path
+		if err := i.setModDependencyConfig(modDef, destPath); err != nil {
 			return nil, err
 		}
 	}
@@ -437,7 +437,7 @@ func (i *ModInstaller) loadDependencyMod(ctx context.Context, modVersion *versio
 	if modDef == nil {
 		return nil, fmt.Errorf("failed to load mod from %s", modPath)
 	}
-	if err := i.setModDependencyPath(modDef, modPath); err != nil {
+	if err := i.setModDependencyConfig(modDef, modPath); err != nil {
 		return nil, err
 	}
 	return modDef, nil
@@ -445,9 +445,12 @@ func (i *ModInstaller) loadDependencyMod(ctx context.Context, modVersion *versio
 }
 
 // set the mod dependency path
-func (i *ModInstaller) setModDependencyPath(mod *modconfig.Mod, modPath string) (err error) {
-	mod.ModDependencyPath, err = filepath.Rel(i.modsPath, modPath)
-	return
+func (i *ModInstaller) setModDependencyConfig(mod *modconfig.Mod, modPath string) error {
+	dependencyPath, err := filepath.Rel(i.modsPath, modPath)
+	if err != nil {
+		return err
+	}
+	return mod.SetDependencyConfig(dependencyPath)
 }
 
 func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, createDefault bool) (*modconfig.Mod, error) {
@@ -461,6 +464,7 @@ func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, createDe
 		}
 		return nil, nil
 	}
+
 	mod, err := parse.ParseModDefinition(modPath)
 	if err != nil {
 		return nil, err

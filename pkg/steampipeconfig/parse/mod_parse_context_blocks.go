@@ -9,38 +9,38 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func (r *ModParseContext) DetermineBlockName(block *hcl.Block) string {
+func (m *ModParseContext) DetermineBlockName(block *hcl.Block) string {
 	var shortName string
 
 	// have we cached a name for this block (i.e. is this the second decode pass)
-	if name, ok := r.GetCachedBlockShortName(block); ok {
+	if name, ok := m.GetCachedBlockShortName(block); ok {
 		return name
 	}
 
 	// if there is a parent set in the parent stack, this block is a child of that parent
-	parentName := r.PeekParent()
+	parentName := m.PeekParent()
 
 	anonymous := len(block.Labels) == 0
 	if anonymous {
-		shortName = r.getUniqueName(block.Type, parentName)
+		shortName = m.getUniqueName(block.Type, parentName)
 	} else {
 		shortName = block.Labels[0]
 	}
 	// build unqualified name
 	unqualifiedName := fmt.Sprintf("%s.%s", block.Type, shortName)
-	r.addChildBlockForParent(parentName, unqualifiedName)
+	m.addChildBlockForParent(parentName, unqualifiedName)
 	// cache this name for the second decode pass
-	r.cacheBlockName(block, unqualifiedName)
+	m.cacheBlockName(block, unqualifiedName)
 	return shortName
 }
 
-func (r *ModParseContext) GetCachedBlockName(block *hcl.Block) (string, bool) {
-	name, ok := r.blockNameMap[r.blockHash(block)]
+func (m *ModParseContext) GetCachedBlockName(block *hcl.Block) (string, bool) {
+	name, ok := m.blockNameMap[m.blockHash(block)]
 	return name, ok
 }
 
-func (r *ModParseContext) GetCachedBlockShortName(block *hcl.Block) (string, bool) {
-	unqualifiedName, ok := r.blockNameMap[r.blockHash(block)]
+func (m *ModParseContext) GetCachedBlockShortName(block *hcl.Block) (string, bool) {
+	unqualifiedName, ok := m.blockNameMap[m.blockHash(block)]
 	if ok {
 		parsedName, err := modconfig.ParseResourceName(unqualifiedName)
 		if err != nil {
@@ -51,31 +51,31 @@ func (r *ModParseContext) GetCachedBlockShortName(block *hcl.Block) (string, boo
 	return "", false
 }
 
-func (r *ModParseContext) GetDecodedResourceForBlock(block *hcl.Block) (modconfig.HclResource, bool) {
-	if name, ok := r.GetCachedBlockName(block); ok {
+func (m *ModParseContext) GetDecodedResourceForBlock(block *hcl.Block) (modconfig.HclResource, bool) {
+	if name, ok := m.GetCachedBlockName(block); ok {
 		// see whether the mod contains this resource already
 		parsedName, err := modconfig.ParseResourceName(name)
 		if err == nil {
-			return r.CurrentMod.GetResource(parsedName)
+			return m.CurrentMod.GetResource(parsedName)
 		}
 	}
 	return nil, false
 }
 
-func (r *ModParseContext) cacheBlockName(block *hcl.Block, shortName string) {
-	r.blockNameMap[r.blockHash(block)] = shortName
+func (m *ModParseContext) cacheBlockName(block *hcl.Block, shortName string) {
+	m.blockNameMap[m.blockHash(block)] = shortName
 }
 
-func (r *ModParseContext) blockHash(block *hcl.Block) string {
+func (m *ModParseContext) blockHash(block *hcl.Block) string {
 	return helpers.GetMD5Hash(block.DefRange.String())
 }
 
 // getUniqueName returns a name unique within the scope of this execution tree
-func (r *ModParseContext) getUniqueName(blockType string, parent string) string {
+func (m *ModParseContext) getUniqueName(blockType string, parent string) string {
 	// count how many children of this block type the parent has
 	childCount := 0
 
-	for _, childName := range r.blockChildMap[parent] {
+	for _, childName := range m.blockChildMap[parent] {
 		parsedName, err := modconfig.ParseResourceName(childName)
 		if err != nil {
 			// we do not expect this
@@ -89,6 +89,6 @@ func (r *ModParseContext) getUniqueName(blockType string, parent string) string 
 	return fmt.Sprintf("%s_anonymous_%s_%d", sanitisedParentName, blockType, childCount)
 }
 
-func (r *ModParseContext) addChildBlockForParent(parent, child string) {
-	r.blockChildMap[parent] = append(r.blockChildMap[parent], child)
+func (m *ModParseContext) addChildBlockForParent(parent, child string) {
+	m.blockChildMap[parent] = append(m.blockChildMap[parent], child)
 }

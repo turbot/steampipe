@@ -10,10 +10,12 @@ import useTemplateRender from "../../../hooks/useTemplateRender";
 import {
   BasePrimitiveProps,
   ExecutablePrimitiveProps,
+  isNumericCol,
   LeafNodeData,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { PanelProperties } from "../../../types";
+import { DashboardRunState, PanelProperties } from "../../../types";
+import { getColumn } from "../../../utils/data";
 import { getComponent, registerComponent } from "../index";
 import {
   getIconClasses,
@@ -29,16 +31,18 @@ const Table = getComponent("table");
 
 export type CardType = "alert" | "info" | "ok" | "table" | null;
 
+export type CardProperties = {
+  label?: string;
+  value?: any;
+  icon?: string;
+  href?: string;
+};
+
 export type CardProps = PanelProperties &
   Omit<BasePrimitiveProps, "display_type"> &
   ExecutablePrimitiveProps & {
     display_type?: CardType;
-    properties: {
-      label?: string;
-      value?: string;
-      icon?: string;
-      href?: string;
-    };
+    properties: CardProperties;
   };
 
 type CardDataFormat = "simple" | "formal";
@@ -59,13 +63,12 @@ const getDataFormat = (data: LeafNodeData): CardDataFormat => {
   return "simple";
 };
 
-const useCardState = ({
-  data,
-  display_type,
-  properties,
-  status,
-}: CardProps) => {
-  const [calculatedProperties, setCalculatedProperties] = useState<CardState>({
+const getDefaultState = (
+  status: DashboardRunState,
+  properties: CardProperties,
+  display_type: CardType | undefined
+) => {
+  return {
     loading: status === "running",
     label: properties.label || null,
     value: isNumber(properties.value)
@@ -74,7 +77,18 @@ const useCardState = ({
     type: display_type || null,
     icon: getIconForType(display_type, properties.icon),
     href: properties.href || null,
-  });
+  };
+};
+
+const useCardState = ({
+  data,
+  display_type,
+  properties,
+  status,
+}: CardProps) => {
+  const [calculatedProperties, setCalculatedProperties] = useState<CardState>(
+    getDefaultState(status, properties, display_type)
+  );
 
   useEffect(() => {
     if (
@@ -84,16 +98,9 @@ const useCardState = ({
       data.columns.length === 0 ||
       data.rows.length === 0
     ) {
-      setCalculatedProperties({
-        loading: status === "running",
-        label: properties.label || null,
-        value: isNumber(properties.value)
-          ? properties.value
-          : properties.value || null,
-        type: display_type || null,
-        icon: getIconForType(display_type, properties.icon),
-        href: properties.href || null,
-      });
+      setCalculatedProperties(
+        getDefaultState(status, properties, display_type)
+      );
       return;
     }
 
@@ -101,11 +108,16 @@ const useCardState = ({
 
     if (dataFormat === "simple") {
       const firstCol = data.columns[0];
+      const isNumericValue = isNumericCol(firstCol.data_type);
       const row = data.rows[0];
+      const value = row[firstCol.name];
       setCalculatedProperties({
         loading: false,
         label: firstCol.name,
-        value: row[firstCol.name],
+        value:
+          value !== null && value !== undefined && isNumericValue
+            ? value.toLocaleString()
+            : value,
         type: display_type || null,
         icon: getIconForType(display_type, properties.icon),
         href: properties.href || null,
@@ -116,10 +128,15 @@ const useCardState = ({
       const formalType = get(data, `rows[0].type`, null);
       const formalIcon = get(data, `rows[0].icon`, null);
       const formalHref = get(data, `rows[0].href`, null);
+      const valueCol = getColumn(data.columns, "value");
+      const isNumericValue = !!valueCol && isNumericCol(valueCol.data_type);
       setCalculatedProperties({
         loading: false,
         label: formalLabel,
-        value: formalValue,
+        value:
+          formalValue !== null && formalValue !== undefined && isNumericValue
+            ? formalValue.toLocaleString()
+            : formalValue,
         type: formalType || display_type || null,
         icon: getIconForType(
           formalType || display_type,
