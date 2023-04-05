@@ -224,9 +224,6 @@ func (i *ModInstaller) commitShadow() (err error) {
 }
 
 func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) (err error) {
-	// TODO:BINAEK:: We should look at trying to solve the "shadow directory" solution
-	// with an overlay virtual filesystem
-
 	defer func() {
 		if err == nil {
 			// everything went well
@@ -351,38 +348,43 @@ func (i *ModInstaller) getCurrentlyInstalledVersionToUse(requiredModVersion *mod
 	return i.loadDependencyMod(installedVersion)
 }
 
+// loadDependencyMod tries to load the mod definition from the shadow directory
+// and falls back to the 'mods' directory of the root mod
 func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionConstraint) (*modconfig.Mod, error) {
-	modPath := i.getDependencyDestPath(modconfig.BuildModDependencyPath(modVersion.Name, modVersion.Version))
-	modDef, err := i.loadModfile(modPath, false)
+	rootLocation := i.shadowDirPath
+	modPath := i.getDependencyShadowPath(modconfig.BuildModDependencyPath(modVersion.Name, modVersion.Version))
+	modDefinition, err := i.loadDependencyModFromRoot(modVersion, modPath)
 	if err != nil {
-		return nil, err
+		return nil, sperr.WrapWithMessage(err, "could not load mod definition from '%s'", rootLocation)
 	}
-	if modDef != nil {
-		log.Println("[TRACE] found dependency mod in", modPath)
-		if err := i.setModDependencyConfig(modDef, modPath, i.modsPath); err != nil {
-			return nil, err
+	if modDefinition == nil {
+		log.Println("[TRACE] failed to load from shadow - trying in 'mods'")
+		modPath = i.getDependencyDestPath(modconfig.BuildModDependencyPath(modVersion.Name, modVersion.Version))
+		rootLocation = i.modsPath
+		modDefinition, err = i.loadDependencyModFromRoot(modVersion, modPath)
+		if err != nil {
+			return nil, sperr.WrapWithMessage(err, "could not load mod definition from '%s'", rootLocation)
 		}
-		return modDef, nil
+	}
+	if modDefinition == nil {
+		return nil, fmt.Errorf("could not find dependency mod '%s'", modVersion.FullName())
 	}
 
-	log.Println("[TRACE] NOT found dependency mod in", modPath)
-	log.Println("[TRACE] falling back to", modPath)
-	// we couldn't load the mod from the mods directory
-	// this mod may have been installed in this installation
-	// try to load this from the shadow directory
-	shadowModPath := i.getDependencyShadowPath(modconfig.BuildModDependencyPath(modVersion.Name, modVersion.Version))
-	log.Println("[TRACE] looking for dependency mod in", shadowModPath)
-	modDef, err = i.loadModfile(shadowModPath, false)
+	relativePathFromRoot, err := filepath.Rel(rootLocation, modPath)
 	if err != nil {
 		return nil, err
 	}
-	if modDef == nil {
-		return nil, fmt.Errorf("failed to load mod from %s", modPath)
-	}
-	if err := i.setModDependencyConfig(modDef, shadowModPath, i.shadowDirPath); err != nil {
+
+	if err := i.setModDependencyConfig(modDefinition, relativePathFromRoot); err != nil {
 		return nil, err
 	}
-	return modDef, nil
+
+	return modDefinition, nil
+}
+
+func (i *ModInstaller) loadDependencyModFromRoot(modVersion *versionmap.ResolvedVersionConstraint, modInstallRoot string) (*modconfig.Mod, error) {
+	log.Println("[TRACE] looking for dependency mod in", modInstallRoot)
+	return i.loadModfile(modInstallRoot, false)
 }
 
 // determine if we should update this mod, and if so whether there is an update available
@@ -462,8 +464,12 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 		if err := i.copyModFromTempToModsFolder(tempDestPath, destPath); err != nil {
 			return nil, err
 		}
+		relativePath, err := filepath.Rel(i.shadowDirPath, destPath)
+		if err != nil {
+			return nil, err
+		}
 		// now the mod is installed in it's final location, set mod dependency path
-		if err := i.setModDependencyConfig(modDef, destPath, i.shadowDirPath); err != nil {
+		if err := i.setModDependencyConfig(modDef, relativePath); err != nil {
 			return nil, err
 		}
 	}
@@ -485,7 +491,7 @@ func (i *ModInstaller) copyModFromTempToModsFolder(tmpPath string, destPath stri
 func (i *ModInstaller) installFromGit(dependency *ResolvedModRef, installPath string) error {
 	// get the mod from git
 	gitUrl := getGitUrl(dependency.Name)
-	log.Println("[TRACE] cloning", gitUrl, dependency.GitReference)
+	log.Println("[TRACE] >>> cloning", gitUrl, dependency.GitReference)
 	_, err := git.PlainClone(installPath,
 		false,
 		&git.CloneOptions{
@@ -514,11 +520,7 @@ func (i *ModInstaller) getDependencyShadowPath(dependencyFullName string) string
 }
 
 // set the mod dependency path
-func (i *ModInstaller) setModDependencyConfig(mod *modconfig.Mod, modPath string, relativeTo string) error {
-	dependencyPath, err := filepath.Rel(relativeTo, modPath)
-	if err != nil {
-		return err
-	}
+func (i *ModInstaller) setModDependencyConfig(mod *modconfig.Mod, dependencyPath string) error {
 	return mod.SetDependencyConfig(dependencyPath)
 }
 
