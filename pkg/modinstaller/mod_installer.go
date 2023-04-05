@@ -21,7 +21,8 @@ import (
 )
 
 type ModInstaller struct {
-	installData  *InstallData
+	installData *InstallData
+
 	workspaceMod *modconfig.Mod
 	mods         versionmap.VersionConstraintMap
 
