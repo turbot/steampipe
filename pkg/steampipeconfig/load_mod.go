@@ -94,7 +94,6 @@ func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext) er
 		}
 
 		for _, requiredModVersion := range mod.Require.Mods {
-
 			// have we already loaded a mod which satisfied this
 			loadedMod, err := parseCtx.GetLoadedDependencyMod(requiredModVersion, mod)
 			if err != nil {
@@ -135,7 +134,7 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	defer func() { parseCtx.ListOptions.Exclude = prevExclusions }()
 
 	// create a child run context
-	childRunCtx := parse.NewModParseContext(
+	childParseCtx := parse.NewModParseContext(
 		parseCtx.WorkspaceLock,
 		dependencyPath,
 		parse.CreatePseudoResources,
@@ -145,11 +144,11 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 			// only load .sp files
 			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 		})
-	childRunCtx.BlockTypes = parseCtx.BlockTypes
-	childRunCtx.ParentParseCtx = parseCtx
+	childParseCtx.BlockTypes = parseCtx.BlockTypes
+	childParseCtx.ParentParseCtx = parseCtx
 
 	// NOTE: pass in the version and dependency path of the mod - these must be set before it loads its depdencies
-	mod, errAndWarnings := LoadMod(dependencyPath, childRunCtx, WithDependencyConfig(modDependency.Name, version))
+	mod, errAndWarnings := LoadMod(dependencyPath, childParseCtx, WithDependencyConfig(modDependency.Name, version))
 	if errAndWarnings.GetError() != nil {
 		return errAndWarnings.GetError()
 	}

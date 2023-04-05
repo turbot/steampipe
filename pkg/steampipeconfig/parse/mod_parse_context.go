@@ -195,7 +195,9 @@ func (m *ModParseContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 		// continue walking
 		return true, nil
 	}
-	mod.WalkResources(resourceFunc)
+
+	// NOTE: only add top level resources (i.e. we do not add resources from transitive depdencies)
+	mod.GetResourceMaps().TopLevelResources().WalkResources(resourceFunc)
 
 	// rebuild the eval context
 	m.buildEvalContext()
@@ -234,7 +236,7 @@ func (m *ModParseContext) CreatePseudoResources() bool {
 	return m.Flags&CreatePseudoResources == CreatePseudoResources
 }
 
-// AddResource stores this resource as a variable to be added to the eval context. It alse
+// AddResource stores this resource as a variable to be added to the eval context.
 func (m *ModParseContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics {
 	diagnostics := m.storeResourceInCtyMap(resource)
 	if diagnostics.HasErrors() {
