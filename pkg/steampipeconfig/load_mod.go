@@ -42,7 +42,7 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOpt
 	if err := loadModDependencies(mod, parseCtx); err != nil {
 		return nil, modconfig.NewErrorsAndWarning(err)
 	}
-	// now we have loaded dependencies, set the current mod on the run context
+	// now we have loaded dependencies, set the current mod on the parse context
 	parseCtx.CurrentMod = mod
 	// populate the resource maps of the current mod using the dependency mods
 	mod.ResourceMaps = parseCtx.GetResourceMaps()
@@ -133,7 +133,7 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	parseCtx.ListOptions.Exclude = nil
 	defer func() { parseCtx.ListOptions.Exclude = prevExclusions }()
 
-	// create a child run context
+	// create a child parse context
 	childParseCtx := parse.NewModParseContext(
 		parseCtx.WorkspaceLock,
 		dependencyPath,
@@ -160,7 +160,6 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	}
 
 	return nil
-
 }
 
 func loadModResources(modPath string, parseCtx *parse.ModParseContext) (*modconfig.Mod, *modconfig.ErrorAndWarnings) {
@@ -190,13 +189,6 @@ func loadModResources(modPath string, parseCtx *parse.ModParseContext) (*modconf
 
 	// parse all hcl files (NOTE - this reads the CurrentMod out of ParseContext and adds to it)
 	mod, errAndWarnings := parse.ParseMod(fileData, pseudoResources, parseCtx)
-	if errAndWarnings.GetError() == nil {
-		// now add fully populated mod to the parent run context
-		if parseCtx.ParentParseCtx != nil {
-			parseCtx.ParentParseCtx.CurrentMod = mod
-			parseCtx.ParentParseCtx.AddMod(mod)
-		}
-	}
 
 	return mod, errAndWarnings
 }

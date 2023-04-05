@@ -187,13 +187,13 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 	// add pseudo resources to the mod
 	addPseudoResourcesToMod(pseudoResources, hclResources, mod)
 
-	// add the parsed content to the run context
+	// add the parsed content to the parse context
 	parseCtx.SetDecodeContent(content, fileData)
 
-	// add the mod to the run context
+	// add the mod to the parse context
 	// - this it to ensure all pseudo resources get added and build the eval context with the variables we just added
 	if diags = parseCtx.AddMod(mod); diags.HasErrors() {
-		return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to add mod to run context", diags))
+		return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to add mod to parse context", diags))
 	}
 
 	// collect warnings as we parse

@@ -34,7 +34,7 @@ func decode(parseCtx *ModParseContext) hcl.Diagnostics {
 		return diags
 	}
 
-	// now clear dependencies from run context - they will be rebuilt
+	// now clear dependencies from parse context - they will be rebuilt
 	parseCtx.ClearDependencies()
 
 	for _, block := range blocks {
@@ -166,7 +166,7 @@ func decodeBlock(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclReso
 	}
 
 	// handle the result
-	// - if there are dependencies, add to run context
+	// - if there are dependencies, add to parse context
 	handleModDecodeResult(resource, res, block, parseCtx)
 
 	return resource, res
@@ -479,7 +479,7 @@ func decodeDashboard(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Da
 
 func decodeDashboardBlocks(content *hclsyntax.Body, dashboard *modconfig.Dashboard, parseCtx *ModParseContext) *decodeResult {
 	var res = newDecodeResult()
-	// set dashboard as parent on the run context - this is used when generating names for anonymous blocks
+	// set dashboard as parent on the parse context - this is used when generating names for anonymous blocks
 	parseCtx.PushParent(dashboard)
 	defer func() {
 		parseCtx.PopParent()
@@ -541,7 +541,7 @@ func decodeDashboardContainer(block *hcl.Block, parseCtx *ModParseContext) (*mod
 func decodeDashboardContainerBlocks(content *hclsyntax.Body, dashboardContainer *modconfig.DashboardContainer, parseCtx *ModParseContext) *decodeResult {
 	var res = newDecodeResult()
 
-	// set container as parent on the run context - this is used when generating names for anonymous blocks
+	// set container as parent on the parse context - this is used when generating names for anonymous blocks
 	parseCtx.PushParent(dashboardContainer)
 	defer func() {
 		parseCtx.PopParent()
@@ -650,7 +650,7 @@ func handleModDecodeResult(resource modconfig.HclResource, res *decodeResult, bl
 	resource.SetTopLevel(parseCtx.IsTopLevelBlock(block))
 
 	// call post decode hook
-	// NOTE: must do this BEFORE adding resource to run context to ensure we respect the base property
+	// NOTE: must do this BEFORE adding resource to parse context to ensure we respect the base property
 	moreDiags := resource.OnDecoded(block, parseCtx)
 	res.addDiags(moreDiags)
 
@@ -666,10 +666,10 @@ func handleModDecodeResult(resource modconfig.HclResource, res *decodeResult, bl
 		return
 	}
 
-	// if resource is NOT anonymous, and this is a TOP LEVEL BLOCK, add into the run context
+	// if resource is NOT anonymous, and this is a TOP LEVEL BLOCK, add into the parse context
 	// NOTE: we can only reference resources defined in a top level block
 	if !resourceIsAnonymous(resource) && resource.IsTopLevel() {
-		moreDiags = parseCtx.AddResource(resource)
+		moreDiags = parseCtx.AddResourceToEvalCtx(resource)
 		res.addDiags(moreDiags)
 	}
 

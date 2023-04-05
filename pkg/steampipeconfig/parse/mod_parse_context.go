@@ -45,7 +45,7 @@ type ModParseContext struct {
 	// there may be multiple versions of same mod in this map
 	loadedDependencyMods modconfig.ModMap
 
-	// Variables are populated in an initial parse pass top we store them on the run context
+	// Variables are populated in an initial parse pass top we store them on the parse context
 	// so we can set them on the mod when we do the main parse
 
 	// Variables is a map of the variables in the current mod
@@ -100,7 +100,7 @@ func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath st
 }
 
 func (m *ModParseContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
-	// if the mod has dependencies, there must a workspace lock object in the run context
+	// if the mod has dependencies, there must a workspace lock object in the parse context
 	// (mod MUST be the workspace mod, not a dependency, as we would hit this error as soon as we parse it)
 	if mod.HasDependentMods() && (m.WorkspaceLock.Empty() || m.WorkspaceLock.Incomplete()) {
 		return fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
@@ -136,15 +136,15 @@ func VariableValueMap(variables map[string]*modconfig.Variable) map[string]cty.V
 	return ret
 }
 
-// AddInputVariables adds variables to the run context.
-// This function is called for the root run context after loading all input variables
+// AddInputVariables adds variables to the parse context.
+// This function is called for the root parse context after loading all input variables
 func (m *ModParseContext) AddInputVariables(inputVariables *modconfig.ModVariableMap) {
 	m.setRootVariables(inputVariables.RootVariables)
 	m.setDependencyVariables(inputVariables.DependencyVariables)
 }
 
-// SetVariablesForDependencyMod adds variables to the run context.
-// This function is called for dependent mod run context
+// SetVariablesForDependencyMod adds variables to the parse context.
+// This function is called for dependent mod parse context
 func (m *ModParseContext) SetVariablesForDependencyMod(mod *modconfig.Mod, dependencyVariablesMap map[string]map[string]*modconfig.Variable) {
 	m.setRootVariables(dependencyVariablesMap[mod.ShortName])
 	m.setDependencyVariables(dependencyVariablesMap)
@@ -174,30 +174,28 @@ func (m *ModParseContext) setDependencyVariables(dependencyVariables map[string]
 	}
 }
 
-// AddMod is used to add a mod to the eval context
+// AddMod is used to add a mod and all its resources to the eval context
 func (m *ModParseContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	if len(m.UnresolvedBlocks) > 0 {
 		// should never happen
 		panic("calling SetContent on runContext but there are unresolved blocks from a previous parse")
 	}
-
 	var diags hcl.Diagnostics
 
-	moreDiags := m.storeResourceInCtyMap(mod)
+	moreDiags := m.addResource(mod)
 	diags = append(diags, moreDiags...)
 
 	resourceFunc := func(item modconfig.HclResource) (bool, error) {
 		// add all mod resources except variables into cty map
 		if _, ok := item.(*modconfig.Variable); !ok {
-			moreDiags := m.storeResourceInCtyMap(item)
+			moreDiags := m.addResource(item)
 			diags = append(diags, moreDiags...)
 		}
 		// continue walking
 		return true, nil
 	}
 
-	// NOTE: only add top level resources (i.e. we do not add resources from transitive depdencies)
-	mod.GetResourceMaps().TopLevelResources().WalkResources(resourceFunc)
+	mod.GetResourceMaps().WalkResources(resourceFunc)
 
 	// rebuild the eval context
 	m.buildEvalContext()
@@ -236,9 +234,9 @@ func (m *ModParseContext) CreatePseudoResources() bool {
 	return m.Flags&CreatePseudoResources == CreatePseudoResources
 }
 
-// AddResource stores this resource as a variable to be added to the eval context.
-func (m *ModParseContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics {
-	diagnostics := m.storeResourceInCtyMap(resource)
+// AddResourceToEvalCtx stores this resource as a variable to be added to the eval context.
+func (m *ModParseContext) AddResourceToEvalCtx(resource modconfig.HclResource) hcl.Diagnostics {
+	diagnostics := m.addResource(resource)
 	if diagnostics.HasErrors() {
 		return diagnostics
 	}
@@ -316,10 +314,10 @@ func (m *ModParseContext) buildEvalContext() {
 	m.ParseContext.buildEvalContext(variables)
 }
 
-// update the cached cty value for the given resource, as long as itr does not already exist
-func (m *ModParseContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.Diagnostics {
+// update the cached cty value for the given resource, and add references to reference value map
+func (m *ModParseContext) addResource(resource modconfig.HclResource) hcl.Diagnostics {
 	// add resource to variable map
-	ctyValue, diags := m.getResourceCtyValue(resource)
+	ctyValue, diags := m.addResourceToVariableMap(resource)
 	if diags.HasErrors() {
 		return diags
 	}
@@ -335,7 +333,7 @@ func (m *ModParseContext) storeResourceInCtyMap(resource modconfig.HclResource) 
 	return nil
 }
 
-func (m *ModParseContext) getResourceCtyValue(resource modconfig.HclResource) (cty.Value, hcl.Diagnostics) {
+func (m *ModParseContext) addResourceToVariableMap(resource modconfig.HclResource) (cty.Value, hcl.Diagnostics) {
 	ctyValue, err := resource.(modconfig.CtyValueProvider).CtyValue()
 	if err != nil {
 		return cty.Zero, m.errToCtyValueDiags(resource, err)
@@ -421,8 +419,9 @@ func (m *ModParseContext) addReferenceValue(resource modconfig.HclResource, valu
 	key := parsedName.Name
 	typeString := parsedName.ItemType
 
-	// the resource name will not have a mod - but the run context knows which mod we are parsing
+	// the resource name will not have a mod - but the parse context knows which mod we are parsing
 	mod := m.CurrentMod
+
 	modName := mod.ShortName
 	if mod.ModPath == m.RootEvalPath {
 		modName = "local"
@@ -478,6 +477,8 @@ func (m *ModParseContext) AddLoadedDependencyMod(mod *modconfig.Mod) {
 		return
 	}
 	m.loadedDependencyMods[*mod.DependencyPath] = mod
+	// add mod into variable map
+	m.addResourceToVariableMap(mod)
 }
 
 // GetTopLevelDependencyMods build a mod map of top level loaded dependencies, keyed by mod name

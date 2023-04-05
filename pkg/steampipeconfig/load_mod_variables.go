@@ -66,7 +66,7 @@ func getInputVariables(variableMap map[string]*modconfig.Variable, validate bool
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
-	// get mod and mod path from run context
+	// get mod and mod path from parse context
 	mod := parseCtx.CurrentMod
 	path := mod.ModPath
 

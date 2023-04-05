@@ -254,7 +254,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	// populate the parsed variable values
 	w.VariableValues = inputVariables.VariableValues
 
-	// build run context which we use to load the workspace
+	// build parse context which we use to load the workspace
 	parseCtx, err := w.getParseContext()
 	if err != nil {
 		return modconfig.NewErrorsAndWarning(err)
@@ -286,7 +286,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 }
 
 func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, error) {
-	// build a run context just to use to load variable definitions
+	// build a parse context just to use to load variable definitions
 	variablesRunCtx, err := w.getParseContext()
 	if err != nil {
 		return nil, err

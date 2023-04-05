@@ -104,7 +104,7 @@ func decodeWorkspaceProfiles(parseCtx *WorkspaceProfileParseContext) (map[string
 		return nil, diags
 	}
 
-	// now clear dependencies from run context - they will be rebuilt
+	// now clear dependencies from parse context - they will be rebuilt
 	parseCtx.ClearDependencies()
 
 	for _, block := range blocksToDecode {
@@ -169,7 +169,7 @@ func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseCon
 func handleWorkspaceProfileDecodeResult(resource *modconfig.WorkspaceProfile, res *decodeResult, block *hcl.Block, parseCtx *WorkspaceProfileParseContext) {
 	if res.Success() {
 		// call post decode hook
-		// NOTE: must do this BEFORE adding resource to run context to ensure we respect the base property
+		// NOTE: must do this BEFORE adding resource to parse context to ensure we respect the base property
 		moreDiags := resource.OnDecoded()
 		res.addDiags(moreDiags)
 
