@@ -12,7 +12,7 @@ import (
 //	and a version into a dependency path of form github.com/turbot/steampipe-mod-m2@v1.0.0
 func BuildModDependencyPath(dependencyName string, version *semver.Version) string {
 	if version == nil {
-		// TODO KAI DOES THIS EVER HAPPEN
+		// not expected
 		return dependencyName
 	}
 

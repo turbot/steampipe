@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/Masterminds/semver"
@@ -338,40 +339,45 @@ func (i *ModInstaller) getCurrentlyInstalledVersionToUse(requiredModVersion *mod
 // loadDependencyMod tries to load the mod definition from the shadow directory
 // and falls back to the 'mods' directory of the root mod
 func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionConstraint) (*modconfig.Mod, error) {
-	rootLocation := i.shadowDirPath
-	modPath := i.getDependencyShadowPath(modconfig.BuildModDependencyPath(modVersion.Name, modVersion.Version))
-	modDefinition, err := i.loadDependencyModFromRoot(modVersion, modPath)
-	if err != nil {
-		return nil, sperr.WrapWithMessage(err, "could not load mod definition from '%s'", rootLocation)
-	}
-	if modDefinition == nil {
-		log.Println("[TRACE] failed to load from shadow - trying in 'mods'")
-		modPath = i.getDependencyDestPath(modconfig.BuildModDependencyPath(modVersion.Name, modVersion.Version))
-		rootLocation = i.modsPath
-		modDefinition, err = i.loadDependencyModFromRoot(modVersion, modPath)
-		if err != nil {
-			return nil, sperr.WrapWithMessage(err, "could not load mod definition from '%s'", rootLocation)
-		}
-	}
-	if modDefinition == nil {
-		return nil, fmt.Errorf("could not find dependency mod '%s'", modVersion.FullName())
-	}
+	// construct the dependency path - this is the relative path of the dependency we are installing
+	dependencyPath := modVersion.DependencyPath()
 
-	relativePathFromRoot, err := filepath.Rel(rootLocation, modPath)
+	// first try loading from the shadow dir
+	modDefinition, err := i.loadDependencyModFromRoot(i.shadowDirPath, dependencyPath)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := i.setModDependencyConfig(modDefinition, relativePathFromRoot); err != nil {
+	// failed to load from shadow dir, try mods dir
+	if modDefinition == nil {
+		modDefinition, err = i.loadDependencyModFromRoot(i.modsPath, dependencyPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// if we still failed, give up
+	if modDefinition == nil {
+		return nil, fmt.Errorf("could not find dependency mod '%s'", dependencyPath)
+	}
+
+	// set the DependencyName, DependencyPath and Version properties on the mod
+	if err := i.setModDependencyConfig(modDefinition, dependencyPath); err != nil {
 		return nil, err
 	}
 
 	return modDefinition, nil
 }
 
-func (i *ModInstaller) loadDependencyModFromRoot(modVersion *versionmap.ResolvedVersionConstraint, modInstallRoot string) (*modconfig.Mod, error) {
-	log.Println("[TRACE] looking for dependency mod in", modInstallRoot)
-	return i.loadModfile(modInstallRoot, false)
+func (i *ModInstaller) loadDependencyModFromRoot(modInstallRoot string, dependencyPath string) (*modconfig.Mod, error) {
+	log.Printf("[TRACE] loadDependencyModFromRoot: trying to load %s from root %s", dependencyPath, modInstallRoot)
+
+	modPath := path.Join(modInstallRoot, dependencyPath)
+	modDefinition, err := i.loadModfile(modPath, false)
+	if err != nil {
+		return nil, sperr.WrapWithMessage(err, "failed to load mod definition for %s from %s", dependencyPath, modInstallRoot)
+	}
+	return modDefinition, nil
 }
 
 // determine if we should update this mod, and if so whether there is an update available
@@ -420,8 +426,8 @@ func (i *ModInstaller) getModRefSatisfyingConstraints(modVersion *modconfig.ModV
 func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod) (_ *modconfig.Mod, err error) {
 	var modDef *modconfig.Mod
 	// get the temp location to install the mod to
-	fullName := dependency.FullName()
-	destPath := i.getDependencyShadowPath(fullName)
+	dependencyPath := dependency.DependencyPath()
+	destPath := i.getDependencyShadowPath(dependencyPath)
 
 	defer func() {
 		if err == nil {
@@ -431,7 +437,7 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 	// if the target path exists, use the exiting file
 	// if it does not exist (the usual case), install it
 	if _, err := os.Stat(destPath); os.IsNotExist(err) {
-		log.Println("[TRACE] installing", fullName, "in", destPath)
+		log.Println("[TRACE] installing", dependencyPath, "in", destPath)
 		if err := i.installFromGit(dependency, destPath); err != nil {
 			return nil, err
 		}
@@ -443,17 +449,12 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 		return nil, err
 	}
 	if modDef == nil {
-		return nil, fmt.Errorf("'%s' has no mod definition file", dependency.FullName())
+		return nil, fmt.Errorf("'%s' has no mod definition file", dependencyPath)
 	}
 
-	// so we have successfully installed this dependency to the temp location, now copy to the mod location
 	if !i.dryRun {
-		relativePath, err := filepath.Rel(i.shadowDirPath, destPath)
-		if err != nil {
-			return nil, err
-		}
-		// now the mod is installed in it's final location, set mod dependency path
-		if err := i.setModDependencyConfig(modDef, relativePath); err != nil {
+		// now the mod is installed in its final location, set mod dependency path
+		if err := i.setModDependencyConfig(modDef, dependencyPath); err != nil {
 			return nil, err
 		}
 	}
