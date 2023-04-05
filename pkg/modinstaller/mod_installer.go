@@ -77,8 +77,30 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	return i, nil
 }
 
+func (i *ModInstaller) removeOldShadowDirectories() error {
+	removeErrors := []error{}
+	// get the parent of the 'mods' directory - all shadow directories are siblings of this
+	parent := filepath.Base(i.modsPath)
+	entries, err := os.ReadDir(parent)
+	if err != nil {
+		return err
+	}
+	for _, dir := range entries {
+		if dir.IsDir() && filepaths.IsModInstallShadowPath(dir.Name()) {
+			err := os.RemoveAll(filepath.Join(parent, dir.Name()))
+			if err != nil {
+				removeErrors = append(removeErrors, err)
+			}
+		}
+	}
+	return error_helpers.CombineErrors(removeErrors...)
+}
+
 func (i *ModInstaller) setModsPath() error {
 	i.modsPath = filepaths.WorkspaceModPath(i.workspacePath)
+	if err := i.removeOldShadowDirectories(); err != nil {
+		log.Println("[INFO] could not remove old mod installation shadow directory", err)
+	}
 	i.shadowDirPath = filepaths.WorkspaceModShadowPath(i.workspacePath)
 	return nil
 }
