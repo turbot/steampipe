@@ -27,9 +27,6 @@ type ModInstaller struct {
 
 	// the final resting place of all dependency mods
 	modsPath string
-	// temp location used to git clone the dependencies into
-	// TODO: Binaek - look into removing this - since we use a shadow directory anyway
-	tmpPath string
 	// a shadow directory for installing mods
 	// this is necessary to make mod installation transactional
 	shadowDirPath string
@@ -79,11 +76,6 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 }
 
 func (i *ModInstaller) setModsPath() error {
-	dir, err := os.MkdirTemp(os.TempDir(), "sp_dr_*")
-	if err != nil {
-		return err
-	}
-	i.tmpPath = dir
 	i.modsPath = filepaths.WorkspaceModPath(i.workspacePath)
 	i.shadowDirPath = filepaths.WorkspaceModShadowPath(i.workspacePath)
 	return nil
@@ -112,7 +104,6 @@ func (i *ModInstaller) UninstallWorkspaceDependencies() error {
 
 	// if this is a dry run, return now
 	if i.dryRun {
-
 		log.Printf("[TRACE] UninstallWorkspaceDependencies - dry-run=true, returning before saving mod file and cache\n")
 		return nil
 	}
@@ -230,11 +221,6 @@ func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, paren
 			// copy whatever we installed to the mods directory
 			err = i.commitShadow()
 		}
-		// remove any temporary directory
-		// TODO BINAEK :: now that we have a shadow directory,
-		// we shouldn't need this. try to remove this
-		// clean up the temp location
-		os.RemoveAll(i.tmpPath)
 
 		// force remove the shadow directory
 		os.RemoveAll(i.shadowDirPath)
@@ -434,7 +420,7 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 	var modDef *modconfig.Mod
 	// get the temp location to install the mod to
 	fullName := dependency.FullName()
-	tempDestPath := i.getDependencyTmpPath(fullName)
+	destPath := i.getDependencyShadowPath(fullName)
 
 	defer func() {
 		if err == nil {
@@ -443,14 +429,15 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 	}()
 	// if the target path exists, use the exiting file
 	// if it does not exist (the usual case), install it
-	if _, err := os.Stat(tempDestPath); os.IsNotExist(err) {
-		if err := i.installFromGit(dependency, tempDestPath); err != nil {
+	if _, err := os.Stat(destPath); os.IsNotExist(err) {
+		log.Println("[TRACE] installing", fullName, "in", destPath)
+		if err := i.installFromGit(dependency, destPath); err != nil {
 			return nil, err
 		}
 	}
 
 	// now load the installed mod and return it
-	modDef, err = i.loadModfile(tempDestPath, false)
+	modDef, err = i.loadModfile(destPath, false)
 	if err != nil {
 		return nil, err
 	}
@@ -460,10 +447,6 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 
 	// so we have successfully installed this dependency to the temp location, now copy to the mod location
 	if !i.dryRun {
-		destPath := i.getDependencyShadowPath(fullName)
-		if err := i.copyModFromTempToModsFolder(tempDestPath, destPath); err != nil {
-			return nil, err
-		}
 		relativePath, err := filepath.Rel(i.shadowDirPath, destPath)
 		if err != nil {
 			return nil, err
@@ -475,17 +458,6 @@ func (i *ModInstaller) install(dependency *ResolvedModRef, parent *modconfig.Mod
 	}
 
 	return modDef, nil
-}
-
-func (i *ModInstaller) copyModFromTempToModsFolder(tmpPath string, destPath string) error {
-	if err := os.RemoveAll(destPath); err != nil {
-		return err
-	}
-
-	if err := copy.Copy(tmpPath, destPath); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (i *ModInstaller) installFromGit(dependency *ResolvedModRef, installPath string) error {
@@ -502,11 +474,6 @@ func (i *ModInstaller) installFromGit(dependency *ResolvedModRef, installPath st
 		})
 
 	return err
-}
-
-// build the path of the temp location to copy this depednency to
-func (i *ModInstaller) getDependencyTmpPath(dependencyFullName string) string {
-	return filepath.Join(i.tmpPath, dependencyFullName)
 }
 
 // build the path of the temp location to copy this depednency to
