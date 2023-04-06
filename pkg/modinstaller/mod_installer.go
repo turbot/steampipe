@@ -14,7 +14,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
@@ -26,11 +25,7 @@ type ModInstaller struct {
 	installData *InstallData
 
 	workspaceMod *modconfig.Mod
-
-	// installed plugins
-	installedPlugins *versionfile.PluginVersionFile
-
-	mods versionmap.VersionConstraintMap
+	mods         versionmap.VersionConstraintMap
 
 	// the final resting place of all dependency mods
 	modsPath string
@@ -55,12 +50,6 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	if err := i.setModsPath(); err != nil {
 		return nil, err
 	}
-
-	installedPlugins, err := versionfile.LoadPluginVersionFile()
-	if err != nil {
-		return nil, err
-	}
-	i.installedPlugins = installedPlugins
 
 	// load workspace mod, creating a default if needed
 	workspaceMod, err := i.loadModfile(i.workspacePath, true)
@@ -251,7 +240,7 @@ func (i *ModInstaller) commitShadow() (err error) {
 
 func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) (err error) {
 	defer func() {
-		if err == nil && !i.dryRun {
+		if err == nil {
 			// everything went well
 			// copy whatever we installed to the mods directory
 			err = i.commitShadow()
@@ -318,9 +307,6 @@ func (i *ModInstaller) installModDependencesRecursively(requiredModVersion *modc
 			return err
 		}
 		if err = dependencyMod.ValidateSteampipeVersion(); err != nil {
-			return err
-		}
-		if err = dependencyMod.ValidatePluginVersions(i.installedPlugins); err != nil {
 			return err
 		}
 	} else {
