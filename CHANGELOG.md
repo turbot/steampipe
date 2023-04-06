@@ -1,3 +1,7 @@
+## v0.19.4 [2023-04-06]
+_Bug fixes_
+* Fix issue where installing transitive mod dependencies leaves the lock file with an entry with an incorrect key.  ([#3285](https://github.com/turbot/steampipe/issues/3285))
+
 ## v0.19.3 [2023-03-24]
 _Bug fixes_
 * Fix issue where the json output of variable list command was returning wrong values for `value` and `value_default` fields. ([#3265](https://github.com/turbot/steampipe/issues/3265))
