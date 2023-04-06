@@ -429,7 +429,7 @@ func (i *ModInstaller) getDependencyDestPath(dependencyFullName string) string {
 }
 
 func (i *ModInstaller) loadDependencyMod(ctx context.Context, modVersion *versionmap.ResolvedVersionConstraint) (*modconfig.Mod, error) {
-	modPath := i.getDependencyDestPath(modconfig.ModVersionFullName(modVersion.Name, modVersion.Version))
+	modPath := i.getDependencyDestPath(modconfig.BuildModDependencyPath(modVersion.Name, modVersion.Version))
 	modDef, err := i.loadModfile(ctx, modPath, false)
 	if err != nil {
 		return nil, err
