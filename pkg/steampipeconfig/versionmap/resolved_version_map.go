@@ -19,3 +19,11 @@ func (m ResolvedVersionMap) ToVersionListMap() ResolvedVersionListMap {
 	}
 	return res
 }
+
+func (m ResolvedVersionMap) ToDependencyPathMap() map[string]struct{} {
+	res := make(map[string]struct{}, len(m))
+	for _, c := range m {
+		res[c.DependencyPath()] = struct{}{}
+	}
+	return res
+}

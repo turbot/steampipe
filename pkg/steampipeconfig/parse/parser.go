@@ -219,7 +219,7 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 		// if the number of unresolved blocks has NOT reduced, fail
 		if prevUnresolvedBlocks != 0 && unresolvedBlocks >= prevUnresolvedBlocks {
 			str := parseCtx.FormatDependencies()
-			return nil, modconfig.NewErrorsAndWarning(fmt.Errorf("failed to resolve mod dependencies after %d attempts\nDependencies:\n%s", attempts+1, str))
+			return nil, modconfig.NewErrorsAndWarning(fmt.Errorf("failed to resolve dependencies for mod '%s' after %d attempts\nDependencies:\n%s", mod.FullName, attempts+1, str))
 		}
 		// update prevUnresolvedBlocks
 		prevUnresolvedBlocks = unresolvedBlocks
