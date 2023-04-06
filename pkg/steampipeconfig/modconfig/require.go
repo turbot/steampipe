@@ -8,7 +8,11 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/ociinstaller"
+	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/version"
+	"github.com/turbot/steampipe/sperr"
 )
 
 // Require is a struct representing mod dependencies
@@ -63,6 +67,43 @@ func (r *Require) ValidateSteampipeVersion(modName string) error {
 		}
 	}
 	return nil
+}
+
+// validates that for every plugin requirement there's at least one plugin installed
+func (r *Require) ValidatePluginVersions(modName string, plugins *versionfile.PluginVersionFile) error {
+	if len(r.Plugins) == 0 {
+		return nil
+	}
+	errors := []error{}
+	for _, requiredPlugin := range r.Plugins {
+		if err := r.searchInstalledPluginForRequirement(modName, requiredPlugin, plugins); err != nil {
+			errors = append(errors, err)
+		}
+	}
+	return error_helpers.CombineErrors(errors...)
+}
+
+func (r *Require) searchInstalledPluginForRequirement(modName string, requirement *PluginVersion, plugins *versionfile.PluginVersionFile) error {
+	for _, installed := range plugins.Plugins {
+		if satisfied, err := r.isRequirementSatisfiedByInstalled(requirement, installed); satisfied && err != nil {
+			return nil
+		}
+	}
+	return sperr.New("could not find plugin which satisfies requirement '%s' in '%s'", requirement.RawName, modName)
+}
+
+func (r *Require) isRequirementSatisfiedByInstalled(requirement *PluginVersion, installed *versionfile.InstalledVersion) (bool, error) {
+	org, name, _ := ociinstaller.NewSteampipeImageRef(installed.Name).GetOrgNameAndStream()
+	if org == requirement.Org && name == requirement.Name {
+		requiredVersion := requirement.Version
+		installedVersion, err := semver.NewVersion(installed.Version)
+		if err != nil {
+			return false, err
+		}
+		// constraint specifies a minimum version
+		return requiredVersion.LessThan(installedVersion), nil
+	}
+	return false, nil
 }
 
 // AddModDependencies adds all the mod in newModVersions to our list of mods, using the following logic
