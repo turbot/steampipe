@@ -23,7 +23,7 @@ func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContex
 		return nil, errAndWarnings.GetError()
 	}
 
-	variableMap := modconfig.NewModVariableMap(mod, parseCtx.GetTopLevelDependencyMods())
+	variableMap := modconfig.NewModVariableMap(mod, parseCtx.LoadedDependencyMods)
 
 	return variableMap, nil
 }

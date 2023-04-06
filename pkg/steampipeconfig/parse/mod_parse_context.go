@@ -43,7 +43,7 @@ type ModParseContext struct {
 	ListOptions *filehelpers.ListOptions
 	// map of loaded dependency mods, keyed by DependencyPath (including version)
 	// there may be multiple versions of same mod in this map
-	loadedDependencyMods modconfig.ModMap
+	LoadedDependencyMods modconfig.ModMap
 
 	// Variables are populated in an initial parse pass top we store them on the run context
 	// so we can set them on the mod when we do the main parse
@@ -54,6 +54,7 @@ type ModParseContext struct {
 
 	// DependencyVariables is a map of the variables in the dependency mods of the current mod
 	// it is used to populate the variables property on the dependency
+	// keyed by mod DependencyPath
 	DependencyVariables map[string]map[string]*modconfig.Variable
 	ParentParseCtx      *ModParseContext
 
@@ -68,9 +69,12 @@ type ModParseContext struct {
 	topLevelBlocks map[*hcl.Block]struct{}
 	// map of block names, keyed by a hash of the blopck
 	blockNameMap map[string]string
-	// map of ReferenceTypeValueMaps keyed by mod
+	// map of ReferenceTypeValueMaps keyed by mod name
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
+	// map of variable values as ReferenceTypeValueMaps - keyed by mod DependencyPath
+	dependencyVariableValues map[string]ReferenceTypeValueMap
+
 	// a map of just the top level dependencies of the CurrentMod, keyed my full mod DepdencyName (with no version)
 	topLevelDependencyMods modconfig.ModMap
 }
@@ -82,15 +86,16 @@ func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath st
 		Flags:                flags,
 		WorkspaceLock:        workspaceLock,
 		ListOptions:          listOptions,
-		loadedDependencyMods: make(modconfig.ModMap),
+		LoadedDependencyMods: make(modconfig.ModMap),
 
 		blockChildMap: make(map[string][]string),
 		blockNameMap:  make(map[string]string),
-		// initialise variable maps - even though we later overwrite them
+		// initialise reference maps - even though we later overwrite them
 		Variables: make(map[string]*modconfig.Variable),
 		referenceValues: map[string]ReferenceTypeValueMap{
 			"local": make(ReferenceTypeValueMap),
 		},
+		dependencyVariableValues: make(map[string]ReferenceTypeValueMap),
 	}
 	// add root node - this will depend on all other nodes
 	c.dependencyGraph = c.newDependencyGraph()
@@ -127,8 +132,8 @@ func (m *ModParseContext) PeekParent() string {
 	return m.parents[len(m.parents)-1]
 }
 
-// VariableValueMap converts a map of variables to a map of the underlying cty value
-func VariableValueMap(variables map[string]*modconfig.Variable) map[string]cty.Value {
+// VariableValueCtyMap converts a map of variables to a map of the underlying cty value
+func VariableValueCtyMap(variables map[string]*modconfig.Variable) map[string]cty.Value {
 	ret := make(map[string]cty.Value, len(variables))
 	for k, v := range variables {
 		ret[k] = v.Value
@@ -154,23 +159,23 @@ func (m *ModParseContext) SetVariablesForDependencyMod(mod *modconfig.Mod, depen
 // and adds the variables to the referenceValues map (used to build the eval context)
 func (m *ModParseContext) setRootVariables(variables map[string]*modconfig.Variable) {
 	m.Variables = variables
+	// write local variables directly into referenceValues map
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
-	m.referenceValues["local"]["var"] = VariableValueMap(variables)
+	m.referenceValues["local"]["var"] = VariableValueCtyMap(variables)
 }
 
 // setDependencyVariables sets the DependencyVariables property
-// and adds the dependency variables to the referenceValues map (used to build the eval context
+// and adds the dependency variables to the referenceValues map (used to build the eval context)
 func (m *ModParseContext) setDependencyVariables(dependencyVariables map[string]map[string]*modconfig.Variable) {
 	m.DependencyVariables = dependencyVariables
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
-	// add top level variables
-	// add dependency mod variables, scoped by mod name
+	// add dependency mod variables to dependencyVariableValues, scoped by DependencyPath
 	for depModName, depVars := range m.DependencyVariables {
 		// create map for this dependency if needed
-		if m.referenceValues[depModName] == nil {
-			m.referenceValues[depModName] = make(ReferenceTypeValueMap)
+		if m.dependencyVariableValues[depModName] == nil {
+			m.dependencyVariableValues[depModName] = make(ReferenceTypeValueMap)
 		}
-		m.referenceValues[depModName]["var"] = VariableValueMap(depVars)
+		m.dependencyVariableValues[depModName]["var"] = VariableValueCtyMap(depVars)
 	}
 }
 
@@ -183,13 +188,13 @@ func (m *ModParseContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 
 	var diags hcl.Diagnostics
 
-	moreDiags := m.storeResourceInCtyMap(mod)
+	moreDiags := m.storeResourceInReferenceValueMap(mod)
 	diags = append(diags, moreDiags...)
 
 	resourceFunc := func(item modconfig.HclResource) (bool, error) {
 		// add all mod resources except variables into cty map
 		if _, ok := item.(*modconfig.Variable); !ok {
-			moreDiags := m.storeResourceInCtyMap(item)
+			moreDiags := m.storeResourceInReferenceValueMap(item)
 			diags = append(diags, moreDiags...)
 		}
 		// continue walking
@@ -236,7 +241,7 @@ func (m *ModParseContext) CreatePseudoResources() bool {
 
 // AddResource stores this resource as a variable to be added to the eval context. It alse
 func (m *ModParseContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics {
-	diagnostics := m.storeResourceInCtyMap(resource)
+	diagnostics := m.storeResourceInReferenceValueMap(resource)
 	if diagnostics.HasErrors() {
 		return diagnostics
 	}
@@ -258,7 +263,7 @@ func (m *ModParseContext) GetMod(modShortName string) *modconfig.Mod {
 	key := m.CurrentMod.GetInstallCacheKey()
 	deps := m.WorkspaceLock.InstallCache[key]
 	for _, dep := range deps {
-		depMod, ok := m.loadedDependencyMods[dep.DependencyPath()]
+		depMod, ok := m.LoadedDependencyMods[dep.DependencyPath()]
 		if ok && depMod.ShortName == modShortName {
 			return depMod
 		}
@@ -287,16 +292,16 @@ func (m *ModParseContext) GetResource(parsedName *modconfig.ParsedResourceName) 
 	return m.GetResourceMaps().GetResource(parsedName)
 }
 
-// eval functions
+// build the eval context from the cached reference values
 func (m *ModParseContext) buildEvalContext() {
 	// convert variables to cty values
-	variables := make(map[string]cty.Value)
+	referenceValues := make(map[string]cty.Value)
 
 	// now for each mod add all the values
 	for mod, modMap := range m.referenceValues {
 		if mod == "local" {
 			for k, v := range modMap {
-				variables[k] = cty.ObjectVal(v)
+				referenceValues[k] = cty.ObjectVal(v)
 			}
 			continue
 		}
@@ -308,14 +313,14 @@ func (m *ModParseContext) buildEvalContext() {
 			refTypeMap[refType] = cty.ObjectVal(typeValueMap)
 		}
 		// now convert the cty map to a cty object
-		variables[mod] = cty.ObjectVal(refTypeMap)
+		referenceValues[mod] = cty.ObjectVal(refTypeMap)
 	}
 
-	m.ParseContext.buildEvalContext(variables)
+	m.ParseContext.buildEvalContext(referenceValues)
 }
 
-// update the cached cty value for the given resource, as long as itr does not already exist
-func (m *ModParseContext) storeResourceInCtyMap(resource modconfig.HclResource) hcl.Diagnostics {
+// store the resource as a cty value in the reference valuemap
+func (m *ModParseContext) storeResourceInReferenceValueMap(resource modconfig.HclResource) hcl.Diagnostics {
 	// add resource to variable map
 	ctyValue, diags := m.getResourceCtyValue(resource)
 	if diags.HasErrors() {
@@ -333,6 +338,7 @@ func (m *ModParseContext) storeResourceInCtyMap(resource modconfig.HclResource) 
 	return nil
 }
 
+// convert a HclResource into a cty value, taking into account nested structs
 func (m *ModParseContext) getResourceCtyValue(resource modconfig.HclResource) (cty.Value, hcl.Diagnostics) {
 	ctyValue, err := resource.(modconfig.CtyValueProvider).CtyValue()
 	if err != nil {
@@ -466,7 +472,7 @@ func (m *ModParseContext) GetLoadedDependencyMod(requiredModVersion *modconfig.M
 		return nil, fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
 	}
 	// use the full name of the locked version as key
-	d, _ := m.loadedDependencyMods[lockedVersion.FullName()]
+	d, _ := m.LoadedDependencyMods[lockedVersion.FullName()]
 	return d, nil
 }
 
@@ -475,7 +481,7 @@ func (m *ModParseContext) AddLoadedDependencyMod(mod *modconfig.Mod) {
 	if mod.DependencyPath == nil {
 		return
 	}
-	m.loadedDependencyMods[*mod.DependencyPath] = mod
+	m.LoadedDependencyMods[*mod.DependencyPath] = mod
 }
 
 // GetTopLevelDependencyMods build a mod map of top level loaded dependencies, keyed by mod name
@@ -492,7 +498,7 @@ func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
 	// merge in the dependency mods
 	for _, dep := range deps {
 		key := dep.DependencyPath()
-		loadedDepMod := m.loadedDependencyMods[key]
+		loadedDepMod := m.LoadedDependencyMods[key]
 		if loadedDepMod != nil {
 			// as key use the ModDependencyPath _without_ the version
 			m.topLevelDependencyMods[loadedDepMod.DependencyName] = loadedDepMod

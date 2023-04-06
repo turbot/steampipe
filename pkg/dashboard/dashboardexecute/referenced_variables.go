@@ -9,7 +9,7 @@ import (
 )
 
 // GetReferencedVariables builds map of variables values containing only those mod variables which are referenced
-// NOTE: we refer to variables in depdencyt mods in the format which is valid for an SPVARS filer, i.e.
+// NOTE: we refer to variables in dependency mods in the format which is valid for an SPVARS filer, i.e.
 // <mod>.<var-name>
 // the VariableValues map will contain these variables with the name format <mod>.var.<var-name>,
 // so we must convert the name
