@@ -57,8 +57,8 @@ func NewInitData(ctx context.Context) *InitData {
 		return i
 	}
 
-	if len(w.GetResourceMaps().Controls) == 0 {
-		i.Result.AddWarnings("no controls found in current workspace")
+	if len(w.GetResourceMaps().Controls)+len(w.GetResourceMaps().Benchmarks) == 0 {
+		i.Result.AddWarnings("no controls or benchmarks found in current workspace")
 	}
 
 	if err := controldisplay.EnsureTemplates(); err != nil {
