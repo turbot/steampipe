@@ -177,7 +177,7 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
-	// if variables were passed in runcontext, add to the mod
+	// if variables were passed in parsecontext, add to the mod
 	for _, v := range parseCtx.Variables {
 		if diags = mod.AddResource(v); diags.HasErrors() {
 			return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to add resource to mod", diags))

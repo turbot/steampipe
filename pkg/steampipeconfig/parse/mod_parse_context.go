@@ -53,8 +53,8 @@ type ModParseContext struct {
 	Variables map[string]*modconfig.Variable
 
 	// DependencyVariables is a map of the variables in the dependency mods of the current mod
-	// it is used to populate the variables property on the dependency
-	// keyed by mod DependencyPath
+	// it is used to populate the variables values on child parseContexts when parsing dependencies
+	// (keyed by mod DependencyPath)
 	DependencyVariables map[string]map[string]*modconfig.Variable
 	ParentParseCtx      *ModParseContext
 
@@ -144,33 +144,44 @@ func VariableValueCtyMap(variables map[string]*modconfig.Variable) map[string]ct
 // AddInputVariables adds variables to the run context.
 // This function is called for the root run context after loading all input variables
 func (m *ModParseContext) AddInputVariables(inputVariables *modconfig.ModVariableMap) {
-	m.setRootVariables(inputVariables.RootVariables)
-	m.setDependencyVariables(inputVariables.DependencyVariables)
+	// store the variables
+	m.Variables = inputVariables.RootVariables
+	// store the depdency variables sop we can pass them down to our children
+	m.DependencyVariables = inputVariables.DependencyVariables
 }
 
 // SetVariablesForDependencyMod adds variables to the run context.
 // This function is called for dependent mod run context
 func (m *ModParseContext) SetVariablesForDependencyMod(mod *modconfig.Mod, dependencyVariablesMap map[string]map[string]*modconfig.Variable) {
-	m.setRootVariables(dependencyVariablesMap[mod.ShortName])
-	m.setDependencyVariables(dependencyVariablesMap)
+	// TODO KAI UPDATE THIS
+	m.addRootVariablesToReferenceMap(dependencyVariablesMap[mod.ShortName])
+	m.addDependencyVariablesToReferenceMap(dependencyVariablesMap)
 }
 
-// setRootVariables sets the Variables property
+func (m *ModParseContext) AddVariablesToReferenceMap() {
+	m.addRootVariablesToReferenceMap(m.Variables)
+	m.addDependencyVariablesToReferenceMap(m.DependencyVariables)
+	// NOTE: we do not rebuild the eval context here as in practice, buildEvalContext will be called after the
+	// mod definition is parsed
+}
+
+// addRootVariablesToReferenceMap sets the Variables property
 // and adds the variables to the referenceValues map (used to build the eval context)
-func (m *ModParseContext) setRootVariables(variables map[string]*modconfig.Variable) {
-	m.Variables = variables
+func (m *ModParseContext) addRootVariablesToReferenceMap(variables map[string]*modconfig.Variable) {
+
 	// write local variables directly into referenceValues map
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
 	m.referenceValues["local"]["var"] = VariableValueCtyMap(variables)
 }
 
-// setDependencyVariables sets the DependencyVariables property
+// addDependencyVariablesToReferenceMap sets the DependencyVariables property
 // and adds the dependency variables to the referenceValues map (used to build the eval context)
-func (m *ModParseContext) setDependencyVariables(dependencyVariables map[string]map[string]*modconfig.Variable) {
-	m.DependencyVariables = dependencyVariables
+func (m *ModParseContext) addDependencyVariablesToReferenceMap(dependencyVariables map[string]map[string]*modconfig.Variable) {
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
 	// add dependency mod variables to dependencyVariableValues, scoped by DependencyPath
 	for depModName, depVars := range m.DependencyVariables {
+
+		// check
 		// create map for this dependency if needed
 		if m.dependencyVariableValues[depModName] == nil {
 			m.dependencyVariableValues[depModName] = make(ReferenceTypeValueMap)
@@ -294,7 +305,7 @@ func (m *ModParseContext) GetResource(parsedName *modconfig.ParsedResourceName) 
 
 // build the eval context from the cached reference values
 func (m *ModParseContext) buildEvalContext() {
-	// convert variables to cty values
+	// convert reference values to cty objects
 	referenceValues := make(map[string]cty.Value)
 
 	// now for each mod add all the values
@@ -309,13 +320,20 @@ func (m *ModParseContext) buildEvalContext() {
 		// mod map is map[string]map[string]cty.Value
 		// for each element (i.e. map[string]cty.Value) convert to cty object
 		refTypeMap := make(map[string]cty.Value)
-		for refType, typeValueMap := range modMap {
-			refTypeMap[refType] = cty.ObjectVal(typeValueMap)
+		if mod == "local" {
+			for k, v := range modMap {
+				referenceValues[k] = cty.ObjectVal(v)
+			}
+		} else {
+			for refType, typeValueMap := range modMap {
+				refTypeMap[refType] = cty.ObjectVal(typeValueMap)
+			}
 		}
-		// now convert the cty map to a cty object
+		// now convert the referenceValues itself to a cty object
 		referenceValues[mod] = cty.ObjectVal(refTypeMap)
 	}
 
+	// rebuild the eval context
 	m.ParseContext.buildEvalContext(referenceValues)
 }
 
@@ -505,4 +523,11 @@ func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
 		}
 	}
 	return m.topLevelDependencyMods
+}
+
+func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
+	m.CurrentMod = mod
+	// now the mod is set we can add variables to the reference map
+	// ( we cannot do this until mod as set as we need to identify which variables to use if we are a dependency
+	m.AddVariablesToReferenceMap()
 }

@@ -259,7 +259,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	if err != nil {
 		return modconfig.NewErrorsAndWarning(err)
 	}
-	// add variables to runContext
+	// add variables
 	parseCtx.AddInputVariables(inputVariables)
 	// do not reload variables as we already have them
 	parseCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
