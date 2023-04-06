@@ -56,9 +56,6 @@ func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, var
 		}
 	}
 
-	// add workspace mod variables to runContext
-	parseCtx.AddInputVariables(variableMap)
-
 	return variableMap, nil
 }
 

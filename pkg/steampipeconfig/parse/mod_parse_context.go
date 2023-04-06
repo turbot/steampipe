@@ -104,6 +104,23 @@ func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath st
 	return c
 }
 
+func NewChildModParseContext(parent *ModParseContext, rootEvalPath string) *ModParseContext {
+	// create a child run context
+	child := NewModParseContext(
+		parent.WorkspaceLock,
+		rootEvalPath,
+		parent.Flags,
+		parent.ListOptions)
+	// copy our block tpyes
+	child.BlockTypes = parent.BlockTypes
+	// set the child's parent
+	child.ParentParseCtx = parent
+	// copy DependencyVariables
+	child.DependencyVariables = parent.DependencyVariables
+
+	return child
+}
+
 func (m *ModParseContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
 	// if the mod has dependencies, there must a workspace lock object in the run context
 	// (mod MUST be the workspace mod, not a dependency, as we would hit this error as soon as we parse it)
@@ -150,17 +167,9 @@ func (m *ModParseContext) AddInputVariables(inputVariables *modconfig.ModVariabl
 	m.DependencyVariables = inputVariables.DependencyVariables
 }
 
-// SetVariablesForDependencyMod adds variables to the run context.
-// This function is called for dependent mod run context
-func (m *ModParseContext) SetVariablesForDependencyMod(mod *modconfig.Mod, dependencyVariablesMap map[string]map[string]*modconfig.Variable) {
-	// TODO KAI UPDATE THIS
-	m.addRootVariablesToReferenceMap(dependencyVariablesMap[mod.ShortName])
-	m.addDependencyVariablesToReferenceMap(dependencyVariablesMap)
-}
-
 func (m *ModParseContext) AddVariablesToReferenceMap() {
 	m.addRootVariablesToReferenceMap(m.Variables)
-	m.addDependencyVariablesToReferenceMap(m.DependencyVariables)
+	m.addDependencyVariablesToReferenceMap()
 	// NOTE: we do not rebuild the eval context here as in practice, buildEvalContext will be called after the
 	// mod definition is parsed
 }
@@ -176,17 +185,23 @@ func (m *ModParseContext) addRootVariablesToReferenceMap(variables map[string]*m
 
 // addDependencyVariablesToReferenceMap sets the DependencyVariables property
 // and adds the dependency variables to the referenceValues map (used to build the eval context)
-func (m *ModParseContext) addDependencyVariablesToReferenceMap(dependencyVariables map[string]map[string]*modconfig.Variable) {
+func (m *ModParseContext) addDependencyVariablesToReferenceMap() {
+	currentModKey := m.CurrentMod.GetInstallCacheKey()
+	topLevelDependencies := m.WorkspaceLock.InstallCache[currentModKey]
+
+	// convert topLevelDependencies into as map keyed by depdency path
+	topLevelDependencyPathMap := topLevelDependencies.ToDependencyPathMap()
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
 	// add dependency mod variables to dependencyVariableValues, scoped by DependencyPath
 	for depModName, depVars := range m.DependencyVariables {
-
-		// check
-		// create map for this dependency if needed
-		if m.dependencyVariableValues[depModName] == nil {
-			m.dependencyVariableValues[depModName] = make(ReferenceTypeValueMap)
+		// only add variables from top level dependencies
+		if _, ok := topLevelDependencyPathMap[depModName]; ok {
+			// create map for this dependency if needed
+			if m.dependencyVariableValues[depModName] == nil {
+				m.dependencyVariableValues[depModName] = make(ReferenceTypeValueMap)
+			}
+			m.dependencyVariableValues[depModName]["var"] = VariableValueCtyMap(depVars)
 		}
-		m.dependencyVariableValues[depModName]["var"] = VariableValueCtyMap(depVars)
 	}
 }
 
@@ -250,7 +265,7 @@ func (m *ModParseContext) CreatePseudoResources() bool {
 	return m.Flags&CreatePseudoResources == CreatePseudoResources
 }
 
-// AddResource stores this resource as a variable to be added to the eval context. It alse
+// AddResource stores this resource as a variable to be added to the eval context.
 func (m *ModParseContext) AddResource(resource modconfig.HclResource) hcl.Diagnostics {
 	diagnostics := m.storeResourceInReferenceValueMap(resource)
 	if diagnostics.HasErrors() {
@@ -527,6 +542,12 @@ func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
 
 func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
 	m.CurrentMod = mod
+
+	// if the current mod is a dependency mod (i.e. has a DependencyPath property set), update the Variables property
+	if dependencyVariables, ok := m.DependencyVariables[mod.GetInstallCacheKey()]; ok {
+		m.Variables = dependencyVariables
+	}
+	// set the root variables from the parent
 	// now the mod is set we can add variables to the reference map
 	// ( we cannot do this until mod as set as we need to identify which variables to use if we are a dependency
 	m.AddVariablesToReferenceMap()

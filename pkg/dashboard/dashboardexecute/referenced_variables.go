@@ -16,6 +16,7 @@ import (
 func GetReferencedVariables(root dashboardtypes.DashboardTreeRun, w *workspace.Workspace) map[string]string {
 	var referencedVariables = make(map[string]string)
 
+	// TODO KAI UPDATE TO HANDLE DEPENDENCYPATH
 	addReferencedVars := func(refs []*modconfig.ResourceReference) {
 		for _, ref := range refs {
 			parts := strings.Split(ref.To, ".")

@@ -139,22 +139,9 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	parseCtx.ListOptions.Exclude = nil
 	defer func() { parseCtx.ListOptions.Exclude = prevExclusions }()
 
-	// create a child run context
-	childRunCtx := parse.NewModParseContext(
-		parseCtx.WorkspaceLock,
-		dependencyDir,
-		parse.CreatePseudoResources,
-		&filehelpers.ListOptions{
-			// listFlag specifies whether to load files recursively
-			Flags: filehelpers.FilesRecursive,
-			// only load .sp files
-			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
-		})
-	childRunCtx.BlockTypes = parseCtx.BlockTypes
-	childRunCtx.ParentParseCtx = parseCtx
-
+	childParseCtx := parse.NewChildModParseContext(parseCtx, dependencyDir)
 	// NOTE: pass in the version and dependency path of the mod - these must be set before it loads its depdencies
-	mod, errAndWarnings := LoadMod(dependencyDir, childRunCtx, WithDependencyConfig(modDependency.Name, version))
+	mod, errAndWarnings := LoadMod(dependencyDir, childParseCtx, WithDependencyConfig(modDependency.Name, version))
 	if errAndWarnings.GetError() != nil {
 		return errAndWarnings.GetError()
 	}
