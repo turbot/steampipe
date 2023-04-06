@@ -13,7 +13,6 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -352,13 +351,6 @@ func (m *Mod) ValidateSteampipeVersion() error {
 		return nil
 	}
 	return m.Require.ValidateSteampipeVersion(m.Name())
-}
-
-func (m *Mod) ValidatePluginVersions(plugins *versionfile.PluginVersionFile) error {
-	if m.Require == nil {
-		return nil
-	}
-	return m.Require.ValidatePluginVersions(m.Name(), plugins)
 }
 
 // CtyValue implements CtyValueProvider
