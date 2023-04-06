@@ -1,6 +1,12 @@
 ## v0.19.4 [2023-04-06]
-_Bug fixes_
-* Fix issue where installing transitive mod dependencies leaves the lock file with an entry with an incorrect key.  ([#3285](https://github.com/turbot/steampipe/issues/3285))
+_What's new?_
+* Dashboard snapshot href links now work for external URLs. ([#3278](https://github.com/turbot/steampipe/issues/3278))
+* Numeric dashboard benchmark summary card values should render using locale string. ([#3299](https://github.com/turbot/steampipe/issues/3299))
+* Improve hover title grammar of critical/high severity dashboard benchmark badges. ([#3300](https://github.com/turbot/steampipe/issues/3300))
+
+* _Bug fixes_
+* Fix issue where installing transitive mod dependencies leaves the lock file with an entry with an incorrect key. ([#3285](https://github.com/turbot/steampipe/issues/3285))
+* Fix duplicate dashboard UI benchmark nodes being rendered for deep benchmark hierarchies with mixture of benchmark and child controls. ([#3298](https://github.com/turbot/steampipe/issues/3298))
 
 ## v0.19.3 [2023-03-24]
 _Bug fixes_
