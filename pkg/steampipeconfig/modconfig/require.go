@@ -17,13 +17,13 @@ import (
 
 // Require is a struct representing mod dependencies
 type Require struct {
-	SteampipeVersion *semver.Version
-	Plugins          []*PluginVersion `hcl:"plugin,block"`
-	// map keyed by name [and alias]
-	SteampipeVersionString string `hcl:"steampipe,optional"`
+	SteampipeVersion       *semver.Version
+	SteampipeVersionString string           `hcl:"steampipe,optional"`
+	Plugins                []*PluginVersion `hcl:"plugin,block"`
 	Mods                   []*ModVersionConstraint
-	modMap                 map[string]*ModVersionConstraint
 	DeclRange              hcl.Range
+	// map keyed by name [and alias]
+	modMap map[string]*ModVersionConstraint
 }
 
 func NewRequire() *Require {
