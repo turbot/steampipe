@@ -258,7 +258,7 @@ func (m *ModParseContext) GetMod(modShortName string) *modconfig.Mod {
 	key := m.CurrentMod.GetInstallCacheKey()
 	deps := m.WorkspaceLock.InstallCache[key]
 	for _, dep := range deps {
-		depMod, ok := m.loadedDependencyMods[dep.FullName()]
+		depMod, ok := m.loadedDependencyMods[dep.DependencyPath()]
 		if ok && depMod.ShortName == modShortName {
 			return depMod
 		}
@@ -451,15 +451,6 @@ func (m *ModParseContext) addReferenceValue(resource modconfig.HclResource, valu
 	return nil
 }
 
-//func (m *ModParseContext) `AddLoadedDependentMods`(mods modconfig.ModMap) {
-//	update to include version in name
-//	for k, v := range mods {
-//		if _, alreadyLoaded := m.LoadedDependencyMods[k]; !alreadyLoaded {
-//			m.LoadedDependencyMods[k] = v
-//		}
-//	}
-//}
-
 func (m *ModParseContext) IsTopLevelBlock(block *hcl.Block) bool {
 	_, isTopLevel := m.topLevelBlocks[block]
 	return isTopLevel
@@ -500,7 +491,7 @@ func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
 
 	// merge in the dependency mods
 	for _, dep := range deps {
-		key := dep.FullName()
+		key := dep.DependencyPath()
 		loadedDepMod := m.loadedDependencyMods[key]
 		if loadedDepMod != nil {
 			// as key use the ModDependencyPath _without_ the version
