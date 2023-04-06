@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/modinstaller"
@@ -88,7 +90,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 
 	// if any mod names were passed as args, convert into formed mod names
 	opts := newInstallOpts(cmd, args...)
-	installData, err := modinstaller.InstallWorkspaceDependencies(opts)
+	installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
 
 	fmt.Println(modinstaller.BuildInstallSummary(installData))
@@ -159,7 +161,7 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 
 	opts := newInstallOpts(cmd, args...)
 
-	installData, err := modinstaller.InstallWorkspaceDependencies(opts)
+	installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
 
 	fmt.Println(modinstaller.BuildInstallSummary(installData))
@@ -189,7 +191,7 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 	opts := newInstallOpts(cmd)
-	installer, err := modinstaller.NewModInstaller(opts)
+	installer, err := modinstaller.NewModInstaller(ctx, opts)
 	error_helpers.FailOnError(err)
 
 	treeString := installer.GetModList()
@@ -212,9 +214,13 @@ func modInitCmd() *cobra.Command {
 	return cmd
 }
 
-func runModInitCmd(cmd *cobra.Command, _ []string) {
-	ctx := cmd.Context()
+func runModInitCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runModInitCmd")
+
+	// setup a cancel context and start cancel handler
+	ctx, cancel := context.WithCancel(cmd.Context())
+	contexthelpers.StartCancelHandler(cancel)
+
 	defer func() {
 		utils.LogTime("cmd.runModInitCmd end")
 		if r := recover(); r != nil {
@@ -223,6 +229,12 @@ func runModInitCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 	workspacePath := viper.GetString(constants.ArgModLocation)
+	if !modinstaller.ValidateModLocation(ctx, workspacePath) {
+		exitCode = constants.ExitCodeModInitFailed
+		error_helpers.ShowError(ctx, fmt.Errorf("Mod initialisation cancelled"))
+		return
+	}
+
 	if parse.ModfileExists(workspacePath) {
 		fmt.Println("Working folder already contains a mod definition file")
 		return

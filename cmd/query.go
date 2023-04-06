@@ -50,8 +50,9 @@ Examples:
   # Run a specific query directly
   steampipe query "select * from cloud"`,
 
-		ValidArgsFunction: func(_ *cobra.Command, _ []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			w, err := workspace.LoadResourceNames(viper.GetString(constants.ArgModLocation))
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			ctx := cmd.Context()
+			w, err := workspace.LoadResourceNames(ctx, viper.GetString(constants.ArgModLocation))
 			if err != nil {
 				return []string{}, cobra.ShellCompDirectiveError
 			}

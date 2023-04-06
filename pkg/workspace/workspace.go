@@ -117,7 +117,7 @@ func createShellWorkspace(workspacePath string) (*Workspace, error) {
 }
 
 // LoadResourceNames builds lists of all workspace resource names
-func LoadResourceNames(workspacePath string) (*modconfig.WorkspaceResources, error) {
+func LoadResourceNames(ctx context.Context, workspacePath string) (*modconfig.WorkspaceResources, error) {
 	utils.LogTime("workspace.LoadResourceNames start")
 	defer utils.LogTime("workspace.LoadResourceNames end")
 
@@ -134,7 +134,7 @@ func LoadResourceNames(workspacePath string) (*modconfig.WorkspaceResources, err
 		return nil, err
 	}
 
-	return workspace.loadWorkspaceResourceName()
+	return workspace.loadWorkspaceResourceName(ctx)
 }
 
 func (w *Workspace) SetupWatcher(ctx context.Context, client db_common.Client, errorHandler func(context.Context, error)) error {
@@ -255,7 +255,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	w.VariableValues = inputVariables.VariableValues
 
 	// build run context which we use to load the workspace
-	parseCtx, err := w.getParseContext()
+	parseCtx, err := w.getParseContext(ctx)
 	if err != nil {
 		return modconfig.NewErrorsAndWarning(err)
 	}
@@ -287,7 +287,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 
 func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, error) {
 	// build a run context just to use to load variable definitions
-	variablesRunCtx, err := w.getParseContext()
+	variablesRunCtx, err := w.getParseContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -303,12 +303,12 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
-func (w *Workspace) getParseContext() (*parse.ModParseContext, error) {
+func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext, error) {
 	parseFlag := parse.CreateDefaultMod
 	if w.loadPseudoResources {
 		parseFlag |= parse.CreatePseudoResources
 	}
-	workspaceLock, err := w.loadWorkspaceLock()
+	workspaceLock, err := w.loadWorkspaceLock(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +328,7 @@ func (w *Workspace) getParseContext() (*parse.ModParseContext, error) {
 }
 
 // load the workspace lock, migrating it if necessary
-func (w *Workspace) loadWorkspaceLock() (*versionmap.WorkspaceLock, error) {
+func (w *Workspace) loadWorkspaceLock(ctx context.Context) (*versionmap.WorkspaceLock, error) {
 	workspaceLock, err := versionmap.LoadWorkspaceLock(w.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load installation cache from %s: %s", w.Path, err)
@@ -337,7 +337,7 @@ func (w *Workspace) loadWorkspaceLock() (*versionmap.WorkspaceLock, error) {
 	// if this is the old format, migrate by reinstalling dependencies
 	if workspaceLock.StructVersion() != versionmap.WorkspaceLockStructVersion {
 		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgModLocation)}
-		installData, err := modinstaller.InstallWorkspaceDependencies(opts)
+		installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -383,9 +383,9 @@ func (w *Workspace) loadExclusions() error {
 	return nil
 }
 
-func (w *Workspace) loadWorkspaceResourceName() (*modconfig.WorkspaceResources, error) {
+func (w *Workspace) loadWorkspaceResourceName(ctx context.Context) (*modconfig.WorkspaceResources, error) {
 	// build options used to load workspace
-	parseCtx, err := w.getParseContext()
+	parseCtx, err := w.getParseContext(ctx)
 	if err != nil {
 		return nil, err
 	}
