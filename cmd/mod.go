@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -90,6 +91,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 
 	// if any mod names were passed as args, convert into formed mod names
 	opts := newInstallOpts(cmd, args...)
+	trimGitUrls(opts)
 	installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
 
@@ -125,6 +127,7 @@ func runModUninstallCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	opts := newInstallOpts(cmd, args...)
+	trimGitUrls(opts)
 	installData, err := modinstaller.UninstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
 
@@ -160,7 +163,7 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	opts := newInstallOpts(cmd, args...)
-
+	trimGitUrls(opts)
 	installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
 
@@ -255,4 +258,15 @@ func newInstallOpts(cmd *cobra.Command, args ...string) *modinstaller.InstallOpt
 		Command:       cmd.Name(),
 	}
 	return opts
+}
+
+// Modifies(trims) the URL if contains http ot https in arguments
+
+func trimGitUrls(opts *modinstaller.InstallOpts) {
+	re := regexp.MustCompile(`^(https?://)`)
+	for i, url := range opts.ModArgs {
+		if re.MatchString(url) {
+			opts.ModArgs[i] = re.ReplaceAllString(url, "")
+		}
+	}
 }
