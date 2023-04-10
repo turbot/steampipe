@@ -26,6 +26,10 @@ func (vr *VersionCheckReport) ShortName() string {
 	return fmt.Sprintf("%s/%s", vr.CheckResponse.Org, vr.CheckResponse.Name)
 }
 
+func (vr *VersionCheckReport) ShortNameWithStream() string {
+	return fmt.Sprintf("%s/%s@%s", vr.CheckResponse.Org, vr.CheckResponse.Name, vr.CheckResponse.Stream)
+}
+
 // VersionChecker :: wrapper struct over the plugin version check utilities
 type VersionChecker struct {
 	pluginsToCheck []*versionfile.InstalledVersion
