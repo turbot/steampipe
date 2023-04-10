@@ -413,8 +413,6 @@ func createRootContext() context.Context {
 	return ctx
 }
 
-// TODO: update deprecation warning to add workspace profile doc(0.20.0) link to each warnings.
-// https://github.com/turbot/steampipe/issues/3307
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way
 func displayDeprecationWarnings(errorsAndWarnings *modconfig.ErrorAndWarnings) {
 	if len(errorsAndWarnings.Warnings) > 0 {

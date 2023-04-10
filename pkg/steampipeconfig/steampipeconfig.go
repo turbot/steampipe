@@ -101,11 +101,11 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *m
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
 		errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("%s", constants.Bold("terminal options"))))
 
-		// NOTE: ignore terminal options if current command is not query
+		// NOTE: do not load terminal options for check command
 		// this is a short term workaround to handle the clashing 'output' argument
 		// this will be refactored
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
-		if c.commandName != constants.CmdNameQuery {
+		if c.commandName == "check" {
 			break
 		}
 		if c.TerminalOptions == nil {
@@ -128,7 +128,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *m
 }
 
 func deprecationWarning(subject string) string {
-	return fmt.Sprintf("%s has been deprecated and will be removed in subsequent versions of steampipe", subject)
+	return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nPlease use workspace options instead - https://steampipe.io/docs/reference/config-files/workspace", subject)
 }
 
 var defaultCacheEnabled = true
