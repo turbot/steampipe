@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/turbot/go-kit/helpers"
@@ -337,6 +338,15 @@ func displayTable(ctx context.Context, result *queryresult.Result) int {
 		rowAsString, _ := ColumnValuesAsString(row, result.Cols)
 		rowObj := table.Row{}
 		for _, col := range rowAsString {
+			// trim out non-displayable code-points in string
+			// exfept white-spaces
+			col = strings.Map(func(r rune) rune {
+				if unicode.IsSpace(r) || unicode.IsGraphic(r) {
+					// return if this is a white space character
+					return r
+				}
+				return -1
+			}, col)
 			rowObj = append(rowObj, col)
 		}
 		t.AppendRow(rowObj)
