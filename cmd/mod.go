@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -263,10 +262,11 @@ func newInstallOpts(cmd *cobra.Command, args ...string) *modinstaller.InstallOpt
 // Modifies(trims) the URL if contains http ot https in arguments
 
 func trimGitUrls(opts *modinstaller.InstallOpts) {
-	re := regexp.MustCompile(`^(https?://)`)
-	for i, url := range opts.ModArgs {
-		if re.MatchString(url) {
-			opts.ModArgs[i] = re.ReplaceAllString(url, "")
-		}
-	}
+    for i, url := range opts.ModArgs {
+        if strings.HasPrefix(url, "http://") {
+            opts.ModArgs[i] = strings.TrimPrefix(url, "http://")
+        } else if strings.HasPrefix(url, "https://") {
+            opts.ModArgs[i] = strings.TrimPrefix(url, "https://")
+        }
+    }
 }
