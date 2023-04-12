@@ -149,6 +149,7 @@ func modUpdateCmd() *cobra.Command {
 
 	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgPrune, true, "Remove unused dependencies after update is complete").
+		AddBoolFlag(constants.ArgForce, false, "Update mods even if plugin/cli version requirements are not met (cannot be used with --dry-run)").
 		AddBoolFlag(constants.ArgDryRun, false, "Show which mods would be updated without modifying them").
 		AddBoolFlag(constants.ArgHelp, false, "Help for update", cmdconfig.FlagOptions.WithShortHand("h"))
 
