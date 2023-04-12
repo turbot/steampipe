@@ -263,10 +263,7 @@ func newInstallOpts(cmd *cobra.Command, args ...string) *modinstaller.InstallOpt
 
 func trimGitUrls(opts *modinstaller.InstallOpts) {
     for i, url := range opts.ModArgs {
-        if strings.HasPrefix(url, "http://") {
-            opts.ModArgs[i] = strings.TrimPrefix(url, "http://")
-        } else if strings.HasPrefix(url, "https://") {
-            opts.ModArgs[i] = strings.TrimPrefix(url, "https://")
-        }
+        opts.ModArgs[i] = strings.TrimPrefix(url, "http://")
+        opts.ModArgs[i] = strings.TrimPrefix(url, "https://")
     }
 }
