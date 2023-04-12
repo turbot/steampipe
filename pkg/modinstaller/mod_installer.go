@@ -11,6 +11,7 @@ import (
 	"github.com/Masterminds/semver"
 	git "github.com/go-git/go-git/v5"
 	"github.com/otiai10/copy"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -517,9 +518,13 @@ func (i *ModInstaller) setModDependencyConfig(mod *modconfig.Mod, dependencyPath
 }
 
 func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, createDefault bool) (*modconfig.Mod, error) {
+	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	if !parse.ModfileExists(modPath) {
-		if !ValidateModLocation(ctx, modPath) {
-			error_helpers.FailOnError(fmt.Errorf("Mod installation cancelled"))
+		// we don't need to validate location for dashboard and check commands(only for mod commands)
+		if cmd.Name() != "dashboard" && cmd.Name() != "check" {
+			if !ValidateModLocation(ctx, modPath) {
+				error_helpers.FailOnError(fmt.Errorf("Mod installation cancelled"))
+			}
 		}
 		if createDefault {
 			mod := modconfig.CreateDefaultMod(i.workspacePath)
