@@ -45,6 +45,8 @@ type ModInstaller struct {
 	command string
 	// are dependencies being added to the workspace
 	dryRun bool
+	// do we force install even if there are require errors
+	force bool
 }
 
 func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, error) {
@@ -52,6 +54,7 @@ func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, err
 		workspacePath: opts.WorkspacePath,
 		command:       opts.Command,
 		dryRun:        opts.DryRun,
+		force:         opts.Force,
 	}
 	if err := i.setModsPath(); err != nil {
 		return nil, err
@@ -255,6 +258,12 @@ func (i *ModInstaller) commitShadow() (err error) {
 
 func (i *ModInstaller) installMods(ctx context.Context, mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) (err error) {
 	defer func() {
+		if !i.dryRun && err != nil && i.force {
+			// if this is not a dryrun
+			// even if there was an error but force was enabled
+			// commit
+			err = i.commitShadow()
+		}
 		if err == nil && !i.dryRun {
 			// everything went well
 			// copy whatever we installed to the mods directory

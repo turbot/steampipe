@@ -72,6 +72,7 @@ func modInstallCmd() *cobra.Command {
 	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgPrune, true, "Remove unused dependencies after installation is complete").
 		AddBoolFlag(constants.ArgDryRun, false, "Show which mods would be installed/updated/uninstalled without modifying them").
+		AddBoolFlag(constants.ArgForce, false, "Install mods even if plugin/cli version requirements are not met (cannot be used with --dry-run)").
 		AddBoolFlag(constants.ArgHelp, false, "Help for install", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
@@ -87,6 +88,10 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
+
+	if viper.GetBool(constants.ArgDryRun) && viper.GetBool(constants.ArgForce) {
+		error_helpers.FailOnError(fmt.Errorf("cannot use '%s' and '%s' together", constants.Bold("--dry-run"), constants.Bold("--force")))
+	}
 
 	// if any mod names were passed as args, convert into formed mod names
 	opts := newInstallOpts(cmd, args...)
@@ -253,6 +258,7 @@ func newInstallOpts(cmd *cobra.Command, args ...string) *modinstaller.InstallOpt
 	opts := &modinstaller.InstallOpts{
 		WorkspacePath: viper.GetString(constants.ArgModLocation),
 		DryRun:        viper.GetBool(constants.ArgDryRun),
+		Force:         viper.GetBool(constants.ArgForce),
 		ModArgs:       args,
 		Command:       cmd.Name(),
 	}
