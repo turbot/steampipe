@@ -231,7 +231,10 @@ func (i *ModInstaller) GetModList() string {
 // commitShadow recursively copies over the contents of the shadow directory
 // to the mods directory, replacing conflicts as it goes
 // (uses `os.Create(dest)` under the hood - which truncates the target)
-func (i *ModInstaller) commitShadow() (err error) {
+func (i *ModInstaller) commitShadow(ctx context.Context) error {
+	if error_helpers.IsContextCanceled(ctx) {
+		return ctx.Err()
+	}
 	if _, err := os.Stat(i.shadowDirPath); os.IsNotExist(err) {
 		// nothing to do here
 		// there's no shadow directory to commit
@@ -262,12 +265,12 @@ func (i *ModInstaller) installMods(ctx context.Context, mods []*modconfig.ModVer
 			// if this is not a dryrun
 			// even if there was an error but force was enabled
 			// commit
-			err = i.commitShadow()
+			err = i.commitShadow(ctx)
 		}
 		if err == nil && !i.dryRun {
 			// everything went well
 			// copy whatever we installed to the mods directory
-			err = i.commitShadow()
+			err = i.commitShadow(ctx)
 		}
 
 		// force remove the shadow directory
@@ -310,6 +313,10 @@ func (i *ModInstaller) buildInstallError(errors []error) error {
 }
 
 func (i *ModInstaller) installModDependencesRecursively(ctx context.Context, requiredModVersion *modconfig.ModVersionConstraint, dependencyMod *modconfig.Mod, parent *modconfig.Mod, shouldUpdate bool) error {
+	if error_helpers.IsContextCanceled(ctx) {
+		// short circuit if the execution context has been cancelled
+		return ctx.Err()
+	}
 	// get available versions for this mod
 	includePrerelease := requiredModVersion.Constraint.IsPrerelease()
 	availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name, includePrerelease)
