@@ -179,7 +179,10 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 	}()
 
 	// first check our Steampipe version is sufficient
-	if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
+	if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil && !i.force {
+		return err
+	}
+	if err := workspaceMod.Require.ValidatePluginVersions(workspaceMod.Name(), i.installedPlugins); err != nil && !i.force {
 		return err
 	}
 
