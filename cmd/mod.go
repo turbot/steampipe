@@ -90,6 +90,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 
 	// if any mod names were passed as args, convert into formed mod names
 	opts := newInstallOpts(cmd, args...)
+	trimGitUrls(opts)
 	installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
 
@@ -125,6 +126,7 @@ func runModUninstallCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	opts := newInstallOpts(cmd, args...)
+	trimGitUrls(opts)
 	installData, err := modinstaller.UninstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
 
@@ -160,7 +162,7 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	opts := newInstallOpts(cmd, args...)
-
+	trimGitUrls(opts)
 	installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
 
@@ -255,4 +257,13 @@ func newInstallOpts(cmd *cobra.Command, args ...string) *modinstaller.InstallOpt
 		Command:       cmd.Name(),
 	}
 	return opts
+}
+
+// Modifies(trims) the URL if contains http ot https in arguments
+
+func trimGitUrls(opts *modinstaller.InstallOpts) {
+    for i, url := range opts.ModArgs {
+        opts.ModArgs[i] = strings.TrimPrefix(url, "http://")
+        opts.ModArgs[i] = strings.TrimPrefix(url, "https://")
+    }
 }

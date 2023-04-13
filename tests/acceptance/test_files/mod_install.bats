@@ -74,6 +74,16 @@ local
   assert_output --partial 'does not satisfy mod.m4 which requires version 10.99.99'
 }
 
+@test "install a mod with protocal in url" {
+  run steampipe mod install https://github.com/turbot/steampipe-mod-hackernews-insights@0.3.0
+  # should install with the protocol in the url prefix
+  assert_output '
+Installed 1 mod:
+
+local
+└── github.com/turbot/steampipe-mod-hackernews-insights@v0.3.0'
+}
+
 function teardown() {
   rm -rf .steampipe/
   rm -rf .mod.cache.json
