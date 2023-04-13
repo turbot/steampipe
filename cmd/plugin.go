@@ -413,7 +413,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	for _, key := range sorted {
 		report := reports[key]
 		updateWaitGroup.Add(1)
-		bar := createProgressBar(report.ShortName(), progressBars)
+		bar := createProgressBar(report.ShortNameWithStream(), progressBars)
 		go doPluginUpdate(ctx, bar, report, updateWaitGroup, dataChannel)
 	}
 	go func() {
@@ -470,7 +470,7 @@ func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.Version
 func createProgressBar(plugin string, parentProgressBars *uiprogress.Progress) *uiprogress.Bar {
 	bar := parentProgressBars.AddBar(len(pluginInstallSteps))
 	bar.PrependFunc(func(b *uiprogress.Bar) string {
-		return helpers.Resize(plugin, 20)
+		return helpers.Resize(plugin, 30)
 	})
 	return bar
 }
