@@ -458,8 +458,16 @@ func (m *ModParseContext) addReferenceValue(resource modconfig.HclResource, valu
 	key := parsedName.Name
 	typeString := parsedName.ItemType
 
-	// the resource name will not have a mod - but the run context knows which mod we are parsing
-	mod := m.CurrentMod
+	// most resources will have a mod property - use this if available
+	var mod *modconfig.Mod
+	if modTreeItem, ok := resource.(modconfig.ModTreeItem); ok {
+		mod = modTreeItem.GetMod()
+	}
+	// fall back to current mod
+	if mod == nil {
+		mod = m.CurrentMod
+	}
+
 	modName := mod.ShortName
 	if mod.ModPath == m.RootEvalPath {
 		modName = "local"
