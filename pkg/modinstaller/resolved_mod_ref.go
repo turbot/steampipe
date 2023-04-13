@@ -43,7 +43,7 @@ func (r *ResolvedModRef) setGitReference() {
 	r.GitReference = plumbing.NewTagReferenceName(r.Version.Original())
 }
 
-// FullName returns name in the format <dependency name>@v<dependencyVersion>
-func (r *ResolvedModRef) FullName() string {
+// DependencyPath returns name in the format <dependency name>@v<dependencyVersion>
+func (r *ResolvedModRef) DependencyPath() string {
 	return modconfig.BuildModDependencyPath(r.Name, r.Version)
 }
