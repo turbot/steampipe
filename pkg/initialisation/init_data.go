@@ -12,6 +12,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/statushooks"
@@ -142,6 +143,26 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 
 	i.ConnectionMap = connectionMap
 
+}
+
+func validateModRequirementsRecursively(mod *modconfig.Mod) error {
+	validationErrors := []error{}
+	fmt.Println("validating steampipe version for ", mod.DependencyName)
+	if err := mod.ValidateSteampipeVersion(); err != nil {
+		validationErrors = append(validationErrors, err)
+	}
+	for _, req := range mod.Require.Mods {
+		// find the mod from the resource map
+		var requiredMod *modconfig.Mod
+		for _, m2 := range mod.ResourceMaps.Mods {
+			if m2.DependencyName == req.Name {
+				requiredMod = m2
+				break
+			}
+		}
+		validationErrors = append(validationErrors, validateModRequirementsRecursively(requiredMod))
+	}
+	return error_helpers.CombineErrors(validationErrors...)
 }
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
