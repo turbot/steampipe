@@ -239,7 +239,7 @@ func (i *ModInstaller) commitShadow() (err error) {
 	return nil
 }
 
-func (i *ModInstaller) installMods(mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) (err error) {
+func (i *ModInstaller) installMods(ctx context.Context, mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) (err error) {
 	defer func() {
 		if err == nil {
 			// everything went well
@@ -320,12 +320,12 @@ func (i *ModInstaller) installModDependencesRecursively(ctx context.Context, req
 	var errors []error
 
 	for _, childDependency := range dependencyMod.Require.Mods {
-		childDependencyMod, err := i.getCurrentlyInstalledVersionToUse(childDependency, dependencyMod, shouldUpdate)
+		childDependencyMod, err := i.getCurrentlyInstalledVersionToUse(ctx, childDependency, dependencyMod, shouldUpdate)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		if err := i.installModDependencesRecursively(childDependency, childDependencyMod, dependencyMod, shouldUpdate); err != nil {
+		if err := i.installModDependencesRecursively(ctx, childDependency, childDependencyMod, dependencyMod, shouldUpdate); err != nil {
 			errors = append(errors, err)
 			continue
 		}
@@ -361,19 +361,19 @@ func (i *ModInstaller) getCurrentlyInstalledVersionToUse(ctx context.Context, re
 
 // loadDependencyMod tries to load the mod definition from the shadow directory
 // and falls back to the 'mods' directory of the root mod
-func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionConstraint) (*modconfig.Mod, error) {
+func (i *ModInstaller) loadDependencyMod(ctx context.Context, modVersion *versionmap.ResolvedVersionConstraint) (*modconfig.Mod, error) {
 	// construct the dependency path - this is the relative path of the dependency we are installing
 	dependencyPath := modVersion.DependencyPath()
 
 	// first try loading from the shadow dir
-	modDefinition, err := i.loadDependencyModFromRoot(i.shadowDirPath, dependencyPath)
+	modDefinition, err := i.loadDependencyModFromRoot(ctx, i.shadowDirPath, dependencyPath)
 	if err != nil {
 		return nil, err
 	}
 
 	// failed to load from shadow dir, try mods dir
 	if modDefinition == nil {
-		modDefinition, err = i.loadDependencyModFromRoot(i.modsPath, dependencyPath)
+		modDefinition, err = i.loadDependencyModFromRoot(ctx, i.modsPath, dependencyPath)
 		if err != nil {
 			return nil, err
 		}
@@ -392,11 +392,11 @@ func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionC
 	return modDefinition, nil
 }
 
-func (i *ModInstaller) loadDependencyModFromRoot(modInstallRoot string, dependencyPath string) (*modconfig.Mod, error) {
+func (i *ModInstaller) loadDependencyModFromRoot(ctx context.Context, modInstallRoot string, dependencyPath string) (*modconfig.Mod, error) {
 	log.Printf("[TRACE] loadDependencyModFromRoot: trying to load %s from root %s", dependencyPath, modInstallRoot)
 
 	modPath := path.Join(modInstallRoot, dependencyPath)
-	modDefinition, err := i.loadModfile(modPath, false)
+	modDefinition, err := i.loadModfile(ctx, modPath, false)
 	if err != nil {
 		return nil, sperr.WrapWithMessage(err, "failed to load mod definition for %s from %s", dependencyPath, modInstallRoot)
 	}
@@ -467,7 +467,7 @@ func (i *ModInstaller) install(ctx context.Context, dependency *ResolvedModRef, 
 	}
 
 	// now load the installed mod and return it
-	modDef, err = i.loadModfile(destPath, false)
+	modDef, err = i.loadModfile(ctx, destPath, false)
 	if err != nil {
 		return nil, err
 	}
