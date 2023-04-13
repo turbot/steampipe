@@ -90,7 +90,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// if any mod names were passed as args, convert into formed mod names
-	opts := newInstallOpts(cmd, args...)
+	opts := modinstaller.NewInstallOpts(args...)
 	trimGitUrls(opts)
 	installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
@@ -126,7 +126,7 @@ func runModUninstallCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	opts := newInstallOpts(cmd, args...)
+	opts := modinstaller.NewInstallOpts(args...)
 	trimGitUrls(opts)
 	installData, err := modinstaller.UninstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
@@ -163,7 +163,7 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	opts := newInstallOpts(cmd, args...)
+	opts := modinstaller.NewInstallOpts(args...)
 	trimGitUrls(opts)
 	installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
@@ -194,7 +194,7 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
-	opts := newInstallOpts(cmd)
+	opts := modinstaller.NewInstallOpts()
 	installer, err := modinstaller.NewModInstaller(ctx, opts)
 	error_helpers.FailOnError(err)
 
@@ -250,17 +250,6 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 }
 
 // helpers
-
-func newInstallOpts(cmd *cobra.Command, args ...string) *modinstaller.InstallOpts {
-	opts := &modinstaller.InstallOpts{
-		WorkspacePath: viper.GetString(constants.ArgModLocation),
-		DryRun:        viper.GetBool(constants.ArgDryRun),
-		Force:         viper.GetBool(constants.ArgForce),
-		ModArgs:       args,
-		Command:       cmd.Name(),
-	}
-	return opts
-}
 
 // Modifies(trims) the URL if contains http ot https in arguments
 

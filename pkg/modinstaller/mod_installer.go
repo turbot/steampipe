@@ -69,8 +69,14 @@ func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, err
 	}
 	i.installedPlugins = installedPlugins
 
-	// load workspace mod, creating a default if needed
-	workspaceMod, err := i.loadModfile(ctx, i.workspacePath, true)
+	var loadOpts []LoadModOption
+	// set createDefault in loadModConfiguration to true if CreateDefaultMod is set
+	if opts.CreateDefaultMod {
+		loadOpts = append(loadOpts, WithCreateDefault())
+	}
+
+	// load workspace mod, creating a default if needed(only for mod install)
+	workspaceMod, err := i.loadModfile(ctx, i.workspacePath, loadOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -232,6 +238,9 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 }
 
 func (i *ModInstaller) GetModList() string {
+	if i.workspaceMod == nil {
+		return "No mods installed."
+	}
 	return i.installData.Lock.GetModList(i.workspaceMod.GetInstallCacheKey())
 }
 
@@ -450,7 +459,7 @@ func (i *ModInstaller) loadDependencyModFromRoot(ctx context.Context, modInstall
 	log.Printf("[TRACE] loadDependencyModFromRoot: trying to load %s from root %s", dependencyPath, modInstallRoot)
 
 	modPath := path.Join(modInstallRoot, dependencyPath)
-	modDefinition, err := i.loadModfile(ctx, modPath, false)
+	modDefinition, err := i.loadModfile(ctx, modPath)
 	if err != nil {
 		return nil, sperr.WrapWithMessage(err, "failed to load mod definition for %s from %s", dependencyPath, modInstallRoot)
 	}
@@ -521,7 +530,7 @@ func (i *ModInstaller) install(ctx context.Context, dependency *ResolvedModRef, 
 	}
 
 	// now load the installed mod and return it
-	modDef, err = i.loadModfile(ctx, destPath, false)
+	modDef, err = i.loadModfile(ctx, destPath)
 	if err != nil {
 		return nil, err
 	}
@@ -570,12 +579,16 @@ func (i *ModInstaller) setModDependencyConfig(mod *modconfig.Mod, dependencyPath
 	return mod.SetDependencyConfig(dependencyPath)
 }
 
-func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, createDefault bool) (*modconfig.Mod, error) {
+func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, opts ...LoadModOption) (*modconfig.Mod, error) {
+	options := NewLoadModConfiguration()
+	for _, o := range opts {
+		o(options)
+	}
 	if !parse.ModfileExists(modPath) {
-		if !ValidateModLocation(ctx, modPath) {
-			error_helpers.FailOnError(fmt.Errorf("Mod installation cancelled"))
-		}
-		if createDefault {
+		if options.createDefault {
+			if !ValidateModLocation(ctx, modPath) {
+				error_helpers.FailOnError(fmt.Errorf("Mod installation cancelled"))
+			}
 			mod := modconfig.CreateDefaultMod(i.workspacePath)
 			return mod, nil
 		}
