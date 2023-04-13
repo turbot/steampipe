@@ -342,7 +342,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FILE_PATH/test_data/nested_mod/folder1
 
   run steampipe check all
-  assert_equal "$output" "Error: this command requires a mod definition file - could not find in the current directory tree"
+  assert_equal "$output" "Error: This command requires a mod definition file(mod.sp) - could not find in the current directory tree.
+
+You can either clone a mod repository or install a mod using steampipe mod install and run this command from the cloned/installed mod directory.
+Please refer to: https://steampipe.io/docs/mods/overview"
   cd -
 }
 
@@ -355,7 +358,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FILE_PATH/test_data/nested_mod_no_mod_file/folder1/folder11
 
   run steampipe check all
-  assert_equal "$output" "Error: this command requires a mod definition file - could not find in the current directory tree"
+  assert_equal "$output" "Error: This command requires a mod definition file(mod.sp) - could not find in the current directory tree.
+
+You can either clone a mod repository or install a mod using steampipe mod install and run this command from the cloned/installed mod directory.
+Please refer to: https://steampipe.io/docs/mods/overview"
 
   run steampipe query control.check_1
   assert_success
