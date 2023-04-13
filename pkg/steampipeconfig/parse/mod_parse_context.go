@@ -209,7 +209,7 @@ func (m *ModParseContext) addDependencyVariablesToReferenceMap() {
 func (m *ModParseContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	if len(m.UnresolvedBlocks) > 0 {
 		// should never happen
-		panic("calling SetContent on runContext but there are unresolved blocks from a previous parse")
+		panic("calling AddMod on ModParseContext but there are unresolved blocks from a previous parse")
 	}
 
 	var diags hcl.Diagnostics
