@@ -66,11 +66,6 @@ func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (*modcon
 		if err != nil {
 			return nil, err
 		}
-		// now we have loaded the mod, if this is a dependency mod, add in any variables we have loaded
-		//if parseCtx.ParentParseCtx != nil {
-		//	parseCtx.SetVariablesForDependencyMod(mod, parseCtx.ParentParseCtx.DependencyVariables)
-		//}
-
 	} else {
 		// so there is no mod file - should we create a default?
 		if !parseCtx.ShouldCreateDefaultMod() {

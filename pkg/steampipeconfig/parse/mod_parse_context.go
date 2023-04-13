@@ -72,8 +72,6 @@ type ModParseContext struct {
 	// map of ReferenceTypeValueMaps keyed by mod name
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
-	// map of variable values as ReferenceTypeValueMaps - keyed by mod DependencyPath
-	dependencyVariableValues map[string]ReferenceTypeValueMap
 
 	// a map of just the top level dependencies of the CurrentMod, keyed my full mod DepdencyName (with no version)
 	topLevelDependencyMods modconfig.ModMap
@@ -95,7 +93,6 @@ func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath st
 		referenceValues: map[string]ReferenceTypeValueMap{
 			"local": make(ReferenceTypeValueMap),
 		},
-		dependencyVariableValues: make(map[string]ReferenceTypeValueMap),
 	}
 	// add root node - this will depend on all other nodes
 	c.dependencyGraph = c.newDependencyGraph()
@@ -197,10 +194,11 @@ func (m *ModParseContext) addDependencyVariablesToReferenceMap() {
 		// only add variables from top level dependencies
 		if _, ok := topLevelDependencyPathMap[depModName]; ok {
 			// create map for this dependency if needed
-			if m.dependencyVariableValues[depModName] == nil {
-				m.dependencyVariableValues[depModName] = make(ReferenceTypeValueMap)
+			alias := topLevelDependencyPathMap[depModName]
+			if m.referenceValues[alias] == nil {
+				m.referenceValues[alias] = make(ReferenceTypeValueMap)
 			}
-			m.dependencyVariableValues[depModName]["var"] = VariableValueCtyMap(depVars)
+			m.referenceValues[alias]["var"] = VariableValueCtyMap(depVars)
 		}
 	}
 }
@@ -569,4 +567,5 @@ func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
 	// now the mod is set we can add variables to the reference map
 	// ( we cannot do this until mod as set as we need to identify which variables to use if we are a dependency
 	m.AddVariablesToReferenceMap()
+	m.buildEvalContext()
 }
