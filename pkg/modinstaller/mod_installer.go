@@ -444,12 +444,16 @@ func (i *ModInstaller) loadDependencyMod(modVersion *versionmap.ResolvedVersionC
 }
 
 // set the mod dependency path
-func (i *ModInstaller) setModDependencyConfig(mod *modconfig.Mod, modPath string) error {
-	dependencyPath, err := filepath.Rel(i.modsPath, modPath)
+func (i *ModInstaller) setModDependencyConfig(mod *modconfig.Mod, modPath string) (err error) {
+	mod.DependencyPath, err = filepath.Rel(i.modsPath, modPath)
+	// parse the dependency path to get the depdency name and version
+	dependencyName, version, err := modconfig.ParseModDependencyPath(mod.DependencyPath)
 	if err != nil {
 		return err
 	}
-	return mod.SetDependencyConfig(dependencyPath)
+	mod.DependencyName = dependencyName
+	mod.Version = version
+	return
 }
 
 func (i *ModInstaller) loadModfile(modPath string, createDefault bool) (*modconfig.Mod, error) {
