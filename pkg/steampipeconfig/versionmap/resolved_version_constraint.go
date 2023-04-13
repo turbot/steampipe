@@ -1,8 +1,8 @@
 package versionmap
 
 import (
+	"fmt"
 	"github.com/Masterminds/semver"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 type ResolvedVersionConstraint struct {
@@ -33,6 +33,6 @@ func (c ResolvedVersionConstraint) IsPrerelease() bool {
 	return c.Version.Prerelease() != "" || c.Version.Metadata() != ""
 }
 
-func (c ResolvedVersionConstraint) DependencyPath() string {
-	return modconfig.BuildModDependencyPath(c.Name, c.Version)
+func (c ResolvedVersionConstraint) FullName() string {
+	return fmt.Sprintf("%s@v%s", c.Name, c.Version.String())
 }
