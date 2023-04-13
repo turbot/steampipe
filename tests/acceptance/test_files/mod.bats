@@ -385,7 +385,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FILE_PATH/test_data/bad_mod_with_plugin_require_not_met
 
   run steampipe dashboard
-  assert_output --partial 'Error: 1 mod plugin requirement not satisfied.'
+  assert_output --partial "[ Wait    ] Loading Workspace
+Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_with_require_not_met'"
   cd -
 }
 
