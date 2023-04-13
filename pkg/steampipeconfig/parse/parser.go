@@ -192,7 +192,7 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 
 	// add the mod to the run context
 	// - this it to ensure all pseudo resources get added and build the eval context with the variables we just added
-	if diags = parseCtx.AddMod(mod); diags.HasErrors() {
+	if diags = parseCtx.AddModResources(mod); diags.HasErrors() {
 		return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to add mod to run context", diags))
 	}
 

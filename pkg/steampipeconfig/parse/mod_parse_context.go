@@ -205,11 +205,11 @@ func (m *ModParseContext) addDependencyVariablesToReferenceMap() {
 	}
 }
 
-// AddMod is used to add a mod to the eval context
-func (m *ModParseContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
+// AddModResources is used to add mod resources to the eval context
+func (m *ModParseContext) AddModResources(mod *modconfig.Mod) hcl.Diagnostics {
 	if len(m.UnresolvedBlocks) > 0 {
 		// should never happen
-		panic("calling AddMod on ModParseContext but there are unresolved blocks from a previous parse")
+		panic("calling AddModResources on ModParseContext but there are unresolved blocks from a previous parse")
 	}
 
 	var diags hcl.Diagnostics
@@ -217,9 +217,19 @@ func (m *ModParseContext) AddMod(mod *modconfig.Mod) hcl.Diagnostics {
 	moreDiags := m.storeResourceInReferenceValueMap(mod)
 	diags = append(diags, moreDiags...)
 
+	// do not add variables (as they have already been added)
+	// if the resource is for a dependency mod, do not add locals
+	shouldAdd := func(item modconfig.HclResource) bool {
+		if item.BlockType() == modconfig.BlockTypeVariable ||
+			item.BlockType() == modconfig.BlockTypeLocals && item.(modconfig.ModTreeItem).GetMod().ShortName != m.CurrentMod.ShortName {
+			return false
+		}
+		return true
+	}
+
 	resourceFunc := func(item modconfig.HclResource) (bool, error) {
-		// add all mod resources except variables into cty map
-		if _, ok := item.(*modconfig.Variable); !ok {
+		// add all mod resources (except those excluded) into cty map
+		if shouldAdd(item) {
 			moreDiags := m.storeResourceInReferenceValueMap(item)
 			diags = append(diags, moreDiags...)
 		}

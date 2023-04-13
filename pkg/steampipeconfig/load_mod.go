@@ -46,10 +46,6 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOpt
 		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
-	// TODO KAI WHY AFTER DEPS???
-	// now we have loaded dependencies, set the current mod on the run context
-	//parseCtx.CurrentMod = mod
-
 	// populate the resource maps of the current mod using the dependency mods
 	mod.ResourceMaps = parseCtx.GetResourceMaps()
 	// now load the mod resource hcl
@@ -150,6 +146,8 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	parseCtx.AddLoadedDependencyMod(mod)
 	if parseCtx.ParentParseCtx != nil {
 		parseCtx.ParentParseCtx.AddLoadedDependencyMod(mod)
+		// add mod resources to parent parse context
+		parseCtx.ParentParseCtx.AddModResources(mod)
 	}
 
 	return nil
@@ -183,14 +181,6 @@ func loadModResources(modPath string, parseCtx *parse.ModParseContext) (*modconf
 
 	// parse all hcl files (NOTE - this reads the CurrentMod out of ParseContext and adds to it)
 	mod, errAndWarnings := parse.ParseMod(fileData, pseudoResources, parseCtx)
-	if errAndWarnings.GetError() == nil {
-		// now add fully populated mod to the parent run context
-		if parseCtx.ParentParseCtx != nil {
-			// TODO WHY?? if we have already set current mod for parent this should not be needed
-			//parseCtx.ParentParseCtx.CurrentMod = mod
-			parseCtx.ParentParseCtx.AddMod(mod)
-		}
-	}
 
 	return mod, errAndWarnings
 }
