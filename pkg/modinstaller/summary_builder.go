@@ -34,7 +34,7 @@ func getVerb(verb string) string {
 
 func BuildInstallSummary(installData *InstallData) string {
 	// for now treat an install as update - we only install deps which are in the mod.sp but missing in the mod folder
-	modDependencyPath := installData.WorkspaceMod.GetInstallCacheKey()
+	modDependencyPath := installData.WorkspaceMod.GetModDependencyPath()
 	installCount, installedTreeString := getInstallationResultString(installData.Installed, modDependencyPath)
 	uninstallCount, uninstalledTreeString := getInstallationResultString(installData.Uninstalled, modDependencyPath)
 	upgradeCount, upgradeTreeString := getInstallationResultString(installData.Upgraded, modDependencyPath)

@@ -27,6 +27,11 @@ type Mod struct {
 	// required to allow partial decoding
 	Remain hcl.Body `hcl:",remain" json:"-"`
 
+	// ModDependencyPath is the fully qualified mod name, which can be used to 'require'  the mod,
+	// e.g. github.com/turbot/steampipe-mod-azure-thrifty
+	// This is only set if the mod is installed as a dependency
+	ModDependencyPath string `cty:"mod_dependency_path"`
+
 	// attributes
 	Categories []string `cty:"categories" hcl:"categories,optional" column:"categories,jsonb"`
 	Color      *string  `cty:"color" hcl:"color" column:"color,text"`
@@ -37,27 +42,17 @@ type Mod struct {
 	LegacyRequire *Require   `hcl:"requires,block"`
 	OpenGraph     *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
 
-	// Depency attributes - set if this mod is loaded as a dependency
-
-	// the mod version
-	Version *semver.Version
-	// DependencyPath is the fully qualified mod name including version,
-	// which will by the map key in the workspace lock file
-	// NOTE: this is the relative path to th emod location from the depdemncy install dir (.steampipe/mods)
-	// e.g. github.com/turbot/steampipe-mod-azure-thrifty@v1.0.0
-	DependencyPath string
-	// DependencyName return the name of the mod as a dependency, i.e. the mod dependency path, _without_ the version
-	// e.g. github.com/turbot/steampipe-mod-azure-thrifty
-	DependencyName string
+	VersionString string `cty:"version"`
+	Version       *semver.Version
 
 	// ModPath is the installation location of the mod
 	ModPath string
 
-	// convenient aggregation of all resources
-	ResourceMaps *ResourceMaps
-
 	// the filepath of the mod.sp file (will be empty for default mod)
 	modFilePath string
+	// convenient aggregation of all resources
+	// NOTE: this resource map object references the same set of resources
+	ResourceMaps *ResourceMaps
 }
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
@@ -78,7 +73,24 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	}
 	mod.ResourceMaps = NewModResources(mod)
 
+	// try to derive mod version from the path
+	mod.setVersion()
+
 	return mod
+}
+
+func (m *Mod) setVersion() {
+	segments := strings.Split(m.ModPath, "@")
+	if len(segments) == 1 {
+		return
+	}
+	versionString := segments[len(segments)-1]
+	// try to set version, ignoring error
+	version, err := semver.NewVersion(versionString)
+	if err == nil {
+		m.Version = version
+		m.VersionString = fmt.Sprintf("%d.%d", version.Major(), version.Minor())
+	}
 }
 
 func (m *Mod) Equals(other *Mod) bool {
@@ -140,6 +152,21 @@ func (m *Mod) IsDefaultMod() bool {
 	return m.modFilePath == ""
 }
 
+func (m *Mod) NameWithVersion() string {
+	if m.VersionString == "" {
+		return m.ShortName
+	}
+	return fmt.Sprintf("%s@%s", m.ShortName, m.VersionString)
+}
+
+// GetModDependencyPath ModDependencyPath if it is set. If not it returns NameWithVersion()
+func (m *Mod) GetModDependencyPath() string {
+	if m.ModDependencyPath != "" {
+		return m.ModDependencyPath
+	}
+	return m.NameWithVersion()
+}
+
 // GetPaths implements ModTreeItem (override base functionality)
 func (m *Mod) GetPaths() []NodePath {
 	return []NodePath{{m.Name()}}
@@ -150,6 +177,11 @@ func (m *Mod) SetPaths() {}
 
 // OnDecoded implements HclResource
 func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+	// if VersionString is set, set Version
+	if m.VersionString != "" && m.Version == nil {
+		m.Version, _ = semver.NewVersion(m.VersionString)
+	}
+
 	// handle legacy requires block
 	if m.LegacyRequire != nil && !m.LegacyRequire.Empty() {
 		// ensure that both 'require' and 'requires' were not set
@@ -355,14 +387,4 @@ func (m *Mod) ValidateSteampipeVersion() error {
 // CtyValue implements CtyValueProvider
 func (m *Mod) CtyValue() (cty.Value, error) {
 	return GetCtyValue(m)
-}
-
-// GetInstallCacheKey returns the key used to find this mod in a workspace lock InstallCache
-func (m *Mod) GetInstallCacheKey() string {
-	// if the ModDependencyPath is set, this is a dependency mod - use that
-	if m.DependencyPath != "" {
-		return m.DependencyPath
-	}
-	// otherwise use the short name
-	return m.ShortName
 }

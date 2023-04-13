@@ -225,8 +225,8 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 		prevUnresolvedBlocks = unresolvedBlocks
 	}
 
-	// now tell mod to build tree of resources
-	res.Error = mod.BuildResourceTree(parseCtx.GetTopLevelDependencyMods())
+	// now tell mod to build tree of controls.
+	res.Error = mod.BuildResourceTree(parseCtx.LoadedDependencyMods)
 
 	return mod, res
 }

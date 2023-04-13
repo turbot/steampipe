@@ -13,7 +13,7 @@ func (i *ModInstaller) Prune() (versionmap.VersionListMap, error) {
 	// now delete any mod folders which are not in the lock file
 	for name, versions := range unusedMods {
 		for _, version := range versions {
-			depPath := i.getDependencyDestPath(modconfig.BuildModDependencyPath(name, version))
+			depPath := i.getDependencyDestPath(modconfig.ModVersionFullName(name, version))
 			if err := i.deleteDependencyItem(depPath); err != nil {
 				return nil, err
 			}

@@ -1,7 +1,6 @@
 package versionmap
 
 import (
-	"fmt"
 	"github.com/Masterminds/semver"
 )
 
@@ -31,8 +30,4 @@ func (c ResolvedVersionConstraint) Equals(other *ResolvedVersionConstraint) bool
 
 func (c ResolvedVersionConstraint) IsPrerelease() bool {
 	return c.Version.Prerelease() != "" || c.Version.Metadata() != ""
-}
-
-func (c ResolvedVersionConstraint) FullName() string {
-	return fmt.Sprintf("%s@v%s", c.Name, c.Version.String())
 }

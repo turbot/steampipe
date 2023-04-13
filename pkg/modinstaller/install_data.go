@@ -64,18 +64,17 @@ func (d *InstallData) GetAvailableUpdates() (versionmap.DependencyVersionMap, er
 
 // onModInstalled is called when a dependency is satisfied by installing a mod version
 func (d *InstallData) onModInstalled(dependency *ResolvedModRef, modDef *modconfig.Mod, parent *modconfig.Mod) {
-	parentPath := parent.GetInstallCacheKey()
+	parentPath := parent.GetModDependencyPath()
 	// get the constraint from the parent (it must be there)
-	modVersionConstraint := parent.Require.GetModDependency(dependency.Name).Constraint.Original
-
+	modVersion := parent.Require.GetModDependency(dependency.Name)
 	// update lock
-	d.NewLock.InstallCache.Add(dependency.Name, modDef.ShortName, modDef.Version, modVersionConstraint, parentPath)
+	d.NewLock.InstallCache.Add(dependency.Name, modDef.ShortName, modDef.Version, modVersion.Constraint.Original, parentPath)
 }
 
 // addExisting is called when a dependency is satisfied by a mod which is already installed
 func (d *InstallData) addExisting(dependencyName string, existingDep *modconfig.Mod, constraint *versionhelpers.Constraints, parent *modconfig.Mod) {
 	// update lock
-	parentPath := parent.GetInstallCacheKey()
+	parentPath := parent.GetModDependencyPath()
 	d.NewLock.InstallCache.Add(dependencyName, existingDep.ShortName, existingDep.Version, constraint.Original, parentPath)
 }
 
@@ -108,13 +107,13 @@ func (d *InstallData) onInstallComplete() {
 }
 
 func (d *InstallData) GetUpdatedTree() treeprint.Tree {
-	return d.Upgraded.GetDependencyTree(d.WorkspaceMod.GetInstallCacheKey())
+	return d.Upgraded.GetDependencyTree(d.WorkspaceMod.GetModDependencyPath())
 }
 
 func (d *InstallData) GetInstalledTree() treeprint.Tree {
-	return d.Installed.GetDependencyTree(d.WorkspaceMod.GetInstallCacheKey())
+	return d.Installed.GetDependencyTree(d.WorkspaceMod.GetModDependencyPath())
 }
 
 func (d *InstallData) GetUninstalledTree() treeprint.Tree {
-	return d.Uninstalled.GetDependencyTree(d.WorkspaceMod.GetInstallCacheKey())
+	return d.Uninstalled.GetDependencyTree(d.WorkspaceMod.GetModDependencyPath())
 }

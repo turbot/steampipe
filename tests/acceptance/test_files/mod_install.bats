@@ -26,7 +26,7 @@ local
   run steampipe mod list
   assert_output '
 local
-└── github.com/turbot/steampipe-mod-aws-compliance@v0.10.0'
+└── github.com/turbot/steampipe-mod-aws-compliance@v0.10'
 }
 
 @test "install old version when latest already installed" {
@@ -36,7 +36,7 @@ local
 Downgraded 1 mod:
 
 local
-└── github.com/turbot/steampipe-mod-aws-compliance@v0.1.0'
+└── github.com/turbot/steampipe-mod-aws-compliance@v0.1'
 }
 
 @test "install mod version, remove .steampipe folder and then run install" {
@@ -51,7 +51,7 @@ local
 Installed 1 mod:
 
 local
-└── github.com/turbot/steampipe-mod-aws-compliance@v0.1.0'
+└── github.com/turbot/steampipe-mod-aws-compliance@v0.1'
 }
 
 @test "install mod version, remove .cache file and then run install" {
@@ -66,7 +66,7 @@ local
 Installed 1 mod:
 
 local
-└── github.com/turbot/steampipe-mod-aws-compliance@v0.1.0'
+└── github.com/turbot/steampipe-mod-aws-compliance@v0.1'
 }
 
 @test "install mod version should fail, since dependant mod has a requirement of different steampipe CLI version" {
