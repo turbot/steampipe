@@ -135,6 +135,7 @@ top_level.benchmark.bm_version_dependency_mod_2,Benchmark version dependency mod
 }
 
 function teardown() {
+  steampipe plugin uninstall aws
   rm -rf .steampipe/
   rm -rf .mod.cache.json
   rm -rf mod.sp
@@ -142,4 +143,5 @@ function teardown() {
 
 function setup() {
   cd $FILE_PATH/test_data/mod_install
+  steampipe plugin install aws
 }
