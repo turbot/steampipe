@@ -38,12 +38,14 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOpt
 		o(mod)
 	}
 
+	// set the current mod on the run context
+	parseCtx.SetCurrentMod(mod)
+
 	// load the mod dependencies
 	if err := loadModDependencies(mod, parseCtx); err != nil {
 		return nil, modconfig.NewErrorsAndWarning(err)
 	}
-	// now we have loaded dependencies, set the current mod on the run context
-	parseCtx.CurrentMod = mod
+
 	// populate the resource maps of the current mod using the dependency mods
 	mod.ResourceMaps = parseCtx.GetResourceMaps()
 	// now load the mod resource hcl
@@ -64,12 +66,6 @@ func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (*modcon
 		if err != nil {
 			return nil, err
 		}
-		// now we have loaded the mod, if this is a dependency mod, add in any variables we have loaded
-		if parseCtx.ParentParseCtx != nil {
-			parseCtx.Variables = parseCtx.ParentParseCtx.DependencyVariables[mod.ShortName]
-			parseCtx.SetVariablesForDependencyMod(mod, parseCtx.ParentParseCtx.DependencyVariables)
-		}
-
 	} else {
 		// so there is no mod file - should we create a default?
 		if !parseCtx.ShouldCreateDefaultMod() {
@@ -124,7 +120,7 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	parentFolder := filepath.Dir(filepath.Join(parseCtx.WorkspaceLock.ModInstallationPath, modDependency.Name))
 
 	// search the parent folder for a mod installation which satisfied the given mod dependency
-	dependencyPath, version, err := findInstalledDependency(modDependency, parentFolder)
+	dependencyDir, version, err := findInstalledDependency(modDependency, parentFolder)
 	if err != nil {
 		return err
 	}
@@ -134,22 +130,9 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	parseCtx.ListOptions.Exclude = nil
 	defer func() { parseCtx.ListOptions.Exclude = prevExclusions }()
 
-	// create a child run context
-	childRunCtx := parse.NewModParseContext(
-		parseCtx.WorkspaceLock,
-		dependencyPath,
-		parse.CreatePseudoResources,
-		&filehelpers.ListOptions{
-			// listFlag specifies whether to load files recursively
-			Flags: filehelpers.FilesRecursive,
-			// only load .sp files
-			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
-		})
-	childRunCtx.BlockTypes = parseCtx.BlockTypes
-	childRunCtx.ParentParseCtx = parseCtx
-
+	childParseCtx := parse.NewChildModParseContext(parseCtx, dependencyDir)
 	// NOTE: pass in the version and dependency path of the mod - these must be set before it loads its depdencies
-	mod, errAndWarnings := LoadMod(dependencyPath, childRunCtx, WithDependencyConfig(modDependency.Name, version))
+	mod, errAndWarnings := LoadMod(dependencyDir, childParseCtx, WithDependencyConfig(modDependency.Name, version))
 	if errAndWarnings.GetError() != nil {
 		return errAndWarnings.GetError()
 	}
@@ -158,6 +141,8 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	parseCtx.AddLoadedDependencyMod(mod)
 	if parseCtx.ParentParseCtx != nil {
 		parseCtx.ParentParseCtx.AddLoadedDependencyMod(mod)
+		// add mod resources to parent parse context
+		parseCtx.ParentParseCtx.AddModResources(mod)
 	}
 
 	return nil
@@ -191,13 +176,6 @@ func loadModResources(modPath string, parseCtx *parse.ModParseContext) (*modconf
 
 	// parse all hcl files (NOTE - this reads the CurrentMod out of ParseContext and adds to it)
 	mod, errAndWarnings := parse.ParseMod(fileData, pseudoResources, parseCtx)
-	if errAndWarnings.GetError() == nil {
-		// now add fully populated mod to the parent run context
-		if parseCtx.ParentParseCtx != nil {
-			parseCtx.ParentParseCtx.CurrentMod = mod
-			parseCtx.ParentParseCtx.AddMod(mod)
-		}
-	}
 
 	return mod, errAndWarnings
 }

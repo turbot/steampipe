@@ -29,11 +29,11 @@ func NewModVariableMap(mod *Mod, dependencyMods ModMap) *ModVariableMap {
 		m.RootVariables[buildVariableMapKey(k)] = v
 	}
 	// now add variables from dependency mods
-	for _, mod := range dependencyMods {
+	for dependencyPath, mod := range dependencyMods {
 		// add variables into map, modifying the key to be the variable short name
-		m.DependencyVariables[mod.ShortName] = make(map[string]*Variable)
+		m.DependencyVariables[dependencyPath] = make(map[string]*Variable)
 		for k, v := range mod.ResourceMaps.Variables {
-			m.DependencyVariables[mod.ShortName][buildVariableMapKey(k)] = v
+			m.DependencyVariables[dependencyPath][buildVariableMapKey(k)] = v
 		}
 	}
 	// build map of all variables

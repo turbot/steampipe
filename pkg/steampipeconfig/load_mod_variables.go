@@ -23,7 +23,7 @@ func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContex
 		return nil, errAndWarnings.GetError()
 	}
 
-	variableMap := modconfig.NewModVariableMap(mod, parseCtx.GetTopLevelDependencyMods())
+	variableMap := modconfig.NewModVariableMap(mod, parseCtx.LoadedDependencyMods)
 
 	return variableMap, nil
 }
@@ -55,9 +55,6 @@ func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, var
 			return nil, err
 		}
 	}
-
-	// add workspace mod variables to runContext
-	parseCtx.AddInputVariables(variableMap)
 
 	return variableMap, nil
 }

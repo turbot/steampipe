@@ -177,7 +177,7 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
-	// if variables were passed in runcontext, add to the mod
+	// if variables were passed in parsecontext, add to the mod
 	for _, v := range parseCtx.Variables {
 		if diags = mod.AddResource(v); diags.HasErrors() {
 			return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to add resource to mod", diags))
@@ -192,7 +192,7 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 
 	// add the mod to the run context
 	// - this it to ensure all pseudo resources get added and build the eval context with the variables we just added
-	if diags = parseCtx.AddMod(mod); diags.HasErrors() {
+	if diags = parseCtx.AddModResources(mod); diags.HasErrors() {
 		return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to add mod to run context", diags))
 	}
 
@@ -219,7 +219,7 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 		// if the number of unresolved blocks has NOT reduced, fail
 		if prevUnresolvedBlocks != 0 && unresolvedBlocks >= prevUnresolvedBlocks {
 			str := parseCtx.FormatDependencies()
-			return nil, modconfig.NewErrorsAndWarning(fmt.Errorf("failed to resolve mod dependencies after %d attempts\nDependencies:\n%s", attempts+1, str))
+			return nil, modconfig.NewErrorsAndWarning(fmt.Errorf("failed to resolve dependencies for mod '%s' after %d attempts\nDependencies:\n%s", mod.FullName, attempts+1, str))
 		}
 		// update prevUnresolvedBlocks
 		prevUnresolvedBlocks = unresolvedBlocks
