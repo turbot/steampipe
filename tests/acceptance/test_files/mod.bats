@@ -368,7 +368,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FILE_PATH/test_data/bad_mod_with_plugin_require_not_met
 
   run steampipe query "select 1"
-  assert_output --partial 'Error: 1 mod plugin requirement not satisfied.'
+  assert_output --partial 'Warning: could not find plugin which satisfies requirement'
   cd -
 }
 
@@ -376,7 +376,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FILE_PATH/test_data/bad_mod_with_plugin_require_not_met
 
   run steampipe check all
-  assert_output --partial 'Error: 1 mod plugin requirement not satisfied.'
+  assert_output --partial 'Warning: could not find plugin which satisfies requirement'
   cd -
 }
 
