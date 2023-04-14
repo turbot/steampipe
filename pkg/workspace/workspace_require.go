@@ -6,19 +6,16 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
-
 	"github.com/Masterminds/semver"
-
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/plugin"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func (w *Workspace) CheckRequiredPluginsInstalled() error {
 	// get the list of all installed plugins
-	installedPlugins, err := w.getInstalledPlugins()
+	installedPlugins, err := plugin.GetInstalledPlugins()
 	if err != nil {
 		return err
 	}
@@ -65,21 +62,6 @@ func (w *Workspace) getRequiredPlugins() map[string]*semver.Version {
 		return requiredVersion
 	}
 	return nil
-}
-
-func (w *Workspace) getInstalledPlugins() (versionmap.VersionMap, error) {
-	installedPlugins := make(versionmap.VersionMap)
-	installedPluginsData, _ := plugin.List(nil)
-	for _, plugin := range installedPluginsData {
-		org, name, _ := ociinstaller.NewSteampipeImageRef(plugin.Name).GetOrgNameAndStream()
-		semverVersion, err := semver.NewVersion(plugin.Version)
-		if err != nil {
-			continue
-		}
-		pluginShortName := fmt.Sprintf("%s/%s", org, name)
-		installedPlugins[pluginShortName] = semverVersion
-	}
-	return installedPlugins, nil
 }
 
 type requiredPluginVersion struct {
