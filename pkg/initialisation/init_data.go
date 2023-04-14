@@ -146,8 +146,11 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {
 	validationErrors := validateModRequirements(mod, pluginVersionMap)
 	for childDependencyName, childMod := range mod.ResourceMaps.Mods {
+		// TODO : The 'mod.DependencyName == childMod.DependencyName' check has to be done because
+		// of a bug in the resource loading code which also puts the mod itself into the resource map
+		// [https://github.com/turbot/steampipe/issues/3341]
 		if childDependencyName == "local" || mod.DependencyName == childMod.DependencyName {
-			// this is a reference to self - skip (otherwise we will end up with a recusion loop)
+			// this is a reference to self - skip (otherwise we will end up with a recursion loop)
 			continue
 		}
 		childValidationErrors := validateModRequirementsRecursively(childMod, pluginVersionMap)
