@@ -521,7 +521,7 @@ func (m *ModParseContext) GetLoadedDependencyMod(requiredModVersion *modconfig.M
 		return nil, fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
 	}
 	// use the full name of the locked version as key
-	d, _ := m.LoadedDependencyMods[lockedVersion.FullName()]
+	d, _ := m.LoadedDependencyMods[lockedVersion.DependencyPath()]
 	return d, nil
 }
 

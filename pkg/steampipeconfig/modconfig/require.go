@@ -29,7 +29,6 @@ func (r SteampipeRequire) initialise() hcl.Diagnostics {
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  fmt.Sprintf("invalid required steampipe version %s", r.MinVersionString),
-				Subject:  &r.DeclRange,
 			}}
 	}
 
@@ -39,17 +38,19 @@ func (r SteampipeRequire) initialise() hcl.Diagnostics {
 
 // Require is a struct representing mod dependencies
 type Require struct {
-	Plugins   []*PluginVersion        `hcl:"plugin,block"`
-	Steampipe *SteampipeRequire       `hcl:"steampipe,block"`
-	SteampipeVersionString string `hcl:"steampipe,optional"`
-	Mods                   []*ModVersionConstraint
-	modMap                 map[string]*ModVersionConstraint
-	DeclRange              hcl.Range
+	Plugins                          []*PluginVersion        `hcl:"plugin,block"`
+	DeprecatedSteampipeVersionString string                  `hcl:"steampipe,optional"`
+	Steampipe                        *SteampipeRequire       `hcl:"steampipe,block"`
+	Mods                             []*ModVersionConstraint `hcl:"mod,block"`
+	DeclRange                        hcl.Range
+	// map keyed by name [and alias]
+	modMap map[string]*ModVersionConstraint
 }
 
-func NewRequire() *Require {
+func NewRequire(block *hcl.Block) *Require {
 	return &Require{
-		modMap: make(map[string]*ModVersionConstraint),
+		modMap:    make(map[string]*ModVersionConstraint),
+		DeclRange: block.DefRange,
 	}
 }
 

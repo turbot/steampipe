@@ -13,8 +13,11 @@ type PluginVersion struct {
 	// the plugin name, as specified in the mod requires block. , e.g. turbot/mod1, aws
 	RawName string `cty:"name" hcl:"name,label"`
 	// the version STREAM, can be either a major or minor version stream i.e. 1 or 1.1
+	// deprecated: use MinVersionString
 	VersionString string `cty:"version" hcl:"version,optional"`
-	Version       *semver.Version
+	// TODO KAI validate and r aise deprecation
+	MinVersionString string `cty:"min_version" hcl:"min_version,optional"`
+	Version          *semver.Version
 	// the org and name which are parsed from the raw name
 	Org       string
 	Name      string

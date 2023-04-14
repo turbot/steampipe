@@ -62,7 +62,7 @@ type Mod struct {
 }
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
-	require := NewRequire()
+	require := NewRequire(nil)
 	name := fmt.Sprintf("mod.%s", shortName)
 	mod := &Mod{
 		ModTreeItemImpl: ModTreeItemImpl{
@@ -289,7 +289,7 @@ func (m *Mod) Save() error {
 		if len(require.Mods) > 0 {
 			for _, m := range require.Mods {
 				modBody := requiresBody.AppendNewBlock("mod", []string{m.Name}).Body()
-				modBody.SetAttributeValue("min_version", cty.StringVal(m.MinVersionString))
+				modBody.SetAttributeValue("version", cty.StringVal(m.VersionString))
 			}
 		}
 	}
