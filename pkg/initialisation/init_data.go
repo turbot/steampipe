@@ -150,18 +150,14 @@ func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap ver
 			// this is a reference to self - skip (otherwise we will end up with a recusion loop)
 			continue
 		}
-		fmt.Println(">>> found child", childMod.DependencyName, "of", mod.FullName)
 		childValidationErrors := validateModRequirementsRecursively(childMod, pluginVersionMap)
 		validationErrors = append(validationErrors, childValidationErrors...)
-		fmt.Println("### validated", childMod.DependencyName)
 	}
 	return validationErrors
 }
 
 func validateModRequirements(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {
 	validationErrors := []string{}
-	fmt.Println(">>> validating", mod.FullName)
-	defer fmt.Println(">>> validated", mod.FullName)
 	if err := mod.ValidateSteampipeVersion(); err != nil {
 		validationErrors = append(validationErrors, err.Error())
 	}
