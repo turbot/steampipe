@@ -28,9 +28,9 @@ import (
 // ShowOutput displays the output using the proper formatter as applicable
 func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) int {
 	rowErrors := 0
-	options := NewDisplayConfiguration()
+	config := NewDisplayConfiguration()
 	for _, o := range opts {
-		o(options)
+		o(config)
 	}
 
 	switch cmdconfig.Viper().GetString(constants.ArgOutput) {
@@ -44,7 +44,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 		rowErrors = displayTable(ctx, result)
 	}
 
-	if options.timing {
+	if config.timing {
 		fmt.Println(buildTimingString(result))
 	}
 	// return the number of rows that returned errors
