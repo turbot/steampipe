@@ -74,7 +74,7 @@ local
   assert_output --partial 'does not satisfy mod.m4 which requires version 10.99.99'
 }
 
-@test "install a mod with protocal in url" {
+@test "install a mod with protocol in url" {
   run steampipe mod install https://github.com/turbot/steampipe-mod-hackernews-insights@0.3.0
   # should install with the protocol in the url prefix
   assert_output '
@@ -82,6 +82,56 @@ Installed 1 mod:
 
 local
 └── github.com/turbot/steampipe-mod-hackernews-insights@v0.3.0'
+}
+
+# Installed 4 mods:
+
+# local
+# └── github.com/pskrbasu/steampipe-mod-top-level@v3.0.0
+#     ├── github.com/pskrbasu/steampipe-mod-dependency-1@v4.0.0
+#     └── github.com/pskrbasu/steampipe-mod-dependency-2@v3.0.0
+#         └── github.com/pskrbasu/steampipe-mod-dependency-1@v3.0.0
+@test "complex mod dependency resolution - test tree structure" {
+  run steampipe mod install github.com/pskrbasu/steampipe-mod-top-level
+  # test the tree structure output
+  assert_output '
+Installed 4 mods:
+
+local
+└── github.com/pskrbasu/steampipe-mod-top-level@v3.0.0
+    ├── github.com/pskrbasu/steampipe-mod-dependency-1@v4.0.0
+    └── github.com/pskrbasu/steampipe-mod-dependency-2@v3.0.0
+        └── github.com/pskrbasu/steampipe-mod-dependency-1@v3.0.0'
+}
+
+@test "complex mod dependency resolution - test benchmark and controls resolution 1" {
+  steampipe mod install github.com/pskrbasu/steampipe-mod-top-level
+
+  run steampipe check top_level.benchmark.bm_version_dependency_mod_1 --output csv
+  # check the output - benchmark should run the control and query from dependency mod 1 which will
+  # have the output:
+# +--------+----------+--------+
+# | reason | resource | status |
+# +--------+----------+--------+
+# | 4      | 4        | alarm  |
+# +--------+----------+--------+
+  assert_output 'group_id,title,description,control_id,control_title,control_description,reason,resource,status,severity
+top_level.benchmark.bm_version_dependency_mod_1,Benchmark version dependency mod 1,,dependency_1.control.version,,,4,4,alarm,'
+}
+
+@test "complex mod dependency resolution - test benchmark and controls resolution 2" {
+  steampipe mod install github.com/pskrbasu/steampipe-mod-top-level
+
+  run steampipe check top_level.benchmark.bm_version_dependency_mod_2 --output csv
+  # check the output - benchmark should run the control and query from dependency mod 2 which will
+  # have the output:
+# +--------+----------+--------+
+# | reason | resource | status |
+# +--------+----------+--------+
+# | 3      | 3        | ok     |
+# +--------+----------+--------+
+  assert_output 'group_id,title,description,control_id,control_title,control_description,reason,resource,status,severity
+top_level.benchmark.bm_version_dependency_mod_2,Benchmark version dependency mod 2,,dependency_2.control.version,,,3,3,ok,'
 }
 
 function teardown() {
