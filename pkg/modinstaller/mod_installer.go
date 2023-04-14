@@ -172,7 +172,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 	defer func() {
 		// tidy unused mods
 		// (put in defer so it still gets called in case of errors)
-		if viper.GetBool(constants.ArgPrune) {
+		if viper.GetBool(constants.ArgPrune) && !i.dryRun {
 			// be sure not to overwrite an existing return error
 			_, pruneErr := i.Prune()
 			if pruneErr != nil && err == nil {
