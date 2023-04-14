@@ -16,14 +16,14 @@ import (
 func GetReferencedVariables(root dashboardtypes.DashboardTreeRun, w *workspace.Workspace) map[string]string {
 	var referencedVariables = make(map[string]string)
 
-	// TODO KAI UPDATE TO HANDLE DEPENDENCYPATH
 	addReferencedVars := func(refs []*modconfig.ResourceReference) {
 		for _, ref := range refs {
 			parts := strings.Split(ref.To, ".")
 			if len(parts) == 2 && parts[0] == "var" {
 				varName := parts[1]
 				varValueName := varName
-				// NOTE: if the ref is NOT for the workspace mod, then use the fully qualifed name
+				// NOTE: if the ref is NOT for the workspace mod, then use the qualified variable name
+				// (e.g. aws_insights.var.v1)
 				if refMod := ref.GetMetadata().ModName; refMod != w.Mod.ShortName {
 					varValueName = fmt.Sprintf("%s.var.%s", refMod, varName)
 					varName = fmt.Sprintf("%s.%s", refMod, varName)
