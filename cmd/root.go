@@ -420,5 +420,7 @@ func displayDeprecationWarnings(errorsAndWarnings *modconfig.ErrorAndWarnings) {
 		for _, warning := range errorsAndWarnings.Warnings {
 			fmt.Printf("%s\n\n", warning)
 		}
+		fmt.Println("For more details, see https://steampipe.io/docs/reference/config-files/workspace")
+		fmt.Println()
 	}
 }

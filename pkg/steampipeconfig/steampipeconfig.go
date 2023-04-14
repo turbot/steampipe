@@ -128,7 +128,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *m
 }
 
 func deprecationWarning(subject string) string {
-	return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nPlease use workspace options instead - https://steampipe.io/docs/reference/config-files/workspace", subject)
+	return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThis can now be set in a steampipe workspace.", subject)
 }
 
 var defaultCacheEnabled = true
