@@ -99,7 +99,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *m
 		}
 	case *options.Terminal:
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
-		errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("%s", constants.Bold("terminal options"))))
+		errorsAndWarnings.AddWarning(deprecationWarning("terminal options"))
 
 		// NOTE: ignore terminal options if current command is not query
 		// this is a short term workaround to handle the clashing 'output' argument
@@ -128,6 +128,9 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *m
 }
 
 func deprecationWarning(subject string) string {
+	if subject == "terminal options" {
+		return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThese can now be set in a steampipe %s.", constants.Bold(subject), constants.Bold("workspace"))
+	}
 	return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThis can now be set in a steampipe %s.", subject, constants.Bold("workspace"))
 }
 
