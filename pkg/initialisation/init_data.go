@@ -105,10 +105,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	}
 
 	//validate steampipe version
-	if err = i.Workspace.ValidateSteampipeVersion(); err != nil {
-		i.Result.Error = err
-		return
-	}
+	validationWarnings := validateModRequirementsRecursively(i.Workspace.Mod, pluginsInstalled)
+	i.Result.AddWarnings(validationWarnings...)
 
 	// if introspection tables are enabled, setup the session data callback
 	var ensureSessionData db_client.DbConnectionCallback
