@@ -89,10 +89,6 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	if viper.GetBool(constants.ArgDryRun) && viper.GetBool(constants.ArgForce) {
-		error_helpers.FailOnError(fmt.Errorf("cannot use '%s' and '%s' together", constants.Bold("--dry-run"), constants.Bold("--force")))
-	}
-
 	// if any mod names were passed as args, convert into formed mod names
 	opts := newInstallOpts(cmd, args...)
 	trimGitUrls(opts)
