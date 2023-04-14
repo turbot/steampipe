@@ -105,7 +105,7 @@ func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *m
 	rowErrors := 0 // get the number of rows that returned an error
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		rowErrors = display.ShowOutput(ctx, r, display.ShowTimingOnOutput(constants.OutputFormatTable))
+		rowErrors = display.ShowOutput(ctx, r)
 		// signal to the resultStreamer that we are done with this result
 		resultsStreamer.AllResultsRead()
 	}

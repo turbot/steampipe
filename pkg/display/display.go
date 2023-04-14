@@ -25,41 +25,12 @@ import (
 	"golang.org/x/text/message"
 )
 
-type DisplayConfiguration struct {
-	timing bool
-}
-
-type DisplayOption = func(config *DisplayConfiguration)
-
-// ShowTimingOnOutput only enables timing if the current output mode is the one provided and if --timing is set
-func ShowTimingOnOutput(output string) DisplayOption {
-	return func(o *DisplayConfiguration) {
-		o.timing = o.timing && (cmdconfig.Viper().GetString(constants.ArgOutput) == output)
-	}
-}
-
-// DisableTiming disables display of timing data forcefully
-func DisableTiming() DisplayOption {
-	return func(config *DisplayConfiguration) {
-		config.timing = false
-	}
-}
-
-// EnableTiming enables display of timing data forcefully
-func EnableTiming() DisplayOption {
-	return func(o *DisplayConfiguration) {
-		o.timing = true
-	}
-}
-
 // ShowOutput displays the output using the proper formatter as applicable
 func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) int {
 	rowErrors := 0
-	config := &DisplayConfiguration{
-		timing: cmdconfig.Viper().GetBool(constants.ArgTiming),
-	}
+	options := NewDisplayConfiguration()
 	for _, o := range opts {
-		o(config)
+		o(options)
 	}
 
 	switch cmdconfig.Viper().GetString(constants.ArgOutput) {
@@ -73,7 +44,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 		rowErrors = displayTable(ctx, result)
 	}
 
-	if config.timing {
+	if options.timing {
 		fmt.Println(buildTimingString(result))
 	}
 	// return the number of rows that returned errors
