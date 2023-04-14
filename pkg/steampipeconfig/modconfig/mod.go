@@ -274,8 +274,10 @@ func (m *Mod) Save() error {
 	// require
 	if require := m.Require; require != nil && !m.Require.Empty() {
 		requiresBody := modBody.AppendNewBlock("require", nil).Body()
-		if require.SteampipeVersionString != "" {
-			requiresBody.SetAttributeValue("steampipe", cty.StringVal(require.SteampipeVersionString))
+
+		if require.Steampipe != nil && require.Steampipe.MinVersionString != "" {
+			steampipeRequiresBody := requiresBody.AppendNewBlock("steampipe", nil).Body()
+			steampipeRequiresBody.SetAttributeValue("min_version", cty.StringVal(require.Steampipe.MinVersionString))
 		}
 		if len(require.Plugins) > 0 {
 			pluginValues := make([]cty.Value, len(require.Plugins))
@@ -287,7 +289,7 @@ func (m *Mod) Save() error {
 		if len(require.Mods) > 0 {
 			for _, m := range require.Mods {
 				modBody := requiresBody.AppendNewBlock("mod", []string{m.Name}).Body()
-				modBody.SetAttributeValue("version", cty.StringVal(m.VersionString))
+				modBody.SetAttributeValue("min_version", cty.StringVal(m.MinVersionString))
 			}
 		}
 	}

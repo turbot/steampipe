@@ -580,25 +580,25 @@ func decodeBenchmark(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Be
 	content, diags := block.Body.Content(BenchmarkBlockSchema)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeProperty(content, "children", &benchmark.ChildNames, parseCtx)
+	diags = decodeProperty(content, "children", &benchmark.ChildNames, parseCtx.EvalCtx)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeProperty(content, "description", &benchmark.Description, parseCtx)
+	diags = decodeProperty(content, "description", &benchmark.Description, parseCtx.EvalCtx)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeProperty(content, "documentation", &benchmark.Documentation, parseCtx)
+	diags = decodeProperty(content, "documentation", &benchmark.Documentation, parseCtx.EvalCtx)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeProperty(content, "tags", &benchmark.Tags, parseCtx)
+	diags = decodeProperty(content, "tags", &benchmark.Tags, parseCtx.EvalCtx)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeProperty(content, "title", &benchmark.Title, parseCtx)
+	diags = decodeProperty(content, "title", &benchmark.Title, parseCtx.EvalCtx)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeProperty(content, "type", &benchmark.Type, parseCtx)
+	diags = decodeProperty(content, "type", &benchmark.Type, parseCtx.EvalCtx)
 	res.handleDecodeDiags(diags)
 
-	diags = decodeProperty(content, "display", &benchmark.Display, parseCtx)
+	diags = decodeProperty(content, "display", &benchmark.Display, parseCtx.EvalCtx)
 	res.handleDecodeDiags(diags)
 
 	// now add children
@@ -612,7 +612,7 @@ func decodeBenchmark(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Be
 		benchmark.ChildNameStrings = getChildNameStringsFromModTreeItem(children)
 	}
 
-	diags = decodeProperty(content, "base", &benchmark.Base, parseCtx)
+	diags = decodeProperty(content, "base", &benchmark.Base, parseCtx.EvalCtx)
 	res.handleDecodeDiags(diags)
 	if benchmark.Base != nil && len(benchmark.Base.ChildNames) > 0 {
 		supportedChildren := []string{modconfig.BlockTypeBenchmark, modconfig.BlockTypeControl}
@@ -621,15 +621,15 @@ func decodeBenchmark(block *hcl.Block, parseCtx *ModParseContext) (*modconfig.Be
 		children, _ := resolveChildrenFromNames(benchmark.Base.ChildNameStrings, block, supportedChildren, parseCtx)
 		benchmark.Base.SetChildren(children)
 	}
-	diags = decodeProperty(content, "width", &benchmark.Width, parseCtx)
+	diags = decodeProperty(content, "width", &benchmark.Width, parseCtx.EvalCtx)
 	res.handleDecodeDiags(diags)
 	return benchmark, res
 }
 
-func decodeProperty(content *hcl.BodyContent, property string, dest interface{}, parseCtx *ModParseContext) hcl.Diagnostics {
+func decodeProperty(content *hcl.BodyContent, property string, dest interface{}, evalCtx *hcl.EvalContext) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	if attr, ok := content.Attributes[property]; ok {
-		diags = gohcl.DecodeExpression(attr.Expr, parseCtx.EvalCtx, dest)
+		diags = gohcl.DecodeExpression(attr.Expr, evalCtx, dest)
 	}
 	return diags
 }

@@ -14,11 +14,33 @@ import (
 	"github.com/turbot/steampipe/sperr"
 )
 
+// TODO KAI SET RANGE
+
+type SteampipeRequire struct {
+	MinVersionString string `hcl:"min_version,optional"`
+	Constraint       *semver.Constraints
+	DeclRange        hcl.Range
+}
+
+func (r SteampipeRequire) initialise() hcl.Diagnostics {
+	constraint, err := semver.NewConstraint(fmt.Sprintf(">=%s", strings.TrimPrefix(r.MinVersionString, "v")))
+	if err != nil {
+		return hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("invalid required steampipe version %s", r.MinVersionString),
+				Subject:  &r.DeclRange,
+			}}
+	}
+
+	r.Constraint = constraint
+	return nil
+}
+
 // Require is a struct representing mod dependencies
 type Require struct {
-	SteampipeVersion *semver.Version
-	Plugins          []*PluginVersion `hcl:"plugin,block"`
-	// map keyed by name [and alias]
+	Plugins   []*PluginVersion        `hcl:"plugin,block"`
+	Steampipe *SteampipeRequire       `hcl:"steampipe,block"`
 	SteampipeVersionString string `hcl:"steampipe,optional"`
 	Mods                   []*ModVersionConstraint
 	modMap                 map[string]*ModVersionConstraint
@@ -35,13 +57,9 @@ func (r *Require) initialise() error {
 	var diags hcl.Diagnostics
 	r.modMap = make(map[string]*ModVersionConstraint)
 
-	if r.SteampipeVersionString != "" {
-		steampipeVersion, err := semver.NewVersion(strings.TrimPrefix(r.SteampipeVersionString, "v"))
-		if err != nil {
-			return fmt.Errorf("invalid required steampipe version %s", r.SteampipeVersionString)
-		}
-
-		r.SteampipeVersion = steampipeVersion
+	if r.Steampipe != nil && r.Steampipe.MinVersionString != "" {
+		moreDiags := r.Steampipe.initialise()
+		diags = append(diags, moreDiags...)
 	}
 
 	for _, p := range r.Plugins {
@@ -60,9 +78,9 @@ func (r *Require) initialise() error {
 }
 
 func (r *Require) ValidateSteampipeVersion(modName string) error {
-	if r.SteampipeVersion != nil {
-		if version.SteampipeVersion.LessThan(r.SteampipeVersion) {
-			return fmt.Errorf("steampipe version %s does not satisfy %s which requires version %s", version.SteampipeVersion.String(), modName, r.SteampipeVersion.String())
+	if steampipeVersionConstraint := r.SteampipeVersionConstraint(); steampipeVersionConstraint != nil {
+		if !steampipeVersionConstraint.Check(version.SteampipeVersion) {
+			return fmt.Errorf("steampipe version %s does not satisfy %s which requires version %s", version.SteampipeVersion.String(), modName, r.Steampipe.MinVersionString)
 		}
 	}
 	return nil
@@ -104,7 +122,6 @@ func (r *Require) AddModDependencies(newModVersions map[string]*ModVersionConstr
 
 	// first rebuild the mod map
 	for name, newVersion := range newModVersions {
-		// todo take alias into account
 		r.modMap[name] = newVersion
 	}
 
@@ -124,7 +141,6 @@ func (r *Require) AddModDependencies(newModVersions map[string]*ModVersionConstr
 func (r *Require) RemoveModDependencies(versions map[string]*ModVersionConstraint) {
 	// first rebuild the mod map
 	for name := range versions {
-		// todo take alias into account
 		delete(r.modMap, name)
 	}
 	// now update the mod array from the map
@@ -156,5 +172,13 @@ func (r *Require) ContainsMod(requiredModVersion *ModVersionConstraint) bool {
 }
 
 func (r *Require) Empty() bool {
-	return r.SteampipeVersion == nil && len(r.Mods) == 0 && len(r.Plugins) == 0
+	return r.SteampipeVersionConstraint == nil && len(r.Mods) == 0 && len(r.Plugins) == 0
+}
+
+func (r *Require) SteampipeVersionConstraint() *semver.Constraints {
+	if r.Steampipe == nil {
+		return nil
+	}
+	return r.Steampipe.Constraint
+
 }

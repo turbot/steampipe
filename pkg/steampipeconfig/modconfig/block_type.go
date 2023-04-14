@@ -4,6 +4,7 @@ import "github.com/turbot/go-kit/helpers"
 
 // NOTE: when adding a block type, be sure to update  QueryProviderBlocks/ReferenceBlocks/AllBlockTypes as needed
 const (
+	BlockTypeSteampipe      = "steampipe"
 	BlockTypeMod            = "mod"
 	BlockTypeQuery          = "query"
 	BlockTypeControl        = "control"

@@ -144,7 +144,6 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 		return nil, plugin.DiagsToError("Failed to decode mod hcl file", res.Diags)
 	}
 	// NOTE: IGNORE DEPENDENCY ERRORS
-	// TODO verify any dependency errors are for args only
 
 	// call decode callback
 	if err := mod.OnDecoded(block, nil); err != nil {
