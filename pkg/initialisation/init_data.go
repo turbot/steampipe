@@ -12,12 +12,13 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/modinstaller"
+	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -97,8 +98,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	i.Workspace.CloudMetadata = cloudMetadata
 
 	statushooks.SetStatus(ctx, "Checking for required plugins")
-	// check if the required plugins are installed
-	err = i.Workspace.CheckRequiredPluginsInstalled()
+	pluginsInstalled, err := plugin.GetInstalledPlugins()
 	if err != nil {
 		i.Result.Error = err
 		return
@@ -145,24 +145,33 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 
 }
 
-func validateModRequirementsRecursively(mod *modconfig.Mod) error {
-	validationErrors := []error{}
-	fmt.Println("validating steampipe version for ", mod.DependencyName)
-	if err := mod.ValidateSteampipeVersion(); err != nil {
-		validationErrors = append(validationErrors, err)
-	}
-	for _, req := range mod.Require.Mods {
-		// find the mod from the resource map
-		var requiredMod *modconfig.Mod
-		for _, m2 := range mod.ResourceMaps.Mods {
-			if m2.DependencyName == req.Name {
-				requiredMod = m2
-				break
-			}
+func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {
+	validationErrors := validateModRequirements(mod, pluginVersionMap)
+	for childDependencyName, childMod := range mod.ResourceMaps.Mods {
+		if childDependencyName == "local" || mod.DependencyName == childMod.DependencyName {
+			// this is a reference to self - skip (otherwise we will end up with a recusion loop)
+			continue
 		}
-		validationErrors = append(validationErrors, validateModRequirementsRecursively(requiredMod))
+		fmt.Println(">>> found child", childMod.DependencyName, "of", mod.FullName)
+		childValidationErrors := validateModRequirementsRecursively(childMod, pluginVersionMap)
+		validationErrors = append(validationErrors, childValidationErrors...)
+		fmt.Println("### validated", childMod.DependencyName)
 	}
-	return error_helpers.CombineErrors(validationErrors...)
+	return validationErrors
+}
+
+func validateModRequirements(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {
+	validationErrors := []string{}
+	fmt.Println(">>> validating", mod.FullName)
+	defer fmt.Println(">>> validated", mod.FullName)
+	if err := mod.ValidateSteampipeVersion(); err != nil {
+		validationErrors = append(validationErrors, err.Error())
+	}
+	if err := mod.ValidatePluginVersions(pluginVersionMap); err != nil {
+		validationErrors = append(validationErrors, err.Error())
+	}
+	// now validate the plugin requirements (dependent on #3328)
+	return validationErrors
 }
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
