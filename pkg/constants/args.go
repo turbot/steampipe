@@ -3,6 +3,7 @@ package constants
 // Argument name constants
 const (
 	ArgHelp                 = "help"
+	ArgSilent               = "silent"
 	ArgVersion              = "version"
 	ArgForce                = "force"
 	ArgAll                  = "all"

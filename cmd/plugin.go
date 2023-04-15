@@ -82,12 +82,16 @@ Examples:
   steampipe plugin install aws
 
   # Install a specific plugin version
-  steampipe plugin install turbot/azure@0.1.0`,
+  steampipe plugin install turbot/azure@0.1.0
+
+  # Install a plugin with silent/quiet progress indicator
+  steampipe plugin install --silent aws`,
 	}
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants.ArgHelp, false, "Help for plugin install", cmdconfig.FlagOptions.WithShortHand("h"))
+		AddBoolFlag(constants.ArgHelp, false, "Help for plugin install", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddBoolFlag(constants.ArgSilent, false, "No installation progress indicator", cmdconfig.FlagOptions.WithShortHand("s"))
 	return cmd
 }
 
@@ -201,6 +205,10 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// plugin names can be simple names ('aws') for "standard" plugins,
 	// or full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
+	silent, err := cmd.Flags().GetBool("silent")
+	if err != nil {
+		error_helpers.ShowErrorWithMessage(ctx, err, fmt.Sprintf("Failed to parse silent flag '%v'", silent))
+	}
 	installReports := make(display.PluginInstallReports, 0, len(plugins))
 
 	if len(plugins) == 0 {
@@ -215,23 +223,22 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
-
 	progressBars := uiprogress.New()
 	installWaitGroup := &sync.WaitGroup{}
 	dataChannel := make(chan *display.PluginInstallReport, len(plugins))
 
-	progressBars.Start()
-
+	if !silent {
+		progressBars.Start()
+	}
 	for _, pluginName := range plugins {
 		installWaitGroup.Add(1)
 		bar := createProgressBar(pluginName, progressBars)
-		go doPluginInstall(ctx, bar, pluginName, installWaitGroup, dataChannel)
+		go doPluginInstall(ctx, bar, pluginName, installWaitGroup, dataChannel, silent)
 	}
 	go func() {
 		installWaitGroup.Wait()
 		close(dataChannel)
 	}()
-
 	installCount := 0
 	for report := range dataChannel {
 		installReports = append(installReports, report)
@@ -239,8 +246,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			installCount++
 		}
 	}
-
-	progressBars.Stop()
+	if !silent {
+		progressBars.Stop()
+	}
 
 	if installCount > 0 {
 		// TODO do we need to refresh connections here
@@ -262,17 +270,19 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 }
 
-func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
+func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport, silent bool) {
 	var report *display.PluginInstallReport
 
 	pluginAlreadyInstalled, _ := plugin.Exists(pluginName)
 	if pluginAlreadyInstalled {
-		// set the bar to MAX
-		bar.Set(len(pluginInstallSteps))
-		// let the bar append itself with "Already Installed"
-		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			return helpers.Resize(constants.PluginAlreadyInstalled, 20)
-		})
+		if !silent {
+			// set the bar to MAX
+			bar.Set(len(pluginInstallSteps))
+			// let the bar append itself with "Already Installed"
+			bar.AppendFunc(func(b *uiprogress.Bar) string {
+				return helpers.Resize(constants.PluginAlreadyInstalled, 20)
+			})
+		}
 		report = &display.PluginInstallReport{
 			Plugin:         pluginName,
 			Skipped:        true,
@@ -281,17 +291,19 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 		}
 	} else {
 		// let the bar append itself with the current installation step
-		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			if report != nil && report.SkipReason == constants.PluginNotFound {
-				return helpers.Resize(constants.PluginNotFound, 20)
-			} else {
-				if b.Current() == 0 {
-					// no install step to display yet
-					return ""
+		if !silent {
+			bar.AppendFunc(func(b *uiprogress.Bar) string {
+				if report != nil && report.SkipReason == constants.PluginNotFound {
+					return helpers.Resize(constants.PluginNotFound, 20)
+				} else {
+					if b.Current() == 0 {
+						// no install step to display yet
+						return ""
+					}
+					return helpers.Resize(pluginInstallSteps[b.Current()-1], 20)
 				}
-				return helpers.Resize(pluginInstallSteps[b.Current()-1], 20)
-			}
-		})
+			})
+		}
 		report = installPlugin(ctx, pluginName, false, bar)
 	}
 	returnChannel <- report
