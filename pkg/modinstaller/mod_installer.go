@@ -214,6 +214,9 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 }
 
 func (i *ModInstaller) GetModList() string {
+	if i.workspaceMod == nil {
+		return "No mods installed."
+	}
 	return i.installData.Lock.GetModList(i.workspaceMod.GetInstallCacheKey())
 }
 
