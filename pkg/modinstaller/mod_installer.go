@@ -15,7 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
@@ -29,7 +29,7 @@ type ModInstaller struct {
 	workspaceMod *modconfig.Mod
 
 	// installed plugins
-	installedPlugins *versionfile.PluginVersionFile
+	installedPlugins map[string]*semver.Version
 
 	mods versionmap.VersionConstraintMap
 
@@ -60,7 +60,7 @@ func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, err
 		return nil, err
 	}
 
-	installedPlugins, err := versionfile.LoadPluginVersionFile()
+	installedPlugins, err := plugin.GetInstalledPlugins()
 	if err != nil {
 		return nil, err
 	}
@@ -181,12 +181,15 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 		}
 	}()
 
-	// first check our Steampipe version is sufficient
-	if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil && !i.force {
-		return err
-	}
-	if err := workspaceMod.Require.ValidatePluginVersions(workspaceMod.Name(), i.installedPlugins); err != nil && !i.force {
-		return err
+	if !i.force {
+		// there's no point in checking the requirements if force is set
+		// since we will ignore it anyway
+		if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil && !i.force {
+			return err
+		}
+		if err := workspaceMod.Require.ValidatePluginVersions(workspaceMod.Name(), i.installedPlugins); err != nil && !i.force {
+			return err
+		}
 	}
 
 	// if mod args have been provided, add them to the the workspace mod requires
