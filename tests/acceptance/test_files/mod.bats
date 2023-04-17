@@ -374,7 +374,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "running steampipe check with mod plugin requirement not met" {
   cd $FILE_PATH/test_data/bad_mod_with_plugin_require_not_met
-  echo "running running steampipe check with mod plugin requirement not met"
+
   run steampipe check all
   assert_output --partial 'Warning: could not find plugin which satisfies requirement'
   cd -
