@@ -11,7 +11,6 @@ import (
 	"github.com/Masterminds/semver"
 	git "github.com/go-git/go-git/v5"
 	"github.com/otiai10/copy"
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -54,7 +53,7 @@ func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, err
 	}
 
 	// load workspace mod, creating a default if needed
-	workspaceMod, err := i.loadModfile(ctx, i.workspacePath, true)
+	workspaceMod, err := i.loadModfile(ctx, i.workspacePath, WithCreateDefault())
 	if err != nil {
 		return nil, err
 	}
@@ -397,7 +396,7 @@ func (i *ModInstaller) loadDependencyModFromRoot(ctx context.Context, modInstall
 	log.Printf("[TRACE] loadDependencyModFromRoot: trying to load %s from root %s", dependencyPath, modInstallRoot)
 
 	modPath := path.Join(modInstallRoot, dependencyPath)
-	modDefinition, err := i.loadModfile(ctx, modPath, false)
+	modDefinition, err := i.loadModfile(ctx, modPath)
 	if err != nil {
 		return nil, sperr.WrapWithMessage(err, "failed to load mod definition for %s from %s", dependencyPath, modInstallRoot)
 	}
@@ -468,7 +467,7 @@ func (i *ModInstaller) install(ctx context.Context, dependency *ResolvedModRef, 
 	}
 
 	// now load the installed mod and return it
-	modDef, err = i.loadModfile(ctx, destPath, false)
+	modDef, err = i.loadModfile(ctx, destPath)
 	if err != nil {
 		return nil, err
 	}
@@ -517,16 +516,19 @@ func (i *ModInstaller) setModDependencyConfig(mod *modconfig.Mod, dependencyPath
 	return mod.SetDependencyConfig(dependencyPath)
 }
 
-func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, createDefault bool) (*modconfig.Mod, error) {
-	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, opts ...LoadModOption) (*modconfig.Mod, error) {
 	if !parse.ModfileExists(modPath) {
-		// we don't need to validate location for dashboard and check commands(only for mod commands)
-		if cmd.Name() != "dashboard" && cmd.Name() != "check" {
-			if !ValidateModLocation(ctx, modPath) {
-				error_helpers.FailOnError(fmt.Errorf("Mod installation cancelled"))
-			}
+		options := NewLoadModConfiguration()
+		for _, o := range opts {
+			o(options)
 		}
-		if createDefault {
+		if options.createDefault {
+			// if the command is mod install, validate the location
+			if i.command == "install" {
+				if !ValidateModLocation(ctx, modPath) {
+					error_helpers.FailOnError(fmt.Errorf("Mod installation cancelled"))
+				}
+			}
 			mod := modconfig.CreateDefaultMod(i.workspacePath)
 			return mod, nil
 		}
