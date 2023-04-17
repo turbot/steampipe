@@ -47,7 +47,9 @@ func decodeRequireBlock(content *hcl.BodyContent, evalCtx *hcl.EvalContext) (*mo
 	res.handleDecodeDiags(diags)
 
 	// decode the body
-	require := modconfig.NewRequire(block)
+	require := modconfig.NewRequire()
+	require.DeclRange = block.DefRange
+
 	diags = gohcl.DecodeBody(block.Body, evalCtx, require)
 	res.handleDecodeDiags(diags)
 

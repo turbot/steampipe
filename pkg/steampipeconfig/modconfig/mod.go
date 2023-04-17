@@ -62,7 +62,6 @@ type Mod struct {
 }
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
-	require := NewRequire(nil)
 	name := fmt.Sprintf("mod.%s", shortName)
 	mod := &Mod{
 		ModTreeItemImpl: ModTreeItemImpl{
@@ -75,7 +74,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 			},
 		},
 		ModPath: modPath,
-		Require: require,
+		Require: NewRequire(),
 	}
 	mod.ResourceMaps = NewModResources(mod)
 
@@ -272,7 +271,7 @@ func (m *Mod) Save() error {
 	}
 
 	// require
-	if require := m.Require; require != nil && !m.Require.Empty() {
+	if require := m.Require; require != nil && !require.Empty() {
 		requiresBody := modBody.AppendNewBlock("require", nil).Body()
 
 		if require.Steampipe != nil && require.Steampipe.MinVersionString != "" {

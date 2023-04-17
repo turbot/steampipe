@@ -15,7 +15,7 @@ type PluginVersion struct {
 	// the version STREAM, can be either a major or minor version stream i.e. 1 or 1.1
 	// deprecated: use MinVersionString
 	VersionString string `cty:"version" hcl:"version,optional"`
-	// TODO KAI validate and r aise deprecation
+	// TODO KAI validate and raise deprecation
 	MinVersionString string `cty:"min_version" hcl:"min_version,optional"`
 	Version          *semver.Version
 	// the org and name which are parsed from the raw name
@@ -50,6 +50,11 @@ func (p *PluginVersion) Initialise() hcl.Diagnostics {
 		})
 	} else {
 		p.Version = version
+	}
+	if p.VersionString != "" {
+		if p.Version != nil {
+
+		}
 	}
 
 	// parse plugin name

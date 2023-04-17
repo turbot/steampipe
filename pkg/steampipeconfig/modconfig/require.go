@@ -47,10 +47,9 @@ type Require struct {
 	modMap map[string]*ModVersionConstraint
 }
 
-func NewRequire(block *hcl.Block) *Require {
+func NewRequire() *Require {
 	return &Require{
-		modMap:    make(map[string]*ModVersionConstraint),
-		DeclRange: block.DefRange,
+		modMap: make(map[string]*ModVersionConstraint),
 	}
 }
 
@@ -173,7 +172,7 @@ func (r *Require) ContainsMod(requiredModVersion *ModVersionConstraint) bool {
 }
 
 func (r *Require) Empty() bool {
-	return r.SteampipeVersionConstraint == nil && len(r.Mods) == 0 && len(r.Plugins) == 0
+	return r.SteampipeVersionConstraint() == nil && len(r.Mods) == 0 && len(r.Plugins) == 0
 }
 
 func (r *Require) SteampipeVersionConstraint() *semver.Constraints {
