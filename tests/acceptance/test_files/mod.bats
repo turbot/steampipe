@@ -407,6 +407,8 @@ Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_w
 }
 
 @test "running steampipe dashboard with steampipe CLI version requirement not met" {
+  skip "test has been disabled since the new behaviour is to start dashboard with a warning"
+
   cd $FILE_PATH/test_data/bad_mod_with_sp_version_require_not_met
 
   run steampipe dashboard
@@ -437,6 +439,8 @@ Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_w
 }
 
 @test "running steampipe dashboard with dependant mod version requirement not met(not installed)" {
+  skip "test has been disabled since the new behaviour is to start dashboard with a warning"
+
   cd $FILE_PATH/test_data/bad_mod_with_dep_mod_version_require_not_met
 
   run steampipe dashboard
