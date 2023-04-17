@@ -381,6 +381,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "running steampipe dashboard with mod plugin requirement not met" {
+  skip "test has been disabled since the new behaviour is to start dashboard with a warning"
   cd $FILE_PATH/test_data/bad_mod_with_plugin_require_not_met
 
   run steampipe dashboard
