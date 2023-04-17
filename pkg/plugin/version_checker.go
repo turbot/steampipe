@@ -27,7 +27,11 @@ func (vr *VersionCheckReport) ShortName() string {
 }
 
 func (vr *VersionCheckReport) ShortNameWithStream() string {
-	return fmt.Sprintf("%s/%s@%s", vr.CheckResponse.Org, vr.CheckResponse.Name, vr.CheckResponse.Stream)
+	// dont show stream names for latest streams
+	if vr.CheckResponse.Stream != "latest" {
+		return fmt.Sprintf("%s/%s@%s", vr.CheckResponse.Org, vr.CheckResponse.Name, vr.CheckResponse.Stream)
+	}
+	return fmt.Sprintf("%s/%s", vr.CheckResponse.Org, vr.CheckResponse.Name)
 }
 
 // VersionChecker :: wrapper struct over the plugin version check utilities
