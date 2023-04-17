@@ -14,12 +14,9 @@ import (
 	"github.com/turbot/steampipe/sperr"
 )
 
-// TODO KAI SET RANGE
-
 type SteampipeRequire struct {
 	MinVersionString string `hcl:"min_version,optional"`
 	Constraint       *semver.Constraints
-	DeclRange        hcl.Range
 }
 
 func (r SteampipeRequire) initialise() hcl.Diagnostics {

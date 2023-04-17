@@ -17,7 +17,7 @@ type VersionConstrainCollection []*ModVersionConstraint
 type ModVersionConstraint struct {
 	// the fully qualified mod name, e.g. github.com/turbot/mod1
 	Name          string `cty:"name" hcl:"name,label"`
-	VersionString string `cty:"version" hcl:"version,optional"`
+	VersionString string `cty:"version" hcl:"version"`
 	// variable values to be set on the dependency mod
 	Args map[string]cty.Value `cty:"args"  hcl:"args,optional"`
 	// only one of Constraint, Branch and FilePath will be set
@@ -30,19 +30,22 @@ type ModVersionConstraint struct {
 // NewModVersionConstraint creates a new ModVersionConstraint - this is called when installing a mod
 func NewModVersionConstraint(modFullName string) (*ModVersionConstraint, error) {
 	m := &ModVersionConstraint{
-		Name: modFullName,
 		Args: make(map[string]cty.Value),
 	}
 
-	// otherwise try to extract version from name
-	segments := strings.Split(m.Name, "@")
-	if len(segments) > 2 {
-		return nil, fmt.Errorf("invalid mod name %s", m.Name)
-
-	}
-	m.Name = segments[0]
-	if len(segments) == 2 {
-		m.VersionString = segments[1]
+	// if name has `file:` prefix, just set the name and ignore version
+	if strings.HasPrefix(modFullName, filePrefix) {
+		m.Name = modFullName
+	} else {
+		// otherwise try to extract version from name
+		segments := strings.Split(modFullName, "@")
+		if len(segments) > 2 {
+			return nil, fmt.Errorf("invalid mod name %s", modFullName)
+		}
+		m.Name = segments[0]
+		if len(segments) == 2 {
+			m.VersionString = segments[1]
+		}
 	}
 
 	// try to convert version into a semver constraint
@@ -54,7 +57,6 @@ func NewModVersionConstraint(modFullName string) (*ModVersionConstraint, error) 
 
 // Initialise parses the version and name properties
 func (m *ModVersionConstraint) Initialise() hcl.Diagnostics {
-	// if name has `file:` prefix, just set the name and ignore version
 	if strings.HasPrefix(m.Name, filePrefix) {
 		m.setFilePath()
 		return nil
