@@ -52,8 +52,14 @@ func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, err
 		return nil, err
 	}
 
-	// load workspace mod, creating a default if needed
-	workspaceMod, err := i.loadModfile(ctx, i.workspacePath, WithCreateDefault())
+	var loadOpts []LoadModOption
+	// set createDefault in loadModConfiguration to true if CreateDefaultMod is set
+	if opts.CreateDefaultMod {
+		loadOpts = append(loadOpts, WithCreateDefault())
+	}
+
+	// load workspace mod, creating a default if needed(only for mod install)
+	workspaceMod, err := i.loadModfile(ctx, i.workspacePath, loadOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -517,17 +523,14 @@ func (i *ModInstaller) setModDependencyConfig(mod *modconfig.Mod, dependencyPath
 }
 
 func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, opts ...LoadModOption) (*modconfig.Mod, error) {
+	options := NewLoadModConfiguration()
+	for _, o := range opts {
+		o(options)
+	}
 	if !parse.ModfileExists(modPath) {
-		options := NewLoadModConfiguration()
-		for _, o := range opts {
-			o(options)
-		}
 		if options.createDefault {
-			// if the command is mod install, validate the location
-			if i.command == "install" {
-				if !ValidateModLocation(ctx, modPath) {
-					error_helpers.FailOnError(fmt.Errorf("Mod installation cancelled"))
-				}
+			if !ValidateModLocation(ctx, modPath) {
+				error_helpers.FailOnError(fmt.Errorf("Mod installation cancelled"))
 			}
 			mod := modconfig.CreateDefaultMod(i.workspacePath)
 			return mod, nil

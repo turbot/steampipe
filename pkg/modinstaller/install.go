@@ -22,6 +22,11 @@ func InstallWorkspaceDependencies(ctx context.Context, opts *InstallOpts) (_ *In
 		return nil, err
 	}
 
+	// if no mod is created, return
+	if installer.workspaceMod == nil {
+		return installer.installData, nil
+	}
+
 	if err := installer.InstallWorkspaceDependencies(ctx); err != nil {
 		return nil, err
 	}
