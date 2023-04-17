@@ -46,16 +46,13 @@ func decodeRequireBlock(content *hcl.BodyContent, evalCtx *hcl.EvalContext) (*mo
 	content, _, diags := block.Body.PartialContent(RequireBlockSchema)
 	res.handleDecodeDiags(diags)
 
-	// decode the body into 'modContainer' to populate all properties that can be automatically decoded
+	// decode the body
 	require := modconfig.NewRequire(block)
-
-	// TODO KAI SET DECL RANGE
-
-	// manually decode deprecated `steampipe` property
-	// decode the body into 'modContainer' to populate all properties that can be automatically decoded
 	diags = gohcl.DecodeBody(block.Body, evalCtx, require)
 	res.handleDecodeDiags(diags)
 
+	// handle deprecation warnings/errors
+	// the 'steampipe' property is deprecaterd and replace with a steampipe block
 	if require.DeprecatedSteampipeVersionString != "" {
 		// if there is both a steampipe block and property, fail
 		if require.Steampipe != nil {
