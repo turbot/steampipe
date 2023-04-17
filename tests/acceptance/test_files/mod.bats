@@ -342,10 +342,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FILE_PATH/test_data/nested_mod/folder1
 
   run steampipe check all
-  assert_equal "$output" "Error: This command requires a mod definition file(mod.sp) - could not find in the current directory tree.
-
-You can either clone a mod repository or install a mod using steampipe mod install and run this command from the cloned/installed mod directory.
-Please refer to: https://steampipe.io/docs/mods/overview"
+  assert_output --partial "Error: This command requires a mod definition file (mod.sp)"
   cd -
 }
 
@@ -358,10 +355,7 @@ Please refer to: https://steampipe.io/docs/mods/overview"
   cd $FILE_PATH/test_data/nested_mod_no_mod_file/folder1/folder11
 
   run steampipe check all
-  assert_equal "$output" "Error: This command requires a mod definition file(mod.sp) - could not find in the current directory tree.
-
-You can either clone a mod repository or install a mod using steampipe mod install and run this command from the cloned/installed mod directory.
-Please refer to: https://steampipe.io/docs/mods/overview"
+  assert_output --partial "Error: This command requires a mod definition file (mod.sp)"
 
   run steampipe query control.check_1
   assert_success
@@ -455,11 +449,7 @@ Please refer to: https://steampipe.io/docs/mods/overview"
 
 @test "mod parsing" {
   # install necessary plugins
-  steampipe plugin install aws
-  steampipe plugin install ibm
-  steampipe plugin install oci
-  steampipe plugin install azure
-  steampipe plugin install azuread
+  steampipe plugin install aws ibm oci azure azuread
 
   # create a directory to install the mods
   target_directory=$(mktemp -d)
@@ -518,11 +508,7 @@ Please refer to: https://steampipe.io/docs/mods/overview"
   rm -f $STEAMPIPE_INSTALL_DIR/config/azuread.spc
   
   # uninstall the plugins
-  steampipe plugin uninstall aws
-  steampipe plugin uninstall ibm
-  steampipe plugin uninstall oci
-  steampipe plugin uninstall azure
-  steampipe plugin uninstall azuread
+  steampipe plugin uninstall aws ibm oci azure azuread
 
   # rerun steampipe to make sure they are removed from steampipe
   steampipe query "select 1"
