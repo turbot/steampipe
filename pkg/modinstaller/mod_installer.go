@@ -10,6 +10,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	git "github.com/go-git/go-git/v5"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -21,6 +22,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
+	"github.com/zclconf/go-cty/cty"
 )
 
 type ModInstaller struct {
@@ -578,7 +580,13 @@ func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, createDe
 		return nil, nil
 	}
 
-	mod, err := parse.ParseModDefinition(modPath)
+	// build an eval context just containing functions
+	evalCtx := &hcl.EvalContext{
+		Functions: parse.ContextFunctions(modPath),
+		Variables: make(map[string]cty.Value),
+	}
+
+	mod, err := parse.ParseModDefinition(modPath, evalCtx)
 	if err != nil {
 		return nil, err
 	}

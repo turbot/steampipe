@@ -18,7 +18,6 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/zclconf/go-cty/cty"
 	"sigs.k8s.io/yaml"
 )
 
@@ -97,7 +96,7 @@ func ModfileExists(modPath string) bool {
 // ParseModDefinition parses the modfile only
 // it is expected the calling code will have verified the existence of the modfile by calling ModfileExists
 // this is called before parsing the workspace to, for example, identify dependency mods
-func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
+func ParseModDefinition(modPath string, evalCtx *hcl.EvalContext) (*modconfig.Mod, error) {
 	// if there is no mod at this location, return error
 	modFilePath := filepaths.ModFilePath(modPath)
 	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
@@ -116,12 +115,6 @@ func ParseModDefinition(modPath string) (*modconfig.Mod, error) {
 	workspaceContent, diags := body.Content(WorkspaceBlockSchema)
 	if diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
-	}
-
-	// build an eval context containing functions
-	evalCtx := &hcl.EvalContext{
-		Functions: ContextFunctions(modPath),
-		Variables: make(map[string]cty.Value),
 	}
 
 	block := getFirstBlockOfType(workspaceContent.Blocks, modconfig.BlockTypeMod)

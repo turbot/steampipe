@@ -388,3 +388,20 @@ func (m *Mod) SetDependencyConfig(dependencyPath string) error {
 	m.Version = version
 	return nil
 }
+
+// RequireHasUnresolvedArgs returns whether the mod has any mod requirements which have unresolved args
+// (this could be because the arg refers to a variable, meanin gwe need an additional parse phase
+// to resolve the arg values)
+func (m *Mod) RequireHasUnresolvedArgs() bool {
+	if m.Require == nil {
+		return false
+	}
+	for _, m := range m.Require.Mods {
+		for _, a := range m.Args {
+			if !a.IsKnown() {
+				return true
+			}
+		}
+	}
+	return false
+}

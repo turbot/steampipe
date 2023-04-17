@@ -287,18 +287,43 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 
 func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, error) {
 	// build a run context just to use to load variable definitions
-	variablesRunCtx, err := w.getParseContext(ctx)
+	variablesParseCtx, err := w.getParseContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	inputVariables, err := w.getVariableValues(ctx, variablesParseCtx, validateMissing)
+	if err != nil {
+		return nil, err
+	}
+
+	// if needed, reload
+	// if a mod require has args which use a variable, this will not have been resolved in the first pass
+	// - we need to parse again
+	if variablesParseCtx.CurrentMod.RequireHasUnresolvedArgs() {
+		// add the variables into the parse context and rebuild the eval context
+		variablesParseCtx.AddInputVariables(inputVariables)
+		variablesParseCtx.AddVariablesToEvalContext()
+
+		// now try to parse the mod again
+		inputVariables, err = w.getVariableValues(ctx, variablesParseCtx, validateMissing)
+		if err != nil {
+			return nil, err
+		}
+
+	}
+	return inputVariables, nil
+
+}
+
+func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, error) {
 	// load variable definitions
-	variableMap, err := steampipeconfig.LoadVariableDefinitions(w.Path, variablesRunCtx)
+	variableMap, err := steampipeconfig.LoadVariableDefinitions(w.Path, variablesParseCtx)
 	if err != nil {
 		return nil, err
 	}
-
-	return steampipeconfig.GetVariableValues(ctx, variablesRunCtx, variableMap, validateMissing)
+	// get the values
+	return steampipeconfig.GetVariableValues(ctx, variablesParseCtx, variableMap, validateMissing)
 }
 
 // build options used to load workspace

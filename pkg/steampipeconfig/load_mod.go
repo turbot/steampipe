@@ -62,7 +62,7 @@ func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (*modcon
 
 	if parse.ModfileExists(modPath) {
 		// load the mod definition to get the dependencies
-		mod, err = parse.ParseModDefinition(modPath)
+		mod, err = parse.ParseModDefinition(modPath, parseCtx.EvalCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +131,7 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	defer func() { parseCtx.ListOptions.Exclude = prevExclusions }()
 
 	childParseCtx := parse.NewChildModParseContext(parseCtx, dependencyDir)
-	// NOTE: pass in the version and dependency path of the mod - these must be set before it loads its depdencies
+	// NOTE: pass in the version and dependency path of the mod - these must be set before it loads its dependencies
 	mod, errAndWarnings := LoadMod(dependencyDir, childParseCtx, WithDependencyConfig(modDependency.Name, version))
 	if errAndWarnings.GetError() != nil {
 		return errAndWarnings.GetError()
