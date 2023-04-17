@@ -14,9 +14,11 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/modinstaller"
+	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -96,18 +98,15 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	i.Workspace.CloudMetadata = cloudMetadata
 
 	statushooks.SetStatus(ctx, "Checking for required plugins")
-	// check if the required plugins are installed
-	err = i.Workspace.CheckRequiredPluginsInstalled()
+	pluginsInstalled, err := plugin.GetInstalledPlugins()
 	if err != nil {
 		i.Result.Error = err
 		return
 	}
 
 	//validate steampipe version
-	if err = i.Workspace.ValidateSteampipeVersion(); err != nil {
-		i.Result.Error = err
-		return
-	}
+	validationWarnings := validateModRequirementsRecursively(i.Workspace.Mod, pluginsInstalled)
+	i.Result.AddWarnings(validationWarnings...)
 
 	// if introspection tables are enabled, setup the session data callback
 	var ensureSessionData db_client.DbConnectionCallback
@@ -142,6 +141,34 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 
 	i.ConnectionMap = connectionMap
 
+}
+
+func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {
+	validationErrors := validateModRequirements(mod, pluginVersionMap)
+	for childDependencyName, childMod := range mod.ResourceMaps.Mods {
+		// TODO : The 'mod.DependencyName == childMod.DependencyName' check has to be done because
+		// of a bug in the resource loading code which also puts the mod itself into the resource map
+		// [https://github.com/turbot/steampipe/issues/3341]
+		if childDependencyName == "local" || mod.DependencyName == childMod.DependencyName {
+			// this is a reference to self - skip (otherwise we will end up with a recursion loop)
+			continue
+		}
+		childValidationErrors := validateModRequirementsRecursively(childMod, pluginVersionMap)
+		validationErrors = append(validationErrors, childValidationErrors...)
+	}
+	return validationErrors
+}
+
+func validateModRequirements(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {
+	validationErrors := []string{}
+	if err := mod.ValidateSteampipeVersion(); err != nil {
+		validationErrors = append(validationErrors, err.Error())
+	}
+	if err := mod.ValidatePluginVersions(pluginVersionMap); err != nil {
+		validationErrors = append(validationErrors, err.Error())
+	}
+	// now validate the plugin requirements (dependent on #3328)
+	return validationErrors
 }
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient

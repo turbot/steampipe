@@ -2,10 +2,10 @@ package modconfig
 
 import (
 	"fmt"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
-
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -45,7 +45,7 @@ type ResourceMaps struct {
 func NewModResources(mod *Mod) *ResourceMaps {
 	res := emptyModResources()
 	res.Mod = mod
-	res.Mods[mod.Name()] = mod
+	res.Mods[mod.GetInstallCacheKey()] = mod
 	return res
 }
 

@@ -8,7 +8,10 @@ import (
 	"github.com/Masterminds/semver"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/version"
+	"github.com/turbot/steampipe/sperr"
 )
 
 // Require is a struct representing mod dependencies
@@ -63,6 +66,34 @@ func (r *Require) ValidateSteampipeVersion(modName string) error {
 		}
 	}
 	return nil
+}
+
+// validates that for every plugin requirement there's at least one plugin installed
+func (r *Require) ValidatePluginVersions(modName string, plugins map[string]*semver.Version) error {
+	if len(r.Plugins) == 0 {
+		return nil
+	}
+	errors := []error{}
+	for _, requiredPlugin := range r.Plugins {
+		if err := r.searchInstalledPluginForRequirement(modName, requiredPlugin, plugins); err != nil {
+			errors = append(errors, err)
+		}
+	}
+	return error_helpers.CombineErrors(errors...)
+}
+
+func (r *Require) searchInstalledPluginForRequirement(modName string, requirement *PluginVersion, plugins map[string]*semver.Version) error {
+	for installedName, installed := range plugins {
+		org, name, _ := ociinstaller.NewSteampipeImageRef(installedName).GetOrgNameAndStream()
+		if org != requirement.Org || name != requirement.Name {
+			// no point check - different plugin
+			continue
+		}
+		if requirement.Version.LessThan(installed) || requirement.Version.Equal(installed) {
+			return nil
+		}
+	}
+	return sperr.New("could not find plugin which satisfies requirement '%s@%s' in '%s'", requirement.RawName, requirement.VersionString, modName)
 }
 
 // AddModDependencies adds all the mod in newModVersions to our list of mods, using the following logic

@@ -353,6 +353,13 @@ func (m *Mod) ValidateSteampipeVersion() error {
 	return m.Require.ValidateSteampipeVersion(m.Name())
 }
 
+func (m *Mod) ValidatePluginVersions(availablePlugins map[string]*semver.Version) error {
+	if m.Require == nil {
+		return nil
+	}
+	return m.Require.ValidatePluginVersions(m.DependencyName, availablePlugins)
+}
+
 // CtyValue implements CtyValueProvider
 func (m *Mod) CtyValue() (cty.Value, error) {
 	return GetCtyValue(m)
