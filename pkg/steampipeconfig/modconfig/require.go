@@ -37,12 +37,8 @@ func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
 	// find the require block
 	requireBlock := hclhelpers.FindFirstChildBlock(modBlock, BlockTypeRequire)
 	if requireBlock == nil {
-		// should not happen
-		return hcl.Diagnostics{&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  "No require block found for mod, even though a require was decoded",
-			Subject:  &modBlock.DefRange,
-		}}
+		// if none was specified, fall back to parent block
+		requireBlock = modBlock
 	}
 	// build maps of plugin and mod blocks
 	pluginBlockMap := hclhelpers.BlocksToMap(hclhelpers.FindChildBlocks(requireBlock, BlockTypePlugin))
