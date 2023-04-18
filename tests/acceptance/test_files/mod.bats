@@ -455,11 +455,7 @@ Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_w
 
 @test "mod parsing" {
   # install necessary plugins
-  steampipe plugin install aws
-  steampipe plugin install ibm
-  steampipe plugin install oci
-  steampipe plugin install azure
-  steampipe plugin install azuread
+  steampipe plugin install aws ibm oci azure azuread
 
   # create a directory to install the mods
   target_directory=$(mktemp -d)
@@ -518,11 +514,7 @@ Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_w
   rm -f $STEAMPIPE_INSTALL_DIR/config/azuread.spc
   
   # uninstall the plugins
-  steampipe plugin uninstall aws
-  steampipe plugin uninstall ibm
-  steampipe plugin uninstall oci
-  steampipe plugin uninstall azure
-  steampipe plugin uninstall azuread
+  steampipe plugin uninstall aws ibm oci azure azuread
 
   # rerun steampipe to make sure they are removed from steampipe
   steampipe query "select 1"
