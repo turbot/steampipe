@@ -72,6 +72,7 @@ func modInstallCmd() *cobra.Command {
 	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgPrune, true, "Remove unused dependencies after installation is complete").
 		AddBoolFlag(constants.ArgDryRun, false, "Show which mods would be installed/updated/uninstalled without modifying them").
+		AddBoolFlag(constants.ArgForce, false, "Install mods even if plugin/cli version requirements are not met (cannot be used with --dry-run)").
 		AddBoolFlag(constants.ArgHelp, false, "Help for install", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
@@ -144,6 +145,7 @@ func modUpdateCmd() *cobra.Command {
 
 	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgPrune, true, "Remove unused dependencies after update is complete").
+		AddBoolFlag(constants.ArgForce, false, "Update mods even if plugin/cli version requirements are not met (cannot be used with --dry-run)").
 		AddBoolFlag(constants.ArgDryRun, false, "Show which mods would be updated without modifying them").
 		AddBoolFlag(constants.ArgHelp, false, "Help for update", cmdconfig.FlagOptions.WithShortHand("h"))
 
@@ -253,6 +255,7 @@ func newInstallOpts(cmd *cobra.Command, args ...string) *modinstaller.InstallOpt
 	opts := &modinstaller.InstallOpts{
 		WorkspacePath: viper.GetString(constants.ArgModLocation),
 		DryRun:        viper.GetBool(constants.ArgDryRun),
+		Force:         viper.GetBool(constants.ArgForce),
 		ModArgs:       args,
 		Command:       cmd.Name(),
 	}
@@ -262,8 +265,8 @@ func newInstallOpts(cmd *cobra.Command, args ...string) *modinstaller.InstallOpt
 // Modifies(trims) the URL if contains http ot https in arguments
 
 func trimGitUrls(opts *modinstaller.InstallOpts) {
-    for i, url := range opts.ModArgs {
-        opts.ModArgs[i] = strings.TrimPrefix(url, "http://")
-        opts.ModArgs[i] = strings.TrimPrefix(url, "https://")
-    }
+	for i, url := range opts.ModArgs {
+		opts.ModArgs[i] = strings.TrimPrefix(url, "http://")
+		opts.ModArgs[i] = strings.TrimPrefix(url, "https://")
+	}
 }

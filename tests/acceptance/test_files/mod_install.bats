@@ -6,8 +6,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output 'No mods installed.'
 }
 
-@test "install latest" {
+@test "install latest(plugin requirement not satisfied)" {
   run steampipe mod install github.com/turbot/steampipe-mod-aws-compliance
+  assert_output --partial "Error: 1 dependency failed to install - could not find plugin which satisfies requirement"
+}
+
+@test "install latest(--force)" {
+  run steampipe mod install github.com/turbot/steampipe-mod-aws-compliance --force
   assert_output --partial 'Installed 1 mod:
 
 local
@@ -16,13 +21,13 @@ local
 }
 
 @test "install latest and then run install" {
-  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance
+  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance --force
   run steampipe mod install
   assert_output 'All mods are up to date'
 }
 
 @test "install mod and list" {
-  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance@0.10
+  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance@0.10 --force
   run steampipe mod list
   assert_output '
 local
@@ -30,7 +35,7 @@ local
 }
 
 @test "install old version when latest already installed" {
-  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance
+  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance --force
   run steampipe mod install github.com/turbot/steampipe-mod-aws-compliance@0.1
   assert_output '
 Downgraded 1 mod:
@@ -41,7 +46,7 @@ local
 
 @test "install mod version, remove .steampipe folder and then run install" {
   # install particular mod version, remove .steampipe folder and run mod install
-  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance@0.1
+  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance@0.1 --force
   rm -rf .steampipe
   run steampipe mod install
 
@@ -56,7 +61,7 @@ local
 
 @test "install mod version, remove .cache file and then run install" {
   # install particular mod version, remove .mod.cache.json file and run mod install
-  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance@0.1
+  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance@0.1 --force
   rm -rf .mod.cache.json
   run steampipe mod install
 
@@ -75,7 +80,7 @@ local
 }
 
 @test "install a mod with protocol in url" {
-  run steampipe mod install https://github.com/turbot/steampipe-mod-hackernews-insights@0.3.0
+  run steampipe mod install https://github.com/turbot/steampipe-mod-hackernews-insights@0.3.0 --force
   # should install with the protocol in the url prefix
   assert_output '
 Installed 1 mod:

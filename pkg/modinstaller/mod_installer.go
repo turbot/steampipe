@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
@@ -26,7 +27,11 @@ type ModInstaller struct {
 	installData *InstallData
 
 	workspaceMod *modconfig.Mod
-	mods         versionmap.VersionConstraintMap
+
+	// installed plugins
+	installedPlugins map[string]*semver.Version
+
+	mods versionmap.VersionConstraintMap
 
 	// the final resting place of all dependency mods
 	modsPath string
@@ -40,6 +45,8 @@ type ModInstaller struct {
 	command string
 	// are dependencies being added to the workspace
 	dryRun bool
+	// do we force install even if there are require errors
+	force bool
 }
 
 func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, error) {
@@ -47,10 +54,17 @@ func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, err
 		workspacePath: opts.WorkspacePath,
 		command:       opts.Command,
 		dryRun:        opts.DryRun,
+		force:         opts.Force,
 	}
 	if err := i.setModsPath(); err != nil {
 		return nil, err
 	}
+
+	installedPlugins, err := plugin.GetInstalledPlugins()
+	if err != nil {
+		return nil, err
+	}
+	i.installedPlugins = installedPlugins
 
 	// load workspace mod, creating a default if needed
 	workspaceMod, err := i.loadModfile(ctx, i.workspacePath, true)
@@ -158,7 +172,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 	defer func() {
 		// tidy unused mods
 		// (put in defer so it still gets called in case of errors)
-		if viper.GetBool(constants.ArgPrune) {
+		if viper.GetBool(constants.ArgPrune) && !i.dryRun {
 			// be sure not to overwrite an existing return error
 			_, pruneErr := i.Prune()
 			if pruneErr != nil && err == nil {
@@ -167,9 +181,15 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 		}
 	}()
 
-	// first check our Steampipe version is sufficient
-	if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
-		return err
+	if !i.force {
+		// there's no point in checking the requirements if force is set
+		// since we will ignore it anyway
+		if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
+			return err
+		}
+		if err := workspaceMod.Require.ValidatePluginVersions(workspaceMod.Name(), i.installedPlugins); err != nil {
+			return err
+		}
 	}
 
 	// if mod args have been provided, add them to the the workspace mod requires
@@ -214,7 +234,10 @@ func (i *ModInstaller) GetModList() string {
 // commitShadow recursively copies over the contents of the shadow directory
 // to the mods directory, replacing conflicts as it goes
 // (uses `os.Create(dest)` under the hood - which truncates the target)
-func (i *ModInstaller) commitShadow() (err error) {
+func (i *ModInstaller) commitShadow(ctx context.Context) error {
+	if error_helpers.IsContextCanceled(ctx) {
+		return ctx.Err()
+	}
 	if _, err := os.Stat(i.shadowDirPath); os.IsNotExist(err) {
 		// nothing to do here
 		// there's no shadow directory to commit
@@ -239,15 +262,35 @@ func (i *ModInstaller) commitShadow() (err error) {
 	return nil
 }
 
+func (i *ModInstaller) shouldCommitShadow(ctx context.Context, installError error) bool {
+	// no commit if this is a dry run
+	if i.dryRun {
+		return false
+	}
+	// commit if this is forced - even if there's errors
+	return installError == nil || i.force
+}
+
 func (i *ModInstaller) installMods(ctx context.Context, mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) (err error) {
 	defer func() {
-		if err == nil {
-			// everything went well
-			// copy whatever we installed to the mods directory
-			err = i.commitShadow()
+		var commitErr error
+		if i.shouldCommitShadow(ctx, err) {
+			commitErr = i.commitShadow(ctx)
 		}
 
-		// force remove the shadow directory
+		// if this was forced, we need to suppress the install error
+		// otherwise the calling code will fail
+		if i.force {
+			err = nil
+		}
+
+		// ensure we return any commit error
+		if commitErr != nil {
+			err = commitErr
+		}
+
+		// force remove the shadow directory - we can ignore any error here, since
+		// these directories get cleaned up before any install session
 		os.RemoveAll(i.shadowDirPath)
 	}()
 
@@ -287,6 +330,10 @@ func (i *ModInstaller) buildInstallError(errors []error) error {
 }
 
 func (i *ModInstaller) installModDependencesRecursively(ctx context.Context, requiredModVersion *modconfig.ModVersionConstraint, dependencyMod *modconfig.Mod, parent *modconfig.Mod, shouldUpdate bool) error {
+	if error_helpers.IsContextCanceled(ctx) {
+		// short circuit if the execution context has been cancelled
+		return ctx.Err()
+	}
 	// get available versions for this mod
 	includePrerelease := requiredModVersion.Constraint.IsPrerelease()
 	availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name, includePrerelease)
@@ -308,6 +355,9 @@ func (i *ModInstaller) installModDependencesRecursively(ctx context.Context, req
 			return err
 		}
 		if err = dependencyMod.ValidateSteampipeVersion(); err != nil {
+			return err
+		}
+		if err = dependencyMod.ValidatePluginVersions(i.installedPlugins); err != nil {
 			return err
 		}
 	} else {
