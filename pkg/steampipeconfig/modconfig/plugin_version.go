@@ -62,14 +62,17 @@ func (p *PluginVersion) Initialise(block *hcl.Block) hcl.Diagnostics {
 		p.MinVersionString = p.VersionString
 	}
 
-	if constraint, err := semver.NewConstraint(fmt.Sprintf(">=%s", strings.TrimPrefix(p.MinVersionString, "v"))); err != nil {
+	// convert min version into constraint (including prereleases)
+	minVersion, err := semver.NewVersion(strings.TrimPrefix(p.MinVersionString, "v"))
+	if err == nil {
+		p.Constraint, err = semver.NewConstraint(fmt.Sprintf(">=%s-0", minVersion))
+	}
+	if err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("Invalid plugin version %s", p.MinVersionString),
 			Subject:  &p.DeclRange,
 		})
-	} else {
-		p.Constraint = constraint
 	}
 	// parse plugin name
 	p.Org, p.Name, _ = ociinstaller.NewSteampipeImageRef(p.RawName).GetOrgNameAndStream()

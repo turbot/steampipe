@@ -28,7 +28,12 @@ func (r *SteampipeRequire) initialise(requireBlock *hcl.Block) hcl.Diagnostics {
 	if r.MinVersionString == "" {
 		return nil
 	}
-	constraint, err := semver.NewConstraint(fmt.Sprintf(">=%s", strings.TrimPrefix(r.MinVersionString, "v")))
+
+	// convert min version into constraint (including prereleases)
+	minVersion, err := semver.NewVersion(strings.TrimPrefix(r.MinVersionString, "v"))
+	if err == nil {
+		r.Constraint, err = semver.NewConstraint(fmt.Sprintf(">=%s-0", minVersion))
+	}
 	if err != nil {
 		return hcl.Diagnostics{
 			&hcl.Diagnostic{
@@ -37,8 +42,5 @@ func (r *SteampipeRequire) initialise(requireBlock *hcl.Block) hcl.Diagnostics {
 				Subject:  &r.DeclRange,
 			}}
 	}
-
-	r.Constraint = constraint
 	return nil
-
 }
