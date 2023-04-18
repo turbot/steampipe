@@ -264,16 +264,15 @@ func (i *ModInstaller) commitShadow(ctx context.Context) error {
 
 func (i *ModInstaller) installMods(ctx context.Context, mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) (err error) {
 	defer func() {
-		if !i.dryRun && err != nil && i.force {
-			// if this is not a dryrun
-			// even if there was an error but force was enabled
-			// commit
-			err = i.commitShadow(ctx)
-		}
-		if err == nil && !i.dryRun {
-			// everything went well
-			// copy whatever we installed to the mods directory
-			err = i.commitShadow(ctx)
+		// ensure we commit any changes to the shadow directory
+		// (unless this was a dry run)
+		if i.dryRun {
+			log.Printf("[TRACE] installMods with dry-run=true - returning without committing")
+		} else {
+			// commit if there is no error (or if force is set)
+			if err == nil || i.force {
+				err = i.commitShadow(ctx)
+			}
 		}
 
 		// force remove the shadow directory
