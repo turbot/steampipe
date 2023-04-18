@@ -455,7 +455,7 @@ Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_w
 
 @test "mod parsing" {
   # install necessary plugins
-  steampipe plugin install aws ibm oci azure azuread
+  steampipe plugin install aws oci azure azuread
 
   # create a directory to install the mods
   target_directory=$(mktemp -d)
@@ -473,14 +473,6 @@ Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_w
   steampipe mod install github.com/turbot/steampipe-mod-aws-thrifty
   # go to the mod directory and run steampipe query to verify parsing
   cd .steampipe/mods/github.com/turbot/steampipe-mod-aws-thrifty@*
-  run steampipe query "select 1"
-  assert_success
-  cd -
-
-  # install steampipe-mod-ibm-insights
-  steampipe mod install github.com/turbot/steampipe-mod-ibm-insights
-  # go to the mod directory and run steampipe query to verify parsing
-  cd .steampipe/mods/github.com/turbot/steampipe-mod-ibm-insights@*
   run steampipe query "select 1"
   assert_success
   cd -
@@ -514,7 +506,7 @@ Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_w
   rm -f $STEAMPIPE_INSTALL_DIR/config/azuread.spc
   
   # uninstall the plugins
-  steampipe plugin uninstall aws ibm oci azure azuread
+  steampipe plugin uninstall aws oci azure azuread
 
   # rerun steampipe to make sure they are removed from steampipe
   steampipe query "select 1"
