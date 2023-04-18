@@ -172,6 +172,14 @@ func decodeBlock(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclReso
 	return resource, res
 }
 
+func decodeMod(block *hcl.Block, evalCtx *hcl.EvalContext, mod *modconfig.Mod) (*modconfig.Mod, *decodeResult) {
+	res := newDecodeResult()
+	// decode the body
+	diags := decodeHclBody(block.Body, evalCtx, mod, mod)
+	res.handleDecodeDiags(diags)
+	return mod, res
+}
+
 // generic decode function for any resource we do not have custom decode logic for
 func decodeResource(block *hcl.Block, parseCtx *ModParseContext) (modconfig.HclResource, *decodeResult) {
 	res := newDecodeResult()

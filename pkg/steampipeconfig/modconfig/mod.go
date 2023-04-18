@@ -33,7 +33,7 @@ type Mod struct {
 	Icon       *string  `cty:"icon" hcl:"icon" column:"icon,text"`
 
 	// blocks
-	Require       *Require
+	Require       *Require   `hcl:"require,block"`
 	LegacyRequire *Require   `hcl:"requires,block"`
 	OpenGraph     *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
 
@@ -169,15 +169,8 @@ func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvid
 	if m.Require == nil {
 		return nil
 	}
-	err := m.Require.initialise()
-	if err != nil {
-		return hcl.Diagnostics{&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  err.Error(),
-			Subject:  &block.DefRange,
-		}}
-	}
-	return nil
+
+	return m.Require.initialise(block)
 
 }
 

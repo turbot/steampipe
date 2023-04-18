@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"io"
 	"log"
 	"os"
@@ -117,7 +118,7 @@ func ParseModDefinition(modPath string, evalCtx *hcl.EvalContext) (*modconfig.Mo
 		return nil, plugin.DiagsToError("Failed to load mod", diags)
 	}
 
-	block := getFirstBlockOfType(workspaceContent.Blocks, modconfig.BlockTypeMod)
+	block := hclhelpers.GetFirstBlockOfType(workspaceContent.Blocks, modconfig.BlockTypeMod)
 	if block == nil {
 		return nil, fmt.Errorf("no mod definition found in %s", modPath)
 	}

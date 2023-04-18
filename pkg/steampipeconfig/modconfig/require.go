@@ -6,7 +6,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/version"
@@ -30,21 +30,41 @@ func NewRequire() *Require {
 	}
 }
 
-func (r *Require) initialise() error {
+func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
+	// handle deprecated properties
+	r.handleDeprecations()
+
+	// find the require block
+	requireBlock := hclhelpers.FindFirstChildBlock(modBlock, BlockTypeRequire)
+	if requireBlock == nil {
+		// should not happen
+		return hcl.Diagnostics{&hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "No require block found for mod, even though a require was decoded",
+			Subject:  &modBlock.DefRange,
+		}}
+	}
+	// build maps of plugin and mod blocks
+	pluginBlockMap := hclhelpers.BlocksToMap(hclhelpers.FindChildBlocks(requireBlock, BlockTypePlugin))
+	modBlockMap := hclhelpers.BlocksToMap(hclhelpers.FindChildBlocks(requireBlock, BlockTypeMod))
+
+	// set our DecRange
+	r.DeclRange = requireBlock.DefRange
+
 	var diags hcl.Diagnostics
 	r.modMap = make(map[string]*ModVersionConstraint)
 
 	if r.Steampipe != nil {
-		moreDiags := r.Steampipe.initialise()
+		moreDiags := r.Steampipe.initialise(requireBlock)
 		diags = append(diags, moreDiags...)
 	}
 
 	for _, p := range r.Plugins {
-		moreDiags := p.Initialise()
+		moreDiags := p.Initialise(pluginBlockMap[p.RawName])
 		diags = append(diags, moreDiags...)
 	}
 	for _, m := range r.Mods {
-		moreDiags := m.Initialise()
+		moreDiags := m.Initialise(modBlockMap[m.Name])
 		diags = append(diags, moreDiags...)
 		if !diags.HasErrors() {
 			// key map entry by name [and alias]
@@ -52,7 +72,31 @@ func (r *Require) initialise() error {
 		}
 	}
 
-	return plugin.DiagsToError("failed to initialise Require struct", diags)
+	return diags
+}
+
+func (r *Require) handleDeprecations() hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	// the 'steampipe' property is deprecated and replace with a steampipe block
+	if r.DeprecatedSteampipeVersionString != "" {
+		// if there is both a steampipe block and property, fail
+		if r.Steampipe != nil {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Both 'steampipe' block and deprecated 'steampipe' property are set",
+				Subject:  &r.DeclRange,
+			})
+		} else {
+			r.Steampipe = &SteampipeRequire{MinVersionString: r.DeprecatedSteampipeVersionString}
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagWarning,
+				Summary:  "Property 'steampipe' is deprecated for mod require block - use a steampipe block instead",
+				Subject:  &r.DeclRange,
+			},
+			)
+		}
+	}
+	return diags
 }
 
 func (r *Require) ValidateSteampipeVersion(modName string) error {

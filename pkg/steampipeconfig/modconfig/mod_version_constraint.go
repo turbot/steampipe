@@ -49,14 +49,16 @@ func NewModVersionConstraint(modFullName string) (*ModVersionConstraint, error) 
 	}
 
 	// try to convert version into a semver constraint
-	if err := m.Initialise(); err != nil {
+	if err := m.Initialise(nil); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
 // Initialise parses the version and name properties
-func (m *ModVersionConstraint) Initialise() hcl.Diagnostics {
+func (m *ModVersionConstraint) Initialise(block *hcl.Block) hcl.Diagnostics {
+	m.DeclRange = block.DefRange
+
 	if strings.HasPrefix(m.Name, filePrefix) {
 		m.setFilePath()
 		return nil

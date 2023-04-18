@@ -39,8 +39,9 @@ func (p *PluginVersion) String() string {
 }
 
 // Initialise parses the version and name properties
-func (p *PluginVersion) Initialise() hcl.Diagnostics {
+func (p *PluginVersion) Initialise(block *hcl.Block) hcl.Diagnostics {
 	var diags hcl.Diagnostics
+	p.DeclRange = block.DefRange
 	// handle deprecation warnings/errors
 	if p.VersionString != "" {
 		if p.Constraint != nil {

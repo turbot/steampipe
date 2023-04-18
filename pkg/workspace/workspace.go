@@ -275,6 +275,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	m.ResourceMaps.PopulateReferences()
 	// set the mod
 	w.Mod = m
+	// set the child mods
 	w.Mods = parseCtx.GetTopLevelDependencyMods()
 	// NOTE: add in the workspace mod to the dependency mods
 	w.Mods[w.Mod.Name()] = w.Mod

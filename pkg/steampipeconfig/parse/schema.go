@@ -142,21 +142,6 @@ var WorkspaceBlockSchema = &hcl.BodySchema{
 	},
 }
 
-// ModBlockSchema contains schema for the mod blocks which must be manually decoded
-var ModBlockSchema = &hcl.BodySchema{
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type: modconfig.BlockTypeRequire,
-		},
-	},
-}
-
-var RequireModBlockSchema = &hcl.BodySchema{
-	Attributes: []hcl.AttributeSchema{
-		{Name: "args"},
-	},
-}
-
 // DashboardBlockSchema is only used to validate the blocks of a Dashboard
 var DashboardBlockSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
