@@ -1,7 +1,7 @@
 package parse
 
 import (
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 

@@ -138,6 +138,7 @@ func ParseModDefinition(modPath string, evalCtx *hcl.EvalContext) (*modconfig.Mo
 	}
 	// NOTE: IGNORE DEPENDENCY ERRORS
 
+	// TODO change return value to bubble up decodeResult
 	// call decode callback
 	if err := mod.OnDecoded(block, nil); err != nil {
 		return nil, err

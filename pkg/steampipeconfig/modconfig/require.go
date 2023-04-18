@@ -3,9 +3,8 @@ package modconfig
 import (
 	"fmt"
 	"sort"
-	"strings"
 
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -13,25 +12,6 @@ import (
 	"github.com/turbot/steampipe/pkg/version"
 	"github.com/turbot/steampipe/sperr"
 )
-
-type SteampipeRequire struct {
-	MinVersionString string `hcl:"min_version,optional"`
-	Constraint       *semver.Constraints
-}
-
-func (r SteampipeRequire) initialise() hcl.Diagnostics {
-	constraint, err := semver.NewConstraint(fmt.Sprintf(">=%s", strings.TrimPrefix(r.MinVersionString, "v")))
-	if err != nil {
-		return hcl.Diagnostics{
-			&hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("invalid required steampipe version %s", r.MinVersionString),
-			}}
-	}
-
-	r.Constraint = constraint
-	return nil
-}
 
 // Require is a struct representing mod dependencies
 type Require struct {
@@ -71,6 +51,7 @@ func (r *Require) initialise() error {
 			r.modMap[m.Name] = m
 		}
 	}
+
 	return plugin.DiagsToError("failed to initialise Require struct", diags)
 }
 
@@ -83,7 +64,7 @@ func (r *Require) ValidateSteampipeVersion(modName string) error {
 	return nil
 }
 
-// validates that for every plugin requirement there's at least one plugin installed
+// ValidatePluginVersions validates that for every plugin requirement there's at least one plugin installed
 func (r *Require) ValidatePluginVersions(modName string, plugins map[string]*semver.Version) error {
 	if len(r.Plugins) == 0 {
 		return nil
@@ -104,11 +85,11 @@ func (r *Require) searchInstalledPluginForRequirement(modName string, requiremen
 			// no point check - different plugin
 			continue
 		}
-		if requirement.Version.LessThan(installed) || requirement.Version.Equal(installed) {
+		if !requirement.Constraint.Check(installed) {
 			return nil
 		}
 	}
-	return sperr.New("could not find plugin which satisfies requirement '%s@%s' in '%s'", requirement.RawName, requirement.VersionString, modName)
+	return sperr.New("could not find plugin which satisfies requirement '%s@%s' in '%s'", requirement.RawName, requirement.MinVersionString, modName)
 }
 
 // AddModDependencies adds all the mod in newModVersions to our list of mods, using the following logic

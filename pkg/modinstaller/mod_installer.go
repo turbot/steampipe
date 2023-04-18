@@ -8,7 +8,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 	git "github.com/go-git/go-git/v5"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/otiai10/copy"

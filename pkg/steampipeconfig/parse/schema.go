@@ -151,17 +151,6 @@ var ModBlockSchema = &hcl.BodySchema{
 	},
 }
 
-var RequireBlockSchema = &hcl.BodySchema{
-	Blocks: []hcl.BlockHeaderSchema{
-		{
-			Type: modconfig.BlockTypeSteampipe,
-		}, {
-			Type:       modconfig.BlockTypeMod,
-			LabelNames: []string{"name"},
-		},
-	},
-}
-
 var RequireModBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{
 		{Name: "args"},

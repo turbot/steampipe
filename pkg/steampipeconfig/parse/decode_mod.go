@@ -35,25 +35,31 @@ func decodeMod(block *hcl.Block, evalCtx *hcl.EvalContext, mod *modconfig.Mod) (
 func decodeRequireBlock(content *hcl.BodyContent, evalCtx *hcl.EvalContext) (*modconfig.Require, *decodeResult) {
 	var res = newDecodeResult()
 
-	block := getFirstBlockOfType(content.Blocks, modconfig.BlockTypeRequire)
-	if block == nil {
+	requireBlock := getFirstBlockOfType(content.Blocks, modconfig.BlockTypeRequire)
+	if requireBlock == nil {
 		return nil, res
 	}
 
-	//  retrieve the body content which complies with modBlockSchema
-	//  - this will be used to handle attributes which need manual decoding
-	// everything else will be implicitly decoded
-	content, _, diags := block.Body.PartialContent(RequireBlockSchema)
-	res.handleDecodeDiags(diags)
-
 	// decode the body
 	require := modconfig.NewRequire()
-	require.DeclRange = block.DefRange
+	require.DeclRange = requireBlock.DefRange
 
-	diags = gohcl.DecodeBody(block.Body, evalCtx, require)
+	diags := gohcl.DecodeBody(requireBlock.Body, evalCtx, require)
 	res.handleDecodeDiags(diags)
 
-	// handle deprecation warnings/errors
+	// handle deprecation warnings/errors (this may mutate require and res)
+	require, res = handleRequireBlockDeprecations(require, res)
+
+	// TODO KAI SET RANGES
+	setRequireBlockChildRanges(require, content)
+	return require, res
+}
+
+func setRequireBlockChildRanges(require *modconfig.Require, content *hcl.BodyContent) {
+
+}
+
+func handleRequireBlockDeprecations(require *modconfig.Require, res *decodeResult) (*modconfig.Require, *decodeResult) {
 	// the 'steampipe' property is deprecated and replace with a steampipe block
 	if require.DeprecatedSteampipeVersionString != "" {
 		// if there is both a steampipe block and property, fail
@@ -63,16 +69,17 @@ func decodeRequireBlock(content *hcl.BodyContent, evalCtx *hcl.EvalContext) (*mo
 				Summary:  "Both 'steampipe' block and deprecated 'steampipe' property are set",
 				Subject:  &require.DeclRange,
 			})
-			return nil, res
+		} else {
+			require.Steampipe = &modconfig.SteampipeRequire{MinVersionString: require.DeprecatedSteampipeVersionString}
+			res.Diags = append(res.Diags, &hcl.Diagnostic{
+				Severity: hcl.DiagWarning,
+				Summary:  "Property 'steampipe' is deprecated for mod require block - use a steampipe block instead",
+				Subject:  &require.DeclRange,
+			},
+			)
 		}
-
-		require.Steampipe = &modconfig.SteampipeRequire{MinVersionString: require.DeprecatedSteampipeVersionString}
-		res.Diags = append(res.Diags, &hcl.Diagnostic{
-			Severity: hcl.DiagWarning,
-			Summary:  "Property 'steampipe' is deprecated for mod require block - use a steampipe block instead",
-			Subject:  &require.DeclRange,
-		},
-		)
 	}
+
 	return require, res
+
 }

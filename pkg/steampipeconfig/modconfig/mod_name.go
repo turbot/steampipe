@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 )
 
 // BuildModDependencyPath converts a mod dependency name of form github.com/turbot/steampipe-mod-m2

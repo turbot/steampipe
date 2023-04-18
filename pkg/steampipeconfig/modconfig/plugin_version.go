@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 )
@@ -12,23 +12,22 @@ import (
 type PluginVersion struct {
 	// the plugin name, as specified in the mod requires block. , e.g. turbot/mod1, aws
 	RawName string `cty:"name" hcl:"name,label"`
-	// the version STREAM, can be either a major or minor version stream i.e. 1 or 1.1
 	// deprecated: use MinVersionString
 	VersionString string `cty:"version" hcl:"version,optional"`
-	// TODO KAI validate and raise deprecation
+	// the minumum version which satisfies the requirement
 	MinVersionString string `cty:"min_version" hcl:"min_version,optional"`
-	Version          *semver.Version
+	Constraint       *semver.Constraints
 	// the org and name which are parsed from the raw name
 	Org       string
 	Name      string
-	DeclRange hcl.Range `json:"-"`
+	DeclRange hcl.Range
 }
 
 func (p *PluginVersion) FullName() string {
-	if p.VersionString == "" {
+	if p.MinVersionString == "" {
 		return p.ShortName()
 	}
-	return fmt.Sprintf("%s@%s", p.ShortName(), p.VersionString)
+	return fmt.Sprintf("%s@%s", p.ShortName(), p.MinVersionString)
 }
 
 func (p *PluginVersion) ShortName() string {
@@ -42,21 +41,34 @@ func (p *PluginVersion) String() string {
 // Initialise parses the version and name properties
 func (p *PluginVersion) Initialise() hcl.Diagnostics {
 	var diags hcl.Diagnostics
-	if version, err := semver.NewVersion(strings.TrimPrefix(p.VersionString, "v")); err != nil {
+	// handle deprecation warnings/errors
+	if p.VersionString != "" {
+		if p.Constraint != nil {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Both 'min_version' and deprecated 'version' property are set",
+			})
+			return diags
+		}
+		// raise deprecation warning
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagWarning,
+			Summary:  fmt.Sprintf("Property 'version' is deprecated - use 'version instead, in plugin '%s' require block", p.Name),
+			Subject:  &p.DeclRange,
+		})
+		// copy into new property
+		p.MinVersionString = p.VersionString
+	}
+
+	if constraint, err := semver.NewConstraint(fmt.Sprintf(">=%s", strings.TrimPrefix(p.MinVersionString, "v"))); err != nil {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("invalid plugin version %s", p.VersionString),
+			Summary:  fmt.Sprintf("Invalid plugin version %s", p.MinVersionString),
 			Subject:  &p.DeclRange,
 		})
 	} else {
-		p.Version = version
+		p.Constraint = constraint
 	}
-	if p.VersionString != "" {
-		if p.Version != nil {
-
-		}
-	}
-
 	// parse plugin name
 	p.Org, p.Name, _ = ociinstaller.NewSteampipeImageRef(p.RawName).GetOrgNameAndStream()
 

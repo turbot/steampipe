@@ -1,7 +1,7 @@
 package versionhelpers
 
 import (
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 )
 
 // Constraints wraps semver.Constraints type, adding the Original property
