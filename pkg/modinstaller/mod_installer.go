@@ -184,10 +184,10 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 	if !i.force {
 		// there's no point in checking the requirements if force is set
 		// since we will ignore it anyway
-		if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil && !i.force {
+		if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
 			return err
 		}
-		if err := workspaceMod.Require.ValidatePluginVersions(workspaceMod.Name(), i.installedPlugins); err != nil && !i.force {
+		if err := workspaceMod.Require.ValidatePluginVersions(workspaceMod.Name(), i.installedPlugins); err != nil {
 			return err
 		}
 	}
@@ -262,23 +262,35 @@ func (i *ModInstaller) commitShadow(ctx context.Context) error {
 	return nil
 }
 
+func (i *ModInstaller) shouldCommitShadow(ctx context.Context, installError error) bool {
+	// no commit if this is a dry run
+	if i.dryRun {
+		return false
+	}
+	// commit if this is forced - even if there's errors
+	return installError == nil || i.force
+}
+
 func (i *ModInstaller) installMods(ctx context.Context, mods []*modconfig.ModVersionConstraint, parent *modconfig.Mod) (err error) {
 	defer func() {
-		// ensure we commit any changes to the shadow directory
-		// (unless this was a dry run)
-		if i.dryRun {
-			if i.force {
-				err = nil
-			}
-			log.Printf("[TRACE] installMods with dry-run=true - returning without committing")
-		} else {
-			// commit if there is no error (or if force is set)
-			if err == nil || i.force {
-				err = i.commitShadow(ctx)
-			}
+		var commitErr error
+		if i.shouldCommitShadow(ctx, err) {
+			commitErr = i.commitShadow(ctx)
 		}
 
-		// force remove the shadow directory
+		// if this was forced, we need to suppress the install error
+		// otherwise the calling code will fail
+		if i.force {
+			err = nil
+		}
+
+		// ensure we return any commit error
+		if commitErr != nil {
+			err = commitErr
+		}
+
+		// force remove the shadow directory - we can ignore any error here, since
+		// these directories get cleaned up before any install session
 		os.RemoveAll(i.shadowDirPath)
 	}()
 
