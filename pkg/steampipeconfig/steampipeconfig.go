@@ -121,14 +121,17 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *m
 		}
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
 		if c.GeneralOptions.MaxParallel != nil {
-			errorsAndWarnings.AddWarning(deprecationWarning("'max_parallel' in general options"))
+			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants.Bold("max_parallel"), constants.Bold("general options"))))
 		}
 	}
 	return errorsAndWarnings
 }
 
 func deprecationWarning(subject string) string {
-	return fmt.Sprintf("%s has been deprecated and will be removed in subsequent versions of steampipe", subject)
+	if subject == "terminal options" {
+		return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThese can now be set in a steampipe %s.", constants.Bold(subject), constants.Bold("workspace"))
+	}
+	return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThis can now be set in a steampipe %s.", subject, constants.Bold("workspace"))
 }
 
 var defaultCacheEnabled = true

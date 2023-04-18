@@ -58,6 +58,9 @@ func RunTasks(ctx context.Context, cmd *cobra.Command, args []string, options ..
 		// if the legacy file existed, then we should enforce a run, since we need
 		// to update the available version cache
 		if runner.shouldRun() || exists {
+			for _, hook := range config.preHooks {
+				hook(c)
+			}
 			runner.run(c)
 		}
 	}(ctx)
