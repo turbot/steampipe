@@ -13,7 +13,10 @@ type SteampipeRequire struct {
 	DeclRange        hcl.Range
 }
 
-func (r SteampipeRequire) initialise() hcl.Diagnostics {
+func (r *SteampipeRequire) initialise() hcl.Diagnostics {
+	if r.MinVersionString == "" {
+		return nil
+	}
 	constraint, err := semver.NewConstraint(fmt.Sprintf(">=%s", strings.TrimPrefix(r.MinVersionString, "v")))
 	if err != nil {
 		return hcl.Diagnostics{

@@ -34,7 +34,7 @@ func (r *Require) initialise() error {
 	var diags hcl.Diagnostics
 	r.modMap = make(map[string]*ModVersionConstraint)
 
-	if r.Steampipe != nil && r.Steampipe.MinVersionString != "" {
+	if r.Steampipe != nil {
 		moreDiags := r.Steampipe.initialise()
 		diags = append(diags, moreDiags...)
 	}
