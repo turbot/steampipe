@@ -267,6 +267,9 @@ func (i *ModInstaller) installMods(ctx context.Context, mods []*modconfig.ModVer
 		// ensure we commit any changes to the shadow directory
 		// (unless this was a dry run)
 		if i.dryRun {
+			if i.force {
+				err = nil
+			}
 			log.Printf("[TRACE] installMods with dry-run=true - returning without committing")
 		} else {
 			// commit if there is no error (or if force is set)
