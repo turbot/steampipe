@@ -20,7 +20,6 @@ func FindChildBlocks(parentBlock *hcl.Block, blockType string) hcl.Blocks {
 	for _, b := range childBlocks {
 		if b.Type == blockType {
 			res = append(res, b.AsHCLBlock())
-			break
 		}
 	}
 	return res

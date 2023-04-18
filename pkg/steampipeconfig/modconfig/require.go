@@ -137,7 +137,7 @@ func (r *Require) searchInstalledPluginForRequirement(modName string, requiremen
 			return nil
 		}
 	}
-	return sperr.New("could not find plugin which satisfies requirement '%s@%s' in '%s'", requirement.RawName, requirement.MinVersionString, modName)
+	return sperr.New("could not find plugin which satisfies requirement '%s@%s' - required by '%s'", requirement.RawName, requirement.MinVersionString, modName)
 }
 
 // AddModDependencies adds all the mod in newModVersions to our list of mods, using the following logic

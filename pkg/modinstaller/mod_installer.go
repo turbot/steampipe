@@ -183,15 +183,11 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 		}
 	}()
 
-	if !i.force {
-		// there's no point in checking the requirements if force is set
-		// since we will ignore it anyway
-		if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
-			return err
-		}
-		if err := workspaceMod.Require.ValidatePluginVersions(workspaceMod.Name(), i.installedPlugins); err != nil {
-			return err
-		}
+	if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
+		return err
+	}
+	if err := workspaceMod.Require.ValidatePluginVersions(workspaceMod.Name(), i.installedPlugins); err != nil {
+		return err
 	}
 
 	// if mod args have been provided, add them to the the workspace mod requires
