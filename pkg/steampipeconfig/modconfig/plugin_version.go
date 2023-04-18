@@ -48,6 +48,7 @@ func (p *PluginVersion) Initialise(block *hcl.Block) hcl.Diagnostics {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Both 'min_version' and deprecated 'version' property are set",
+				Subject:  &p.DeclRange,
 			})
 			return diags
 		}

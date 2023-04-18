@@ -351,7 +351,7 @@ func (m *Mod) ValidatePluginVersions(availablePlugins map[string]*semver.Version
 	if m.Require == nil {
 		return nil
 	}
-	return m.Require.ValidatePluginVersions(m.DependencyName, availablePlugins)
+	return m.Require.ValidatePluginVersions(m.GetInstallCacheKey(), availablePlugins)
 }
 
 // CtyValue implements CtyValueProvider
