@@ -139,7 +139,7 @@ func (d *Dashboard) Equals(other *Dashboard) bool {
 }
 
 // OnDecoded implements HclResource
-func (d *Dashboard) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (d *Dashboard) OnDecoded(block *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostics {
 	d.setBaseProperties()
 
 	d.ChildNames = make([]string, len(d.children))

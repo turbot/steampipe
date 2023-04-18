@@ -149,7 +149,7 @@ func (m *Mod) GetPaths() []NodePath {
 func (m *Mod) SetPaths() {}
 
 // OnDecoded implements HclResource
-func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (m *Mod) OnDecoded(block *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostics {
 	// handle legacy requires block
 	if m.LegacyRequire != nil && !m.LegacyRequire.Empty() {
 		// ensure that both 'require' and 'requires' were not set
@@ -171,7 +171,6 @@ func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvid
 	}
 
 	return m.Require.initialise(block)
-
 }
 
 // AddReference implements ResourceWithMetadata (overridden from ResourceWithMetadataImpl)

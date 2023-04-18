@@ -173,7 +173,7 @@ func (q *QueryProviderImpl) getBaseImpl() *QueryProviderImpl {
 	return q.base.(QueryProvider).GetQueryProviderImpl()
 }
 
-func (q *QueryProviderImpl) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (q *QueryProviderImpl) OnDecoded(block *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostics {
 	q.populateQueryName()
 
 	return nil
