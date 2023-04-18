@@ -141,8 +141,8 @@ func ParseModDefinition(modPath string, evalCtx *hcl.EvalContext) (*modconfig.Mo
 
 	// TODO change return value to bubble up decodeResult
 	// call decode callback
-	if err := mod.OnDecoded(block, nil); err != nil {
-		return nil, err
+	if diags := mod.OnDecoded(block, nil); diags.HasErrors() {
+		return nil, plugin.DiagsToError("Mod parse failed", diags)
 	}
 	return mod, nil
 }

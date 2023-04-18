@@ -57,7 +57,9 @@ func NewModVersionConstraint(modFullName string) (*ModVersionConstraint, error) 
 
 // Initialise parses the version and name properties
 func (m *ModVersionConstraint) Initialise(block *hcl.Block) hcl.Diagnostics {
-	m.DeclRange = block.DefRange
+	if block != nil {
+		m.DeclRange = block.DefRange
+	}
 
 	if strings.HasPrefix(m.Name, filePrefix) {
 		m.setFilePath()
