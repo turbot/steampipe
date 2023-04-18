@@ -90,7 +90,6 @@ func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext) er
 		}
 
 		for _, requiredModVersion := range mod.Require.Mods {
-
 			// have we already loaded a mod which satisfied this
 			loadedMod, err := parseCtx.GetLoadedDependencyMod(requiredModVersion, mod)
 			if err != nil {
