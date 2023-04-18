@@ -261,8 +261,8 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	}
 	// add variables
 	parseCtx.AddInputVariables(inputVariables)
-	// do not reload variables as we already have them
-	parseCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
+	// do not reload variables as we already have them (and exclude mod as this is always loaded first anyway)
+	parseCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable, modconfig.BlockTypeMod}
 
 	// load the workspace mod
 	m, errorAndWarning := steampipeconfig.LoadMod(w.Path, parseCtx)

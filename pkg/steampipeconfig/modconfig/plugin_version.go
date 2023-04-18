@@ -44,7 +44,7 @@ func (p *PluginVersion) Initialise(block *hcl.Block) hcl.Diagnostics {
 	p.DeclRange = block.DefRange
 	// handle deprecation warnings/errors
 	if p.VersionString != "" {
-		if p.Constraint != nil {
+		if p.MinVersionString != "" {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  "Both 'min_version' and deprecated 'version' property are set",
