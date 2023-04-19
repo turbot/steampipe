@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -21,16 +21,16 @@ import (
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOption) (mod *modconfig.Mod, errAndWarnings *modconfig.ErrorAndWarnings) {
+func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOption) (mod *modconfig.Mod, errorsAndWarnings *modconfig.ErrorAndWarnings) {
 	defer func() {
 		if r := recover(); r != nil {
-			errAndWarnings = modconfig.NewErrorsAndWarning(helpers.ToError(r))
+			errorsAndWarnings = modconfig.NewErrorsAndWarning(helpers.ToError(r))
 		}
 	}()
 
-	mod, err := loadModDefinition(modPath, parseCtx)
-	if err != nil {
-		return nil, modconfig.NewErrorsAndWarning(err)
+	mod, loadModResult := loadModDefinition(modPath, parseCtx)
+	if loadModResult.Error != nil {
+		return nil, loadModResult
 	}
 
 	// apply opts to mod
@@ -49,34 +49,41 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOpt
 	// populate the resource maps of the current mod using the dependency mods
 	mod.ResourceMaps = parseCtx.GetResourceMaps()
 	// now load the mod resource hcl
-	return loadModResources(modPath, parseCtx)
+	mod, errorsAndWarnings = loadModResources(modPath, parseCtx)
+
+	// add in any warnings from mod load
+	errorsAndWarnings.AddWarning(loadModResult.Warnings...)
+	return mod, errorsAndWarnings
 }
 
-func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (*modconfig.Mod, error) {
-	var mod *modconfig.Mod
+func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings *modconfig.ErrorAndWarnings) {
+	errorsAndWarnings = &modconfig.ErrorAndWarnings{}
 	// verify the mod folder exists
 	_, err := os.Stat(modPath)
 	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("mod folder %s does not exist", modPath)
+		return nil, modconfig.NewErrorsAndWarning(fmt.Errorf("mod folder %s does not exist", modPath))
 	}
 
 	if parse.ModfileExists(modPath) {
 		// load the mod definition to get the dependencies
-		mod, err = parse.ParseModDefinition(modPath)
-		if err != nil {
-			return nil, err
+		var res *parse.DecodeResult
+		mod, res = parse.ParseModDefinition(modPath, parseCtx.EvalCtx)
+		errorsAndWarnings = modconfig.DiagsToErrorsAndWarnings("mod load failed", res.Diags)
+		if res.Diags.HasErrors() {
+			return nil, errorsAndWarnings
 		}
 	} else {
 		// so there is no mod file - should we create a default?
 		if !parseCtx.ShouldCreateDefaultMod() {
+			errorsAndWarnings.Error = fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
 			// ShouldCreateDefaultMod flag NOT set - fail
-			return nil, fmt.Errorf("mod folder %s does not contain a mod resource definition", modPath)
+			return nil, errorsAndWarnings
 		}
 		// just create a default mod
 		mod = modconfig.CreateDefaultMod(modPath)
 
 	}
-	return mod, nil
+	return mod, errorsAndWarnings
 }
 
 func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext) error {
@@ -90,7 +97,6 @@ func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext) er
 		}
 
 		for _, requiredModVersion := range mod.Require.Mods {
-
 			// have we already loaded a mod which satisfied this
 			loadedMod, err := parseCtx.GetLoadedDependencyMod(requiredModVersion, mod)
 			if err != nil {
@@ -131,7 +137,7 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	defer func() { parseCtx.ListOptions.Exclude = prevExclusions }()
 
 	childParseCtx := parse.NewChildModParseContext(parseCtx, dependencyDir)
-	// NOTE: pass in the version and dependency path of the mod - these must be set before it loads its depdencies
+	// NOTE: pass in the version and dependency path of the mod - these must be set before it loads its dependencies
 	mod, errAndWarnings := LoadMod(dependencyDir, childParseCtx, WithDependencyConfig(modDependency.Name, version))
 	if errAndWarnings.GetError() != nil {
 		return errAndWarnings.GetError()

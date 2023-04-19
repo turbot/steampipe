@@ -59,7 +59,7 @@ func (b *Benchmark) Equals(other *Benchmark) bool {
 }
 
 // OnDecoded implements HclResource
-func (b *Benchmark) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (b *Benchmark) OnDecoded(block *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostics {
 	b.setBaseProperties()
 	return nil
 }

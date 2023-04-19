@@ -3,26 +3,25 @@ package modconfig
 import (
 	"fmt"
 	"sort"
-	"strings"
 
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/version"
 	"github.com/turbot/steampipe/sperr"
 )
 
 // Require is a struct representing mod dependencies
 type Require struct {
-	SteampipeVersion *semver.Version
-	Plugins          []*PluginVersion `hcl:"plugin,block"`
+	Plugins                          []*PluginVersion        `hcl:"plugin,block"`
+	DeprecatedSteampipeVersionString string                  `hcl:"steampipe,optional"`
+	Steampipe                        *SteampipeRequire       `hcl:"steampipe,block"`
+	Mods                             []*ModVersionConstraint `hcl:"mod,block"`
+	DeclRange                        hcl.Range
 	// map keyed by name [and alias]
-	SteampipeVersionString string `hcl:"steampipe,optional"`
-	Mods                   []*ModVersionConstraint
-	modMap                 map[string]*ModVersionConstraint
-	DeclRange              hcl.Range
+	modMap map[string]*ModVersionConstraint
 }
 
 func NewRequire() *Require {
@@ -31,44 +30,89 @@ func NewRequire() *Require {
 	}
 }
 
-func (r *Require) initialise() error {
+func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
+	// This will actually be called twice - once when we load the mod definition,
+	// and again when we load the mod resources (and set the mod metadata, references etc)
+	// If we have already initialised, return (we can tell by checking the DeclRange)
+	if !r.DeclRange.Empty() {
+		return nil
+	}
+
 	var diags hcl.Diagnostics
+	// handle deprecated properties
+	moreDiags := r.handleDeprecations()
+	diags = append(diags, moreDiags...)
+
+	// find the require block
+	requireBlock := hclhelpers.FindFirstChildBlock(modBlock, BlockTypeRequire)
+	if requireBlock == nil {
+		// if none was specified, fall back to parent block
+		requireBlock = modBlock
+	}
+	// build maps of plugin and mod blocks
+	pluginBlockMap := hclhelpers.BlocksToMap(hclhelpers.FindChildBlocks(requireBlock, BlockTypePlugin))
+	modBlockMap := hclhelpers.BlocksToMap(hclhelpers.FindChildBlocks(requireBlock, BlockTypeMod))
+
+	// set our DecRange
+	r.DeclRange = requireBlock.DefRange
+
 	r.modMap = make(map[string]*ModVersionConstraint)
 
-	if r.SteampipeVersionString != "" {
-		steampipeVersion, err := semver.NewVersion(strings.TrimPrefix(r.SteampipeVersionString, "v"))
-		if err != nil {
-			return fmt.Errorf("invalid required steampipe version %s", r.SteampipeVersionString)
-		}
-
-		r.SteampipeVersion = steampipeVersion
+	if r.Steampipe != nil {
+		moreDiags := r.Steampipe.initialise(requireBlock)
+		diags = append(diags, moreDiags...)
 	}
 
 	for _, p := range r.Plugins {
-		moreDiags := p.Initialise()
+		moreDiags := p.Initialise(pluginBlockMap[p.RawName])
 		diags = append(diags, moreDiags...)
 	}
 	for _, m := range r.Mods {
-		moreDiags := m.Initialise()
+		moreDiags := m.Initialise(modBlockMap[m.Name])
 		diags = append(diags, moreDiags...)
 		if !diags.HasErrors() {
 			// key map entry by name [and alias]
 			r.modMap[m.Name] = m
 		}
 	}
-	return plugin.DiagsToError("failed to initialise Require struct", diags)
+
+	return diags
+}
+
+func (r *Require) handleDeprecations() hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	// the 'steampipe' property is deprecated and replace with a steampipe block
+	if r.DeprecatedSteampipeVersionString != "" {
+		// if there is both a steampipe block and property, fail
+		if r.Steampipe != nil {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Both 'steampipe' block and deprecated 'steampipe' property are set",
+				Subject:  &r.DeclRange,
+			})
+		} else {
+			r.Steampipe = &SteampipeRequire{MinVersionString: r.DeprecatedSteampipeVersionString}
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagWarning,
+				Summary:  "Property 'steampipe' is deprecated for mod require block - use a steampipe block instead",
+				Subject:  &r.DeclRange,
+			},
+			)
+		}
+	}
+	return diags
 }
 
 func (r *Require) ValidateSteampipeVersion(modName string) error {
-	if r.SteampipeVersion != nil {
-		if version.SteampipeVersion.LessThan(r.SteampipeVersion) {
-			return fmt.Errorf("steampipe version %s does not satisfy %s which requires version %s", version.SteampipeVersion.String(), modName, r.SteampipeVersion.String())
+	if steampipeVersionConstraint := r.SteampipeVersionConstraint(); steampipeVersionConstraint != nil {
+		if !steampipeVersionConstraint.Check(version.SteampipeVersion) {
+			return fmt.Errorf("steampipe version %s does not satisfy %s which requires version %s", version.SteampipeVersion.String(), modName, r.Steampipe.MinVersionString)
 		}
 	}
 	return nil
 }
 
-// validates that for every plugin requirement there's at least one plugin installed
+// ValidatePluginVersions validates that for every plugin requirement there's at least one plugin installed
 func (r *Require) ValidatePluginVersions(modName string, plugins map[string]*semver.Version) error {
 	if len(r.Plugins) == 0 {
 		return nil
@@ -89,11 +133,12 @@ func (r *Require) searchInstalledPluginForRequirement(modName string, requiremen
 			// no point check - different plugin
 			continue
 		}
-		if requirement.Version.LessThan(installed) || requirement.Version.Equal(installed) {
+		if requirement.Constraint.Check(installed) {
+			// constraint is satisfied
 			return nil
 		}
 	}
-	return sperr.New("could not find plugin which satisfies requirement '%s@%s' in '%s'", requirement.RawName, requirement.VersionString, modName)
+	return sperr.New("could not find plugin which satisfies requirement '%s@%s' - required by '%s'", requirement.RawName, requirement.MinVersionString, modName)
 }
 
 // AddModDependencies adds all the mod in newModVersions to our list of mods, using the following logic
@@ -104,7 +149,6 @@ func (r *Require) AddModDependencies(newModVersions map[string]*ModVersionConstr
 
 	// first rebuild the mod map
 	for name, newVersion := range newModVersions {
-		// todo take alias into account
 		r.modMap[name] = newVersion
 	}
 
@@ -124,7 +168,6 @@ func (r *Require) AddModDependencies(newModVersions map[string]*ModVersionConstr
 func (r *Require) RemoveModDependencies(versions map[string]*ModVersionConstraint) {
 	// first rebuild the mod map
 	for name := range versions {
-		// todo take alias into account
 		delete(r.modMap, name)
 	}
 	// now update the mod array from the map
@@ -156,5 +199,13 @@ func (r *Require) ContainsMod(requiredModVersion *ModVersionConstraint) bool {
 }
 
 func (r *Require) Empty() bool {
-	return r.SteampipeVersion == nil && len(r.Mods) == 0 && len(r.Plugins) == 0
+	return r.SteampipeVersionConstraint() == nil && len(r.Mods) == 0 && len(r.Plugins) == 0
+}
+
+func (r *Require) SteampipeVersionConstraint() *semver.Constraints {
+	if r.Steampipe == nil {
+		return nil
+	}
+	return r.Steampipe.Constraint
+
 }

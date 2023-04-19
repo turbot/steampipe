@@ -6,10 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/plugin"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -32,7 +31,7 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 		if installedVersion, found := installedPlugins[name]; found {
 			req.SetInstalledVersion(installedVersion)
 
-			if installedPlugins[name].LessThan(requiredVersion) {
+			if !requiredVersion.Check(installedPlugins[name]) {
 				pluginsNotInstalled = append(pluginsNotInstalled, req)
 			}
 		} else {
@@ -52,12 +51,12 @@ func (w *Workspace) ValidateSteampipeVersion() error {
 	return w.Mod.ValidateSteampipeVersion()
 }
 
-func (w *Workspace) getRequiredPlugins() map[string]*semver.Version {
+func (w *Workspace) getRequiredPlugins() map[string]*semver.Constraints {
 	if w.Mod.Require != nil {
 		requiredPluginVersions := w.Mod.Require.Plugins
-		requiredVersion := make(versionmap.VersionMap)
+		requiredVersion := make(map[string]*semver.Constraints)
 		for _, pluginVersion := range requiredPluginVersions {
-			requiredVersion[pluginVersion.ShortName()] = pluginVersion.Version
+			requiredVersion[pluginVersion.ShortName()] = pluginVersion.Constraint
 		}
 		return requiredVersion
 	}
@@ -70,11 +69,10 @@ type requiredPluginVersion struct {
 	installedVersion string
 }
 
-func (v *requiredPluginVersion) SetRequiredVersion(requiredVersion *semver.Version) {
+func (v *requiredPluginVersion) SetRequiredVersion(requiredVersion *semver.Constraints) {
 	requiredVersionString := requiredVersion.String()
-	// if no required version was specified, the version will be 0.0.0
-	if requiredVersionString == "0.0.0" {
-		v.requiredVersion = "latest"
+	if requiredVersion == nil {
+		v.requiredVersion = "*"
 	} else {
 		v.requiredVersion = requiredVersionString
 	}

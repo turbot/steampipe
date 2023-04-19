@@ -19,18 +19,15 @@ type ModVersionConstraint struct {
 	Name          string `cty:"name" hcl:"name,label"`
 	VersionString string `cty:"version" hcl:"version"`
 	// variable values to be set on the dependency mod
-	Args map[string]cty.Value `cty:"args"`
+	Args map[string]cty.Value `cty:"args"  hcl:"args,optional"`
 	// only one of Constraint, Branch and FilePath will be set
 	Constraint *versionhelpers.Constraints
-	// // NOTE: aliases will be supported in the future
-	//Alias string `cty:"alias" hcl:"alias"`
-	// the branch to use
-	Branch string
 	// the local file location to use
 	FilePath  string
 	DeclRange hcl.Range
 }
 
+// NewModVersionConstraint creates a new ModVersionConstraint - this is called when installing a mod
 func NewModVersionConstraint(modFullName string) (*ModVersionConstraint, error) {
 	m := &ModVersionConstraint{
 		Args: make(map[string]cty.Value),
@@ -52,13 +49,45 @@ func NewModVersionConstraint(modFullName string) (*ModVersionConstraint, error) 
 	}
 
 	// try to convert version into a semver constraint
-	if err := m.Initialise(); err != nil {
+	if err := m.Initialise(nil); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (m *ModVersionConstraint) FullName() string {
+// Initialise parses the version and name properties
+func (m *ModVersionConstraint) Initialise(block *hcl.Block) hcl.Diagnostics {
+	if block != nil {
+		m.DeclRange = block.DefRange
+	}
+
+	if strings.HasPrefix(m.Name, filePrefix) {
+		m.setFilePath()
+		return nil
+	}
+
+	// now default the version string to latest
+	if m.VersionString == "" || m.VersionString == "latest" {
+		m.VersionString = "*"
+	}
+
+	// does the version parse as a semver version
+	if c, err := versionhelpers.NewConstraint(m.VersionString); err == nil {
+		// no error
+		m.Constraint = c
+		return nil
+	}
+
+	// so there was an error
+	return hcl.Diagnostics{&hcl.Diagnostic{
+		Severity: hcl.DiagError,
+		Summary:  fmt.Sprintf("invalid mod version %s", m.VersionString),
+		Subject:  &m.DeclRange,
+	}}
+
+}
+
+func (m *ModVersionConstraint) DependencyPath() string {
 	if m.HasVersion() {
 		return fmt.Sprintf("%s@%s", m.Name, m.VersionString)
 	}
@@ -72,42 +101,7 @@ func (m *ModVersionConstraint) HasVersion() bool {
 }
 
 func (m *ModVersionConstraint) String() string {
-	return m.FullName()
-}
-
-// Initialise parses the version and name properties
-func (m *ModVersionConstraint) Initialise() hcl.Diagnostics {
-	if strings.HasPrefix(m.Name, filePrefix) {
-		m.setFilePath()
-		return nil
-	}
-	var diags hcl.Diagnostics
-
-	if m.VersionString == "" {
-		m.Constraint, _ = versionhelpers.NewConstraint("*")
-		m.VersionString = "latest"
-		return diags
-	}
-	if m.VersionString == "latest" {
-		m.Constraint, _ = versionhelpers.NewConstraint("*")
-		return diags
-	}
-	// does the version parse as a semver version
-	if c, err := versionhelpers.NewConstraint(m.VersionString); err == nil {
-		// no error
-		m.Constraint = c
-		return diags
-	}
-
-	// todo handle branch and commit hash
-
-	// so there was an error
-	diags = append(diags, &hcl.Diagnostic{
-		Severity: hcl.DiagError,
-		Summary:  fmt.Sprintf("invalid mod version %s", m.VersionString),
-		Subject:  &m.DeclRange,
-	})
-	return diags
+	return m.DependencyPath()
 }
 
 func (m *ModVersionConstraint) setFilePath() {

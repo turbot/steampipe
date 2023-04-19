@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
@@ -33,7 +33,7 @@ type Mod struct {
 	Icon       *string  `cty:"icon" hcl:"icon" column:"icon,text"`
 
 	// blocks
-	Require       *Require
+	Require       *Require   `hcl:"require,block"`
 	LegacyRequire *Require   `hcl:"requires,block"`
 	OpenGraph     *OpenGraph `hcl:"opengraph,block" column:"open_graph,jsonb"`
 
@@ -62,7 +62,6 @@ type Mod struct {
 }
 
 func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
-	require := NewRequire()
 	name := fmt.Sprintf("mod.%s", shortName)
 	mod := &Mod{
 		ModTreeItemImpl: ModTreeItemImpl{
@@ -75,7 +74,7 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 			},
 		},
 		ModPath: modPath,
-		Require: require,
+		Require: NewRequire(),
 	}
 	mod.ResourceMaps = NewModResources(mod)
 
@@ -150,7 +149,7 @@ func (m *Mod) GetPaths() []NodePath {
 func (m *Mod) SetPaths() {}
 
 // OnDecoded implements HclResource
-func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (m *Mod) OnDecoded(block *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostics {
 	// handle legacy requires block
 	if m.LegacyRequire != nil && !m.LegacyRequire.Empty() {
 		// ensure that both 'require' and 'requires' were not set
@@ -170,16 +169,8 @@ func (m *Mod) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvid
 	if m.Require == nil {
 		return nil
 	}
-	err := m.Require.initialise()
-	if err != nil {
-		return hcl.Diagnostics{&hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  err.Error(),
-			Subject:  &block.DefRange,
-		}}
-	}
-	return nil
 
+	return m.Require.initialise(block)
 }
 
 // AddReference implements ResourceWithMetadata (overridden from ResourceWithMetadataImpl)
@@ -272,10 +263,12 @@ func (m *Mod) Save() error {
 	}
 
 	// require
-	if require := m.Require; require != nil && !m.Require.Empty() {
+	if require := m.Require; require != nil && !require.Empty() {
 		requiresBody := modBody.AppendNewBlock("require", nil).Body()
-		if require.SteampipeVersionString != "" {
-			requiresBody.SetAttributeValue("steampipe", cty.StringVal(require.SteampipeVersionString))
+
+		if require.Steampipe != nil && require.Steampipe.MinVersionString != "" {
+			steampipeRequiresBody := requiresBody.AppendNewBlock("steampipe", nil).Body()
+			steampipeRequiresBody.SetAttributeValue("min_version", cty.StringVal(require.Steampipe.MinVersionString))
 		}
 		if len(require.Plugins) > 0 {
 			pluginValues := make([]cty.Value, len(require.Plugins))
@@ -357,7 +350,7 @@ func (m *Mod) ValidatePluginVersions(availablePlugins map[string]*semver.Version
 	if m.Require == nil {
 		return nil
 	}
-	return m.Require.ValidatePluginVersions(m.DependencyName, availablePlugins)
+	return m.Require.ValidatePluginVersions(m.GetInstallCacheKey(), availablePlugins)
 }
 
 // CtyValue implements CtyValueProvider
@@ -386,4 +379,21 @@ func (m *Mod) SetDependencyConfig(dependencyPath string) error {
 	m.DependencyName = dependencyName
 	m.Version = version
 	return nil
+}
+
+// RequireHasUnresolvedArgs returns whether the mod has any mod requirements which have unresolved args
+// (this could be because the arg refers to a variable, meanin gwe need an additional parse phase
+// to resolve the arg values)
+func (m *Mod) RequireHasUnresolvedArgs() bool {
+	if m.Require == nil {
+		return false
+	}
+	for _, m := range m.Require.Mods {
+		for _, a := range m.Args {
+			if !a.IsKnown() {
+				return true
+			}
+		}
+	}
+	return false
 }

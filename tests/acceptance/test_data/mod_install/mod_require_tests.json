@@ -1,0 +1,20 @@
+[
+  {
+    "test_name": "new steampipe struct with old steampipe property",
+    "modsp": "mod \"test\" {\n  title = \"test\"\n  require {\n    steampipe = \"0.18.0\"\n    steampipe {\n      min_version = \"0.18.0\"\n    }\n  }\n}",
+    "cmd": "steampipe query 'select 1'",
+    "expected": "Both 'steampipe' block and deprecated 'steampipe' property are set"
+  },
+  {
+    "test_name": "old steampipe property",
+    "modsp": "mod \"test\" {\n  title = \"test\"\n  require {\n    steampipe = \"0.18.0\"\n    }\n}",
+    "cmd": "steampipe query 'select 1'",
+    "expected": "Warning: Property 'steampipe' is deprecated for mod require block - use a steampipe block instead"
+  },
+  {
+    "test_name": "new steampipe block with min_version",
+    "modsp": "mod \"test\" {\n  title = \"test\"\n  require {\n  steampipe {\n      min_version = \"0.18.0\"\n    }\n  }\n}",
+    "cmd": "steampipe query 'select 1'",
+    "expected": "1"
+  }
+]

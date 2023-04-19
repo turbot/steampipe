@@ -150,7 +150,7 @@ func CollectVariableValuesFromModRequire(mod *modconfig.Mod, parseCtx *parse.Mod
 				return nil, err
 			}
 			if depMod == nil {
-				return nil, fmt.Errorf("depency mod %s is not loaded", depMod.Name())
+				return nil, fmt.Errorf("dependency mod %s is not loaded", depMod.Name())
 			}
 
 			if args := depModConstraint.Args; args != nil {

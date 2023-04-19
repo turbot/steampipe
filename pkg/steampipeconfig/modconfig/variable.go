@@ -77,7 +77,7 @@ func (v *Variable) Equals(other *Variable) bool {
 }
 
 // OnDecoded implements HclResource
-func (v *Variable) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (v *Variable) OnDecoded(block *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostics {
 	return nil
 }
 

@@ -164,11 +164,10 @@ func (m *ModParseContext) AddInputVariables(inputVariables *modconfig.ModVariabl
 	m.DependencyVariables = inputVariables.DependencyVariables
 }
 
-func (m *ModParseContext) AddVariablesToReferenceMap() {
+func (m *ModParseContext) AddVariablesToEvalContext() {
 	m.addRootVariablesToReferenceMap(m.Variables)
 	m.addDependencyVariablesToReferenceMap()
-	// NOTE: we do not rebuild the eval context here as in practice, buildEvalContext will be called after the
-	// mod definition is parsed
+	m.buildEvalContext()
 }
 
 // addRootVariablesToReferenceMap sets the Variables property
@@ -521,7 +520,7 @@ func (m *ModParseContext) GetLoadedDependencyMod(requiredModVersion *modconfig.M
 		return nil, fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
 	}
 	// use the full name of the locked version as key
-	d, _ := m.LoadedDependencyMods[lockedVersion.FullName()]
+	d, _ := m.LoadedDependencyMods[lockedVersion.DependencyPath()]
 	return d, nil
 }
 
@@ -564,8 +563,7 @@ func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
 		m.Variables = dependencyVariables
 	}
 	// set the root variables from the parent
-	// now the mod is set we can add variables to the reference map
+	// now the mod is set we can add variables to the eval context
 	// ( we cannot do this until mod as set as we need to identify which variables to use if we are a dependency
-	m.AddVariablesToReferenceMap()
-	m.buildEvalContext()
+	m.AddVariablesToEvalContext()
 }

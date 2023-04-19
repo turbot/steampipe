@@ -44,7 +44,7 @@ func (w *DashboardWith) Equals(other *DashboardWith) bool {
 }
 
 // OnDecoded implements HclResource
-func (w *DashboardWith) OnDecoded(_ *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (w *DashboardWith) OnDecoded(_ *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostics {
 	return nil
 }
 

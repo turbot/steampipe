@@ -8,10 +8,12 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 	git "github.com/go-git/go-git/v5"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
+	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -21,6 +23,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
+	"github.com/zclconf/go-cty/cty"
 )
 
 type ModInstaller struct {
@@ -170,6 +173,11 @@ func (i *ModInstaller) UninstallWorkspaceDependencies(ctx context.Context) error
 func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err error) {
 	workspaceMod := i.workspaceMod
 	defer func() {
+		if err != nil && i.force {
+			// suppress the error since this is a forced install
+			log.Println("[TRACE] suppressing error in InstallWorkspaceDependencies because force is enabled", err)
+			err = nil
+		}
 		// tidy unused mods
 		// (put in defer so it still gets called in case of errors)
 		if viper.GetBool(constants.ArgPrune) && !i.dryRun {
@@ -181,15 +189,11 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 		}
 	}()
 
-	if !i.force {
-		// there's no point in checking the requirements if force is set
-		// since we will ignore it anyway
-		if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
-			return err
-		}
-		if err := workspaceMod.Require.ValidatePluginVersions(workspaceMod.Name(), i.installedPlugins); err != nil {
-			return err
-		}
+	if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
+		return err
+	}
+	if err := workspaceMod.Require.ValidatePluginVersions(workspaceMod.Name(), i.installedPlugins); err != nil {
+		return err
 	}
 
 	// if mod args have been provided, add them to the the workspace mod requires
@@ -578,9 +582,15 @@ func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, createDe
 		return nil, nil
 	}
 
-	mod, err := parse.ParseModDefinition(modPath)
-	if err != nil {
-		return nil, err
+	// build an eval context just containing functions
+	evalCtx := &hcl.EvalContext{
+		Functions: parse.ContextFunctions(modPath),
+		Variables: make(map[string]cty.Value),
+	}
+
+	mod, res := parse.ParseModDefinition(modPath, evalCtx)
+	if res.Diags.HasErrors() {
+		return nil, sdkplugin.DiagsToError("Failed to load mod", res.Diags)
 	}
 
 	return mod, nil

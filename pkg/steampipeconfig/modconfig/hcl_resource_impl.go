@@ -43,7 +43,7 @@ func (b *HclResourceImpl) GetUnqualifiedName() string {
 }
 
 // OnDecoded implements HclResource
-func (b *HclResourceImpl) OnDecoded(block *hcl.Block, resourceMapProvider ResourceMapsProvider) hcl.Diagnostics {
+func (b *HclResourceImpl) OnDecoded(block *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostics {
 	return nil
 }
 

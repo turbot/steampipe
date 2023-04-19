@@ -130,7 +130,7 @@ func decodeWorkspaceProfileOption(block *hcl.Block) (options.Options, hcl.Diagno
 	return DecodeOptions(block, WithOverride(constants.CmdNameDashboard, &options.WorkspaceProfileDashboard{}))
 }
 
-func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseContext) (*modconfig.WorkspaceProfile, *decodeResult) {
+func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseContext) (*modconfig.WorkspaceProfile, *DecodeResult) {
 	res := newDecodeResult()
 	// get shell resource
 	resource := modconfig.NewWorkspaceProfile(block)
@@ -186,7 +186,7 @@ func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseCon
 	return resource, res
 }
 
-func handleWorkspaceProfileDecodeResult(resource *modconfig.WorkspaceProfile, res *decodeResult, block *hcl.Block, parseCtx *WorkspaceProfileParseContext) {
+func handleWorkspaceProfileDecodeResult(resource *modconfig.WorkspaceProfile, res *DecodeResult, block *hcl.Block, parseCtx *WorkspaceProfileParseContext) {
 	if res.Success() {
 		// call post decode hook
 		// NOTE: must do this BEFORE adding resource to run context to ensure we respect the base property
