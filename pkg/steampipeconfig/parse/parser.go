@@ -97,30 +97,44 @@ func ModfileExists(modPath string) bool {
 // ParseModDefinition parses the modfile only
 // it is expected the calling code will have verified the existence of the modfile by calling ModfileExists
 // this is called before parsing the workspace to, for example, identify dependency mods
-func ParseModDefinition(modPath string, evalCtx *hcl.EvalContext) (*modconfig.Mod, error) {
+func ParseModDefinition(modPath string, evalCtx *hcl.EvalContext) (*modconfig.Mod, *DecodeResult) {
+	res := newDecodeResult()
+
 	// if there is no mod at this location, return error
 	modFilePath := filepaths.ModFilePath(modPath)
 	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("no mod file found in %s", modPath)
+		res.Diags = append(res.Diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("no mod file found in %s", modPath),
+		})
+		return nil, res
 	}
+
 	fileData, diags := LoadFileData(modFilePath)
+	res.addDiags(diags)
 	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load mod files", diags)
+		return nil, res
 	}
 
 	body, diags := ParseHclFiles(fileData)
+	res.addDiags(diags)
 	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load all mod source files", diags)
+		return nil, res
 	}
 
 	workspaceContent, diags := body.Content(WorkspaceBlockSchema)
+	res.addDiags(diags)
 	if diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to load mod", diags)
+		return nil, res
 	}
 
 	block := hclhelpers.GetFirstBlockOfType(workspaceContent.Blocks, modconfig.BlockTypeMod)
 	if block == nil {
-		return nil, fmt.Errorf("no mod definition found in %s", modPath)
+		res.Diags = append(res.Diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("no mod definition found in %s", modPath),
+		})
+		return nil, res
 	}
 	var defRange = block.DefRange
 	if hclBody, ok := block.Body.(*hclsyntax.Body); ok {
@@ -132,19 +146,18 @@ func ParseModDefinition(modPath string, evalCtx *hcl.EvalContext) (*modconfig.Mo
 
 	// create a temporary runContext to decode the mod definition
 	// note - this is not fully populated - the only properties which will be used are
-	var res *decodeResult
+
 	mod, res = decodeMod(block, evalCtx, mod)
 	if res.Diags.HasErrors() {
-		return nil, plugin.DiagsToError("Failed to decode mod hcl file", res.Diags)
+		return nil, res
 	}
 	// NOTE: IGNORE DEPENDENCY ERRORS
 
-	// TODO change return value to bubble up decodeResult
 	// call decode callback
-	if diags := mod.OnDecoded(block, nil); diags.HasErrors() {
-		return nil, plugin.DiagsToError("Mod parse failed", diags)
-	}
-	return mod, nil
+	diags = mod.OnDecoded(block, nil)
+	res.addDiags(diags)
+
+	return mod, res
 }
 
 // ParseMod parses all source hcl files for the mod path and associated resources, and returns the mod object

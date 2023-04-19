@@ -7,17 +7,17 @@ import (
 )
 
 // struct to hold the result of a decoding operation
-type decodeResult struct {
+type DecodeResult struct {
 	Diags   hcl.Diagnostics
 	Depends map[string]*modconfig.ResourceDependency
 }
 
-func newDecodeResult() *decodeResult {
-	return &decodeResult{Depends: make(map[string]*modconfig.ResourceDependency)}
+func newDecodeResult() *DecodeResult {
+	return &DecodeResult{Depends: make(map[string]*modconfig.ResourceDependency)}
 }
 
 // Merge merges this decode result with another
-func (p *decodeResult) Merge(other *decodeResult) *decodeResult {
+func (p *DecodeResult) Merge(other *DecodeResult) *DecodeResult {
 	p.Diags = append(p.Diags, other.Diags...)
 	for k, v := range other.Depends {
 		p.Depends[k] = v
@@ -27,13 +27,13 @@ func (p *decodeResult) Merge(other *decodeResult) *decodeResult {
 }
 
 // Success returns if the was parsing successful - true if there are no errors and no dependencies
-func (p *decodeResult) Success() bool {
+func (p *DecodeResult) Success() bool {
 	return !p.Diags.HasErrors() && len(p.Depends) == 0
 }
 
 // if the diags contains dependency errors, add dependencies to the result
 // otherwise add diags to the result
-func (p *decodeResult) handleDecodeDiags(diags hcl.Diagnostics) {
+func (p *DecodeResult) handleDecodeDiags(diags hcl.Diagnostics) {
 	for _, diag := range diags {
 		if dependency := diagsToDependency(diag); dependency != nil {
 			p.Depends[dependency.String()] = dependency
@@ -53,6 +53,6 @@ func diagsToDependency(diag *hcl.Diagnostic) *modconfig.ResourceDependency {
 	return nil
 }
 
-func (p *decodeResult) addDiags(diags hcl.Diagnostics) {
+func (p *DecodeResult) addDiags(diags hcl.Diagnostics) {
 	p.Diags = append(p.Diags, diags...)
 }

@@ -33,13 +33,15 @@ func NewRequire() *Require {
 func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
 	// This will actually be called twice - once when we load the mod definition,
 	// and again when we load the mod resources (and set the mod metadata, references etc)
-        // If we have already initialised, return (we can tell by checking the DeclRange)
+	// If we have already initialised, return (we can tell by checking the DeclRange)
 	if !r.DeclRange.Empty() {
 		return nil
 	}
 
+	var diags hcl.Diagnostics
 	// handle deprecated properties
-	r.handleDeprecations()
+	moreDiags := r.handleDeprecations()
+	diags = append(diags, moreDiags...)
 
 	// find the require block
 	requireBlock := hclhelpers.FindFirstChildBlock(modBlock, BlockTypeRequire)
@@ -54,7 +56,6 @@ func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
 	// set our DecRange
 	r.DeclRange = requireBlock.DefRange
 
-	var diags hcl.Diagnostics
 	r.modMap = make(map[string]*ModVersionConstraint)
 
 	if r.Steampipe != nil {

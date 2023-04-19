@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
+	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -587,9 +588,9 @@ func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, createDe
 		Variables: make(map[string]cty.Value),
 	}
 
-	mod, err := parse.ParseModDefinition(modPath, evalCtx)
-	if err != nil {
-		return nil, err
+	mod, res := parse.ParseModDefinition(modPath, evalCtx)
+	if res.Diags.HasErrors() {
+		return nil, sdkplugin.DiagsToError("Failed to load mod", res.Diags)
 	}
 
 	return mod, nil
