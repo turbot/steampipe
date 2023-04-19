@@ -31,9 +31,9 @@ func NewRequire() *Require {
 }
 
 func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
-	// this will actually be called twice - once when we load the mod definition,
+	// This will actually be called twice - once when we load the mod definition,
 	// and again when we load the mod resources (and set the mod metadata, references etc)
-	// we can tell by checking the DeclRange
+        // If we have already initialised, return (we can tell by checking the DeclRange)
 	if !r.DeclRange.Empty() {
 		return nil
 	}
