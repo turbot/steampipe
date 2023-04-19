@@ -57,6 +57,7 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOpt
 }
 
 func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings *modconfig.ErrorAndWarnings) {
+	errorsAndWarnings = &modconfig.ErrorAndWarnings{}
 	// verify the mod folder exists
 	_, err := os.Stat(modPath)
 	if os.IsNotExist(err) {
