@@ -119,6 +119,3 @@ Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_w
   assert_output --partial "1"
 }
 
-function teardown() {
-  cd -
-}
