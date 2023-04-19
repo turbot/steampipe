@@ -423,3 +423,23 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select 1"
 }
 
+## dependency resolution tests
+
+@test "complex mod dependency resolution - test vars resolution from require section of local mod" {
+  cd $FILE_PATH/test_data/local_mod_with_args_in_require
+  steampipe mod install
+
+  run steampipe query dependency_vars_1.query.version --output csv
+  # check the output - query should use the value of variable from the local 
+  # mod require section("v3.0.0") which will give the output:
+# +--------+----------+--------+
+# | reason | resource | status |
+# +--------+----------+--------+
+# | v3.0.0 | v3.0.0   | ok     |
+# +--------+----------+--------+
+  assert_output 'reason,resource,status
+v3.0.0,v3.0.0,ok'
+  
+  rm -rf .steampipe/
+  rm -rf .mod.cache.json
+}
