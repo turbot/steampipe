@@ -1,6 +1,8 @@
 package versionmap
 
 import (
+	"sort"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/xlab/treeprint"
@@ -41,7 +43,13 @@ func (m DependencyVersionMap) GetDependencyTree(rootName string) treeprint.Tree 
 
 func (m DependencyVersionMap) buildTree(name string, tree treeprint.Tree) {
 	deps := m[name]
-	for name, version := range deps {
+	depNames := []string{}
+	for k := range deps {
+		depNames = append(depNames, k)
+	}
+	sort.Strings(depNames)
+	for _, name := range depNames {
+		version := deps[name]
 		fullName := modconfig.BuildModDependencyPath(name, version.Version)
 		child := tree.AddBranch(fullName)
 		// if there are children add them
