@@ -19,7 +19,7 @@ func (r *SteampipeRequire) initialise(requireBlock *hcl.Block) hcl.Diagnostics {
 	// find the steampipe block
 	steampipeBlock := hclhelpers.FindFirstChildBlock(requireBlock, BlockTypeSteampipe)
 	if steampipeBlock == nil {
-		// can happen if there is a legacy property - just use th eparent block
+		// can happen if there is a legacy property - just use the parent block
 		steampipeBlock = requireBlock
 	}
 	// set DeclRange
