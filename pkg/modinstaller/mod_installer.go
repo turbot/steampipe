@@ -172,6 +172,11 @@ func (i *ModInstaller) UninstallWorkspaceDependencies(ctx context.Context) error
 func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err error) {
 	workspaceMod := i.workspaceMod
 	defer func() {
+		if err != nil && i.force {
+			// suppress the error since this is a forced install
+			log.Println("[TRACE] suppressing error in InstallWorkspaceDependencies because force is enabled", err)
+			err = nil
+		}
 		// tidy unused mods
 		// (put in defer so it still gets called in case of errors)
 		if viper.GetBool(constants.ArgPrune) && !i.dryRun {
