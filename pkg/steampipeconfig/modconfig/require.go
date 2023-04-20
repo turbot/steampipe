@@ -107,7 +107,7 @@ func (r *Require) handleDeprecations() hcl.Diagnostics {
 	return diags
 }
 
-func (r *Require) ValidateSteampipeVersion(modName string) error {
+func (r *Require) validateSteampipeVersion(modName string) error {
 	if steampipeVersionConstraint := r.SteampipeVersionConstraint(); steampipeVersionConstraint != nil {
 		if !steampipeVersionConstraint.Check(version.SteampipeVersion) {
 			return fmt.Errorf("steampipe version %s does not satisfy %s which requires version %s", version.SteampipeVersion.String(), modName, r.Steampipe.MinVersionString)
@@ -116,8 +116,8 @@ func (r *Require) ValidateSteampipeVersion(modName string) error {
 	return nil
 }
 
-// ValidatePluginVersions validates that for every plugin requirement there's at least one plugin installed
-func (r *Require) ValidatePluginVersions(modName string, plugins map[string]*semver.Version) error {
+// validatePluginVersions validates that for every plugin requirement there's at least one plugin installed
+func (r *Require) validatePluginVersions(modName string, plugins map[string]*semver.Version) error {
 	if len(r.Plugins) == 0 {
 		return nil
 	}

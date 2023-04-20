@@ -47,10 +47,6 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 	return nil
 }
 
-func (w *Workspace) ValidateSteampipeVersion() error {
-	return w.Mod.ValidateSteampipeVersion()
-}
-
 func (w *Workspace) getRequiredPlugins() map[string]*semver.Constraints {
 	if w.Mod.Require != nil {
 		requiredPluginVersions := w.Mod.Require.Plugins

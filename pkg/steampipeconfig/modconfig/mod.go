@@ -173,16 +173,6 @@ func (m *Mod) OnDecoded(block *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostic
 	return m.Require.initialise(block)
 }
 
-func (m *Mod) ValidateRequirements(pluginVersionMap map[string]*semver.Version) error {
-	if err := m.ValidateSteampipeVersion(); err != nil {
-		return err
-	}
-	if err := m.ValidatePluginVersions(pluginVersionMap); err != nil {
-		return err
-	}
-	return nil
-}
-
 // AddReference implements ResourceWithMetadata (overridden from ResourceWithMetadataImpl)
 func (m *Mod) AddReference(ref *ResourceReference) {
 	m.ResourceMaps.References[ref.Name()] = ref
@@ -349,18 +339,28 @@ func (m *Mod) SetFilePath(modFilePath string) {
 	m.modFilePath = modFilePath
 }
 
-func (m *Mod) ValidateSteampipeVersion() error {
-	if m.Require == nil {
-		return nil
+func (m *Mod) ValidateRequirements(pluginVersionMap map[string]*semver.Version) error {
+	if err := m.validateSteampipeVersion(); err != nil {
+		return err
 	}
-	return m.Require.ValidateSteampipeVersion(m.Name())
+	if err := m.validatePluginVersions(pluginVersionMap); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (m *Mod) ValidatePluginVersions(availablePlugins map[string]*semver.Version) error {
+func (m *Mod) validateSteampipeVersion() error {
 	if m.Require == nil {
 		return nil
 	}
-	return m.Require.ValidatePluginVersions(m.GetInstallCacheKey(), availablePlugins)
+	return m.Require.validateSteampipeVersion(m.Name())
+}
+
+func (m *Mod) validatePluginVersions(availablePlugins map[string]*semver.Version) error {
+	if m.Require == nil {
+		return nil
+	}
+	return m.Require.validatePluginVersions(m.GetInstallCacheKey(), availablePlugins)
 }
 
 // CtyValue implements CtyValueProvider
