@@ -119,3 +119,29 @@ Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_w
   assert_output --partial "1"
 }
 
+@test "old plugin.version property" {
+  # go to the mod directory and run steampipe to get the deprectaion warning
+  # or error, and check the output
+  cd $FILE_PATH/test_data/mod_require_tests/mod_with_old_plugin_block_with_version
+  run steampipe query "select 1"
+
+  assert_output --partial "Warning: Property 'version' is deprecated - use 'min_version' instead, in plugin 'chaos' require block"
+}
+
+@test "old plugin.version property with new plugin.min_version property" {
+  # go to the mod directory and run steampipe to get the deprectaion warning
+  # or error, and check the output
+  cd $FILE_PATH/test_data/mod_require_tests/mod_with_both_version_and_minversion_in_plugin_block
+  run steampipe query "select 1"
+
+  assert_output --partial "Both 'min_version' and deprecated 'version' property are set"
+}
+
+@test "new plugin.min_version property set" {
+  # go to the mod directory and run steampipe to get the deprectaion warning
+  # or error, and check the output
+  cd $FILE_PATH/test_data/mod_require_tests/mod_with_minversion_in_plugin_block
+  run steampipe query "select 1"
+
+  assert_output --partial "1"
+}
