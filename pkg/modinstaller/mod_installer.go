@@ -10,10 +10,8 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	git "github.com/go-git/go-git/v5"
-	"github.com/hashicorp/hcl/v2"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
-	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -23,7 +21,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
-	"github.com/zclconf/go-cty/cty"
 )
 
 type ModInstaller struct {
@@ -52,9 +49,13 @@ type ModInstaller struct {
 	force bool
 }
 
-func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, error) {
+func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
+	if opts.WorkspaceMod == nil {
+		return nil, sperr.New("no workspace mod passed to mod installer")
+	}
 	i := &ModInstaller{
-		workspacePath: opts.WorkspacePath,
+		workspacePath: opts.WorkspaceMod.ModPath,
+		workspaceMod:  opts.WorkspaceMod,
 		command:       opts.Command,
 		dryRun:        opts.DryRun,
 		force:         opts.Force,
@@ -69,13 +70,6 @@ func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, err
 	}
 	i.installedPlugins = installedPlugins
 
-	// load workspace mod, creating a default if needed
-	workspaceMod, err := i.loadModfile(ctx, i.workspacePath, true)
-	if err != nil {
-		return nil, err
-	}
-	i.workspaceMod = workspaceMod
-
 	// load lock file
 	workspaceLock, err := versionmap.LoadWorkspaceLock(i.workspacePath)
 	if err != nil {
@@ -83,7 +77,7 @@ func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, err
 	}
 
 	// create install data
-	i.installData = NewInstallData(workspaceLock, workspaceMod)
+	i.installData = NewInstallData(workspaceLock, i.workspaceMod)
 
 	// parse args to get the required mod versions
 	requiredMods, err := i.GetRequiredModVersionsFromArgs(opts.ModArgs)
@@ -450,7 +444,7 @@ func (i *ModInstaller) loadDependencyModFromRoot(ctx context.Context, modInstall
 	log.Printf("[TRACE] loadDependencyModFromRoot: trying to load %s from root %s", dependencyPath, modInstallRoot)
 
 	modPath := path.Join(modInstallRoot, dependencyPath)
-	modDefinition, err := i.loadModfile(ctx, modPath, false)
+	modDefinition, err := parse.LoadModfile(modPath)
 	if err != nil {
 		return nil, sperr.WrapWithMessage(err, "failed to load mod definition for %s from %s", dependencyPath, modInstallRoot)
 	}
@@ -521,7 +515,7 @@ func (i *ModInstaller) install(ctx context.Context, dependency *ResolvedModRef, 
 	}
 
 	// now load the installed mod and return it
-	modDef, err = i.loadModfile(ctx, destPath, false)
+	modDef, err = parse.LoadModfile(destPath)
 	if err != nil {
 		return nil, err
 	}
@@ -568,32 +562,6 @@ func (i *ModInstaller) getDependencyShadowPath(dependencyFullName string) string
 // set the mod dependency path
 func (i *ModInstaller) setModDependencyConfig(mod *modconfig.Mod, dependencyPath string) error {
 	return mod.SetDependencyConfig(dependencyPath)
-}
-
-func (i *ModInstaller) loadModfile(ctx context.Context, modPath string, createDefault bool) (*modconfig.Mod, error) {
-	if !parse.ModfileExists(modPath) {
-		if !ValidateModLocation(ctx, modPath) {
-			error_helpers.FailOnError(fmt.Errorf("Mod installation cancelled"))
-		}
-		if createDefault {
-			mod := modconfig.CreateDefaultMod(i.workspacePath)
-			return mod, nil
-		}
-		return nil, nil
-	}
-
-	// build an eval context just containing functions
-	evalCtx := &hcl.EvalContext{
-		Functions: parse.ContextFunctions(modPath),
-		Variables: make(map[string]cty.Value),
-	}
-
-	mod, res := parse.ParseModDefinition(modPath, evalCtx)
-	if res.Diags.HasErrors() {
-		return nil, sdkplugin.DiagsToError("Failed to load mod", res.Diags)
-	}
-
-	return mod, nil
 }
 
 func (i *ModInstaller) updating() bool {

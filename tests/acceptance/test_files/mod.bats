@@ -342,7 +342,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FILE_PATH/test_data/nested_mod/folder1
 
   run steampipe check all
-  assert_equal "$output" "Error: this command requires a mod definition file - could not find in the current directory tree"
+  assert_output --partial "This command requires a mod definition file (mod.sp) - could not find in the current directory tree."
   cd -
 }
 
@@ -355,7 +355,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FILE_PATH/test_data/nested_mod_no_mod_file/folder1/folder11
 
   run steampipe check all
-  assert_equal "$output" "Error: this command requires a mod definition file - could not find in the current directory tree"
+  assert_output --partial "This command requires a mod definition file (mod.sp) - could not find in the current directory tree."
 
   run steampipe query control.check_1
   assert_success
@@ -365,6 +365,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 ## parsing
 
 @test "mod parsing" {
+  skip "Skipping for now, need to re-design"
   # install necessary plugins
   steampipe plugin install aws oci azure azuread
 

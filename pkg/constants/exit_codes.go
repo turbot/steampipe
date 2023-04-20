@@ -15,6 +15,7 @@ const (
 	ExitCodeQueryExecutionFailed        = 41  // query - 1 or more queries failed - change in behavior(previously the exitCode used to be the number of queries that failed)
 	ExitCodeLoginCloudConnectionFailed  = 51  // login - connecting to cloud failed
 	ExitCodeModInitFailed               = 61  // mod - init failed
+	ExitCodeModInstallFailed            = 62  // mod - install failed
 	ExitCodeInvalidExecutionEnvironment = 249 // common - when steampipe is run in an unsupported environment
 	ExitCodeInitializationFailed        = 250 // common - initialization failed
 	ExitCodeBindPortUnavailable         = 251 // common(service/dashboard) - port binding failed

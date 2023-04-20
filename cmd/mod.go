@@ -10,7 +10,6 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/modinstaller"
@@ -89,11 +88,29 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// try to load the workspace mod definition
+	// - if it does not exist, this will return a nil mod and a nil error
+	workspacePath := viper.GetString(constants.ArgModLocation)
+	workspaceMod, err := parse.LoadModfile(workspacePath)
+	error_helpers.FailOnErrorWithMessage(err, "failed to load mod definition")
+
+	// if no mod was loaded, create a default
+	if workspaceMod == nil {
+		workspaceMod, err = createWorkspaceMod(ctx, cmd, workspacePath)
+		if err != nil {
+			exitCode = constants.ExitCodeModInstallFailed
+			error_helpers.FailOnError(err)
+		}
+	}
+
 	// if any mod names were passed as args, convert into formed mod names
-	opts := newInstallOpts(cmd, args...)
+	opts := modinstaller.NewInstallOpts(workspaceMod, args...)
 	trimGitUrls(opts)
 	installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
-	error_helpers.FailOnError(err)
+	if err != nil {
+		exitCode = constants.ExitCodeModInstallFailed
+		error_helpers.FailOnError(err)
+	}
 
 	fmt.Println(modinstaller.BuildInstallSummary(installData))
 }
@@ -126,7 +143,15 @@ func runModUninstallCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	opts := newInstallOpts(cmd, args...)
+	// try to load the workspace mod definition
+	// - if it does not exist, this will return a nil mod and a nil error
+	workspaceMod, err := parse.LoadModfile(viper.GetString(constants.ArgModLocation))
+	error_helpers.FailOnErrorWithMessage(err, "failed to load mod definition")
+	if workspaceMod == nil {
+		fmt.Println("No mods installed.")
+		return
+	}
+	opts := modinstaller.NewInstallOpts(workspaceMod, args...)
 	trimGitUrls(opts)
 	installData, err := modinstaller.UninstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
@@ -163,7 +188,16 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	opts := newInstallOpts(cmd, args...)
+	// try to load the workspace mod definition
+	// - if it does not exist, this will return a nil mod and a nil error
+	workspaceMod, err := parse.LoadModfile(viper.GetString(constants.ArgModLocation))
+	error_helpers.FailOnErrorWithMessage(err, "failed to load mod definition")
+	if workspaceMod == nil {
+		fmt.Println("No mods installed.")
+		return
+	}
+
+	opts := modinstaller.NewInstallOpts(workspaceMod, args...)
 	trimGitUrls(opts)
 	installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 	error_helpers.FailOnError(err)
@@ -194,8 +228,18 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
-	opts := newInstallOpts(cmd)
-	installer, err := modinstaller.NewModInstaller(ctx, opts)
+
+	// try to load the workspace mod definition
+	// - if it does not exist, this will return a nil mod and a nil error
+	workspaceMod, err := parse.LoadModfile(viper.GetString(constants.ArgModLocation))
+	error_helpers.FailOnErrorWithMessage(err, "failed to load mod definition")
+	if workspaceMod == nil {
+		fmt.Println("No mods installed.")
+		return
+	}
+
+	opts := modinstaller.NewInstallOpts(workspaceMod)
+	installer, err := modinstaller.NewModInstaller(opts)
 	error_helpers.FailOnError(err)
 
 	treeString := installer.GetModList()
@@ -220,10 +264,7 @@ func modInitCmd() *cobra.Command {
 
 func runModInitCmd(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmd.runModInitCmd")
-
-	// setup a cancel context and start cancel handler
-	ctx, cancel := context.WithCancel(cmd.Context())
-	contexthelpers.StartCancelHandler(cancel)
+	ctx := cmd.Context()
 
 	defer func() {
 		utils.LogTime("cmd.runModInitCmd end")
@@ -233,37 +274,32 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 	workspacePath := viper.GetString(constants.ArgModLocation)
-	if !modinstaller.ValidateModLocation(ctx, workspacePath) {
+	if _, err := createWorkspaceMod(ctx, cmd, workspacePath); err != nil {
 		exitCode = constants.ExitCodeModInitFailed
-		error_helpers.ShowError(ctx, fmt.Errorf("Mod initialisation cancelled"))
-		return
+		error_helpers.FailOnError(err)
 	}
-
-	if parse.ModfileExists(workspacePath) {
-		fmt.Println("Working folder already contains a mod definition file")
-		return
-	}
-	mod := modconfig.CreateDefaultMod(workspacePath)
-	err := mod.Save()
-	error_helpers.FailOnError(err)
 	fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
 }
 
 // helpers
-
-func newInstallOpts(cmd *cobra.Command, args ...string) *modinstaller.InstallOpts {
-	opts := &modinstaller.InstallOpts{
-		WorkspacePath: viper.GetString(constants.ArgModLocation),
-		DryRun:        viper.GetBool(constants.ArgDryRun),
-		Force:         viper.GetBool(constants.ArgForce),
-		ModArgs:       args,
-		Command:       cmd.Name(),
+func createWorkspaceMod(ctx context.Context, cmd *cobra.Command, workspacePath string) (*modconfig.Mod, error) {
+	if !modinstaller.ValidateModLocation(ctx, workspacePath) {
+		return nil, fmt.Errorf("mod %s cancelled", cmd.Name())
 	}
-	return opts
+
+	if parse.ModfileExists(workspacePath) {
+		fmt.Println("Working folder already contains a mod definition file")
+		return nil, nil
+	}
+	mod := modconfig.CreateDefaultMod(workspacePath)
+	if err := mod.Save(); err != nil {
+		return nil, err
+	}
+
+	return mod, nil
 }
 
 // Modifies(trims) the URL if contains http ot https in arguments
-
 func trimGitUrls(opts *modinstaller.InstallOpts) {
 	for i, url := range opts.ModArgs {
 		opts.ModArgs[i] = strings.TrimPrefix(url, "http://")

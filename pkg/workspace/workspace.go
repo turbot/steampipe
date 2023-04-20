@@ -362,7 +362,7 @@ func (w *Workspace) loadWorkspaceLock(ctx context.Context) (*versionmap.Workspac
 
 	// if this is the old format, migrate by reinstalling dependencies
 	if workspaceLock.StructVersion() != versionmap.WorkspaceLockStructVersion {
-		opts := &modinstaller.InstallOpts{WorkspacePath: viper.GetString(constants.ArgModLocation)}
+		opts := &modinstaller.InstallOpts{WorkspaceMod: w.Mod}
 		installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 		if err != nil {
 			return nil, err
