@@ -73,7 +73,7 @@ func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
 		)
 	} else {
 		arg := input.args()[0]
-		paths := []string{}
+		var paths []string
 		split := strings.Split(arg, ",")
 		for _, s := range split {
 			s = strings.TrimSpace(s)

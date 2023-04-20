@@ -65,7 +65,7 @@ func refreshConnections(ctx context.Context, foreignSchemaNames []string, forceU
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
-	// create a conneciton pool to connection refresh
+	// create a connection pool to connection refresh
 	poolsize := 25
 	pool, err := createConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
 	if err != nil {
