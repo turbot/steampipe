@@ -46,8 +46,12 @@ func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
 	// find the require block
 	requireBlock := hclhelpers.FindFirstChildBlock(modBlock, BlockTypeRequire)
 	if requireBlock == nil {
-		// if none was specified, fall back to parent block
-		requireBlock = modBlock
+		// was this the legacy 'requires' block?
+		requireBlock = hclhelpers.FindFirstChildBlock(modBlock, BlockTypeLegacyRequires)
+		if requireBlock == nil {
+			// if none was specified, fall back to parent block
+			requireBlock = modBlock
+		}
 	}
 	// build maps of plugin and mod blocks
 	pluginBlockMap := hclhelpers.BlocksToMap(hclhelpers.FindChildBlocks(requireBlock, BlockTypePlugin))
