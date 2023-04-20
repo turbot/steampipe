@@ -66,8 +66,6 @@ func (d *ConnectionData) Equals(other *ConnectionData) bool {
 		return false
 	}
 
-	// TODO KAI remove debug version
-
 	if d.Plugin != other.Plugin {
 		return false
 	}
