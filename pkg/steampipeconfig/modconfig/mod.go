@@ -173,6 +173,16 @@ func (m *Mod) OnDecoded(block *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostic
 	return m.Require.initialise(block)
 }
 
+func (m *Mod) ValidateRequirements(pluginVersionMap map[string]*semver.Version) error {
+	if err := m.ValidateSteampipeVersion(); err != nil {
+		return err
+	}
+	if err := m.ValidatePluginVersions(pluginVersionMap); err != nil {
+		return err
+	}
+	return nil
+}
+
 // AddReference implements ResourceWithMetadata (overridden from ResourceWithMetadataImpl)
 func (m *Mod) AddReference(ref *ResourceReference) {
 	m.ResourceMaps.References[ref.Name()] = ref

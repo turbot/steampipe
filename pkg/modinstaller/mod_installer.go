@@ -183,11 +183,11 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 		}
 	}()
 
-	if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
-		return err
-	}
-	if err := workspaceMod.Require.ValidatePluginVersions(workspaceMod.Name(), i.installedPlugins); err != nil {
-		return err
+	if err := workspaceMod.ValidateRequirements(i.installedPlugins); err != nil {
+		if !i.force {
+			return err
+		}
+		log.Println("[TRACE] suppressing mod validation error", err)
 	}
 
 	// if mod args have been provided, add them to the the workspace mod requires
@@ -352,10 +352,7 @@ func (i *ModInstaller) installModDependencesRecursively(ctx context.Context, req
 		if err != nil {
 			return err
 		}
-		if err = dependencyMod.ValidateSteampipeVersion(); err != nil {
-			return err
-		}
-		if err = dependencyMod.ValidatePluginVersions(i.installedPlugins); err != nil {
+		if err := dependencyMod.ValidateRequirements(i.installedPlugins); err != nil {
 			return err
 		}
 	} else {

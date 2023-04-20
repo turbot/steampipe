@@ -19,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
+	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -108,8 +109,9 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	}
 
 	//validate steampipe version
-	validationWarnings := validateModRequirementsRecursively(i.Workspace.Mod, pluginsInstalled)
-	i.Result.AddWarnings(validationWarnings...)
+	validationErrors := validateModRequirementsRecursively(i.Workspace.Mod, pluginsInstalled)
+	warnings := utils.Map(validationErrors, func(e error) string { return e.Error() })
+	i.Result.AddWarnings(warnings...)
 
 	// if introspection tables are enabled, setup the session data callback
 	var ensureSessionData db_client.DbConnectionCallback
@@ -146,8 +148,15 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 
 }
 
-func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {
-	validationErrors := validateModRequirements(mod, pluginVersionMap)
+func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []error {
+	validationErrors := []error{}
+
+	// validate this mod
+	if err := mod.ValidateRequirements(pluginVersionMap); err != nil {
+		validationErrors = append(validationErrors, err)
+	}
+
+	// validate dependent mods
 	for childDependencyName, childMod := range mod.ResourceMaps.Mods {
 		// TODO : The 'mod.DependencyName == childMod.DependencyName' check has to be done because
 		// of a bug in the resource loading code which also puts the mod itself into the resource map
@@ -159,18 +168,7 @@ func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap ver
 		childValidationErrors := validateModRequirementsRecursively(childMod, pluginVersionMap)
 		validationErrors = append(validationErrors, childValidationErrors...)
 	}
-	return validationErrors
-}
 
-func validateModRequirements(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {
-	validationErrors := []string{}
-	if err := mod.ValidateSteampipeVersion(); err != nil {
-		validationErrors = append(validationErrors, err.Error())
-	}
-	if err := mod.ValidatePluginVersions(pluginVersionMap); err != nil {
-		validationErrors = append(validationErrors, err.Error())
-	}
-	// now validate the plugin requirements (dependent on #3328)
 	return validationErrors
 }
 
