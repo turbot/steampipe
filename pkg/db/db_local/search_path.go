@@ -3,12 +3,13 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"log"
-	"strings"
 )
 
 func setUserSearchPath(ctx context.Context, conn *pgx.Conn, foreignSchemaNames []string) error {
@@ -16,8 +17,8 @@ func setUserSearchPath(ctx context.Context, conn *pgx.Conn, foreignSchemaNames [
 
 	// is there a user search path in the config?
 	// check ConfigKeyDatabaseSearchPath config (this is the value specified in the database config)
-	if viper.IsSet(constants.ConfigKeyDatabaseSearchPath) {
-		searchPath = viper.GetStringSlice(constants.ConfigKeyDatabaseSearchPath)
+	if viper.IsSet(constants.ArgServerSearchPath) {
+		searchPath = viper.GetStringSlice(constants.ArgServerSearchPath)
 		// add 'internal' schema as last schema in the search path
 		searchPath = append(searchPath, constants.InternalSchema)
 	} else {
