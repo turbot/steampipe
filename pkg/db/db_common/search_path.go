@@ -2,22 +2,59 @@ package db_common
 
 import (
 	"context"
-	"github.com/turbot/steampipe/pkg/constants"
-	"sort"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/turbot/go-kit/helpers"
+	"strings"
 )
 
-// GetDefaultSearchPath builds default search path from the connection schemas, book-ended with public and internal
-func GetDefaultSearchPath(ctx context.Context, foreignSchemaNames []string) []string {
-	// default to foreign schema names
-	searchPath := foreignSchemaNames
-
-	sort.Strings(searchPath)
-	// add the 'public' schema as the first schema in the search_path. This makes it
-	// easier for users to build and work with their own tables, and since it's normally
-	// empty, doesn't make using steampipe tables any more difficult.
-	searchPath = append([]string{"public"}, searchPath...)
-	// add 'internal' schema as last schema in the search path
-	searchPath = append(searchPath, constants.InternalSchema)
-
+func AddSearchPathPrefix(searchPathPrefix []string, searchPath []string) []string {
+	if len(searchPathPrefix) > 0 {
+		prefixedSearchPath := searchPathPrefix
+		for _, p := range searchPath {
+			if !helpers.StringSliceContains(prefixedSearchPath, p) {
+				prefixedSearchPath = append(prefixedSearchPath, p)
+			}
+		}
+		searchPath = prefixedSearchPath
+	}
 	return searchPath
+}
+
+func BuildSearchPathResult(searchPathString string) ([]string, error) {
+	// if this is called from GetSteampipeUserSearchPath the result will be prefixed by "search_path="
+	searchPathString = strings.TrimPrefix(searchPathString, "search_path=")
+	// split
+	searchPath := strings.Split(searchPathString, ",")
+
+	// unescape
+	for idx, p := range searchPath {
+		p = strings.Join(strings.Split(p, "\""), "")
+		p = strings.TrimSpace(p)
+		searchPath[idx] = p
+	}
+	return searchPath, nil
+}
+
+func GetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
+	query := `SELECT rs.setconfig
+	FROM   pg_db_role_setting rs
+	LEFT   JOIN pg_roles      r ON r.oid = rs.setrole
+	LEFT   JOIN pg_database   d ON d.oid = rs.setdatabase
+	WHERE  r.rolname = 'steampipe'`
+
+	rows, err := pool.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var searchPathString string
+
+		if err := rows.Scan(&searchPathString); err != nil {
+			return nil, err
+		}
+		return BuildSearchPathResult("")
+	}
+
+	// should not get here
+	return nil, nil
 }

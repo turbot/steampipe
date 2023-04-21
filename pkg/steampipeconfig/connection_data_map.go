@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"encoding/json"
+	"github.com/turbot/steampipe/pkg/constants"
 	"log"
 	"os"
 	"time"
@@ -12,6 +13,17 @@ import (
 )
 
 type ConnectionDataMap map[string]*ConnectionData
+
+// Pending returns whether there are any connections in the map pending?
+// this indicates that the db has just started and RefreshConnections has not been called yet
+func (m ConnectionDataMap) Pending() bool {
+	for _, c := range m {
+		if c.ConnectionState == constants.ConnectionStatePending {
+			return true
+		}
+	}
+	return false
+}
 
 // NewConnectionDataMap populates a map of connection data for all connections in connectionMap
 func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (ConnectionDataMap, map[string][]modconfig.Connection, error) {

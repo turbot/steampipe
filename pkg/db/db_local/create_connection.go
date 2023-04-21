@@ -52,8 +52,8 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 		"host": info.Listen[0],
 		"port": fmt.Sprintf("%d", info.Port),
 		// TODO KAI HACK
-		"user": "root",
-		//"user":   opts.Username,
+		//"user": "root",
+		"user":   opts.Username,
 		"dbname": opts.DatabaseName,
 	}
 	psqlInfoMap = utils.MergeMaps(psqlInfoMap, dsnSSLParams())

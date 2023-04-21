@@ -12,10 +12,14 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 	"log"
 	"os"
+	"time"
 )
 
-func LoadConnectionState(ctx context.Context, pool *pgxpool.Pool) (state ConnectionDataMap, err error) {
-	query := fmt.Sprintf(`SELECT name,
+// LoadConnectionState populates a ConnectionDataMap from the connection_state table
+// it verifies the table has been initialised by calling RefreshConnections after db startup
+func LoadConnectionState(ctx context.Context, pool *pgxpool.Pool) (ConnectionDataMap, error) {
+	for i := 0; i < 2; i++ {
+		query := fmt.Sprintf(`SELECT name,
 		state,
 		error,	
 		plugin,
@@ -24,37 +28,44 @@ func LoadConnectionState(ctx context.Context, pool *pgxpool.Pool) (state Connect
 		plugin_mod_time
 	FROM  %s.%s `, constants.InternalSchema, constants.ConnectionStateTable)
 
-	rows, err := pool.Query(ctx, query)
-	if err != nil {
-		return nil, err
+		rows, err := pool.Query(ctx, query)
+		if err != nil {
+			return nil, err
+		}
+
+		var res = make(ConnectionDataMap)
+
+		connectionDataList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionData])
+		if err != nil {
+			return nil, err
+		}
+
+		for _, c := range connectionDataList {
+			// copy into loop var
+			connectionData := c
+			// get connection config for this connection
+			// (this will not be there for a deletion)
+			connection, _ := GlobalConfig.Connections[connectionData.ConnectionName]
+
+			connectionData.StructVersion = ConnectionDataStructVersion
+			connectionData.Connection = connection
+			res[c.ConnectionName] = &connectionData
+		}
+		// verify the state is not pending
+		if !res.Pending() {
+			return res, nil
+		}
+
+		log.Printf("[TRACE] LoadConnectionState - connection state pending, retry load to give RefreshConnections a chance to run")
+		time.Sleep(50 * time.Millisecond)
 	}
-
-	var res = make(ConnectionDataMap)
-
-	connectionDataList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionData])
-	if err != nil {
-		return nil, err
-	}
-
-	for _, c := range connectionDataList {
-		// copy into loop var
-		connectionData := c
-		// get connection config for this connection
-		connection, _ := GlobalConfig.Connections[connectionData.ConnectionName]
-		// this will not be there for a deletion
-
-		connectionData.StructVersion = ConnectionDataStructVersion
-		connectionData.Connection = connection
-		res[c.ConnectionName] = &connectionData
-	}
-
-	return res, nil
+	return nil, fmt.Errorf("timed out waiting for RefreshConnections to clear pending status for connection states")
 }
 
 // LoadConnectionStateFile loads the connection state file
 func LoadConnectionStateFile() (state ConnectionDataMap, err error) {
-	utils.LogTime("steampipeconfig.LoadConnectionStateFile start")
-	defer utils.LogTime("steampipeconfig.LoadConnectionStateFile end")
+	utils.LogTime("LoadConnectionStateFile start")
+	defer utils.LogTime("LoadConnectionStateFile end")
 
 	var connectionState ConnectionDataMap
 	connectionStatePath := filepaths.ConnectionStatePath()
@@ -86,4 +97,35 @@ func LoadConnectionStateFile() (state ConnectionDataMap, err error) {
 		}
 	}
 	return connectionState, nil
+}
+
+func SaveConnectionStateFile(res *RefreshConnectionResult, connectionUpdates *ConnectionUpdates) {
+	// now serialise the connection state
+	connectionState := make(ConnectionDataMap, len(connectionUpdates.FinalConnectionState))
+	for k, v := range connectionUpdates.FinalConnectionState {
+		connectionState[k] = v
+	}
+	// NOTE: add any connection which failed
+	for c := range res.FailedConnections {
+		connectionState[c].ConnectionState = constants.ConnectionStateError
+		connectionState[c].SetError(constants.ConnectionErrorPluginFailedToStart)
+	}
+	for pluginName, connections := range connectionUpdates.MissingPlugins {
+		// add in missing connections
+		for _, c := range connections {
+			connectionData := NewConnectionData(pluginName, &c, time.Now())
+			connectionData.ConnectionState = constants.ConnectionStateError
+			connectionData.SetError(constants.ConnectionErrorPluginNotInstalled)
+			connectionState[c.Name] = connectionData
+		}
+	}
+
+	// update connection state and write the missing and failed plugin connections
+	if err := connectionState.Save(); err != nil {
+		res.Error = err
+	}
+}
+
+func DeleteConnectionStateFile() {
+	os.Remove(filepaths.ConnectionStatePath())
 }

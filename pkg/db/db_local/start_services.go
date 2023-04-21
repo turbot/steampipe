@@ -143,6 +143,8 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 }
 
 func postServiceStart(ctx context.Context) error {
+	// setup internal schema
+	// thi includes setting the state of all connections in the connection_state table to pending
 	statushooks.SetStatus(ctx, "Setting up functions")
 	if err := setupInternal(ctx); err != nil {
 		return err
@@ -159,7 +161,7 @@ func postServiceStart(ctx context.Context) error {
 	}
 
 	// call initial refresh connections
-	// get plugin manager
+	// get plugin manager client
 	pluginManager, err := pluginmanager.GetPluginManager()
 	if err != nil {
 		return err

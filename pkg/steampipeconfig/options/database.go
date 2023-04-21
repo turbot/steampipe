@@ -9,15 +9,14 @@ import (
 
 // Database
 type Database struct {
-	Port         *int    `hcl:"port"`
-	Listen       *string `hcl:"listen"`
-	SearchPath   *string `hcl:"search_path"`
-	StartTimeout *int    `hcl:"start_timeout"`
-
-	SearchPathPrefix *string `hcl:"search_path_prefix"`
 	Cache            *bool   `hcl:"cache"`
 	CacheMaxTtl      *int    `hcl:"cache_max_ttl"`
 	CacheMaxSizeMb   *int    `hcl:"cache_max_size_mb"`
+	Listen           *string `hcl:"listen"`
+	Port             *int    `hcl:"port"`
+	SearchPath       *string `hcl:"search_path"`
+	SearchPathPrefix *string `hcl:"search_path_prefix"`
+	StartTimeout     *int    `hcl:"start_timeout"`
 }
 
 // ConfigMap creates a config map that can be merged with viper
