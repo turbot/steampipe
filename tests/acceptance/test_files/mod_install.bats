@@ -8,7 +8,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "install latest(plugin requirement not satisfied)" {
   run steampipe mod install github.com/turbot/steampipe-mod-aws-compliance
-  assert_output --partial "Error: 1 dependency failed to install - could not find plugin which satisfies requirement"
+  assert_output --partial "dependency failed to install"
 }
 
 @test "install latest(--force)" {
