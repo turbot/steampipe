@@ -19,7 +19,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
-	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
 
@@ -109,9 +108,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	}
 
 	//validate steampipe version
-	validationErrors := validateModRequirementsRecursively(i.Workspace.Mod, pluginsInstalled)
-	warnings := utils.Map(validationErrors, func(e error) string { return e.Error() })
-	i.Result.AddWarnings(warnings...)
+	validationWarnings := validateModRequirementsRecursively(i.Workspace.Mod, pluginsInstalled)
+	i.Result.AddWarnings(validationWarnings...)
 
 	// if introspection tables are enabled, setup the session data callback
 	var ensureSessionData db_client.DbConnectionCallback
@@ -148,12 +146,12 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 
 }
 
-func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []error {
-	validationErrors := []error{}
+func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {
+	validationErrors := []string{}
 
 	// validate this mod
-	if err := mod.ValidateRequirements(pluginVersionMap); err != nil {
-		validationErrors = append(validationErrors, err)
+	for _, err := range mod.ValidateRequirements(pluginVersionMap) {
+		validationErrors = append(validationErrors, err.Error())
 	}
 
 	// validate dependent mods

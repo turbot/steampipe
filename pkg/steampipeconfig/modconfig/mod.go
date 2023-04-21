@@ -339,14 +339,15 @@ func (m *Mod) SetFilePath(modFilePath string) {
 	m.modFilePath = modFilePath
 }
 
-func (m *Mod) ValidateRequirements(pluginVersionMap map[string]*semver.Version) error {
+// ValidateRequirements validates that the current steampipe CLI and the installed plugins is compatible with the mod
+func (m *Mod) ValidateRequirements(pluginVersionMap map[string]*semver.Version) []error {
+	validationErrors := []error{}
 	if err := m.validateSteampipeVersion(); err != nil {
-		return err
+		validationErrors = append(validationErrors, err)
 	}
-	if err := m.validatePluginVersions(pluginVersionMap); err != nil {
-		return err
-	}
-	return nil
+	pluginErr := m.validatePluginVersions(pluginVersionMap)
+	validationErrors = append(validationErrors, pluginErr...)
+	return validationErrors
 }
 
 func (m *Mod) validateSteampipeVersion() error {
@@ -356,7 +357,7 @@ func (m *Mod) validateSteampipeVersion() error {
 	return m.Require.validateSteampipeVersion(m.Name())
 }
 
-func (m *Mod) validatePluginVersions(availablePlugins map[string]*semver.Version) error {
+func (m *Mod) validatePluginVersions(availablePlugins map[string]*semver.Version) []error {
 	if m.Require == nil {
 		return nil
 	}

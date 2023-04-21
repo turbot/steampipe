@@ -183,9 +183,9 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 		}
 	}()
 
-	if err := workspaceMod.ValidateRequirements(i.installedPlugins); err != nil {
+	if err := workspaceMod.ValidateRequirements(i.installedPlugins); len(err) > 0 {
 		if !i.force {
-			return err
+			return error_helpers.CombineErrors(err...)
 		}
 		log.Println("[TRACE] suppressing mod validation error", err)
 	}
@@ -340,6 +340,8 @@ func (i *ModInstaller) installModDependencesRecursively(ctx context.Context, req
 		return err
 	}
 
+	var errors []error
+
 	if dependencyMod == nil {
 		// get a resolved mod ref that satisfies the version constraints
 		resolvedRef, err := i.getModRefSatisfyingConstraints(requiredModVersion, availableVersions)
@@ -352,18 +354,17 @@ func (i *ModInstaller) installModDependencesRecursively(ctx context.Context, req
 		if err != nil {
 			return err
 		}
-		if err := dependencyMod.ValidateRequirements(i.installedPlugins); err != nil {
-			return err
-		}
+
+		validationErrors := dependencyMod.ValidateRequirements(i.installedPlugins)
+		errors = append(errors, validationErrors...)
 	} else {
 		// update the install data
 		i.installData.addExisting(requiredModVersion.Name, dependencyMod, requiredModVersion.Constraint, parent)
 		log.Printf("[TRACE] not installing %s with version constraint %s as version %s is already installed", requiredModVersion.Name, requiredModVersion.Constraint.Original, dependencyMod.Version)
 	}
+
 	// to get here we have the dependency mod - either we installed it or it was already installed
 	// recursively install its dependencies
-	var errors []error
-
 	for _, childDependency := range dependencyMod.Require.Mods {
 		childDependencyMod, err := i.getCurrentlyInstalledVersionToUse(ctx, childDependency, dependencyMod, shouldUpdate)
 		if err != nil {
