@@ -20,9 +20,9 @@ import (
 
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
-	connectionString          string
-	pool                      *pgxpool.Pool
-	requiredSessionSearchPath []string
+	connectionString string
+	pool             *pgxpool.Pool
+	//requiredSessionSearchPath []string
 
 	// concurrency management for db session access
 	parallelSessionInitLock *semaphore.Weighted
@@ -34,9 +34,9 @@ type DbClient struct {
 	sessionsMutex *sync.Mutex
 
 	// list of connection schemas
-	foreignSchemaNames []string
-	// list of all local schemas
-	allSchemaNames []string
+	//foreignSchemaNames []string
+	//// list of all local schemas
+	//allSchemaNames []string
 
 	// if a custom search path or a prefix is used, store it here
 	customSearchPath []string
@@ -86,7 +86,10 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 	}
 
 	// initialise the required search path
-	client.SetRequiredSessionSearchPath(ctx)
+	if err := client.SetRequiredSessionSearchPath(ctx); err != nil {
+		client.Close(ctx)
+		return nil, err
+	}
 
 	return client, nil
 }
@@ -121,34 +124,34 @@ func (c *DbClient) Close(context.Context) error {
 }
 
 // ForeignSchemaNames implements Client
-func (c *DbClient) ForeignSchemaNames() []string {
-	return c.foreignSchemaNames
-}
+//func (c *DbClient) ForeignSchemaNames() []string {
+//	return c.foreignSchemaNames
+//}
 
-// AllSchemaNames implements Client
-func (c *DbClient) AllSchemaNames() []string {
-	return c.allSchemaNames
-}
+//// AllSchemaNames implements Client
+//func (c *DbClient) AllSchemaNames() []string {
+//	return c.allSchemaNames
+//}
 
 // LoadSchemaNames implements Client
 func (c *DbClient) LoadSchemaNames(ctx context.Context) error {
-	conn, err := c.pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-
-	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn.Conn())
-	if err != nil {
-		return err
-	}
-	allSchemaNames, err := db_common.LoadSchemaNames(ctx, conn.Conn())
-	if err != nil {
-		return err
-	}
-
-	c.foreignSchemaNames = foreignSchemaNames
-	c.allSchemaNames = allSchemaNames
+	//conn, err := c.pool.Acquire(ctx)
+	//if err != nil {
+	//	return err
+	//}
+	//defer conn.Release()
+	//
+	//foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn.Conn())
+	//if err != nil {
+	//	return err
+	//}
+	////allSchemaNames, err := db_common.LoadSchemaNames(ctx, conn.Conn())
+	////if err != nil {
+	////	return err
+	////}
+	//
+	////c.foreignSchemaNames = foreignSchemaNames
+	//c.allSchemaNames = allSchemaNames
 
 	return nil
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"golang.org/x/exp/maps"
 	"log"
 	"sort"
@@ -30,24 +30,35 @@ type ConnectionUpdates struct {
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
-func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, foreignSchemaNames []string, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
+func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
 	utils.LogTime("NewConnectionUpdates start")
 	defer utils.LogTime("NewConnectionUpdates end")
-
 	log.Printf("[TRACE] NewConnectionUpdates")
 
-	res := &RefreshConnectionResult{}
-	statushooks.SetStatus(ctx, "Loading connection state")
+	// load foreign schema names
+	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, pool)
+	if err != nil {
+		log.Printf("[WARN] failed to load foreign schema names: %s", err.Error())
+		return nil, NewErrorRefreshConnectionResult(err)
+	}
+	log.Printf("[TRACE] Loading connection state")
+	// load the connection state file and filter out any connections which are not in the list of schemas
+	// this allows for the database being rebuilt,modified externally
+	currentConnectionState, err := LoadConnectionState(ctx, pool)
+	if err != nil {
+		log.Printf("[WARN] failed to load connection state: %s", err.Error())
+		return nil, NewErrorRefreshConnectionResult(err)
+	}
+
 	// build connection data for all required connections
 	// NOTE: this will NOT populate SchemaMode for the connections, as we need to load the schema for that
 	// this will be updated below on the call to updateRequiredStateWithSchemaProperties
 	requiredConnectionState, missingPlugins, err := NewConnectionDataMap(GlobalConfig.Connections)
 	if err != nil {
 		log.Printf("[WARN] failed to build required connection state: %s", err.Error())
-		res.Error = err
-		return nil, res
+		return nil, NewErrorRefreshConnectionResult(err)
 	}
-	log.Printf("[TRACE]  built required connection state")
+	log.Printf("[TRACE] built required connection state")
 
 	updates := &ConnectionUpdates{
 		Update:               ConnectionDataMap{},
@@ -55,30 +66,20 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, foreignSchema
 		FinalConnectionState: requiredConnectionState,
 	}
 
-	// load the connection state file and filter out any connections which are not in the list of schemas
-	// this allows for the database being rebuilt,modified externally
-	currentConnectionState, err := LoadConnectionState(ctx, pool)
-	if err != nil {
-		log.Printf("[WARN] failed to load connection state: %s", err.Error())
-		res.Error = err
-		return nil, res
-	}
 	log.Printf("[TRACE] loaded connection state")
 	updates.CurrentConnectionState = currentConnectionState
 
-	statushooks.SetStatus(ctx, "Loading dynamic schema hashes")
+	log.Printf("[TRACE] Loading dynamic schema hashes")
 
 	// for any connections with dynamic schema, we need to reload their schema
 	// instantiate connection plugins for all connections with dynamic schema - this will retrieve their current schema
 	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, err := getSchemaHashesForDynamicSchemas(requiredConnectionState, currentConnectionState)
 	if err != nil {
 		log.Printf("[WARN] getSchemaHashesForDynamicSchemas failed: %s", err.Error())
-
-		res.Error = err
-		return nil, res
+		return nil, NewErrorRefreshConnectionResult(err)
 	}
 
-	statushooks.SetStatus(ctx, "Identify connections to update")
+	log.Printf("[TRACE] Identify connections to update")
 
 	// connections to create/update
 	for name, requiredConnectionData := range requiredConnectionState {
@@ -93,7 +94,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, foreignSchema
 		}
 	}
 
-	statushooks.SetStatus(ctx, "Identify connections to delete")
+	log.Printf("[TRACE] Identify connections to delete")
 	// connections to delete - any connection which is in connection state but NOT required connections
 	for name := range currentConnectionState {
 		if _, ok := requiredConnectionState[name]; !ok {
@@ -103,7 +104,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, foreignSchema
 	}
 	// if there are any foreign schemas which do not exist in currentConnectionState OR requiredConnectionState,
 	// add them into deletions
-	// (if they exist in required current state but not required stste, they will already be marked for deletion)
+	// (if they exist in required current state but not required state, they will already be marked for deletion)
 	for _, name := range foreignSchemaNames {
 		_, existsInCurrentState := currentConnectionState[name]
 		_, existsInRequiredState := requiredConnectionState[name]
@@ -125,10 +126,9 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, foreignSchema
 		}
 	}
 
-	statushooks.SetStatus(ctx, "Connecting to plugins")
+	log.Printf("[TRACE] Connecting to plugins")
 	//  instantiate connection plugins for all updates
-	otherRes := updates.populateConnectionPlugins(connectionsPluginsWithDynamicSchema)
-	res.Merge(otherRes)
+	res := updates.populateConnectionPlugins(connectionsPluginsWithDynamicSchema)
 	if res.Error != nil {
 		return nil, res
 	}

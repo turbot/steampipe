@@ -31,3 +31,12 @@ func SortedMapKeys[V any](m map[string]V) []string {
 	sort.Strings(keys)
 	return keys
 }
+
+func SliceToLookup[K comparable](src []K) map[K]struct{} {
+	var result = make(map[K]struct{}, len(src))
+	for _, k := range src {
+		result[k] = struct{}{}
+	}
+	return result
+
+}

@@ -118,6 +118,12 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	startTime := time.Now()
 
+	searchPath, err := e.client.GetRequiredSessionSearchPath(ctx)
+	if err != nil {
+		e.Root.SetError(ctx, err)
+		return
+	}
+
 	// store context
 	cancelCtx, cancel := context.WithCancel(ctx)
 	e.cancel = cancel
@@ -159,7 +165,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 			Variables:   referencedVariables,
 			// search path elements are quoted (for consumption by postgres)
 			// unquote them
-			SearchPath: utils.UnquoteStringArray(e.client.GetRequiredSessionSearchPath()),
+			SearchPath: utils.UnquoteStringArray(searchPath),
 			StartTime:  startTime,
 			EndTime:    time.Now(),
 		}

@@ -2,20 +2,31 @@
 
 ## Configuring the search path
 
-Search path config precedence
-- The session setting, as set by the most recent `.search_path` and/or `.search_path_prefix` meta-command (for interactive session).
-- The `--search-path` or `--search-path-prefix` command line arguments.
-- The `search_path` or `search_path_prefix` set in the terminal options for the workspace, in the workspace.spc file.
-- The `search_path` or `search_path_prefix` set in the terminal global option, typically set in ~/.steampipe/config/default.spc
-- The `search_path` or `search_path_prefix` set in the database global option, typically set in ~/.steampipe/config/default.spc
-- The compiled default (public, then alphabetical by connection name)
+## Server search path
+Server side search path (the 'steampipe' user search path) is determined according to following precedence:
+1) `server_search_path` and `server_search_path_prefix` config options  (set in the database global option,)
+2) the compiled default (public, then alphabetical by connection name)
 
-## Implementation
-### Overview
+It is set as follows:
+- When service is started the user search path is cleared (to avoid a race condition if the config has changed, and a query is executed before the user searhc path is update)
+- Post-service-start, RefreshConnections is called asyncronously. 
+- RefreshConnections sets the required user search path, (determined using the precedence above.) 
+- It then adds new schemas in the order of the search path
 
-During initialisation, the `requiredSessionSearchPath` for a `DbClient` is set by `RefreshConnectionsAndSearchPaths`. 
+## Client search path
+Client side search path (the session search path) is determined according to following precedence:
+1) The session setting, as set by the most recent `.search_path` and/or `.search_path_prefix` meta-command (for interactive session).
+2) The `--search-path` or `--search-path-prefix` command line arguments.
+3) The `search_path` or `search_path_prefix` set in the workspace, in the workspace.spc file.
+4) The compiled default (public, then alphabetical by connection name)
 
-When a DB session is created, the session search path is set to the `requiredSessionSearchPath` in `DbClient.ensureSessionSearchPath()`
+
+When a DB session is created, if viper has a setting for either `search_path` ot `search_path_prefix`,  the session search path is set (determined using the precedence above.)
+
+
+
+
+
 
 Finally, call `LoadSchemaNames` which updates the client `foreignSchemas` property with a list of foreign schema
 

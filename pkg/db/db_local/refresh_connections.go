@@ -18,37 +18,31 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"time"
 )
 
 func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
-	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	time.Sleep(10 * time.Second)
+
+	// create a connection pool to connection refresh
+	poolsize := 1
+	pool, err := createConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
+	if err != nil {
+		return steampipeconfig.NewErrorRefreshConnectionResult(err)
+	}
+	defer pool.Close()
+
+	// set user search path first
+	log.Printf("[TRACE] Setting up search path")
+	searchPath, err := setUserSearchPath(ctx, pool)
 	if err != nil {
 		return steampipeconfig.NewErrorRefreshConnectionResult(err)
 	}
 
-	// load foreign schema names to pass
-	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn)
-	if err != nil {
-		return steampipeconfig.NewErrorRefreshConnectionResult(err)
-	}
-
-	statushooks.SetStatus(ctx, "Refreshing connections")
-	res := refreshConnections(ctx, foreignSchemaNames, forceUpdateConnectionNames...)
+	// now refresh connections
+	log.Printf("[TRACE] Refreshing connections")
+	res := refreshConnections(ctx, pool, searchPath, forceUpdateConnectionNames...)
 	if res.Error != nil {
-		return res
-	}
-
-	statushooks.SetStatus(ctx, "Loading steampipe connections")
-
-	// set user search path first - client may fall back to using it
-	statushooks.SetStatus(ctx, "Setting up search path")
-
-	// we need to send a muted ctx here since this function selects from the database
-	// which by default puts up a "Loading" spinner. We don't want that here
-	mutedCtx := statushooks.DisableStatusHooks(ctx)
-	err = setUserSearchPath(mutedCtx, conn, foreignSchemaNames)
-	if err != nil {
-		res.Error = err
 		return res
 	}
 
@@ -58,24 +52,15 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionN
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func refreshConnections(ctx context.Context, foreignSchemaNames []string, forceUpdateConnectionNames ...string) (res *steampipeconfig.RefreshConnectionResult) {
+func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []string, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
 	//log.Printf("[WARN] refreshConnections")
 	//
-	//time.Sleep(10 * time.Second)
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
-	// create a connection pool to connection refresh
-	poolsize := 25
-	pool, err := createConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
-	if err != nil {
-		return steampipeconfig.NewErrorRefreshConnectionResult(err)
-	}
-	defer pool.Close()
-
 	// determine any necessary connection updates
-	var connectionUpdates *steampipeconfig.ConnectionUpdates
-	connectionUpdates, res = steampipeconfig.NewConnectionUpdates(ctx, pool, foreignSchemaNames, forceUpdateConnectionNames...)
+
+	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(ctx, pool, forceUpdateConnectionNames...)
 	defer logRefreshConnectionResults(connectionUpdates, res)
 	if res.Error != nil {
 		// TODO kai send error PG notification
@@ -117,7 +102,7 @@ func refreshConnections(ctx context.Context, foreignSchemaNames []string, forceU
 
 	// delete the connection state file - this indicates to anything using it that we are in the process up refreshing
 	log.Printf("[TRACE] refreshConnections  connections state file")
-	deleteConnectionState()
+	steampipeconfig.DeleteConnectionStateFile()
 
 	// before finishing - be sure to save connection state if there was no error
 	defer func() {
@@ -125,13 +110,13 @@ func refreshConnections(ctx context.Context, foreignSchemaNames []string, forceU
 			log.Printf("[WARN] refreshConnections saving connections state file")
 			// now serialise the connection state
 			if res.Error == nil {
-				serialiseConnectionState(res, connectionUpdates)
+				steampipeconfig.SaveConnectionStateFile(res, connectionUpdates)
 			}
 		}
 	}()
 
 	// now build list of necessary queries to perform the update
-	queryRes := executeConnectionQueries(ctx, pool, tableUpdater)
+	queryRes := executeConnectionQueries(ctx, pool, searchPath, tableUpdater)
 	// merge results into local results
 	res.Merge(queryRes)
 	if res.Error != nil {
@@ -161,7 +146,7 @@ func logRefreshConnectionResults(updates *steampipeconfig.ConnectionUpdates, res
 	log.Printf("[INFO] refresh connections: \n%s\n", helpers.Tabify(op.String(), "    "))
 }
 
-func executeConnectionQueries(ctx context.Context, pool *pgxpool.Pool, tableUpdater *connectionStateTableUpdater) *steampipeconfig.RefreshConnectionResult {
+func executeConnectionQueries(ctx context.Context, pool *pgxpool.Pool, searchPath []string, tableUpdater *connectionStateTableUpdater) *steampipeconfig.RefreshConnectionResult {
 	// retrieve updates from the table updater
 	connectionUpdates := tableUpdater.updates
 
@@ -174,7 +159,7 @@ func executeConnectionQueries(ctx context.Context, pool *pgxpool.Pool, tableUpda
 	res := &steampipeconfig.RefreshConnectionResult{}
 	if numUpdates > 0 {
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
-		res = executeUpdateQueries(ctx, pool, tableUpdater)
+		res = executeUpdateQueries(ctx, pool, searchPath, tableUpdater)
 		if res.Error != nil {
 			log.Printf("[TRACE] executeUpdateQueries returned error: %v", res.Error)
 			return res
@@ -187,7 +172,7 @@ func executeConnectionQueries(ctx context.Context, pool *pgxpool.Pool, tableUpda
 	return res
 }
 
-func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, tableUpdater *connectionStateTableUpdater) (res *steampipeconfig.RefreshConnectionResult) {
+func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, searchPath []string, tableUpdater *connectionStateTableUpdater) (res *steampipeconfig.RefreshConnectionResult) {
 	utils.LogTime("db.executeUpdateQueries start")
 	defer utils.LogTime("db.executeUpdateQueries end")
 
@@ -201,8 +186,29 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, tableUpdater 
 	if len(validationFailures) > 0 {
 		res.Warnings = append(res.Warnings, steampipeconfig.BuildValidationWarningString(validationFailures))
 	}
-
 	numUpdates := len(validatedUpdates)
+
+	// we need to execute the updates in search path order
+	// build map from search path
+	searchPathMap := utils.SliceToLookup(searchPath)
+	orderedUpdates := make([]string, 0, numUpdates)
+
+	// build ordered updated
+	for _, c := range searchPath {
+		// add search path first
+		if _, updateConnection := validatedUpdates[c]; updateConnection {
+			orderedUpdates = append(orderedUpdates, c)
+		}
+	}
+	// now add all updates NOT in the search path (if any)
+	if len(orderedUpdates) < numUpdates {
+		for c := range validatedUpdates {
+			if _, inSearchPath := searchPathMap[c]; !inSearchPath {
+				orderedUpdates = append(orderedUpdates, c)
+			}
+		}
+	}
+
 	idx := 1
 	exemplarSchemaMap := make(map[string]string)
 	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
@@ -210,14 +216,16 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, tableUpdater 
 	var errors []error
 	cloneableConnections := make(steampipeconfig.ConnectionDataMap)
 	statushooks.SetStatus(ctx, fmt.Sprintf("Creating %d %s", numUpdates, utils.Pluralize("connection", numUpdates)))
-	for connectionName, connectionData := range validatedUpdates {
+	for _, connectionName := range orderedUpdates {
+		connectionData := validatedUpdates[connectionName]
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
+		// TODO KAI NOTE for now we ignore cloning
 		// if this schema is static, and is already in the plugin map, clone from it
-		_, haveExemplarSchema := exemplarSchemaMap[connectionData.Plugin]
-		if haveExemplarSchema && connectionData.CanCloneSchema() {
-			cloneableConnections[connectionName] = connectionData
-			continue
-		}
+		//_, haveExemplarSchema := exemplarSchemaMap[connectionData.Plugin]
+		//if haveExemplarSchema && connectionData.CanCloneSchema() {
+		//	cloneableConnections[connectionName] = connectionData
+		//	continue
+		//}
 
 		// execute update query, and update the connection state table, in a transaction
 		sql := getUpdateConnectionQuery(connectionName, remoteSchema)
