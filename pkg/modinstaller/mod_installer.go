@@ -183,11 +183,14 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 		}
 	}()
 
-	if err := workspaceMod.ValidateRequirements(i.installedPlugins); len(err) > 0 {
+	if validationErrors := workspaceMod.ValidateRequirements(i.installedPlugins); len(validationErrors) > 0 {
 		if !i.force {
-			return error_helpers.CombineErrors(err...)
+			// if this is not a force install, return errors in validation
+			return error_helpers.CombineErrors(validationErrors...)
 		}
-		log.Println("[TRACE] suppressing mod validation error", err)
+		// ignore if this is a force install
+		// TODO: raise warnings for errors getting suppressed [https://github.com/turbot/steampipe/issues/3364]
+		log.Println("[TRACE] suppressing mod validation error", validationErrors)
 	}
 
 	// if mod args have been provided, add them to the the workspace mod requires
