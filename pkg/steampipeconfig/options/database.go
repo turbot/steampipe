@@ -32,7 +32,11 @@ func (d *Database) ConfigMap() map[string]interface{} {
 	}
 	if d.SearchPath != nil {
 		// convert from string to array
-		res[constants.ArgSearchPath] = searchPathToArray(*d.SearchPath)
+		res[constants.ArgServerSearchPath] = searchPathToArray(*d.SearchPath)
+	}
+	if d.SearchPathPrefix != nil {
+		// convert from string to array
+		res[constants.ArgServerSearchPathPrefix] = searchPathToArray(*d.SearchPathPrefix)
 	}
 	if d.StartTimeout != nil {
 		res[constants.ArgDatabaseStartTimeout] = d.StartTimeout
@@ -40,10 +44,6 @@ func (d *Database) ConfigMap() map[string]interface{} {
 		res[constants.ArgDatabaseStartTimeout] = constants.DBStartTimeout.Seconds()
 	}
 
-	if d.SearchPathPrefix != nil {
-		// convert from string to array
-		res[constants.ArgSearchPathPrefix] = searchPathToArray(*d.SearchPathPrefix)
-	}
 	if d.Cache != nil {
 		res[constants.ArgServiceCacheEnabled] = d.Cache
 	}
