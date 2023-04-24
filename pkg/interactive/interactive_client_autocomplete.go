@@ -1,6 +1,7 @@
 package interactive
 
 import (
+	"context"
 	"fmt"
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
@@ -11,12 +12,14 @@ import (
 	"strings"
 )
 
-func (c *InteractiveClient) initialiseSuggestions() {
-	c.initialiseTableSuggestions()
-	c.initialiseQuerySuggestions()
+func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
+	if err := c.initialiseTableSuggestions(ctx); err != nil {
+		return err
+	}
+	return c.initialiseQuerySuggestions(ctx)
 }
 
-func (c *InteractiveClient) initialiseQuerySuggestions() {
+func (c *InteractiveClient) initialiseQuerySuggestions(context.Context) (err error) {
 	var res []prompt.Suggest
 
 	workspaceModName := c.initData.Workspace.Mod.Name()
@@ -66,10 +69,12 @@ func (c *InteractiveClient) initialiseQuerySuggestions() {
 		return res[i].Text < res[j].Text
 	})
 	c.querySuggestions = res
+
+	return nil
 }
 
 // initialiseTableSuggestions build a list of schema and table querySuggestions
-func (c *InteractiveClient) initialiseTableSuggestions() {
+func (c *InteractiveClient) initialiseTableSuggestions(ctx context.Context) (err error) {
 
 	if c.schemaMetadata == nil {
 		return
@@ -114,7 +119,12 @@ func (c *InteractiveClient) initialiseTableSuggestions() {
 		// only add unqualified table name if the schema is in the search_path
 		// and we have not added tables for another connection using the same plugin as this one
 		schemaOfSamePluginIncluded := hasConnectionForSchema && pluginSchemaMap[pluginOfThisSchema]
-		foundInSearchPath := helpers.StringSliceContains(c.schemaMetadata.SearchPath, schemaName)
+
+		sessionSearchPath := c.client().GetRequiredSessionSearchPath(ctx)
+		if err != nil {
+			return err
+		}
+		foundInSearchPath := helpers.StringSliceContains(sessionSearchPath, schemaName)
 
 		if (foundInSearchPath || isTemporarySchema) && !schemaOfSamePluginIncluded {
 			for tableName := range schemaDetails {
@@ -145,6 +155,8 @@ func (c *InteractiveClient) initialiseTableSuggestions() {
 	}
 
 	c.tableSuggestions = s
+
+	return nil
 }
 
 func stripVersionFromPluginName(pluginName string) string {

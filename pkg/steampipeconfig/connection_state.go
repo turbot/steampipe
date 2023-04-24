@@ -18,8 +18,7 @@ import (
 // LoadConnectionState populates a ConnectionDataMap from the connection_state table
 // it verifies the table has been initialised by calling RefreshConnections after db startup
 func LoadConnectionState(ctx context.Context, pool *pgxpool.Pool) (ConnectionDataMap, error) {
-	for i := 0; i < 2; i++ {
-		query := fmt.Sprintf(`SELECT name,
+	query := fmt.Sprintf(`SELECT name,
 		state,
 		error,	
 		plugin,
@@ -28,38 +27,35 @@ func LoadConnectionState(ctx context.Context, pool *pgxpool.Pool) (ConnectionDat
 		plugin_mod_time
 	FROM  %s.%s `, constants.InternalSchema, constants.ConnectionStateTable)
 
-		rows, err := pool.Query(ctx, query)
-		if err != nil {
-			return nil, err
-		}
-
-		var res = make(ConnectionDataMap)
-
-		connectionDataList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionData])
-		if err != nil {
-			return nil, err
-		}
-
-		for _, c := range connectionDataList {
-			// copy into loop var
-			connectionData := c
-			// get connection config for this connection
-			// (this will not be there for a deletion)
-			connection, _ := GlobalConfig.Connections[connectionData.ConnectionName]
-
-			connectionData.StructVersion = ConnectionDataStructVersion
-			connectionData.Connection = connection
-			res[c.ConnectionName] = &connectionData
-		}
-		// verify the state is not pending
-		if !res.Pending() {
-			return res, nil
-		}
-
-		log.Printf("[TRACE] LoadConnectionState - connection state pending, retry load to give RefreshConnections a chance to run")
-		time.Sleep(50 * time.Millisecond)
+	rows, err := pool.Query(ctx, query)
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf("timed out waiting for RefreshConnections to clear pending status for connection states")
+	defer rows.Close()
+
+	var res = make(ConnectionDataMap)
+
+	connectionDataList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionData])
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range connectionDataList {
+		// copy into loop var
+		connectionData := c
+		// get connection config for this connection
+		// (this will not be there for a deletion)
+		connection, _ := GlobalConfig.Connections[connectionData.ConnectionName]
+
+		connectionData.StructVersion = ConnectionDataStructVersion
+		connectionData.Connection = connection
+		res[c.ConnectionName] = &connectionData
+	}
+	// verify the state is not pending
+	if !res.Pending() {
+		return res, nil
+	}
+	return res, nil
 }
 
 // LoadConnectionStateFile loads the connection state file

@@ -40,10 +40,8 @@ type ExecutionTree struct {
 }
 
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg, controlFilterWhereClause string) (*ExecutionTree, error) {
-	searchPath, err := client.GetRequiredSessionSearchPath(ctx)
-	if err != nil {
-		return nil, err
-	}
+	searchPath := client.GetRequiredSessionSearchPath(ctx)
+
 	// now populate the ExecutionTree
 	executionTree := &ExecutionTree{
 		Workspace:  workspace,
@@ -53,7 +51,7 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 	// if a "--where" or "--tag" parameter was passed, build a map of control names used to filter the controls to run
 	// create a context with status hooks disabled
 	noStatusCtx := statushooks.DisableStatusHooks(ctx)
-	err = executionTree.populateControlFilterMap(noStatusCtx, controlFilterWhereClause)
+	err := executionTree.populateControlFilterMap(noStatusCtx, controlFilterWhereClause)
 	if err != nil {
 		return nil, err
 	}

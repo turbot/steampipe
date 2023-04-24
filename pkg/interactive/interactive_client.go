@@ -705,9 +705,10 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 
 	log.Printf("[TRACE] handleConnectionUpdateNotification")
 	// reload the connection data map
-	// first load foreign schema names
-	if err := c.client().LoadSchemaNames(ctx); err != nil {
-		log.Printf("[INFO] Error loading foreign schema names: %v", err)
+
+	// first load user search path
+	if err := c.client().LoadUserSearchPath(ctx); err != nil {
+		log.Printf("[INFO] Error loading foreign user search path: %v", err)
 	}
 	// now reload state
 	connectionMap, err := steampipeconfig.LoadConnectionStateFile()
@@ -731,8 +732,14 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 		log.Printf("[INFO] Error unmarshalling notification: %s", err)
 		return
 	}
+	// reload the user search path
+	if err := c.client().LoadUserSearchPath(ctx); err != nil {
+		log.Printf("[INFO] Error loading search path: %s", err)
+		return
+	}
+
 	// reinitialise autocomplete suggestions
-	c.initialiseSuggestions()
+	c.initialiseSuggestions(ctx)
 
 	// refresh the db session inside an execution lock
 	// we do this to avoid the postgres `cached plan must not change result type`` error

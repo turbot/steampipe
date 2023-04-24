@@ -31,11 +31,11 @@ func (d *Database) ConfigMap() map[string]interface{} {
 	}
 	if d.SearchPath != nil {
 		// convert from string to array
-		res[constants.ArgServerSearchPath] = searchPathToArray(*d.SearchPath)
+		res[constants.ConfigKeyServerSearchPath] = searchPathToArray(*d.SearchPath)
 	}
 	if d.SearchPathPrefix != nil {
 		// convert from string to array
-		res[constants.ArgServerSearchPathPrefix] = searchPathToArray(*d.SearchPathPrefix)
+		res[constants.ConfigKeyServerSearchPathPrefix] = searchPathToArray(*d.SearchPathPrefix)
 	}
 	if d.StartTimeout != nil {
 		res[constants.ArgDatabaseStartTimeout] = d.StartTimeout

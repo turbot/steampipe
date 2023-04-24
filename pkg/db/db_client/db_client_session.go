@@ -27,25 +27,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 		}
 	}()
 
-	// TODO KAI THIS SHOULD NOT BE NECESSARY - USER SEARCH PATH WILL HAVE CHANGED ALREADY
-	// save the current value of schema names, then reload the names and check for differences
-	//schemaNames := c.AllSchemaNames()
-	//
-	//// reload schema names in case they changed based on a connection watcher event
-	//if err := c.LoadSchemaNames(ctx); err != nil {
-	//	sessionResult.Error = err
-	//	return
-	//}
-
-	// if the schemas have changes, reset the desired search path
-	//newSchemaNames := c.AllSchemaNames()
-	//if !utils.StringSlicesEqual(schemaNames, newSchemaNames) {
-	//	if err := c.updateRequiredSearchPath(ctx); err != nil {
-	//		sessionResult.Error = err
-	//		return
-	//	}
-	//}
-
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
 	databaseConnection, backendPid, err := c.getDatabaseConnectionWithRetries(ctx)

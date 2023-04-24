@@ -8,14 +8,10 @@ import (
 
 type Client interface {
 	Close(ctx context.Context) error
-
-	//ForeignSchemaNames() []string
-	//AllSchemaNames() []string
-	LoadSchemaNames(ctx context.Context) error
-
+	LoadUserSearchPath(ctx context.Context) error
 	GetCurrentSearchPath(context.Context) ([]string, error)
 	SetRequiredSessionSearchPath(context.Context) error
-	GetRequiredSessionSearchPath(context.Context) ([]string, error)
+	GetRequiredSessionSearchPath(context.Context) []string
 
 	AcquireSession(context.Context) *AcquireSessionResult
 

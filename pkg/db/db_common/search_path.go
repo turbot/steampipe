@@ -2,7 +2,7 @@ package db_common
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 	"github.com/turbot/go-kit/helpers"
 	"strings"
 )
@@ -35,24 +35,28 @@ func BuildSearchPathResult(searchPathString string) ([]string, error) {
 	return searchPath, nil
 }
 
-func GetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
+func GetUserSearchPath(ctx context.Context, conn *pgx.Conn) ([]string, error) {
 	query := `SELECT rs.setconfig
 	FROM   pg_db_role_setting rs
 	LEFT   JOIN pg_roles      r ON r.oid = rs.setrole
 	LEFT   JOIN pg_database   d ON d.oid = rs.setdatabase
 	WHERE  r.rolname = 'steampipe'`
 
-	rows, err := pool.Query(ctx, query)
+	rows, err := conn.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	for rows.Next() {
-		var searchPathString string
+	defer rows.Close()
 
-		if err := rows.Scan(&searchPathString); err != nil {
+	for rows.Next() {
+		var configStrings []string
+
+		if err := rows.Scan(&configStrings); err != nil {
 			return nil, err
 		}
-		return BuildSearchPathResult("")
+		if len(configStrings) > 0 {
+			return BuildSearchPathResult(configStrings[0])
+		}
 	}
 
 	// should not get here
