@@ -118,7 +118,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	startTime := time.Now()
 
-	searchPath := e.client.GetRequiredSessionSearchPath(ctx)
+	searchPath := e.client.GetRequiredSessionSearchPath()
 
 	// store context
 	cancelCtx, cancel := context.WithCancel(ctx)

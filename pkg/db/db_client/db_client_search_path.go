@@ -91,7 +91,7 @@ func (c *DbClient) setUserSearchPath(ctx context.Context, connection *pgx.Conn) 
 }
 
 // GetRequiredSessionSearchPath implements Client
-func (c *DbClient) GetRequiredSessionSearchPath(ctx context.Context) []string {
+func (c *DbClient) GetRequiredSessionSearchPath() []string {
 	if c.customSearchPath != nil {
 		return c.customSearchPath
 	}
@@ -120,7 +120,7 @@ func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_comm
 		return err
 	}
 
-	requiredSearchPath := c.GetRequiredSessionSearchPath(ctx)
+	requiredSearchPath := c.GetRequiredSessionSearchPath()
 
 	// now determine whether the session search path is the same as the required search path
 	// if so, return
