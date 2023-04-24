@@ -12,14 +12,12 @@ import (
 	"strings"
 )
 
-func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
-	if err := c.initialiseTableSuggestions(ctx); err != nil {
-		return err
-	}
-	return c.initialiseQuerySuggestions(ctx)
+func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) {
+	c.initialiseTableSuggestions(ctx)
+	c.initialiseQuerySuggestions(ctx)
 }
 
-func (c *InteractiveClient) initialiseQuerySuggestions(context.Context) (err error) {
+func (c *InteractiveClient) initialiseQuerySuggestions(context.Context) {
 	var res []prompt.Suggest
 
 	workspaceModName := c.initData.Workspace.Mod.Name()
@@ -69,13 +67,10 @@ func (c *InteractiveClient) initialiseQuerySuggestions(context.Context) (err err
 		return res[i].Text < res[j].Text
 	})
 	c.querySuggestions = res
-
-	return nil
 }
 
 // initialiseTableSuggestions build a list of schema and table querySuggestions
-func (c *InteractiveClient) initialiseTableSuggestions(ctx context.Context) (err error) {
-
+func (c *InteractiveClient) initialiseTableSuggestions(ctx context.Context) {
 	if c.schemaMetadata == nil {
 		return
 	}
@@ -121,9 +116,6 @@ func (c *InteractiveClient) initialiseTableSuggestions(ctx context.Context) (err
 		schemaOfSamePluginIncluded := hasConnectionForSchema && pluginSchemaMap[pluginOfThisSchema]
 
 		sessionSearchPath := c.client().GetRequiredSessionSearchPath(ctx)
-		if err != nil {
-			return err
-		}
 		foundInSearchPath := helpers.StringSliceContains(sessionSearchPath, schemaName)
 
 		if (foundInSearchPath || isTemporarySchema) && !schemaOfSamePluginIncluded {
@@ -155,8 +147,6 @@ func (c *InteractiveClient) initialiseTableSuggestions(ctx context.Context) (err
 	}
 
 	c.tableSuggestions = s
-
-	return nil
 }
 
 func stripVersionFromPluginName(pluginName string) string {
