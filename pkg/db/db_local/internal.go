@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/turbot/steampipe/pkg/constants"
@@ -30,6 +31,7 @@ func setupInternal(ctx context.Context) error {
 	utils.LogTime("db.setupInternal start")
 	defer utils.LogTime("db.setupInternal end")
 
+	log.Printf("[WARN] setupInternal creating connection_state table  ")
 	queries := []string{
 		"lock table pg_namespace;",
 		fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS %s;`, constants.InternalSchema),

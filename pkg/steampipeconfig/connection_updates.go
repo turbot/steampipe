@@ -35,8 +35,15 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	defer utils.LogTime("NewConnectionUpdates end")
 	log.Printf("[TRACE] NewConnectionUpdates")
 
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		log.Printf("[WARN] failed to acquire conneciton from pool: %s", err.Error())
+		return nil, NewErrorRefreshConnectionResult(err)
+	}
+	defer conn.Release()
+
 	// load foreign schema names
-	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, pool)
+	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn.Conn())
 	if err != nil {
 		log.Printf("[WARN] failed to load foreign schema names: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
@@ -44,7 +51,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	log.Printf("[TRACE] Loading connection state")
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
-	currentConnectionState, err := LoadConnectionState(ctx, pool)
+	currentConnectionState, err := LoadConnectionState(ctx, conn.Conn())
 	if err != nil {
 		log.Printf("[WARN] failed to load connection state: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
@@ -259,7 +266,7 @@ func (u *ConnectionUpdates) setError(connectionName string, error string) {
 	if !ok {
 		return
 	}
-	failedConnection.ConnectionState = constants.ConnectionStateError
+	failedConnection.State = constants.ConnectionStateError
 	failedConnection.SetError(error)
 	// remove from updating (in case it is there)
 	delete(u.Update, connectionName)

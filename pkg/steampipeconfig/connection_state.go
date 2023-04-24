@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/sethvargo/go-retry"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -15,9 +15,46 @@ import (
 	"time"
 )
 
+type LoadConnectionStateConfiguration struct {
+	WaitForPending bool
+}
+
+type LoadConnectionStateOption = func(config *LoadConnectionStateConfiguration)
+
+var WithWaitForPending = func(config *LoadConnectionStateConfiguration) {
+	config.WaitForPending = true
+}
+
 // LoadConnectionState populates a ConnectionDataMap from the connection_state table
 // it verifies the table has been initialised by calling RefreshConnections after db startup
-func LoadConnectionState(ctx context.Context, pool *pgxpool.Pool) (ConnectionDataMap, error) {
+func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnectionStateOption) (ConnectionDataMap, error) {
+	config := &LoadConnectionStateConfiguration{}
+	for _, opt := range opts {
+		opt(config)
+	}
+	if !config.WaitForPending {
+		return loadConnectionState(ctx, conn)
+	}
+
+	maxAttempts := uint64(10)
+	retryInterval := 50 * time.Millisecond
+	backoff := retry.NewConstant(retryInterval * time.Millisecond)
+
+	var connectionState ConnectionDataMap
+
+	err := retry.Do(ctx, retry.WithMaxRetries(maxAttempts, backoff), func(ctx context.Context) error {
+		var loadErr error
+		connectionState, loadErr = loadConnectionState(ctx, conn)
+		if loadErr == nil && connectionState.Pending() {
+			loadErr = retry.RetryableError(fmt.Errorf("connection state is pending"))
+		}
+		return loadErr
+	})
+
+	return connectionState, err
+}
+
+func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionDataMap, error) {
 	query := fmt.Sprintf(`SELECT name,
 		state,
 		error,	
@@ -27,7 +64,7 @@ func LoadConnectionState(ctx context.Context, pool *pgxpool.Pool) (ConnectionDat
 		plugin_mod_time
 	FROM  %s.%s `, constants.InternalSchema, constants.ConnectionStateTable)
 
-	rows, err := pool.Query(ctx, query)
+	rows, err := conn.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -51,10 +88,7 @@ func LoadConnectionState(ctx context.Context, pool *pgxpool.Pool) (ConnectionDat
 		connectionData.Connection = connection
 		res[c.ConnectionName] = &connectionData
 	}
-	// verify the state is not pending
-	if !res.Pending() {
-		return res, nil
-	}
+
 	return res, nil
 }
 
@@ -103,14 +137,14 @@ func SaveConnectionStateFile(res *RefreshConnectionResult, connectionUpdates *Co
 	}
 	// NOTE: add any connection which failed
 	for c := range res.FailedConnections {
-		connectionState[c].ConnectionState = constants.ConnectionStateError
+		connectionState[c].State = constants.ConnectionStateError
 		connectionState[c].SetError(constants.ConnectionErrorPluginFailedToStart)
 	}
 	for pluginName, connections := range connectionUpdates.MissingPlugins {
 		// add in missing connections
 		for _, c := range connections {
 			connectionData := NewConnectionData(pluginName, &c, time.Now())
-			connectionData.ConnectionState = constants.ConnectionStateError
+			connectionData.State = constants.ConnectionStateError
 			connectionData.SetError(constants.ConnectionErrorPluginNotInstalled)
 			connectionState[c.Name] = connectionData
 		}
