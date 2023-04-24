@@ -8,9 +8,7 @@ import (
 
 func NewMetadata() *Metadata {
 	return &Metadata{
-		Schemas:             map[string]map[string]TableSchema{},
-		SearchPath:          []string{},
-		TemporarySchemaName: "", // don't need this, adding for completeness
+		Schemas: map[string]map[string]TableSchema{},
 	}
 }
 
@@ -18,15 +16,13 @@ func NewMetadata() *Metadata {
 type Metadata struct {
 	// map {schemaname, {map {tablename -> tableschema}}
 	Schemas map[string]map[string]TableSchema
-	// the search path that is set in the backend
-	SearchPath []string
 	// the name of the temporary schema
 	TemporarySchemaName string
 }
 
 // TableSchema contains the details of a single table in the schema
 type TableSchema struct {
-	// map {columnName -> columnschema}
+	// map columnName -> columnSchema
 	Columns     map[string]ColumnSchema
 	Name        string
 	FullName    string

@@ -118,11 +118,7 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	startTime := time.Now()
 
-	searchPath, err := e.client.GetRequiredSessionSearchPath(ctx)
-	if err != nil {
-		e.Root.SetError(ctx, err)
-		return
-	}
+	searchPath := e.client.GetRequiredSessionSearchPath(ctx)
 
 	// store context
 	cancelCtx, cancel := context.WithCancel(ctx)

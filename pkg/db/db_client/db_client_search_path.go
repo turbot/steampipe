@@ -3,6 +3,7 @@ package db_client
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"log"
 	"strings"
 
@@ -35,6 +36,7 @@ func (c *DbClient) GetCurrentSearchPath(ctx context.Context) ([]string, error) {
 // this just sets the required search path for this client
 // - when creating a database session, we will actually set the searchPath
 func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
+
 	configuredSearchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 
@@ -42,10 +44,8 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 	configuredSearchPath = helpers.RemoveFromStringSlice(configuredSearchPath, "")
 	searchPathPrefix = helpers.RemoveFromStringSlice(searchPathPrefix, "")
 
-	requiredSearchPath, err := db_common.GetUserSearchPath(ctx, c.pool)
-	if err != nil {
-		return err
-	}
+	// default required path to user search path
+	requiredSearchPath := c.userSearchPath
 
 	// store custom search path and search path prefix
 	c.searchPathPrefix = searchPathPrefix
@@ -70,13 +70,34 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 	return nil
 }
 
+func (c *DbClient) LoadUserSearchPath(ctx context.Context) error {
+	conn, _, err := c.getDatabaseConnectionWithRetries(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+	return c.setUserSearchPath(ctx, conn.Conn())
+}
+
+func (c *DbClient) setUserSearchPath(ctx context.Context, connection *pgx.Conn) error {
+	// load the user search path
+	userSearchPath, err := db_common.GetUserSearchPath(ctx, connection)
+	if err != nil {
+		return err
+	}
+	// update the cached value
+	c.userSearchPath = userSearchPath
+	return nil
+}
+
 // GetRequiredSessionSearchPath implements Client
-func (c *DbClient) GetRequiredSessionSearchPath(ctx context.Context) ([]string, error) {
+func (c *DbClient) GetRequiredSessionSearchPath(ctx context.Context) []string {
 	if c.customSearchPath != nil {
-		return c.customSearchPath, nil
+		return c.customSearchPath
 	}
 
-	return db_common.GetUserSearchPath(ctx, c.pool)
+	return c.userSearchPath
+
 }
 
 // reload Steampipe config, update viper and re-set required search path
@@ -93,15 +114,17 @@ func (c *DbClient) updateRequiredSearchPath(ctx context.Context) error {
 // ensure the search path for the database session is as required
 func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_common.DatabaseSession) error {
 	log.Printf("[TRACE] ensureSessionSearchPath")
-	// if we are NOT using a custom search path, nothing to do (we will fall back on the user search path)
-	if len(c.customSearchPath) == 0 {
-		log.Printf("[TRACE] no custom search path - fall back on the user search path")
-		return nil
+
+	// update the stored value of user search path
+	if err := c.setUserSearchPath(ctx, session.Connection.Conn()); err != nil {
+		return err
 	}
+
+	requiredSearchPath := c.GetRequiredSessionSearchPath(ctx)
 
 	// now determine whether the session search path is the same as the required search path
 	// if so, return
-	if strings.Join(session.SearchPath, ",") == strings.Join(c.customSearchPath, ",") {
+	if strings.Join(session.SearchPath, ",") == strings.Join(requiredSearchPath, ",") {
 		log.Printf("[TRACE] session search path is already correct - nothing to do")
 		return nil
 	}
@@ -110,10 +133,10 @@ func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_comm
 	log.Printf("[TRACE] session search path will be updated to  %s", strings.Join(c.customSearchPath, ","))
 
 	// TODO KAI USE PARAMS
-	_, err := session.Connection.Exec(ctx, fmt.Sprintf("set search_path to %s", strings.Join(db_common.PgEscapeSearchPath(c.customSearchPath), ",")))
+	_, err := session.Connection.Exec(ctx, fmt.Sprintf("set search_path to %s", strings.Join(db_common.PgEscapeSearchPath(requiredSearchPath), ",")))
 	if err == nil {
 		// update the session search path property
-		session.SearchPath = c.customSearchPath
+		session.SearchPath = requiredSearchPath
 	}
 	return err
 }

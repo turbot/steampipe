@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"log"
 	"os"
 	"os/exec"
@@ -11,7 +12,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/jackc/pgx/v5"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -171,6 +171,7 @@ func postServiceStart(ctx context.Context) error {
 	// execute async and ignore result (if there is an error we will receive a PG notification
 	go pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
 
+	statushooks.SetStatus(ctx, "Service startup complete")
 	return nil
 }
 

@@ -41,6 +41,8 @@ type DbClient struct {
 	// if a custom search path or a prefix is used, store it here
 	customSearchPath []string
 	searchPathPrefix []string
+	// the default user search path
+	userSearchPath []string
 	// a cached copy of (viper.GetBool(constants.ArgTiming) && viper.GetString(constants.ArgOutput) == constants.OutputFormatTable)
 	// (cached to avoid concurrent access error on viper)
 	showTimingFlag bool
@@ -79,13 +81,13 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		return nil, err
 	}
 
-	// populate foreign schema names - this will be updated whenever we acquire a session
-	if err := client.LoadSchemaNames(ctx); err != nil {
-		client.Close(ctx)
+	// set user search path
+	err := client.LoadUserSearchPath(ctx)
+	if err != nil {
 		return nil, err
 	}
 
-	// initialise the required search path
+	// populate customSearchPath
 	if err := client.SetRequiredSessionSearchPath(ctx); err != nil {
 		client.Close(ctx)
 		return nil, err
@@ -119,39 +121,6 @@ func (c *DbClient) Close(context.Context) error {
 		c.sessions = nil
 		c.pool.Close()
 	}
-
-	return nil
-}
-
-// ForeignSchemaNames implements Client
-//func (c *DbClient) ForeignSchemaNames() []string {
-//	return c.foreignSchemaNames
-//}
-
-//// AllSchemaNames implements Client
-//func (c *DbClient) AllSchemaNames() []string {
-//	return c.allSchemaNames
-//}
-
-// LoadSchemaNames implements Client
-func (c *DbClient) LoadSchemaNames(ctx context.Context) error {
-	//conn, err := c.pool.Acquire(ctx)
-	//if err != nil {
-	//	return err
-	//}
-	//defer conn.Release()
-	//
-	//foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn.Conn())
-	//if err != nil {
-	//	return err
-	//}
-	////allSchemaNames, err := db_common.LoadSchemaNames(ctx, conn.Conn())
-	////if err != nil {
-	////	return err
-	////}
-	//
-	////c.foreignSchemaNames = foreignSchemaNames
-	//c.allSchemaNames = allSchemaNames
 
 	return nil
 }
@@ -192,12 +161,6 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) (*sch
 		return nil, err
 	}
 	connection.Release()
-
-	searchPath, err := c.GetCurrentSearchPath(ctx)
-	if err != nil {
-		return nil, err
-	}
-	metadata.SearchPath = searchPath
 
 	return metadata, nil
 }
