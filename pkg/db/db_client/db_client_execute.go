@@ -4,14 +4,19 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/sethvargo/go-retry"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/sperr"
+	"log"
 	"net/netip"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -138,7 +143,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 	// start query
 	var rows pgx.Rows
-	rows, err = c.startQuery(ctxExecute, session.Connection, query, args...)
+	rows, err = c.startQueryWithRetries(ctxExecute, session.Connection.Conn(), query, args...)
 	if err != nil {
 		return
 	}
@@ -248,11 +253,83 @@ func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_comm
 	return nil
 }
 
+func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, query string, args ...any) (pgx.Rows, error) {
+
+	maxDuration := 10 * time.Minute
+	retryInterval := 50 * time.Millisecond
+	backoff := retry.NewConstant(retryInterval * time.Millisecond)
+
+	var res pgx.Rows
+	err := retry.Do(ctx, retry.WithMaxDuration(maxDuration, backoff), func(ctx context.Context) error {
+
+		for {
+			rows, err := c.startQuery(ctx, conn, query, args...)
+			if err == nil {
+				res = rows
+				return nil
+			}
+
+			missingSchema, missingTable, relationNotFound := isRelationNotFoundError(err)
+			if !relationNotFound {
+				return err
+			}
+
+			// so this _was_ a relation not found error
+			// load the connection state to see if the missing schema is in there at all
+			// if not, give up
+			// if there was a schema not found with an unqualified query, we keep trying until ALL the schemas have loaded
+			connectionStateMap, stateErr := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitForPending)
+			if stateErr != nil {
+				return sperr.WrapWithMessage(stateErr, "failed to load connection state")
+			}
+
+			if missingSchema != "" {
+				connectionState, ok := connectionStateMap[missingSchema]
+				if !ok {
+					return err
+				}
+				if connectionState.State != constants.ConnectionStatePending {
+					return err
+				}
+			}
+			log.Printf("[WARN] retrying %s.%s", missingSchema, missingTable)
+			time.Sleep(25 * time.Millisecond)
+		}
+	})
+
+	return res, err
+}
+
+func isRelationNotFoundError(err error) (string, string, bool) {
+	if err == nil {
+		return "", "", false
+	}
+	pgErr, ok := err.(*pgconn.PgError)
+	if !ok || pgErr.Code != "42P01" {
+		return "", "", false
+	}
+
+	r := regexp.MustCompile(`^relation "(.*)\.(.*)" does not exist$`)
+	captureGroups := r.FindStringSubmatch(pgErr.Message)
+	if len(captureGroups) == 3 {
+
+		return captureGroups[1], captureGroups[2], true
+	}
+
+	// maybe there is no schema
+	r = regexp.MustCompile(`^relation "(.*)" does not exist$`)
+	captureGroups = r.FindStringSubmatch(pgErr.Message)
+	if len(captureGroups) == 2 {
+		return "", captureGroups[1], true
+	}
+	return "", "", true
+}
+
 // run query in a goroutine, so we can check for cancellation
 // in case the client becomes unresponsive and does not respect context cancellation
-func (c *DbClient) startQuery(ctx context.Context, conn *pgxpool.Conn, query string, args ...any) (rows pgx.Rows, err error) {
-	doneChan := make(chan bool)
+func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string, args ...any) (rows pgx.Rows, err error) {
 
+	doneChan := make(chan bool)
 	go func() {
 		// start asynchronous query
 		rows, err = conn.Query(ctx, query, args...)

@@ -3,7 +3,6 @@ package db_common
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"sort"
 	"strings"
 
@@ -44,7 +43,7 @@ type schemaRecord struct {
 //	return allSchemaNames, nil
 //}
 
-func LoadForeignSchemaNames(ctx context.Context, conn *pgxpool.Pool) ([]string, error) {
+func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, error) {
 	res, err := conn.Query(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables WHERE foreign_server_name='steampipe'")
 	if err != nil {
 		return nil, err

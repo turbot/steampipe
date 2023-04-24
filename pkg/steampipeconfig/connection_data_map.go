@@ -18,7 +18,7 @@ type ConnectionDataMap map[string]*ConnectionData
 // this indicates that the db has just started and RefreshConnections has not been called yet
 func (m ConnectionDataMap) Pending() bool {
 	for _, c := range m {
-		if c.ConnectionState == constants.ConnectionStatePending {
+		if c.State == constants.ConnectionStatePending {
 			return true
 		}
 	}

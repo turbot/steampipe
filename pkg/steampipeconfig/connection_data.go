@@ -27,7 +27,7 @@ type ConnectionData struct {
 	// the fully qualified name of the plugin
 	Plugin string `json:"plugin,omitempty"  db:"plugin"`
 	// the connection state (pending, updating, deleting, error, ready)
-	ConnectionState string `json:"state,omitempty"  db:"state"`
+	State string `json:"state,omitempty"  db:"state"`
 	// error (if there is one - make a pointer to supprt null)
 	ConnectionError *string `json:"error,omitempty" db:"error"`
 	// schema mode - static or dynamic
@@ -44,12 +44,12 @@ type ConnectionData struct {
 
 func NewConnectionData(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionData {
 	return &ConnectionData{
-		StructVersion:   ConnectionDataStructVersion,
-		Plugin:          remoteSchema,
-		ConnectionName:  connection.Name,
-		Connection:      connection,
-		PluginModTime:   creationTime,
-		ConnectionState: constants.ConnectionStateReady,
+		StructVersion:  ConnectionDataStructVersion,
+		Plugin:         remoteSchema,
+		ConnectionName: connection.Name,
+		Connection:     connection,
+		PluginModTime:  creationTime,
+		State:          constants.ConnectionStateReady,
 	}
 }
 
@@ -69,7 +69,7 @@ func (d *ConnectionData) Equals(other *ConnectionData) bool {
 	if d.Plugin != other.Plugin {
 		return false
 	}
-	if d.ConnectionState != other.ConnectionState {
+	if d.State != other.State {
 		return false
 	}
 	if d.Error() != other.Error() {

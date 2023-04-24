@@ -53,7 +53,7 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionN
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
 func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []string, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
-	//log.Printf("[WARN] refreshConnections")
+	log.Printf("[INFO] refreshConnections")
 	//
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
@@ -66,6 +66,8 @@ func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []st
 		// TODO kai send error PG notification
 		return res
 	}
+
+	log.Printf("[INFO] refreshConnections: created connection updates")
 
 	var connectionNames, pluginNames []string
 	// add warning if there are connections left over, from missing plugins
@@ -86,7 +88,7 @@ func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []st
 	}
 
 	if !connectionUpdates.HasUpdates() {
-		log.Println("[TRACE] RefreshConnections: no updates required")
+		log.Println("[INFO] refreshConnections: no updates required")
 		return res
 	}
 
@@ -101,19 +103,21 @@ func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []st
 	}
 
 	// delete the connection state file - this indicates to anything using it that we are in the process up refreshing
-	log.Printf("[TRACE] refreshConnections  connections state file")
+	log.Printf("[TRACE] refreshConnections deleting connections state file")
 	steampipeconfig.DeleteConnectionStateFile()
 
 	// before finishing - be sure to save connection state if there was no error
 	defer func() {
 		if res.Error == nil {
-			log.Printf("[WARN] refreshConnections saving connections state file")
+			log.Printf("[INFO] refreshConnections saving connections state file")
 			// now serialise the connection state
 			if res.Error == nil {
 				steampipeconfig.SaveConnectionStateFile(res, connectionUpdates)
 			}
 		}
 	}()
+
+	log.Printf("[INFO] refreshConnections execute connection queries")
 
 	// now build list of necessary queries to perform the update
 	queryRes := executeConnectionQueries(ctx, pool, searchPath, tableUpdater)

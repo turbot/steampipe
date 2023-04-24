@@ -31,16 +31,16 @@ func newConnectionStateTableUpdater(updates *steampipeconfig.ConnectionUpdates) 
 
 // update connection state table to indicate the updates that will be done
 func (u *connectionStateTableUpdater) start(ctx context.Context) error {
-	log.Printf("[WARN] connectionStateTableUpdater start")
+	log.Printf("[INFO] connectionStateTableUpdater start - update connection_state with intended states")
 
 	var queries []db_common.QueryWithArgs
 
 	for name, connectionData := range u.updates.FinalConnectionState {
 		// set the connection data state based on whether this connection is being created or deleted
 		if _, updatingConnection := u.updates.Update[name]; updatingConnection {
-			connectionData.ConnectionState = constants.ConnectionStateUpdating
+			connectionData.State = constants.ConnectionStateUpdating
 		} else if _, deletingConnection := u.updates.Update[name]; deletingConnection {
-			connectionData.ConnectionState = constants.ConnectionStateDeleting
+			connectionData.State = constants.ConnectionStateDeleting
 		}
 		queries = append(queries, getStartUpdateConnectionStateSql(connectionData))
 	}
@@ -48,6 +48,7 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 	if _, err := executeSqlWithArgsAsRoot(ctx, queries...); err != nil {
 		return err
 	}
+	log.Printf("[INFO] connectionStateTableUpdater start - finished updating connection_state with intended states")
 	return nil
 }
 
@@ -118,7 +119,7 @@ WHERE
 
 func getStartUpdateConnectionStateSql(c *steampipeconfig.ConnectionData) db_common.QueryWithArgs {
 	// if state is updating, set comments to false
-	commentsSet := c.ConnectionState == constants.ConnectionStateReady
+	commentsSet := c.State == constants.ConnectionStateReady
 	// upsert
 	query := fmt.Sprintf(`INSERT INTO %s.%s (name, 
 		state,
@@ -142,7 +143,7 @@ DO
 			  connection_mod_time = now(),
 			  plugin_mod_time = $8
 `, constants.InternalSchema, constants.ConnectionStateTable)
-	args := []any{c.Connection.Name, c.ConnectionState, c.ConnectionError, c.Plugin, c.SchemaMode, c.SchemaHash, commentsSet, c.PluginModTime}
+	args := []any{c.Connection.Name, c.State, c.ConnectionError, c.Plugin, c.SchemaMode, c.SchemaHash, commentsSet, c.PluginModTime}
 	return db_common.QueryWithArgs{query, args}
 }
 
