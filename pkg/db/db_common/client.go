@@ -11,7 +11,7 @@ type Client interface {
 	LoadUserSearchPath(ctx context.Context) error
 	GetCurrentSearchPath(context.Context) ([]string, error)
 	SetRequiredSessionSearchPath(context.Context) error
-	GetRequiredSessionSearchPath(context.Context) []string
+	GetRequiredSessionSearchPath() []string
 
 	AcquireSession(context.Context) *AcquireSessionResult
 

@@ -1,7 +1,6 @@
 package interactive
 
 import (
-	"context"
 	"fmt"
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
@@ -12,12 +11,12 @@ import (
 	"strings"
 )
 
-func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) {
-	c.initialiseTableSuggestions(ctx)
-	c.initialiseQuerySuggestions(ctx)
+func (c *InteractiveClient) initialiseSuggestions() {
+	c.initialiseTableSuggestions()
+	c.initialiseQuerySuggestions()
 }
 
-func (c *InteractiveClient) initialiseQuerySuggestions(context.Context) {
+func (c *InteractiveClient) initialiseQuerySuggestions() {
 	var res []prompt.Suggest
 
 	workspaceModName := c.initData.Workspace.Mod.Name()
@@ -70,7 +69,7 @@ func (c *InteractiveClient) initialiseQuerySuggestions(context.Context) {
 }
 
 // initialiseTableSuggestions build a list of schema and table querySuggestions
-func (c *InteractiveClient) initialiseTableSuggestions(ctx context.Context) {
+func (c *InteractiveClient) initialiseTableSuggestions() {
 	if c.schemaMetadata == nil {
 		return
 	}
@@ -115,7 +114,7 @@ func (c *InteractiveClient) initialiseTableSuggestions(ctx context.Context) {
 		// and we have not added tables for another connection using the same plugin as this one
 		schemaOfSamePluginIncluded := hasConnectionForSchema && pluginSchemaMap[pluginOfThisSchema]
 
-		sessionSearchPath := c.client().GetRequiredSessionSearchPath(ctx)
+		sessionSearchPath := c.client().GetRequiredSessionSearchPath()
 		foundInSearchPath := helpers.StringSliceContains(sessionSearchPath, schemaName)
 
 		if (foundInSearchPath || isTemporarySchema) && !schemaOfSamePluginIncluded {

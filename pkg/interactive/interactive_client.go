@@ -739,7 +739,7 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	}
 
 	// reinitialise autocomplete suggestions
-	c.initialiseSuggestions(ctx)
+	c.initialiseSuggestions()
 
 	// refresh the db session inside an execution lock
 	// we do this to avoid the postgres `cached plan must not change result type`` error

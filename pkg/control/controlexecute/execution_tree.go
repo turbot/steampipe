@@ -40,7 +40,7 @@ type ExecutionTree struct {
 }
 
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg, controlFilterWhereClause string) (*ExecutionTree, error) {
-	searchPath := client.GetRequiredSessionSearchPath(ctx)
+	searchPath := client.GetRequiredSessionSearchPath()
 
 	// now populate the ExecutionTree
 	executionTree := &ExecutionTree{
