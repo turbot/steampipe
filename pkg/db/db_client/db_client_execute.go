@@ -8,7 +8,6 @@ import (
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/sperr"
-	"log"
 	"net/netip"
 	"regexp"
 	"strings"
@@ -139,8 +138,6 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		}
 	}()
 
-	statushooks.SetStatus(ctxExecute, "Loading results...")
-
 	// start query
 	var rows pgx.Rows
 	rows, err = c.startQueryWithRetries(ctxExecute, session.Connection.Conn(), query, args...)
@@ -254,52 +251,88 @@ func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_comm
 }
 
 func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, query string, args ...any) (pgx.Rows, error) {
-
 	maxDuration := 10 * time.Minute
-	retryInterval := 50 * time.Millisecond
-	backoff := retry.NewConstant(retryInterval * time.Millisecond)
+	backoffInterval := 250 * time.Millisecond
+	backoff := retry.NewConstant(backoffInterval)
 
 	var res pgx.Rows
 	err := retry.Do(ctx, retry.WithMaxDuration(maxDuration, backoff), func(ctx context.Context) error {
-
-		for {
-			rows, err := c.startQuery(ctx, conn, query, args...)
-			if err == nil {
-				res = rows
-				return nil
-			}
-
-			missingSchema, missingTable, relationNotFound := isRelationNotFoundError(err)
-			if !relationNotFound {
-				return err
-			}
-
-			// so this _was_ a relation not found error
-			// load the connection state to see if the missing schema is in there at all
-			// if not, give up
-			// if there was a schema not found with an unqualified query, we keep trying until ALL the schemas have loaded
-			connectionStateMap, stateErr := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitForPending)
-			if stateErr != nil {
-				return sperr.WrapWithMessage(stateErr, "failed to load connection state")
-			}
-
-			if missingSchema != "" {
-				connectionState, ok := connectionStateMap[missingSchema]
-				if !ok {
-					return err
-				}
-				if connectionState.State != constants.ConnectionStatePending {
-					return err
-				}
-			}
-			log.Printf("[WARN] retrying %s.%s", missingSchema, missingTable)
-			time.Sleep(25 * time.Millisecond)
+		rows, queryError := c.startQuery(ctx, conn, query, args...)
+		if queryError == nil {
+			statushooks.SetStatus(ctx, "Loading results...")
+			res = rows
+			return nil
 		}
+
+		missingSchema, _, relationNotFound := isRelationNotFoundError(queryError)
+		if !relationNotFound {
+			return queryError
+		}
+
+		// so this _was_ a relation not found error
+		// load the connection state to see if the missing schema is in there at all
+		// if not, give up
+		// if there was a schema not found with an unqualified query, we keep trying until ALL the schemas have loaded
+		connectionStateMap, stateErr := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitForPending)
+		if stateErr != nil {
+			return sperr.WrapWithMessage(stateErr, "failed to load connection state")
+		}
+
+		statusMessage := getloadingConnectionStatusMessage(connectionStateMap, missingSchema)
+
+		// if a schema was specified, verify it exists in the connection map
+		if missingSchema != "" {
+			connectionState, missingSchemaExistsInStateMap := connectionStateMap[missingSchema]
+			if missingSchemaExistsInStateMap {
+				// if connection is in error or has been ready for more than the backoff interval, do not retry
+				// so, if it has only just become ready retry the query
+				if connectionState.State == constants.ConnectionStateError ||
+					connectionState.State == constants.ConnectionStateReady && time.Since(connectionState.ConnectionModTime) > backoffInterval {
+					return queryError
+				}
+			} else {
+				// missing schema is not in connection map - it may not have updated yet
+				// try reloading connection config to see if it is in there
+				config, errorsAndWarnings := steampipeconfig.LoadConnectionConfig()
+				if errorsAndWarnings.GetError() != nil {
+					// just return the original error
+					return queryError
+				}
+
+				_, missingSchemaExistsInConnectionConfig := config.Connections[missingSchema]
+				if !missingSchemaExistsInConnectionConfig {
+					// schema is not in connection config either - just return relation not found error
+					return queryError
+				}
+			}
+		}
+
+		statushooks.SetStatus(ctx, statusMessage)
+
+		// retry
+		return retry.RetryableError(queryError)
 	})
 
 	return res, err
 }
 
+func getloadingConnectionStatusMessage(connectionStateMap steampipeconfig.ConnectionDataMap, missingSchema string) string {
+	var connectionSummary = connectionStateMap.GetSummary()
+
+	readyCount := connectionSummary[constants.ConnectionStateReady]
+	totalCount := connectionSummary[constants.ConnectionStateUpdating] + connectionSummary[constants.ConnectionStateReady]
+
+	loadedMessage := fmt.Sprintf("Loaded %d of %d %s",
+		readyCount,
+		totalCount,
+		utils.Pluralize("connection", totalCount))
+
+	if missingSchema == "" {
+		return loadedMessage
+	}
+
+	return fmt.Sprintf("Waiting for connection '%s' to load (%s)", missingSchema, loadedMessage)
+}
 func isRelationNotFoundError(err error) (string, string, bool) {
 	if err == nil {
 		return "", "", false

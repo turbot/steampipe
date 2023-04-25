@@ -61,6 +61,7 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionDataMap
 		plugin,
 		schema_mode,
 		schema_hash,
+		connection_mod_time,
 		plugin_mod_time
 	FROM  %s.%s `, constants.InternalSchema, constants.ConnectionStateTable)
 

@@ -36,10 +36,8 @@ type ConnectionData struct {
 	SchemaHash string `json:"schema_hash,omitempty" db:"schema_hash"`
 	// the creation time of the plugin file
 	PluginModTime time.Time `json:"plugin_mod_time" db:"plugin_mod_time"`
-	//// the update time of the connection
-	//ConnectionModTime time.Time `json:"conneciton_mod_time"`
-	// loaded is false if the plugin failed to load
-	//Loaded bool `json:"loaded"`
+	// the update time of the connection
+	ConnectionModTime time.Time `json:"connection_mod_time" db:"connection_mod_time"`
 }
 
 func NewConnectionData(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionData {
@@ -65,11 +63,7 @@ func (d *ConnectionData) Equals(other *ConnectionData) bool {
 		// return false, so that connections get refreshed and this file gets written in the new format in the process
 		return false
 	}
-
 	if d.Plugin != other.Plugin {
-		return false
-	}
-	if d.State != other.State {
 		return false
 	}
 	if d.Error() != other.Error() {
@@ -88,14 +82,7 @@ func (d *ConnectionData) Equals(other *ConnectionData) bool {
 	if !d.Connection.Equals(other.Connection) {
 		return false
 	}
-	//}	return d.Plugin == other.Plugin &&
-	//		d.ConnectionState == other.ConnectionState &&
-	//		d.Error() == other.Error() &&
-	//		d.SchemaMode == other.SchemaMode &&
-	//		d.Connection.Equals(other.Connection) &&
-	//		d.PluginModTime.Equal(other.PluginModTime) &&
-	//		//d.ConnectionModTime.Equal(other.ConnectionModTime) &&
-	//		d.Connection.Equals(other.Connection)
+
 	return true
 }
 
