@@ -193,67 +193,108 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, searchPath []
 	}
 	numUpdates := len(validatedUpdates)
 
-	// we need to execute the updates in search path order
-	// build map from search path
-	searchPathMap := utils.SliceToLookup(searchPath)
-	orderedUpdates := make([]string, 0, numUpdates)
+	//we need to execute the updates in search path order
+
+	// group the search path by plugin, then add/update the first connection for each plugin together, first
+	pluginSearchPathMap := make(map[string][]string)
+	var initialUpdates []string
+	var remainingUpdates []string
+
+	//orderedUpdates := make([]string, 0, numUpdates)
 
 	// build ordered updated
-	for _, c := range searchPath {
-		// add search path first
-		if _, updateConnection := validatedUpdates[c]; updateConnection {
-			orderedUpdates = append(orderedUpdates, c)
+	for _, connectionName := range searchPath {
+		// get the connection config for this
+		connectionConfig, gotConfig := steampipeconfig.GlobalConfig.Connections[connectionName]
+		// do we have config for this search path element (if not just ignore)
+		if gotConfig {
+			// add to pluginSearchPathMap for this plugin
+			pluginSearchPathMap[connectionConfig.Plugin] = append(pluginSearchPathMap[connectionConfig.Plugin], connectionName)
 		}
 	}
-	// now add all updates NOT in the search path (if any)
-	if len(orderedUpdates) < numUpdates {
-		for c := range validatedUpdates {
-			if _, inSearchPath := searchPathMap[c]; !inSearchPath {
-				orderedUpdates = append(orderedUpdates, c)
+
+	// now construct ordered updates
+	// build a list of upates which are the first conneciton for each plugin
+	// (these can be executed in parallel, but must be executed first)
+	// and a list of all other updates
+	for _, connections := range pluginSearchPathMap {
+		for i, connectionName := range connections {
+			// is an update required for this connection
+			if _, updateRequired := validatedUpdates[connectionName]; updateRequired {
+				// if an update is required for first plugin, add to initialUpdates
+				if i == 0 {
+					initialUpdates = append(initialUpdates, connectionName)
+				} else {
+					remainingUpdates = append(remainingUpdates, connectionName)
+				}
 			}
 		}
 	}
 
-	idx := 1
+	// add search path first
+	//if _, updateConnection := validatedUpdates[c]; updateConnection {
+	//	orderedUpdates = append(orderedUpdates, c)
+	//}
+
+	// now add all updates NOT in the search path (if any)
+	if len(initialUpdates)+len(remainingUpdates) < numUpdates {
+		// build map from search path
+		searchPathMap := utils.SliceToLookup(searchPath)
+
+		for c := range validatedUpdates {
+			if _, inSearchPath := searchPathMap[c]; !inSearchPath {
+				remainingUpdates = append(remainingUpdates, c)
+			}
+		}
+	}
+
 	exemplarSchemaMap := make(map[string]string)
 	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
 
+	// TODO kai paralellizeq
 	var errors []error
-	cloneableConnections := make(steampipeconfig.ConnectionDataMap)
-	statushooks.SetStatus(ctx, fmt.Sprintf("Creating %d %s", numUpdates, utils.Pluralize("connection", numUpdates)))
-	for _, connectionName := range orderedUpdates {
+	for _, connectionName := range initialUpdates {
 		connectionData := validatedUpdates[connectionName]
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
 		// TODO KAI NOTE for now we ignore cloning
-		// if this schema is static, and is already in the plugin map, clone from it
-		//_, haveExemplarSchema := exemplarSchemaMap[connectionData.Plugin]
-		//if haveExemplarSchema && connectionData.CanCloneSchema() {
-		//	cloneableConnections[connectionName] = connectionData
-		//	continue
-		//}
+		// if this schema is static, add to the exemplar map
+		connectionData.CanCloneSchema()
+		{
+			exemplarSchemaMap[connectionData.Plugin] = connectionName
+		}
 
 		// execute update query, and update the connection state table, in a transaction
 		sql := getUpdateConnectionQuery(connectionName, remoteSchema)
 		if err := executeUpdateQuery(ctx, pool, tableUpdater, sql, connectionName); err != nil {
 			errors = append(errors, err)
 		}
-
-		statushooks.SetStatus(ctx, fmt.Sprintf("Created %d of %d %s (%s)", idx, numUpdates, utils.Pluralize("connection", numUpdates), connectionName))
-		exemplarSchemaMap[connectionData.Plugin] = connectionName
-		idx++
 	}
+
 	if len(errors) > 0 {
 		res.Error = error_helpers.CombineErrors(errors...)
 		return res
 	}
 
-	if len(cloneableConnections) > 0 {
-		statushooks.SetStatus(ctx, fmt.Sprintf("Cloning %d %s", len(cloneableConnections), utils.Pluralize("connection", len(cloneableConnections))))
-		if err := cloneConnectionSchemas(ctx, pool, exemplarSchemaMap, cloneableConnections, idx, numUpdates, tableUpdater); err != nil {
-			res.Error = err
-			return res
+	// now execute remaining
+	// TODO KAI wrap this in parallel function which either clones or not
+	for _, connectionName := range remainingUpdates {
+		connectionData := validatedUpdates[connectionName]
+		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
+		// execute update query, and update the connection state table, in a transaction
+		sql := getUpdateConnectionQuery(connectionName, remoteSchema)
+		if err := executeUpdateQuery(ctx, pool, tableUpdater, sql, connectionName); err != nil {
+			errors = append(errors, err)
 		}
 	}
+	if len(errors) > 0 {
+		res.Error = error_helpers.CombineErrors(errors...)
+	}
+	//	statushooks.SetStatus(ctx, fmt.Sprintf("Cloning %d %s", len(cloneableConnections), utils.Pluralize("connection", len(cloneableConnections))))
+	//	if err := cloneConnectionSchemas(ctx, pool, exemplarSchemaMap, cloneableConnections, idx, numUpdates, tableUpdater); err != nil {
+	//		res.Error = err
+	//		return res
+	//	}
+	//}
 
 	log.Printf("[TRACE] all update queries executed")
 
@@ -273,7 +314,7 @@ func executeUpdateQueries(ctx context.Context, pool *pgxpool.Pool, searchPath []
 
 	if viper.GetBool(constants.ArgSchemaComments) {
 		log.Printf("[WARN] start comments")
-		idx = 0
+
 		conn, err := pool.Acquire(ctx)
 		if err != nil {
 			log.Printf("[WARN] comments error %v", err)
