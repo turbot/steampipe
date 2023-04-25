@@ -193,16 +193,32 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 		}
 	}()
 
-	for name, p := range m.connectionPluginMap {
-		if p.client == nil {
-			log.Printf("[WARN] plugin %s has no client - cannot kill", name)
-			// shouldn't happen but has been observed in error situations
-			continue
+	// kill all plugins in pluginMultiConnectionMap
+	for _, p := range m.pluginMultiConnectionMap {
+		m.killPlugin(p)
+		// remove entries from the connectionPluginMap
+		for _, c := range p.reattach.Connections {
+			m.killPlugin(p)
+			delete(m.connectionPluginMap, c)
 		}
-		log.Printf("[INFO] PluginManager killing plugin %s (%v)", name, p.reattach.Pid)
-		p.client.Kill()
 	}
+	// if there are any entries left in connectionPluginMap, these must be legacy plugins
+	// kill these also
+	for _, p := range m.connectionPluginMap {
+		m.killPlugin(p)
+	}
+
 	return &pb.ShutdownResponse{}, nil
+}
+
+func (m *PluginManager) killPlugin(p *runningPlugin) {
+	if p.client == nil {
+		log.Printf("[WARN] plugin %s has no client - cannot kill", p.pluginName)
+		// shouldn't happen but has been observed in error situations
+		return
+	}
+	log.Printf("[INFO] PluginManager killing plugin %s (%v)", p.pluginName, p.reattach.Pid)
+	p.client.Kill()
 }
 
 func (m *PluginManager) handleConnectionConfigChanges(newConfigMap map[string]*sdkproto.ConnectionConfig) error {
@@ -336,7 +352,7 @@ func (m *PluginManager) handleUpdatedConnections(updatedConnections map[string][
 func (m *PluginManager) getConnectionConfig(connectionName string) (*sdkproto.ConnectionConfig, error) {
 	connectionConfig, ok := m.connectionConfigMap[connectionName]
 	if !ok {
-		return nil, fmt.Errorf("plugin manager: no connection config loaded for connection '%s'", connectionName)
+		return nil, fmt.Errorf("connection '%s' does not exist in connection config", connectionName)
 	}
 	return connectionConfig, nil
 }

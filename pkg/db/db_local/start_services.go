@@ -91,25 +91,38 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 
 	if res.DbState == nil {
 		res = startDB(ctx, port, listen, invoker)
+		if res.Error != nil {
+			return res
+		}
 	} else {
-		rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
+		// so db is already running - ensure it contains command schema
+		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
+		// and upgrades to this version - we need to ensure we create the command schema
+		conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
 		if err != nil {
 			res.Error = err
 			res.Status = ServiceFailedToStart
 			return res
 		}
-		defer rootClient.Close(ctx)
-		// so db is already running - ensure it contains command schema
-		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
-		// and upgrades to this version - we need to ensure we create the command schema
-		res.Error = ensureCommandSchema(ctx, rootClient)
+		defer conn.Close(ctx)
+		res.Error = ensureCommandSchema(ctx, conn)
 		res.Status = ServiceAlreadyRunning
 	}
 
-	if res.Error != nil {
-		return res
+	// start plugin manager if needed
+	res = ensurePluginManager(res)
+	if res.Status == ServiceStarted {
+		// execute post startup setup
+		err := postServiceStart(ctx)
+		if err != nil {
+			// NOTE do not update res.Status - this will be done by defer block
+			res.Error = err
+		}
 	}
+	return res
+}
 
+func ensurePluginManager(res *StartResult) *StartResult {
 	// start the plugin manager if needed
 	res.PluginManagerState, res.Error = pluginmanager.LoadPluginManagerState()
 	if res.Error != nil {
@@ -128,17 +141,9 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
 			return res.SetError(err)
 		}
-
+		// set status to service started as started plugin manager
 		res.Status = ServiceStarted
 	}
-
-	// execute post startup setup
-	err := postServiceStart(ctx)
-	if err != nil {
-		// NOTE do not update res.Status - this will be done by defer block
-		res.Error = err
-	}
-
 	return res
 }
 
@@ -484,8 +489,8 @@ func setServicePassword(ctx context.Context, password string) error {
 	}
 	defer connection.Close(ctx)
 	statements := []string{
-		"lock table pg_user;",
-		fmt.Sprintf(`alter user steampipe with password '%s';`, password),
+		"LOCK TABLE pg_user IN SHARE ROW EXCLUSIVE MODE;",
+		fmt.Sprintf(`ALTER USER steampipe WITH PASSWORD '%s';`, password),
 	}
 	_, err = executeSqlInTransaction(ctx, connection, statements...)
 	return err

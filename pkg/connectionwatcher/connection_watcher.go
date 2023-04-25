@@ -2,8 +2,6 @@ package connectionwatcher
 
 import (
 	"context"
-	"log"
-
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/filewatcher"
@@ -13,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"log"
 )
 
 type ConnectionWatcher struct {
@@ -32,7 +31,7 @@ func NewConnectionWatcher(onConnectionChanged func(ConnectionConfigMap), onSchem
 		Directories: []string{filepaths.EnsureConfigDir()},
 		Include:     filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
 		ListFlag:    filehelpers.FilesRecursive,
-		EventMask:   fsnotify.Create | fsnotify.Remove | fsnotify.Rename | fsnotify.Write,
+		EventMask:   fsnotify.Create | fsnotify.Remove | fsnotify.Rename | fsnotify.Write | fsnotify.Chmod,
 		OnChange: func(events []fsnotify.Event) {
 			w.handleFileWatcherEvent(events)
 		},
@@ -55,12 +54,32 @@ func NewConnectionWatcher(onConnectionChanged func(ConnectionConfigMap), onSchem
 	return w, nil
 }
 
-func (w *ConnectionWatcher) handleFileWatcherEvent(_ []fsnotify.Event) {
+func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("[WARN] ConnectionWatcher caught a panic: %s", helpers.ToError(r).Error())
 		}
 	}()
+
+	// TODO KAI REMOVE
+	// filter events to exclude chmod for non zero length files
+	//
+	log.Printf("[WARN] handleFileWatcherEvent %v", events)
+	//var filteredEvents []fsnotify.Event
+	//for _, ev := range events {
+	//	if ev.Op == fsnotify.Chmod {
+	//		log.Printf("[WARN] CHMOD %s", ev.Name)
+	//		fi, err := os.Stat(ev.Name)
+	//		if err == nil && fi.Size() > 0 {
+	//			continue
+	//		}
+	//	}
+	//
+	//	filteredEvents = append(filteredEvents, ev)
+	//}
+	//if len(filteredEvents) == 0 {
+	//	return
+	//}
 
 	// this is a file system event handler and not bound to any context
 	ctx := context.Background()

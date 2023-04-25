@@ -12,18 +12,9 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-type ConnectionDataMap map[string]*ConnectionData
+type ConnectionStateSummary map[string]int
 
-// Pending returns whether there are any connections in the map pending?
-// this indicates that the db has just started and RefreshConnections has not been called yet
-func (m ConnectionDataMap) Pending() bool {
-	for _, c := range m {
-		if c.State == constants.ConnectionStatePending {
-			return true
-		}
-	}
-	return false
-}
+type ConnectionDataMap map[string]*ConnectionData
 
 // NewConnectionDataMap populates a map of connection data for all connections in connectionMap
 func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (ConnectionDataMap, map[string][]modconfig.Connection, error) {
@@ -67,6 +58,25 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration end")
 
 	return requiredConnections, missingPluginMap, nil
+}
+
+func (m ConnectionDataMap) GetSummary() ConnectionStateSummary {
+	res := make(map[string]int, len(m))
+	for _, c := range m {
+		res[c.State]++
+	}
+	return res
+}
+
+// Pending returns whether there are any connections in the map pending?
+// this indicates that the db has just started and RefreshConnections has not been called yet
+func (m ConnectionDataMap) Pending() bool {
+	for _, c := range m {
+		if c.State == constants.ConnectionStatePending {
+			return true
+		}
+	}
+	return false
 }
 
 // IsValid checks whether the struct was correctly deserialized,

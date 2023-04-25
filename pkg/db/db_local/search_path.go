@@ -42,7 +42,7 @@ func setUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 	}
 	defer conn.Release()
 
-	query := fmt.Sprintf(`select usename from pg_user where pg_has_role(usename, '%s', 'member')`, constants.DatabaseUsersRole)
+	query := fmt.Sprintf(`SELECT USENAME FROM pg_user WHERE pg_has_role(usename, '%s', 'member')`, constants.DatabaseUsersRole)
 	rows, err := conn.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func setUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 
 	// set the search path for all these roles
 	var queries = []string{
-		"lock table pg_user;",
+		"LOCK TABLE pg_user IN SHARE ROW EXCLUSIVE MODE;",
 	}
 
 	for rows.Next() {
@@ -62,7 +62,7 @@ func setUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 			continue
 		}
 		queries = append(queries, fmt.Sprintf(
-			"alter user %s set search_path to %s;",
+			"ALTER USER %s SET SEARCH_PATH TO %s;",
 			db_common.PgEscapeName(user),
 			strings.Join(escapedSearchPath, ","),
 		))

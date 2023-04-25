@@ -18,11 +18,11 @@ import (
 	"log"
 	"strings"
 	"sync"
-	"time"
 )
 
 func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
-	time.Sleep(10 * time.Second)
+	// uncomment to debug
+	//time.Sleep(10 * time.Second)
 
 	// create a connection pool to connection refresh
 	poolsize := 1
@@ -87,11 +87,6 @@ func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []st
 			constants.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(pluginNames, " ")))))
 	}
 
-	if !connectionUpdates.HasUpdates() {
-		log.Println("[INFO] refreshConnections: no updates required")
-		return res
-	}
-
 	// create object to update the connection state table and notify of state changes
 	tableUpdater := newConnectionStateTableUpdater(connectionUpdates)
 
@@ -99,6 +94,12 @@ func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []st
 	// also this will update the schema hashes of plugins
 	if err := tableUpdater.start(ctx); err != nil {
 		res.Error = err
+		return res
+	}
+
+	// if there ar eno updates, just return
+	if !connectionUpdates.HasUpdates() {
+		log.Println("[INFO] refreshConnections: no updates required")
 		return res
 	}
 
