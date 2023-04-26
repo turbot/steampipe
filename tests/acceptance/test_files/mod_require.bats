@@ -145,3 +145,14 @@ Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_w
 
   assert_output --partial "1"
 }
+
+@test "legacy 'requires' block" {
+  # go to the mod directory and run steampipe to get the deprectaion warning
+  # or error, and check the output
+  cd $FILE_PATH/test_data/mod_require_tests/mod_with_legacy_requires_block
+  run steampipe query "select 1"
+
+  # TODO: update this test when the deprecation warning for legacy 'requries'
+  # block is added
+  assert_output --partial "1"
+}
