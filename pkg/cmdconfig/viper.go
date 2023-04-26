@@ -101,6 +101,9 @@ func setBaseDefaults() {
 		constants.ArgServiceCacheEnabled:  true,
 		constants.ArgCacheMaxTtl:          300,
 		constants.ArgMaxCacheSizeMb:       constants.DefaultMaxCacheSizeMb,
+
+		// dashboard
+		constants.ArgDashboardStartTimeout: constants.DashboardStartTimeout.Seconds(),
 	}
 
 	for k, v := range defaults {
@@ -133,23 +136,24 @@ func SetDefaultsFromEnv() {
 
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
-		constants.EnvInstallDir:           {[]string{constants.ArgInstallDir}, String},
-		constants.EnvWorkspaceChDir:       {[]string{constants.ArgModLocation}, String},
-		constants.EnvModLocation:          {[]string{constants.ArgModLocation}, String},
-		constants.EnvIntrospection:        {[]string{constants.ArgIntrospection}, String},
-		constants.EnvTelemetry:            {[]string{constants.ArgTelemetry}, String},
-		constants.EnvUpdateCheck:          {[]string{constants.ArgUpdateCheck}, Bool},
-		constants.EnvCloudHost:            {[]string{constants.ArgCloudHost}, String},
-		constants.EnvCloudToken:           {[]string{constants.ArgCloudToken}, String},
-		constants.EnvSnapshotLocation:     {[]string{constants.ArgSnapshotLocation}, String},
-		constants.EnvWorkspaceDatabase:    {[]string{constants.ArgWorkspaceDatabase}, String},
-		constants.EnvServicePassword:      {[]string{constants.ArgServicePassword}, String},
-		constants.EnvCheckDisplayWidth:    {[]string{constants.ArgCheckDisplayWidth}, Int},
-		constants.EnvMaxParallel:          {[]string{constants.ArgMaxParallel}, Int},
-		constants.EnvQueryTimeout:         {[]string{constants.ArgDatabaseQueryTimeout}, Int},
-		constants.EnvDatabaseStartTimeout: {[]string{constants.ArgDatabaseStartTimeout}, Int},
-		constants.EnvCacheTTL:             {[]string{constants.ArgCacheTtl}, Int},
-		constants.EnvCacheMaxTTL:          {[]string{constants.ArgCacheMaxTtl}, Int},
+		constants.EnvInstallDir:            {[]string{constants.ArgInstallDir}, String},
+		constants.EnvWorkspaceChDir:        {[]string{constants.ArgModLocation}, String},
+		constants.EnvModLocation:           {[]string{constants.ArgModLocation}, String},
+		constants.EnvIntrospection:         {[]string{constants.ArgIntrospection}, String},
+		constants.EnvTelemetry:             {[]string{constants.ArgTelemetry}, String},
+		constants.EnvUpdateCheck:           {[]string{constants.ArgUpdateCheck}, Bool},
+		constants.EnvCloudHost:             {[]string{constants.ArgCloudHost}, String},
+		constants.EnvCloudToken:            {[]string{constants.ArgCloudToken}, String},
+		constants.EnvSnapshotLocation:      {[]string{constants.ArgSnapshotLocation}, String},
+		constants.EnvWorkspaceDatabase:     {[]string{constants.ArgWorkspaceDatabase}, String},
+		constants.EnvServicePassword:       {[]string{constants.ArgServicePassword}, String},
+		constants.EnvCheckDisplayWidth:     {[]string{constants.ArgCheckDisplayWidth}, Int},
+		constants.EnvMaxParallel:           {[]string{constants.ArgMaxParallel}, Int},
+		constants.EnvQueryTimeout:          {[]string{constants.ArgDatabaseQueryTimeout}, Int},
+		constants.EnvDatabaseStartTimeout:  {[]string{constants.ArgDatabaseStartTimeout}, Int},
+		constants.EnvDashboardStartTimeout: {[]string{constants.ArgDashboardStartTimeout}, Int},
+		constants.EnvCacheTTL:              {[]string{constants.ArgCacheTtl}, Int},
+		constants.EnvCacheMaxTTL:           {[]string{constants.ArgCacheMaxTtl}, Int},
 
 		// we need this value to go into different locations
 		constants.EnvCacheEnabled: {[]string{
