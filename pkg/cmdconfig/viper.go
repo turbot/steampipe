@@ -101,6 +101,9 @@ func setBaseDefaults() {
 		constants.ArgDatabaseStartTimeout:    constants.DBStartTimeout.Seconds(),
 		constants.ArgServiceCacheEnabled:     true,
 		constants.ArgCacheMaxTtl:             300,
+
+		// dashboard
+		constants.ArgDashboardStartTimeout: constants.DashboardStartTimeout.Seconds(),
 	}
 
 	for k, v := range defaults {
@@ -148,8 +151,9 @@ func SetDefaultsFromEnv() {
 		constants.EnvMaxParallel:          {[]string{constants.ArgMaxParallel}, Int},
 		constants.EnvQueryTimeout:         {[]string{constants.ArgDatabaseQueryTimeout}, Int},
 		constants.EnvDatabaseStartTimeout: {[]string{constants.ArgDatabaseStartTimeout}, Int},
-		constants.EnvCacheTTL:             {[]string{constants.ArgCacheTtl}, Int},
-		constants.EnvCacheMaxTTL:          {[]string{constants.ArgCacheMaxTtl}, Int},
+		constants.EnvDashboardStartTimeout: {[]string{constants.ArgDashboardStartTimeout}, Int},
+		constants.EnvCacheTTL:              {[]string{constants.ArgCacheTtl}, Int},
+		constants.EnvCacheMaxTTL:           {[]string{constants.ArgCacheMaxTtl}, Int},
 
 		// we need this value to go into different locations
 		constants.EnvCacheEnabled: {[]string{
