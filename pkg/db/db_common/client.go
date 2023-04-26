@@ -2,17 +2,20 @@ package db_common
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
-	"github.com/turbot/steampipe/pkg/schema"
 )
 
 type Client interface {
 	Close(ctx context.Context) error
 	LoadUserSearchPath(ctx context.Context) error
-	GetCurrentSearchPath(context.Context) ([]string, error)
+
 	SetRequiredSessionSearchPath(context.Context) error
 	GetRequiredSessionSearchPath() []string
 
+	// acquire a database connection - must be closed
+	AcquireConnection(ctx context.Context) (*pgxpool.Conn, error)
+	// acquire a query execution session (which search pathand cache options  set) - must be closed
 	AcquireSession(context.Context) *AcquireSessionResult
 
 	ExecuteSync(context.Context, string, ...any) (*queryresult.SyncQueryResult, error)
@@ -22,5 +25,5 @@ type Client interface {
 	ExecuteInSession(context.Context, *DatabaseSession, func(), string, ...any) (*queryresult.Result, error)
 
 	RefreshSessions(context.Context) *AcquireSessionResult
-	GetSchemaFromDB(context.Context, ...string) (*schema.Metadata, error)
+	GetSchemaFromDB(context.Context, ...string) (*SchemaMetadata, error)
 }

@@ -2,7 +2,6 @@ package controlexecute
 
 import (
 	"context"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"log"
 	"sort"
 	"sync"
@@ -14,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/sync/semaphore"
 )

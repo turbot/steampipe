@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -24,24 +23,6 @@ type schemaRecord struct {
 	ColumnDescription string
 	TableDescription  string
 }
-
-//func LoadSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, error) {
-//	res, err := conn.Query(ctx, "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT LIKE 'pg_%' ORDER BY schema_name;")
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	var allSchemaNames []string
-//	var schema string
-//	for res.Next() {
-//		if err := res.Scan(&schema); err != nil {
-//			return nil, err
-//		}
-//		allSchemaNames = append(allSchemaNames, schema)
-//	}
-//	sort.Strings(allSchemaNames)
-//	return allSchemaNames, nil
-//}
 
 func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, error) {
 	res, err := conn.Query(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables WHERE foreign_server_name='steampipe'")
@@ -64,7 +45,7 @@ func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, erro
 	return foreignSchemaNames, nil
 }
 
-func BuildSchemaMetadata(rows pgx.Rows) (_ *schema.Metadata, err error) {
+func BuildSchemaMetadata(rows pgx.Rows) (_ *SchemaMetadata, err error) {
 	utils.LogTime("db.buildSchemaMetadata start")
 	defer func() {
 		utils.LogTime("db.buildSchemaMetadata end")
@@ -76,25 +57,25 @@ func BuildSchemaMetadata(rows pgx.Rows) (_ *schema.Metadata, err error) {
 	if err != nil {
 		return nil, err
 	}
-	schemaMetadata := schema.NewMetadata()
+	SchemaMetadata := NewSchemaMetadata()
 
 	utils.LogTime("db.buildSchemaMetadata.iteration start")
 	for _, record := range records {
-		if _, schemaFound := schemaMetadata.Schemas[record.TableSchema]; !schemaFound {
-			schemaMetadata.Schemas[record.TableSchema] = map[string]schema.TableSchema{}
+		if _, schemaFound := SchemaMetadata.Schemas[record.TableSchema]; !schemaFound {
+			SchemaMetadata.Schemas[record.TableSchema] = map[string]TableSchema{}
 		}
 
-		if _, tblFound := schemaMetadata.Schemas[record.TableSchema][record.TableName]; !tblFound {
-			schemaMetadata.Schemas[record.TableSchema][record.TableName] = schema.TableSchema{
+		if _, tblFound := SchemaMetadata.Schemas[record.TableSchema][record.TableName]; !tblFound {
+			SchemaMetadata.Schemas[record.TableSchema][record.TableName] = TableSchema{
 				Schema:      record.TableSchema,
 				Name:        record.TableName,
 				FullName:    fmt.Sprintf("%s.%s", record.TableSchema, record.TableName),
 				Description: record.TableDescription,
-				Columns:     map[string]schema.ColumnSchema{},
+				Columns:     map[string]ColumnSchema{},
 			}
 		}
 
-		schemaMetadata.Schemas[record.TableSchema][record.TableName].Columns[record.ColumnName] = schema.ColumnSchema{
+		SchemaMetadata.Schemas[record.TableSchema][record.TableName].Columns[record.ColumnName] = ColumnSchema{
 			Name:        record.ColumnName,
 			NotNull:     typeHelpers.StringToBool(record.IsNullable),
 			Type:        record.DataType,
@@ -103,12 +84,12 @@ func BuildSchemaMetadata(rows pgx.Rows) (_ *schema.Metadata, err error) {
 		}
 
 		if strings.HasPrefix(record.TableSchema, "pg_temp") {
-			schemaMetadata.TemporarySchemaName = record.TableSchema
+			SchemaMetadata.TemporarySchemaName = record.TableSchema
 		}
 	}
 	utils.LogTime("db.buildSchemaMetadata.iteration end")
 
-	return schemaMetadata, err
+	return SchemaMetadata, err
 }
 
 func getSchemaRecordsFromRows(rows pgx.Rows) ([]schemaRecord, error) {

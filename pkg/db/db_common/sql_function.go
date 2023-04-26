@@ -1,7 +1,7 @@
-package schema
+package db_common
 
-// SQLFunc :: struct for an sqlFunc
-type SQLFunc struct {
+// SQLFunction is a struct for an sqlFunc
+type SQLFunction struct {
 	Name     string
 	Params   map[string]string
 	Returns  string

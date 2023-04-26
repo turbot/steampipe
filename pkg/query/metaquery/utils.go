@@ -1,14 +1,13 @@
 package metaquery
 
 import (
-	"sort"
 	"strings"
 
-	"github.com/c-bata/go-prompt"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/turbot/go-kit/helpers"
 )
 
-// IsMetaQuery :: returns true if the query is a metaquery, false otherwise
+// IsMetaQuery returns whether the query is a metaquery
 func IsMetaQuery(query string) bool {
 	if !strings.HasPrefix(query, ".") {
 		return false
@@ -21,6 +20,7 @@ func IsMetaQuery(query string) bool {
 	return foundHandler
 }
 
+// extract the command and arguments from the query string
 func getCmdAndArgs(query string) (string, []string) {
 	query = strings.TrimSuffix(query, ";")
 	split := helpers.SplitByWhitespace(query)
@@ -32,21 +32,33 @@ func getCmdAndArgs(query string) (string, []string) {
 	return cmd, args
 }
 
-// PromptSuggestions :: Returns a list of the suggestions for go-prompt
-func PromptSuggestions() []prompt.Suggest {
-	suggestions := make([]prompt.Suggest, 0, len(metaQueryDefinitions))
-	for k, definition := range metaQueryDefinitions {
-		suggestions = append(suggestions, prompt.Suggest{Text: k, Description: definition.description, Output: k})
-	}
-
-	sort.SliceStable(suggestions[:], func(i, j int) bool {
-		return suggestions[i].Text < suggestions[j].Text
-	})
-
-	return suggestions
-}
-
+// extract the arguments from the query string
 func getArguments(query string) []string {
 	_, args := getCmdAndArgs(query)
 	return args
+}
+
+// build a table from the provided row data
+func buildTable(rows [][]string, autoMerge bool) string {
+	t := table.NewWriter()
+	t.SetStyle(table.StyleDefault)
+	t.Style().Options = table.Options{
+		DrawBorder:      false,
+		SeparateColumns: false,
+		SeparateFooter:  false,
+		SeparateHeader:  false,
+		SeparateRows:    false,
+	}
+	t.Style().Box.PaddingLeft = ""
+
+	rowConfig := table.RowConfig{AutoMerge: autoMerge}
+
+	for _, row := range rows {
+		rowObj := table.Row{}
+		for _, col := range row {
+			rowObj = append(rowObj, col)
+		}
+		t.AppendRow(rowObj, rowConfig)
+	}
+	return t.Render()
 }

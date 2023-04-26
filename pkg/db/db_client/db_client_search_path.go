@@ -12,23 +12,8 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
-
-// GetCurrentSearchPath implements Client
-// query the database to get the current session search path
-func (c *DbClient) GetCurrentSearchPath(ctx context.Context) ([]string, error) {
-	res, err := c.ExecuteSync(ctx, "show search_path")
-	if err != nil {
-		return nil, err
-	}
-	pathAsString, ok := res.Rows[0].(*queryresult.RowResult).Data[0].(string)
-	if !ok {
-		return nil, fmt.Errorf("failed to read the current search path: %s", err.Error())
-	}
-	return db_common.BuildSearchPathResult(pathAsString)
-}
 
 // SetRequiredSessionSearchPath implements Client
 // if either a search-path or search-path-prefix is set in config, set the search path

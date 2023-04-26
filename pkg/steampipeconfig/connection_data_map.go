@@ -2,11 +2,11 @@ package steampipeconfig
 
 import (
 	"encoding/json"
-	"github.com/turbot/steampipe/pkg/constants"
 	"log"
 	"os"
 	"time"
 
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -68,12 +68,19 @@ func (m ConnectionDataMap) GetSummary() ConnectionStateSummary {
 	return res
 }
 
-// Pending returns whether there are any connections in the map pending?
+// Pending returns whether there are any connections in the map which are pending
 // this indicates that the db has just started and RefreshConnections has not been called yet
 func (m ConnectionDataMap) Pending() bool {
+	return m.ConnectionsInState(constants.ConnectionStatePending)
+}
+
+// ConnectionsInState returns whether there are any connections one of the given states
+func (m ConnectionDataMap) ConnectionsInState(states ...string) bool {
 	for _, c := range m {
-		if c.State == constants.ConnectionStatePending {
-			return true
+		for _, state := range states {
+			if c.State == state {
+				return true
+			}
 		}
 	}
 	return false
