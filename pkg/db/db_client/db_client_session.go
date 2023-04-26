@@ -15,7 +15,7 @@ import (
 func (c *DbClient) AcquireConnection(ctx context.Context) (*pgxpool.Conn, error) {
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
-	conn, _, err := c.getDatabaseConnectionWithRetries(ctx)
+	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
-	databaseConnection, backendPid, err := c.getDatabaseConnectionWithRetries(ctx)
+	databaseConnection, backendPid, err := c.GetDatabaseConnectionWithRetries(ctx)
 	if err != nil {
 		sessionResult.Error = err
 		return sessionResult
@@ -92,14 +92,14 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	return sessionResult
 }
 
-func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {
+func (c *DbClient) GetDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {
 	// get a database connection from the pool
 	databaseConnection, err := c.pool.Acquire(ctx)
 	if err != nil {
 		if databaseConnection != nil {
 			databaseConnection.Release()
 		}
-		log.Printf("[TRACE] getDatabaseConnectionWithRetries failed: %s", err.Error())
+		log.Printf("[TRACE] GetDatabaseConnectionWithRetries failed: %s", err.Error())
 		return nil, 0, err
 	}
 

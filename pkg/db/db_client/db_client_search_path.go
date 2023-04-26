@@ -55,7 +55,7 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 }
 
 func (c *DbClient) LoadUserSearchPath(ctx context.Context) error {
-	conn, _, err := c.getDatabaseConnectionWithRetries(ctx)
+	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
 	if err != nil {
 		return err
 	}

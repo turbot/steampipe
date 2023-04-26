@@ -29,7 +29,7 @@ func Ensure(ctx context.Context) error {
 	}
 
 	statushooks.SetStatus(ctx, "Installing dashboard server...")
-	defer statushooks.Done(ctx)
+
 	reportAssetsPath := filepaths.EnsureDashboardAssetsDir()
 
 	// remove the legacy report folder, if it exists

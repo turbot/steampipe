@@ -93,7 +93,7 @@ func Stop() error {
 
 // stop the running plugin manager instance
 func stop(state *PluginManagerState) error {
-	log.Printf("[INFO] plugin manager stop")
+	log.Printf("[TRACE] plugin manager stop")
 	pluginManager, err := NewPluginManagerClient(state)
 	if err != nil {
 		return err

@@ -10,6 +10,7 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -60,7 +61,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	// build connection data for all required connections
 	// NOTE: this will NOT populate SchemaMode for the connections, as we need to load the schema for that
 	// this will be updated below on the call to updateRequiredStateWithSchemaProperties
-	requiredConnectionState, missingPlugins, err := NewConnectionDataMap(GlobalConfig.Connections)
+	requiredConnectionState, missingPlugins, err := NewConnectionDataMap(GlobalConfig.Connections, currentConnectionState)
 	if err != nil {
 		log.Printf("[WARN] failed to build required connection state: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
@@ -88,6 +89,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 
 	log.Printf("[TRACE] Identify connections to update")
 
+	modTime := time.Now()
 	// connections to create/update
 	for name, requiredConnectionData := range requiredConnectionState {
 		// check whether this connection exists in the state
@@ -98,6 +100,9 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 			!currentConnectionData.Equals(requiredConnectionData) {
 			log.Printf("[TRACE] connection %s is out of date or missing", name)
 			updates.Update[name] = requiredConnectionData
+
+			// set the connection mod time of required connection data to now
+			requiredConnectionData.ConnectionModTime = modTime
 		}
 	}
 

@@ -579,11 +579,12 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// List failed/missing plugins in a separate table
-	if len(failedPluginMap) != 0 || len(missingPluginMap) != 0 {
+	if len(failedPluginMap)+len(missingPluginMap) != 0 {
 		// List missing/failed plugins
 		headers := []string{"Failed Plugin", "Connections", "Reason"}
-		var conns = []string{}
+		var conns []string
 		var missingRows [][]string
+
 		// failed plugins
 		for p, item := range failedPluginMap {
 			for _, conn := range item {
@@ -695,28 +696,12 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 	statushooks.SetStatus(ctx, "Fetching connection map")
 
 	res = &modconfig.ErrorAndWarnings{}
-	// NOTE: start db if necessary - this will call refresh connections
-	if err := db_local.EnsureDBInstalled(ctx); err != nil {
-		return nil, nil, nil, modconfig.NewErrorsAndWarning(err)
-	}
-	startResult := db_local.StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), db_local.ListenTypeLocal, constants.InvokerPlugin)
-	if startResult.Error != nil {
-		return nil, nil, nil, &startResult.ErrorAndWarnings
-	}
-	defer db_local.ShutdownService(ctx, constants.InvokerPlugin)
 
-	// load the connection state and cache it!
-	connectionStateMap, err := steampipeconfig.LoadConnectionStateFile()
-	if err != nil {
-		res.Error = err
+	connectionStateMap, stateRes := getConnectionState(ctx)
+	res.Merge(stateRes)
+	if res.Error != nil {
 		return nil, nil, nil, res
 	}
-
-	// TODO KAI if state file empty but conneciton config is not, we need to call refresh connections
-	// (as service is not started by default for plugin commands)
-	//if len(connectionStateMap)==0 && len(steampipeconfig.GlobalConfig.Connections) != 0{
-	//
-	//}
 
 	// create the map of failed/missing plugins
 	failedPluginMap = map[string][]*modconfig.Connection{}
@@ -746,4 +731,31 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 	}
 
 	return pluginConnectionMap, failedPluginMap, missingPluginMap, res
+}
+
+func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionDataMap, *modconfig.ErrorAndWarnings) {
+
+	// start service
+	client, res := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
+	if res.Error != nil {
+		return nil, res
+	}
+	defer client.Close(ctx)
+
+	conn, err := client.AcquireConnection(ctx)
+	if err != nil {
+		res.Error = err
+		return nil, res
+	}
+	defer conn.Release()
+
+	// load LoadConnectionState
+	statushooks.SetStatus(ctx, "Loading connection state")
+	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilReady)
+	if err != nil {
+		res.Error = err
+		return nil, res
+	}
+
+	return connectionStateMap, res
 }
