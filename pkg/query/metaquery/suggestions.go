@@ -2,6 +2,7 @@ package metaquery
 
 import (
 	"sort"
+
 	"github.com/c-bata/go-prompt"
 )
 
