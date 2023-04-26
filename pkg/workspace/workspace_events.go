@@ -3,7 +3,6 @@ package workspace
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"log"
 	"reflect"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )

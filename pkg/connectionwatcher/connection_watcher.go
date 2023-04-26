@@ -61,26 +61,6 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
 		}
 	}()
 
-	// TODO KAI REMOVE
-	// filter events to exclude chmod for non zero length files
-	//
-	log.Printf("[WARN] handleFileWatcherEvent %v", events)
-	//var filteredEvents []fsnotify.Event
-	//for _, ev := range events {
-	//	if ev.Op == fsnotify.Chmod {
-	//		log.Printf("[WARN] CHMOD %s", ev.Name)
-	//		fi, err := os.Stat(ev.Name)
-	//		if err == nil && fi.Size() > 0 {
-	//			continue
-	//		}
-	//	}
-	//
-	//	filteredEvents = append(filteredEvents, ev)
-	//}
-	//if len(filteredEvents) == 0 {
-	//	return
-	//}
-
 	// this is a file system event handler and not bound to any context
 	ctx := context.Background()
 
