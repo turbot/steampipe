@@ -17,14 +17,14 @@ type ConnectionStateSummary map[string]int
 type ConnectionDataMap map[string]*ConnectionData
 
 // NewConnectionDataMap populates a map of connection data for all connections in connectionMap
-func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (ConnectionDataMap, map[string][]modconfig.Connection, error) {
+func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection, currentConnectionState ConnectionDataMap) (ConnectionDataMap, map[string][]modconfig.Connection, error) {
 	utils.LogTime("steampipeconfig.getRequiredConnections start")
 	defer utils.LogTime("steampipeconfig.getRequiredConnections end")
 
-	requiredConnections := ConnectionDataMap{}
+	res := ConnectionDataMap{}
 
 	// cache plugin file creation times in a dictionary to avoid reloading the same plugin file multiple times
-	modTimeMap := make(map[string]time.Time)
+	pluginModTimeMap := make(map[string]time.Time)
 
 	// map of missing plugins, keyed by plugin, value is list of conections using missing plugin
 	missingPluginMap := make(map[string][]modconfig.Connection)
@@ -42,22 +42,27 @@ func NewConnectionDataMap(connectionMap map[string]*modconfig.Connection) (Conne
 		}
 
 		// get the plugin file mod time
-		var modTime time.Time
+		var pluginModTime time.Time
 		var ok bool
-		if modTime, ok = modTimeMap[pluginPath]; !ok {
+		if pluginModTime, ok = pluginModTimeMap[pluginPath]; !ok {
 			var err error
-			modTime, err = utils.FileModTime(pluginPath)
+			pluginModTime, err = utils.FileModTime(pluginPath)
 			if err != nil {
 				return nil, nil, err
 			}
 		}
-		modTimeMap[pluginPath] = modTime
+		pluginModTimeMap[pluginPath] = pluginModTime
+		res[name] = NewConnectionData(remoteSchema, connection, pluginModTime)
 
-		requiredConnections[name] = NewConnectionData(remoteSchema, connection, modTime)
+		// NOTE: if the connection exists in the current state, copy the connection mod time
+		// (this will be updated to 'now' later if we are updating the connection)
+		if currentState, ok := currentConnectionState[name]; ok {
+			res[name].ConnectionModTime = currentState.ConnectionModTime
+		}
 	}
 	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration end")
 
-	return requiredConnections, missingPluginMap, nil
+	return res, missingPluginMap, nil
 }
 
 func (m ConnectionDataMap) GetSummary() ConnectionStateSummary {
@@ -74,6 +79,14 @@ func (m ConnectionDataMap) Pending() bool {
 	return m.ConnectionsInState(constants.ConnectionStatePending)
 }
 
+// Ready returns whether loading is complete, i.e.  all connections are either ready or error
+func (m ConnectionDataMap) Ready() bool {
+	return !m.ConnectionsInState(
+		constants.ConnectionStatePending,
+		constants.ConnectionStateUpdating,
+		constants.ConnectionStateDeleting)
+}
+
 // ConnectionsInState returns whether there are any connections one of the given states
 func (m ConnectionDataMap) ConnectionsInState(states ...string) bool {
 	for _, c := range m {
@@ -84,17 +97,6 @@ func (m ConnectionDataMap) ConnectionsInState(states ...string) bool {
 		}
 	}
 	return false
-}
-
-// IsValid checks whether the struct was correctly deserialized,
-// by checking if the ConnectionData StructVersion is populated
-func (m ConnectionDataMap) IsValid() bool {
-	for _, v := range m {
-		if !v.IsValid() {
-			return false
-		}
-	}
-	return true
 }
 
 func (m ConnectionDataMap) Save() error {

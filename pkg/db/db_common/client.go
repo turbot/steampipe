@@ -25,5 +25,5 @@ type Client interface {
 	ExecuteInSession(context.Context, *DatabaseSession, func(), string, ...any) (*queryresult.Result, error)
 
 	RefreshSessions(context.Context) *AcquireSessionResult
-	GetSchemaFromDB(context.Context, ...string) (*SchemaMetadata, error)
+	GetSchemaFromDB(context.Context) (*SchemaMetadata, error)
 }

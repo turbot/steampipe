@@ -179,7 +179,6 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	if force {
 		// check if we have a process from another install-dir
 		statushooks.SetStatus(ctx, "Checking for running instances...")
-		defer statushooks.Done(ctx)
 		// do not use a context that can be cancelled
 		anyStopped := killInstanceIfAny(context.Background())
 		if anyStopped {
@@ -258,7 +257,6 @@ func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) erro
 
 		// set status, as this is taking time
 		statushooks.SetStatus(ctx, "Shutting down...")
-		defer statushooks.Done(ctx)
 
 		// try a SIGINT
 		err = process.SendSignal(syscall.SIGINT)

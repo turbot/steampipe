@@ -60,7 +60,7 @@ func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []st
 
 	defer func() {
 		if res.Error != nil {
-			// if there was an error, set state of all connectoins to error
+			// if there was an error, set state of all connections to error
 			// TODO KAI CHECK THIS
 			setAllConnectionStateToError(ctx, pool, res.Error)
 			// TODO kai send error PG notification
@@ -72,6 +72,16 @@ func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []st
 	if res.Error != nil {
 		return res
 	}
+
+	// delete the connection state file - this indicates to anything using it that we are in the process up refreshing
+	log.Printf("[INFO] refreshConnections deleting connections state file")
+	steampipeconfig.DeleteConnectionStateFile()
+	defer func() {
+		if res.Error == nil {
+			log.Printf("[INFO] refreshConnections saving connections state file")
+			steampipeconfig.SaveConnectionStateFile(res, connectionUpdates)
+		}
+	}()
 
 	log.Printf("[INFO] refreshConnections: created connection updates")
 
@@ -108,21 +118,6 @@ func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []st
 		log.Println("[INFO] refreshConnections: no updates required")
 		return res
 	}
-
-	// delete the connection state file - this indicates to anything using it that we are in the process up refreshing
-	log.Printf("[TRACE] refreshConnections deleting connections state file")
-	steampipeconfig.DeleteConnectionStateFile()
-
-	// before finishing - be sure to save connection state if there was no error
-	defer func() {
-		if res.Error == nil {
-			log.Printf("[INFO] refreshConnections saving connections state file")
-			// now serialise the connection state
-			if res.Error == nil {
-				steampipeconfig.SaveConnectionStateFile(res, connectionUpdates)
-			}
-		}
-	}()
 
 	log.Printf("[INFO] refreshConnections execute connection queries")
 

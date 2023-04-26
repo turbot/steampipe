@@ -2,27 +2,28 @@ package steampipeconfig
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/sethvargo/go-retry"
-	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
-	"log"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"os"
 	"time"
 )
 
 type LoadConnectionStateConfiguration struct {
 	WaitForPending bool
+	WaitForReady   bool
 }
 
 type LoadConnectionStateOption = func(config *LoadConnectionStateConfiguration)
 
 var WithWaitForPending = func(config *LoadConnectionStateConfiguration) {
 	config.WaitForPending = true
+}
+var WithWaitUntilReady = func(config *LoadConnectionStateConfiguration) {
+	config.WaitForReady = true
 }
 
 // LoadConnectionState populates a ConnectionDataMap from the connection_state table
@@ -32,21 +33,26 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 	for _, opt := range opts {
 		opt(config)
 	}
-	if !config.WaitForPending {
-		return loadConnectionState(ctx, conn)
+	// max duration depends on if waiting for ready
+	maxDuration := 5 * time.Second
+	if config.WaitForReady {
+		maxDuration = 5 * time.Minute
 	}
-
-	maxAttempts := uint64(10)
 	retryInterval := 50 * time.Millisecond
-	backoff := retry.NewConstant(retryInterval * time.Millisecond)
+	backoff := retry.NewConstant(retryInterval)
 
 	var connectionState ConnectionDataMap
 
-	err := retry.Do(ctx, retry.WithMaxRetries(maxAttempts, backoff), func(ctx context.Context) error {
+	err := retry.Do(ctx, retry.WithMaxDuration(maxDuration, backoff), func(ctx context.Context) error {
 		var loadErr error
 		connectionState, loadErr = loadConnectionState(ctx, conn)
-		if loadErr == nil && connectionState.Pending() {
-			loadErr = retry.RetryableError(fmt.Errorf("connection state is pending"))
+		if loadErr == nil {
+			if config.WaitForReady && !connectionState.Ready() {
+				statushooks.SetStatus(ctx, "Waiting for steampipe connections to refresh")
+				loadErr = retry.RetryableError(fmt.Errorf("connection state is still loading"))
+			} else if config.WaitForPending && connectionState.Pending() {
+				loadErr = retry.RetryableError(fmt.Errorf("connection state is pending"))
+			}
 		}
 		return loadErr
 	})
@@ -85,7 +91,6 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionDataMap
 		// (this will not be there for a deletion)
 		connection, _ := GlobalConfig.Connections[connectionData.ConnectionName]
 
-		connectionData.StructVersion = ConnectionDataStructVersion
 		connectionData.Connection = connection
 		res[c.ConnectionName] = &connectionData
 	}
@@ -93,42 +98,35 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionDataMap
 	return res, nil
 }
 
-// LoadConnectionStateFile loads the connection state file
-func LoadConnectionStateFile() (state ConnectionDataMap, err error) {
-	utils.LogTime("LoadConnectionStateFile start")
-	defer utils.LogTime("LoadConnectionStateFile end")
-
-	var connectionState ConnectionDataMap
-	connectionStatePath := filepaths.ConnectionStatePath()
-
-	// if file does not exist, return empty struct
-	if !filehelpers.FileExists(connectionStatePath) {
-		return connectionState, nil
-	}
-	jsonFile, err := os.ReadFile(connectionStatePath)
-	if err != nil {
-		return nil, fmt.Errorf("error loading %s: %v", connectionStatePath, err)
-	}
-
-	err = json.Unmarshal(jsonFile, &connectionState)
-	if err != nil {
-		log.Printf("[TRACE] error parsing %s: %v", connectionStatePath, err)
-		// If we fail to parse the state file, suppress the error and return an empty state
-		// This will force the connection to refresh
-		return make(ConnectionDataMap), nil
-	}
-
-	// check whether the loaded state file has an older struct version
-	// this indicates that we need to refresh this connection - so remove the connection data from the map
-	// (typically this would be used if we need to force a refresh of connection config,
-	// for example if there is an update to the Postgres schema building code)
-	for key, connectionData := range connectionState {
-		if connectionData.StructVersion < ConnectionDataStructVersion {
-			delete(connectionState, key)
-		}
-	}
-	return connectionState, nil
-}
+//
+//// TODO KAI WHO USES ME???
+//// LoadConnectionStateFile loads the connection state file
+//func LoadConnectionStateFile() (state ConnectionDataMap, err error) {
+//	utils.LogTime("LoadConnectionStateFile start")
+//	defer utils.LogTime("LoadConnectionStateFile end")
+//
+//	var connectionState ConnectionDataMap
+//	connectionStatePath := filepaths.ConnectionStatePath()
+//
+//	// if file does not exist, return empty struct
+//	if !filehelpers.FileExists(connectionStatePath) {
+//		return connectionState, nil
+//	}
+//	jsonFile, err := os.ReadFile(connectionStatePath)
+//	if err != nil {
+//		return nil, fmt.Errorf("error loading %s: %v", connectionStatePath, err)
+//	}
+//
+//	err = json.Unmarshal(jsonFile, &connectionState)
+//	if err != nil {
+//		log.Printf("[TRACE] error parsing %s: %v", connectionStatePath, err)
+//		// If we fail to parse the state file, suppress the error and return an empty state
+//		// This will force the connection to refresh
+//		return make(ConnectionDataMap), nil
+//	}
+//
+//	return connectionState, nil
+//}
 
 func SaveConnectionStateFile(res *RefreshConnectionResult, connectionUpdates *ConnectionUpdates) {
 	// now serialise the connection state

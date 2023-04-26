@@ -48,3 +48,15 @@ func (r *ErrorAndWarnings) GetError() error {
 	}
 	return r.Error
 }
+
+func (r *ErrorAndWarnings) Merge(other *ErrorAndWarnings) {
+	if other == nil {
+		return
+	}
+	if r.Error == nil {
+		r.Error = other.Error
+	}
+	if len(other.Warnings) > 0 {
+		r.AddWarning(other.Warnings...)
+	}
+}

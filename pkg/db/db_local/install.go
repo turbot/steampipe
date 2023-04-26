@@ -76,7 +76,6 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	statushooks.SetStatus(ctx, "Installing database...")
-	defer statushooks.Done(ctx)
 
 	err = downloadAndInstallDbFiles(ctx)
 	if err != nil {
@@ -188,7 +187,6 @@ func prepareDb(ctx context.Context) error {
 	// we can just drop in the new binaries
 	if dbNeedsUpdate(versionInfo) {
 		statushooks.SetStatus(ctx, "Updating database...")
-		defer statushooks.Done(ctx)
 
 		// install new db binaries
 		if err = downloadAndInstallDbFiles(ctx); err != nil {
@@ -254,7 +252,6 @@ func installFDW(ctx context.Context, firstSetup bool) (string, error) {
 		}()
 	}
 	statushooks.SetStatus(ctx, fmt.Sprintf("Download & install %s...", constants.Bold("steampipe-postgres-fdw")))
-	defer statushooks.Done(ctx)
 	return ociinstaller.InstallFdw(ctx, getDatabaseLocation())
 }
 
@@ -271,7 +268,6 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	defer utils.LogTime("db_local.runInstall end")
 
 	statushooks.SetStatus(ctx, "Cleaning up...")
-	defer statushooks.Done(ctx)
 
 	err := utils.RemoveDirectoryContents(getDataLocation())
 	if err != nil {
