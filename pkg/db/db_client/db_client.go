@@ -21,7 +21,6 @@ import (
 type DbClient struct {
 	connectionString string
 	pool             *pgxpool.Pool
-	//requiredSessionSearchPath []string
 
 	// concurrency management for db session access
 	parallelSessionInitLock *semaphore.Weighted
@@ -31,11 +30,6 @@ type DbClient struct {
 	sessions map[uint32]*db_common.DatabaseSession
 	// allows locked access to the 'sessions' map
 	sessionsMutex *sync.Mutex
-
-	// list of connection schemas
-	//foreignSchemaNames []string
-	//// list of all local schemas
-	//allSchemaNames []string
 
 	// if a custom search path or a prefix is used, store it here
 	customSearchPath []string

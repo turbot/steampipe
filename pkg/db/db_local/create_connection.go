@@ -49,10 +49,8 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 
 	psqlInfoMap := map[string]string{
 		// Connect to the database using the first listen address, which is usually localhost
-		"host": info.Listen[0],
-		"port": fmt.Sprintf("%d", info.Port),
-		// TODO KAI HACK
-		//"user": "root",
+		"host":   info.Listen[0],
+		"port":   fmt.Sprintf("%d", info.Port),
 		"user":   opts.Username,
 		"dbname": opts.DatabaseName,
 	}

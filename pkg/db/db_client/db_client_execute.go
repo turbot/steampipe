@@ -4,10 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/sethvargo/go-retry"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/sperr"
 	"net/netip"
 	"regexp"
 	"strings"
@@ -15,7 +11,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/sethvargo/go-retry"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -23,7 +21,9 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/sperr"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -250,6 +250,7 @@ func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_comm
 	return nil
 }
 
+// TODO KAI COMMENT
 func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, query string, args ...any) (pgx.Rows, error) {
 	maxDuration := 10 * time.Minute
 	backoffInterval := 250 * time.Millisecond
@@ -361,7 +362,6 @@ func isRelationNotFoundError(err error) (string, string, bool) {
 // run query in a goroutine, so we can check for cancellation
 // in case the client becomes unresponsive and does not respect context cancellation
 func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string, args ...any) (rows pgx.Rows, err error) {
-
 	doneChan := make(chan bool)
 	go func() {
 		// start asynchronous query

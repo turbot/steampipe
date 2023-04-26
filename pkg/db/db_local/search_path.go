@@ -3,11 +3,11 @@ package db_local
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
 	"sort"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"

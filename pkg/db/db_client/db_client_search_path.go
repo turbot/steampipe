@@ -3,10 +3,10 @@ package db_client
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5"
 	"log"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -21,7 +21,6 @@ import (
 // this just sets the required search path for this client
 // - when creating a database session, we will actually set the searchPath
 func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
-
 	configuredSearchPath := viper.GetStringSlice(constants.ArgSearchPath)
 	searchPathPrefix := viper.GetStringSlice(constants.ArgSearchPathPrefix)
 
