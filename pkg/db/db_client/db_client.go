@@ -13,7 +13,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/sync/semaphore"
 )
@@ -143,7 +142,7 @@ func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireS
 
 // GetSchemaFromDB requests for all columns of tables backed by steampipe plugins
 // and creates golang struct representations from the result
-func (c *DbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) (*schema.Metadata, error) {
+func (c *DbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) (*db_common.SchemaMetadata, error) {
 	utils.LogTime("db_client.GetSchemaFromDB start")
 	defer utils.LogTime("db_client.GetSchemaFromDB end")
 	connection, err := c.pool.Acquire(ctx)

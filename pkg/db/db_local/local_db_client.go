@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
-	"github.com/turbot/steampipe/pkg/schema"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -78,7 +78,7 @@ func (c *LocalDbClient) Close(ctx context.Context) error {
 // GetSchemaFromDB for LocalDBClient optimises the schema extraction by extracting schema
 // information for connections backed by distinct plugins and then fanning back out.
 // NOTE: we can only do this optimisation for a LOCAL db connection as we have access to connection config
-func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) (*schema.Metadata, error) {
+func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) (*db_common.SchemaMetadata, error) {
 	// build a ConnectionSchemaMap object to identify the schemas to load
 	connectionSchemaMap, err := steampipeconfig.NewConnectionSchemaMap()
 	if err != nil {
@@ -94,7 +94,7 @@ func (c *LocalDbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) 
 		exemplarSchema, ok := metadata.Schemas[loadedSchema]
 		if !ok {
 			// should can happen in the case of a dynamic plugin with no tables - use empty schema
-			exemplarSchema = make(map[string]schema.TableSchema)
+			exemplarSchema = make(map[string]db_common.TableSchema)
 		}
 
 		for _, s := range otherSchemas {

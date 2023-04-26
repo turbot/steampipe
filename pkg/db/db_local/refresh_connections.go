@@ -52,18 +52,24 @@ func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionN
 // RefreshConnections loads required connections from config
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
-func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []string, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
+func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []string, forceUpdateConnectionNames ...string) (res *steampipeconfig.RefreshConnectionResult) {
 	log.Printf("[INFO] refreshConnections")
 	//
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
+	defer func() {
+		if res.Error != nil {
+			// if there was an error, set state of all connectoins to error
+			// TODO KAI CHECK THIS
+			setAllConnectionStateToError(ctx, pool, res.Error)
+			// TODO kai send error PG notification
+		}
+	}()
 	// determine any necessary connection updates
-
 	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(ctx, pool, forceUpdateConnectionNames...)
 	defer logRefreshConnectionResults(connectionUpdates, res)
 	if res.Error != nil {
-		// TODO kai send error PG notification
 		return res
 	}
 
@@ -125,13 +131,39 @@ func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []st
 	// merge results into local results
 	res.Merge(queryRes)
 	if res.Error != nil {
-		// TODO KAI clear up connection schemas and connection state table
 		return res
 	}
 
 	res.UpdatedConnections = true
 
 	return res
+}
+
+// sett the state of all connections to error
+func setAllConnectionStateToError(ctx context.Context, pool *pgxpool.Pool, err error) {
+	// create wrapped error
+	connectionStateError := sperr.WrapWithMessage(err, "failed to update Steampipe connections")
+	// load connection state
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		log.Printf("[WARN] setAllConnectionStateToError failed to acquire conneciton from pool: %s", err.Error())
+	}
+	defer conn.Release()
+
+	// load the connection state file and filter out any connections which are not in the list of schemas
+	// this allows for the database being rebuilt,modified externally
+	currentConnectionState, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn())
+	if err != nil {
+		log.Printf("[WARN] setAllConnectionStateToError failed to load connection state: %s", err.Error())
+		return
+	}
+	var queries []db_common.QueryWithArgs
+	for name := range currentConnectionState {
+		queries = append(queries, getConnectionStateErrorSql(name, connectionStateError))
+	}
+	if _, err := executeSqlWithArgsAsRoot(ctx, queries...); err != nil {
+		log.Printf("[WARN] setAllConnectionStateToError failed to set connectoin state to error: %s", err.Error())
+	}
 }
 
 func logRefreshConnectionResults(updates *steampipeconfig.ConnectionUpdates, res *steampipeconfig.RefreshConnectionResult) {

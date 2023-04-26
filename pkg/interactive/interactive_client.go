@@ -29,7 +29,6 @@ import (
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/metaquery"
 	"github.com/turbot/steampipe/pkg/query/queryhistory"
-	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -70,7 +69,7 @@ type InteractiveClient struct {
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock sync.Mutex
 	// the schema metadata - this is loaded asynchronously during init
-	schemaMetadata *schema.Metadata
+	schemaMetadata *db_common.SchemaMetadata
 	highlighter    *Highlighter
 	// hidePrompt is used to render a blank as the prompt prefix
 	hidePrompt bool
@@ -519,10 +518,10 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 	client := c.client()
 	// validation passed, now we will run
 	return metaquery.Handle(ctx, &metaquery.HandlerInput{
-		Query:       query,
-		Client:      client,
-		Schema:      c.schemaMetadata,
-		Connections: c.initData.ConnectionMap,
+		Query:      query,
+		Client:     client,
+		Schema:     c.schemaMetadata,
+		SearchPath: client.GetRequiredSessionSearchPath(),
 		Prompt:      c.interactivePrompt,
 		ClosePrompt: func() { c.afterClose = AfterPromptCloseExit },
 	})
@@ -680,7 +679,7 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 	if notification == nil {
 		return
 	}
-	log.Printf("[WARN] handleConnectionUpdateNotification: %s", notification.Payload)
+	log.Printf("[TRACE] handleConnectionUpdateNotification")
 	n := &steampipeconfig.PostgresNotification{}
 	err := json.Unmarshal([]byte(notification.Payload), n)
 	if err != nil {
@@ -704,20 +703,11 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	// as an optimization we could look at the updates and only reload the required schemas
 
 	log.Printf("[TRACE] handleConnectionUpdateNotification")
-	// reload the connection data map
 
 	// first load user search path
 	if err := c.client().LoadUserSearchPath(ctx); err != nil {
 		log.Printf("[INFO] Error loading foreign user search path: %v", err)
 	}
-	// now reload state
-	connectionMap, err := steampipeconfig.LoadConnectionStateFile()
-	if err != nil {
-		log.Printf("[INFO] Error loading connection state: %v", err)
-		return
-	}
-	// and save it
-	c.initData.ConnectionMap = connectionMap
 
 	// reload config before reloading schema
 	config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "query")
@@ -732,11 +722,6 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 		log.Printf("[INFO] Error unmarshalling notification: %s", err)
 		return
 	}
-	// reload the user search path
-	if err := c.client().LoadUserSearchPath(ctx); err != nil {
-		log.Printf("[INFO] Error loading search path: %s", err)
-		return
-	}
 
 	// reinitialise autocomplete suggestions
 	c.initialiseSuggestions()
@@ -747,5 +732,4 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	defer c.executionLock.Unlock()
 
 	c.client().RefreshSessions(ctx)
-	log.Printf("[TRACE] completed refresh session")
 }

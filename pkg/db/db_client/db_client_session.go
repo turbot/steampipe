@@ -12,6 +12,17 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )
 
+func (c *DbClient) AcquireConnection(ctx context.Context) (*pgxpool.Conn, error) {
+	// get a database connection and query its backend pid
+	// note - this will retry if the connection is bad
+	conn, _, err := c.getDatabaseConnectionWithRetries(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return conn, nil
+}
+
 func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common.AcquireSessionResult) {
 	sessionResult = &db_common.AcquireSessionResult{}
 

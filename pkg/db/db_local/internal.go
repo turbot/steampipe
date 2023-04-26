@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/schema"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
 )
@@ -40,7 +40,7 @@ func setupInternal(ctx context.Context) error {
 		fmt.Sprintf(`UPDATE %s.%s SET STATE = '%s'`, constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStatePending),
 		fmt.Sprintf(`GRANT SELECT ON TABLE %s.%s to %s;`, constants.InternalSchema, constants.ConnectionStateTable, constants.DatabaseUsersRole),
 	}
-	queries = append(queries, getFunctionAddStrings(constants.Functions)...)
+	queries = append(queries, getFunctionAddStrings(db_common.Functions)...)
 	if _, err := executeSqlAsRoot(ctx, queries...); err != nil {
 		return sperr.WrapWithMessage(err, "failed to initialise functions")
 	}
@@ -64,7 +64,7 @@ func getConnectionStateTableCreateSql() string {
     			);`, constants.InternalSchema, constants.ConnectionStateTable)
 }
 
-func getFunctionAddStrings(functions []schema.SQLFunc) []string {
+func getFunctionAddStrings(functions []db_common.SQLFunction) []string {
 	var addStrings []string
 	for _, function := range functions {
 		addStrings = append(addStrings, getFunctionAddString(function))
@@ -72,7 +72,7 @@ func getFunctionAddStrings(functions []schema.SQLFunc) []string {
 	return addStrings
 }
 
-func getFunctionAddString(function schema.SQLFunc) string {
+func getFunctionAddString(function db_common.SQLFunction) string {
 	if err := validateFunction(function); err != nil {
 		// panic - this should never happen,
 		// since the function definitions are
@@ -80,8 +80,7 @@ func getFunctionAddString(function schema.SQLFunc) string {
 		panic(err)
 	}
 
-	inputParams := []string{}
-
+	var inputParams []string
 	for argName, argType := range function.Params {
 		inputParams = append(inputParams, fmt.Sprintf("%s %s", argName, argType))
 	}
@@ -102,6 +101,6 @@ $$;
 	))
 }
 
-func validateFunction(f schema.SQLFunc) error {
+func validateFunction(f db_common.SQLFunction) error {
 	return nil
 }

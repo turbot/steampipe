@@ -1,19 +1,21 @@
-package schema
+package db_common
 
 import (
+	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 	"regexp"
 	"sort"
 	"strings"
 )
 
-func NewMetadata() *Metadata {
-	return &Metadata{
+func NewSchemaMetadata() *SchemaMetadata {
+	return &SchemaMetadata{
 		Schemas: map[string]map[string]TableSchema{},
 	}
 }
 
-// Metadata is a struct to represent the schema of the database
-type Metadata struct {
+// SchemaMetadata is a struct to represent the schema of the database
+type SchemaMetadata struct {
 	// map {schemaname, {map {tablename -> tableschema}}
 	Schemas map[string]map[string]TableSchema
 	// the name of the temporary schema
@@ -41,7 +43,7 @@ type ColumnSchema struct {
 }
 
 // GetSchemas returns all foreign schema names
-func (m *Metadata) GetSchemas() []string {
+func (m *SchemaMetadata) GetSchemas() []string {
 	var schemas []string
 	for schema := range m.Schemas {
 		schemas = append(schemas, schema)
@@ -50,16 +52,12 @@ func (m *Metadata) GetSchemas() []string {
 	return schemas
 }
 
-// GetTablesInSchema :: returns all foreign tables in a given foreign schema
-func (m *Metadata) GetTablesInSchema(schemaName string) []string {
-	tables := []string{}
-	for table := range m.Schemas[schemaName] {
-		tables = append(tables, table)
-	}
-	return tables
+// GetTablesInSchema returns a lookup of all foreign tables in a given foreign schema
+func (m *SchemaMetadata) GetTablesInSchema(schemaName string) map[string]struct{} {
+	return utils.SliceToLookup(maps.Keys(m.Schemas[schemaName]))
 }
 
-// IsSchemaNameValid :: verifies that the given string is a valid pgsql schema name
+// IsSchemaNameValid verifies that the given string is a valid pgsql schema name
 func IsSchemaNameValid(name string) (bool, string) {
 	var message string
 
