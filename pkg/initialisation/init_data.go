@@ -147,7 +147,14 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 }
 
 func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {
-	validationErrors := validateModRequirements(mod, pluginVersionMap)
+	validationErrors := []string{}
+
+	// validate this mod
+	for _, err := range mod.ValidateRequirements(pluginVersionMap) {
+		validationErrors = append(validationErrors, err.Error())
+	}
+
+	// validate dependent mods
 	for childDependencyName, childMod := range mod.ResourceMaps.Mods {
 		// TODO : The 'mod.DependencyName == childMod.DependencyName' check has to be done because
 		// of a bug in the resource loading code which also puts the mod itself into the resource map
@@ -159,18 +166,7 @@ func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap ver
 		childValidationErrors := validateModRequirementsRecursively(childMod, pluginVersionMap)
 		validationErrors = append(validationErrors, childValidationErrors...)
 	}
-	return validationErrors
-}
 
-func validateModRequirements(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {
-	validationErrors := []string{}
-	if err := mod.ValidateSteampipeVersion(); err != nil {
-		validationErrors = append(validationErrors, err.Error())
-	}
-	if err := mod.ValidatePluginVersions(pluginVersionMap); err != nil {
-		validationErrors = append(validationErrors, err.Error())
-	}
-	// now validate the plugin requirements (dependent on #3328)
 	return validationErrors
 }
 

@@ -183,11 +183,14 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 		}
 	}()
 
-	if err := workspaceMod.Require.ValidateSteampipeVersion(workspaceMod.Name()); err != nil {
-		return err
-	}
-	if err := workspaceMod.Require.ValidatePluginVersions(workspaceMod.Name(), i.installedPlugins); err != nil {
-		return err
+	if validationErrors := workspaceMod.ValidateRequirements(i.installedPlugins); len(validationErrors) > 0 {
+		if !i.force {
+			// if this is not a force install, return errors in validation
+			return error_helpers.CombineErrors(validationErrors...)
+		}
+		// ignore if this is a force install
+		// TODO: raise warnings for errors getting suppressed [https://github.com/turbot/steampipe/issues/3364]
+		log.Println("[TRACE] suppressing mod validation error", validationErrors)
 	}
 
 	// if mod args have been provided, add them to the the workspace mod requires
@@ -340,6 +343,8 @@ func (i *ModInstaller) installModDependencesRecursively(ctx context.Context, req
 		return err
 	}
 
+	var errors []error
+
 	if dependencyMod == nil {
 		// get a resolved mod ref that satisfies the version constraints
 		resolvedRef, err := i.getModRefSatisfyingConstraints(requiredModVersion, availableVersions)
@@ -352,21 +357,17 @@ func (i *ModInstaller) installModDependencesRecursively(ctx context.Context, req
 		if err != nil {
 			return err
 		}
-		if err = dependencyMod.ValidateSteampipeVersion(); err != nil {
-			return err
-		}
-		if err = dependencyMod.ValidatePluginVersions(i.installedPlugins); err != nil {
-			return err
-		}
+
+		validationErrors := dependencyMod.ValidateRequirements(i.installedPlugins)
+		errors = append(errors, validationErrors...)
 	} else {
 		// update the install data
 		i.installData.addExisting(requiredModVersion.Name, dependencyMod, requiredModVersion.Constraint, parent)
 		log.Printf("[TRACE] not installing %s with version constraint %s as version %s is already installed", requiredModVersion.Name, requiredModVersion.Constraint.Original, dependencyMod.Version)
 	}
+
 	// to get here we have the dependency mod - either we installed it or it was already installed
 	// recursively install its dependencies
-	var errors []error
-
 	for _, childDependency := range dependencyMod.Require.Mods {
 		childDependencyMod, err := i.getCurrentlyInstalledVersionToUse(ctx, childDependency, dependencyMod, shouldUpdate)
 		if err != nil {

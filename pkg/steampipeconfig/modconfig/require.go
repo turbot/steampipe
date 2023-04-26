@@ -6,7 +6,6 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/version"
@@ -107,7 +106,7 @@ func (r *Require) handleDeprecations() hcl.Diagnostics {
 	return diags
 }
 
-func (r *Require) ValidateSteampipeVersion(modName string) error {
+func (r *Require) validateSteampipeVersion(modName string) error {
 	if steampipeVersionConstraint := r.SteampipeVersionConstraint(); steampipeVersionConstraint != nil {
 		if !steampipeVersionConstraint.Check(version.SteampipeVersion) {
 			return fmt.Errorf("steampipe version %s does not satisfy %s which requires version %s", version.SteampipeVersion.String(), modName, r.Steampipe.MinVersionString)
@@ -116,18 +115,18 @@ func (r *Require) ValidateSteampipeVersion(modName string) error {
 	return nil
 }
 
-// ValidatePluginVersions validates that for every plugin requirement there's at least one plugin installed
-func (r *Require) ValidatePluginVersions(modName string, plugins map[string]*semver.Version) error {
+// validatePluginVersions validates that for every plugin requirement there's at least one plugin installed
+func (r *Require) validatePluginVersions(modName string, plugins map[string]*semver.Version) []error {
 	if len(r.Plugins) == 0 {
 		return nil
 	}
-	errors := []error{}
+	validationErrors := []error{}
 	for _, requiredPlugin := range r.Plugins {
 		if err := r.searchInstalledPluginForRequirement(modName, requiredPlugin, plugins); err != nil {
-			errors = append(errors, err)
+			validationErrors = append(validationErrors, err)
 		}
 	}
-	return error_helpers.CombineErrors(errors...)
+	return validationErrors
 }
 
 func (r *Require) searchInstalledPluginForRequirement(modName string, requirement *PluginVersion, plugins map[string]*semver.Version) error {

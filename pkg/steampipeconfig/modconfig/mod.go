@@ -339,18 +339,29 @@ func (m *Mod) SetFilePath(modFilePath string) {
 	m.modFilePath = modFilePath
 }
 
-func (m *Mod) ValidateSteampipeVersion() error {
-	if m.Require == nil {
-		return nil
+// ValidateRequirements validates that the current steampipe CLI and the installed plugins is compatible with the mod
+func (m *Mod) ValidateRequirements(pluginVersionMap map[string]*semver.Version) []error {
+	validationErrors := []error{}
+	if err := m.validateSteampipeVersion(); err != nil {
+		validationErrors = append(validationErrors, err)
 	}
-	return m.Require.ValidateSteampipeVersion(m.Name())
+	pluginErr := m.validatePluginVersions(pluginVersionMap)
+	validationErrors = append(validationErrors, pluginErr...)
+	return validationErrors
 }
 
-func (m *Mod) ValidatePluginVersions(availablePlugins map[string]*semver.Version) error {
+func (m *Mod) validateSteampipeVersion() error {
 	if m.Require == nil {
 		return nil
 	}
-	return m.Require.ValidatePluginVersions(m.GetInstallCacheKey(), availablePlugins)
+	return m.Require.validateSteampipeVersion(m.Name())
+}
+
+func (m *Mod) validatePluginVersions(availablePlugins map[string]*semver.Version) []error {
+	if m.Require == nil {
+		return nil
+	}
+	return m.Require.validatePluginVersions(m.GetInstallCacheKey(), availablePlugins)
 }
 
 // CtyValue implements CtyValueProvider
