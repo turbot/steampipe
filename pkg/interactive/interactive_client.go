@@ -518,10 +518,10 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 	client := c.client()
 	// validation passed, now we will run
 	return metaquery.Handle(ctx, &metaquery.HandlerInput{
-		Query:      query,
-		Client:     client,
-		Schema:     c.schemaMetadata,
-		SearchPath: client.GetRequiredSessionSearchPath(),
+		Query:       query,
+		Client:      client,
+		Schema:      c.schemaMetadata,
+		SearchPath:  client.GetRequiredSessionSearchPath(),
 		Prompt:      c.interactivePrompt,
 		ClosePrompt: func() { c.afterClose = AfterPromptCloseExit },
 	})
