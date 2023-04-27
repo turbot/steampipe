@@ -1,3 +1,8 @@
+## v0.19.5 [2023-04-27]
+_Bug fixes_
+* Fix connection validation warning following a file watcher event causing plugin manager to crash with unhandled signal. ([#3371](https://github.com/turbot/steampipe/issues/3371))
+* Fixes issue where having non graphic code points in output would mess up table output in interactive. ([#3205](https://github.com/turbot/steampipe/issues/3205))
+
 ## v0.19.4 [2023-04-06]
 _What's new?_
 * Dashboard snapshot href links now work for external URLs. ([#3278](https://github.com/turbot/steampipe/issues/3278))
