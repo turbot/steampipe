@@ -32,7 +32,6 @@ func NewInitData(ctx context.Context) *InitData {
 
 	statushooks.SetStatus(ctx, "Loading workspace")
 
-
 	// load the workspace
 	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
 	if errAndWarnings.GetError() != nil {
