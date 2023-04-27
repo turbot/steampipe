@@ -1,6 +1,11 @@
 package modconfig
 
 import (
+	"fmt"
+	"reflect"
+	"strings"
+
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
 
@@ -39,5 +44,14 @@ func (m ConfigMap) SetBoolItem(argValue *bool, argName string) {
 func (m ConfigMap) PopulateConfigMapForOptions(o options.Options) {
 	for k, v := range o.ConfigMap() {
 		m[k] = v
+		// also store a scoped version of the config property
+		m[getScopedKey(o, k)] = v
 	}
+}
+
+// generated a scoped key for the config property. For example if o is a database options object and k is 'search-path'
+// the scoped key will be 'database.search-path'
+func getScopedKey(o options.Options, k string) string {
+	t := reflect.TypeOf(helpers.DereferencePointer(o)).Name()
+	return fmt.Sprintf("%s.%s", strings.ToLower(t), k)
 }
