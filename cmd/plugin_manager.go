@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
@@ -43,6 +45,16 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 		log.Printf("[WARN] failed to load connection config: %v", errorsAndWarnings.GetError())
 		os.Exit(1)
 	}
+
+	// add signal handler for sigpipe - this will be raised if we call displayWarning as stdout is piped
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, syscall.SIGPIPE)
+	go func() {
+		for {
+			// swallow signal
+			<-signalCh
+		}
+	}()
 
 	// add a prefix to the PgClientAppName so that out DB connecitons are not treated as
 	// another Steampipe instance connected to the DB
