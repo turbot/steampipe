@@ -166,7 +166,7 @@ func (c *Connection) Validate(map[string]*Connection) (warnings []string, errors
 func (c *Connection) ValidateAggregatorConnection() (warnings, errors []string) {
 	if len(c.Connections) == 0 {
 		/// there should be at least one connection - raise as warning
-		return []string{fmt.Sprintf("aggregator connection '%s' has no children", c.Name)}, nil
+		return []string{c.getEmptyAggregatorError()}, nil
 	}
 
 	var validationErrors []string
@@ -185,6 +185,22 @@ func (c *Connection) ValidateAggregatorConnection() (warnings, errors []string) 
 
 	}
 	return nil, validationErrors
+}
+
+// TODO update FDW to use this as well (steampipe-postgres-fdw/hub/errors.go)
+func (c *Connection) getEmptyAggregatorError() string {
+	patterns := c.ConnectionNames
+	if len(patterns) == 0 {
+		return fmt.Sprintf("aggregator '%s' defines no child connections", c.Name)
+	}
+	if len(patterns) == 1 {
+		return fmt.Sprintf("aggregator '%s' with pattern '%s' matches no connections",
+			c.Name,
+			patterns[0])
+	}
+	return fmt.Sprintf("aggregator '%s' with patterns ['%s'] matches no connections",
+		c.Name,
+		strings.Join(patterns, "','"))
 }
 
 func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {
@@ -219,6 +235,7 @@ func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {
 	}
 	c.ResolvedConnectionNames = maps.Keys(c.Connections)
 }
+
 
 // GetResolveConnectionNames return the names of all child connections
 // (will only be non-empty for aggregator connections)
