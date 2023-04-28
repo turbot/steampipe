@@ -67,6 +67,16 @@ const (
 	CommandTableScanMetadata = "scan_metadata"
 )
 
+// ConnectionStates is a handy array of all states
+var ConnectionStates = []string{
+	ConnectionStateTable,
+	ConnectionStatePending,
+	ConnectionStateReady,
+	ConnectionStateUpdating,
+	ConnectionStateDeleting,
+	ConnectionStateError,
+}
+
 var ReservedConnectionNames = []string{
 	"public",
 	InternalSchema,

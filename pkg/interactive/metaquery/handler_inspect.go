@@ -3,7 +3,8 @@ package metaquery
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"regexp"
 	"sort"
 	"strings"
@@ -16,16 +17,12 @@ import (
 
 // inspect
 func inspect(ctx context.Context, input *HandlerInput) error {
-	log.Printf("[WARN] inspect")
-
 	// load connection state and put into input
-	connectionState, err := getConnectionState(ctx, input)
+	connectionState, err := getConnectionState(ctx, input.Client)
 	if err != nil {
 		return err
 	}
 	input.ConnectionState = connectionState
-
-	log.Printf("[WARN] loaded state")
 
 	// if no args were provided just list connections
 	if len(input.args()) == 0 {
@@ -92,15 +89,6 @@ To get information about the columns in a table, run %s
 	return inspectTable(tokens[0], tokens[1], input)
 }
 
-func getConnectionState(ctx context.Context, input *HandlerInput) (steampipeconfig.ConnectionDataMap, error) {
-	conn, err := input.Client.AcquireConnection(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
-	return steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitForPending)
-}
-
 // list all the tables in the schema
 func listTables(_ context.Context, input *HandlerInput) error {
 
@@ -128,16 +116,16 @@ To get information about the columns in a table, run %s
 		}
 
 		// treat this as a wild card
-		regexp, err := regexp.Compile(arg)
+		r, err := regexp.Compile(arg)
 		if err != nil {
 			return fmt.Errorf("invalid search string %s", arg)
 		}
 		header := []string{"Table", "Schema"}
-		rows := [][]string{}
+		var rows [][]string
 		for schemaName, schemaDetails := range input.Schema.Schemas {
 			var tables [][]string
 			for tableName := range schemaDetails {
-				if regexp.MatchString(tableName) {
+				if r.MatchString(tableName) {
 					tables = append(tables, []string{tableName, schemaName})
 				}
 			}
@@ -178,6 +166,11 @@ func listConnections(_ context.Context, input *HandlerInput) error {
 
 	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 
+	if showState {
+
+		showStateSummary(input.ConnectionState)
+	}
+
 	fmt.Printf(`
 To get information about the tables in a connection, run %s
 To get information about the columns in a table, run %s
@@ -187,9 +180,22 @@ To get information about the columns in a table, run %s
 	return nil
 }
 
+func showStateSummary(connectionState steampipeconfig.ConnectionDataMap) {
+	header := []string{"Connection state", "Count"}
+	var rows [][]string
+	stateSummary := connectionState.GetSummary()
+
+	for _, state := range constants.ConnectionStates {
+		if connectionsInState := stateSummary[state]; connectionsInState > 0 {
+			rows = append(rows, []string{state, fmt.Sprintf("%d", connectionsInState)})
+		}
+	}
+	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+}
+
 func inspectTable(connectionName string, tableName string, input *HandlerInput) error {
 	header := []string{"column", "type", "description"}
-	rows := [][]string{}
+	var rows [][]string
 
 	schema, found := input.Schema.Schemas[connectionName]
 	if !found {
@@ -257,4 +263,19 @@ func inspectConnection(connectionName string, input *HandlerInput) bool {
 	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 
 	return true
+}
+
+// helper function to acquire db connection and retrieve connection
+func getConnectionState(ctx context.Context, client db_common.Client) (steampipeconfig.ConnectionDataMap, error) {
+	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
+
+	statushooks.SetStatus(ctx, "Loading connection state...")
+
+	conn, err := client.AcquireConnection(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Release()
+	return steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitForPending)
 }

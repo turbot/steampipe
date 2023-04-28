@@ -22,8 +22,8 @@ import (
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/sperr"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -269,43 +269,51 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, qu
 		if !relationNotFound {
 			return queryError
 		}
-
 		// so this _was_ a relation not found error
-		// load the connection state to see if the missing schema is in there at all
-		// if not, give up
+		// load the connection state and connection config to see if the missing schema is in there at all
 		// if there was a schema not found with an unqualified query, we keep trying until ALL the schemas have loaded
-		connectionStateMap, stateErr := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitForPending)
+
+		connectionStateMap, connectionConfigMap, stateErr := loadConnectionConfigAndState(ctx, conn)
 		if stateErr != nil {
-			return sperr.WrapWithMessage(stateErr, "failed to load connection state")
+			// just return the query error
+			return queryError
+		}
+		// if there are no connections, just return the error
+		if len(connectionConfigMap) == 0 {
+			return queryError
 		}
 
-		statusMessage := getloadingConnectionStatusMessage(connectionStateMap, missingSchema)
+		statusMessage := getLoadingConnectionStatusMessage(connectionStateMap, connectionConfigMap, missingSchema)
 
-		// if a schema was specified, verify it exists in the connection map
+		// if a schema was specified, verify it exists in the connection state or connection config
+
 		if missingSchema != "" {
 			connectionState, missingSchemaExistsInStateMap := connectionStateMap[missingSchema]
 			if missingSchemaExistsInStateMap {
 				// if connection is in error or has been ready for more than the backoff interval, do not retry
-				// so, if it has only just become ready retry the query
+				// (in other words, if it has only just become ready, then retry the query)
 				if connectionState.State == constants.ConnectionStateError ||
 					connectionState.State == constants.ConnectionStateReady && time.Since(connectionState.ConnectionModTime) > backoffInterval {
 					return queryError
 				}
 			} else {
-				// missing schema is not in connection map - it may not have updated yet
-				// try reloading connection config to see if it is in there
-				config, errorsAndWarnings := steampipeconfig.LoadConnectionConfig()
-				if errorsAndWarnings.GetError() != nil {
-					// just return the original error
-					return queryError
-				}
+				// missing schema is not in connection state map - it may not have updated yet
 
-				_, missingSchemaExistsInConnectionConfig := config.Connections[missingSchema]
+				_, missingSchemaExistsInConnectionConfig := connectionConfigMap[missingSchema]
 				if !missingSchemaExistsInConnectionConfig {
 					// schema is not in connection config either - just return relation not found error
 					return queryError
 				}
 			}
+		} else {
+			// if no schema was specified, return if the conneciton state is not pending
+			// (and has same length as connection config,
+			// i.e. it has been updated to reflect recent config change)
+			if !connectionStateMap.Pending() && len(connectionStateMap) == len(connectionConfigMap) {
+				return queryError
+			}
+
+			// otherwise we need to wait for everything to load
 		}
 
 		statushooks.SetStatus(ctx, statusMessage)
@@ -317,11 +325,24 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, qu
 	return res, err
 }
 
-func getloadingConnectionStatusMessage(connectionStateMap steampipeconfig.ConnectionDataMap, missingSchema string) string {
+func loadConnectionConfigAndState(ctx context.Context, conn *pgx.Conn) (steampipeconfig.ConnectionDataMap, map[string]*modconfig.Connection, error) {
+	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitForPending)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	connectionConfig, errorsAndWarnings := steampipeconfig.LoadConnectionConfig()
+	if err := errorsAndWarnings.GetError(); err != nil {
+		return nil, nil, err
+	}
+	return connectionStateMap, connectionConfig.Connections, nil
+}
+
+func getLoadingConnectionStatusMessage(connectionStateMap steampipeconfig.ConnectionDataMap, connectionConfigMap map[string]*modconfig.Connection, missingSchema string) string {
 	var connectionSummary = connectionStateMap.GetSummary()
 
 	readyCount := connectionSummary[constants.ConnectionStateReady]
-	totalCount := connectionSummary[constants.ConnectionStateUpdating] + connectionSummary[constants.ConnectionStateReady]
+	totalCount := len(connectionConfigMap)
 
 	loadedMessage := fmt.Sprintf("Loaded %d of %d %s",
 		readyCount,
