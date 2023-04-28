@@ -66,12 +66,16 @@ func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []st
 			// TODO kai send error PG notification
 		}
 	}()
+	log.Printf("[INFO] refreshConnections building connectionUpdates")
+
 	// determine any necessary connection updates
 	connectionUpdates, res := steampipeconfig.NewConnectionUpdates(ctx, pool, forceUpdateConnectionNames...)
 	defer logRefreshConnectionResults(connectionUpdates, res)
 	if res.Error != nil {
 		return res
 	}
+
+	log.Printf("[INFO] refreshConnections: created connection updates")
 
 	// delete the connection state file - this indicates to anything using it that we are in the process up refreshing
 	log.Printf("[INFO] refreshConnections deleting connections state file")
@@ -83,7 +87,7 @@ func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []st
 		}
 	}()
 
-	log.Printf("[INFO] refreshConnections: created connection updates")
+	log.Printf("[INFO] refreshConnections: identify missing plugins")
 
 	var connectionNames, pluginNames []string
 	// add warning if there are connections left over, from missing plugins
@@ -126,8 +130,11 @@ func refreshConnections(ctx context.Context, pool *pgxpool.Pool, searchPath []st
 	// merge results into local results
 	res.Merge(queryRes)
 	if res.Error != nil {
+		log.Printf("[INFO] refreshConnections failed with err %s", res.Error.Error())
 		return res
 	}
+
+	log.Printf("[INFO] refreshConnections complete")
 
 	res.UpdatedConnections = true
 

@@ -33,8 +33,8 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 	for _, opt := range opts {
 		opt(config)
 	}
-	// max duration depends on if waiting for ready
-	maxDuration := 5 * time.Second
+	// max duration depends on if waiting for ready or just pending
+	maxDuration := 20 * time.Second
 	if config.WaitForReady {
 		maxDuration = 5 * time.Minute
 	}
@@ -97,36 +97,6 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionDataMap
 
 	return res, nil
 }
-
-//
-//// TODO KAI WHO USES ME???
-//// LoadConnectionStateFile loads the connection state file
-//func LoadConnectionStateFile() (state ConnectionDataMap, err error) {
-//	utils.LogTime("LoadConnectionStateFile start")
-//	defer utils.LogTime("LoadConnectionStateFile end")
-//
-//	var connectionState ConnectionDataMap
-//	connectionStatePath := filepaths.ConnectionStatePath()
-//
-//	// if file does not exist, return empty struct
-//	if !filehelpers.FileExists(connectionStatePath) {
-//		return connectionState, nil
-//	}
-//	jsonFile, err := os.ReadFile(connectionStatePath)
-//	if err != nil {
-//		return nil, fmt.Errorf("error loading %s: %v", connectionStatePath, err)
-//	}
-//
-//	err = json.Unmarshal(jsonFile, &connectionState)
-//	if err != nil {
-//		log.Printf("[TRACE] error parsing %s: %v", connectionStatePath, err)
-//		// If we fail to parse the state file, suppress the error and return an empty state
-//		// This will force the connection to refresh
-//		return make(ConnectionDataMap), nil
-//	}
-//
-//	return connectionState, nil
-//}
 
 func SaveConnectionStateFile(res *RefreshConnectionResult, connectionUpdates *ConnectionUpdates) {
 	// now serialise the connection state

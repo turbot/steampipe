@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/jackc/pgx/v5"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"golang.org/x/exp/maps"
 )
 
@@ -16,6 +17,8 @@ type ConnectionSchemaMap map[string][]string
 // - which is why CreateConnectionPlugins loads the schemas for each new plugin
 // and calls NewConnectionSchemaMapForConnections directly, passing the schema modes)
 func NewConnectionSchemaMap(ctx context.Context, conn *pgx.Conn) (ConnectionSchemaMap, error) {
+	statushooks.SetStatus(ctx, "Loading connection state...")
+
 	connectionStateMap, err := LoadConnectionState(ctx, conn)
 	if err != nil {
 		return nil, err
