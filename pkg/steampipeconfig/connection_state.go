@@ -34,9 +34,13 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 		opt(config)
 	}
 	// max duration depends on if waiting for ready or just pending
-	maxDuration := 20 * time.Second
+	// default value is if we are waiting for pending
+	// set this to a long enough time for ConnectionUpdates to be generated for a large connection count
+	// TODO this time can be reduced once all; plugins are using v5.4.1 of the sdk
+	maxDuration := 1 * time.Minute
 	if config.WaitForReady {
-		maxDuration = 5 * time.Minute
+		// is we are waiting for all connections to be ready, wait up to 10 minutes
+		maxDuration = 10 * time.Minute
 	}
 	retryInterval := 50 * time.Millisecond
 	backoff := retry.NewConstant(retryInterval)
