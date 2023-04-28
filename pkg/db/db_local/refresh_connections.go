@@ -14,15 +14,17 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
+	"golang.org/x/exp/maps"
 	"golang.org/x/sync/semaphore"
 	"log"
 	"strings"
 	"sync"
+	"time"
 )
 
 func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
 	// uncomment to debug
-	//time.Sleep(10 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	// create a connection pool to connection refresh
 	poolsize := 1
@@ -206,7 +208,7 @@ func executeConnectionQueries(ctx context.Context, pool *pgxpool.Pool, searchPat
 	}
 
 	// delete connections
-	executeDeleteQueries(ctx, pool, connectionUpdates.Delete, tableUpdater)
+	executeDeleteQueries(ctx, pool, maps.Keys(connectionUpdates.Delete), tableUpdater)
 
 	return res
 }
