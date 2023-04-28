@@ -21,7 +21,7 @@ import (
 
 type ConnectionUpdates struct {
 	Update         ConnectionDataMap
-	Delete         []string
+	Delete         map[string]struct{}
 	MissingPlugins map[string][]modconfig.Connection
 	// the connections which will exist after the update
 	FinalConnectionState ConnectionDataMap
@@ -69,6 +69,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	log.Printf("[TRACE] built required connection state")
 
 	updates := &ConnectionUpdates{
+		Delete:               make(map[string]struct{}),
 		Update:               ConnectionDataMap{},
 		MissingPlugins:       missingPlugins,
 		FinalConnectionState: requiredConnectionState,
@@ -111,7 +112,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	for name := range currentConnectionState {
 		if _, ok := requiredConnectionState[name]; !ok {
 			log.Printf("[TRACE] connection %s in current state but not in required state - marking for deletion\n", name)
-			updates.Delete = append(updates.Delete, name)
+			updates.Delete[name] = struct{}{}
 		}
 	}
 	// if there are any foreign schemas which do not exist in currentConnectionState OR requiredConnectionState,
@@ -122,7 +123,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 		_, existsInRequiredState := requiredConnectionState[name]
 		if !existsInCurrentState && !existsInRequiredState {
 			log.Printf("[TRACE] connection %s exists in db foreign schemas state but not current or required state - marking for deletion\n", name)
-			updates.Delete = append(updates.Delete, name)
+			updates.Delete[name] = struct{}{}
 		}
 	}
 
@@ -243,7 +244,7 @@ func (u *ConnectionUpdates) HasUpdates() bool {
 func (u *ConnectionUpdates) String() string {
 	var op strings.Builder
 	update := utils.SortedMapKeys(u.Update)
-	delete := u.Delete
+	delete := maps.Keys(u.Delete)
 	sort.Strings(delete)
 	stateConnections := utils.SortedMapKeys(u.FinalConnectionState)
 	if len(update) > 0 {
@@ -263,7 +264,7 @@ func (u *ConnectionUpdates) String() string {
 func (u *ConnectionUpdates) AsNotification() *SchemaUpdateNotification {
 	return NewSchemaUpdateNotification(
 		maps.Keys(u.Update),
-		u.Delete)
+		maps.Keys(u.Delete))
 }
 
 func (u *ConnectionUpdates) setError(connectionName string, error string) {

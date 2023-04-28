@@ -39,10 +39,11 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 		// set the connection data state based on whether this connection is being created or deleted
 		if _, updatingConnection := u.updates.Update[name]; updatingConnection {
 			connectionData.State = constants.ConnectionStateUpdating
-		} else if _, deletingConnection := u.updates.Update[name]; deletingConnection {
-			connectionData.State = constants.ConnectionStateDeleting
 		}
 		queries = append(queries, getStartUpdateConnectionStateSql(connectionData))
+	}
+	for name := range u.updates.Delete {
+		queries = append(queries, getDeleteConnectionStateSql(name))
 	}
 
 	if _, err := executeSqlWithArgsAsRoot(ctx, queries...); err != nil {
