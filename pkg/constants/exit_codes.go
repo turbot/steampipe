@@ -7,6 +7,7 @@ const (
 	ExitCodePluginLoadingError          = 11  // plugin - loading error
 	ExitCodePluginListFailure           = 12  // plugin - listing failed
 	ExitCodePluginNotFound              = 13  // plugin - not found
+	ExitCodePluginInstallFailure        = 14  // plugin - install failed
 	ExitCodeSnapshotCreationFailed      = 21  // snapshot - creation failed
 	ExitCodeSnapshotUploadFailed        = 22  // snapshot - upload failed
 	ExitCodeServiceSetupFailure         = 31  // service - setup failed
