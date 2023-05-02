@@ -88,12 +88,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $target_install_directory
 }
 
-@test "start service, install plugin and query" {
+@test "start service and query" {
   # start service
   steampipe service start
-
-  # install plugin
-  steampipe plugin install chaos
 
   # query the plugin
   run steampipe query "select time_col from chaos_cache_check limit 1"
