@@ -1,4 +1,4 @@
-package connection
+package connection_sync
 
 import (
 	"context"

@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
@@ -389,23 +390,36 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	} else {
 		statushooks.Show(ctx)
 		defer statushooks.Done(ctx)
-
 		// otherwise execute query
-		t := time.Now()
-		result, err := c.client().Execute(queryCtx, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
-		if err != nil {
-			error_helpers.ShowError(ctx, error_helpers.HandleCancelError(err))
-			// if timing flag is enabled, show the time taken for the query to fail
-			if cmdconfig.Viper().GetBool(constants.ArgTiming) {
-				display.DisplayErrorTiming(t)
-			}
-		} else {
-			c.promptResult.Streamer.StreamResult(result)
-		}
+		c.executeQuery(ctx, queryCtx, resolvedQuery)
 	}
 
 	// restart the prompt
 	c.restartInteractiveSession()
+}
+
+func (c *InteractiveClient) executeQuery(ctx context.Context, queryCtx context.Context, resolvedQuery *modconfig.ResolvedQuery) {
+
+	// if there is a custom search path, wait until the first connection of each plugin has loaded
+	if customSearchPath := c.client().GetCustomSearchPath(); customSearchPath != nil {
+		if err := connection_sync.WaitForSearchPathHeadSchemas(ctx, c.client(), customSearchPath); err != nil {
+			error_helpers.ShowError(ctx, err)
+			c.afterClose = AfterPromptCloseExit
+			return
+		}
+	}
+
+	t := time.Now()
+	result, err := c.client().Execute(queryCtx, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
+	if err != nil {
+		error_helpers.ShowError(ctx, error_helpers.HandleCancelError(err))
+		// if timing flag is enabled, show the time taken for the query to fail
+		if cmdconfig.Viper().GetBool(constants.ArgTiming) {
+			display.DisplayErrorTiming(t)
+		}
+	} else {
+		c.promptResult.Streamer.StreamResult(result)
+	}
 }
 
 func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfig.ResolvedQuery {

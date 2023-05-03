@@ -3,13 +3,16 @@ package steampipeconfig
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"os"
-	"time"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 //type ConnectionState ConnectionDataMap
@@ -61,7 +64,8 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 		connectionState, loadErr = loadConnectionState(ctx, conn)
 		if loadErr == nil {
 			if config.WaitForReady && !connectionState.Loaded(config.Connections...) {
-				statushooks.SetStatus(ctx, "Waiting for steampipe connections to refresh")
+				statusMessage := GetLoadingConnectionStatusMessage(connectionState, config.Connections...)
+				statushooks.SetStatus(ctx, statusMessage)
 				loadErr = retry.RetryableError(fmt.Errorf("connection state is still loading"))
 			} else if config.WaitForPending && connectionState.Pending() {
 				loadErr = retry.RetryableError(fmt.Errorf("connection state is pending"))
@@ -71,6 +75,24 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 	})
 
 	return connectionState, err
+}
+
+func GetLoadingConnectionStatusMessage(connectionStateMap ConnectionDataMap, requiredSchemas ...string) string {
+	var connectionSummary = connectionStateMap.GetSummary()
+
+	readyCount := connectionSummary[constants.ConnectionStateReady]
+	totalCount := len(connectionStateMap) - connectionSummary[constants.ConnectionStateDeleting]
+
+	loadedMessage := fmt.Sprintf("Loaded %d of %d %s",
+		readyCount,
+		totalCount,
+		utils.Pluralize("connection", totalCount))
+
+	if len(requiredSchemas) == 0 {
+		return loadedMessage
+	}
+	// TODO kai think about display of arrays
+	return fmt.Sprintf("Waiting for %s '%s' to load (%s)", utils.Pluralize("connection", len(requiredSchemas)), strings.Join(requiredSchemas, "','"), loadedMessage)
 }
 
 func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionDataMap, error) {

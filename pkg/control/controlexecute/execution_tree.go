@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/connection"
+	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -103,7 +103,7 @@ func (e *ExecutionTree) Execute(ctx context.Context) (controlstatus.StatusSummar
 	// TODO KAI SHOULD WE ALWAYS WAIT EVEN WITH NON CUSTOM SEARCH PATH???
 	// if there is a custom search path, wait until the first connection of each plugin has loaded
 	if customSearchPath := e.client.GetCustomSearchPath(); customSearchPath != nil {
-		if err := connection.WaitForSearchPathHeadSchemas(ctx, e.client, customSearchPath); err != nil {
+		if err := connection_sync.WaitForSearchPathHeadSchemas(ctx, e.client, customSearchPath); err != nil {
 			return controlstatus.StatusSummary{}, err
 		}
 	}

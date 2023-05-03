@@ -7,10 +7,10 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sethvargo/go-retry"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"regexp"
 	"time"
 )
@@ -49,20 +49,18 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, qu
 			return queryError
 		}
 
-		// build the status message to display with a spinner, if needed
-		statusMessage := getLoadingConnectionStatusMessage(connectionStateMap, missingSchema)
-
 		if missingSchema == "" {
 			// if all connections are ready (and have been for more than the backoff interval) , just return the relation not found error
 			if connectionStateMap.Loaded() && time.Since(connectionStateMap.ConnectionModTime()) > backoffInterval {
 				return queryError
 			}
 
-			// TODO KAI just wait for first schema of all plugins???? apart from dynamic???
-
-			// otherwise we need to wait for everything to load - retry
-			statushooks.SetStatus(ctx, statusMessage)
-			return retry.RetryableError(queryError)
+			// TODO KAI test this
+			// otherwise we need to wait for the first schema of everything plugin to load
+			if err := connection_sync.WaitForSearchPathHeadSchemas(ctx, c, c.GetRequiredSessionSearchPath()); err != nil {
+				return err
+			}
+			return nil
 		}
 
 		// so a schema was specified - verify it exists in the connection state
@@ -77,6 +75,8 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, qu
 				return fmt.Errorf("connection %s failed to load: %s", missingSchema, typehelpers.SafeString(connectionState.ConnectionError))
 			}
 			// retry
+			// build the status message to display with a spinner, if needed
+			statusMessage := steampipeconfig.GetLoadingConnectionStatusMessage(connectionStateMap, missingSchema)
 			statushooks.SetStatus(ctx, statusMessage)
 			return retry.RetryableError(queryError)
 		}
@@ -87,24 +87,6 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, qu
 	})
 
 	return res, err
-}
-
-func getLoadingConnectionStatusMessage(connectionStateMap steampipeconfig.ConnectionDataMap, missingSchema string) string {
-	var connectionSummary = connectionStateMap.GetSummary()
-
-	readyCount := connectionSummary[constants.ConnectionStateReady]
-	totalCount := len(connectionStateMap) - connectionSummary[constants.ConnectionStateDeleting]
-
-	loadedMessage := fmt.Sprintf("Loaded %d of %d %s",
-		readyCount,
-		totalCount,
-		utils.Pluralize("connection", totalCount))
-
-	if missingSchema == "" {
-		return loadedMessage
-	}
-
-	return fmt.Sprintf("Waiting for connection '%s' to load (%s)", missingSchema, loadedMessage)
 }
 
 func isRelationNotFoundError(err error) (string, string, bool) {

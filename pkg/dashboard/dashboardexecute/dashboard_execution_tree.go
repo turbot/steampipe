@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -130,6 +131,15 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	e.Root.Initialise(cancelCtx)
 	if e.Root.GetError() != nil {
 		return
+	}
+
+	// TODO KAI SHOULD WE ALWAYS WAIT EVEN WITH NON CUSTOM SEARCH PATH???
+	// if there is a custom search path, wait until the first connection of each plugin has loaded
+	if customSearchPath := e.client.GetCustomSearchPath(); customSearchPath != nil {
+		if err := connection_sync.WaitForSearchPathHeadSchemas(ctx, e.client, customSearchPath); err != nil {
+			e.Root.SetError(ctx, err)
+			return
+		}
 	}
 
 	panels := e.BuildSnapshotPanels()
