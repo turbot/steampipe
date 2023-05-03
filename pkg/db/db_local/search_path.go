@@ -15,7 +15,7 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-func setUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
+func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
 	var searchPath []string
 
 	// is there a user search path in the config?
@@ -69,7 +69,7 @@ func setUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 	}
 
 	log.Printf("[TRACE] user search path sql: %v", queries)
-	_, err = executeSqlInTransaction(ctx, conn.Conn(), queries...)
+	_, err = ExecuteSqlInTransaction(ctx, conn.Conn(), queries...)
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-package connectionwatcher
+package connection
 
 import (
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"

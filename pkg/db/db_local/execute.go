@@ -13,17 +13,17 @@ func executeSqlAsRoot(ctx context.Context, statements ...string) ([]pgconn.Comma
 	if err != nil {
 		return nil, err
 	}
-	return executeSqlInTransaction(ctx, rootClient, statements...)
+	return ExecuteSqlInTransaction(ctx, rootClient, statements...)
 }
 func executeSqlWithArgsAsRoot(ctx context.Context, queries ...db_common.QueryWithArgs) ([]pgconn.CommandTag, error) {
 	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}
-	return executeSqlWithArgsInTransaction(ctx, rootClient, queries...)
+	return ExecuteSqlWithArgsInTransaction(ctx, rootClient, queries...)
 }
 
-func executeSqlInTransaction(ctx context.Context, conn *pgx.Conn, statements ...string) (results []pgconn.CommandTag, err error) {
+func ExecuteSqlInTransaction(ctx context.Context, conn *pgx.Conn, statements ...string) (results []pgconn.CommandTag, err error) {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func executeSqlInTransaction(ctx context.Context, conn *pgx.Conn, statements ...
 	return results, nil
 }
 
-func executeSqlWithArgsInTransaction(ctx context.Context, conn *pgx.Conn, queries ...db_common.QueryWithArgs) (results []pgconn.CommandTag, err error) {
+func ExecuteSqlWithArgsInTransaction(ctx context.Context, conn *pgx.Conn, queries ...db_common.QueryWithArgs) (results []pgconn.CommandTag, err error) {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return nil, err

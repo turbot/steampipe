@@ -497,7 +497,7 @@ func setServicePassword(ctx context.Context, password string) error {
 		"LOCK TABLE pg_user IN SHARE ROW EXCLUSIVE MODE;",
 		fmt.Sprintf(`ALTER USER steampipe WITH PASSWORD '%s';`, password),
 	}
-	_, err = executeSqlInTransaction(ctx, connection, statements...)
+	_, err = ExecuteSqlInTransaction(ctx, connection, statements...)
 	return err
 }
 
@@ -586,11 +586,11 @@ func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
 func ensureCommandSchema(ctx context.Context, rootClient *pgx.Conn) error {
 	commandSchemaStatements := []string{
 		"lock table pg_namespace;",
-		getUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
+		db_common.GetUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
 		fmt.Sprintf("grant select on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableScanMetadata),
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableSettings),
 	}
-	if _, err := executeSqlInTransaction(ctx, rootClient, commandSchemaStatements...); err != nil {
+	if _, err := ExecuteSqlInTransaction(ctx, rootClient, commandSchemaStatements...); err != nil {
 		return err
 	}
 	return nil
@@ -603,7 +603,7 @@ func ensureTempTablePermissions(ctx context.Context, databaseName string, rootCl
 		"lock table pg_namespace;",
 		fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser),
 	}
-	if _, err := executeSqlInTransaction(ctx, rootClient, statements...); err != nil {
+	if _, err := ExecuteSqlInTransaction(ctx, rootClient, statements...); err != nil {
 		return err
 	}
 	return nil

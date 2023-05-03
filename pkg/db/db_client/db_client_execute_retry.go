@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sethvargo/go-retry"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -48,36 +49,39 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, qu
 			return queryError
 		}
 
+		// build the status message to display with a spinner, if needed
 		statusMessage := getLoadingConnectionStatusMessage(connectionStateMap, missingSchema)
 
-		// if a schema was specified, verify it exists in the connection state or connection config
-
-		if missingSchema != "" {
-			connectionState, missingSchemaExistsInStateMap := connectionStateMap[missingSchema]
-			if missingSchemaExistsInStateMap {
-				// if connection is in error or has been ready for more than the backoff interval, do not retry
-				// (in other words, if it has only just become ready, then retry the query)
-				if connectionState.State == constants.ConnectionStateError ||
-					connectionState.State == constants.ConnectionStateReady && time.Since(connectionState.ConnectionModTime) > backoffInterval {
-					return queryError
-				}
-			} else {
-				// missing schema is not in connection state map - just return the error
-				return queryError
-			}
-		} else {
+		if missingSchema == "" {
 			// if no schema was specified, return if the connection state is not pending
 			if !connectionStateMap.Pending() {
 				return queryError
 			}
 
-			// otherwise we need to wait for everything to load
+			// otherwise we need to wait for everything to load - retry
+			statushooks.SetStatus(ctx, statusMessage)
+			return retry.RetryableError(queryError)
 		}
 
-		statushooks.SetStatus(ctx, statusMessage)
+		// so a schema was specified - verify it exists in the connection state
+		connectionState, missingSchemaExistsInStateMap := connectionStateMap[missingSchema]
+		if missingSchemaExistsInStateMap {
+			// if the connection is ready (and has been for more than the backoff interval) , just return the relation not found error
+			if connectionState.State == constants.ConnectionStateReady && time.Since(connectionState.ConnectionModTime) > backoffInterval {
+				return queryError
+			}
+			// if connection is in error and there is connection error
+			if connectionState.State == constants.ConnectionStateError {
+				return fmt.Errorf("connection %s failed to load: %s", missingSchema, typehelpers.SafeString(connectionState.ConnectionError))
+			}
+			// retry
+			statushooks.SetStatus(ctx, statusMessage)
+			return retry.RetryableError(queryError)
+		}
 
-		// retry
-		return retry.RetryableError(queryError)
+		// otherwise, missing schema is not in connection state map - just return the error
+		return queryError
+
 	})
 
 	return res, err

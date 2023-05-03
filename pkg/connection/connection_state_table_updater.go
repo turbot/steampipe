@@ -1,11 +1,13 @@
-package db_local
+package connection
 
 import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"sync"
@@ -21,11 +23,13 @@ type connectionStateTableUpdater struct {
 	deleteCountLock    sync.Mutex
 	updatedConnections int
 	deletedConnections int
+	pool               *pgxpool.Pool
 }
 
-func newConnectionStateTableUpdater(updates *steampipeconfig.ConnectionUpdates) *connectionStateTableUpdater {
+func newConnectionStateTableUpdater(updates *steampipeconfig.ConnectionUpdates, pool *pgxpool.Pool) *connectionStateTableUpdater {
 	return &connectionStateTableUpdater{
 		updates: updates,
+		pool:    pool,
 	}
 }
 
@@ -46,7 +50,12 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 		queries = append(queries, getDeleteConnectionStateSql(name))
 	}
 
-	if _, err := executeSqlWithArgsAsRoot(ctx, queries...); err != nil {
+	conn, err := u.pool.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+	if _, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn.Conn(), queries...); err != nil {
 		return err
 	}
 	log.Printf("[INFO] connectionStateTableUpdater start - finished updating connection_state with intended states")
@@ -101,6 +110,7 @@ func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, tx 
 	if _, err := tx.Exec(ctx, q.Query, q.Args...); err != nil {
 		return err
 	}
+
 	return nil
 	// TODO KAI send notification
 }
@@ -111,7 +121,7 @@ SET state = $1,
 	error = $2,
 	connection_mod_time = now()
 WHERE
-	name $3
+	name = $3
 	`,
 		constants.InternalSchema, constants.ConnectionStateTable)
 	args := []any{constants.ConnectionStateError, err.Error(), connectionName}

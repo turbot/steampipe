@@ -110,10 +110,9 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 	return conn, nil
 }
 
-// createConnectionPool
+// CreateConnectionPool
 
-func createConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnections int) (*pgxpool.Pool, error) {
-
+func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnections int) (*pgxpool.Pool, error) {
 	utils.LogTime("db_client.establishConnectionPool start")
 	defer utils.LogTime("db_client.establishConnectionPool end")
 

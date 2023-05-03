@@ -92,5 +92,23 @@ type ConnectionData struct {
 
 Currently stored in connections.json, and updated in refreshConnections
 
-## SchemaHash
-Schema has is 
+
+## ISSUES
+# connection error
+  - save to connection state
+  - send notification
+
+Execution code
+  - when executing, if receive "relation not found" error
+    - if schema is specified
+      - if connection is in error, bubble error
+      - if connection is loading, wait
+    - if schema is NOT specified 
+      - if first plugin connection in search path is in error, bubble error (?????)
+    - 
+  - receive error notification: 
+    - if static schema and first plugin connection in search path, bubble error
+    - if dynamic schema and failed connection in active search path, fail
+
+- what if a connections change midways through control/dashboard run? (client detects and warns?)
+- what do we do if there is a file watch event before previous refresh is complete

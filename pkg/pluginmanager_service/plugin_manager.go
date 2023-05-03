@@ -20,7 +20,7 @@ import (
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkshared "github.com/turbot/steampipe-plugin-sdk/v5/grpc/shared"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/connectionwatcher"
+	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -57,7 +57,7 @@ type PluginManager struct {
 	// NOTE - for legacy plugins, one entry in this map may correspond to multiple running plugins
 	pluginConnectionConfigMap map[string][]*sdkproto.ConnectionConfig
 	// map of connection configs, keyed by connection name
-	connectionConfigMap connectionwatcher.ConnectionConfigMap
+	connectionConfigMap connection.ConnectionConfigMap
 	// map of max cache size, keyed by plugin name
 	pluginCacheSizeMap map[string]int64
 
@@ -147,7 +147,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 
 func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.RefreshConnectionsResponse, error) {
 	resp := &pb.RefreshConnectionsResponse{}
-	refreshResult := db_local.RefreshConnectionAndSearchPaths(context.Background())
+	refreshResult := connection.RefreshConnectionAndSearchPaths(context.Background())
 	if refreshResult.Error != nil {
 		return nil, refreshResult.Error
 	}
@@ -156,7 +156,7 @@ func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.R
 }
 
 // OnConnectionConfigChanged is the callback function invoked by the connection watcher when the config changed
-func (m *PluginManager) OnConnectionConfigChanged(configMap connectionwatcher.ConnectionConfigMap) {
+func (m *PluginManager) OnConnectionConfigChanged(configMap connection.ConnectionConfigMap) {
 	m.mut.Lock()
 	defer m.mut.Unlock()
 
@@ -800,7 +800,7 @@ func (m *PluginManager) setCacheOptions(pluginClient *sdkgrpc.PluginClient) erro
 func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionName string) {
 	log.Printf("[TRACE] updateConnectionSchema connection %s", connectionName)
 
-	refreshResult := db_local.RefreshConnectionAndSearchPaths(ctx, connectionName)
+	refreshResult := connection.RefreshConnectionAndSearchPaths(ctx, connectionName)
 	if refreshResult.Error != nil {
 		log.Printf("[TRACE] error refreshing connections: %s", refreshResult.Error)
 		return

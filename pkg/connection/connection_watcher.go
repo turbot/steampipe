@@ -1,4 +1,4 @@
-package connectionwatcher
+package connection
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
@@ -102,7 +101,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
 
 	log.Printf("[TRACE] calling RefreshConnectionAndSearchPathsWithLocalClient")
 	// now refresh connections and search paths
-	refreshResult := db_local.RefreshConnectionAndSearchPaths(ctx)
+	refreshResult := RefreshConnectionAndSearchPaths(ctx)
 	if refreshResult.Error != nil {
 		log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
 		return

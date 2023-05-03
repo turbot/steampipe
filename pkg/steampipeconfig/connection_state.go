@@ -109,9 +109,9 @@ func SaveConnectionStateFile(res *RefreshConnectionResult, connectionUpdates *Co
 		connectionState[k] = v
 	}
 	// NOTE: add any connection which failed
-	for c := range res.FailedConnections {
+	for c, reason := range res.FailedConnections {
 		connectionState[c].State = constants.ConnectionStateError
-		connectionState[c].SetError(constants.ConnectionErrorPluginFailedToStart)
+		connectionState[c].SetError(reason)
 	}
 	for pluginName, connections := range connectionUpdates.MissingPlugins {
 		// add in missing connections

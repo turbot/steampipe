@@ -192,8 +192,8 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	// now create them
 	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate)
 	// if any plugins failed to load, set those connections to error
-	for c := range res.FailedConnections {
-		u.setError(c, constants.ConnectionErrorPluginFailedToStart)
+	for c, reason := range res.FailedConnections {
+		u.setError(c, reason)
 	}
 
 	if res.Error != nil {
