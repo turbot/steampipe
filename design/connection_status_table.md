@@ -99,13 +99,20 @@ Currently stored in connections.json, and updated in refreshConnections
   - send notification
 
 Execution code
-  - when executing, if receive "relation not found" error
+  - when executing query, if receive "relation not found" error
     - if schema is specified
+      - if connection does not exist in state map, bubble error
       - if connection is in error, bubble error
-      - if connection is loading, wait
-    - if schema is NOT specified 
-      - if first plugin connection in search path is in error, bubble error (?????)
-    - 
+      - if connection is ready ( and has been for > backoff interval) assume an actual missing table - bubble error
+      - if connection is loading, wait/retry
+    - if schema is NOT specified
+      - if all connections are ready, bubble error
+      - otherwise wait/retry
+      - TODO if first plugin connection in search path is in error, bubble error (?????)
+    
+  - before staring query/control/dashboard execution
+    - if custom search path, wait until first schema for each plugin is loaded (all schemas for dynamic)
+
   - receive error notification: 
     - if static schema and first plugin connection in search path, bubble error
     - if dynamic schema and failed connection in active search path, fail

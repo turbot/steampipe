@@ -39,7 +39,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, qu
 		// load the connection state and connection config to see if the missing schema is in there at all
 		// if there was a schema not found with an unqualified query, we keep trying until ALL the schemas have loaded
 
-		connectionStateMap, stateErr := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitForPending)
+		connectionStateMap, stateErr := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitForPending())
 		if stateErr != nil {
 			// just return the query error
 			return queryError
@@ -53,10 +53,12 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, qu
 		statusMessage := getLoadingConnectionStatusMessage(connectionStateMap, missingSchema)
 
 		if missingSchema == "" {
-			// if no schema was specified, return if the connection state is not pending
-			if !connectionStateMap.Pending() {
+			// if all connections are ready (and have been for more than the backoff interval) , just return the relation not found error
+			if connectionStateMap.Loaded() && time.Since(connectionStateMap.ConnectionModTime()) > backoffInterval {
 				return queryError
 			}
+
+			// TODO KAI just wait for first schema of all plugins???? apart from dynamic???
 
 			// otherwise we need to wait for everything to load - retry
 			statushooks.SetStatus(ctx, statusMessage)

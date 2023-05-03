@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"encoding/json"
+	"golang.org/x/exp/maps"
 	"log"
 	"os"
 	"time"
@@ -79,12 +80,25 @@ func (m ConnectionDataMap) Pending() bool {
 	return m.ConnectionsInState(constants.ConnectionStatePending)
 }
 
-// Ready returns whether loading is complete, i.e.  all connections are either ready or error
-func (m ConnectionDataMap) Ready() bool {
-	return !m.ConnectionsInState(
-		constants.ConnectionStatePending,
-		constants.ConnectionStateUpdating,
-		constants.ConnectionStateDeleting)
+// Loaded returns whether loading is complete, i.e.  all connections are either ready or error
+// (optionally, a list of connections may be passed, in which case just these connections are checked)
+func (m ConnectionDataMap) Loaded(connections ...string) bool {
+	// if no connections were passed, check them all
+	if len(connections) == 0 {
+		connections = maps.Keys(m)
+	}
+
+	for _, connectionName := range connections {
+		connectionState, ok := m[connectionName]
+		if !ok {
+			// ignore if we have no state loaded for this conneciton name
+			continue
+		}
+		if !connectionState.Loaded() {
+			return false
+		}
+	}
+	return true
 }
 
 // ConnectionsInState returns whether there are any connections one of the given states
@@ -133,6 +147,17 @@ func (m ConnectionDataMap) Connections() []*modconfig.Connection {
 	for _, d := range m {
 		res[idx] = d.Connection
 		idx++
+	}
+	return res
+}
+
+// ConnectionModTime returns the latest connection mod time
+func (m ConnectionDataMap) ConnectionModTime() time.Time {
+	var res time.Time
+	for _, c := range m {
+		if c.ConnectionModTime.After(res) {
+			res = c.ConnectionModTime
+		}
 	}
 	return res
 }

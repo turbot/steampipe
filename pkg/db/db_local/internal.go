@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
 )
@@ -26,7 +29,7 @@ ORDER BY
 
 **/
 
-func setupInternal(ctx context.Context) error {
+func setupInternal(ctx context.Context, conn *pgx.Conn) error {
 	utils.LogTime("db.setupInternal start")
 	defer utils.LogTime("db.setupInternal end")
 
@@ -36,12 +39,12 @@ func setupInternal(ctx context.Context) error {
 		fmt.Sprintf(`GRANT USAGE ON SCHEMA %s TO %s;`, constants.InternalSchema, constants.DatabaseUsersRole),
 		// create connection state table
 		getConnectionStateTableCreateSql(),
-		// set all existing connections to pending
+		// set state of all existing connections to pending
 		fmt.Sprintf(`UPDATE %s.%s SET STATE = '%s'`, constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStatePending),
 		fmt.Sprintf(`GRANT SELECT ON TABLE %s.%s to %s;`, constants.InternalSchema, constants.ConnectionStateTable, constants.DatabaseUsersRole),
 	}
 	queries = append(queries, getFunctionAddStrings(db_common.Functions)...)
-	if _, err := executeSqlAsRoot(ctx, queries...); err != nil {
+	if _, err := ExecuteSqlInTransaction(ctx, conn, queries...); err != nil {
 		return sperr.WrapWithMessage(err, "failed to initialise functions")
 	}
 
@@ -103,4 +106,51 @@ $$;
 
 func validateFunction(f db_common.SQLFunction) error {
 	return nil
+}
+
+// for any conneciton in the connection config but not in the connection state table, ad an entry with `pending` state
+// this is to worek around the race condition where we wait for connection state before RefreshConnections has added
+// any new connections into the state table
+func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
+	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn)
+	if err != nil {
+		return err
+	}
+	var queries []db_common.QueryWithArgs
+	for connection, connectionConfig := range steampipeconfig.GlobalConfig.Connections {
+		if _, ok := connectionStateMap[connection]; !ok {
+			queries = append(queries, getConnectionStateTableInsertSql(connectionConfig))
+		}
+	}
+	if len(queries) == 0 {
+		return nil
+	}
+	_, err = ExecuteSqlWithArgsInTransaction(ctx, conn, queries...)
+	return err
+}
+
+func getConnectionStateTableInsertSql(connection *modconfig.Connection) db_common.QueryWithArgs {
+
+	query := fmt.Sprintf(`INSERT INTO %s.%s (name, 
+		state,
+		error,
+		plugin,
+		schema_mode,
+		schema_hash,
+		comments_set,
+		connection_mod_time,
+		plugin_mod_time)
+VALUES($1,$2,$3,$4,$5,$6,$7,now(),now()) 
+`, constants.InternalSchema, constants.ConnectionStateTable)
+
+	schemaMode := "tbd"
+	commentsSet := false
+	schemaHash := ""
+	args := []any{connection.Name, constants.ConnectionStatePending, nil, connection.Plugin, schemaMode, schemaHash, commentsSet}
+
+	return db_common.QueryWithArgs{
+		Query: query,
+		Args:  args,
+	}
+
 }

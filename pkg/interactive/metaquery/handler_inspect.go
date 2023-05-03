@@ -277,5 +277,5 @@ func getConnectionState(ctx context.Context, client db_common.Client) (steampipe
 		return nil, err
 	}
 	defer conn.Release()
-	return steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitForPending)
+	return steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitForPending())
 }

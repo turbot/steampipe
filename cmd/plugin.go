@@ -733,6 +733,7 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 	return pluginConnectionMap, failedPluginMap, missingPluginMap, res
 }
 
+// load the connection state, waiting until all connections are loaded
 func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionDataMap, *modconfig.ErrorAndWarnings) {
 
 	// start service
@@ -751,7 +752,7 @@ func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionDataMap,
 
 	// load LoadConnectionState
 	statushooks.SetStatus(ctx, "Loading connection state")
-	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilReady)
+	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilReady())
 	if err != nil {
 		res.Error = err
 		return nil, res

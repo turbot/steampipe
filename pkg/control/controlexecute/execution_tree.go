@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -88,7 +89,7 @@ func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Contr
 	}
 }
 
-func (e *ExecutionTree) Execute(ctx context.Context) controlstatus.StatusSummary {
+func (e *ExecutionTree) Execute(ctx context.Context) (controlstatus.StatusSummary, error) {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.StartTime = time.Now()
@@ -98,6 +99,14 @@ func (e *ExecutionTree) Execute(ctx context.Context) controlstatus.StatusSummary
 		e.EndTime = time.Now()
 		e.Progress.Finish(ctx)
 	}()
+
+	// TODO KAI SHOULD WE ALWAYS WAIT EVEN WITH NON CUSTOM SEARCH PATH???
+	// if there is a custom search path, wait until the first connection of each plugin has loaded
+	if customSearchPath := e.client.GetCustomSearchPath(); customSearchPath != nil {
+		if err := connection.WaitForSearchPathHeadSchemas(ctx, e.client, customSearchPath); err != nil {
+			return controlstatus.StatusSummary{}, err
+		}
+	}
 
 	// the number of goroutines parallel to start
 	var maxParallelGoRoutines int64 = constants.DefaultMaxConnections
@@ -119,7 +128,7 @@ func (e *ExecutionTree) Execute(ctx context.Context) controlstatus.StatusSummary
 	e.DimensionColorGenerator, _ = NewDimensionColorGenerator(4, 27)
 	e.DimensionColorGenerator.populate(e)
 
-	return e.Root.Summary.Status
+	return e.Root.Summary.Status, nil
 }
 
 func (e *ExecutionTree) waitForActiveRunsToComplete(ctx context.Context, parallelismLock *semaphore.Weighted, maxParallelGoRoutines int64) error {

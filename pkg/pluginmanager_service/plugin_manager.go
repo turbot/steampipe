@@ -726,10 +726,10 @@ func (m *PluginManager) waitForPluginLoad(p *runningPlugin) error {
 	select {
 	case <-p.initialized:
 		log.Printf("[TRACE] initialized: %d", p.reattach.Pid)
-		log.Printf("[TRACE] initialized: %d", p.reattach.Pid)
 		return nil
 
 	case <-time.After(time.Duration(pluginStartTimeoutSecs) * time.Second):
+		log.Printf("[WARN] timed out waiting for %s to startup after %d seconds", p.pluginName, pluginStartTimeoutSecs)
 		return fmt.Errorf("timed out waiting for %s to startup after %d seconds", p.pluginName, pluginStartTimeoutSecs)
 	}
 }

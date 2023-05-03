@@ -95,17 +95,6 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 			return res
 		}
 	} else {
-		// so db is already running - ensure it contains command schema
-		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
-		// and upgrades to this version - we need to ensure we create the command schema
-		conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
-		if err != nil {
-			res.Error = err
-			res.Status = ServiceFailedToStart
-			return res
-		}
-		defer conn.Close(ctx)
-		res.Error = ensureCommandSchema(ctx, conn)
 		res.Status = ServiceAlreadyRunning
 	}
 
@@ -113,8 +102,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 	res = ensurePluginManager(res)
 	if res.Status == ServiceStarted {
 		// execute post startup setup
-		err := postServiceStart(ctx)
-		if err != nil {
+		if err := postServiceStart(ctx, res); err != nil {
 			// NOTE do not update res.Status - this will be done by defer block
 			res.Error = err
 		}
@@ -147,11 +135,33 @@ func ensurePluginManager(res *StartResult) *StartResult {
 	return res
 }
 
-func postServiceStart(ctx context.Context) error {
+func postServiceStart(ctx context.Context, res *StartResult) error {
+
+	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
+	if err != nil {
+		return err
+	}
+	defer conn.Close(ctx)
+
+	if res.Status==ServiceAlreadyRunning {
+		// if db is already running - ensure it contains command schema
+		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
+		// and upgrades to this version - we need to ensure we create the command schema
+		if err := ensureCommandSchema(ctx, conn); err != nil {
+			return err
+		}
+	}
+
 	// setup internal schema
 	// thi includes setting the state of all connections in the connection_state table to pending
 	statushooks.SetStatus(ctx, "Setting up functions")
-	if err := setupInternal(ctx); err != nil {
+	if err := setupInternal(ctx, conn); err != nil {
+		return err
+	}
+	// ensure connection stat etable contains entries for all connections in connection config
+	// (this is to allow for the race condition between polling connection state and calling refresh connections,
+	// which does not update the connection_state with added connections until it has built the ConnectionUpdates
+	if err := initializeConnectionStateTable(ctx, conn); err != nil {
 		return err
 	}
 

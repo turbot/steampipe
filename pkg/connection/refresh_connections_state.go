@@ -349,13 +349,13 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	return
 }
 
-func (state *refreshConnectionState) writeComments(ctx context.Context, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin)  {
+func (state *refreshConnectionState) writeComments(ctx context.Context, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) {
 	log.Printf("[WARN] start comments")
 
 	conn, err := state.pool.Acquire(ctx)
 	if err != nil {
 		// NOTE: do not return an error if we fail to write comments
-		log.Printf("[WARN] failed to write comments: could not acquire connection: %s", err.Error()
+		log.Printf("[WARN] failed to write comments: could not acquire connection: %s", err.Error())
 		return
 	}
 	defer conn.Release()
@@ -371,7 +371,7 @@ func (state *refreshConnectionState) writeComments(ctx context.Context, validate
 		_, err = db_local.ExecuteSqlInTransaction(ctx, conn.Conn(), "lock table pg_namespace;", db_common.GetCommentsQueryForPlugin(connectionName, connectionPlugin.ConnectionMap[connectionName].Schema.Schema))
 		if err != nil {
 			// NOTE: do not return an error if we fail to write comments
-			log.Printf("[WARN] failed to write comments for connection '%s': %s",connectionName, err.Error())
+			log.Printf("[WARN] failed to write comments for connection '%s': %s", connectionName, err.Error())
 		}
 		// TODO KAI update connection state
 	}
@@ -391,17 +391,18 @@ func (state *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql
 		}
 	}()
 
-	if connectionName == "aws_015" {
-		statusErr := state.tableUpdater.onConnectionError(ctx, tx, connectionName, fmt.Errorf("HACKETY"))
-		// update failed connections in result
-		state.res.AddFailedConnection(connectionName, err.Error())
-
-		// NOTE: do not return the error - unless we failed to update the connection state table
-		if statusErr != nil {
-			return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connectionm %s and failed to update connection_state table", connectionName), err, statusErr)
-		}
-		return nil
-	}
+	// TODO KAI HACK
+	//if connectionName == "aws_015" {
+	//	statusErr := state.tableUpdater.onConnectionError(ctx, tx, connectionName, fmt.Errorf("HACKETY"))
+	//	// update failed connections in result
+	//	state.res.AddFailedConnection(connectionName, err.Error())
+	//
+	//	// NOTE: do not return the error - unless we failed to update the connection state table
+	//	if statusErr != nil {
+	//		return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connectionm %s and failed to update connection_state table", connectionName), err, statusErr)
+	//	}
+	//	return nil
+	//}
 
 	// execute update sql
 	_, err = tx.Exec(ctx, sql)

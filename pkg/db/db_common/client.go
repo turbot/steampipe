@@ -12,6 +12,7 @@ type Client interface {
 
 	SetRequiredSessionSearchPath(context.Context) error
 	GetRequiredSessionSearchPath() []string
+	GetCustomSearchPath() []string
 
 	// acquire a database connection - must be closed
 	AcquireConnection(ctx context.Context) (*pgxpool.Conn, error)

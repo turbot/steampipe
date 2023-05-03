@@ -158,7 +158,9 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		error_helpers.FailOnError(err)
 
 		// execute controls synchronously (execute returns the number of alarms and errors)
-		stats := executionTree.Execute(ctx)
+		stats, err := executionTree.Execute(ctx)
+		error_helpers.FailOnError(err)
+
 		// append the total number of alarms and errors for multiple runs
 		totalAlarms += stats.Alarm
 		totalErrors += stats.Error

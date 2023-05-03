@@ -81,7 +81,10 @@ func (c *DbClient) GetRequiredSessionSearchPath() []string {
 	}
 
 	return c.userSearchPath
+}
 
+func (c *DbClient) GetCustomSearchPath() []string {
+	return c.customSearchPath
 }
 
 // reload Steampipe config, update viper and re-set required search path

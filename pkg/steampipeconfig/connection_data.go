@@ -85,3 +85,8 @@ func (d *ConnectionData) Error() string {
 func (d *ConnectionData) SetError(err string) {
 	d.ConnectionError = &err
 }
+
+// Loaded returns true if the connection state is 'ready' or 'error'
+func (d *ConnectionData) Loaded() bool {
+	return d.State == constants.ConnectionStateReady || d.State == constants.ConnectionStateError
+}

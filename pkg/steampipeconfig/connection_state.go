@@ -12,18 +12,26 @@ import (
 	"time"
 )
 
+//type ConnectionState ConnectionDataMap
+
 type LoadConnectionStateConfiguration struct {
 	WaitForPending bool
 	WaitForReady   bool
+	Connections    []string
 }
 
 type LoadConnectionStateOption = func(config *LoadConnectionStateConfiguration)
 
-var WithWaitForPending = func(config *LoadConnectionStateConfiguration) {
-	config.WaitForPending = true
+var WithWaitForPending = func() func(config *LoadConnectionStateConfiguration) {
+	return func(config *LoadConnectionStateConfiguration) {
+		config.WaitForPending = true
+	}
 }
-var WithWaitUntilReady = func(config *LoadConnectionStateConfiguration) {
-	config.WaitForReady = true
+var WithWaitUntilReady = func(connections ...string) func(config *LoadConnectionStateConfiguration) {
+	return func(config *LoadConnectionStateConfiguration) {
+		config.Connections = connections
+		config.WaitForReady = true
+	}
 }
 
 // LoadConnectionState populates a ConnectionDataMap from the connection_state table
@@ -38,11 +46,12 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 	// set this to a long enough time for ConnectionUpdates to be generated for a large connection count
 	// TODO this time can be reduced once all; plugins are using v5.4.1 of the sdk
 	maxDuration := 1 * time.Minute
+	retryInterval := 50 * time.Millisecond
 	if config.WaitForReady {
 		// is we are waiting for all connections to be ready, wait up to 10 minutes
 		maxDuration = 10 * time.Minute
+		retryInterval = 250 * time.Millisecond
 	}
-	retryInterval := 50 * time.Millisecond
 	backoff := retry.NewConstant(retryInterval)
 
 	var connectionState ConnectionDataMap
@@ -51,7 +60,7 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 		var loadErr error
 		connectionState, loadErr = loadConnectionState(ctx, conn)
 		if loadErr == nil {
-			if config.WaitForReady && !connectionState.Ready() {
+			if config.WaitForReady && !connectionState.Loaded(config.Connections...) {
 				statushooks.SetStatus(ctx, "Waiting for steampipe connections to refresh")
 				loadErr = retry.RetryableError(fmt.Errorf("connection state is still loading"))
 			} else if config.WaitForPending && connectionState.Pending() {
