@@ -239,7 +239,12 @@ func (i *ModInstaller) calcChangesForUninstall(oldMod *modconfig.Mod, newMod *mo
 	// end for
 	for _, requiredMod := range oldMod.Require.Mods {
 		// check if this mod is still a dependency
-		modInNew := newMod.Require.GetModDependency(requiredMod.Name)
+		var modInNew *modconfig.ModVersionConstraint
+		if newMod.Require == nil {
+			modInNew = nil
+		} else {
+			modInNew = newMod.Require.GetModDependency(requiredMod.Name)
+		}
 		if modInNew == nil {
 			changeset = append(changeset, &Change{
 				Operation:   DELETE,
@@ -260,6 +265,10 @@ func (i *ModInstaller) calcChangesForInstall(oldMod *modconfig.Mod, newMod *modc
 	//		end if
 	// end for
 	// add the new ones
+	if newMod.Require == nil {
+		// return an empty changeset
+		return ChangeSet{}
+	}
 	f := hclwrite.NewEmptyFile()
 	rootBody := f.Body()
 	for _, requiredMod := range newMod.Require.Mods {
@@ -293,6 +302,11 @@ func (i *ModInstaller) calcChangesForUpdate(oldMod *modconfig.Mod, newMod *modco
 	//			end if
 	//		end if
 	// end for
+	if newMod.Require == nil {
+		// new mod does not have any require
+		// return an empty change set
+		return ChangeSet{}
+	}
 	for _, requiredMod := range oldMod.Require.Mods {
 		modInUpdated := newMod.Require.GetModDependency(requiredMod.Name)
 		if modInUpdated == nil {
@@ -365,19 +379,14 @@ func (i *ModInstaller) updateRequireBlock() error {
 	changes = append(changes, i.calcChangesForInstall(mod, workspaceMod)...)
 	changes = append(changes, i.calcChangesForUpdate(mod, workspaceMod)...)
 
-	if mod.Require.Empty() {
-		// remove the require block completely
-		changes = append(changes, &Change{
-			Operation:   DELETE,
-			Content:     []byte{},
-			OffsetStart: mod.Require.DeclRange.Start.Byte,
-			OffsetEnd:   mod.Require.BodyRange.End.Byte,
-		})
-	}
-
 	contents.ApplyChanges(changes)
 	contents.Apply(hclwrite.Format)
 	contents.TrimBlanks()
+
+	// Todo: Try to remove the entire require block if it's empty
+	// right now we can't do this because that would be the lowest
+	// offset and will get applied last - but the end offset would
+	// have changed
 
 	return os.WriteFile(filepaths.ModFilePath(i.workspaceMod.ModPath), contents.Bytes(), 0644)
 }
