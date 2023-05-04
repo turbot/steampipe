@@ -10,6 +10,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	git "github.com/go-git/go-git/v5"
+	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -21,6 +22,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
+	"github.com/zclconf/go-cty/cty"
 )
 
 type ModInstaller struct {
@@ -150,7 +152,7 @@ func (i *ModInstaller) UninstallWorkspaceDependencies(ctx context.Context) error
 	}
 
 	//  now safe to save the mod file
-	if err := i.workspaceMod.Save(); err != nil {
+	if err := i.UpdateRequireBlock(); err != nil {
 		return err
 	}
 
@@ -216,16 +218,152 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 
 	//  now safe to save the mod file
 	if len(i.mods) > 0 {
-		if err := i.workspaceMod.Save(); err != nil {
+		if err := i.UpdateRequireBlock(); err != nil {
 			return err
 		}
 	}
-
 	if !workspaceMod.HasDependentMods() {
 		// there are no dependencies - delete the cache
 		i.installData.Lock.Delete()
 	}
 	return nil
+}
+
+func (i *ModInstaller) calcChangesForUninstall(oldMod *modconfig.Mod, newMod *modconfig.Mod) ChangeSet {
+	changeset := ChangeSet{}
+	// for every require.mod in parsed
+	//		if not in workspaceMod
+	//			remove - uninstall
+	//		end if
+	// end for
+	// remove mod requires which exist in file but not in updated mod
+	for _, mvc := range oldMod.Require.Mods {
+		// check if this mod is still a dependency
+		modInWkspc := newMod.Require.GetModDependency(mvc.Name)
+		if modInWkspc == nil {
+			changeset = append(changeset, &Change{
+				Operation:   DELETE,
+				OffsetStart: mvc.DefRange.Start.Byte,
+				OffsetEnd:   mvc.BodyRange.End.Byte,
+				Content:     []byte{},
+			})
+		}
+	}
+	return changeset
+}
+
+func (i *ModInstaller) calcChangesForInstall(oldMod *modconfig.Mod, newMod *modconfig.Mod) ChangeSet {
+	// for every require.mod in workspaceMod
+	// 		if not in parsed
+	//			add - install
+	//		end if
+	// end for
+	// add the new ones
+	f := hclwrite.NewEmptyFile()
+	rootBody := f.Body()
+	for _, mvc2 := range newMod.Require.Mods {
+		modInContents := oldMod.Require.GetModDependency(mvc2.Name)
+		if modInContents == nil {
+			modRequireBlock := rootBody.AppendNewBlock("mod", []string{mvc2.Name})
+			modRequireBlock.Body().SetAttributeValue("version", cty.StringVal(mvc2.VersionString))
+		}
+	}
+
+	if len(f.Bytes()) == 0 {
+		return ChangeSet{}
+	}
+
+	return ChangeSet{
+		&Change{
+			Operation:   INSERT,
+			OffsetStart: oldMod.Require.BodyRange.End.Byte - 1,
+			Content:     f.Bytes(),
+		},
+	}
+}
+
+func (i *ModInstaller) calcChangesForUpdate(oldMod *modconfig.Mod, newMod *modconfig.Mod) ChangeSet {
+	changes := ChangeSet{}
+	// for every require.mod in parsed
+	//		if in workspaceMod
+	//			if parsed.version != workspaceMod.version
+	//				update version field - upgrade
+	//			end if
+	//		end if
+	// end for
+	for _, mvc := range oldMod.Require.Mods {
+		modInUpdated := newMod.Require.GetModDependency(mvc.Name)
+		if modInUpdated == nil {
+			continue
+		}
+		if modInUpdated.VersionString != mvc.VersionString {
+			changes = append(changes, &Change{
+				Operation:   REPLACE,
+				OffsetStart: mvc.VersionRange.Start.Byte,
+				OffsetEnd:   mvc.VersionRange.End.Byte,
+				Content:     []byte(fmt.Sprintf("version = \"%s\"", modInUpdated.VersionString)),
+			})
+		}
+	}
+	return changes
+}
+
+func (i *ModInstaller) loadModForUpdate() (*modconfig.Mod, *ByteSequence, error) {
+	mod, err := parse.LoadModfile(i.workspaceMod.ModPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	modFileBytes, err := os.ReadFile(filepaths.ModFilePath(i.workspaceMod.ModPath))
+	if err != nil {
+		return nil, nil, err
+	}
+	return mod, NewByteSequence(modFileBytes), nil
+}
+
+func (i *ModInstaller) ensureRequireBlock() error {
+	mod, contents, err := i.loadModForUpdate()
+	if err != nil {
+		return err
+	}
+	if mod.Require == nil || mod.Require.BodyRange.Empty() {
+		// add an empty require block
+		// and reparse the file
+		f := hclwrite.NewEmptyFile()
+		f.Body().AppendNewBlock("require", nil)
+		contents.append(mod.DeclRange.End.Byte-1, f.Bytes())
+		contents.Apply(hclwrite.Format)
+		if err := os.WriteFile(filepaths.ModFilePath(i.workspaceMod.ModPath), contents.Bytes(), 0644); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (i *ModInstaller) UpdateRequireBlock() error {
+	if err := i.ensureRequireBlock(); err != nil {
+		return err
+	}
+	mod, contents, err := i.loadModForUpdate()
+	if err != nil {
+		return err
+	}
+
+	// this is the parsed content of the mod file as is present on disk
+
+	// this is the modified mod after all operations have been done
+	workspaceMod := i.workspaceMod
+
+	changes := ChangeSet{}
+
+	changes = append(changes, i.calcChangesForUninstall(mod, workspaceMod)...)
+	changes = append(changes, i.calcChangesForInstall(mod, workspaceMod)...)
+	changes = append(changes, i.calcChangesForUpdate(mod, workspaceMod)...)
+
+	contents.ApplyChanges(changes)
+	contents.Apply(hclwrite.Format)
+	contents.TrimBlanks()
+
+	return os.WriteFile(filepaths.ModFilePath(i.workspaceMod.ModPath), contents.Bytes(), 0644)
 }
 
 func (i *ModInstaller) GetModList() string {
