@@ -365,6 +365,16 @@ func (i *ModInstaller) updateRequireBlock() error {
 	changes = append(changes, i.calcChangesForInstall(mod, workspaceMod)...)
 	changes = append(changes, i.calcChangesForUpdate(mod, workspaceMod)...)
 
+	if mod.Require.Empty() {
+		// remove the require block completely
+		changes = append(changes, &Change{
+			Operation:   DELETE,
+			Content:     []byte{},
+			OffsetStart: mod.Require.DeclRange.Start.Byte,
+			OffsetEnd:   mod.Require.BodyRange.End.Byte,
+		})
+	}
+
 	contents.ApplyChanges(changes)
 	contents.Apply(hclwrite.Format)
 	contents.TrimBlanks()
