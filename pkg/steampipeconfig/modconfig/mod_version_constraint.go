@@ -24,9 +24,12 @@ type ModVersionConstraint struct {
 	// only one of Constraint, Branch and FilePath will be set
 	Constraint *versionhelpers.Constraints
 	// the local file location to use
-	FilePath     string
-	DefRange     hcl.Range
-	BodyRange    hcl.Range
+	FilePath string
+	// contains the range of the definition of the mod block
+	DefRange hcl.Range
+	// contains the range of the body of the mod block
+	BodyRange hcl.Range
+	// contains the range of the total version field
 	VersionRange hcl.Range
 }
 

@@ -19,10 +19,12 @@ type Require struct {
 	DeprecatedSteampipeVersionString string                  `hcl:"steampipe,optional"`
 	Steampipe                        *SteampipeRequire       `hcl:"steampipe,block"`
 	Mods                             []*ModVersionConstraint `hcl:"mod,block"`
-	DeclRange                        hcl.Range
-	BodyRange                        hcl.Range
 	// map keyed by name [and alias]
 	modMap map[string]*ModVersionConstraint
+	// range of the definition of the require block
+	DeclRange hcl.Range
+	// range of the body of the require block
+	BodyRange hcl.Range
 }
 
 func NewRequire() *Require {

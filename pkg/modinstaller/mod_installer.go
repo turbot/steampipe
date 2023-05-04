@@ -152,7 +152,7 @@ func (i *ModInstaller) UninstallWorkspaceDependencies(ctx context.Context) error
 	}
 
 	//  now safe to save the mod file
-	if err := i.UpdateRequireBlock(); err != nil {
+	if err := i.updateRequireBlock(); err != nil {
 		return err
 	}
 
@@ -218,7 +218,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 
 	//  now safe to save the mod file
 	if len(i.mods) > 0 {
-		if err := i.UpdateRequireBlock(); err != nil {
+		if err := i.updateRequireBlock(); err != nil {
 			return err
 		}
 	}
@@ -229,22 +229,22 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 	return nil
 }
 
+// calculates changes required in mod.sp to reflect uninstalls
 func (i *ModInstaller) calcChangesForUninstall(oldMod *modconfig.Mod, newMod *modconfig.Mod) ChangeSet {
 	changeset := ChangeSet{}
-	// for every require.mod in parsed
-	//		if not in workspaceMod
-	//			remove - uninstall
+	// for every require.mod in current
+	//		if not in updated
+	//			remove
 	//		end if
 	// end for
-	// remove mod requires which exist in file but not in updated mod
-	for _, mvc := range oldMod.Require.Mods {
+	for _, requiredMod := range oldMod.Require.Mods {
 		// check if this mod is still a dependency
-		modInWkspc := newMod.Require.GetModDependency(mvc.Name)
-		if modInWkspc == nil {
+		modInNew := newMod.Require.GetModDependency(requiredMod.Name)
+		if modInNew == nil {
 			changeset = append(changeset, &Change{
 				Operation:   DELETE,
-				OffsetStart: mvc.DefRange.Start.Byte,
-				OffsetEnd:   mvc.BodyRange.End.Byte,
+				OffsetStart: requiredMod.DefRange.Start.Byte,
+				OffsetEnd:   requiredMod.BodyRange.End.Byte,
 				Content:     []byte{},
 			})
 		}
@@ -252,20 +252,21 @@ func (i *ModInstaller) calcChangesForUninstall(oldMod *modconfig.Mod, newMod *mo
 	return changeset
 }
 
+// calculates changes required in mod.sp to reflect new installs
 func (i *ModInstaller) calcChangesForInstall(oldMod *modconfig.Mod, newMod *modconfig.Mod) ChangeSet {
-	// for every require.mod in workspaceMod
-	// 		if not in parsed
+	// for every require.mod in new
+	// 		if not in current
 	//			add - install
 	//		end if
 	// end for
 	// add the new ones
 	f := hclwrite.NewEmptyFile()
 	rootBody := f.Body()
-	for _, mvc2 := range newMod.Require.Mods {
-		modInContents := oldMod.Require.GetModDependency(mvc2.Name)
+	for _, requiredMod := range newMod.Require.Mods {
+		modInContents := oldMod.Require.GetModDependency(requiredMod.Name)
 		if modInContents == nil {
-			modRequireBlock := rootBody.AppendNewBlock("mod", []string{mvc2.Name})
-			modRequireBlock.Body().SetAttributeValue("version", cty.StringVal(mvc2.VersionString))
+			modRequireBlock := rootBody.AppendNewBlock("mod", []string{requiredMod.Name})
+			modRequireBlock.Body().SetAttributeValue("version", cty.StringVal(requiredMod.VersionString))
 		}
 	}
 
@@ -282,6 +283,7 @@ func (i *ModInstaller) calcChangesForInstall(oldMod *modconfig.Mod, newMod *modc
 	}
 }
 
+// calculates the changes required in mod.sp to reflect updates
 func (i *ModInstaller) calcChangesForUpdate(oldMod *modconfig.Mod, newMod *modconfig.Mod) ChangeSet {
 	changes := ChangeSet{}
 	// for every require.mod in parsed
@@ -291,16 +293,16 @@ func (i *ModInstaller) calcChangesForUpdate(oldMod *modconfig.Mod, newMod *modco
 	//			end if
 	//		end if
 	// end for
-	for _, mvc := range oldMod.Require.Mods {
-		modInUpdated := newMod.Require.GetModDependency(mvc.Name)
+	for _, requiredMod := range oldMod.Require.Mods {
+		modInUpdated := newMod.Require.GetModDependency(requiredMod.Name)
 		if modInUpdated == nil {
 			continue
 		}
-		if modInUpdated.VersionString != mvc.VersionString {
+		if modInUpdated.VersionString != requiredMod.VersionString {
 			changes = append(changes, &Change{
 				Operation:   REPLACE,
-				OffsetStart: mvc.VersionRange.Start.Byte,
-				OffsetEnd:   mvc.VersionRange.End.Byte,
+				OffsetStart: requiredMod.VersionRange.Start.Byte,
+				OffsetEnd:   requiredMod.VersionRange.End.Byte,
 				Content:     []byte(fmt.Sprintf("version = \"%s\"", modInUpdated.VersionString)),
 			})
 		}
@@ -308,6 +310,7 @@ func (i *ModInstaller) calcChangesForUpdate(oldMod *modconfig.Mod, newMod *modco
 	return changes
 }
 
+// loadModForUpdate parses
 func (i *ModInstaller) loadModForUpdate() (*modconfig.Mod, *ByteSequence, error) {
 	mod, err := parse.LoadModfile(i.workspaceMod.ModPath)
 	if err != nil {
@@ -320,6 +323,8 @@ func (i *ModInstaller) loadModForUpdate() (*modconfig.Mod, *ByteSequence, error)
 	return mod, NewByteSequence(modFileBytes), nil
 }
 
+// ensureRequireBlock ensures that there's a require block in the mod.sp
+// file of the root mod.
 func (i *ModInstaller) ensureRequireBlock() error {
 	mod, contents, err := i.loadModForUpdate()
 	if err != nil {
@@ -339,7 +344,8 @@ func (i *ModInstaller) ensureRequireBlock() error {
 	return nil
 }
 
-func (i *ModInstaller) UpdateRequireBlock() error {
+// updates the 'require' block in 'mod.sp'
+func (i *ModInstaller) updateRequireBlock() error {
 	if err := i.ensureRequireBlock(); err != nil {
 		return err
 	}
