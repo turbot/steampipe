@@ -3,24 +3,28 @@ package db_client
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"time"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sethvargo/go-retry"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"regexp"
-	"time"
 )
 
 // execute query - if it fails with a "relation not found" error, determine whether this is because the required schema
 // has not yet loaded and if so, wait for it to load and retry
-func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, query string, args ...any) (pgx.Rows, error) {
+func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common.DatabaseSession, query string, args ...any) (pgx.Rows, error) {
 	// long timeout to give refresh connections a chance to finish
 	maxDuration := 10 * time.Minute
 	backoffInterval := 250 * time.Millisecond
 	backoff := retry.NewConstant(backoffInterval)
+
+	conn := session.Connection.Conn()
 
 	var res pgx.Rows
 	err := retry.Do(ctx, retry.WithMaxDuration(maxDuration, backoff), func(ctx context.Context) error {
@@ -43,11 +47,13 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, qu
 		// if there was a schema not found with an unqualified query, we keep trying until
 		// the first search path schema for each plugin has loaded
 
+		statushooks.SetStatus(ctx, "Loading connection state")
 		connectionStateMap, stateErr := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitUntilLoading())
 		if stateErr != nil {
 			// just return the query error
 			return queryError
 		}
+
 		// if there are no connections, just return the error
 		if len(connectionStateMap) == 0 {
 			return queryError
@@ -55,23 +61,25 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, conn *pgx.Conn, qu
 
 		// is this an unqualified query...
 		if missingSchema == "" {
-			// if all connections are ready (and have been for more than the backoff interval) , just return the relation not found error
-			if connectionStateMap.Loaded() && time.Since(connectionStateMap.ConnectionModTime()) > backoffInterval {
+			// refresh the search path, as now the connection state is in loading state, search paths may have been updated
+			if err := c.ensureSessionSearchPath(ctx, session); err != nil {
 				return queryError
 			}
 
-			// tell our client to reload the search path, as now the connection state is in loading state,
-			// search paths may have been updated
-			if err := c.loadUserSearchPath(ctx, conn); err != nil {
+			// we need the first search path connection for each plugin to be loaded
+			searchPath := c.GetRequiredSessionSearchPath()
+			requiredConnections := connectionStateMap.GetFirstSearchPathConnectionForPlugins(searchPath)
+			// if required connections are ready (and have been for more than the backoff interval) , just return the relation not found error
+			if connectionStateMap.Loaded(requiredConnections...) && time.Since(connectionStateMap.ConnectionModTime()) > backoffInterval {
 				return queryError
 			}
-			c.SetRequiredSessionSearchPath(ctx)
 
-			// TODO KAI test this
 			// otherwise we need to wait for the first schema of everything plugin to load
-			if _, err := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitForSearchPath(c.GetRequiredSessionSearchPath())); err != nil {
+			if _, err := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitForSearchPath(searchPath)); err != nil {
 				return err
 			}
+
+			// so now the connections are loaded - retry the query
 			return retry.RetryableError(queryError)
 		}
 

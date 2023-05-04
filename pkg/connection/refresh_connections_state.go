@@ -65,8 +65,6 @@ func (state *refreshConnectionState) close() {
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
 func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
-	log.Printf("[WARN] refreshConnections")
-	//
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 

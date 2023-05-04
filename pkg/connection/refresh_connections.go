@@ -7,13 +7,12 @@ import (
 )
 
 func RefreshConnectionAndSearchPaths(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
-	log.Printf("[WARN] Refreshing connections")
+	log.Printf("[TRACE] Refreshing connections")
 
 	// uncomment to debug
-	//time.Sleep(20 * time.Second)
+	//time.Sleep(10 * time.Second)
 
 	// now refresh connections
-	//log.Printf("[WARN] Refreshing connections WAIT DONE")
 	// package up all necessary data into a state object6
 	state, err := newRefreshConnectionState(ctx, forceUpdateConnectionNames)
 	if err != nil {

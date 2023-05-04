@@ -1,7 +1,6 @@
 package steampipeconfig
 
 import (
-	"log"
 	"time"
 
 	typehelpers "github.com/turbot/go-kit/types"
@@ -61,8 +60,6 @@ func (d *ConnectionState) Equals(other *ConnectionState) bool {
 	}
 	// allow for sub ms rounding errors when converting from PG
 	if d.PluginModTime.Sub(other.PluginModTime).Abs() > 1*time.Millisecond {
-		a := d.PluginModTime.Sub(other.PluginModTime)
-		log.Printf("[WARN] %v", a)
 		return false
 	}
 	//d.ConnectionModTime.Equal(other.ConnectionModTime) return false

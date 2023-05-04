@@ -135,7 +135,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 
 	// start query
 	var rows pgx.Rows
-	rows, err = c.startQueryWithRetries(ctxExecute, session.Connection.Conn(), query, args...)
+	rows, err = c.startQueryWithRetries(ctxExecute, session, query, args...)
 	if err != nil {
 		return
 	}
