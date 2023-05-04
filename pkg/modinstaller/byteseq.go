@@ -64,27 +64,6 @@ func (bseq *ByteSequence) ApplyChanges(changeSet ChangeSet) {
 
 }
 
-// clear replaces whatever is within [start,end] with white spaces
-func (bseq *ByteSequence) clear(start int, end int) {
-	left := bseq._underlying[:start]
-	right := bseq._underlying[end:]
-	bseq._underlying = append(left, right...)
-}
-
-// append inserts the given content at 'offset'
-func (bseq *ByteSequence) append(offset int, content []byte) {
-	left := bseq._underlying[:offset]
-	right := bseq._underlying[offset:]
-	// prepend the content before the right part
-	right = append(content, right...)
-	bseq._underlying = append(left, right...)
-}
-
-// Apply applies the given function on the byte sequence
-func (bseq *ByteSequence) Apply(apply func([]byte) []byte) {
-	bseq._underlying = apply(bseq._underlying)
-}
-
 // TrimBlanks compresses multiple empty lines to a single empty line
 func (bseq *ByteSequence) TrimBlanks() {
 	sc := bufio.NewScanner(bytes.NewReader(bseq._underlying))
@@ -108,4 +87,25 @@ func (bseq *ByteSequence) TrimBlanks() {
 
 func (bseq *ByteSequence) Bytes() []byte {
 	return bseq._underlying
+}
+
+// clear replaces whatever is within [start,end] with white spaces
+func (bseq *ByteSequence) clear(start int, end int) {
+	left := bseq._underlying[:start]
+	right := bseq._underlying[end:]
+	bseq._underlying = append(left, right...)
+}
+
+// append inserts the given content at 'offset'
+func (bseq *ByteSequence) append(offset int, content []byte) {
+	left := bseq._underlying[:offset]
+	right := bseq._underlying[offset:]
+	// prepend the content before the right part
+	right = append(content, right...)
+	bseq._underlying = append(left, right...)
+}
+
+// Apply applies the given function on the byte sequence
+func (bseq *ByteSequence) Apply(apply func([]byte) []byte) {
+	bseq._underlying = apply(bseq._underlying)
 }
