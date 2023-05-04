@@ -387,6 +387,7 @@ func (i *ModInstaller) updateRequireBlock() error {
 	// right now we can't do this because that would be the lowest
 	// offset and will get applied last - but the end offset would
 	// have changed
+	// https://github.com/turbot/steampipe/issues/3383
 
 	return os.WriteFile(filepaths.ModFilePath(i.workspaceMod.ModPath), contents.Bytes(), 0644)
 }
