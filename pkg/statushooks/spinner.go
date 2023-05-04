@@ -100,7 +100,7 @@ func (s *StatusSpinner) Hide() {
 }
 
 func (s *StatusSpinner) Show() {
-	if len(s.spinner.Suffix) > 0 {
+	if len(strings.TrimSpace(s.spinner.Suffix)) > 0 {
 		// only show the spinner if there's an actual message to show
 		s.spinner.Start()
 	}
