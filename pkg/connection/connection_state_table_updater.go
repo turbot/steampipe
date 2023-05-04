@@ -128,7 +128,7 @@ WHERE
 	return db_common.QueryWithArgs{query, args}
 }
 
-func getStartUpdateConnectionStateSql(c *steampipeconfig.ConnectionData) db_common.QueryWithArgs {
+func getStartUpdateConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
 	// if state is updating, set comments to false
 	commentsSet := c.State == constants.ConnectionStateReady
 	// upsert
@@ -159,7 +159,7 @@ DO
 }
 
 // note: set comments to false as this is called from start and updateConnectionState - both before comment completion
-func getConnectionReadySql(connection *steampipeconfig.ConnectionData) db_common.QueryWithArgs {
+func getConnectionReadySql(connection *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
 	// upsert
 	query := fmt.Sprintf(`UPDATE %s.%s 
     SET	state = $1, 

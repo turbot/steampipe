@@ -60,10 +60,10 @@ func (c *DbClient) LoadUserSearchPath(ctx context.Context) error {
 		return err
 	}
 	defer conn.Release()
-	return c.setUserSearchPath(ctx, conn.Conn())
+	return c.loadUserSearchPath(ctx, conn.Conn())
 }
 
-func (c *DbClient) setUserSearchPath(ctx context.Context, connection *pgx.Conn) error {
+func (c *DbClient) loadUserSearchPath(ctx context.Context, connection *pgx.Conn) error {
 	// load the user search path
 	userSearchPath, err := db_common.GetUserSearchPath(ctx, connection)
 	if err != nil {
@@ -103,7 +103,7 @@ func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_comm
 	log.Printf("[TRACE] ensureSessionSearchPath")
 
 	// update the stored value of user search path
-	if err := c.setUserSearchPath(ctx, session.Connection.Conn()); err != nil {
+	if err := c.loadUserSearchPath(ctx, session.Connection.Conn()); err != nil {
 		return err
 	}
 

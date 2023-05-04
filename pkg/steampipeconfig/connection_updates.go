@@ -20,14 +20,14 @@ import (
 )
 
 type ConnectionUpdates struct {
-	Update         ConnectionDataMap
+	Update         ConnectionStateMap
 	Delete         map[string]struct{}
 	MissingPlugins map[string][]modconfig.Connection
 	// the connections which will exist after the update
-	FinalConnectionState ConnectionDataMap
+	FinalConnectionState ConnectionStateMap
 	// connection plugins required to perform the updates
 	ConnectionPlugins      map[string]*ConnectionPlugin
-	CurrentConnectionState ConnectionDataMap
+	CurrentConnectionState ConnectionStateMap
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
@@ -61,7 +61,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	// build connection data for all required connections
 	// NOTE: this will NOT populate SchemaMode for the connections, as we need to load the schema for that
 	// this will be updated below on the call to updateRequiredStateWithSchemaProperties
-	requiredConnectionState, missingPlugins, err := NewConnectionDataMap(GlobalConfig.Connections, currentConnectionState)
+	requiredConnectionState, missingPlugins, err := NewConnectionStateMap(GlobalConfig.Connections, currentConnectionState)
 	if err != nil {
 		log.Printf("[WARN] failed to build required connection state: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
@@ -70,7 +70,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 
 	updates := &ConnectionUpdates{
 		Delete:               make(map[string]struct{}),
-		Update:               ConnectionDataMap{},
+		Update:               ConnectionStateMap{},
 		MissingPlugins:       missingPlugins,
 		FinalConnectionState: requiredConnectionState,
 	}
@@ -278,14 +278,14 @@ func (u *ConnectionUpdates) setError(connectionName string, error string) {
 	delete(u.Update, connectionName)
 }
 
-func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionDataMap, connectionState ConnectionDataMap) (map[string]string, map[string]*ConnectionPlugin, error) {
+func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionStateMap, connectionState ConnectionStateMap) (map[string]string, map[string]*ConnectionPlugin, error) {
 	log.Printf("[TRACE] getSchemaHashesForDynamicSchemas")
 	// for every required connection, check the connection state to determine whether the schema mode is 'dynamic'
 	// if we have never loaded the connection, there will be no state, so we cannot retrieve this information
 	// however in this case we will load the connection anyway
 	// - at which point the state will be updated with the schema mode for the next time round
 
-	var connectionsWithDynamicSchema = make(ConnectionDataMap)
+	var connectionsWithDynamicSchema = make(ConnectionStateMap)
 	for requiredConnectionName, requiredConnection := range requiredConnectionData {
 		if existingConnection, ok := connectionState[requiredConnectionName]; ok {
 			// SchemaMode will be unpopulated for plugins using an older version of the sdk

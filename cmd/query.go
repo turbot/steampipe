@@ -203,7 +203,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 
 	// if there is a custom search path, wait until the first connection of each plugin has loaded
 	if customSearchPath := initData.Client.GetCustomSearchPath(); customSearchPath != nil {
-		if err := connection_sync.WaitForSearchPathHeadSchemas(ctx, initData.Client, customSearchPath); err != nil {
+		if err := connection_sync.WaitForSearchPathSchemas(ctx, initData.Client, customSearchPath); err != nil {
 			exitCode = constants.ExitCodeInitializationFailed
 			error_helpers.FailOnError(err)
 		}

@@ -180,7 +180,7 @@ To get information about the columns in a table, run %s
 	return nil
 }
 
-func showStateSummary(connectionState steampipeconfig.ConnectionDataMap) {
+func showStateSummary(connectionState steampipeconfig.ConnectionStateMap) {
 	header := []string{"Connection state", "Count"}
 	var rows [][]string
 	stateSummary := connectionState.GetSummary()
@@ -266,7 +266,7 @@ func inspectConnection(connectionName string, input *HandlerInput) bool {
 }
 
 // helper function to acquire db connection and retrieve connection
-func getConnectionState(ctx context.Context, client db_common.Client) (steampipeconfig.ConnectionDataMap, error) {
+func getConnectionState(ctx context.Context, client db_common.Client) (steampipeconfig.ConnectionStateMap, error) {
 	statushooks.Show(ctx)
 	defer statushooks.Done(ctx)
 
@@ -277,5 +277,5 @@ func getConnectionState(ctx context.Context, client db_common.Client) (steampipe
 		return nil, err
 	}
 	defer conn.Release()
-	return steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitForPending())
+	return steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
 }

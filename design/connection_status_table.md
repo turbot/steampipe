@@ -56,66 +56,54 @@ UPDATE connection_state SET status = 'pending'
 ```
 
 ## Refresh Connections
-
 - After building ConnectionUpdates, set status of connection to [updating / deleting / ready / error] as appropriate
-- After updating every N connections, set their state to  [ready / error] as appropriate
-- After deletions, delete removed connecitrons from table
-- After comments are inserted
+- _After updating every N connections, set their state to  [ready / error] as appropriate_ ???
+- After deletions, delete removed connections from table
+
+
+**Update execution**
+- build search path connections list
+- execute these first (in parallel)
+- Notify(?)
+- then execute remaining updates (in parallel)
+
+**Connection Error**
+
+If there is a connection error for the first pluginm connection in the search path, 
+**remove all other connections for plugin** and set their state to "error - first connection in search path ('xxxx') failed to load"  
 
 # Command execution (Query/Control/Dashboard)
-## Interactive Query
-- After client acquisistion:
-  - start notification listener
-  - read connection state table. If any connections are either `pending` or `updating`, wait for notifications to indicate the update is complete
 
-
-# ConnectionData
-```go
-type ConnectionData struct {
-	StructVersion int64 `json:"struct_version,omitempty"`
-	// the fully qualified name of the plugin
-	Plugin string `json:"plugin,omitempty"`
-	// the underlying connection object
-	Connection *modconfig.Connection `json:"connection,omitempty"`
-	// schema mode - static or dynamic
-	SchemaMode string `json:"schema_mode,omitempty"`
-	// the hash of the connection schema
-	SchemaHash string `json:"schema_hash,omitempty"`
-	// the creation time of the plugin file (only used for local plugins)
-	ModTime time.Time `json:"mod_time"`
-	// loaded is false if the plugin failed to load
-	Loaded bool `json:"loaded"`
-	// error to be populated if we failed to start/load plugin
-	Error string `json:"error,omitempty"`
-}
-```
-
-Currently stored in connections.json, and updated in refreshConnections
-
-
-## ISSUES
-# connection error
-  - save to connection state
-  - send notification
-
-Execution code
-  - when executing query, if receive "relation not found" error
-    - if schema is specified
-      - if connection does not exist in state map, bubble error
-      - if connection is in error, bubble error
-      - if connection is ready ( and has been for > backoff interval) assume an actual missing table - bubble error
-      - if connection is loading, wait/retry
-    - if schema is NOT specified
-      - if all connections are ready, bubble error
-      - otherwise wait/retry
-      - TODO if first plugin connection in search path is in error, bubble error (?????)
+When executing query, if receive "relation not found" error:
+- if schema is specified
+  - if connection does not exist in state map, bubble error
+  - if connection is in error, bubble error
+  - if connection is ready ( and has been for > backoff interval) assume an actual missing table - bubble error
+  - if connection is loading, wait/retry
+- if schema is NOT specified
+  - if all connections are ready, bubble error
+  - otherwise wait for search path connections (if first plugin connection in search path is in error, bubble error)
     
-  - before staring query/control/dashboard execution
-    - if custom search path, wait until first schema for each plugin is loaded (all schemas for dynamic)
+Before staring query/control/dashboard execution:
+    - if custom search path, wait "search path schemas" are loaded loaded
 
+
+NO:
   - receive error notification: 
     - if static schema and first plugin connection in search path, bubble error
     - if dynamic schema and failed connection in active search path, fail
 
+
+
+
+**QUESTIONS**
 - what if a connections change midways through control/dashboard run? (client detects and warns?)
-- what do we do if there is a file watch event before previous refresh is complete
+- what do we do if there is a file watch event before previous refresh is complete - cancel previous
+
+**ISSUES**
+- inspect broken
+- autocomplete update
+- empty spinner for query
+- observed multiple plugin startup timeouts when running benchmark, maybe
+caused by the 10 execution threads all trying to start the plugin
+- once got transaction deadlocks 

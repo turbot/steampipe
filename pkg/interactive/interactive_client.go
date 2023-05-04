@@ -399,10 +399,9 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 }
 
 func (c *InteractiveClient) executeQuery(ctx context.Context, queryCtx context.Context, resolvedQuery *modconfig.ResolvedQuery) {
-
 	// if there is a custom search path, wait until the first connection of each plugin has loaded
 	if customSearchPath := c.client().GetCustomSearchPath(); customSearchPath != nil {
-		if err := connection_sync.WaitForSearchPathHeadSchemas(ctx, c.client(), customSearchPath); err != nil {
+		if err := connection_sync.WaitForSearchPathSchemas(ctx, c.client(), customSearchPath); err != nil {
 			error_helpers.ShowError(ctx, err)
 			c.afterClose = AfterPromptCloseExit
 			return

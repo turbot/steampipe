@@ -734,7 +734,7 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 }
 
 // load the connection state, waiting until all connections are loaded
-func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionDataMap, *modconfig.ErrorAndWarnings) {
+func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionStateMap, *modconfig.ErrorAndWarnings) {
 
 	// start service
 	client, res := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)

@@ -28,7 +28,7 @@ type InitData struct {
 
 	ShutdownTelemetry func()
 	ExportManager     *export.Manager
-	ConnectionMap     steampipeconfig.ConnectionDataMap
+	ConnectionMap     steampipeconfig.ConnectionStateMap
 }
 
 func NewErrorInitData(err error) *InitData {

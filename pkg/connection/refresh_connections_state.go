@@ -40,7 +40,7 @@ func newRefreshConnectionState(ctx context.Context, forceUpdateConnectionNames [
 	}
 
 	// set user search path first
-	log.Printf("[TRACE] Setting up search path")
+	log.Printf("[WARN] Setting up search path")
 	searchPath, err := db_local.SetUserSearchPath(ctx, pool)
 	if err != nil {
 		// note: close pool in case of error
@@ -65,7 +65,7 @@ func (state *refreshConnectionState) close() {
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
 func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
-	log.Printf("[INFO] refreshConnections")
+	log.Printf("[WARN] refreshConnections")
 	//
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
@@ -510,7 +510,7 @@ func (state *refreshConnectionState) setAllConnectionStateToError(ctx context.Co
 	}
 }
 
-func (state *refreshConnectionState) cloneConnectionSchemas(ctx context.Context, pluginMap map[string]string, cloneableConnections steampipeconfig.ConnectionDataMap, idx int, numUpdates int) error {
+func (state *refreshConnectionState) cloneConnectionSchemas(ctx context.Context, pluginMap map[string]string, cloneableConnections steampipeconfig.ConnectionStateMap, idx int, numUpdates int) error {
 	var wg sync.WaitGroup
 	var progressChan = make(chan string)
 	type connectionError struct {
@@ -545,7 +545,7 @@ func (state *refreshConnectionState) cloneConnectionSchemas(ctx context.Context,
 			return err
 		}
 		// use semaphore to limit goroutines
-		go func(connectionName string, connectionData *steampipeconfig.ConnectionData) {
+		go func(connectionName string, connectionData *steampipeconfig.ConnectionState) {
 			//log.Printf("[WARN] start clone connection %s", connectionName)
 			defer func() {
 				wg.Done()

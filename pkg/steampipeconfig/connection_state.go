@@ -1,165 +1,92 @@
 package steampipeconfig
 
 import (
-	"context"
-	"fmt"
-	"os"
-	"strings"
+	"log"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/sethvargo/go-retry"
+	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-//type ConnectionState ConnectionDataMap
-
-type LoadConnectionStateConfiguration struct {
-	WaitForPending bool
-	WaitForReady   bool
-	Connections    []string
+// ConnectionState is a struct containing all details for a connection
+// - the plugin name and checksum, the connection config and options
+// json tags needed as this is stored in the connection state file
+type ConnectionState struct {
+	// the connection name
+	ConnectionName string `json:"connection,omitempty"  db:"name"`
+	// the connection object
+	Connection *modconfig.Connection `json:"connection,omitempty"  db:"-"`
+	// the fully qualified name of the plugin
+	Plugin string `json:"plugin,omitempty"  db:"plugin"`
+	// the connection state (pending, updating, deleting, error, ready)
+	State string `json:"state,omitempty"  db:"state"`
+	// error (if there is one - make a pointer to supprt null)
+	ConnectionError *string `json:"error,omitempty" db:"error"`
+	// schema mode - static or dynamic
+	SchemaMode string `json:"schema_mode,omitempty" db:"schema_mode"`
+	// the hash of the connection schema - this is used to determine if a dynamic schema has changed
+	SchemaHash string `json:"schema_hash,omitempty" db:"schema_hash"`
+	// the creation time of the plugin file
+	PluginModTime time.Time `json:"plugin_mod_time" db:"plugin_mod_time"`
+	// the update time of the connection
+	ConnectionModTime time.Time `json:"connection_mod_time" db:"connection_mod_time"`
 }
 
-type LoadConnectionStateOption = func(config *LoadConnectionStateConfiguration)
-
-var WithWaitForPending = func() func(config *LoadConnectionStateConfiguration) {
-	return func(config *LoadConnectionStateConfiguration) {
-		config.WaitForPending = true
-	}
-}
-var WithWaitUntilReady = func(connections ...string) func(config *LoadConnectionStateConfiguration) {
-	return func(config *LoadConnectionStateConfiguration) {
-		config.Connections = connections
-		config.WaitForReady = true
-	}
-}
-
-// LoadConnectionState populates a ConnectionDataMap from the connection_state table
-// it verifies the table has been initialised by calling RefreshConnections after db startup
-func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnectionStateOption) (ConnectionDataMap, error) {
-	config := &LoadConnectionStateConfiguration{}
-	for _, opt := range opts {
-		opt(config)
-	}
-	// max duration depends on if waiting for ready or just pending
-	// default value is if we are waiting for pending
-	// set this to a long enough time for ConnectionUpdates to be generated for a large connection count
-	// TODO this time can be reduced once all; plugins are using v5.4.1 of the sdk
-	maxDuration := 1 * time.Minute
-	retryInterval := 50 * time.Millisecond
-	if config.WaitForReady {
-		// is we are waiting for all connections to be ready, wait up to 10 minutes
-		maxDuration = 10 * time.Minute
-		retryInterval = 250 * time.Millisecond
-	}
-	backoff := retry.NewConstant(retryInterval)
-
-	var connectionState ConnectionDataMap
-
-	err := retry.Do(ctx, retry.WithMaxDuration(maxDuration, backoff), func(ctx context.Context) error {
-		var loadErr error
-		connectionState, loadErr = loadConnectionState(ctx, conn)
-		if loadErr == nil {
-			if config.WaitForReady && !connectionState.Loaded(config.Connections...) {
-				statusMessage := GetLoadingConnectionStatusMessage(connectionState, config.Connections...)
-				statushooks.SetStatus(ctx, statusMessage)
-				loadErr = retry.RetryableError(fmt.Errorf("connection state is still loading"))
-			} else if config.WaitForPending && connectionState.Pending() {
-				loadErr = retry.RetryableError(fmt.Errorf("connection state is pending"))
-			}
-		}
-		return loadErr
-	})
-
-	return connectionState, err
-}
-
-func GetLoadingConnectionStatusMessage(connectionStateMap ConnectionDataMap, requiredSchemas ...string) string {
-	var connectionSummary = connectionStateMap.GetSummary()
-
-	readyCount := connectionSummary[constants.ConnectionStateReady]
-	totalCount := len(connectionStateMap) - connectionSummary[constants.ConnectionStateDeleting]
-
-	loadedMessage := fmt.Sprintf("Loaded %d of %d %s",
-		readyCount,
-		totalCount,
-		utils.Pluralize("connection", totalCount))
-
-	if len(requiredSchemas) == 0 {
-		return loadedMessage
-	}
-	// TODO kai think about display of arrays
-	return fmt.Sprintf("Waiting for %s '%s' to load (%s)", utils.Pluralize("connection", len(requiredSchemas)), strings.Join(requiredSchemas, "','"), loadedMessage)
-}
-
-func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionDataMap, error) {
-	query := fmt.Sprintf(`SELECT name,
-		state,
-		error,	
-		plugin,
-		schema_mode,
-		schema_hash,
-		connection_mod_time,
-		plugin_mod_time
-	FROM  %s.%s `, constants.InternalSchema, constants.ConnectionStateTable)
-
-	rows, err := conn.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var res = make(ConnectionDataMap)
-
-	connectionDataList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionData])
-	if err != nil {
-		return nil, err
-	}
-
-	for _, c := range connectionDataList {
-		// copy into loop var
-		connectionData := c
-		// get connection config for this connection
-		// (this will not be there for a deletion)
-		connection, _ := GlobalConfig.Connections[connectionData.ConnectionName]
-
-		connectionData.Connection = connection
-		res[c.ConnectionName] = &connectionData
-	}
-
-	return res, nil
-}
-
-func SaveConnectionStateFile(res *RefreshConnectionResult, connectionUpdates *ConnectionUpdates) {
-	// now serialise the connection state
-	connectionState := make(ConnectionDataMap, len(connectionUpdates.FinalConnectionState))
-	for k, v := range connectionUpdates.FinalConnectionState {
-		connectionState[k] = v
-	}
-	// NOTE: add any connection which failed
-	for c, reason := range res.FailedConnections {
-		connectionState[c].State = constants.ConnectionStateError
-		connectionState[c].SetError(reason)
-	}
-	for pluginName, connections := range connectionUpdates.MissingPlugins {
-		// add in missing connections
-		for _, c := range connections {
-			connectionData := NewConnectionData(pluginName, &c, time.Now())
-			connectionData.State = constants.ConnectionStateError
-			connectionData.SetError(constants.ConnectionErrorPluginNotInstalled)
-			connectionState[c.Name] = connectionData
-		}
-	}
-
-	// update connection state and write the missing and failed plugin connections
-	if err := connectionState.Save(); err != nil {
-		res.Error = err
+func NewConnectionData(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionState {
+	return &ConnectionState{
+		Plugin:         remoteSchema,
+		ConnectionName: connection.Name,
+		Connection:     connection,
+		PluginModTime:  creationTime,
+		State:          constants.ConnectionStateReady,
 	}
 }
 
-func DeleteConnectionStateFile() {
-	os.Remove(filepaths.ConnectionStatePath())
+func (d *ConnectionState) Equals(other *ConnectionState) bool {
+	if d.Connection == nil || other.Connection == nil {
+		// if either object has a nil Connection, then it may be data from an old connection state file
+		// return false, so that connections get refreshed and this file gets written in the new format in the process
+		return false
+	}
+	if d.Plugin != other.Plugin {
+		return false
+	}
+	if d.Error() != other.Error() {
+		return false
+	}
+	if !d.Connection.Equals(other.Connection) {
+		return false
+	}
+	// allow for sub ms rounding errors when converting from PG
+	if d.PluginModTime.Sub(other.PluginModTime).Abs() > 1*time.Millisecond {
+		a := d.PluginModTime.Sub(other.PluginModTime)
+		log.Printf("[WARN] %v", a)
+		return false
+	}
+	//d.ConnectionModTime.Equal(other.ConnectionModTime) return false
+	if !d.Connection.Equals(other.Connection) {
+		return false
+	}
+
+	return true
+}
+
+func (d *ConnectionState) CanCloneSchema() bool {
+	return d.SchemaMode != plugin.SchemaModeDynamic &&
+		d.Connection.Type != modconfig.ConnectionTypeAggregator
+}
+
+func (d *ConnectionState) Error() string {
+	return typehelpers.SafeString(d.ConnectionError)
+
+}
+func (d *ConnectionState) SetError(err string) {
+	d.ConnectionError = &err
+}
+
+// Loaded returns true if the connection state is 'ready' or 'error'
+func (d *ConnectionState) Loaded() bool {
+	return d.State == constants.ConnectionStateReady || d.State == constants.ConnectionStateError
 }

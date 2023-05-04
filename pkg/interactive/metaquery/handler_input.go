@@ -14,7 +14,7 @@ type HandlerInput struct {
 	Prompt          *prompt.Prompt
 	ClosePrompt     func()
 	Query           string
-	ConnectionState steampipeconfig.ConnectionDataMap
+	ConnectionState steampipeconfig.ConnectionStateMap
 	SearchPath      []string
 }
 
