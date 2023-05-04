@@ -70,18 +70,23 @@ func (bseq *ByteSequence) TrimBlanks() {
 	writer := bytes.NewBuffer([]byte{})
 	skipBlankLine := false
 	for sc.Scan() {
-		t := strings.TrimSpace(sc.Text())
-		if len(t) == 0 && skipBlankLine {
+		isBlankLine := len(strings.TrimSpace(sc.Text())) == 0
+		if isBlankLine && skipBlankLine {
 			continue
 		}
+
 		if writer.Len() > 0 {
+			// we don't want the first line to be a newline
 			writer.WriteByte('\n')
 		}
+
+		// write out the line
 		writer.Write(sc.Bytes())
 
 		// if this was a blank line, we want to skip the next ones
-		skipBlankLine = (len(t) == 0)
+		skipBlankLine = isBlankLine
 	}
+
 	bseq._underlying = writer.Bytes()
 }
 
