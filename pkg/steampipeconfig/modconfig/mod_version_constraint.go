@@ -64,8 +64,13 @@ func NewModVersionConstraint(modFullName string) (*ModVersionConstraint, error) 
 // Initialise parses the version and name properties
 func (m *ModVersionConstraint) Initialise(block *hcl.Block) hcl.Diagnostics {
 	if block != nil {
+		// record all the ranges in the source file
 		m.DefRange = block.DefRange
 		m.BodyRange = block.Body.(*hclsyntax.Body).SrcRange
+		// record the range of the version attribute in this structure
+		if versionAttribute, ok := block.Body.(*hclsyntax.Body).Attributes["version"]; ok {
+			m.VersionRange = versionAttribute.SrcRange
+		}
 	}
 
 	if strings.HasPrefix(m.Name, filePrefix) {
@@ -83,11 +88,6 @@ func (m *ModVersionConstraint) Initialise(block *hcl.Block) hcl.Diagnostics {
 		// no error
 		m.Constraint = c
 		return nil
-	}
-
-	// record the range of the version attribute in this structure
-	if versionAttribute, ok := block.Body.(*hclsyntax.Body).Attributes["version"]; ok {
-		m.VersionRange = versionAttribute.SrcRange
 	}
 
 	// so there was an error
