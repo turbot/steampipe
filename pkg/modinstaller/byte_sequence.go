@@ -55,16 +55,16 @@ func (b *ByteSequence) ApplyChanges(changeSet ChangeSet) {
 		switch change.Operation {
 		case Insert:
 			{
-				b.insert(change.OffsetStart, change.Content)
+				b.insert(change)
 			}
 		case Delete:
 			{
-				b.clear(change.OffsetStart, change.OffsetEnd)
+				b.clear(change)
 			}
 		case Replace:
 			{
-				b.clear(change.OffsetStart, change.OffsetEnd)
-				b.insert(change.OffsetStart, change.Content)
+				b.clear(change)
+				b.insert(change)
 			}
 		}
 	}
@@ -81,17 +81,17 @@ func (bseq *ByteSequence) Bytes() []byte {
 }
 
 // clear replaces whatever is within [start,end] with white spaces
-func (bseq *ByteSequence) clear(start int, end int) {
-	left := bseq._underlying[:start]
-	right := bseq._underlying[end:]
+func (bseq *ByteSequence) clear(change *Change) {
+	left := bseq._underlying[:change.OffsetStart]
+	right := bseq._underlying[change.OffsetEnd:]
 	bseq._underlying = append(left, right...)
 }
 
 // insert inserts the given content at 'offset'
-func (bseq *ByteSequence) insert(offset int, content []byte) {
-	left := bseq._underlying[:offset]
-	right := bseq._underlying[offset:]
+func (bseq *ByteSequence) insert(change *Change) {
+	left := bseq._underlying[:change.OffsetStart]
+	right := bseq._underlying[change.OffsetStart:]
 	// prepend the content before the right part
-	right = append(content, right...)
+	right = append(change.Content, right...)
 	bseq._underlying = append(left, right...)
 }
