@@ -47,46 +47,51 @@ func inspect(ctx context.Context, input *HandlerInput) error {
 	// arg can be one of <connection_name> or <connection_name>.<table_name>
 	tokens := strings.SplitN(tableOrConnection, ".", 2)
 
-	// here tokens could be schema.tableName
-	// or tableName
-	if len(tokens) > 0 {
+	// here tokens could be schema.tableName or tableName
+
+	if len(tokens) == 1 {
 		// only a connection name (or maybe unqualified table name)
-		schemaFound := inspectConnection(tableOrConnection, input)
-
-		// there was no schema
-		if !schemaFound {
-			// add the temporary schema to the search_path so that it becomes searchable
-			// for the next step
-			searchPath := append(input.SearchPath, input.Schema.TemporarySchemaName)
-
-			// go through the searchPath one by one and try to find the table by this name
-			for _, schema := range searchPath {
-				tablesInThisSchema := input.Schema.GetTablesInSchema(schema)
-				// we have a table by this name here
-				if _, gotTable := tablesInThisSchema[tableOrConnection]; gotTable {
-					return inspectTable(schema, tableOrConnection, input)
-				}
-
-				// check against the fully qualified name of the table
-				for _, table := range input.Schema.Schemas[schema] {
-					if tableOrConnection == table.FullName {
-						return inspectTable(schema, table.Name, input)
-					}
-				}
-			}
-
-			return fmt.Errorf("could not find connection or table called '%s'. Is the plugin installed? Is the connection configured?", tableOrConnection)
-		}
-
-		fmt.Printf(`
-To get information about the columns in a table, run %s
-	
-`, constants.Bold(".inspect {connection}.{table}"))
-		return nil
+		return inspectSchemaOrUnqualifiedTable(tableOrConnection, input)
 	}
 
 	// this is a fully qualified table name
-	return inspectTable(tokens[0], tokens[1], input)
+	return inspectQualifiedTable(tokens[0], tokens[1], input)
+}
+
+func inspectSchemaOrUnqualifiedTable(tableOrConnection string, input *HandlerInput) error {
+	// only a connection name (or maybe unqualified table name)
+	schemaFound := inspectConnection(tableOrConnection, input)
+
+	// there was no schema
+	if !schemaFound {
+		// add the temporary schema to the search_path so that it becomes searchable
+		// for the next step
+		searchPath := append(input.SearchPath, input.Schema.TemporarySchemaName)
+
+		// go through the searchPath one by one and try to find the table by this name
+		for _, schema := range searchPath {
+			tablesInThisSchema := input.Schema.GetTablesInSchema(schema)
+			// we have a table by this name here
+			if _, gotTable := tablesInThisSchema[tableOrConnection]; gotTable {
+				return inspectQualifiedTable(schema, tableOrConnection, input)
+			}
+
+			// check against the fully qualified name of the table
+			for _, table := range input.Schema.Schemas[schema] {
+				if tableOrConnection == table.FullName {
+					return inspectQualifiedTable(schema, table.Name, input)
+				}
+			}
+		}
+
+		return fmt.Errorf("could not find connection or table called '%s'. Is the plugin installed? Is the connection configured?", tableOrConnection)
+	}
+
+	fmt.Printf(`
+To get information about the columns in a table, run %s
+	
+`, constants.Bold(".inspect {connection}.{table}"))
+	return nil
 }
 
 // helper function to acquire db connection and retrieve connection state
@@ -208,13 +213,13 @@ func showStateSummary(connectionState steampipeconfig.ConnectionStateMap) {
 	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 }
 
-func inspectTable(connectionName string, tableName string, input *HandlerInput) error {
+func inspectQualifiedTable(connectionName string, tableName string, input *HandlerInput) error {
 	header := []string{"column", "type", "description"}
 	var rows [][]string
 
 	schema, found := input.Schema.Schemas[connectionName]
 	if !found {
-		return fmt.Errorf("could not find connection called '%s'", connectionName)
+		return fmt.Errorf("could not find connection called '%s'. Is the plugin installed? Is the connection configured?\n", connectionName)
 	}
 	tableSchema, found := schema[tableName]
 	if !found {

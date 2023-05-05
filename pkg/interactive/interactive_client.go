@@ -712,7 +712,7 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 	}
 }
 
-func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, _ *steampipeconfig.SchemaUpdateNotification) {
+func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, n *steampipeconfig.SchemaUpdateNotification) {
 	// at present, we do not actually use the payload, we just do a brute force reload
 	// as an optimization we could look at the updates and only reload the required schemas
 
@@ -724,20 +724,17 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 		return
 	}
 
-	// reload config before reloading schema
-	//config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "query")
-	//if errorsAndWarnings.GetError() != nil {
-	//	log.Printf("[WARN] Error reloading config: %v", errorsAndWarnings.GetError())
-	//	return
-	//}
-	//steampipeconfig.GlobalConfig = config
-
-	// reload schema
-	if err := c.loadSchema(); err != nil {
-		log.Printf("[INFO] Error unmarshalling notification: %s", err)
-		return
+	// remove any deletes schemas
+	for _, deletedConnection := range n.Delete {
+		delete(c.schemaMetadata.Schemas, deletedConnection)
 	}
-
+	// if there are any updates,  reload schema
+	if len(n.Update) > 0 {
+		if err := c.loadSchema(); err != nil {
+			log.Printf("[INFO] Error unmarshalling notification: %s", err)
+			return
+		}
+	}
 	// reinitialise autocomplete suggestions
 	c.initialiseSuggestions()
 

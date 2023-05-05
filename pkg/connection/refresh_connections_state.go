@@ -123,7 +123,7 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 	// execute any necessary queries
 	state.executeConnectionQueries(ctx)
 	if state.res.Error != nil {
-		log.Printf("[INFO] refreshConnections failed with err %s", state.res.Error.Error())
+		log.Printf("[WARN] refreshConnections failed with err %s", state.res.Error.Error())
 		return
 	}
 
@@ -183,7 +183,10 @@ func (state *refreshConnectionState) executeConnectionQueries(ctx context.Contex
 	defer utils.LogTime("db.executeConnectionQueries start")
 
 	// execute deletions
-	state.executeDeleteQueries(ctx)
+	if err := state.executeDeleteQueries(ctx); err != nil {
+		// just log
+		log.Printf("[WARN] failed to delete all unused schemas: %s", err.Error())
+	}
 
 	// execute updates
 	numUpdates := len(connectionUpdates.Update)
@@ -260,7 +263,7 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 
 	// now that we have updated all exemplar schemars, send postgres notification
 	// this gives any attached interactive clients a chance to update their inspect data and autocomplete
-	if err := state.sendPostgreSchemaNotification(ctx, state.connectionUpdates.Delete, initialUpdates); err != nil {
+	if err := state.sendPostgreSchemaNotification(ctx, nil, maps.Keys(initialUpdates)); err != nil {
 		// just log
 		log.Printf("[WARN] failed to send schem update Postgres notification: %s", err.Error())
 	}
@@ -411,6 +414,7 @@ func (state *refreshConnectionState) executeDeleteQueries(ctx context.Context) e
 	deletions := maps.Keys(state.connectionUpdates.Delete)
 	statushooks.SetStatus(ctx, fmt.Sprintf("Deleting %d %s", len(deletions), utils.Pluralize("connection", len(deletions))))
 	var errors []error
+	var successfulDeletions []string
 	for _, c := range deletions {
 		utils.LogTime("delete connection start")
 		log.Printf("[TRACE] delete connection %s\n ", c)
@@ -418,10 +422,18 @@ func (state *refreshConnectionState) executeDeleteQueries(ctx context.Context) e
 		err := state.executeDeleteQuery(ctx, c)
 		if err != nil {
 			errors = append(errors, err)
+		} else {
+			successfulDeletions = append(successfulDeletions, c)
 		}
 		utils.LogTime("delete connection end")
 	}
 
+	// now that we have updated all exemplar schemars, send postgres notification
+	// this gives any attached interactive clients a chance to update their inspect data and autocomplete
+	if err := state.sendPostgreSchemaNotification(ctx, successfulDeletions, nil); err != nil {
+		// just log
+		log.Printf("[WARN] failed to send schema deletion Postgres notification: %s", err.Error())
+	}
 	return error_helpers.CombineErrors(errors...)
 }
 
@@ -560,15 +572,12 @@ func (state *refreshConnectionState) cloneConnectionSchemas(ctx context.Context,
 }
 
 // OnConnectionsChanged is the callback function invoked by the connection watcher when connections are added or removed
-func (state *refreshConnectionState) sendPostgreSchemaNotification(ctx context.Context, deletions map[string]struct{}, updates steampipeconfig.ConnectionStateMap) error {
+func (state *refreshConnectionState) sendPostgreSchemaNotification(ctx context.Context, deletions, updates []string) error {
 	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
-		log.Printf("[WARN] failed to send schema update notification: %s", err)
+		return err
 	}
-
-	notification := steampipeconfig.NewSchemaUpdateNotification(
-		maps.Keys(updates),
-		maps.Keys(deletions))
+	notification := steampipeconfig.NewSchemaUpdateNotification(updates, deletions)
 
 	return db_local.SendPostgresNotification(ctx, conn, notification)
 }
