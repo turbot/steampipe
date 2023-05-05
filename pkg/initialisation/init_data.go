@@ -15,7 +15,6 @@ import (
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/workspace"
@@ -28,7 +27,6 @@ type InitData struct {
 
 	ShutdownTelemetry func()
 	ExportManager     *export.Manager
-	ConnectionMap     steampipeconfig.ConnectionStateMap
 }
 
 func NewErrorInitData(err error) *InitData {

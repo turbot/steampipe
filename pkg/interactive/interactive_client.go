@@ -75,8 +75,7 @@ type InteractiveClient struct {
 	// hidePrompt is used to render a blank as the prompt prefix
 	hidePrompt bool
 
-	querySuggestions []prompt.Suggest
-	tableSuggestions []prompt.Suggest
+	suggestions *autoCompleteSuggestions
 }
 
 func getHighlighter(theme string) *Highlighter {
@@ -100,6 +99,7 @@ func newInteractiveClient(ctx context.Context, initData *query.InitData, result 
 		autocompleteOnEmpty:     false,
 		initResultChan:          make(chan *db_common.InitResult, 1),
 		highlighter:             getHighlighter(viper.GetString(constants.ArgTheme)),
+		suggestions:             newAutocompleteSuggestions(),
 	}
 
 	// asynchronously wait for init to complete
@@ -586,29 +586,64 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 
 	switch {
 	case isFirstWord(text):
-		// add all we know that can be the first words
-		// named queries
-		s = append(s, c.querySuggestions...)
-		// "select"
-		s = append(s, prompt.Suggest{Text: "select", Output: "select"}, prompt.Suggest{Text: "with", Output: "with"})
-		// metaqueries
-		s = append(s, metaquery.PromptSuggestions()...)
+		suggestions := c.getFirstWordSuggestions(text)
+		s = append(s, suggestions...)
 	case metaquery.IsMetaQuery(text):
 		suggestions := metaquery.Complete(&metaquery.CompleterInput{
-			Query:            text,
-			TableSuggestions: c.tableSuggestions,
+			Query: text,
+			TableSuggestions: c.getTableAndConnectionSuggestions(lastWord(text)),
 		})
 		s = append(s, suggestions...)
 	default:
 		if queryInfo := getQueryInfo(text); queryInfo.EditingTable {
-			s = append(s, c.tableSuggestions...)
+			tableSuggestions := c.getTableAndConnectionSuggestions(lastWord(text))
+			s = append(s, tableSuggestions...)
 		}
 	}
 
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }
 
-func (c *InteractiveClient) addSuggestion(itemType string, description string, name string) prompt.Suggest {
+func (c *InteractiveClient) getFirstWordSuggestions(word string) []prompt.Suggest {
+	var querySuggestions []prompt.Suggest
+	// if this a qualified query try to extract connection
+	parts := strings.Split(word, ".")
+	if len(parts) >1 {
+		// if first word is a mod name we know about, return appropriate suggestions
+		modName := strings.TrimSpace(parts[0])
+		if modQueries, isMod := c.suggestions.queriesByMod[modName]; isMod {
+			querySuggestions = modQueries
+		} else {
+			//  otherwise return mods names and unqualified queries
+			querySuggestions = append(c.suggestions.mods, c.suggestions.unqualifiedQueries...)
+		}
+	}
+
+	var s []prompt.Suggest
+	// add all we know that can be the first words
+	// named queries
+	s = append(s, querySuggestions...)
+	// "select", "with"
+	s = append(s, prompt.Suggest{Text: "select", Output: "select"}, prompt.Suggest{Text: "with", Output: "with"})
+	// metaqueries
+	s = append(s, metaquery.PromptSuggestions()...)
+	return s
+}
+
+func (c *InteractiveClient) getTableAndConnectionSuggestions(word string) []prompt.Suggest {
+	// try to extract connection
+	parts := strings.SplitN(word, ".", 2)
+	if len(parts) == 1 {
+		// no connection, just return schemas and unqualified tables
+		return append(c.suggestions.schemas, c.suggestions.unqualifiedTables...)
+	}
+
+	connection := strings.TrimSpace(parts[0])
+	t := c.suggestions.tablesBySchema[connection]
+	return t
+}
+
+func (c *InteractiveClient) newSuggestion(itemType string, description string, name string) prompt.Suggest {
 	if description != "" {
 		itemType += fmt.Sprintf(": %s", description)
 	}
@@ -736,7 +771,7 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 		}
 	}
 	// reinitialise autocomplete suggestions
-	c.initialiseSuggestions()
+	c.initialiseSuggestions(ctx)
 
 	// refresh the db session inside an execution lock
 	// we do this to avoid the postgres `cached plan must not change result type`` error
