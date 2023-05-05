@@ -241,24 +241,19 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 
 // calculates changes required in mod.sp to reflect uninstalls
 func (i *ModInstaller) calcChangesForUninstall(oldRequire *modconfig.Require, newRequire *modconfig.Require) ChangeSet {
-	changeset := ChangeSet{}
-	// for every require.mod in current
-	//		if not in updated
-	//			remove
-	//		end if
-	// end for
+	changes := ChangeSet{}
 	for _, requiredMod := range oldRequire.Mods {
 		// check if this mod is still a dependency
 		modInNew := newRequire.GetModDependency(requiredMod.Name)
 		if modInNew == nil {
-			changeset = append(changeset, &Change{
+			changes = append(changes, &Change{
 				Operation:   Delete,
 				OffsetStart: requiredMod.DefRange.Start.Byte,
 				OffsetEnd:   requiredMod.BodyRange.End.Byte,
 			})
 		}
 	}
-	return changeset
+	return changes
 }
 
 // calculates changes required in mod.sp to reflect new installs
@@ -276,6 +271,8 @@ func (i *ModInstaller) calcChangesForInstall(oldRequire *modconfig.Require, newR
 		return ChangeSet{}
 	}
 
+	// create the HCL serialization for the mod blocks which needs to be placed
+	// in the require block
 	f := hclwrite.NewEmptyFile()
 	rootBody := f.Body()
 	for _, modToAdd := range modsToAdd {
@@ -311,6 +308,8 @@ func (i *ModInstaller) calcChangesForUpdate(oldRequire *modconfig.Require, newRe
 	return changes
 }
 
+// loads the contents of the mod.sp file and wraps it with a thin wrapper
+// to assist in byte sequence manipulation
 func (i *ModInstaller) loadModFileBytes() (*ByteSequence, error) {
 	modFileBytes, err := os.ReadFile(filepaths.ModFilePath(i.workspaceMod.ModPath))
 	if err != nil {
@@ -361,6 +360,7 @@ func (i *ModInstaller) updateModFile() error {
 	} else if oldRequire.Empty() && !newRequire.Empty() {
 		// if the new require is not empty, but the old one is
 		// add a new require block with the new stuff
+		// by generating the HCL string that goes in
 		f := hclwrite.NewEmptyFile()
 		requireBlock := f.Body().AppendNewBlock("require", nil)
 		for _, mvc := range newRequire.Mods {
