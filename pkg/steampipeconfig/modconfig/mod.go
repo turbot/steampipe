@@ -81,6 +81,21 @@ func NewMod(shortName, modPath string, defRange hcl.Range) *Mod {
 	return mod
 }
 
+// create a shallow clone of the Require data
+func (m *Mod) ShallowCloneRequire() *Require {
+	if m.Require == nil {
+		return nil
+	}
+	require := NewRequire()
+	require.Steampipe = m.Require.Steampipe
+	require.Plugins = m.Require.Plugins
+	require.Mods = m.Require.Mods
+	require.modMap = m.Require.modMap
+	require.DeclRange = m.Require.DeclRange
+	require.BodyRange = m.Require.BodyRange
+	return require
+}
+
 func (m *Mod) Equals(other *Mod) bool {
 	res := m.ShortName == other.ShortName &&
 		m.FullName == other.FullName &&
