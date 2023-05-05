@@ -27,7 +27,7 @@ type StatusSpinner struct {
 	spinner      *spinner.Spinner
 	cancel       chan struct{}
 	delay        time.Duration
-	spinnerShown bool
+	visible bool
 }
 
 type StatusSpinnerOpt func(*StatusSpinner)
@@ -92,27 +92,27 @@ func (s *StatusSpinner) Warn(msg string) {
 
 // Hide implements StatusHooks
 func (s *StatusSpinner) Hide() {
+	s.visible = false
 	if s.cancel != nil {
 		close(s.cancel)
 	}
 	s.closeSpinner()
-	s.spinnerShown = false
 }
 
 func (s *StatusSpinner) Show() {
+	s.visible = true
 	if len(strings.TrimSpace(s.spinner.Suffix)) > 0 {
 		// only show the spinner if there's an actual message to show
 		s.spinner.Start()
 	}
-	s.spinnerShown = true
 }
 
 // UpdateSpinnerMessage updates the message of the given spinner
 func (s *StatusSpinner) UpdateSpinnerMessage(newMessage string) {
 	newMessage = s.truncateSpinnerMessageToScreen(newMessage)
 	s.spinner.Suffix = fmt.Sprintf(" %s", newMessage)
-	if s.spinnerShown && !s.spinner.Active() {
-		// this may happen if Show() was called on the spinner while there was no message
+	// if the spinner is not active, start it
+	if s.visible && !s.spinner.Active() {
 		s.spinner.Start()
 	}
 }
