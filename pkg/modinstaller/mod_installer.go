@@ -28,7 +28,12 @@ import (
 type ModInstaller struct {
 	installData *InstallData
 
+	// this will be updated as changes are made to dependencies
 	workspaceMod *modconfig.Mod
+
+	// since changes are made to workspaceMod, we need a copy of the Require as is on disk
+	// to be able to calculate changes
+	oldRequire *modconfig.Require
 
 	// installed plugins
 	installedPlugins map[string]*semver.Version
@@ -58,10 +63,12 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 	i := &ModInstaller{
 		workspacePath: opts.WorkspaceMod.ModPath,
 		workspaceMod:  opts.WorkspaceMod,
+		oldRequire:    opts.WorkspaceMod.ShallowCloneRequire(),
 		command:       opts.Command,
 		dryRun:        opts.DryRun,
 		force:         opts.Force,
 	}
+
 	if err := i.setModsPath(); err != nil {
 		return nil, err
 	}
@@ -152,7 +159,7 @@ func (i *ModInstaller) UninstallWorkspaceDependencies(ctx context.Context) error
 	}
 
 	//  now safe to save the mod file
-	if err := i.updateRequireBlock(); err != nil {
+	if err := i.updateModFile(); err != nil {
 		return err
 	}
 
@@ -218,7 +225,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 
 	//  now safe to save the mod file
 	if len(i.mods) > 0 {
-		if err := i.updateRequireBlock(); err != nil {
+		if err := i.updateModFile(); err != nil {
 			return err
 		}
 	}
@@ -230,27 +237,26 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 }
 
 // calculates changes required in mod.sp to reflect uninstalls
-func (i *ModInstaller) calcChangesForUninstall(oldMod *modconfig.Mod, newMod *modconfig.Mod) ChangeSet {
+func (i *ModInstaller) calcChangesForUninstall(oldRequire *modconfig.Require, newRequire *modconfig.Require) ChangeSet {
 	changeset := ChangeSet{}
 	// for every require.mod in current
 	//		if not in updated
 	//			remove
 	//		end if
 	// end for
-	for _, requiredMod := range oldMod.Require.Mods {
+	for _, requiredMod := range oldRequire.Mods {
 		// check if this mod is still a dependency
 		var modInNew *modconfig.ModVersionConstraint
-		if newMod.Require == nil {
+		if newRequire == nil {
 			modInNew = nil
 		} else {
-			modInNew = newMod.Require.GetModDependency(requiredMod.Name)
+			modInNew = newRequire.GetModDependency(requiredMod.Name)
 		}
 		if modInNew == nil {
 			changeset = append(changeset, &Change{
-				Operation:   DELETE,
+				Operation:   Delete,
 				OffsetStart: requiredMod.DefRange.Start.Byte,
 				OffsetEnd:   requiredMod.BodyRange.End.Byte,
-				Content:     []byte{},
 			})
 		}
 	}
@@ -258,42 +264,37 @@ func (i *ModInstaller) calcChangesForUninstall(oldMod *modconfig.Mod, newMod *mo
 }
 
 // calculates changes required in mod.sp to reflect new installs
-func (i *ModInstaller) calcChangesForInstall(oldMod *modconfig.Mod, newMod *modconfig.Mod) ChangeSet {
-	// for every require.mod in new
-	// 		if not in current
-	//			add - install
-	//		end if
-	// end for
-	// add the new ones
-	if newMod.Require == nil {
-		// return an empty changeset
-		return ChangeSet{}
-	}
-	f := hclwrite.NewEmptyFile()
-	rootBody := f.Body()
-	for _, requiredMod := range newMod.Require.Mods {
-		modInContents := oldMod.Require.GetModDependency(requiredMod.Name)
+func (i *ModInstaller) calcChangesForInstall(oldRequire *modconfig.Require, newRequire *modconfig.Require) ChangeSet {
+	modsToAdd := []*modconfig.ModVersionConstraint{}
+	for _, requiredMod := range newRequire.Mods {
+		modInContents := oldRequire.GetModDependency(requiredMod.Name)
 		if modInContents == nil {
-			modRequireBlock := rootBody.AppendNewBlock("mod", []string{requiredMod.Name})
-			modRequireBlock.Body().SetAttributeValue("version", cty.StringVal(requiredMod.VersionString))
+			modsToAdd = append(modsToAdd, requiredMod)
 		}
 	}
 
-	if len(f.Bytes()) == 0 {
+	if len(modsToAdd) == 0 {
+		// an empty changeset
 		return ChangeSet{}
+	}
+
+	f := hclwrite.NewEmptyFile()
+	rootBody := f.Body()
+	for _, modToAdd := range modsToAdd {
+		rootBody.AppendBlock(i.getNewModRequireBlock(modToAdd))
 	}
 
 	return ChangeSet{
 		&Change{
-			Operation:   INSERT,
-			OffsetStart: oldMod.Require.BodyRange.End.Byte - 1,
+			Operation:   Insert,
+			OffsetStart: oldRequire.BodyRange.End.Byte - 1,
 			Content:     f.Bytes(),
 		},
 	}
 }
 
 // calculates the changes required in mod.sp to reflect updates
-func (i *ModInstaller) calcChangesForUpdate(oldMod *modconfig.Mod, newMod *modconfig.Mod) ChangeSet {
+func (i *ModInstaller) calcChangesForUpdate(oldRequire *modconfig.Require, newRequire *modconfig.Require) ChangeSet {
 	changes := ChangeSet{}
 	// for every require.mod in parsed
 	//		if in workspaceMod
@@ -302,19 +303,14 @@ func (i *ModInstaller) calcChangesForUpdate(oldMod *modconfig.Mod, newMod *modco
 	//			end if
 	//		end if
 	// end for
-	if newMod.Require == nil {
-		// new mod does not have any require
-		// return an empty change set
-		return ChangeSet{}
-	}
-	for _, requiredMod := range oldMod.Require.Mods {
-		modInUpdated := newMod.Require.GetModDependency(requiredMod.Name)
+	for _, requiredMod := range oldRequire.Mods {
+		modInUpdated := newRequire.GetModDependency(requiredMod.Name)
 		if modInUpdated == nil {
 			continue
 		}
 		if modInUpdated.VersionString != requiredMod.VersionString {
 			changes = append(changes, &Change{
-				Operation:   REPLACE,
+				Operation:   Replace,
 				OffsetStart: requiredMod.VersionRange.Start.Byte,
 				OffsetEnd:   requiredMod.VersionRange.End.Byte,
 				Content:     []byte(fmt.Sprintf("version = \"%s\"", modInUpdated.VersionString)),
@@ -324,70 +320,84 @@ func (i *ModInstaller) calcChangesForUpdate(oldMod *modconfig.Mod, newMod *modco
 	return changes
 }
 
-// loadModForUpdate parses
-func (i *ModInstaller) loadModForUpdate() (*modconfig.Mod, *ByteSequence, error) {
-	mod, err := parse.LoadModfile(i.workspaceMod.ModPath)
-	if err != nil {
-		return nil, nil, err
-	}
+// loadModFileBytes parses
+func (i *ModInstaller) loadModFileBytes() (*ByteSequence, error) {
 	modFileBytes, err := os.ReadFile(filepaths.ModFilePath(i.workspaceMod.ModPath))
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return mod, NewByteSequence(modFileBytes), nil
+	return NewByteSequence(modFileBytes), nil
 }
 
-// ensureRequireBlock ensures that there's a require block in the mod.sp
-// file of the root mod.
-func (i *ModInstaller) ensureRequireBlock() error {
-	mod, contents, err := i.loadModForUpdate()
-	if err != nil {
-		return err
-	}
-	if mod.Require == nil || mod.Require.BodyRange.Empty() {
-		// add an empty require block
-		// and reparse the file
-		f := hclwrite.NewEmptyFile()
-		f.Body().AppendNewBlock("require", nil)
-		contents.append(mod.DeclRange.End.Byte-1, f.Bytes())
-		contents.Apply(hclwrite.Format)
-		if err := os.WriteFile(filepaths.ModFilePath(i.workspaceMod.ModPath), contents.Bytes(), 0644); err != nil {
-			return err
-		}
-	}
-	return nil
+func (i *ModInstaller) getNewModRequireBlock(modVersion *modconfig.ModVersionConstraint) *hclwrite.Block {
+	modRequireBlock := hclwrite.NewBlock("mod", []string{modVersion.Name})
+	modRequireBlock.Body().SetAttributeValue("version", cty.StringVal(modVersion.VersionString))
+	return modRequireBlock
 }
 
 // updates the 'require' block in 'mod.sp'
-func (i *ModInstaller) updateRequireBlock() error {
-	if err := i.ensureRequireBlock(); err != nil {
-		return err
-	}
-	mod, contents, err := i.loadModForUpdate()
+func (i *ModInstaller) updateModFile() error {
+	contents, err := i.loadModFileBytes()
 	if err != nil {
 		return err
 	}
 
-	// this is the parsed content of the mod file as is present on disk
+	changes := NewChangeSet()
 
-	// this is the modified mod after all operations have been done
-	workspaceMod := i.workspaceMod
+	oldRequire := i.oldRequire
+	newRequire := i.workspaceMod.Require
 
-	changes := ChangeSet{}
+	// fill these requires in with empty requires
+	// so that we don't have to do nil checks everywhere
+	// from here on out - if it's empty - it's nil
 
-	changes = append(changes, i.calcChangesForUninstall(mod, workspaceMod)...)
-	changes = append(changes, i.calcChangesForInstall(mod, workspaceMod)...)
-	changes = append(changes, i.calcChangesForUpdate(mod, workspaceMod)...)
+	if oldRequire == nil {
+		// use an empty require as the old requirements
+		oldRequire = modconfig.NewRequire()
+	}
+	if newRequire == nil {
+		// use a stub require instance
+		newRequire = modconfig.NewRequire()
+	}
+
+	// if the new set of requires is empty - just remove the require block
+	if newRequire.Empty() && !oldRequire.Empty() {
+		changes = append(changes, &Change{
+			Operation:   Delete,
+			OffsetStart: oldRequire.DeclRange.Start.Byte,
+			OffsetEnd:   oldRequire.BodyRange.End.Byte,
+		})
+	}
+
+	// if the new require is not empty, but the old one is
+	// add a new require block with the new stuff
+	if oldRequire.Empty() && !newRequire.Empty() {
+		// create a require block with the new stuff
+		f := hclwrite.NewEmptyFile()
+		requireBlock := f.Body().AppendNewBlock("require", nil)
+		for _, mvc := range newRequire.Mods {
+			requireBlock.Body().AppendBlock(i.getNewModRequireBlock(mvc))
+		}
+		changes = append(changes, &Change{
+			Operation:   Insert,
+			OffsetStart: i.workspaceMod.DeclRange.End.Byte - 1,
+			Content:     f.Bytes(),
+		})
+	}
+
+	if !i.oldRequire.Empty() && !newRequire.Empty() {
+		uninstall := i.calcChangesForUninstall(oldRequire, newRequire)
+		install := i.calcChangesForInstall(oldRequire, newRequire)
+		update := i.calcChangesForUpdate(oldRequire, newRequire)
+		changes = NewChangeSet(
+			uninstall,
+			install,
+			update,
+		)
+	}
 
 	contents.ApplyChanges(changes)
 	contents.Apply(hclwrite.Format)
-	contents.TrimBlanks()
-
-	// Todo: Try to remove the entire require block if it's empty
-	// right now we can't do this because that would be the lowest
-	// offset and will get applied last - but the end offset would
-	// have changed
-	// https://github.com/turbot/steampipe/issues/3383
 
 	return os.WriteFile(filepaths.ModFilePath(i.workspaceMod.ModPath), contents.Bytes(), 0644)
 }
