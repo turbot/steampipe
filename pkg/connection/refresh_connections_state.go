@@ -182,20 +182,17 @@ func (state *refreshConnectionState) executeConnectionQueries(ctx context.Contex
 	utils.LogTime("db.executeConnectionQueries start")
 	defer utils.LogTime("db.executeConnectionQueries start")
 
+	// execute deletions
+	state.executeDeleteQueries(ctx)
+
+	// execute updates
 	numUpdates := len(connectionUpdates.Update)
 	log.Printf("[INFO] executeConnectionQueries: num updates: %d", numUpdates)
 
 	if numUpdates > 0 {
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
 		state.executeUpdateQueries(ctx)
-		if state.res.Error != nil {
-			log.Printf("[INFO] executeUpdateQueries returned error: %v", state.res.Error)
-			return
-		}
 	}
-
-	// delete connections
-	state.executeDeleteQueries(ctx)
 
 	return
 }
@@ -206,6 +203,12 @@ func (state *refreshConnectionState) executeConnectionQueries(ctx context.Contex
 func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	utils.LogTime("db.executeUpdateQueries start")
 	defer utils.LogTime("db.executeUpdateQueries end")
+
+	defer func() {
+		if state.res.Error != nil {
+			log.Printf("[INFO] executeUpdateQueries returned error: %v", state.res.Error)
+		}
+	}()
 
 	// retrieve updates from the table updater
 	connectionUpdates := state.tableUpdater.updates
@@ -218,69 +221,19 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	numUpdates := len(validatedUpdates)
 
 	// we need to execute the updates in search path order
-
-	// group the search path by plugin, then add/update the first connection for each plugin together, first
-	pluginSearchPathMap := make(map[string][]string)
-	var initialUpdates []string
-	var remainingUpdates []string
-
-	//orderedUpdates := make([]string, 0, numUpdates)—
-
-	// build ordered updated
-	for _, connectionName := range state.searchPath {
-		// get the connection config for this
-		connectionConfig, gotConfig := steampipeconfig.GlobalConfig.Connections[connectionName]
-		// do we have config for this search path element (if not just ignore)
-		if gotConfig {
-			// add to pluginSearchPathMap for this plugin
-			pluginSearchPathMap[connectionConfig.Plugin] = append(pluginSearchPathMap[connectionConfig.Plugin], connectionName)
-		}
-	}
-
-	// now construct ordered updates
-	// build a list of upates which are the first conneciton for each plugin
-	// (these can be executed in parallel, but must be executed first)
-	// and a list of all other updates
-	for _, connections := range pluginSearchPathMap {
-		for i, connectionName := range connections {
-			// is an update required for this connection
-			if _, updateRequired := validatedUpdates[connectionName]; updateRequired {
-				// if an update is required for first plugin, add to initialUpdates
-				if i == 0 {
-					initialUpdates = append(initialUpdates, connectionName)
-				} else {
-					remainingUpdates = append(remainingUpdates, connectionName)
-				}
-			}
-		}
-	}
-
-	// add search path first
-	//if _, updateConnection := validatedUpdates[c]; updateConnection {
-	//	orderedUpdates = append(orderedUpdates, c)
-	//}
-
-	// now add all updates NOT in the search path (if any)
-	if len(initialUpdates)+len(remainingUpdates) < numUpdates {
-		// build map from search path
-		searchPathMap := utils.SliceToLookup(state.searchPath)
-
-		for c := range validatedUpdates {
-			if _, inSearchPath := searchPathMap[c]; !inSearchPath {
-				remainingUpdates = append(remainingUpdates, c)
-			}
-		}
-	}
+	// i.e. we first need to update the first search path connection for each plugin (this can be done in parallel)
+	// then we can update the remaining connections in parallel
+	initialUpdates, remainingUpdates := state.populateInitialAndRemainingUpdates(validatedUpdates)
 
 	exemplarSchemaMap := make(map[string]string)
 	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
 
+	// execute initial updates
 	// TODO kai parallelizing
 	var errors []error
-	for _, connectionName := range initialUpdates {
-		connectionData := validatedUpdates[connectionName]
+	for connectionName, connectionData := range initialUpdates {
+
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
-		// TODO KAI NOTE for now we ignore cloning
 		// if this schema is static, add to the exemplar map
 		connectionData.CanCloneSchema()
 		{
@@ -297,15 +250,24 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 		}
 	}
 
+	// if any of the initial schemas failed, do not proceed - these schemas are required to ensure we correctly
+	// resolve unqualified queries/tables
 	if len(errors) > 0 {
 		state.res.Error = error_helpers.CombineErrors(errors...)
+		// TODO KAI SEND ERROR NOTIFICATION
 		return
+	}
+
+	// now that we have updated all exemplar schemars, send postgres notification
+	// this gives any attached interactive clients a chance to update their inspect data and autocomplete
+	if err := state.sendPostgreSchemaNotification(ctx, state.connectionUpdates.Delete, initialUpdates); err != nil {
+		// just log
+		log.Printf("[WARN] failed to send schem update Postgres notification: %s", err.Error())
 	}
 
 	// now execute remaining
 	// TODO KAI wrap this in parallel function which either clones or not
-	for _, connectionName := range remainingUpdates {
-		connectionData := validatedUpdates[connectionName]
+	for connectionName, connectionData := range remainingUpdates {
 		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
 		// execute update query, and update the connection state table, in a transaction
 		sql := db_common.GetUpdateConnectionQuery(connectionName, remoteSchema)
@@ -345,6 +307,27 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 
 	log.Printf("[TRACE] executeUpdateQueries complete")
 	return
+}
+
+func (state *refreshConnectionState) populateInitialAndRemainingUpdates(validatedUpdates steampipeconfig.ConnectionStateMap) (initialUpdates, remainingUpdates steampipeconfig.ConnectionStateMap) {
+	searchPathConnections := state.connectionUpdates.FinalConnectionState.GetFirstSearchPathConnectionForPlugins(state.searchPath)
+	initialUpdates = make(steampipeconfig.ConnectionStateMap)
+	remainingUpdates = make(steampipeconfig.ConnectionStateMap)
+
+	// convert this into a lookup of initial updates to execute
+	for _, connectionName := range searchPathConnections {
+		if connectionState, updateRequired := validatedUpdates[connectionName]; updateRequired {
+			initialUpdates[connectionName] = connectionState
+		}
+	}
+	// now add remaining updates to remainingUpdates
+	for connectionName, connectionState := range validatedUpdates {
+		if _, isInitialUpdate := initialUpdates[connectionName]; !isInitialUpdate {
+			remainingUpdates[connectionName] = connectionState
+		}
+
+	}
+	return initialUpdates, remainingUpdates
 }
 
 func (state *refreshConnectionState) writeComments(ctx context.Context, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) {
@@ -574,4 +557,18 @@ func (state *refreshConnectionState) cloneConnectionSchemas(ctx context.Context,
 	close(progressChan)
 
 	return error_helpers.CombineErrors(errors...)
+}
+
+// OnConnectionsChanged is the callback function invoked by the connection watcher when connections are added or removed
+func (state *refreshConnectionState) sendPostgreSchemaNotification(ctx context.Context, deletions map[string]struct{}, updates steampipeconfig.ConnectionStateMap) error {
+	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
+	if err != nil {
+		log.Printf("[WARN] failed to send schema update notification: %s", err)
+	}
+
+	notification := steampipeconfig.NewSchemaUpdateNotification(
+		maps.Keys(updates),
+		maps.Keys(deletions))
+
+	return db_local.SendPostgresNotification(ctx, conn, notification)
 }

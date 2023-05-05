@@ -176,6 +176,14 @@ func (m ConnectionStateMap) GetFirstSearchPathConnectionForPlugins(searchPath []
 	return requiredSchemas
 }
 
+func (m ConnectionStateMap) GetPluginToConnectionMap() map[string][]string {
+	res := make(map[string][]string)
+	for connectionName, connectionState := range m {
+		res[connectionState.Plugin] = append(res[connectionState.Plugin], connectionName)
+	}
+	return res
+}
+
 // getFirstSearchPathConnectionMapForPlugins builds map of plugin to the connections which must be loaded to ensure we can resolve unqualified queries
 // for static plugins, just the first connection in the search path is included
 // for dynamic schemas all search paths are included

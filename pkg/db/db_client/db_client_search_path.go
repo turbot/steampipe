@@ -93,6 +93,8 @@ func (c *DbClient) updateRequiredSearchPath(ctx context.Context) error {
 	if errorsAndWarnings.GetError() != nil {
 		return errorsAndWarnings.GetError()
 	}
+	// todo review this usage of GlobalConfig
+	// https://github.com/turbot/steampipe/issues/3387
 	steampipeconfig.GlobalConfig = config
 	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
 	return c.SetRequiredSessionSearchPath(ctx)

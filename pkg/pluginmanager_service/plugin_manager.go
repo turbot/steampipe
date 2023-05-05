@@ -170,18 +170,6 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connection.Connectio
 
 }
 
-// OnConnectionsChanged is the callback function invoked by the connection watcher when connections are added or removed
-func (m *PluginManager) OnConnectionsChanged(ctx context.Context, refreshResult *steampipeconfig.RefreshConnectionResult) {
-	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
-	if err != nil {
-		log.Printf("[WARN] failed to send schema update notification: %s", err)
-	}
-
-	notification := refreshResult.Updates.AsNotification()
-
-	db_local.SendPostgresNotification(ctx, conn, notification)
-}
-
 func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
 	log.Printf("[INFO] PluginManager Shutdown")
 

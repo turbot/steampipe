@@ -17,13 +17,11 @@ type ConnectionWatcher struct {
 	fileWatcherErrorHandler   func(error)
 	watcher                   *filewatcher.FileWatcher
 	onConnectionConfigChanged func(ConnectionConfigMap)
-	onSchemaChanged           func(context.Context, *steampipeconfig.RefreshConnectionResult)
 }
 
-func NewConnectionWatcher(onConnectionChanged func(ConnectionConfigMap), onSchemaChanged func(context.Context, *steampipeconfig.RefreshConnectionResult)) (*ConnectionWatcher, error) {
+func NewConnectionWatcher(onConnectionChanged func(ConnectionConfigMap)) (*ConnectionWatcher, error) {
 	w := &ConnectionWatcher{
 		onConnectionConfigChanged: onConnectionChanged,
-		onSchemaChanged:           onSchemaChanged,
 	}
 
 	watcherOptions := &filewatcher.WatcherOptions{
@@ -105,10 +103,6 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
 	if refreshResult.Error != nil {
 		log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
 		return
-	}
-	// if the connections were added or removed, call the schema changed callback
-	if refreshResult.UpdatedConnections {
-		w.onSchemaChanged(ctx, refreshResult)
 	}
 
 	// display any refresh warnings

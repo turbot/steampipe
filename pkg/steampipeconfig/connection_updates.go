@@ -261,12 +261,6 @@ func (u *ConnectionUpdates) String() string {
 	return op.String()
 }
 
-func (u *ConnectionUpdates) AsNotification() *SchemaUpdateNotification {
-	return NewSchemaUpdateNotification(
-		maps.Keys(u.Update),
-		maps.Keys(u.Delete))
-}
-
 func (u *ConnectionUpdates) setError(connectionName string, error string) {
 	failedConnection, ok := u.FinalConnectionState[connectionName]
 	if !ok {

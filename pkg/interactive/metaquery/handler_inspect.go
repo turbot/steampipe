@@ -89,6 +89,21 @@ To get information about the columns in a table, run %s
 	return inspectTable(tokens[0], tokens[1], input)
 }
 
+// helper function to acquire db connection and retrieve connection state
+func getConnectionState(ctx context.Context, client db_common.Client) (steampipeconfig.ConnectionStateMap, error) {
+	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
+
+	statushooks.SetStatus(ctx, "Loading connection state...")
+
+	conn, err := client.AcquireConnection(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Release()
+	return steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
+}
+
 // list all the tables in the schema
 func listTables(_ context.Context, input *HandlerInput) error {
 
@@ -263,19 +278,4 @@ func inspectConnection(connectionName string, input *HandlerInput) bool {
 	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 
 	return true
-}
-
-// helper function to acquire db connection and retrieve connection
-func getConnectionState(ctx context.Context, client db_common.Client) (steampipeconfig.ConnectionStateMap, error) {
-	statushooks.Show(ctx)
-	defer statushooks.Done(ctx)
-
-	statushooks.SetStatus(ctx, "Loading connection state...")
-
-	conn, err := client.AcquireConnection(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
-	return steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
 }

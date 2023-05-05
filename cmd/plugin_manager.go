@@ -74,7 +74,7 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 	if shouldRunConnectionWatcher() {
 		log.Printf("[INFO] starting connection watcher")
 
-		connectionWatcher, err := connection.NewConnectionWatcher(pluginManager.OnConnectionConfigChanged, pluginManager.OnConnectionsChanged)
+		connectionWatcher, err := connection.NewConnectionWatcher(pluginManager.OnConnectionConfigChanged)
 		if err != nil {
 			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
 			error_helpers.ShowError(ctx, err)

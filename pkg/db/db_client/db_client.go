@@ -3,6 +3,7 @@ package db_client
 import (
 	"context"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"log"
 	"strings"
 	"sync"
@@ -139,26 +140,32 @@ func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireS
 // NOTE: it optimises the schema extraction by extracting schema information for
 // connections backed by distinct plugins and then fanning back out.
 func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetadata, error) {
-	connection, _, err := c.GetDatabaseConnectionWithRetries(ctx)
+
+	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer connection.Release()
+	defer conn.Release()
+
+	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
+	if err != nil {
+		return nil, err
+	}
 
 	// build a ConnectionSchemaMap object to identify the schemas to load
-	connectionSchemaMap, err := steampipeconfig.NewConnectionSchemaMap(ctx, connection.Conn())
+	connectionSchemaMap := steampipeconfig.NewConnectionSchemaMap(ctx, connectionStateMap, c.GetRequiredSessionSearchPath())
 	if err != nil {
 		return nil, err
 	}
 
 	// get the unique schema - we use this to limit the schemas we load from the database
-	schemas := connectionSchemaMap.UniqueSchemas()
+	schemas := maps.Keys(connectionSchemaMap)
 
 	// build a query to retrieve these schema
 	query := c.buildSchemasQuery(schemas...)
 
 	//execute
-	tablesResult, err := connection.Query(ctx, query)
+	tablesResult, err := conn.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}

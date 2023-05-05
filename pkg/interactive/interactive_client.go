@@ -712,7 +712,7 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 	}
 }
 
-func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, notification *steampipeconfig.SchemaUpdateNotification) {
+func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, _ *steampipeconfig.SchemaUpdateNotification) {
 	// at present, we do not actually use the payload, we just do a brute force reload
 	// as an optimization we could look at the updates and only reload the required schemas
 
@@ -720,16 +720,17 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 
 	// first load user search path
 	if err := c.client().LoadUserSearchPath(ctx); err != nil {
-		log.Printf("[INFO] Error loading foreign user search path: %v", err)
+		log.Printf("[INFO] Error in handleConnectionUpdateNotification when loading foreign user search path: %s", err.Error())
+		return
 	}
 
 	// reload config before reloading schema
-	config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "query")
-	if errorsAndWarnings.GetError() != nil {
-		log.Printf("[WARN] Error reloading config: %v", errorsAndWarnings.GetError())
-		return
-	}
-	steampipeconfig.GlobalConfig = config
+	//config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "query")
+	//if errorsAndWarnings.GetError() != nil {
+	//	log.Printf("[WARN] Error reloading config: %v", errorsAndWarnings.GetError())
+	//	return
+	//}
+	//steampipeconfig.GlobalConfig = config
 
 	// reload schema
 	if err := c.loadSchema(); err != nil {

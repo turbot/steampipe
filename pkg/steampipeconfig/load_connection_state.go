@@ -158,6 +158,9 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionStateMa
 	for _, c := range connectionDataList {
 		// copy into loop var
 		connectionData := c
+		// TODO remove this usage of GlobalConfig.Connections
+		// (possibly remove connectionData.Connection altogether?)
+		//https://github.com/turbot/steampipe/issues/3387
 		// get connection config for this connection
 		// (this will not be there for a deletion)
 		connection, _ := GlobalConfig.Connections[connectionData.ConnectionName]
