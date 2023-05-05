@@ -237,6 +237,8 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		installReports = append(installReports, report)
 		if !report.Skipped {
 			installCount++
+		} else {
+			exitCode = constants.ExitCodePluginInstallFailure
 		}
 	}
 
