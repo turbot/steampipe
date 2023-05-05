@@ -39,13 +39,15 @@ func NewConnectionSchemaMap(ctx context.Context, connectionStateMap ConnectionSt
 		if connectionState.SchemaMode == plugin.SchemaModeDynamic {
 			res[connectionName] = nil
 		} else {
-			// add all connections for this plugin
+			var connectionsWithSameSchema []string
+			// add all connections for this plugin (apart from exemplar)
 			for _, connectionForPlugin := range pluginMap[connectionState.Plugin] {
 				// do not copy exemplar
 				if connectionForPlugin != connectionName {
-					res[connectionName] = append(res[connectionName], connectionForPlugin)
+					connectionsWithSameSchema = append(connectionsWithSameSchema, connectionForPlugin)
 				}
 			}
+			res[connectionName] = connectionsWithSameSchema
 		}
 	}
 

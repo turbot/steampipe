@@ -57,7 +57,6 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
 			log.Printf("[WARN] ConnectionWatcher caught a panic: %s", helpers.ToError(r).Error())
 		}
 	}()
-
 	// this is a file system event handler and not bound to any context
 	ctx := context.Background()
 

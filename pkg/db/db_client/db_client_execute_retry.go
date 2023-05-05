@@ -47,7 +47,6 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		// if there was a schema not found with an unqualified query, we keep trying until
 		// the first search path schema for each plugin has loaded
 
-		statushooks.SetStatus(ctx, "Loading connection state")
 		connectionStateMap, stateErr := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitUntilLoading())
 		if stateErr != nil {
 			// just return the query error

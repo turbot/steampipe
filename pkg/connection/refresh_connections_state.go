@@ -11,7 +11,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
@@ -195,6 +194,16 @@ func (state *refreshConnectionState) executeConnectionQueries(ctx context.Contex
 	if numUpdates > 0 {
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
 		state.executeUpdateQueries(ctx)
+	} else if len(connectionUpdates.Delete) > 0 {
+		log.Printf("[INFO] RefreshConnection has deleted all unnecessary schemas - sending notification")
+
+		// if there are no updates and there ARE deletes, notify
+		// (is there are updates, deletes will be notified by executeUpdateQueries)
+		if err := state.sendPostgreSchemaNotification(ctx, maps.Keys(connectionUpdates.Delete), nil); err != nil {
+			// just log
+			log.Printf("[WARN] failed to send schema deletion Postgres notification: %s", err.Error())
+		}
+
 	}
 
 	return
@@ -260,10 +269,12 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 		// TODO KAI SEND ERROR NOTIFICATION
 		return
 	}
+	log.Printf("[INFO] RefreshConnection has updated all exemplar schemas - sending notification")
 
 	// now that we have updated all exemplar schemars, send postgres notification
 	// this gives any attached interactive clients a chance to update their inspect data and autocomplete
-	if err := state.sendPostgreSchemaNotification(ctx, nil, maps.Keys(initialUpdates)); err != nil {
+	// (also send deletions)
+	if err := state.sendPostgreSchemaNotification(ctx, maps.Keys(connectionUpdates.Delete), maps.Keys(initialUpdates)); err != nil {
 		// just log
 		log.Printf("[WARN] failed to send schem update Postgres notification: %s", err.Error())
 	}
@@ -291,7 +302,7 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	//	}
 	//}
 
-	log.Printf("[TRACE] all update queries executed")
+	log.Printf("[INFO] all update queries executed")
 
 	for _, failure := range validationFailures {
 		log.Printf("[TRACE] remove schema for connection failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
@@ -308,7 +319,7 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 		state.writeComments(ctx, validatedPlugins)
 	}
 
-	log.Printf("[TRACE] executeUpdateQueries complete")
+	log.Printf("[INFO] executeUpdateQueries complete")
 	return
 }
 
@@ -334,7 +345,8 @@ func (state *refreshConnectionState) populateInitialAndRemainingUpdates(validate
 }
 
 func (state *refreshConnectionState) writeComments(ctx context.Context, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) {
-	log.Printf("[WARN] start comments")
+	log.Printf("[INFO] start comments")
+	defer log.Printf("[INFO] end comments")
 
 	conn, err := state.pool.Acquire(ctx)
 	if err != nil {
@@ -411,8 +423,9 @@ func (state *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql
 }
 
 func (state *refreshConnectionState) executeDeleteQueries(ctx context.Context) error {
+	log.Printf("[INFO] refreshConnections execute delete queries")
 	deletions := maps.Keys(state.connectionUpdates.Delete)
-	statushooks.SetStatus(ctx, fmt.Sprintf("Deleting %d %s", len(deletions), utils.Pluralize("connection", len(deletions))))
+
 	var errors []error
 	var successfulDeletions []string
 	for _, c := range deletions {
@@ -428,12 +441,6 @@ func (state *refreshConnectionState) executeDeleteQueries(ctx context.Context) e
 		utils.LogTime("delete connection end")
 	}
 
-	// now that we have updated all exemplar schemars, send postgres notification
-	// this gives any attached interactive clients a chance to update their inspect data and autocomplete
-	if err := state.sendPostgreSchemaNotification(ctx, successfulDeletions, nil); err != nil {
-		// just log
-		log.Printf("[WARN] failed to send schema deletion Postgres notification: %s", err.Error())
-	}
 	return error_helpers.CombineErrors(errors...)
 }
 

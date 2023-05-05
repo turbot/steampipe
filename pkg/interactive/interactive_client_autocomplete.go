@@ -9,10 +9,13 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
+	"log"
 	"strings"
 )
 
 func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
+	log.Printf("[TRACE] initialiseSuggestions")
+
 	conn, err := c.client().AcquireConnection(ctx)
 	if err != nil {
 		return err
@@ -23,6 +26,8 @@ func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// reset suggestions
+	c.suggestions = newAutocompleteSuggestions()
 	c.initialiseSchemaAndTableSuggestions(connectionStateMap)
 	c.initialiseQuerySuggestions()
 	c.suggestions.sort()
@@ -35,8 +40,6 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 		return
 	}
 
-	// schema names
-	var schemasToAdd []string
 	// unqualified table names
 	// use lookup to avoid dupes from dynamic plugins
 	// (this is needed as GetFirstSearchPathConnectionForPlugins will return ALL dynamic connections)
@@ -51,19 +54,23 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 
 	for schemaName, schemaDetails := range c.schemaMetadata.Schemas {
 		// fully qualified table names
-		var qualifiedTablesToAdd []string
+		var qualifiedTablesToAdd []prompt.Suggest
 
 		isTemporarySchema := schemaName == c.schemaMetadata.TemporarySchemaName
 		if !isTemporarySchema {
 			// add the schema into the list of schema
-			schemasToAdd = append(schemasToAdd, schemaName)
+			// we don't need to escape schema names, since schema names are derived from connection names
+			// which are validated so that we don't end up with names which need it
+			c.suggestions.schemas = append(c.suggestions.schemas, prompt.Suggest{Text: schemaName, Description: "Schema", Output: schemaName})
 		}
 
 		// add qualified names of all tables
 		for tableName := range schemaDetails {
 			// do not add temp tables to qualified tables
 			if !isTemporarySchema {
-				qualifiedTablesToAdd = append(qualifiedTablesToAdd, fmt.Sprintf("%s.%s", schemaName, sanitiseTableName(tableName)))
+				// TODO use description?
+				qualifiedTableName := fmt.Sprintf("%s.%s", schemaName, sanitiseTableName(tableName))
+				qualifiedTablesToAdd = append(qualifiedTablesToAdd, prompt.Suggest{Text: qualifiedTableName, Description: "Table", Output: qualifiedTableName})
 			}
 			if _, addToUnqualified := firstConnectionPerPluginLookup[schemaName]; addToUnqualified {
 				unqualifiedTablesToAdd[tableName] = struct{}{}
@@ -71,27 +78,15 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 		}
 
 		// add qualified table to tablesBySchema
-		var s []prompt.Suggest
-		for _, table := range qualifiedTablesToAdd {
-			s = append(s, prompt.Suggest{Text: table, Description: "Table", Output: table})
+		if len(qualifiedTablesToAdd) > 0 {
+			c.suggestions.tablesBySchema[schemaName] = qualifiedTablesToAdd
 		}
-		c.suggestions.tablesBySchema[schemaName] = s
 	}
 
-	// add schemas and unqualified tables
-	var schemas, unqualifiedTables []prompt.Suggest
-	for _, schema := range schemasToAdd {
-		// we don't need to escape schema names, since schema names are derived from connection names
-		// which are validated so that we don't end up with names which need it
-		schemas = append(schemas, prompt.Suggest{Text: schema, Description: "Schema", Output: schema})
-	}
-
+	// add unqualified table suggestions
 	for tableName := range unqualifiedTablesToAdd {
-		unqualifiedTables = append(unqualifiedTables, prompt.Suggest{Text: tableName, Description: "Table", Output: sanitiseTableName(tableName)})
+		c.suggestions.unqualifiedTables = append(c.suggestions.unqualifiedTables, prompt.Suggest{Text: tableName, Description: "Table", Output: sanitiseTableName(tableName)})
 	}
-	c.suggestions.schemas = schemas
-	c.suggestions.unqualifiedTables = unqualifiedTables
-
 }
 
 func (c *InteractiveClient) initialiseQuerySuggestions() {

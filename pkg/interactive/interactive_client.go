@@ -590,7 +590,7 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 		s = append(s, suggestions...)
 	case metaquery.IsMetaQuery(text):
 		suggestions := metaquery.Complete(&metaquery.CompleterInput{
-			Query: text,
+			Query:            text,
 			TableSuggestions: c.getTableAndConnectionSuggestions(lastWord(text)),
 		})
 		s = append(s, suggestions...)
@@ -608,7 +608,7 @@ func (c *InteractiveClient) getFirstWordSuggestions(word string) []prompt.Sugges
 	var querySuggestions []prompt.Suggest
 	// if this a qualified query try to extract connection
 	parts := strings.Split(word, ".")
-	if len(parts) >1 {
+	if len(parts) > 1 {
 		// if first word is a mod name we know about, return appropriate suggestions
 		modName := strings.TrimSpace(parts[0])
 		if modQueries, isMod := c.suggestions.queriesByMod[modName]; isMod {

@@ -140,7 +140,6 @@ func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireS
 // NOTE: it optimises the schema extraction by extracting schema information for
 // connections backed by distinct plugins and then fanning back out.
 func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetadata, error) {
-
 	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
 	if err != nil {
 		return nil, err
