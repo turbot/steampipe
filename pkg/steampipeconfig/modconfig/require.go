@@ -32,6 +32,22 @@ func NewRequire() *Require {
 		modMap: make(map[string]*ModVersionConstraint),
 	}
 }
+func (r *Require) Clone() *Require {
+	require := NewRequire()
+	require.Steampipe = r.Steampipe
+	require.Plugins = r.Plugins
+	require.Mods = r.Mods
+	require.DeclRange = r.DeclRange
+	require.BodyRange = r.BodyRange
+
+	// we need to shallow copy the map
+	// if we don't, when the other one gets
+	// modified - this one gets as well
+	for k, mvc := range r.modMap {
+		require.modMap[k] = mvc
+	}
+	return require
+}
 
 func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
 	// This will actually be called twice - once when we load the mod definition,
