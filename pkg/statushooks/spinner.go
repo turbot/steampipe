@@ -27,7 +27,7 @@ type StatusSpinner struct {
 	spinner      *spinner.Spinner
 	cancel       chan struct{}
 	delay        time.Duration
-	visible bool
+	visible      bool
 }
 
 type StatusSpinnerOpt func(*StatusSpinner)
