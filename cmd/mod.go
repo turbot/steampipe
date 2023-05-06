@@ -296,6 +296,13 @@ func createWorkspaceMod(ctx context.Context, cmd *cobra.Command, workspacePath s
 		return nil, err
 	}
 
+	// load up the written mod file so that we get the updated
+	// block ranges
+	mod, err := parse.LoadModfile(workspacePath)
+	if err != nil {
+		return nil, err
+	}
+
 	return mod, nil
 }
 
