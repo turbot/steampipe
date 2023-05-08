@@ -21,12 +21,18 @@ type Change struct {
 
 type ChangeSet []*Change
 
-func NewChangeSet(changeSets ...ChangeSet) ChangeSet {
+// MergedChangeSet creates a ChangeSet by merging the given ChangeSets in order
+func MergedChangeSet(changeSets ...ChangeSet) ChangeSet {
 	changeSet := ChangeSet{}
 	for _, cs := range changeSets {
 		changeSet = append(changeSet, cs...)
 	}
 	return changeSet
+}
+
+// NewChangeSet creates a ChangeSet from the given changes
+func NewChangeSet(changes ...*Change) ChangeSet {
+	return ChangeSet(changes)
 }
 
 func (c ChangeSet) SortByOffset() {
@@ -61,6 +67,7 @@ func NewByteSequence(b []byte) *ByteSequence {
 }
 
 func (b *ByteSequence) ApplyChanges(changeSet ChangeSet) {
+	changeSet.SortByOffset()
 	for _, change := range changeSet {
 		operation := change.Operation
 		if operator, ok := b.operators[operation]; ok {
@@ -74,18 +81,17 @@ func (bseq *ByteSequence) Apply(apply func([]byte) []byte) {
 	bseq._underlying = apply(bseq._underlying)
 }
 
+// Bytes returns the current underlying byte sequence
 func (bseq *ByteSequence) Bytes() []byte {
 	return bseq._underlying
 }
 
-// clear replaces whatever is within [start,end] with white spaces
 func clear(change *Change, source []byte) []byte {
 	left := source[:change.OffsetStart]
 	right := source[change.OffsetEnd:]
 	return append(left, right...)
 }
 
-// insert inserts the given content at 'offset'
 func insert(change *Change, source []byte) []byte {
 	left := source[:change.OffsetStart]
 	right := source[change.OffsetStart:]

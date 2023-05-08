@@ -244,8 +244,7 @@ func (i *ModInstaller) calcChangesForUninstall(oldRequire *modconfig.Require, ne
 	changes := ChangeSet{}
 	for _, requiredMod := range oldRequire.Mods {
 		// check if this mod is still a dependency
-		modInNew := newRequire.GetModDependency(requiredMod.Name)
-		if modInNew == nil {
+		if modInNew := newRequire.GetModDependency(requiredMod.Name); modInNew == nil {
 			changes = append(changes, &Change{
 				Operation:   Delete,
 				OffsetStart: requiredMod.DefRange.Start.Byte,
@@ -260,8 +259,7 @@ func (i *ModInstaller) calcChangesForUninstall(oldRequire *modconfig.Require, ne
 func (i *ModInstaller) calcChangesForInstall(oldRequire *modconfig.Require, newRequire *modconfig.Require) ChangeSet {
 	modsToAdd := []*modconfig.ModVersionConstraint{}
 	for _, requiredMod := range newRequire.Mods {
-		modInContents := oldRequire.GetModDependency(requiredMod.Name)
-		if modInContents == nil {
+		if modInOld := oldRequire.GetModDependency(requiredMod.Name); modInOld == nil {
 			modsToAdd = append(modsToAdd, requiredMod)
 		}
 	}
@@ -332,8 +330,6 @@ func (i *ModInstaller) updateModFile() error {
 		return err
 	}
 
-	changes := NewChangeSet()
-
 	oldRequire := i.oldRequire
 	newRequire := i.workspaceMod.Require
 
@@ -350,14 +346,15 @@ func (i *ModInstaller) updateModFile() error {
 		newRequire = modconfig.NewRequire()
 	}
 
+	changes := MergedChangeSet()
 	if newRequire.Empty() && !oldRequire.Empty() {
 		// if the new set of requires is empty - just remove the require block
-		changes = append(changes, &Change{
+		changes = NewChangeSet(&Change{
 			Operation:   Delete,
 			OffsetStart: oldRequire.DeclRange.Start.Byte,
 			OffsetEnd:   oldRequire.BodyRange.End.Byte,
 		})
-	} else if oldRequire.Empty() && !newRequire.Empty() {
+	} else if !newRequire.Empty() && oldRequire.Empty() {
 		// if the new require is not empty, but the old one is
 		// add a new require block with the new stuff
 		// by generating the HCL string that goes in
@@ -367,18 +364,18 @@ func (i *ModInstaller) updateModFile() error {
 			newBlock := i.createNewModRequireBlock(mvc)
 			requireBlock.Body().AppendBlock(newBlock)
 		}
-		changes = append(changes, &Change{
+		changes = NewChangeSet(&Change{
 			Operation:   Insert,
 			OffsetStart: i.workspaceMod.DeclRange.End.Byte - 1,
 			Content:     f.Bytes(),
 		})
-	} else if !i.oldRequire.Empty() && !newRequire.Empty() {
+	} else if !newRequire.Empty() && !oldRequire.Empty() {
 		// calculate the changes
 		uninstallChanges := i.calcChangesForUninstall(oldRequire, newRequire)
 		installChanges := i.calcChangesForInstall(oldRequire, newRequire)
 		updateChanges := i.calcChangesForUpdate(oldRequire, newRequire)
 
-		changes = NewChangeSet(
+		changes = MergedChangeSet(
 			uninstallChanges,
 			installChanges,
 			updateChanges,
