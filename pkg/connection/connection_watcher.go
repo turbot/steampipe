@@ -96,17 +96,13 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
 	// to use the GlobalConfig here and ignore Workspace Profile in general
 	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
 
-	log.Printf("[TRACE] calling RefreshConnectionAndSearchPathsWithLocalClient")
-	// now refresh connections and search paths
-	refreshResult := RefreshConnectionAndSearchPaths(ctx)
-	if refreshResult.Error != nil {
-		log.Printf("[WARN] error refreshing connections: %s", refreshResult.Error)
-		return
-	}
+	log.Printf("[TRACE] calling RefreshConnections asyncronously")
 
-	// display any refresh warnings
+	// call RefreshConnections asyncronously
+	// the RefreshConnections implements its own locking to ensure only a singler execution and a single queues execution
 	// TODO send warnings on warning_stream
-	refreshResult.ShowWarnings()
+	go RefreshConnections(ctx)
+
 	log.Printf("[TRACE] File watch event done")
 }
 

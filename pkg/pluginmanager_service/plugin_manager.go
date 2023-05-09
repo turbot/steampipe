@@ -147,7 +147,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 
 func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.RefreshConnectionsResponse, error) {
 	resp := &pb.RefreshConnectionsResponse{}
-	refreshResult := connection.RefreshConnectionAndSearchPaths(context.Background())
+	refreshResult := connection.RefreshConnections(context.Background())
 	if refreshResult.Error != nil {
 		return nil, refreshResult.Error
 	}
@@ -788,7 +788,7 @@ func (m *PluginManager) setCacheOptions(pluginClient *sdkgrpc.PluginClient) erro
 func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionName string) {
 	log.Printf("[TRACE] updateConnectionSchema connection %s", connectionName)
 
-	refreshResult := connection.RefreshConnectionAndSearchPaths(ctx, connectionName)
+	refreshResult := connection.RefreshConnections(ctx, connectionName)
 	if refreshResult.Error != nil {
 		log.Printf("[TRACE] error refreshing connections: %s", refreshResult.Error)
 		return
