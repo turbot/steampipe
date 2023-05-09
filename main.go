@@ -118,7 +118,7 @@ func checkWsl1(ctx context.Context) {
 
 func checkOSXVersion(ctx context.Context) {
 	// get the OS and return if not darwin
-	if !strings.Contains(runtime.GOOS, "darwin") {
+	if runtime.GOOS != "darwin" {
 		return
 	}
 
