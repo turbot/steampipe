@@ -25,7 +25,7 @@ type WorkspaceProfile struct {
 	SearchPathPrefix  *string           `hcl:"search_path_prefix" cty:"search_path_prefix"`
 	Watch             *bool             `hcl:"watch" cty:"watch"`
 	MaxParallel       *int              `hcl:"max_parallel" cty:"max-parallel"`
-	Introspection     *bool             `hcl:"introspection" cty:"introspection"`
+	Introspection     *string           `hcl:"introspection" cty:"introspection"`
 	Input             *bool             `hcl:"input" cty:"input"`
 	Progress          *bool             `hcl:"progress" cty:"progress"`
 	Theme             *string           `hcl:"theme" cty:"theme"`
@@ -196,7 +196,7 @@ func (p *WorkspaceProfile) ConfigMap(cmd *cobra.Command) map[string]interface{} 
 	res.SetIntItem(p.MaxParallel, constants.ArgMaxParallel)
 	res.SetStringSliceItem(searchPathFromString(p.SearchPath, ","), constants.ArgSearchPath)
 	res.SetStringSliceItem(searchPathFromString(p.SearchPathPrefix, ","), constants.ArgSearchPathPrefix)
-	res.SetBoolItem(p.Introspection, constants.ArgIntrospection)
+	res.SetStringItem(p.Introspection, constants.ArgIntrospection)
 	res.SetBoolItem(p.Input, constants.ArgInput)
 	res.SetBoolItem(p.Progress, constants.ArgProgress)
 	res.SetStringItem(p.Theme, constants.ArgTheme)

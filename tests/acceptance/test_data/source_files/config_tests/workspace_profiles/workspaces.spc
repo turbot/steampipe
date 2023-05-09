@@ -1,5 +1,6 @@
 
 workspace "default" {
+  introspection = "info"
   cloud_host = "latestpipe.turbot.io/"
   cloud_token = "spt_012faketoken34567890_012faketoken3456789099999"
   install_dir = "sp_install_dir_default"
@@ -9,6 +10,7 @@ workspace "default" {
 }
 
 workspace "sample" {
+  introspection = "control"
   cloud_host = "testpipe.turbot.io"
   cloud_token = "spt_012faketoken34567890_012faketoken3456789099999"
   install_dir = "sp_install_dir_sample"
