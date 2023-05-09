@@ -2,13 +2,13 @@ package parse
 
 import (
 	"fmt"
+
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/zclconf/go-cty/cty"
-	"runtime/debug"
 )
 
 const rootDependencyNode = "rootDependencyNode"
@@ -420,7 +420,6 @@ func (m *ModParseContext) getResourceCtyValue(resource modconfig.HclResource) (c
 func (m *ModParseContext) mergeResourceCtyValue(resource modconfig.CtyValueProvider, valueMap map[string]cty.Value) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println(string(debug.Stack()))
 			err = fmt.Errorf("panic in mergeResourceCtyValue: %s", helpers.ToError(r).Error())
 		}
 	}()
