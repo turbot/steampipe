@@ -1,6 +1,7 @@
 package modinstaller
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -359,15 +360,38 @@ func (i *ModInstaller) updateModFile() error {
 		// add a new require block with the new stuff
 		// by generating the HCL string that goes in
 		f := hclwrite.NewEmptyFile()
-		requireBlock := f.Body().AppendNewBlock("require", nil)
+
+		var body *hclwrite.Body
+		var insertOffset int
+
+		if oldRequire.BodyRange.Start.Byte != 0 {
+			// this means that there is a require block
+			// but is probably empty
+			body = f.Body()
+			insertOffset = oldRequire.BodyRange.End.Byte - 1
+		} else {
+			// we don't have a require block at all
+			// let's create one to append to
+			body = f.Body().AppendNewBlock("require", nil).Body()
+			insertOffset = i.workspaceMod.DeclRange.End.Byte - 1
+		}
+
 		for _, mvc := range newRequire.Mods {
 			newBlock := i.createNewModRequireBlock(mvc)
-			requireBlock.Body().AppendBlock(newBlock)
+			body.AppendBlock(newBlock)
 		}
+
+		// prefix and suffix with new lines
+		// this is so that we can handle empty blocks
+		// which do not have newlines
+		buffer := bytes.NewBuffer([]byte{'\n'})
+		buffer.Write(f.Bytes())
+		buffer.WriteByte('\n')
+
 		changes = NewChangeSet(&Change{
 			Operation:   Insert,
-			OffsetStart: i.workspaceMod.DeclRange.End.Byte - 1,
-			Content:     f.Bytes(),
+			OffsetStart: insertOffset,
+			Content:     buffer.Bytes(),
 		})
 	} else if !newRequire.Empty() && !oldRequire.Empty() {
 		// calculate the changes
