@@ -53,7 +53,8 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 			return checkConnectionsAreReady(ctx, connectionStateMap, config)
 		case WaitForLoading:
 			if connectionStateMap.Pending() {
-				return retry.RetryableError(fmt.Errorf("connection state is pending"))
+				// TODO KAI BETTER ERROR
+				return retry.RetryableError(fmt.Errorf("timed out waiting for connection state to be updated from pending"))
 			}
 		case WaitForSearchPath:
 			if len(config.SearchPath) == 0 {

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/turbot/steampipe/pkg/connection/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -38,9 +39,8 @@ func setupInternal(ctx context.Context, conn *pgx.Conn) error {
 		fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS %s;`, constants.InternalSchema),
 		fmt.Sprintf(`GRANT USAGE ON SCHEMA %s TO %s;`, constants.InternalSchema, constants.DatabaseUsersRole),
 		// create connection state table
-		getConnectionStateTableCreateSql(),
-		// set state of all existing connections to pending
-		fmt.Sprintf(`UPDATE %s.%s SET STATE = '%s'`, constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStatePending),
+		connection_state.GetConnectionStateTableCreateSql(),
+
 		fmt.Sprintf(`GRANT SELECT ON TABLE %s.%s to %s;`, constants.InternalSchema, constants.ConnectionStateTable, constants.DatabaseUsersRole),
 	}
 	queries = append(queries, getFunctionAddStrings(db_common.Functions)...)
@@ -49,22 +49,6 @@ func setupInternal(ctx context.Context, conn *pgx.Conn) error {
 	}
 
 	return nil
-}
-
-func getConnectionStateTableCreateSql() string {
-	return fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
-    			name TEXT PRIMARY KEY,
--- 			    connection_type TEXT,
--- 			    child_connections TEXT[],
-    			state TEXT NOT NULL,
-    			error TEXT NULL,
-    			plugin TEXT NOT NULL,
-    			schema_mode TEXT NOT NULL,
-    			schema_hash TEXT NULL,
-    			comments_set BOOL DEFAULT FALSE,
-    			connection_mod_time TIMESTAMPTZ NOT NULL,
-    			plugin_mod_time TIMESTAMPTZ NOT NULL
-    			);`, constants.InternalSchema, constants.ConnectionStateTable)
 }
 
 func getFunctionAddStrings(functions []db_common.SQLFunction) []string {
@@ -108,23 +92,26 @@ func validateFunction(f db_common.SQLFunction) error {
 	return nil
 }
 
-// for any conneciton in the connection config but not in the connection state table, ad an entry with `pending` state
-// this is to worek around the race condition where we wait for connection state before RefreshConnections has added
-// any new connections into the state table
 func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn)
 	if err != nil {
 		return err
 	}
-	var queries []db_common.QueryWithArgs
+	incompleteErrorSql := connection_state.GetIncompleteConnectionStateErrorSql(fmt.Errorf("previous update did not complete"))
+	queries := []db_common.QueryWithArgs{
+		// if any connections are not in a ready to error state, set them to error
+		incompleteErrorSql,
+	}
+
+	// for any connection in the connection config but not in the connection state table, add an entry with `pending` state
+	// this is to work around the race condition where we wait for connection state before RefreshConnections has added
+	// any new connections into the state table
 	for connection, connectionConfig := range steampipeconfig.GlobalConfig.Connections {
 		if _, ok := connectionStateMap[connection]; !ok {
 			queries = append(queries, getConnectionStateTableInsertSql(connectionConfig))
 		}
 	}
-	if len(queries) == 0 {
-		return nil
-	}
+
 	_, err = ExecuteSqlWithArgsInTransaction(ctx, conn, queries...)
 	return err
 }

@@ -3,10 +3,16 @@ package connection
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
+	"sync"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/connection/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
@@ -16,10 +22,12 @@ import (
 	"github.com/turbot/steampipe/sperr"
 	"golang.org/x/exp/maps"
 	"golang.org/x/sync/semaphore"
-	"log"
-	"strings"
-	"sync"
 )
+
+type connectionError struct {
+	name string
+	err  error
+}
 
 type refreshConnectionState struct {
 	pool                       *pgxpool.Pool
@@ -28,18 +36,20 @@ type refreshConnectionState struct {
 	tableUpdater               *connectionStateTableUpdater
 	res                        *steampipeconfig.RefreshConnectionResult
 	forceUpdateConnectionNames []string
+	exemplarSchemaMapMut       sync.Mutex
+	exemplarSchemaMap          map[string]string
 }
 
 func newRefreshConnectionState(ctx context.Context, forceUpdateConnectionNames []string) (*refreshConnectionState, error) {
 	// create a connection pool to connection refresh
-	poolsize := 1
+	poolsize := 20
 	pool, err := db_local.CreateConnectionPool(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
 	if err != nil {
 		return nil, err
 	}
 
 	// set user search path first
-	log.Printf("[WARN] Setting up search path")
+	log.Printf("[INFO] Setting up search path")
 	searchPath, err := db_local.SetUserSearchPath(ctx, pool)
 	if err != nil {
 		// note: close pool in case of error
@@ -67,12 +77,12 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 	utils.LogTime("db.refreshConnections start")
 	defer utils.LogTime("db.refreshConnections end")
 
+	// if there was an error (other than a connection error, which will NOT have been assigned to res),
+	// set state of all incomplete connections to error
 	defer func() {
 		if state.res.Error != nil {
-			// if there was an error (other than a connection error, which will NOT have been assigned to res),
-			// set state of all connections to error
-			// TODO KAI CHECK THIS
-			state.setAllConnectionStateToError(ctx, state.res.Error)
+
+			state.setIncompleteConnectionStateToError(ctx, fmt.Errorf("refreshConnections failed before connection upate was complete"))
 			// TODO kai send error PG notification
 		}
 	}()
@@ -235,32 +245,24 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	// we need to execute the updates in search path order
 	// i.e. we first need to update the first search path connection for each plugin (this can be done in parallel)
 	// then we can update the remaining connections in parallel
-	initialUpdates, remainingUpdates := state.populateInitialAndRemainingUpdates(validatedUpdates)
+	// TODO make each of these an array of []ConnectionState instead of map, merge initial and dynamic
+	initialUpdates, remainingUpdates, dynamicUpdates := state.populateInitialAndRemainingUpdates(validatedUpdates)
 
-	exemplarSchemaMap := make(map[string]string)
+	// dynamic plugins must be updated for each plugin in search path order
+	// dynamicUpdates is a map keyed by plugin with all the updates for that plugin
+
+	// create exemplar map
+	state.exemplarSchemaMap = make(map[string]string)
 	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
 
 	// execute initial updates
-	// TODO kai parallelizing
 	var errors []error
-	for connectionName, connectionData := range initialUpdates {
+	moreErrors := state.executeUpdatesAsync(ctx, initialUpdates)
+	errors = append(errors, moreErrors...)
 
-		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
-		// if this schema is static, add to the exemplar map
-		connectionData.CanCloneSchema()
-		{
-			exemplarSchemaMap[connectionData.Plugin] = connectionName
-		}
-
-		// execute update query, and update the connection state table, in a transaction
-		sql := db_common.GetUpdateConnectionQuery(connectionName, remoteSchema)
-
-		// the only error this will return is the failure to update the state table
-		// - all other errors are written to the state table
-		if err := state.executeUpdateQuery(ctx, sql, connectionName); err != nil {
-			errors = append(errors, err)
-		}
-	}
+	// execute dynamic updates
+	moreErrors = state.executeUpdatesAsync(ctx, dynamicUpdates)
+	errors = append(errors, moreErrors...)
 
 	// if any of the initial schemas failed, do not proceed - these schemas are required to ensure we correctly
 	// resolve unqualified queries/tables
@@ -280,27 +282,12 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	}
 
 	// now execute remaining
-	// TODO KAI wrap this in parallel function which either clones or not
-	for connectionName, connectionData := range remainingUpdates {
-		remoteSchema := utils.PluginFQNToSchemaName(connectionData.Plugin)
-		// execute update query, and update the connection state table, in a transaction
-		sql := db_common.GetUpdateConnectionQuery(connectionName, remoteSchema)
+	moreErrors = state.executeUpdatesAsync(ctx, remainingUpdates)
+	errors = append(errors, moreErrors...)
 
-		// the only error this will return is the failure to update the state table
-		// - all other errors are written to the state table
-		if err := state.executeUpdateQuery(ctx, sql, connectionName); err != nil {
-			errors = append(errors, err)
-		}
-	}
 	if len(errors) > 0 {
 		state.res.Error = error_helpers.CombineErrors(errors...)
 	}
-	//	statushooks.SetStatus(ctx, fmt.Sprintf("Cloning %d %s", len(cloneableConnections), utils.Pluralize("connection", len(cloneableConnections))))
-	//	if err := cloneConnectionSchemas(ctx, state.pool, exemplarSchemaMap, cloneableConnections, idx, numUpdates, state.tableUpdater); err != nil {
-	//		res.Error = err
-	//		return state.res
-	//	}
-	//}
 
 	log.Printf("[INFO] all update queries executed")
 
@@ -323,25 +310,161 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	return
 }
 
-func (state *refreshConnectionState) populateInitialAndRemainingUpdates(validatedUpdates steampipeconfig.ConnectionStateMap) (initialUpdates, remainingUpdates steampipeconfig.ConnectionStateMap) {
+func (state *refreshConnectionState) executeUpdatesAsync(ctx context.Context, updates map[string][]*steampipeconfig.ConnectionState) (errors []error) {
+	var wg sync.WaitGroup
+	var errChan = make(chan *connectionError)
+
+	// use as many goroutines as we have connections
+	var maxUpdateThreads = int64(state.pool.Config().MaxConns)
+	sem := semaphore.NewWeighted(maxUpdateThreads)
+
+	go func() {
+		for {
+			select {
+			case connectionError := <-errChan:
+				if connectionError == nil {
+					return
+				}
+				errors = append(errors, connectionError.err)
+				state.tableUpdater.onConnectionError(ctx, nil, connectionError.name, connectionError.err)
+			}
+		}
+	}()
+
+	// each update may be multiple connections, to execute in order
+	for _, states := range updates {
+		wg.Add(1)
+		// use semaphore to limit goroutines
+		if err := sem.Acquire(ctx, 1); err != nil {
+			errors = append(errors, err)
+			return errors
+		}
+		go func(connectionStates []*steampipeconfig.ConnectionState) {
+			defer func() {
+				wg.Done()
+				sem.Release(1)
+			}()
+
+			moreErrors := state.executeUpdateForConnections(ctx, connectionStates...)
+			errors = append(errors, moreErrors...)
+		}(states)
+
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	return errors
+}
+
+func (state *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, connectionName string) error {
+	// create a transaction
+	tx, err := state.pool.Begin(ctx)
+	if err != nil {
+		return sperr.WrapWithMessage(err, "failed to create transaction to perform update query")
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	// execute update sql
+	_, err = tx.Exec(ctx, sql)
+	if err != nil {
+		statusErr := state.tableUpdater.onConnectionError(ctx, tx, connectionName, err)
+		// update failed connections in result
+		state.res.AddFailedConnection(connectionName, err.Error())
+
+		// NOTE: do not return the error - unless we failed to update the connection state table
+		if statusErr != nil {
+			return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
+		}
+		return nil
+	}
+
+	// update state table (inside transaction)
+	err = state.tableUpdater.onConnectionReady(ctx, tx, connectionName)
+	if err != nil {
+		return sperr.WrapWithMessage(err, "failed to update connection state table")
+	}
+	return nil
+}
+
+// syncronously execute the update queries for one or more connections
+func (state *refreshConnectionState) executeUpdateForConnections(ctx context.Context, connectionStates ...*steampipeconfig.ConnectionState) (errors []error) {
+	for _, connectionState := range connectionStates {
+		connectionName := connectionState.ConnectionName
+		remoteSchema := utils.PluginFQNToSchemaName(connectionState.Plugin)
+
+		var sql string
+
+		// if this schema is static, add to the exemplar map
+		state.exemplarSchemaMapMut.Lock()
+		// is this plugin in the exemplarSchemaMap
+		exemplarSchemaName, haveExemplarSchema := state.exemplarSchemaMap[connectionState.Plugin]
+		if haveExemplarSchema {
+			// we can clone!
+			sql = getCloneSchemaQuery(sql, exemplarSchemaName, connectionState)
+		} else {
+			// just get sql to execute update query, and update the connection state table, in a transaction
+			sql = db_common.GetUpdateConnectionQuery(connectionName, remoteSchema)
+		}
+		state.exemplarSchemaMapMut.Unlock()
+
+		// the only error this will return is the failure to update the state table
+		// - all other errors are written to the state table
+		if err := state.executeUpdateQuery(ctx, sql, connectionName); err != nil {
+			errors = append(errors, err)
+		} else {
+			// we can clone this plugin, add to exemplarSchemaMap
+			// (AFTER executing the update query)
+			if !haveExemplarSchema && connectionState.CanCloneSchema() {
+				state.exemplarSchemaMap[connectionState.Plugin] = connectionName
+			}
+		}
+	}
+	return errors
+}
+
+func getCloneSchemaQuery(sql string, exemplarSchemaName string, connectionState *steampipeconfig.ConnectionState) string {
+	sql = fmt.Sprintf("select clone_foreign_schema('%s', '%s', '%s');", exemplarSchemaName, connectionState.ConnectionName, connectionState.Plugin)
+	return sql
+}
+
+func (state *refreshConnectionState) populateInitialAndRemainingUpdates(validatedUpdates steampipeconfig.ConnectionStateMap) (initialUpdates, remainingUpdates, dynamicUpdates map[string][]*steampipeconfig.ConnectionState) {
 	searchPathConnections := state.connectionUpdates.FinalConnectionState.GetFirstSearchPathConnectionForPlugins(state.searchPath)
-	initialUpdates = make(steampipeconfig.ConnectionStateMap)
-	remainingUpdates = make(steampipeconfig.ConnectionStateMap)
+	// dynamic plugins must be updated for each plugin in search path order
+	// build a map keyed by plugin, wit th evalue the ordered updates for that plugun
+
+	// NOTE: for convenience of execution, initialUpdates and remainingUpdates are also stored as a map of []ConnectionState
+	// (keyed by connection name)
+	// even this there will only be one element in each array
+	initialUpdates = make(map[string][]*steampipeconfig.ConnectionState)
+	remainingUpdates = make(map[string][]*steampipeconfig.ConnectionState)
+	dynamicUpdates = make(map[string][]*steampipeconfig.ConnectionState)
 
 	// convert this into a lookup of initial updates to execute
 	for _, connectionName := range searchPathConnections {
 		if connectionState, updateRequired := validatedUpdates[connectionName]; updateRequired {
-			initialUpdates[connectionName] = connectionState
+			if connectionState.SchemaMode == sdkplugin.SchemaModeDynamic {
+				dynamicUpdates[connectionState.Plugin] = append(dynamicUpdates[connectionState.Plugin], connectionState)
+			} else {
+
+				initialUpdates[connectionName] = []*steampipeconfig.ConnectionState{connectionState}
+			}
 		}
 	}
 	// now add remaining updates to remainingUpdates
 	for connectionName, connectionState := range validatedUpdates {
 		if _, isInitialUpdate := initialUpdates[connectionName]; !isInitialUpdate {
-			remainingUpdates[connectionName] = connectionState
+			remainingUpdates[connectionName] = []*steampipeconfig.ConnectionState{connectionState}
 		}
 
 	}
-	return initialUpdates, remainingUpdates
+	return initialUpdates, remainingUpdates, dynamicUpdates
 }
 
 func (state *refreshConnectionState) writeComments(ctx context.Context, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) {
@@ -373,73 +496,63 @@ func (state *refreshConnectionState) writeComments(ctx context.Context, validate
 	}
 }
 
-func (state *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, connectionName string) error {
-	// create a transaction
-	tx, err := state.pool.Begin(ctx)
-	if err != nil {
-		return sperr.WrapWithMessage(err, "failed to create transaction to perform update query")
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback(ctx)
-		} else {
-			tx.Commit(ctx)
+func (state *refreshConnectionState) executeDeleteQueries(ctx context.Context) error {
+	utils.LogTime("delete connection start")
+	defer utils.LogTime("delete connection end")
+
+	log.Printf("[INFO] refreshConnections execute delete queries")
+	defer log.Printf("[INFO] completed execute delete queries")
+
+	deletions := maps.Keys(state.connectionUpdates.Delete)
+	var wg sync.WaitGroup
+	var errChan = make(chan *connectionError)
+
+	// use as many goroutines as we have connections
+	var maxUpdateThreads = int64(state.pool.Config().MaxConns)
+	sem := semaphore.NewWeighted(maxUpdateThreads)
+
+	var errors []error
+
+	go func() {
+		for {
+			select {
+			case connectionError := <-errChan:
+				if connectionError == nil {
+					return
+				}
+				if connectionError.err != nil {
+					errors = append(errors, connectionError.err)
+					state.tableUpdater.onConnectionError(ctx, nil, connectionError.name, connectionError.err)
+				}
+			}
 		}
 	}()
 
-	// TODO KAI HACK
-	//if connectionName == "aws_015" {
-	//	statusErr := state.tableUpdater.onConnectionError(ctx, tx, connectionName, fmt.Errorf("HACKETY"))
-	//	// update failed connections in result
-	//	state.res.AddFailedConnection(connectionName, err.Error())
-	//
-	//	// NOTE: do not return the error - unless we failed to update the connection state table
-	//	if statusErr != nil {
-	//		return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connectionm %s and failed to update connection_state table", connectionName), err, statusErr)
-	//	}
-	//	return nil
-	//}
-
-	// execute update sql
-	_, err = tx.Exec(ctx, sql)
-	if err != nil {
-		statusErr := state.tableUpdater.onConnectionError(ctx, tx, connectionName, err)
-		// update failed connections in result
-		state.res.AddFailedConnection(connectionName, err.Error())
-
-		// NOTE: do not return the error - unless we failed to update the connection state table
-		if statusErr != nil {
-			return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
-		}
-		return nil
-	}
-
-	// update state table (inside transaction)
-	err = state.tableUpdater.onConnectionReady(ctx, tx, connectionName)
-	if err != nil {
-		return sperr.WrapWithMessage(err, "failed to update connection state table")
-	}
-	return nil
-}
-
-func (state *refreshConnectionState) executeDeleteQueries(ctx context.Context) error {
-	log.Printf("[INFO] refreshConnections execute delete queries")
-	deletions := maps.Keys(state.connectionUpdates.Delete)
-
-	var errors []error
-	var successfulDeletions []string
+	// each update may be multiple connections, to execute in order
 	for _, c := range deletions {
-		utils.LogTime("delete connection start")
-		log.Printf("[TRACE] delete connection %s\n ", c)
-
-		err := state.executeDeleteQuery(ctx, c)
-		if err != nil {
+		wg.Add(1)
+		// use semaphore to limit goroutines
+		if err := sem.Acquire(ctx, 1); err != nil {
 			errors = append(errors, err)
-		} else {
-			successfulDeletions = append(successfulDeletions, c)
+			break
 		}
-		utils.LogTime("delete connection end")
+		go func(connectionName string) {
+			defer func() {
+				wg.Done()
+				sem.Release(1)
+			}()
+
+			err := state.executeDeleteQuery(ctx, connectionName)
+			errChan <- &connectionError{
+				name: connectionName,
+				err:  err,
+			}
+		}(c)
+
 	}
+
+	wg.Wait()
+	close(errChan)
 
 	return error_helpers.CombineErrors(errors...)
 }
@@ -447,7 +560,6 @@ func (state *refreshConnectionState) executeDeleteQueries(ctx context.Context) e
 // delete the schema and update remove the connection from the state table
 // NOTE: this only returns an error if we fail to update the state table
 func (state *refreshConnectionState) executeDeleteQuery(ctx context.Context, connectionName string) error {
-	sql := db_common.GetDeleteConnectionQuery(connectionName)
 	// create a transaction
 	tx, err := state.pool.Begin(ctx)
 	if err != nil {
@@ -460,6 +572,8 @@ func (state *refreshConnectionState) executeDeleteQuery(ctx context.Context, con
 			tx.Commit(ctx)
 		}
 	}()
+
+	sql := db_common.GetDeleteConnectionQuery(connectionName)
 
 	// execute delete sql
 	_, err = tx.Exec(ctx, sql)
@@ -480,8 +594,8 @@ func (state *refreshConnectionState) executeDeleteQuery(ctx context.Context, con
 	return nil
 }
 
-// sett the state of all connections to error
-func (state *refreshConnectionState) setAllConnectionStateToError(ctx context.Context, err error) {
+// set the state of any incomplete connections to error
+func (state *refreshConnectionState) setIncompleteConnectionStateToError(ctx context.Context, err error) {
 	// create wrapped error
 	connectionStateError := sperr.WrapWithMessage(err, "failed to update Steampipe connections")
 	// load connection state
@@ -492,90 +606,12 @@ func (state *refreshConnectionState) setAllConnectionStateToError(ctx context.Co
 	}
 	defer conn.Release()
 
-	// load the connection state file and filter out any connections which are not in the list of schemas
-	// this allows for the database being rebuilt,modified externally
-	currentConnectionState, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn())
-	if err != nil {
-		log.Printf("[WARN] setAllConnectionStateToError failed to load connection state: %s", err.Error())
+	query := connection_state.GetIncompleteConnectionStateErrorSql(connectionStateError)
+
+	if _, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn.Conn(), query); err != nil {
+		log.Printf("[WARN] setAllConnectionStateToError failed to set connection states to error: %s", err.Error())
 		return
 	}
-	var queries []db_common.QueryWithArgs
-	for name := range currentConnectionState {
-		queries = append(queries, getConnectionStateErrorSql(name, connectionStateError))
-	}
-
-	if _, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn.Conn(), queries...); err != nil {
-		log.Printf("[WARN] setAllConnectionStateToError failed to set connection state to error: %s", err.Error())
-		return
-	}
-}
-
-func (state *refreshConnectionState) cloneConnectionSchemas(ctx context.Context, pluginMap map[string]string, cloneableConnections steampipeconfig.ConnectionStateMap, idx int, numUpdates int) error {
-	var wg sync.WaitGroup
-	var progressChan = make(chan string)
-	type connectionError struct {
-		name string
-		err  error
-	}
-	var errChan = make(chan connectionError)
-
-	var pluginMapMut sync.Mutex
-
-	sem := semaphore.NewWeighted(int64(state.pool.Config().MaxConns))
-	var errors []error
-
-	go func() {
-		for {
-			select {
-			case connectionError := <-errChan:
-				errors = append(errors, connectionError.err)
-				state.tableUpdater.onConnectionError(ctx, nil, connectionError.name, connectionError.err)
-			case connectionName := <-progressChan:
-				if connectionName == "" {
-					return
-				}
-				idx++
-
-			}
-		}
-	}()
-	for n, d := range cloneableConnections {
-		wg.Add(1)
-		if err := sem.Acquire(ctx, 1); err != nil {
-			return err
-		}
-		// use semaphore to limit goroutines
-		go func(connectionName string, connectionData *steampipeconfig.ConnectionState) {
-			//log.Printf("[WARN] start clone connection %s", connectionName)
-			defer func() {
-				wg.Done()
-				sem.Release(1)
-			}()
-
-			// this schema is already in the plugin map, clone from it
-			exemplarSchemaName := pluginMap[connectionData.Plugin]
-
-			// Clone the foreign schema into this connection.
-			sql := fmt.Sprintf("select clone_foreign_schema('%s', '%s', '%s');", exemplarSchemaName, connectionName, connectionData.Plugin)
-			// execute clone query, and update the connection state table, in a transaction
-			if err := state.executeUpdateQuery(ctx, sql, connectionName); err != nil {
-				errChan <- connectionError{connectionName, err}
-				return
-			}
-
-			pluginMapMut.Lock()
-			pluginMap[connectionData.Plugin] = connectionName
-			pluginMapMut.Unlock()
-
-			progressChan <- connectionName
-		}(n, d)
-
-	}
-
-	wg.Wait()
-	close(progressChan)
-
-	return error_helpers.CombineErrors(errors...)
 }
 
 // OnConnectionsChanged is the callback function invoked by the connection watcher when connections are added or removed

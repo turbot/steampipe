@@ -161,21 +161,16 @@ To get information about the columns in a table, run %s
 }
 
 func listConnections(_ context.Context, input *HandlerInput) error {
-	header := []string{"connection", "plugin"}
-	showState := input.ConnectionState.ConnectionsInState(
+	header := []string{"connection", "plugin", "state"}
+	showStateSummary := input.ConnectionState.ConnectionsInState(
 		constants.ConnectionStateUpdating,
 		constants.ConnectionStateDeleting,
 		constants.ConnectionStateError)
-	if showState {
-		header = append(header, "state")
-	}
+
 	var rows [][]string
 
 	for connectionName, state := range input.ConnectionState {
-		row := []string{connectionName, state.Plugin}
-		if showState {
-			row = append(row, state.State)
-		}
+		row := []string{connectionName, state.Plugin, state.State}
 		rows = append(rows, row)
 	}
 
@@ -186,9 +181,8 @@ func listConnections(_ context.Context, input *HandlerInput) error {
 
 	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 
-	if showState {
-
-		showStateSummary(input.ConnectionState)
+	if showStateSummary {
+		showStateSummaryTable(input.ConnectionState)
 	}
 
 	fmt.Printf(`
@@ -200,7 +194,7 @@ To get information about the columns in a table, run %s
 	return nil
 }
 
-func showStateSummary(connectionState steampipeconfig.ConnectionStateMap) {
+func showStateSummaryTable(connectionState steampipeconfig.ConnectionStateMap) {
 	header := []string{"Connection state", "Count"}
 	var rows [][]string
 	stateSummary := connectionState.GetSummary()

@@ -2,28 +2,19 @@ package connection
 
 import (
 	"context"
-	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/turbot/steampipe/pkg/connection/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
-	"sync"
 )
-
-// send a notification every 5 connections
-const updatePageSize = 5
 
 type connectionStateTableUpdater struct {
 	updates *steampipeconfig.ConnectionUpdates
-
-	updateCountLock    sync.Mutex
-	deleteCountLock    sync.Mutex
-	updatedConnections int
-	deletedConnections int
-	pool               *pgxpool.Pool
+	pool    *pgxpool.Pool
 }
 
 func newConnectionStateTableUpdater(updates *steampipeconfig.ConnectionUpdates, pool *pgxpool.Pool) *connectionStateTableUpdater {
@@ -44,10 +35,10 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 		if _, updatingConnection := u.updates.Update[name]; updatingConnection {
 			connectionData.State = constants.ConnectionStateUpdating
 		}
-		queries = append(queries, getStartUpdateConnectionStateSql(connectionData))
+		queries = append(queries, connection_state.GetStartUpdateConnectionStateSql(connectionData))
 	}
 	for name := range u.updates.Delete {
-		queries = append(queries, getDeleteConnectionStateSql(name))
+		queries = append(queries, connection_state.GetSetConnectionDeletingSql(name))
 	}
 
 	conn, err := u.pool.Acquire(ctx)
@@ -64,126 +55,31 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 
 func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, tx pgx.Tx, name string) error {
 	connection := u.updates.FinalConnectionState[name]
-	q := getConnectionReadySql(connection)
+	q := connection_state.GetSetConnectionReadySql(connection)
 	_, err := tx.Exec(ctx, q.Query, q.Args...)
 	if err != nil {
 		return err
 	}
-
-	// this may be called from multiple goroutines
-	u.updateCountLock.Lock()
-	u.updatedConnections++
-	if u.updatedConnections >= updatePageSize {
-		//log.Printf("[WARN] onConnectionReady updating page")
-		// TODO KAI send notification
-		//statushooks.SetStatus(ctx, fmt.Sprintf("Cloned %d of %d %s (%s)", idx, numUpdates, utils.Pluralize("connection", numUpdates), connectionName))
-		u.updatedConnections = 0
-	}
-	u.updateCountLock.Unlock()
 
 	return nil
 }
 
 func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, tx pgx.Tx, name string) error {
-	q := getDeleteConnectionStateSql(name)
+	q := connection_state.GetDeleteConnectionStateSql(name)
 	_, err := tx.Exec(ctx, q.Query, q.Args...)
 	if err != nil {
 		return err
 	}
-	// this may be called from multiple goroutines
-	u.deleteCountLock.Lock()
-
-	u.deletedConnections++
-	if u.deletedConnections >= updatePageSize {
-		//log.Printf("[WARN] onConnectionDeleted updating page")
-		// TODO KAI send notification
-
-		u.deletedConnections = 0
-	}
-	u.deleteCountLock.Unlock()
 
 	return nil
 }
 
 func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, tx pgx.Tx, connectionName string, err error) error {
-	q := getConnectionStateErrorSql(connectionName, err)
+	q := connection_state.GetConnectionStateErrorSql(connectionName, err)
 	if _, err := tx.Exec(ctx, q.Query, q.Args...); err != nil {
 		return err
 	}
 
 	return nil
 	// TODO KAI send notification
-}
-
-func getConnectionStateErrorSql(connectionName string, err error) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`UPDATE %s.%s
-SET state = $1,
-	error = $2,
-	connection_mod_time = now()
-WHERE
-	name = $3
-	`,
-		constants.InternalSchema, constants.ConnectionStateTable)
-	args := []any{constants.ConnectionStateError, err.Error(), connectionName}
-	return db_common.QueryWithArgs{query, args}
-}
-
-func getStartUpdateConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
-	// if state is updating, set comments to false
-	commentsSet := c.State == constants.ConnectionStateReady
-	// upsert
-	query := fmt.Sprintf(`INSERT INTO %s.%s (name, 
-		state,
-		error,
-		plugin,
-		schema_mode,
-		schema_hash,
-		comments_set,
-		connection_mod_time,
-		plugin_mod_time)
-VALUES($1,$2,$3,$4,$5,$6,$7,now(),$8) 
-ON CONFLICT (name) 
-DO 
-   UPDATE SET 
- 			  state = $2, 
-			  error = $3,
-			  plugin = $4,
-			  schema_mode = $5,
-			  schema_hash = $6,
-			  comments_set = $7,
-			  connection_mod_time = now(),
-			  plugin_mod_time = $8
-`, constants.InternalSchema, constants.ConnectionStateTable)
-	args := []any{c.Connection.Name, c.State, c.ConnectionError, c.Plugin, c.SchemaMode, c.SchemaHash, commentsSet, c.PluginModTime}
-	return db_common.QueryWithArgs{query, args}
-}
-
-// note: set comments to false as this is called from start and updateConnectionState - both before comment completion
-func getConnectionReadySql(connection *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
-	// upsert
-	query := fmt.Sprintf(`UPDATE %s.%s 
-    SET	state = $1, 
-	 	connection_mod_time = now(),
-	 	plugin_mod_time = $2
-    WHERE 
-        name = $3
-`,
-		constants.InternalSchema, constants.ConnectionStateTable,
-	)
-	args := []any{constants.ConnectionStateReady, connection.PluginModTime, connection.ConnectionName}
-	return db_common.QueryWithArgs{query, args}
-}
-
-func getDeleteConnectionStateSql(connectionName string) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`DELETE FROM %s.%s WHERE NAME=$1`, constants.InternalSchema, constants.ConnectionStateTable)
-	args := []any{connectionName}
-	return db_common.QueryWithArgs{query, args}
-}
-
-func getSetConnectionStateCommentLoadedSql(connectionName string, commentsLoaded bool) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`UPDATE  %s.%s
-SET comments_loaded = $1
-WHERE NAME=$2`, constants.InternalSchema, constants.ConnectionStateTable)
-	args := []any{commentsLoaded, connectionName}
-	return db_common.QueryWithArgs{query, args}
 }
