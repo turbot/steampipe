@@ -26,7 +26,12 @@ import (
 type ModInstaller struct {
 	installData *InstallData
 
+	// this will be updated as changes are made to dependencies
 	workspaceMod *modconfig.Mod
+
+	// since changes are made to workspaceMod, we need a copy of the Require as is on disk
+	// to be able to calculate changes
+	oldRequire *modconfig.Require
 
 	// installed plugins
 	installedPlugins map[string]*semver.Version
@@ -60,6 +65,11 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 		dryRun:        opts.DryRun,
 		force:         opts.Force,
 	}
+
+	if opts.WorkspaceMod.Require != nil {
+		i.oldRequire = opts.WorkspaceMod.Require.Clone()
+	}
+
 	if err := i.setModsPath(); err != nil {
 		return nil, err
 	}
@@ -150,7 +160,7 @@ func (i *ModInstaller) UninstallWorkspaceDependencies(ctx context.Context) error
 	}
 
 	//  now safe to save the mod file
-	if err := i.workspaceMod.Save(); err != nil {
+	if err := i.updateModFile(); err != nil {
 		return err
 	}
 
@@ -215,10 +225,8 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 	}
 
 	//  now safe to save the mod file
-	if len(i.mods) > 0 {
-		if err := i.workspaceMod.Save(); err != nil {
-			return err
-		}
+	if err := i.updateModFile(); err != nil {
+		return err
 	}
 
 	if !workspaceMod.HasDependentMods() {

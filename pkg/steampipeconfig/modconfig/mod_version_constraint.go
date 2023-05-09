@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/versionhelpers"
 	"github.com/zclconf/go-cty/cty"
@@ -23,8 +24,13 @@ type ModVersionConstraint struct {
 	// only one of Constraint, Branch and FilePath will be set
 	Constraint *versionhelpers.Constraints
 	// the local file location to use
-	FilePath  string
-	DeclRange hcl.Range
+	FilePath string
+	// contains the range of the definition of the mod block
+	DefRange hcl.Range
+	// contains the range of the body of the mod block
+	BodyRange hcl.Range
+	// contains the range of the total version field
+	VersionRange hcl.Range
 }
 
 // NewModVersionConstraint creates a new ModVersionConstraint - this is called when installing a mod
@@ -58,7 +64,13 @@ func NewModVersionConstraint(modFullName string) (*ModVersionConstraint, error) 
 // Initialise parses the version and name properties
 func (m *ModVersionConstraint) Initialise(block *hcl.Block) hcl.Diagnostics {
 	if block != nil {
-		m.DeclRange = block.DefRange
+		// record all the ranges in the source file
+		m.DefRange = block.DefRange
+		m.BodyRange = block.Body.(*hclsyntax.Body).SrcRange
+		// record the range of the version attribute in this structure
+		if versionAttribute, ok := block.Body.(*hclsyntax.Body).Attributes["version"]; ok {
+			m.VersionRange = versionAttribute.SrcRange
+		}
 	}
 
 	if strings.HasPrefix(m.Name, filePrefix) {
@@ -82,7 +94,7 @@ func (m *ModVersionConstraint) Initialise(block *hcl.Block) hcl.Diagnostics {
 	return hcl.Diagnostics{&hcl.Diagnostic{
 		Severity: hcl.DiagError,
 		Summary:  fmt.Sprintf("invalid mod version %s", m.VersionString),
-		Subject:  &m.DeclRange,
+		Subject:  &m.DefRange,
 	}}
 
 }

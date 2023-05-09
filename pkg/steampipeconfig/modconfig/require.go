@@ -6,6 +6,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/version"
@@ -18,15 +19,34 @@ type Require struct {
 	DeprecatedSteampipeVersionString string                  `hcl:"steampipe,optional"`
 	Steampipe                        *SteampipeRequire       `hcl:"steampipe,block"`
 	Mods                             []*ModVersionConstraint `hcl:"mod,block"`
-	DeclRange                        hcl.Range
 	// map keyed by name [and alias]
 	modMap map[string]*ModVersionConstraint
+	// range of the definition of the require block
+	DeclRange hcl.Range
+	// range of the body of the require block
+	BodyRange hcl.Range
 }
 
 func NewRequire() *Require {
 	return &Require{
 		modMap: make(map[string]*ModVersionConstraint),
 	}
+}
+func (r *Require) Clone() *Require {
+	require := NewRequire()
+	require.Steampipe = r.Steampipe
+	require.Plugins = r.Plugins
+	require.Mods = r.Mods
+	require.DeclRange = r.DeclRange
+	require.BodyRange = r.BodyRange
+
+	// we need to shallow copy the map
+	// if we don't, when the other one gets
+	// modified - this one gets as well
+	for k, mvc := range r.modMap {
+		require.modMap[k] = mvc
+	}
+	return require
 }
 
 func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
@@ -47,19 +67,19 @@ func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
 	if requireBlock == nil {
 		// was this the legacy 'requires' block?
 		requireBlock = hclhelpers.FindFirstChildBlock(modBlock, BlockTypeLegacyRequires)
-		if requireBlock == nil {
-			// if none was specified, fall back to parent block
-			requireBlock = modBlock
-		}
 	}
+	if requireBlock == nil {
+		// nothing else to populate
+		return nil
+	}
+
+	// set our Ranges
+	r.DeclRange = requireBlock.DefRange
+	r.BodyRange = requireBlock.Body.(*hclsyntax.Body).SrcRange
+
 	// build maps of plugin and mod blocks
 	pluginBlockMap := hclhelpers.BlocksToMap(hclhelpers.FindChildBlocks(requireBlock, BlockTypePlugin))
 	modBlockMap := hclhelpers.BlocksToMap(hclhelpers.FindChildBlocks(requireBlock, BlockTypeMod))
-
-	// set our DecRange
-	r.DeclRange = requireBlock.DefRange
-
-	r.modMap = make(map[string]*ModVersionConstraint)
 
 	if r.Steampipe != nil {
 		moreDiags := r.Steampipe.initialise(requireBlock)
