@@ -8,31 +8,25 @@ const DefaultConnectionConfigContent = `
 # at https://steampipe.io/docs/reference/cli-args
 #
 
-# options "connection" {
-#   cache     = true # true, false
-#   cache_ttl = 300  # expiration (TTL) in seconds
+# options "database" {
+#   port                = 9193                  # any valid, open port number
+#   listen              = "local"               # local, network
+#   search_path         = "aws,aws2,gcp,gcp2"   # comma-separated string; an exact search_path
+#   search_path_prefix  = "aws"                 # comma-separated string; a search_path prefix
+#   start_timeout       = 30                    # maximum time (in seconds) to wait for the database to start up
+#   cache               = true                  # true, false
+#   cache_max_ttl       = 900                   # max expiration (TTL) in seconds
+#   cache_max_size_mb   = 1024                  # max total size of cache across all plugins
 # }
 
-# options "database" {
+# options "dashboard" {
 #   port          = 9193    # any valid, open port number
 #   listen        = "local" # local, network
-#   search_path   =  ""     # comma-separated string
-#   start_timeout = 30      # maximum time it should take for the database service to start accepting queries (in seconds)
-# }
-
-# options "terminal" {
-#   multi               = false   # true, false
-#   output              = "table" # json, csv, table, line
-#   header              = true    # true, false
-#   separator           = ","     # any single char
-#   timing              = false   # true, false
-#   search_path         =  ""     # comma-separated string
-#   search_path_prefix  =  ""     # comma-separated string
-#   watch  			        =  true   # true, false
-#   autocomplete        =  true   # true, false
 # }
 
 # options "general" {
-#   update_check = true # true, false
+#   update_check = true    # true, false
+#   telemetry    = "info"  # info, none
+#   log_level    = "info"  # trace, debug, info, warn, error 
 # }
 `
