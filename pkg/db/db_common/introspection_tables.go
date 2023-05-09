@@ -25,7 +25,8 @@ func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfi
 	// get the sql for columns which every table has
 	commonColumnSql := getColumnDefinitions(modconfig.ResourceMetadata{})
 
-	switch viper.GetString(constants.ArgIntrospection) {
+	// convert to lowercase to support case sensitivity
+	switch strings.ToLower(viper.GetString(constants.ArgIntrospection)) {
 	case constants.IntrospectionInfo:
 		return populateAllIntrospectionTables(ctx, workspaceResources, conn, commonColumnSql)
 	case constants.IntrospectionControl:
