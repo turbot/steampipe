@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -116,14 +117,8 @@ func checkWsl1(ctx context.Context) {
 }
 
 func checkOSXVersion(ctx context.Context) {
-	// check if macOS
-	osname, err := exec.Command("uname").Output()
-	if err != nil {
-		error_helpers.ShowErrorWithMessage(ctx, err, "failed to check OS")
-		return
-	}
-
-	// return if OS is not darwin
+	// get the OS and return if not darwin
+	osname := runtime.GOOS
 	if !strings.Contains(strings.ToLower(string(osname)), "darwin") {
 		return
 	}
