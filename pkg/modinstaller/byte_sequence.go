@@ -21,8 +21,10 @@ type Change struct {
 
 type ChangeSet []*Change
 
-// MergedChangeSet creates a ChangeSet by merging the given ChangeSets in order
-func MergedChangeSet(changeSets ...ChangeSet) ChangeSet {
+func EmptyChangeSet() ChangeSet { return ChangeSet{} }
+
+// MergeChangeSet creates a ChangeSet by merging the given ChangeSets in order
+func MergeChangeSet(changeSets ...ChangeSet) ChangeSet {
 	changeSet := ChangeSet{}
 	for _, cs := range changeSets {
 		changeSet = append(changeSet, cs...)
