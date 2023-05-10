@@ -750,7 +750,7 @@ func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionStateMap
 	}
 	defer conn.Release()
 
-	// load LoadConnectionState
+	// load connection state
 	statushooks.SetStatus(ctx, "Loading connection state")
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilReady())
 	if err != nil {

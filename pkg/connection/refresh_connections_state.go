@@ -83,7 +83,7 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 		if state.res.Error != nil {
 
 			state.setIncompleteConnectionStateToError(ctx, fmt.Errorf("refreshConnections failed before connection upate was complete"))
-			// TODO kai send error PG notification
+			// TODO send error PG notification
 		}
 	}()
 	log.Printf("[INFO] refreshConnections building connectionUpdates")
@@ -268,7 +268,7 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	// resolve unqualified queries/tables
 	if len(errors) > 0 {
 		state.res.Error = error_helpers.CombineErrors(errors...)
-		// TODO KAI SEND ERROR NOTIFICATION
+		// TODO SEND ERROR NOTIFICATION
 		return
 	}
 	log.Printf("[INFO] RefreshConnection has updated all exemplar schemas - sending notification")
@@ -492,7 +492,7 @@ func (state *refreshConnectionState) writeComments(ctx context.Context, validate
 			// NOTE: do not return an error if we fail to write comments
 			log.Printf("[WARN] failed to write comments for connection '%s': %s", connectionName, err.Error())
 		}
-		// TODO KAI update connection state
+		// TODO update connection state
 	}
 }
 

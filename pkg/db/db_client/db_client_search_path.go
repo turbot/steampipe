@@ -121,7 +121,6 @@ func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_comm
 	// so we need to set the search path
 	log.Printf("[TRACE] session search path will be updated to  %s", strings.Join(c.customSearchPath, ","))
 
-	// TODO KAI USE PARAMS
 	_, err := session.Connection.Exec(ctx, fmt.Sprintf("set search_path to %s", strings.Join(db_common.PgEscapeSearchPath(requiredSearchPath), ",")))
 	if err == nil {
 		// update the session search path property

@@ -12,7 +12,6 @@ import (
 
 // SendPostgresNotification send a postgres notification that the schema has chganged
 func SendPostgresNotification(_ context.Context, conn *pgx.Conn, notification any) error {
-
 	notificationBytes, err := json.Marshal(notification)
 	if err != nil {
 		return sperr.WrapWithMessage(err, "error marshalling Postgres notification")

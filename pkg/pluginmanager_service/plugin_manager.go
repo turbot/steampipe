@@ -704,7 +704,7 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 	if schema.Mode == sdkplugin.SchemaModeDynamic {
 		_ = m.messageServer.AddConnection(pluginClient, pluginName, connectionNames...)
 	}
-	// TODO KAI how to handle error here
+	// TODO how to handle error here
 	return client, reattach, nil
 }
 

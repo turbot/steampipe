@@ -5,7 +5,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"sync"
-	"time"
 )
 
 // only allow one execution of refresh connections
@@ -33,12 +32,9 @@ func RefreshConnections(ctx context.Context, forceUpdateConnectionNames ...strin
 		log.Printf("[INFO] RefreshConnections  released refreshExecuteLock")
 	}()
 
-	// we have the execute lock, release the queue lock so someone else can queue
+	// we have the execute-lock, release the queue-lock so someone else can queue
 	queueLock.Unlock()
 	log.Printf("[INFO] RefreshConnections acquired refreshExecuteLock, released refreshQueueLock")
-
-	// uncomment to debug
-	time.Sleep(10 * time.Second)
 
 	// now refresh connections
 	// package up all necessary data into a state object6

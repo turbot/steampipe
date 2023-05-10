@@ -81,5 +81,5 @@ func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, tx 
 	}
 
 	return nil
-	// TODO KAI send notification
+	// TODO send notification
 }

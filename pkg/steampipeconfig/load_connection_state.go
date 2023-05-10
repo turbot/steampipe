@@ -53,7 +53,6 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 			return checkConnectionsAreReady(ctx, connectionStateMap, config)
 		case WaitForLoading:
 			if connectionStateMap.Pending() {
-				// TODO KAI BETTER ERROR
 				return retry.RetryableError(fmt.Errorf("timed out waiting for connection state to be updated from pending"))
 			}
 		case WaitForSearchPath:
@@ -128,7 +127,7 @@ func GetLoadingConnectionStatusMessage(connectionStateMap ConnectionStateMap, re
 	if len(requiredSchemas) == 0 {
 		return loadedMessage
 	}
-	// TODO kai think about display of arrays
+	// TODO think about display of arrays
 	return fmt.Sprintf("Waiting for %s '%s' to load (%s)", utils.Pluralize("connection", len(requiredSchemas)), strings.Join(requiredSchemas, "','"), loadedMessage)
 }
 
