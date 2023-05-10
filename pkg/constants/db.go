@@ -46,12 +46,13 @@ const (
 	InternalSchema = "internal"
 
 	// ConnectionStateTable is the table used to store steampipe connection state
-	ConnectionStateTable    = "connection_state"
-	ConnectionStatePending  = "pending"
-	ConnectionStateReady    = "ready"
-	ConnectionStateUpdating = "updating"
-	ConnectionStateDeleting = "deleting"
-	ConnectionStateError    = "error"
+	ConnectionStateTable             = "connection_state"
+	ConnectionStatePending           = "pending"
+	ConnectionStatePendingIncomplete = "incomplete"
+	ConnectionStateReady             = "ready"
+	ConnectionStateUpdating          = "updating"
+	ConnectionStateDeleting          = "deleting"
+	ConnectionStateError             = "error"
 
 	// CommandSchema is the schema which is used to send commands to the FDW
 	CommandSchema = "steampipe_command"

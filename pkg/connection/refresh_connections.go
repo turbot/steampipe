@@ -16,6 +16,7 @@ var queueLock sync.Mutex
 func RefreshConnections(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
 	log.Printf("[TRACE] Refreshing connections")
 
+	//time.Sleep(10 * time.Second)
 	// first grab the queue lock
 	if !queueLock.TryLock() {
 		// someone has it - they will execute so we have nothing to do

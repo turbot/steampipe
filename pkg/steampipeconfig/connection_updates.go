@@ -32,6 +32,8 @@ type ConnectionUpdates struct {
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
 func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
+	TAKE INTO ACCOUNT PENDING INCOMPLETE
+
 	utils.LogTime("NewConnectionUpdates start")
 	defer utils.LogTime("NewConnectionUpdates end")
 	log.Printf("[TRACE] NewConnectionUpdates")
@@ -61,7 +63,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	// build connection data for all required connections
 	// NOTE: this will NOT populate SchemaMode for the connections, as we need to load the schema for that
 	// this will be updated below on the call to updateRequiredStateWithSchemaProperties
-	requiredConnectionState, missingPlugins, err := NewConnectionStateMap(GlobalConfig.Connections, currentConnectionState)
+	requiredConnectionState, missingPlugins, err := GetRequiredConnectionStateMap(GlobalConfig.Connections, currentConnectionState)
 	if err != nil {
 		log.Printf("[WARN] failed to build required connection state: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)

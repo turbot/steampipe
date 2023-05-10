@@ -7,8 +7,8 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
-func GetConnectionStateTableCreateSql() string {
-	return fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
+func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
+	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
     			name TEXT PRIMARY KEY,
 -- 			    connection_type TEXT,
 -- 			    child_connections TEXT[],
@@ -17,34 +17,51 @@ func GetConnectionStateTableCreateSql() string {
     			plugin TEXT NOT NULL,
     			schema_mode TEXT NOT NULL,
     			schema_hash TEXT NULL,
+    			import_schema TEXT NOT NULL,
     			comments_set BOOL DEFAULT FALSE,
     			connection_mod_time TIMESTAMPTZ NOT NULL,
     			plugin_mod_time TIMESTAMPTZ NOT NULL
     			);`, constants.InternalSchema, constants.ConnectionStateTable)
+	return db_common.QueryWithArgs{Query: query}
 }
 
 func GetConnectionStateErrorSql(connectionName string, err error) db_common.QueryWithArgs {
 	query := fmt.Sprintf(`UPDATE %s.%s
-SET state = 'error',
+SET state = '%s',
 	error = $1,
 	connection_mod_time = now()
 WHERE
 	name = $2
 	`,
-		constants.InternalSchema, constants.ConnectionStateTable)
+		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStateError)
 	args := []any{constants.ConnectionStateError, err.Error(), connectionName}
 	return db_common.QueryWithArgs{query, args}
 }
 
 func GetIncompleteConnectionStateErrorSql(err error) db_common.QueryWithArgs {
 	query := fmt.Sprintf(`UPDATE %s.%s
-SET state = 'error',
+SET state = '%s',
 	error = $1,
 	connection_mod_time = now()
 WHERE
-	state <> 'ready'
+	state <> 'ready' 
+AND state <> 'error' 
 	`,
-		constants.InternalSchema, constants.ConnectionStateTable)
+		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStateError)
+	args := []any{err.Error()}
+	return db_common.QueryWithArgs{Query: query, Args: args}
+}
+
+func GetIncompleteConnectionStatePendingIncompleteSql() db_common.QueryWithArgs {
+	query := fmt.Sprintf(`UPDATE %s.%s
+SET state = '%s',
+	error = $1,
+	connection_mod_time = now()
+WHERE
+	state <> 'ready' 
+AND state <> 'error' 
+	`,
+		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStatePendingIncomplete)
 	args := []any{err.Error()}
 	return db_common.QueryWithArgs{Query: query, Args: args}
 }
@@ -81,15 +98,15 @@ DO
 
 func GetSetConnectionReadySql(connection *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
 	query := fmt.Sprintf(`UPDATE %s.%s 
-    SET	state = $1, 
+    SET	state = %s, 
 	 	connection_mod_time = now(),
-	 	plugin_mod_time = $2
+	 	plugin_mod_time = $1
     WHERE 
-        name = $3
+        name = $2
 `,
-		constants.InternalSchema, constants.ConnectionStateTable,
+		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStateReady,
 	)
-	args := []any{constants.ConnectionStateReady, connection.PluginModTime, connection.ConnectionName}
+	args := []any{connection.PluginModTime, connection.ConnectionName}
 	return db_common.QueryWithArgs{query, args}
 }
 
@@ -101,12 +118,12 @@ func GetDeleteConnectionStateSql(connectionName string) db_common.QueryWithArgs 
 
 func GetSetConnectionDeletingSql(connectionName string) db_common.QueryWithArgs {
 	query := fmt.Sprintf(`UPDATE %s.%s 
-    SET	state = 'deleting', 
+    SET	state = '%s', 
 	 	connection_mod_time = now()
     WHERE 
         name = $1
 `,
-		constants.InternalSchema, constants.ConnectionStateTable,
+		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStateDeleting,
 	)
 	args := []any{connectionName}
 	return db_common.QueryWithArgs{query, args}

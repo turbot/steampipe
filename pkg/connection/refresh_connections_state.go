@@ -87,7 +87,7 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 		log.Printf("[INFO] refreshConnections complete (%fs)", time.Since(t).Seconds())
 		if state.res.Error != nil {
 
-			state.setIncompleteConnectionStateToError(ctx, fmt.Errorf("refreshConnections failed before connection upate was complete"))
+			state.setIncompleteConnectionStateToError(ctx, sperr.WrapWithMessage(state.res.Error, "refreshConnections failed before connection update was complete"))
 			// TODO send error PG notification
 		}
 	}()

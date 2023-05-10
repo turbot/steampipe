@@ -43,6 +43,14 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 		}
 		connection.Type = connectionType
 	}
+	if connectionContent.Attributes["import_schema"] != nil {
+		var importSchema string
+		diags = gohcl.DecodeExpression(connectionContent.Attributes["import_schema"].Expr, nil, &importSchema)
+		if diags.HasErrors() {
+			return nil, diags
+		}
+		connection.ImportSchema = importSchema
+	}
 	if connectionContent.Attributes["connections"] != nil {
 		var connections []string
 		diags = gohcl.DecodeExpression(connectionContent.Attributes["connections"].Expr, nil, &connections)

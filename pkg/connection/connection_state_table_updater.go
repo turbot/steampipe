@@ -30,12 +30,12 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 
 	var queries []db_common.QueryWithArgs
 
-	for name, connectionData := range u.updates.FinalConnectionState {
+	for name, connectionState := range u.updates.FinalConnectionState {
 		// set the connection data state based on whether this connection is being created or deleted
 		if _, updatingConnection := u.updates.Update[name]; updatingConnection {
-			connectionData.State = constants.ConnectionStateUpdating
+			connectionState.State = constants.ConnectionStateUpdating
 		}
-		queries = append(queries, connection_state.GetStartUpdateConnectionStateSql(connectionData))
+		queries = append(queries, connection_state.GetStartUpdateConnectionStateSql(connectionState))
 	}
 	for name := range u.updates.Delete {
 		queries = append(queries, connection_state.GetSetConnectionDeletingSql(name))

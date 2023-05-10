@@ -18,10 +18,10 @@ type ConnectionStateSummary map[string]int
 
 type ConnectionStateMap map[string]*ConnectionState
 
-// NewConnectionStateMap populates a map of connection data for all connections in connectionMap
-func NewConnectionStateMap(connectionMap map[string]*modconfig.Connection, currentConnectionState ConnectionStateMap) (ConnectionStateMap, map[string][]modconfig.Connection, error) {
-	utils.LogTime("steampipeconfig.getRequiredConnections start")
-	defer utils.LogTime("steampipeconfig.getRequiredConnections end")
+// GetRequiredConnectionStateMap populates a map of connection data for all connections in connectionMap
+func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connection, currentConnectionState ConnectionStateMap) (ConnectionStateMap, map[string][]modconfig.Connection, error) {
+	utils.LogTime("steampipeconfig.GetRequiredConnectionStateMap start")
+	defer utils.LogTime("steampipeconfig.GetRequiredConnectionStateMap end")
 
 	res := ConnectionStateMap{}
 
@@ -34,6 +34,11 @@ func NewConnectionStateMap(connectionMap map[string]*modconfig.Connection, curre
 	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration start")
 	// populate file mod time for each referenced plugin
 	for name, connection := range connectionMap {
+		// if schema import is disabled, skip this
+		if connection.ImportSchema == modconfig.ImportSchemaDisabled {
+			log.Printf("[TRACE] connection '%s' excluded as import_sachema is 'disabled'", name)
+			continue
+		}
 		remoteSchema := connection.Plugin
 		pluginPath, _ := filepaths.GetPluginPath(connection.Plugin, connection.PluginShortName)
 		// ignore error if plugin is not available
@@ -54,7 +59,7 @@ func NewConnectionStateMap(connectionMap map[string]*modconfig.Connection, curre
 			}
 		}
 		pluginModTimeMap[pluginPath] = pluginModTime
-		res[name] = NewConnectionData(remoteSchema, connection, pluginModTime)
+		res[name] = NewConnectionState(remoteSchema, connection, pluginModTime)
 
 		// NOTE: if the connection exists in the current state, copy the connection mod time
 		// (this will be updated to 'now' later if we are updating the connection)
@@ -62,7 +67,6 @@ func NewConnectionStateMap(connectionMap map[string]*modconfig.Connection, curre
 			res[name].ConnectionModTime = currentState.ConnectionModTime
 		}
 	}
-	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration end")
 
 	return res, missingPluginMap, nil
 }
@@ -78,7 +82,7 @@ func (m ConnectionStateMap) GetSummary() ConnectionStateSummary {
 // Pending returns whether there are any connections in the map which are pending
 // this indicates that the db has just started and RefreshConnections has not been called yet
 func (m ConnectionStateMap) Pending() bool {
-	return m.ConnectionsInState(constants.ConnectionStatePending)
+	return m.ConnectionsInState(constants.ConnectionStatePending, constants.ConnectionStatePendingIncomplete)
 }
 
 // Loaded returns whether loading is complete, i.e.  all connections are either ready or error

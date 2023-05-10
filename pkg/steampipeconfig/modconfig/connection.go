@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/utils"
 	"log"
 	"path"
 	"reflect"
@@ -15,7 +16,11 @@ import (
 
 const (
 	ConnectionTypeAggregator = "aggregator"
+	ImportSchemaEnabled      = "enabled"
+	ImportSchemaDisabled     = "disabled"
 )
+
+var ValidImportSchemaValues = []string{ImportSchemaEnabled, ImportSchemaDisabled}
 
 // Connection is a struct representing the partially parsed connection
 //
@@ -31,6 +36,8 @@ type Connection struct {
 	Plugin string `json:"plugin,omitempty"`
 	// Type - supported values: "aggregator"
 	Type string `json:"type,omitempty"`
+	//
+	ImportSchema string `json:"type,omitempty"`
 	// this is a list of names or wildcards which are resolved to connections
 	// (only valid for "aggregator" type)
 	ConnectionNames []string `json:"connections,omitempty"`
@@ -101,8 +108,9 @@ func NewPos(sourcePos hcl.Pos) Pos {
 
 func NewConnection(block *hcl.Block) *Connection {
 	return &Connection{
-		Name:      block.Labels[0],
-		DeclRange: NewRange(block.TypeRange),
+		Name:         block.Labels[0],
+		DeclRange:    NewRange(block.TypeRange),
+		ImportSchema: ImportSchemaEnabled,
 	}
 }
 
@@ -116,7 +124,9 @@ func (c *Connection) Equals(other *Connection) bool {
 		c.Type == other.Type &&
 		strings.Join(c.ConnectionNames, ",") == strings.Join(other.ConnectionNames, ",") &&
 		connectionOptionsEqual &&
-		c.Config == other.Config
+		c.Config == other.Config &&
+		c.ImportSchema == other.ImportSchema
+
 }
 
 // SetOptions sets the options on the connection
@@ -159,6 +169,11 @@ func (c *Connection) Validate(map[string]*Connection) (warnings []string, errors
 	if len(c.ConnectionNames) != 0 {
 		validationErrors = append(validationErrors, fmt.Sprintf("connection '%s' has %d children, but is not of type 'aggregator'", c.Name, len(c.ConnectionNames)))
 	}
+	validImportSchemaValues := utils.SliceToLookup(ValidImportSchemaValues)
+	if _, isValid := validImportSchemaValues[c.ImportSchema]; !isValid {
+		validationErrors = append(validationErrors, fmt.Sprintf("invalid value '%s'for import_schema, must be one of ['%'s]", c.ImportSchema, strings.Join(ValidImportSchemaValues, "','")))
+	}
+
 	return nil, validationErrors
 
 }

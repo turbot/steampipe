@@ -12,7 +12,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"golang.org/x/exp/maps"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
@@ -78,7 +78,14 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 
 // GetDefaultSearchPath builds default search path from the connection schemas, book-ended with public and internal
 func getDefaultSearchPath() []string {
-	searchPath := maps.Keys(steampipeconfig.GlobalConfig.Connections)
+	// add all connections to the seatrch path (UNLESS ImportSchema is disabled)
+	var searchPath []string
+	for connectionName, connection := range steampipeconfig.GlobalConfig.Connections {
+		if connection.ImportSchema == modconfig.ImportSchemaEnabled {
+			searchPath = append(searchPath, connectionName)
+		}
+	}
+
 	sort.Strings(searchPath)
 	// add the 'public' schema as the first schema in the search_path. This makes it
 	// easier for users to build and work with their own tables, and since it's normally

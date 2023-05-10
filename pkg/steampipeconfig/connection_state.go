@@ -33,7 +33,7 @@ type ConnectionState struct {
 	ConnectionModTime time.Time `json:"connection_mod_time" db:"connection_mod_time"`
 }
 
-func NewConnectionData(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionState {
+func NewConnectionState(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionState {
 	return &ConnectionState{
 		Plugin:         remoteSchema,
 		ConnectionName: connection.Name,
@@ -62,7 +62,7 @@ func (d *ConnectionState) Equals(other *ConnectionState) bool {
 	if d.PluginModTime.Sub(other.PluginModTime).Abs() > 1*time.Millisecond {
 		return false
 	}
-	// do not look atr connecoitn mod time as the mod time for the desired state is not relevant
+	// do not look at connection mod time as the mod time for the desired state is not relevant
 
 	return true
 }

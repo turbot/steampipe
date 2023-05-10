@@ -38,10 +38,6 @@ func setupInternal(ctx context.Context, conn *pgx.Conn) error {
 		"lock table pg_namespace;",
 		fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS %s;`, constants.InternalSchema),
 		fmt.Sprintf(`GRANT USAGE ON SCHEMA %s TO %s;`, constants.InternalSchema, constants.DatabaseUsersRole),
-		// create connection state table
-		connection_state.GetConnectionStateTableCreateSql(),
-
-		fmt.Sprintf(`GRANT SELECT ON TABLE %s.%s to %s;`, constants.InternalSchema, constants.ConnectionStateTable, constants.DatabaseUsersRole),
 	}
 	queries = append(queries, getFunctionAddStrings(db_common.Functions)...)
 	if _, err := ExecuteSqlInTransaction(ctx, conn, queries...); err != nil {
@@ -93,13 +89,24 @@ func validateFunction(f db_common.SQLFunction) error {
 }
 
 func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
+	// first create the table if necessary
+	createQueries := []db_common.QueryWithArgs{
+		connection_state.GetConnectionStateTableCreateSql(),
+		{Query: fmt.Sprintf(`GRANT SELECT ON TABLE %s.%s to %s;`, constants.InternalSchema, constants.ConnectionStateTable, constants.DatabaseUsersRole)},
+	}
+	if _, err := ExecuteSqlWithArgsInTransaction(ctx, conn, createQueries...); err != nil {
+		return err
+	}
+
+	// now load the state
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn)
 	if err != nil {
 		return err
 	}
-	incompleteErrorSql := connection_state.GetIncompleteConnectionStateErrorSql(fmt.Errorf("previous update did not complete"))
+
+	// if any connections are not in a ready or error state, set them to pending_incpomplete
+	incompleteErrorSql := connection_state.GetIncompleteConnectionStatePendingIncompleteSql()
 	queries := []db_common.QueryWithArgs{
-		// if any connections are not in a ready to error state, set them to error
 		incompleteErrorSql,
 	}
 
@@ -133,7 +140,15 @@ VALUES($1,$2,$3,$4,$5,$6,$7,now(),now())
 	schemaMode := "tbd"
 	commentsSet := false
 	schemaHash := ""
-	args := []any{connection.Name, constants.ConnectionStatePending, nil, connection.Plugin, schemaMode, schemaHash, commentsSet}
+	args := []any{
+		connection.Name,
+		constants.ConnectionStatePending,
+		nil,
+		connection.Plugin,
+		schemaMode,
+		schemaHash,
+		commentsSet,
+	}
 
 	return db_common.QueryWithArgs{
 		Query: query,
