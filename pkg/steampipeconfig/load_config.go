@@ -191,8 +191,8 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 		switch block.Type {
 		case modconfig.BlockTypeConnection:
 			connection, moreDiags := parse.DecodeConnection(block)
+			diags = append(diags, moreDiags...)
 			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
 				continue
 			}
 			_, alreadyThere := steampipeConfig.Connections[connection.Name]
