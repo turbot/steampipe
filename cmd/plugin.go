@@ -273,19 +273,19 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 		bar.Set(len(pluginInstallSteps))
 		// let the bar append itself with "Already Installed"
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			return helpers.Resize(constants.PluginAlreadyInstalled, 20)
+			return helpers.Resize(constants.InstallMessagePluginAlreadyInstalled, 20)
 		})
 		report = &display.PluginInstallReport{
 			Plugin:         pluginName,
 			Skipped:        true,
-			SkipReason:     constants.PluginAlreadyInstalled,
+			SkipReason:     constants.InstallMessagePluginAlreadyInstalled,
 			IsUpdateReport: false,
 		}
 	} else {
 		// let the bar append itself with the current installation step
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			if report != nil && report.SkipReason == constants.PluginNotFound {
-				return helpers.Resize(constants.PluginNotFound, 20)
+			if report != nil && report.SkipReason == constants.InstallMessagePluginNotFound {
+				return helpers.Resize(constants.InstallMessagePluginNotFound, 20)
 			} else {
 				if b.Current() == 0 {
 					// no install step to display yet
@@ -376,7 +376,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 				updateResults = append(updateResults, &display.PluginInstallReport{
 					Skipped:        true,
 					Plugin:         p,
-					SkipReason:     constants.PluginNotInstalled,
+					SkipReason:     constants.InstallMessagePluginNotInstalled,
 					IsUpdateReport: true,
 				})
 			}
@@ -499,7 +499,7 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		_, name, stream := ociinstaller.NewSteampipeImageRef(pluginName).GetOrgNameAndStream()
 		if isPluginNotFoundErr(err) {
 			exitCode = constants.ExitCodePluginNotFound
-			msg = constants.PluginNotFound
+			msg = constants.InstallMessagePluginNotFound
 		} else {
 			msg = err.Error()
 		}
@@ -579,17 +579,18 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// List failed/missing plugins in a separate table
-	if len(failedPluginMap) != 0 || len(missingPluginMap) != 0 {
+	if len(failedPluginMap)+len(missingPluginMap) != 0 {
 		// List missing/failed plugins
 		headers := []string{"Failed Plugin", "Connections", "Reason"}
-		var conns = []string{}
+		var conns []string
 		var missingRows [][]string
+
 		// failed plugins
 		for p, item := range failedPluginMap {
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), "plugin failed to start"})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.ConnectionErrorPluginFailedToStart})
 			conns = []string{}
 		}
 		// missing plugins
@@ -597,7 +598,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), "plugin not installed"})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.InstallMessagePluginNotInstalled})
 			conns = []string{}
 		}
 		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
@@ -695,35 +696,23 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 	statushooks.SetStatus(ctx, "Fetching connection map")
 
 	res = &modconfig.ErrorAndWarnings{}
-	// NOTE: start db if necessary - this will call refresh connections
-	if err := db_local.EnsureDBInstalled(ctx); err != nil {
-		return nil, nil, nil, modconfig.NewErrorsAndWarning(err)
-	}
-	startResult := db_local.StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), db_local.ListenTypeLocal, constants.InvokerPlugin)
-	if startResult.Error != nil {
-		return nil, nil, nil, &startResult.ErrorAndWarnings
-	}
-	defer db_local.ShutdownService(ctx, constants.InvokerPlugin)
 
-	// load the connection state and cache it!
-	// passing nil so that we dont prune connections(connectionMap is now the connection state
-	// containing all connections)
-	connectionMap, _, err := steampipeconfig.GetConnectionState(nil)
-	if err != nil {
-		res.Error = err
+	connectionStateMap, stateRes := getConnectionState(ctx)
+	res.Merge(stateRes)
+	if res.Error != nil {
 		return nil, nil, nil, res
 	}
 
 	// create the map of failed/missing plugins
 	failedPluginMap = map[string][]*modconfig.Connection{}
 	missingPluginMap = map[string][]*modconfig.Connection{}
-	for _, j := range connectionMap {
-		if !j.Loaded && j.Error == "plugin failed to start" {
+	for _, j := range connectionStateMap {
+		if j.State == constants.ConnectionStateError && j.Error() == constants.ConnectionErrorPluginFailedToStart {
 			if _, ok := failedPluginMap[j.Plugin]; !ok {
 				failedPluginMap[j.Plugin] = []*modconfig.Connection{}
 			}
 			failedPluginMap[j.Plugin] = append(failedPluginMap[j.Plugin], j.Connection)
-		} else if !j.Loaded && j.Error == "plugin not installed" {
+		} else if j.State == constants.ConnectionStateError && j.Error() == constants.ConnectionErrorPluginNotInstalled {
 			if _, ok := missingPluginMap[j.Plugin]; !ok {
 				missingPluginMap[j.Plugin] = []*modconfig.Connection{}
 			}
@@ -733,7 +722,7 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 
 	// create the map of available/loaded plugins
 	pluginConnectionMap = make(map[string][]*modconfig.Connection)
-	for _, v := range connectionMap {
+	for _, v := range connectionStateMap {
 		_, found := pluginConnectionMap[v.Plugin]
 		if !found {
 			pluginConnectionMap[v.Plugin] = []*modconfig.Connection{}
@@ -742,4 +731,32 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 	}
 
 	return pluginConnectionMap, failedPluginMap, missingPluginMap, res
+}
+
+// load the connection state, waiting until all connections are loaded
+func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionStateMap, *modconfig.ErrorAndWarnings) {
+
+	// start service
+	client, res := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
+	if res.Error != nil {
+		return nil, res
+	}
+	defer client.Close(ctx)
+
+	conn, err := client.AcquireConnection(ctx)
+	if err != nil {
+		res.Error = err
+		return nil, res
+	}
+	defer conn.Release()
+
+	// load connection state
+	statushooks.SetStatus(ctx, "Loading connection state")
+	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilReady())
+	if err != nil {
+		res.Error = err
+		return nil, res
+	}
+
+	return connectionStateMap, res
 }

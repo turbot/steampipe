@@ -8,11 +8,12 @@ import (
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/pluginmanager"
+	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
-	"github.com/turbot/steampipe/pluginmanager"
-	"github.com/turbot/steampipe/pluginmanager_service/grpc/proto"
 )
 
 type ConnectionPluginData struct {
@@ -116,7 +117,7 @@ func CreateConnectionPlugins(connectionsToCreate []*modconfig.Connection) (reque
 		// figure out which connections are provided by any failed plugins
 		for _, c := range connectionsToCreate {
 			if c.Plugin == failedPlugin {
-				res.AddFailedConnection(c.Name, failure)
+				res.AddFailedConnection(c.Name, constants.ConnectionErrorPluginFailedToStart)
 			}
 		}
 	}

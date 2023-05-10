@@ -2,8 +2,6 @@ package constants
 
 import (
 	"fmt"
-
-	"github.com/turbot/steampipe/pkg/schema"
 )
 
 // Client constants
@@ -44,8 +42,16 @@ const (
 
 // schema names
 const (
-	// FunctionSchema is the schema container for all steampipe helper functions
-	FunctionSchema = "internal"
+	// InternalSchema is the schema container for all steampipe helper functions, and connection state table
+	InternalSchema = "internal"
+
+	// ConnectionStateTable is the table used to store steampipe connection state
+	ConnectionStateTable    = "connection_state"
+	ConnectionStatePending  = "pending"
+	ConnectionStateReady    = "ready"
+	ConnectionStateUpdating = "updating"
+	ConnectionStateDeleting = "deleting"
+	ConnectionStateError    = "error"
 
 	// CommandSchema is the schema which is used to send commands to the FDW
 	CommandSchema = "steampipe_command"
@@ -61,28 +67,19 @@ const (
 	CommandTableScanMetadata = "scan_metadata"
 )
 
-// Functions :: a list of SQLFunc objects that are installed in the db 'internal' schema startup
-var Functions = []schema.SQLFunc{
-	{
-		Name:     "glob",
-		Params:   map[string]string{"input_glob": "text"},
-		Returns:  "text",
-		Language: "plpgsql",
-		Body: `
-declare
-	output_pattern text;
-begin
-	output_pattern = replace(input_glob, '*', '%');
-	output_pattern = replace(output_pattern, '?', '_');
-	return output_pattern;
-end;
-`,
-	},
+// ConnectionStates is a handy array of all states
+var ConnectionStates = []string{
+	ConnectionStateTable,
+	ConnectionStatePending,
+	ConnectionStateReady,
+	ConnectionStateUpdating,
+	ConnectionStateDeleting,
+	ConnectionStateError,
 }
 
 var ReservedConnectionNames = []string{
 	"public",
-	FunctionSchema,
+	InternalSchema,
 }
 
 // introspection table names

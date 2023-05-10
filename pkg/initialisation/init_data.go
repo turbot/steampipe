@@ -3,7 +3,6 @@ package initialisation
 import (
 	"context"
 	"fmt"
-
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -16,7 +15,6 @@ import (
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/workspace"
@@ -29,7 +27,6 @@ type InitData struct {
 
 	ShutdownTelemetry func()
 	ExportManager     *export.Manager
-	ConnectionMap     steampipeconfig.ConnectionDataMap
 }
 
 func NewErrorInitData(err error) *InitData {
@@ -134,16 +131,6 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	}
 	i.Result.AddWarnings(errorsAndWarnings.Warnings...)
 	i.Client = client
-
-	// load the connection state and cache it!
-	connectionMap, _, err := steampipeconfig.GetConnectionState(client.ForeignSchemaNames())
-	if err != nil {
-		i.Result.Error = err
-		return
-	}
-
-	i.ConnectionMap = connectionMap
-
 }
 
 func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {

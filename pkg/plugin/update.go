@@ -22,7 +22,7 @@ func SkipUpdate(report VersionCheckReport) (bool, string) {
 	}
 
 	// 3) Otherwise skip
-	return true, constants.PluginLatestAlreadyInstalled
+	return true, constants.InstallMessagePluginLatestAlreadyInstalled
 }
 
 // check to see if steampipe is running as a Mac/M1 build

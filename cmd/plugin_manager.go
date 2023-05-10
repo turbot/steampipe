@@ -15,13 +15,13 @@ import (
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/connectionwatcher"
+	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/pluginmanager_service"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pluginmanager_service"
 )
 
 func pluginManagerCmd() *cobra.Command {
@@ -62,7 +62,7 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 	// so we will be shut down when the service is stopped)
 	runtime.PgClientAppName = runtime.PgClientAppNamePluginManagerPrefix + runtime.PgClientAppName
 
-	configMap := connectionwatcher.NewConnectionConfigMap(steampipeConfig.Connections)
+	configMap := connection.NewConnectionConfigMap(steampipeConfig.Connections)
 	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
 
 	pluginManager, err := pluginmanager_service.NewPluginManager(configMap, logger)
@@ -74,7 +74,7 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 	if shouldRunConnectionWatcher() {
 		log.Printf("[INFO] starting connection watcher")
 
-		connectionWatcher, err := connectionwatcher.NewConnectionWatcher(pluginManager.OnConnectionConfigChanged, pluginManager.OnConnectionsChanged)
+		connectionWatcher, err := connection.NewConnectionWatcher(pluginManager.OnConnectionConfigChanged)
 		if err != nil {
 			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
 			error_helpers.ShowError(ctx, err)

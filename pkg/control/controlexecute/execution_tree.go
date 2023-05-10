@@ -7,9 +7,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/turbot/go-kit/helpers"
-
 	"github.com/spf13/viper"
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -40,11 +40,13 @@ type ExecutionTree struct {
 }
 
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg, controlFilterWhereClause string) (*ExecutionTree, error) {
+	searchPath := client.GetRequiredSessionSearchPath()
+
 	// now populate the ExecutionTree
 	executionTree := &ExecutionTree{
 		Workspace:  workspace,
 		client:     client,
-		SearchPath: utils.UnquoteStringArray(client.GetRequiredSessionSearchPath()),
+		SearchPath: utils.UnquoteStringArray(searchPath),
 	}
 	// if a "--where" or "--tag" parameter was passed, build a map of control names used to filter the controls to run
 	// create a context with status hooks disabled
@@ -87,7 +89,7 @@ func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Contr
 	}
 }
 
-func (e *ExecutionTree) Execute(ctx context.Context) controlstatus.StatusSummary {
+func (e *ExecutionTree) Execute(ctx context.Context) (controlstatus.StatusSummary, error) {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.StartTime = time.Now()
@@ -97,6 +99,14 @@ func (e *ExecutionTree) Execute(ctx context.Context) controlstatus.StatusSummary
 		e.EndTime = time.Now()
 		e.Progress.Finish(ctx)
 	}()
+
+	// TODO should we always wait even with non custom search path?
+	// if there is a custom search path, wait until the first connection of each plugin has loaded
+	if customSearchPath := e.client.GetCustomSearchPath(); customSearchPath != nil {
+		if err := connection_sync.WaitForSearchPathSchemas(ctx, e.client, customSearchPath); err != nil {
+			return controlstatus.StatusSummary{}, err
+		}
+	}
 
 	// the number of goroutines parallel to start
 	var maxParallelGoRoutines int64 = constants.DefaultMaxConnections
@@ -118,7 +128,7 @@ func (e *ExecutionTree) Execute(ctx context.Context) controlstatus.StatusSummary
 	e.DimensionColorGenerator, _ = NewDimensionColorGenerator(4, 27)
 	e.DimensionColorGenerator.populate(e)
 
-	return e.Root.Summary.Status
+	return e.Root.Summary.Status, nil
 }
 
 func (e *ExecutionTree) waitForActiveRunsToComplete(ctx context.Context, parallelismLock *semaphore.Weighted, maxParallelGoRoutines int64) error {

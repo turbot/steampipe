@@ -24,7 +24,6 @@ const (
 // Remove removes an installed plugin
 func Remove(ctx context.Context, image string, pluginConnections map[string][]*modconfig.Connection) (*display.PluginRemoveReport, error) {
 	statushooks.SetStatus(ctx, fmt.Sprintf("Removing plugin %s", image))
-	defer statushooks.Done(ctx)
 
 	imageRef := ociinstaller.NewSteampipeImageRef(image)
 	fullPluginName := imageRef.DisplayImageRef()
@@ -115,15 +114,15 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 			Name:    plugin,
 			Version: version,
 		}
+
 		if pluginConnectionMap != nil {
-			item.Connections = func() []string {
-				// extract only the connection names
-				conNames := []string{}
-				for _, y := range pluginConnectionMap[plugin] {
-					conNames = append(conNames, y.Name)
-				}
-				return conNames
-			}()
+			// extract only the connection names
+			var connectionNames []string
+			for _, y := range pluginConnectionMap[plugin] {
+				connectionNames = append(connectionNames, y.Name)
+			}
+			item.Connections = connectionNames
+
 		}
 		items = append(items, item)
 	}

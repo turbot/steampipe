@@ -21,15 +21,15 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/interactive/metaquery"
 	"github.com/turbot/steampipe/pkg/query"
-	"github.com/turbot/steampipe/pkg/query/metaquery"
 	"github.com/turbot/steampipe/pkg/query/queryhistory"
-	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -70,13 +70,12 @@ type InteractiveClient struct {
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock sync.Mutex
 	// the schema metadata - this is loaded asynchronously during init
-	schemaMetadata *schema.Metadata
+	schemaMetadata *db_common.SchemaMetadata
 	highlighter    *Highlighter
 	// hidePrompt is used to render a blank as the prompt prefix
 	hidePrompt bool
 
-	querySuggestions []prompt.Suggest
-	tableSuggestions []prompt.Suggest
+	suggestions *autoCompleteSuggestions
 }
 
 func getHighlighter(theme string) *Highlighter {
@@ -100,6 +99,7 @@ func newInteractiveClient(ctx context.Context, initData *query.InitData, result 
 		autocompleteOnEmpty:     false,
 		initResultChan:          make(chan *db_common.InitResult, 1),
 		highlighter:             getHighlighter(viper.GetString(constants.ArgTheme)),
+		suggestions:             newAutocompleteSuggestions(),
 	}
 
 	// asynchronously wait for init to complete
@@ -390,23 +390,36 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	} else {
 		statushooks.Show(ctx)
 		defer statushooks.Done(ctx)
-
+		statushooks.SetStatus(ctx, "Executing query")
 		// otherwise execute query
-		t := time.Now()
-		result, err := c.client().Execute(queryCtx, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
-		if err != nil {
-			error_helpers.ShowError(ctx, error_helpers.HandleCancelError(err))
-			// if timing flag is enabled, show the time taken for the query to fail
-			if cmdconfig.Viper().GetBool(constants.ArgTiming) {
-				display.DisplayErrorTiming(t)
-			}
-		} else {
-			c.promptResult.Streamer.StreamResult(result)
-		}
+		c.executeQuery(ctx, queryCtx, resolvedQuery)
 	}
 
 	// restart the prompt
 	c.restartInteractiveSession()
+}
+
+func (c *InteractiveClient) executeQuery(ctx context.Context, queryCtx context.Context, resolvedQuery *modconfig.ResolvedQuery) {
+	// if there is a custom search path, wait until the first connection of each plugin has loaded
+	if customSearchPath := c.client().GetCustomSearchPath(); customSearchPath != nil {
+		if err := connection_sync.WaitForSearchPathSchemas(ctx, c.client(), customSearchPath); err != nil {
+			error_helpers.ShowError(ctx, err)
+			c.afterClose = AfterPromptCloseExit
+			return
+		}
+	}
+
+	t := time.Now()
+	result, err := c.client().Execute(queryCtx, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
+	if err != nil {
+		error_helpers.ShowError(ctx, error_helpers.HandleCancelError(err))
+		// if timing flag is enabled, show the time taken for the query to fail
+		if cmdconfig.Viper().GetBool(constants.ArgTiming) {
+			display.DisplayErrorTiming(t)
+		}
+	} else {
+		c.promptResult.Streamer.StreamResult(result)
+	}
 }
 
 func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfig.ResolvedQuery {
@@ -522,7 +535,7 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 		Query:       query,
 		Client:      client,
 		Schema:      c.schemaMetadata,
-		Connections: c.initData.ConnectionMap,
+		SearchPath:  client.GetRequiredSessionSearchPath(),
 		Prompt:      c.interactivePrompt,
 		ClosePrompt: func() { c.afterClose = AfterPromptCloseExit },
 	})
@@ -573,29 +586,64 @@ func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
 
 	switch {
 	case isFirstWord(text):
-		// add all we know that can be the first words
-		// named queries
-		s = append(s, c.querySuggestions...)
-		// "select"
-		s = append(s, prompt.Suggest{Text: "select", Output: "select"}, prompt.Suggest{Text: "with", Output: "with"})
-		// metaqueries
-		s = append(s, metaquery.PromptSuggestions()...)
+		suggestions := c.getFirstWordSuggestions(text)
+		s = append(s, suggestions...)
 	case metaquery.IsMetaQuery(text):
 		suggestions := metaquery.Complete(&metaquery.CompleterInput{
 			Query:            text,
-			TableSuggestions: c.tableSuggestions,
+			TableSuggestions: c.getTableAndConnectionSuggestions(lastWord(text)),
 		})
 		s = append(s, suggestions...)
 	default:
 		if queryInfo := getQueryInfo(text); queryInfo.EditingTable {
-			s = append(s, c.tableSuggestions...)
+			tableSuggestions := c.getTableAndConnectionSuggestions(lastWord(text))
+			s = append(s, tableSuggestions...)
 		}
 	}
 
 	return prompt.FilterHasPrefix(s, d.GetWordBeforeCursor(), true)
 }
 
-func (c *InteractiveClient) addSuggestion(itemType string, description string, name string) prompt.Suggest {
+func (c *InteractiveClient) getFirstWordSuggestions(word string) []prompt.Suggest {
+	var querySuggestions []prompt.Suggest
+	// if this a qualified query try to extract connection
+	parts := strings.Split(word, ".")
+	if len(parts) > 1 {
+		// if first word is a mod name we know about, return appropriate suggestions
+		modName := strings.TrimSpace(parts[0])
+		if modQueries, isMod := c.suggestions.queriesByMod[modName]; isMod {
+			querySuggestions = modQueries
+		} else {
+			//  otherwise return mods names and unqualified queries
+			querySuggestions = append(c.suggestions.mods, c.suggestions.unqualifiedQueries...)
+		}
+	}
+
+	var s []prompt.Suggest
+	// add all we know that can be the first words
+	// named queries
+	s = append(s, querySuggestions...)
+	// "select", "with"
+	s = append(s, prompt.Suggest{Text: "select", Output: "select"}, prompt.Suggest{Text: "with", Output: "with"})
+	// metaqueries
+	s = append(s, metaquery.PromptSuggestions()...)
+	return s
+}
+
+func (c *InteractiveClient) getTableAndConnectionSuggestions(word string) []prompt.Suggest {
+	// try to extract connection
+	parts := strings.SplitN(word, ".", 2)
+	if len(parts) == 1 {
+		// no connection, just return schemas and unqualified tables
+		return append(c.suggestions.schemas, c.suggestions.unqualifiedTables...)
+	}
+
+	connection := strings.TrimSpace(parts[0])
+	t := c.suggestions.tablesBySchema[connection]
+	return t
+}
+
+func (c *InteractiveClient) newSuggestion(itemType string, description string, name string) prompt.Suggest {
 	if description != "" {
 		itemType += fmt.Sprintf(": %s", description)
 	}
@@ -680,11 +728,11 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 	if notification == nil {
 		return
 	}
-	log.Printf("[TRACE] handleConnectionUpdateNotification: %s", notification.Payload)
+	log.Printf("[TRACE] handleConnectionUpdateNotification")
 	n := &steampipeconfig.PostgresNotification{}
 	err := json.Unmarshal([]byte(notification.Payload), n)
 	if err != nil {
-		log.Printf("[INFO] Error unmarshalling notification: %s", err)
+		log.Printf("[WARN] Error unmarshalling notification: %s", err)
 		return
 	}
 	switch n.Type {
@@ -692,47 +740,38 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 		// unmarshal the notification again, into the correct type
 		schemaUpdateNotification := &steampipeconfig.SchemaUpdateNotification{}
 		if err := json.Unmarshal([]byte(notification.Payload), schemaUpdateNotification); err != nil {
-			log.Printf("[INFO] Error unmarshalling notification: %s", err)
+			log.Printf("[WARN] Error unmarshalling notification: %s", err)
 			return
 		}
 		c.handleConnectionUpdateNotification(ctx, schemaUpdateNotification)
 	}
 }
 
-func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, notification *steampipeconfig.SchemaUpdateNotification) {
+func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, n *steampipeconfig.SchemaUpdateNotification) {
 	// at present, we do not actually use the payload, we just do a brute force reload
 	// as an optimization we could look at the updates and only reload the required schemas
 
 	log.Printf("[TRACE] handleConnectionUpdateNotification")
-	// reload the connection data map
-	// first load foreign schema names
-	if err := c.client().LoadSchemaNames(ctx); err != nil {
-		log.Printf("[INFO] Error loading foreign schema names: %v", err)
-	}
-	// now reload state
-	connectionMap, _, err := steampipeconfig.GetConnectionState(c.client().ForeignSchemaNames())
-	if err != nil {
-		log.Printf("[INFO] Error loading connection state: %v", err)
-		return
-	}
-	// and save it
-	c.initData.ConnectionMap = connectionMap
 
-	// reload config before reloading schema
-	config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "query")
-	if errorsAndWarnings.GetError() != nil {
-		log.Printf("[WARN] Error reloading config: %v", errorsAndWarnings.GetError())
+	// first load user search path
+	if err := c.client().LoadUserSearchPath(ctx); err != nil {
+		log.Printf("[INFO] Error in handleConnectionUpdateNotification when loading foreign user search path: %s", err.Error())
 		return
 	}
-	steampipeconfig.GlobalConfig = config
 
-	// reload schema
-	if err := c.loadSchema(); err != nil {
-		log.Printf("[INFO] Error unmarshalling notification: %s", err)
-		return
+	// remove any deletes schemas
+	for _, deletedConnection := range n.Delete {
+		delete(c.schemaMetadata.Schemas, deletedConnection)
+	}
+	// if there are any updates,  reload schema
+	if len(n.Update) > 0 {
+		if err := c.loadSchema(); err != nil {
+			log.Printf("[INFO] Error unmarshalling notification: %s", err)
+			return
+		}
 	}
 	// reinitialise autocomplete suggestions
-	c.initialiseSuggestions()
+	c.initialiseSuggestions(ctx)
 
 	// refresh the db session inside an execution lock
 	// we do this to avoid the postgres `cached plan must not change result type`` error
@@ -740,5 +779,4 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	defer c.executionLock.Unlock()
 
 	c.client().RefreshSessions(ctx)
-	log.Printf("[TRACE] completed refresh session")
 }

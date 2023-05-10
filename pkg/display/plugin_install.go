@@ -81,11 +81,11 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 		report.IsUpdateReport = isUpdateReport
 		if !report.Skipped {
 			installedOrUpdated = append(installedOrUpdated, report)
-		} else if report.SkipReason == constants.PluginNotInstalled {
+		} else if report.SkipReason == constants.InstallMessagePluginNotInstalled {
 			canBeInstalled = append(canBeInstalled, report)
-		} else if report.SkipReason == constants.PluginAlreadyInstalled {
+		} else if report.SkipReason == constants.InstallMessagePluginAlreadyInstalled {
 			canBeUpdated = append(canBeUpdated, report)
-		} else if report.SkipReason == constants.PluginNotFound {
+		} else if report.SkipReason == constants.InstallMessagePluginNotFound {
 			notFound = append(notFound, report)
 		}
 	}
@@ -111,7 +111,7 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 		installSkipReports := []string{}
 		for _, report := range reports {
 			showReport := true
-			if report.SkipReason == constants.PluginAlreadyInstalled || report.SkipReason == constants.PluginLatestAlreadyInstalled {
+			if report.SkipReason == constants.InstallMessagePluginAlreadyInstalled || report.SkipReason == constants.InstallMessagePluginLatestAlreadyInstalled {
 				showReport = false
 			}
 			if report.Skipped && showReport {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -48,6 +49,13 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) (int, error)
 
 	// display any initialisation messages/warnings
 	initData.Result.DisplayMessages()
+
+	// if there is a custom search path, wait until the first connection of each plugin has loaded
+	if customSearchPath := initData.Client.GetCustomSearchPath(); customSearchPath != nil {
+		if err := connection_sync.WaitForSearchPathSchemas(ctx, initData.Client, customSearchPath); err != nil {
+			return 0, err
+		}
+	}
 
 	failures := 0
 	if len(initData.Queries) > 0 {

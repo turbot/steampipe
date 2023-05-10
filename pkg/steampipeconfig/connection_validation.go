@@ -27,13 +27,13 @@ func (v ValidationFailure) String() string {
 	)
 }
 
-func ValidatePlugins(updates ConnectionDataMap, plugins map[string]*ConnectionPlugin) ([]*ValidationFailure, ConnectionDataMap, map[string]*ConnectionPlugin) {
+func ValidatePlugins(updates ConnectionStateMap, plugins map[string]*ConnectionPlugin) ([]*ValidationFailure, ConnectionStateMap, map[string]*ConnectionPlugin) {
 	var validatedPlugins = make(map[string]*ConnectionPlugin)
-	var validatedUpdates = ConnectionDataMap{}
+	var validatedUpdates = ConnectionStateMap{}
 
 	var validationFailures []*ValidationFailure
 	for connectionName, connectionPlugin := range plugins {
-		if validationFailure := validateColumnDefVersion(connectionName, connectionPlugin); validationFailure != nil {
+		if validationFailure := validateProtocolVersion(connectionName, connectionPlugin); validationFailure != nil {
 			// validation failed
 			validationFailures = append(validationFailures, validationFailure)
 		} else if validationFailure := validateConnectionName(connectionName, connectionPlugin); validationFailure != nil {
@@ -103,18 +103,20 @@ func BuildValidationWarningString(failures []*ValidationFailure) string {
 func validateConnectionName(connectionName string, p *ConnectionPlugin) *ValidationFailure {
 	if helpers.StringSliceContains(constants.ReservedConnectionNames, connectionName) {
 		return &ValidationFailure{
-			Plugin:             p.PluginName,
-			ConnectionName:     connectionName,
-			Message:            fmt.Sprintf("Connection name cannot be one of %s", strings.Join(constants.ReservedConnectionNames, ",")),
+			Plugin:         p.PluginName,
+			ConnectionName: connectionName,
+			Message:        fmt.Sprintf("Connection name cannot be one of %s", strings.Join(constants.ReservedConnectionNames, ",")),
+			// no need to drop - this connection cannot have been created as a schema
+			// - we DO NOT want to drop one of the reserved schemas!
 			ShouldDropIfExists: false,
 		}
 	}
 	return nil
 }
 
-func validateColumnDefVersion(connectionName string, p *ConnectionPlugin) *ValidationFailure {
+func validateProtocolVersion(connectionName string, p *ConnectionPlugin) *ValidationFailure {
 	pluginProtocolVersion := p.ConnectionMap[connectionName].Schema.GetProtocolVersion()
-	// if this is 0, the plugin does not define columnDefinitionVersion
+	// if this is 0, the plugin does not define a protocol version
 	// - so we know the plugin sdk version is older that the one we are using
 	// therefore we are compatible
 	if pluginProtocolVersion == 0 {
@@ -124,9 +126,10 @@ func validateColumnDefVersion(connectionName string, p *ConnectionPlugin) *Valid
 	steampipeProtocolVersion := sdkversion.ProtocolVersion
 	if steampipeProtocolVersion < pluginProtocolVersion {
 		return &ValidationFailure{
-			Plugin:             p.PluginName,
-			ConnectionName:     connectionName,
-			Message:            "Incompatible steampipe-plugin-sdk version. Please upgrade Steampipe.",
+			Plugin:         p.PluginName,
+			ConnectionName: connectionName,
+			Message:        "Incompatible steampipe-plugin-sdk version. Please upgrade Steampipe.",
+			// drop this connection if it exists
 			ShouldDropIfExists: true,
 		}
 	}

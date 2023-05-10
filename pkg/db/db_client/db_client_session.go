@@ -10,8 +10,18 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/utils"
 )
+
+func (c *DbClient) AcquireConnection(ctx context.Context) (*pgxpool.Conn, error) {
+	// get a database connection and query its backend pid
+	// note - this will retry if the connection is bad
+	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return conn, nil
+}
 
 func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common.AcquireSessionResult) {
 	sessionResult = &db_common.AcquireSessionResult{}
@@ -28,27 +38,9 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 		}
 	}()
 
-	// save the current value of schema names, then reload the names and check for differences
-	schemaNames := c.AllSchemaNames()
-
-	// reload schema names in case they changed based on a connection watcher event
-	if err := c.LoadSchemaNames(ctx); err != nil {
-		sessionResult.Error = err
-		return
-	}
-
-	// if the schemas have changes, reset the desired search path
-	newSchemaNames := c.AllSchemaNames()
-	if !utils.StringSlicesEqual(schemaNames, newSchemaNames) {
-		if err := c.updateRequiredSearchPath(ctx); err != nil {
-			sessionResult.Error = err
-			return
-		}
-	}
-
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
-	databaseConnection, backendPid, err := c.getDatabaseConnectionWithRetries(ctx)
+	databaseConnection, backendPid, err := c.GetDatabaseConnectionWithRetries(ctx)
 	if err != nil {
 		sessionResult.Error = err
 		return sessionResult
@@ -100,14 +92,14 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	return sessionResult
 }
 
-func (c *DbClient) getDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {
+func (c *DbClient) GetDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {
 	// get a database connection from the pool
 	databaseConnection, err := c.pool.Acquire(ctx)
 	if err != nil {
 		if databaseConnection != nil {
 			databaseConnection.Release()
 		}
-		log.Printf("[TRACE] getDatabaseConnectionWithRetries failed: %s", err.Error())
+		log.Printf("[TRACE] GetDatabaseConnectionWithRetries failed: %s", err.Error())
 		return nil, 0, err
 	}
 

@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -134,11 +133,9 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		}
 	}()
 
-	statushooks.SetStatus(ctxExecute, "Loading results...")
-
 	// start query
 	var rows pgx.Rows
-	rows, err = c.startQuery(ctxExecute, session.Connection, query, args...)
+	rows, err = c.startQueryWithRetries(ctxExecute, session, query, args...)
 	if err != nil {
 		return
 	}
@@ -250,9 +247,8 @@ func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_comm
 
 // run query in a goroutine, so we can check for cancellation
 // in case the client becomes unresponsive and does not respect context cancellation
-func (c *DbClient) startQuery(ctx context.Context, conn *pgxpool.Conn, query string, args ...any) (rows pgx.Rows, err error) {
+func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string, args ...any) (rows pgx.Rows, err error) {
 	doneChan := make(chan bool)
-
 	go func() {
 		// start asynchronous query
 		rows, err = conn.Query(ctx, query, args...)

@@ -12,9 +12,9 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/schema"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
@@ -199,7 +199,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			if alreadyThere {
 				return modconfig.NewErrorsAndWarning(sperr.New("duplicate connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename))
 			}
-			if ok, errorMessage := schema.IsSchemaNameValid(connection.Name); !ok {
+			if ok, errorMessage := db_common.IsSchemaNameValid(connection.Name); !ok {
 				return modconfig.NewErrorsAndWarning(sperr.New("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage))
 			}
 			steampipeConfig.Connections[connection.Name] = connection

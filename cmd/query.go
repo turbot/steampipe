@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/connection_sync"
 	"os"
 	"path"
 	"strings"
@@ -198,6 +199,14 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 	if err := initData.Result.Error; err != nil {
 		exitCode = constants.ExitCodeInitializationFailed
 		error_helpers.FailOnError(err)
+	}
+
+	// if there is a custom search path, wait until the first connection of each plugin has loaded
+	if customSearchPath := initData.Client.GetCustomSearchPath(); customSearchPath != nil {
+		if err := connection_sync.WaitForSearchPathSchemas(ctx, initData.Client, customSearchPath); err != nil {
+			exitCode = constants.ExitCodeInitializationFailed
+			error_helpers.FailOnError(err)
+		}
 	}
 
 	// build ordered list of queries

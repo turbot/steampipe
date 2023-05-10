@@ -19,10 +19,12 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/pluginmanager"
+	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/pluginmanager"
+	"github.com/turbot/steampipe/sperr"
 )
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
@@ -89,25 +91,26 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 
 	if res.DbState == nil {
 		res = startDB(ctx, port, listen, invoker)
-	} else {
-		rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
-		if err != nil {
-			res.Error = err
-			res.Status = ServiceFailedToStart
+		if res.Error != nil {
 			return res
 		}
-		defer rootClient.Close(ctx)
-		// so db is already running - ensure it contains command schema
-		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
-		// and upgrades to this version - we need to ensure we create the command schema
-		res.Error = ensureCommandSchema(ctx, rootClient)
+	} else {
 		res.Status = ServiceAlreadyRunning
 	}
 
-	if res.Error != nil {
-		return res
+	// start plugin manager if needed
+	res = ensurePluginManager(res)
+	if res.Status == ServiceStarted {
+		// execute post startup setup
+		if err := postServiceStart(ctx, res); err != nil {
+			// NOTE do not update res.Status - this will be done by defer block
+			res.Error = err
+		}
 	}
+	return res
+}
 
+func ensurePluginManager(res *StartResult) *StartResult {
 	// start the plugin manager if needed
 	res.PluginManagerState, res.Error = pluginmanager.LoadPluginManagerState()
 	if res.Error != nil {
@@ -126,53 +129,70 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
 			return res.SetError(err)
 		}
+		// set status to service started as started plugin manager
 		res.Status = ServiceStarted
 	}
-
-	// execute post startup setup
-	errorsAndWarnings := postServiceStart(ctx)
-
-	res.AddWarning(errorsAndWarnings.Warnings...)
-	if errorsAndWarnings.Error != nil {
-		// NOTE do not update res.Status - this will be ddone by defer block
-		res.Error = errorsAndWarnings.Error
-	}
-
 	return res
 }
 
-func postServiceStart(ctx context.Context) *modconfig.ErrorAndWarnings {
+func postServiceStart(ctx context.Context, res *StartResult) error {
+
+	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
+	if err != nil {
+		return err
+	}
+	defer conn.Close(ctx)
+
+	if res.Status==ServiceAlreadyRunning {
+		// if db is already running - ensure it contains command schema
+		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
+		// and upgrades to this version - we need to ensure we create the command schema
+		if err := ensureCommandSchema(ctx, conn); err != nil {
+			return err
+		}
+	}
+
+	// setup internal schema
+	// thi includes setting the state of all connections in the connection_state table to pending
 	statushooks.SetStatus(ctx, "Setting up functions")
-	if err := refreshFunctions(ctx); err != nil {
-		return modconfig.NewErrorsAndWarning(err)
+	if err := setupInternal(ctx, conn); err != nil {
+		return err
+	}
+	// ensure connection stat etable contains entries for all connections in connection config
+	// (this is to allow for the race condition between polling connection state and calling refresh connections,
+	// which does not update the connection_state with added connections until it has built the ConnectionUpdates
+	if err := initializeConnectionStateTable(ctx, conn); err != nil {
+		return err
 	}
 
 	// create the clone_foreign_schema function
 	if _, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL); err != nil {
-		return modconfig.NewErrorsAndWarning(err)
-	}
-
-	statushooks.SetStatus(ctx, "Setting up functions")
-	if err := refreshFunctions(ctx); err != nil {
-		return modconfig.NewErrorsAndWarning(err)
-	}
-
-	// create the clone_foreign_schema function
-	_, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL)
-	if err != nil {
-		return modconfig.NewErrorsAndWarning(err)
+		return sperr.WrapWithMessage(err, "failed to create clone_foreign_schema function")
 	}
 
 	// if there is an unprocessed db backup file, restore it now
 	if err := restoreDBBackup(ctx); err != nil {
-		return modconfig.NewErrorsAndWarning(err)
+		return sperr.WrapWithMessage(err, "failed to migrate db public schema")
 	}
 
-	// refresh connections and search paths
-	refreshResult := RefreshConnectionAndSearchPaths(ctx)
+	// call initial refresh connections
+	// get plugin manager client
+	pluginManager, err := pluginmanager.GetPluginManager()
+	if err != nil {
+		return err
+	}
 
-	// assign res from the underlying ErrorAndWarnings of refreshResult
-	return &refreshResult.ErrorAndWarnings
+	// ask the plugin manager to refresh connections
+	// execute async and ignore result (if there is an error we will receive a PG notification)
+	// unless STEAMPIPE_SYNC_REFRESH is set - used for acceptance testing
+	if _, synchronousRefresh := os.LookupEnv("STEAMPIPE_SYNC_REFRESH"); synchronousRefresh {
+		pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
+	} else {
+		go pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
+	}
+
+	statushooks.SetStatus(ctx, "Service startup complete")
+	return nil
 }
 
 // StartDB starts the database if not already running
@@ -202,8 +222,6 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 			}
 		}
 	}()
-
-	log.Printf("[TRACE] StartDB started plugin manager")
 
 	// remove the stale info file, ignoring errors - will overwrite anyway
 	_ = removeRunningInstanceInfo()
@@ -486,10 +504,10 @@ func setServicePassword(ctx context.Context, password string) error {
 	}
 	defer connection.Close(ctx)
 	statements := []string{
-		"lock table pg_user;",
-		fmt.Sprintf(`alter user steampipe with password '%s';`, password),
+		"LOCK TABLE pg_user IN SHARE ROW EXCLUSIVE MODE;",
+		fmt.Sprintf(`ALTER USER steampipe WITH PASSWORD '%s';`, password),
 	}
-	_, err = executeSqlInTransaction(ctx, connection, statements...)
+	_, err = ExecuteSqlInTransaction(ctx, connection, statements...)
 	return err
 }
 
@@ -578,11 +596,11 @@ func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
 func ensureCommandSchema(ctx context.Context, rootClient *pgx.Conn) error {
 	commandSchemaStatements := []string{
 		"lock table pg_namespace;",
-		getUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
+		db_common.GetUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
 		fmt.Sprintf("grant select on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableScanMetadata),
 		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableSettings),
 	}
-	if _, err := executeSqlInTransaction(ctx, rootClient, commandSchemaStatements...); err != nil {
+	if _, err := ExecuteSqlInTransaction(ctx, rootClient, commandSchemaStatements...); err != nil {
 		return err
 	}
 	return nil
@@ -595,7 +613,7 @@ func ensureTempTablePermissions(ctx context.Context, databaseName string, rootCl
 		"lock table pg_namespace;",
 		fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser),
 	}
-	if _, err := executeSqlInTransaction(ctx, rootClient, statements...); err != nil {
+	if _, err := ExecuteSqlInTransaction(ctx, rootClient, statements...); err != nil {
 		return err
 	}
 	return nil

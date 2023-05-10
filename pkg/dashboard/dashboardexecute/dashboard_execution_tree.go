@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -118,6 +119,8 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	startTime := time.Now()
 
+	searchPath := e.client.GetRequiredSessionSearchPath()
+
 	// store context
 	cancelCtx, cancel := context.WithCancel(ctx)
 	e.cancel = cancel
@@ -128,6 +131,15 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 	e.Root.Initialise(cancelCtx)
 	if e.Root.GetError() != nil {
 		return
+	}
+
+	// TODO should we always wait even with non custom search path?
+	// if there is a custom search path, wait until the first connection of each plugin has loaded
+	if customSearchPath := e.client.GetCustomSearchPath(); customSearchPath != nil {
+		if err := connection_sync.WaitForSearchPathSchemas(ctx, e.client, customSearchPath); err != nil {
+			e.Root.SetError(ctx, err)
+			return
+		}
 	}
 
 	panels := e.BuildSnapshotPanels()
@@ -159,7 +171,7 @@ func (e *DashboardExecutionTree) Execute(ctx context.Context) {
 			Variables:   referencedVariables,
 			// search path elements are quoted (for consumption by postgres)
 			// unquote them
-			SearchPath: utils.UnquoteStringArray(e.client.GetRequiredSessionSearchPath()),
+			SearchPath: utils.UnquoteStringArray(searchPath),
 			StartTime:  startTime,
 			EndTime:    time.Now(),
 		}

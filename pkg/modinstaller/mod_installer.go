@@ -120,9 +120,7 @@ func (i *ModInstaller) removeOldShadowDirectories() error {
 
 func (i *ModInstaller) setModsPath() error {
 	i.modsPath = filepaths.WorkspaceModPath(i.workspacePath)
-	if err := i.removeOldShadowDirectories(); err != nil {
-		log.Println("[INFO] could not remove old mod installation shadow directory", err)
-	}
+	_ = i.removeOldShadowDirectories()
 	i.shadowDirPath = filepaths.WorkspaceModShadowPath(i.workspacePath)
 	return nil
 }

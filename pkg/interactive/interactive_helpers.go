@@ -71,6 +71,11 @@ func isFirstWord(text string) bool {
 	return strings.LastIndex(text, " ") == -1
 }
 
+// split the string by spaces and return the last segment
+func lastWord(text string) string {
+	return text[strings.LastIndex(text, " "):]
+}
+
 //
 // keeping this around because we may need
 // to revisit exit on non-darwin platforms.

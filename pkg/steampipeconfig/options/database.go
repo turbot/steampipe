@@ -9,15 +9,14 @@ import (
 
 // Database
 type Database struct {
-	Port         *int    `hcl:"port"`
-	Listen       *string `hcl:"listen"`
-	SearchPath   *string `hcl:"search_path"`
-	StartTimeout *int    `hcl:"start_timeout"`
-
-	SearchPathPrefix *string `hcl:"search_path_prefix"`
 	Cache            *bool   `hcl:"cache"`
 	CacheMaxTtl      *int    `hcl:"cache_max_ttl"`
 	CacheMaxSizeMb   *int    `hcl:"cache_max_size_mb"`
+	Listen           *string `hcl:"listen"`
+	Port             *int    `hcl:"port"`
+	SearchPath       *string `hcl:"search_path"`
+	SearchPathPrefix *string `hcl:"search_path_prefix"`
+	StartTimeout     *int    `hcl:"start_timeout"`
 }
 
 // ConfigMap creates a config map that can be merged with viper
@@ -32,7 +31,11 @@ func (d *Database) ConfigMap() map[string]interface{} {
 	}
 	if d.SearchPath != nil {
 		// convert from string to array
-		res[constants.ArgSearchPath] = searchPathToArray(*d.SearchPath)
+		res[constants.ConfigKeyServerSearchPath] = searchPathToArray(*d.SearchPath)
+	}
+	if d.SearchPathPrefix != nil {
+		// convert from string to array
+		res[constants.ConfigKeyServerSearchPathPrefix] = searchPathToArray(*d.SearchPathPrefix)
 	}
 	if d.StartTimeout != nil {
 		res[constants.ArgDatabaseStartTimeout] = d.StartTimeout
@@ -40,10 +43,6 @@ func (d *Database) ConfigMap() map[string]interface{} {
 		res[constants.ArgDatabaseStartTimeout] = constants.DBStartTimeout.Seconds()
 	}
 
-	if d.SearchPathPrefix != nil {
-		// convert from string to array
-		res[constants.ArgSearchPathPrefix] = searchPathToArray(*d.SearchPathPrefix)
-	}
 	if d.Cache != nil {
 		res[constants.ArgServiceCacheEnabled] = d.Cache
 	}

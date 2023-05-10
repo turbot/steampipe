@@ -3,6 +3,7 @@ package db_client
 import (
 	"context"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"log"
 	"strings"
 	"sync"
@@ -13,16 +14,15 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/schema"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/sync/semaphore"
 )
 
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
-	connectionString          string
-	pool                      *pgxpool.Pool
-	requiredSessionSearchPath []string
+	connectionString string
+	pool             *pgxpool.Pool
 
 	// concurrency management for db session access
 	parallelSessionInitLock *semaphore.Weighted
@@ -33,14 +33,11 @@ type DbClient struct {
 	// allows locked access to the 'sessions' map
 	sessionsMutex *sync.Mutex
 
-	// list of connection schemas
-	foreignSchemaNames []string
-	// list of all local schemas
-	allSchemaNames []string
-
 	// if a custom search path or a prefix is used, store it here
 	customSearchPath []string
 	searchPathPrefix []string
+	// the default user search path
+	userSearchPath []string
 	// a cached copy of (viper.GetBool(constants.ArgTiming) && viper.GetString(constants.ArgOutput) == constants.OutputFormatTable)
 	// (cached to avoid concurrent access error on viper)
 	showTimingFlag bool
@@ -79,14 +76,17 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		return nil, err
 	}
 
-	// populate foreign schema names - this will be updated whenever we acquire a session
-	if err := client.LoadSchemaNames(ctx); err != nil {
-		client.Close(ctx)
+	// set user search path
+	err := client.LoadUserSearchPath(ctx)
+	if err != nil {
 		return nil, err
 	}
 
-	// initialise the required search path
-	client.SetRequiredSessionSearchPath(ctx)
+	// populate customSearchPath
+	if err := client.SetRequiredSessionSearchPath(ctx); err != nil {
+		client.Close(ctx)
+		return nil, err
+	}
 
 	return client, nil
 }
@@ -120,39 +120,6 @@ func (c *DbClient) Close(context.Context) error {
 	return nil
 }
 
-// ForeignSchemaNames implements Client
-func (c *DbClient) ForeignSchemaNames() []string {
-	return c.foreignSchemaNames
-}
-
-// AllSchemaNames implements Client
-func (c *DbClient) AllSchemaNames() []string {
-	return c.allSchemaNames
-}
-
-// LoadSchemaNames implements Client
-func (c *DbClient) LoadSchemaNames(ctx context.Context) error {
-	conn, err := c.pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-
-	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn.Conn())
-	if err != nil {
-		return err
-	}
-	allSchemaNames, err := db_common.LoadSchemaNames(ctx, conn.Conn())
-	if err != nil {
-		return err
-	}
-
-	c.foreignSchemaNames = foreignSchemaNames
-	c.allSchemaNames = allSchemaNames
-
-	return nil
-}
-
 // RefreshSessions terminates the current connections and creates a new one - repopulating session data
 func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireSessionResult) {
 	utils.LogTime("db_client.RefreshSessions start")
@@ -169,33 +136,58 @@ func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireS
 	return res
 }
 
-// GetSchemaFromDB requests for all columns of tables backed by steampipe plugins
-// and creates golang struct representations from the result
-func (c *DbClient) GetSchemaFromDB(ctx context.Context, schemas ...string) (*schema.Metadata, error) {
-	utils.LogTime("db_client.GetSchemaFromDB start")
-	defer utils.LogTime("db_client.GetSchemaFromDB end")
-	connection, err := c.pool.Acquire(ctx)
-	error_helpers.FailOnError(err)
+// GetSchemaFromDB  retrieves schemas for all steampipe connections
+// NOTE: it optimises the schema extraction by extracting schema information for
+// connections backed by distinct plugins and then fanning back out.
+func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetadata, error) {
+	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Release()
 
-	query := c.buildSchemasQuery(schemas...)
-
-	tablesResult, err := connection.Query(ctx, query)
+	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
 	if err != nil {
 		return nil, err
 	}
 
+	// build a ConnectionSchemaMap object to identify the schemas to load
+	connectionSchemaMap := steampipeconfig.NewConnectionSchemaMap(ctx, connectionStateMap, c.GetRequiredSessionSearchPath())
+	if err != nil {
+		return nil, err
+	}
+
+	// get the unique schema - we use this to limit the schemas we load from the database
+	schemas := maps.Keys(connectionSchemaMap)
+
+	// build a query to retrieve these schema
+	query := c.buildSchemasQuery(schemas...)
+
+	//execute
+	tablesResult, err := conn.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	// build schema metadata from query result
 	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
 	if err != nil {
 		return nil, err
 	}
-	connection.Release()
 
-	searchPath, err := c.GetCurrentSearchPath(ctx)
-	if err != nil {
-		return nil, err
+	// we now need to add in all other schemas which have the same schemas as those we have loaded
+	for loadedSchema, otherSchemas := range connectionSchemaMap {
+		// all 'otherSchema's have the same schema as loadedSchema
+		exemplarSchema, ok := metadata.Schemas[loadedSchema]
+		if !ok {
+			// should can happen in the case of a dynamic plugin with no tables - use empty schema
+			exemplarSchema = make(map[string]db_common.TableSchema)
+		}
+
+		for _, s := range otherSchemas {
+			metadata.Schemas[s] = exemplarSchema
+		}
 	}
-	metadata.SearchPath = searchPath
-
 	return metadata, nil
 }
 
