@@ -85,13 +85,13 @@ Examples:
   steampipe plugin install turbot/azure@0.1.0
 
   # Install a plugin with silent/quiet progress indicator
-  steampipe plugin install --silent aws`,
+  steampipe plugin install --progress=false aws`,
 	}
 
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, false, "Help for plugin install", cmdconfig.FlagOptions.WithShortHand("h")).
-		AddBoolFlag(constants.ArgSilent, false, "No installation progress indicator", cmdconfig.FlagOptions.WithShortHand("s"))
+		AddBoolFlag(constants.ArgProgress, true, "Display control execution progress")
 	return cmd
 }
 
@@ -205,10 +205,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// plugin names can be simple names ('aws') for "standard" plugins,
 	// or full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
-	silent, err := cmd.Flags().GetBool("silent")
-	if err != nil {
-		error_helpers.ShowErrorWithMessage(ctx, err, fmt.Sprintf("Failed to parse silent flag '%v'", silent))
-	}
+	progress_flag := viper.GetBool(constants.ArgProgress)
 	installReports := make(display.PluginInstallReports, 0, len(plugins))
 
 	if len(plugins) == 0 {
@@ -227,13 +224,13 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	installWaitGroup := &sync.WaitGroup{}
 	dataChannel := make(chan *display.PluginInstallReport, len(plugins))
 
-	if !silent {
+	if progress_flag {
 		progressBars.Start()
 	}
 	for _, pluginName := range plugins {
 		installWaitGroup.Add(1)
 		bar := createProgressBar(pluginName, progressBars)
-		go doPluginInstall(ctx, bar, pluginName, installWaitGroup, dataChannel, silent)
+		go doPluginInstall(ctx, bar, pluginName, installWaitGroup, dataChannel)
 	}
 	go func() {
 		installWaitGroup.Wait()
@@ -246,7 +243,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			installCount++
 		}
 	}
-	if !silent {
+	if progress_flag {
 		progressBars.Stop()
 	}
 
@@ -270,19 +267,17 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 }
 
-func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport, silent bool) {
+func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
 	pluginAlreadyInstalled, _ := plugin.Exists(pluginName)
 	if pluginAlreadyInstalled {
-		if !silent {
-			// set the bar to MAX
-			bar.Set(len(pluginInstallSteps))
-			// let the bar append itself with "Already Installed"
-			bar.AppendFunc(func(b *uiprogress.Bar) string {
-				return helpers.Resize(constants.PluginAlreadyInstalled, 20)
-			})
-		}
+		// set the bar to MAX
+		bar.Set(len(pluginInstallSteps))
+		// let the bar append itself with "Already Installed"
+		bar.AppendFunc(func(b *uiprogress.Bar) string {
+			return helpers.Resize(constants.PluginAlreadyInstalled, 20)
+		})
 		report = &display.PluginInstallReport{
 			Plugin:         pluginName,
 			Skipped:        true,
@@ -291,19 +286,17 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 		}
 	} else {
 		// let the bar append itself with the current installation step
-		if !silent {
-			bar.AppendFunc(func(b *uiprogress.Bar) string {
-				if report != nil && report.SkipReason == constants.PluginNotFound {
-					return helpers.Resize(constants.PluginNotFound, 20)
-				} else {
-					if b.Current() == 0 {
-						// no install step to display yet
-						return ""
-					}
-					return helpers.Resize(pluginInstallSteps[b.Current()-1], 20)
+		bar.AppendFunc(func(b *uiprogress.Bar) string {
+			if report != nil && report.SkipReason == constants.PluginNotFound {
+				return helpers.Resize(constants.PluginNotFound, 20)
+			} else {
+				if b.Current() == 0 {
+					// no install step to display yet
+					return ""
 				}
-			})
-		}
+				return helpers.Resize(pluginInstallSteps[b.Current()-1], 20)
+			}
+		})
 		report = installPlugin(ctx, pluginName, false, bar)
 	}
 	returnChannel <- report
