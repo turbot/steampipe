@@ -21,7 +21,7 @@ type ConnectionState struct {
 	Plugin string `json:"plugin,omitempty"  db:"plugin"`
 	// the connection state (pending, updating, deleting, error, ready)
 	State string `json:"state,omitempty"  db:"state"`
-	// error (if there is one - make a pointer to supprt null)
+	// error (if there is one - make a pointer to support null)
 	ConnectionError *string `json:"error,omitempty" db:"error"`
 	// schema mode - static or dynamic
 	SchemaMode string `json:"schema_mode,omitempty" db:"schema_mode"`
@@ -62,10 +62,7 @@ func (d *ConnectionState) Equals(other *ConnectionState) bool {
 	if d.PluginModTime.Sub(other.PluginModTime).Abs() > 1*time.Millisecond {
 		return false
 	}
-	//d.ConnectionModTime.Equal(other.ConnectionModTime) return false
-	if !d.Connection.Equals(other.Connection) {
-		return false
-	}
+	// do not look atr connecoitn mod time as the mod time for the desired state is not relevant
 
 	return true
 }

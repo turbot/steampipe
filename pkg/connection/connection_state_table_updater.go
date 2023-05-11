@@ -53,10 +53,10 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, tx pgx.Tx, name string) error {
+func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, conn *pgx.Conn, name string) error {
 	connection := u.updates.FinalConnectionState[name]
 	q := connection_state.GetSetConnectionReadySql(connection)
-	_, err := tx.Exec(ctx, q.Query, q.Args...)
+	_, err := conn.Exec(ctx, q.Query, q.Args...)
 	if err != nil {
 		return err
 	}
@@ -64,9 +64,9 @@ func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, tx 
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, tx pgx.Tx, name string) error {
+func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, conn *pgx.Conn, name string) error {
 	q := connection_state.GetDeleteConnectionStateSql(name)
-	_, err := tx.Exec(ctx, q.Query, q.Args...)
+	_, err := conn.Exec(ctx, q.Query, q.Args...)
 	if err != nil {
 		return err
 	}
@@ -74,9 +74,9 @@ func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, t
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, tx pgx.Tx, connectionName string, err error) error {
+func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, conn *pgx.Conn, connectionName string, err error) error {
 	q := connection_state.GetConnectionStateErrorSql(connectionName, err)
-	if _, err := tx.Exec(ctx, q.Query, q.Args...); err != nil {
+	if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {
 		return err
 	}
 
