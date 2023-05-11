@@ -86,6 +86,8 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *m
 
 	switch o := opts.(type) {
 	case *options.Connection:
+		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
+		errorsAndWarnings.AddWarning(deprecationWarning("connection options"))
 		if c.DefaultConnectionOptions == nil {
 			c.DefaultConnectionOptions = o
 		} else {
