@@ -763,13 +763,12 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	for _, deletedConnection := range n.Delete {
 		delete(c.schemaMetadata.Schemas, deletedConnection)
 	}
-	// if there are any updates,  reload schema
-	if len(n.Update) > 0 {
-		if err := c.loadSchema(); err != nil {
-			log.Printf("[INFO] Error unmarshalling notification: %s", err)
-			return
-		}
+	//  reload schema
+	if err := c.loadSchema(); err != nil {
+		log.Printf("[INFO] Error unmarshalling notification: %s", err)
+		return
 	}
+
 	// reinitialise autocomplete suggestions
 	c.initialiseSuggestions(ctx)
 

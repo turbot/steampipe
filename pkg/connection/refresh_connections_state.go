@@ -94,7 +94,7 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 	log.Printf("[INFO] refreshConnections building connectionUpdates")
 
 	// determine any necessary connection updates
-	state.buildConnectionUpdates(ctx)
+	state.connectionUpdates, state.res = steampipeconfig.NewConnectionUpdates(ctx, state.pool, state.forceUpdateConnectionNames...)
 	defer state.logRefreshConnectionResults()
 	// were we successful
 	if state.res.Error != nil {
@@ -144,10 +144,6 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 	log.Printf("[INFO] refreshConnections complete")
 
 	state.res.UpdatedConnections = true
-}
-
-func (state *refreshConnectionState) buildConnectionUpdates(ctx context.Context) {
-	state.connectionUpdates, state.res = steampipeconfig.NewConnectionUpdates(ctx, state.pool, state.forceUpdateConnectionNames...)
 }
 
 func (state *refreshConnectionState) addMissingPluginWarnings() {

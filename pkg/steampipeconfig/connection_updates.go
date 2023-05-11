@@ -20,8 +20,10 @@ import (
 )
 
 type ConnectionUpdates struct {
-	Update         ConnectionStateMap
-	Delete         map[string]struct{}
+	Update   ConnectionStateMap
+	Delete   map[string]struct{}
+	Disabled map[string]struct{}
+
 	MissingPlugins map[string][]modconfig.Connection
 	// the connections which will exist after the update
 	FinalConnectionState ConnectionStateMap
@@ -32,8 +34,6 @@ type ConnectionUpdates struct {
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
 func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
-	TAKE INTO ACCOUNT PENDING INCOMPLETE
-
 	utils.LogTime("NewConnectionUpdates start")
 	defer utils.LogTime("NewConnectionUpdates end")
 	log.Printf("[TRACE] NewConnectionUpdates")
@@ -45,16 +45,18 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	}
 	defer conn.Release()
 
-	// load foreign schema names
-	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn.Conn())
-	if err != nil {
-		log.Printf("[WARN] failed to load foreign schema names: %s", err.Error())
-		return nil, NewErrorRefreshConnectionResult(err)
+	disabled := make(map[string]struct{})
+	// build lookup of disabled connections
+	for _, c := range GlobalConfig.Connections {
+		if c.ImportSchema == modconfig.ImportSchemaDisabled {
+			disabled[c.Name] = struct{}{}
+		}
 	}
+
 	log.Printf("[TRACE] Loading connection state")
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
-	currentConnectionState, err := LoadConnectionState(ctx, conn.Conn())
+	currentConnectionStateMap, err := LoadConnectionState(ctx, conn.Conn())
 	if err != nil {
 		log.Printf("[WARN] failed to load connection state: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
@@ -63,7 +65,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	// build connection data for all required connections
 	// NOTE: this will NOT populate SchemaMode for the connections, as we need to load the schema for that
 	// this will be updated below on the call to updateRequiredStateWithSchemaProperties
-	requiredConnectionState, missingPlugins, err := GetRequiredConnectionStateMap(GlobalConfig.Connections, currentConnectionState)
+	requiredConnectionStateMap, missingPlugins, err := GetRequiredConnectionStateMap(GlobalConfig.Connections, currentConnectionStateMap)
 	if err != nil {
 		log.Printf("[WARN] failed to build required connection state: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
@@ -72,19 +74,20 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 
 	updates := &ConnectionUpdates{
 		Delete:               make(map[string]struct{}),
+		Disabled:             disabled,
 		Update:               ConnectionStateMap{},
 		MissingPlugins:       missingPlugins,
-		FinalConnectionState: requiredConnectionState,
+		FinalConnectionState: requiredConnectionStateMap,
 	}
 
 	log.Printf("[TRACE] loaded connection state")
-	updates.CurrentConnectionState = currentConnectionState
+	updates.CurrentConnectionState = currentConnectionStateMap
 
 	log.Printf("[TRACE] Loading dynamic schema hashes")
 
 	// for any connections with dynamic schema, we need to reload their schema
 	// instantiate connection plugins for all connections with dynamic schema - this will retrieve their current schema
-	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, err := getSchemaHashesForDynamicSchemas(requiredConnectionState, currentConnectionState)
+	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, err := getSchemaHashesForDynamicSchemas(requiredConnectionStateMap, currentConnectionStateMap)
 	if err != nil {
 		log.Printf("[WARN] getSchemaHashesForDynamicSchemas failed: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
@@ -94,35 +97,43 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 
 	modTime := time.Now()
 	// connections to create/update
-	for name, requiredConnectionData := range requiredConnectionState {
-		// check whether this connection exists in the state
-		currentConnectionData, schemaExistsInState := currentConnectionState[name]
-		// if it does not exist, or is not equal, add to updates
-		if helpers.StringSliceContains(forceUpdateConnectionNames, name) ||
-			!schemaExistsInState ||
-			!currentConnectionData.Equals(requiredConnectionData) {
+	for name, requiredConnectionState := range requiredConnectionStateMap {
+		// if the connection requires update, add to list
+		if connectionRequiresUpdate(forceUpdateConnectionNames, name, currentConnectionStateMap, requiredConnectionState) {
 			log.Printf("[TRACE] connection %s is out of date or missing", name)
-			updates.Update[name] = requiredConnectionData
+			updates.Update[name] = requiredConnectionState
 
 			// set the connection mod time of required connection data to now
-			requiredConnectionData.ConnectionModTime = modTime
+			requiredConnectionState.ConnectionModTime = modTime
 		}
 	}
 
 	log.Printf("[TRACE] Identify connections to delete")
 	// connections to delete - any connection which is in connection state but NOT required connections
-	for name := range currentConnectionState {
-		if _, ok := requiredConnectionState[name]; !ok {
+	for name, currentState := range currentConnectionStateMap {
+		if _, connectionRequired := requiredConnectionStateMap[name]; !connectionRequired {
 			log.Printf("[TRACE] connection %s in current state but not in required state - marking for deletion\n", name)
 			updates.Delete[name] = struct{}{}
 		}
+		// if required connection state is disabled and it is not currently disabled, mark for deletion
+		if _, disabled := disabled[name]; disabled && currentState.State != constants.ConnectionStateDisabled {
+			log.Printf("[TRACE] connection %s is disabled - marking for deletion\n", name)
+			updates.Delete[name] = struct{}{}
+		}
 	}
+
 	// if there are any foreign schemas which do not exist in currentConnectionState OR requiredConnectionState,
 	// add them into deletions
 	// (if they exist in required current state but not required state, they will already be marked for deletion)
+	// load foreign schema names
+	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn.Conn())
+	if err != nil {
+		log.Printf("[WARN] failed to load foreign schema names: %s", err.Error())
+		return nil, NewErrorRefreshConnectionResult(err)
+	}
 	for _, name := range foreignSchemaNames {
-		_, existsInCurrentState := currentConnectionState[name]
-		_, existsInRequiredState := requiredConnectionState[name]
+		_, existsInCurrentState := currentConnectionStateMap[name]
+		_, existsInRequiredState := requiredConnectionStateMap[name]
 		if !existsInCurrentState && !existsInRequiredState {
 			log.Printf("[TRACE] connection %s exists in db foreign schemas state but not current or required state - marking for deletion\n", name)
 			updates.Delete[name] = struct{}{}
@@ -134,7 +145,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	// if not, add to updates
 	for name, requiredHash := range dynamicSchemaHashMap {
 		// get the connection data from the loaded connection state
-		connectionData, ok := currentConnectionState[name]
+		connectionData, ok := currentConnectionStateMap[name]
 		// if the connection exists in the state, does the schemas hash match?
 		if ok && connectionData.SchemaHash != requiredHash {
 			updates.Update[name] = connectionData
@@ -153,6 +164,20 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	updates.updateRequiredStateWithSchemaProperties(dynamicSchemaHashMap)
 	res.Updates = updates
 	return updates, res
+}
+
+func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, currentConnectionStateMap ConnectionStateMap, requiredConnectionState *ConnectionState) bool {
+	// check whether this connection exists in the state
+	currentConnectionState, schemaExistsInState := currentConnectionStateMap[name]
+
+	if requiredConnectionState.State == constants.ConnectionStateDisabled {
+		return false
+	}
+
+	return helpers.StringSliceContains(forceUpdateConnectionNames, name) ||
+		!schemaExistsInState ||
+		currentConnectionState.State == constants.ConnectionStatePendingIncomplete ||
+		!currentConnectionState.Equals(requiredConnectionState)
 }
 
 // update requiredConnections - set the schema hash and schema mode for all elements of FinalConnectionState

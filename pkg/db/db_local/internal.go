@@ -110,12 +110,13 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 		incompleteErrorSql,
 	}
 
-	// for any connection in the connection config but not in the connection state table, add an entry with `pending` state
-	// this is to work around the race condition where we wait for connection state before RefreshConnections has added
+	// for any connection in the connection config but not in the connection state table,
+	// add an entry with `pending_incomplete` state this is to work around the race condition
+	// where we wait for connection state before RefreshConnections has added
 	// any new connections into the state table
 	for connection, connectionConfig := range steampipeconfig.GlobalConfig.Connections {
 		if _, ok := connectionStateMap[connection]; !ok {
-			queries = append(queries, getConnectionStateTableInsertSql(connectionConfig))
+			queries = append(queries, getNewConnectionStateTableInsertSql(connectionConfig))
 		}
 	}
 
@@ -123,8 +124,7 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 	return err
 }
 
-func getConnectionStateTableInsertSql(connection *modconfig.Connection) db_common.QueryWithArgs {
-
+func getNewConnectionStateTableInsertSql(connection *modconfig.Connection) db_common.QueryWithArgs {
 	query := fmt.Sprintf(`INSERT INTO %s.%s (name, 
 		state,
 		error,
@@ -137,12 +137,12 @@ func getConnectionStateTableInsertSql(connection *modconfig.Connection) db_commo
 VALUES($1,$2,$3,$4,$5,$6,$7,now(),now()) 
 `, constants.InternalSchema, constants.ConnectionStateTable)
 
-	schemaMode := "tbd"
+	schemaMode := ""
 	commentsSet := false
 	schemaHash := ""
 	args := []any{
 		connection.Name,
-		constants.ConnectionStatePending,
+		constants.ConnectionStatePendingIncomplete,
 		nil,
 		connection.Plugin,
 		schemaMode,

@@ -51,6 +51,9 @@ var ConnectionBlockSchema = &hcl.BodySchema{
 		{
 			Name: "connections",
 		},
+		{
+			Name: "import_schema",
+		},
 	},
 	Blocks: []hcl.BlockHeaderSchema{
 		{

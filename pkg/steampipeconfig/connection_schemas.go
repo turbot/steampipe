@@ -3,6 +3,7 @@ package steampipeconfig
 import (
 	"context"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/statushooks"
 )
 
@@ -33,21 +34,28 @@ func NewConnectionSchemaMap(ctx context.Context, connectionStateMap ConnectionSt
 	// map of plugin name to first connection which uses it
 	pluginMap := connectionStateMap.GetPluginToConnectionMap()
 
-	for _, connectionName := range firstConnections {
-		connectionState := connectionStateMap[connectionName]
-		// if this is a dunamic schema, there will be no connections with the same schema
-		if connectionState.SchemaMode == plugin.SchemaModeDynamic {
-			res[connectionName] = nil
+	for _, exemplarConnectionName := range firstConnections {
+		exemplarConnectionState := connectionStateMap[exemplarConnectionName]
+		// if this is a dynamic schema, there will be no connections with the same schema
+		if exemplarConnectionState.SchemaMode == plugin.SchemaModeDynamic {
+			res[exemplarConnectionName] = nil
 		} else {
 			var connectionsWithSameSchema []string
 			// add all connections for this plugin (apart from exemplar)
-			for _, connectionForPlugin := range pluginMap[connectionState.Plugin] {
+			for _, connectionForPlugin := range pluginMap[exemplarConnectionState.Plugin] {
 				// do not copy exemplar
-				if connectionForPlugin != connectionName {
-					connectionsWithSameSchema = append(connectionsWithSameSchema, connectionForPlugin)
+				if connectionForPlugin == exemplarConnectionName {
+					continue
 				}
+				connectionState := connectionStateMap[connectionForPlugin]
+				// do not include disabled connections
+				if connectionState.State == constants.ConnectionStateDisabled {
+					continue
+				}
+				// otherwise add to list
+				connectionsWithSameSchema = append(connectionsWithSameSchema, connectionForPlugin)
 			}
-			res[connectionName] = connectionsWithSameSchema
+			res[exemplarConnectionName] = connectionsWithSameSchema
 		}
 	}
 

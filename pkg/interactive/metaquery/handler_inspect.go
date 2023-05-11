@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"regexp"
 	"sort"
@@ -60,32 +61,32 @@ func inspect(ctx context.Context, input *HandlerInput) error {
 
 func inspectSchemaOrUnqualifiedTable(tableOrConnection string, input *HandlerInput) error {
 	// only a connection name (or maybe unqualified table name)
-	schemaFound := inspectConnection(tableOrConnection, input)
+	if inspectConnection(tableOrConnection, input) {
+		return nil
+	}
 
 	// there was no schema
-	if !schemaFound {
-		// add the temporary schema to the search_path so that it becomes searchable
-		// for the next step
-		searchPath := append(input.SearchPath, input.Schema.TemporarySchemaName)
+	// add the temporary schema to the search_path so that it becomes searchable
+	// for the next step
+	searchPath := append(input.SearchPath, input.Schema.TemporarySchemaName)
 
-		// go through the searchPath one by one and try to find the table by this name
-		for _, schema := range searchPath {
-			tablesInThisSchema := input.Schema.GetTablesInSchema(schema)
-			// we have a table by this name here
-			if _, gotTable := tablesInThisSchema[tableOrConnection]; gotTable {
-				return inspectQualifiedTable(schema, tableOrConnection, input)
-			}
-
-			// check against the fully qualified name of the table
-			for _, table := range input.Schema.Schemas[schema] {
-				if tableOrConnection == table.FullName {
-					return inspectQualifiedTable(schema, table.Name, input)
-				}
-			}
+	// go through the searchPath one by one and try to find the table by this name
+	for _, schema := range searchPath {
+		tablesInThisSchema := input.Schema.GetTablesInSchema(schema)
+		// we have a table by this name here
+		if _, gotTable := tablesInThisSchema[tableOrConnection]; gotTable {
+			return inspectQualifiedTable(schema, tableOrConnection, input)
 		}
 
-		return fmt.Errorf("could not find connection or table called '%s'. Is the plugin installed? Is the connection configured?", tableOrConnection)
+		// check against the fully qualified name of the table
+		for _, table := range input.Schema.Schemas[schema] {
+			if tableOrConnection == table.FullName {
+				return inspectQualifiedTable(schema, table.Name, input)
+			}
+		}
 	}
+
+	return fmt.Errorf("could not find connection or table called '%s'. Is the plugin installed? Is the connection configured?", tableOrConnection)
 
 	fmt.Printf(`
 To get information about the columns in a table, run %s
@@ -170,6 +171,10 @@ func listConnections(_ context.Context, input *HandlerInput) error {
 	var rows [][]string
 
 	for connectionName, state := range input.ConnectionState {
+		// skip disabled connections
+		if state.State == constants.ConnectionStateDisabled {
+			continue
+		}
 		row := []string{connectionName, state.Plugin, state.State}
 		rows = append(rows, row)
 	}
@@ -211,6 +216,11 @@ func inspectQualifiedTable(connectionName string, tableName string, input *Handl
 	header := []string{"column", "type", "description"}
 	var rows [][]string
 
+	if input.ConnectionState[connectionName].State == constants.ConnectionStateDisabled {
+		error_helpers.ShowWarning(fmt.Sprintf("connection '%s' has schema import disabled", connectionName))
+		return nil
+	}
+
 	schema, found := input.Schema.Schemas[connectionName]
 	if !found {
 		return fmt.Errorf("could not find connection called '%s'. Is the plugin installed? Is the connection configured?\n", connectionName)
@@ -237,10 +247,13 @@ func inspectQualifiedTable(connectionName string, tableName string, input *Handl
 // inspect the connection with the given name
 // return whether connectionName was identified as an existing connection
 func inspectConnection(connectionName string, input *HandlerInput) bool {
-
 	connectionState, connectionFoundInState := input.ConnectionState[connectionName]
 	if !connectionFoundInState {
 		return false
+	}
+	if connectionState.State == constants.ConnectionStateDisabled {
+		error_helpers.ShowWarning(fmt.Sprintf("connection '%s' has schema import disabled", connectionName))
+		return true
 	}
 
 	// have we loaded the schema for this connection yet?

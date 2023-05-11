@@ -52,6 +52,7 @@ const (
 	ConnectionStateReady             = "ready"
 	ConnectionStateUpdating          = "updating"
 	ConnectionStateDeleting          = "deleting"
+	ConnectionStateDisabled          = "disabled"
 	ConnectionStateError             = "error"
 
 	// CommandSchema is the schema which is used to send commands to the FDW

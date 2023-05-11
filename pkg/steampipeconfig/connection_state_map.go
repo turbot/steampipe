@@ -34,11 +34,6 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration start")
 	// populate file mod time for each referenced plugin
 	for name, connection := range connectionMap {
-		// if schema import is disabled, skip this
-		if connection.ImportSchema == modconfig.ImportSchemaDisabled {
-			log.Printf("[TRACE] connection '%s' excluded as import_sachema is 'disabled'", name)
-			continue
-		}
 		remoteSchema := connection.Plugin
 		pluginPath, _ := filepaths.GetPluginPath(connection.Plugin, connection.PluginShortName)
 		// ignore error if plugin is not available
@@ -61,6 +56,10 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 		pluginModTimeMap[pluginPath] = pluginModTime
 		res[name] = NewConnectionState(remoteSchema, connection, pluginModTime)
 
+		// if schema import is disabled, set desired state as disabled
+		if connection.ImportSchema == modconfig.ImportSchemaDisabled {
+			res[name].State = constants.ConnectionStateDisabled
+		}
 		// NOTE: if the connection exists in the current state, copy the connection mod time
 		// (this will be updated to 'now' later if we are updating the connection)
 		if currentState, ok := currentConnectionState[name]; ok {
@@ -197,6 +196,10 @@ func (m ConnectionStateMap) getFirstSearchPathConnectionMapForPlugins(searchPath
 		// is this in the connection state map
 		connectionState, ok := m[connectionName]
 		if !ok {
+			continue
+		}
+		// if this connection is disabled, skip it
+		if connectionState.State == constants.ConnectionStateDisabled {
 			continue
 		}
 

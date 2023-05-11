@@ -17,7 +17,6 @@ func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
     			plugin TEXT NOT NULL,
     			schema_mode TEXT NOT NULL,
     			schema_hash TEXT NULL,
-    			import_schema TEXT NOT NULL,
     			comments_set BOOL DEFAULT FALSE,
     			connection_mod_time TIMESTAMPTZ NOT NULL,
     			plugin_mod_time TIMESTAMPTZ NOT NULL
@@ -55,15 +54,14 @@ AND state <> 'error'
 func GetIncompleteConnectionStatePendingIncompleteSql() db_common.QueryWithArgs {
 	query := fmt.Sprintf(`UPDATE %s.%s
 SET state = '%s',
-	error = $1,
-	connection_mod_time = now()
+	connection_mod_time = now(),
+    error = null
 WHERE
 	state <> 'ready' 
-AND state <> 'error' 
 	`,
 		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStatePendingIncomplete)
-	args := []any{err.Error()}
-	return db_common.QueryWithArgs{Query: query, Args: args}
+
+	return db_common.QueryWithArgs{Query: query}
 }
 
 func GetStartUpdateConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
@@ -96,35 +94,21 @@ DO
 	return db_common.QueryWithArgs{query, args}
 }
 
-func GetSetConnectionReadySql(connection *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`UPDATE %s.%s 
-    SET	state = %s, 
-	 	connection_mod_time = now(),
-	 	plugin_mod_time = $1
-    WHERE 
-        name = $2
-`,
-		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStateReady,
-	)
-	args := []any{connection.PluginModTime, connection.ConnectionName}
-	return db_common.QueryWithArgs{query, args}
-}
-
-func GetDeleteConnectionStateSql(connectionName string) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`DELETE FROM %s.%s WHERE NAME=$1`, constants.InternalSchema, constants.ConnectionStateTable)
-	args := []any{connectionName}
-	return db_common.QueryWithArgs{query, args}
-}
-
-func GetSetConnectionDeletingSql(connectionName string) db_common.QueryWithArgs {
+func GetSetConnectionStateSql(connectionName string, state string) db_common.QueryWithArgs {
 	query := fmt.Sprintf(`UPDATE %s.%s 
     SET	state = '%s', 
 	 	connection_mod_time = now()
     WHERE 
         name = $1
 `,
-		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStateDeleting,
+		constants.InternalSchema, constants.ConnectionStateTable, state,
 	)
+	args := []any{connectionName}
+	return db_common.QueryWithArgs{query, args}
+}
+
+func GetDeleteConnectionStateSql(connectionName string) db_common.QueryWithArgs {
+	query := fmt.Sprintf(`DELETE FROM %s.%s WHERE NAME=$1`, constants.InternalSchema, constants.ConnectionStateTable)
 	args := []any{connectionName}
 	return db_common.QueryWithArgs{query, args}
 }

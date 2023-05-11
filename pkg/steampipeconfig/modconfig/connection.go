@@ -30,15 +30,15 @@ var ValidImportSchemaValues = []string{ImportSchemaEnabled, ImportSchemaDisabled
 type Connection struct {
 	// connection name
 	Name string `json:"name,omitempty"`
-	// The name of plugin as mentioned in config
+	// name of plugin as mentioned in config
 	PluginShortName string `json:"plugin_short_name,omitempty"`
-	// The fully qualified name of the plugin. derived from the short name
+	// fully qualified name of the plugin. derived from the short name
 	Plugin string `json:"plugin,omitempty"`
-	// Type - supported values: "aggregator"
+	// connection type - supported values: "aggregator"
 	Type string `json:"type,omitempty"`
-	//
-	ImportSchema string `json:"type,omitempty"`
-	// this is a list of names or wildcards which are resolved to connections
+	// should a schema be created for this connection - supported values: "enabled", "disabled"
+	ImportSchema string `json:"import_schema,omitempty"`
+	// list of names or wildcards which are resolved to connections
 	// (only valid for "aggregator" type)
 	ConnectionNames []string `json:"connections,omitempty"`
 	// a map of the resolved child connections

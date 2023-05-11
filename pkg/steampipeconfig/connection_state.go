@@ -31,6 +31,9 @@ type ConnectionState struct {
 	PluginModTime time.Time `json:"plugin_mod_time" db:"plugin_mod_time"`
 	// the update time of the connection
 	ConnectionModTime time.Time `json:"connection_mod_time" db:"connection_mod_time"`
+
+	//// new fields
+	//Type string `json:"type,omitempty"  db:"type"`
 }
 
 func NewConnectionState(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionState {
