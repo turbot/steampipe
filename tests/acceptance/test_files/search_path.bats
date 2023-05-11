@@ -48,3 +48,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query "show search_path" --search-path-prefix foo
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_5.txt)"
 }
+
+@test "verify that 'internal' schema is added" {
+  run steampipe query "show search_path" --search-path foo
+  assert_output "$(cat $TEST_DATA_DIR/expected_search_path_internal_schema_once_1.txt)"
+}
+
+@test "verify that 'internal' schema is added only once" {
+  run steampipe query "show search_path" --search-path foo1,internal,foo2
+  assert_output "$(cat $TEST_DATA_DIR/expected_search_path_internal_schema_once_2.txt)"
+}
