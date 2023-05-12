@@ -3,7 +3,6 @@ package steampipeconfig
 import (
 	"context"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/statushooks"
 )
 
@@ -49,7 +48,7 @@ func NewConnectionSchemaMap(ctx context.Context, connectionStateMap ConnectionSt
 				}
 				connectionState := connectionStateMap[connectionForPlugin]
 				// do not include disabled connections
-				if connectionState.State == constants.ConnectionStateDisabled {
+				if connectionState.Disabled() {
 					continue
 				}
 				// otherwise add to list

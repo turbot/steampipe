@@ -172,7 +172,7 @@ func listConnections(_ context.Context, input *HandlerInput) error {
 
 	for connectionName, state := range input.ConnectionState {
 		// skip disabled connections
-		if state.State == constants.ConnectionStateDisabled {
+		if state.Disabled() {
 			continue
 		}
 		row := []string{connectionName, state.Plugin, state.State}
@@ -216,7 +216,7 @@ func inspectQualifiedTable(connectionName string, tableName string, input *Handl
 	header := []string{"column", "type", "description"}
 	var rows [][]string
 
-	if input.ConnectionState[connectionName].State == constants.ConnectionStateDisabled {
+	if input.ConnectionState[connectionName].Disabled() {
 		error_helpers.ShowWarning(fmt.Sprintf("connection '%s' has schema import disabled", connectionName))
 		return nil
 	}
@@ -251,7 +251,7 @@ func inspectConnection(connectionName string, input *HandlerInput) bool {
 	if !connectionFoundInState {
 		return false
 	}
-	if connectionState.State == constants.ConnectionStateDisabled {
+	if connectionState.Disabled() {
 		error_helpers.ShowWarning(fmt.Sprintf("connection '%s' has schema import disabled", connectionName))
 		return true
 	}

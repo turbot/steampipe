@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/connection/connection_state"
+	"github.com/turbot/steampipe/pkg/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
@@ -583,7 +583,7 @@ func (state *refreshConnectionState) sendPostgreSchemaNotification(ctx context.C
 	if err != nil {
 		return err
 	}
-	notification := steampipeconfig.NewSchemaUpdateNotification(updates, deletions)
+	notification := steampipeconfig.NewSchemaUpdateNotification(steampipeconfig.PgNotificationSchemaUpdate)
 
 	return db_local.SendPostgresNotification(ctx, conn, notification)
 }

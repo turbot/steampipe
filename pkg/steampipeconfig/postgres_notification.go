@@ -13,18 +13,14 @@ type PostgresNotification struct {
 	Type          PostgresNotificationType
 }
 
-type SchemaUpdateNotification struct {
+type SteampipeNotification struct {
 	StructVersion int
 	Type          PostgresNotificationType
-	Update        []string
-	Delete        []string
 }
 
-func NewSchemaUpdateNotification(update, delete []string) *SchemaUpdateNotification {
-	return &SchemaUpdateNotification{
+func NewSchemaUpdateNotification(notificationType PostgresNotificationType) *SteampipeNotification {
+	return &SteampipeNotification{
 		StructVersion: PostgresNotificationStructVersion,
-		Type:          PgNotificationSchemaUpdate,
-		Update:        update,
-		Delete:        delete,
+		Type:          notificationType,
 	}
 }

@@ -145,16 +145,6 @@ func (m ConnectionStateMap) Equals(other ConnectionStateMap) bool {
 	return true
 }
 
-func (m ConnectionStateMap) Connections() []*modconfig.Connection {
-	var res = make([]*modconfig.Connection, len(m))
-	idx := 0
-	for _, d := range m {
-		res[idx] = d.Connection
-		idx++
-	}
-	return res
-}
-
 // ConnectionModTime returns the latest connection mod time
 func (m ConnectionStateMap) ConnectionModTime() time.Time {
 	var res time.Time
@@ -199,7 +189,7 @@ func (m ConnectionStateMap) getFirstSearchPathConnectionMapForPlugins(searchPath
 			continue
 		}
 		// if this connection is disabled, skip it
-		if connectionState.State == constants.ConnectionStateDisabled {
+		if connectionState.Disabled() {
 			continue
 		}
 

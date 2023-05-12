@@ -6,11 +6,10 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/turbot/steampipe/pkg/connection/connection_state"
+	"github.com/turbot/steampipe/pkg/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
 )
@@ -116,43 +115,10 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 	// any new connections into the state table
 	for connection, connectionConfig := range steampipeconfig.GlobalConfig.Connections {
 		if _, ok := connectionStateMap[connection]; !ok {
-			queries = append(queries, getNewConnectionStateTableInsertSql(connectionConfig))
+			queries = append(queries, connection_state.GetNewConnectionStateTableInsertSql(connectionConfig))
 		}
 	}
 
 	_, err = ExecuteSqlWithArgsInTransaction(ctx, conn, queries...)
 	return err
-}
-
-func getNewConnectionStateTableInsertSql(connection *modconfig.Connection) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`INSERT INTO %s.%s (name, 
-		state,
-		error,
-		plugin,
-		schema_mode,
-		schema_hash,
-		comments_set,
-		connection_mod_time,
-		plugin_mod_time)
-VALUES($1,$2,$3,$4,$5,$6,$7,now(),now()) 
-`, constants.InternalSchema, constants.ConnectionStateTable)
-
-	schemaMode := ""
-	commentsSet := false
-	schemaHash := ""
-	args := []any{
-		connection.Name,
-		constants.ConnectionStatePendingIncomplete,
-		nil,
-		connection.Plugin,
-		schemaMode,
-		schemaHash,
-		commentsSet,
-	}
-
-	return db_common.QueryWithArgs{
-		Query: query,
-		Args:  args,
-	}
-
 }

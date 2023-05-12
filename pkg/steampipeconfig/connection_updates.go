@@ -170,13 +170,20 @@ func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, 
 	// check whether this connection exists in the state
 	currentConnectionState, schemaExistsInState := currentConnectionStateMap[name]
 
-	if requiredConnectionState.State == constants.ConnectionStateDisabled {
+	// if the connection has been disabled, return false
+	if requiredConnectionState.Disabled() {
 		return false
 	}
 
-	return helpers.StringSliceContains(forceUpdateConnectionNames, name) ||
+	// if the connection has been enabled, return true
+	return currentConnectionState.Disabled() ||
+		// are we are forcing an update of this connection,
+		helpers.StringSliceContains(forceUpdateConnectionNames, name) ||
+		// is this is a new connection
 		!schemaExistsInState ||
+		// has this connection previously not fully loaded
 		currentConnectionState.State == constants.ConnectionStatePendingIncomplete ||
+		// has this connection changed
 		!currentConnectionState.Equals(requiredConnectionState)
 }
 
@@ -235,13 +242,13 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	return res
 }
 
-func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) []*modconfig.Connection {
-	updateConnections := u.Update.Connections()
+func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) []string {
+	updateConnections := maps.Keys(u.Update)
 	// put connections into a map to avoid dupes
 	var connectionMap = make(map[string]*modconfig.Connection, len(updateConnections))
-	for _, connection := range updateConnections {
-
-		connectionMap[connection.Name] = connection
+	for _, connectionName := range updateConnections {
+		connection := GlobalConfig.Connections[connectionName]
+		connectionMap[connectionName] = connection
 		// if this connection is an aggregator, add all its children
 		for _, child := range connection.Connections {
 			connectionMap[child.Name] = child
@@ -253,15 +260,7 @@ func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugi
 		delete(connectionMap, name)
 	}
 
-	// now copy result into array
-	res := make([]*modconfig.Connection, len(connectionMap))
-	idx := 0
-	for _, c := range connectionMap {
-		res[idx] = c
-		idx++
-	}
-
-	return res
+	return maps.Keys(connectionMap)
 }
 
 func (u *ConnectionUpdates) HasUpdates() bool {
@@ -317,7 +316,7 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionStateMap,
 			}
 		}
 	}
-	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(connectionsWithDynamicSchema.Connections())
+	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(maps.Keys(connectionsWithDynamicSchema))
 	if res.Error != nil {
 		return nil, nil, res.Error
 	}

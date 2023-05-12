@@ -695,6 +695,8 @@ func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) error {
 		notification, err := conn.WaitForNotification(ctx)
 		if err != nil && !error_helpers.IsContextCancelledError(err) {
 			log.Printf("[INFO] Error waiting for notification: %s", err)
+			// TODO what to do about connection closed error
+			return err
 		}
 
 		if notification != nil {
@@ -738,16 +740,16 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 	switch n.Type {
 	case steampipeconfig.PgNotificationSchemaUpdate:
 		// unmarshal the notification again, into the correct type
-		schemaUpdateNotification := &steampipeconfig.SchemaUpdateNotification{}
+		schemaUpdateNotification := &steampipeconfig.SteampipeNotification{}
 		if err := json.Unmarshal([]byte(notification.Payload), schemaUpdateNotification); err != nil {
 			log.Printf("[WARN] Error unmarshalling notification: %s", err)
 			return
 		}
-		c.handleConnectionUpdateNotification(ctx, schemaUpdateNotification)
+		c.handleConnectionUpdateNotification(ctx)
 	}
 }
 
-func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context, n *steampipeconfig.SchemaUpdateNotification) {
+func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context) {
 	// at present, we do not actually use the payload, we just do a brute force reload
 	// as an optimization we could look at the updates and only reload the required schemas
 
@@ -759,10 +761,6 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 		return
 	}
 
-	// remove any deletes schemas
-	for _, deletedConnection := range n.Delete {
-		delete(c.schemaMetadata.Schemas, deletedConnection)
-	}
 	//  reload schema
 	if err := c.loadSchema(); err != nil {
 		log.Printf("[INFO] Error unmarshalling notification: %s", err)
