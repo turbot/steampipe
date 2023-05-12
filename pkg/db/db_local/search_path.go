@@ -9,7 +9,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -22,11 +21,10 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 	// is there a user search path in the config?
 	// check ConfigKeyDatabaseSearchPath config (this is the value specified in the database config)
 	if viper.IsSet(constants.ConfigKeyServerSearchPath) {
+
 		searchPath = viper.GetStringSlice(constants.ConfigKeyServerSearchPath)
-		if !helpers.StringSliceContains(searchPath, constants.InternalSchema) {
-			// add 'internal' schema as last schema in the search path
-			searchPath = append(searchPath, constants.InternalSchema)
-		}
+		// the Internal Schema should always go at the end
+		searchPath = db_common.EnsureInternalSchemaSuffix(searchPath)
 	} else {
 		// no config set - set user search path to default
 		// - which is all the connection names, book-ended with public and internal

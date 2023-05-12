@@ -39,13 +39,10 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 		requiredSearchPath = configuredSearchPath
 	}
 
-	if !helpers.StringSliceContains(requiredSearchPath, constants.InternalSchema) {
-		// add 'internal' schema as last schema in the search path - if not there
-		requiredSearchPath = append(requiredSearchPath, constants.InternalSchema)
-	}
-
 	// add in the prefix if present
 	requiredSearchPath = db_common.AddSearchPathPrefix(searchPathPrefix, requiredSearchPath)
+
+	requiredSearchPath = db_common.EnsureInternalSchemaSuffix(requiredSearchPath)
 
 	// if either configuredSearchPath or searchPathPrefix are set, store requiredSearchPath as customSearchPath
 	if len(configuredSearchPath)+len(searchPathPrefix) > 0 {
