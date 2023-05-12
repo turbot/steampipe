@@ -84,13 +84,13 @@ Examples:
   # Install a specific plugin version
   steampipe plugin install turbot/azure@0.1.0
 
-  # Install a plugin without progress indicator
+  # Hide progress bars during installation
   steampipe plugin install --progress=false aws`,
 	}
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants.ArgProgress, true, "Display control execution progress").
+		AddBoolFlag(constants.ArgProgress, true, "Display installation progress").
 		AddBoolFlag(constants.ArgHelp, false, "Help for plugin install", cmdconfig.FlagOptions.WithShortHand("h"))
 	return cmd
 }
@@ -115,13 +115,16 @@ Examples:
   steampipe plugin update --all
 
   # Update a common plugin (turbot/aws)
-  steampipe plugin update aws`,
+  steampipe plugin update aws
+
+  # Hide progress bars during update
+  steampipe plugin update --progress=false aws`,
 	}
 
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgAll, false, "Update all plugins to its latest available version").
-		AddBoolFlag(constants.ArgProgress, true, "Display control execution progress").
+		AddBoolFlag(constants.ArgProgress, true, "Display installation progress").
 		AddBoolFlag(constants.ArgHelp, false, "Help for plugin update", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
