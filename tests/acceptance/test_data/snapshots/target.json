@@ -153,7 +153,7 @@
     "steampipe",
     "steampipecloud",
     "test_aab",
-    "internal"
+    "sp_internal"
   ],
   "start_time": "2022-11-30T16:34:15.168508+05:30",
   "end_time": "2022-11-30T16:34:15.216647+05:30",
