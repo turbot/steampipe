@@ -43,7 +43,7 @@ const (
 // schema names
 const (
 	// InternalSchema is the schema container for all steampipe helper functions, and connection state table
-	InternalSchema = "internal"
+	InternalSchema = "sp_internal"
 
 	// ConnectionStateTable is the table used to store steampipe connection state
 	ConnectionStateTable    = "connection_state"
@@ -54,7 +54,7 @@ const (
 	ConnectionStateError    = "error"
 
 	// CommandSchema is the schema which is used to send commands to the FDW
-	CommandSchema = "steampipe_command"
+	CommandSchema = "sp_command"
 
 	CommandTableSettings            = "settings"
 	CommandTableSettingsKeyColumn   = "name"
