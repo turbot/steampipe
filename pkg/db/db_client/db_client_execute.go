@@ -195,7 +195,7 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		resultChannel <- timingResult
 	}()
 
-	res, err := c.ExecuteSyncInSession(ctx, session, fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from steampipe_command.scan_metadata where id > %d", session.ScanMetadataMaxId))
+	res, err := c.ExecuteSyncInSession(ctx, session, fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.scan_metadata where id > %d", constants.CommandSchema, session.ScanMetadataMaxId))
 	// if we failed to read scan metadata (either because the query failed or the plugin does not support it)
 	// just return
 	if err != nil || len(res.Rows) == 0 {
@@ -227,7 +227,7 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 }
 
 func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_common.DatabaseSession) error {
-	res, err := c.ExecuteSyncInSession(ctx, session, "select max(id) from steampipe_command.scan_metadata")
+	res, err := c.ExecuteSyncInSession(ctx, session, fmt.Sprintf("select max(id) from %s.scan_metadata", constants.CommandSchema))
 	if err != nil {
 		return err
 	}
