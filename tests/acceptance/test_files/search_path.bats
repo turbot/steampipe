@@ -54,7 +54,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_internal_schema_once_1.txt)"
 }
 
-@test "verify that 'internal' schema is not added if passed in as custom" {
+@test "verify that 'internal' schema is always suffixed if passed in as custom" {
   run steampipe query "show search_path" --search-path foo1,internal,foo2
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_internal_schema_once_2.txt)"
 }
