@@ -171,7 +171,7 @@ func (c *Connection) Validate(map[string]*Connection) (warnings []string, errors
 	}
 	validImportSchemaValues := utils.SliceToLookup(ValidImportSchemaValues)
 	if _, isValid := validImportSchemaValues[c.ImportSchema]; !isValid {
-		validationErrors = append(validationErrors, fmt.Sprintf("invalid value '%s'for import_schema, must be one of ['%'s]", c.ImportSchema, strings.Join(ValidImportSchemaValues, "','")))
+		validationErrors = append(validationErrors, fmt.Sprintf("invalid value '%s'for import_schema, must be one of ['%s']", c.ImportSchema, strings.Join(ValidImportSchemaValues, "','")))
 	}
 
 	return nil, validationErrors

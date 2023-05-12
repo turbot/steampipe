@@ -86,7 +86,7 @@ DO
    UPDATE SET 
 			  state = $2, 
  			  type = $3,
-              import_schema = $5,		
+              import_schema = $4,		
  		      error = $5,
 			  plugin = $6,
 			  schema_mode = $7,
