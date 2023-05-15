@@ -88,30 +88,7 @@ var rootCmd = &cobra.Command{
 			createLogger()
 		}
 
-		var taskUpdateCtx context.Context
-		taskUpdateCtx, tasksCancelFn = context.WithCancel(cmd.Context())
-
-		// skip running the task runner if this is the plugin manager
-		// since it's supposed to be a daemon
-		// and only intended for managing plugins
-		// there is no point in running tasks in the plugin manager
-		// since it is always started by steampipe
-		// which will have run the tasks anyway before-hand
-		if !task.IsPluginManagerCmd(cmd) {
-			waitForTasksChannel = task.RunTasks(
-				taskUpdateCtx,
-				cmd,
-				args,
-				// pass the config value in rather than runRasks querying viper directly - to avoid concurrent map access issues
-				// (we can use the update-check viper config here, since initGlobalConfig has already set it up
-				// with values from the config files and ENV settings - update-check cannot be set from the command line)
-				task.WithUpdateCheck(viper.GetBool(constants.ArgUpdateCheck)),
-				// show deprecation warnings
-				task.WithPreHook(func(_ context.Context) {
-					displayDeprecationWarnings(ew)
-				}),
-			)
-		}
+		waitForTasksChannel = setupTasksChannel(cmd.Context(), cmd, args, ew)
 
 		// set the max memory
 		debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())
@@ -141,6 +118,33 @@ Getting started:
 
   Documentation available at https://steampipe.io/docs
  `,
+}
+
+// setupTasksChannel
+func setupTasksChannel(ctx context.Context, cmd *cobra.Command, args []string, ew *modconfig.ErrorAndWarnings) chan struct{} {
+	// skip running the task runner if this is the plugin manager
+	// since it's supposed to be a daemon
+	if !task.IsPluginManagerCmd(cmd) {
+		return nil
+	}
+
+	taskUpdateCtx, cancelFn := context.WithCancel(ctx)
+	tasksCancelFn = cancelFn
+
+	return task.RunTasks(
+		taskUpdateCtx,
+		cmd,
+		args,
+		// pass the config value in rather than runRasks querying viper directly - to avoid concurrent map access issues
+		// (we can use the update-check viper config here, since initGlobalConfig has already set it up
+		// with values from the config files and ENV settings - update-check cannot be set from the command line)
+		task.WithUpdateCheck(viper.GetBool(constants.ArgUpdateCheck)),
+		// show deprecation warnings
+		task.WithPreHook(func(_ context.Context) {
+			displayDeprecationWarnings(ew)
+		}),
+	)
+
 }
 
 // the log level will need resetting if
