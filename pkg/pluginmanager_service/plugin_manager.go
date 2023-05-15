@@ -795,7 +795,7 @@ func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionNa
 	}
 
 	// also send a postgres notification
-	notification := steampipeconfig.NewSchemaUpdateNotification([]string{connectionName}, nil)
+	notification := steampipeconfig.NewSchemaUpdateNotification(steampipeconfig.PgNotificationSchemaUpdate)
 
 	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {

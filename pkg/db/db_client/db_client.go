@@ -136,7 +136,7 @@ func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireS
 	return res
 }
 
-// GetSchemaFromDB  retrieves schemas for all steampipe connections
+// GetSchemaFromDB  retrieves schemas for all steampipe connections (EXCEPT DISABLED CONNECTIONS)
 // NOTE: it optimises the schema extraction by extracting schema information for
 // connections backed by distinct plugins and then fanning back out.
 func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetadata, error) {

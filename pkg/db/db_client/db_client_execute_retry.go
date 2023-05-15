@@ -83,9 +83,9 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		}
 
 		// so a schema was specified
-		// verify it exists in the connection state
+		// verify it exists in the connection state and is not disabled
 		connectionState, missingSchemaExistsInStateMap := connectionStateMap[missingSchema]
-		if !missingSchemaExistsInStateMap {
+		if !missingSchemaExistsInStateMap || connectionState.Disabled() {
 			//, missing schema is not in connection state map - just return the error
 			return queryError
 		}

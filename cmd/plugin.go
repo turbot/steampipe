@@ -703,31 +703,31 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 		return nil, nil, nil, res
 	}
 
-	// create the map of failed/missing plugins
+	// create the map of failed/missing plugins and available/loaded plugins
 	failedPluginMap = map[string][]*modconfig.Connection{}
 	missingPluginMap = map[string][]*modconfig.Connection{}
-	for _, j := range connectionStateMap {
-		if j.State == constants.ConnectionStateError && j.Error() == constants.ConnectionErrorPluginFailedToStart {
-			if _, ok := failedPluginMap[j.Plugin]; !ok {
-				failedPluginMap[j.Plugin] = []*modconfig.Connection{}
-			}
-			failedPluginMap[j.Plugin] = append(failedPluginMap[j.Plugin], j.Connection)
-		} else if j.State == constants.ConnectionStateError && j.Error() == constants.ConnectionErrorPluginNotInstalled {
-			if _, ok := missingPluginMap[j.Plugin]; !ok {
-				missingPluginMap[j.Plugin] = []*modconfig.Connection{}
-			}
-			missingPluginMap[j.Plugin] = append(missingPluginMap[j.Plugin], j.Connection)
-		}
-	}
-
-	// create the map of available/loaded plugins
 	pluginConnectionMap = make(map[string][]*modconfig.Connection)
-	for _, v := range connectionStateMap {
-		_, found := pluginConnectionMap[v.Plugin]
-		if !found {
-			pluginConnectionMap[v.Plugin] = []*modconfig.Connection{}
+
+	for _, state := range connectionStateMap {
+		connection, ok := steampipeconfig.GlobalConfig.Connections[state.ConnectionName]
+		if !ok {
+			continue
 		}
-		pluginConnectionMap[v.Plugin] = append(pluginConnectionMap[v.Plugin], v.Connection)
+
+		if state.State == constants.ConnectionStateError && state.Error() == constants.ConnectionErrorPluginFailedToStart {
+			if _, ok := failedPluginMap[state.Plugin]; !ok {
+				failedPluginMap[state.Plugin] = []*modconfig.Connection{}
+			}
+
+			failedPluginMap[state.Plugin] = append(failedPluginMap[state.Plugin])
+		} else if state.State == constants.ConnectionStateError && state.Error() == constants.ConnectionErrorPluginNotInstalled {
+			if _, ok := missingPluginMap[state.Plugin]; !ok {
+				missingPluginMap[state.Plugin] = []*modconfig.Connection{}
+			}
+			missingPluginMap[state.Plugin] = append(missingPluginMap[state.Plugin], connection)
+		}
+
+		pluginConnectionMap[state.Plugin] = append(pluginConnectionMap[state.Plugin], connection)
 	}
 
 	return pluginConnectionMap, failedPluginMap, missingPluginMap, res

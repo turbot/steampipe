@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type ConnectionPluginData struct {
@@ -81,14 +82,18 @@ func NewConnectionPlugin(pluginName string, pluginClient *sdkgrpc.PluginClient, 
 }
 
 // CreateConnectionPlugins instantiates plugins for specified connections, and fetches schemas
-func CreateConnectionPlugins(connectionsToCreate []*modconfig.Connection) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
+func CreateConnectionPlugins(connectionNamesToCreate []string) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
 	res = &RefreshConnectionResult{}
 	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin)
-	if len(connectionsToCreate) == 0 {
+	if len(connectionNamesToCreate) == 0 {
 		return
 	}
-	log.Printf("[TRACE] CreateConnectionPlugin creating %d connections", len(connectionsToCreate))
+	log.Printf("[TRACE] CreateConnectionPlugin creating %d %s", len(connectionNamesToCreate), utils.Pluralize("connection", len(connectionNamesToCreate)))
 
+	var connectionsToCreate = make([]*modconfig.Connection, len(connectionNamesToCreate))
+	for i, name := range connectionNamesToCreate {
+		connectionsToCreate[i] = GlobalConfig.Connections[name]
+	}
 	// build result map, keyed by connection name
 	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin, len(connectionsToCreate))
 	// build list of connection names to pass to plugin manager 'get'

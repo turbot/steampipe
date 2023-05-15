@@ -101,14 +101,19 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	if c.initData.Result.Error != nil {
 		return
 	}
+	statushooks.SetStatus(ctx, "Completing initialization...")
+	//  fetch the schema
+	// TODO make this async https://github.com/turbot/steampipe/issues/3400
+	// NOTE: we would like to do this asyncronously, but we are currently limited to a single Db conneciton in our
+	// as the client cache settings are set per connection so we rely on only haveing a single connection
+	// This means that the schema load would block other queries anyway so there is no benefit right not in making asyncronous
 
-	// asyncronously fetch the schema
 	if err := c.loadSchema(); err != nil {
 		c.initData.Result.Error = err
 		return
 	}
 
-	log.Printf("[TRACE] readInitDataStream - data has arrived")
+	log.Printf("[TRACE] SetupWatcher")
 
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
@@ -117,6 +122,8 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 			c.initData.Result.Error = err
 		}
 	}
+
+	log.Printf("[TRACE] Start notifications listener")
 
 	// create a cancellation context used to cancel the listen thread when we exit
 	listenCtx, cancel := context.WithCancel(ctx)

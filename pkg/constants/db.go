@@ -30,7 +30,7 @@ const (
 // constants for installing db and fdw images
 const (
 	DatabaseVersion = "14.2.0"
-	FdwVersion      = "1.7.0-rc.1"
+	FdwVersion      = "1.7.0-rc.5"
 
 	// PostgresImageRef is the OCI Image ref for the database binaries
 	PostgresImageRef    = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
@@ -43,18 +43,19 @@ const (
 // schema names
 const (
 	// InternalSchema is the schema container for all steampipe helper functions, and connection state table
-	InternalSchema = "internal"
-
-	// ConnectionStateTable is the table used to store steampipe connection state
-	ConnectionStateTable    = "connection_state"
-	ConnectionStatePending  = "pending"
-	ConnectionStateReady    = "ready"
-	ConnectionStateUpdating = "updating"
-	ConnectionStateDeleting = "deleting"
-	ConnectionStateError    = "error"
-
+	InternalSchema = "steampipe_internal"
 	// CommandSchema is the schema which is used to send commands to the FDW
 	CommandSchema = "steampipe_command"
+
+	// ConnectionStateTable is the table used to store steampipe connection state
+	ConnectionStateTable             = "steampipe_connection_state"
+	ConnectionStatePending           = "pending"
+	ConnectionStatePendingIncomplete = "incomplete"
+	ConnectionStateReady             = "ready"
+	ConnectionStateUpdating          = "updating"
+	ConnectionStateDeleting          = "deleting"
+	ConnectionStateDisabled          = "disabled"
+	ConnectionStateError             = "error"
 
 	CommandTableSettings            = "settings"
 	CommandTableSettingsKeyColumn   = "name"

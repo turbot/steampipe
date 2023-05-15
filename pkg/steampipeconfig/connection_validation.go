@@ -50,14 +50,16 @@ func ValidatePlugins(updates ConnectionStateMap, plugins map[string]*ConnectionP
 	}
 
 	// we need to separately validate aggregator connections as there will not be a connection plugin for them
-	for updateConnectionName, connectionData := range updates {
-		if connectionData.Connection.Type == modconfig.ConnectionTypeAggregator {
+	for updateConnectionName, connectionState := range updates {
+		if connectionState.GetType() == modconfig.ConnectionTypeAggregator {
+			// get the conneciton object
+			connection := GlobalConfig.Connections[updateConnectionName]
 			// get the first child connection
-			for _, childConnection := range connectionData.Connection.Connections {
+			for _, childConnection := range connection.Connections {
 				// check whether the plugin for this connection is validated
 				for _, p := range validatedPlugins {
 					if p.IncludesConnection(childConnection.Name) {
-						validatedUpdates[updateConnectionName] = connectionData
+						validatedUpdates[updateConnectionName] = connectionState
 					}
 				}
 				// only need to handle the first connection

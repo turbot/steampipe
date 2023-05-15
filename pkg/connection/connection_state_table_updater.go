@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/turbot/steampipe/pkg/connection/connection_state"
+	"github.com/turbot/steampipe/pkg/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
@@ -30,17 +30,30 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 
 	var queries []db_common.QueryWithArgs
 
-	for name, connectionData := range u.updates.FinalConnectionState {
+	// set updates to "updating"
+	for name, connectionState := range u.updates.FinalConnectionState {
 		// set the connection data state based on whether this connection is being created or deleted
 		if _, updatingConnection := u.updates.Update[name]; updatingConnection {
-			connectionData.State = constants.ConnectionStateUpdating
+			connectionState.State = constants.ConnectionStateUpdating
 		}
-		queries = append(queries, connection_state.GetStartUpdateConnectionStateSql(connectionData))
+		queries = append(queries, connection_state.GetStartUpdateConnectionStateSql(connectionState))
 	}
+	// set deletions to "deleting"
 	for name := range u.updates.Delete {
-		queries = append(queries, connection_state.GetSetConnectionDeletingSql(name))
+		// if we are we deleting the schema because schema_import="disabled", DO NOT set state to deleting -
+		// it will be set to "disabled below
+		if _, connectionDisabled := u.updates.Disabled[name]; connectionDisabled {
+			continue
+		}
+
+		queries = append(queries, connection_state.GetSetConnectionStateSql(name, constants.ConnectionStateDeleting))
 	}
 
+	// set any connections with import_schema=disabled to "disabled"
+	// also build a lookup of disabled connections
+	for name := range u.updates.Disabled {
+		queries = append(queries, connection_state.GetSetConnectionStateSql(name, constants.ConnectionStateDisabled))
+	}
 	conn, err := u.pool.Acquire(ctx)
 	if err != nil {
 		return err
@@ -53,10 +66,10 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, tx pgx.Tx, name string) error {
+func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, conn *pgx.Conn, name string) error {
 	connection := u.updates.FinalConnectionState[name]
-	q := connection_state.GetSetConnectionReadySql(connection)
-	_, err := tx.Exec(ctx, q.Query, q.Args...)
+	q := connection_state.GetSetConnectionStateSql(connection.ConnectionName, constants.ConnectionStateReady)
+	_, err := conn.Exec(ctx, q.Query, q.Args...)
 	if err != nil {
 		return err
 	}
@@ -64,9 +77,13 @@ func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, tx 
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, tx pgx.Tx, name string) error {
+func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, conn *pgx.Conn, name string) error {
+	// if this connection has schema import disabled, DO NOT delete from the conneciotn state table
+	if _, connectionDisabled := u.updates.Disabled[name]; connectionDisabled {
+		return nil
+	}
 	q := connection_state.GetDeleteConnectionStateSql(name)
-	_, err := tx.Exec(ctx, q.Query, q.Args...)
+	_, err := conn.Exec(ctx, q.Query, q.Args...)
 	if err != nil {
 		return err
 	}
@@ -74,9 +91,9 @@ func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, t
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, tx pgx.Tx, connectionName string, err error) error {
+func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, conn *pgx.Conn, connectionName string, err error) error {
 	q := connection_state.GetConnectionStateErrorSql(connectionName, err)
-	if _, err := tx.Exec(ctx, q.Query, q.Args...); err != nil {
+	if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {
 		return err
 	}
 

@@ -3,15 +3,15 @@ package steampipeconfig
 import (
 	"context"
 	"fmt"
-	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/sethvargo/go-retry"
+	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -30,11 +30,10 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 	// set this to a long enough time for ConnectionUpdates to be generated for a large connection count
 	// TODO this time can be reduced once all; plugins are using v5.4.1 of the sdk
 	maxDuration := 1 * time.Minute
-	retryInterval := 50 * time.Millisecond
+	retryInterval := 250 * time.Millisecond
 	if config.WaitMode == WaitForReady || config.WaitMode == WaitForSearchPath {
 		// is we are waiting for all connections to be ready, wait up to 10 minutes
 		maxDuration = 10 * time.Minute
-		retryInterval = 250 * time.Millisecond
 	}
 	backoff := retry.NewConstant(retryInterval)
 
@@ -133,6 +132,8 @@ func GetLoadingConnectionStatusMessage(connectionStateMap ConnectionStateMap, re
 
 func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionStateMap, error) {
 	query := fmt.Sprintf(`SELECT name,
+		type,
+		import_schema,
 		state,
 		error,	
 		plugin,
@@ -150,23 +151,15 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionStateMa
 
 	var res = make(ConnectionStateMap)
 
-	connectionDataList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionState])
+	connectionStateList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionState])
 	if err != nil {
 		return nil, err
 	}
 
-	for _, c := range connectionDataList {
+	for _, c := range connectionStateList {
 		// copy into loop var
-		connectionData := c
-		// TODO remove this usage of GlobalConfig.Connections
-		// (possibly remove connectionData.Connection altogether?)
-		//https://github.com/turbot/steampipe/issues/3387
-		// get connection config for this connection
-		// (this will not be there for a deletion)
-		connection, _ := GlobalConfig.Connections[connectionData.ConnectionName]
-
-		connectionData.Connection = connection
-		res[c.ConnectionName] = &connectionData
+		connectionState := c
+		res[c.ConnectionName] = &connectionState
 	}
 
 	return res, nil
@@ -186,7 +179,7 @@ func SaveConnectionStateFile(res *RefreshConnectionResult, connectionUpdates *Co
 	for pluginName, connections := range connectionUpdates.MissingPlugins {
 		// add in missing connections
 		for _, c := range connections {
-			connectionData := NewConnectionData(pluginName, &c, time.Now())
+			connectionData := NewConnectionState(pluginName, &c, time.Now())
 			connectionData.State = constants.ConnectionStateError
 			connectionData.SetError(constants.ConnectionErrorPluginNotInstalled)
 			connectionState[c.Name] = connectionData
