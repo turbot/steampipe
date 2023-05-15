@@ -162,7 +162,7 @@ func (r *Runner) shouldRun() bool {
 
 func showNotificationsForCommand(cmd *cobra.Command, cmdArgs []string) bool {
 	return !(isPluginUpdateCmd(cmd) ||
-		isPluginManagerCmd(cmd) ||
+		IsPluginManagerCmd(cmd) ||
 		isServiceStopCmd(cmd) ||
 		isBatchQueryCmd(cmd, cmdArgs) ||
 		isCompletionCmd(cmd))
@@ -174,7 +174,7 @@ func isServiceStopCmd(cmd *cobra.Command) bool {
 func isCompletionCmd(cmd *cobra.Command) bool {
 	return cmd.Name() == "completion"
 }
-func isPluginManagerCmd(cmd *cobra.Command) bool {
+func IsPluginManagerCmd(cmd *cobra.Command) bool {
 	return cmd.Name() == "plugin-manager"
 }
 func isPluginUpdateCmd(cmd *cobra.Command) bool {
