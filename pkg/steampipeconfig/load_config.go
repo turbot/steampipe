@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -194,6 +195,14 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			diags = append(diags, moreDiags...)
 			if moreDiags.HasErrors() {
 				continue
+			}
+			if err := db_common.CheckReservedConnectionName(connection.Name); err != nil {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagWarning,
+					Summary:  err.Error(),
+					Subject:  &block.DefRange,
+				})
+				error_helpers.ShowWarning(plugin.DiagsToWarnings(diags)[0])
 			}
 			_, alreadyThere := steampipeConfig.Connections[connection.Name]
 			if alreadyThere {
