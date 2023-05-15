@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
 func CheckReservedConnectionName(connectionName string) error {
-	if strings.EqualFold(connectionName, "public") {
-		return fmt.Errorf("'%s' is a reserved connection name", constants.Bold("public"))
+	if helpers.StringSliceContains(constants.ReservedConnectionNames, connectionName) {
+		return fmt.Errorf("'%s' is a reserved connection name", constants.Bold(connectionName))
 	}
-	if strings.HasPrefix(connectionName, "sp_") {
-		return fmt.Errorf("connection name '%s' cannot start with '%s'", constants.Bold(connectionName), constants.Bold("sp_"))
+	if strings.HasPrefix(connectionName, constants.ReservedConnectionPrefix) {
+		return fmt.Errorf("invalid connection name '%s' - connection names cannot start with '%s'", constants.Bold(connectionName), constants.Bold(constants.ReservedConnectionPrefix))
 	}
 	return nil
 }
