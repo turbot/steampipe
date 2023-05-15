@@ -48,7 +48,7 @@ const (
 	CommandSchema = "steampipe_command"
 
 	// ConnectionStateTable is the table used to store steampipe connection state
-	ConnectionStateTable             = "connection_state"
+	ConnectionStateTable             = "steampipe_connection_state"
 	ConnectionStatePending           = "pending"
 	ConnectionStatePendingIncomplete = "incomplete"
 	ConnectionStateReady             = "ready"
