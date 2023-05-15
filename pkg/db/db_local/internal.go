@@ -15,36 +15,34 @@ import (
 	"github.com/turbot/steampipe/sperr"
 )
 
+// dropLegacyInternal looks for a schema named 'internal'
+// which has a function called 'glob' - and drops it
 func dropLegacyInternal(ctx context.Context, conn *pgx.Conn) error {
 	utils.LogTime("db_local.dropLegacyInternal start")
 	defer utils.LogTime("db_local.dropLegacyInternal end")
 
 	log.Println("[TRACE] counting legacy internal")
 
-	// look for a schema named 'internal'
-	// which has a function called 'glob'
-	//
 	// we do a count here so that we don't have to deal with
 	// an antipattern of checking if the error is 'ErrNoRows'
 	// count will always yield a row - with a count of 0
-	row := conn.QueryRow(ctx, `
+	legacySchemaCountQuery := `
 	SELECT
-	count(distinct(p.proname)) as count
+		count(distinct(p.proname)) as count
 	FROM
-	pg_proc p
-	LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
+		pg_proc p
+		LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
 	WHERE
-	n.nspname = $1
-	AND
-	p.proname = $2;
-	`, constants.LegacyInternalSchema, "glob")
+		n.nspname = $1 AND p.proname = $2;
+	`
+
+	row := conn.QueryRow(ctx, legacySchemaCountQuery, constants.LegacyInternalSchema, "glob")
 
 	var count int
 	err := row.Scan(&count)
 	if err != nil {
 		return sperr.WrapWithMessage(err, "could not query for legacy schema: '%s'", constants.LegacyInternalSchema)
 	}
-	log.Println("[TRACE] legacy internal count", count)
 
 	if count == 0 {
 		// nothing to do here
@@ -52,7 +50,7 @@ func dropLegacyInternal(ctx context.Context, conn *pgx.Conn) error {
 		return nil
 	}
 
-	log.Println("[TRACE] dropping legacy internal")
+	log.Println("[TRACE] dropping legacy 'internal' schema")
 	if _, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA %s CASCADE", constants.LegacyInternalSchema)); err != nil {
 		return sperr.WrapWithMessage(err, "could not drop legacy schema: '%s'", constants.LegacyInternalSchema)
 	}
@@ -66,7 +64,7 @@ func setupInternal(ctx context.Context, conn *pgx.Conn) error {
 	defer utils.LogTime("db_local.setupInternal end")
 
 	if err := dropLegacyInternal(ctx, conn); err != nil {
-		return err
+		log.Println("[INFO] failed to drop legacy 'internal' schema", err)
 	}
 
 	queries := []string{
