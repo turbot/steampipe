@@ -143,7 +143,7 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	}
 	defer conn.Close(ctx)
 
-	if res.Status==ServiceAlreadyRunning {
+	if res.Status == ServiceAlreadyRunning {
 		// if db is already running - ensure it contains command schema
 		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
 		// and upgrades to this version - we need to ensure we create the command schema
@@ -168,6 +168,10 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	// create the clone_foreign_schema function
 	if _, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL); err != nil {
 		return sperr.WrapWithMessage(err, "failed to create clone_foreign_schema function")
+	}
+	// create the clone_comments function
+	if _, err := executeSqlAsRoot(ctx, cloneCommentsSQL); err != nil {
+		return sperr.WrapWithMessage(err, "failed to create clone_comments function")
 	}
 
 	// if there is an unprocessed db backup file, restore it now

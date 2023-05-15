@@ -8,6 +8,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
+// GetConnectionStateTableCreateSql returns the sql to create the conneciton state table
 func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
     			name TEXT PRIMARY KEY,
@@ -25,6 +26,7 @@ func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{Query: query}
 }
 
+// GetConnectionStateErrorSql returns the sql to set a connection to 'error'
 func GetConnectionStateErrorSql(connectionName string, err error) db_common.QueryWithArgs {
 	query := fmt.Sprintf(`UPDATE %s.%s
 SET state = '%s',
@@ -38,6 +40,7 @@ WHERE
 	return db_common.QueryWithArgs{query, args}
 }
 
+// GetIncompleteConnectionStateErrorSql returns the sql to set all incomplete connections to 'error' (unless they alre already in error)
 func GetIncompleteConnectionStateErrorSql(err error) db_common.QueryWithArgs {
 	query := fmt.Sprintf(`UPDATE %s.%s
 SET state = '%s',
@@ -52,6 +55,7 @@ AND state <> 'error'
 	return db_common.QueryWithArgs{Query: query, Args: args}
 }
 
+// GetIncompleteConnectionStatePendingIncompleteSql returns the sql to set all incomplete connections to 'incomplete'
 func GetIncompleteConnectionStatePendingIncompleteSql() db_common.QueryWithArgs {
 	query := fmt.Sprintf(`UPDATE %s.%s
 SET state = '%s',
@@ -65,9 +69,8 @@ WHERE
 	return db_common.QueryWithArgs{Query: query}
 }
 
-func GetStartUpdateConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
-	// if state is updating, set comments to false
-	commentsSet := c.State == constants.ConnectionStateReady
+// UpdateConnectionStateSql returns the sql to update the connection state in the able with the current properties
+func UpdateConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
 	// upsert
 	query := fmt.Sprintf(`INSERT INTO %s.%s (name, 
 		state,
@@ -104,7 +107,7 @@ DO
 		c.Plugin,
 		c.SchemaMode,
 		c.SchemaHash,
-		commentsSet,
+		c.CommentsSet,
 		c.PluginModTime}
 	return db_common.QueryWithArgs{query, args}
 }
@@ -166,7 +169,7 @@ func GetDeleteConnectionStateSql(connectionName string) db_common.QueryWithArgs 
 
 func GetSetConnectionStateCommentLoadedSql(connectionName string, commentsLoaded bool) db_common.QueryWithArgs {
 	query := fmt.Sprintf(`UPDATE  %s.%s
-SET comments_loaded = $1
+SET comments_set = $1
 WHERE NAME=$2`, constants.InternalSchema, constants.ConnectionStateTable)
 	args := []any{commentsLoaded, connectionName}
 	return db_common.QueryWithArgs{query, args}

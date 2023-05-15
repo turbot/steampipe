@@ -31,7 +31,6 @@ BEGIN
 -- Create schema
     EXECUTE 'DROP SCHEMA IF EXISTS ' ||  dest_schema || ' CASCADE';
     EXECUTE 'CREATE SCHEMA ' || dest_schema;
---     EXECUTE 'COMMENT ON SCHEMA ' || dest_schema || 'IS  ''steampipe plugin: ' || plugin_name || '''';
     EXECUTE 'GRANT USAGE ON SCHEMA ' || dest_schema || ' TO steampipe_users';
     EXECUTE 'ALTER DEFAULT PRIVILEGES IN SCHEMA ' || dest_schema || ' GRANT SELECT ON TABLES TO steampipe_users';
 
@@ -73,75 +72,78 @@ $BODY$
                      COST 100;
 `
 
-const cloneCommentsSQL = `CREATE OR REPLACE FUNCTION clone_foreign_schema(
+const cloneCommentsSQL = `
+CREATE OR REPLACE FUNCTION clone_table_comments(
     source_schema text,
-    dest_schema text,
-    plugin_name text)
+    dest_schema text)
     RETURNS text AS
 $BODY$
 
 DECLARE
-    src_oid          oid;
-    object           text;
-    dest_table       text;
-    table_sql      text;
-    columns_sql      text;
-    type_            text;
-    column_          text;
-    res              text;
+    src_oid         oid;
+    dest_oid        oid;
+    t               text;
+    ret             text;
+    query           text;
+    table_desc      text;
+    column_desc     text;
+    column_number   int;
+    c               text;
+
 BEGIN
 
-    -- Check that source_schema exists
+
+    -- Check that source_schema and dest_schema exist
     SELECT oid INTO src_oid
     FROM pg_namespace
-    WHERE nspname = source_schema;
+    WHERE nspname = quote_ident(source_schema);
     IF NOT FOUND
     THEN
-        RAISE EXCEPTION 'source schema % does not exist!', source_schema;
-        RETURN '';
+        RAISE NOTICE 'source schema % does not exist!', source_schema;
+        RETURN 'source schema does not exist!';
     END IF;
 
--- Create schema
-    EXECUTE 'DROP SCHEMA IF EXISTS ' ||  dest_schema || ' CASCADE';
-    EXECUTE 'CREATE SCHEMA ' || dest_schema;
---     EXECUTE 'COMMENT ON SCHEMA ' || dest_schema || 'IS  ''steampipe plugin: ' || plugin_name || '''';
-    EXECUTE 'GRANT USAGE ON SCHEMA ' || dest_schema || ' TO steampipe_users';
-    EXECUTE 'ALTER DEFAULT PRIVILEGES IN SCHEMA ' || dest_schema || ' GRANT SELECT ON TABLES TO steampipe_users';
+    SELECT oid INTO dest_oid
+    FROM pg_namespace
+    WHERE nspname = quote_ident(dest_schema);
+    IF NOT FOUND
+    THEN
+        RAISE NOTICE 'dest schema % does not exist!', dest_schema;
+        RETURN 'dest schema does not exist!';
+    END IF;
 
--- Create tables
-    FOR object IN
-        SELECT TABLE_NAME::text
+    -- Copy comments
+    FOR t IN
+        SELECT table_name::text
         FROM information_schema.tables
-        WHERE table_schema = source_schema
-          AND table_type = 'FOREIGN'
+            WHERE table_schema = quote_ident(source_schema)
+            AND table_type = 'FOREIGN'
+    LOOP
+            SELECT OBJ_DESCRIPTION((quote_ident(source_schema) || '.' || quote_ident(t))::REGCLASS) into table_desc;
+            query = 'COMMENT ON FOREIGN TABLE ' || quote_ident(dest_schema) ||  '.' || quote_ident(t) || ' IS $steampipe_escape$' || table_desc || '$steampipe_escape$';
+             EXECUTE query;
 
-        LOOP
-            columns_sql := '';
-
-            FOR column_, type_ IN
-                SELECT column_name::text, data_type::text
+            FOR  c,column_number IN
+                SELECT column_name, ordinal_position
                 FROM information_schema.COLUMNS
-                WHERE table_schema = source_schema
-                  AND TABLE_NAME = object
+                    WHERE table_schema = quote_ident(source_schema)
+                    AND table_name = quote_ident(t)
+            LOOP
+                SELECT PG_CATALOG.COL_DESCRIPTION((quote_ident(source_schema) || '.' || quote_ident(t))::REGCLASS::OID, column_number) into column_desc;
+                query = 'COMMENT ON COLUMN ' || quote_ident(dest_schema) ||  '.' || quote_ident(t) ||  '.' || quote_ident(c) || ' IS $steampipe_escape$' || column_desc || '$steampipe_escape$';
+                select CONCAT(ret, query || '\n') into ret;
 
-                LOOP
-                    IF columns_sql <> ''
-                    THEN
-                        columns_sql = columns_sql || ',';
-                    END IF;
-                    columns_sql = columns_sql || quote_ident(column_) || ' ' || type_;
-                END LOOP;
+              EXECUTE query;
 
-            dest_table := '"' || dest_schema || '".' || quote_ident(object);
-            table_sql :='CREATE FOREIGN TABLE ' || dest_table || ' (' || columns_sql || ') SERVER steampipe OPTIONS (table '|| $$'$$ || quote_ident(object) || $$'$$ || ') ';
-            EXECUTE table_sql;
+            END LOOP;
 
-            SELECT CONCAT(res, table_sql, ';') into res;
-        END LOOP;
-    RETURN res;
+    END LOOP;
+
+    RETURN ret;
 END
 
 $BODY$
     LANGUAGE plpgsql VOLATILE
                      COST 100;
+
 `

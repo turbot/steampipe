@@ -29,9 +29,10 @@ type ConnectionState struct {
 	SchemaMode string `json:"schema_mode,omitempty" db:"schema_mode"`
 	// the hash of the connection schema - this is used to determine if a dynamic schema has changed
 	SchemaHash string `json:"schema_hash,omitempty" db:"schema_hash"`
+	// are the comments set
+	CommentsSet bool `json:"comments_set" db:"comments_set"`
 	// the creation time of the plugin file
 	PluginModTime time.Time `json:"plugin_mod_time" db:"plugin_mod_time"`
-
 	// the update time of the connection
 	ConnectionModTime time.Time `json:"connection_mod_time" db:"connection_mod_time"`
 }

@@ -30,13 +30,16 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 
 	var queries []db_common.QueryWithArgs
 
+	// update the conection stat etable to set appropriate state for all connections
 	// set updates to "updating"
 	for name, connectionState := range u.updates.FinalConnectionState {
 		// set the connection data state based on whether this connection is being created or deleted
 		if _, updatingConnection := u.updates.Update[name]; updatingConnection {
 			connectionState.State = constants.ConnectionStateUpdating
+			connectionState.CommentsSet = false
 		}
-		queries = append(queries, connection_state.GetStartUpdateConnectionStateSql(connectionState))
+		// get the sql to update the connection state in the table to match the struct
+		queries = append(queries, connection_state.UpdateConnectionStateSql(connectionState))
 	}
 	// set deletions to "deleting"
 	for name := range u.updates.Delete {
@@ -69,6 +72,17 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, conn *pgx.Conn, name string) error {
 	connection := u.updates.FinalConnectionState[name]
 	q := connection_state.GetSetConnectionStateSql(connection.ConnectionName, constants.ConnectionStateReady)
+	_, err := conn.Exec(ctx, q.Query, q.Args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *connectionStateTableUpdater) onConnectionCommentsLoaded(ctx context.Context, conn *pgx.Conn, name string) error {
+	connection := u.updates.FinalConnectionState[name]
+	q := connection_state.GetSetConnectionStateCommentLoadedSql(connection.ConnectionName, true)
 	_, err := conn.Exec(ctx, q.Query, q.Args...)
 	if err != nil {
 		return err
