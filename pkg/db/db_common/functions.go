@@ -1,6 +1,6 @@
 package db_common
 
-// Functions is a list of SQLFunction objects that are installed in the db 'internal' schema startup
+// Functions is a list of SQLFunction objects that are installed in the db 'steampipe_internal' schema startup
 var Functions = []SQLFunction{
 	{
 		Name:     "glob",

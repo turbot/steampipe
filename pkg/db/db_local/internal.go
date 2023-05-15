@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -14,24 +15,59 @@ import (
 	"github.com/turbot/steampipe/sperr"
 )
 
-/**
+func dropLegacyInternal(ctx context.Context, conn *pgx.Conn) error {
+	utils.LogTime("db_local.dropLegacyInternal start")
+	defer utils.LogTime("db_local.dropLegacyInternal end")
 
-Query to get functions:
-SELECT
-    p.proname AS function_name
-FROM
-    pg_proc p
-    LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
-WHERE
-    n.nspname = 'functionSchema'
-ORDER BY
-    function_name;
+	log.Println("[TRACE] counting legacy internal")
 
-**/
+	// look for a schema named 'internal'
+	// which has a function called 'glob'
+	//
+	// we do a count here so that we don't have to deal with
+	// an antipattern of checking if the error is 'ErrNoRows'
+	// count will always yield a row - with a count of 0
+	row := conn.QueryRow(ctx, `
+	SELECT
+	count(distinct(p.proname)) as count
+	FROM
+	pg_proc p
+	LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
+	WHERE
+	n.nspname = $1
+	AND
+	p.proname = $2;
+	`, constants.LegacyInternalSchema, "glob")
+
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return sperr.WrapWithMessage(err, "could not query for legacy schema: '%s'", constants.LegacyInternalSchema)
+	}
+	log.Println("[TRACE] legacy internal count", count)
+
+	if count == 0 {
+		// nothing to do here
+		// the legacy schema has been dropped already
+		return nil
+	}
+
+	log.Println("[TRACE] dropping legacy internal")
+	if _, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA %s CASCADE", constants.LegacyInternalSchema)); err != nil {
+		return sperr.WrapWithMessage(err, "could not drop legacy schema: '%s'", constants.LegacyInternalSchema)
+	}
+
+	log.Println("[TRACE] dropped legacy internal")
+	return nil
+}
 
 func setupInternal(ctx context.Context, conn *pgx.Conn) error {
-	utils.LogTime("db.setupInternal start")
-	defer utils.LogTime("db.setupInternal end")
+	utils.LogTime("db_local.setupInternal start")
+	defer utils.LogTime("db_local.setupInternal end")
+
+	if err := dropLegacyInternal(ctx, conn); err != nil {
+		return err
+	}
 
 	queries := []string{
 		"lock table pg_namespace;",
