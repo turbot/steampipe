@@ -93,6 +93,10 @@ var rootCmd = &cobra.Command{
 
 		// skip running the task runner if this is the plugin manager
 		// since it's supposed to be a daemon
+		// and only intended for managing plugins
+		// there is no point in running tasks in the plugin manager
+		// since it is always started by steampipe
+		// which will have run the tasks anyway before-hand
 		if !task.IsPluginManagerCmd(cmd) {
 			waitForTasksChannel = task.RunTasks(
 				taskUpdateCtx,
