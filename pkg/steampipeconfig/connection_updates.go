@@ -174,17 +174,26 @@ func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, 
 	if requiredConnectionState.Disabled() {
 		return false
 	}
+	// is this is a new connection
+	if !schemaExistsInState {
+		return true
+	}
+	// if the connection has been enabled (i.e. if it was previously DISABLED) , return true
+	if currentConnectionState.Disabled() {
+		return true
+	}
 
-	// if the connection has been enabled, return true
-	return currentConnectionState.Disabled() ||
-		// are we are forcing an update of this connection,
-		helpers.StringSliceContains(forceUpdateConnectionNames, name) ||
-		// is this is a new connection
-		!schemaExistsInState ||
-		// has this connection previously not fully loaded
-		currentConnectionState.State == constants.ConnectionStatePendingIncomplete ||
-		// has this connection changed
-		!currentConnectionState.Equals(requiredConnectionState)
+	// are we are forcing an update of this connection,
+	if helpers.StringSliceContains(forceUpdateConnectionNames, name) {
+		return true
+	}
+
+	// has this connection previously not fully loaded
+	if currentConnectionState.State == constants.ConnectionStatePendingIncomplete {
+		return true
+	}
+	// update if the connection state is different
+	return !currentConnectionState.Equals(requiredConnectionState)
 }
 
 // update requiredConnections - set the schema hash and schema mode for all elements of FinalConnectionState
