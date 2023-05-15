@@ -82,11 +82,15 @@ Examples:
   steampipe plugin install aws
 
   # Install a specific plugin version
-  steampipe plugin install turbot/azure@0.1.0`,
+  steampipe plugin install turbot/azure@0.1.0
+
+  # Hide progress bars during installation
+  steampipe plugin install --progress=false aws`,
 	}
 
 	cmdconfig.
 		OnCmd(cmd).
+		AddBoolFlag(constants.ArgProgress, true, "Display installation progress").
 		AddBoolFlag(constants.ArgHelp, false, "Help for plugin install", cmdconfig.FlagOptions.WithShortHand("h"))
 	return cmd
 }
@@ -111,12 +115,16 @@ Examples:
   steampipe plugin update --all
 
   # Update a common plugin (turbot/aws)
-  steampipe plugin update aws`,
+  steampipe plugin update aws
+
+  # Hide progress bars during update
+  steampipe plugin update --progress=false aws`,
 	}
 
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgAll, false, "Update all plugins to its latest available version").
+		AddBoolFlag(constants.ArgProgress, true, "Display installation progress").
 		AddBoolFlag(constants.ArgHelp, false, "Help for plugin update", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
@@ -201,6 +209,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// plugin names can be simple names ('aws') for "standard" plugins,
 	// or full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
+	showProgress := viper.GetBool(constants.ArgProgress)
 	installReports := make(display.PluginInstallReports, 0, len(plugins))
 
 	if len(plugins) == 0 {
@@ -215,25 +224,24 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
-
 	progressBars := uiprogress.New()
 	installWaitGroup := &sync.WaitGroup{}
-	dataChannel := make(chan *display.PluginInstallReport, len(plugins))
+	reportChannel := make(chan *display.PluginInstallReport, len(plugins))
 
-	progressBars.Start()
-
+	if showProgress {
+		progressBars.Start()
+	}
 	for _, pluginName := range plugins {
 		installWaitGroup.Add(1)
 		bar := createProgressBar(pluginName, progressBars)
-		go doPluginInstall(ctx, bar, pluginName, installWaitGroup, dataChannel)
+		go doPluginInstall(ctx, bar, pluginName, installWaitGroup, reportChannel)
 	}
 	go func() {
 		installWaitGroup.Wait()
-		close(dataChannel)
+		close(reportChannel)
 	}()
-
 	installCount := 0
-	for report := range dataChannel {
+	for report := range reportChannel {
 		installReports = append(installReports, report)
 		if !report.Skipped {
 			installCount++
@@ -241,8 +249,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			exitCode = constants.ExitCodePluginInstallFailure
 		}
 	}
-
-	progressBars.Stop()
+	if showProgress {
+		progressBars.Stop()
+	}
 
 	if installCount > 0 {
 		// TODO do we need to refresh connections here
@@ -315,6 +324,8 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	// These can be simple names ('aws') for "standard" plugins,
 	// or full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins, err := resolveUpdatePluginsFromArgs(args)
+	showProgress := viper.GetBool(constants.ArgProgress)
+
 	if err != nil {
 		fmt.Println()
 		error_helpers.ShowError(ctx, err)
@@ -407,30 +418,34 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	updateWaitGroup := &sync.WaitGroup{}
-	dataChannel := make(chan *display.PluginInstallReport, len(reports))
+	reportChannel := make(chan *display.PluginInstallReport, len(reports))
 	progressBars := uiprogress.New()
-	progressBars.Start()
+	if showProgress {
+		progressBars.Start()
+	}
 
 	sorted := utils.SortedMapKeys(reports)
 	for _, key := range sorted {
 		report := reports[key]
 		updateWaitGroup.Add(1)
 		bar := createProgressBar(report.ShortNameWithStream(), progressBars)
-		go doPluginUpdate(ctx, bar, report, updateWaitGroup, dataChannel)
+		go doPluginUpdate(ctx, bar, report, updateWaitGroup, reportChannel)
 	}
 	go func() {
 		updateWaitGroup.Wait()
-		close(dataChannel)
+		close(reportChannel)
 	}()
 	installCount := 0
 
-	for updateResult := range dataChannel {
+	for updateResult := range reportChannel {
 		updateResults = append(updateResults, updateResult)
 		if !updateResult.Skipped {
 			installCount++
 		}
 	}
-	progressBars.Stop()
+	if showProgress {
+		progressBars.Stop()
+	}
 
 	display.PrintInstallReports(updateResults, true)
 
