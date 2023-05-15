@@ -89,9 +89,7 @@ DECLARE
     column_desc     text;
     column_number   int;
     c               text;
-
 BEGIN
-
 
     -- Check that source_schema and dest_schema exist
     SELECT oid INTO src_oid
@@ -112,6 +110,7 @@ BEGIN
         RETURN 'dest schema does not exist!';
     END IF;
 
+
     -- Copy comments
     FOR t IN
         SELECT table_name::text
@@ -119,24 +118,22 @@ BEGIN
             WHERE table_schema = quote_ident(source_schema)
             AND table_type = 'FOREIGN'
     LOOP
-            SELECT OBJ_DESCRIPTION((quote_ident(source_schema) || '.' || quote_ident(t))::REGCLASS) into table_desc;
-            query = 'COMMENT ON FOREIGN TABLE ' || quote_ident(dest_schema) ||  '.' || quote_ident(t) || ' IS $steampipe_escape$' || table_desc || '$steampipe_escape$';
-             EXECUTE query;
+        SELECT OBJ_DESCRIPTION((quote_ident(source_schema) || '.' || quote_ident(t))::REGCLASS) INTO table_desc;
+        query = 'COMMENT ON FOREIGN TABLE ' || quote_ident(dest_schema) ||  '.' || quote_ident(t) || ' IS $steampipe_escape$' || table_desc || '$steampipe_escape$';
+--       SELECT CONCAT(ret, query || '\n') INTO ret;
+        EXECUTE query;
 
-            FOR  c,column_number IN
-                SELECT column_name, ordinal_position
-                FROM information_schema.COLUMNS
-                    WHERE table_schema = quote_ident(source_schema)
-                    AND table_name = quote_ident(t)
-            LOOP
-                SELECT PG_CATALOG.COL_DESCRIPTION((quote_ident(source_schema) || '.' || quote_ident(t))::REGCLASS::OID, column_number) into column_desc;
-                query = 'COMMENT ON COLUMN ' || quote_ident(dest_schema) ||  '.' || quote_ident(t) ||  '.' || quote_ident(c) || ' IS $steampipe_escape$' || column_desc || '$steampipe_escape$';
-                select CONCAT(ret, query || '\n') into ret;
-
-              EXECUTE query;
-
-            END LOOP;
-
+        FOR  c,column_number IN
+            SELECT column_name, ordinal_position
+            FROM information_schema.COLUMNS
+                WHERE table_schema = quote_ident(source_schema)
+                AND table_name = quote_ident(t)
+        LOOP
+            SELECT PG_CATALOG.COL_DESCRIPTION((quote_ident(source_schema) || '.' || quote_ident(t))::REGCLASS::OID, column_number) INTO column_desc;
+            query = 'COMMENT ON COLUMN ' || quote_ident(dest_schema) ||  '.' || quote_ident(t) ||  '.' || quote_ident(c) || ' IS $steampipe_escape$' || column_desc || '$steampipe_escape$';
+--            SELECT CONCAT(ret, query || '\n') INTO ret;
+            EXECUTE query;
+        END LOOP;
     END LOOP;
 
     RETURN ret;
@@ -145,5 +142,4 @@ END
 $BODY$
     LANGUAGE plpgsql VOLATILE
                      COST 100;
-
 `

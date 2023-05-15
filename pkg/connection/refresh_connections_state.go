@@ -520,16 +520,16 @@ func (state *refreshConnectionState) updateCommentsForConnections(ctx context.Co
 		// if this schema is static, add to the exemplar map
 		state.exemplarSchemaMapMut.Lock()
 		// is this plugin in the exemplarSchemaMap
-		exemplarSchemaName, haveExemplarSchema := state.exemplarCommentsMap[connectionState.Plugin]
-		if haveExemplarSchema {
-			// we can clone!
-			sql = getCloneCommentsQuery(sql, exemplarSchemaName, connectionState)
-		} else {
-			// get the schema from the connection plugin
-			schema := connectionPluginMap[connectionName].ConnectionMap[connectionName].Schema.Schema
-			// just get sql to execute update query, and update the connection state table, in a transaction
-			sql = db_common.GetCommentsQueryForPlugin(connectionName, schema)
-		}
+		_, haveExemplarSchema := state.exemplarCommentsMap[connectionState.Plugin]
+		//if haveExemplarSchema {
+		// we can clone!
+		//sql = getCloneCommentsQuery(sql, exemplarSchemaName, connectionState)
+		//} else {
+		// get the schema from the connection plugin
+		schema := connectionPluginMap[connectionName].ConnectionMap[connectionName].Schema.Schema
+		// just get sql to execute update query, and update the connection state table, in a transaction
+		sql = db_common.GetCommentsQueryForPlugin(connectionName, schema)
+		//}
 		state.exemplarSchemaMapMut.Unlock()
 
 		// the only error this will return is the failure to update the state table

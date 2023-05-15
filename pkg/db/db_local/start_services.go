@@ -136,7 +136,6 @@ func ensurePluginManager(res *StartResult) *StartResult {
 }
 
 func postServiceStart(ctx context.Context, res *StartResult) error {
-
 	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
