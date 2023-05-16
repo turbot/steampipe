@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -22,6 +21,25 @@ import (
 func dropLegacyInternal(ctx context.Context, conn *pgx.Conn) error {
 	utils.LogTime("db_local.dropLegacyInternal start")
 	defer utils.LogTime("db_local.dropLegacyInternal end")
+
+	if exists, err := isLegacyInternalExists(ctx, conn); err == nil && !exists {
+		log.Println("[TRACE] could not find legacy 'internal' schema")
+		return nil
+	}
+
+	log.Println("[TRACE] dropping legacy 'internal' schema")
+	if _, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA %s CASCADE", constants.LegacyInternalSchema)); err != nil {
+		return sperr.WrapWithMessage(err, "could not drop legacy schema: '%s'", constants.LegacyInternalSchema)
+	}
+	log.Println("[TRACE] dropped legacy 'internal' schema")
+	return nil
+}
+
+// isLegacyInternalExists looks for a schema named 'internal'
+// which has a function called 'glob' and maybe a table named 'connection_state'
+func isLegacyInternalExists(ctx context.Context, conn *pgx.Conn) (bool, error) {
+	utils.LogTime("db_local.isLegacyInternalExists start")
+	defer utils.LogTime("db_local.isLegacyInternalExists end")
 
 	log.Println("[TRACE] querying for legacy 'internal' schema")
 
@@ -56,48 +74,47 @@ INNER JOIN
 
 	row := conn.QueryRow(ctx, legacySchemaCountQuery, constants.LegacyInternalSchema)
 
-	var fNames string
-	var tNames string
-	err := row.Scan(&fNames, &tNames)
+	var functionNames string
+	var tableNames string
+	err := row.Scan(&functionNames, &tableNames)
 	if err != nil {
-		return sperr.WrapWithMessage(err, "could not query legacy 'internal' schema objects: '%s'", constants.LegacyInternalSchema)
+		return false, sperr.WrapWithMessage(err, "could not query legacy 'internal' schema objects: '%s'", constants.LegacyInternalSchema)
 	}
 
-	if len(fNames) == 0 && len(tNames) == 0 {
+	if len(functionNames) == 0 && len(tableNames) == 0 {
 		log.Println("[TRACE] could not find any objects in 'internal' - skipping drop")
-		return nil
+		return false, nil
 	}
 
-	functionNames := strings.Split(fNames, ",")
-	tableNames := strings.Split(tNames, ",")
+	functions := strings.Split(functionNames, ",")
+	tables := strings.Split(tableNames, ",")
 
-	log.Println("[TRACE] dropLegacyInternal: available function names", functionNames)
-	log.Println("[TRACE] dropLegacyInternal: available table names", tableNames)
+	log.Println("[TRACE] isLegacyInternalExists: available function names", functions)
+	log.Println("[TRACE] isLegacyInternalExists: available table names", tables)
 
-	expectedFunctions := []string{"glob"}
-	expectedTables := []string{"connection_state", constants.ConnectionStateTable}
-
-	unexpectedFunctions := helpers.StringSliceDiff(functionNames, expectedFunctions)
-	unexpectedTables := helpers.StringSliceDiff(tableNames, expectedTables)
-
-	if len(unexpectedFunctions) > 0 {
-		log.Println("[TRACE] dropLegacyInternal: unexpected functions", unexpectedFunctions)
-		log.Println("[INFO] found 'internal' with unexpected functions - skipping drop")
-		return nil
+	expectedFunctions := map[string]bool{
+		"glob": true,
+	}
+	expectedTables := map[string]bool{
+		"connection_state":             true, // legacy table name
+		constants.ConnectionStateTable: true,
 	}
 
-	if len(unexpectedTables) > 0 {
-		log.Println("[TRACE] dropLegacyInternal: unexpected tables", unexpectedTables)
-		log.Println("[INFO] found 'internal' with unexpected tables - skipping drop")
-		return nil
+	for _, f := range functions {
+		if !expectedFunctions[f] {
+			log.Println("[TRACE] isLegacyInternalExists: unexpected function", f)
+			return false, nil
+		}
 	}
 
-	log.Println("[TRACE] dropping legacy 'internal' schema")
-	if _, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA %s CASCADE", constants.LegacyInternalSchema)); err != nil {
-		return sperr.WrapWithMessage(err, "could not drop legacy schema: '%s'", constants.LegacyInternalSchema)
+	for _, t := range tables {
+		if !expectedTables[t] {
+			log.Println("[TRACE] isLegacyInternalExists: unexpected table", t)
+			return false, nil
+		}
 	}
-	log.Println("[TRACE] dropped legacy 'internal' schema")
-	return nil
+
+	return true, nil
 }
 
 func setupInternal(ctx context.Context, conn *pgx.Conn) error {
