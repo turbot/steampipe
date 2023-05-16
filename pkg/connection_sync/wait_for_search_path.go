@@ -2,6 +2,8 @@ package connection_sync
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
@@ -18,5 +20,13 @@ func WaitForSearchPathSchemas(ctx context.Context, client db_common.Client, sear
 	defer conn.Release()
 
 	_, err = steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitForSearchPath(searchPath))
+
+	// NOTE: if we failed to load conection state, this must be because we are connected to an older version of the CLI
+	// just return nil error
+	_, missingTable, relationNotFound := db_client.IsRelationNotFoundError(err)
+	if relationNotFound && missingTable == constants.ConnectionStateTable {
+		return nil
+	}
+
 	return err
 }
