@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -16,37 +17,80 @@ import (
 )
 
 // dropLegacyInternal looks for a schema named 'internal'
-// which has a function called 'glob' - and drops it
+// which has a function called 'glob' and maybe a table named 'connection_state'
+// and drops it
 func dropLegacyInternal(ctx context.Context, conn *pgx.Conn) error {
 	utils.LogTime("db_local.dropLegacyInternal start")
 	defer utils.LogTime("db_local.dropLegacyInternal end")
 
-	log.Println("[TRACE] counting legacy internal")
+	log.Println("[TRACE] querying for legacy 'internal' schema")
 
-	// we do a count here so that we don't have to deal with
-	// an antipattern of checking if the error is 'ErrNoRows'
-	// count will always yield a row - with a count of 0
 	legacySchemaCountQuery := `
-	SELECT
-		count(distinct(p.proname)) as count
-	FROM
-		pg_proc p
-		LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
-	WHERE
-		n.nspname = $1 AND p.proname = $2;
+WITH 
+internal_functions AS (
+		SELECT
+			COALESCE(STRING_AGG(DISTINCT(p.proname), ', '),'') as function_names
+		FROM
+			pg_proc p
+			LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
+		WHERE
+			n.nspname = $1
+),
+internal_tables AS (
+		SELECT 
+				COALESCE(STRING_AGG(DISTINCT(table_name), ', '),'') as table_names
+		FROM 
+				information_schema.tables 
+		WHERE 
+				table_schema = $1
+)
+SELECT 
+		internal_functions.function_names, 
+		internal_tables.table_names 
+FROM
+		internal_functions 
+INNER JOIN
+		internal_tables
+ON
+		true
 	`
 
-	row := conn.QueryRow(ctx, legacySchemaCountQuery, constants.LegacyInternalSchema, "glob")
+	row := conn.QueryRow(ctx, legacySchemaCountQuery, constants.LegacyInternalSchema)
 
-	var count int
-	err := row.Scan(&count)
+	var fNames string
+	var tNames string
+	err := row.Scan(&fNames, &tNames)
 	if err != nil {
 		return sperr.WrapWithMessage(err, "could not query for legacy schema: '%s'", constants.LegacyInternalSchema)
 	}
 
-	if count == 0 {
-		// nothing to do here
-		// the legacy schema has been dropped already
+	if len(fNames) == 0 && len(tNames) == 0 {
+		log.Println("[TRACE] could not find any objects in 'internal' - skipping drop")
+		return nil
+	}
+
+	functionNames := strings.Split(fNames, ",")
+	tableNames := strings.Split(tNames, ",")
+
+	log.Println("[TRACE] dropLegacyInternal: available function names", functionNames)
+	log.Println("[TRACE] dropLegacyInternal: available table names", tableNames)
+
+	expectedFunctions := []string{"glob"}
+	expectedTables := []string{"connection_state", constants.ConnectionStateTable}
+
+	unexpectedFunctions := helpers.StringSliceDiff(functionNames, expectedFunctions)
+	unexpectedTables := helpers.StringSliceDiff(tableNames, expectedTables)
+
+	log.Println("[TRACE] dropLegacyInternal: unexpected functions", unexpectedFunctions)
+	log.Println("[TRACE] dropLegacyInternal: unexpected tables", unexpectedTables)
+
+	if len(unexpectedFunctions) > 0 {
+		log.Println("[INFO] found 'internal' with unexpected functions - skipping drop")
+		return nil
+	}
+
+	if len(unexpectedTables) > 0 {
+		log.Println("[INFO] found 'internal' with unexpected tables - skipping drop")
 		return nil
 	}
 
@@ -54,7 +98,6 @@ func dropLegacyInternal(ctx context.Context, conn *pgx.Conn) error {
 	if _, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA %s CASCADE", constants.LegacyInternalSchema)); err != nil {
 		return sperr.WrapWithMessage(err, "could not drop legacy schema: '%s'", constants.LegacyInternalSchema)
 	}
-
 	log.Println("[TRACE] dropped legacy internal")
 	return nil
 }
