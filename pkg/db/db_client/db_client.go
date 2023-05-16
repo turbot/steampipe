@@ -152,18 +152,22 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetada
 	var schemas []string
 	var connectionSchemaMap steampipeconfig.ConnectionSchemaMap
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
-	if err == nil {
-		// todo check error is connection state not found
-		// build a ConnectionSchemaMap object to identify the schemas to load
-		connectionSchemaMap = steampipeconfig.NewConnectionSchemaMap(ctx, connectionStateMap, c.GetRequiredSessionSearchPath())
-		if err != nil {
-			return nil, err
-		}
-
-		// get the unique schema - we use this to limit the schemas we load from the database
-		schemas = maps.Keys(connectionSchemaMap)
+	// NOTE: if we failed to load conenction state, this may be because we are connected to an older version of the CLI
+	// use legacy (v0.19.x) schema loading code
+	if err != nil {
+		return c.GetSchemaFromDBLegacy(ctx, conn)
 	}
-	// build a query to retrieve these schema
+
+	// build a ConnectionSchemaMap object to identify the schemas to load
+	connectionSchemaMap = steampipeconfig.NewConnectionSchemaMap(ctx, connectionStateMap, c.GetRequiredSessionSearchPath())
+	if err != nil {
+		return nil, err
+	}
+
+	// get the unique schema - we use this to limit the schemas we load from the database
+	schemas = maps.Keys(connectionSchemaMap)
+
+	// build a query to retrieve these schemas
 	query := c.buildSchemasQuery(schemas...)
 
 	//execute
@@ -178,44 +182,35 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetada
 		return nil, err
 	}
 
-	// if we have a conneciton schema map (i.e. we managed to load connection state)
 	// we now need to add in all other schemas which have the same schemas as those we have loaded
-	if connectionSchemaMap != nil {
-		for loadedSchema, otherSchemas := range connectionSchemaMap {
-			// all 'otherSchema's have the same schema as loadedSchema
-			exemplarSchema, ok := metadata.Schemas[loadedSchema]
-			if !ok {
-				// should can happen in the case of a dynamic plugin with no tables - use empty schema
-				exemplarSchema = make(map[string]db_common.TableSchema)
-			}
+	for loadedSchema, otherSchemas := range connectionSchemaMap {
+		// all 'otherSchema's have the same schema as loadedSchema
+		exemplarSchema, ok := metadata.Schemas[loadedSchema]
+		if !ok {
+			// should can happen in the case of a dynamic plugin with no tables - use empty schema
+			exemplarSchema = make(map[string]db_common.TableSchema)
+		}
 
-			for _, s := range otherSchemas {
-				metadata.Schemas[s] = exemplarSchema
-			}
+		for _, s := range otherSchemas {
+			metadata.Schemas[s] = exemplarSchema
 		}
 	}
+
 	return metadata, nil
 }
 
-// GetSchemaFromDB requests for all columns of tables backed by steampipe plugins
-// and creates golang struct representations from the result
-func (c *DbClient) GetSchemaFromDBLegacy(ctx context.Context, conn *pgx.Conn) (*db_common.SchemaMetadata, error) {
-	utils.LogTime("db_client.GetSchemaFromDB start")
-	defer utils.LogTime("db_client.GetSchemaFromDB end")
+func (c *DbClient) GetSchemaFromDBLegacy(ctx context.Context, conn *pgxpool.Conn) (*db_common.SchemaMetadata, error) {
+	// build a query to retrieve these schemas
+	query := c.buildSchemasQueryLegacy()
 
-	query := c.buildSchemasQuery()
-
+	//execute
 	tablesResult, err := conn.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 
-	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
-	if err != nil {
-		return nil, err
-	}
-
-	return metadata, nil
+	// build schema metadata from query result
+	return db_common.BuildSchemaMetadata(tablesResult)
 }
 
 // refreshDbClient terminates the current connection and opens up a new connection to the service.
@@ -265,5 +260,39 @@ LEFT JOIN
 WHERE %s
 	LEFT(cols.table_schema,8) = 'pg_temp_'
 `, schemaClause)
+	return query
+}
+func (c *DbClient) buildSchemasQueryLegacy() string {
+
+	query := `
+WITH distinct_schema AS (
+	SELECT DISTINCT(foreign_table_schema) 
+	FROM 
+		information_schema.foreign_tables 
+	WHERE 
+		foreign_table_schema <> 'steampipe_command'
+)
+SELECT
+    table_name,
+    column_name,
+    column_default,
+    is_nullable,
+    data_type,
+    udt_name,
+    table_schema,
+    (COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
+    (COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
+FROM
+    information_schema.columns cols
+LEFT JOIN
+    pg_catalog.pg_namespace nsp ON nsp.nspname = cols.table_schema
+LEFT JOIN
+    pg_catalog.pg_class c ON c.relname = cols.table_name AND c.relnamespace = nsp.oid
+WHERE
+	cols.table_schema in (select * from distinct_schema)
+	OR
+    LEFT(cols.table_schema,8) = 'pg_temp_'
+
+`
 	return query
 }

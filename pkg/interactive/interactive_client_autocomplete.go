@@ -26,7 +26,7 @@ func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
 	if err != nil {
 		// if we failed to load connection state, just use unoptimised autocomplete loading
-		c.initialiseQuerySuggestionsLegacy()
+		c.initialiseSuggestionsLegacy()
 		return nil
 	}
 
@@ -159,16 +159,4 @@ func sanitiseTableName(strToEscape string) string {
 		escaped = append(escaped, token)
 	}
 	return strings.Join(escaped, ".")
-}
-
-func (c *InteractiveClient) initialiseSuggestionsLegacy() {
-	c.initialiseQuerySuggestionsLegacy()
-	c.initialiseTableSuggestionsLegacy()
-}
-
-func (c *InteractiveClient) initialiseQuerySuggestionsLegacy() {
-}
-
-// initialiseTableSuggestions build a list of schema and table querySuggestions
-func (c *InteractiveClient) initialiseTableSuggestionsLegacy() {
 }

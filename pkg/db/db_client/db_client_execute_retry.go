@@ -37,7 +37,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		}
 
 		// so there is an error - is it "relation not found"?
-		missingSchema, _, relationNotFound := isRelationNotFoundError(queryError)
+		missingSchema, _, relationNotFound := IsRelationNotFoundError(queryError)
 		if !relationNotFound {
 			// just return it
 			return queryError
@@ -112,7 +112,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 	return res, err
 }
 
-func isRelationNotFoundError(err error) (string, string, bool) {
+func IsRelationNotFoundError(err error) (string, string, bool) {
 	if err == nil {
 		return "", "", false
 	}

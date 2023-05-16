@@ -12,7 +12,7 @@ import (
 // inspect
 func inspectLegacy(ctx context.Context, input *HandlerInput) error {
 	if len(input.args()) == 0 {
-		return listConnections(ctx, input)
+		return listConnectionsLegacy(ctx, input)
 	}
 	tableOrConnection := input.args()[0]
 	if len(input.args()) > 0 {
@@ -37,7 +37,7 @@ func inspectLegacy(ctx context.Context, input *HandlerInput) error {
 
 	if len(tokens) > 0 {
 		// only a connection name (or maybe unqualified table name)
-		schemaFound := inspectConnection(tableOrConnection, input)
+		schemaFound := inspectConnectionLegacy(tableOrConnection, input)
 
 		// there was no schema
 		if !schemaFound {
@@ -88,61 +88,57 @@ To get information about the columns in a table, run %s
 	return inspectTableLegacy(tokens[0], tokens[1], input)
 }
 
-//func listConnectionsLegacy(ctx context.Context, input *HandlerInput) error {
-//	header := []string{"connection", "plugin"}
-//	var rows [][]string
-//
-//	for _, schema := range input.Schema.GetSchemas() {
-//		if schema == input.Schema.TemporarySchemaName {
-//			continue
-//		}
-//		plugin, found := input.Connections[schema]
-//		if found {
-//			rows = append(rows, []string{schema, plugin.Plugin})
-//		} else {
-//			rows = append(rows, []string{schema, ""})
-//		}
-//	}
-//
-//	// sort by connection name
-//	sort.SliceStable(rows, func(i, j int) bool {
-//		return rows[i][0] < rows[j][0]
-//	})
-//
-//	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
-//
-//	fmt.Printf(`
-//To get information about the tables in a connection, run %s
-//To get information about the columns in a table, run %s
-//
-//`, constants.Bold(".inspect {connection}"), constants.Bold(".inspect {connection}.{table}"))
-//
-//	return nil
-//}
-//
-//func inspectConnectionLegacy(connectionName string, input *HandlerInput) bool {
-//	header := []string{"table", "description"}
-//	var rows [][]string
-//
-//	schema, found := input.Schema.Schemas[connectionName]
-//
-//	if !found {
-//		return false
-//	}
-//
-//	for _, tableSchema := range schema {
-//		rows = append(rows, []string{tableSchema.Name, tableSchema.Description})
-//	}
-//
-//	// sort by table name
-//	sort.SliceStable(rows, func(i, j int) bool {
-//		return rows[i][0] < rows[j][0]
-//	})
-//
-//	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
-//
-//	return true
-//}
+func listConnectionsLegacy(ctx context.Context, input *HandlerInput) error {
+	header := []string{"connection", "plugin"}
+	var rows [][]string
+
+	for _, schema := range input.Schema.GetSchemas() {
+		if schema == input.Schema.TemporarySchemaName {
+			continue
+		}
+		rows = append(rows, []string{schema, ""})
+
+	}
+
+	// sort by connection name
+	sort.SliceStable(rows, func(i, j int) bool {
+		return rows[i][0] < rows[j][0]
+	})
+
+	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+
+	fmt.Printf(`
+To get information about the tables in a connection, run %s
+To get information about the columns in a table, run %s
+
+`, constants.Bold(".inspect {connection}"), constants.Bold(".inspect {connection}.{table}"))
+
+	return nil
+}
+
+func inspectConnectionLegacy(connectionName string, input *HandlerInput) bool {
+	header := []string{"table", "description"}
+	var rows [][]string
+
+	schema, found := input.Schema.Schemas[connectionName]
+
+	if !found {
+		return false
+	}
+
+	for _, tableSchema := range schema {
+		rows = append(rows, []string{tableSchema.Name, tableSchema.Description})
+	}
+
+	// sort by table name
+	sort.SliceStable(rows, func(i, j int) bool {
+		return rows[i][0] < rows[j][0]
+	})
+
+	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+
+	return true
+}
 
 func inspectTableLegacy(connectionName string, tableName string, input *HandlerInput) error {
 	header := []string{"column", "type", "description"}
