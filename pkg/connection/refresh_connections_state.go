@@ -235,6 +235,7 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	// retrieve updates from the table updater
 	connectionUpdates := state.tableUpdater.updates
 
+	// TODO tidy up and refactor this validation
 	// find any plugins which use a newer sdk version than steampipe.
 	validationFailures, validatedPlugins := ValidatePlugins(connectionUpdates.ConnectionPlugins)
 	moreValidationFailures, validatedUpdates, validatedCommentUpdates := ValidateUpdates(connectionUpdates.Update, connectionUpdates.MissingComments, validatedPlugins)
@@ -311,9 +312,6 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	moreErrors = state.executeUpdatesInParallel(ctx, remainingUpdates)
 	errors = append(errors, moreErrors...)
 
-	// TODO kai need locking?
-	// asyncronously set all remaining comments
-	//go func() {
 	log.Printf("[INFO] Set comments for %d remaining %s and %d %s missing comments",
 		len(remainingUpdates),
 		utils.Pluralize("updates", len(remainingUpdates)),
@@ -324,7 +322,6 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	state.UpdateCommentsInParallel(ctx, maps.Values(remainingUpdates), validatedPlugins)
 	// set comments for any other connection without comment set
 	state.UpdateCommentsInParallel(ctx, maps.Values(state.connectionUpdates.MissingComments), validatedPlugins)
-	//}()
 
 	if len(errors) > 0 {
 		state.res.Error = error_helpers.CombineErrors(errors...)

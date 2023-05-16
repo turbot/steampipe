@@ -71,8 +71,8 @@ AND state <> 'disabled'
 	return db_common.QueryWithArgs{Query: query}
 }
 
-// UpdateConnectionStateSql returns the sql to update the connection state in the able with the current properties
-func UpdateConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
+// GetUpdateConnectionStateSql returns the sql to update the connection state in the able with the current properties
+func GetUpdateConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
 	// upsert
 	query := fmt.Sprintf(`INSERT INTO %s.%s (name, 
 		state,
