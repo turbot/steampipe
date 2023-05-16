@@ -166,33 +166,3 @@ func inspectTableLegacy(connectionName string, tableName string, input *HandlerI
 
 	return nil
 }
-
-//
-//func buildTable(rows [][]string, autoMerge bool) string {
-//	t := table.NewWriter()
-//	t.SetStyle(table.StyleDefault)
-//	t.Style().Options = table.Options{
-//		DrawBorder:      false,
-//		SeparateColumns: false,
-//		SeparateFooter:  false,
-//		SeparateHeader:  false,
-//		SeparateRows:    false,
-//	}
-//	t.Style().Box.PaddingLeft = ""
-//
-//	rowConfig := table.RowConfig{AutoMerge: autoMerge}
-//
-//	for _, row := range rows {
-//		rowObj := table.Row{}
-//		for _, col := range row {
-//			rowObj = append(rowObj, col)
-//		}
-//		t.AppendRow(rowObj, rowConfig)
-//	}
-//	return t.Render()
-//}
-//
-//func setAutoComplete(ctx context.Context, input *HandlerInput) error {
-//	cmdconfig.Viper().Set(constants.ArgAutoComplete, typeHelpers.StringToBool(input.args()[0]))
-//	return nil
-//}

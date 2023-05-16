@@ -146,11 +146,9 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetada
 	}
 	defer conn.Release()
 
-	// for optimisation purposes, try to loade connection state and build a map of schemas to load
+	// for optimisation purposes, try to load connection state and build a map of schemas to load
 	// (if we are connected to a remote server running an older CLI,
 	// this load may fail, in which case bypass the optimisation)
-	var schemas []string
-	var connectionSchemaMap steampipeconfig.ConnectionSchemaMap
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
 	// NOTE: if we failed to load conenction state, this may be because we are connected to an older version of the CLI
 	// use legacy (v0.19.x) schema loading code
@@ -159,13 +157,13 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetada
 	}
 
 	// build a ConnectionSchemaMap object to identify the schemas to load
-	connectionSchemaMap = steampipeconfig.NewConnectionSchemaMap(ctx, connectionStateMap, c.GetRequiredSessionSearchPath())
+	connectionSchemaMap := steampipeconfig.NewConnectionSchemaMap(ctx, connectionStateMap, c.GetRequiredSessionSearchPath())
 	if err != nil {
 		return nil, err
 	}
 
 	// get the unique schema - we use this to limit the schemas we load from the database
-	schemas = maps.Keys(connectionSchemaMap)
+	schemas := maps.Keys(connectionSchemaMap)
 
 	// build a query to retrieve these schemas
 	query := c.buildSchemasQuery(schemas...)
