@@ -29,7 +29,7 @@ func dropLegacyInternal(ctx context.Context, conn *pgx.Conn) error {
 WITH 
 internal_functions AS (
 		SELECT
-			COALESCE(STRING_AGG(DISTINCT(p.proname), ', '),'') as function_names
+			COALESCE(STRING_AGG(DISTINCT(p.proname),','),'') as function_names
 		FROM
 			pg_proc p
 			LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
@@ -38,7 +38,7 @@ internal_functions AS (
 ),
 internal_tables AS (
 		SELECT 
-				COALESCE(STRING_AGG(DISTINCT(table_name), ', '),'') as table_names
+				COALESCE(STRING_AGG(DISTINCT(table_name),','),'') as table_names
 		FROM 
 				information_schema.tables 
 		WHERE 
@@ -51,8 +51,7 @@ FROM
 		internal_functions 
 INNER JOIN
 		internal_tables
-ON
-		true
+		ON true;
 	`
 
 	row := conn.QueryRow(ctx, legacySchemaCountQuery, constants.LegacyInternalSchema)
@@ -61,7 +60,7 @@ ON
 	var tNames string
 	err := row.Scan(&fNames, &tNames)
 	if err != nil {
-		return sperr.WrapWithMessage(err, "could not query for legacy schema: '%s'", constants.LegacyInternalSchema)
+		return sperr.WrapWithMessage(err, "could not query legacy 'internal' schema objects: '%s'", constants.LegacyInternalSchema)
 	}
 
 	if len(fNames) == 0 && len(tNames) == 0 {
@@ -81,15 +80,14 @@ ON
 	unexpectedFunctions := helpers.StringSliceDiff(functionNames, expectedFunctions)
 	unexpectedTables := helpers.StringSliceDiff(tableNames, expectedTables)
 
-	log.Println("[TRACE] dropLegacyInternal: unexpected functions", unexpectedFunctions)
-	log.Println("[TRACE] dropLegacyInternal: unexpected tables", unexpectedTables)
-
 	if len(unexpectedFunctions) > 0 {
+		log.Println("[TRACE] dropLegacyInternal: unexpected functions", unexpectedFunctions)
 		log.Println("[INFO] found 'internal' with unexpected functions - skipping drop")
 		return nil
 	}
 
 	if len(unexpectedTables) > 0 {
+		log.Println("[TRACE] dropLegacyInternal: unexpected tables", unexpectedTables)
 		log.Println("[INFO] found 'internal' with unexpected tables - skipping drop")
 		return nil
 	}
@@ -98,7 +96,7 @@ ON
 	if _, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA %s CASCADE", constants.LegacyInternalSchema)); err != nil {
 		return sperr.WrapWithMessage(err, "could not drop legacy schema: '%s'", constants.LegacyInternalSchema)
 	}
-	log.Println("[TRACE] dropped legacy internal")
+	log.Println("[TRACE] dropped legacy 'internal' schema")
 	return nil
 }
 
