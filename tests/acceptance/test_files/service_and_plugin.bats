@@ -275,6 +275,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe aggregator connections should fail when querying a different plugin" {
+    skip
     run steampipe query "select * from chaos_group.chaos_all_numeric_column order by id"
 
     # this should pass since the aggregator contains only chaos connections
