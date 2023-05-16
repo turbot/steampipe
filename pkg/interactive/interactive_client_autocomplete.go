@@ -48,7 +48,7 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 
 	// add connection state
 	unqualifiedTablesToAdd[constants.ConnectionStateTable] = struct{}{}
-	
+
 	// get the first search path connection for each plugin
 	firstConnectionPerPlugin := connectionStateMap.GetFirstSearchPathConnectionForPlugins(c.client().GetRequiredSessionSearchPath())
 	firstConnectionPerPluginLookup := utils.SliceToLookup(firstConnectionPerPlugin)
@@ -72,7 +72,6 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 		for tableName := range schemaDetails {
 			// do not add temp tables to qualified tables
 			if !isTemporarySchema {
-				// TODO use description?
 				qualifiedTableName := fmt.Sprintf("%s.%s", schemaName, sanitiseTableName(tableName))
 				qualifiedTablesToAdd = append(qualifiedTablesToAdd, prompt.Suggest{Text: qualifiedTableName, Description: "Table", Output: qualifiedTableName})
 			}

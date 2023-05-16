@@ -37,6 +37,9 @@ func setupInternal(ctx context.Context, conn *pgx.Conn) error {
 		"lock table pg_namespace;",
 		fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS %s;`, constants.InternalSchema),
 		fmt.Sprintf(`GRANT USAGE ON SCHEMA %s TO %s;`, constants.InternalSchema, constants.DatabaseUsersRole),
+		fmt.Sprintf("IMPORT FOREIGN SCHEMA \"%s\" FROM SERVER steampipe INTO %s;\n", constants.InternalSchema, constants.InternalSchema),
+		fmt.Sprintf("GRANT INSERT ON %s.%s TO %s;", constants.InternalSchema, constants.CommandTableSettings, constants.DatabaseUsersRole),
+		fmt.Sprintf("GRANT SELECT ON %s.%s TO %s;", constants.InternalSchema, constants.CommandTableScanMetadata, constants.DatabaseUsersRole),
 	}
 	queries = append(queries, getFunctionAddStrings(db_common.Functions)...)
 	if _, err := ExecuteSqlInTransaction(ctx, conn, queries...); err != nil {

@@ -142,17 +142,8 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	}
 	defer conn.Close(ctx)
 
-	if res.Status == ServiceAlreadyRunning {
-		// if db is already running - ensure it contains command schema
-		// this is to handle the upgrade edge case where a user has a service running of an earlier version of steampipe
-		// and upgrades to this version - we need to ensure we create the command schema
-		if err := ensureCommandSchema(ctx, conn); err != nil {
-			return err
-		}
-	}
-
 	// setup internal schema
-	// thi includes setting the state of all connections in the connection_state table to pending
+	// this includes setting the state of all connections in the connection_state table to pending
 	statushooks.SetStatus(ctx, "Setting up functions")
 	if err := setupInternal(ctx, conn); err != nil {
 		return err
@@ -321,11 +312,6 @@ func ensureService(ctx context.Context, databaseName string) error {
 		return err
 	}
 
-	// ensure the db contains command schema
-	err = ensureCommandSchema(ctx, connection)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -591,20 +577,6 @@ func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
 	// if there is an error, we need to reinstall the foreign server
 	if err != nil {
 		return installForeignServer(ctx, rootClient)
-	}
-	return nil
-}
-
-// create the command schema and grant insert permission
-func ensureCommandSchema(ctx context.Context, rootClient *pgx.Conn) error {
-	commandSchemaStatements := []string{
-		"lock table pg_namespace;",
-		db_common.GetUpdateConnectionQuery(constants.CommandSchema, constants.CommandSchema),
-		fmt.Sprintf("grant select on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableScanMetadata),
-		fmt.Sprintf("grant insert on %s.%s to steampipe_users;", constants.CommandSchema, constants.CommandTableSettings),
-	}
-	if _, err := ExecuteSqlInTransaction(ctx, rootClient, commandSchemaStatements...); err != nil {
-		return err
 	}
 	return nil
 }

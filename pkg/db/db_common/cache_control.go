@@ -30,7 +30,7 @@ func SetCacheEnabled(ctx context.Context, enabled bool, connection *pgx.Conn) er
 func executeCacheCommand(ctx context.Context, settingName string, settingValue string, connection *pgx.Conn) error {
 	_, err := connection.Exec(ctx, fmt.Sprintf(
 		"insert into %s.%s (%s,%s) values ('%s','%s')",
-		constants.CommandSchema,
+		constants.InternalSchema,
 		constants.CommandTableSettings,
 		constants.CommandTableSettingsKeyColumn,
 		constants.CommandTableSettingsValueColumn,
