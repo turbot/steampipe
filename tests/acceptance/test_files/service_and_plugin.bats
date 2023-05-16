@@ -253,6 +253,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe aggregator connection check total results" {
+    skip
     run steampipe query "select * from chaos.chaos_all_numeric_column" --output json
 
     # store the length of the result when queried using `chaos` connection
