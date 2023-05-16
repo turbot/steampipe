@@ -7,18 +7,17 @@ import (
 	"time"
 )
 
-func GetFirstListenAddress(listenAddresses string) string {
-	listenAddress := strings.TrimSpace(strings.Split(listenAddresses, ",")[0])
+func GetFirstListenAddress(listenAddresses []string) string {
+	listenAddress := strings.TrimSpace(listenAddresses[0])
 	if listenAddress == "*" {
 		listenAddress = "127.0.0.1"
 	}
 	return listenAddress
 }
 
-func ListenAddressesContainsOneOfAddresses(listenAddresses string, addresses []string) bool {
-	listenAddressesList := strings.Split(listenAddresses, ",")
-	for i := range listenAddressesList {
-		listenAddress := strings.TrimSpace(listenAddressesList[i])
+func ListenAddressesContainsOneOfAddresses(listenAddresses []string, addresses []string) bool {
+	for i := range listenAddresses {
+		listenAddress := strings.TrimSpace(listenAddresses[i])
 		for j := range addresses {
 			if addresses[j] == listenAddress {
 				return true

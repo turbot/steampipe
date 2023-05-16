@@ -18,7 +18,7 @@ const RunningDBStructVersion = 20220411
 // RunningDBInstanceInfo contains data about the running process and it's credentials
 type RunningDBInstanceInfo struct {
 	Pid             int               `json:"pid"`
-	ListenAddresses string            `json:"listen"` // FIXME: this may be a breaking change, not sure if it really matters
+	ListenAddresses []string          `json:"listen"`
 	Port            int               `json:"port"`
 	Invoker         constants.Invoker `json:"invoker"`
 	Password        string            `json:"password"`
@@ -27,7 +27,7 @@ type RunningDBInstanceInfo struct {
 	StructVersion   int64             `json:"struct_version"`
 }
 
-func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses string, port int, databaseName string, password string, invoker constants.Invoker) *RunningDBInstanceInfo {
+func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int, databaseName string, password string, invoker constants.Invoker) *RunningDBInstanceInfo {
 	dbState := &RunningDBInstanceInfo{
 		Pid:             cmd.Process.Pid,
 		ListenAddresses: listenAddresses,

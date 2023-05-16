@@ -185,10 +185,10 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 	}
 }
 
-func startService(ctx context.Context, listenAddresses string, port int, invoker constants.Invoker) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState, dbServiceStarted bool) {
+func startService(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState, dbServiceStarted bool) {
 	statushooks.Show(ctx)
 	defer statushooks.Done(ctx)
-	log.Println(fmt.Sprintf("[TRACE] startService - listenAddresses=%s", listenAddresses))
+	log.Println(fmt.Sprintf("[TRACE] startService - listenAddresses=%q", listenAddresses))
 
 	err := db_local.EnsureDBInstalled(ctx)
 	if err != nil {
@@ -217,7 +217,7 @@ func startService(ctx context.Context, listenAddresses string, port int, invoker
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
 			error_helpers.FailOnError(fmt.Errorf("service is already running on port %d - cannot change port while it's running", startResult.DbState.Port))
 		}
-		if listenAddresses != startResult.DbState.ListenAddresses {
+		if !utils.StringSlicesEqual(listenAddresses, startResult.DbState.ListenAddresses) {
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
 			error_helpers.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen addresses while it's running", startResult.DbState.ListenAddresses))
 		}

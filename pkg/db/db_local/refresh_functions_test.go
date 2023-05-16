@@ -16,7 +16,7 @@ func TestConcurrentPerms(t *testing.T) {
 	filepaths.SteampipeDir = "/users/kai/.steampipe"
 
 	ctx := context.Background()
-	res := StartServices(ctx, "localhost", constants.DatabaseDefaultPort, "query")
+	res := StartServices(ctx, []string{"localhost"}, constants.DatabaseDefaultPort, "query")
 	if res.Error != nil {
 		t.Fatal(res.Error)
 	}

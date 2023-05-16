@@ -62,23 +62,24 @@ const (
 )
 
 // ToListenAddresses is transforms StartListenType known aliases into their actual value
-func (slt StartListenType) ToListenAddresses() string {
+func (slt StartListenType) ToListenAddresses() []string {
 	switch slt {
 	case ListenTypeNetwork:
-		return "*"
+		return []string{"*"}
 	case ListenTypeLocal:
-		return "localhost"
+		return []string{"localhost"}
 	}
-	return string(slt)
+	return strings.Split(string(slt), ",")
 }
 
-func StartServices(ctx context.Context, listenAddresses string, port int, invoker constants.Invoker) *StartResult {
+func StartServices(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) *StartResult {
 	utils.LogTime("db_local.StartServices start")
 	defer utils.LogTime("db_local.StartServices end")
 
 	if !utils.ListenAddressesContainsOneOfAddresses(listenAddresses, []string{"127.0.0.1", "*", "localhost"}) {
 		log.Println("[TRACE] StartServices - prepending 127.0.0.1 to listenAddresses")
-		listenAddresses = "127.0.0.1," + listenAddresses
+
+		listenAddresses = append([]string{"127.0.0.1"}, listenAddresses...)
 	}
 	log.Println(fmt.Sprintf("[TRACE] StartServices - listenAddresses=%s, port=%d", listenAddresses, port))
 
@@ -206,7 +207,7 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 }
 
 // StartDB starts the database if not already running
-func startDB(ctx context.Context, listenAddresses string, port int, invoker constants.Invoker) (res *StartResult) {
+func startDB(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) (res *StartResult) {
 	log.Printf("[TRACE] StartDB invoker %s (listenAddresses=%s, port=%d)", invoker, listenAddresses, port)
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
@@ -359,7 +360,7 @@ func resolvePassword() (string, error) {
 	return password, nil
 }
 
-func startPostgresProcess(ctx context.Context, listenAddresses string, port int, invoker constants.Invoker) (*exec.Cmd, error) {
+func startPostgresProcess(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) (*exec.Cmd, error) {
 	if error_helpers.IsContextCanceled(ctx) {
 		return nil, ctx.Err()
 	}
@@ -426,12 +427,12 @@ func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) (
 	return runningInfo, runningInfo.Save()
 }
 
-func createCmd(ctx context.Context, port int, listenAddresses string) *exec.Cmd {
+func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cmd {
 	postgresCmd := exec.Command(
 		getPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port is free to listen to
 		"-p", fmt.Sprint(port),
-		"-c", fmt.Sprintf("listen_addresses=%s", listenAddresses),
+		"-c", fmt.Sprintf("listen_addresses=%s", strings.Join(listenAddresses, ",")),
 		"-c", fmt.Sprintf("application_name=%s", constants.AppName),
 		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
 
