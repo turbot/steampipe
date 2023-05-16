@@ -46,14 +46,6 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	}
 	defer conn.Release()
 
-	disabled := make(map[string]struct{})
-	// build lookup of disabled connections
-	for _, c := range GlobalConfig.Connections {
-		if c.ImportSchema == modconfig.ImportSchemaDisabled {
-			disabled[c.Name] = struct{}{}
-		}
-	}
-
 	log.Printf("[TRACE] Loading connection state")
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
@@ -72,6 +64,14 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 		return nil, NewErrorRefreshConnectionResult(err)
 	}
 	log.Printf("[TRACE] built required connection state")
+
+	// build lookup of disabled connections
+	disabled := make(map[string]struct{})
+	for _, c := range requiredConnectionStateMap {
+		if c.Disabled() {
+			disabled[c.ConnectionName] = struct{}{}
+		}
+	}
 
 	updates := &ConnectionUpdates{
 		Delete:               make(map[string]struct{}),
@@ -116,9 +116,8 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 		if _, connectionRequired := requiredConnectionStateMap[name]; !connectionRequired {
 			log.Printf("[TRACE] connection %s in current state but not in required state - marking for deletion\n", name)
 			updates.Delete[name] = struct{}{}
-		}
-		// if required connection state is disabled and it is not currently disabled, mark for deletion
-		if _, disabled := disabled[name]; disabled && currentState.State != constants.ConnectionStateDisabled {
+		} else if updates.FinalConnectionState[name].Disabled() && !currentState.Disabled() {
+			// if required connection state is disabled and it is not currently disabled, mark for deletion
 			log.Printf("[TRACE] connection %s is disabled - marking for deletion\n", name)
 			updates.Delete[name] = struct{}{}
 		}

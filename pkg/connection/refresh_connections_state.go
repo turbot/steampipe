@@ -92,8 +92,7 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 	// set state of all incomplete connections to error
 	defer func() {
 		log.Printf("[INFO] refreshConnections complete (%fs)", time.Since(t).Seconds())
-		if state.res.Error != nil {
-
+		if state.res != nil && state.res.Error != nil {
 			state.setIncompleteConnectionStateToError(ctx, sperr.WrapWithMessage(state.res.Error, "refreshConnections failed before connection update was complete"))
 			// TODO send error PG notification
 		}
@@ -290,13 +289,11 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 
 	// now set comments for initial updates and dynamic connections
 	// note errors will be empty to get here
-	moreErrors = state.UpdateCommentsParallel(ctx, maps.Values(initialUpdates), validatedPlugins)
-	errors = append(errors, moreErrors...)
+	state.UpdateCommentsParallel(ctx, maps.Values(initialUpdates), validatedPlugins)
 
 	// convert dynamicUpdates to an array of connection states
 	var dynamicUpdateArray = updateSetMapToArray(dynamicUpdates)
-	moreErrors = state.UpdateCommentsParallel(ctx, dynamicUpdateArray, validatedPlugins)
-	errors = append(errors, moreErrors...)
+	state.UpdateCommentsParallel(ctx, dynamicUpdateArray, validatedPlugins)
 
 	// now that we have updated all exemplar schemars, send postgres notification
 	// this gives any attached interactive clients a chance to update their inspect data and autocomplete
@@ -310,13 +307,14 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	moreErrors = state.executeUpdatesInParallel(ctx, remainingUpdates)
 	errors = append(errors, moreErrors...)
 
-	// set comments for remaining updates
-	moreErrors = state.UpdateCommentsParallel(ctx, maps.Values(remainingUpdates), validatedPlugins)
-	errors = append(errors, moreErrors...)
-
-	// set comments for any other connection without comment set
-	moreErrors = state.UpdateCommentsParallel(ctx, maps.Values(state.connectionUpdates.MissingComments), validatedPlugins)
-	errors = append(errors, moreErrors...)
+	// TODO kai need locking?
+	// asyncronously set all remaining comments
+	go func() {
+		// set comments for remaining updates
+		state.UpdateCommentsParallel(ctx, maps.Values(remainingUpdates), validatedPlugins)
+		// set comments for any other connection without comment set
+		state.UpdateCommentsParallel(ctx, maps.Values(state.connectionUpdates.MissingComments), validatedPlugins)
+	}()
 
 	if len(errors) > 0 {
 		state.res.Error = error_helpers.CombineErrors(errors...)
@@ -534,7 +532,7 @@ func (state *refreshConnectionState) UpdateCommentsParallel(ctx context.Context,
 				sem.Release(1)
 			}()
 
-			state.updateCommentsForConnections(ctx, errChan, plugins, connectionState)
+			state.updateCommentsForConnection(ctx, errChan, plugins, connectionState)
 		}(connectionState)
 
 	}
@@ -546,7 +544,7 @@ func (state *refreshConnectionState) UpdateCommentsParallel(ctx context.Context,
 }
 
 // syncronously execute the comments queries for one or more connections
-func (state *refreshConnectionState) updateCommentsForConnections(ctx context.Context, errChan chan *connectionError, connectionPluginMap map[string]*steampipeconfig.ConnectionPlugin, connectionState *steampipeconfig.ConnectionState) {
+func (state *refreshConnectionState) updateCommentsForConnection(ctx context.Context, errChan chan *connectionError, connectionPluginMap map[string]*steampipeconfig.ConnectionPlugin, connectionState *steampipeconfig.ConnectionState) {
 	connectionName := connectionState.ConnectionName
 
 	var sql string

@@ -48,6 +48,7 @@ SET state = '%s',
 	connection_mod_time = now()
 WHERE
 	state <> 'ready' 
+AND state <> 'disabled' 
 AND state <> 'error' 
 	`,
 		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStateError)
@@ -63,6 +64,7 @@ SET state = '%s',
     error = null
 WHERE
 	state <> 'ready' 
+AND state <> 'disabled' 
 	`,
 		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStatePendingIncomplete)
 

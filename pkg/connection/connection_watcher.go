@@ -66,9 +66,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
 		log.Printf("[WARN] error loading updated connection config: %v", errorsAndWarnings.GetError())
 		return
 	}
-	if len(errorsAndWarnings.Warnings) > 0 {
-		log.Printf("[WARN] loading updated connection config succeeded with warnings: %v", errorsAndWarnings.Warnings)
-	}
+
 	log.Printf("[TRACE] loaded updated config")
 
 	// We need to update the viper config and GlobalConfig
