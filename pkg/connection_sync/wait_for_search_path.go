@@ -18,5 +18,7 @@ func WaitForSearchPathSchemas(ctx context.Context, client db_common.Client, sear
 	defer conn.Release()
 
 	_, err = steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitForSearchPath(searchPath))
+
+	// TODO KAI if err is "relation "steampipe_internal.steampipe_connection_state" does not exist" ignore
 	return err
 }

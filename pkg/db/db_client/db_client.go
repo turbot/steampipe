@@ -146,20 +146,23 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetada
 	}
 	defer conn.Release()
 
+	// for optimisation purposes, try to loade connection state and build a map of schemas to load
+	// (if we are connected to a remote server running an older CLI,
+	// this load may fail, in which case bypass the optimisation)
+	var schemas []string
+	var connectionSchemaMap steampipeconfig.ConnectionSchemaMap
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
-	if err != nil {
-		return nil, err
+	if err == nil {
+		// todo check error is connection state not found
+		// build a ConnectionSchemaMap object to identify the schemas to load
+		connectionSchemaMap = steampipeconfig.NewConnectionSchemaMap(ctx, connectionStateMap, c.GetRequiredSessionSearchPath())
+		if err != nil {
+			return nil, err
+		}
+
+		// get the unique schema - we use this to limit the schemas we load from the database
+		schemas = maps.Keys(connectionSchemaMap)
 	}
-
-	// build a ConnectionSchemaMap object to identify the schemas to load
-	connectionSchemaMap := steampipeconfig.NewConnectionSchemaMap(ctx, connectionStateMap, c.GetRequiredSessionSearchPath())
-	if err != nil {
-		return nil, err
-	}
-
-	// get the unique schema - we use this to limit the schemas we load from the database
-	schemas := maps.Keys(connectionSchemaMap)
-
 	// build a query to retrieve these schema
 	query := c.buildSchemasQuery(schemas...)
 
@@ -175,19 +178,43 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetada
 		return nil, err
 	}
 
+	// if we have a conneciton schema map (i.e. we managed to load connection state)
 	// we now need to add in all other schemas which have the same schemas as those we have loaded
-	for loadedSchema, otherSchemas := range connectionSchemaMap {
-		// all 'otherSchema's have the same schema as loadedSchema
-		exemplarSchema, ok := metadata.Schemas[loadedSchema]
-		if !ok {
-			// should can happen in the case of a dynamic plugin with no tables - use empty schema
-			exemplarSchema = make(map[string]db_common.TableSchema)
-		}
+	if connectionSchemaMap != nil {
+		for loadedSchema, otherSchemas := range connectionSchemaMap {
+			// all 'otherSchema's have the same schema as loadedSchema
+			exemplarSchema, ok := metadata.Schemas[loadedSchema]
+			if !ok {
+				// should can happen in the case of a dynamic plugin with no tables - use empty schema
+				exemplarSchema = make(map[string]db_common.TableSchema)
+			}
 
-		for _, s := range otherSchemas {
-			metadata.Schemas[s] = exemplarSchema
+			for _, s := range otherSchemas {
+				metadata.Schemas[s] = exemplarSchema
+			}
 		}
 	}
+	return metadata, nil
+}
+
+// GetSchemaFromDB requests for all columns of tables backed by steampipe plugins
+// and creates golang struct representations from the result
+func (c *DbClient) GetSchemaFromDBLegacy(ctx context.Context, conn *pgx.Conn) (*db_common.SchemaMetadata, error) {
+	utils.LogTime("db_client.GetSchemaFromDB start")
+	defer utils.LogTime("db_client.GetSchemaFromDB end")
+
+	query := c.buildSchemasQuery()
+
+	tablesResult, err := conn.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
+	if err != nil {
+		return nil, err
+	}
+
 	return metadata, nil
 }
 

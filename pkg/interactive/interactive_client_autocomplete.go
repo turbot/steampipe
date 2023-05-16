@@ -25,8 +25,11 @@ func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
 
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
 	if err != nil {
-		return err
+		// if we failed to load connection state, just use unoptimised autocomplete loading
+		c.initialiseQuerySuggestionsLegacy()
+		return nil
 	}
+
 	// reset suggestions
 	c.suggestions = newAutocompleteSuggestions()
 	c.initialiseSchemaAndTableSuggestions(connectionStateMap)
@@ -48,7 +51,7 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 
 	// add connection state
 	unqualifiedTablesToAdd[constants.ConnectionStateTable] = struct{}{}
-	
+
 	// get the first search path connection for each plugin
 	firstConnectionPerPlugin := connectionStateMap.GetFirstSearchPathConnectionForPlugins(c.client().GetRequiredSessionSearchPath())
 	firstConnectionPerPluginLookup := utils.SliceToLookup(firstConnectionPerPlugin)
@@ -156,4 +159,16 @@ func sanitiseTableName(strToEscape string) string {
 		escaped = append(escaped, token)
 	}
 	return strings.Join(escaped, ".")
+}
+
+func (c *InteractiveClient) initialiseSuggestionsLegacy() {
+	c.initialiseQuerySuggestionsLegacy()
+	c.initialiseTableSuggestionsLegacy()
+}
+
+func (c *InteractiveClient) initialiseQuerySuggestionsLegacy() {
+}
+
+// initialiseTableSuggestions build a list of schema and table querySuggestions
+func (c *InteractiveClient) initialiseTableSuggestionsLegacy() {
 }

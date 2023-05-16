@@ -6,6 +6,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
@@ -21,8 +22,11 @@ func inspect(ctx context.Context, input *HandlerInput) error {
 	// load connection state and put into input
 	connectionState, err := getConnectionState(ctx, input.Client)
 	if err != nil {
-		return err
+		log.Printf("[TRACE] failed to load connection state - are we connected to a server running a previous steampipe version?")
+		// call legacy inspect
+		return inspectLegacy(ctx, input)
 	}
+
 	input.ConnectionState = connectionState
 
 	// if no args were provided just list connections
