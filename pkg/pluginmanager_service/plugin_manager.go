@@ -186,7 +186,6 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 		m.killPlugin(p)
 		// remove entries from the connectionPluginMap
 		for _, c := range p.reattach.Connections {
-			m.killPlugin(p)
 			delete(m.connectionPluginMap, c)
 		}
 	}
