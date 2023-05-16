@@ -60,16 +60,14 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
 	// this is a file system event handler and not bound to any context
 	ctx := context.Background()
 
-	log.Printf("[TRACE] ConnectionWatcher handleFileWatcherEvent")
+	log.Printf("[INFO] ConnectionWatcher handleFileWatcherEvent")
 	config, errorsAndWarnings := steampipeconfig.LoadConnectionConfig()
 	if errorsAndWarnings.GetError() != nil {
 		log.Printf("[WARN] error loading updated connection config: %v", errorsAndWarnings.GetError())
 		return
 	}
-	if len(errorsAndWarnings.Warnings) > 0 {
-		log.Printf("[WARN] loading updated connection config succeeded with warnings: %v", errorsAndWarnings.Warnings)
-	}
-	log.Printf("[TRACE] loaded updated config")
+
+	log.Printf("[INFO] loaded updated config")
 
 	// We need to update the viper config and GlobalConfig
 	// as these are both used by RefreshConnectionAndSearchPathsWithLocalClient
@@ -96,7 +94,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
 	// to use the GlobalConfig here and ignore Workspace Profile in general
 	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
 
-	log.Printf("[TRACE] calling RefreshConnections asyncronously")
+	log.Printf("[INFO] calling RefreshConnections asyncronously")
 
 	// call RefreshConnections asyncronously
 	// the RefreshConnections implements its own locking to ensure only a singler execution and a single queues execution

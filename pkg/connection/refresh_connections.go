@@ -2,9 +2,12 @@ package connection
 
 import (
 	"context"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"sync"
+	"time"
+
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // only allow one execution of refresh connections
@@ -14,27 +17,34 @@ var executeLock sync.Mutex
 var queueLock sync.Mutex
 
 func RefreshConnections(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
-	log.Printf("[TRACE] Refreshing connections")
+	utils.LogTime("RefreshConnections start")
+	defer utils.LogTime("RefreshConnections end")
+
+	//time.Sleep(10 * time.Second)
+
+	t := time.Now()
+	log.Printf("[INFO] refreshConnections start")
+	defer log.Printf("[INFO] refreshConnections complete (%fs)", time.Since(t).Seconds())
 
 	// first grab the queue lock
 	if !queueLock.TryLock() {
 		// someone has it - they will execute so we have nothing to do
-		log.Printf("[INFO] RefreshConnections - another execution is already queued - returning")
+		log.Printf("[INFO] another execution is already queued - returning")
 		return &steampipeconfig.RefreshConnectionResult{}
 	}
 
-	log.Printf("[INFO] RefreshConnections acquired refreshQueueLock, try to acquire refreshExecuteLock")
+	log.Printf("[INFO] acquired refreshQueueLock, try to acquire refreshExecuteLock")
 
 	// so we have the queue lock, now wait on the execute lock
 	executeLock.Lock()
 	defer func() {
 		executeLock.Unlock()
-		log.Printf("[INFO] RefreshConnections  released refreshExecuteLock")
+		log.Printf("[INFO] released refreshExecuteLock")
 	}()
 
 	// we have the execute-lock, release the queue-lock so someone else can queue
 	queueLock.Unlock()
-	log.Printf("[INFO] RefreshConnections acquired refreshExecuteLock, released refreshQueueLock")
+	log.Printf("[INFO] acquired refreshExecuteLock, released refreshQueueLock")
 
 	// now refresh connections
 	// package up all necessary data into a state object6

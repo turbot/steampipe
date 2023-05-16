@@ -37,8 +37,15 @@ type refreshConnectionState struct {
 	tableUpdater               *connectionStateTableUpdater
 	res                        *steampipeconfig.RefreshConnectionResult
 	forceUpdateConnectionNames []string
-	exemplarSchemaMapMut       sync.Mutex
-	exemplarSchemaMap          map[string]string
+
+	// properties for schema/comment cloning
+	exemplarSchemaMapMut sync.Mutex
+
+	// maps keyed by plugin which gives an exemplar connection name,
+	// if a plugin has an entry in this map, all connections schemas can be cloned from teh exemplar schema
+	exemplarSchemaMap map[string]string
+	// if a plugin has an entry in this map, all connections schemas can be cloned from teh exemplar schema
+	exemplarCommentsMap map[string]string
 }
 
 func newRefreshConnectionState(ctx context.Context, forceUpdateConnectionNames []string) (*refreshConnectionState, error) {
@@ -50,7 +57,7 @@ func newRefreshConnectionState(ctx context.Context, forceUpdateConnectionNames [
 	}
 
 	// set user search path first
-	log.Printf("[INFO] Setting up search path")
+	log.Printf("[INFO] setting up search path")
 	searchPath, err := db_local.SetUserSearchPath(ctx, pool)
 	if err != nil {
 		// note: close pool in case of error
@@ -75,23 +82,16 @@ func (state *refreshConnectionState) close() {
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
 func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
-	utils.LogTime("db.refreshConnections start")
-	defer utils.LogTime("db.refreshConnections end")
-
-	t := time.Now()
-	log.Printf("[INFO] refreshConnections start")
 
 	// if there was an error (other than a connection error, which will NOT have been assigned to res),
 	// set state of all incomplete connections to error
 	defer func() {
-		log.Printf("[INFO] refreshConnections complete (%fs)", time.Since(t).Seconds())
-		if state.res.Error != nil {
-
+		if state.res != nil && state.res.Error != nil {
 			state.setIncompleteConnectionStateToError(ctx, sperr.WrapWithMessage(state.res.Error, "refreshConnections failed before connection update was complete"))
 			// TODO send error PG notification
 		}
 	}()
-	log.Printf("[INFO] refreshConnections building connectionUpdates")
+	log.Printf("[INFO] building connectionUpdates")
 
 	// determine any necessary connection updates
 	state.connectionUpdates, state.res = steampipeconfig.NewConnectionUpdates(ctx, state.pool, state.forceUpdateConnectionNames...)
@@ -101,14 +101,14 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 		return
 	}
 
-	log.Printf("[INFO] refreshConnections: created connection updates")
+	log.Printf("[INFO] created connection updates")
 
 	// delete the connection state file - it will be rewritten when we are complete
-	log.Printf("[INFO] refreshConnections deleting connections state file")
+	log.Printf("[INFO] deleting connections state file")
 	steampipeconfig.DeleteConnectionStateFile()
 	defer func() {
 		if state.res.Error == nil {
-			log.Printf("[INFO] refreshConnections saving connections state file")
+			log.Printf("[INFO] saving connections state file")
 			steampipeconfig.SaveConnectionStateFile(state.res, state.connectionUpdates)
 		}
 	}()
@@ -128,11 +128,11 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 
 	// if there are no updates, just return
 	if !state.connectionUpdates.HasUpdates() {
-		log.Println("[INFO] refreshConnections: no updates required")
+		log.Println("[INFO] no updates required")
 		return
 	}
 
-	log.Printf("[INFO] refreshConnections execute connection queries")
+	log.Printf("[INFO] execute connection queries")
 
 	// execute any necessary queries
 	state.executeConnectionQueries(ctx)
@@ -140,8 +140,6 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 		log.Printf("[WARN] refreshConnections failed with err %s", state.res.Error.Error())
 		return
 	}
-
-	log.Printf("[INFO] refreshConnections complete")
 
 	state.res.UpdatedConnections = true
 }
@@ -200,17 +198,18 @@ func (state *refreshConnectionState) executeConnectionQueries(ctx context.Contex
 
 	// execute updates
 	numUpdates := len(connectionUpdates.Update)
-	log.Printf("[INFO] executeConnectionQueries: num updates: %d", numUpdates)
+	numMissingComments := len(connectionUpdates.MissingComments)
+	log.Printf("[INFO] executeConnectionQueries: num updates: %d, connections missing comments: %d", numUpdates, numMissingComments)
 
-	if numUpdates > 0 {
+	if numUpdates+numMissingComments > 0 {
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
 		state.executeUpdateQueries(ctx)
 	} else if len(connectionUpdates.Delete) > 0 {
-		log.Printf("[INFO] RefreshConnection has deleted all unnecessary schemas - sending notification")
+		log.Printf("[INFO] deleted all unnecessary schemas - sending notification")
 
 		// if there are no updates and there ARE deletes, notify
 		// (is there are updates, deletes will be notified by executeUpdateQueries)
-		if err := state.sendPostgreSchemaNotification(ctx, maps.Keys(connectionUpdates.Delete), nil); err != nil {
+		if err := state.sendPostgreSchemaNotification(ctx); err != nil {
 			// just log
 			log.Printf("[WARN] failed to send schema deletion Postgres notification: %s", err.Error())
 		}
@@ -236,55 +235,93 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	// retrieve updates from the table updater
 	connectionUpdates := state.tableUpdater.updates
 
+	// TODO tidy up and refactor this validation
 	// find any plugins which use a newer sdk version than steampipe.
-	validationFailures, validatedUpdates, validatedPlugins := steampipeconfig.ValidatePlugins(connectionUpdates.Update, connectionUpdates.ConnectionPlugins)
+	validationFailures, validatedPlugins := ValidatePlugins(connectionUpdates.ConnectionPlugins)
+	moreValidationFailures, validatedUpdates, validatedCommentUpdates := ValidateUpdates(connectionUpdates.Update, connectionUpdates.MissingComments, validatedPlugins)
+	validationFailures = append(validationFailures, moreValidationFailures...)
 	if len(validationFailures) > 0 {
-		state.res.Warnings = append(state.res.Warnings, steampipeconfig.BuildValidationWarningString(validationFailures))
+		log.Printf("[INFO] executeUpdateQueries - plugin validation returned %d validation %s", len(validationFailures), utils.Pluralize("failure", len(validationFailures)))
+		state.res.Warnings = append(state.res.Warnings, BuildValidationWarningString(validationFailures))
 	}
+
+	// write back validated updates
+	connectionUpdates.Update = validatedUpdates
+	connectionUpdates.MissingComments = validatedCommentUpdates
+	// store validated plugins in state
+	// this is a map of plugins keyed by connection
 	numUpdates := len(validatedUpdates)
 
 	// we need to execute the updates in search path order
 	// i.e. we first need to update the first search path connection for each plugin (this can be done in parallel)
 	// then we can update the remaining connections in parallel
-	// TODO make each of these an array of []ConnectionState instead of map, merge initial and dynamic
-	initialUpdates, remainingUpdates, dynamicUpdates := state.populateInitialAndRemainingUpdates(validatedUpdates)
+	initialUpdates, remainingUpdates, dynamicUpdates := state.getInitialAndRemainingUpdates()
 
 	// dynamic plugins must be updated for each plugin in search path order
 	// dynamicUpdates is a map keyed by plugin with all the updates for that plugin
 
-	// create exemplar map
+	// create exemplar maps
 	state.exemplarSchemaMap = make(map[string]string)
-	log.Printf("[TRACE] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
+	state.exemplarCommentsMap = make(map[string]string)
+	log.Printf("[INFO] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
 
 	// execute initial updates
+	log.Printf("[INFO] executing initial updates")
 	var errors []error
-	moreErrors := state.executeUpdatesAsync(ctx, initialUpdates)
+	moreErrors := state.executeUpdatesInParallel(ctx, initialUpdates)
 	errors = append(errors, moreErrors...)
 
-	// execute dynamic updates
-	moreErrors = state.executeUpdatesAsync(ctx, dynamicUpdates)
+	// execute dynamic updates (not, we update all connections in search path order,
+	// so must call executeUpdateSetsInParallel)
+	log.Printf("[INFO] executing dynamic updates")
+	moreErrors = state.executeUpdateSetsInParallel(ctx, dynamicUpdates)
 	errors = append(errors, moreErrors...)
 
 	// if any of the initial schemas failed, do not proceed - these schemas are required to ensure we correctly
 	// resolve unqualified queries/tables
 	if len(errors) > 0 {
 		state.res.Error = error_helpers.CombineErrors(errors...)
+		log.Printf("[WARN] initial updates failed: %s", state.res.Error.Error())
 		// TODO SEND ERROR NOTIFICATION
 		return
 	}
-	log.Printf("[INFO] RefreshConnection has updated all exemplar schemas - sending notification")
 
+	log.Printf("[INFO] set comments for initial updates")
+	// now set comments for initial updates and dynamic connections
+	// note errors will be empty to get here
+	state.UpdateCommentsInParallel(ctx, maps.Values(initialUpdates), validatedPlugins)
+
+	log.Printf("[INFO] set comments for dynamic updates")
+	// convert dynamicUpdates to an array of connection states
+	var dynamicUpdateArray = updateSetMapToArray(dynamicUpdates)
+	state.UpdateCommentsInParallel(ctx, dynamicUpdateArray, validatedPlugins)
+
+	log.Printf("[INFO] updated all exemplar schemas - sending notification")
 	// now that we have updated all exemplar schemars, send postgres notification
 	// this gives any attached interactive clients a chance to update their inspect data and autocomplete
-	// (also send deletions)
-	if err := state.sendPostgreSchemaNotification(ctx, maps.Keys(connectionUpdates.Delete), maps.Keys(initialUpdates)); err != nil {
+
+	if err := state.sendPostgreSchemaNotification(ctx); err != nil {
 		// just log
 		log.Printf("[WARN] failed to send schem update Postgres notification: %s", err.Error())
 	}
 
-	// now execute remaining
-	moreErrors = state.executeUpdatesAsync(ctx, remainingUpdates)
+	log.Printf("[INFO] Execute %d remaining %s",
+		len(remainingUpdates),
+		utils.Pluralize("updates", len(remainingUpdates)))
+	// now execute remaining updates
+	moreErrors = state.executeUpdatesInParallel(ctx, remainingUpdates)
 	errors = append(errors, moreErrors...)
+
+	log.Printf("[INFO] Set comments for %d remaining %s and %d %s missing comments",
+		len(remainingUpdates),
+		utils.Pluralize("updates", len(remainingUpdates)),
+		len(connectionUpdates.MissingComments),
+		utils.Pluralize("updates", len(connectionUpdates.MissingComments)),
+	)
+	// set comments for remaining updates
+	state.UpdateCommentsInParallel(ctx, maps.Values(remainingUpdates), validatedPlugins)
+	// set comments for any other connection without comment set
+	state.UpdateCommentsInParallel(ctx, maps.Values(state.connectionUpdates.MissingComments), validatedPlugins)
 
 	if len(errors) > 0 {
 		state.res.Error = error_helpers.CombineErrors(errors...)
@@ -302,16 +339,37 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 			}
 		}
 	}
-
-	if viper.GetBool(constants.ArgSchemaComments) {
-		state.writeComments(ctx, validatedPlugins)
-	}
-
 	log.Printf("[INFO] executeUpdateQueries complete")
 	return
 }
 
-func (state *refreshConnectionState) executeUpdatesAsync(ctx context.Context, updates map[string][]*steampipeconfig.ConnectionState) (errors []error) {
+// convert map upd update sets (used for dynamic schemas) to an array of the underlying connection states
+func updateSetMapToArray(updateSetMap map[string][]*steampipeconfig.ConnectionState) []*steampipeconfig.ConnectionState {
+	var res []*steampipeconfig.ConnectionState
+	for _, updates := range updateSetMap {
+		res = append(res, updates...)
+	}
+	return res
+}
+
+// create/update connections
+
+func (state *refreshConnectionState) executeUpdatesInParallel(ctx context.Context, updates map[string]*steampipeconfig.ConnectionState) (errors []error) {
+	// just call executeUpdateSetsInParallel
+
+	// convert updates to update sets
+	updatesAsSets := make(map[string][]*steampipeconfig.ConnectionState, len(updates))
+	for k, v := range updates {
+		updatesAsSets[k] = []*steampipeconfig.ConnectionState{v}
+	}
+	return state.executeUpdateSetsInParallel(ctx, updatesAsSets)
+}
+
+// execute sets of updates in parallel - this is required as for dynamic plugins, we must updated all connections in
+// search path order
+// - for convenience we also use this function for static connections by mapping the input data
+// from map[string]*steampipeconfig.ConnectionState to map[string][]*steampipeconfig.ConnectionState
+func (state *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Context, updates map[string][]*steampipeconfig.ConnectionState) (errors []error) {
 	var wg sync.WaitGroup
 	var errChan = make(chan *connectionError)
 
@@ -362,51 +420,13 @@ func (state *refreshConnectionState) executeUpdatesAsync(ctx context.Context, up
 	return errors
 }
 
-func (state *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, connectionName string) error {
-	// create a transaction
-	tx, err := state.pool.Begin(ctx)
-	if err != nil {
-		return sperr.WrapWithMessage(err, "failed to create transaction to perform update query")
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback(ctx)
-		} else {
-			tx.Commit(ctx)
-		}
-	}()
-
-	// execute update sql
-	_, err = tx.Exec(ctx, sql)
-	if err != nil {
-		statusErr := state.tableUpdater.onConnectionError(ctx, tx.Conn(), connectionName, err)
-		// update failed connections in result
-		state.res.AddFailedConnection(connectionName, err.Error())
-
-		// NOTE: do not return the error - unless we failed to update the connection state table
-		if statusErr != nil {
-			return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
-		}
-		return nil
-	}
-
-	// update state table (inside transaction)
-	err = state.tableUpdater.onConnectionReady(ctx, tx.Conn(), connectionName)
-	if err != nil {
-		return sperr.WrapWithMessage(err, "failed to update connection state table")
-	}
-	return nil
-}
-
 // syncronously execute the update queries for one or more connections
 func (state *refreshConnectionState) executeUpdateForConnections(ctx context.Context, errChan chan *connectionError, connectionStates ...*steampipeconfig.ConnectionState) {
 	for _, connectionState := range connectionStates {
 		connectionName := connectionState.ConnectionName
 		remoteSchema := utils.PluginFQNToSchemaName(connectionState.Plugin)
-
 		var sql string
 
-		// if this schema is static, add to the exemplar map
 		state.exemplarSchemaMapMut.Lock()
 		// is this plugin in the exemplarSchemaMap
 		exemplarSchemaName, haveExemplarSchema := state.exemplarSchemaMap[connectionState.Plugin]
@@ -433,81 +453,230 @@ func (state *refreshConnectionState) executeUpdateForConnections(ctx context.Con
 	}
 }
 
+func (state *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, connectionName string) error {
+	// create a transaction
+	tx, err := state.pool.Begin(ctx)
+	if err != nil {
+		return sperr.WrapWithMessage(err, "failed to create transaction to perform update query")
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	// execute update sql
+	_, err = tx.Exec(ctx, sql)
+	if err != nil {
+		// update failed connections in result
+		state.res.AddFailedConnection(connectionName, err.Error())
+
+		// update the state table
+		//(the transaction will be aborted - create a connection for the update)
+		if conn, poolErr := state.pool.Acquire(ctx); poolErr == nil {
+			if statusErr := state.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
+				// NOTE: do not return the error - unless we failed to update the connection state table
+				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
+			}
+		}
+		return nil
+	}
+
+	// update state table (inside transaction)
+	err = state.tableUpdater.onConnectionReady(ctx, tx.Conn(), connectionName)
+	if err != nil {
+		return sperr.WrapWithMessage(err, "failed to update connection state table")
+	}
+	return nil
+}
+
+// set connection comments
+
+func (state *refreshConnectionState) UpdateCommentsInParallel(ctx context.Context, updates []*steampipeconfig.ConnectionState, plugins map[string]*steampipeconfig.ConnectionPlugin) (errors []error) {
+	if !viper.GetBool(constants.ArgSchemaComments) {
+		return nil
+	}
+
+	var wg sync.WaitGroup
+	var errChan = make(chan *connectionError)
+
+	// use as many goroutines as we have connections
+	var maxUpdateThreads = int64(state.pool.Config().MaxConns)
+	sem := semaphore.NewWeighted(maxUpdateThreads)
+
+	go func() {
+		for {
+			select {
+			case connectionError := <-errChan:
+				if connectionError == nil {
+					return
+				}
+				errors = append(errors, connectionError.err)
+				// TODO just log errors
+			}
+		}
+	}()
+
+	// each update may be multiple connections, to execute in order
+	for _, connectionState := range updates {
+		wg.Add(1)
+		// use semaphore to limit goroutines
+		if err := sem.Acquire(ctx, 1); err != nil {
+			errors = append(errors, err)
+			// if we fail to acquire semaphore, just give up
+			return errors
+		}
+		go func(connectionState *steampipeconfig.ConnectionState) {
+			defer func() {
+				wg.Done()
+				sem.Release(1)
+			}()
+
+			state.updateCommentsForConnection(ctx, errChan, plugins, connectionState)
+		}(connectionState)
+
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	return errors
+}
+
+// syncronously execute the comments queries for one or more connections
+func (state *refreshConnectionState) updateCommentsForConnection(ctx context.Context, errChan chan *connectionError, connectionPluginMap map[string]*steampipeconfig.ConnectionPlugin, connectionState *steampipeconfig.ConnectionState) {
+	connectionName := connectionState.ConnectionName
+
+	var sql string
+
+	// we should have a connectionPlugin loaded for this connection
+	connectionPlugin, ok := connectionPluginMap[connectionName]
+	if !ok {
+		log.Printf("[WARN] no connection plugin loaded for connection '%s', which needs comments updating", connectionName)
+		return
+	}
+
+	schema := connectionPlugin.ConnectionMap[connectionName].Schema.Schema
+	// just get sql to execute update query, and update the connection state table, in a transaction
+	sql = db_common.GetCommentsQueryForPlugin(connectionName, schema)
+
+	// comment cloning disabled for now
+	//// if this schema is static, add to the exemplar map
+	//state.exemplarSchemaMapMut.Lock()
+	//// is this plugin in the exemplarSchemaMap
+	//exemplarSchemaName, haveExemplarSchema := state.exemplarCommentsMap[connectionState.Plugin]
+	//if haveExemplarSchema {
+	//// we can clone!
+	//	sql = getCloneCommentsQuery(sql, exemplarSchemaName, connectionState)
+	//} else {
+	//	// get the schema from the connection plugin
+	//	schema := connectionPluginMap[connectionName].ConnectionMap[connectionName].Schema.Schema
+	//	// just get sql to execute update query, and update the connection state table, in a transaction
+	//	sql = db_common.GetCommentsQueryForPlugin(connectionName, schema)
+	//}
+	//state.exemplarSchemaMapMut.Unlock()
+
+	// the only error this will return is the failure to update the state table
+	// - all other errors are written to the state table
+	if err := state.executeCommentQuery(ctx, sql, connectionName); err != nil {
+		errChan <- &connectionError{connectionName, err}
+	} //else {
+	//	// we can clone this plugin, add to exemplarCommentsMap
+	//	// (AFTER executing the update query)
+	//	if !haveExemplarSchema && connectionState.CanCloneSchema() {
+	//		state.exemplarCommentsMap[connectionState.Plugin] = connectionName
+	//	}
+	//}
+}
+
+func (state *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, connectionName string) error {
+	// create a transaction
+	tx, err := state.pool.Begin(ctx)
+	if err != nil {
+		return sperr.WrapWithMessage(err, "failed to create transaction to perform update query")
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	// execute update sql
+	_, err = tx.Exec(ctx, sql)
+	if err != nil {
+		// update the state table
+		//(the transaction will be aborted - create a connection for the update)
+		if conn, poolErr := state.pool.Acquire(ctx); poolErr == nil {
+			if statusErr := state.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
+				// NOTE: do not return the error - unless we failed to update the connection state table
+				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
+			}
+		}
+
+		return nil
+	}
+
+	// update state table (inside transaction)
+	// ignore error
+	if err := state.tableUpdater.onConnectionCommentsLoaded(ctx, tx.Conn(), connectionName); err != nil {
+		log.Printf("[WARN] failed to set 'comments_set' for connection '%s': %s", connectionName, err.Error())
+	}
+
+	return nil
+}
+
 func getCloneSchemaQuery(sql string, exemplarSchemaName string, connectionState *steampipeconfig.ConnectionState) string {
 	sql = fmt.Sprintf("select clone_foreign_schema('%s', '%s', '%s');", exemplarSchemaName, connectionState.ConnectionName, connectionState.Plugin)
 	return sql
 }
 
-func (state *refreshConnectionState) populateInitialAndRemainingUpdates(validatedUpdates steampipeconfig.ConnectionStateMap) (initialUpdates, remainingUpdates, dynamicUpdates map[string][]*steampipeconfig.ConnectionState) {
-	searchPathConnections := state.connectionUpdates.FinalConnectionState.GetFirstSearchPathConnectionForPlugins(state.searchPath)
-	// dynamic plugins must be updated for each plugin in search path order
-	// build a map keyed by plugin, wit th evalue the ordered updates for that plugun
+func getCloneCommentsQuery(sql string, exemplarSchemaName string, connectionState *steampipeconfig.ConnectionState) string {
+	sql = fmt.Sprintf("select clone_table_comments('%s', '%s');", exemplarSchemaName, connectionState.ConnectionName)
+	return sql
+}
 
-	// NOTE: for convenience of execution, initialUpdates and remainingUpdates are also stored as a map of []ConnectionState
-	// (keyed by connection name)
-	// even this there will only be one element in each array
-	initialUpdates = make(map[string][]*steampipeconfig.ConnectionState)
-	remainingUpdates = make(map[string][]*steampipeconfig.ConnectionState)
+func (state *refreshConnectionState) getInitialAndRemainingUpdates() (initialUpdates, remainingUpdates map[string]*steampipeconfig.ConnectionState, dynamicUpdates map[string][]*steampipeconfig.ConnectionState) {
+	updates := state.connectionUpdates.Update
+	searchPathConnections := state.connectionUpdates.FinalConnectionState.GetFirstSearchPathConnectionForPlugins(state.searchPath)
+
+	initialUpdates = make(map[string]*steampipeconfig.ConnectionState)
+	remainingUpdates = make(map[string]*steampipeconfig.ConnectionState)
+	// dynamic plugins must be updated for each plugin in search path order
+	// build a map keyed by plugin, with the value the ordered updates for that plugin
 	dynamicUpdates = make(map[string][]*steampipeconfig.ConnectionState)
 
 	// convert this into a lookup of initial updates to execute
 	for _, connectionName := range searchPathConnections {
-		if connectionState, updateRequired := validatedUpdates[connectionName]; updateRequired {
+		if connectionState, updateRequired := updates[connectionName]; updateRequired {
 			if connectionState.SchemaMode == sdkplugin.SchemaModeDynamic {
 				dynamicUpdates[connectionState.Plugin] = append(dynamicUpdates[connectionState.Plugin], connectionState)
 			} else {
-
-				initialUpdates[connectionName] = []*steampipeconfig.ConnectionState{connectionState}
+				initialUpdates[connectionName] = connectionState
 			}
 		}
 	}
 	// now add remaining updates to remainingUpdates
-	for connectionName, connectionState := range validatedUpdates {
+	for connectionName, connectionState := range updates {
 		if _, isInitialUpdate := initialUpdates[connectionName]; !isInitialUpdate {
-			remainingUpdates[connectionName] = []*steampipeconfig.ConnectionState{connectionState}
+			remainingUpdates[connectionName] = connectionState
 		}
 
 	}
 	return initialUpdates, remainingUpdates, dynamicUpdates
 }
 
-func (state *refreshConnectionState) writeComments(ctx context.Context, validatedPlugins map[string]*steampipeconfig.ConnectionPlugin) {
-	log.Printf("[INFO] start comments")
-	defer log.Printf("[INFO] end comments")
-
-	conn, err := state.pool.Acquire(ctx)
-	if err != nil {
-		// NOTE: do not return an error if we fail to write comments
-		log.Printf("[WARN] failed to write comments: could not acquire connection: %s", err.Error())
-		return
-	}
-	defer conn.Release()
-
-	numCommentsUpdates := len(validatedPlugins)
-	log.Printf("[TRACE] executing %d comment %s", numCommentsUpdates, utils.Pluralize("query", numCommentsUpdates))
-
-	for connectionName, connectionPlugin := range validatedPlugins {
-		// check this connection has not failed
-		if _, connectionFailed := state.res.FailedConnections[connectionName]; connectionFailed {
-			continue
-		}
-		_, err = db_local.ExecuteSqlInTransaction(ctx, conn.Conn(), "lock table pg_namespace;", db_common.GetCommentsQueryForPlugin(connectionName, connectionPlugin.ConnectionMap[connectionName].Schema.Schema))
-		if err != nil {
-			// NOTE: do not return an error if we fail to write comments
-			log.Printf("[WARN] failed to write comments for connection '%s': %s", connectionName, err.Error())
-		}
-		// TODO update connection state
-	}
-}
-
 func (state *refreshConnectionState) executeDeleteQueries(ctx context.Context) error {
+	deletions := maps.Keys(state.connectionUpdates.Delete)
+
 	t := time.Now()
-	log.Printf("[INFO] refreshConnections execute delete queries")
+	log.Printf("[INFO] execute %d delete %s", len(deletions), utils.Pluralize("query", len(deletions)))
 	defer func() {
 		log.Printf("[INFO] completed execute delete queries (%fs)", time.Since(t).Seconds())
 	}()
-
-	deletions := maps.Keys(state.connectionUpdates.Delete)
 
 	var errors []error
 
@@ -541,11 +710,15 @@ func (state *refreshConnectionState) executeDeleteQuery(ctx context.Context, con
 	// execute delete sql
 	_, err = tx.Exec(ctx, sql)
 	if err != nil {
-		statusErr := state.tableUpdater.onConnectionError(ctx, tx.Conn(), connectionName, err)
-		// NOTE: do not return the error - unless we failed to update the connection state table
-		if statusErr != nil {
-			return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connectionm %s and failed to update connection_state table", connectionName), err, statusErr)
+		// update the state table
+		//(the transaction will be aborted - create a connection for the update)
+		if conn, poolErr := state.pool.Acquire(ctx); poolErr == nil {
+			if statusErr := state.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
+				// NOTE: do not return the error - unless we failed to update the connection state table
+				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
+			}
 		}
+
 		return nil
 	}
 
@@ -578,7 +751,7 @@ func (state *refreshConnectionState) setIncompleteConnectionStateToError(ctx con
 }
 
 // OnConnectionsChanged is the callback function invoked by the connection watcher when connections are added or removed
-func (state *refreshConnectionState) sendPostgreSchemaNotification(ctx context.Context, deletions, updates []string) error {
+func (state *refreshConnectionState) sendPostgreSchemaNotification(ctx context.Context) error {
 	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err

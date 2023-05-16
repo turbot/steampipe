@@ -55,7 +55,8 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 		}
 		pluginModTimeMap[pluginPath] = pluginModTime
 		res[name] = NewConnectionState(remoteSchema, connection, pluginModTime)
-
+		// the comments _will_ eventually be set
+		res[name].CommentsSet = true
 		// if schema import is disabled, set desired state as disabled
 		if connection.ImportSchema == modconfig.ImportSchemaDisabled {
 			res[name].State = constants.ConnectionStateDisabled

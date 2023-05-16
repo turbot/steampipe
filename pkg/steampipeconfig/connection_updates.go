@@ -20,14 +20,15 @@ import (
 )
 
 type ConnectionUpdates struct {
-	Update   ConnectionStateMap
-	Delete   map[string]struct{}
-	Disabled map[string]struct{}
+	Update          ConnectionStateMap
+	Delete          map[string]struct{}
+	Disabled        map[string]struct{}
+	MissingComments ConnectionStateMap
 
 	MissingPlugins map[string][]modconfig.Connection
 	// the connections which will exist after the update
 	FinalConnectionState ConnectionStateMap
-	// connection plugins required to perform the updates
+	// connection plugins required to perform the updates, keyed by connection name
 	ConnectionPlugins      map[string]*ConnectionPlugin
 	CurrentConnectionState ConnectionStateMap
 }
@@ -44,14 +45,6 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 		return nil, NewErrorRefreshConnectionResult(err)
 	}
 	defer conn.Release()
-
-	disabled := make(map[string]struct{})
-	// build lookup of disabled connections
-	for _, c := range GlobalConfig.Connections {
-		if c.ImportSchema == modconfig.ImportSchemaDisabled {
-			disabled[c.Name] = struct{}{}
-		}
-	}
 
 	log.Printf("[TRACE] Loading connection state")
 	// load the connection state file and filter out any connections which are not in the list of schemas
@@ -72,10 +65,19 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	}
 	log.Printf("[TRACE] built required connection state")
 
+	// build lookup of disabled connections
+	disabled := make(map[string]struct{})
+	for _, c := range requiredConnectionStateMap {
+		if c.Disabled() {
+			disabled[c.ConnectionName] = struct{}{}
+		}
+	}
+
 	updates := &ConnectionUpdates{
 		Delete:               make(map[string]struct{}),
 		Disabled:             disabled,
 		Update:               ConnectionStateMap{},
+		MissingComments:      ConnectionStateMap{},
 		MissingPlugins:       missingPlugins,
 		FinalConnectionState: requiredConnectionStateMap,
 	}
@@ -114,9 +116,8 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 		if _, connectionRequired := requiredConnectionStateMap[name]; !connectionRequired {
 			log.Printf("[TRACE] connection %s in current state but not in required state - marking for deletion\n", name)
 			updates.Delete[name] = struct{}{}
-		}
-		// if required connection state is disabled and it is not currently disabled, mark for deletion
-		if _, disabled := disabled[name]; disabled && currentState.State != constants.ConnectionStateDisabled {
+		} else if updates.FinalConnectionState[name].Disabled() && !currentState.Disabled() {
+			// if required connection state is disabled and it is not currently disabled, mark for deletion
 			log.Printf("[TRACE] connection %s is disabled - marking for deletion\n", name)
 			updates.Delete[name] = struct{}{}
 		}
@@ -153,7 +154,10 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	}
 
 	log.Printf("[TRACE] Connecting to plugins")
-	//  instantiate connection plugins for all updates
+	// now identify any connections which are not being updated/deleted but which have not got comments set
+	updates.IdentifyMissingComments()
+
+	//  instantiate connection plugins for all updates (including comment updates)
 	res := updates.populateConnectionPlugins(connectionsPluginsWithDynamicSchema)
 	if res.Error != nil {
 		return nil, res
@@ -162,6 +166,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	// set the schema mode and hash on the connection data in required state
 	// this uses data from the ConnectionPlugins which we have now loaded
 	updates.updateRequiredStateWithSchemaProperties(dynamicSchemaHashMap)
+
 	res.Updates = updates
 	return updates, res
 }
@@ -229,6 +234,7 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	defer utils.LogTime("populateConnectionPlugins end")
 
 	// get list of connections to update:
+	// - add connections which will be updated or have the comments updated
 	// - exclude connections already created
 	// - for any aggregator connections, instantiate the first child connection instead
 	connectionsToCreate := u.getConnectionsToCreate(alreadyCreatedConnectionPlugins)
@@ -252,10 +258,11 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 }
 
 func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) []string {
-	updateConnections := maps.Keys(u.Update)
+	// ensure we instantiate all plugins required for schema AND comment updates
+	connections := append(maps.Keys(u.Update), maps.Keys(u.MissingComments)...)
 	// put connections into a map to avoid dupes
-	var connectionMap = make(map[string]*modconfig.Connection, len(updateConnections))
-	for _, connectionName := range updateConnections {
+	var connectionMap = make(map[string]*modconfig.Connection, len(connections))
+	for _, connectionName := range connections {
 		connection := GlobalConfig.Connections[connectionName]
 		connectionMap[connectionName] = connection
 		// if this connection is an aggregator, add all its children
@@ -273,7 +280,7 @@ func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugi
 }
 
 func (u *ConnectionUpdates) HasUpdates() bool {
-	return len(u.Update)+len(u.Delete) > 0
+	return len(u.Update)+len(u.Delete)+len(u.MissingComments) > 0
 }
 
 func (u *ConnectionUpdates) String() string {
@@ -305,6 +312,22 @@ func (u *ConnectionUpdates) setError(connectionName string, error string) {
 	failedConnection.SetError(error)
 	// remove from updating (in case it is there)
 	delete(u.Update, connectionName)
+}
+
+// identify any connections which are not being updated/deleted but which have not got comments set
+// NOTE: this mutates FinalConnectionState to set comment_set (if needed)
+func (u *ConnectionUpdates) IdentifyMissingComments() {
+	for name, state := range u.FinalConnectionState {
+		if currentState, existsInCurrentState := u.CurrentConnectionState[name]; existsInCurrentState {
+			if !currentState.CommentsSet {
+				_, updating := u.Update[name]
+				_, deleting := u.Delete[name]
+				if !updating || deleting {
+					u.MissingComments[name] = state
+				}
+			}
+		}
+	}
 }
 
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionStateMap, connectionState ConnectionStateMap) (map[string]string, map[string]*ConnectionPlugin, error) {

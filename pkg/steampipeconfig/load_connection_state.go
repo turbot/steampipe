@@ -85,6 +85,42 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 	return connectionStateMap, err
 }
 
+func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionStateMap, error) {
+	query := fmt.Sprintf(`SELECT name,
+		type,
+		import_schema,
+		state,
+		error,	
+		plugin,
+		schema_mode,
+		schema_hash,
+		comments_set,
+		connection_mod_time,
+		plugin_mod_time
+	FROM  %s.%s `, constants.InternalSchema, constants.ConnectionStateTable)
+
+	rows, err := conn.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var res = make(ConnectionStateMap)
+
+	connectionStateList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionState])
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range connectionStateList {
+		// copy into loop var
+		connectionState := c
+		res[c.ConnectionName] = &connectionState
+	}
+
+	return res, nil
+}
+
 func checkConnectionsAreReady(ctx context.Context, connectionStateMap ConnectionStateMap, config *LoadConnectionStateConfiguration) error {
 	if !connectionStateMap.Loaded(config.Connections...) {
 		statusMessage := GetLoadingConnectionStatusMessage(connectionStateMap, config.Connections...)
@@ -128,41 +164,6 @@ func GetLoadingConnectionStatusMessage(connectionStateMap ConnectionStateMap, re
 	}
 	// TODO think about display of arrays
 	return fmt.Sprintf("Waiting for %s '%s' to load (%s)", utils.Pluralize("connection", len(requiredSchemas)), strings.Join(requiredSchemas, "','"), loadedMessage)
-}
-
-func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionStateMap, error) {
-	query := fmt.Sprintf(`SELECT name,
-		type,
-		import_schema,
-		state,
-		error,	
-		plugin,
-		schema_mode,
-		schema_hash,
-		connection_mod_time,
-		plugin_mod_time
-	FROM  %s.%s `, constants.InternalSchema, constants.ConnectionStateTable)
-
-	rows, err := conn.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var res = make(ConnectionStateMap)
-
-	connectionStateList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionState])
-	if err != nil {
-		return nil, err
-	}
-
-	for _, c := range connectionStateList {
-		// copy into loop var
-		connectionState := c
-		res[c.ConnectionName] = &connectionState
-	}
-
-	return res, nil
 }
 
 func SaveConnectionStateFile(res *RefreshConnectionResult, connectionUpdates *ConnectionUpdates) {
