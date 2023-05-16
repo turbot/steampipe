@@ -240,15 +240,15 @@ func (c *DbClient) buildSchemasQuery(schemas ...string) string {
 
 	query := fmt.Sprintf(`
 SELECT
-    table_name,
-    column_name,
-    column_default,
-    is_nullable,
-    data_type,
+		table_name,
+		column_name,
+		column_default,
+		is_nullable,
+		data_type,
 		udt_name,
-    table_schema,
-    (COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
-    (COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
+		table_schema,
+		(COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
+		(COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
 FROM
     information_schema.columns cols
 LEFT JOIN
