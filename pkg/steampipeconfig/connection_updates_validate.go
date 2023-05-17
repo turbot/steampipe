@@ -4,28 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/go-kit/helpers"
 	sdkversion "github.com/turbot/steampipe-plugin-sdk/v5/version"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
-
-type ValidationFailure struct {
-	Plugin             string
-	ConnectionName     string
-	Message            string
-	ShouldDropIfExists bool
-}
-
-func (v ValidationFailure) String() string {
-	return fmt.Sprintf(
-		"Connection: %s\nPlugin:     %s\nError:      %s",
-		v.ConnectionName,
-		v.Plugin,
-		v.Message,
-	)
-}
 
 func (u *ConnectionUpdates) validate() {
 	// find any plugins which use a newer sdk version than steampipe, and any connections with an invalid name
@@ -95,26 +78,16 @@ func (u *ConnectionUpdates) validateAggregator(connectionState *ConnectionState)
 }
 
 func validateConnectionName(connectionName string, p *ConnectionPlugin) *ValidationFailure {
-	if helpers.StringSliceContains(constants.ReservedConnectionNames, connectionName) {
+	if err := ValidateConnectionName(connectionName); err != nil {
 		return &ValidationFailure{
 			Plugin:         p.PluginName,
 			ConnectionName: connectionName,
-			Message:        fmt.Sprintf("Connection name cannot be one of %s", strings.Join(constants.ReservedConnectionNames, ",")),
+			Message:        err.Error(),
 			// no need to drop - this connection cannot have been created as a schema
-			// - we DO NOT want to drop one of the reserved schemas!
 			ShouldDropIfExists: false,
 		}
 	}
 
-	if strings.HasPrefix(connectionName, constants.ReservedConnectionNamePrefix) {
-		return &ValidationFailure{
-			Plugin:         p.PluginName,
-			ConnectionName: connectionName,
-			Message:        fmt.Sprintf("Connection name cannot start with '%s'", constants.ReservedConnectionNamePrefix),
-			// no need to drop - this connection cannot have been created as a schema
-			ShouldDropIfExists: false,
-		}
-	}
 	return nil
 }
 
