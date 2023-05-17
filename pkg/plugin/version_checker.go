@@ -194,7 +194,7 @@ func (v *VersionChecker) requestServerForLatest(ctx context.Context, payload []v
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Printf("[TRACE] Error reading body stream")
+		log.Printf("[TRACE] Error reading body stream: %v", err)
 		return nil, err
 	}
 	defer resp.Body.Close()

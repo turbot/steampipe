@@ -24,9 +24,9 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/installationstate"
 	"github.com/turbot/steampipe/pkg/migrate"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
-	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -88,7 +88,8 @@ var rootCmd = &cobra.Command{
 			createLogger()
 		}
 
-		waitForTasksChannel = setupTasksChannel(cmd.Context(), cmd, args, ew)
+		// runScheduledTasks skips running tasks if this instance is the plugin manager
+		waitForTasksChannel = runScheduledTasks(cmd.Context(), cmd, args, ew)
 
 		// set the max memory
 		debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())
@@ -120,11 +121,14 @@ Getting started:
  `,
 }
 
-// setupTasksChannel
-func setupTasksChannel(ctx context.Context, cmd *cobra.Command, args []string, ew *modconfig.ErrorAndWarnings) chan struct{} {
+// runScheduledTasks runs the task runner and returns a channel which is closed when
+// task run is complete
+//
+// runScheduledTasks skips running tasks if this instance is the plugin manager
+func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, ew *modconfig.ErrorAndWarnings) chan struct{} {
 	// skip running the task runner if this is the plugin manager
 	// since it's supposed to be a daemon
-	if !task.IsPluginManagerCmd(cmd) {
+	if task.IsPluginManagerCmd(cmd) {
 		return nil
 	}
 
@@ -340,7 +344,7 @@ func migrateLegacyFiles() error {
 		return nil
 	}
 	return error_helpers.CombineErrors(
-		migrate.Migrate(&statefile.State{}, filepaths.LegacyStateFilePath()),
+		migrate.Migrate(&installationstate.InstallationState{}, filepaths.LegacyStateFilePath()),
 		migrate.Migrate(&versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath()),
 		migrate.Migrate(&versionfile.DatabaseVersionFile{}, filepaths.DatabaseVersionFilePath()),
 	)

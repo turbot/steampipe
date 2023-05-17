@@ -13,15 +13,15 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/installationstate"
 	"github.com/turbot/steampipe/pkg/plugin"
-	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
 const minimumDurationBetweenChecks = 24 * time.Hour
 
 type Runner struct {
-	currentState statefile.State
+	currentState installationstate.InstallationState
 	options      *taskRunConfig
 }
 
@@ -75,7 +75,7 @@ func newRunner(config *taskRunConfig) *Runner {
 	r := new(Runner)
 	r.options = config
 
-	state, err := statefile.LoadState()
+	state, err := installationstate.Load()
 	if err != nil {
 		// this error should never happen
 		// log this and carry on
