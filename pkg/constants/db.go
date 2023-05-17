@@ -81,6 +81,8 @@ var ReservedConnectionNames = []string{
 	InternalSchema,
 }
 
+const ReservedConnectionNamePrefix = "steampipe_"
+
 // introspection table names
 const (
 	IntrospectionTableQuery              = "steampipe_query"

@@ -96,7 +96,7 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 	// determine any necessary connection updates
 	state.connectionUpdates, state.res = steampipeconfig.NewConnectionUpdates(ctx, state.pool, state.forceUpdateConnectionNames...)
 	defer state.logRefreshConnectionResults()
-	// were we successful
+	// were we successful#
 	if state.res.Error != nil {
 		return
 	}
@@ -232,25 +232,9 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 		}
 	}()
 
-	// retrieve updates from the table updater
-	connectionUpdates := state.tableUpdater.updates
-
-	// TODO tidy up and refactor this validation
-	// find any plugins which use a newer sdk version than steampipe.
-	validationFailures, validatedPlugins := ValidatePlugins(connectionUpdates.ConnectionPlugins)
-	moreValidationFailures, validatedUpdates, validatedCommentUpdates := ValidateUpdates(connectionUpdates.Update, connectionUpdates.MissingComments, validatedPlugins)
-	validationFailures = append(validationFailures, moreValidationFailures...)
-	if len(validationFailures) > 0 {
-		log.Printf("[INFO] executeUpdateQueries - plugin validation returned %d validation %s", len(validationFailures), utils.Pluralize("failure", len(validationFailures)))
-		state.res.Warnings = append(state.res.Warnings, BuildValidationWarningString(validationFailures))
-	}
-
-	// write back validated updates
-	connectionUpdates.Update = validatedUpdates
-	connectionUpdates.MissingComments = validatedCommentUpdates
-	// store validated plugins in state
-	// this is a map of plugins keyed by connection
-	numUpdates := len(validatedUpdates)
+	connectionUpdates := state.connectionUpdates
+	connectionPlugins := connectionUpdates.ConnectionPlugins
+	numUpdates := len(connectionUpdates.Update)
 
 	// we need to execute the updates in search path order
 	// i.e. we first need to update the first search path connection for each plugin (this can be done in parallel)
@@ -289,12 +273,12 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	log.Printf("[INFO] set comments for initial updates")
 	// now set comments for initial updates and dynamic connections
 	// note errors will be empty to get here
-	state.UpdateCommentsInParallel(ctx, maps.Values(initialUpdates), validatedPlugins)
+	state.UpdateCommentsInParallel(ctx, maps.Values(initialUpdates), connectionPlugins)
 
 	log.Printf("[INFO] set comments for dynamic updates")
 	// convert dynamicUpdates to an array of connection states
 	var dynamicUpdateArray = updateSetMapToArray(dynamicUpdates)
-	state.UpdateCommentsInParallel(ctx, dynamicUpdateArray, validatedPlugins)
+	state.UpdateCommentsInParallel(ctx, dynamicUpdateArray, connectionPlugins)
 
 	log.Printf("[INFO] updated all exemplar schemas - sending notification")
 	// now that we have updated all exemplar schemars, send postgres notification
@@ -319,9 +303,9 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 		utils.Pluralize("updates", len(connectionUpdates.MissingComments)),
 	)
 	// set comments for remaining updates
-	state.UpdateCommentsInParallel(ctx, maps.Values(remainingUpdates), validatedPlugins)
+	state.UpdateCommentsInParallel(ctx, maps.Values(remainingUpdates), connectionPlugins)
 	// set comments for any other connection without comment set
-	state.UpdateCommentsInParallel(ctx, maps.Values(state.connectionUpdates.MissingComments), validatedPlugins)
+	state.UpdateCommentsInParallel(ctx, maps.Values(state.connectionUpdates.MissingComments), connectionPlugins)
 
 	if len(errors) > 0 {
 		state.res.Error = error_helpers.CombineErrors(errors...)
@@ -329,7 +313,7 @@ func (state *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 
 	log.Printf("[INFO] all update queries executed")
 
-	for _, failure := range validationFailures {
+	for _, failure := range connectionUpdates.InvalidConnections {
 		log.Printf("[TRACE] remove schema for connection failing validation connection %s, plugin Name %s\n ", failure.ConnectionName, failure.Plugin)
 		if failure.ShouldDropIfExists {
 			_, err := state.pool.Exec(ctx, db_common.GetDeleteConnectionQuery(failure.ConnectionName))

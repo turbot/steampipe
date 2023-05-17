@@ -31,10 +31,22 @@ type ConnectionUpdates struct {
 	// connection plugins required to perform the updates, keyed by connection name
 	ConnectionPlugins      map[string]*ConnectionPlugin
 	CurrentConnectionState ConnectionStateMap
+	InvalidConnections     map[string]*ValidationFailure
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
 func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
+	updates, res := populateConnectionUpdates(ctx, pool, forceUpdateConnectionNames...)
+	if res.Error != nil {
+		return updates, res
+	}
+	// validate the updates
+	// this will validate all plugins and connection names  and remove any updates whichi use invalid connections
+	updates.validate()
+	return updates, res
+}
+
+func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
 	utils.LogTime("NewConnectionUpdates start")
 	defer utils.LogTime("NewConnectionUpdates end")
 	log.Printf("[TRACE] NewConnectionUpdates")
@@ -80,6 +92,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 		MissingComments:      ConnectionStateMap{},
 		MissingPlugins:       missingPlugins,
 		FinalConnectionState: requiredConnectionStateMap,
+		InvalidConnections:   make(map[string]*ValidationFailure),
 	}
 
 	log.Printf("[TRACE] loaded connection state")

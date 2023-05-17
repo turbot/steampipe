@@ -30,13 +30,17 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 
 	var queries []db_common.QueryWithArgs
 
-	// update the conection stat etable to set appropriate state for all connections
+	// update the conection state table to set appropriate state for all connections
 	// set updates to "updating"
 	for name, connectionState := range u.updates.FinalConnectionState {
 		// set the connection data state based on whether this connection is being created or deleted
 		if _, updatingConnection := u.updates.Update[name]; updatingConnection {
 			connectionState.State = constants.ConnectionStateUpdating
 			connectionState.CommentsSet = false
+		} else if validationError, connectionIsInvalid := u.updates.InvalidConnections[name]; connectionIsInvalid {
+			// if his conneciton has an error, set to error
+			connectionState.State = constants.ConnectionStateError
+			connectionState.ConnectionError = &validationError.Message
 		}
 		// get the sql to update the connection state in the table to match the struct
 		queries = append(queries, connection_state.GetUpdateConnectionStateSql(connectionState))
