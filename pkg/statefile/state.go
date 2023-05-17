@@ -2,7 +2,7 @@ package statefile
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -37,13 +37,13 @@ func LoadState() (State, error) {
 
 	stateFileContent, err := os.ReadFile(filepaths.StateFilePath())
 	if err != nil {
-		fmt.Println("Could not read update state file")
+		log.Println("[INFO] Could not read update state file")
 		return currentState, err
 	}
 
 	err = json.Unmarshal(stateFileContent, &currentState)
 	if err != nil {
-		fmt.Println("Could not parse update state file")
+		log.Println("[INFO] Could not parse update state file")
 		return currentState, err
 	}
 
@@ -51,7 +51,7 @@ func LoadState() (State, error) {
 }
 
 // Save the state
-// NOTE: this updates the last checked time
+// NOTE: this updates the last checked time to the current time
 func (s *State) Save() error {
 	// set the struct version
 	s.StructVersion = StateStructVersion
