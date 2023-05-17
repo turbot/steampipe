@@ -3,7 +3,6 @@ package db_client
 import (
 	"context"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"log"
 	"strings"
 	"sync"
@@ -16,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -23,6 +23,10 @@ import (
 type DbClient struct {
 	connectionString string
 	pool             *pgxpool.Pool
+
+	// this flag is set if the service that this client
+	// is connected to is running in the same physical system
+	isLocalService bool
 
 	// concurrency management for db session access
 	parallelSessionInitLock *semaphore.Weighted
