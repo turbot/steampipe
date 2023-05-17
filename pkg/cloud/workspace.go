@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/sperr"
 )
 
@@ -17,7 +17,7 @@ func GetUserWorkspaceHandle(ctx context.Context, token string) (string, error) {
 	client := newSteampipeCloudClient(token)
 	actor, _, err := client.Actors.Get(ctx).Execute()
 	if err != nil {
-		return "", sperr.New("Invalid token.\nPlease run %s or setup a token.", constants.Bold("steampipe login"))
+		return "", error_helpers.InvalidCloudTokenError
 	}
 	userHandler := actor.Handle
 	workspacesResponse, _, err := client.UserWorkspaces.List(ctx, userHandler).Execute()
