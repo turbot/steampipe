@@ -16,21 +16,21 @@ import (
 	"github.com/turbot/steampipe/sperr"
 )
 
-// dropLegacySchema drops the legacy 'steampipe_command' schema if it exists
+// dropLegacySchemas drops the legacy 'steampipe_command' schema if it exists
 // and the 'internal' schema if it contains only the 'glob' function
 // and maybe the 'connection_state' table
-func dropLegacySchema(ctx context.Context, conn *pgx.Conn) error {
+func dropLegacySchemas(ctx context.Context, conn *pgx.Conn) error {
 	utils.LogTime("db_local.dropLegacySchema start")
 	defer utils.LogTime("db_local.dropLegacySchema end")
 
 	return error_helpers.CombineErrors(
-		dropLegacyInternal(ctx, conn),
-		dropLegacySteampipeCommand(ctx, conn),
+		dropLegacyInternalSchema(ctx, conn),
+		dropLegacySteampipeCommandSchema(ctx, conn),
 	)
 }
 
-// dropLegacySteampipeCommand drops the 'steampipe_command' schema if it exists
-func dropLegacySteampipeCommand(ctx context.Context, conn *pgx.Conn) error {
+// dropLegacySteampipeCommandSchema drops the 'steampipe_command' schema if it exists
+func dropLegacySteampipeCommandSchema(ctx context.Context, conn *pgx.Conn) error {
 	utils.LogTime("db_local.dropLegacySteampipeCommand start")
 	defer utils.LogTime("db_local.dropLegacySteampipeCommand end")
 
@@ -38,14 +38,14 @@ func dropLegacySteampipeCommand(ctx context.Context, conn *pgx.Conn) error {
 	return err
 }
 
-// dropLegacyInternal looks for a schema named 'internal'
+// dropLegacyInternalSchema looks for a schema named 'internal'
 // which has a function called 'glob' and maybe a table named 'connection_state'
 // and drops it
-func dropLegacyInternal(ctx context.Context, conn *pgx.Conn) error {
+func dropLegacyInternalSchema(ctx context.Context, conn *pgx.Conn) error {
 	utils.LogTime("db_local.dropLegacyInternal start")
 	defer utils.LogTime("db_local.dropLegacyInternal end")
 
-	if exists, err := isLegacyInternalExists(ctx, conn); err == nil && !exists {
+	if exists, err := legacyInternalExists(ctx, conn); err == nil && !exists {
 		log.Println("[TRACE] could not find legacy 'internal' schema")
 		return nil
 	}
@@ -59,9 +59,9 @@ func dropLegacyInternal(ctx context.Context, conn *pgx.Conn) error {
 	return nil
 }
 
-// isLegacyInternalExists looks for a schema named 'internal'
+// legacyInternalExists looks for a schema named 'internal'
 // which has a function called 'glob' and maybe a table named 'connection_state'
-func isLegacyInternalExists(ctx context.Context, conn *pgx.Conn) (bool, error) {
+func legacyInternalExists(ctx context.Context, conn *pgx.Conn) (bool, error) {
 	utils.LogTime("db_local.isLegacyInternalExists start")
 	defer utils.LogTime("db_local.isLegacyInternalExists end")
 
