@@ -74,9 +74,10 @@ func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, con
 	q := connection_state.GetSetConnectionStateSql(connection.ConnectionName, constants.ConnectionStateReady)
 	_, err := conn.Exec(ctx, q.Query, q.Args...)
 	if err != nil {
+		log.Printf("[WARN] onConnectionReady failed for connection '%s': %s", name, err.Error())
 		return err
 	}
-
+	log.Printf("[INFO] onConnectionReady succeeded for connection '%s'", name)
 	return nil
 }
 

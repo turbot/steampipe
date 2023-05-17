@@ -454,6 +454,8 @@ func (state *refreshConnectionState) executeUpdateForConnections(ctx context.Con
 }
 
 func (state *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, connectionName string) error {
+	log.Printf("[INFO] executeUpdateQuery for connection '%s'", connectionName)
+
 	// create a transaction
 	tx, err := state.pool.Begin(ctx)
 	if err != nil {
@@ -461,6 +463,7 @@ func (state *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql
 	}
 	defer func() {
 		if err != nil {
+			log.Printf("[INFO] executeUpdateQuery failed for connection '%s': %s", connectionName, err.Error())
 			tx.Rollback(ctx)
 		} else {
 			tx.Commit(ctx)
