@@ -416,7 +416,7 @@ func (w *Workspace) loadWorkspaceResourceName(ctx context.Context) (*modconfig.W
 		return nil, err
 	}
 
-	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Path, parseCtx)
+	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Mod, parseCtx)
 	if err != nil {
 		return nil, err
 	}
