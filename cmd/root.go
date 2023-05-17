@@ -88,6 +88,7 @@ var rootCmd = &cobra.Command{
 			createLogger()
 		}
 
+		// runScheduledTasks skips running tasks if this instance is the plugin manager
 		waitForTasksChannel = runScheduledTasks(cmd.Context(), cmd, args, ew)
 
 		// set the max memory
