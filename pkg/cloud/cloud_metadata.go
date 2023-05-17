@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/sperr"
 )
@@ -23,7 +24,7 @@ func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string
 	// get the identity
 	identity, _, err := client.Identities.Get(ctx, identityHandle).Execute()
 	if err != nil {
-		return nil, sperr.Wrap(err)
+		return nil, sperr.New("Invalid 'workspace-database' argument '%s'.\nPlease check the identity and workspace names and try again.", workspaceDatabaseString)
 	}
 
 	// get the workspace
@@ -35,7 +36,7 @@ func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string
 	}
 
 	if err != nil {
-		return nil, sperr.Wrap(err)
+		return nil, error_helpers.InvalidCloudTokenError
 	}
 
 	workspaceHost := cloudWorkspace.GetHost()
@@ -43,7 +44,7 @@ func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string
 
 	actor, _, err := client.Actors.Get(ctx).Execute()
 	if err != nil {
-		return nil, sperr.Wrap(err)
+		return nil, error_helpers.InvalidCloudTokenError
 	}
 
 	password, _, err := client.Users.GetDBPassword(ctx, actor.GetHandle()).Execute()
