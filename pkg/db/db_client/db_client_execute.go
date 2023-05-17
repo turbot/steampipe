@@ -195,7 +195,7 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		resultChannel <- timingResult
 	}()
 
-	res, err := c.ExecuteSyncInSession(ctx, session, fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.scan_metadata where id > %d", constants.InternalSchema, session.ScanMetadataMaxId))
+	res, err := c.ExecuteSyncInSession(ctx, session, fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId))
 	// if we failed to read scan metadata (either because the query failed or the plugin does not support it)
 	// just return
 	if err != nil || len(res.Rows) == 0 {
