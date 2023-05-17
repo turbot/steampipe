@@ -123,7 +123,7 @@ Getting started:
 // runScheduledTasks runs the task runner and returns a channel which is closed when
 // task run is complete
 //
-// runScheduledTasks skips running tasks is if this instance is the plugin manager
+// runScheduledTasks skips running tasks if this instance is the plugin manager
 func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, ew *modconfig.ErrorAndWarnings) chan struct{} {
 	// skip running the task runner if this is the plugin manager
 	// since it's supposed to be a daemon

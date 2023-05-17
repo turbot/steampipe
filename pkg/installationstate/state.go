@@ -15,22 +15,21 @@ import (
 
 const StateStructVersion = 20220411
 
-// InstallationState is a struct containing installation state
 type InstallationState struct {
 	LastCheck      string `json:"last_checked"`    // an RFC3339 encoded time stamp
 	InstallationID string `json:"installation_id"` // a UUIDv4 string
 	StructVersion  int64  `json:"struct_version"`
 }
 
-func newState() InstallationState {
+func newInstallationState() InstallationState {
 	return InstallationState{
 		InstallationID: newInstallationID(),
 		StructVersion:  StateStructVersion,
 	}
 }
 
-func LoadInstallationState() (InstallationState, error) {
-	currentState := newState()
+func Load() (InstallationState, error) {
+	currentState := newInstallationState()
 	if !files.FileExists(filepaths.StateFilePath()) {
 		return currentState, nil
 	}

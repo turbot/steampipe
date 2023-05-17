@@ -345,7 +345,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	state, err := installationstate.LoadInstallationState()
+	state, err := installationstate.Load()
 	if err != nil {
 		error_helpers.ShowError(ctx, fmt.Errorf("could not load state"))
 		exitCode = constants.ExitCodePluginLoadingError

@@ -75,7 +75,7 @@ func newRunner(config *taskRunConfig) *Runner {
 	r := new(Runner)
 	r.options = config
 
-	state, err := installationstate.LoadInstallationState()
+	state, err := installationstate.Load()
 	if err != nil {
 		// this error should never happen
 		// log this and carry on
