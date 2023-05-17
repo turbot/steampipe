@@ -28,7 +28,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 	// cache plugin file creation times in a dictionary to avoid reloading the same plugin file multiple times
 	pluginModTimeMap := make(map[string]time.Time)
 
-	// map of missing plugins, keyed by plugin, value is list of conections using missing plugin
+	// map of missing plugins, keyed by plugin, value is list of connections using missing plugin
 	missingPluginMap := make(map[string][]modconfig.Connection)
 
 	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration start")
