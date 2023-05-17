@@ -1,4 +1,4 @@
-package statefile
+package installationstate
 
 import (
 	"encoding/json"
@@ -15,21 +15,21 @@ import (
 
 const StateStructVersion = 20220411
 
-// State is a struct containing installation state
-type State struct {
+// InstallationState is a struct containing installation state
+type InstallationState struct {
 	LastCheck      string `json:"last_checked"`    // an RFC3339 encoded time stamp
 	InstallationID string `json:"installation_id"` // a UUIDv4 string
 	StructVersion  int64  `json:"struct_version"`
 }
 
-func newState() State {
-	return State{
+func newState() InstallationState {
+	return InstallationState{
 		InstallationID: newInstallationID(),
 		StructVersion:  StateStructVersion,
 	}
 }
 
-func LoadState() (State, error) {
+func LoadInstallationState() (InstallationState, error) {
 	currentState := newState()
 	if !files.FileExists(filepaths.StateFilePath()) {
 		return currentState, nil
@@ -52,7 +52,7 @@ func LoadState() (State, error) {
 
 // Save the state
 // NOTE: this updates the last checked time to the current time
-func (s *State) Save() error {
+func (s *InstallationState) Save() error {
 	// set the struct version
 	s.StructVersion = StateStructVersion
 
@@ -69,11 +69,11 @@ func (s *State) Save() error {
 
 // IsValid checks whether the struct was correctly deserialized,
 // by checking if the StructVersion is populated
-func (s *State) IsValid() bool {
+func (s *InstallationState) IsValid() bool {
 	return s.StructVersion > 0
 }
 
-func (s *State) MigrateFrom() migrate.Migrateable {
+func (s *InstallationState) MigrateFrom() migrate.Migrateable {
 	// save the existing property values to the new legacy properties
 	s.StructVersion = StateStructVersion
 	s.LastCheck = nowTimeString()

@@ -24,9 +24,9 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/installationstate"
 	"github.com/turbot/steampipe/pkg/migrate"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
-	"github.com/turbot/steampipe/pkg/statefile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -343,7 +343,7 @@ func migrateLegacyFiles() error {
 		return nil
 	}
 	return error_helpers.CombineErrors(
-		migrate.Migrate(&statefile.State{}, filepaths.LegacyStateFilePath()),
+		migrate.Migrate(&installationstate.InstallationState{}, filepaths.LegacyStateFilePath()),
 		migrate.Migrate(&versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath()),
 		migrate.Migrate(&versionfile.DatabaseVersionFile{}, filepaths.DatabaseVersionFilePath()),
 	)
