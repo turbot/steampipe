@@ -2,10 +2,20 @@ package db_common
 
 import (
 	"context"
+	"strings"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/turbot/go-kit/helpers"
-	"strings"
+	"github.com/turbot/steampipe/pkg/constants"
 )
+
+func EnsureInternalSchemaSuffix(searchPath []string) []string {
+	// remove the InternalSchema
+	searchPath = helpers.RemoveFromStringSlice(searchPath, constants.InternalSchema)
+	// append the InternalSchema
+	searchPath = append(searchPath, constants.InternalSchema)
+	return searchPath
+}
 
 func AddSearchPathPrefix(searchPathPrefix []string, searchPath []string) []string {
 	if len(searchPathPrefix) > 0 {
