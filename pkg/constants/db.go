@@ -44,8 +44,8 @@ const (
 const (
 
 	// legacy schema names
-	// these are schema names which were used
-	// and are not relevant anymore and need to be dropped
+	// these are schema names which were used previously
+	// but are not relevant anymore and need to be dropped
 	LegacyInternalSchema = "internal"
 	LegacyCommandSchema  = "steampipe_command"
 
