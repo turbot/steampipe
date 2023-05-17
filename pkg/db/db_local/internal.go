@@ -21,7 +21,7 @@ func dropLegacySteampipeCommand(ctx context.Context, conn *pgx.Conn) error {
 	utils.LogTime("db_local.dropLegacySteampipeCommand start")
 	defer utils.LogTime("db_local.dropLegacySteampipeCommand end")
 
-	_, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", constants.CommandSchema))
+	_, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", constants.LegacyCommandSchema))
 	return err
 }
 

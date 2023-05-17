@@ -42,9 +42,16 @@ const (
 
 // schema names
 const (
-	// InternalSchema is the schema container for all steampipe helper functions, and connection state table
+
+	// legacy schema names
+	// these are schema names which were used
+	// and are not relevant anymore and need to be dropped
 	LegacyInternalSchema = "internal"
-	InternalSchema       = "steampipe_internal"
+	LegacyCommandSchema  = "steampipe_command"
+
+	// InternalSchema is the schema container for all steampipe helper functions, and connection state table
+	// along with the foreign tables to communicate with the FDW
+	InternalSchema = "steampipe_internal"
 
 	// ConnectionStateTable is the table used to store steampipe connection state
 	ConnectionStateTable             = "steampipe_connection_state"
