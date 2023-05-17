@@ -65,26 +65,13 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 		}
 	}()
 
-	// if the cache is set on the workspace profile
-	// then override the default cache setting of the connection
-	if viper.IsSet(constants.ArgClientCacheEnabled) {
-		cacheEnabled := viper.GetBool(constants.ArgClientCacheEnabled)
-
-		// override this if this is a local client and the server cache is disabled
-		// this is a temporary work-around till all plugins are updated with SDKv5
-		// SDKv5 gives the plugins capabilities to turn off it's own cache
-		if cacheEnabled && c.isLocalService {
-			// this is necessary in the interim for as long as
-			// cache settings are still in the deprecation cycle
-			cacheEnabled = cacheEnabled && viper.GetBool(constants.ArgServiceCacheEnabled)
-			fmt.Println("cache override for local mode", cacheEnabled)
-		}
-
-		if err := db_common.SetCacheEnabled(ctx, cacheEnabled, databaseConnection.Conn()); err != nil {
+	if cacheSetting := c.resolveCacheEnabled(ctx); c != nil {
+		if err := db_common.SetCacheEnabled(ctx, *cacheSetting, databaseConnection.Conn()); err != nil {
 			sessionResult.Error = err
 			return sessionResult
 		}
 	}
+
 	if viper.IsSet(constants.ArgCacheTtl) {
 		ttl := time.Duration(viper.GetInt(constants.ArgCacheTtl)) * time.Second
 		if err := db_common.SetCacheTtl(ctx, ttl, databaseConnection.Conn()); err != nil {
@@ -102,6 +89,29 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	sessionResult.Error = ctx.Err()
 	return sessionResult
+}
+
+// resolveCacheEnabled resolves the value of the cache that should
+// be set in the connection
+// the complexity in the logic is a temporary workaround to make sure
+// that we turn off caching for plugins compiled with SDK pre-V5.
+// this is because the ability to turn off caching server-side has been
+// introduced in V5 and this workaround has to be around till
+// all plugins in the steampipe ecosystem are updated.
+func (c *DbClient) resolveCacheEnabled(_ context.Context) *bool {
+	// default to enabled
+	var cacheEnabled bool
+
+	if viper.IsSet(constants.ArgClientCacheEnabled) {
+		cacheEnabled = viper.GetBool(constants.ArgClientCacheEnabled)
+		if cacheEnabled && c.isLocalService {
+			cacheEnabled = cacheEnabled && viper.GetBool(constants.ArgServiceCacheEnabled)
+		}
+	} else {
+		cacheEnabled = viper.GetBool(constants.ArgServiceCacheEnabled)
+	}
+
+	return &cacheEnabled
 }
 
 func (c *DbClient) GetDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {
