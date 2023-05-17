@@ -53,8 +53,10 @@ func (p *PluginVersion) Initialise(block *hcl.Block) hcl.Diagnostics {
 			return diags
 		}
 		// raise deprecation warning
-		// disable raising this for now, since for the
-		// v0.20.x we should support both usage (but not together)
+		// disable raising this for now, since for the v0.20.x
+		// release cycle we should support both usage (but not together)
+		//
+		// [Issue](https://github.com/turbot/steampipe/issues/3251)
 		//
 		// diags = append(diags, &hcl.Diagnostic{
 		// 	Severity: hcl.DiagWarning,
