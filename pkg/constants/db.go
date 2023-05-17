@@ -85,8 +85,9 @@ var ConnectionStates = []string{
 
 var ReservedConnectionNames = []string{
 	"public",
-	InternalSchema,
 }
+
+const ReservedConnectionNamePrefix = "steampipe_"
 
 // introspection table names
 const (

@@ -63,6 +63,7 @@ func start(steampipeExecutablePath string) error {
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
 		Logger:           logger,
 	})
+
 	if _, err := client.Start(); err != nil {
 		log.Printf("[WARN] plugin manager start() failed to start GRPC client for plugin manager: %s", err)
 		return err

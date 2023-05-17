@@ -243,9 +243,6 @@ func initGlobalConfig() *modconfig.ErrorAndWarnings {
 	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
 	error_helpers.FailOnError(loadConfigErrorsAndWarnings.GetError())
 
-	// show any deprecation warnings
-	// loadConfigErrorsAndWarnings.ShowWarnings()
-
 	// store global config
 	steampipeconfig.GlobalConfig = config
 
