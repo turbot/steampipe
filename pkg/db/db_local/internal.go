@@ -3,35 +3,147 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/turbot/steampipe/pkg/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
 )
 
-/**
+// dropLegacySchemas drops the legacy 'steampipe_command' schema if it exists
+// and the 'internal' schema if it contains only the 'glob' function
+// and maybe the 'connection_state' table
+func dropLegacySchemas(ctx context.Context, conn *pgx.Conn) error {
+	utils.LogTime("db_local.dropLegacySchema start")
+	defer utils.LogTime("db_local.dropLegacySchema end")
 
-Query to get functions:
-SELECT
-    p.proname AS function_name
+	return error_helpers.CombineErrors(
+		dropLegacyInternalSchema(ctx, conn),
+		dropLegacySteampipeCommandSchema(ctx, conn),
+	)
+}
+
+// dropLegacySteampipeCommandSchema drops the 'steampipe_command' schema if it exists
+func dropLegacySteampipeCommandSchema(ctx context.Context, conn *pgx.Conn) error {
+	utils.LogTime("db_local.dropLegacySteampipeCommand start")
+	defer utils.LogTime("db_local.dropLegacySteampipeCommand end")
+
+	_, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", constants.LegacyCommandSchema))
+	return err
+}
+
+// dropLegacyInternalSchema looks for a schema named 'internal'
+// which has a function called 'glob' and maybe a table named 'connection_state'
+// and drops it
+func dropLegacyInternalSchema(ctx context.Context, conn *pgx.Conn) error {
+	utils.LogTime("db_local.dropLegacyInternal start")
+	defer utils.LogTime("db_local.dropLegacyInternal end")
+
+	if exists, err := legacyInternalExists(ctx, conn); err == nil && !exists {
+		log.Println("[TRACE] could not find legacy 'internal' schema")
+		return nil
+	}
+
+	log.Println("[TRACE] dropping legacy 'internal' schema")
+	if _, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA %s CASCADE", constants.LegacyInternalSchema)); err != nil {
+		return sperr.WrapWithMessage(err, "could not drop legacy schema: '%s'", constants.LegacyInternalSchema)
+	}
+	log.Println("[TRACE] dropped legacy 'internal' schema")
+
+	return nil
+}
+
+// legacyInternalExists looks for a schema named 'internal'
+// which has a function called 'glob' and maybe a table named 'connection_state'
+func legacyInternalExists(ctx context.Context, conn *pgx.Conn) (bool, error) {
+	utils.LogTime("db_local.isLegacyInternalExists start")
+	defer utils.LogTime("db_local.isLegacyInternalExists end")
+
+	log.Println("[TRACE] querying for legacy 'internal' schema")
+
+	legacySchemaCountQuery := `
+WITH 
+internal_functions AS (
+		SELECT
+			COALESCE(STRING_AGG(DISTINCT(p.proname),','),'') as function_names
+		FROM
+			pg_proc p
+			LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
+		WHERE
+			n.nspname = $1
+),
+internal_tables AS (
+		SELECT 
+				COALESCE(STRING_AGG(DISTINCT(table_name),','),'') as table_names
+		FROM 
+				information_schema.tables 
+		WHERE 
+				table_schema = $1
+)
+SELECT 
+		internal_functions.function_names, 
+		internal_tables.table_names 
 FROM
-    pg_proc p
-    LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
-WHERE
-    n.nspname = 'functionSchema'
-ORDER BY
-    function_name;
+		internal_functions 
+INNER JOIN
+		internal_tables
+		ON true;
+	`
 
-**/
+	row := conn.QueryRow(ctx, legacySchemaCountQuery, constants.LegacyInternalSchema)
+
+	var functionNames string
+	var tableNames string
+	err := row.Scan(&functionNames, &tableNames)
+	if err != nil {
+		return false, sperr.WrapWithMessage(err, "could not query legacy 'internal' schema objects: '%s'", constants.LegacyInternalSchema)
+	}
+
+	if len(functionNames) == 0 && len(tableNames) == 0 {
+		log.Println("[TRACE] could not find any objects in 'internal' - skipping drop")
+		return false, nil
+	}
+
+	functions := strings.Split(functionNames, ",")
+	tables := strings.Split(tableNames, ",")
+
+	log.Println("[TRACE] isLegacyInternalExists: available function names", functions)
+	log.Println("[TRACE] isLegacyInternalExists: available table names", tables)
+
+	expectedFunctions := map[string]bool{
+		"glob": true,
+	}
+	expectedTables := map[string]bool{
+		"connection_state":             true, // legacy table name
+		constants.ConnectionStateTable: true,
+	}
+
+	for _, f := range functions {
+		if !expectedFunctions[f] {
+			log.Println("[TRACE] isLegacyInternalExists: unexpected function", f)
+			return false, nil
+		}
+	}
+
+	for _, t := range tables {
+		if !expectedTables[t] {
+			log.Println("[TRACE] isLegacyInternalExists: unexpected table", t)
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
 
 func setupInternal(ctx context.Context, conn *pgx.Conn) error {
-	utils.LogTime("db.setupInternal start")
-	defer utils.LogTime("db.setupInternal end")
+	utils.LogTime("db_local.setupInternal start")
+	defer utils.LogTime("db_local.setupInternal end")
 
 	queries := []string{
 		"lock table pg_namespace;",

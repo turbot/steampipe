@@ -142,6 +142,14 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	}
 	defer conn.Close(ctx)
 
+	statushooks.SetStatus(ctx, "Dropping legacy schema")
+	if err := dropLegacySchemas(ctx, conn); err != nil {
+		// do not fail
+		// worst case scenario is that we have a couple of extra schema
+		// these won't be in the search path anyway
+		log.Println("[INFO] failed to drop legacy 'internal' schema", err)
+	}
+
 	// setup internal schema
 	// this includes setting the state of all connections in the connection_state table to pending
 	statushooks.SetStatus(ctx, "Setting up functions")

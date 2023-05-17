@@ -3,7 +3,6 @@ package db_client
 import (
 	"context"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"log"
 	"strings"
 	"sync"
@@ -16,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -240,15 +240,15 @@ func (c *DbClient) buildSchemasQuery(schemas ...string) string {
 
 	query := fmt.Sprintf(`
 SELECT
-    table_name,
-    column_name,
-    column_default,
-    is_nullable,
-    data_type,
-	udt_name,
-    table_schema,
-    (COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
-    (COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
+		table_name,
+		column_name,
+		column_default,
+		is_nullable,
+		data_type,
+		udt_name,
+		table_schema,
+		(COALESCE(pg_catalog.col_description(c.oid, cols.ordinal_position :: int),'')) as column_comment,
+		(COALESCE(pg_catalog.obj_description(c.oid),'')) as table_comment
 FROM
     information_schema.columns cols
 LEFT JOIN
