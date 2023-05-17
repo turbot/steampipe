@@ -38,7 +38,7 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 			connectionState.State = constants.ConnectionStateUpdating
 			connectionState.CommentsSet = false
 		} else if validationError, connectionIsInvalid := u.updates.InvalidConnections[name]; connectionIsInvalid {
-			// if his conneciton has an error, set to error
+			// if this connection has an error, set to error
 			connectionState.State = constants.ConnectionStateError
 			connectionState.ConnectionError = &validationError.Message
 		}
