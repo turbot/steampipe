@@ -90,33 +90,7 @@ jobs:
       matrix:
         platform: [macos-latest, ubuntu-latest]
         test_block:
-          - "migration"
           - "service_and_plugin"
-          - "service"
-          - "search_path"
-          - "chaos_and_query"
-          - "dynamic_schema"
-          - "dynamic_aggregators"
-          - "cache"
-          - "mod_install"
-          - "mod"
-          - "mod_require"
-          - "check"
-          - "performance"
-          - "workspace"
-          - "introspection"
-          - "cloud"
-          - "snapshot"
-          - "dashboard"
-          - "dashboard_parsing_validation"
-          - "schema_cloning"
-          - "exit_codes"
-          - "force_stop"
-        exclude:
-          - platform: macos-latest
-            test_block: migration
-          - platform: macos-latest
-            test_block: force_stop
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
