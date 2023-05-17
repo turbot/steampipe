@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -153,8 +154,8 @@ Examples:
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag("outdated", false, "Check each plugin in the list for updates").
-		AddBoolFlag(constants.ArgHelp, false, "Help for plugin list", cmdconfig.FlagOptions.WithShortHand("h"))
-
+		AddBoolFlag(constants.ArgHelp, false, "Help for plugin list", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddStringFlag(constants.ArgOutputFormat, "", "Output in JSON format")
 	return cmd
 }
 
@@ -565,6 +566,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 	// setup a cancel context and start cancel handler
 	ctx, cancel := context.WithCancel(cmd.Context())
 	contexthelpers.StartCancelHandler(cancel)
+	outputJson := viper.GetString(constants.ArgOutputFormat)
 
 	utils.LogTime("runPluginListCmd list")
 	defer func() {
@@ -624,6 +626,29 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		res.ShowWarnings()
 		fmt.Printf("\n")
 	}
+
+	if outputJson == "json" {
+		output := struct {
+			InstalledPlugins []plugin.PluginListItem            `json:"installed_plugins"`
+			FailedPlugins    map[string][]*modconfig.Connection `json:"failed_plugins"`
+			MissingPlugins   map[string][]*modconfig.Connection `json:"missing_plugins"`
+			Warnings         []string                           `json:"warnings"`
+		}{
+			InstalledPlugins: pluginList,
+			FailedPlugins:    failedPluginMap,
+			MissingPlugins:   missingPluginMap,
+			Warnings:         res.Warnings,
+		}
+
+		jsonOutput, err := json.MarshalIndent(output, "", "  ")
+		if err != nil {
+			error_helpers.ShowError(cmd.Context(), err)
+			return
+		}
+
+		fmt.Println(string(jsonOutput))
+	}
+
 }
 
 func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) {
