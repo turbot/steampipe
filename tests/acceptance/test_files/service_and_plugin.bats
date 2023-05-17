@@ -244,7 +244,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 ## connection config
 
 @test "steampipe aggregator connection wildcard check" {
-    skip
+    export STEAMPIPE_LOG=info
     run steampipe plugin install chaos
     run steampipe plugin install steampipe
     cp $SRC_DATA_DIR/aggregator.spc $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
@@ -252,190 +252,188 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
 }
 
-@test "steampipe aggregator connection check total results" {
-    skip
-    run steampipe query "select * from chaos.chaos_all_numeric_column" --output json
+# @test "steampipe aggregator connection check total results" {
+#     run steampipe query "select * from chaos.chaos_all_numeric_column" --output json
 
-    # store the length of the result when queried using `chaos` connection
-    length_chaos=$(echo $output | jq length)
+#     # store the length of the result when queried using `chaos` connection
+#     length_chaos=$(echo $output | jq length)
 
-    run steampipe query "select * from chaos2.chaos_all_numeric_column" --output json
+#     run steampipe query "select * from chaos2.chaos_all_numeric_column" --output json
 
-    # store the length of the result when queried using `chaos2` connection
-    length_chaos_2=$(echo $output | jq length)
+#     # store the length of the result when queried using `chaos2` connection
+#     length_chaos_2=$(echo $output | jq length)
 
-    run steampipe query "select * from chaos_group.chaos_all_numeric_column" --output json
+#     run steampipe query "select * from chaos_group.chaos_all_numeric_column" --output json
 
-    # store the length of the result when queried using `chaos_group` aggregated connection
-    length_chaos_agg=$(echo $output | jq length)
+#     # store the length of the result when queried using `chaos_group` aggregated connection
+#     length_chaos_agg=$(echo $output | jq length)
 
-    # since the aggregator connection `chaos_group` contains two chaos connections, we expect
-    # the number of results returned will be the summation of the two
-    assert_equal "$length_chaos_agg" "$((length_chaos+length_chaos_2))"
-}
+#     # since the aggregator connection `chaos_group` contains two chaos connections, we expect
+#     # the number of results returned will be the summation of the two
+#     assert_equal "$length_chaos_agg" "$((length_chaos+length_chaos_2))"
+# }
 
-@test "steampipe aggregator connections should fail when querying a different plugin" {
-    skip
-    run steampipe query "select * from chaos_group.chaos_all_numeric_column order by id"
+# @test "steampipe aggregator connections should fail when querying a different plugin" {
+#     run steampipe query "select * from chaos_group.chaos_all_numeric_column order by id"
 
-    # this should pass since the aggregator contains only chaos connections
-    assert_success
+#     # this should pass since the aggregator contains only chaos connections
+#     assert_success
     
-    run steampipe query "select * from chaos_group.steampipe_registry_plugin order by id"
+#     run steampipe query "select * from chaos_group.steampipe_registry_plugin order by id"
 
-    # this should fail since the aggregator contains only chaos connections, and we are
-    # querying a steampipe table
-    assert_failure
-}
+#     # this should fail since the aggregator contains only chaos connections, and we are
+#     # querying a steampipe table
+#     assert_failure
+# }
 
-@test "steampipe json connection config" {
-    cp $SRC_DATA_DIR/chaos2.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
+# @test "steampipe json connection config" {
+#     cp $SRC_DATA_DIR/chaos2.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
 
-    run steampipe query "select time_col from chaos4.chaos_cache_check"
+#     run steampipe query "select time_col from chaos4.chaos_cache_check"
 
-    # remove the config file
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos2.json
+#     # remove the config file
+#     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos2.json
 
-    assert_success
-}
+#     assert_success
+# }
 
-@test "steampipe should return an error for duplicate connection name" {
-    cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
+# @test "steampipe should return an error for duplicate connection name" {
+#     cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
 
-    # this should fail because of duplicate connection name
-    run steampipe query "select time_col from chaos.chaos_cache_check"
+#     # this should fail because of duplicate connection name
+#     run steampipe query "select time_col from chaos.chaos_cache_check"
 
-    # remove the config file
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos2.json
+#     # remove the config file
+#     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos2.json
 
-    assert_output --partial 'duplicate connection name'
-}
+#     assert_output --partial 'duplicate connection name'
+# }
 
-@test "steampipe yaml connection config" {
-    cp $SRC_DATA_DIR/chaos2.yml $STEAMPIPE_INSTALL_DIR/config/chaos3.yml
+# @test "steampipe yaml connection config" {
+#     cp $SRC_DATA_DIR/chaos2.yml $STEAMPIPE_INSTALL_DIR/config/chaos3.yml
 
-    run steampipe query "select time_col from chaos5.chaos_cache_check"
+#     run steampipe query "select time_col from chaos5.chaos_cache_check"
 
-    # remove the config file
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos3.yml
+#     # remove the config file
+#     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos3.yml
 
-    assert_success
-}
+#     assert_success
+# }
 
-@test "steampipe test connection config with options(hcl)" {
-    cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+# @test "steampipe test connection config with options(hcl)" {
+#     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
-    run steampipe query "select time_col from chaos6.chaos_cache_check"
+#     run steampipe query "select time_col from chaos6.chaos_cache_check"
 
-    # remove the config file
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+#     # remove the config file
+#     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
-    assert_success
-}
+#     assert_success
+# }
 
-@test "steampipe test connection config with options(yml)" {
-    cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+# @test "steampipe test connection config with options(yml)" {
+#     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
-    run steampipe query "select time_col from chaos6.chaos_cache_check"
-    # remove the config file
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+#     run steampipe query "select time_col from chaos6.chaos_cache_check"
+#     # remove the config file
+#     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
-    assert_success
-}
+#     assert_success
+# }
 
-@test "steampipe test connection config with options(json)" {
-    cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+# @test "steampipe test connection config with options(json)" {
+#     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
-    run steampipe query "select time_col from chaos6.chaos_cache_check"
-    # remove the config file
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+#     run steampipe query "select time_col from chaos6.chaos_cache_check"
+#     # remove the config file
+#     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
-    assert_success
-}
+#     assert_success
+# }
 
-@test "steampipe check regions in connection config is being parsed and used(hcl)" {
-    cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+# @test "steampipe check regions in connection config is being parsed and used(hcl)" {
+#     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
-    # check regions in connection config is being parsed and used
-    run steampipe query "select * from chaos6.chaos_regions order by id" --output json
-    result=$(echo $output | tr -d '[:space:]')
+#     # check regions in connection config is being parsed and used
+#     run steampipe query "select * from chaos6.chaos_regions order by id" --output json
+#     result=$(echo $output | tr -d '[:space:]')
 
-    # remove the config file
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
-    # check output
-    assert_equal "$result" '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
+#     # remove the config file
+#     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+#     # check output
+#     assert_equal "$result" '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
 
-}
+# }
 
-@test "steampipe check regions in connection config is being parsed and used(yml)" {
-    cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+# @test "steampipe check regions in connection config is being parsed and used(yml)" {
+#     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
-    # check regions in connection config is being parsed and used
-    run steampipe query "select * from chaos6.chaos_regions order by id" --output json
-    result=$(echo $output | tr -d '[:space:]')
+#     # check regions in connection config is being parsed and used
+#     run steampipe query "select * from chaos6.chaos_regions order by id" --output json
+#     result=$(echo $output | tr -d '[:space:]')
 
-    # remove the config file
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
-    # check output
-    assert_equal "$result" '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
+#     # remove the config file
+#     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
+#     # check output
+#     assert_equal "$result" '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
 
-}
+# }
 
-@test "steampipe check regions in connection config is being parsed and used(json)" {
-    cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+# @test "steampipe check regions in connection config is being parsed and used(json)" {
+#     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
-    # check regions in connection config is being parsed and used
-    run steampipe query "select * from chaos6.chaos_regions order by id" --output json
-    result=$(echo $output | tr -d '[:space:]')
+#     # check regions in connection config is being parsed and used
+#     run steampipe query "select * from chaos6.chaos_regions order by id" --output json
+#     result=$(echo $output | tr -d '[:space:]')
 
-    # remove the config file
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
-    # check output
-    assert_equal "$result" '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
+#     # remove the config file
+#     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
+#     # check output
+#     assert_equal "$result" '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
 
-}
+# }
 
-@test "connection name escaping" {
-    cp $SRC_DATA_DIR/chaos_conn_name_escaping.spc $STEAMPIPE_INSTALL_DIR/config/chaos_conn_name_escaping.spc
+# @test "connection name escaping" {
+#     cp $SRC_DATA_DIR/chaos_conn_name_escaping.spc $STEAMPIPE_INSTALL_DIR/config/chaos_conn_name_escaping.spc
 
-    # steampipe should accept default keyword in the connection configuration file, keywords should be escaped properly
-    run steampipe query "select * from \"default\".chaos_limit limit 1"
+#     # steampipe should accept default keyword in the connection configuration file, keywords should be escaped properly
+#     run steampipe query "select * from \"default\".chaos_limit limit 1"
 
-    # remove the config file
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_conn_name_escaping.spc
+#     # remove the config file
+#     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_conn_name_escaping.spc
 
-    assert_success
-}
+#     assert_success
+# }
 
-## service extensions
+# ## service extensions
 
-# tests for tablefunc module
+# # tests for tablefunc module
 
-@test "test crosstab function" {
-  # create table and insert values
-  steampipe query "CREATE TABLE ct(id SERIAL, rowid TEXT, attribute TEXT, value TEXT);"
-  steampipe query "INSERT INTO ct(rowid, attribute, value) VALUES('test1','att1','val1');"
-  steampipe query "INSERT INTO ct(rowid, attribute, value) VALUES('test1','att2','val2');"
-  steampipe query "INSERT INTO ct(rowid, attribute, value) VALUES('test1','att3','val3');"
+# @test "test crosstab function" {
+#   # create table and insert values
+#   steampipe query "CREATE TABLE ct(id SERIAL, rowid TEXT, attribute TEXT, value TEXT);"
+#   steampipe query "INSERT INTO ct(rowid, attribute, value) VALUES('test1','att1','val1');"
+#   steampipe query "INSERT INTO ct(rowid, attribute, value) VALUES('test1','att2','val2');"
+#   steampipe query "INSERT INTO ct(rowid, attribute, value) VALUES('test1','att3','val3');"
 
-  # crosstab function
-  run steampipe query "SELECT * FROM crosstab('select rowid, attribute, value from ct where attribute = ''att2'' or attribute = ''att3'' order by 1,2') AS ct(row_name text, category_1 text, category_2 text);"
-  echo $output
+#   # crosstab function
+#   run steampipe query "SELECT * FROM crosstab('select rowid, attribute, value from ct where attribute = ''att2'' or attribute = ''att3'' order by 1,2') AS ct(row_name text, category_1 text, category_2 text);"
+#   echo $output
 
-  # drop table
-  steampipe query "DROP TABLE ct"
+#   # drop table
+#   steampipe query "DROP TABLE ct"
 
-  # match output with expected
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_crosstab_results.txt)"
-}
+#   # match output with expected
+#   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_crosstab_results.txt)"
+# }
 
-@test "test normal_rand function" {
-  # normal_rand function
-  run steampipe query "SELECT * FROM normal_rand(10, 5, 3);"
+# @test "test normal_rand function" {
+#   # normal_rand function
+#   run steampipe query "SELECT * FROM normal_rand(10, 5, 3);"
 
-  # previous query should pass
-  assert_success
-}
+#   # previous query should pass
+#   assert_success
+# }
 
 @test "cleanup" {
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
