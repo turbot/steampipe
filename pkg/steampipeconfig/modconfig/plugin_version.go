@@ -53,11 +53,16 @@ func (p *PluginVersion) Initialise(block *hcl.Block) hcl.Diagnostics {
 			return diags
 		}
 		// raise deprecation warning
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagWarning,
-			Summary:  fmt.Sprintf("Property 'version' is deprecated - use 'min_version' instead, in plugin '%s' require block", p.RawName),
-			Subject:  &p.DeclRange,
-		})
+		// disable raising this for now, since for the v0.20.x
+		// release cycle we should support both usage (but not together)
+		//
+		// [Issue](https://github.com/turbot/steampipe/issues/3251)
+		//
+		// diags = append(diags, &hcl.Diagnostic{
+		// 	Severity: hcl.DiagWarning,
+		// 	Summary:  fmt.Sprintf("Property 'version' is deprecated - use 'min_version' instead, in plugin '%s' require block", p.RawName),
+		// 	Subject:  &p.DeclRange,
+		// })
 		// copy into new property
 		p.MinVersionString = p.VersionString
 	}
