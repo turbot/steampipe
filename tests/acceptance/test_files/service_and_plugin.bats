@@ -244,6 +244,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 ## connection config
 
 @test "steampipe aggregator connection wildcard check" {
+    echo $STEAMPIPE_SYNC_REFRESH
     export STEAMPIPE_LOG=info
     cp $SRC_DATA_DIR/aggregator.spc $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
     run steampipe query "select name, state, type, error, import_schema, comments_set from steampipe_connection_state order by name asc" --output json
