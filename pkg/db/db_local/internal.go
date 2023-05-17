@@ -16,6 +16,19 @@ import (
 	"github.com/turbot/steampipe/sperr"
 )
 
+// dropLegacySchema drops the legacy 'steampipe_command' schema if it exists
+// and the 'internal' schema if it contains only the 'glob' function
+// and maybe the 'connection_state' table
+func dropLegacySchema(ctx context.Context, conn *pgx.Conn) error {
+	utils.LogTime("db_local.dropLegacySchema start")
+	defer utils.LogTime("db_local.dropLegacySchema end")
+
+	return error_helpers.CombineErrors(
+		dropLegacyInternal(ctx, conn),
+		dropLegacySteampipeCommand(ctx, conn),
+	)
+}
+
 // dropLegacySteampipeCommand drops the 'steampipe_command' schema if it exists
 func dropLegacySteampipeCommand(ctx context.Context, conn *pgx.Conn) error {
 	utils.LogTime("db_local.dropLegacySteampipeCommand start")
@@ -44,19 +57,6 @@ func dropLegacyInternal(ctx context.Context, conn *pgx.Conn) error {
 	log.Println("[TRACE] dropped legacy 'internal' schema")
 
 	return nil
-}
-
-// dropLegacySchema drops the legacy 'steampipe_command' schema if it exists
-// and the 'internal' schema if it contains only the 'glob' function
-// and maybe the 'connection_state' table
-func dropLegacySchema(ctx context.Context, conn *pgx.Conn) error {
-	utils.LogTime("db_local.dropLegacySchema start")
-	defer utils.LogTime("db_local.dropLegacySchema end")
-
-	return error_helpers.CombineErrors(
-		dropLegacyInternal(ctx, conn),
-		dropLegacySteampipeCommand(ctx, conn),
-	)
 }
 
 // isLegacyInternalExists looks for a schema named 'internal'
