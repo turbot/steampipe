@@ -241,6 +241,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
 }
 
+@test "force stop" {
+    run steampipe service stop --force
+}
+
 ## connection config
 
 @test "steampipe aggregator connection wildcard check" {
