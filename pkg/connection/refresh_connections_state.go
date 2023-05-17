@@ -498,6 +498,8 @@ func (state *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql
 // set connection comments
 
 func (state *refreshConnectionState) UpdateCommentsInParallel(ctx context.Context, updates []*steampipeconfig.ConnectionState, plugins map[string]*steampipeconfig.ConnectionPlugin) (errors []error) {
+	// TODO HACK
+	return nil
 	if !viper.GetBool(constants.ArgSchemaComments) {
 		return nil
 	}
