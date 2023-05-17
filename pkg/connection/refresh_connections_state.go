@@ -96,7 +96,7 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 	// determine any necessary connection updates
 	state.connectionUpdates, state.res = steampipeconfig.NewConnectionUpdates(ctx, state.pool, state.forceUpdateConnectionNames...)
 	defer state.logRefreshConnectionResults()
-	// were we successful#
+	// were we successful?
 	if state.res.Error != nil {
 		return
 	}
