@@ -57,13 +57,13 @@ const (
 	ConnectionStateError             = "error"
 
 	// foreign tables in internal schema
-	CommandTableScanMetadata              = "steampipe_scan_metadata"
-	CommandTableSettings                  = "steampipe_settings"
-	CommandTableSettingsKeyColumn         = "name"
-	CommandTableSettingsValueColumn       = "value"
-	CommandTableSettingsCacheKey          = "cache"
-	CommandTableSettingsCacheTtlKey       = "cache_ttl"
-	CommandTableSettingsCacheClearTimeKey = "cache_clear_time"
+	ForeignTableScanMetadata              = "steampipe_scan_metadata"
+	ForeighTableSettings                  = "steampipe_settings"
+	ForeignTableSettingsKeyColumn         = "name"
+	ForeignTableSettingsValueColumn       = "value"
+	ForeignTableSettingsCacheKey          = "cache"
+	ForeignTableSettingsCacheTtlKey       = "cache_ttl"
+	ForeignTableSettingsCacheClearTimeKey = "cache_clear_time"
 )
 
 // ConnectionStates is a handy array of all states
