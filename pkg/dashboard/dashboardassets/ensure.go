@@ -28,7 +28,7 @@ func Ensure(ctx context.Context) error {
 		return nil
 	}
 
-	statushooks.SetStatus(ctx, "Installing dashboard server...")
+	statushooks.SetStatus(ctx, "Installing dashboard server…")
 
 	reportAssetsPath := filepaths.EnsureDashboardAssetsDir()
 

@@ -64,7 +64,7 @@ func startAPIAsync(ctx context.Context, webSocket *melody.Melody) chan struct{} 
 		OutputMessage(ctx, fmt.Sprintf("Visit http://localhost:%d", dashboardServerPort))
 		OutputMessage(ctx, "Press Ctrl+C to exit")
 		<-ctx.Done()
-		log.Println("Shutdown Server ...")
+		log.Println("Shutdown Server…")
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()

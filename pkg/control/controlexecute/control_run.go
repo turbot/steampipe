@@ -257,12 +257,12 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 		// is this an rpc EOF error - meaning that the plugin somehow crashed
 		if grpc.IsGRPCConnectivityError(err) {
 			if r.attempts < constants.MaxControlRunAttempts {
-				log.Printf("[TRACE] control %s query failed with plugin connectivity error %s - retrying...", r.Control.Name(), err)
+				log.Printf("[TRACE] control %s query failed with plugin connectivity error %s - retrying…", r.Control.Name(), err)
 				// recurse into this function to retry using the original context - which Execute will use to create it's own timeout context
 				r.execute(ctx, client)
 				return
 			} else {
-				log.Printf("[TRACE] control %s query failed again with plugin connectivity error %s - NOT retrying...", r.Control.Name(), err)
+				log.Printf("[TRACE] control %s query failed again with plugin connectivity error %s - NOT retrying…", r.Control.Name(), err)
 			}
 		}
 		r.setError(ctx, err)

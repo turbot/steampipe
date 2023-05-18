@@ -104,7 +104,7 @@ func getConnectionState(ctx context.Context, client db_common.Client) (steampipe
 	statushooks.Show(ctx)
 	defer statushooks.Done(ctx)
 
-	statushooks.SetStatus(ctx, "Loading connection state...")
+	statushooks.SetStatus(ctx, "Loading connection state…")
 
 	conn, err := client.AcquireConnection(ctx)
 	if err != nil {

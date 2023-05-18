@@ -268,7 +268,7 @@ func runSingleDashboard(ctx context.Context, targetName string, inputs map[strin
 	// create context for the dashboard execution
 	ctx = createSnapshotContext(ctx, targetName)
 
-	statushooks.SetStatus(ctx, "Initializing...")
+	statushooks.SetStatus(ctx, "Initializing…")
 	initData := getInitData(ctx)
 
 	statushooks.Done(ctx)

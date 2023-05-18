@@ -101,7 +101,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	if c.initData.Result.Error != nil {
 		return
 	}
-	statushooks.SetStatus(ctx, "Completing initialization...")
+	statushooks.SetStatus(ctx, "Completing initialization…")
 	//  fetch the schema
 	// TODO make this async https://github.com/turbot/steampipe/issues/3400
 	// NOTE: we would like to do this asyncronously, but we are currently limited to a single Db conneciton in our

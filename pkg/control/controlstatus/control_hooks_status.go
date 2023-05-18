@@ -26,7 +26,7 @@ func (c *StatusControlHooks) OnStart(ctx context.Context, _ *ControlProgress) {
 		return
 	}
 
-	statushooks.SetStatus(ctx, "Starting controls...")
+	statushooks.SetStatus(ctx, "Starting controls…")
 	statushooks.Show(ctx)
 }
 

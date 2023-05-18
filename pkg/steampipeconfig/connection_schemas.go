@@ -14,7 +14,7 @@ type ConnectionSchemaMap map[string][]string
 // this is a map keyed by exemplar connection with the value the connections which have the same schema
 // it uses the current connection state to determine if a connection has a dynamic schema
 func NewConnectionSchemaMap(ctx context.Context, connectionStateMap ConnectionStateMap, searchPath []string) ConnectionSchemaMap {
-	statushooks.SetStatus(ctx, "Loading connection state...")
+	statushooks.SetStatus(ctx, "Loading connection state…")
 
 	// res is a map of exemplar connections to all the connections with the same schema
 	var res = make(ConnectionSchemaMap)

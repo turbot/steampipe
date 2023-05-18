@@ -31,7 +31,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		rows, queryError := c.startQuery(ctx, conn, query, args...)
 		// if there is no error, just return
 		if queryError == nil {
-			statushooks.SetStatus(ctx, "Loading results...")
+			statushooks.SetStatus(ctx, "Loading results…")
 			res = rows
 			return nil
 		}

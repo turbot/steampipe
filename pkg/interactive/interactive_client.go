@@ -390,7 +390,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	} else {
 		statushooks.Show(ctx)
 		defer statushooks.Done(ctx)
-		statushooks.SetStatus(ctx, "Executing query")
+		statushooks.SetStatus(ctx, "Executing query…")
 		// otherwise execute query
 		c.executeQuery(ctx, queryCtx, resolvedQuery)
 	}
