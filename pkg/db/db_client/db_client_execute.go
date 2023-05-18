@@ -227,7 +227,7 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 }
 
 func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_common.DatabaseSession) error {
-	res, err := c.ExecuteSyncInSession(ctx, session, fmt.Sprintf("select max(id) from %s.scan_metadata", constants.InternalSchema))
+	res, err := c.ExecuteSyncInSession(ctx, session, fmt.Sprintf("select max(id) from %s.%s", constants.InternalSchema, constants.ForeignTableScanMetadata))
 	if err != nil {
 		return err
 	}

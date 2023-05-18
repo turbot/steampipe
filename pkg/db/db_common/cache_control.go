@@ -31,7 +31,7 @@ func executeCacheCommand(ctx context.Context, settingName string, settingValue s
 	_, err := connection.Exec(ctx, fmt.Sprintf(
 		"insert into %s.%s (%s,%s) values ('%s','%s')",
 		constants.InternalSchema,
-		constants.ForeighTableSettings,
+		constants.ForeignTableSettings,
 		constants.ForeignTableSettingsKeyColumn,
 		constants.ForeignTableSettingsValueColumn,
 		settingName,

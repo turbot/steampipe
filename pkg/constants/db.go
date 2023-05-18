@@ -65,7 +65,7 @@ const (
 
 	// foreign tables in internal schema
 	ForeignTableScanMetadata              = "steampipe_scan_metadata"
-	ForeighTableSettings                  = "steampipe_settings"
+	ForeignTableSettings                  = "steampipe_settings"
 	ForeignTableSettingsKeyColumn         = "name"
 	ForeignTableSettingsValueColumn       = "value"
 	ForeignTableSettingsCacheKey          = "cache"

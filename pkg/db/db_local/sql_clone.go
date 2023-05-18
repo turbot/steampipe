@@ -120,7 +120,7 @@ BEGIN
     LOOP
         SELECT OBJ_DESCRIPTION((quote_ident(source_schema) || '.' || quote_ident(t))::REGCLASS) INTO table_desc;
         query = 'COMMENT ON FOREIGN TABLE ' || quote_ident(dest_schema) ||  '.' || quote_ident(t) || ' IS $steampipe_escape$' || table_desc || '$steampipe_escape$';
---       SELECT CONCAT(ret, query || '\n') INTO ret;
+       SELECT CONCAT(ret, query || '\n') INTO ret;
         EXECUTE query;
 
         FOR  c,column_number IN
