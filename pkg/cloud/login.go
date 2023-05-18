@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path"
 
@@ -33,9 +34,9 @@ func WebLogin(ctx context.Context) (string, error) {
 
 	fmt.Println()
 	fmt.Printf("Verify login at %s\n", browserUrl)
-	err = utils.OpenBrowser(browserUrl)
-	if err != nil {
-		return "", sperr.WrapWithMessage(err, "failed to open login webpage")
+
+	if err = utils.OpenBrowser(browserUrl); err != nil {
+		log.Println("[INFO] failed to open login web page")
 	}
 
 	return id, nil
