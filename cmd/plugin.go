@@ -730,15 +730,8 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 		}
 
 		if state.State == constants.ConnectionStateError && state.Error() == constants.ConnectionErrorPluginFailedToStart {
-			if _, ok := failedPluginMap[state.Plugin]; !ok {
-				failedPluginMap[state.Plugin] = []*modconfig.Connection{}
-			}
-
-			failedPluginMap[state.Plugin] = append(failedPluginMap[state.Plugin])
+			failedPluginMap[state.Plugin] = append(failedPluginMap[state.Plugin], connection)
 		} else if state.State == constants.ConnectionStateError && state.Error() == constants.ConnectionErrorPluginNotInstalled {
-			if _, ok := missingPluginMap[state.Plugin]; !ok {
-				missingPluginMap[state.Plugin] = []*modconfig.Connection{}
-			}
 			missingPluginMap[state.Plugin] = append(missingPluginMap[state.Plugin], connection)
 		}
 

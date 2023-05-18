@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"golang.org/x/exp/maps"
@@ -188,6 +189,10 @@ func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, 
 	// check whether this connection exists in the state
 	currentConnectionState, schemaExistsInState := currentConnectionStateMap[name]
 
+	// if the required plugin is not installed, return false
+	if typehelpers.SafeString(requiredConnectionState.ConnectionError) == constants.ConnectionErrorPluginNotInstalled {
+		return false
+	}
 	// if the connection has been disabled, return false
 	if requiredConnectionState.Disabled() {
 		return false
@@ -327,10 +332,14 @@ func (u *ConnectionUpdates) setError(connectionName string, error string) {
 	delete(u.Update, connectionName)
 }
 
-// identify any connections which are not being updated/deleted but which have not got comments set
+// IdentifyMissingComments identifies any connections which are not being updated/deleted but which have not got comments set
 // NOTE: this mutates FinalConnectionState to set comment_set (if needed)
 func (u *ConnectionUpdates) IdentifyMissingComments() {
 	for name, state := range u.FinalConnectionState {
+		// if plugin is not installed, skip
+		if typehelpers.SafeString(state.ConnectionError) == constants.ConnectionErrorPluginNotInstalled {
+			continue
+		}
 		if currentState, existsInCurrentState := u.CurrentConnectionState[name]; existsInCurrentState {
 			if !currentState.CommentsSet {
 				_, updating := u.Update[name]

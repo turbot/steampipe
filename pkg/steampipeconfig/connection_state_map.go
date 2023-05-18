@@ -68,7 +68,23 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 		}
 	}
 
+	// add in state for connections which are missing plugins
+	res = addConnectionsMissingPlugins(res, missingPluginMap)
+
 	return res, missingPluginMap, nil
+}
+
+func addConnectionsMissingPlugins(connectionStateMap ConnectionStateMap, missingPlugins map[string][]modconfig.Connection) ConnectionStateMap {
+	for pluginName, connections := range missingPlugins {
+		// add in missing connections
+		for _, c := range connections {
+			connectionData := NewConnectionState(pluginName, &c, time.Now())
+			connectionData.State = constants.ConnectionStateError
+			connectionData.SetError(constants.ConnectionErrorPluginNotInstalled)
+			connectionStateMap[c.Name] = connectionData
+		}
+	}
+	return connectionStateMap
 }
 
 func (m ConnectionStateMap) GetSummary() ConnectionStateSummary {
