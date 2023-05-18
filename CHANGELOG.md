@@ -1,4 +1,4 @@
-## v0.19.4 [2023-04-06]
+## v0.20.0 [2023-05-18]
 
 #### Connection Management 
 - Optimise connection initialisation for high connection count ([#3394](https://github.com/turbot/steampipe/issues/3394),[#3267](https://github.com/turbot/steampipe/issues/3267),[#3236](https://github.com/turbot/steampipe/issues/3236),[#3229](https://github.com/turbot/steampipe/issues/3229),[#3413](https://github.com/turbot/steampipe/issues/3413))
