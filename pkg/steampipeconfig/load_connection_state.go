@@ -131,6 +131,9 @@ func checkConnectionsAreReady(ctx context.Context, connectionStateMap Connection
 }
 
 func allConnectionsInError(connectionsNames []string, connectionStateMap ConnectionStateMap) bool {
+	if len(connectionsNames) == 0 {
+		return false
+	}
 	for _, connectionName := range connectionsNames {
 		connectionState, ok := connectionStateMap[connectionName]
 		if !ok {
