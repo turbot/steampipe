@@ -245,7 +245,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		installReports = append(installReports, report)
 		if !report.Skipped {
 			installCount++
-		} else {
+		} else if !(report.Skipped && report.SkipReason == "Already installed") {
 			exitCode = constants.ExitCodePluginInstallFailure
 		}
 	}
