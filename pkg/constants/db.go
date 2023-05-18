@@ -72,8 +72,8 @@ const (
 	ForeignTableSettingsCacheTtlKey       = "cache_ttl"
 	ForeignTableSettingsCacheClearTimeKey = "cache_clear_time"
 
-	FunctionCacheSet    = "set_cache"
-	FunctionCacheSetTtl = "set_cache_ttl"
+	FunctionCacheSet    = "meta_cache"
+	FunctionCacheSetTtl = "meta_cache_ttl"
 )
 
 // ConnectionStates is a handy array of all states

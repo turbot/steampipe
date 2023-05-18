@@ -1,5 +1,7 @@
 package db_common
 
+import "github.com/turbot/steampipe/pkg/constants"
+
 // Functions is a list of SQLFunction objects that are installed in the db 'steampipe_internal' schema startup
 var Functions = []SQLFunction{
 	{
@@ -18,7 +20,7 @@ end;
 `,
 	},
 	{
-		Name:     "set_cache",
+		Name:     constants.FunctionCacheSet,
 		Params:   map[string]string{"command": "text"},
 		Returns:  "void",
 		Language: "plpgsql",
@@ -37,7 +39,7 @@ end;
 `,
 	},
 	{
-		Name:     "set_cache_ttl",
+		Name:     constants.FunctionCacheSetTtl,
 		Params:   map[string]string{"duration": "int"},
 		Returns:  "void",
 		Language: "plpgsql",
