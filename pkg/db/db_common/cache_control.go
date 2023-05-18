@@ -12,8 +12,8 @@ import (
 // SetCacheTtl set the cache ttl on the client
 func SetCacheTtl(ctx context.Context, duration time.Duration, connection *pgx.Conn) error {
 	duration = duration.Truncate(time.Second)
-	seconds := int(duration.Seconds())
-	return executeCacheCommand(ctx, constants.ForeignTableSettingsCacheTtlKey, fmt.Sprint(seconds), connection)
+	seconds := fmt.Sprint(duration.Seconds())
+	return executeCacheTtlSetFunction(ctx, seconds, connection)
 }
 
 // CacheClear resets the max time on the cache
@@ -37,6 +37,16 @@ func executeCacheSetFunction(ctx context.Context, settingValue string, connectio
 		constants.InternalSchema,
 		constants.FunctionCacheSet,
 		settingValue,
+	))
+	return err
+}
+
+func executeCacheTtlSetFunction(ctx context.Context, seconds string, connection *pgx.Conn) error {
+	_, err := connection.Exec(ctx, fmt.Sprintf(
+		"select %s.%s('%s')",
+		constants.InternalSchema,
+		constants.FunctionCacheSetTtl,
+		seconds,
 	))
 	return err
 }

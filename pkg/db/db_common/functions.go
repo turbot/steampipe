@@ -36,4 +36,15 @@ begin
 end;
 `,
 	},
+	{
+		Name:     "set_cache_ttl",
+		Params:   map[string]string{"duration": "int"},
+		Returns:  "void",
+		Language: "plpgsql",
+		Body: `
+begin
+	INSERT INTO steampipe_internal.steampipe_settings("name","value") VALUES ('cache_clear_time',duration);
+end;
+`,
+	},
 }
