@@ -3,9 +3,7 @@ package metaquery
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 	"regexp"
 	"sort"
@@ -19,15 +17,12 @@ import (
 
 // inspect
 func inspect(ctx context.Context, input *HandlerInput) error {
-	// load connection state and put into input
-	connectionState, err := getConnectionState(ctx, input.Client)
-	if err != nil {
+	// if there is no connection state in the input, call legacy inspect
+	if input.ConnectionState == nil {
 		log.Printf("[TRACE] failed to load connection state - are we connected to a server running a previous steampipe version?")
 		// call legacy inspect
 		return inspectLegacy(ctx, input)
 	}
-
-	input.ConnectionState = connectionState
 
 	// if no args were provided just list connections
 	if len(input.args()) == 0 {
@@ -99,21 +94,6 @@ To get information about the columns in a table, run %s
 	return nil
 }
 
-// helper function to acquire db connection and retrieve connection state
-func getConnectionState(ctx context.Context, client db_common.Client) (steampipeconfig.ConnectionStateMap, error) {
-	statushooks.Show(ctx)
-	defer statushooks.Done(ctx)
-
-	statushooks.SetStatus(ctx, "Loading connection state…")
-
-	conn, err := client.AcquireConnection(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Release()
-	return steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
-}
-
 // list all the tables in the schema
 func listTables(_ context.Context, input *HandlerInput) error {
 
@@ -165,7 +145,14 @@ To get information about the columns in a table, run %s
 	return nil
 }
 
-func listConnections(_ context.Context, input *HandlerInput) error {
+func listConnections(ctx context.Context, input *HandlerInput) error {
+	// if there is no connection state in the input, call listConnectionsLegacy
+	if input.ConnectionState == nil {
+		log.Printf("[TRACE] failed to load connection state - are we connected to a server running a previous steampipe version?")
+		// call legacy inspect
+		return listConnectionsLegacy(ctx, input)
+	}
+
 	header := []string{"connection", "plugin", "state"}
 	showStateSummary := input.ConnectionState.ConnectionsInState(
 		constants.ConnectionStateUpdating,

@@ -530,6 +530,14 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 		return nil
 	}
 	client := c.client()
+
+	// load connection state and put into input
+	connectionState, err := c.getConnectionState(ctx)
+	if err != nil {
+		// swallow error - it may just be that we are connected to a server which does not support connection state
+		log.Printf("[TRACE] failed to load connection state - are we connected to a server running a previous steampipe version?")
+	}
+
 	// validation passed, now we will run
 	return metaquery.Handle(ctx, &metaquery.HandlerInput{
 		Query:       query,
@@ -538,7 +546,23 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 		SearchPath:  client.GetRequiredSessionSearchPath(),
 		Prompt:      c.interactivePrompt,
 		ClosePrompt: func() { c.afterClose = AfterPromptCloseExit },
+		ConnectionState: connectionState,
 	})
+}
+
+// helper function to acquire db connection and retrieve connection state
+func (c *InteractiveClient) getConnectionState(ctx context.Context) (steampipeconfig.ConnectionStateMap, error) {
+	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
+
+	statushooks.SetStatus(ctx, "Loading connection state…")
+
+	conn, err := c.client().AcquireConnection(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Release()
+	return steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
 }
 
 func (c *InteractiveClient) restartInteractiveSession() {
