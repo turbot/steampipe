@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -157,11 +156,12 @@ func GetLoadingConnectionStatusMessage(connectionStateMap ConnectionStateMap, re
 		totalCount,
 		utils.Pluralize("connection", totalCount))
 
-	if len(requiredSchemas) == 0 {
-		return loadedMessage
+	if len(requiredSchemas) == 1 {
+		// if we are only waiting for a single schema, include that in the message
+		return fmt.Sprintf("Waiting for connection '%s' to load (%s)", requiredSchemas[0], loadedMessage)
 	}
-	// TODO think about display of arrays
-	return fmt.Sprintf("Waiting for %s '%s' to load (%s)", utils.Pluralize("connection", len(requiredSchemas)), strings.Join(requiredSchemas, "','"), loadedMessage)
+
+	return loadedMessage
 }
 
 func SaveConnectionStateFile(res *RefreshConnectionResult, connectionUpdates *ConnectionUpdates) {
