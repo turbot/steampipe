@@ -17,4 +17,23 @@ begin
 end;
 `,
 	},
+	{
+		Name:     "set_cache",
+		Params:   map[string]string{"command": "text"},
+		Returns:  "void",
+		Language: "plpgsql",
+		Body: `
+begin
+	IF command = 'on' THEN
+		INSERT INTO steampipe_internal.steampipe_settings("name","value") VALUES ('cache','true');
+	ELSIF command = 'off' THEN
+		INSERT INTO steampipe_internal.steampipe_settings("name","value") VALUES ('cache','false');
+	ELSIF command = 'clear' THEN
+		INSERT INTO steampipe_internal.steampipe_settings("name","value") VALUES ('cache_clear_time','');
+	ELSE
+		RAISE EXCEPTION 'Unknown value % for set_cache - valid values are on, off and clear.', $1;
+	END IF;
+end;
+`,
+	},
 }
