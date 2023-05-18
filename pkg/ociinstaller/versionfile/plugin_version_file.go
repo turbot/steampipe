@@ -2,12 +2,18 @@ package versionfile
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"os"
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/migrate"
+	"github.com/turbot/steampipe/sperr"
+)
+
+var (
+	ErrNoContent = errors.New("no content")
 )
 
 const PluginStructVersion = 20220411
@@ -70,6 +76,10 @@ func (f *PluginVersionFile) write(path string) error {
 	if err != nil {
 		log.Println("[ERROR]", "Error while writing version file", err)
 		return err
+	}
+	if len(versionFileJSON) == 0 {
+		log.Println("[ERROR]", "Cannot write 0 bytes to file")
+		return sperr.WrapWithMessage(ErrNoContent, "cannot write versions file")
 	}
 	return os.WriteFile(path, versionFileJSON, 0644)
 }
