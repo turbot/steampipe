@@ -1,3 +1,71 @@
+## v0.19.4 [2023-04-06]
+
+#### Connection Management 
+- Optimise connection initialisation for high connection count ([#3394](https://github.com/turbot/steampipe/issues/3394),[#3267](https://github.com/turbot/steampipe/issues/3267),[#3236](https://github.com/turbot/steampipe/issues/3236),[#3229](https://github.com/turbot/steampipe/issues/3229),[#3413](https://github.com/turbot/steampipe/issues/3413))
+  - Execute RefreshConnections asyncronously in service startup
+  - Start executing queries without waiting for connections to load, add smart error handling to wait for required connection
+  - Optimise autocomplete for high connection count
+  - Autocomplete and inspect data available before all conections are refreshed
+  - Add `steampipe_connection_state` table to indicate the loading state of connections
+  - Add support for `import_schema` property in connection config, controlling whether to create a postgres schema for a steampipe connection. Closes #3407
+  - Optimise schema creation by cloning connection schemas
+  - Add locking to ensure only a single instance of RefreshConnections runs
+  - Update refresh connections to write comments for exemplar schemas first, followed by remaining schemas.  
+
+- Update connection and plugin validation during refreshConnections. ([#3432](https://github.com/turbot/steampipe/issues/3432),[#3402](https://github.com/turbot/steampipe/issues/3402))
+  - ensure failed connections are set to 'error' in connection state.  
+  - Schema names starting with steampipe_ are to be reserved for steampipe. 
+
+#### Mod Dependency Management
+- Support mods requiring different versions of the same depdency mod. ([#3302](https://github.com/turbot/steampipe/issues/3302))
+- Support transitive dependencies referencing variables from different versions of same mod.([#3337](https://github.com/turbot/steampipe/issues/3337))
+- Resource references in dependency mods must be fully qualified. ([#3335](https://github.com/turbot/steampipe/issues/3335))
+- Locals in dependency mods cannot be referenced. ([#3336](https://github.com/turbot/steampipe/issues/3336))
+- Fix issue where 'mod install' on an existing mod would sometimes corrupt the 'mod.sp' file. ([#3376](https://github.com/turbot/steampipe/issues/3376))
+- Fix issue where mod installation would fail silently for unmet dependencies in top mod in force mode. ([#3358](https://github.com/turbot/steampipe/issues/3358))
+- Fix issue where mod list output is not printed in a specific order. ([#3349](https://github.com/turbot/steampipe/issues/3349))
+- Fix issue where a mod would install even if plugin dependencies are not met. ([#3041](https://github.com/turbot/steampipe/issues/3041))
+- Fix issue where running mods with unmet dependencies does not raise warnings. ([#3324](https://github.com/turbot/steampipe/issues/3324))
+- Fix mod commands failing when using a `https` prefix. ([#3257](https://github.com/turbot/steampipe/issues/3257))
+- Fix issue where mod install/update continues installation even with unsatisfied requirements. ([#3291](https://github.com/turbot/steampipe/issues/3291))
+- Fix nil reference exception when loading a mod using the legacy `requires` property. ([#3347](https://github.com/turbot/steampipe/issues/3347))
+
+#### Caching
+
+- Updates in cache configuration to allow disabling of all caching on server. ([#3258](https://github.com/turbot/steampipe/issues/3258))
+  - STEAMPIPE_CACHE environment variable controls both *service* cache-enabled and  *client* cache-enabled
+  - *service* cache enabled is used by the plugin manager to enable/disable caching on the plugins during startup.
+  - *client* cache enabled is used to enable/disable the cache on the database session. 
+- Introduce SQL functions to easily manipulate caching functionality - `meta_cache()` and `meta_cache_ttl()`. ([#3442](https://github.com/turbot/steampipe/issues/3442))
+
+_What's new?_
+- Add support for time-series charts. ([#1389](https://github.com/turbot/steampipe/issues/1389))
+- Updates to workspace profile - add additional properties and command specific options blocks. ([#3223](https://github.com/turbot/steampipe/issues/3223))
+- Adds a `--progress` flag to `plugin install` to disable progress bars. ([#2953](https://github.com/turbot/steampipe/issues/2953))
+- Detect older versions of MacOS and warn that Steampipe does not support them. ([#3256](https://github.com/turbot/steampipe/issues/3256))
+- Updates the default content written to 'default.spc' and remove deprecated blocks. ([#3391](https://github.com/turbot/steampipe/issues/3391))
+- Show plugin name with stream (if not latest) in the progress bar during plugin update. ([#3241](https://github.com/turbot/steampipe/issues/3241),[#3330](https://github.com/turbot/steampipe/issues/3330))
+- Replace all '...' with ellipsis … in terminal output. ([#3441](https://github.com/turbot/steampipe/issues/3441))
+- Add check to the mod init function so users are aware if it's run in the home directory or if there are a large number of non-mod files in the path. ([#2562](https://github.com/turbot/steampipe/issues/2562))
+- Add query column in introspection tables to populate FullName if a QueryProvider references a named query. ([#3161](https://github.com/turbot/steampipe/issues/3161))
+- Improve error message when running steampipe check/dashboard outside a mod. ([#3215](https://github.com/turbot/steampipe/issues/3215))
+
+_Bug fixes_
+- Fixes issue where not being able to open the browser results in a fatal error during login. ([#3437](https://github.com/turbot/steampipe/issues/3437))
+- Fixes issue where 'internal' would be added twice in the search_path if one is mentioned in the non default search path. ([#3397](https://github.com/turbot/steampipe/issues/3397))
+- Set mod name in resource metadata for pseudo-resources. ([#3405](https://github.com/turbot/steampipe/issues/3405))
+- Fix error message when connecting to steampipe cloud if login token has expired or become corrupted. ([#3418](https://github.com/turbot/steampipe/issues/3418))
+- Fix `invalid output format` error when running dashboard if `output` is set in terminal options. ([#3293](https://github.com/turbot/steampipe/issues/3293))
+- Fixes issue where execution continues even if there's an unexpected error in parsing config. ([#3286](https://github.com/turbot/steampipe/issues/3286))
+- Fix rendering issues when running .inspect. ([#3268](https://github.com/turbot/steampipe/issues/3268))
+- Fixes issue where spinner was not showing up in interactive prompt while a query was executing. ([#3259](https://github.com/turbot/steampipe/issues/3259))
+- Fix crash on shutdown if init not complete. ([#3352](https://github.com/turbot/steampipe/issues/3352))
+- Fixes issue where workspace introspection option was boolean instead of control/info/none. ([#3389](https://github.com/turbot/steampipe/issues/3389))
+- Fixes issue where network failures during plugin install was returning 0 exit code. ([#3367](https://github.com/turbot/steampipe/issues/3367))
+- Ensure successful shutdown after dashboard service start failure. ([#3354](https://github.com/turbot/steampipe/issues/3354))
+- Ensure plugin-manager command does not execute scheduled tasks - avoid deprecation warnings which make the plugin manager GRPC startup fail. ([#3410](https://github.com/turbot/steampipe/issues/3410)
+
+
 ## v0.19.5 [2023-04-27]
 _Bug fixes_
 * Fix plugin manager to crash with unhandled signal caused by connection validation warning following a file watcher event. ([#3371](https://github.com/turbot/steampipe/issues/3371))
