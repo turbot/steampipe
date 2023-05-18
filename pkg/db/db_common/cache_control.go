@@ -12,30 +12,41 @@ import (
 // SetCacheTtl set the cache ttl on the client
 func SetCacheTtl(ctx context.Context, duration time.Duration, connection *pgx.Conn) error {
 	duration = duration.Truncate(time.Second)
-	seconds := int(duration.Seconds())
-	return executeCacheCommand(ctx, constants.ForeignTableSettingsCacheTtlKey, fmt.Sprint(seconds), connection)
+	seconds := fmt.Sprint(duration.Seconds())
+	return executeCacheTtlSetFunction(ctx, seconds, connection)
 }
 
 // CacheClear resets the max time on the cache
 // anything below this is not accepted
 func CacheClear(ctx context.Context, connection *pgx.Conn) error {
-	return executeCacheCommand(ctx, constants.ForeignTableSettingsCacheClearTimeKey, "", connection)
+	return executeCacheSetFunction(ctx, "clear", connection)
 }
 
 // SetCacheEnabled enables/disables the cache
 func SetCacheEnabled(ctx context.Context, enabled bool, connection *pgx.Conn) error {
-	return executeCacheCommand(ctx, constants.ForeignTableSettingsCacheKey, fmt.Sprint(enabled), connection)
+	value := "off"
+	if enabled {
+		value = "on"
+	}
+	return executeCacheSetFunction(ctx, value, connection)
 }
 
-func executeCacheCommand(ctx context.Context, settingName string, settingValue string, connection *pgx.Conn) error {
+func executeCacheSetFunction(ctx context.Context, settingValue string, connection *pgx.Conn) error {
 	_, err := connection.Exec(ctx, fmt.Sprintf(
-		"insert into %s.%s (%s,%s) values ('%s','%s')",
+		"select %s.%s('%s')",
 		constants.InternalSchema,
-		constants.ForeignTableSettings,
-		constants.ForeignTableSettingsKeyColumn,
-		constants.ForeignTableSettingsValueColumn,
-		settingName,
+		constants.FunctionCacheSet,
 		settingValue,
+	))
+	return err
+}
+
+func executeCacheTtlSetFunction(ctx context.Context, seconds string, connection *pgx.Conn) error {
+	_, err := connection.Exec(ctx, fmt.Sprintf(
+		"select %s.%s('%s')",
+		constants.InternalSchema,
+		constants.FunctionCacheSetTtl,
+		seconds,
 	))
 	return err
 }
