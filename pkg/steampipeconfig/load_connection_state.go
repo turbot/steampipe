@@ -9,9 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/sethvargo/go-retry"
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -73,9 +71,12 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 			}
 
 			// so all required connections are loaded, either 'ready' or 'error'
-			// verify that no schemas are in error state
+			// verify that not all schemas are in error state
 			// (this returns an error if any schemas are in error state)
-			return checkConnectionErrors(config.Connections, connectionStateMap)
+			if allConnectionsInError(config.Connections, connectionStateMap) {
+				return fmt.Errorf("all connections in search path are in error")
+			}
+			return nil
 
 		}
 		return nil
@@ -130,22 +131,19 @@ func checkConnectionsAreReady(ctx context.Context, connectionStateMap Connection
 	return nil
 }
 
-// if any of the given connections are in error state, return an error
-func checkConnectionErrors(schemas []string, connectionStateMap ConnectionStateMap) error {
-	var errors []error
-	for _, connectionName := range schemas {
+func allConnectionsInError(connectionsNames []string, connectionStateMap ConnectionStateMap) bool {
+	for _, connectionName := range connectionsNames {
 		connectionState, ok := connectionStateMap[connectionName]
 		if !ok {
 			// not expected but not impossible - state may have changed while we iterate
 			continue
 		}
-		if connectionState.State == constants.ConnectionStateError {
-			err := fmt.Errorf("connection '%s' failed to load: %s",
-				connectionName, typehelpers.SafeString(connectionState.ConnectionError))
-			errors = append(errors, err)
+		if connectionState.State != constants.ConnectionStateError {
+			return false
 		}
 	}
-	return error_helpers.CombineErrors(errors...)
+
+	return true
 }
 
 func GetLoadingConnectionStatusMessage(connectionStateMap ConnectionStateMap, requiredSchemas ...string) string {

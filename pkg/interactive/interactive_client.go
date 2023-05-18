@@ -404,7 +404,6 @@ func (c *InteractiveClient) executeQuery(ctx context.Context, queryCtx context.C
 	if customSearchPath := c.client().GetCustomSearchPath(); customSearchPath != nil {
 		if err := connection_sync.WaitForSearchPathSchemas(ctx, c.client(), customSearchPath); err != nil {
 			error_helpers.ShowError(ctx, err)
-			c.afterClose = AfterPromptCloseExit
 			return
 		}
 	}
@@ -540,12 +539,12 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 
 	// validation passed, now we will run
 	return metaquery.Handle(ctx, &metaquery.HandlerInput{
-		Query:       query,
-		Client:      client,
-		Schema:      c.schemaMetadata,
-		SearchPath:  client.GetRequiredSessionSearchPath(),
-		Prompt:      c.interactivePrompt,
-		ClosePrompt: func() { c.afterClose = AfterPromptCloseExit },
+		Query:           query,
+		Client:          client,
+		Schema:          c.schemaMetadata,
+		SearchPath:      client.GetRequiredSessionSearchPath(),
+		Prompt:          c.interactivePrompt,
+		ClosePrompt:     func() { c.afterClose = AfterPromptCloseExit },
 		ConnectionState: connectionState,
 	})
 }
