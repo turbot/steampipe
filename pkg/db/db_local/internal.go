@@ -10,33 +10,32 @@ import (
 	"github.com/turbot/steampipe/pkg/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
 )
 
-// dropLegacySchemas drops the legacy 'steampipe_command' schema if it exists
-// and the 'internal' schema if it contains only the 'glob' function
-// and maybe the 'connection_state' table
-func dropLegacySchemas(ctx context.Context, conn *pgx.Conn) error {
-	utils.LogTime("db_local.dropLegacySchema start")
-	defer utils.LogTime("db_local.dropLegacySchema end")
-
-	return error_helpers.CombineErrors(
-		dropLegacyInternalSchema(ctx, conn),
-		dropLegacySteampipeCommandSchema(ctx, conn),
-	)
-}
-
-// dropLegacySteampipeCommandSchema drops the 'steampipe_command' schema if it exists
-func dropLegacySteampipeCommandSchema(ctx context.Context, conn *pgx.Conn) error {
-	utils.LogTime("db_local.dropLegacySteampipeCommand start")
-	defer utils.LogTime("db_local.dropLegacySteampipeCommand end")
-
-	_, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", constants.LegacyCommandSchema))
-	return err
-}
+//// dropLegacySchemas drops the legacy 'steampipe_command' schema if it exists
+//// and the 'internal' schema if it contains only the 'glob' function
+//// and maybe the 'connection_state' table
+//func dropLegacySchemas(ctx context.Context, conn *pgx.Conn) error {
+//	utils.LogTime("db_local.dropLegacySchema start")
+//	defer utils.LogTime("db_local.dropLegacySchema end")
+//
+//	return error_helpers.CombineErrors(
+//		dropLegacyInternalSchema(ctx, conn),
+//		dropLegacySteampipeCommandSchema(ctx, conn),
+//	)
+//}
+//
+//// dropLegacySteampipeCommandSchema drops the 'steampipe_command' schema if it exists
+//func dropLegacySteampipeCommandSchema(ctx context.Context, conn *pgx.Conn) error {
+//	utils.LogTime("db_local.dropLegacySteampipeCommand start")
+//	defer utils.LogTime("db_local.dropLegacySteampipeCommand end")
+//
+//	_, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", constants.LegacyCommandSchema))
+//	return err
+//}
 
 // dropLegacyInternalSchema looks for a schema named 'internal'
 // which has a function called 'glob' and maybe a table named 'connection_state'
