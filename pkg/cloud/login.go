@@ -11,6 +11,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
@@ -33,9 +34,9 @@ func WebLogin(ctx context.Context) (string, error) {
 
 	fmt.Println()
 	fmt.Printf("Verify login at %s\n", browserUrl)
-	err = utils.OpenBrowser(browserUrl)
-	if err != nil {
-		return "", sperr.WrapWithMessage(err, "failed to open login webpage")
+
+	if err = utils.OpenBrowser(browserUrl); err != nil {
+		error_helpers.ShowWarning(fmt.Sprintf("Failed to start browser. Please navigate to %s", constants.Bold(browserUrl)))
 	}
 
 	return id, nil
