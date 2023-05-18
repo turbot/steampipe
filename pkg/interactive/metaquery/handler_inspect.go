@@ -220,7 +220,8 @@ func inspectQualifiedTable(connectionName string, tableName string, input *Handl
 	header := []string{"column", "type", "description"}
 	var rows [][]string
 
-	if input.ConnectionState[connectionName].Disabled() {
+	// do we have connection state for this schema and if so is it disabled?
+	if connectionState := input.ConnectionState[connectionName]; connectionState != nil && connectionState.Disabled() {
 		error_helpers.ShowWarning(fmt.Sprintf("connection '%s' has schema import disabled", connectionName))
 		return nil
 	}
