@@ -65,10 +65,22 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 		}
 	}()
 
-	if cacheSetting := c.resolveCacheEnabled(ctx); c != nil {
-		if err := db_common.SetCacheEnabled(ctx, *cacheSetting, databaseConnection.Conn()); err != nil {
+	// if this is connected to a local service (localhost) and if the server cache
+	// is disabled, override the client setting to always disable
+	//
+	// this is a temporary workaround to make sure
+	// that we turn off caching for plugins compiled with SDK pre-V5
+	if c.isLocalService && !viper.GetBool(constants.ArgServiceCacheEnabled) {
+		if err := db_common.SetCacheEnabled(ctx, false, databaseConnection.Conn()); err != nil {
 			sessionResult.Error = err
 			return sessionResult
+		}
+	} else {
+		if viper.IsSet(constants.ArgClientCacheEnabled) {
+			if err := db_common.SetCacheEnabled(ctx, viper.GetBool(constants.ArgClientCacheEnabled), databaseConnection.Conn()); err != nil {
+				sessionResult.Error = err
+				return sessionResult
+			}
 		}
 	}
 
@@ -89,29 +101,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	sessionResult.Error = ctx.Err()
 	return sessionResult
-}
-
-// resolveCacheEnabled resolves the value of the cache that should
-// be set in the connection
-// the complexity in the logic is a temporary workaround to make sure
-// that we turn off caching for plugins compiled with SDK pre-V5.
-// this is because the ability to turn off caching server-side has been
-// introduced in V5 and this workaround has to be around till
-// all plugins in the steampipe ecosystem are updated.
-func (c *DbClient) resolveCacheEnabled(_ context.Context) *bool {
-	// default to enabled
-	var cacheEnabled bool
-
-	if viper.IsSet(constants.ArgClientCacheEnabled) {
-		cacheEnabled = viper.GetBool(constants.ArgClientCacheEnabled)
-		if cacheEnabled && c.isLocalService {
-			cacheEnabled = cacheEnabled && viper.GetBool(constants.ArgServiceCacheEnabled)
-		}
-	} else {
-		cacheEnabled = viper.GetBool(constants.ArgServiceCacheEnabled)
-	}
-
-	return &cacheEnabled
 }
 
 func (c *DbClient) GetDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {
