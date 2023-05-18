@@ -24,6 +24,10 @@ type DbClient struct {
 	connectionString string
 	pool             *pgxpool.Pool
 
+	// this flag is set if the service that this client
+	// is connected to is running in the same physical system
+	isLocalService bool
+
 	// concurrency management for db session access
 	parallelSessionInitLock *semaphore.Weighted
 

@@ -65,14 +65,25 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 		}
 	}()
 
-	// if the cache is set on the workspace profile
-	// then override the default cache setting of the connection
-	if viper.IsSet(constants.ArgClientCacheEnabled) {
-		if err := db_common.SetCacheEnabled(ctx, viper.GetBool(constants.ArgClientCacheEnabled), databaseConnection.Conn()); err != nil {
+	// if this is connected to a local service (localhost) and if the server cache
+	// is disabled, override the client setting to always disable
+	//
+	// this is a temporary workaround to make sure
+	// that we turn off caching for plugins compiled with SDK pre-V5
+	if c.isLocalService && !viper.GetBool(constants.ArgServiceCacheEnabled) {
+		if err := db_common.SetCacheEnabled(ctx, false, databaseConnection.Conn()); err != nil {
 			sessionResult.Error = err
 			return sessionResult
 		}
+	} else {
+		if viper.IsSet(constants.ArgClientCacheEnabled) {
+			if err := db_common.SetCacheEnabled(ctx, viper.GetBool(constants.ArgClientCacheEnabled), databaseConnection.Conn()); err != nil {
+				sessionResult.Error = err
+				return sessionResult
+			}
+		}
 	}
+
 	if viper.IsSet(constants.ArgCacheTtl) {
 		ttl := time.Duration(viper.GetInt(constants.ArgCacheTtl)) * time.Second
 		if err := db_common.SetCacheTtl(ctx, ttl, databaseConnection.Conn()); err != nil {

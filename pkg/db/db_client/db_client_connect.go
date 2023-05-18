@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -18,6 +19,7 @@ type DbConnectionCallback func(context.Context, *pgx.Conn) error
 func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	utils.LogTime("db_client.establishConnectionPool start")
 	defer utils.LogTime("db_client.establishConnectionPool end")
+
 	const (
 		connMaxIdleTime = 1 * time.Minute
 		connMaxLifetime = 10 * time.Minute
@@ -28,6 +30,17 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	locals := []string{
+		"127.0.0.1",
+		"::1",
+		"localhost",
+	}
+
+	if helpers.StringSliceContains(locals, config.ConnConfig.Host) {
+		c.isLocalService = true
+	}
+
 	// MinConns should default to 0, but when not set, it actually get very high values (e.g. 80217984)
 	// this leads to a huge number of connections getting created
 	// TODO BINAEK dig into this and figure out why this is happening.
