@@ -31,13 +31,20 @@ ENV STEAMPIPE_UPDATE_CHECK=false
 # disable telemetry
 ENV STEAMPIPE_TELEMETRY=none
 
+# Create a temporary mod - this is required to make sure that the dashboard server starts without problems
+RUN steampipe mod init
+
 # Run steampipe service once
 RUN steampipe service start --dashboard
+
 # and stop it
 RUN steampipe service stop
 
+# Cleanup
 # remove the generated service .passwd file from this image, so that it gets regenerated in the container
 RUN rm -f /home/steampipe/.steampipe/internal/.passwd
+# remove the temporary mod
+RUN rm -f ./mod.sp
 
 # expose postgres service default port
 EXPOSE 9193
