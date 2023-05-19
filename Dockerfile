@@ -2,7 +2,6 @@ FROM debian:bullseye-slim
 LABEL maintainer="Turbot Support <help@turbot.com>"
 
 ARG TARGETVERSION
-ARG TARGETOS
 ARG TARGETARCH
 
 # add a non-root 'steampipe' user
@@ -11,13 +10,13 @@ RUN adduser --system --disabled-login --ingroup 0 --gecos "steampipe user" --she
 # updates and installs - 'wget' for downloading steampipe, 'less' for paging in 'steampipe query' interactive mode
 RUN apt-get update -y && apt-get install -y wget less
 
-# download the release as given in TARGETVERSION, TARGETOS and TARGETARCH
+# download the release as given in TARGETVERSION and TARGETARCH
 RUN echo \
  && cd /tmp \
- && wget -nv https://github.com/turbot/steampipe/releases/download/${TARGETVERSION}/steampipe_${TARGETOS}_${TARGETARCH}.tar.gz \
- && tar xzf steampipe_${TARGETOS}_${TARGETARCH}.tar.gz \
+ && wget -nv https://github.com/turbot/steampipe/releases/download/${TARGETVERSION}/steampipe_linux_${TARGETARCH}.tar.gz \
+ && tar xzf steampipe_linux_${TARGETARCH}.tar.gz \
  && mv steampipe /usr/local/bin/ \
- && rm -rf /tmp/steampipe_${TARGETOS}_${TARGETARCH}.tar.gz 
+ && rm -rf /tmp/steampipe_linux_${TARGETARCH}.tar.gz 
 
 # Change user to non-root
 USER steampipe:0
