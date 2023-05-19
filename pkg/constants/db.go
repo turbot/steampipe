@@ -30,7 +30,7 @@ const (
 // constants for installing db and fdw images
 const (
 	DatabaseVersion = "14.2.0"
-	FdwVersion      = "1.7.1"
+	FdwVersion      = "1.7.2"
 
 	// PostgresImageRef is the OCI Image ref for the database binaries
 	PostgresImageRef    = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
@@ -47,7 +47,6 @@ const (
 	// these are schema names which were used previously
 	// but are not relevant anymore and need to be dropped
 	LegacyInternalSchema = "internal"
-	LegacyCommandSchema  = "steampipe_command"
 
 	// InternalSchema is the schema container for all steampipe helper functions, and connection state table
 	// also used to send commands to the FDW
@@ -74,6 +73,17 @@ const (
 
 	FunctionCacheSet    = "meta_cache"
 	FunctionCacheSetTtl = "meta_cache_ttl"
+
+	// legacy
+	LegacyCommandSchema = "steampipe_command"
+
+	LegacyCommandTableCache                = "cache"
+	LegacyCommandTableCacheOperationColumn = "operation"
+	LegacyCommandCacheOn                   = "cache_on"
+	LegacyCommandCacheOff                  = "cache_off"
+	LegacyCommandCacheClear                = "cache_clear"
+
+	LegacyCommandTableScanMetadata = "scan_metadata"
 )
 
 // ConnectionStates is a handy array of all states
