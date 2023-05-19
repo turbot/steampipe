@@ -12,7 +12,7 @@ env:
   GH_PUBLISH_ACCESS_TOKEN: ${{ secrets.GH_PUBLISH_ACCESS_TOKEN }}
 
 jobs:
-  publish_docker:  
+  publish_docker:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
     steps:
@@ -22,9 +22,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-# TODO: v0.21.x will be the last version we publish our images to Docker Hub. Update Docker
-# publish workflow to stop publishing to Docker Hub just before v0.22.0 comes out.
-# https://github.com/turbot/steampipe/issues/3327
+      # TODO: v0.21.x will be the last version we publish our images to Docker Hub. Update Docker
+      # publish workflow to stop publishing to Docker Hub just before v0.22.0 comes out.
+      # https://github.com/turbot/steampipe/issues/3327
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -37,12 +37,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GH_PUBLISH_ACCESS_TOKEN }}
-      
+
       - name: Clean Version for Tag
         id: generate_docker_tag
         run: |
           echo "docker_tag=${STEAMPIPE_VERSION#"v"}" >> $GITHUB_OUTPUT
-          
+
       - name: Build and Push to DockerHub and Container Registry
         id: docker_build
         uses: docker/build-push-action@v4
@@ -56,58 +56,44 @@ jobs:
             turbot/steampipe:latest
             ghcr.io/turbot/steampipe:${{ steps.generate_docker_tag.outputs.docker_tag }}
             ghcr.io/turbot/steampipe:latest
-          
+
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
 
-#   update_homebrew_tap:  
-#     name: Update homebrew-tap formula
-# #    needs: publish_docker
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v3
-#         with:
-#           repository: turbot/homebrew-tap
-#           token: ${{ secrets.GH_ACCESS_TOKEN }}
-#           ref: main
-# 
-#       - name: Get pull request title
-#         id: pr_title
-#         run: >-
-#           echo "PR_TITLE=$(
-#             gh pr view $STEAMPIPE_VERSION --json title | jq .title | tr -d '"'
-#           )" >> $GITHUB_OUTPUT
-# 
-#       - name: Output
-#         run: |
-#           echo ${{ steps.pr_title.outputs.PR_TITLE }}
-#           echo ${{ env.STEAMPIPE_VERSION }}
-# 
-#       - name: Fail if PR title does not match with version
-#         run: |
-#           if ${{ (steps.pr_title.outputs.PR_TITLE == env.STEAMPIPE_VERSION) }} == 'true';then
-#             echo "Correct version"
-#           else
-#             echo "Incorrect version"
-#             exit 1
-#           fi
-#         
-#       - name: Merge pull request to update brew formula
-#         run: |
-#           git fetch --all
-#           gh pr merge $STEAMPIPE_VERSION --squash --delete-branch
-#           git push origin --delete bump-brew
-# 
-#   update_homebrew_core_formula:
-#     name: Update Homebrew Core Formula
-#     runs-on: macos-latest
-#     steps:
-#       - name: Update Homebrew core formula
-#         uses: dawidd6/action-homebrew-bump-formula@v3
-#         with:
-#           token: ${{ secrets.GH_ACCESS_TOKEN }} # should be turbot org token?
-#           formula: steampipe
-#           tag: ${{ env.STEAMPIPE_VERSION }}
-#           force: true
-# 
+  update_homebrew_tap:
+    name: Update homebrew-tap formula
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: main
+
+      - name: Get pull request title
+        id: pr_title
+        run: >-
+          echo "PR_TITLE=$(
+            gh pr view $STEAMPIPE_VERSION --json title | jq .title | tr -d '"'
+          )" >> $GITHUB_OUTPUT
+
+      - name: Output
+        run: |
+          echo ${{ steps.pr_title.outputs.PR_TITLE }}
+          echo ${{ env.STEAMPIPE_VERSION }}
+
+      - name: Fail if PR title does not match with version
+        run: |
+          if ${{ (steps.pr_title.outputs.PR_TITLE == env.STEAMPIPE_VERSION) }} == 'true';then
+            echo "Correct version"
+          else
+            echo "Incorrect version"
+            exit 1
+          fi
+
+      - name: Merge pull request to update brew formula
+        run: |
+          git fetch --all
+          gh pr merge $STEAMPIPE_VERSION --squash --delete-branch
+          git push origin --delete bump-brew
