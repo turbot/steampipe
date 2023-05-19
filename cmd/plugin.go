@@ -148,14 +148,17 @@ Examples:
   steampipe plugin list
 
   # List plugins that have updates available
-  steampipe plugin list --outdated`,
+  steampipe plugin list --outdated
+
+  # List plugins output in json
+  steampipe plugin list --output json`,
 	}
 
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag("outdated", false, "Check each plugin in the list for updates").
 		AddBoolFlag(constants.ArgHelp, false, "Help for plugin list", cmdconfig.FlagOptions.WithShortHand("h")).
-		AddStringFlag(constants.ArgOutputFormat, "", "Output in JSON format")
+		AddStringFlag(constants.ArgOutput, "table", "Output format: table or json")
 	return cmd
 }
 
@@ -566,7 +569,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 	// setup a cancel context and start cancel handler
 	ctx, cancel := context.WithCancel(cmd.Context())
 	contexthelpers.StartCancelHandler(cancel)
-	outputJson := viper.GetString(constants.ArgOutputFormat)
+	outputFormat := viper.GetString(constants.ArgOutput)
 
 	utils.LogTime("runPluginListCmd list")
 	defer func() {
@@ -591,8 +594,10 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		for _, item := range pluginList {
 			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
 		}
-		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
-		fmt.Printf("\n")
+		if outputFormat == "table" {
+			display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+			fmt.Printf("\n")
+		}
 	}
 
 	// List failed/missing plugins in a separate table
@@ -618,7 +623,9 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.InstallMessagePluginNotInstalled})
 			conns = []string{}
 		}
-		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
+		if outputFormat == "table" {
+			display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
+		}
 	}
 
 	if len(res.Warnings) > 0 {
@@ -627,7 +634,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		fmt.Printf("\n")
 	}
 
-	if outputJson == "json" {
+	if outputFormat == "json" {
 		output := struct {
 			InstalledPlugins []plugin.PluginListItem            `json:"installed_plugins"`
 			FailedPlugins    map[string][]*modconfig.Connection `json:"failed_plugins"`
@@ -645,8 +652,8 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 			error_helpers.ShowError(cmd.Context(), err)
 			return
 		}
-
 		fmt.Println(string(jsonOutput))
+		fmt.Printf("\n")
 	}
 
 }
