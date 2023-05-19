@@ -1,5 +1,6 @@
-## v0.20.1 [2023-05-19]
+## v0.20.2 [2023-05-19]
 _Whats new_
+* Cleanup temp plugin files when killing plugin manager. ([#3292](https://github.com/turbot/steampipe/issues/3292))
 * Re-add support for legacy command-schema. ([#3457](https://github.com/turbot/steampipe/issues/3457))
 
 ## v0.20.1 [2023-05-19]
