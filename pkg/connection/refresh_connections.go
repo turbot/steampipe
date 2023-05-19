@@ -19,7 +19,6 @@ var queueLock sync.Mutex
 func RefreshConnections(ctx context.Context, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
 	utils.LogTime("RefreshConnections start")
 	defer utils.LogTime("RefreshConnections end")
-	//time.Sleep(10 * time.Second)
 
 	t := time.Now()
 	log.Printf("[INFO] refreshConnections start")

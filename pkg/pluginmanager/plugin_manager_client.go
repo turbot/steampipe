@@ -16,6 +16,7 @@ import (
 type PluginManagerClient struct {
 	manager            pluginshared.PluginManager
 	pluginManagerState *PluginManagerState
+	rawClient          *plugin.Client
 }
 
 func NewPluginManagerClient(pluginManagerState *PluginManagerState) (*PluginManagerClient, error) {
@@ -36,7 +37,7 @@ func (c *PluginManagerClient) attachToPluginManager() error {
 	logger := logging.NewLogger(loggOpts)
 
 	// construct a client using the plugin manager reaattach config
-	newClient := plugin.NewClient(&plugin.ClientConfig{
+	c.rawClient = plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: pluginshared.Handshake,
 		Plugins:         pluginshared.PluginMap,
 		Reattach:        c.pluginManagerState.reattachConfig(),
@@ -46,7 +47,7 @@ func (c *PluginManagerClient) attachToPluginManager() error {
 	})
 
 	// connect via RPC
-	rpcClient, err := newClient.Client()
+	rpcClient, err := c.rawClient.Client()
 	if err != nil {
 		log.Printf("[TRACE] failed to connect to plugin manager: %s", err.Error())
 		return err
@@ -62,6 +63,7 @@ func (c *PluginManagerClient) attachToPluginManager() error {
 	// cast to correct type
 	pluginManager := raw.(pluginshared.PluginManager)
 	c.manager = pluginManager
+
 	return nil
 }
 
