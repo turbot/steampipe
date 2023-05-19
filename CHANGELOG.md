@@ -1,4 +1,8 @@
 ## v0.20.1 [2023-05-19]
+_Whats new_
+* Re-add support for legacy command-schema. ([#3457](https://github.com/turbot/steampipe/issues/3457))
+
+## v0.20.1 [2023-05-19]
 _Bug fixes_
 - Update FDW version to v1.7.1 to work around bad Linux Arm build of FDW v1.70. ([#3455](https://github.com/turbot/steampipe/issues/3455), [#311](https://github.com/turbot/steampipe-postgres-fdw/issues/311))
 
