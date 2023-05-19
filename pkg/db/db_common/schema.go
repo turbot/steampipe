@@ -36,8 +36,8 @@ func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, erro
 		if err := res.Scan(&schema); err != nil {
 			return nil, err
 		}
-		// ignore command schema
-		if schema != constants.InternalSchema {
+		// ignore internal schema and legacy command schema
+		if schema != constants.InternalSchema && schema != constants.LegacyCommandSchema {
 			foreignSchemaNames = append(foreignSchemaNames, schema)
 		}
 	}

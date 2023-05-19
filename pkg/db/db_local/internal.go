@@ -148,9 +148,15 @@ func setupInternal(ctx context.Context, conn *pgx.Conn) error {
 		"lock table pg_namespace;",
 		fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS %s;`, constants.InternalSchema),
 		fmt.Sprintf(`GRANT USAGE ON SCHEMA %s TO %s;`, constants.InternalSchema, constants.DatabaseUsersRole),
-		fmt.Sprintf("IMPORT FOREIGN SCHEMA \"%s\" FROM SERVER steampipe INTO %s;\n", constants.InternalSchema, constants.InternalSchema),
+		fmt.Sprintf("IMPORT FOREIGN SCHEMA \"%s\" FROM SERVER steampipe INTO %s;", constants.InternalSchema, constants.InternalSchema),
 		fmt.Sprintf("GRANT INSERT ON %s.%s TO %s;", constants.InternalSchema, constants.ForeignTableSettings, constants.DatabaseUsersRole),
 		fmt.Sprintf("GRANT SELECT ON %s.%s TO %s;", constants.InternalSchema, constants.ForeignTableScanMetadata, constants.DatabaseUsersRole),
+		// legacy command schema support
+		fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS %s;`, constants.LegacyCommandSchema),
+		fmt.Sprintf(`GRANT USAGE ON SCHEMA %s TO %s;`, constants.LegacyCommandSchema, constants.DatabaseUsersRole),
+		fmt.Sprintf("IMPORT FOREIGN SCHEMA \"%s\" FROM SERVER steampipe INTO %s;", constants.LegacyCommandSchema, constants.LegacyCommandSchema),
+		fmt.Sprintf("GRANT INSERT ON %s.%s TO %s;", constants.LegacyCommandSchema, constants.ForeignTableSettings, constants.DatabaseUsersRole),
+		fmt.Sprintf("GRANT SELECT ON %s.%s TO %s;", constants.LegacyCommandSchema, constants.ForeignTableScanMetadata, constants.DatabaseUsersRole),
 	}
 	queries = append(queries, getFunctionAddStrings(db_common.Functions)...)
 	if _, err := ExecuteSqlInTransaction(ctx, conn, queries...); err != nil {

@@ -47,7 +47,6 @@ const (
 	// these are schema names which were used previously
 	// but are not relevant anymore and need to be dropped
 	LegacyInternalSchema = "internal"
-	LegacyCommandSchema  = "steampipe_command"
 
 	// InternalSchema is the schema container for all steampipe helper functions, and connection state table
 	// also used to send commands to the FDW
@@ -74,6 +73,17 @@ const (
 
 	FunctionCacheSet    = "meta_cache"
 	FunctionCacheSetTtl = "meta_cache_ttl"
+
+	// legacy
+	LegacyCommandSchema = "steampipe_command"
+
+	LegacyCommandTableCache                = "cache"
+	LegacyCommandTableCacheOperationColumn = "operation"
+	LegacyCommandCacheOn                   = "cache_on"
+	LegacyCommandCacheOff                  = "cache_off"
+	LegacyCommandCacheClear                = "cache_clear"
+
+	LegacyCommandTableScanMetadata = "scan_metadata"
 )
 
 // ConnectionStates is a handy array of all states
