@@ -24,6 +24,7 @@ import (
 
 var GlobalConfig *SteampipeConfig
 var defaultConfigFileName = "default.spc"
+var defaultConfigSampleFileName = "default.spc.sample"
 
 // LoadSteampipeConfig loads the HCL connection config and workspace options
 func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConfig, *modconfig.ErrorAndWarnings) {
@@ -48,7 +49,7 @@ func LoadConnectionConfig() (*SteampipeConfig, *modconfig.ErrorAndWarnings) {
 }
 
 func ensureDefaultConfigFile(configFolder string) error {
-	defaultConfigFile := filepath.Join(configFolder, defaultConfigFileName)
+	defaultConfigFile := filepath.Join(configFolder, defaultConfigSampleFileName)
 	if _, err := os.Stat(defaultConfigFile); os.IsNotExist(err) {
 		err = os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0755)
 		if err != nil {
