@@ -93,9 +93,7 @@ Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_w
 ### deprecation tests ###
 
 @test "old steampipe property" {
-  # skip this for v0.20.0
-  # [Issue](https://github.com/turbot/steampipe/issues/3251)
-  skip "skipped for v0.20.0"  # go to the mod directory and run steampipe to get the deprectaion warning
+  # go to the mod directory and run steampipe to get the deprectaion warning
   # or error, and check the output
   cd $FILE_PATH/test_data/mod_require_tests/mod_with_old_steampipe_in_require
   run steampipe query "select 1"
@@ -122,9 +120,6 @@ Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_w
 }
 
 @test "old plugin.version property" {
-  # skip this for v0.20.0
-  # [Issue](https://github.com/turbot/steampipe/issues/3251)
-  skip "skipped for v0.20.0"
   # go to the mod directory and run steampipe to get the deprectaion warning
   # or error, and check the output
   cd $FILE_PATH/test_data/mod_require_tests/mod_with_old_plugin_block_with_version
