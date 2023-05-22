@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"path"
@@ -56,4 +57,16 @@ func MoveFile(source string, destination string) error {
 func FilenameNoExtension(fileName string) string {
 	fileName = path.Base(fileName)
 	return fileName[:len(fileName)-len(filepath.Ext(fileName))]
+}
+
+func AreFilesEqual(file1, file2 string) (bool, error) {
+	content1, err := os.ReadFile(file1)
+	if err != nil {
+		return false, err
+	}
+	content2, err := os.ReadFile(file2)
+	if err != nil {
+		return false, err
+	}
+	return bytes.Equal(content1, content2), nil
 }
