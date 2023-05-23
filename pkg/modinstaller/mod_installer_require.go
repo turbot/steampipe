@@ -44,6 +44,11 @@ func (i *ModInstaller) updateModFile() error {
 		changes = i.calculateChangeSet(oldRequire, newRequire)
 	}
 
+	if len(changes) == 0 {
+		// nothing to do here
+		return nil
+	}
+
 	contents.ApplyChanges(changes)
 	contents.Apply(hclwrite.Format)
 
