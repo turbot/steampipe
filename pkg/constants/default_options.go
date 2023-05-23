@@ -1,6 +1,6 @@
 package constants
 
-// DefaultConnectionConfigContent is the content of the sample connection config file, default.spc.sample,
+// DefaultConnectionConfigContent is the content of the sample connection config file(default.spc.sample),
 // that is created if it does not exist
 const DefaultConnectionConfigContent = `
 #

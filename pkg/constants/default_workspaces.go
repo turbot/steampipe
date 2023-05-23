@@ -1,6 +1,6 @@
 package constants
 
-// DefaultWorkspaceContent is the content of the sample workspaces config file, workspaces.spc.sample,
+// DefaultWorkspaceContent is the content of the sample workspaces config file(workspaces.spc.sample),
 // that is created if it does not exist
 const DefaultWorkspaceContent = `
 #
