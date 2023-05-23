@@ -165,10 +165,20 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	if err := setupInternal(ctx, conn); err != nil {
 		return err
 	}
-	// ensure connection stat etable contains entries for all connections in connection config
+	// ensure connection state table contains entries for all connections in connection config
 	// (this is to allow for the race condition between polling connection state and calling refresh connections,
 	// which does not update the connection_state with added connections until it has built the ConnectionUpdates
 	if err := initializeConnectionStateTable(ctx, conn); err != nil {
+		return err
+	}
+
+	// initialize the server settings table
+	// this table contains that configuration that this instance of the service
+	// is booting with
+	// we don't support file watching on service config file
+	// hence the settings written to this table will always remain valid
+	// for the life of this instance
+	if err := initializeServerSettingsTable(ctx, conn); err != nil {
 		return err
 	}
 
