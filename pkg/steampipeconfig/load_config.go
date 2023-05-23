@@ -49,27 +49,29 @@ func LoadConnectionConfig() (*SteampipeConfig, *modconfig.ErrorAndWarnings) {
 }
 
 func ensureDefaultConfigFile(configFolder string) error {
-	// always write the default.spc.sample file
-	defaultConfigSampleFile := filepath.Join(configFolder, defaultConfigSampleFileName)
-	err := os.WriteFile(defaultConfigSampleFile, []byte(constants.DefaultConnectionConfigContent), 0755)
-	if err != nil {
-		return err
-	}
-	// write default.spc if it does not exist, if it exists and if the content of the default.spc and
-	// the default.spc.sample file are the same, remove the default.spc file
 	defaultConfigFile := filepath.Join(configFolder, defaultConfigFileName)
-	if _, err := os.Stat(defaultConfigFile); os.IsNotExist(err) {
-		err = os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0755)
-		if err != nil {
-			return err
-		}
-	} else if _, err := os.Stat(defaultConfigFile); err == nil {
+	defaultConfigSampleFile := filepath.Join(configFolder, defaultConfigSampleFileName)
+	// if default.spc exists, and if the content of the default.spc and the default.spc.sample
+	// file are the same, remove the default.spc file.
+	if _, err := os.Stat(defaultConfigFile); err == nil {
 		if equal, _ := utils.AreFilesEqual(defaultConfigFile, defaultConfigSampleFile); equal {
 			// remove default.spc file
 			err := os.Remove(defaultConfigFile)
 			if err != nil {
 				return err
 			}
+		}
+	}
+	// always write the default.spc.sample file
+	err := os.WriteFile(defaultConfigSampleFile, []byte(constants.DefaultConnectionConfigContent), 0755)
+	if err != nil {
+		return err
+	}
+	// write default.spc if it does not exist
+	if _, err := os.Stat(defaultConfigFile); os.IsNotExist(err) {
+		err = os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0755)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
