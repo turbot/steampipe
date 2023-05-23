@@ -2,15 +2,20 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/utils"
-	"log"
+	"github.com/turbot/steampipe/sperr"
 )
 
 var GlobalWorkspaceProfile *modconfig.WorkspaceProfile
+var defaultWorkspaceSampleFileName = "workspaces.spc.sample"
 
 type WorkspaceProfileLoader struct {
 	workspaceProfiles    map[string]*modconfig.WorkspaceProfile
@@ -19,7 +24,25 @@ type WorkspaceProfileLoader struct {
 	ConfiguredProfile    *modconfig.WorkspaceProfile
 }
 
+func ensureDefaultWorkspaceFile(configFolder string) error {
+	// always write the workspaces.spc.sample file
+	defaultWorkspaceSampleFile := filepath.Join(configFolder, defaultWorkspaceSampleFileName)
+	err := os.WriteFile(defaultWorkspaceSampleFile, []byte(constants.DefaultWorkspaceContent), 0755)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func NewWorkspaceProfileLoader(workspaceProfilePath string) (*WorkspaceProfileLoader, error) {
+	// write the workspaces.spc.sample file
+	if err := ensureDefaultWorkspaceFile(workspaceProfilePath); err != nil {
+		return nil,
+			sperr.WrapWithMessage(
+				err,
+				"could not create sample workspace",
+			)
+	}
 	loader := &WorkspaceProfileLoader{workspaceProfilePath: workspaceProfilePath}
 	workspaceProfiles, err := loader.load()
 	if err != nil {
