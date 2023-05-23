@@ -55,10 +55,12 @@ func ExecuteSqlWithArgsInTransaction(ctx context.Context, conn *pgx.Conn, querie
 	if err != nil {
 		return nil, err
 	}
+	log.Println("[TRACE] >>> Executing in transaction >>>")
 	defer func() {
 		if err != nil {
 			tx.Rollback(ctx)
 		}
+		log.Println("[TRACE] >>> Transaction closed >>>")
 	}()
 
 	for _, q := range queries {
