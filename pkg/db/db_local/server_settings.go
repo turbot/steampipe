@@ -78,14 +78,13 @@ func getServerSettingsRowSql(_ context.Context, settings map[ServerSettingKey]an
 
 		queries = append(queries, db_common.QueryWithArgs{
 			Query: fmt.Sprintf(
-				`INSERT INTO %s.%s (name,value) VALUES ($1,TO_JSONB($2::%s))`,
+				`INSERT INTO %s.%s (name,value,vartype) VALUES ($1,TO_JSONB($2::%s),$3)`,
 				constants.InternalSchema,
 				constants.ServerSettingsTable,
 				dataType,
 			),
-			Args: []any{name, value},
+			Args: []any{name, value, dataType},
 		})
-
 	}
 	return queries
 }
@@ -104,7 +103,8 @@ func getServerSettingsTableGrantSQL(_ context.Context) db_common.QueryWithArgs {
 func getServerSettingsTableCreateSQL(_ context.Context) db_common.QueryWithArgs {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
 		name TEXT PRIMARY KEY,
-		value JSONB NOT NULL
+		value JSONB NOT NULL,
+		vartype TEXT NOT NULL
 		);`, constants.InternalSchema, constants.ServerSettingsTable)
 
 	return db_common.QueryWithArgs{Query: query}
