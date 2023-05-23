@@ -472,7 +472,7 @@ jobs:
           chmod +x tests/acceptance/run-linux-arm.sh
 
           # ssh into the instance and run the full acceptance test suite
-          # ssh -o StrictHostKeyChecking=accept-new -i private_key ubuntu@$public_ip 'bash -s' < tests/acceptance/run-linux-arm.sh $ref
+          ssh -o StrictHostKeyChecking=accept-new -i private_key ubuntu@$public_ip 'bash -s' < tests/acceptance/run-linux-arm.sh $ref
 
           # stop instance
           aws ec2 stop-instances --instance-ids i-09b87c86dfdfcd2bd --region ap-south-1
