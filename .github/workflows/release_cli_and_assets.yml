@@ -226,7 +226,7 @@ jobs:
         cat config.json
         cat annotations.json
         cat dashboard_ui_build/versions.json
-        REF="${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}:$GITHUB_RUN_ID"
+        REF="${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}:${{ env.VERSION }}"
         echo "REF=$REF" >> $GITHUB_OUTPUT
 
     - name: Push to registry
@@ -235,13 +235,6 @@ jobs:
           --config config.json:application/vnd.turbot.steampipe.config.v1+json \
           --annotation-file annotations.json \
           dashboard_ui_build:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
-
-    - name: Set version tags on Pushed Image
-      uses: ./.github/actions/semver-tags
-      id: semver
-      with:
-        image-to-tag: "${{ steps.image_ref.outputs.REF }}"
-        image-version: ${{ env.VERSION }}
 
   create_test_build:
     name: Create Test Build
