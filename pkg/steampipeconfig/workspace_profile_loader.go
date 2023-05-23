@@ -36,6 +36,7 @@ func ensureDefaultWorkspaceFile(configFolder string) error {
 
 func NewWorkspaceProfileLoader(workspaceProfilePath string) (*WorkspaceProfileLoader, error) {
 	// write the workspaces.spc.sample file
+	err := os.MkdirAll(workspaceProfilePath, 0755)
 	if err := ensureDefaultWorkspaceFile(workspaceProfilePath); err != nil {
 		return nil,
 			sperr.WrapWithMessage(
