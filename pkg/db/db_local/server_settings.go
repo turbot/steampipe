@@ -61,7 +61,7 @@ func initializeServerSettingsTable(ctx context.Context, conn *pgx.Conn) error {
 }
 
 func getServerSettingsRowSql(_ context.Context, settings map[ServerSettingKey]any) []db_common.QueryWithArgs {
-	queries := make([]db_common.QueryWithArgs, len(settings), 0)
+	queries := []db_common.QueryWithArgs{}
 	for name, value := range settings {
 		dataType := "text"
 		kind := reflect.TypeOf(value).Kind()
