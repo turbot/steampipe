@@ -62,7 +62,7 @@ func ExecuteSqlWithArgsInTransaction(ctx context.Context, conn *pgx.Conn, querie
 	}()
 
 	for _, q := range queries {
-		log.Println("Executing query:", q)
+		log.Println("[TRACE] Executing query:", q)
 		result, err := tx.Exec(ctx, q.Query, q.Args...)
 		if err != nil {
 			return nil, err
