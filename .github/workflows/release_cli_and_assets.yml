@@ -412,7 +412,7 @@ jobs:
 
   linux_arm_acceptance_tests:
     name: Linux ARM64 acceptance tests
-    needs: [create_test_build,build_and_release_assets]
+    needs: [create_test_build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -435,6 +435,9 @@ jobs:
         run: |
           # echo $ref
           ref=${{ github.event.ref }}
+
+          # get branch
+          branch=$(echo "$ref" | sed 's/.*\///')
 
           # get public IP of this runner
           ip=$(dig +short myip.opendns.com @resolver1.opendns.com)
@@ -472,7 +475,7 @@ jobs:
           chmod +x tests/acceptance/run-linux-arm.sh
 
           # ssh into the instance and run the full acceptance test suite
-          ssh -o StrictHostKeyChecking=accept-new -i private_key ubuntu@$public_ip 'bash -s' < tests/acceptance/run-linux-arm.sh $ref
+          ssh -o StrictHostKeyChecking=accept-new -i private_key ubuntu@$public_ip 'bash -s' < tests/acceptance/run-linux-arm.sh $branch
 
           # stop instance
           aws ec2 stop-instances --instance-ids i-09b87c86dfdfcd2bd --region ap-south-1

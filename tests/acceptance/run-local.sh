@@ -17,7 +17,7 @@ echo "Install directory: $STEAMPIPE_INSTALL_DIR"
 steampipe query "select 1 as setup_complete"
 echo "Installation complete at $STEAMPIPE_INSTALL_DIR"
 echo "Installing CHAOS and CHAOSDYNAMIC"
-steampipe plugin install chaos chaosdynamic
+steampipe plugin install chaos chaosdynamic --progress=false
 echo "Installed CHAOS and CHAOSDYNAMIC"
 
 if [ $# -eq 0 ]; then
