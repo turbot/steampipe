@@ -149,7 +149,7 @@ jobs:
 
       - name: Push to Registry
         run: |-
-          REF="$CORE_REPO/$IMAGE_NAME:$GITHUB_RUN_ID"
+          REF="$CORE_REPO/$IMAGE_NAME:$VERSION"
 
           oras push $REF \
               --config config.json:application/vnd.turbot.steampipe.config.v1+json \
@@ -158,10 +158,3 @@ jobs:
               extracted-darwin-arm64:application/vnd.turbot.steampipe.db.darwin-arm64.layer.v1+tar \
               extracted-linux-amd64:application/vnd.turbot.steampipe.db.linux-amd64.layer.v1+tar \
               extracted-linux-arm64:application/vnd.turbot.steampipe.db.linux-arm64.layer.v1+tar
-
-      - name: Set version tags
-        uses: ./.github/actions/semver-tags
-        id: semver
-        with:
-          image-to-tag: "${{ env.CORE_REPO }}/${{ env.IMAGE_NAME }}:${{ github.run_id  }}"
-          image-version: ${{ env.VERSION }}
