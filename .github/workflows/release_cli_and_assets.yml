@@ -491,6 +491,10 @@ jobs:
           AWS_DEFAULT_REGION: 'ap-south-1'
           PRIVATE_KEY: ${{ secrets.ACC_TEST_ARM_LINUX_AWS_PRIVATE_KEY  }}
         run: |
+          # get public IP of this runner
+          ip=$(dig +short myip.opendns.com @resolver1.opendns.com)
+          echo $ip
+
           # stop instance
           aws ec2 stop-instances --instance-ids i-09b87c86dfdfcd2bd --region ap-south-1
 
