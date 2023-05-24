@@ -62,7 +62,7 @@ exit_if_failed
 echo ""
 
 echo "run acceptance tests"
-./tests/acceptance/run-local.sh
+./tests/acceptance/run-local.sh check.bats
 exit_if_failed
 echo ""
 
