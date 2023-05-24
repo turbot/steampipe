@@ -74,3 +74,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $tmpdir
   rm -f verify*
 }
+
+function setup() {
+  sys=$(uname -sm)
+  if [[ "$sys" == "Linux aarch64" ]]; then
+    skip
+  else
+    echo "Running migration test..."
+  fi
+}
