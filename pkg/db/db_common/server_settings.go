@@ -36,7 +36,7 @@ func StubServerSettings() *ServerSettings {
 func LoadServerSettings(ctx context.Context, conn *pgx.Conn) (*ServerSettings, error) {
 	rows, err := conn.Query(ctx, fmt.Sprintf("SELECT name,value FROM %s.%s", constants.InternalSchema, constants.ServerSettingsTable))
 	if err != nil {
-		return nil, sperr.WrapWithMessage(err, "could not load %s.%s", constants.InternalSchema, constants.ServerSettingsTable)
+		return nil, err
 	}
 	defer rows.Close()
 	settings := new(ServerSettings)
