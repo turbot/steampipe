@@ -2,6 +2,7 @@ package db_common
 
 import (
 	"context"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
@@ -27,4 +28,6 @@ type Client interface {
 
 	RefreshSessions(context.Context) *AcquireSessionResult
 	GetSchemaFromDB(context.Context) (*SchemaMetadata, error)
+
+	ServerSettings(context.Context) *ServerSettings
 }

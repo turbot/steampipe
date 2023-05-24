@@ -24,6 +24,10 @@ type DbClient struct {
 	connectionString string
 	pool             *pgxpool.Pool
 
+	// the settings of the server that this client is
+	// connected to
+	serverSettings *db_common.ServerSettings
+
 	// this flag is set if the service that this client
 	// is connected to is running in the same physical system
 	isLocalService bool
@@ -80,9 +84,15 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		return nil, err
 	}
 
+	// load up the server settings
+	if err := client.loadServerSettings(ctx); err != nil {
+		client.Close(ctx)
+		return nil, err
+	}
+
 	// set user search path
-	err := client.LoadUserSearchPath(ctx)
-	if err != nil {
+	if err := client.LoadUserSearchPath(ctx); err != nil {
+		client.Close(ctx)
 		return nil, err
 	}
 
@@ -93,6 +103,20 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 	}
 
 	return client, nil
+}
+
+func (c *DbClient) loadServerSettings(ctx context.Context) error {
+	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+	serverSettings, err := db_common.LoadServerSettings(ctx, conn.Conn())
+	if err != nil {
+		return err
+	}
+	c.serverSettings = serverSettings
+	return nil
 }
 
 func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.DatabaseSession) {
@@ -109,6 +133,10 @@ func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.D
 
 func (c *DbClient) shouldShowTiming() bool {
 	return c.showTimingFlag && !c.disableTiming
+}
+
+func (c *DbClient) ServerSettings(context.Context) *db_common.ServerSettings {
+	return c.serverSettings
 }
 
 // Close implements Client
