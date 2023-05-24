@@ -499,6 +499,15 @@ jobs:
 
           # fin
           echo "fin"
+      
+      - name: Check if passed/failed
+        if: always()
+        run: |
+          if [ ${{ steps.ssh-and-run-test-suite.outcome }} == 'success' ]; then
+            exit 0
+          else
+            exit 1
+          fi
 
   create_release_tag:
     name: Tag Release
