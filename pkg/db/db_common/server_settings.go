@@ -28,6 +28,11 @@ type ServerSettings struct {
 	loaded bool
 }
 
+// StubServerSettings returns a server settings struct which is maked as unloaded
+func StubServerSettings() *ServerSettings {
+	return new(ServerSettings)
+}
+
 func LoadServerSettings(ctx context.Context, conn *pgx.Conn) (*ServerSettings, error) {
 	rows, err := conn.Query(ctx, fmt.Sprintf("SELECT name,value FROM %s.%s", constants.InternalSchema, constants.ServerSettingsTable))
 	if err != nil {
@@ -73,6 +78,11 @@ func LoadServerSettings(ctx context.Context, conn *pgx.Conn) (*ServerSettings, e
 	}
 	settings.loaded = true
 	return settings, nil
+}
+
+// Loaded returns a bool indicating whether settings data has been loaded
+func (s *ServerSettings) Loaded(ctx context.Context) bool {
+	return s.loaded
 }
 
 // SetupSql returns the set of SQL statements to fully replace any existing

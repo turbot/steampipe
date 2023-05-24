@@ -115,6 +115,7 @@ func (c *DbClient) loadServerSettings(ctx context.Context) error {
 	if err != nil {
 		if _, _, notFound := IsRelationNotFoundError(err); notFound {
 			log.Printf("[INFO] could not find %s.%s table.", constants.InternalSchema, constants.ServerSettingsTable)
+			c.serverSettings = db_common.StubServerSettings()
 			return nil
 		}
 		return err
