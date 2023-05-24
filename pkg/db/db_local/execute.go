@@ -2,7 +2,6 @@ package db_local
 
 import (
 	"context"
-	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -62,7 +61,6 @@ func ExecuteSqlWithArgsInTransaction(ctx context.Context, conn *pgx.Conn, querie
 	}()
 
 	for _, q := range queries {
-		log.Println("[TRACE] Executing query:", q)
 		result, err := tx.Exec(ctx, q.Query, q.Args...)
 		if err != nil {
 			return nil, err

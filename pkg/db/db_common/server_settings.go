@@ -80,8 +80,10 @@ func LoadServerSettings(ctx context.Context, conn *pgx.Conn) (*ServerSettings, e
 	return settings, nil
 }
 
-// Loaded returns a bool indicating whether settings data has been loaded
-func (s *ServerSettings) Loaded(ctx context.Context) bool {
+// Loaded returns a bool indicating whether settings data has been loaded.
+//
+// Use this for backward compatibility with pre 0.21 servers
+func (s *ServerSettings) Loaded() bool {
 	return s.loaded
 }
 

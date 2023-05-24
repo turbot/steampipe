@@ -140,7 +140,7 @@ func (c *DbClient) shouldShowTiming() bool {
 	return c.showTimingFlag && !c.disableTiming
 }
 
-func (c *DbClient) ServerSettings(context.Context) *db_common.ServerSettings {
+func (c *DbClient) ServerSettings() *db_common.ServerSettings {
 	return c.serverSettings
 }
 

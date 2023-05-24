@@ -29,5 +29,5 @@ type Client interface {
 	RefreshSessions(context.Context) *AcquireSessionResult
 	GetSchemaFromDB(context.Context) (*SchemaMetadata, error)
 
-	ServerSettings(context.Context) *ServerSettings
+	ServerSettings() *ServerSettings
 }
