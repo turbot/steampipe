@@ -115,16 +115,12 @@ func (r *Require) handleDeprecations() hcl.Diagnostics {
 			})
 		} else {
 			r.Steampipe = &SteampipeRequire{MinVersionString: r.DeprecatedSteampipeVersionString}
-			// disable raising this for now, since for the v0.20.x
-			// release cycle we should support both usage (but not together)
-			//
-			// [Issue](https://github.com/turbot/steampipe/issues/3251)
-			//
-			// diags = append(diags, &hcl.Diagnostic{
-			// 	Severity: hcl.DiagWarning,
-			// 	Summary:  "Property 'steampipe' is deprecated for mod require block - use a steampipe block instead",
-			// 	Subject:  &r.DeclRange,
-			// })
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagWarning,
+				Summary:  "Property 'steampipe' is deprecated for mod require block - use a steampipe block instead",
+				Subject:  &r.DeclRange,
+			},
+			)
 		}
 	}
 	return diags
