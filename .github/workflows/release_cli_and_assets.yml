@@ -426,7 +426,7 @@ jobs:
           mkdir ~/.aws
           echo -e "[default]\naws_access_key_id = ${{ secrets.ACC_TEST_ARM_LINUX_AWS_ACCESS_KEY_ID }}\naws_secret_access_key = ${{ secrets.ACC_TEST_ARM_LINUX_AWS_SECRET_ACCESS_KEY }}\nregion = ap-south-1" > ~/.aws/credentials
 
-      - name: SSH into the system and run tests
+      - name: SSH into the EC2 instance and run tests
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ACC_TEST_ARM_LINUX_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ACC_TEST_ARM_LINUX_AWS_SECRET_ACCESS_KEY }}
@@ -477,6 +477,16 @@ jobs:
           # ssh into the instance and run the full acceptance test suite
           ssh -o StrictHostKeyChecking=accept-new -i private_key ubuntu@$public_ip 'bash -s' < tests/acceptance/run-linux-arm.sh $branch
 
+          # success if all tests passed
+          echo "success"
+      
+      - name: Stop the running instance
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ACC_TEST_ARM_LINUX_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ACC_TEST_ARM_LINUX_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: 'ap-south-1'
+          PRIVATE_KEY: ${{ secrets.ACC_TEST_ARM_LINUX_AWS_PRIVATE_KEY  }}
+        run: |
           # stop instance
           aws ec2 stop-instances --instance-ids i-09b87c86dfdfcd2bd --region ap-south-1
 
