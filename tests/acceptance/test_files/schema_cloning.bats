@@ -23,3 +23,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query "select * from chaos2.chaos_all_column_types"
   assert_success
 }
+
+function teardown() {
+  # remove the files created as part of these tests 
+  rm -f $STEAMPIPE_INSTALL_DIR/config/two_chaos.spc
+}
