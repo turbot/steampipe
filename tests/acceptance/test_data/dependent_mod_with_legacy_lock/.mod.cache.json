@@ -1,10 +1,35 @@
 {
-  "local": {
-    "github.com/pskrbasu/steampipe-mod-m1": {
-      "name": "github.com/pskrbasu/steampipe-mod-m1",
-      "alias": "m1",
+  "github.com/pskrbasu/steampipe-mod-dependency-2@v3.0.0": {
+    "github.com/pskrbasu/steampipe-mod-dependency-1": {
+      "name": "github.com/pskrbasu/steampipe-mod-dependency-1",
+      "alias": "dependency_1",
+      "version": "3.0.0",
+      "constraint": "v3.0.0",
+      "struct_version": 20220411
+    }
+  },
+  "github.com/pskrbasu/steampipe-mod-top-level@v3.0.0": {
+    "github.com/pskrbasu/steampipe-mod-dependency-1": {
+      "name": "github.com/pskrbasu/steampipe-mod-dependency-1",
+      "alias": "dependency_1",
       "version": "4.0.0",
-      "constraint": "4.0",
+      "constraint": "v4.0.0",
+      "struct_version": 20220411
+    },
+    "github.com/pskrbasu/steampipe-mod-dependency-2": {
+      "name": "github.com/pskrbasu/steampipe-mod-dependency-2",
+      "alias": "dependency_2",
+      "version": "3.0.0",
+      "constraint": "*",
+      "struct_version": 20220411
+    }
+  },
+  "local": {
+    "github.com/pskrbasu/steampipe-mod-top-level": {
+      "name": "github.com/pskrbasu/steampipe-mod-top-level",
+      "alias": "top_level",
+      "version": "3.0.0",
+      "constraint": "3.0.0",
       "struct_version": 20220411
     }
   }

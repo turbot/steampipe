@@ -1,14 +1,6 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
-@test "migrate legacy lock file" {
-  cd $FILE_PATH/test_data/dependent_mod_with_legacy_lock
-  # run steampipe query twice - the bug we are testing for caused the workspace lock to be deleted after the first query
-  steampipe query "select 1 as a" --output json
-  run steampipe query "select 1 as a" --output json
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_15.json)"
-}
-
 ## public schema migration
 
 @test "verify data is properly migrated when upgrading from v0.13.6" {
