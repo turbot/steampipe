@@ -75,7 +75,9 @@ func LoadServerSettings(ctx context.Context, conn *pgx.Conn) (*ServerSettings, e
 	return settings, nil
 }
 
-func (s *ServerSettings) PersistSql(ctx context.Context) []QueryWithArgs {
+// SetupSql returns the set of SQL statements to fully replace any existing
+// settings table with a new one and populates the values
+func (s *ServerSettings) SetupSql(ctx context.Context) []QueryWithArgs {
 	utils.LogTime("db_local.initializeServerSettingsTable start")
 	defer utils.LogTime("db_local.initializeServerSettingsTable end")
 
