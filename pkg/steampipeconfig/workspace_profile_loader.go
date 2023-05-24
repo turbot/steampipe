@@ -26,8 +26,12 @@ type WorkspaceProfileLoader struct {
 
 func ensureDefaultWorkspaceFile(configFolder string) error {
 	// always write the workspaces.spc.sample file
+	err := os.MkdirAll(configFolder, 0755)
+	if err != nil {
+		return err
+	}
 	defaultWorkspaceSampleFile := filepath.Join(configFolder, defaultWorkspaceSampleFileName)
-	err := os.WriteFile(defaultWorkspaceSampleFile, []byte(constants.DefaultWorkspaceContent), 0755)
+	err = os.WriteFile(defaultWorkspaceSampleFile, []byte(constants.DefaultWorkspaceContent), 0755)
 	if err != nil {
 		return err
 	}
@@ -36,7 +40,6 @@ func ensureDefaultWorkspaceFile(configFolder string) error {
 
 func NewWorkspaceProfileLoader(workspaceProfilePath string) (*WorkspaceProfileLoader, error) {
 	// write the workspaces.spc.sample file
-	err := os.MkdirAll(workspaceProfilePath, 0755)
 	if err := ensureDefaultWorkspaceFile(workspaceProfilePath); err != nil {
 		return nil,
 			sperr.WrapWithMessage(
