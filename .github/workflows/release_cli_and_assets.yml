@@ -427,6 +427,9 @@ jobs:
           echo -e "[default]\naws_access_key_id = ${{ secrets.ACC_TEST_ARM_LINUX_AWS_ACCESS_KEY_ID }}\naws_secret_access_key = ${{ secrets.ACC_TEST_ARM_LINUX_AWS_SECRET_ACCESS_KEY }}\nregion = ap-south-1" > ~/.aws/credentials
 
       - name: SSH into the EC2 instance and run tests
+        id: ssh-and-run-test-suite
+        timeout-minutes: 20
+        continue-on-error: true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ACC_TEST_ARM_LINUX_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ACC_TEST_ARM_LINUX_AWS_SECRET_ACCESS_KEY }}
@@ -481,6 +484,7 @@ jobs:
           echo "success"
       
       - name: Stop the running instance
+        if: always()
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ACC_TEST_ARM_LINUX_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ACC_TEST_ARM_LINUX_AWS_SECRET_ACCESS_KEY }}
