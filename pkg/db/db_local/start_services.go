@@ -172,13 +172,10 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 		return err
 	}
 
-	// initialize the server settings table
-	// this table contains that configuration that this instance of the service
+	// create the server settings table
+	// this table contains configuration that this instance of the service
 	// is booting with
-	// we don't support file watching on service config file
-	// hence the settings written to this table will always remain valid
-	// for the life of this instance
-	if err := initializeServerSettingsTable(ctx, conn); err != nil {
+	if err := setupServerSettingsTable(ctx, conn); err != nil {
 		return err
 	}
 

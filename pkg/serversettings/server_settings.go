@@ -1,4 +1,4 @@
-package db_common
+package serversettings
 
 import (
 	"context"
@@ -22,10 +22,6 @@ type ServerSettings struct {
 	CacheMaxTtl      int
 	CacheMaxSizeMb   int
 	CacheEnabled     bool
-
-	// a private property
-	// defaults to false - set to true after loading completes
-	loaded bool
 }
 
 // StubServerSettings returns a server settings struct which is maked as unloaded
@@ -33,7 +29,7 @@ func StubServerSettings() *ServerSettings {
 	return new(ServerSettings)
 }
 
-func LoadServerSettings(ctx context.Context, conn *pgx.Conn) (*ServerSettings, error) {
+func Load(ctx context.Context, conn *pgx.Conn) (*ServerSettings, error) {
 	rows, err := conn.Query(ctx, fmt.Sprintf("SELECT name,value FROM %s.%s", constants.InternalSchema, constants.ServerSettingsTable))
 	if err != nil {
 		return nil, err
@@ -76,20 +72,12 @@ func LoadServerSettings(ctx context.Context, conn *pgx.Conn) (*ServerSettings, e
 			)
 		}
 	}
-	settings.loaded = true
 	return settings, nil
-}
-
-// Loaded returns a bool indicating whether settings data has been loaded.
-//
-// Use this for backward compatibility with pre 0.21 servers
-func (s *ServerSettings) Loaded() bool {
-	return s.loaded
 }
 
 // SetupSql returns the set of SQL statements to fully replace any existing
 // settings table with a new one and populates the values
-func (s *ServerSettings) SetupSql(ctx context.Context) []QueryWithArgs {
+func (s *ServerSettings) SetupTable(ctx context.Context, conn *pgx.Conn) (err error) {
 	utils.LogTime("db_local.initializeServerSettingsTable start")
 	defer utils.LogTime("db_local.initializeServerSettingsTable end")
 
@@ -102,25 +90,42 @@ func (s *ServerSettings) SetupSql(ctx context.Context) []QueryWithArgs {
 		ServerSettingCacheMaxSizeMb:   viper.GetInt(constants.ArgMaxCacheSizeMb),
 	}
 
-	// start with a clean slate
-	queries := []QueryWithArgs{
-		// drop the old table (alternative is "if exists then truncate" which is more expensive)
-		// this also allows us to modify the table structure without having to go through complex
-		// migrations
-		getServerSettingsTableDropSQL(ctx),
-		// create a new one
-		getServerSettingsTableCreateSQL(ctx),
-		// grants
-		getServerSettingsTableGrantSQL(ctx),
+	// start a transaction on this connection
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
 	}
 
-	queries = append(queries, getServerSettingsRowSql(ctx, settings)...)
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		}
+	}()
 
-	return queries
+	// drop the old table (alternative is "if exists then truncate" which is more expensive)
+	// this also allows us to modify the table structure without having to go through complex
+	// migrations
+	err = dropServerSettingsTable(ctx, tx)
+	if err != nil {
+		return err
+	}
+	err = createServerSettingsTable(ctx, tx)
+	if err != nil {
+		return err
+	}
+	err = setupGrantsOnServerSettingsTable(ctx, tx)
+	if err != nil {
+		return err
+	}
+	err = populateServerSettingsTable(ctx, tx, settings)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
-func getServerSettingsRowSql(_ context.Context, settings map[ServerSettingKey]any) []QueryWithArgs {
-	queries := []QueryWithArgs{}
+func populateServerSettingsTable(ctx context.Context, tx pgx.Tx, settings map[ServerSettingKey]any) error {
 	for name, value := range settings {
 		dataType := "text"
 		kind := reflect.TypeOf(value).Kind()
@@ -136,48 +141,53 @@ func getServerSettingsRowSql(_ context.Context, settings map[ServerSettingKey]an
 			continue
 		}
 
-		queries = append(queries, QueryWithArgs{
-			Query: fmt.Sprintf(
+		_, err := tx.Exec(
+			ctx,
+			fmt.Sprintf(
 				`INSERT INTO %s.%s (name,value,vartype) VALUES ($1,TO_JSONB($2::%s),$3)`,
 				constants.InternalSchema,
 				constants.ServerSettingsTable,
 				dataType,
 			),
-			Args: []any{name, value, dataType},
-		})
+			name,
+			value,
+			dataType,
+		)
+		if err != nil {
+			return err
+		}
 	}
-	return queries
+
+	return nil
 }
 
-func getServerSettingsTableGrantSQL(_ context.Context) QueryWithArgs {
-	return QueryWithArgs{
-		Query: fmt.Sprintf(
-			`GRANT SELECT ON TABLE %s.%s to %s;`,
-			constants.InternalSchema,
-			constants.ServerSettingsTable,
-			constants.DatabaseUsersRole,
-		),
-	}
+func setupGrantsOnServerSettingsTable(ctx context.Context, tx pgx.Tx) error {
+	_, err := tx.Exec(ctx, fmt.Sprintf(
+		`GRANT SELECT ON TABLE %s.%s to %s;`,
+		constants.InternalSchema,
+		constants.ServerSettingsTable,
+		constants.DatabaseUsersRole,
+	))
+	return err
 }
 
-func getServerSettingsTableCreateSQL(_ context.Context) QueryWithArgs {
-	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
+func createServerSettingsTable(ctx context.Context, tx pgx.Tx) error {
+	_, err := tx.Exec(ctx, fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
 		name TEXT PRIMARY KEY,
 		value JSONB NOT NULL,
 		vartype TEXT NOT NULL
-		);`, constants.InternalSchema, constants.ServerSettingsTable)
+		);`, constants.InternalSchema, constants.ServerSettingsTable))
 
-	return QueryWithArgs{Query: query}
+	return err
 }
 
-func getServerSettingsTableDropSQL(_ context.Context) QueryWithArgs {
-	query := fmt.Sprintf(
+func dropServerSettingsTable(ctx context.Context, tx pgx.Tx) error {
+	_, err := tx.Exec(ctx, fmt.Sprintf(
 		`DROP TABLE IF EXISTS %s.%s;`,
 		constants.InternalSchema,
 		constants.ServerSettingsTable,
-	)
-
-	return QueryWithArgs{Query: query}
+	))
+	return err
 }
 
 const (

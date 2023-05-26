@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/serversettings"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
@@ -26,7 +27,7 @@ type DbClient struct {
 
 	// the settings of the server that this client is
 	// connected to
-	serverSettings *db_common.ServerSettings
+	serverSettings *serversettings.ServerSettings
 
 	// this flag is set if the service that this client
 	// is connected to is running in the same physical system
@@ -111,11 +112,10 @@ func (c *DbClient) loadServerSettings(ctx context.Context) error {
 		return err
 	}
 	defer conn.Release()
-	serverSettings, err := db_common.LoadServerSettings(ctx, conn.Conn())
+	serverSettings, err := serversettings.Load(ctx, conn.Conn())
 	if err != nil {
 		if _, _, notFound := IsRelationNotFoundError(err); notFound {
 			log.Printf("[INFO] could not find %s.%s table.", constants.InternalSchema, constants.ServerSettingsTable)
-			c.serverSettings = db_common.StubServerSettings()
 			return nil
 		}
 		return err
@@ -140,7 +140,7 @@ func (c *DbClient) shouldShowTiming() bool {
 	return c.showTimingFlag && !c.disableTiming
 }
 
-func (c *DbClient) ServerSettings() *db_common.ServerSettings {
+func (c *DbClient) ServerSettings() *serversettings.ServerSettings {
 	return c.serverSettings
 }
 
