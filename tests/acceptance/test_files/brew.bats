@@ -12,6 +12,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe completion zsh --install-dir $target_install_directory
 
   # check no steampipe install directories are created at target_install_directory
+  cd $target_install_directory
   directory_count=$(ls | wc -l)
   echo $directory_count
 
