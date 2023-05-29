@@ -62,9 +62,27 @@ exit_if_failed
 echo ""
 
 echo "run acceptance tests"
-./tests/acceptance/run-local.sh chaos_and_query.bats
-exit_if_failed
+declare -a arr=("migration" "service_and_plugin" "search_path" "chaos_and_query" "dynamic_schema" "dynamic_aggregators" "cache" "mod_install" "mod" "mod_require" "check" "performance" "workspace" introspection "cloud" "snapshot" "dashboard" "dashboard_parsing_validation" "schema_cloning" "exit_codes")
+declare -i failure_count=0
+# run test suite
+for i in "${arr[@]}"
+do
+  echo ""
+  echo ">>>>> running $i.bats"
+  ./tests/acceptance/run-local.sh $i.bats
+  failure_count+=$?
+done
 echo ""
+
+# check if all tests passed
+echo $failure_count
+if [[ $failure_count -eq 0 ]]; then
+  echo "test run successful"
+  exit 0
+else
+  echo "test run failed"
+  exit 1
+fi
 
 echo "Hallelujah!"
 exit 0
