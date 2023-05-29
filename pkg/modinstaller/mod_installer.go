@@ -463,7 +463,11 @@ func (i *ModInstaller) canUpdateMod(installedVersion *versionmap.ResolvedVersion
 	// so should we update?
 	// if forceUpdate is set or if the required version constraint is different to the locked version constraint, update
 	// TODO check * vs latest - maybe need a custom equals?
-	if forceUpdate || installedVersion.Constraint != requiredModVersion.Constraint.Original {
+	isSatisfied, errs := requiredModVersion.Constraint.Validate(installedVersion.Version)
+	if len(errs) > 0 {
+		return false, error_helpers.CombineErrors(errs...)
+	}
+	if forceUpdate || !isSatisfied {
 		// get available versions for this mod
 		includePrerelease := requiredModVersion.Constraint.IsPrerelease()
 		availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name, includePrerelease)
