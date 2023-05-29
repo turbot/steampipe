@@ -44,12 +44,6 @@ func NewPluginVersionFile() *PluginVersionFile {
 	}
 }
 
-func pluginVersionFileFromLegacy(legacyFile *LegacyCompositeVersionFile) *PluginVersionFile {
-	return &PluginVersionFile{
-		Plugins: legacyFile.Plugins,
-	}
-}
-
 // LoadPluginVersionFile migrates from the old version file format if necessary and loads the plugin version data
 func LoadPluginVersionFile() (*PluginVersionFile, error) {
 	versionFilePath := filepaths.PluginVersionFilePath()
@@ -82,14 +76,6 @@ func (f *PluginVersionFile) write(path string) error {
 		return sperr.WrapWithMessage(ErrNoContent, "cannot write versions file")
 	}
 	return os.WriteFile(path, versionFileJSON, 0644)
-}
-
-// delete the file on disk if it exists
-func (f *PluginVersionFile) delete() {
-	versionFilePath := filepaths.PluginVersionFilePath()
-	if filehelpers.FileExists(versionFilePath) {
-		os.Remove(versionFilePath)
-	}
 }
 
 func readPluginVersionFile(path string) (*PluginVersionFile, error) {
