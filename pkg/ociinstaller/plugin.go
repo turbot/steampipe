@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -18,6 +19,8 @@ import (
 	versionfile "github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/utils"
 )
+
+var versionFileUpdateLock = &sync.Mutex{}
 
 // InstallPlugin installs a plugin from an OCI Image
 func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}) (*SteampipeImage, error) {
@@ -51,17 +54,14 @@ func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}) (*St
 	if err = installPluginConfigFiles(image, tempDir.Path); err != nil {
 		return nil, fmt.Errorf("plugin installation failed: %s", err)
 	}
-
 	sub <- struct{}{}
-	if err := updateVersionFilePlugin(image); err != nil {
+	if err := updatePluginVersionFiles(image); err != nil {
 		return nil, err
 	}
 	return image, nil
 }
 
-var versionFileUpdateLock = &sync.Mutex{}
-
-func updateVersionFilePlugin(image *SteampipeImage) error {
+func updatePluginVersionFiles(image *SteampipeImage) error {
 	versionFileUpdateLock.Lock()
 	defer versionFileUpdateLock.Unlock()
 
@@ -73,24 +73,35 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 
 	pluginFullName := image.ImageRef.DisplayImageRef()
 
-	plugin, ok := v.Plugins[pluginFullName]
+	installation, ok := v.Plugins[pluginFullName]
 	if !ok {
-		plugin = &versionfile.InstalledVersion{}
+		installation = &versionfile.InstalledVersion{}
 	}
 
-	//change this to the path????
-	plugin.Name = pluginFullName
-	plugin.Version = image.Config.Plugin.Version
-	plugin.ImageDigest = string(image.OCIDescriptor.Digest)
-	plugin.BinaryDigest = image.Plugin.BinaryDigest
-	plugin.BinaryArchitecture = image.Plugin.BinaryArchitecture
-	plugin.InstalledFrom = image.ImageRef.ActualImageRef()
-	plugin.LastCheckedDate = timeNow
-	plugin.InstallDate = timeNow
+	installation.Name = pluginFullName
+	installation.Version = image.Config.Plugin.Version
+	installation.ImageDigest = string(image.OCIDescriptor.Digest)
+	installation.BinaryDigest = image.Plugin.BinaryDigest
+	installation.BinaryArchitecture = image.Plugin.BinaryArchitecture
+	installation.InstalledFrom = image.ImageRef.ActualImageRef()
+	installation.LastCheckedDate = timeNow
+	installation.InstallDate = timeNow
 
-	v.Plugins[pluginFullName] = plugin
+	v.Plugins[pluginFullName] = installation
 
-	return v.Save()
+	return error_helpers.CombineErrors(
+		v.Save(),
+		installPluginVersionFile(image, installation),
+	)
+}
+
+func installPluginVersionFile(image *SteampipeImage, installation *versionfile.InstalledVersion) error {
+	indieVersionFile := pluginVersionFile(image.ImageRef)
+	theBytes, err := json.MarshalIndent(installation, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(indieVersionFile, theBytes, 0644)
 }
 
 func installPluginBinary(image *SteampipeImage, tempdir string) error {
@@ -227,4 +238,8 @@ func pluginInstallDir(ref *SteampipeImageRef) string {
 	}
 
 	return fullPath
+}
+
+func pluginVersionFile(ref *SteampipeImageRef) string {
+	return filepath.Join(pluginInstallDir(ref), "version.json")
 }
