@@ -428,7 +428,7 @@ jobs:
 
       - name: SSH into the EC2 instance and run tests
         id: ssh-and-run-test-suite
-        timeout-minutes: 20
+        timeout-minutes: 25
         continue-on-error: true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.ACC_TEST_ARM_LINUX_AWS_ACCESS_KEY_ID }}
