@@ -66,7 +66,7 @@ echo ""
 
 echo "install steampipe and test pre-requisites"
 steampipe service start
-steampipe plugin install chaos chaosdynamic
+steampipe plugin install chaos chaosdynamic --progress=false
 steampipe service stop
 exit_if_failed
 echo ""
