@@ -19,6 +19,9 @@ go version
 exit_if_failed
 echo ""
 
+echo "remove existing .steampipe install dir(if any)"
+rm -rf ~/.steampipe
+
 echo "Checkout to cloned steampipe repo"
 cd steampipe
 pwd
@@ -61,28 +64,17 @@ steampipe -v
 exit_if_failed
 echo ""
 
-echo "run acceptance tests"
-declare -a arr=("migration" "service_and_plugin" "search_path" "chaos_and_query" "dynamic_schema" "dynamic_aggregators" "cache" "mod_install" "mod" "mod_require" "check" "performance" "workspace" introspection "cloud" "snapshot" "dashboard" "dashboard_parsing_validation" "schema_cloning" "exit_codes")
-declare -i failure_count=0
-# run test suite
-for i in "${arr[@]}"
-do
-  echo ""
-  echo ">>>>> running $i.bats"
-  ./tests/acceptance/run-local.sh $i.bats
-  failure_count+=$?
-done
+echo "install steampipe and test pre-requisites"
+steampipe service start
+steampipe plugin install chaos chaosdynamic
+steampipe service stop
+exit_if_failed
 echo ""
 
-# check if all tests passed
-echo $failure_count
-if [[ $failure_count -eq 0 ]]; then
-  echo "test run successful"
-  exit 0
-else
-  echo "test run failed"
-  exit 1
-fi
+echo "run acceptance tests"
+./tests/acceptance/run.sh
+exit_if_failed
+echo ""
 
 echo "Hallelujah!"
 exit 0
