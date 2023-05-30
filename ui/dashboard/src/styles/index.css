@@ -10,8 +10,7 @@
   --color-alert-inverse: theme("colors.white");
   --color-orange: #ff832b;
   --color-orange-inverse: theme("colors.white");
-  --color-yellow: #c9a00c;
-  --color-yellow-inverse: theme("colors.white");
+  --color-severity: #c9a00c;
   --color-ok: #198038;
   --color-ok-animate: rgba(25, 128, 56, 0.8); /* #27ca58 */
   --color-ok-inverse: theme("colors.white");
@@ -66,8 +65,7 @@
   --color-alert-inverse: theme("colors.white");
   --color-orange: #ff832b;
   --color-orange-inverse: theme("colors.white");
-  --color-yellow: #bd960b;
-  --color-yellow-inverse: theme("colors.white");
+  --color-severity: #bd960b;
   --color-ok: #24a148;
   --color-ok-animate: rgba(36, 161, 72, 0.8);
   --color-ok-inverse: theme("colors.white");

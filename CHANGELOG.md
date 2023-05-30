@@ -1,3 +1,7 @@
+## v0.20.3 [TBD]
+_Bug fixes_
+* Don't use custom theme color `yellow` for severity cards, to avoid clashing with Tailwind's yellow palette. ([#3501](https://github.com/turbot/steampipe/issues/3501))
+
 ## v0.20.2 [2023-05-19]
 _Whats new_
 * Re-add support for legacy command-schema. ([#3457](https://github.com/turbot/steampipe/issues/3457))

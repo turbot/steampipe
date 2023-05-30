@@ -15,7 +15,7 @@ module.exports = {
         "alert-light": "var(--color-alert-light)",
         "alert-inverse": "var(--color-alert-inverse)",
         orange: "var(--color-orange)",
-        yellow: "var(--color-yellow)",
+        severity: "var(--color-severity)",
         ok: "var(--color-ok)",
         "ok-inverse": "var(--color-ok-inverse)",
         info: "var(--color-info)",

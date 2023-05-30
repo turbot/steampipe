@@ -238,9 +238,9 @@ const CheckPanelSeverityBadge = ({
     <div
       className={classNames(
         "border rounded-md text-sm divide-x",
-        count > 0 ? "border-yellow" : "border-skip",
+        count > 0 ? "border-severity" : "border-skip",
         count > 0
-          ? "bg-yellow text-white divide-white"
+          ? "bg-severity text-white divide-white"
           : "text-skip divide-skip"
       )}
       title={title}

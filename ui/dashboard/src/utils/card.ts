@@ -10,7 +10,7 @@ const getIconClasses = (type) => {
     case "ok":
       return classNames(coloredClasses, "print:text-ok");
     case "severity":
-      return classNames(coloredClasses, "print:text-yellow");
+      return classNames(coloredClasses, "print:text-severity");
     default:
       return "text-black-scale-4 text-3xl";
   }
@@ -63,7 +63,7 @@ const getWrapperClasses = (type) => {
     case "ok":
       return "bg-ok border-ok print:border-2 print:bg-white";
     case "severity":
-      return "bg-yellow border-yellow print:border-2 print:bg-white";
+      return "bg-severity border-severity print:border-2 print:bg-white";
     default:
       return "bg-dashboard-panel shadow-sm border-gray-400 print:border-2 print:shadow-none print:bg-white";
   }
