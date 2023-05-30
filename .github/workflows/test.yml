@@ -92,6 +92,7 @@ jobs:
         test_block:
           - "migration"
           - "service_and_plugin"
+          - "blank_aggregators"
           - "service"
           - "search_path"
           - "chaos_and_query"
