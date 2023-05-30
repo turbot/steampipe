@@ -42,7 +42,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 		return updates, res
 	}
 	// validate the updates
-	// this will validate all plugins and connection names  and remove any updates whichi use invalid connections
+	// this will validate all plugins and connection names  and remove any updates which use invalid connections
 	updates.validate()
 	return updates, res
 }
