@@ -84,9 +84,13 @@ func (c *DbClient) Execute(ctx context.Context, query string, args ...any) (*que
 	if sessionResult.Error != nil {
 		return nil, sessionResult.Error
 	}
+	// disable statushooks when timing is enabled, because setShouldShowTiming internally calls the readRows funcs which
+	// calls the statushooks.Done, which hides the `Executing query…` spinner, when timing is enabled.
+	timingCtx := statushooks.DisableStatusHooks(ctx)
+
 	// re-read ArgTiming from viper (in case the .timing command has been run)
 	// (this will refetch ScanMetadataMaxId if timing has just been enabled)
-	c.setShouldShowTiming(ctx, sessionResult.Session)
+	c.setShouldShowTiming(timingCtx, sessionResult.Session)
 
 	// define callback to close session when the async execution is complete
 	closeSessionCallback := func() { sessionResult.Session.Close(error_helpers.IsContextCanceled(ctx)) }
