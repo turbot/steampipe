@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -358,8 +360,16 @@ func (state *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Con
 	var errChan = make(chan *connectionError)
 
 	// use as many goroutines as we have connections
-	var maxUpdateThreads = int64(state.pool.Config().MaxConns)
-	sem := semaphore.NewWeighted(maxUpdateThreads)
+	var maxParallel = int64(1)
+	if envMaxStr, ok := os.LookupEnv("STEAMPIPE_UPDATE_SCHEMA_MAX_PARALLEL"); ok {
+		envMax, err := strconv.Atoi(envMaxStr)
+		if err == nil {
+			maxParallel = int64(envMax)
+		}
+	}
+	log.Printf("[INFO] executeUpdateSetsInParallel - maxParallel= %d", maxParallel)
+
+	sem := semaphore.NewWeighted(maxParallel)
 
 	go func() {
 		for {
@@ -378,6 +388,12 @@ func (state *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Con
 		}
 	}()
 
+	var cloneSchemaEnabled = true
+	if envClone, ok := os.LookupEnv("STEAMPIPE_CLONE_SCHEMA"); ok {
+		cloneSchemaEnabled = strings.ToLower(envClone) == "true"
+	}
+	log.Printf("[INFO] executeUpdateForConnections - cloneSchema=%v", cloneSchemaEnabled)
+
 	// each update may be multiple connections, to execute in order
 	for _, states := range updates {
 		wg.Add(1)
@@ -393,7 +409,7 @@ func (state *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Con
 				sem.Release(1)
 			}()
 
-			state.executeUpdateForConnections(ctx, errChan, connectionStates...)
+			state.executeUpdateForConnections(ctx, errChan, cloneSchemaEnabled, connectionStates...)
 		}(states)
 
 	}
@@ -405,7 +421,8 @@ func (state *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Con
 }
 
 // syncronously execute the update queries for one or more connections
-func (state *refreshConnectionState) executeUpdateForConnections(ctx context.Context, errChan chan *connectionError, connectionStates ...*steampipeconfig.ConnectionState) {
+func (state *refreshConnectionState) executeUpdateForConnections(ctx context.Context, errChan chan *connectionError, cloneSchemaEnabled bool, connectionStates ...*steampipeconfig.ConnectionState) {
+
 	for _, connectionState := range connectionStates {
 		connectionName := connectionState.ConnectionName
 		remoteSchema := utils.PluginFQNToSchemaName(connectionState.Plugin)
@@ -414,7 +431,7 @@ func (state *refreshConnectionState) executeUpdateForConnections(ctx context.Con
 		state.exemplarSchemaMapMut.Lock()
 		// is this plugin in the exemplarSchemaMap
 		exemplarSchemaName, haveExemplarSchema := state.exemplarSchemaMap[connectionState.Plugin]
-		if haveExemplarSchema {
+		if haveExemplarSchema && cloneSchemaEnabled {
 			// we can clone!
 			sql = getCloneSchemaQuery(sql, exemplarSchemaName, connectionState)
 		} else {
