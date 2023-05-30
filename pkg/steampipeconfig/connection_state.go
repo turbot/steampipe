@@ -1,6 +1,8 @@
 package steampipeconfig
 
 import (
+	"sort"
+	"strings"
 	"time"
 
 	typehelpers "github.com/turbot/go-kit/types"
@@ -35,16 +37,19 @@ type ConnectionState struct {
 	PluginModTime time.Time `json:"plugin_mod_time" db:"plugin_mod_time"`
 	// the update time of the connection
 	ConnectionModTime time.Time `json:"connection_mod_time" db:"connection_mod_time"`
+	// the names of child connections (for aggregators)
+	ConnectionNames []string `json:"-" db:"-"`
 }
 
 func NewConnectionState(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionState {
 	return &ConnectionState{
-		Plugin:         remoteSchema,
-		ConnectionName: connection.Name,
-		PluginModTime:  creationTime,
-		State:          constants.ConnectionStateReady,
-		Type:           &connection.Type,
-		ImportSchema:   connection.ImportSchema,
+		Plugin:          remoteSchema,
+		ConnectionName:  connection.Name,
+		PluginModTime:   creationTime,
+		State:           constants.ConnectionStateReady,
+		Type:            &connection.Type,
+		ImportSchema:    connection.ImportSchema,
+		ConnectionNames: connection.ConnectionNames,
 	}
 }
 
@@ -60,6 +65,14 @@ func (d *ConnectionState) Equals(other *ConnectionState) bool {
 		return false
 	}
 	if d.Error() != other.Error() {
+		return false
+	}
+
+	names := d.ConnectionNames
+	sort.Strings(names)
+	otherNames := other.ConnectionNames
+	sort.Strings(otherNames)
+	if strings.Join(names, ",") != strings.Join(otherNames, "'") {
 		return false
 	}
 
