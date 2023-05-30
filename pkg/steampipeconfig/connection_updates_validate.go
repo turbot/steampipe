@@ -64,7 +64,7 @@ func (u *ConnectionUpdates) validateUpdates() {
 func (u *ConnectionUpdates) validateAggregator(connectionState *ConnectionState) bool {
 	connectionName := connectionState.ConnectionName
 	if connectionState.GetType() == modconfig.ConnectionTypeAggregator {
-		// get the conneciton object
+		// get the connection object
 		connection := GlobalConfig.Connections[connectionName]
 		// get the first child connection
 		for _, childConnection := range connection.Connections {
@@ -74,7 +74,8 @@ func (u *ConnectionUpdates) validateAggregator(connectionState *ConnectionState)
 			}
 		}
 	}
-	return false
+	// treat empty aggregator as validated - we will create a schema for it but not allow querying
+	return true
 }
 
 func validateConnectionName(connectionName string, p *ConnectionPlugin) *ValidationFailure {
