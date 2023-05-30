@@ -91,6 +91,7 @@ jobs:
         platform: [macos-latest, ubuntu-latest]
         test_block:
           - "migration"
+          - "brew"
           - "service_and_plugin"
           - "service"
           - "search_path"

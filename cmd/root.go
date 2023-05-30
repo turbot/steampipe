@@ -71,6 +71,11 @@ var rootCmd = &cobra.Command{
 		// depending on the value of the log_level value in global general options
 		createLogger()
 
+		// steampipe completion should not create INSTALL DIR or seup/init global config
+		if cmd.Name() == "completion" {
+			return
+		}
+
 		// set up the global viper config with default values from
 		// config files and ENV variables
 		ew := initGlobalConfig()
