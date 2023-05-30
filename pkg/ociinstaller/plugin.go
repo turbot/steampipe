@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -89,19 +88,14 @@ func updatePluginVersionFiles(image *SteampipeImage) error {
 
 	v.Plugins[pluginFullName] = installation
 
-	return error_helpers.CombineErrors(
-		v.Save(),
-		installPluginVersionFile(image, installation),
-	)
-}
-
-func installPluginVersionFile(image *SteampipeImage, installation *versionfile.InstalledVersion) error {
-	indieVersionFile := pluginVersionFile(image.ImageRef)
-	theBytes, err := json.MarshalIndent(installation, "", "  ")
-	if err != nil {
+	// ensure that the version file is written
+	// having this file is important, since this can be used
+	// to compose the holistic version file if need be
+	if err := v.EnsureVersionFile(installation); err != nil {
 		return err
 	}
-	return os.WriteFile(indieVersionFile, theBytes, 0644)
+
+	return v.Save()
 }
 
 func installPluginBinary(image *SteampipeImage, tempdir string) error {

@@ -96,6 +96,11 @@ var rootCmd = &cobra.Command{
 		// runScheduledTasks skips running tasks if this instance is the plugin manager
 		waitForTasksChannel = runScheduledTasks(cmd.Context(), cmd, args, ew)
 
+		// decompose the plugin version file
+		if !task.IsPluginManagerCmd(cmd) {
+			versionfile.DecomposePluginVersionFile()
+		}
+
 		// set the max memory
 		debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())
 	},

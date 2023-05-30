@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"path/filepath"
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -37,6 +38,28 @@ func (f *PluginVersionFile) MigrateFrom() migrate.Migrateable {
 	return f
 }
 
+func (f *PluginVersionFile) Decompose() error {
+	for _, installation := range f.Plugins {
+		if err := f.EnsureVersionFile(installation); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *PluginVersionFile) EnsureVersionFile(installData *InstalledVersion) error {
+	pluginFolder, err := filepaths.FindPluginFolder(installData.Name)
+	if err != nil {
+		return err
+	}
+	versionFile := filepath.Join(pluginFolder, "version.json")
+	theBytes, err := json.MarshalIndent(installData, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(versionFile, theBytes, 0644)
+}
+
 func NewPluginVersionFile() *PluginVersionFile {
 	return &PluginVersionFile{
 		Plugins:       map[string]*InstalledVersion{},
@@ -51,6 +74,14 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 		return readPluginVersionFile(versionFilePath)
 	}
 	return NewPluginVersionFile(), nil
+}
+
+func DecomposePluginVersionFile() error {
+	versions, err := LoadPluginVersionFile()
+	if err != nil {
+		return err
+	}
+	return versions.Decompose()
 }
 
 // Save writes the config file to disk
