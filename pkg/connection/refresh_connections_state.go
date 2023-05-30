@@ -359,8 +359,9 @@ func (state *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Con
 	var wg sync.WaitGroup
 	var errChan = make(chan *connectionError)
 
-	// use as many goroutines as we have connections
+	// default to running a single update at a time
 	var maxParallel = int64(1)
+	// allow override of this behaviour vis env var
 	if envMaxStr, ok := os.LookupEnv("STEAMPIPE_UPDATE_SCHEMA_MAX_PARALLEL"); ok {
 		envMax, err := strconv.Atoi(envMaxStr)
 		if err == nil {
@@ -388,6 +389,7 @@ func (state *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Con
 		}
 	}()
 
+	// allow disabling of schema clone via env var
 	var cloneSchemaEnabled = true
 	if envClone, ok := os.LookupEnv("STEAMPIPE_CLONE_SCHEMA"); ok {
 		cloneSchemaEnabled = strings.ToLower(envClone) == "true"
