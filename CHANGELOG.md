@@ -1,5 +1,12 @@
-## v0.20.3 [TBD]
+## v0.20.3 [2023-05-30]
+_Whats new_
+* Update refresh connections to execute updates serially by default.  ([#3498](https://github.com/turbot/steampipe/issues/3498))
+
 _Bug fixes_
+* Fix issue where result counter spinner was not showing up in interactive when timing was enabled. ([#3481](https://github.com/turbot/steampipe/issues/3481))
+* Fixes issue where dependency mods are installed even if there is an installed mod which satisfies requirement. ([#3475](https://github.com/turbot/steampipe/issues/3475))
+* Ensure a schema is created for blank aggregators when connections are added. ([#3488](https://github.com/turbot/steampipe/issues/3488))
+* Fix issue where `steampipe completion` command was creating install directories. ([#3485](https://github.com/turbot/steampipe/issues/3485))
 * Don't use custom theme color `yellow` for severity cards, to avoid clashing with Tailwind's yellow palette. ([#3501](https://github.com/turbot/steampipe/issues/3501))
 
 ## v0.20.2 [2023-05-19]
