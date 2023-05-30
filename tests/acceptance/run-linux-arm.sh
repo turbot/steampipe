@@ -37,6 +37,11 @@ git restore .
 exit_if_failed
 echo ""
 
+echo "delete all existing local branches"
+git branch | grep -v "main" | xargs git branch -D
+exit_if_failed
+echo ""
+
 echo "git fetch"
 git fetch
 exit_if_failed
