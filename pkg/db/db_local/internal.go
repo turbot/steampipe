@@ -228,8 +228,8 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 	// if any connections are not in a ready or error state, set them to pending_incomplete
 	incompleteErrorSql := connection_state.GetIncompleteConnectionStatePendingIncompleteSql()
 	queries := []db_common.QueryWithArgs{
-		pendingSql,
 		incompleteErrorSql,
+		pendingSql,
 	}
 
 	// for any connection in the connection config but not in the connection state table,
