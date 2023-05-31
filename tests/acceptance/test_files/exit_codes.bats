@@ -29,7 +29,3 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $status
   [ $status -eq 0 ]
 }
-
-@test "failing test" {
-  assert_equal 1 0
-}
