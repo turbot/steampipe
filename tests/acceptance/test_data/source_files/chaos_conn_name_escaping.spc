@@ -1,3 +1,3 @@
-connection "default" {
+connection "escape" {
   plugin = "chaos"
 }

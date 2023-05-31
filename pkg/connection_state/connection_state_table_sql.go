@@ -71,6 +71,20 @@ AND state <> 'disabled'
 	return db_common.QueryWithArgs{Query: query}
 }
 
+// GetReadConnectionStatePendingSql returns the sql to set all ready connections to 'pending'
+func GetReadConnectionStatePendingSql() db_common.QueryWithArgs {
+	query := fmt.Sprintf(`UPDATE %s.%s
+SET state = '%s',
+	connection_mod_time = now(),
+    error = null
+WHERE
+	state = 'ready' 
+	`,
+		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStatePending)
+
+	return db_common.QueryWithArgs{Query: query}
+}
+
 // GetUpdateConnectionStateSql returns the sql to update the connection state in the able with the current properties
 func GetUpdateConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
 	// upsert

@@ -84,7 +84,6 @@ func (state *refreshConnectionState) close() {
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
 func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
-
 	// if there was an error (other than a connection error, which will NOT have been assigned to res),
 	// set state of all incomplete connections to error
 	defer func() {
@@ -103,7 +102,7 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 		return
 	}
 
-	log.Printf("[INFO] created connection updates")
+	log.Printf("[INFO] created connectionUpdates")
 
 	// delete the connection state file - it will be rewritten when we are complete
 	log.Printf("[INFO] deleting connections state file")

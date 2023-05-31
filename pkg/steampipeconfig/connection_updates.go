@@ -96,10 +96,10 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 		InvalidConnections:   make(map[string]*ValidationFailure),
 	}
 
-	log.Printf("[TRACE] loaded connection state")
+	log.Printf("[INFO] loaded connection state")
 	updates.CurrentConnectionState = currentConnectionStateMap
 
-	log.Printf("[TRACE] Loading dynamic schema hashes")
+	log.Printf("[INFO] Loading dynamic schema hashes")
 
 	// for any connections with dynamic schema, we need to reload their schema
 	// instantiate connection plugins for all connections with dynamic schema - this will retrieve their current schema
@@ -108,8 +108,13 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 		log.Printf("[WARN] getSchemaHashesForDynamicSchemas failed: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
 	}
+	log.Printf("[INFO] connectionsPluginsWithDynamicSchema: %s", strings.Join(maps.Keys(currentConnectionStateMap), "'"))
 
-	log.Printf("[TRACE] Identify connections to update")
+	log.Printf("[INFO] dynamicSchemaHashMap")
+	for k, v := range dynamicSchemaHashMap {
+		log.Printf("[INFO] %s: %s", k, v)
+	}
+	log.Printf("[INFO] Identify connections to update")
 
 	modTime := time.Now()
 	// connections to create/update
