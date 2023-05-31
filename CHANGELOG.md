@@ -1,3 +1,7 @@
+## v0.20.4 [2023-05-31]
+_Bug fixes_
+* Ensure `Ready` connections are set to `Pending` state on startup. This makes sure connection changes are reflected in the connection schema if a query is executed soon after startup. ([#3483](https://github.com/turbot/steampipe/issues/3483))
+
 ## v0.20.3 [2023-05-30]
 _Whats new_
 * Update refresh connections to execute updates serially by default.  ([#3498](https://github.com/turbot/steampipe/issues/3498))
