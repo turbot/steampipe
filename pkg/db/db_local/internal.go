@@ -230,6 +230,7 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 	queries := []db_common.QueryWithArgs{
 		pendingSql,
 		incompleteErrorSql,
+		pendingSql,
 	}
 
 	// for any connection in the connection config but not in the connection state table,
