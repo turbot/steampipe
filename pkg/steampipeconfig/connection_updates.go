@@ -108,7 +108,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 		log.Printf("[WARN] getSchemaHashesForDynamicSchemas failed: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
 	}
-	log.Printf("[INFO] connectionsPluginsWithDynamicSchema: %s", strings.Join(maps.Keys(currentConnectionStateMap), "'"))
+	log.Printf("[INFO] connectionsPluginsWithDynamicSchema: %s", strings.Join(maps.Keys(connectionsPluginsWithDynamicSchema), "'"))
 
 	log.Printf("[INFO] dynamicSchemaHashMap")
 	for k, v := range dynamicSchemaHashMap {
@@ -355,6 +355,17 @@ func (u *ConnectionUpdates) IdentifyMissingComments() {
 			}
 		}
 	}
+}
+
+// DynamicUpdates returns the names of all dynamic plugins which are being updated
+func (u *ConnectionUpdates) DynamicUpdates() []string {
+	var dynamicUpdates []string
+	for _, c := range u.Update {
+		if c.SchemaMode == plugin.SchemaModeDynamic {
+			dynamicUpdates = append(dynamicUpdates, c.ConnectionName)
+		}
+	}
+	return dynamicUpdates
 }
 
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionStateMap, connectionState ConnectionStateMap) (map[string]string, map[string]*ConnectionPlugin, error) {

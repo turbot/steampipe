@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -120,6 +120,10 @@ func (state *refreshConnectionState) refreshConnections(ctx context.Context) {
 	// create object to update the connection state table and notify of state changes
 	state.tableUpdater = newConnectionStateTableUpdater(state.connectionUpdates, state.pool)
 
+	// NOTE: delete any DYNAMIC plugin connections which will be updated
+	// to avoid them being accessed before they are updated
+	state.executeDeleteQueries(ctx, state.connectionUpdates.DynamicUpdates())
+
 	// update connectionState table to reflect the updates (i.e. set connections to updating/deleting/ready as appropriate)
 	// also this will update the schema hashes of plugins
 	if err := state.tableUpdater.start(ctx); err != nil {
@@ -192,7 +196,7 @@ func (state *refreshConnectionState) executeConnectionQueries(ctx context.Contex
 	defer utils.LogTime("db.executeConnectionQueries start")
 
 	// execute deletions
-	if err := state.executeDeleteQueries(ctx); err != nil {
+	if err := state.executeDeleteQueries(ctx, maps.Keys(state.connectionUpdates.Delete)); err != nil {
 		// just log
 		log.Printf("[WARN] failed to delete all unused schemas: %s", err.Error())
 	}
@@ -654,7 +658,7 @@ func (state *refreshConnectionState) getInitialAndRemainingUpdates() (initialUpd
 	// convert this into a lookup of initial updates to execute
 	for _, connectionName := range searchPathConnections {
 		if connectionState, updateRequired := updates[connectionName]; updateRequired {
-			if connectionState.SchemaMode == sdkplugin.SchemaModeDynamic {
+			if connectionState.SchemaMode == plugin.SchemaModeDynamic {
 				dynamicUpdates[connectionState.Plugin] = append(dynamicUpdates[connectionState.Plugin], connectionState)
 			} else {
 				initialUpdates[connectionName] = connectionState
@@ -671,9 +675,7 @@ func (state *refreshConnectionState) getInitialAndRemainingUpdates() (initialUpd
 	return initialUpdates, remainingUpdates, dynamicUpdates
 }
 
-func (state *refreshConnectionState) executeDeleteQueries(ctx context.Context) error {
-	deletions := maps.Keys(state.connectionUpdates.Delete)
-
+func (state *refreshConnectionState) executeDeleteQueries(ctx context.Context, deletions []string) error {
 	t := time.Now()
 	log.Printf("[INFO] execute %d delete %s", len(deletions), utils.Pluralize("query", len(deletions)))
 	defer func() {
