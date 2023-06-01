@@ -1,3 +1,8 @@
+## v0.20.6 [tbd]
+_Bug fixes_
+* Avoid orphan plugin processes when running short batch queries. ([#3514](https://github.com/turbot/steampipe/issues/3514))
+* Delete dynamic schemas before updating them to avoid a timing issue showing incorrect schema. ([#3510](https://github.com/turbot/steampipe/issues/3510))
+
 ## v0.20.5 [2023-05-31]
 _Bug fixes_
 * Set incomplete connections to `Incomplete` before setting ready connections to `Pending` to avoid ready connections ending up `Incomplete`. ([#3507](https://github.com/turbot/steampipe/issues/3507))
