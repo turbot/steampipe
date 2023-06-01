@@ -121,7 +121,11 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardListen))
 	error_helpers.FailOnError(serverListen.IsValid())
 
-	if err := utils.IsPortBindable(int(serverPort)); err != nil {
+	serverHost := ""
+	if serverListen == dashboardserver.ListenTypeLocal {
+		serverHost = "127.0.0.1"
+	}
+	if err := utils.IsPortBindable(serverHost, int(serverPort)); err != nil {
 		exitCode = constants.ExitCodeBindPortUnavailable
 		error_helpers.FailOnError(err)
 	}
@@ -430,7 +434,7 @@ func saveDashboardState(serverPort dashboardserver.ListenPort, serverListen dash
 		Pid:        os.Getpid(),
 		Port:       int(serverPort),
 		ListenType: string(serverListen),
-		Listen:     constants.DatabaseListenAddresses,
+		Listen:     constants.DashboardListenAddresses,
 	}
 
 	if serverListen == dashboardserver.ListenTypeNetwork {

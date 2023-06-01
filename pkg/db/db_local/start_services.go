@@ -61,18 +61,27 @@ const (
 	ListenTypeLocal = "local"
 )
 
-// IsValid is a validator for StartListenType known values
-func (slt StartListenType) IsValid() error {
+// ToListenAddresses is transforms StartListenType known aliases into their actual value
+func (slt StartListenType) ToListenAddresses() []string {
 	switch slt {
-	case ListenTypeNetwork, ListenTypeLocal:
-		return nil
+	case ListenTypeNetwork:
+		return []string{"*"}
+	case ListenTypeLocal:
+		return []string{"localhost"}
 	}
-	return fmt.Errorf("Invalid listen type. Can be one of '%v' or '%v'", ListenTypeNetwork, ListenTypeLocal)
+	return strings.Split(string(slt), ",")
 }
 
-func StartServices(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) *StartResult {
+func StartServices(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) *StartResult {
 	utils.LogTime("db_local.StartServices start")
 	defer utils.LogTime("db_local.StartServices end")
+
+	if !utils.ListenAddressesContainsOneOfAddresses(listenAddresses, []string{"127.0.0.1", "*", "localhost"}) {
+		log.Println("[TRACE] StartServices - prepending 127.0.0.1 to listenAddresses")
+
+		listenAddresses = append([]string{"127.0.0.1"}, listenAddresses...)
+	}
+	log.Println(fmt.Sprintf("[TRACE] StartServices - listenAddresses=%s, port=%d", listenAddresses, port))
 
 	res := &StartResult{}
 
@@ -90,7 +99,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 	}
 
 	if res.DbState == nil {
-		res = startDB(ctx, port, listen, invoker)
+		res = startDB(ctx, listenAddresses, port, invoker)
 		if res.Error != nil {
 			return res
 		}
@@ -198,8 +207,8 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 }
 
 // StartDB starts the database if not already running
-func startDB(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) (res *StartResult) {
-	log.Printf("[TRACE] StartDB invoker %s", invoker)
+func startDB(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) (res *StartResult) {
+	log.Printf("[TRACE] StartDB invoker %s (listenAddresses=%s, port=%d)", invoker, listenAddresses, port)
 	utils.LogTime("db.StartDB start")
 	defer utils.LogTime("db.StartDB end")
 	var postgresCmd *exec.Cmd
@@ -237,8 +246,8 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		error_helpers.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
 	}
 
-	if err := utils.IsPortBindable(port); err != nil {
-		return res.SetError(fmt.Errorf("cannot listen on port %d", constants.Bold(port)))
+	if err := utils.IsPortBindable(utils.GetFirstListenAddress(listenAddresses), port); err != nil {
+		return res.SetError(fmt.Errorf("cannot listen on listenAddresses %s and port %d", constants.Bold(listenAddresses), constants.Bold(port)))
 	}
 
 	if err := migrateLegacyPasswordFile(); err != nil {
@@ -250,14 +259,14 @@ func startDB(ctx context.Context, port int, listen StartListenType, invoker cons
 		return res.SetError(err)
 	}
 
-	postgresCmd, err = startPostgresProcess(ctx, port, listen, invoker)
+	postgresCmd, err = startPostgresProcess(ctx, listenAddresses, port, invoker)
 	if err != nil {
 		return res.SetError(err)
 	}
 
 	// create a RunningInfo with empty database name
 	// we need this to connect to the service using 'root', required retrieve the name of the installed database
-	res.DbState = newRunningDBInstanceInfo(postgresCmd, port, "", password, listen, invoker)
+	res.DbState = newRunningDBInstanceInfo(postgresCmd, listenAddresses, port, "", password, invoker)
 	err = res.DbState.Save()
 	if err != nil {
 		return res.SetError(err)
@@ -351,15 +360,9 @@ func resolvePassword() (string, error) {
 	return password, nil
 }
 
-func startPostgresProcess(ctx context.Context, port int, listen StartListenType, invoker constants.Invoker) (*exec.Cmd, error) {
+func startPostgresProcess(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) (*exec.Cmd, error) {
 	if error_helpers.IsContextCanceled(ctx) {
 		return nil, ctx.Err()
-	}
-
-	listenAddresses := "localhost"
-
-	if listen == ListenTypeNetwork {
-		listenAddresses = "*"
 	}
 
 	if err := writePGConf(ctx); err != nil {
@@ -367,6 +370,7 @@ func startPostgresProcess(ctx context.Context, port int, listen StartListenType,
 	}
 
 	postgresCmd := createCmd(ctx, port, listenAddresses)
+	log.Printf("[TRACE] startPostgresProcess - postgres command: %s", postgresCmd)
 
 	setupLogCollection(postgresCmd)
 	err := postgresCmd.Start()
@@ -423,15 +427,12 @@ func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) (
 	return runningInfo, runningInfo.Save()
 }
 
-func createCmd(ctx context.Context, port int, listenAddresses string) *exec.Cmd {
+func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cmd {
 	postgresCmd := exec.Command(
 		getPostgresBinaryExecutablePath(),
-		// by this time, we are sure that the port if free to listen to
+		// by this time, we are sure that the port is free to listen to
 		"-p", fmt.Sprint(port),
-		"-c", fmt.Sprintf("listen_addresses=\"%s\"", listenAddresses),
-		// NOTE: If quoted, the application name includes the quotes. Worried about
-		// having spaces in the APPNAME, but leaving it unquoted since currently
-		// the APPNAME is hardcoded to be steampipe.
+		"-c", fmt.Sprintf("listen_addresses=%s", strings.Join(listenAddresses, ",")),
 		"-c", fmt.Sprintf("application_name=%s", constants.AppName),
 		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
 

@@ -3,10 +3,11 @@ package db_local
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"sync"
 	"testing"
+
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 // test used for debug purposes to replicate `tuple concurrently updated` DB error
@@ -15,7 +16,7 @@ func TestConcurrentPerms(t *testing.T) {
 	filepaths.SteampipeDir = "/users/kai/.steampipe"
 
 	ctx := context.Background()
-	res := StartServices(ctx, constants.DatabaseDefaultPort, "local", "query")
+	res := StartServices(ctx, []string{"localhost"}, constants.DatabaseDefaultPort, "query")
 	if res.Error != nil {
 		t.Fatal(res.Error)
 	}

@@ -111,7 +111,7 @@ is latest. The name is a required argument.
 
 Examples:
 
-  # Update all plugins to their latest available version 
+  # Update all plugins to their latest available version
   steampipe plugin update --all
 
   # Update a common plugin (turbot/aws)

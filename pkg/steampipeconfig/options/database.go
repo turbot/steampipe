@@ -23,11 +23,11 @@ type Database struct {
 func (d *Database) ConfigMap() map[string]interface{} {
 	// only add keys which are non null
 	res := map[string]interface{}{}
+	if d.Listen != nil {
+		res[constants.ArgDatabaseListenAddresses] = d.Listen
+	}
 	if d.Port != nil {
 		res[constants.ArgDatabasePort] = d.Port
-	}
-	if d.Listen != nil {
-		res[constants.ArgListenAddress] = d.Listen
 	}
 	if d.SearchPath != nil {
 		// convert from string to array
@@ -60,11 +60,11 @@ func (d *Database) ConfigMap() map[string]interface{} {
 func (d *Database) Merge(otherOptions Options) {
 	switch o := otherOptions.(type) {
 	case *Database:
-		if o.Port != nil {
-			d.Port = o.Port
-		}
 		if o.Listen != nil {
 			d.Listen = o.Listen
+		}
+		if o.Port != nil {
+			d.Port = o.Port
 		}
 		if o.SearchPath != nil {
 			d.SearchPath = o.SearchPath
@@ -92,15 +92,15 @@ func (d *Database) String() string {
 		return ""
 	}
 	var str []string
-	if d.Port == nil {
-		str = append(str, "  Port: nil")
-	} else {
-		str = append(str, fmt.Sprintf("  Port: %d", *d.Port))
-	}
 	if d.Listen == nil {
 		str = append(str, "  Listen: nil")
 	} else {
 		str = append(str, fmt.Sprintf("  Listen: %s", *d.Listen))
+	}
+	if d.Port == nil {
+		str = append(str, "  Port: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  Port: %d", *d.Port))
 	}
 	if d.SearchPath == nil {
 		str = append(str, "  SearchPath: nil")

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -59,10 +60,8 @@ connection from any Postgres compatible database client.`,
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, false, "Help for service start", cmdconfig.FlagOptions.WithShortHand("h")).
-		// for now default port to -1 so we fall back to the default of the deprecated arg
 		AddIntFlag(constants.ArgDatabasePort, constants.DatabaseDefaultPort, "Database service port").
-		// for now default listen address to empty so we fall back to the default of the deprecated arg
-		AddStringFlag(constants.ArgListenAddress, string(db_local.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (postgres)").
+		AddStringFlag(constants.ArgDatabaseListenAddresses, string(db_local.ListenTypeNetwork), "Accept connections from: `local` (an alias for `localhost` only), `network` (an alias for `*`), or a comma separated list of hosts and/or IP addresses").
 		AddStringFlag(constants.ArgServicePassword, "", "Set the database password for this session").
 		// default is false and hides the database user password from service start prompt
 		AddBoolFlag(constants.ArgServiceShowPassword, false, "View database password for connecting from another machine").
@@ -162,16 +161,12 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 	ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt, os.Kill)
 	defer cancel()
 
+	listenAddresses := db_local.StartListenType(viper.GetString(constants.ArgDatabaseListenAddresses)).ToListenAddresses()
+
 	port := viper.GetInt(constants.ArgDatabasePort)
 	if port < 1 || port > 65535 {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		panic("Invalid port - must be within range (1:65535)")
-	}
-
-	serviceListen := db_local.StartListenType(viper.GetString(constants.ArgListenAddress))
-	if serviceListen.IsValid() != nil {
-		exitCode = constants.ExitCodeInsufficientOrWrongInputs
-		error_helpers.FailOnError(serviceListen.IsValid())
 	}
 
 	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
@@ -180,7 +175,7 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 		error_helpers.FailOnError(invoker.IsValid())
 	}
 
-	startResult, dashboardState, dbServiceStarted := startService(ctx, port, serviceListen, invoker)
+	startResult, dashboardState, dbServiceStarted := startService(ctx, listenAddresses, port, invoker)
 	alreadyRunning := !dbServiceStarted
 
 	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, dashboardState, alreadyRunning)
@@ -190,9 +185,10 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 	}
 }
 
-func startService(ctx context.Context, port int, serviceListen db_local.StartListenType, invoker constants.Invoker) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState, dbServiceStarted bool) {
+func startService(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState, dbServiceStarted bool) {
 	statushooks.Show(ctx)
 	defer statushooks.Done(ctx)
+	log.Println(fmt.Sprintf("[TRACE] startService - listenAddresses=%q", listenAddresses))
 
 	err := db_local.EnsureDBInstalled(ctx)
 	if err != nil {
@@ -201,7 +197,7 @@ func startService(ctx context.Context, port int, serviceListen db_local.StartLis
 	}
 
 	// start db, refreshing connections
-	startResult := db_local.StartServices(ctx, port, serviceListen, invoker)
+	startResult := db_local.StartServices(ctx, listenAddresses, port, invoker)
 	if startResult.Error != nil {
 		exitCode = constants.ExitCodeServiceSetupFailure
 		error_helpers.FailOnError(startResult.Error)
@@ -221,9 +217,9 @@ func startService(ctx context.Context, port int, serviceListen db_local.StartLis
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
 			error_helpers.FailOnError(fmt.Errorf("service is already running on port %d - cannot change port while it's running", startResult.DbState.Port))
 		}
-		if serviceListen != startResult.DbState.ListenType {
+		if !utils.StringSlicesEqual(listenAddresses, startResult.DbState.ListenAddresses) {
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
-			error_helpers.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen type while it's running", startResult.DbState.ListenType))
+			error_helpers.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen addresses while it's running", startResult.DbState.ListenAddresses))
 		}
 
 		// convert to being invoked by service
@@ -434,7 +430,7 @@ to force a restart.
 	viper.Set(constants.ArgServicePassword, currentDbState.Password)
 
 	// start db
-	dbStartResult := db_local.StartServices(ctx, currentDbState.Port, currentDbState.ListenType, currentDbState.Invoker)
+	dbStartResult := db_local.StartServices(ctx, currentDbState.ListenAddresses, currentDbState.Port, currentDbState.Invoker)
 	error_helpers.FailOnError(dbStartResult.Error)
 	if dbStartResult.Status == db_local.ServiceFailedToStart {
 		exitCode = constants.ExitCodeServiceStartupFailure
@@ -671,13 +667,13 @@ Managing the Steampipe service:
 
   # Get status of the service
   steampipe service status
-	 
+
   # View database password for connecting from another machine
   steampipe service status --show-password
-  
+
   # Restart the service
   steampipe service restart
-  
+
   # Stop the service
   steampipe service stop
 `
@@ -689,7 +685,7 @@ Managing the Steampipe service:
 			"postgres://%v:%v@%v:%v/%v",
 			dbState.User,
 			dbState.Password,
-			dbState.Listen[0],
+			utils.GetFirstListenAddress(dbState.ListenAddresses),
 			dbState.Port,
 			dbState.Database,
 		)
@@ -698,7 +694,7 @@ Managing the Steampipe service:
 		connectionStr = fmt.Sprintf(
 			"postgres://%v@%v:%v/%v",
 			dbState.User,
-			dbState.Listen[0],
+			utils.GetFirstListenAddress(dbState.ListenAddresses),
 			dbState.Port,
 			dbState.Database,
 		)
@@ -717,7 +713,7 @@ Database:
 `
 	postgresMsg := fmt.Sprintf(
 		postgresFmt,
-		strings.Join(dbState.Listen, ", "),
+		dbState.ListenAddresses,
 		dbState.Port,
 		dbState.Database,
 		dbState.User,
@@ -728,7 +724,7 @@ Database:
 	dashboardMsg := ""
 
 	if dashboardState != nil {
-		browserUrl := fmt.Sprintf("http://localhost:%d/", dashboardState.Port)
+		browserUrl := fmt.Sprintf("http://%s:%d/", dashboardState.Listen[0], dashboardState.Port)
 		dashboardMsg = fmt.Sprintf(`
 Dashboard:
 

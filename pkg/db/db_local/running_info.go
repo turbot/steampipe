@@ -17,33 +17,26 @@ const RunningDBStructVersion = 20220411
 
 // RunningDBInstanceInfo contains data about the running process and it's credentials
 type RunningDBInstanceInfo struct {
-	Pid           int               `json:"pid"`
-	Port          int               `json:"port"`
-	Listen        []string          `json:"listen"`
-	ListenType    StartListenType   `json:"listen_type"`
-	Invoker       constants.Invoker `json:"invoker"`
-	Password      string            `json:"password"`
-	User          string            `json:"user"`
-	Database      string            `json:"database"`
-	StructVersion int64             `json:"struct_version"`
+	Pid             int               `json:"pid"`
+	ListenAddresses []string          `json:"listen"`
+	Port            int               `json:"port"`
+	Invoker         constants.Invoker `json:"invoker"`
+	Password        string            `json:"password"`
+	User            string            `json:"user"`
+	Database        string            `json:"database"`
+	StructVersion   int64             `json:"struct_version"`
 }
 
-func newRunningDBInstanceInfo(cmd *exec.Cmd, port int, databaseName string, password string, listen StartListenType, invoker constants.Invoker) *RunningDBInstanceInfo {
+func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int, databaseName string, password string, invoker constants.Invoker) *RunningDBInstanceInfo {
 	dbState := &RunningDBInstanceInfo{
-		Pid:           cmd.Process.Pid,
-		Port:          port,
-		User:          constants.DatabaseUser,
-		Password:      password,
-		Database:      databaseName,
-		ListenType:    listen,
-		Invoker:       invoker,
-		Listen:        constants.DatabaseListenAddresses,
-		StructVersion: RunningDBStructVersion,
-	}
-
-	if listen == ListenTypeNetwork {
-		addrs, _ := utils.LocalAddresses()
-		dbState.Listen = append(dbState.Listen, addrs...)
+		Pid:             cmd.Process.Pid,
+		ListenAddresses: listenAddresses,
+		Port:            port,
+		User:            constants.DatabaseUser,
+		Password:        password,
+		Database:        databaseName,
+		Invoker:         invoker,
+		StructVersion:   RunningDBStructVersion,
 	}
 
 	return dbState

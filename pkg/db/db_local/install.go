@@ -28,7 +28,7 @@ var ensureMux sync.Mutex
 func noBackupWarning() string {
 	warningMessage := `Steampipe database has been upgraded from Postgres 12 to Postgres 14.
 
-Unfortunately the data in your public schema failed migration using the standard pg_dump and pg_restore tools. Your data has been preserved in the ~/.steampipe/db directory. 
+Unfortunately the data in your public schema failed migration using the standard pg_dump and pg_restore tools. Your data has been preserved in the ~/.steampipe/db directory.
 
 If you need to restore the contents of your public schema, please open an issue at https://github.com/turbot/steampipe.`
 
@@ -365,7 +365,7 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 		getPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port if free to listen to
 		"-p", fmt.Sprint(port),
-		"-c", "listen_addresses=localhost",
+		"-c", "listen_addresses=127.0.0.1",
 		// NOTE: If quoted, the application name includes the quotes. Worried about
 		// having spaces in the APPNAME, but leaving it unquoted since currently
 		// the APPNAME is hardcoded to be steampipe.

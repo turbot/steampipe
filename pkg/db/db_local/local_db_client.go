@@ -2,12 +2,14 @@ package db_local
 
 import (
 	"context"
+	"fmt"
+	"log"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
-	"log"
 )
 
 // LocalDbClient wraps over DbClient
@@ -21,12 +23,15 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
+	listenAddresses := StartListenType(viper.GetString(constants.ArgDatabaseListenAddresses)).ToListenAddresses()
+	port := viper.GetInt(constants.ArgDatabasePort)
+	log.Println(fmt.Sprintf("[TRACE] GetLocalClient - listenAddresses=%s, port=%d", listenAddresses, port))
 	// start db if necessary
 	if err := EnsureDBInstalled(ctx); err != nil {
 		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
-	startResult := StartServices(ctx, viper.GetInt(constants.ArgDatabasePort), ListenTypeLocal, invoker)
+	startResult := StartServices(ctx, listenAddresses, port, invoker)
 	if startResult.Error != nil {
 		return nil, &startResult.ErrorAndWarnings
 	}

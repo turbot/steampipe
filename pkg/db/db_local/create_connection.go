@@ -48,12 +48,12 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 	}
 
 	psqlInfoMap := map[string]string{
-		// Connect to the database using the first listen address, which is usually localhost
-		"host":   info.Listen[0],
+		"host":   utils.GetFirstListenAddress(info.ListenAddresses),
 		"port":   fmt.Sprintf("%d", info.Port),
 		"user":   opts.Username,
 		"dbname": opts.DatabaseName,
 	}
+	log.Println("[TRACE] SQLInfoMap >>>", psqlInfoMap)
 	psqlInfoMap = utils.MergeMaps(psqlInfoMap, dsnSSLParams())
 	log.Println("[TRACE] SQLInfoMap >>>", psqlInfoMap)
 
@@ -172,7 +172,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	utils.LogTime("db_local.createMaintenanceClient start")
 	defer utils.LogTime("db_local.createMaintenanceClient end")
 
-	connStr := fmt.Sprintf("host=localhost port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
+	connStr := fmt.Sprintf("host=127.0.0.1 port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second)
 	defer cancel()

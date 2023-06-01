@@ -34,7 +34,7 @@ func GetState() (*RunningDBInstanceInfo, error) {
 		return nil, err
 	}
 	if !pidExists {
-		log.Printf("[TRACE] GetRunStatus - pid %v does not exist\n", info.Pid)
+		log.Printf("[TRACE] GetState - pid %v does not exist\n", info.Pid)
 		// nothing to do here
 		os.Remove(filepaths.RunningInfoFilePath())
 		return nil, nil
