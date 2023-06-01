@@ -580,24 +580,17 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	pluginList, failedPluginMap, missingPluginMap, res := getPluginList(ctx)
+	pluginList, failedPluginMap, _, res := getPluginList(ctx)
 	if res.Error != nil {
 		error_helpers.ShowErrorWithMessage(ctx, res.Error, "plugin listing failed")
 		exitCode = constants.ExitCodePluginListFailure
 		return
 	}
 
-	err := showPluginListOutput(pluginList, failedPluginMap, missingPluginMap, res, outputFormat)
+	err := showPluginListOutput(pluginList, failedPluginMap, res, outputFormat)
 	if err != nil {
 		error_helpers.ShowError(cmd.Context(), err)
 	}
-
-	if len(res.Warnings) > 0 {
-		fmt.Println()
-		res.ShowWarnings()
-		fmt.Printf("\n")
-	}
-
 }
 
 func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) {
@@ -628,28 +621,25 @@ func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, fai
 			}
 		}
 	}
+	for pluginName, connections := range missingPluginMap {
+		failedPluginMap[pluginName] = connections
+	}
 	return pluginList, failedPluginMap, missingPluginMap, res
 }
 
-func showPluginListOutput(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings, outputFormat string) error {
+func showPluginListOutput(pluginList []plugin.PluginListItem, failedPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings, outputFormat string) error {
 	if outputFormat == "table" {
-		showPluginListAsTable(pluginList, failedPluginMap, missingPluginMap)
+		showPluginListAsTable(pluginList, failedPluginMap)
 	} else if outputFormat == "json" {
-		return showPluginListAsJSON(pluginList, failedPluginMap, missingPluginMap, res)
-	}
-
-	if len(res.Warnings) > 0 {
-		fmt.Println()
-		res.ShowWarnings()
-		fmt.Printf("\n")
+		return showPluginListAsJSON(pluginList, failedPluginMap)
 	}
 	return nil
 }
 
-func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection) {
+func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap map[string][]*modconfig.Connection) {
 	// List installed plugins in a table
 	if len(pluginList) != 0 {
-		headers := []string{"Installed Plugin", "Version", "Connections"}
+		headers := []string{"Installed", "Version", "Connections"}
 		var rows [][]string
 		for _, item := range pluginList {
 			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
@@ -658,9 +648,9 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 		fmt.Printf("\n")
 	}
 
-	// List failed/missing plugins in a separate table
-	if len(failedPluginMap)+len(missingPluginMap) != 0 {
-		headers := []string{"Failed Plugin", "Connections", "Reason"}
+	// List failed+missing plugins in a separate table
+	if len(failedPluginMap) != 0 {
+		headers := []string{"Failed", "Connections", "Reason"}
 		var conns []string
 		var missingRows [][]string
 
@@ -672,30 +662,53 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.ConnectionErrorPluginFailedToStart})
 			conns = []string{}
 		}
-		for p, item := range missingPluginMap {
-			for _, conn := range item {
-				conns = append(conns, conn.Name)
-			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.InstallMessagePluginNotInstalled})
-			conns = []string{}
-		}
-
 		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
 		fmt.Printf("\n")
 	}
 }
 
-func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) error {
+func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap map[string][]*modconfig.Connection) error {
 	output := struct {
-		InstalledPlugins []plugin.PluginListItem            `json:"installed_plugins"`
-		FailedPlugins    map[string][]*modconfig.Connection `json:"failed_plugins"`
-		MissingPlugins   map[string][]*modconfig.Connection `json:"missing_plugins"`
-		Warnings         []string                           `json:"warnings"`
-	}{
-		InstalledPlugins: pluginList,
-		FailedPlugins:    failedPluginMap,
-		MissingPlugins:   missingPluginMap,
-		Warnings:         res.Warnings,
+		Installed []struct {
+			Name        string   `json:"name"`
+			Version     string   `json:"version"`
+			Connections []string `json:"connections"`
+		} `json:"installed"`
+		Failed []struct {
+			Name        string   `json:"name"`
+			Reason      string   `json:"reason"`
+			Connections []string `json:"connections"`
+		} `json:"failed"`
+	}{}
+
+	for _, item := range pluginList {
+		installed := struct {
+			Name        string   `json:"name"`
+			Version     string   `json:"version"`
+			Connections []string `json:"connections"`
+		}{
+			Name:        item.Name,
+			Version:     item.Version,
+			Connections: item.Connections,
+		}
+		output.Installed = append(output.Installed, installed)
+	}
+
+	for p, item := range failedPluginMap {
+		connections := make([]string, len(item))
+		for i, conn := range item {
+			connections[i] = conn.Name
+		}
+		failed := struct {
+			Name        string   `json:"name"`
+			Reason      string   `json:"reason"`
+			Connections []string `json:"connections"`
+		}{
+			Name:        p,
+			Connections: connections,
+			Reason:      "Not installed",
+		}
+		output.Failed = append(output.Failed, failed)
 	}
 
 	jsonOutput, err := json.MarshalIndent(output, "", "  ")
