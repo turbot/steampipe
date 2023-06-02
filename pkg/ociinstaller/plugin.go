@@ -74,7 +74,7 @@ func updatePluginVersionFiles(image *SteampipeImage) error {
 
 	installation, ok := v.Plugins[pluginFullName]
 	if !ok {
-		installation = &versionfile.InstalledVersion{}
+		installation = versionfile.EmptyInstalledVersion()
 	}
 
 	installation.Name = pluginFullName
