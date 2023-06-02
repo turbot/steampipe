@@ -98,7 +98,7 @@ var rootCmd = &cobra.Command{
 
 		// decompose the plugin version file
 		if !task.IsPluginManagerCmd(cmd) {
-			versionfile.DecomposePluginVersionFile()
+			versionfile.BackfillPluginVersionFile()
 		}
 
 		// set the max memory

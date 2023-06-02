@@ -38,7 +38,7 @@ func (f *PluginVersionFile) MigrateFrom() migrate.Migrateable {
 	return f
 }
 
-func (f *PluginVersionFile) Decompose() error {
+func (f *PluginVersionFile) Backfill() error {
 	for _, installation := range f.Plugins {
 		if err := f.EnsureVersionFile(installation); err != nil {
 			return err
@@ -76,12 +76,12 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 	return NewPluginVersionFile(), nil
 }
 
-func DecomposePluginVersionFile() error {
+func BackfillPluginVersionFile() error {
 	versions, err := LoadPluginVersionFile()
 	if err != nil {
 		return err
 	}
-	return versions.Decompose()
+	return versions.Backfill()
 }
 
 // Save writes the config file to disk
@@ -122,8 +122,8 @@ func readPluginVersionFile(path string) (*PluginVersionFile, error) {
 
 	var data PluginVersionFile
 
-	if err := json.Unmarshal([]byte(file), &data); err != nil {
-		log.Println("[WARN]", "Error while parsing plugin version file", err)
+	if err := json.Unmarshal(file, &data); err != nil {
+		log.Println("[ERROR]", "Error while reading plugin version file", err)
 		return nil, err
 	}
 
