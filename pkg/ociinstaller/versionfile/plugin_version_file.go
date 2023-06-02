@@ -3,9 +3,11 @@ package versionfile
 import (
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -67,13 +69,75 @@ func NewPluginVersionFile() *PluginVersionFile {
 	}
 }
 
+// to lock plugin version file loads
+var pluginLoadLock = sync.Mutex{}
+
 // LoadPluginVersionFile migrates from the old version file format if necessary and loads the plugin version data
 func LoadPluginVersionFile() (*PluginVersionFile, error) {
+	// we need a lock here so that we don't hit a race condition where
+	// the plugin file needs to be composed
+	// if recomposition is not required, this has (almost) zero penalty
+	pluginLoadLock.Lock()
+	defer pluginLoadLock.Unlock()
+
 	versionFilePath := filepaths.PluginVersionFilePath()
 	if filehelpers.FileExists(versionFilePath) {
-		return readPluginVersionFile(versionFilePath)
+		pluginVersions, err := readPluginVersionFile(versionFilePath)
+		if err == nil {
+			// backfill the InstalledVersion struct version
+			// so that when this gets saved, the struct versions are filled in
+			for _, iv := range pluginVersions.Plugins {
+				if iv.StructVersion == 0 {
+					iv.StructVersion = InstalledVersionStructVersion
+				}
+			}
+			if pluginVersions.Plugins == nil {
+				// generate the version file from the individual version files
+				pluginVersions = recomposePluginVersionFile()
+				pluginVersions.Save()
+			}
+			return pluginVersions, nil
+		}
+		if errors.Is(err, &json.SyntaxError{}) {
+			// generate the version file from the individual version files
+			pluginVersions = recomposePluginVersionFile()
+			pluginVersions.Save()
+		}
 	}
 	return NewPluginVersionFile(), nil
+}
+
+func recomposePluginVersionFile() *PluginVersionFile {
+	pvf := NewPluginVersionFile()
+	pluginDir := filepaths.EnsurePluginDir()
+
+	err := filepath.WalkDir(pluginDir, func(path string, d fs.DirEntry, _ error) error {
+		if !d.IsDir() {
+			return nil
+		}
+		versionFile := filepath.Join(path, "version.json")
+		if !filehelpers.FileExists(versionFile) {
+			return nil
+		}
+		data, err := os.ReadFile(versionFile)
+		if err != nil {
+			log.Println("[ERROR]", "could not read plugin version file at", versionFile, err)
+			return nil
+		}
+		install := EmptyInstalledVersion()
+		if err := json.Unmarshal(data, &install); err != nil {
+			log.Println("[ERROR]", "error while parsing plugin version file at", versionFile, err)
+			return nil
+		}
+		pvf.Plugins[install.Name] = install
+		return nil
+	})
+
+	if err != nil {
+		log.Println("[ERROR]", "error while walking plugin directory for version files", err)
+	}
+
+	return pvf
 }
 
 func BackfillPluginVersionFile() error {
