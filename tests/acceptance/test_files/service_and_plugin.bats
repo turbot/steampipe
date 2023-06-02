@@ -440,6 +440,28 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 }
 
+@test "plugin list - output table" {
+  tmpdir="$(mktemp -d)"
+  steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
+  run steampipe plugin list --install-dir $tmpdir
+  echo $output
+  rm -rf $tmpdir
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_table.txt)"
+}
+
+@test "plugin list - output table (with a missing plugin)" {
+  tmpdir="$(mktemp -d)"
+  steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
+  # uninstall a plugin but dont remove the config - to simulate the missing plugin scenario
+  steampipe plugin uninstall hackernews@0.4.0 --install-dir $tmpdir
+  run steampipe plugin list --install-dir $tmpdir
+  echo $output
+  rm -rf $tmpdir
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_table_with_missing_plugins.txt)"
+}
+
+# TODO: add a test to check the plugin list output with failed plugins
+
 @test "cleanup" {
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
   run steampipe plugin uninstall steampipe

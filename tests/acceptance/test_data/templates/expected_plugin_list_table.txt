@@ -1,0 +1,6 @@
++--------------------------------------------------+---------+-------------+
+| Installed Plugin                                 | Version | Connections |
++--------------------------------------------------+---------+-------------+
+| hub.steampipe.io/plugins/turbot/bitbucket@0.3.1  | 0.3.1   | bitbucket   |
+| hub.steampipe.io/plugins/turbot/hackernews@0.4.0 | 0.4.0   | hackernews  |
++--------------------------------------------------+---------+-------------+
