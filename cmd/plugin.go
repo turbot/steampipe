@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -632,6 +633,7 @@ func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, fai
 
 	// get the maps of available and failed/missing plugins
 	pluginConnectionMap, failedPluginMap, missingPluginMap, res := getPluginConnectionMap(ctx)
+	log.Printf("[INFO] %s", pluginConnectionMap)
 	if res.Error != nil {
 		return nil, nil, nil, res
 	}
@@ -644,6 +646,7 @@ func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, fai
 		res.Error = err
 		return nil, nil, nil, res
 	}
+	log.Printf("[INFO] %s", pluginList)
 
 	// remove the failed plugins from `list` since we don't want them in the installed table
 	for pluginName := range failedPluginMap {
