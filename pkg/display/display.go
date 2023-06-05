@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -69,6 +70,7 @@ func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableO
 	t.SetOutputMirror(os.Stdout)
 
 	rowConfig := table.RowConfig{AutoMerge: opts.AutoMerge}
+	log.Printf("[INFO] >>>>> %s", rows)
 	colConfigs, headerRow := getColumnSettings(headers, rows, opts)
 
 	t.SetColumnConfigs(colConfigs)
