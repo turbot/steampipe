@@ -18,7 +18,6 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
-	"github.com/karrick/gows"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -135,7 +134,7 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 	// now that all columns are set to the widths that they need,
 	// set the last one to occupy as much as is available - no more - no less
 	sumOfRest := sumOfAllCols - colConfigs[len(colConfigs)-1].WidthMax
-	maxCols, _, _ := gows.GetWinSize()
+	maxCols := 80
 	if sumOfAllCols > maxCols {
 		colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
 		colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
