@@ -144,7 +144,7 @@ func SetDefaultsFromEnv() {
 		constants.EnvSnapshotLocation:     {[]string{constants.ArgSnapshotLocation}, String},
 		constants.EnvWorkspaceDatabase:    {[]string{constants.ArgWorkspaceDatabase}, String},
 		constants.EnvServicePassword:      {[]string{constants.ArgServicePassword}, String},
-		constants.EnvCheckDisplayWidth:    {[]string{constants.ArgDisplayWidth}, Int},
+		constants.EnvDisplayWidth:         {[]string{constants.ArgDisplayWidth}, Int},
 		constants.EnvMaxParallel:          {[]string{constants.ArgMaxParallel}, Int},
 		constants.EnvQueryTimeout:         {[]string{constants.ArgDatabaseQueryTimeout}, Int},
 		constants.EnvDatabaseStartTimeout: {[]string{constants.ArgDatabaseStartTimeout}, Int},
