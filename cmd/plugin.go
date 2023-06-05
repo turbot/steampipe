@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -588,12 +587,8 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		headers := []string{"Installed Plugin", "Version", "Connections"}
 		var rows [][]string
 		for _, item := range pluginList {
-			log.Printf("[INFO] item :%v", item)
 			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
-			log.Printf("[INFO] rows: %v", rows)
 		}
-		log.Printf("[INFO] rows after append: %v", rows)
-		log.Printf("[INFO] headers: %v", headers)
 
 		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 		fmt.Printf("\n")
@@ -638,7 +633,6 @@ func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, fai
 
 	// get the maps of available and failed/missing plugins
 	pluginConnectionMap, failedPluginMap, missingPluginMap, res := getPluginConnectionMap(ctx)
-	log.Printf("[INFO] %s", pluginConnectionMap)
 	if res.Error != nil {
 		return nil, nil, nil, res
 	}
@@ -651,7 +645,6 @@ func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, fai
 		res.Error = err
 		return nil, nil, nil, res
 	}
-	log.Printf("[INFO] %s", pluginList)
 
 	// remove the failed plugins from `list` since we don't want them in the installed table
 	for pluginName := range failedPluginMap {

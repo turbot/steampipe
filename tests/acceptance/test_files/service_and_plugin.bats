@@ -443,7 +443,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "plugin list - output table" {
   tmpdir="$(mktemp -d)"
   steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
-  export STEAMPIPE_LOG=info
   run steampipe plugin list --install-dir $tmpdir
   echo $output
   rm -rf $tmpdir
@@ -452,11 +451,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "plugin list - output table (with a missing plugin)" {
   tmpdir="$(mktemp -d)"
-  unset STEAMPIPE_LOG
   steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
   # uninstall a plugin but dont remove the config - to simulate the missing plugin scenario
   steampipe plugin uninstall hackernews@0.4.0 --install-dir $tmpdir
-  export STEAMPIPE_LOG=info
   run steampipe plugin list --install-dir $tmpdir
   echo $output
   rm -rf $tmpdir
