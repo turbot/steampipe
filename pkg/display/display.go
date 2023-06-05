@@ -73,10 +73,10 @@ func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableO
 	log.Printf("[INFO] >>>>> %s", rows)
 	colConfigs, headerRow := getColumnSettings(headers, rows, opts)
 	log.Printf("[INFO] ???? %s", headerRow)
-	log.Printf("[INFO] !!!! %s", headerRow)
 
 	t.SetColumnConfigs(colConfigs)
 	t.AppendHeader(headerRow)
+	log.Printf("[INFO] OPTS %s", opts)
 
 	for _, row := range rows {
 		rowObj := table.Row{}
@@ -126,6 +126,7 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 			WidthMin: maxLen,
 		}
 		if opts.HideEmptyColumns && !colHasValue {
+			log.Printf("[INFO] IN HERE.....")
 			colConfigs[idx].Hidden = true
 		}
 		sumOfAllCols += maxLen
