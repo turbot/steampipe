@@ -76,7 +76,7 @@ func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableO
 
 	t.SetColumnConfigs(colConfigs)
 	t.AppendHeader(headerRow)
-	log.Printf("[INFO] OPTS %s", opts)
+	log.Printf("[INFO] OPTS %v", opts)
 
 	for _, row := range rows {
 		rowObj := table.Row{}
