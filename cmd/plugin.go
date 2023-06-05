@@ -589,7 +589,6 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		for _, item := range pluginList {
 			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
 		}
-
 		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 		fmt.Printf("\n")
 	}
