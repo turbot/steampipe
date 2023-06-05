@@ -72,6 +72,8 @@ func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableO
 	rowConfig := table.RowConfig{AutoMerge: opts.AutoMerge}
 	log.Printf("[INFO] >>>>> %s", rows)
 	colConfigs, headerRow := getColumnSettings(headers, rows, opts)
+	log.Printf("[INFO] ???? %s", headerRow)
+	log.Printf("[INFO] !!!! %s", headerRow)
 
 	t.SetColumnConfigs(colConfigs)
 	t.AppendHeader(headerRow)
