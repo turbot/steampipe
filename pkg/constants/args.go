@@ -42,7 +42,7 @@ const (
 	ArgVariable                = "var"
 	ArgVarFile                 = "var-file"
 	ArgConnectionString        = "connection-string"
-	ArgCheckDisplayWidth       = "check-display-width"
+	ArgDisplayWidth            = "display-width"
 	ArgPrune                   = "prune"
 	ArgModInstall              = "mod-install"
 	ArgServiceMode             = "service-mode"

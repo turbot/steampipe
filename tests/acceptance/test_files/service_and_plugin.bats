@@ -441,6 +441,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "plugin list - output table" {
+  export STEAMPIPE_DISPLAY_WIDTH=100
   tmpdir="$(mktemp -d)"
   steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
   run steampipe plugin list --install-dir $tmpdir
@@ -450,6 +451,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "plugin list - output table (with a missing plugin)" {
+  export STEAMPIPE_DISPLAY_WIDTH=100
   tmpdir="$(mktemp -d)"
   steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
   # uninstall a plugin but dont remove the config - to simulate the missing plugin scenario

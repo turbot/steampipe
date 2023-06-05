@@ -16,7 +16,7 @@ const (
 	EnvCloudHost         = "STEAMPIPE_CLOUD_HOST"
 	EnvCloudToken        = "STEAMPIPE_CLOUD_TOKEN"
 
-	EnvCheckDisplayWidth = "STEAMPIPE_CHECK_DISPLAY_WIDTH"
+	EnvCheckDisplayWidth = "STEAMPIPE_DISPLAY_WIDTH"
 	EnvCacheEnabled      = "STEAMPIPE_CACHE"
 	EnvCacheTTL          = "STEAMPIPE_CACHE_TTL"
 	EnvCacheMaxTTL       = "STEAMPIPE_CACHE_MAX_TTL"

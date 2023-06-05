@@ -12,8 +12,10 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/karrick/gows"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/utils"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -129,7 +131,8 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 	// now that all columns are set to the widths that they need,
 	// set the last one to occupy as much as is available - no more - no less
 	sumOfRest := sumOfAllCols - colConfigs[len(colConfigs)-1].WidthMax
-	maxCols := 80
+	widthConstraint := utils.NewRangeConstraint(80, 100)
+	maxCols := GetMaxCols(widthConstraint)
 	if sumOfAllCols > maxCols {
 		colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
 		colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
@@ -139,6 +142,15 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 	}
 
 	return colConfigs, headerRow
+}
+
+func GetMaxCols(constraint utils.RangeConstraint) int {
+	colsAvailable, _, _ := gows.GetWinSize()
+	// check if STEAMPIPE_DISPLAY_WIDTH env variable is set
+	if viper.IsSet(constants.ArgDisplayWidth) {
+		colsAvailable = viper.GetInt(constants.ArgDisplayWidth)
+	}
+	return constraint.Constrain(colsAvailable)
 }
 
 func displayLine(ctx context.Context, result *queryresult.Result) int {
