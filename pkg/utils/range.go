@@ -1,4 +1,4 @@
-package controldisplay
+package utils
 
 type RangeConstraint struct {
 	minimum int

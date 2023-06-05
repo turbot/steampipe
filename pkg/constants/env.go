@@ -16,12 +16,12 @@ const (
 	EnvCloudHost         = "STEAMPIPE_CLOUD_HOST"
 	EnvCloudToken        = "STEAMPIPE_CLOUD_TOKEN"
 
-	EnvCheckDisplayWidth = "STEAMPIPE_CHECK_DISPLAY_WIDTH"
-	EnvCacheEnabled      = "STEAMPIPE_CACHE"
-	EnvCacheTTL          = "STEAMPIPE_CACHE_TTL"
-	EnvCacheMaxTTL       = "STEAMPIPE_CACHE_MAX_TTL"
-	EnvCacheMaxSize      = "STEAMPIPE_CACHE_MAX_SIZE_MB"
-	EnvQueryTimeout      = "STEAMPIPE_QUERY_TIMEOUT"
+	EnvDisplayWidth = "STEAMPIPE_DISPLAY_WIDTH"
+	EnvCacheEnabled = "STEAMPIPE_CACHE"
+	EnvCacheTTL     = "STEAMPIPE_CACHE_TTL"
+	EnvCacheMaxTTL  = "STEAMPIPE_CACHE_MAX_TTL"
+	EnvCacheMaxSize = "STEAMPIPE_CACHE_MAX_SIZE_MB"
+	EnvQueryTimeout = "STEAMPIPE_QUERY_TIMEOUT"
 
 	EnvConnectionWatcher        = "STEAMPIPE_CONNECTION_WATCHER"
 	EnvWorkspaceChDir           = "STEAMPIPE_WORKSPACE_CHDIR"
