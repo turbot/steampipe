@@ -67,7 +67,7 @@ func getInputVariables(variableMap map[string]*modconfig.Variable, validate bool
 	mod := parseCtx.CurrentMod
 	path := mod.ModPath
 
-	inputValuesUnparsed, err := inputvars.CollectVariableValues(path, variableFileArgs, variableArgs)
+	var inputValuesUnparsed, err = inputvars.CollectVariableValues(path, variableFileArgs, variableArgs, parseCtx)
 	if err != nil {
 		return nil, err
 	}

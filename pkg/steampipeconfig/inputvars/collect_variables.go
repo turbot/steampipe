@@ -25,7 +25,7 @@ import (
 // This method returns diagnostics relating to the collection of the values,
 // but the values themselves may produce additional diagnostics when finally
 // parsed.
-func CollectVariableValues(workspacePath string, variableFileArgs []string, variablesArgs []string) (map[string]UnparsedVariableValue, error) {
+func CollectVariableValues(workspacePath string, variableFileArgs []string, variablesArgs []string, parseCtx *parse.ModParseContext) (map[string]UnparsedVariableValue, error) {
 	ret := map[string]UnparsedVariableValue{}
 
 	// First we'll deal with environment variables
@@ -136,7 +136,8 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	}
 
 	// now map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
-	ret = transformVarNames(ret)
+	// also if any var value is qualified with the workspace mod, remove the qualification
+	ret = transformVarNames(ret, parseCtx)
 	return ret, nil
 }
 
@@ -176,20 +177,31 @@ func CollectVariableValuesFromModRequire(mod *modconfig.Mod, parseCtx *parse.Mod
 						SourceType:  ValueFromModFile,
 						SourceRange: sourceRange,
 					}
-
 				}
 			}
+
+			// if the depMod specifies args, add these in
+			depInputValues, err := CollectVariableValuesFromModRequire(depMod, parseCtx)
+			if err != nil {
+				return nil, err
+			}
+			res.Merge(depInputValues)
 		}
 	}
 	return res, nil
 }
 
 // map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
-func transformVarNames(rawValues map[string]UnparsedVariableValue) map[string]UnparsedVariableValue {
+func transformVarNames(rawValues map[string]UnparsedVariableValue, parseCtx *parse.ModParseContext) map[string]UnparsedVariableValue {
+	workspaceModName := parseCtx.CurrentMod.ShortName
 	ret := make(map[string]UnparsedVariableValue, len(rawValues))
 	for k, v := range rawValues {
 		if parts := strings.Split(k, "."); len(parts) == 2 {
-			k = fmt.Sprintf("%s.var.%s", parts[0], parts[1])
+			if parts[0] == workspaceModName {
+				k = parts[1]
+			} else {
+				k = fmt.Sprintf("%s.var.%s", parts[0], parts[1])
+			}
 		}
 		ret[k] = v
 	}

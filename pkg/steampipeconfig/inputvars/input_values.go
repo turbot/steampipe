@@ -224,6 +224,13 @@ func (vv InputValues) DefaultTo(other InputValues) {
 	}
 }
 
+func (vv InputValues) Merge(other InputValues) {
+	// TODO should 'other; take precedence?
+	for k, v := range other {
+		vv[k] = v
+	}
+}
+
 // CheckInputVariables ensures that variable values supplied at the UI conform
 // to their corresponding declarations in configuration.
 //
