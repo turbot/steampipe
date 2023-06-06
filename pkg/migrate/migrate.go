@@ -13,18 +13,18 @@ type Migrateable interface {
 }
 
 func Migrate(migrateable Migrateable, oldPath string) {
-	stateFileContent, err := os.ReadFile(oldPath)
+	fileContent, err := os.ReadFile(oldPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Println("[INFO]", "nothing to migrate in", oldPath)
 			return
 		}
-		log.Println("[ERROR]", "could not read file for migration:", oldPath, err)
+		log.Println("[WARN]", "could not read file for migration:", oldPath, err)
 	}
 	// Deserialize into old struct
-	err = json.Unmarshal(stateFileContent, &migrateable)
+	err = json.Unmarshal(fileContent, &migrateable)
 	if err != nil {
-		log.Println("[ERROR]", "parsing failed for:", oldPath, err)
+		log.Println("[WARN]", "parsing failed for during migration:", oldPath, err)
 		return
 	}
 
@@ -36,11 +36,11 @@ func Migrate(migrateable Migrateable, oldPath string) {
 	x := migrateable.MigrateFrom()
 
 	if err := os.Remove(oldPath); err != nil {
-		log.Println("[ERROR]", "could not remove after migration:", oldPath, err)
+		log.Println("[WARN]", "could not remove after migration:", oldPath, err)
 	}
 
 	if err := x.Save(); err != nil {
-		log.Println("[ERROR]", "could not save migrated data:", oldPath, err)
+		log.Println("[WARN]", "could not save migrated data:", oldPath, err)
 	}
 
 }
