@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -147,14 +148,17 @@ Examples:
   steampipe plugin list
 
   # List plugins that have updates available
-  steampipe plugin list --outdated`,
+  steampipe plugin list --outdated
+
+  # List plugins output in json
+  steampipe plugin list --output json`,
 	}
 
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag("outdated", false, "Check each plugin in the list for updates").
+		AddStringFlag(constants.ArgOutput, "table", "Output format: table or json").
 		AddBoolFlag(constants.ArgHelp, false, "Help for plugin list", cmdconfig.FlagOptions.WithShortHand("h"))
-
 	return cmd
 }
 
@@ -565,6 +569,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 	// setup a cancel context and start cancel handler
 	ctx, cancel := context.WithCancel(cmd.Context())
 	contexthelpers.StartCancelHandler(cancel)
+	outputFormat := viper.GetString(constants.ArgOutput)
 
 	utils.LogTime("runPluginListCmd list")
 	defer func() {
@@ -582,41 +587,9 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// List installed plugins in a table
-	if len(pluginList) != 0 {
-		headers := []string{"Installed Plugin", "Version", "Connections"}
-		var rows [][]string
-		for _, item := range pluginList {
-			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
-		}
-		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
-		fmt.Printf("\n")
-	}
-
-	// List failed/missing plugins in a separate table
-	if len(failedPluginMap)+len(missingPluginMap) != 0 {
-		// List missing/failed plugins
-		headers := []string{"Failed Plugin", "Connections", "Reason"}
-		var conns []string
-		var missingRows [][]string
-
-		// failed plugins
-		for p, item := range failedPluginMap {
-			for _, conn := range item {
-				conns = append(conns, conn.Name)
-			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.ConnectionErrorPluginFailedToStart})
-			conns = []string{}
-		}
-		// missing plugins
-		for p, item := range missingPluginMap {
-			for _, conn := range item {
-				conns = append(conns, conn.Name)
-			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.InstallMessagePluginNotInstalled})
-			conns = []string{}
-		}
-		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
+	err := showPluginListOutput(pluginList, failedPluginMap, missingPluginMap, res, outputFormat)
+	if err != nil {
+		error_helpers.ShowError(cmd.Context(), err)
 	}
 
 	if len(res.Warnings) > 0 {
@@ -624,6 +597,7 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		res.ShowWarnings()
 		fmt.Printf("\n")
 	}
+
 }
 
 func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) {
@@ -655,6 +629,128 @@ func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, fai
 		}
 	}
 	return pluginList, failedPluginMap, missingPluginMap, res
+}
+
+func showPluginListOutput(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings, outputFormat string) error {
+	if outputFormat == "table" {
+		showPluginListAsTable(pluginList, failedPluginMap, missingPluginMap)
+	} else if outputFormat == "json" {
+		return showPluginListAsJSON(pluginList, failedPluginMap, missingPluginMap)
+	}
+	if len(res.Warnings) > 0 {
+		fmt.Println()
+		res.ShowWarnings()
+		fmt.Printf("\n")
+	}
+	return nil
+}
+
+func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection) {
+	// List installed plugins in a table
+	if len(pluginList) != 0 {
+		headers := []string{"Installed", "Version", "Connections"}
+		var rows [][]string
+		for _, item := range pluginList {
+			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
+		}
+		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+		fmt.Printf("\n")
+	}
+
+	// List failed/missing plugins in a separate table
+	if len(failedPluginMap)+len(missingPluginMap) != 0 {
+		headers := []string{"Failed", "Connections", "Reason"}
+		var conns []string
+		var missingRows [][]string
+
+		// failed plugins
+		for p, item := range failedPluginMap {
+			for _, conn := range item {
+				conns = append(conns, conn.Name)
+			}
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.ConnectionErrorPluginFailedToStart})
+			conns = []string{}
+		}
+		for p, item := range missingPluginMap {
+			for _, conn := range item {
+				conns = append(conns, conn.Name)
+			}
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.InstallMessagePluginNotInstalled})
+			conns = []string{}
+		}
+
+		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
+		fmt.Printf("\n")
+	}
+}
+
+func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection) error {
+	output := struct {
+		Installed []struct {
+			Name        string   `json:"name"`
+			Version     string   `json:"version"`
+			Connections []string `json:"connections"`
+		} `json:"installed"`
+		Failed []struct {
+			Name        string   `json:"name"`
+			Reason      string   `json:"reason"`
+			Connections []string `json:"connections"`
+		} `json:"failed"`
+	}{}
+
+	for _, item := range pluginList {
+		installed := struct {
+			Name        string   `json:"name"`
+			Version     string   `json:"version"`
+			Connections []string `json:"connections"`
+		}{
+			Name:        item.Name,
+			Version:     item.Version,
+			Connections: item.Connections,
+		}
+		output.Installed = append(output.Installed, installed)
+	}
+
+	for p, item := range failedPluginMap {
+		connections := make([]string, len(item))
+		for i, conn := range item {
+			connections[i] = conn.Name
+		}
+		failed := struct {
+			Name        string   `json:"name"`
+			Reason      string   `json:"reason"`
+			Connections []string `json:"connections"`
+		}{
+			Name:        p,
+			Connections: connections,
+			Reason:      constants.ConnectionErrorPluginFailedToStart,
+		}
+		output.Failed = append(output.Failed, failed)
+	}
+	for p, item := range missingPluginMap {
+		connections := make([]string, len(item))
+		for i, conn := range item {
+			connections[i] = conn.Name
+		}
+		missing := struct {
+			Name        string   `json:"name"`
+			Reason      string   `json:"reason"`
+			Connections []string `json:"connections"`
+		}{
+			Name:        p,
+			Connections: connections,
+			Reason:      constants.InstallMessagePluginNotInstalled,
+		}
+		output.Failed = append(output.Failed, missing)
+	}
+
+	jsonOutput, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(jsonOutput))
+	fmt.Printf("\n")
+	return nil
 }
 
 func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
