@@ -21,27 +21,16 @@ import (
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOption) (mod *modconfig.Mod, errorsAndWarnings *modconfig.ErrorAndWarnings) {
+func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings *modconfig.ErrorAndWarnings) {
 	defer func() {
 		if r := recover(); r != nil {
 			errorsAndWarnings = modconfig.NewErrorsAndWarning(helpers.ToError(r))
 		}
 	}()
-	config := &LoadModConfig{}
-	for _, opt := range opts {
-		opt(config)
-	}
 
 	mod, loadModResult := loadModDefinition(modPath, parseCtx)
 	if loadModResult.Error != nil {
 		return nil, loadModResult
-	}
-
-	// if there is a post load hook, run it
-	if config.PostLoadHook != nil {
-		if err := config.PostLoadHook(parseCtx); err != nil {
-			return nil, modconfig.NewErrorsAndWarning(err)
-		}
 	}
 
 	// if this is a dependency mod, initialise the dependency config
@@ -53,7 +42,7 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOpt
 	parseCtx.SetCurrentMod(mod)
 
 	// load the mod dependencies
-	if err := loadModDependencies(mod, parseCtx, config); err != nil {
+	if err := loadModDependencies(mod, parseCtx); err != nil {
 		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
@@ -97,7 +86,7 @@ func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (mod *mo
 	return mod, errorsAndWarnings
 }
 
-func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext, config *LoadModConfig) error {
+func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext) error {
 	var errors []error
 
 	if mod.Require != nil {
@@ -113,18 +102,12 @@ func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext, co
 			if err != nil {
 				return err
 			}
-			if loadedMod != nil && !config.ReloadDependencies {
+			if loadedMod != nil {
 				continue
 			}
 
 			if err := loadModDependency(requiredModVersion, parseCtx); err != nil {
 				errors = append(errors, err)
-			}
-			// if there is a post load hook, run it
-			if config.PostLoadHook != nil {
-				if err := config.PostLoadHook(parseCtx); err != nil {
-					return err
-				}
 			}
 		}
 	}

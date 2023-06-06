@@ -21,11 +21,9 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
-	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -257,7 +255,8 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	w.VariableValues = inputVariables.VariableValues
 
 	// build run context which we use to load the workspace
-	parseCtx, err := w.getParseContext(ctx)
+	// NOTE: we get the short name
+	parseCtx, err := w.getParseContext(ctx, inputVariables.ModShortName)
 	if err != nil {
 		return modconfig.NewErrorsAndWarning(err)
 	}
@@ -290,7 +289,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 
 func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, error) {
 	// build a run context just to use to load variable definitions
-	variablesParseCtx, err := w.getParseContext(ctx)
+	variablesParseCtx, err := w.getParseContext(ctx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -300,62 +299,31 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 		return nil, err
 	}
 
-	// if needed, reload
-	// if a mod require has args which use a variable, this will not have been resolved in the first pass
-	// - we need to parse again
-	// TODO KAI make ModsWithUnresolvedArgs return a bool
-	modsWithUnresolvedArgs := variablesParseCtx.ModsWithUnresolvedArgs()
-	if len(modsWithUnresolvedArgs) > 0 {
-		// TODO kai tidy hook (make a separate fxn?)
-		postLoadHook := loadModRequireArgs
-		// add the variables into the parse context and rebuild the eval context
-		variablesParseCtx.AddInputVariableValues(inputVariableValues)
-		// TODO TIDY THIS TO AVOID UNNEEDED PARAMS
-		variablesParseCtx.AddVariablesToEvalContext(variablesParseCtx.CurrentMod.GetInstallCacheKey())
-		// now try to parse the mod again
-		inputVariableValues, err = w.getVariableValues(ctx, variablesParseCtx, validateMissing, steampipeconfig.WithPostLoadHook(postLoadHook), steampipeconfig.WithReloadDependencies())
-		if err != nil {
-			return nil, err
-		}
-	}
+	//// if needed, reload
+	//// if a mod require has args which use a variable, this will not have been resolved in the first pass
+	//// - we need to parse again
+	//// TODO KAI make ModsWithUnresolvedArgs return a bool
+	//modsWithUnresolvedArgs := variablesParseCtx.ModsWithUnresolvedArgs()
+	//if len(modsWithUnresolvedArgs) > 0 {
+	//	// TODO kai tidy hook (make a separate fxn?)
+	//	postLoadHook := loadModRequireArgs
+	//	// add the variables into the parse context and rebuild the eval context
+	//	variablesParseCtx.AddInputVariableValues(inputVariableValues)
+	//	// TODO TIDY THIS TO AVOID UNNEEDED PARAMS
+	//	variablesParseCtx.AddVariablesToEvalContext(variablesParseCtx.CurrentMod.GetInstallCacheKey())
+	//	// now try to parse the mod again
+	//	inputVariableValues, err = w.getVariableValues(ctx, variablesParseCtx, validateMissing, steampipeconfig.WithPostLoadHook(postLoadHook), steampipeconfig.WithReloadDependencies())
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
 	return inputVariableValues, nil
 
 }
 
-// when reloading a mod depdency tree to resolve require args values, this function is called after each mod is loaded
-// to load the require arg values and update the variable values
-func loadModRequireArgs(parseCtx *parse.ModParseContext) error {
-	// do not recurse down dependencies
-	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(parseCtx.CurrentMod, parseCtx, false)
-	if err != nil {
-		return err
-	}
-	if len(depModVarValues) == 0 {
-		return nil
-	}
-	variableMap := parseCtx.GetVariableMap()
-	// now update the variables map with the input values
-	for name, inputValue := range depModVarValues {
-		variable := variableMap.AllVariables[name]
-		variable.SetInputValue(
-			inputValue.Value,
-			inputValue.SourceTypeString(),
-			inputValue.SourceRange)
-
-		// set variable value string in our workspace map
-		variableMap.VariableValues[name], err = type_conversion.CtyToString(inputValue.Value)
-		if err != nil {
-			return err
-		}
-	}
-	parseCtx.AddInputVariableValues(variableMap)
-	parseCtx.AddVariablesToEvalContext(parseCtx.CurrentMod.GetInstallCacheKey())
-	return nil
-}
-
-func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool, opts ...steampipeconfig.LoadModOption) (*modconfig.ModVariableMap, error) {
+func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, error) {
 	// load variable definitions
-	variableMap, err := steampipeconfig.LoadVariableDefinitions(w.Path, variablesParseCtx, opts...)
+	variableMap, err := steampipeconfig.LoadVariableDefinitions(w.Path, variablesParseCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -365,7 +333,7 @@ func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *pa
 
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
-func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext, error) {
+func (w *Workspace) getParseContext(ctx context.Context, modShortName string) (*parse.ModParseContext, error) {
 	parseFlag := parse.CreateDefaultMod
 	if w.loadPseudoResources {
 		parseFlag |= parse.CreatePseudoResources
@@ -385,6 +353,9 @@ func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext
 			// only load .sp files
 			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 		})
+
+	// initialise the variables
+	parseCtx.SetVariables(modShortName)
 
 	return parseCtx, nil
 }
@@ -447,7 +418,7 @@ func (w *Workspace) loadExclusions() error {
 
 func (w *Workspace) loadWorkspaceResourceName(ctx context.Context) (*modconfig.WorkspaceResources, error) {
 	// build options used to load workspace
-	parseCtx, err := w.getParseContext(ctx)
+	parseCtx, err := w.getParseContext(ctx, "")
 	if err != nil {
 		return nil, err
 	}

@@ -14,11 +14,13 @@ type ModVariableMap struct {
 	AllVariables map[string]*Variable
 	// the input variables evaluated in the parse
 	VariableValues map[string]string
+	ModShortName   string
 }
 
 // NewModVariableMap builds a ModVariableMap using the variables from a mod and its dependencies
 func NewModVariableMap(mod *Mod, dependencyMods ModMap) *ModVariableMap {
 	m := &ModVariableMap{
+		ModShortName:        mod.ShortName,
 		RootVariables:       make(map[string]*Variable),
 		DependencyVariables: make(map[string]map[string]*Variable),
 		VariableValues:      make(map[string]string),
@@ -36,7 +38,7 @@ func NewModVariableMap(mod *Mod, dependencyMods ModMap) *ModVariableMap {
 			m.DependencyVariables[dependencyPath][buildVariableMapKey(k)] = v
 		}
 	}
-
+	//
 	// build map of all variables
 	m.PopulateAllVariables()
 

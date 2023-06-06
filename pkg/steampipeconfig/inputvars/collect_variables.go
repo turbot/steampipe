@@ -13,9 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 )
 
 // CollectVariableValues inspects the various places that configuration input variable
@@ -25,7 +23,7 @@ import (
 // This method returns diagnostics relating to the collection of the values,
 // but the values themselves may produce additional diagnostics when finally
 // parsed.
-func CollectVariableValues(workspacePath string, variableFileArgs []string, variablesArgs []string, parseCtx *parse.ModParseContext) (map[string]UnparsedVariableValue, error) {
+func CollectVariableValues(workspacePath string, variableFileArgs []string, variablesArgs []string, workspaceModName string) (map[string]UnparsedVariableValue, error) {
 	ret := map[string]UnparsedVariableValue{}
 
 	// First we'll deal with environment variables
@@ -137,65 +135,13 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 
 	// now map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
 	// also if any var value is qualified with the workspace mod, remove the qualification
-	ret = transformVarNames(ret, parseCtx)
+	ret = transformVarNames(ret, workspaceModName)
 	return ret, nil
 }
 
-func CollectVariableValuesFromModRequire(mod *modconfig.Mod, parseCtx *parse.ModParseContext, recursive bool) (InputValues, error) {
-	res := make(InputValues)
-	if mod.Require != nil {
-		for _, depModConstraint := range mod.Require.Mods {
-			// find the loaded dep mod which satisfies this constraint
-			depMod, err := parseCtx.GetLoadedDependencyMod(depModConstraint, mod)
-			if err != nil {
-				return nil, err
-			}
-			if depMod == nil {
-				return nil, fmt.Errorf("dependency mod %s is not loaded", depMod.Name())
-			}
-
-			if args := depModConstraint.Args; args != nil {
-				for varName, varVal := range args {
-					varFullName := fmt.Sprintf("%s.var.%s", depMod.ShortName, varName)
-
-					sourceRange := tfdiags.SourceRange{
-						Filename: mod.Require.DeclRange.Filename,
-						Start: tfdiags.SourcePos{
-							Line:   mod.Require.DeclRange.Start.Line,
-							Column: mod.Require.DeclRange.Start.Column,
-							Byte:   mod.Require.DeclRange.Start.Byte,
-						},
-						End: tfdiags.SourcePos{
-							Line:   mod.Require.DeclRange.End.Line,
-							Column: mod.Require.DeclRange.End.Column,
-							Byte:   mod.Require.DeclRange.End.Byte,
-						},
-					}
-
-					res[varFullName] = &InputValue{
-						Value:       varVal,
-						SourceType:  ValueFromModFile,
-						SourceRange: sourceRange,
-					}
-				}
-			}
-
-			if recursive {
-				// if the depMod specifies args, add these in
-				depInputValues, err := CollectVariableValuesFromModRequire(depMod, parseCtx, true)
-				if err != nil {
-					return nil, err
-				}
-				res.Merge(depInputValues)
-			}
-		}
-	}
-	return res, nil
-}
-
 // map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
-func transformVarNames(rawValues map[string]UnparsedVariableValue, parseCtx *parse.ModParseContext) map[string]UnparsedVariableValue {
-	workspaceModName := parseCtx.CurrentMod.ShortName
+func transformVarNames(rawValues map[string]UnparsedVariableValue, workspaceModName string) map[string]UnparsedVariableValue {
+
 	ret := make(map[string]UnparsedVariableValue, len(rawValues))
 	for k, v := range rawValues {
 		if parts := strings.Split(k, "."); len(parts) == 2 {

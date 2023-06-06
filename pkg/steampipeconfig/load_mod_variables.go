@@ -15,10 +15,10 @@ import (
 	"github.com/turbot/steampipe/pkg/type_conversion"
 )
 
-func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext, opts ...LoadModOption) (*modconfig.ModVariableMap, error) {
+func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext) (*modconfig.ModVariableMap, error) {
 	// only load mod and variables blocks
 	parseCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
-	mod, errAndWarnings := LoadMod(variablePath, parseCtx, opts...)
+	mod, errAndWarnings := LoadMod(variablePath, parseCtx)
 	if errAndWarnings.GetError() != nil {
 		return nil, errAndWarnings.GetError()
 	}
@@ -67,23 +67,17 @@ func getInputVariables(variableMap map[string]*modconfig.Variable, validate bool
 	mod := parseCtx.CurrentMod
 	path := mod.ModPath
 
-	var inputValuesUnparsed, err = inputvars.CollectVariableValues(path, variableFileArgs, variableArgs, parseCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	// build map of dependency mod variable values declared in the mod 'Require' section
-	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(mod, parseCtx, true)
+	var inputValuesUnparsed, err = inputvars.CollectVariableValues(path, variableFileArgs, variableArgs, parseCtx.CurrentMod.ShortName)
 	if err != nil {
 		return nil, err
 	}
 
 	if validate {
-		if err := identifyMissingVariables(inputValuesUnparsed, variableMap, depModVarValues); err != nil {
+		if err := identifyMissingVariables(inputValuesUnparsed, variableMap); err != nil {
 			return nil, err
 		}
 	}
-	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap, depModVarValues, validate)
+	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap, validate)
 
 	return parsedValues, diags.Err()
 }
@@ -110,7 +104,8 @@ func displayValidationErrors(ctx context.Context, diags tfdiags.Diagnostics) {
 	}
 }
 
-func identifyMissingVariables(existing map[string]inputvars.UnparsedVariableValue, vcs map[string]*modconfig.Variable, depModVarValues inputvars.InputValues) error {
+func identifyMissingVariables(existing map[string]inputvars.UnparsedVariableValue, vcs map[string]*modconfig.Variable) error {
+	// TODO KAI this does not take into account require args
 	var needed []*modconfig.Variable
 
 	for name, vc := range vcs {
@@ -118,8 +113,8 @@ func identifyMissingVariables(existing map[string]inputvars.UnparsedVariableValu
 			continue // We only prompt for required variables
 		}
 		_, unparsedValExists := existing[name]
-		_, depModVarValueExists := depModVarValues[name]
-		if !unparsedValExists && !depModVarValueExists {
+
+		if !unparsedValExists {
 			needed = append(needed, vc)
 		}
 	}

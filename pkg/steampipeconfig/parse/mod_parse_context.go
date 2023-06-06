@@ -2,6 +2,9 @@ package parse
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/tfdiags"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"log"
 
 	"github.com/Masterminds/semver/v3"
@@ -120,6 +123,7 @@ func NewChildModParseContext(parent *ModParseContext, modVersion *modconfig.ModV
 	child.DependencyVariables = parent.DependencyVariables
 	// set the dependency config
 	child.DependencyConfig = NewDependencyConfig(modVersion, version)
+
 	// call set variables - this will set the Variables property from the appropriate dependency variables
 	child.SetVariables(*child.DependencyConfig.DependencyPath)
 	return child
@@ -219,6 +223,42 @@ func (m *ModParseContext) addDependencyVariablesToReferenceMap(modDependencyKey 
 			m.referenceValues[alias]["var"] = VariableValueCtyMap(depVars)
 		}
 	}
+}
+
+// when reloading a mod depdency tree to resolve require args values, this function is called after each mod is loaded
+// to load the require arg values and update the variable values
+func (m *ModParseContext) LoadModRequireArgs() error {
+	// if we have not loaded variable definitions yet, do not load require args
+	variableMap := m.GetVariableMap()
+	if len(variableMap.AllVariables) == 0 {
+		return nil
+	}
+
+	// do not recurse down dependencies
+	depModVarValues, err := m.CollectVariableValuesFromModRequire()
+	if err != nil {
+		return err
+	}
+	if len(depModVarValues) == 0 {
+		return nil
+	}
+	// now update the variables map with the input values
+	for name, inputValue := range depModVarValues {
+		variable := variableMap.AllVariables[name]
+		variable.SetInputValue(
+			inputValue.Value,
+			inputValue.SourceTypeString(),
+			inputValue.SourceRange)
+
+		// set variable value string in our workspace map
+		variableMap.VariableValues[name], err = type_conversion.CtyToString(inputValue.Value)
+		if err != nil {
+			return err
+		}
+	}
+	m.AddInputVariableValues(variableMap)
+	m.AddVariablesToEvalContext(m.CurrentMod.GetInstallCacheKey())
+	return nil
 }
 
 // AddModResources is used to add mod resources to the eval context
@@ -575,11 +615,8 @@ func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
 
 func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
 	m.CurrentMod = mod
-	// if this is not a dependency mod, initialise the variables
-	// (for depdency mods this will be done by NewChildModParseContext)
-	if m.DependencyConfig == nil {
-		m.SetVariables(mod.GetInstallCacheKey())
-	}
+	// load any arg values from the mod require - these will  be passed to dependency mods
+	m.LoadModRequireArgs()
 }
 
 func (m *ModParseContext) SetVariables(modDependencyKey string) {
@@ -645,4 +682,44 @@ func (m *ModParseContext) resolveModArgs(mod *modconfig.Mod) hcl.Diagnostics {
 	//	}
 	//}
 	return diags
+}
+
+func (m *ModParseContext) CollectVariableValuesFromModRequire() (inputvars.InputValues, error) {
+	mod := m.CurrentMod
+	res := make(inputvars.InputValues)
+	if mod.Require != nil {
+		for _, depModConstraint := range mod.Require.Mods {
+			if args := depModConstraint.Args; args != nil {
+				// find the loaded dep mod which satisfies this constraint
+				resolvedConstraint := m.WorkspaceLock.GetMod(depModConstraint.Name, mod)
+				if resolvedConstraint == nil {
+					return nil, fmt.Errorf("dependency mod %s is not loaded", depModConstraint.Name)
+				}
+				for varName, varVal := range args {
+					varFullName := fmt.Sprintf("%s.var.%s", resolvedConstraint.Alias, varName)
+
+					sourceRange := tfdiags.SourceRange{
+						Filename: mod.Require.DeclRange.Filename,
+						Start: tfdiags.SourcePos{
+							Line:   mod.Require.DeclRange.Start.Line,
+							Column: mod.Require.DeclRange.Start.Column,
+							Byte:   mod.Require.DeclRange.Start.Byte,
+						},
+						End: tfdiags.SourcePos{
+							Line:   mod.Require.DeclRange.End.Line,
+							Column: mod.Require.DeclRange.End.Column,
+							Byte:   mod.Require.DeclRange.End.Byte,
+						},
+					}
+
+					res[varFullName] = &inputvars.InputValue{
+						Value:       varVal,
+						SourceType:  inputvars.ValueFromModFile,
+						SourceRange: sourceRange,
+					}
+				}
+			}
+		}
+	}
+	return res, nil
 }
