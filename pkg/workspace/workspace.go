@@ -299,26 +299,7 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 		return nil, err
 	}
 
-	//// if needed, reload
-	//// if a mod require has args which use a variable, this will not have been resolved in the first pass
-	//// - we need to parse again
-	//// TODO KAI make ModsWithUnresolvedArgs return a bool
-	//modsWithUnresolvedArgs := variablesParseCtx.ModsWithUnresolvedArgs()
-	//if len(modsWithUnresolvedArgs) > 0 {
-	//	// TODO kai tidy hook (make a separate fxn?)
-	//	postLoadHook := loadModRequireArgs
-	//	// add the variables into the parse context and rebuild the eval context
-	//	variablesParseCtx.AddInputVariableValues(inputVariableValues)
-	//	// TODO TIDY THIS TO AVOID UNNEEDED PARAMS
-	//	variablesParseCtx.AddVariablesToEvalContext(variablesParseCtx.CurrentMod.GetInstallCacheKey())
-	//	// now try to parse the mod again
-	//	inputVariableValues, err = w.getVariableValues(ctx, variablesParseCtx, validateMissing, steampipeconfig.WithPostLoadHook(postLoadHook), steampipeconfig.WithReloadDependencies())
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
 	return inputVariableValues, nil
-
 }
 
 func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, error) {
