@@ -2,9 +2,11 @@ package controldisplay
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -95,10 +97,36 @@ func loadAvailableTemplates() ([]*OutputTemplate, error) {
 	if err != nil {
 		return nil, err
 	}
-	templates := make([]*OutputTemplate, len(templateDirectories))
-	for idx, f := range templateDirectories {
-		templates[idx] = NewOutputTemplate(filepath.Join(templateDir, f.Name()))
+	templates := []*OutputTemplate{}
+	for _, f := range templateDirectories {
+		if shouldIgnoreDirectory(templateDir, f) {
+			continue
+		}
+		templates = append(templates, NewOutputTemplate(filepath.Join(templateDir, f.Name())))
 	}
 
 	return templates, nil
+}
+
+var directoryIgnoreList []string = []string{
+	".DS_Store",
+}
+
+func shouldIgnoreDirectory(templateDir string, dir fs.DirEntry) bool {
+	if !dir.IsDir() {
+		return true
+	}
+	if helpers.StringSliceContains(directoryIgnoreList, dir.Name()) {
+		return true
+	}
+	dirLs, err := os.ReadDir(filepath.Join(templateDir, dir.Name()))
+	if err != nil {
+		// ignore this directory if this cannot be listed at least
+		return true
+	}
+	if len(dirLs) == 0 {
+		// ignore this directory if there are no files in it.
+		return true
+	}
+	return false
 }
