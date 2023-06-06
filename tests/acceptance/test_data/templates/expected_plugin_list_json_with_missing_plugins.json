@@ -1,0 +1,20 @@
+{
+  "installed": [
+    {
+      "name": "hub.steampipe.io/plugins/turbot/docker@latest",
+      "version": "0.6.0",
+      "connections": [
+        "docker"
+      ]
+    }
+  ],
+  "failed": [
+    {
+      "name": "hub.steampipe.io/plugins/turbot/hackernews@latest",
+      "reason": "Not installed",
+      "connections": [
+        "hackernews"
+      ]
+    }
+  ]
+}

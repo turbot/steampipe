@@ -450,6 +450,17 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_table.txt)"
 }
 
+@test "plugin list - output json" {
+  export STEAMPIPE_DISPLAY_WIDTH=100
+  tmpdir="$(mktemp -d)"
+  steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
+  run steampipe plugin list --install-dir $tmpdir --output json
+  echo $output
+  rm -rf $tmpdir
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_json.txt)"
+}
+
+
 @test "plugin list - output table (with a missing plugin)" {
   export STEAMPIPE_DISPLAY_WIDTH=100
   tmpdir="$(mktemp -d)"
@@ -462,7 +473,44 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_table_with_missing_plugins.txt)"
 }
 
-# TODO: add a test to check the plugin list output with failed plugins
+@test "plugin list - output json (with a missing plugin)" {
+  export STEAMPIPE_DISPLAY_WIDTH=100
+  tmpdir="$(mktemp -d)"
+  steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
+  # uninstall a plugin but dont remove the config - to simulate the missing plugin scenario
+  steampipe plugin uninstall hackernews@0.4.0 --install-dir $tmpdir
+  run steampipe plugin list --install-dir $tmpdir --output json
+  echo $output
+  rm -rf $tmpdir
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_json_with_missing_plugins.json)"
+}
+
+
+# TODO: finds other ways to simulate failed plugins
+
+@test "plugin list - output table (with a failed plugin)" {
+  export STEAMPIPE_DISPLAY_WIDTH=100
+  tmpdir="$(mktemp -d)"
+  steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
+  # remove the contents of a plugin execuatable to simulate the failed plugin scenario
+  truncate -s 0 plugins/hub.steampipe.io/plugins/turbot/hackernews@latest/steampipe-plugin-hackernews.plugin
+  run steampipe plugin list --install-dir $tmpdir
+  echo $output
+  rm -rf $tmpdir
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_table_with_failed_plugins.txt)"
+}
+
+@test "plugin list - output json (with a failed plugin)" {
+  export STEAMPIPE_DISPLAY_WIDTH=100
+  tmpdir="$(mktemp -d)"
+  steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
+  # remove the contents of a plugin binary execuatable to simulate the failed plugin scenario
+  truncate -s 0 plugins/hub.steampipe.io/plugins/turbot/hackernews@latest/steampipe-plugin-hackernews.plugin
+  run steampipe plugin list --install-dir $tmpdir --output json
+  echo $output
+  rm -rf $tmpdir
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_json_with_failed.json)"
+}
 
 @test "cleanup" {
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
