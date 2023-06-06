@@ -307,36 +307,7 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 	modsWithUnresolvedArgs := variablesParseCtx.ModsWithUnresolvedArgs()
 	if len(modsWithUnresolvedArgs) > 0 {
 		// TODO kai tidy hook (make a separate fxn?)
-		postLoadHook := func(parseCtx *parse.ModParseContext) error {
-			// do not recurse down depdencies
-			depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(parseCtx.CurrentMod, parseCtx, false)
-			if err != nil {
-				return err
-			}
-			if len(depModVarValues) == 0 {
-				return nil
-			}
-			variableMap := parseCtx.GetVariableMap()
-			// now update the variables map with the input values
-			for name, inputValue := range depModVarValues {
-				variable := variableMap.AllVariables[name]
-				variable.SetInputValue(
-					inputValue.Value,
-					inputValue.SourceTypeString(),
-					inputValue.SourceRange)
-
-				// set variable value string in our workspace map
-				variableMap.VariableValues[name], err = type_conversion.CtyToString(inputValue.Value)
-				if err != nil {
-					return err
-				}
-			}
-			parseCtx.AddInputVariableValues(variableMap)
-
-			// TODO TIDY THIS TO AVOID UNNEEDED PARAMS
-			parseCtx.AddVariablesToEvalContext(variablesParseCtx.CurrentMod.GetInstallCacheKey())
-			return nil
-		}
+		postLoadHook := loadModRequireArgs
 		// add the variables into the parse context and rebuild the eval context
 		variablesParseCtx.AddInputVariableValues(inputVariableValues)
 		// TODO TIDY THIS TO AVOID UNNEEDED PARAMS
@@ -349,6 +320,37 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 	}
 	return inputVariableValues, nil
 
+}
+
+// when reloading a mod depdency tree to resolve require args values, this function is called after each mod is loaded
+// to load the require arg values and update the variable values
+func loadModRequireArgs(parseCtx *parse.ModParseContext) error {
+	// do not recurse down dependencies
+	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(parseCtx.CurrentMod, parseCtx, false)
+	if err != nil {
+		return err
+	}
+	if len(depModVarValues) == 0 {
+		return nil
+	}
+	variableMap := parseCtx.GetVariableMap()
+	// now update the variables map with the input values
+	for name, inputValue := range depModVarValues {
+		variable := variableMap.AllVariables[name]
+		variable.SetInputValue(
+			inputValue.Value,
+			inputValue.SourceTypeString(),
+			inputValue.SourceRange)
+
+		// set variable value string in our workspace map
+		variableMap.VariableValues[name], err = type_conversion.CtyToString(inputValue.Value)
+		if err != nil {
+			return err
+		}
+	}
+	parseCtx.AddInputVariableValues(variableMap)
+	parseCtx.AddVariablesToEvalContext(parseCtx.CurrentMod.GetInstallCacheKey())
+	return nil
 }
 
 func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool, opts ...steampipeconfig.LoadModOption) (*modconfig.ModVariableMap, error) {

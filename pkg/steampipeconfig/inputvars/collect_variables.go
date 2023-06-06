@@ -141,7 +141,6 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	return ret, nil
 }
 
-// TODO KAI tidy recursive
 func CollectVariableValuesFromModRequire(mod *modconfig.Mod, parseCtx *parse.ModParseContext, recursive bool) (InputValues, error) {
 	res := make(InputValues)
 	if mod.Require != nil {

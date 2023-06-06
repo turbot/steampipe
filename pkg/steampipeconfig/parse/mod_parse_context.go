@@ -171,7 +171,9 @@ func (m *ModParseContext) AddInputVariableValues(inputVariables *modconfig.ModVa
 	m.DependencyVariables = inputVariables.DependencyVariables
 }
 
-// TODO tactical - used for hook
+// Tactical
+// convert the RootVariables and DepdencyVariables back into a ModVariableMap
+// used for post mod load hook when reloading require args
 func (m *ModParseContext) GetVariableMap() *modconfig.ModVariableMap {
 	res := &modconfig.ModVariableMap{
 		RootVariables:       m.Variables,
@@ -182,7 +184,6 @@ func (m *ModParseContext) GetVariableMap() *modconfig.ModVariableMap {
 	return res
 }
 
-// TODO remove need for modDependencyKey
 func (m *ModParseContext) AddVariablesToEvalContext(modDependencyKey string) {
 	m.addRootVariablesToReferenceMap(m.Variables)
 	m.addDependencyVariablesToReferenceMap(modDependencyKey)
@@ -575,7 +576,7 @@ func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
 func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
 	m.CurrentMod = mod
 	// if this is not a dependency mod, initialise the variables
-	// TODO CHECK THIS
+	// (for depdency mods this will be done by NewChildModParseContext)
 	if m.DependencyConfig == nil {
 		m.SetVariables(mod.GetInstallCacheKey())
 	}

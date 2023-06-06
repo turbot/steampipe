@@ -73,7 +73,6 @@ func getInputVariables(variableMap map[string]*modconfig.Variable, validate bool
 	}
 
 	// build map of dependency mod variable values declared in the mod 'Require' section
-	// TODO sort recursion
 	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(mod, parseCtx, true)
 	if err != nil {
 		return nil, err
