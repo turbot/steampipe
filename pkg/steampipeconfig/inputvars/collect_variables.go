@@ -141,7 +141,8 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	return ret, nil
 }
 
-func CollectVariableValuesFromModRequire(mod *modconfig.Mod, parseCtx *parse.ModParseContext) (InputValues, error) {
+// TODO KAI tidy recursive
+func CollectVariableValuesFromModRequire(mod *modconfig.Mod, parseCtx *parse.ModParseContext, recursive bool) (InputValues, error) {
 	res := make(InputValues)
 	if mod.Require != nil {
 		for _, depModConstraint := range mod.Require.Mods {
@@ -180,12 +181,14 @@ func CollectVariableValuesFromModRequire(mod *modconfig.Mod, parseCtx *parse.Mod
 				}
 			}
 
-			// if the depMod specifies args, add these in
-			depInputValues, err := CollectVariableValuesFromModRequire(depMod, parseCtx)
-			if err != nil {
-				return nil, err
+			if recursive {
+				// if the depMod specifies args, add these in
+				depInputValues, err := CollectVariableValuesFromModRequire(depMod, parseCtx, true)
+				if err != nil {
+					return nil, err
+				}
+				res.Merge(depInputValues)
 			}
-			res.Merge(depInputValues)
 		}
 	}
 	return res, nil

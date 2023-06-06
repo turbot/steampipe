@@ -15,10 +15,10 @@ import (
 	"github.com/turbot/steampipe/pkg/type_conversion"
 )
 
-func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext) (*modconfig.ModVariableMap, error) {
+func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext, opts ...LoadModOption) (*modconfig.ModVariableMap, error) {
 	// only load mod and variables blocks
 	parseCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
-	mod, errAndWarnings := LoadMod(variablePath, parseCtx)
+	mod, errAndWarnings := LoadMod(variablePath, parseCtx, opts...)
 	if errAndWarnings.GetError() != nil {
 		return nil, errAndWarnings.GetError()
 	}
@@ -73,7 +73,8 @@ func getInputVariables(variableMap map[string]*modconfig.Variable, validate bool
 	}
 
 	// build map of dependency mod variable values declared in the mod 'Require' section
-	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(mod, parseCtx)
+	// TODO sort recursion
+	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(mod, parseCtx, true)
 	if err != nil {
 		return nil, err
 	}

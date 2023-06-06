@@ -36,15 +36,16 @@ func NewModVariableMap(mod *Mod, dependencyMods ModMap) *ModVariableMap {
 			m.DependencyVariables[dependencyPath][buildVariableMapKey(k)] = v
 		}
 	}
+
 	// build map of all variables
-	m.AllVariables = m.buildCombinedMap()
+	m.PopulateAllVariables()
 
 	return m
 }
 
-// build a map of top level and dependency variables
+// PopulateAllVariables builds a map of top level and dependency variables
 // (dependency variables are keyed by full (qualified) name
-func (m ModVariableMap) buildCombinedMap() map[string]*Variable {
+func (m ModVariableMap) PopulateAllVariables() {
 	res := make(map[string]*Variable)
 	for k, v := range m.RootVariables {
 		// add top level vars keyed by short name
@@ -56,7 +57,7 @@ func (m ModVariableMap) buildCombinedMap() map[string]*Variable {
 			res[v.FullName] = v
 		}
 	}
-	return res
+	m.AllVariables = res
 }
 
 func (m ModVariableMap) ToArray() []*Variable {

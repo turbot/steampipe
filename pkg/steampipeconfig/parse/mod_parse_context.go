@@ -2,13 +2,15 @@ package parse
 
 import (
 	"fmt"
+	"log"
+
+	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/zclconf/go-cty/cty"
-	"log"
 )
 
 const rootDependencyNode = "rootDependencyNode"
@@ -36,6 +38,7 @@ type ModParseContext struct {
 	ParseContext
 	// the mod which is currently being parsed
 	CurrentMod *modconfig.Mod
+
 	// the workspace lock data
 	WorkspaceLock *versionmap.WorkspaceLock
 
@@ -75,6 +78,7 @@ type ModParseContext struct {
 
 	// a map of just the top level dependencies of the CurrentMod, keyed my full mod DepdencyName (with no version)
 	topLevelDependencyMods modconfig.ModMap
+	DependencyConfig       *ModDependencyConfig
 }
 
 func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *ModParseContext {
@@ -101,7 +105,7 @@ func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath st
 	return c
 }
 
-func NewChildModParseContext(parent *ModParseContext, rootEvalPath string) *ModParseContext {
+func NewChildModParseContext(parent *ModParseContext, modVersion *modconfig.ModVersionConstraint, rootEvalPath string, version *semver.Version) *ModParseContext {
 	// create a child run context
 	child := NewModParseContext(
 		parent.WorkspaceLock,
@@ -114,7 +118,10 @@ func NewChildModParseContext(parent *ModParseContext, rootEvalPath string) *ModP
 	child.ParentParseCtx = parent
 	// copy DependencyVariables
 	child.DependencyVariables = parent.DependencyVariables
-
+	// set the dependency config
+	child.DependencyConfig = NewDependencyConfig(modVersion, version)
+	// call set variables - this will set the Variables property from the appropriate dependency variables
+	child.SetVariables(*child.DependencyConfig.DependencyPath)
 	return child
 }
 
@@ -155,18 +162,30 @@ func VariableValueCtyMap(variables map[string]*modconfig.Variable) map[string]ct
 	return ret
 }
 
-// AddInputVariables adds variables to the run context.
+// AddInputVariableValues adds evaluated variables to the run context.
 // This function is called for the root run context after loading all input variables
-func (m *ModParseContext) AddInputVariables(inputVariables *modconfig.ModVariableMap) {
+func (m *ModParseContext) AddInputVariableValues(inputVariables *modconfig.ModVariableMap) {
 	// store the variables
 	m.Variables = inputVariables.RootVariables
 	// store the depdency variables sop we can pass them down to our children
 	m.DependencyVariables = inputVariables.DependencyVariables
 }
 
-func (m *ModParseContext) AddVariablesToEvalContext() {
+// TODO tactical - used for hook
+func (m *ModParseContext) GetVariableMap() *modconfig.ModVariableMap {
+	res := &modconfig.ModVariableMap{
+		RootVariables:       m.Variables,
+		DependencyVariables: m.DependencyVariables,
+		VariableValues:      make(map[string]string),
+	}
+	res.PopulateAllVariables()
+	return res
+}
+
+// TODO remove need for modDependencyKey
+func (m *ModParseContext) AddVariablesToEvalContext(modDependencyKey string) {
 	m.addRootVariablesToReferenceMap(m.Variables)
-	m.addDependencyVariablesToReferenceMap()
+	m.addDependencyVariablesToReferenceMap(modDependencyKey)
 	m.buildEvalContext()
 }
 
@@ -179,13 +198,12 @@ func (m *ModParseContext) addRootVariablesToReferenceMap(variables map[string]*m
 	m.referenceValues["local"]["var"] = VariableValueCtyMap(variables)
 }
 
-// addDependencyVariablesToReferenceMap sets the DependencyVariables property
-// and adds the dependency variables to the referenceValues map (used to build the eval context)
-func (m *ModParseContext) addDependencyVariablesToReferenceMap() {
-	currentModKey := m.CurrentMod.GetInstallCacheKey()
-	topLevelDependencies := m.WorkspaceLock.InstallCache[currentModKey]
+// addDependencyVariablesToReferenceMap adds the dependency variables to the referenceValues map
+// (used to build the eval context)
+func (m *ModParseContext) addDependencyVariablesToReferenceMap(modDependencyKey string) {
+	topLevelDependencies := m.WorkspaceLock.InstallCache[modDependencyKey]
 
-	// convert topLevelDependencies into as map keyed by depdency path
+	// convert topLevelDependencies into as map keyed by dependency path
 	topLevelDependencyPathMap := topLevelDependencies.ToDependencyPathMap()
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
 	// add dependency mod variables to dependencyVariableValues, scoped by DependencyPath
@@ -556,25 +574,22 @@ func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
 
 func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
 	m.CurrentMod = mod
-
-	// if the current mod is a dependency mod (i.e. has a DependencyPath property set), update the Variables property
-	if dependencyVariables, ok := m.DependencyVariables[mod.GetInstallCacheKey()]; ok {
-		m.Variables = dependencyVariables
+	// if this is not a dependency mod, initialise the variables
+	// TODO CHECK THIS
+	if m.DependencyConfig == nil {
+		m.SetVariables(mod.GetInstallCacheKey())
 	}
-	// set the root variables from the parent
-	// now the mod is set we can add variables to the eval context
-	// ( we cannot do this until mod as set as we need to identify which variables to use if we are a dependency
-	m.AddVariablesToEvalContext()
 }
-func (m *ModParseContext) SetVariablesForDependency(dependencyPath string) {
+
+func (m *ModParseContext) SetVariables(modDependencyKey string) {
 	// if the current mod is a dependency mod (i.e. has a DependencyPath property set), update the Variables property
-	if dependencyVariables, ok := m.DependencyVariables[dependencyPath]; ok {
+	if dependencyVariables, ok := m.DependencyVariables[modDependencyKey]; ok {
 		m.Variables = dependencyVariables
 	}
 	// set the root variables from the parent
 	// now the mod is set we can add variables to the eval context
 	// ( we cannot do this until mod as set as we need to identify which variables to use if we are a dependency
-	m.AddVariablesToEvalContext()
+	m.AddVariablesToEvalContext(modDependencyKey)
 }
 
 // ResolveUnresolvedArgs returns whether the current mod, or any dependency mod, has unresolved args in the require block

@@ -119,7 +119,7 @@ func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, v
 	}
 
 	// depModVarValues are values of dependency mod variables which are set in the mod file.
-	// default the inputVariables to these values (last resourt)
+	// default the inputVariables to these values (last resort)
 	ret.DefaultTo(depModVarValues)
 
 	// By this point we should've gathered all of the required variables

@@ -27,17 +27,9 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOpt
 			errorsAndWarnings = modconfig.NewErrorsAndWarning(helpers.ToError(r))
 		}
 	}()
-
-	// HACK
-	// if this is a dependency mod, we need to copy the parseCtx dependency mod variables into the Variables property
-	// _before_ loading the mod definition
-	var config = &LoadModConfig{}
-	// apply opts to config
-	for _, o := range opts {
-		o(config)
-	}
-	if config.DependencyPath != nil {
-		parseCtx.SetVariablesForDependency(*config.DependencyPath)
+	config := &LoadModConfig{}
+	for _, opt := range opts {
+		opt(config)
 	}
 
 	mod, loadModResult := loadModDefinition(modPath, parseCtx)
@@ -45,11 +37,23 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOpt
 		return nil, loadModResult
 	}
 
+	// if there is a post load hook, run it
+	if config.PostLoadHook != nil {
+		if err := config.PostLoadHook(parseCtx); err != nil {
+			return nil, modconfig.NewErrorsAndWarning(err)
+		}
+	}
+
+	// if this is a dependency mod, initialise the dependency config
+	if parseCtx.DependencyConfig != nil {
+		parseCtx.DependencyConfig.SetModProperties(mod)
+	}
+
 	// set the current mod on the run context
 	parseCtx.SetCurrentMod(mod)
 
 	// load the mod dependencies
-	if err := loadModDependencies(mod, parseCtx); err != nil {
+	if err := loadModDependencies(mod, parseCtx, config); err != nil {
 		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
@@ -93,7 +97,7 @@ func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (mod *mo
 	return mod, errorsAndWarnings
 }
 
-func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext) error {
+func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext, config *LoadModConfig) error {
 	var errors []error
 
 	if mod.Require != nil {
@@ -109,12 +113,18 @@ func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext) er
 			if err != nil {
 				return err
 			}
-			if loadedMod != nil {
+			if loadedMod != nil && !config.ReloadDependencies {
 				continue
 			}
 
 			if err := loadModDependency(requiredModVersion, parseCtx); err != nil {
 				errors = append(errors, err)
+			}
+			// if there is a post load hook, run it
+			if config.PostLoadHook != nil {
+				if err := config.PostLoadHook(parseCtx); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -143,19 +153,19 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	parseCtx.ListOptions.Exclude = nil
 	defer func() { parseCtx.ListOptions.Exclude = prevExclusions }()
 
-	childParseCtx := parse.NewChildModParseContext(parseCtx, dependencyDir)
+	childParseCtx := parse.NewChildModParseContext(parseCtx, modDependency, dependencyDir, version)
 	// NOTE: pass in the version and dependency path of the mod - these must be set before it loads its dependencies
-	mod, errAndWarnings := LoadMod(dependencyDir, childParseCtx, WithDependencyConfig(modDependency.Name, version))
+	dependencyMod, errAndWarnings := LoadMod(dependencyDir, childParseCtx)
 	if errAndWarnings.GetError() != nil {
 		return errAndWarnings.GetError()
 	}
 
 	// update loaded dependency mods
-	parseCtx.AddLoadedDependencyMod(mod)
+	parseCtx.AddLoadedDependencyMod(dependencyMod)
 	if parseCtx.ParentParseCtx != nil {
-		parseCtx.ParentParseCtx.AddLoadedDependencyMod(mod)
+		parseCtx.ParentParseCtx.AddLoadedDependencyMod(dependencyMod)
 		// add mod resources to parent parse context
-		parseCtx.ParentParseCtx.AddModResources(mod)
+		parseCtx.ParentParseCtx.AddModResources(dependencyMod)
 	}
 
 	return nil

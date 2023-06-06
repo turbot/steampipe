@@ -21,9 +21,11 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/modinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -260,7 +262,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 		return modconfig.NewErrorsAndWarning(err)
 	}
 	// add variables
-	parseCtx.AddInputVariables(inputVariables)
+	parseCtx.AddInputVariableValues(inputVariables)
 	// do not reload variables as we already have them
 	parseCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 
@@ -293,7 +295,7 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 		return nil, err
 	}
 
-	inputVariables, err := w.getVariableValues(ctx, variablesParseCtx, validateMissing)
+	inputVariableValues, err := w.getVariableValues(ctx, variablesParseCtx, validateMissing)
 	if err != nil {
 		return nil, err
 	}
@@ -301,25 +303,57 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 	// if needed, reload
 	// if a mod require has args which use a variable, this will not have been resolved in the first pass
 	// - we need to parse again
+	// TODO KAI make ModsWithUnresolvedArgs return a bool
 	modsWithUnresolvedArgs := variablesParseCtx.ModsWithUnresolvedArgs()
 	if len(modsWithUnresolvedArgs) > 0 {
+		// TODO kai tidy hook (make a separate fxn?)
+		postLoadHook := func(parseCtx *parse.ModParseContext) error {
+			// do not recurse down depdencies
+			depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(parseCtx.CurrentMod, parseCtx, false)
+			if err != nil {
+				return err
+			}
+			if len(depModVarValues) == 0 {
+				return nil
+			}
+			variableMap := parseCtx.GetVariableMap()
+			// now update the variables map with the input values
+			for name, inputValue := range depModVarValues {
+				variable := variableMap.AllVariables[name]
+				variable.SetInputValue(
+					inputValue.Value,
+					inputValue.SourceTypeString(),
+					inputValue.SourceRange)
 
+				// set variable value string in our workspace map
+				variableMap.VariableValues[name], err = type_conversion.CtyToString(inputValue.Value)
+				if err != nil {
+					return err
+				}
+			}
+			parseCtx.AddInputVariableValues(variableMap)
+
+			// TODO TIDY THIS TO AVOID UNNEEDED PARAMS
+			parseCtx.AddVariablesToEvalContext(variablesParseCtx.CurrentMod.GetInstallCacheKey())
+			return nil
+		}
 		// add the variables into the parse context and rebuild the eval context
-		variablesParseCtx.AddInputVariables(inputVariables)
-		variablesParseCtx.AddVariablesToEvalContext()
+		variablesParseCtx.AddInputVariableValues(inputVariableValues)
+		// TODO TIDY THIS TO AVOID UNNEEDED PARAMS
+		variablesParseCtx.AddVariablesToEvalContext(variablesParseCtx.CurrentMod.GetInstallCacheKey())
 		// now try to parse the mod again
-		inputVariables, err = w.getVariableValues(ctx, variablesParseCtx, validateMissing)
+		inputVariableValues, err = w.getVariableValues(ctx, variablesParseCtx, validateMissing, steampipeconfig.WithPostLoadHook(postLoadHook), steampipeconfig.WithReloadDependencies())
 		if err != nil {
 			return nil, err
 		}
 	}
-	return inputVariables, nil
+	return inputVariableValues, nil
 
 }
 
-func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, error) {
+func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool, opts ...steampipeconfig.LoadModOption) (*modconfig.ModVariableMap, error) {
 	// load variable definitions
-	variableMap, err := steampipeconfig.LoadVariableDefinitions(w.Path, variablesParseCtx)
+	variableMap, err := steampipeconfig.LoadVariableDefinitions(w.Path, variablesParseCtx, opts...)
 	if err != nil {
 		return nil, err
 	}
