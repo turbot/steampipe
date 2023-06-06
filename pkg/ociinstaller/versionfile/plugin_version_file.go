@@ -19,11 +19,18 @@ var (
 	ErrNoContent = errors.New("no content")
 )
 
-const PluginStructVersion = 20220411
+const (
+	PluginStructVersion   = 20220411
+	pluginVersionFileName = "version.json"
+)
 
 type PluginVersionFile struct {
 	Plugins       map[string]*InstalledVersion `json:"plugins"`
 	StructVersion int64                        `json:"struct_version"`
+
+	// used when this structure was populated by traversion plugin directory
+	// if so, there's no need to attempt a backfill
+	composed bool
 }
 
 // IsValid checks whether the struct was correctly deserialized,
@@ -54,7 +61,12 @@ func (f *PluginVersionFile) EnsureVersionFile(installData *InstalledVersion) err
 	if err != nil {
 		return err
 	}
-	versionFile := filepath.Join(pluginFolder, "version.json")
+	versionFile := filepath.Join(pluginFolder, pluginVersionFileName)
+	if filehelpers.FileExists(versionFile) {
+		// if the version file already exists, nothing to do
+		return nil
+	}
+
 	theBytes, err := json.MarshalIndent(installData, "", "  ")
 	if err != nil {
 		return err
@@ -83,27 +95,28 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 	versionFilePath := filepaths.PluginVersionFilePath()
 	if filehelpers.FileExists(versionFilePath) {
 		pluginVersions, err := readPluginVersionFile(versionFilePath)
+
+		// we could read out the file
 		if err == nil {
-			// backfill the InstalledVersion struct version
-			// so that when this gets saved, the struct versions are filled in
-			for _, iv := range pluginVersions.Plugins {
-				if iv.StructVersion == 0 {
-					iv.StructVersion = InstalledVersionStructVersion
-				}
-			}
-			if pluginVersions.Plugins == nil {
-				// generate the version file from the individual version files
-				pluginVersions = recomposePluginVersionFile()
-				pluginVersions.Save()
-			}
 			return pluginVersions, nil
 		}
-		if errors.Is(err, &json.SyntaxError{}) {
-			// generate the version file from the individual version files
-			pluginVersions = recomposePluginVersionFile()
-			pluginVersions.Save()
+
+		// check if this was a syntax error during parsing
+		var syntaxError *json.SyntaxError
+		isSyntaxError := errors.As(err, &syntaxError)
+		if !isSyntaxError {
+			// no - return
+			return nil, err
 		}
+
+		// generate the version file from the individual version files
+		// by walking the plugin directories
+		pluginVersions = recomposePluginVersionFile()
+		err = pluginVersions.Save()
+
+		return pluginVersions, err
 	}
+
 	return NewPluginVersionFile(), nil
 }
 
@@ -115,28 +128,31 @@ func recomposePluginVersionFile() *PluginVersionFile {
 		if !d.IsDir() {
 			return nil
 		}
-		versionFile := filepath.Join(path, "version.json")
+		versionFile := filepath.Join(path, pluginVersionFileName)
 		if !filehelpers.FileExists(versionFile) {
 			return nil
 		}
 		data, err := os.ReadFile(versionFile)
 		if err != nil {
-			log.Println("[ERROR]", "could not read plugin version file at", versionFile, err)
 			return nil
 		}
 		install := EmptyInstalledVersion()
 		if err := json.Unmarshal(data, &install); err != nil {
-			log.Println("[ERROR]", "error while parsing plugin version file at", versionFile, err)
+			// this wasn't the version file (probably) - keep going
 			return nil
 		}
 		pvf.Plugins[install.Name] = install
-		return nil
+		// now that we have an entry - lets skip sub directories
+		return fs.SkipDir
 	})
 
 	if err != nil {
 		log.Println("[ERROR]", "error while walking plugin directory for version files", err)
 	}
 
+	// mark that this is a composed version file
+	// and not directly read
+	pvf.composed = true
 	return pvf
 }
 
@@ -144,6 +160,11 @@ func BackfillPluginVersionFile() error {
 	versions, err := LoadPluginVersionFile()
 	if err != nil {
 		return err
+	}
+	if versions.composed {
+		// this was composed from the plugin directories
+		// no point backfilling
+		return nil
 	}
 	return versions.Backfill()
 }
@@ -187,7 +208,6 @@ func readPluginVersionFile(path string) (*PluginVersionFile, error) {
 	var data PluginVersionFile
 
 	if err := json.Unmarshal(file, &data); err != nil {
-		log.Println("[ERROR]", "Error while reading plugin version file", err)
 		return nil, err
 	}
 
@@ -195,9 +215,13 @@ func readPluginVersionFile(path string) (*PluginVersionFile, error) {
 		data.Plugins = map[string]*InstalledVersion{}
 	}
 
-	for key := range data.Plugins {
+	for key, installedPlugin := range data.Plugins {
 		// hard code the name to the key
-		data.Plugins[key].Name = key
+		installedPlugin.Name = key
+		if installedPlugin.StructVersion == 0 {
+			// also backfill the StructVersion in the values
+			installedPlugin.StructVersion = InstalledVersionStructVersion
+		}
 	}
 
 	return &data, nil
