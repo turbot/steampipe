@@ -28,6 +28,23 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
+type installedPlugin struct {
+	Name        string   `json:"name"`
+	Version     string   `json:"version"`
+	Connections []string `json:"connections"`
+}
+
+type failedPlugin struct {
+	Name        string   `json:"name"`
+	Reason      string   `json:"reason"`
+	Connections []string `json:"connections"`
+}
+
+type pluginJsonOutput struct {
+	Installed []installedPlugin `json:"installed"`
+	Failed    []failedPlugin    `json:"failed"`
+}
+
 // Plugin management commands
 func pluginCmd() *cobra.Command {
 	var cmd = &cobra.Command{
@@ -592,12 +609,6 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 		error_helpers.ShowError(cmd.Context(), err)
 	}
 
-	if len(res.Warnings) > 0 {
-		fmt.Println()
-		res.ShowWarnings()
-		fmt.Printf("\n")
-	}
-
 }
 
 func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) {
@@ -671,6 +682,8 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.ConnectionErrorPluginFailedToStart})
 			conns = []string{}
 		}
+
+		// missing plugins
 		for p, item := range missingPluginMap {
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
@@ -680,30 +693,15 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 		}
 
 		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
-		fmt.Printf("\n")
+		fmt.Println()
 	}
 }
 
 func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection) error {
-	output := struct {
-		Installed []struct {
-			Name        string   `json:"name"`
-			Version     string   `json:"version"`
-			Connections []string `json:"connections"`
-		} `json:"installed"`
-		Failed []struct {
-			Name        string   `json:"name"`
-			Reason      string   `json:"reason"`
-			Connections []string `json:"connections"`
-		} `json:"failed"`
-	}{}
+	output := pluginJsonOutput{}
 
 	for _, item := range pluginList {
-		installed := struct {
-			Name        string   `json:"name"`
-			Version     string   `json:"version"`
-			Connections []string `json:"connections"`
-		}{
+		installed := installedPlugin{
 			Name:        item.Name,
 			Version:     item.Version,
 			Connections: item.Connections,
@@ -716,27 +714,20 @@ func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, m
 		for i, conn := range item {
 			connections[i] = conn.Name
 		}
-		failed := struct {
-			Name        string   `json:"name"`
-			Reason      string   `json:"reason"`
-			Connections []string `json:"connections"`
-		}{
+		failed := failedPlugin{
 			Name:        p,
 			Connections: connections,
 			Reason:      constants.ConnectionErrorPluginFailedToStart,
 		}
 		output.Failed = append(output.Failed, failed)
 	}
+
 	for p, item := range missingPluginMap {
 		connections := make([]string, len(item))
 		for i, conn := range item {
 			connections[i] = conn.Name
 		}
-		missing := struct {
-			Name        string   `json:"name"`
-			Reason      string   `json:"reason"`
-			Connections []string `json:"connections"`
-		}{
+		missing := failedPlugin{
 			Name:        p,
 			Connections: connections,
 			Reason:      constants.InstallMessagePluginNotInstalled,
@@ -749,7 +740,7 @@ func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, m
 		return err
 	}
 	fmt.Println(string(jsonOutput))
-	fmt.Printf("\n")
+	fmt.Println()
 	return nil
 }
 

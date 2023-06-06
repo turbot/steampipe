@@ -473,7 +473,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "plugin list - output json (with a missing plugin)" {
-  export STEAMPIPE_DISPLAY_WIDTH=100
   tmpdir="$(mktemp -d)"
   steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
   # uninstall a plugin but dont remove the config - to simulate the missing plugin scenario
@@ -484,7 +483,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_json_with_missing_plugins.json)"
 }
 
-# TODO: add a test to check the plugin list output with failed plugins
 # TODO: finds other ways to simulate failed plugins
 
 @test "plugin list - output table (with a failed plugin)" {
@@ -500,7 +498,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "plugin list - output json (with a failed plugin)" {
-  export STEAMPIPE_DISPLAY_WIDTH=100
   tmpdir="$(mktemp -d)"
   steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
   # remove the contents of a plugin binary execuatable to simulate the failed plugin scenario
