@@ -492,7 +492,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   tmpdir="$(mktemp -d)"
   steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
   # remove the contents of a plugin execuatable to simulate the failed plugin scenario
-  truncate -s 0 plugins/hub.steampipe.io/plugins/turbot/hackernews@0.4.0/steampipe-plugin-hackernews.plugin
+  truncate -s 0 $tmpdir/plugins/hub.steampipe.io/plugins/turbot/hackernews@0.4.0/steampipe-plugin-hackernews.plugin
   run steampipe plugin list --install-dir $tmpdir
   echo $output
   rm -rf $tmpdir
@@ -504,11 +504,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   tmpdir="$(mktemp -d)"
   steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
   # remove the contents of a plugin binary execuatable to simulate the failed plugin scenario
-  truncate -s 0 plugins/hub.steampipe.io/plugins/turbot/hackernews@0.4.0/steampipe-plugin-hackernews.plugin
+  truncate -s 0 $tmpdir/plugins/hub.steampipe.io/plugins/turbot/hackernews@0.4.0/steampipe-plugin-hackernews.plugin
   run steampipe plugin list --install-dir $tmpdir --output json
   echo $output
   rm -rf $tmpdir
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_json_with_failed.json)"
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_json_with_failed_plugins.json)"
 }
 
 @test "cleanup" {
