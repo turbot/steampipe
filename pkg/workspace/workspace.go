@@ -255,12 +255,13 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	w.VariableValues = inputVariables.VariableValues
 
 	// build run context which we use to load the workspace
-	// NOTE: we get the short name
-	parseCtx, err := w.getParseContext(ctx, inputVariables.ModShortName)
+	// NOTE: we get the short name from the inputVariables map
+	parseCtx, err := w.getParseContext(ctx)
 	if err != nil {
 		return modconfig.NewErrorsAndWarning(err)
 	}
-	// add variables
+
+	// add evaluated variables to the context
 	parseCtx.AddInputVariableValues(inputVariables)
 	// do not reload variables as we already have them
 	parseCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
@@ -289,7 +290,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 
 func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, error) {
 	// build a run context just to use to load variable definitions
-	variablesParseCtx, err := w.getParseContext(ctx, "")
+	variablesParseCtx, err := w.getParseContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +315,7 @@ func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *pa
 
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
-func (w *Workspace) getParseContext(ctx context.Context, modShortName string) (*parse.ModParseContext, error) {
+func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext, error) {
 	parseFlag := parse.CreateDefaultMod
 	if w.loadPseudoResources {
 		parseFlag |= parse.CreatePseudoResources
@@ -334,9 +335,6 @@ func (w *Workspace) getParseContext(ctx context.Context, modShortName string) (*
 			// only load .sp files
 			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
 		})
-
-	// initialise the variables
-	parseCtx.SetVariables(modShortName)
 
 	return parseCtx, nil
 }
@@ -399,7 +397,7 @@ func (w *Workspace) loadExclusions() error {
 
 func (w *Workspace) loadWorkspaceResourceName(ctx context.Context) (*modconfig.WorkspaceResources, error) {
 	// build options used to load workspace
-	parseCtx, err := w.getParseContext(ctx, "")
+	parseCtx, err := w.getParseContext(ctx)
 	if err != nil {
 		return nil, err
 	}

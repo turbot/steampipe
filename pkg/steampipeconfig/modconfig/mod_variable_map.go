@@ -38,7 +38,6 @@ func NewModVariableMap(mod *Mod, dependencyMods ModMap) *ModVariableMap {
 			m.DependencyVariables[dependencyPath][buildVariableMapKey(k)] = v
 		}
 	}
-	//
 	// build map of all variables
 	m.PopulateAllVariables()
 

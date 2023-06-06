@@ -2,17 +2,15 @@ package parse
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/tfdiags"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
-	"github.com/turbot/steampipe/pkg/type_conversion"
-	"log"
-
-	"github.com/Masterminds/semver/v3"
+	semver "github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/terraform/tfdiags"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -41,7 +39,6 @@ type ModParseContext struct {
 	ParseContext
 	// the mod which is currently being parsed
 	CurrentMod *modconfig.Mod
-
 	// the workspace lock data
 	WorkspaceLock *versionmap.WorkspaceLock
 
@@ -81,7 +78,8 @@ type ModParseContext struct {
 
 	// a map of just the top level dependencies of the CurrentMod, keyed my full mod DepdencyName (with no version)
 	topLevelDependencyMods modconfig.ModMap
-	DependencyConfig       *ModDependencyConfig
+	// if we are loading dependency mod, this contains the details
+	DependencyConfig *ModDependencyConfig
 }
 
 func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *ModParseContext {
@@ -171,14 +169,16 @@ func VariableValueCtyMap(variables map[string]*modconfig.Variable) map[string]ct
 func (m *ModParseContext) AddInputVariableValues(inputVariables *modconfig.ModVariableMap) {
 	// store the variables
 	m.Variables = inputVariables.RootVariables
-	// store the depdency variables sop we can pass them down to our children
+	// store the dependency variables sop we can pass them down to our children
 	m.DependencyVariables = inputVariables.DependencyVariables
+
+	// now add variables into eval context
+	m.AddVariablesToEvalContext(m.CurrentMod.GetInstallCacheKey())
 }
 
 // Tactical
-// convert the RootVariables and DepdencyVariables back into a ModVariableMap
-// used for post mod load hook when reloading require args
-func (m *ModParseContext) GetVariableMap() *modconfig.ModVariableMap {
+// convert the RootVariables and DependencyVariables back into a ModVariableMap
+func (m *ModParseContext) getVariableMap() *modconfig.ModVariableMap {
 	res := &modconfig.ModVariableMap{
 		RootVariables:       m.Variables,
 		DependencyVariables: m.DependencyVariables,
@@ -225,17 +225,16 @@ func (m *ModParseContext) addDependencyVariablesToReferenceMap(modDependencyKey 
 	}
 }
 
-// when reloading a mod depdency tree to resolve require args values, this function is called after each mod is loaded
+// when reloading a mod dependency tree to resolve require args values, this function is called after each mod is loaded
 // to load the require arg values and update the variable values
-func (m *ModParseContext) LoadModRequireArgs() error {
+func (m *ModParseContext) loadModRequireArgs() error {
 	// if we have not loaded variable definitions yet, do not load require args
-	variableMap := m.GetVariableMap()
+	variableMap := m.getVariableMap()
 	if len(variableMap.AllVariables) == 0 {
 		return nil
 	}
 
-	// do not recurse down dependencies
-	depModVarValues, err := m.CollectVariableValuesFromModRequire()
+	depModVarValues, err := m.collectVariableValuesFromModRequire()
 	if err != nil {
 		return err
 	}
@@ -256,8 +255,9 @@ func (m *ModParseContext) LoadModRequireArgs() error {
 			return err
 		}
 	}
+	// now set the overridden values on the context
 	m.AddInputVariableValues(variableMap)
-	m.AddVariablesToEvalContext(m.CurrentMod.GetInstallCacheKey())
+
 	return nil
 }
 
@@ -616,7 +616,7 @@ func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
 func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
 	m.CurrentMod = mod
 	// load any arg values from the mod require - these will  be passed to dependency mods
-	m.LoadModRequireArgs()
+	m.loadModRequireArgs()
 }
 
 func (m *ModParseContext) SetVariables(modDependencyKey string) {
@@ -624,67 +624,10 @@ func (m *ModParseContext) SetVariables(modDependencyKey string) {
 	if dependencyVariables, ok := m.DependencyVariables[modDependencyKey]; ok {
 		m.Variables = dependencyVariables
 	}
-	// set the root variables from the parent
-	// now the mod is set we can add variables to the eval context
-	// ( we cannot do this until mod as set as we need to identify which variables to use if we are a dependency
 	m.AddVariablesToEvalContext(modDependencyKey)
 }
 
-// ResolveUnresolvedArgs returns whether the current mod, or any dependency mod, has unresolved args in the require block
-func (m *ModParseContext) ModsWithUnresolvedArgs() []*modconfig.Mod {
-	var res []*modconfig.Mod
-	if m.CurrentMod.RequireHasUnresolvedArgs() {
-		res = append(res, m.CurrentMod)
-	}
-	for _, mod := range m.LoadedDependencyMods {
-		if mod.RequireHasUnresolvedArgs() {
-			res = append(res, mod)
-		}
-	}
-	return res
-}
-func (m *ModParseContext) ResolveUnresolvedArgs() (bool, hcl.Diagnostics) {
-	var diags hcl.Diagnostics
-	var hasUnresolvedArgs = false
-	if m.CurrentMod.RequireHasUnresolvedArgs() {
-		moreDiags := m.resolveModArgs(m.CurrentMod)
-		diags = append(diags, moreDiags...)
-		hasUnresolvedArgs = true
-	}
-	for _, mod := range m.LoadedDependencyMods {
-		if mod.RequireHasUnresolvedArgs() {
-			moreDiags := m.resolveModArgs(mod)
-			diags = append(diags, moreDiags...)
-			hasUnresolvedArgs = true
-		}
-	}
-	return hasUnresolvedArgs, diags
-}
-
-func (m *ModParseContext) resolveModArgs(mod *modconfig.Mod) hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	if mod.Require == nil {
-		return diags
-	}
-
-	reloadedMod, loadModResult := ParseModDefinition(mod.ModPath, m.EvalCtx)
-	log.Println(reloadedMod)
-	log.Println(loadModResult)
-
-	//for depMod, unresolvedArgs := range mod.Require.UnresolvedModArgs {
-	//	target := make(map[string]cty.Value)
-	//
-	//	moreDiags := gohcl.DecodeExpression(unresolvedArgs.Expr, m.EvalCtx, &target)
-	//	diags = append(diags, moreDiags...)
-	//	if !diags.HasErrors() {
-	//		//resolved := resolvedCty.AsValueMap()
-	//		mod.Require.SetModArgs(depMod, target)
-	//	}
-	//}
-	return diags
-}
-
-func (m *ModParseContext) CollectVariableValuesFromModRequire() (inputvars.InputValues, error) {
+func (m *ModParseContext) collectVariableValuesFromModRequire() (inputvars.InputValues, error) {
 	mod := m.CurrentMod
 	res := make(inputvars.InputValues)
 	if mod.Require != nil {
