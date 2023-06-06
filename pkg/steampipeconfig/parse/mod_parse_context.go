@@ -2,13 +2,13 @@ package parse
 
 import (
 	"fmt"
-
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/zclconf/go-cty/cty"
+	"log"
 )
 
 const rootDependencyNode = "rootDependencyNode"
@@ -565,4 +565,68 @@ func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
 	// now the mod is set we can add variables to the eval context
 	// ( we cannot do this until mod as set as we need to identify which variables to use if we are a dependency
 	m.AddVariablesToEvalContext()
+}
+func (m *ModParseContext) SetVariablesForDependency(dependencyPath string) {
+	// if the current mod is a dependency mod (i.e. has a DependencyPath property set), update the Variables property
+	if dependencyVariables, ok := m.DependencyVariables[dependencyPath]; ok {
+		m.Variables = dependencyVariables
+	}
+	// set the root variables from the parent
+	// now the mod is set we can add variables to the eval context
+	// ( we cannot do this until mod as set as we need to identify which variables to use if we are a dependency
+	m.AddVariablesToEvalContext()
+}
+
+// ResolveUnresolvedArgs returns whether the current mod, or any dependency mod, has unresolved args in the require block
+func (m *ModParseContext) ModsWithUnresolvedArgs() []*modconfig.Mod {
+	var res []*modconfig.Mod
+	if m.CurrentMod.RequireHasUnresolvedArgs() {
+		res = append(res, m.CurrentMod)
+	}
+	for _, mod := range m.LoadedDependencyMods {
+		if mod.RequireHasUnresolvedArgs() {
+			res = append(res, mod)
+		}
+	}
+	return res
+}
+func (m *ModParseContext) ResolveUnresolvedArgs() (bool, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+	var hasUnresolvedArgs = false
+	if m.CurrentMod.RequireHasUnresolvedArgs() {
+		moreDiags := m.resolveModArgs(m.CurrentMod)
+		diags = append(diags, moreDiags...)
+		hasUnresolvedArgs = true
+	}
+	for _, mod := range m.LoadedDependencyMods {
+		if mod.RequireHasUnresolvedArgs() {
+			moreDiags := m.resolveModArgs(mod)
+			diags = append(diags, moreDiags...)
+			hasUnresolvedArgs = true
+		}
+	}
+	return hasUnresolvedArgs, diags
+}
+
+func (m *ModParseContext) resolveModArgs(mod *modconfig.Mod) hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	if mod.Require == nil {
+		return diags
+	}
+
+	reloadedMod, loadModResult := ParseModDefinition(mod.ModPath, m.EvalCtx)
+	log.Println(reloadedMod)
+	log.Println(loadModResult)
+
+	//for depMod, unresolvedArgs := range mod.Require.UnresolvedModArgs {
+	//	target := make(map[string]cty.Value)
+	//
+	//	moreDiags := gohcl.DecodeExpression(unresolvedArgs.Expr, m.EvalCtx, &target)
+	//	diags = append(diags, moreDiags...)
+	//	if !diags.HasErrors() {
+	//		//resolved := resolvedCty.AsValueMap()
+	//		mod.Require.SetModArgs(depMod, target)
+	//	}
+	//}
+	return diags
 }

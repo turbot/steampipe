@@ -28,14 +28,21 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext, opts ...LoadModOpt
 		}
 	}()
 
+	// HACK
+	// if this is a dependency mod, we need to copy the parseCtx dependency mod variables into the Variables property
+	// _before_ loading the mod definition
+	var config = &LoadModConfig{}
+	// apply opts to config
+	for _, o := range opts {
+		o(config)
+	}
+	if config.DependencyPath != nil {
+		parseCtx.SetVariablesForDependency(*config.DependencyPath)
+	}
+
 	mod, loadModResult := loadModDefinition(modPath, parseCtx)
 	if loadModResult.Error != nil {
 		return nil, loadModResult
-	}
-
-	// apply opts to mod
-	for _, o := range opts {
-		o(mod)
 	}
 
 	// set the current mod on the run context

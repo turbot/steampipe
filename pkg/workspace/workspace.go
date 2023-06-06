@@ -301,17 +301,17 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 	// if needed, reload
 	// if a mod require has args which use a variable, this will not have been resolved in the first pass
 	// - we need to parse again
-	if variablesParseCtx.CurrentMod.RequireHasUnresolvedArgs() {
+	modsWithUnresolvedArgs := variablesParseCtx.ModsWithUnresolvedArgs()
+	if len(modsWithUnresolvedArgs) > 0 {
+
 		// add the variables into the parse context and rebuild the eval context
 		variablesParseCtx.AddInputVariables(inputVariables)
 		variablesParseCtx.AddVariablesToEvalContext()
-
 		// now try to parse the mod again
 		inputVariables, err = w.getVariableValues(ctx, variablesParseCtx, validateMissing)
 		if err != nil {
 			return nil, err
 		}
-
 	}
 	return inputVariables, nil
 

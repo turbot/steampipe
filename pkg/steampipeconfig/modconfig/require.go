@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/zclconf/go-cty/cty"
 	"sort"
 
 	"github.com/Masterminds/semver/v3"
@@ -21,6 +22,8 @@ type Require struct {
 	Mods                             []*ModVersionConstraint `hcl:"mod,block"`
 	// map keyed by name [and alias]
 	modMap map[string]*ModVersionConstraint
+
+	UnresolvedModArgs map[string]*hcl.Attribute
 	// range of the definition of the require block
 	DeclRange hcl.Range
 	// range of the body of the require block
@@ -29,7 +32,8 @@ type Require struct {
 
 func NewRequire() *Require {
 	return &Require{
-		modMap: make(map[string]*ModVersionConstraint),
+		modMap:            make(map[string]*ModVersionConstraint),
+		UnresolvedModArgs: make(map[string]*hcl.Attribute),
 	}
 }
 func (r *Require) Clone() *Require {
@@ -230,5 +234,9 @@ func (r *Require) SteampipeVersionConstraint() *semver.Constraints {
 		return nil
 	}
 	return r.Steampipe.Constraint
+
+}
+
+func (r *Require) SetModArgs(mod string, resolved map[string]cty.Value) {
 
 }

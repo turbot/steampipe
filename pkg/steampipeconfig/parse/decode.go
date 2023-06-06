@@ -177,7 +177,30 @@ func decodeMod(block *hcl.Block, evalCtx *hcl.EvalContext, mod *modconfig.Mod) (
 	// decode the body
 	diags := decodeHclBody(block.Body, evalCtx, mod, mod)
 	res.handleDecodeDiags(diags)
+
+	// now handle any mod require args values
+	diags = getRawModArgs(block.Body, evalCtx, mod)
+	res.handleDecodeDiags(diags)
+
 	return mod, res
+}
+
+func getRawModArgs(body hcl.Body, ctx *hcl.EvalContext, mod *modconfig.Mod) hcl.Diagnostics {
+	for _, b := range body.(*hclsyntax.Body).Blocks {
+		if b.Type == modconfig.BlockTypeRequire {
+			for _, requireBlock := range b.Body.Blocks {
+				if requireBlock.Type != "mod" {
+					continue
+				}
+				for _, attr := range requireBlock.Body.Attributes {
+					if attr.Name == "args" {
+						mod.Require.UnresolvedModArgs[requireBlock.Labels[0]] = attr.AsHCLAttribute()
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // generic decode function for any resource we do not have custom decode logic for

@@ -15,6 +15,10 @@ const filePrefix = "file:"
 
 type VersionConstrainCollection []*ModVersionConstraint
 
+type ModArg struct {
+	Value cty.Value
+	Raw   hcl.Expression
+}
 type ModVersionConstraint struct {
 	// the fully qualified mod name, e.g. github.com/turbot/mod1
 	Name          string `cty:"name" hcl:"name,label"`
