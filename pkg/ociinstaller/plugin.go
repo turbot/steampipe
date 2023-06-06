@@ -233,7 +233,3 @@ func pluginInstallDir(ref *SteampipeImageRef) string {
 
 	return fullPath
 }
-
-func pluginVersionFile(ref *SteampipeImageRef) string {
-	return filepath.Join(pluginInstallDir(ref), "version.json")
-}
