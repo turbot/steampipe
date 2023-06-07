@@ -141,24 +141,3 @@ func (v *Variable) Diff(other *Variable) *DashboardTreeItemDiffs {
 func (v *Variable) CtyValue() (cty.Value, error) {
 	return GetCtyValue(v)
 }
-
-func (v *Variable) Clone() *Variable {
-	return &Variable{
-		ResourceWithMetadataImpl:   v.ResourceWithMetadataImpl,
-		ModTreeItemImpl:            v.ModTreeItemImpl,
-		Remain:                     v.Remain,
-		Default:                    v.Default,
-		Type:                       v.Type,
-		TypeString:                 v.TypeString,
-		DefaultGo:                  v.DefaultGo,
-		ValueGo:                    v.ValueGo,
-		ModName:                    v.ModName,
-		Value:                      v.Value,
-		ValueSourceType:            v.ValueSourceType,
-		ValueSourceFileName:        v.ValueSourceFileName,
-		ValueSourceStartLineNumber: v.ValueSourceStartLineNumber,
-		ValueSourceEndLineNumber:   v.ValueSourceEndLineNumber,
-		ParsingMode:                v.ParsingMode,
-		metadata:                   v.metadata,
-	}
-}

@@ -110,27 +110,16 @@ func NewChildModParseContext(parent *ModParseContext, modVersion *versionmap.Res
 	child.BlockTypes = parent.BlockTypes
 	// set the child's parent
 	child.ParentParseCtx = parent
-	// TODO KAI update
-	// clone DependencyVariables so that any evaluation we perform based on mod require args is not replicated in
-	// other usages of the dependency
-	//child.DependencyVariables = cloneVariableMap(parent.DependencyVariables)
 	// set the dependency config
 	child.DependencyConfig = NewDependencyConfig(modVersion)
+	// set variables if parent has any
+	if parent.Variables != nil {
+		child.Variables = parent.Variables.DependencyVariables[modVersion.Name]
+	}
 
 	// call set variables - this will set the Variables property from the appropriate dependency variables
 	child.SetVariables(*child.DependencyConfig.DependencyPath)
 	return child
-}
-
-func cloneVariableMap(variables map[string]map[string]*modconfig.Variable) map[string]map[string]*modconfig.Variable {
-	var res = make(map[string]map[string]*modconfig.Variable)
-	for dep, vars := range variables {
-		res[dep] = make(map[string]*modconfig.Variable)
-		for name, v := range vars {
-			res[dep][name] = v.Clone()
-		}
-	}
-	return res
 }
 
 func (m *ModParseContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
@@ -177,14 +166,12 @@ func (m *ModParseContext) AddInputVariableValues(inputVariables *modconfig.ModVa
 	m.Variables = inputVariables.ModVariableMap
 
 	// now add variables into eval context
-	// TODO CHECK KEY??
 	m.AddVariablesToEvalContext()
 }
 
 func (m *ModParseContext) AddVariablesToEvalContext() {
 	m.addRootVariablesToReferenceMap()
-	// TODO KAI CHECK KEY
-	m.addDependencyVariablesToReferenceMap(m.Variables.ModInstallCacheKey)
+	m.addDependencyVariablesToReferenceMap()
 	m.buildEvalContext()
 }
 
@@ -200,27 +187,16 @@ func (m *ModParseContext) addRootVariablesToReferenceMap() {
 
 // addDependencyVariablesToReferenceMap adds the dependency variables to the referenceValues map
 // (used to build the eval context)
-func (m *ModParseContext) addDependencyVariablesToReferenceMap(modDependencyKey string) {
-	TODO KAI FIX ME
-	//topLevelDependencies := m.WorkspaceLock.InstallCache[modDependencyKey]
-	//
-	//convert topLevelDependencies into as map keyed by dependency path
-	//topLevelDependencyPathMap := topLevelDependencies.ToDependencyPathMap()
-	//NOTE: we add with the name "var" not "variable" as that is how variables are referenced
-	//add dependency mod variables to dependencyVariableValues, scoped by DependencyPath
-
-
+func (m *ModParseContext) addDependencyVariablesToReferenceMap() {
+	// retrieve the resolved dependency versions for the parent mod
+	resolvedVersions := m.WorkspaceLock.InstallCache[m.Variables.ModInstallCacheKey]
 
 	for depModName, depVars := range m.Variables.DependencyVariables {
-		for _, v := range depVars.RootVariables{
-			// create map for this dependency if needed
-			alias := topLevelDependencyPathMap[depModName]
-			if m.referenceValues[alias] == nil{
+		alias := resolvedVersions[depModName].Alias
+		if m.referenceValues[alias] == nil {
 			m.referenceValues[alias] = make(ReferenceTypeValueMap)
 		}
-			m.referenceValues[alias]["var"] = VariableValueCtyMap(depVars)
-		}
-		}
+		m.referenceValues[alias]["var"] = VariableValueCtyMap(depVars.RootVariables)
 	}
 }
 

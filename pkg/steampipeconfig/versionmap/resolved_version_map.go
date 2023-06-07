@@ -19,12 +19,3 @@ func (m ResolvedVersionMap) ToVersionListMap() ResolvedVersionListMap {
 	}
 	return res
 }
-
-// ToDependencyPathMap converts to a map of mod aliases, keyed by mod dependency path
-func (m ResolvedVersionMap) ToDependencyPathMap() map[string]string {
-	res := make(map[string]string, len(m))
-	for _, c := range m {
-		res[c.DependencyPath()] = c.Alias
-	}
-	return res
-}

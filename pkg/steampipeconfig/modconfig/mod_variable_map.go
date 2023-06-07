@@ -8,7 +8,7 @@ import (
 type ModVariableMap struct {
 	ModInstallCacheKey string
 	RootVariables      map[string]*Variable
-	// map of depdency bvareiable maps, keyed by depdency name
+	// map of dependency variable maps, keyed by dependency name
 	DependencyVariables map[string]*ModVariableMap
 }
 
@@ -16,10 +16,9 @@ type ModVariableMap struct {
 func NewModVariableMap(mod *Mod) *ModVariableMap {
 	m := &ModVariableMap{
 		// TODO KAI CHECK THIS
-		ModInstallCacheKey:   mod.GetInstallCacheKey(),
-		RootVariables:        make(map[string]*Variable),
-		DependencyVariables:  make(map[string]*ModVariableMap),
-
+		ModInstallCacheKey:  mod.GetInstallCacheKey(),
+		RootVariables:       make(map[string]*Variable),
+		DependencyVariables: make(map[string]*ModVariableMap),
 	}
 
 	// add variables into map, modifying the key to be the variable short name
@@ -31,7 +30,7 @@ func NewModVariableMap(mod *Mod) *ModVariableMap {
 	for _, depMod := range mod.ResourceMaps.Mods {
 		// todo for some reason the mod appears in its own resource maps?
 		if depMod.Name() != mod.Name() {
-			m.DependencyVariables[depMod.GetInstallCacheKey()] = NewModVariableMap(depMod)
+			m.DependencyVariables[depMod.DependencyName] = NewModVariableMap(depMod)
 		}
 	}
 
@@ -94,30 +93,10 @@ type ModVariableValueMap struct {
 
 func NewModVariableValueMap(mod *Mod) *ModVariableValueMap {
 	m := &ModVariableValueMap{
-		ModVariableMap: NewModVariableMap(mod),
+		ModVariableMap:       NewModVariableMap(mod),
 		PublicVariableValues: make(map[string]string),
 	}
 
-	// add variables into map, modifying the key to be the variable short name
-	for k, v := range mod.ResourceMaps.Variables {
-		m.RootVariables[buildVariableMapKey(k)] = v
-	}
-
-	// now traverse all dependency mods
-	for _, depMod := range mod.ResourceMaps.Mods {
-		// todo for some reason the mod appears in its own resource maps?
-		if depMod.Name() != mod.Name() {
-			m.DependencyVariables[depMod.GetInstallCacheKey()] = NewModVariableMap(depMod)
-		}
-	}
-	//// now add variables from dependency mods
-	//for dependencyPath, mod := range dependencyMods {
-	//	// add variables into map, modifying the key to be the variable short name
-	//	m.DependencyVariables[dependencyPath] = make(map[string]*Variable)
-	//	for k, v := range mod.ResourceMaps.Variables {
-	//		m.DependencyVariables[dependencyPath][buildVariableMapKey(k)] = v
-	//	}
-	//}
 	// build map of all variables
 	m.PopulatePublicVariables()
 

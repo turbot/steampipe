@@ -124,12 +124,13 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 	}
 
 	// if variables were passed in parsecontext, add to the mod
-	// TODO KAI FIX ME
-	//for _, v := range parseCtx.Variables.RootVariables {
-	//	if diags = mod.AddResource(v); diags.HasErrors() {
-	//		return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to add resource to mod", diags))
-	//	}
-	//}
+	if parseCtx.Variables != nil {
+		for _, v := range parseCtx.Variables.RootVariables {
+			if diags = mod.AddResource(v); diags.HasErrors() {
+				return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to add resource to mod", diags))
+			}
+		}
+	}
 
 	// add pseudo resources to the mod
 	addPseudoResourcesToMod(pseudoResources, hclResources, mod)
