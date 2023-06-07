@@ -47,7 +47,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $FILE_PATH/test_data/bad_mod_with_sp_version_require_not_met
 
   run steampipe dashboard dashboard.sample_dashboard
-  assert_output --partial 'Warning: steampipe version 0.20.5 does not satisfy mod.bad_mod_with_sp_version_require_not_met which requires version 10.99.99'
+  assert_output --partial 'does not satisfy mod.bad_mod_with_sp_version_require_not_met which requires version 10.99.99'
   cd -
 }
 
