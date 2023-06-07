@@ -145,11 +145,6 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 
 	// update loaded dependency mods
 	parseCtx.AddLoadedDependencyMod(dependencyMod)
-	if parseCtx.ParentParseCtx != nil {
-		parseCtx.ParentParseCtx.AddLoadedDependencyMod(dependencyMod)
-		// add mod resources to parent parse context
-		parseCtx.ParentParseCtx.AddModResources(dependencyMod)
-	}
 
 	return nil
 
@@ -213,12 +208,13 @@ func findInstalledDependency(modDependency *modconfig.ModVersionConstraint, pare
 				continue
 			}
 			if modDependency.Constraint.Check(v) {
-				// if there is more than 1 mod which satisfied the dependency, fail (for now)
+				// if there is more than 1 mod which satisfied the dependency, use the newest
 				if dependencyVersion != nil {
-					return "", nil, fmt.Errorf("more than one mod found which satisfies dependency %s@%s", modDependency.Name, modDependency.VersionString)
+					if v.GreaterThan(dependencyVersion) {
+						dependencyPath = filepath.Join(parentFolder, entry.Name())
+						dependencyVersion = v
+					}
 				}
-				dependencyPath = filepath.Join(parentFolder, entry.Name())
-				dependencyVersion = v
 			}
 		}
 	}

@@ -173,7 +173,7 @@ func (m *ModParseContext) AddInputVariableValues(inputVariables *modconfig.ModVa
 	m.DependencyVariables = inputVariables.DependencyVariables
 
 	// now add variables into eval context
-	m.AddVariablesToEvalContext(m.CurrentMod.GetInstallCacheKey())
+	m.AddVariablesToEvalContext(inputVariables.ModInstallCacheKey)
 }
 
 // Tactical
@@ -256,6 +256,7 @@ func (m *ModParseContext) loadModRequireArgs() error {
 		}
 	}
 	// now set the overridden values on the context
+	// TODO CHECK inputvariables.ModInstallCacheKey is correct here
 	m.AddInputVariableValues(variableMap)
 
 	return nil
@@ -588,6 +589,12 @@ func (m *ModParseContext) AddLoadedDependencyMod(mod *modconfig.Mod) {
 		return
 	}
 	m.LoadedDependencyMods[*mod.DependencyPath] = mod
+
+	if m.ParentParseCtx != nil {
+		m.ParentParseCtx.AddLoadedDependencyMod(mod)
+		// add mod resources to parent parse context
+		m.ParentParseCtx.AddModResources(mod)
+	}
 }
 
 // GetTopLevelDependencyMods build a mod map of top level loaded dependencies, keyed by mod name
