@@ -2,7 +2,6 @@ package parse
 
 import (
 	"fmt"
-	semver "github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/tfdiags"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -76,7 +75,7 @@ type ModParseContext struct {
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
 
-	// a map of just the top level dependencies of the CurrentMod, keyed my full mod DepdencyName (with no version)
+	// a map of just the top level dependencies of the CurrentMod, keyed my full mod DependencyName (with no version)
 	topLevelDependencyMods modconfig.ModMap
 	// if we are loading dependency mod, this contains the details
 	DependencyConfig *ModDependencyConfig
@@ -106,7 +105,7 @@ func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath st
 	return c
 }
 
-func NewChildModParseContext(parent *ModParseContext, modVersion *modconfig.ModVersionConstraint, rootEvalPath string, version *semver.Version) *ModParseContext {
+func NewChildModParseContext(parent *ModParseContext, modVersion *versionmap.ResolvedVersionConstraint, rootEvalPath string) *ModParseContext {
 	// create a child run context
 	child := NewModParseContext(
 		parent.WorkspaceLock,
@@ -120,7 +119,7 @@ func NewChildModParseContext(parent *ModParseContext, modVersion *modconfig.ModV
 	// copy DependencyVariables
 	child.DependencyVariables = parent.DependencyVariables
 	// set the dependency config
-	child.DependencyConfig = NewDependencyConfig(modVersion, version)
+	child.DependencyConfig = NewDependencyConfig(modVersion)
 
 	// call set variables - this will set the Variables property from the appropriate dependency variables
 	child.SetVariables(*child.DependencyConfig.DependencyPath)
@@ -569,15 +568,9 @@ func (m *ModParseContext) IsTopLevelBlock(block *hcl.Block) bool {
 	return isTopLevel
 }
 
-func (m *ModParseContext) GetLoadedDependencyMod(requiredModVersion *modconfig.ModVersionConstraint, mod *modconfig.Mod) (*modconfig.Mod, error) {
-	// if we have a locked version, update the required version to reflect this
-	lockedVersion, err := m.WorkspaceLock.GetLockedModVersionConstraint(requiredModVersion, mod)
-	if err != nil {
-		return nil, err
-	}
-	if lockedVersion == nil {
-		return nil, fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
-	}
+// GetLoadedDependencyMod determines whether a mod satisfying the version constraint has already been loaded and if so returns it
+// NOTE: if there is a locked version for this depdency, this is returned
+func (m *ModParseContext) GetLoadedDependencyMod(lockedVersion *versionmap.ResolvedVersionConstraint, parentMod *modconfig.Mod) (*modconfig.Mod, error) {
 	// use the full name of the locked version as key
 	d, _ := m.LoadedDependencyMods[lockedVersion.DependencyPath()]
 	return d, nil

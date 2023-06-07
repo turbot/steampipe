@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -326,4 +327,14 @@ func (l *WorkspaceLock) StructVersion() int {
 	// we have no deps - just return the new struct version
 	return WorkspaceLockStructVersion
 
+}
+
+func (l *WorkspaceLock) FindInstalledDependency(modDependency *ResolvedVersionConstraint) (string, error) {
+	dependencyFilepath := path.Join(l.ModInstallationPath, modDependency.DependencyPath())
+
+	if filehelpers.DirectoryExists(dependencyFilepath) {
+		return dependencyFilepath, nil
+	}
+
+	return "", fmt.Errorf("dependency mod '%s' is not installed - run 'steampipe mod install'", modDependency.DependencyPath())
 }

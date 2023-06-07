@@ -2,26 +2,25 @@ package parse
 
 import (
 	"fmt"
-	"github.com/Masterminds/semver/v3"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 )
 
 type ModDependencyConfig struct {
-	Version        *semver.Version
+	ModDependency  *versionmap.ResolvedVersionConstraint
 	DependencyPath *string
-	DependencyName string
 }
 
 func (c ModDependencyConfig) SetModProperties(mod *modconfig.Mod) {
-	mod.Version = c.Version
+	mod.Version = c.ModDependency.Version
 	mod.DependencyPath = c.DependencyPath
-	mod.DependencyName = c.DependencyName
+	mod.DependencyName = c.ModDependency.Name
 }
 
-func NewDependencyConfig(modDependency *modconfig.ModVersionConstraint, version *semver.Version) *ModDependencyConfig {
-	d := fmt.Sprintf("%s@v%s", modDependency.Name, version.String())
-	return &ModDependencyConfig{Version: version,
+func NewDependencyConfig(modDependency *versionmap.ResolvedVersionConstraint) *ModDependencyConfig {
+	d := fmt.Sprintf("%s@v%s", modDependency.Name, modDependency.Version.String())
+	return &ModDependencyConfig{
 		DependencyPath: &d,
-		DependencyName: modDependency.Name,
+		ModDependency:  modDependency,
 	}
 }

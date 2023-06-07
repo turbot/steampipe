@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Masterminds/semver/v3"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -15,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 )
 
 // LoadMod parses all hcl files in modPath and returns a single mod
@@ -86,27 +86,34 @@ func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (mod *mo
 	return mod, errorsAndWarnings
 }
 
-func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext) error {
+func loadModDependencies(parent *modconfig.Mod, parseCtx *parse.ModParseContext) error {
 	var errors []error
-
-	if mod.Require != nil {
+	if parent.Require != nil {
 		// now ensure there is a lock file - if we have any mod dependnecies there MUST be a lock file -
 		// otherwise 'steampipe install' must be run
-		if err := parseCtx.EnsureWorkspaceLock(mod); err != nil {
+		if err := parseCtx.EnsureWorkspaceLock(parent); err != nil {
 			return err
 		}
 
-		for _, requiredModVersion := range mod.Require.Mods {
+		for _, requiredModVersion := range parent.Require.Mods {
+			// get the locked version ofd this dependency
+			lockedVersion, err := parseCtx.WorkspaceLock.GetLockedModVersion(requiredModVersion, parent)
+			if err != nil {
+				return err
+			}
+			if lockedVersion == nil {
+				return fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
+			}
 			// have we already loaded a mod which satisfied this
-			loadedMod, err := parseCtx.GetLoadedDependencyMod(requiredModVersion, mod)
+			loadedMod, err := parseCtx.GetLoadedDependencyMod(lockedVersion, parent)
 			if err != nil {
 				return err
 			}
 			if loadedMod != nil {
 				continue
 			}
-
-			if err := loadModDependency(requiredModVersion, parseCtx); err != nil {
+			// we have not loaded this depdency - load it!
+			if err := loadModDependency(lockedVersion, parseCtx); err != nil {
 				errors = append(errors, err)
 			}
 		}
@@ -115,18 +122,15 @@ func loadModDependencies(mod *modconfig.Mod, parseCtx *parse.ModParseContext) er
 	return error_helpers.CombineErrors(errors...)
 }
 
-func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *parse.ModParseContext) error {
+func loadModDependency(modDependency *versionmap.ResolvedVersionConstraint, parseCtx *parse.ModParseContext) error {
 	// dependency mods are installed to <mod path>/<mod nam>@version
 	// for example workspace_folder/.steampipe/mods/github.com/turbot/steampipe-mod-aws-compliance@v1.0
 
 	// we need to list all mod folder in the parent folder: workspace_folder/.steampipe/mods/github.com/turbot/
 	// for each folder we parse the mod name and version and determine whether it meets the version constraint
 
-	// we need to iterate through all mods in the parent folder and find one that satisfies requirements
-	parentFolder := filepath.Dir(filepath.Join(parseCtx.WorkspaceLock.ModInstallationPath, modDependency.Name))
-
 	// search the parent folder for a mod installation which satisfied the given mod dependency
-	dependencyDir, version, err := findInstalledDependency(modDependency, parentFolder)
+	dependencyDir, err := parseCtx.WorkspaceLock.FindInstalledDependency(modDependency)
 	if err != nil {
 		return err
 	}
@@ -136,7 +140,7 @@ func loadModDependency(modDependency *modconfig.ModVersionConstraint, parseCtx *
 	parseCtx.ListOptions.Exclude = nil
 	defer func() { parseCtx.ListOptions.Exclude = prevExclusions }()
 
-	childParseCtx := parse.NewChildModParseContext(parseCtx, modDependency, dependencyDir, version)
+	childParseCtx := parse.NewChildModParseContext(parseCtx, modDependency, dependencyDir)
 	// NOTE: pass in the version and dependency path of the mod - these must be set before it loads its dependencies
 	dependencyMod, errAndWarnings := LoadMod(dependencyDir, childParseCtx)
 	if errAndWarnings.GetError() != nil {
@@ -179,52 +183,6 @@ func loadModResources(mod *modconfig.Mod, parseCtx *parse.ModParseContext) (*mod
 	mod, errAndWarnings := parse.ParseMod(fileData, pseudoResources, parseCtx)
 
 	return mod, errAndWarnings
-}
-
-// search the parent folder for a mod installation which satisfied the given mod dependency
-func findInstalledDependency(modDependency *modconfig.ModVersionConstraint, parentFolder string) (string, *semver.Version, error) {
-	shortDepName := filepath.Base(modDependency.Name)
-	entries, err := os.ReadDir(parentFolder)
-	if err != nil {
-		return "", nil, fmt.Errorf("mod satisfying '%s' is not installed", modDependency)
-	}
-
-	// results vars
-	var dependencyPath string
-	var dependencyVersion *semver.Version
-
-	for _, entry := range entries {
-		split := strings.Split(entry.Name(), "@")
-		if len(split) != 2 {
-			// invalid format - ignore
-			continue
-		}
-		modName := split[0]
-		versionString := strings.TrimPrefix(split[1], "v")
-		if modName == shortDepName {
-			v, err := semver.NewVersion(versionString)
-			if err != nil {
-				// invalid format - ignore
-				continue
-			}
-			if modDependency.Constraint.Check(v) {
-				// if there is more than 1 mod which satisfied the dependency, use the newest
-				if dependencyVersion != nil {
-					if v.GreaterThan(dependencyVersion) {
-						dependencyPath = filepath.Join(parentFolder, entry.Name())
-						dependencyVersion = v
-					}
-				}
-			}
-		}
-	}
-
-	// did we find a result?
-	if dependencyVersion != nil {
-		return dependencyPath, dependencyVersion, nil
-	}
-
-	return "", nil, fmt.Errorf("mod satisfying '%s' is not installed", modDependency)
 }
 
 // LoadModResourceNames parses all hcl files in modPath and returns the names of all resources
