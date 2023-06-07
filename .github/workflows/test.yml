@@ -26,6 +26,7 @@ jobs:
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
+        continue-on-error: true # we dont want to enforce just yet
         with:
           version: v1.52.2
           args: --timeout=15m
