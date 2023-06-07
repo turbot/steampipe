@@ -1,6 +1,7 @@
 package modconfig
 
 import (
+	"github.com/turbot/steampipe/pkg/utils"
 	"strings"
 )
 
@@ -10,15 +11,18 @@ type ModVariableMap struct {
 	RootVariables      map[string]*Variable
 	// map of dependency variable maps, keyed by dependency name
 	DependencyVariables map[string]*ModVariableMap
+
+	PublicVariables      map[string]*Variable
+	PublicVariableValues map[string]string
 }
 
 // NewModVariableMap builds a ModVariableMap using the variables from a mod and its dependencies
 func NewModVariableMap(mod *Mod) *ModVariableMap {
 	m := &ModVariableMap{
-		// TODO KAI CHECK THIS
-		ModInstallCacheKey:  mod.GetInstallCacheKey(),
-		RootVariables:       make(map[string]*Variable),
-		DependencyVariables: make(map[string]*ModVariableMap),
+		ModInstallCacheKey:   mod.GetInstallCacheKey(),
+		RootVariables:        make(map[string]*Variable),
+		DependencyVariables:  make(map[string]*ModVariableMap),
+		PublicVariableValues: make(map[string]string),
 	}
 
 	// add variables into map, modifying the key to be the variable short name
@@ -34,43 +38,27 @@ func NewModVariableMap(mod *Mod) *ModVariableMap {
 		}
 	}
 
+	// build map of all publicy settable variables
+	m.PopulatePublicVariables()
+
 	return m
 }
 
 func (m *ModVariableMap) ToArray() []*Variable {
 	var res []*Variable
 
-	// TODO kai update
-	//if len(m.AllVariables) > 0 {
-	//	var keys []string
-	//
-	//	for k := range m.RootVariables {
-	//		keys = append(keys, k)
-	//	}
-	//	// sort keys
-	//	sort.Strings(keys)
-	//	for _, k := range keys {
-	//		res = append(res, m.RootVariables[k])
-	//	}
-	//}
-	//
-	//for _, depVariables := range m.DependencyVariables {
-	//	if len(depVariables) == 0 {
-	//		continue
-	//	}
-	//	keys := make([]string, len(depVariables))
-	//	idx := 0
-	//
-	//	for k := range depVariables {
-	//		keys[idx] = k
-	//		idx++
-	//	}
-	//	// sort keys
-	//	sort.Strings(keys)
-	//	for _, k := range keys {
-	//		res = append(res, depVariables[k])
-	//	}
-	//}
+	keys := utils.SortedMapKeys(m.RootVariables)
+	for _, k := range keys {
+		res = append(res, m.RootVariables[k])
+	}
+
+	for _, depVariables := range m.DependencyVariables {
+
+		keys := utils.SortedMapKeys(depVariables.RootVariables)
+		for _, k := range keys {
+			res = append(res, depVariables.RootVariables[k])
+		}
+	}
 
 	return res
 }
@@ -82,31 +70,9 @@ func buildVariableMapKey(k string) string {
 	return name
 }
 
-type ModVariableValueMap struct {
-	*ModVariableMap
-	// a map of top level AND top level dependency variables
-	// used to set variable values from inputVariables
-	PublicVariables map[string]*Variable
-	// the input variables evaluated in the parse
-	PublicVariableValues map[string]string
-}
-
-func NewModVariableValueMap(mod *Mod) *ModVariableValueMap {
-	m := &ModVariableValueMap{
-		ModVariableMap:       NewModVariableMap(mod),
-		PublicVariableValues: make(map[string]string),
-	}
-
-	// build map of all variables
-	m.PopulatePublicVariables()
-
-	return m
-}
-
 // PopulatePublicVariables builds a map of top level and dependency variables
 // (dependency variables are keyed by full (qualified) name
-func (m *ModVariableValueMap) PopulatePublicVariables() {
-
+func (m *ModVariableMap) PopulatePublicVariables() {
 	res := make(map[string]*Variable)
 	for k, v := range m.RootVariables {
 		// add top level vars keyed by short name

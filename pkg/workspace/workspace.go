@@ -288,7 +288,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	return errorAndWarning
 }
 
-func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableValueMap, error) {
+func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, error) {
 	// build a run context just to use to load variable definitions
 	variablesParseCtx, err := w.getParseContext(ctx)
 	if err != nil {
@@ -303,7 +303,7 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 	return inputVariableValues, nil
 }
 
-func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableValueMap, error) {
+func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, error) {
 	// load variable definitions
 	variableMap, err := steampipeconfig.LoadVariableDefinitions(w.Path, variablesParseCtx)
 	if err != nil {

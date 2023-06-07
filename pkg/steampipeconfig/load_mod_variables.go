@@ -15,7 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 )
 
-func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext) (*modconfig.ModVariableValueMap, error) {
+func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext) (*modconfig.ModVariableMap, error) {
 	// only load mod and variables blocks
 	parseCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
 	mod, errAndWarnings := LoadMod(variablePath, parseCtx)
@@ -23,12 +23,12 @@ func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContex
 		return nil, errAndWarnings.GetError()
 	}
 
-	variableMap := modconfig.NewModVariableValueMap(mod)
+	variableMap := modconfig.NewModVariableMap(mod)
 
 	return variableMap, nil
 }
 
-func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableValueMap, validate bool) (*modconfig.ModVariableValueMap, error) {
+func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, error) {
 	// now resolve all input variables
 	inputValues, err := getInputVariables(variableMap.PublicVariables, validate, parseCtx)
 	if err != nil {

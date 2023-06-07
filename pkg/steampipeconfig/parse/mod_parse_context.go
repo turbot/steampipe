@@ -9,6 +9,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -115,10 +116,10 @@ func NewChildModParseContext(parent *ModParseContext, modVersion *versionmap.Res
 	// set variables if parent has any
 	if parent.Variables != nil {
 		child.Variables = parent.Variables.DependencyVariables[modVersion.Name]
+		child.Variables.PopulatePublicVariables()
+		child.AddVariablesToEvalContext()
 	}
 
-	// call set variables - this will set the Variables property from the appropriate dependency variables
-	child.SetVariables(*child.DependencyConfig.DependencyPath)
 	return child
 }
 
@@ -161,9 +162,9 @@ func VariableValueCtyMap(variables map[string]*modconfig.Variable) map[string]ct
 
 // AddInputVariableValues adds evaluated variables to the run context.
 // This function is called for the root run context after loading all input variables
-func (m *ModParseContext) AddInputVariableValues(inputVariables *modconfig.ModVariableValueMap) {
+func (m *ModParseContext) AddInputVariableValues(inputVariables *modconfig.ModVariableMap) {
 	// store the variables
-	m.Variables = inputVariables.ModVariableMap
+	m.Variables = inputVariables
 
 	// now add variables into eval context
 	m.AddVariablesToEvalContext()
@@ -203,37 +204,38 @@ func (m *ModParseContext) addDependencyVariablesToReferenceMap() {
 // when reloading a mod dependency tree to resolve require args values, this function is called after each mod is loaded
 // to load the require arg values and update the variable values
 func (m *ModParseContext) loadModRequireArgs() error {
-	// TODO UPDATE ME
-	// if we have not loaded variable definitions yet, do not load require args
-	//if len(m.Variables.AllVariables) == 0 {
-	//	return nil
-	//}
+	//if we have not loaded variable definitions yet, do not load require args
+	if m.Variables == nil {
+		return nil
+	}
 
-	// TODO KAI UPDATE ME
-	//depModVarValues, err := m.collectVariableValuesFromModRequire()
-	//if err != nil {
-	//	return err
-	//}
-	//if len(depModVarValues) == 0 {
-	//	return nil
-	//}
-	//// now update the variables map with the input values
-	//for name, inputValue := range depModVarValues {
-	//	variable := variableMap.AllVariables[name]
-	//	variable.SetInputValue(
-	//		inputValue.Value,
-	//		inputValue.SourceTypeString(),
-	//		inputValue.SourceRange)
-	//
-	//	// set variable value string in our workspace map
-	//	variableMap.VariableValues[name], err = type_conversion.CtyToString(inputValue.Value)
-	//	if err != nil {
-	//		return err
-	//	}
-	//}
-	//// now set the overridden values on the context
-	//// TODO CHECK inputvariables.ModInstallCacheKey is correct here
-	//m.AddInputVariableValues(variableMap)
+	depModVarValues, err := m.collectVariableValuesFromModRequire()
+	if err != nil {
+		return err
+	}
+	if len(depModVarValues) == 0 {
+		return nil
+	}
+	// now update the variables map with the input values
+	for name, inputValue := range depModVarValues {
+		variable := m.Variables.PublicVariables[name]
+		variable.SetInputValue(
+			inputValue.Value,
+			inputValue.SourceTypeString(),
+			inputValue.SourceRange)
+
+		// set variable value string in our workspace map
+		m.Variables.PublicVariableValues[name], err = type_conversion.CtyToString(inputValue.Value)
+		if err != nil {
+			return err
+		}
+	}
+
+	// TODO KAI what about transitive dependencies in workspace????
+	// TODO what about missin gvars
+
+	// now add  overridden variables into eval context
+	m.AddVariablesToEvalContext()
 
 	return nil
 }
@@ -559,16 +561,6 @@ func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
 	m.CurrentMod = mod
 	// load any arg values from the mod require - these will be passed to dependency mods
 	m.loadModRequireArgs()
-}
-
-func (m *ModParseContext) SetVariables(modDependencyKey string) {
-	// TODO KAI CHECK
-	//// if the current mod is a dependency mod (i.e. has a DependencyPath property set), update the Variables property
-	//if dependencyVariables, ok := m.DependencyVariables[modDependencyKey]; ok {
-	//	m.Variables = dependencyVariables
-	//}
-	// TODO CHECK KEY
-	//m.AddVariablesToEvalContext()
 }
 
 func (m *ModParseContext) collectVariableValuesFromModRequire() (inputvars.InputValues, error) {
