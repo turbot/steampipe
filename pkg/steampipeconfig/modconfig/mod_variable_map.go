@@ -1,44 +1,55 @@
 package modconfig
 
 import (
-	"sort"
 	"strings"
 )
 
 // ModVariableMap is a struct containins maps of variable definitions
 type ModVariableMap struct {
+	ModInstallCacheKey  string
 	RootVariables       map[string]*Variable
-	DependencyVariables map[string]map[string]*Variable
+	DependencyVariables map[string]*ModVariableMap
+}
+
+type ModVariableValueMap struct {
+	ModVariableMap
 	// a map of top level AND dependency variables
 	// used to set variable values from inputVariables
 	AllVariables map[string]*Variable
 	// the input variables evaluated in the parse
-	VariableValues     map[string]string
-	ModInstallCacheKey string
+	VariableValues map[string]string
 }
 
 // NewModVariableMap builds a ModVariableMap using the variables from a mod and its dependencies
-func NewModVariableMap(mod *Mod, dependencyMods ModMap) *ModVariableMap {
+func NewModVariableMap(mod *Mod) *ModVariableMap {
 	m := &ModVariableMap{
-		// TODO CHECK THIS
+		// TODO KAI CHECK THIS
 		ModInstallCacheKey:  mod.GetInstallCacheKey(),
 		RootVariables:       make(map[string]*Variable),
-		DependencyVariables: make(map[string]map[string]*Variable),
-		VariableValues:      make(map[string]string),
+		DependencyVariables: make(map[string]*ModVariableMap),
+		//VariableValues:      make(map[string]string),
 	}
 
 	// add variables into map, modifying the key to be the variable short name
 	for k, v := range mod.ResourceMaps.Variables {
 		m.RootVariables[buildVariableMapKey(k)] = v
 	}
-	// now add variables from dependency mods
-	for dependencyPath, mod := range dependencyMods {
-		// add variables into map, modifying the key to be the variable short name
-		m.DependencyVariables[dependencyPath] = make(map[string]*Variable)
-		for k, v := range mod.ResourceMaps.Variables {
-			m.DependencyVariables[dependencyPath][buildVariableMapKey(k)] = v
+
+	// now traverse all dependency mods
+	for _, depMod := range mod.ResourceMaps.Mods {
+		// todo for some reason the mod appears in its own resource maps?
+		if depMod.Name() != mod.Name() {
+			m.DependencyVariables[*mod.DependencyPath] = NewModVariableMap(depMod)
 		}
 	}
+	//// now add variables from dependency mods
+	//for dependencyPath, mod := range dependencyMods {
+	//	// add variables into map, modifying the key to be the variable short name
+	//	m.DependencyVariables[dependencyPath] = make(map[string]*Variable)
+	//	for k, v := range mod.ResourceMaps.Variables {
+	//		m.DependencyVariables[dependencyPath][buildVariableMapKey(k)] = v
+	//	}
+	//}
 	// build map of all variables
 	m.PopulateAllVariables()
 
@@ -48,53 +59,55 @@ func NewModVariableMap(mod *Mod, dependencyMods ModMap) *ModVariableMap {
 // PopulateAllVariables builds a map of top level and dependency variables
 // (dependency variables are keyed by full (qualified) name
 func (m *ModVariableMap) PopulateAllVariables() {
-	res := make(map[string]*Variable)
-	for k, v := range m.RootVariables {
-		// add top level vars keyed by short name
-		res[k] = v
-	}
-	for _, dep := range m.DependencyVariables {
-		for _, v := range dep {
-			// add dependency vars keyed by full name
-			res[v.FullName] = v
-		}
-	}
-	m.AllVariables = res
+	// TODO kai update
+	//res := make(map[string]*Variable)
+	//for k, v := range m.RootVariables {
+	//	// add top level vars keyed by short name
+	//	res[k] = v
+	//}
+	//for _, dep := range m.DependencyVariables {
+	//	for _, v := range dep {
+	//		// add dependency vars keyed by full name
+	//		res[v.FullName] = v
+	//	}
+	//}
+	//m.AllVariables = res
 }
 
 func (m *ModVariableMap) ToArray() []*Variable {
 	var res []*Variable
 
-	if len(m.AllVariables) > 0 {
-		var keys []string
-
-		for k := range m.RootVariables {
-			keys = append(keys, k)
-		}
-		// sort keys
-		sort.Strings(keys)
-		for _, k := range keys {
-			res = append(res, m.RootVariables[k])
-		}
-	}
-
-	for _, depVariables := range m.DependencyVariables {
-		if len(depVariables) == 0 {
-			continue
-		}
-		keys := make([]string, len(depVariables))
-		idx := 0
-
-		for k := range depVariables {
-			keys[idx] = k
-			idx++
-		}
-		// sort keys
-		sort.Strings(keys)
-		for _, k := range keys {
-			res = append(res, depVariables[k])
-		}
-	}
+	// TODO kai update
+	//if len(m.AllVariables) > 0 {
+	//	var keys []string
+	//
+	//	for k := range m.RootVariables {
+	//		keys = append(keys, k)
+	//	}
+	//	// sort keys
+	//	sort.Strings(keys)
+	//	for _, k := range keys {
+	//		res = append(res, m.RootVariables[k])
+	//	}
+	//}
+	//
+	//for _, depVariables := range m.DependencyVariables {
+	//	if len(depVariables) == 0 {
+	//		continue
+	//	}
+	//	keys := make([]string, len(depVariables))
+	//	idx := 0
+	//
+	//	for k := range depVariables {
+	//		keys[idx] = k
+	//		idx++
+	//	}
+	//	// sort keys
+	//	sort.Strings(keys)
+	//	for _, k := range keys {
+	//		res = append(res, depVariables[k])
+	//	}
+	//}
 
 	return res
 }

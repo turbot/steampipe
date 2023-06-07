@@ -12,7 +12,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
-	"github.com/turbot/steampipe/pkg/type_conversion"
 )
 
 func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext) (*modconfig.ModVariableMap, error) {
@@ -23,38 +22,39 @@ func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContex
 		return nil, errAndWarnings.GetError()
 	}
 
-	variableMap := modconfig.NewModVariableMap(mod, parseCtx.LoadedDependencyMods)
+	variableMap := modconfig.NewModVariableMap(mod)
 
 	return variableMap, nil
 }
 
 func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, error) {
-	// now resolve all input variables
-	inputVariables, err := getInputVariables(variableMap.AllVariables, validate, parseCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	if validate {
-		if err := validateVariables(ctx, variableMap.AllVariables, inputVariables); err != nil {
-			return nil, err
-		}
-	}
-
-	// now update the variables map with the input values
-	for name, inputValue := range inputVariables {
-		variable := variableMap.AllVariables[name]
-		variable.SetInputValue(
-			inputValue.Value,
-			inputValue.SourceTypeString(),
-			inputValue.SourceRange)
-
-		// set variable value string in our workspace map
-		variableMap.VariableValues[name], err = type_conversion.CtyToString(inputValue.Value)
-		if err != nil {
-			return nil, err
-		}
-	}
+	// TODO KAI CHECK
+	//// now resolve all input variables
+	//inputVariables, err := getInputVariables(variableMap.AllVariables, validate, parseCtx)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//if validate {
+	//	if err := validateVariables(ctx, variableMap.AllVariables, inputVariables); err != nil {
+	//		return nil, err
+	//	}
+	//}
+	//
+	//// now update the variables map with the input values
+	//for name, inputValue := range inputVariables {
+	//	variable := variableMap.AllVariables[name]
+	//	variable.SetInputValue(
+	//		inputValue.Value,
+	//		inputValue.SourceTypeString(),
+	//		inputValue.SourceRange)
+	//
+	//	// set variable value string in our workspace map
+	//	variableMap.VariableValues[name], err = type_conversion.CtyToString(inputValue.Value)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
 
 	return variableMap, nil
 }

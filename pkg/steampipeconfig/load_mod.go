@@ -141,7 +141,6 @@ func loadModDependency(modDependency *versionmap.ResolvedVersionConstraint, pars
 	// update loaded dependency mods
 	parseCtx.AddLoadedDependencyMod(dependencyMod)
 	if parseCtx.ParentParseCtx != nil {
-		parseCtx.ParentParseCtx.AddLoadedDependencyMod(dependencyMod)
 		// add mod resources to parent parse context
 		parseCtx.ParentParseCtx.AddModResources(dependencyMod)
 	}

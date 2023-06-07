@@ -251,8 +251,9 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	if err != nil {
 		return modconfig.NewErrorsAndWarning(err)
 	}
+	// TODO KAI FIX
 	// populate the parsed variable values
-	w.VariableValues = inputVariables.VariableValues
+	//w.VariableValues = inputVariables.VariableValues
 
 	// build run context which we use to load the workspace
 	// NOTE: we get the short name from the inputVariables map

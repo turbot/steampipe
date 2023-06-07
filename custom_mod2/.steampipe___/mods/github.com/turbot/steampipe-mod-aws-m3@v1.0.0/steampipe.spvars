@@ -1,0 +1,3 @@
+# Dimensions
+common_dimensions = ["account_id", "region"]
+tag_dimensions = []
