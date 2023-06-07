@@ -2,20 +2,17 @@ package controldisplay
 
 import (
 	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
 
-	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 type FormatResolver struct {
+	formatterByName map[string]Formatter
 	// array of unique formatters used for export
 	exportFormatters []Formatter
-	formatterByName  map[string]Formatter
 }
 
 func NewFormatResolver() (*FormatResolver, error) {
@@ -92,41 +89,31 @@ func (r *FormatResolver) controlExporters() []export.Exporter {
 }
 
 func loadAvailableTemplates() ([]*OutputTemplate, error) {
-	templateDir := filepaths.EnsureTemplateDir()
-	templateDirectories, err := os.ReadDir(templateDir)
+	templateDirectories, err := files.ListFiles(filepaths.EnsureTemplateDir(), &files.ListOptions{
+		Flags:   files.DirectoriesFlat,
+		Exclude: []string{"./.*"},
+	})
 	if err != nil {
 		return nil, err
 	}
+
 	templates := []*OutputTemplate{}
-	for _, f := range templateDirectories {
-		if shouldIgnoreDirectory(templateDir, f) {
+	for _, templateDirectory := range templateDirectories {
+		ls, err := files.ListFiles(templateDirectory, &files.ListOptions{
+			Flags:   files.FilesFlat,
+			Exclude: []string{"./.*"},
+		})
+		if err != nil {
+			// skip - couldn't list it
+			// can't use anyway
 			continue
 		}
-		templates = append(templates, NewOutputTemplate(filepath.Join(templateDir, f.Name())))
+		if len(ls) == 0 {
+			// skip
+			// empty directory
+			continue
+		}
+		templates = append(templates, NewOutputTemplate(templateDirectory))
 	}
-
 	return templates, nil
-}
-
-var directoryIgnoreList []string = []string{
-	".DS_Store",
-}
-
-func shouldIgnoreDirectory(templateDir string, dir fs.DirEntry) bool {
-	if !dir.IsDir() {
-		return true
-	}
-	if helpers.StringSliceContains(directoryIgnoreList, dir.Name()) {
-		return true
-	}
-	dirLs, err := os.ReadDir(filepath.Join(templateDir, dir.Name()))
-	if err != nil {
-		// ignore this directory if this cannot be listed at least
-		return true
-	}
-	if len(dirLs) == 0 {
-		// ignore this directory if there are no files in it.
-		return true
-	}
-	return false
 }
