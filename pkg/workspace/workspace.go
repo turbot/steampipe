@@ -251,9 +251,8 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	if err != nil {
 		return modconfig.NewErrorsAndWarning(err)
 	}
-	// TODO KAI FIX
 	// populate the parsed variable values
-	//w.VariableValues = inputVariables.VariableValues
+	w.VariableValues = inputVariables.PublicVariableValues
 
 	// build run context which we use to load the workspace
 	// NOTE: we get the short name from the inputVariables map
@@ -289,7 +288,7 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	return errorAndWarning
 }
 
-func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, error) {
+func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableValueMap, error) {
 	// build a run context just to use to load variable definitions
 	variablesParseCtx, err := w.getParseContext(ctx)
 	if err != nil {
@@ -304,7 +303,7 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 	return inputVariableValues, nil
 }
 
-func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, error) {
+func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableValueMap, error) {
 	// load variable definitions
 	variableMap, err := steampipeconfig.LoadVariableDefinitions(w.Path, variablesParseCtx)
 	if err != nil {

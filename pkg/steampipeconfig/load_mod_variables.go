@@ -3,6 +3,7 @@ package steampipeconfig
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/type_conversion"
 	"sort"
 
 	"github.com/hashicorp/terraform/tfdiags"
@@ -14,7 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 )
 
-func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext) (*modconfig.ModVariableMap, error) {
+func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext) (*modconfig.ModVariableValueMap, error) {
 	// only load mod and variables blocks
 	parseCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
 	mod, errAndWarnings := LoadMod(variablePath, parseCtx)
@@ -22,44 +23,43 @@ func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContex
 		return nil, errAndWarnings.GetError()
 	}
 
-	variableMap := modconfig.NewModVariableMap(mod)
+	variableMap := modconfig.NewModVariableValueMap(mod)
 
 	return variableMap, nil
 }
 
-func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, error) {
-	// TODO KAI CHECK
-	//// now resolve all input variables
-	//inputVariables, err := getInputVariables(variableMap.AllVariables, validate, parseCtx)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//if validate {
-	//	if err := validateVariables(ctx, variableMap.AllVariables, inputVariables); err != nil {
-	//		return nil, err
-	//	}
-	//}
-	//
-	//// now update the variables map with the input values
-	//for name, inputValue := range inputVariables {
-	//	variable := variableMap.AllVariables[name]
-	//	variable.SetInputValue(
-	//		inputValue.Value,
-	//		inputValue.SourceTypeString(),
-	//		inputValue.SourceRange)
-	//
-	//	// set variable value string in our workspace map
-	//	variableMap.VariableValues[name], err = type_conversion.CtyToString(inputValue.Value)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
+func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableValueMap, validate bool) (*modconfig.ModVariableValueMap, error) {
+	// now resolve all input variables
+	inputValues, err := getInputVariables(variableMap.PublicVariables, validate, parseCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	if validate {
+		if err := validateVariables(ctx, variableMap.PublicVariables, inputValues); err != nil {
+			return nil, err
+		}
+	}
+
+	// now update the variables map with the input values
+	for name, inputValue := range inputValues {
+		variable := variableMap.PublicVariables[name]
+		variable.SetInputValue(
+			inputValue.Value,
+			inputValue.SourceTypeString(),
+			inputValue.SourceRange)
+
+		// set variable value string in our workspace map
+		variableMap.PublicVariableValues[name], err = type_conversion.CtyToString(inputValue.Value)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return variableMap, nil
 }
 
-func getInputVariables(variableMap map[string]*modconfig.Variable, validate bool, parseCtx *parse.ModParseContext) (inputvars.InputValues, error) {
+func getInputVariables(publicVariableMap map[string]*modconfig.Variable, validate bool, parseCtx *parse.ModParseContext) (inputvars.InputValues, error) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
@@ -73,11 +73,11 @@ func getInputVariables(variableMap map[string]*modconfig.Variable, validate bool
 	}
 
 	if validate {
-		if err := identifyMissingVariables(inputValuesUnparsed, variableMap); err != nil {
+		if err := identifyMissingVariables(inputValuesUnparsed, publicVariableMap); err != nil {
 			return nil, err
 		}
 	}
-	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap, validate)
+	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, publicVariableMap, validate)
 
 	return parsedValues, diags.Err()
 }

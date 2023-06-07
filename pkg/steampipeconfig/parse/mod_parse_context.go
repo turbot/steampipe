@@ -172,9 +172,9 @@ func VariableValueCtyMap(variables map[string]*modconfig.Variable) map[string]ct
 
 // AddInputVariableValues adds evaluated variables to the run context.
 // This function is called for the root run context after loading all input variables
-func (m *ModParseContext) AddInputVariableValues(inputVariables *modconfig.ModVariableMap) {
+func (m *ModParseContext) AddInputVariableValues(inputVariables *modconfig.ModVariableValueMap) {
 	// store the variables
-	m.Variables = inputVariables
+	m.Variables = inputVariables.ModVariableMap
 
 	// now add variables into eval context
 	// TODO CHECK KEY??
@@ -201,24 +201,27 @@ func (m *ModParseContext) addRootVariablesToReferenceMap() {
 // addDependencyVariablesToReferenceMap adds the dependency variables to the referenceValues map
 // (used to build the eval context)
 func (m *ModParseContext) addDependencyVariablesToReferenceMap(modDependencyKey string) {
-	// TODO KAI FIX ME
+	TODO KAI FIX ME
 	//topLevelDependencies := m.WorkspaceLock.InstallCache[modDependencyKey]
-
-	// convert topLevelDependencies into as map keyed by dependency path
+	//
+	//convert topLevelDependencies into as map keyed by dependency path
 	//topLevelDependencyPathMap := topLevelDependencies.ToDependencyPathMap()
-	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
-	// add dependency mod variables to dependencyVariableValues, scoped by DependencyPath
-	//for depModName, depVars := range m.DependencyVariables {
-	//	// only add variables from top level dependencies
-	//	if _, ok := topLevelDependencyPathMap[depModName]; ok {
-	//		// create map for this dependency if needed
-	//		alias := topLevelDependencyPathMap[depModName]
-	//		if m.referenceValues[alias] == nil {
-	//			m.referenceValues[alias] = make(ReferenceTypeValueMap)
-	//		}
-	//		m.referenceValues[alias]["var"] = VariableValueCtyMap(depVars)
-	//	}
-	//}
+	//NOTE: we add with the name "var" not "variable" as that is how variables are referenced
+	//add dependency mod variables to dependencyVariableValues, scoped by DependencyPath
+
+
+
+	for depModName, depVars := range m.Variables.DependencyVariables {
+		for _, v := range depVars.RootVariables{
+			// create map for this dependency if needed
+			alias := topLevelDependencyPathMap[depModName]
+			if m.referenceValues[alias] == nil{
+			m.referenceValues[alias] = make(ReferenceTypeValueMap)
+		}
+			m.referenceValues[alias]["var"] = VariableValueCtyMap(depVars)
+		}
+		}
+	}
 }
 
 // when reloading a mod dependency tree to resolve require args values, this function is called after each mod is loaded
