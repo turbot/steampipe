@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -43,6 +44,7 @@ type failedPlugin struct {
 type pluginJsonOutput struct {
 	Installed []installedPlugin `json:"installed"`
 	Failed    []failedPlugin    `json:"failed"`
+	Warnings  []string          `json:"warnings"`
 }
 
 // Plugin management commands
@@ -611,52 +613,18 @@ func runPluginListCmd(cmd *cobra.Command, args []string) {
 
 }
 
-func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) {
-	statushooks.Show(ctx)
-	defer statushooks.Done(ctx)
-
-	// get the maps of available and failed/missing plugins
-	pluginConnectionMap, failedPluginMap, missingPluginMap, res := getPluginConnectionMap(ctx)
-	if res.Error != nil {
-		return nil, nil, nil, res
-	}
-
-	// TODO do we really need to look at installed plugins - can't we just use the plugin connection map
-	// get a list of the installed plugins by inspecting the install location
-	// pass pluginConnectionMap so we can populate the connections for each plugin
-	pluginList, err := plugin.List(pluginConnectionMap)
-	if err != nil {
-		res.Error = err
-		return nil, nil, nil, res
-	}
-
-	// remove the failed plugins from `list` since we don't want them in the installed table
-	for pluginName := range failedPluginMap {
-		for i := 0; i < len(pluginList); i++ {
-			if pluginList[i].Name == pluginName {
-				pluginList = append(pluginList[:i], pluginList[i+1:]...)
-				i-- // Decrement the loop index since we just removed an element
-			}
-		}
-	}
-	return pluginList, failedPluginMap, missingPluginMap, res
-}
-
 func showPluginListOutput(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings, outputFormat string) error {
-	if outputFormat == "table" {
-		showPluginListAsTable(pluginList, failedPluginMap, missingPluginMap)
-	} else if outputFormat == "json" {
-		return showPluginListAsJSON(pluginList, failedPluginMap, missingPluginMap)
+	switch outputFormat {
+	case "table":
+		return showPluginListAsTable(pluginList, failedPluginMap, missingPluginMap, res)
+	case "json":
+		return showPluginListAsJSON(pluginList, failedPluginMap, missingPluginMap, res)
+	default:
+		return errors.New("invalid output format")
 	}
-	if len(res.Warnings) > 0 {
-		fmt.Println()
-		res.ShowWarnings()
-		fmt.Printf("\n")
-	}
-	return nil
 }
 
-func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection) {
+func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) error {
 	// List installed plugins in a table
 	if len(pluginList) != 0 {
 		headers := []string{"Installed", "Version", "Connections"}
@@ -695,9 +663,16 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
 		fmt.Println()
 	}
+
+	if len(res.Warnings) > 0 {
+		fmt.Println()
+		res.ShowWarnings()
+		fmt.Printf("\n")
+	}
+	return nil
 }
 
-func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection) error {
+func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) error {
 	output := pluginJsonOutput{}
 
 	for _, item := range pluginList {
@@ -733,6 +708,10 @@ func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, m
 			Reason:      constants.InstallMessagePluginNotInstalled,
 		}
 		output.Failed = append(output.Failed, missing)
+	}
+
+	if len(res.Warnings) > 0 {
+		output.Warnings = res.Warnings
 	}
 
 	jsonOutput, err := json.MarshalIndent(output, "", "  ")
@@ -792,6 +771,37 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	}
 	statushooks.Done(ctx)
 	reports.Print()
+}
+
+func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) {
+	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
+
+	// get the maps of available and failed/missing plugins
+	pluginConnectionMap, failedPluginMap, missingPluginMap, res := getPluginConnectionMap(ctx)
+	if res.Error != nil {
+		return nil, nil, nil, res
+	}
+
+	// TODO do we really need to look at installed plugins - can't we just use the plugin connection map
+	// get a list of the installed plugins by inspecting the install location
+	// pass pluginConnectionMap so we can populate the connections for each plugin
+	pluginList, err := plugin.List(pluginConnectionMap)
+	if err != nil {
+		res.Error = err
+		return nil, nil, nil, res
+	}
+
+	// remove the failed plugins from `list` since we don't want them in the installed table
+	for pluginName := range failedPluginMap {
+		for i := 0; i < len(pluginList); i++ {
+			if pluginList[i].Name == pluginName {
+				pluginList = append(pluginList[:i], pluginList[i+1:]...)
+				i-- // Decrement the loop index since we just removed an element
+			}
+		}
+	}
+	return pluginList, failedPluginMap, missingPluginMap, res
 }
 
 func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) {
