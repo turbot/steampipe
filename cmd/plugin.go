@@ -239,7 +239,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		error_helpers.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to install"))
 		fmt.Println()
-		cmd.Help()
+		_ = cmd.Help()
 		fmt.Println()
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return
@@ -584,7 +584,7 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 	return plugins, nil
 }
 
-func runPluginListCmd(cmd *cobra.Command, args []string) {
+func runPluginListCmd(cmd *cobra.Command, _ []string) {
 	// setup a cancel context and start cancel handler
 	ctx, cancel := context.WithCancel(cmd.Context())
 	contexthelpers.StartCancelHandler(cancel)
@@ -805,6 +805,9 @@ func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, fai
 }
 
 func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *modconfig.ErrorAndWarnings) {
+	utils.LogTime("cmd.getPluginConnectionMap start")
+	defer utils.LogTime("cmd.getPluginConnectionMap end")
+
 	statushooks.SetStatus(ctx, "Fetching connection map")
 
 	res = &modconfig.ErrorAndWarnings{}
@@ -840,6 +843,9 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 
 // load the connection state, waiting until all connections are loaded
 func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionStateMap, *modconfig.ErrorAndWarnings) {
+	utils.LogTime("cmd.getConnectionState start")
+	defer utils.LogTime("cmd.getConnectionState end")
+
 	// start service
 	client, res := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
 	if res.Error != nil {

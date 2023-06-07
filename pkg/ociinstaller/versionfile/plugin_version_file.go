@@ -49,22 +49,24 @@ func (f *PluginVersionFile) MigrateFrom() migrate.Migrateable {
 
 func (f *PluginVersionFile) Backfill() error {
 	for _, installation := range f.Plugins {
-		if err := f.EnsureVersionFile(installation); err != nil {
+		if err := f.EnsureVersionFile(installation, false); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (f *PluginVersionFile) EnsureVersionFile(installData *InstalledVersion) error {
+func (f *PluginVersionFile) EnsureVersionFile(installData *InstalledVersion, force bool) error {
 	pluginFolder, err := filepaths.FindPluginFolder(installData.Name)
 	if err != nil {
 		return err
 	}
 	versionFile := filepath.Join(pluginFolder, pluginVersionFileName)
-	if filehelpers.FileExists(versionFile) {
-		// if the version file already exists, nothing to do
-		return nil
+	if !force {
+		// if this is not forced, make sure that the file doesn't exist before overwriting it
+		if filehelpers.FileExists(versionFile) {
+			return nil
+		}
 	}
 
 	theBytes, err := json.MarshalIndent(installData, "", "  ")

@@ -91,7 +91,7 @@ func updatePluginVersionFiles(image *SteampipeImage) error {
 	// ensure that the version file is written
 	// having this file is important, since this can be used
 	// to compose the holistic version file if need be
-	if err := v.EnsureVersionFile(installation); err != nil {
+	if err := v.EnsureVersionFile(installation, true); err != nil {
 		return err
 	}
 
