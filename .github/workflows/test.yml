@@ -24,6 +24,12 @@ jobs:
         with:
           go-version: 1.19
 
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.52.2
+          args: --timeout=15m
+
       - name: Fetching Go Cache Paths
         id: go-cache-paths
         run: |
@@ -45,12 +51,6 @@ jobs:
         with:
           path: ${{ steps.go-cache-paths.outputs.go-mod }}
           key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
-
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.52.2
-          args: --timeout=15m
 
       - name: Run CLI Unit Tests
         run: |
