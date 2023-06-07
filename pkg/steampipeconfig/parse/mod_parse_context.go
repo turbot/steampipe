@@ -116,14 +116,26 @@ func NewChildModParseContext(parent *ModParseContext, modVersion *versionmap.Res
 	child.BlockTypes = parent.BlockTypes
 	// set the child's parent
 	child.ParentParseCtx = parent
-	// copy DependencyVariables
-	child.DependencyVariables = parent.DependencyVariables
+	// clone DependencyVariables so that any evaluation we perform based on mod require args is not replicated in
+	// other usages of the dependency
+	child.DependencyVariables = cloneVariableMap(parent.DependencyVariables)
 	// set the dependency config
 	child.DependencyConfig = NewDependencyConfig(modVersion)
 
 	// call set variables - this will set the Variables property from the appropriate dependency variables
 	child.SetVariables(*child.DependencyConfig.DependencyPath)
 	return child
+}
+
+func cloneVariableMap(variables map[string]map[string]*modconfig.Variable) map[string]map[string]*modconfig.Variable {
+	var res = make(map[string]map[string]*modconfig.Variable)
+	for dep, vars := range variables {
+		res[dep] = make(map[string]*modconfig.Variable)
+		for name, v := range vars {
+			res[dep][name] = v.Clone()
+		}
+	}
+	return res
 }
 
 func (m *ModParseContext) EnsureWorkspaceLock(mod *modconfig.Mod) error {
@@ -582,12 +594,6 @@ func (m *ModParseContext) AddLoadedDependencyMod(mod *modconfig.Mod) {
 		return
 	}
 	m.LoadedDependencyMods[*mod.DependencyPath] = mod
-
-	if m.ParentParseCtx != nil {
-		m.ParentParseCtx.AddLoadedDependencyMod(mod)
-		// add mod resources to parent parse context
-		m.ParentParseCtx.AddModResources(mod)
-	}
 }
 
 // GetTopLevelDependencyMods build a mod map of top level loaded dependencies, keyed by mod name
@@ -615,7 +621,7 @@ func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
 
 func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
 	m.CurrentMod = mod
-	// load any arg values from the mod require - these will  be passed to dependency mods
+	// load any arg values from the mod require - these will be passed to dependency mods
 	m.loadModRequireArgs()
 }
 

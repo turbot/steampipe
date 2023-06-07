@@ -104,15 +104,6 @@ func loadModDependencies(parent *modconfig.Mod, parseCtx *parse.ModParseContext)
 			if lockedVersion == nil {
 				return fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
 			}
-			// have we already loaded a mod which satisfied this
-			loadedMod, err := parseCtx.GetLoadedDependencyMod(lockedVersion, parent)
-			if err != nil {
-				return err
-			}
-			if loadedMod != nil {
-				continue
-			}
-			// we have not loaded this depdency - load it!
 			if err := loadModDependency(lockedVersion, parseCtx); err != nil {
 				errors = append(errors, err)
 			}
@@ -149,7 +140,11 @@ func loadModDependency(modDependency *versionmap.ResolvedVersionConstraint, pars
 
 	// update loaded dependency mods
 	parseCtx.AddLoadedDependencyMod(dependencyMod)
-
+	if parseCtx.ParentParseCtx != nil {
+		parseCtx.ParentParseCtx.AddLoadedDependencyMod(dependencyMod)
+		// add mod resources to parent parse context
+		parseCtx.ParentParseCtx.AddModResources(dependencyMod)
+	}
 	return nil
 
 }
