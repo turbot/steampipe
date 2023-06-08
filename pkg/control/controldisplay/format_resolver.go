@@ -90,7 +90,7 @@ func (r *FormatResolver) controlExporters() []export.Exporter {
 
 func loadAvailableTemplates() ([]*OutputTemplate, error) {
 	templateDirectories, err := files.ListFiles(filepaths.EnsureTemplateDir(), &files.ListOptions{
-		Flags:   files.DirectoriesFlat,
+		Flags:   files.DirectoriesFlat | files.NotEmpty,
 		Exclude: []string{"./.*"},
 	})
 	if err != nil {
@@ -99,20 +99,6 @@ func loadAvailableTemplates() ([]*OutputTemplate, error) {
 
 	templates := []*OutputTemplate{}
 	for _, templateDirectory := range templateDirectories {
-		ls, err := files.ListFiles(templateDirectory, &files.ListOptions{
-			Flags:   files.FilesFlat,
-			Exclude: []string{"./.*"},
-		})
-		if err != nil {
-			// skip - couldn't list it
-			// can't use anyway
-			continue
-		}
-		if len(ls) == 0 {
-			// skip
-			// empty directory
-			continue
-		}
 		templates = append(templates, NewOutputTemplate(templateDirectory))
 	}
 	return templates, nil
