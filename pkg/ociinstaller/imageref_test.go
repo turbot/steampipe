@@ -73,6 +73,11 @@ func TestDisplayImageRef(t *testing.T) {
 		"us-docker.pkg.dev/steampipe/plugins/turbot/aws@latest": "hub.steampipe.io/plugins/turbot/aws@latest",
 		"hub.steampipe.io/plugins/turbot/aws@latest":            "hub.steampipe.io/plugins/turbot/aws@latest",
 		"hub.steampipe.io/plugins/someoneelse/myimage@mytag":    "hub.steampipe.io/plugins/someoneelse/myimage@mytag",
+
+		"aws@v1":            "hub.steampipe.io/plugins/turbot/aws@1",
+		"turbot/aws@v1":     "hub.steampipe.io/plugins/turbot/aws@1",
+		"turbot/aws@v1.0":   "hub.steampipe.io/plugins/turbot/aws@1.0",
+		"turbot/aws@v1.1.1": "hub.steampipe.io/plugins/turbot/aws@1.1.1",
 	}
 
 	for testCase, want := range cases {
