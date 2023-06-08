@@ -118,25 +118,8 @@ func (vv InputValues) JustValues() map[string]cty.Value {
 	return ret
 }
 
-// DefaultVariableValues returns an InputValues map representing the default
-// values specified for variables in the given configuration map.
-//func DefaultVariableValues(configs map[string]*modconfig.Variable) InputValues {
-//	ret := make(InputValues)
-//	for k, c := range configs {
-//		if c.Default == cty.NilVal {
-//			continue
-//		}
-//		ret[k] = &InputValue{
-//			Value:       c.Default,
-//			SourceType:  ValueFromConfig,
-//			SourceRange: &c.DeclRange,
-//		}
-//	}
-//	return ret
-//}
-
 // SameValues returns true if the given InputValues has the same values as
-// the receiever, disregarding the source types and source ranges.
+// the receiver, disregarding the source types and source ranges.
 //
 // Values are compared using the cty "RawEquals" method, which means that
 // unknown values can be considered equal to one another if they are of the
@@ -307,4 +290,20 @@ func CheckInputVariables(vcs map[string]*modconfig.Variable, vs InputValues) tfd
 	}
 
 	return diags
+}
+
+// SetVariableValues determines whether the given variable is a public variable and if so sets its value
+func (vv InputValues) SetVariableValues(m *modconfig.ModVariableMap) {
+	for name, inputValue := range vv {
+		variable, ok := m.PublicVariables[name]
+		// if this variable does not exist in public variables, skip
+		if !ok {
+			// todo warn?
+			continue
+		}
+		variable.SetInputValue(
+			inputValue.Value,
+			inputValue.SourceTypeString(),
+			inputValue.SourceRange)
+	}
 }

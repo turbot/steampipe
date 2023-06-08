@@ -2,14 +2,13 @@ package parse
 
 import (
 	"fmt"
+
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/terraform/tfdiags"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
-	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -115,9 +114,12 @@ func NewChildModParseContext(parent *ModParseContext, modVersion *versionmap.Res
 	child.DependencyConfig = NewDependencyConfig(modVersion)
 	// set variables if parent has any
 	if parent.Variables != nil {
-		child.Variables = parent.Variables.DependencyVariables[modVersion.Name]
-		child.Variables.PopulatePublicVariables()
-		child.AddVariablesToEvalContext()
+		childVars, ok := parent.Variables.DependencyVariables[modVersion.Name]
+		if ok {
+			child.Variables = childVars
+			child.Variables.PopulatePublicVariables()
+			child.AddVariablesToEvalContext()
+		}
 	}
 
 	return child
@@ -190,7 +192,7 @@ func (m *ModParseContext) addRootVariablesToReferenceMap() {
 // (used to build the eval context)
 func (m *ModParseContext) addDependencyVariablesToReferenceMap() {
 	// retrieve the resolved dependency versions for the parent mod
-	resolvedVersions := m.WorkspaceLock.InstallCache[m.Variables.ModInstallCacheKey]
+	resolvedVersions := m.WorkspaceLock.InstallCache[m.Variables.Mod.GetInstallCacheKey()]
 
 	for depModName, depVars := range m.Variables.DependencyVariables {
 		alias := resolvedVersions[depModName].Alias
@@ -209,7 +211,7 @@ func (m *ModParseContext) loadModRequireArgs() error {
 		return nil
 	}
 
-	depModVarValues, err := m.collectVariableValuesFromModRequire()
+	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(m.CurrentMod, m.WorkspaceLock)
 	if err != nil {
 		return err
 	}
@@ -217,24 +219,9 @@ func (m *ModParseContext) loadModRequireArgs() error {
 		return nil
 	}
 	// now update the variables map with the input values
-	for name, inputValue := range depModVarValues {
-		variable := m.Variables.PublicVariables[name]
-		variable.SetInputValue(
-			inputValue.Value,
-			inputValue.SourceTypeString(),
-			inputValue.SourceRange)
+	depModVarValues.SetVariableValues(m.Variables)
 
-		// set variable value string in our workspace map
-		m.Variables.PublicVariableValues[name], err = type_conversion.CtyToString(inputValue.Value)
-		if err != nil {
-			return err
-		}
-	}
-
-	// TODO KAI what about transitive dependencies in workspace????
-	// TODO what about missin gvars
-
-	// now add  overridden variables into eval context
+	// now add  overridden variables into eval context - in case the root mod references any dependency variable values
 	m.AddVariablesToEvalContext()
 
 	return nil
@@ -559,46 +546,6 @@ func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
 
 func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
 	m.CurrentMod = mod
-	// load any arg values from the mod require - these will be passed to dependency mods
+	// now we have the mod, load any arg values from the mod require - these will be passed to dependency mods
 	m.loadModRequireArgs()
-}
-
-func (m *ModParseContext) collectVariableValuesFromModRequire() (inputvars.InputValues, error) {
-	mod := m.CurrentMod
-	res := make(inputvars.InputValues)
-	if mod.Require != nil {
-		for _, depModConstraint := range mod.Require.Mods {
-			if args := depModConstraint.Args; args != nil {
-				// find the loaded dep mod which satisfies this constraint
-				resolvedConstraint := m.WorkspaceLock.GetMod(depModConstraint.Name, mod)
-				if resolvedConstraint == nil {
-					return nil, fmt.Errorf("dependency mod %s is not loaded", depModConstraint.Name)
-				}
-				for varName, varVal := range args {
-					varFullName := fmt.Sprintf("%s.var.%s", resolvedConstraint.Alias, varName)
-
-					sourceRange := tfdiags.SourceRange{
-						Filename: mod.Require.DeclRange.Filename,
-						Start: tfdiags.SourcePos{
-							Line:   mod.Require.DeclRange.Start.Line,
-							Column: mod.Require.DeclRange.Start.Column,
-							Byte:   mod.Require.DeclRange.Start.Byte,
-						},
-						End: tfdiags.SourcePos{
-							Line:   mod.Require.DeclRange.End.Line,
-							Column: mod.Require.DeclRange.End.Column,
-							Byte:   mod.Require.DeclRange.End.Byte,
-						},
-					}
-
-					res[varFullName] = &inputvars.InputValue{
-						Value:       varVal,
-						SourceType:  inputvars.ValueFromModFile,
-						SourceRange: sourceRange,
-					}
-				}
-			}
-		}
-	}
-	return res, nil
 }

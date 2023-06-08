@@ -24,9 +24,13 @@ func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *modco
 	if errAndWarnings.GetError() == nil {
 		return w, errAndWarnings
 	}
-	missingVariablesError, ok := errAndWarnings.GetError().(modconfig.MissingVariableError)
+	missingVariablesError, ok := errAndWarnings.GetError().(*modconfig.MissingVariableError)
 	// if there was an error which is NOT a MissingVariableError, return it
 	if !ok {
+		return nil, errAndWarnings
+	}
+	// if there are missing transitive dependency variables, fail as we do not prompt for these
+	if len(missingVariablesError.MissingTransitiveVariables) > 0 {
 		return nil, errAndWarnings
 	}
 	// if interactive input is disabled, return the missing variables error
@@ -44,10 +48,11 @@ func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *modco
 	return Load(ctx, workspacePath)
 }
 
-func promptForMissingVariables(ctx context.Context, missingVariables []*modconfig.Variable, workspacePath string) error {
+func promptForMissingVariables(ctx context.Context, missingVariables []*modconfig.MissingVariable, workspacePath string) error {
 	fmt.Println()
 	fmt.Println("Variables defined with no value set.")
-	for _, v := range missingVariables {
+	for _, m := range missingVariables {
+		v := m.Variable
 		variableName := v.ShortName
 		variableDisplayName := fmt.Sprintf("var.%s", v.ShortName)
 		// if this variable is NOT part of the workspace mod, add the mod name to the variable name

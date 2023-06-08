@@ -116,6 +116,7 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 	if v.TypeString == "" {
 		v.TypeString = type_conversion.CtyTypeToHclType(value.Type())
 	}
+
 	return nil
 }
 

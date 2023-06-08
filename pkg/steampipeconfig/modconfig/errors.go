@@ -7,16 +7,37 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-type MissingVariableError struct {
-	MissingVariables []*Variable
+type MissingVariable struct {
+	Variable *Variable
+	Path     string
 }
 
-func (m MissingVariableError) Error() string {
-	strs := make([]string, len(m.MissingVariables))
-	for i, v := range m.MissingVariables {
-		strs[i] = v.Name()
+type MissingVariableError struct {
+	MissingVariables           []*MissingVariable
+	MissingTransitiveVariables []*MissingVariable
+}
+
+func (m *MissingVariableError) Error() string {
+	allMissing := append(m.MissingVariables, m.MissingTransitiveVariables...)
+	missingCount := len(allMissing)
+	missingPaths := make([]string, missingCount)
+	for i, v := range allMissing {
+		missingPaths[i] = v.Path
 	}
-	return fmt.Sprintf("missing %d variable %s: %s", len(strs), utils.Pluralize("value", len(strs)), strings.Join(strs, ","))
+
+	return fmt.Sprintf("missing %d variable %s:\n\t%s",
+		missingCount,
+		utils.Pluralize("value", missingCount),
+		strings.Join(missingPaths, "\n\t"),
+	)
+}
+
+func (m *MissingVariableError) Add(missingVars []*MissingVariable, isTopLevel bool) {
+	if isTopLevel {
+		m.MissingVariables = append(m.MissingVariables, missingVars...)
+	} else {
+		m.MissingTransitiveVariables = append(m.MissingTransitiveVariables, missingVars...)
+	}
 }
 
 type VariableValidationFailedError struct {

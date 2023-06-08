@@ -1,28 +1,33 @@
 package modconfig
 
 import (
-	"github.com/turbot/steampipe/pkg/utils"
 	"strings"
+
+	"github.com/turbot/steampipe/pkg/type_conversion"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // ModVariableMap is a struct containins maps of variable definitions
 type ModVariableMap struct {
-	ModInstallCacheKey string
-	RootVariables      map[string]*Variable
-	// map of dependency variable maps, keyed by dependency name
+	// which mod have these variables been loaded for?
+	Mod *Mod
+	// top level variables
+	RootVariables map[string]*Variable
+	// map of dependency variable maps, keyed by dependency NAME
 	DependencyVariables map[string]*ModVariableMap
 
-	PublicVariables      map[string]*Variable
-	PublicVariableValues map[string]string
+	// a list of the pointers to the variables whose values can be changed
+	// NOTE: this refers to the SAME variable objects as exist in the RootVariables and DependencyVariables maps,
+	// so when we set the value of public variables, we mutate the underlying variable
+	PublicVariables map[string]*Variable
 }
 
 // NewModVariableMap builds a ModVariableMap using the variables from a mod and its dependencies
 func NewModVariableMap(mod *Mod) *ModVariableMap {
 	m := &ModVariableMap{
-		ModInstallCacheKey:   mod.GetInstallCacheKey(),
-		RootVariables:        make(map[string]*Variable),
-		DependencyVariables:  make(map[string]*ModVariableMap),
-		PublicVariableValues: make(map[string]string),
+		Mod:                 mod,
+		RootVariables:       make(map[string]*Variable),
+		DependencyVariables: make(map[string]*ModVariableMap),
 	}
 
 	// add variables into map, modifying the key to be the variable short name
@@ -87,3 +92,18 @@ func (m *ModVariableMap) PopulatePublicVariables() {
 	}
 	m.PublicVariables = res
 }
+
+// GetPublicVariableValues converts public variables into a map of string variable values
+func (m *ModVariableMap) GetPublicVariableValues() (map[string]string, error) {
+	res := make(map[string]string, len(m.PublicVariables))
+	for k, v := range m.PublicVariables {
+		// TODO investigate workspace usage of value string and determine whether we can simply format ValueGo
+		valueString, err := type_conversion.CtyToString(v.Value)
+		if err != nil {
+			return nil, err
+		}
+		res[k] = valueString
+	}
+	return res, nil
+}
+
