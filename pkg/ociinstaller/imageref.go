@@ -3,6 +3,8 @@ package ociinstaller
 import (
 	"fmt"
 	"strings"
+
+	"github.com/Masterminds/semver/v3"
 )
 
 const (
@@ -21,6 +23,7 @@ type SteampipeImageRef struct {
 
 // NewSteampipeImageRef :: creates and returns a New SteampipeImageRef
 func NewSteampipeImageRef(ref string) *SteampipeImageRef {
+	ref = sanitizeRefStream(ref)
 	return &SteampipeImageRef{
 		requestedRef: ref,
 	}
@@ -62,6 +65,27 @@ func (r *SteampipeImageRef) DisplayImageRef() string {
 
 func isDigestRef(ref string) bool {
 	return strings.Contains(ref, "@sha256:")
+}
+
+// sanitizes the ref to exclude any 'v' prefix
+// in the stream (if any)
+func sanitizeRefStream(ref string) string {
+	if !isDigestRef(ref) {
+		splitByAt := strings.Split(ref, "@")
+		if len(splitByAt) == 1 {
+			// no stream mentioned
+			return ref
+		}
+		// there's a stream
+		stream := splitByAt[1]
+		// try to parse as a semver
+		if v, err := semver.NewVersion(stream); err == nil {
+			stream = v.String()
+		}
+		splitByAt[1] = stream
+		ref = strings.Join(splitByAt, "@")
+	}
+	return ref
 }
 
 // GetOrgNameAndStream :: splits the full image reference into
