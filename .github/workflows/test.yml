@@ -29,7 +29,7 @@ jobs:
         continue-on-error: true # we dont want to enforce just yet
         with:
           version: v1.52.2
-          args: --timeout=15m
+          args: --timeout=15m --config=.golangci.yml
 
       - name: Fetching Go Cache Paths
         id: go-cache-paths
