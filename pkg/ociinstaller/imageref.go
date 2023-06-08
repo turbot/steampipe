@@ -3,8 +3,6 @@ package ociinstaller
 import (
 	"fmt"
 	"strings"
-
-	"github.com/Masterminds/semver/v3"
 )
 
 const (
@@ -76,13 +74,9 @@ func sanitizeRefStream(ref string) string {
 			// no stream mentioned
 			return ref
 		}
-		// there's a stream
-		stream := splitByAt[1]
-		// try to parse as a semver
-		if v, err := semver.NewVersion(stream); err == nil {
-			stream = v.String()
-		}
-		splitByAt[1] = stream
+		// trim out the 'v' prefix
+		splitByAt[1] = strings.TrimPrefix(splitByAt[1], "v")
+
 		ref = strings.Join(splitByAt, "@")
 	}
 	return ref
