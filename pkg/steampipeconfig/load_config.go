@@ -24,6 +24,7 @@ import (
 
 var GlobalConfig *SteampipeConfig
 var defaultConfigFileName = "default.spc"
+var defaultConfigSampleFileName = "default.spc.sample"
 
 // LoadSteampipeConfig loads the HCL connection config and workspace options
 func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConfig, *modconfig.ErrorAndWarnings) {
@@ -48,7 +49,30 @@ func LoadConnectionConfig() (*SteampipeConfig, *modconfig.ErrorAndWarnings) {
 }
 
 func ensureDefaultConfigFile(configFolder string) error {
+	var equal bool
 	defaultConfigFile := filepath.Join(configFolder, defaultConfigFileName)
+	defaultConfigSampleFile := filepath.Join(configFolder, defaultConfigSampleFileName)
+
+	// always write the default.spc.sample file
+	err := os.WriteFile(defaultConfigSampleFile, []byte(constants.DefaultConnectionConfigContent), 0755)
+	if err != nil {
+		return err
+	}
+	// if default.spc exists, and if the content of the default.spc and the default.spc.sample
+	// file are the same, remove the default.spc file.
+	if _, err := os.Stat(defaultConfigFile); err == nil {
+		if equal, err = utils.AreFilesEqual(defaultConfigFile, defaultConfigSampleFile); err != nil {
+			return err
+		}
+		if equal {
+			// remove default.spc file
+			err := os.Remove(defaultConfigFile)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	// write default.spc if it does not exist
 	if _, err := os.Stat(defaultConfigFile); os.IsNotExist(err) {
 		err = os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0755)
 		if err != nil {
