@@ -5,12 +5,14 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 const logRetentionDays = 7
 
 func TrimLogs() {
-	fileLocation := getDatabaseLogDirectory()
+	fileLocation := filepaths.EnsureLogDir()
 	files, err := os.ReadDir(fileLocation)
 	if err != nil {
 		log.Println("[TRACE] error listing db log directory", err)

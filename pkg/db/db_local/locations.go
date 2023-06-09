@@ -32,15 +32,6 @@ func getDatabaseLocation() string {
 	return loc
 }
 
-func getDatabaseLogDirectory() string {
-	loc := filepaths.EnsureLogDir()
-	if _, err := os.Stat(loc); os.IsNotExist(err) {
-		err = os.MkdirAll(loc, 0755)
-		error_helpers.FailOnErrorWithMessage(err, "could not create postgres logging directory")
-	}
-	return loc
-}
-
 func getDataLocation() string {
 	loc := filepath.Join(databaseInstanceDir(), "data")
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
