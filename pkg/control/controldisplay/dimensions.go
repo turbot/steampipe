@@ -69,6 +69,11 @@ func (r DimensionsRenderer) Render() string {
 		// get the source dimension object
 		dimension := r.dimensions[i]
 
+		if len(strings.TrimSpace(dimension.Value)) == 0 {
+			// if the value of the dimension is empty, skip it
+			continue
+		}
+
 		// get the color code - there must be an entry
 		dimensionColorFunc := func(val interface{}) aurora.Value {
 			// if current theme supports colors, apply coloring
