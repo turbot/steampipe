@@ -20,6 +20,7 @@ func Migrate(migrateable Migrateable, oldPath string) {
 			return
 		}
 		log.Println("[WARN]", "could not read file for migration:", oldPath, err)
+		return
 	}
 	// Deserialize into old struct
 	err = json.Unmarshal(fileContent, &migrateable)
