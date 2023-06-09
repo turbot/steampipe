@@ -2,18 +2,17 @@ package controldisplay
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
+	"github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 type FormatResolver struct {
+	formatterByName map[string]Formatter
 	// array of unique formatters used for export
 	exportFormatters []Formatter
-	formatterByName  map[string]Formatter
 }
 
 func NewFormatResolver() (*FormatResolver, error) {
@@ -90,15 +89,17 @@ func (r *FormatResolver) controlExporters() []export.Exporter {
 }
 
 func loadAvailableTemplates() ([]*OutputTemplate, error) {
-	templateDir := filepaths.EnsureTemplateDir()
-	templateDirectories, err := os.ReadDir(templateDir)
+	templateDirectories, err := files.ListFiles(filepaths.EnsureTemplateDir(), &files.ListOptions{
+		Flags:   files.DirectoriesFlat | files.NotEmpty,
+		Exclude: []string{"./.*"},
+	})
 	if err != nil {
 		return nil, err
 	}
-	templates := make([]*OutputTemplate, len(templateDirectories))
-	for idx, f := range templateDirectories {
-		templates[idx] = NewOutputTemplate(filepath.Join(templateDir, f.Name()))
-	}
 
+	templates := []*OutputTemplate{}
+	for _, templateDirectory := range templateDirectories {
+		templates = append(templates, NewOutputTemplate(templateDirectory))
+	}
 	return templates, nil
 }
