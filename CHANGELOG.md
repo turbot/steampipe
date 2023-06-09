@@ -1,7 +1,16 @@
 ## v0.20.6 [tbd]
 _Bug fixes_
+* Support resolution of variables for transitive dependencies using parent mod `require` block `args` property. ([#3549](https://github.com/turbot/steampipe/issues/3549))
+* `steampipe mod update` now updates transitive mods. ([#3547](https://github.com/turbot/steampipe/issues/3547))
+* It is now be possible to set values for variables in the current mod using fully qualified variable names. ([#3551](https://github.com/turbot/steampipe/issues/3551))
+* Only variables for root mod and top level dependency mods can be set by user.  ([#3550](https://github.com/turbot/steampipe/issues/3550))
 * Avoid orphan plugin processes when running short batch queries. ([#3514](https://github.com/turbot/steampipe/issues/3514))
 * Delete dynamic schemas before updating them to avoid a timing issue showing incorrect schema. ([#3510](https://github.com/turbot/steampipe/issues/3510))
+* Fixes issue where blank dimension values are leaving extra spaces in 'table' rendering. ([#3474](https://github.com/turbot/steampipe/issues/3474))
+* Fixes issue when steampipe fails to startup if plugin version file is blank. ([#3518](https://github.com/turbot/steampipe/issues/3518))
+* Fixes issue where OS specific metadata directories were being considered as check templates. ([#3523](https://github.com/turbot/steampipe/issues/3523))
+* Fixes issue where prefixing a 'v' on a version stream during plugin install would come back with 'not found'. ([#3513](https://github.com/turbot/steampipe/issues/3513))
+
 
 ## v0.20.5 [2023-05-31]
 _Bug fixes_
