@@ -314,7 +314,6 @@ func (m *ModParseContext) AddResource(resource modconfig.HclResource) hcl.Diagno
 // this is used to resolve resource references
 // specifically when the 'children' property of dashboards and benchmarks refers to resource in a dependency mod
 func (m *ModParseContext) GetMod(modShortName string) *modconfig.Mod {
-	// TODO KAI UPDATE
 	if modShortName == m.CurrentMod.ShortName {
 		return m.CurrentMod
 	}

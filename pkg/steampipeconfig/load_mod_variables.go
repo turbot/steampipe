@@ -35,12 +35,6 @@ func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, var
 		return nil, err
 	}
 
-	if validate {
-		if err := validateInputVariables(ctx, parseCtx, variableMap, inputValues); err != nil {
-			return nil, err
-		}
-	}
-
 	// now update the variables map with the input values
 	inputValues.SetVariableValues(variableMap)
 
@@ -68,17 +62,16 @@ func getInputVariables(ctx context.Context, parseCtx *parse.ModParseContext, var
 	// only parse values for public variables
 	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap.PublicVariables, validate)
 
-	return parsedValues, diags.Err()
-}
-
-func validateInputVariables(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, variables inputvars.InputValues) error {
-	diags := inputvars.CheckInputVariables(variableMap.PublicVariables, variables)
-	if diags.HasErrors() {
-		displayValidationErrors(ctx, diags)
-		// return empty error
-		return VariableValidationFailedError{}
+	if validate {
+		moreDiags := inputvars.CheckInputVariables(variableMap.PublicVariables, parsedValues)
+		diags = append(diags, moreDiags...)
+		if diags.HasErrors() {
+			displayValidationErrors(ctx, diags)
+			return nil, VariableValidationFailedError{}
+		}
 	}
-	return nil
+
+	return parsedValues, diags.Err()
 }
 
 func displayValidationErrors(ctx context.Context, diags tfdiags.Diagnostics) {
