@@ -55,6 +55,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		log.Printf("[WARN] relationNotFound - loading connection state")
 		connectionStateMap, stateErr := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitUntilLoading())
 		if stateErr != nil {
+			log.Printf("[WARN] >> stateErr: queryError - %s", stateErr.Error())
 			// just return the query error
 			return queryError
 		}
