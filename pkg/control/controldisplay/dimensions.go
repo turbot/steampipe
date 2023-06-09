@@ -65,6 +65,7 @@ func (r DimensionsRenderer) Render() string {
 	// ok we now have dimensions that fit in the space, color them
 	// check whether color is disabled
 
+	coloredDimensions := make([]string, 0, len(r.dimensions))
 	for i, v := range formattedDimensions {
 		// get the source dimension object
 		dimension := r.dimensions[i]
@@ -84,10 +85,10 @@ func (r DimensionsRenderer) Render() string {
 			return aurora.Reset(val)
 		}
 
-		formattedDimensions[i] = fmt.Sprintf("%s", dimensionColorFunc(v))
+		coloredDimensions = append(coloredDimensions, fmt.Sprintf("%s", dimensionColorFunc(v)))
 	}
 
-	return strings.Join(formattedDimensions, " ")
+	return strings.Join(coloredDimensions, " ")
 }
 
 // count the total length of the dimensions
