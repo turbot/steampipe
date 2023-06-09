@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/zclconf/go-cty/cty"
@@ -41,22 +42,14 @@ type ModParseContext struct {
 
 	Flags       ParseModFlag
 	ListOptions *filehelpers.ListOptions
-	// map of loaded dependency mods, keyed by DependencyPath (including version)
-	// there may be multiple versions of same mod in this map
-	LoadedDependencyMods modconfig.ModMap
 
 	// Variables are populated in an initial parse pass top we store them on the run context
 	// so we can set them on the mod when we do the main parse
 
-	// Variables is a map of the variables in the current mod
-	// it is used to populate the variables property on the mod
-	Variables map[string]*modconfig.Variable
+	// Variables is a tree of maps of the variables in the current mod and child dependency mods
+	Variables *modconfig.ModVariableMap
 
-	// DependencyVariables is a map of the variables in the dependency mods of the current mod
-	// it is used to populate the variables values on child parseContexts when parsing dependencies
-	// (keyed by mod DependencyPath)
-	DependencyVariables map[string]map[string]*modconfig.Variable
-	ParentParseCtx      *ModParseContext
+	ParentParseCtx *ModParseContext
 
 	// stack of parent resources for the currently parsed block
 	// (unqualified name)
@@ -73,23 +66,24 @@ type ModParseContext struct {
 	// NOTE: all values from root mod are keyed with "local"
 	referenceValues map[string]ReferenceTypeValueMap
 
-	// a map of just the top level dependencies of the CurrentMod, keyed my full mod DepdencyName (with no version)
+	// a map of just the top level dependencies of the CurrentMod, keyed my full mod DependencyName (with no version)
 	topLevelDependencyMods modconfig.ModMap
+	// if we are loading dependency mod, this contains the details
+	DependencyConfig *ModDependencyConfig
 }
 
 func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath string, flags ParseModFlag, listOptions *filehelpers.ListOptions) *ModParseContext {
 	parseContext := NewParseContext(rootEvalPath)
 	c := &ModParseContext{
-		ParseContext:         parseContext,
-		Flags:                flags,
-		WorkspaceLock:        workspaceLock,
-		ListOptions:          listOptions,
-		LoadedDependencyMods: make(modconfig.ModMap),
+		ParseContext:  parseContext,
+		Flags:         flags,
+		WorkspaceLock: workspaceLock,
+		ListOptions:   listOptions,
 
-		blockChildMap: make(map[string][]string),
-		blockNameMap:  make(map[string]string),
+		topLevelDependencyMods: make(modconfig.ModMap),
+		blockChildMap:          make(map[string][]string),
+		blockNameMap:           make(map[string]string),
 		// initialise reference maps - even though we later overwrite them
-		Variables: make(map[string]*modconfig.Variable),
 		referenceValues: map[string]ReferenceTypeValueMap{
 			"local": make(ReferenceTypeValueMap),
 		},
@@ -101,7 +95,7 @@ func NewModParseContext(workspaceLock *versionmap.WorkspaceLock, rootEvalPath st
 	return c
 }
 
-func NewChildModParseContext(parent *ModParseContext, rootEvalPath string) *ModParseContext {
+func NewChildModParseContext(parent *ModParseContext, modVersion *versionmap.ResolvedVersionConstraint, rootEvalPath string) *ModParseContext {
 	// create a child run context
 	child := NewModParseContext(
 		parent.WorkspaceLock,
@@ -112,8 +106,17 @@ func NewChildModParseContext(parent *ModParseContext, rootEvalPath string) *ModP
 	child.BlockTypes = parent.BlockTypes
 	// set the child's parent
 	child.ParentParseCtx = parent
-	// copy DependencyVariables
-	child.DependencyVariables = parent.DependencyVariables
+	// set the dependency config
+	child.DependencyConfig = NewDependencyConfig(modVersion)
+	// set variables if parent has any
+	if parent.Variables != nil {
+		childVars, ok := parent.Variables.DependencyVariables[modVersion.Name]
+		if ok {
+			child.Variables = childVars
+			child.Variables.PopulatePublicVariables()
+			child.AddVariablesToEvalContext()
+		}
+	}
 
 	return child
 }
@@ -155,51 +158,69 @@ func VariableValueCtyMap(variables map[string]*modconfig.Variable) map[string]ct
 	return ret
 }
 
-// AddInputVariables adds variables to the run context.
+// AddInputVariableValues adds evaluated variables to the run context.
 // This function is called for the root run context after loading all input variables
-func (m *ModParseContext) AddInputVariables(inputVariables *modconfig.ModVariableMap) {
+func (m *ModParseContext) AddInputVariableValues(inputVariables *modconfig.ModVariableMap) {
 	// store the variables
-	m.Variables = inputVariables.RootVariables
-	// store the depdency variables sop we can pass them down to our children
-	m.DependencyVariables = inputVariables.DependencyVariables
+	m.Variables = inputVariables
+
+	// now add variables into eval context
+	m.AddVariablesToEvalContext()
 }
 
 func (m *ModParseContext) AddVariablesToEvalContext() {
-	m.addRootVariablesToReferenceMap(m.Variables)
+	m.addRootVariablesToReferenceMap()
 	m.addDependencyVariablesToReferenceMap()
 	m.buildEvalContext()
 }
 
 // addRootVariablesToReferenceMap sets the Variables property
 // and adds the variables to the referenceValues map (used to build the eval context)
-func (m *ModParseContext) addRootVariablesToReferenceMap(variables map[string]*modconfig.Variable) {
+func (m *ModParseContext) addRootVariablesToReferenceMap() {
 
+	variables := m.Variables.RootVariables
 	// write local variables directly into referenceValues map
 	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
 	m.referenceValues["local"]["var"] = VariableValueCtyMap(variables)
 }
 
-// addDependencyVariablesToReferenceMap sets the DependencyVariables property
-// and adds the dependency variables to the referenceValues map (used to build the eval context)
+// addDependencyVariablesToReferenceMap adds the dependency variables to the referenceValues map
+// (used to build the eval context)
 func (m *ModParseContext) addDependencyVariablesToReferenceMap() {
-	currentModKey := m.CurrentMod.GetInstallCacheKey()
-	topLevelDependencies := m.WorkspaceLock.InstallCache[currentModKey]
+	// retrieve the resolved dependency versions for the parent mod
+	resolvedVersions := m.WorkspaceLock.InstallCache[m.Variables.Mod.GetInstallCacheKey()]
 
-	// convert topLevelDependencies into as map keyed by depdency path
-	topLevelDependencyPathMap := topLevelDependencies.ToDependencyPathMap()
-	// NOTE: we add with the name "var" not "variable" as that is how variables are referenced
-	// add dependency mod variables to dependencyVariableValues, scoped by DependencyPath
-	for depModName, depVars := range m.DependencyVariables {
-		// only add variables from top level dependencies
-		if _, ok := topLevelDependencyPathMap[depModName]; ok {
-			// create map for this dependency if needed
-			alias := topLevelDependencyPathMap[depModName]
-			if m.referenceValues[alias] == nil {
-				m.referenceValues[alias] = make(ReferenceTypeValueMap)
-			}
-			m.referenceValues[alias]["var"] = VariableValueCtyMap(depVars)
+	for depModName, depVars := range m.Variables.DependencyVariables {
+		alias := resolvedVersions[depModName].Alias
+		if m.referenceValues[alias] == nil {
+			m.referenceValues[alias] = make(ReferenceTypeValueMap)
 		}
+		m.referenceValues[alias]["var"] = VariableValueCtyMap(depVars.RootVariables)
 	}
+}
+
+// when reloading a mod dependency tree to resolve require args values, this function is called after each mod is loaded
+// to load the require arg values and update the variable values
+func (m *ModParseContext) loadModRequireArgs() error {
+	//if we have not loaded variable definitions yet, do not load require args
+	if m.Variables == nil {
+		return nil
+	}
+
+	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(m.CurrentMod, m.WorkspaceLock)
+	if err != nil {
+		return err
+	}
+	if len(depModVarValues) == 0 {
+		return nil
+	}
+	// now update the variables map with the input values
+	depModVarValues.SetVariableValues(m.Variables)
+
+	// now add  overridden variables into eval context - in case the root mod references any dependency variable values
+	m.AddVariablesToEvalContext()
+
+	return nil
 }
 
 // AddModResources is used to add mod resources to the eval context
@@ -296,7 +317,7 @@ func (m *ModParseContext) GetMod(modShortName string) *modconfig.Mod {
 	key := m.CurrentMod.GetInstallCacheKey()
 	deps := m.WorkspaceLock.InstallCache[key]
 	for _, dep := range deps {
-		depMod, ok := m.LoadedDependencyMods[dep.DependencyPath()]
+		depMod, ok := m.topLevelDependencyMods[dep.Name]
 		if ok && depMod.ShortName == modShortName {
 			return depMod
 		}
@@ -509,60 +530,17 @@ func (m *ModParseContext) IsTopLevelBlock(block *hcl.Block) bool {
 	return isTopLevel
 }
 
-func (m *ModParseContext) GetLoadedDependencyMod(requiredModVersion *modconfig.ModVersionConstraint, mod *modconfig.Mod) (*modconfig.Mod, error) {
-	// if we have a locked version, update the required version to reflect this
-	lockedVersion, err := m.WorkspaceLock.GetLockedModVersionConstraint(requiredModVersion, mod)
-	if err != nil {
-		return nil, err
-	}
-	if lockedVersion == nil {
-		return nil, fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
-	}
-	// use the full name of the locked version as key
-	d, _ := m.LoadedDependencyMods[lockedVersion.DependencyPath()]
-	return d, nil
-}
-
 func (m *ModParseContext) AddLoadedDependencyMod(mod *modconfig.Mod) {
-	// should never happen
-	if mod.DependencyPath == nil {
-		return
-	}
-	m.LoadedDependencyMods[*mod.DependencyPath] = mod
+	m.topLevelDependencyMods[mod.DependencyName] = mod
 }
 
 // GetTopLevelDependencyMods build a mod map of top level loaded dependencies, keyed by mod name
 func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
-	// lazy load m.topLevelDependencyMods
-	if m.topLevelDependencyMods != nil {
-		return m.topLevelDependencyMods
-	}
-	// get install cache key fpor this mod (short name for top level mod or ModDependencyPath for dep mods)
-	installCacheKey := m.CurrentMod.GetInstallCacheKey()
-	deps := m.WorkspaceLock.InstallCache[installCacheKey]
-	m.topLevelDependencyMods = make(modconfig.ModMap, len(deps))
-
-	// merge in the dependency mods
-	for _, dep := range deps {
-		key := dep.DependencyPath()
-		loadedDepMod := m.LoadedDependencyMods[key]
-		if loadedDepMod != nil {
-			// as key use the ModDependencyPath _without_ the version
-			m.topLevelDependencyMods[loadedDepMod.DependencyName] = loadedDepMod
-		}
-	}
 	return m.topLevelDependencyMods
 }
 
 func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
 	m.CurrentMod = mod
-
-	// if the current mod is a dependency mod (i.e. has a DependencyPath property set), update the Variables property
-	if dependencyVariables, ok := m.DependencyVariables[mod.GetInstallCacheKey()]; ok {
-		m.Variables = dependencyVariables
-	}
-	// set the root variables from the parent
-	// now the mod is set we can add variables to the eval context
-	// ( we cannot do this until mod as set as we need to identify which variables to use if we are a dependency
-	m.AddVariablesToEvalContext()
+	// now we have the mod, load any arg values from the mod require - these will be passed to dependency mods
+	m.loadModRequireArgs()
 }

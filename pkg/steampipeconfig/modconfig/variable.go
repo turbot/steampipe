@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
@@ -47,7 +46,7 @@ func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 		defaultGo, _ = type_conversion.CtyToGo(v.Default)
 	}
 	fullName := fmt.Sprintf("%s.var.%s", mod.ShortName, v.Name)
-	return &Variable{
+	res := &Variable{
 		ModTreeItemImpl: ModTreeItemImpl{
 			HclResourceImpl: HclResourceImpl{
 				ShortName:       v.Name,
@@ -59,13 +58,22 @@ func NewVariable(v *var_config.Variable, mod *Mod) *Variable {
 			},
 			Mod: mod,
 		},
-		Default:     v.Default,
+		Default:   v.Default,
+		DefaultGo: defaultGo,
+		// initialise the value to the default - may be set later
+		Value:   v.Default,
+		ValueGo: defaultGo,
+
 		Type:        v.Type,
 		ParsingMode: v.ParsingMode,
 		ModName:     mod.ShortName,
-		DefaultGo:   defaultGo,
 		TypeString:  type_conversion.CtyTypeToHclType(v.Type, v.Default.Type()),
 	}
+	// if no type is set and a default _is_ set, use default to set the type
+	if res.Type.Equals(cty.DynamicPseudoType) && !res.Default.IsNull() {
+		res.Type = res.Default.Type()
+	}
+	return res
 }
 
 func (v *Variable) Equals(other *Variable) bool {
@@ -88,11 +96,6 @@ func (v *Variable) Required() bool {
 }
 
 func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange tfdiags.SourceRange) error {
-	// if no type is set and a default _is_ set, use default to set the type
-	if v.Type.Equals(cty.DynamicPseudoType) && !v.Default.IsNull() {
-		v.Type = v.Default.Type()
-	}
-
 	// if the value type is a tuple with no elem type, and we have a type, set the variable to have our type
 	if value.Type().Equals(cty.Tuple(nil)) && !v.Type.Equals(cty.DynamicPseudoType) {
 		var err error
@@ -112,6 +115,7 @@ func (v *Variable) SetInputValue(value cty.Value, sourceType string, sourceRange
 	if v.TypeString == "" {
 		v.TypeString = type_conversion.CtyTypeToHclType(value.Type())
 	}
+
 	return nil
 }
 

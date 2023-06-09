@@ -47,7 +47,7 @@ func decodeHclBodyIntoStruct(body hcl.Body, evalCtx *hcl.EvalContext, resourcePr
 	diags = append(diags, moreDiags...)
 
 	// resolve any resource references using the resource map, rather than relying on the EvalCtx
-	// (which does not work with nexted struct vals)
+	// (which does not work with nested struct vals)
 	moreDiags = resolveReferences(body, resourceProvider, resource)
 	diags = append(diags, moreDiags...)
 	return diags

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"os"
 	"strings"
 
@@ -128,14 +129,15 @@ func CombineErrorsWithPrefix(prefix string, errors ...error) error {
 		}
 	}
 
-	combinedErrorString := []string{prefix}
+	combinedErrorString := map[string]struct{}{prefix: {}}
 	for _, e := range errors {
 		if e == nil {
 			continue
 		}
-		combinedErrorString = append(combinedErrorString, e.Error())
+		combinedErrorString[e.Error()] = struct{}{}
 	}
-	return fmt.Errorf(strings.Join(combinedErrorString, "\n\t"))
+
+	return fmt.Errorf(strings.Join(maps.Keys(combinedErrorString), "\n\t"))
 }
 
 func allErrorsNil(errors ...error) bool {

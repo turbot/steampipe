@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
@@ -24,9 +25,13 @@ func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *modco
 	if errAndWarnings.GetError() == nil {
 		return w, errAndWarnings
 	}
-	missingVariablesError, ok := errAndWarnings.GetError().(modconfig.MissingVariableError)
+	missingVariablesError, ok := errAndWarnings.GetError().(*steampipeconfig.MissingVariableError)
 	// if there was an error which is NOT a MissingVariableError, return it
 	if !ok {
+		return nil, errAndWarnings
+	}
+	// if there are missing transitive dependency variables, fail as we do not prompt for these
+	if len(missingVariablesError.MissingTransitiveVariables) > 0 {
 		return nil, errAndWarnings
 	}
 	// if interactive input is disabled, return the missing variables error
