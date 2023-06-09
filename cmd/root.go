@@ -276,8 +276,7 @@ func initGlobalConfig() *modconfig.ErrorAndWarnings {
 	error_helpers.FailOnErrorWithMessage(err, "failed to validate config")
 
 	// migrate all legacy config files to use snake casing (migrated in v0.14.0)
-	err = migrateLegacyFiles()
-	error_helpers.FailOnErrorWithMessage(err, "failed to migrate steampipe data files")
+	migrateLegacyFiles(cmd)
 
 	return loadConfigErrorsAndWarnings
 }
@@ -339,17 +338,17 @@ func loadWorkspaceProfile() (*steampipeconfig.WorkspaceProfileLoader, error) {
 }
 
 // migrate all data files to use snake casing for property names
-func migrateLegacyFiles() error {
+func migrateLegacyFiles(cmd *cobra.Command) {
 	// skip migration for plugin manager commands because the plugin-manager will have
 	// been started by some other steampipe command, which would have done the migration already
-	if viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name() == "plugin-manager" {
-		return nil
+	if cmd.Name() == "plugin-manager" {
+		return
 	}
-	return error_helpers.CombineErrors(
-		migrate.Migrate(&installationstate.InstallationState{}, filepaths.LegacyStateFilePath()),
-		migrate.Migrate(&versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath()),
-		migrate.Migrate(&versionfile.DatabaseVersionFile{}, filepaths.DatabaseVersionFilePath()),
-	)
+
+	migrate.Migrate(&installationstate.InstallationState{}, filepaths.LegacyStateFilePath())
+	migrate.Migrate(&versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath())
+	migrate.Migrate(&versionfile.DatabaseVersionFile{}, filepaths.DatabaseVersionFilePath())
+
 }
 
 // now validate  config values have appropriate values

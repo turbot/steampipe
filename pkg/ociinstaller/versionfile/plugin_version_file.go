@@ -93,12 +93,20 @@ func (f *PluginVersionFile) delete() {
 }
 
 func readPluginVersionFile(path string) (*PluginVersionFile, error) {
-	file, _ := os.ReadFile(path)
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if len(file) == 0 {
+		// the file exists, but is empty
+		// start from scratch
+		return NewPluginVersionFile(), nil
+	}
 
 	var data PluginVersionFile
 
 	if err := json.Unmarshal([]byte(file), &data); err != nil {
-		log.Println("[ERROR]", "Error while reading plugin version file", err)
+		log.Println("[WARN]", "Error while parsing plugin version file", err)
 		return nil, err
 	}
 
