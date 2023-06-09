@@ -252,15 +252,20 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 		return modconfig.NewErrorsAndWarning(err)
 	}
 	// populate the parsed variable values
-	w.VariableValues = inputVariables.VariableValues
+	w.VariableValues, err = inputVariables.GetPublicVariableValues()
+	if err != nil {
+		return modconfig.NewErrorsAndWarning(err)
+	}
 
 	// build run context which we use to load the workspace
+	// NOTE: we get the short name from the inputVariables map
 	parseCtx, err := w.getParseContext(ctx)
 	if err != nil {
 		return modconfig.NewErrorsAndWarning(err)
 	}
-	// add variables
-	parseCtx.AddInputVariables(inputVariables)
+
+	// add evaluated variables to the context
+	parseCtx.AddInputVariableValues(inputVariables)
 	// do not reload variables as we already have them
 	parseCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 
@@ -293,28 +298,12 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 		return nil, err
 	}
 
-	inputVariables, err := w.getVariableValues(ctx, variablesParseCtx, validateMissing)
+	inputVariableValues, err := w.getVariableValues(ctx, variablesParseCtx, validateMissing)
 	if err != nil {
 		return nil, err
 	}
 
-	// if needed, reload
-	// if a mod require has args which use a variable, this will not have been resolved in the first pass
-	// - we need to parse again
-	if variablesParseCtx.CurrentMod.RequireHasUnresolvedArgs() {
-		// add the variables into the parse context and rebuild the eval context
-		variablesParseCtx.AddInputVariables(inputVariables)
-		variablesParseCtx.AddVariablesToEvalContext()
-
-		// now try to parse the mod again
-		inputVariables, err = w.getVariableValues(ctx, variablesParseCtx, validateMissing)
-		if err != nil {
-			return nil, err
-		}
-
-	}
-	return inputVariables, nil
-
+	return inputVariableValues, nil
 }
 
 func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, error) {

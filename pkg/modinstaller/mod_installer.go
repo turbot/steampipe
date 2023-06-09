@@ -201,7 +201,7 @@ func (i *ModInstaller) InstallWorkspaceDependencies(ctx context.Context) (err er
 		log.Println("[TRACE] suppressing mod validation error", validationErrors)
 	}
 
-	// if mod args have been provided, add them to the the workspace mod requires
+	// if mod args have been provided, add them to the workspace mod requires
 	// (this will replace any existing dependencies of same name)
 	if len(i.mods) > 0 {
 		workspaceMod.AddModDependencies(i.mods)
@@ -309,9 +309,10 @@ func (i *ModInstaller) installMods(ctx context.Context, mods []*modconfig.ModVer
 			continue
 		}
 
-		// if the mod is not installed or needs updating, pass shouldUpdate=true into installModDependencesRecursively
+		// if the mod is not installed or needs updating, OR if this is an update command,
+		// pass shouldUpdate=true into installModDependencesRecursively
 		// this ensures that we update any dependencies which have updates available
-		shouldUpdate := modToUse == nil
+		shouldUpdate := modToUse == nil || i.updating()
 		if err := i.installModDependencesRecursively(ctx, requiredModVersion, modToUse, parent, shouldUpdate); err != nil {
 			errors = append(errors, err)
 		}
