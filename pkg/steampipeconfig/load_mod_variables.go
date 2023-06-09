@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
@@ -62,7 +61,7 @@ func getInputVariables(ctx context.Context, parseCtx *parse.ModParseContext, var
 	}
 
 	if validate {
-		if err := identifyAllMissingVariables(ctx, parseCtx, variableMap, inputValuesUnparsed); err != nil {
+		if err := identifyAllMissingVariables(parseCtx, variableMap, inputValuesUnparsed); err != nil {
 			return nil, err
 		}
 	}
@@ -77,7 +76,7 @@ func validateInputVariables(ctx context.Context, parseCtx *parse.ModParseContext
 	if diags.HasErrors() {
 		displayValidationErrors(ctx, diags)
 		// return empty error
-		return modconfig.VariableValidationFailedError{}
+		return VariableValidationFailedError{}
 	}
 	return nil
 }
@@ -94,7 +93,7 @@ func displayValidationErrors(ctx context.Context, diags tfdiags.Diagnostics) {
 	}
 }
 
-func identifyAllMissingVariables(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, variableValues map[string]inputvars.UnparsedVariableValue) error {
+func identifyAllMissingVariables(parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, variableValues map[string]inputvars.UnparsedVariableValue) error {
 	// convert variableValues into a lookup
 	var variableValueLookup = make(map[string]struct{}, len(variableValues))
 	missingVarsMap, err := identifyMissingVariablesForDependencies(parseCtx.WorkspaceLock, variableMap, variableValueLookup, nil)
@@ -108,33 +107,29 @@ func identifyAllMissingVariables(ctx context.Context, parseCtx *parse.ModParseCo
 	}
 
 	// build a MissingVariableError
-	missingVarErr := &modconfig.MissingVariableError{}
+	missingVarErr := NewMissingVarsError(parseCtx.CurrentMod)
 
 	// build a lookup with the dependency path of the root mod and all top level dependencies
 	rootName := variableMap.Mod.ShortName
-	topLevelModLookup := map[string]struct{}{rootName: {}}
+	topLevelModLookup := map[DependencyPathKey]struct{}{DependencyPathKey(rootName): {}}
 	for dep := range parseCtx.WorkspaceLock.InstallCache {
-		varDepPath := buildDependencyPathKey(rootName, dep)
-		topLevelModLookup[varDepPath] = struct{}{}
+		depPathKey := newDependencyPathKey(rootName, dep)
+		topLevelModLookup[depPathKey] = struct{}{}
 	}
 	for depPath, missingVars := range missingVarsMap {
-		_, isTopLevel := topLevelModLookup[depPath]
-
-		// convert missing vars into MissingVar structs
-		missingWithPath := make([]*modconfig.MissingVariable, len(missingVars))
-		for i, v := range missingVars {
-			varDepPath := buildDependencyPathKey(depPath, v.ShortName)
-			missingWithPath[i] = &modconfig.MissingVariable{Variable: v, Path: varDepPath}
+		if _, isTopLevel := topLevelModLookup[depPath]; isTopLevel {
+			missingVarErr.MissingVariables = append(missingVarErr.MissingVariables, missingVars...)
+		} else {
+			missingVarErr.MissingTransitiveVariables[depPath] = missingVars
 		}
-		missingVarErr.Add(missingWithPath, isTopLevel)
 	}
 
 	return missingVarErr
 }
 
-func identifyMissingVariablesForDependencies(workspaceLock *versionmap.WorkspaceLock, variableMap *modconfig.ModVariableMap, parentVariableValuesLookup map[string]struct{}, dependencyPath []string) (map[string][]*modconfig.Variable, error) {
+func identifyMissingVariablesForDependencies(workspaceLock *versionmap.WorkspaceLock, variableMap *modconfig.ModVariableMap, parentVariableValuesLookup map[string]struct{}, dependencyPath []string) (map[DependencyPathKey][]*modconfig.Variable, error) {
 	// return a map of missing variables, keyed by dependency path
-	res := make(map[string][]*modconfig.Variable)
+	res := make(map[DependencyPathKey][]*modconfig.Variable)
 
 	// update the path to this dependency
 	dependencyPath = append(dependencyPath, variableMap.Mod.GetInstallCacheKey())
@@ -158,7 +153,7 @@ func identifyMissingVariablesForDependencies(workspaceLock *versionmap.Workspace
 	//  handle root variables
 	missingVariables := identifyMissingVariables(variableMap.RootVariables, variableValueLookup)
 	if len(missingVariables) > 0 {
-		res[buildDependencyPathKey(dependencyPath...)] = missingVariables
+		res[newDependencyPathKey(dependencyPath...)] = missingVariables
 	}
 
 	// now iterate through all the dependency variable maps
@@ -173,10 +168,6 @@ func identifyMissingVariablesForDependencies(workspaceLock *versionmap.Workspace
 		}
 	}
 	return res, nil
-}
-
-func buildDependencyPathKey(dependencyPath ...string) string {
-	return strings.Join(dependencyPath, " -> ")
 }
 
 func identifyMissingVariables(variableMap map[string]*modconfig.Variable, variableValuesLookup map[string]struct{}) []*modconfig.Variable {

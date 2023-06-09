@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"

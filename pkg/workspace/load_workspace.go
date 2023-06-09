@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
@@ -24,7 +25,7 @@ func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *modco
 	if errAndWarnings.GetError() == nil {
 		return w, errAndWarnings
 	}
-	missingVariablesError, ok := errAndWarnings.GetError().(*modconfig.MissingVariableError)
+	missingVariablesError, ok := errAndWarnings.GetError().(*steampipeconfig.MissingVariableError)
 	// if there was an error which is NOT a MissingVariableError, return it
 	if !ok {
 		return nil, errAndWarnings
@@ -48,11 +49,10 @@ func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *modco
 	return Load(ctx, workspacePath)
 }
 
-func promptForMissingVariables(ctx context.Context, missingVariables []*modconfig.MissingVariable, workspacePath string) error {
+func promptForMissingVariables(ctx context.Context, missingVariables []*modconfig.Variable, workspacePath string) error {
 	fmt.Println()
 	fmt.Println("Variables defined with no value set.")
-	for _, m := range missingVariables {
-		v := m.Variable
+	for _, v := range missingVariables {
 		variableName := v.ShortName
 		variableDisplayName := fmt.Sprintf("var.%s", v.ShortName)
 		// if this variable is NOT part of the workspace mod, add the mod name to the variable name
