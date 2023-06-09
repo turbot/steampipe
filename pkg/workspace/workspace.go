@@ -258,7 +258,6 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	}
 
 	// build run context which we use to load the workspace
-	// NOTE: we get the short name from the inputVariables map
 	parseCtx, err := w.getParseContext(ctx)
 	if err != nil {
 		return modconfig.NewErrorsAndWarning(err)
