@@ -35,6 +35,24 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f test.txt*
 }
 
+@test "plugin install" {
+  run steampipe plugin install net
+  assert_success
+  steampipe plugin uninstall net
+}
+
+@test "plugin install from stream" {
+  run steampipe plugin install net@0.2
+  assert_success
+  steampipe plugin uninstall net@0.2
+}
+
+@test "plugin install from stream (prefixed with v)" {
+  run steampipe plugin install net@v0.2
+  assert_success
+  steampipe plugin uninstall net@0.2
+}
+
 @test "steampipe service start" {
     run steampipe service start
     assert_success

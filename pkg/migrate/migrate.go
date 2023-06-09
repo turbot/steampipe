@@ -2,10 +2,8 @@ package migrate
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"os"
-
-	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 type Migrateable interface {
@@ -14,25 +12,36 @@ type Migrateable interface {
 	Save() error
 }
 
-func Migrate(migrateable Migrateable, oldPath string) error {
-	stateFileContent, err := os.ReadFile(oldPath)
+func Migrate(migrateable Migrateable, oldPath string) {
+	fileContent, err := os.ReadFile(oldPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil
+			log.Println("[INFO]", "nothing to migrate in", oldPath)
+			return
 		}
-		return err
+		log.Println("[WARN]", "could not read file for migration:", oldPath, err)
+		return
 	}
 	// Deserialize into old struct
-	err = json.Unmarshal(stateFileContent, &migrateable)
+	err = json.Unmarshal(fileContent, &migrateable)
 	if err != nil {
-		return fmt.Errorf("failed to parse %s - %v", oldPath, err)
+		log.Println("[WARN]", "parsing failed for during migration:", oldPath, err)
+		return
 	}
 
 	// check whether we successfully derserialized into the new struct
 	if migrateable.IsValid() {
-		return nil
+		return
 	}
 
 	x := migrateable.MigrateFrom()
-	return error_helpers.CombineErrors(os.Remove(oldPath), x.Save())
+
+	if err := os.Remove(oldPath); err != nil {
+		log.Println("[WARN]", "could not remove after migration:", oldPath, err)
+	}
+
+	if err := x.Save(); err != nil {
+		log.Println("[WARN]", "could not save migrated data:", oldPath, err)
+	}
+
 }
