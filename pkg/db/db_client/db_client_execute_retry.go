@@ -3,6 +3,7 @@ package db_client
 import (
 	"context"
 	"fmt"
+	"log"
 	"regexp"
 	"time"
 
@@ -36,9 +37,13 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 			return nil
 		}
 
+		log.Printf("[WARN] startQueryWithRetries query error: %s", queryError.Error())
+
 		// so there is an error - is it "relation not found"?
 		missingSchema, _, relationNotFound := IsRelationNotFoundError(queryError)
 		if !relationNotFound {
+			log.Printf("[WARN] NOT relationNotFound - just returnin error")
+
 			// just return it
 			return queryError
 		}
@@ -47,6 +52,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		// if there was a schema not found with an unqualified query, we keep trying until
 		// the first search path schema for each plugin has loaded
 
+		log.Printf("[WARN] relationNotFound - loading connection state")
 		connectionStateMap, stateErr := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitUntilLoading())
 		if stateErr != nil {
 			// just return the query error
@@ -55,6 +61,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 
 		// if there are no connections, just return the error
 		if len(connectionStateMap) == 0 {
+			log.Printf("[WARN] connection state empty - returnin gquery error")
 			return queryError
 		}
 
@@ -86,6 +93,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		// verify it exists in the connection state and is not disabled
 		connectionState, missingSchemaExistsInStateMap := connectionStateMap[missingSchema]
 		if !missingSchemaExistsInStateMap || connectionState.Disabled() {
+			log.Printf("[WARN] missing schema is not in connection state map - just return the error. missingSchemaExistsInStateMap: %v, connectionState.Disabled() %v", missingSchema, connectionState.Disabled())
 			//, missing schema is not in connection state map - just return the error
 			return queryError
 		}
@@ -94,13 +102,17 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 
 		// if the connection is ready (and has been for more than the backoff interval) , just return the relation not found error
 		if connectionState.State == constants.ConnectionStateReady && time.Since(connectionState.ConnectionModTime) > backoffInterval {
+			log.Printf("[WARN] connection exists in ready state - just returning query error")
 			return queryError
 		}
 
 		// if connection is in error,return the connection error
 		if connectionState.State == constants.ConnectionStateError {
+			log.Printf("[WARN] connection exists in error state - returning connection error")
 			return fmt.Errorf("connection %s failed to load: %s", missingSchema, typehelpers.SafeString(connectionState.ConnectionError))
 		}
+
+		log.Printf("[WARN] connection exists but is not ready - waiting")
 
 		// ok so we will retry
 		// build the status message to display with a spinner, if needed
