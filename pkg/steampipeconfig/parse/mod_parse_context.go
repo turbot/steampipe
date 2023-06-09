@@ -42,15 +42,11 @@ type ModParseContext struct {
 
 	Flags       ParseModFlag
 	ListOptions *filehelpers.ListOptions
-	// map of loaded dependency mods, keyed by DependencyPath (including version)
-	// there may be multiple versions of same mod in this map
-	//LoadedDependencyMods modconfig.ModMap
 
 	// Variables are populated in an initial parse pass top we store them on the run context
 	// so we can set them on the mod when we do the main parse
 
-	// Variables is a map of the variables in the current mod
-	// it is used to populate the variables property on the mod
+	// Variables is a tree of maps of the variables in the current mod and child dependency mods
 	Variables *modconfig.ModVariableMap
 
 	ParentParseCtx *ModParseContext
