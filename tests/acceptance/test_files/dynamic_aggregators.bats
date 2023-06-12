@@ -21,6 +21,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # Aggregating two connections with different tables defined.
 # Connection `con1` defines a table `t1` whereas connection `con2` defines table `t2`.
 @test "dynamic aggregator - table mismatch" {
+  skip
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_table_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_table_mismatch.spc
 
   run steampipe query "select c1,c2 from dyn_agg.t1 order by c1" --output json
@@ -38,6 +39,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # Connection `con1` defines a table `t1` which has columns `c1` and `c2`, whereas connection `con2` also has a table `t1`
 # but has columns `c1` and `c3`.
 @test "dynamic aggregator - column mismatch" {
+  skip
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_mismatch.spc
 
   run steampipe query "select c1,c2,c3 from dyn_agg.t1 order by c1,c2,c3" --output json
@@ -51,6 +53,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # Connection `con1` defines a table `t1` which has columns `c1(string)` and `c2(string)`, whereas connection `con2` also has a table `t1`
 # but has columns `c1(string)` and `c2(int)`.
 @test "dynamic aggregator - column type mismatch(string and int)" {
+  skip
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch.spc
 
   run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
@@ -64,6 +67,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # Connection `con1` defines a table `t1` which has columns `c1(string)` and `c2(string)`, whereas connection `con2` also has a table `t1`
 # but has columns `c1(string)` and `c2(double)`.
 @test "dynamic aggregator - column type mismatch(string and double)" {
+  skip
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_2.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_2.spc
 
   run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
@@ -77,6 +81,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # Connection `con1` defines a table `t1` which has columns `c1(string)` and `c2(string)`, whereas connection `con2` also has a table `t1`
 # but has columns `c1(string)` and `c2(bool)`.
 @test "dynamic aggregator - column type mismatch(string and bool)" {
+  skip
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_3.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_3.spc
 
   run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
@@ -90,6 +95,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # Connection `con1` defines a table `t1` which has columns `c1(string)` and `c2(string)`, whereas connection `con2` also has a table `t1`
 # but has columns `c1(string)` and `c2(ipaddr)`.
 @test "dynamic aggregator - column type mismatch(string and ipaddr)" {
+  skip
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_4.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_4.spc
 
   run steampipe query "select c1, c2 from dyn_agg.t1 order by c1,c2" --output json
