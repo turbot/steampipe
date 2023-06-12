@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -197,30 +198,6 @@ func (m *ModParseContext) addDependencyVariablesToReferenceMap() {
 		}
 		m.referenceValues[alias]["var"] = VariableValueCtyMap(depVars.RootVariables)
 	}
-}
-
-// when reloading a mod dependency tree to resolve require args values, this function is called after each mod is loaded
-// to load the require arg values and update the variable values
-func (m *ModParseContext) loadModRequireArgs() error {
-	//if we have not loaded variable definitions yet, do not load require args
-	if m.Variables == nil {
-		return nil
-	}
-
-	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(m.CurrentMod, m.WorkspaceLock)
-	if err != nil {
-		return err
-	}
-	if len(depModVarValues) == 0 {
-		return nil
-	}
-	// now update the variables map with the input values
-	depModVarValues.SetVariableValues(m.Variables)
-
-	// now add  overridden variables into eval context - in case the root mod references any dependency variable values
-	m.AddVariablesToEvalContext()
-
-	return nil
 }
 
 // AddModResources is used to add mod resources to the eval context
@@ -539,8 +516,51 @@ func (m *ModParseContext) GetTopLevelDependencyMods() modconfig.ModMap {
 	return m.topLevelDependencyMods
 }
 
-func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) {
+func (m *ModParseContext) SetCurrentMod(mod *modconfig.Mod) error {
 	m.CurrentMod = mod
 	// now we have the mod, load any arg values from the mod require - these will be passed to dependency mods
-	m.loadModRequireArgs()
+	return m.loadModRequireArgs()
+}
+
+// when reloading a mod dependency tree to resolve require args values, this function is called after each mod is loaded
+// to load the require arg values and update the variable values
+func (m *ModParseContext) loadModRequireArgs() error {
+	//if we have not loaded variable definitions yet, do not load require args
+	if m.Variables == nil {
+		return nil
+	}
+
+	depModVarValues, err := inputvars.CollectVariableValuesFromModRequire(m.CurrentMod, m.WorkspaceLock)
+	if err != nil {
+		return err
+	}
+	if len(depModVarValues) == 0 {
+		return nil
+	}
+	// if any mod require args have an unknown value, we have failed to resolve them - raise an error
+	if err := m.validateModRequireValues(depModVarValues); err != nil {
+		return err
+	}
+	// now update the variables map with the input values
+	depModVarValues.SetVariableValues(m.Variables)
+
+	// now add  overridden variables into eval context - in case the root mod references any dependency variable values
+	m.AddVariablesToEvalContext()
+
+	return nil
+}
+
+func (m *ModParseContext) validateModRequireValues(depModVarValues inputvars.InputValues) error {
+	var missingVarExpressions []string
+	for k, v := range depModVarValues {
+		if !v.Value.IsKnown() {
+			r := v.SourceRange
+			sourceRange := fmt.Sprintf("%s:%d", r.Filename, r.Start.Line)
+			missingVarExpressions = append(missingVarExpressions, fmt.Sprintf("failed to resolve value for argument \"%s\" specified in require block of \"%s\" (%s)", k, m.CurrentMod.Name(), sourceRange))
+		}
+	}
+	if len(missingVarExpressions) > 0 {
+		return fmt.Errorf(strings.Join(missingVarExpressions, "\n"))
+	}
+	return nil
 }
