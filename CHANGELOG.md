@@ -1,5 +1,8 @@
 ## v0.20.6 [tbd]
 _Bug fixes_
+* Fix variable validation ([#3546](https://github.com/turbot/steampipe/issues/3546)):
+  * Raise warning or error when setting a value for a variable which is not found or inaccessible (e.g. because it is in a transitive dependency). 
+  * Validate that mod require `args` properties can be resolved. 
 * Support resolution of variables for transitive dependencies using parent mod `require` block `args` property. ([#3549](https://github.com/turbot/steampipe/issues/3549))
 * `steampipe mod update` now updates transitive mods. ([#3547](https://github.com/turbot/steampipe/issues/3547))
 * It is now be possible to set values for variables in the current mod using fully qualified variable names. ([#3551](https://github.com/turbot/steampipe/issues/3551))
@@ -10,7 +13,9 @@ _Bug fixes_
 * Fixes issue when steampipe fails to startup if plugin version file is blank. ([#3518](https://github.com/turbot/steampipe/issues/3518))
 * Fixes issue where OS specific metadata directories were being considered as check templates. ([#3523](https://github.com/turbot/steampipe/issues/3523))
 * Fixes issue where prefixing a 'v' on a version stream during plugin install would come back with 'not found'. ([#3513](https://github.com/turbot/steampipe/issues/3513))
-
+* Increase plugin load timeout to 20s. ([#3564](https://github.com/turbot/steampipe/issues/3564))
+  Fixes issue where timing is not shown in interactive prompt even if .timing is on. ([#3557](https://github.com/turbot/steampipe/issues/3557))
+* Fixes issue where 'dot' commands in interactive prompt fail to execute if there's a file/folder by the same name in the working directory. ([#3558](https://github.com/turbot/steampipe/issues/3558))
 
 ## v0.20.5 [2023-05-31]
 _Bug fixes_

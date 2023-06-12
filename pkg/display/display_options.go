@@ -12,8 +12,12 @@ type displayConfiguration struct {
 // NewDisplayConfiguration creates a default configuration with timing set to
 // true if both --timing is true and --output is table
 func NewDisplayConfiguration() *displayConfiguration {
-	timing := cmdconfig.Viper().GetBool(constants.ArgTiming) &&
-		(cmdconfig.Viper().GetString(constants.ArgOutput) == constants.OutputFormatTable)
+	timingFlag := cmdconfig.Viper().GetBool(constants.ArgTiming)
+	isInteractive := cmdconfig.Viper().GetBool(constants.ConfigKeyInteractive)
+	outputTable := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.OutputFormatTable
+
+	timing := timingFlag && (outputTable || isInteractive)
+
 	return &displayConfiguration{
 		timing: timing,
 	}

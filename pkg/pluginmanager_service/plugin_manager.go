@@ -760,7 +760,7 @@ func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ 
 }
 
 func (m *PluginManager) waitForPluginLoad(p *runningPlugin) error {
-	pluginStartTimeoutSecs := 5
+	pluginStartTimeoutSecs := 20
 
 	select {
 	case <-p.initialized:

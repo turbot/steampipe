@@ -6,11 +6,11 @@ import (
 
 // ResolvedQuery contains the execute SQL, raw SQL and args string used to execute a query
 type ResolvedQuery struct {
-	ExecuteSQL string
-	RawSQL     string
-	Args       []any
+	ExecuteSQL  string
+	RawSQL      string
+	Args        []any
+	IsMetaQuery bool
 }
-
 
 // QueryArgs converts the ResolvedQuery into  QueryArgs
 func (r ResolvedQuery) QueryArgs() *QueryArgs {
