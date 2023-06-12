@@ -16,7 +16,7 @@ func Migrate(migrateable Migrateable, oldPath string) {
 	fileContent, err := os.ReadFile(oldPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Println("[INFO]", "nothing to migrate in", oldPath)
+			log.Println("[TRACE]", "nothing to migrate in", oldPath)
 			return
 		}
 		log.Println("[WARN]", "could not read file for migration:", oldPath, err)
