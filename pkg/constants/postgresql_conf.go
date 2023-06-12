@@ -32,8 +32,8 @@ const SteampipeConfContent = `
 # It is overwritten each time Steampipe starts.
 #
 # In the rare case that postgres.conf customization is required, modifications
-# or additions should be placed in the 'postgres.conf.d' folder as a config
-# include file. For example: 'postgres.conf.d/01-custom-settings.conf'.
+# or additions should be placed in the 'postgresql.conf.d' folder as a config
+# include file. For example: 'postgresql.conf.d/01-custom-settings.conf'.
 # See https://www.postgresql.org/docs/current/config-setting.html#CONFIG-INCLUDES
 #
 
