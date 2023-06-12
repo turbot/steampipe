@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -142,9 +141,10 @@ func (w *Workspace) getQueryFromFile(input string) (*modconfig.ResolvedQuery, bo
 	if err != nil {
 		return nil, false, nil
 	}
-	// does it exist?
 
-	if !files.FileExists(path) {
+	// does it exist?
+	if _, err := os.Stat(path); err != nil {
+		// if this gives any error, return not exist. we may get a not found or a path too long for example
 		return nil, false, nil
 	}
 
