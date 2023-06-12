@@ -20,90 +20,84 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 # Aggregating two connections with different tables defined.
 # Connection `con1` defines a table `t1` whereas connection `con2` defines table `t2`.
-@test "dynamic aggregator - table mismatch" {
-  skip
-  cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_table_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_table_mismatch.spc
+# @test "dynamic aggregator - table mismatch" {
+#   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_table_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_table_mismatch.spc
 
-  run steampipe query "select c1,c2 from dyn_agg.t1 order by c1" --output json
-  echo $output
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_table_mismatch_t1.json)"
+#   run steampipe query "select c1,c2 from dyn_agg.t1 order by c1" --output json
+#   echo $output
+#   assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_table_mismatch_t1.json)"
 
-  run steampipe query "select c1,c2 from dyn_agg.t2 order by c1" --output json
-  echo $output
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_table_mismatch_t2.json)"
+#   run steampipe query "select c1,c2 from dyn_agg.t2 order by c1" --output json
+#   echo $output
+#   assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_table_mismatch_t2.json)"
 
-  rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_table_mismatch.spc
-}
+#   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_table_mismatch.spc
+# }
 
 # Aggregating two connections with same tables defined, but mismatching columns.
 # Connection `con1` defines a table `t1` which has columns `c1` and `c2`, whereas connection `con2` also has a table `t1`
 # but has columns `c1` and `c3`.
-@test "dynamic aggregator - column mismatch" {
-  skip
-  cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_mismatch.spc
+# @test "dynamic aggregator - column mismatch" {
+#   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_mismatch.spc
 
-  run steampipe query "select c1,c2,c3 from dyn_agg.t1 order by c1,c2,c3" --output json
-  echo $output
+#   run steampipe query "select c1,c2,c3 from dyn_agg.t1 order by c1,c2,c3" --output json
+#   echo $output
 
-  rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_mismatch.spc
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_mismatch.json)"
-}
+#   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_mismatch.spc
+#   assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_mismatch.json)"
+# }
 
 # Aggregating two connections with same tables defined, but mismatching type of columns.
 # Connection `con1` defines a table `t1` which has columns `c1(string)` and `c2(string)`, whereas connection `con2` also has a table `t1`
 # but has columns `c1(string)` and `c2(int)`.
-@test "dynamic aggregator - column type mismatch(string and int)" {
-  skip
-  cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch.spc
+# @test "dynamic aggregator - column type mismatch(string and int)" {
+#   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch.spc
 
-  run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
-  echo $output
+#   run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
+#   echo $output
 
-  rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch.spc
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch.json)"
-}
+#   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch.spc
+#   assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch.json)"
+# }
 
 # Aggregating two connections with same tables defined, but mismatching type of columns.
 # Connection `con1` defines a table `t1` which has columns `c1(string)` and `c2(string)`, whereas connection `con2` also has a table `t1`
 # but has columns `c1(string)` and `c2(double)`.
-@test "dynamic aggregator - column type mismatch(string and double)" {
-  skip
-  cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_2.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_2.spc
+# @test "dynamic aggregator - column type mismatch(string and double)" {
+#   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_2.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_2.spc
 
-  run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
-  echo $output
+#   run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
+#   echo $output
 
-  rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_2.spc
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_2.json)"
-}
+#   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_2.spc
+#   assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_2.json)"
+# }
 
 # Aggregating two connections with same tables defined, but mismatching type of columns.
 # Connection `con1` defines a table `t1` which has columns `c1(string)` and `c2(string)`, whereas connection `con2` also has a table `t1`
 # but has columns `c1(string)` and `c2(bool)`.
-@test "dynamic aggregator - column type mismatch(string and bool)" {
-  skip
-  cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_3.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_3.spc
+# @test "dynamic aggregator - column type mismatch(string and bool)" {
+#   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_3.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_3.spc
 
-  run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
-  echo $output
+#   run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
+#   echo $output
 
-  rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_3.spc
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_3.json)"
-}
+#   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_3.spc
+#   assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_3.json)"
+# }
 
 # Aggregating two connections with same tables defined, but mismatching type of columns.
 # Connection `con1` defines a table `t1` which has columns `c1(string)` and `c2(string)`, whereas connection `con2` also has a table `t1`
 # but has columns `c1(string)` and `c2(ipaddr)`.
-@test "dynamic aggregator - column type mismatch(string and ipaddr)" {
-  skip
-  cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_4.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_4.spc
+# @test "dynamic aggregator - column type mismatch(string and ipaddr)" {
+#   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_4.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_4.spc
 
-  run steampipe query "select c1, c2 from dyn_agg.t1 order by c1,c2" --output json
-  echo $output
+#   run steampipe query "select c1, c2 from dyn_agg.t1 order by c1,c2" --output json
+#   echo $output
 
-  rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_4.spc
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_4.json)"
-}
+#   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_4.spc
+#   assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_4.json)"
+# }
 
 function setup_file() {
   export STEAMPIPE_SYNC_REFRESH=true
