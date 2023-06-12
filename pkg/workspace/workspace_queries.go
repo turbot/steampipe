@@ -141,6 +141,7 @@ func (w *Workspace) getQueryFromFile(input string) (*modconfig.ResolvedQuery, bo
 	if err != nil {
 		return nil, false, nil
 	}
+
 	// does it exist?
 	if _, err := os.Stat(path); err != nil {
 		// if this gives any error, return not exist. we may get a not found or a path too long for example
