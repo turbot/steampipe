@@ -375,7 +375,7 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 	// create a  context for the execution of the query
 	queryCtx := c.createQueryContext(ctx)
 
-	if metaquery.IsMetaQuery(resolvedQuery.ExecuteSQL) {
+	if resolvedQuery.IsMetaQuery {
 		c.hidePrompt = true
 		c.interactivePrompt.Render()
 
@@ -386,7 +386,6 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 
 		// cancel the context
 		c.cancelActiveQueryIfAny()
-
 	} else {
 		statushooks.Show(ctx)
 		defer statushooks.Done(ctx)
@@ -467,6 +466,17 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfi
 
 	// expand the buffer out into 'query'
 	queryString := strings.Join(c.interactiveBuffer, "\n")
+
+	// check if the contents in the buffer evaluates to a metaquery
+	if metaquery.IsMetaQuery(line) {
+		// this is a metaquery
+		// clear the interactive buffer
+		c.interactiveBuffer = nil
+		return &modconfig.ResolvedQuery{
+			ExecuteSQL:  line,
+			IsMetaQuery: true,
+		}
+	}
 
 	// in case of a named query call with params, parse the where clause
 	resolvedQuery, queryProvider, err := c.workspace().ResolveQueryAndArgsFromSQLString(queryString)
