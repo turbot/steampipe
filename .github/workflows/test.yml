@@ -184,6 +184,7 @@ jobs:
         run: |
           steampipe query "select 1"
           steampipe plugin install chaos chaosdynamic --progress=false
+          steampipe plugin list
 
       - name: Save Install DB Logs
         uses: actions/upload-artifact@v3
