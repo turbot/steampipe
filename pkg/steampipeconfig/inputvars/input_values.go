@@ -298,7 +298,7 @@ func (vv InputValues) SetVariableValues(m *modconfig.ModVariableMap) {
 		variable, ok := m.PublicVariables[name]
 		// if this variable does not exist in public variables, skip
 		if !ok {
-			// todo warn?
+			// we should have already caught this
 			continue
 		}
 		variable.SetInputValue(

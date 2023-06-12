@@ -2,13 +2,12 @@ package steampipeconfig
 
 import (
 	"context"
-	"fmt"
+	"github.com/hashicorp/terraform/tfdiags"
 	"sort"
 
-	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
@@ -28,20 +27,18 @@ func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContex
 	return variableMap, nil
 }
 
-func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, error) {
+func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, *modconfig.ErrorAndWarnings) {
 	// now resolve all input variables
-	inputValues, err := getInputVariables(ctx, parseCtx, variableMap, validate)
-	if err != nil {
-		return nil, err
+	inputValues, errorsAndWarnings := getInputVariables(ctx, parseCtx, variableMap, validate)
+	if errorsAndWarnings.Error == nil {
+		// now update the variables map with the input values
+		inputValues.SetVariableValues(variableMap)
 	}
 
-	// now update the variables map with the input values
-	inputValues.SetVariableValues(variableMap)
-
-	return variableMap, nil
+	return variableMap, errorsAndWarnings
 }
 
-func getInputVariables(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (inputvars.InputValues, error) {
+func getInputVariables(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (inputvars.InputValues, *modconfig.ErrorAndWarnings) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
@@ -51,39 +48,32 @@ func getInputVariables(ctx context.Context, parseCtx *parse.ModParseContext, var
 
 	var inputValuesUnparsed, err = inputvars.CollectVariableValues(path, variableFileArgs, variableArgs, parseCtx.CurrentMod.ShortName)
 	if err != nil {
-		return nil, err
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
 	if validate {
 		if err := identifyAllMissingVariables(parseCtx, variableMap, inputValuesUnparsed); err != nil {
-			return nil, err
+			return nil, modconfig.NewErrorsAndWarning(err)
 		}
 	}
 	// only parse values for public variables
-	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap.PublicVariables, validate)
+	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap, validate)
 
 	if validate {
 		moreDiags := inputvars.CheckInputVariables(variableMap.PublicVariables, parsedValues)
 		diags = append(diags, moreDiags...)
-		if diags.HasErrors() {
-			displayValidationErrors(ctx, diags)
-			return nil, VariableValidationFailedError{}
-		}
 	}
 
-	return parsedValues, diags.Err()
+	return parsedValues, newVariableValidationResult(diags)
 }
 
-func displayValidationErrors(ctx context.Context, diags tfdiags.Diagnostics) {
-	fmt.Println()
-	for i, diag := range diags {
-
-		error_helpers.ShowError(ctx, fmt.Errorf("%s", constants.Bold(diag.Description().Summary)))
-		fmt.Println(diag.Description().Detail)
-		if i < len(diags)-1 {
-			fmt.Println()
-		}
+func newVariableValidationResult(diags tfdiags.Diagnostics) *modconfig.ErrorAndWarnings {
+	warnings := plugin.DiagsToWarnings(diags.ToHCL())
+	var err error
+	if diags.HasErrors() {
+		err = newVariableValidationFailedError(diags)
 	}
+	return modconfig.NewErrorsAndWarning(err, warnings...)
 }
 
 func identifyAllMissingVariables(parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, variableValues map[string]inputvars.UnparsedVariableValue) error {
