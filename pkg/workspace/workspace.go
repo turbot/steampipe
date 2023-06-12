@@ -76,25 +76,25 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, *modconfig.Err
 
 // LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
 // this is use for the variable list command
-func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Variable, error) {
+func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Variable, *modconfig.ErrorAndWarnings) {
 	utils.LogTime("workspace.LoadVariables start")
 	defer utils.LogTime("workspace.LoadVariables end")
 
 	// create shell workspace
 	workspace, err := createShellWorkspace(workspacePath)
 	if err != nil {
-		return nil, err
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
 	// resolve variables values, WITHOUT validating missing vars
 	validateMissing := false
-	variableMap, err := workspace.getInputVariables(ctx, validateMissing)
-	if err != nil {
-		return nil, err
+	variableMap, errorAndWarnings := workspace.getInputVariables(ctx, validateMissing)
+	if errorAndWarnings.Error != nil {
+		return nil, errorAndWarnings
 	}
 
 	// convert into a sorted array
-	return variableMap.ToArray(), nil
+	return variableMap.ToArray(), errorAndWarnings
 }
 
 func createShellWorkspace(workspacePath string) (*Workspace, error) {
@@ -247,20 +247,22 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	// resolve values of all input variables
 	// we WILL validate missing variables when loading
 	validateMissing := true
-	inputVariables, err := w.getInputVariables(ctx, validateMissing)
-	if err != nil {
-		return modconfig.NewErrorsAndWarning(err)
+	inputVariables, errorsAndWarnings := w.getInputVariables(ctx, validateMissing)
+	if errorsAndWarnings.Error != nil {
+		return errorsAndWarnings
 	}
 	// populate the parsed variable values
-	w.VariableValues, err = inputVariables.GetPublicVariableValues()
-	if err != nil {
+	var err error
+	w.VariableValues, errorsAndWarnings.Error = inputVariables.GetPublicVariableValues()
+	if errorsAndWarnings.Error != nil {
 		return modconfig.NewErrorsAndWarning(err)
 	}
 
 	// build run context which we use to load the workspace
 	parseCtx, err := w.getParseContext(ctx)
 	if err != nil {
-		return modconfig.NewErrorsAndWarning(err)
+		errorsAndWarnings.Error = err
+		return errorsAndWarnings
 	}
 
 	// add evaluated variables to the context
@@ -269,9 +271,10 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	parseCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 
 	// load the workspace mod
-	m, errorAndWarning := steampipeconfig.LoadMod(w.Path, parseCtx)
-	if errorAndWarning.Error != nil {
-		return errorAndWarning
+	m, otherErrorAndWarning := steampipeconfig.LoadMod(w.Path, parseCtx)
+	errorsAndWarnings.Merge(otherErrorAndWarning)
+	if errorsAndWarnings.Error != nil {
+		return errorsAndWarnings
 	}
 
 	// now set workspace properties
@@ -285,31 +288,26 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 	w.Mods[w.Mod.Name()] = w.Mod
 
 	// verify all runtime dependencies can be resolved
-	errorAndWarning.Error = w.verifyResourceRuntimeDependencies()
+	errorsAndWarnings.Error = w.verifyResourceRuntimeDependencies()
 
-	return errorAndWarning
+	return errorsAndWarnings
 }
 
-func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, error) {
+func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, *modconfig.ErrorAndWarnings) {
 	// build a run context just to use to load variable definitions
 	variablesParseCtx, err := w.getParseContext(ctx)
 	if err != nil {
-		return nil, err
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
-	inputVariableValues, err := w.getVariableValues(ctx, variablesParseCtx, validateMissing)
-	if err != nil {
-		return nil, err
-	}
-
-	return inputVariableValues, nil
+	return w.getVariableValues(ctx, variablesParseCtx, validateMissing)
 }
 
-func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, error) {
+func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, *modconfig.ErrorAndWarnings) {
 	// load variable definitions
 	variableMap, err := steampipeconfig.LoadVariableDefinitions(w.Path, variablesParseCtx)
 	if err != nil {
-		return nil, err
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 	// get the values
 	return steampipeconfig.GetVariableValues(ctx, variablesParseCtx, variableMap, validateMissing)

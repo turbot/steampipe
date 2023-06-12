@@ -74,9 +74,9 @@ func runVariableListCmd(cmd *cobra.Command, _ []string) {
 
 	workspacePath := viper.GetString(constants.ArgModLocation)
 
-	vars, err := workspace.LoadVariables(ctx, workspacePath)
+	vars, errorsAndWarnings := workspace.LoadVariables(ctx, workspacePath)
 	// load the workspace
-	error_helpers.FailOnErrorWithMessage(err, "failed to load workspace")
+	error_helpers.FailOnErrorWithMessage(errorsAndWarnings.Error, "failed to load workspace")
 
 	if viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON {
 		display.ShowVarsListJson(vars)

@@ -39,7 +39,9 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mo
 	}
 
 	// set the current mod on the run context
-	parseCtx.SetCurrentMod(mod)
+	if err := parseCtx.SetCurrentMod(mod); err != nil {
+		return nil, modconfig.NewErrorsAndWarning(err)
+	}
 
 	// load the mod dependencies
 	if err := loadModDependencies(mod, parseCtx); err != nil {

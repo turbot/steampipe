@@ -2,11 +2,12 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"github.com/gertd/go-pluralize"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"sort"
 	"strings"
 
+	"github.com/gertd/go-pluralize"
+	"github.com/hashicorp/terraform/tfdiags"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -100,8 +101,24 @@ func (m MissingVariableError) getVariableName(v *modconfig.Variable) string {
 }
 
 type VariableValidationFailedError struct {
+	diags tfdiags.Diagnostics
 }
 
+func newVariableValidationFailedError(diags tfdiags.Diagnostics) VariableValidationFailedError {
+	return VariableValidationFailedError{diags: diags}
+}
 func (m VariableValidationFailedError) Error() string {
-	return "variable validation failed"
+	var sb strings.Builder
+
+	for i, diag := range m.diags {
+		if diag.Severity() == tfdiags.Error {
+			sb.WriteString(fmt.Sprintf("%s: %s",
+				diag.Description().Summary,
+				diag.Description().Detail))
+			if i < len(m.diags)-1 {
+				sb.WriteString("\n")
+			}
+		}
+	}
+	return sb.String()
 }
