@@ -86,7 +86,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe check control with blank dimension" {
   cd $BLANK_DIMENSION_VALUE_TEST_MOD
-  export STEAMPIPE_CHECK_DISPLAY_WIDTH=100
+  export STEAMPIPE_DISPLAY_WIDTH=100
   run steampipe check all --progress=false --theme=plain
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_blank_dimension.txt)"
   cd -
