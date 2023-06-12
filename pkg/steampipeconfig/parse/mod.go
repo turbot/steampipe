@@ -83,13 +83,11 @@ func ParseModDefinition(modPath string, evalCtx *hcl.EvalContext) (*modconfig.Mo
 	// set modFilePath
 	mod.SetFilePath(modFilePath)
 
-	// create a temporary runContext to decode the mod definition
-	// note - this is not fully populated - the only properties which will be used are
-
 	mod, res = decodeMod(block, evalCtx, mod)
 	if res.Diags.HasErrors() {
 		return nil, res
 	}
+
 	// NOTE: IGNORE DEPENDENCY ERRORS
 
 	// call decode callback

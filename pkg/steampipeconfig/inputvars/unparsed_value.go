@@ -2,8 +2,8 @@ package inputvars
 
 import (
 	"fmt"
-
 	"github.com/zclconf/go-cty/cty"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/tfdiags"
@@ -42,9 +42,12 @@ type UnparsedVariableValue interface {
 // InputValues may be incomplete but will include the subset of variables
 // that were successfully processed, allowing for careful analysis of the
 // partial result.
-func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, variablesMap map[string]*modconfig.Variable, validate bool) (InputValues, tfdiags.Diagnostics) {
+func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, variablesMap *modconfig.ModVariableMap, validate bool) (InputValues, tfdiags.Diagnostics) {
+
 	var diags tfdiags.Diagnostics
 	ret := make(InputValues, len(inputValuesUnparsed))
+
+	publicVariables := variablesMap.PublicVariables
 
 	// Currently we're generating only warnings for undeclared variables
 	// defined in files (see below) but we only want to generate a few warnings
@@ -54,7 +57,7 @@ func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, v
 
 	for name, unparsedVal := range inputValuesUnparsed {
 		var mode var_config.VariableParsingMode
-		config, declared := variablesMap[name]
+		config, declared := publicVariables[name]
 		if declared {
 			mode = config.ParsingMode
 		} else {
@@ -78,7 +81,7 @@ func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, v
 					diags = diags.Append(tfdiags.Sourceless(
 						tfdiags.Warning,
 						"Value for undeclared variable",
-						fmt.Sprintf("The configuration does not declare a variable named %q but a value was found. If you meant to use this value, add a \"variable\" block to the configuration.\n", name), //, val.SourceRange.Filename),
+						getUndeclaredVariableError(name, variablesMap), //, val.SourceRange.Filename),
 					))
 				}
 				seenUndeclaredInFile++
@@ -92,7 +95,7 @@ func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, v
 				diags = diags.Append(tfdiags.Sourceless(
 					tfdiags.Error,
 					"Value for undeclared variable",
-					fmt.Sprintf("A variable named %q was assigned on the command line, but the configuration does not declare a variable of that name. To use this value, add a \"variable\" block to the configuration.", name),
+					getUndeclaredVariableError(name, variablesMap),
 				))
 			default:
 				// For all other source types we are more vague, but other situations
@@ -100,7 +103,7 @@ func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, v
 				diags = diags.Append(tfdiags.Sourceless(
 					tfdiags.Error,
 					"Value for undeclared variable",
-					fmt.Sprintf("A variable named %q was assigned a value, but the configuration does not declare a variable of that name. To use this value, add a \"variable\" block to the configuration.", name),
+					getUndeclaredVariableError(name, variablesMap),
 				))
 			}
 			continue
@@ -122,7 +125,7 @@ func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, v
 	// from one of the many possible sources.
 	// We'll now populate any we haven't gathered as their defaults and fail if any of the
 	// missing ones are required.
-	for name, vc := range variablesMap {
+	for name, vc := range publicVariables {
 		if _, defined := ret[name]; defined {
 			continue
 		}
@@ -140,7 +143,7 @@ func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, v
 				SourceRange: tfdiags.SourceRangeFromHCL(vc.DeclRange),
 			}
 
-			// if validation flag is et, raise an error
+			// if validation flag is set, raise an error
 			if validate {
 				diags = diags.Append(&hcl.Diagnostic{
 					Severity: hcl.DiagError,
@@ -160,6 +163,28 @@ func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, v
 	}
 
 	return ret, diags
+}
+
+func getUndeclaredVariableError(name string, variablesMap *modconfig.ModVariableMap) string {
+	// is this a qualified variable?
+	if len(strings.Split(name, ".")) == 1 {
+		// unqualifid
+		return fmt.Sprintf("\"%s\" not found. If you meant to use this value, add a \"variable\" block to the mod.\n", name)
+	}
+
+	// parse to extract the mod name
+	parsedVarName, err := modconfig.ParseResourceName(name)
+	if err != nil {
+		return fmt.Sprintf("Invalid variable name: \"%s\". It should be of form \"var_name\" or \"mod_name.var_name\".", name)
+	}
+
+	// is this mod a dependency?
+	if _, isDepMod := variablesMap.Mod.ResourceMaps.Mods[parsedVarName.Mod]; !isDepMod {
+		return fmt.Sprintf("\"%s\": Mod \"%s\" is not a dependency of the current mod.", name, parsedVarName.Mod)
+	}
+	// so it is a dependency mod
+	return fmt.Sprintf("\"%s\": Dependency mod \"%s\" has no variable \"%s\"", parsedVarName.Mod, name, parsedVarName.Name)
+
 }
 
 type UnparsedInteractiveVariableValue struct {
