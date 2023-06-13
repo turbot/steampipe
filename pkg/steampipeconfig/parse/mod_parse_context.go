@@ -2,6 +2,8 @@ package parse
 
 import (
 	"fmt"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -552,15 +554,92 @@ func (m *ModParseContext) loadModRequireArgs() error {
 
 func (m *ModParseContext) validateModRequireValues(depModVarValues inputvars.InputValues) error {
 	var missingVarExpressions []string
+	var requireBlock *hclsyntax.Block
+
 	for k, v := range depModVarValues {
-		if !v.Value.IsKnown() {
-			r := v.SourceRange
-			sourceRange := fmt.Sprintf("%s:%d", r.Filename, r.Start.Line)
-			missingVarExpressions = append(missingVarExpressions, fmt.Sprintf("failed to resolve value for argument \"%s\" specified in require block of \"%s\" (%s)", k, m.CurrentMod.Name(), sourceRange))
+		if v.Value.IsKnown() {
+			continue
 		}
+		parsedVarName, err := modconfig.ParseResourceName(k)
+		if err != nil {
+			return err
+		}
+		// re-parse the require block manually to extract the range and missing var
+		var errorString string
+		errorString, err = m.getErrorStringForUnresolvedArg(parsedVarName, requireBlock)
+		if err != nil {
+			// if there was an error retriving details, return less specific error string
+			errorString = fmt.Sprintf("failed to resolve argument value for \"%s\"  (specified in require block of \"%s\" (%s)", k, m.CurrentMod.Name(), m.CurrentMod.GetDeclRange().Filename)
+		}
+
+		missingVarExpressions = append(missingVarExpressions, errorString)
 	}
+
 	if len(missingVarExpressions) > 0 {
 		return fmt.Errorf(strings.Join(missingVarExpressions, "\n"))
 	}
 	return nil
+}
+
+func (m *ModParseContext) getErrorStringForUnresolvedArg(parsedVarName *modconfig.ParsedResourceName, requireBlock *hclsyntax.Block) (string, error) {
+	// which mod and variable is this is this for
+	modShortName := parsedVarName.Mod
+	varName := parsedVarName.Name
+	var modDependencyName string
+	// determine the mod dependency name as that is how it will be keyed in the require map
+	for depName, modVersion := range m.WorkspaceLock.InstallCache[m.CurrentMod.ShortName] {
+		if modVersion.Alias == modShortName {
+			modDependencyName = depName
+		}
+	}
+
+	// get require block if we haven't already
+	if requireBlock == nil {
+		requireBlock = m.getModRequireBlock()
+		if requireBlock == nil {
+			return "", fmt.Errorf("require args extracted but no require block found for %s", m.CurrentMod.Name())
+		}
+	}
+
+	for _, modBlock := range requireBlock.Body.Blocks {
+		if modBlock.Labels[0] == modDependencyName {
+			// now find the failed arg
+			argsAttr := modBlock.Body.Attributes["args"]
+			argsItems := argsAttr.Expr.(*hclsyntax.ObjectConsExpr).Items
+			for _, a := range argsItems {
+				thisVarName, err := a.KeyExpr.Value(&hcl.EvalContext{})
+				if err != nil {
+					return "", err
+				}
+
+				if thisVarName.AsString() == varName {
+					expr, ok := a.ValueExpr.(*hclsyntax.ScopeTraversalExpr)
+					if !ok {
+						return "", fmt.Errorf("failed to get args details for %s", parsedVarName.ToResourceName())
+					} else {
+						exprString := hclhelpers.TraversalAsString(expr.Traversal)
+						r := expr.Range()
+						sourceRange := fmt.Sprintf("%s:%d", r.Filename, r.Start.Line)
+						res := fmt.Sprintf("failed to resolve argument \"%s = %s\"  (specified in require block of \"%s\" (%s)",
+							parsedVarName.ToResourceName(),
+							exprString,
+							m.CurrentMod.Name(),
+							sourceRange)
+						return res, nil
+					}
+				}
+			}
+		}
+	}
+	return "", fmt.Errorf("failed to get args details for %s", parsedVarName.ToResourceName())
+}
+
+func (m *ModParseContext) getModRequireBlock() *hclsyntax.Block {
+	for _, b := range m.CurrentMod.ResourceWithMetadataBaseRemain.(*hclsyntax.Body).Blocks {
+		if b.Type == modconfig.BlockTypeRequire {
+			return b
+		}
+	}
+	return nil
+
 }
