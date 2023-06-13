@@ -252,10 +252,9 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWar
 		return errorsAndWarnings
 	}
 	// populate the parsed variable values
-	var err error
 	w.VariableValues, errorsAndWarnings.Error = inputVariables.GetPublicVariableValues()
 	if errorsAndWarnings.Error != nil {
-		return modconfig.NewErrorsAndWarning(err)
+		return errorsAndWarnings
 	}
 
 	// build run context which we use to load the workspace
