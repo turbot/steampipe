@@ -2,7 +2,6 @@ package steampipeconfig
 
 import (
 	"encoding/json"
-	"golang.org/x/exp/maps"
 	"log"
 	"os"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 )
 
 type ConnectionStateSummary map[string]int
