@@ -178,12 +178,13 @@ func getUndeclaredVariableError(name string, variablesMap *modconfig.ModVariable
 		return fmt.Sprintf("Invalid variable name: \"%s\". It should be of form \"var_name\" or \"mod_name.var_name\".", name)
 	}
 
-	// is this mod a dependency?
-	if _, isDepMod := variablesMap.Mod.ResourceMaps.Mods[parsedVarName.Mod]; !isDepMod {
-		return fmt.Sprintf("\"%s\": Mod \"%s\" is not a dependency of the current mod.", name, parsedVarName.Mod)
+	for _, m := range variablesMap.Mod.ResourceMaps.Mods {
+		if m.ShortName == parsedVarName.Mod {
+			return fmt.Sprintf("\"%s\": Dependency mod \"%s\" has no variable \"%s\"", name, m.DependencyName, parsedVarName.Name)
+			// so it is a dependency mod
+		}
 	}
-	// so it is a dependency mod
-	return fmt.Sprintf("\"%s\": Dependency mod \"%s\" has no variable \"%s\"", parsedVarName.Mod, name, parsedVarName.Name)
+	return fmt.Sprintf("\"%s\": Mod \"%s\" is not a dependency of the current workspace.", name, parsedVarName.Mod)
 
 }
 
