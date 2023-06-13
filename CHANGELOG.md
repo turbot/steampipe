@@ -16,6 +16,7 @@ _Bug fixes_
 * Increase plugin load timeout to 20s. ([#3564](https://github.com/turbot/steampipe/issues/3564))
   Fixes issue where timing is not shown in interactive prompt even if .timing is on. ([#3557](https://github.com/turbot/steampipe/issues/3557))
 * Fixes issue where 'dot' commands in interactive prompt fail to execute if there's a file/folder by the same name in the working directory. ([#3558](https://github.com/turbot/steampipe/issues/3558))
+* Fixes issue where 'plugin list' hangs if there are connections with 'import_schema = "disabled"'. ([#3561](https://github.com/turbot/steampipe/issues/3561))
 
 ## v0.20.5 [2023-05-31]
 _Bug fixes_
