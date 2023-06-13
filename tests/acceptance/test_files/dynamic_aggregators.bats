@@ -8,7 +8,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 # Aggregating two connections with same table and same columns defined.
 @test "dynamic aggregator - same table and columns" {
-  # export STEAMPIPE_LOG=trace
+  export STEAMPIPE_LOG=info
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_same_table_cols.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_same_table_cols.spc
 
   run steampipe query "select c1,c2 from dyn_agg.t1 order by c1" --output json

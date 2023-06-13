@@ -103,7 +103,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 
 		// if the connection is ready (and has been for more than the backoff interval) , just return the relation not found error
 		if connectionState.State == constants.ConnectionStateReady && time.Since(connectionState.ConnectionModTime) > backoffInterval {
-			log.Printf("[WARN] connection exists in ready state - just returning query error")
+			log.Printf("[INFO] connection exists in ready state - just returning query error")
 			return queryError
 		}
 
