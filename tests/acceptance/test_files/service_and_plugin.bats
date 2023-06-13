@@ -262,6 +262,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
 }
 
+@test "steampipe plugin list works with disabled connections" {
+    cp $SRC_DATA_DIR/chaos_conn_import_disabled.spc $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
+    run steampipe plugin list
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
+    assert_success
+}
+
 ## connection config
 
 @test "steampipe aggregator connection wildcard check" {
