@@ -2,7 +2,6 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/utils"
 	"log"
 	"path"
 	"reflect"
@@ -11,6 +10,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
+	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 )
 
@@ -112,6 +112,10 @@ func NewConnection(block *hcl.Block) *Connection {
 		DeclRange:    NewRange(block.TypeRange),
 		ImportSchema: ImportSchemaEnabled,
 	}
+}
+
+func (c *Connection) ImportDisabled() bool {
+	return c.ImportSchema == "disabled"
 }
 
 func (c *Connection) Equals(other *Connection) bool {

@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/sperr"
 )
 
 const (
@@ -86,7 +87,7 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 
 	var installedPlugins []string
 
-	filepath.Walk(filepaths.EnsurePluginDir(), func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(filepaths.EnsurePluginDir(), func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() && strings.HasSuffix(info.Name(), ".plugin") {
 			rel, err := filepath.Rel(filepaths.EnsurePluginDir(), filepath.Dir(path))
 			if err != nil {
@@ -96,6 +97,9 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 		}
 		return nil
 	})
+	if err != nil {
+		return nil, sperr.WrapWithMessage(err, "could not traverse plugins directory")
+	}
 
 	v, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
@@ -118,8 +122,12 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 		if pluginConnectionMap != nil {
 			// extract only the connection names
 			var connectionNames []string
-			for _, y := range pluginConnectionMap[plugin] {
-				connectionNames = append(connectionNames, y.Name)
+			for _, connection := range pluginConnectionMap[plugin] {
+				connectionName := connection.Name
+				if connection.ImportDisabled() {
+					connectionName = fmt.Sprintf("%s(disabled)", connectionName)
+				}
+				connectionNames = append(connectionNames, connectionName)
 			}
 			item.Connections = connectionNames
 
