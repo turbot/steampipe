@@ -541,3 +541,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe plugin uninstall steampipe
   rm -f $STEAMPIPE_INSTALL_DIR/config/steampipe.spc
 }
+
+setup_file() {
+  BATS_TEST_TIMEOUT=60
+}
