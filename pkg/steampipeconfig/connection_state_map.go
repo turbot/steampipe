@@ -115,6 +115,7 @@ func (m ConnectionStateMap) Loaded(connections ...string) bool {
 			// ignore if we have no state loaded for this conneciton name
 			continue
 		}
+		log.Println("[INFO] Checking state for", connectionName)
 		if !connectionState.Loaded() {
 			return false
 		}
