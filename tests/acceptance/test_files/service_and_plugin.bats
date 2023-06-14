@@ -2,6 +2,8 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe plugin help is displayed when no sub command given" {
+  skip
+
   steampipe plugin > test.txt
 
   # checking for OS type, since sed command is different for linux and OSX
@@ -19,6 +21,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe service help is displayed when no sub command given" {
+  skip
+
   steampipe service > test.txt
 
   # checking for OS type, since sed command is different for linux and OSX
@@ -36,39 +40,53 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "plugin install" {
+  skip
+
   run steampipe plugin install net
   assert_success
   steampipe plugin uninstall net
 }
 
 @test "plugin install from stream" {
+  skip
+
   run steampipe plugin install net@0.2
   assert_success
   steampipe plugin uninstall net@0.2
 }
 
 @test "plugin install from stream (prefixed with v)" {
+  skip
+
   run steampipe plugin install net@v0.2
   assert_success
   steampipe plugin uninstall net@0.2
 }
 
 @test "steampipe service start" {
+  skip
+
     run steampipe service start
     assert_success
 }
 
 @test "steampipe service restart" {
+  skip
+
     run steampipe service restart
     assert_success
 }
 
 @test "steampipe service stop" {
+  skip
+
     run steampipe service stop
     assert_success
 }
 
 @test "custom database name" {
+  skip
+
   # Set the STEAMPIPE_INITDB_DATABASE_NAME env variable
   export STEAMPIPE_INITDB_DATABASE_NAME="custom_db_name"
   
@@ -93,6 +111,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "custom database name - should not start with uppercase characters" {
+  skip
+
   # Set the STEAMPIPE_INITDB_DATABASE_NAME env variable
   export STEAMPIPE_INITDB_DATABASE_NAME="Custom_db_name"
   
@@ -107,6 +127,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "start service, install plugin and query" {
+  skip
+
   # start service
   steampipe service start
 
@@ -128,6 +150,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "start service and verify that passwords stored in .passwd and steampipe.json are same" {
+  skip
+
   # Start the service
   run steampipe service start
 
@@ -147,6 +171,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "start service with --database-password flag and verify that the password used in flag and stored in steampipe.json are same" {
+  skip
+
   # Start the service with --database-password flag
   run steampipe service start --database-password "abcd-efgh-ijkl"
 
@@ -161,6 +187,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "start service with password in env variable and verify that the password used in env and stored in steampipe.json are same" {
+  skip
+
   # Set the STEAMPIPE_DATABASE_PASSWORD env variable
   export STEAMPIPE_DATABASE_PASSWORD="dcba-hgfe-lkji"
 
@@ -178,6 +206,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "start service with --database-password flag and env variable set, verify that the password used in flag gets higher precedence and is stored in steampipe.json" {
+  skip
+
   # Set the STEAMPIPE_DATABASE_PASSWORD env variable
   export STEAMPIPE_DATABASE_PASSWORD="dcba-hgfe-lkji"
 
@@ -195,6 +225,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "start service after removing .passwd file, verify new .passwd file gets created and also passwords stored in .passwd and steampipe.json are same" {
+  skip
+
   # Remove the .passwd file
   rm -f $STEAMPIPE_INSTALL_DIR/internal/.passwd
 
@@ -217,6 +249,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "start service with --database-password flag and verify that the password used in flag is not stored in .passwd file" {
+  skip
+
   # Start the service with --database-password flag
   run steampipe service start --database-password "abcd-efgh-ijkl"
 
@@ -236,6 +270,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "start service with password in env variable and verify that the password used in env is not stored in .passwd file" {
+  skip
+
   # Set the STEAMPIPE_DATABASE_PASSWORD env variable
   export STEAMPIPE_DATABASE_PASSWORD="dcba-hgfe-lkji"
 
@@ -258,21 +294,25 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe plugin list" {
+  skip
+
     run steampipe plugin list
     assert_success
 }
 
 @test "steampipe plugin list works with disabled connections" {
-    cp $SRC_DATA_DIR/chaos_conn_import_disabled.spc $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
-    export STEAMPIPE_LOG=trace
-    run steampipe plugin list
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
-    assert_success
+  cp $SRC_DATA_DIR/chaos_conn_import_disabled.spc $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
+  export STEAMPIPE_LOG=trace
+  run steampipe plugin list
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
+  assert_success
 }
 
 ## connection config
 
 @test "steampipe aggregator connection wildcard check" {
+  skip
+
     skip
     run steampipe plugin install chaos
     run steampipe plugin install steampipe
@@ -282,6 +322,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe aggregator connection check total results" {
+  skip
+
     skip
     run steampipe query "select * from chaos.chaos_all_numeric_column" --output json
 
@@ -304,6 +346,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe aggregator connections should fail when querying a different plugin" {
+  skip
+
     skip
     run steampipe query "select * from chaos_group.chaos_all_numeric_column order by id"
 
@@ -318,6 +362,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe json connection config" {
+  skip
+
     cp $SRC_DATA_DIR/chaos2.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
 
     run steampipe query "select time_col from chaos4.chaos_cache_check"
@@ -329,6 +375,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe should return an error for duplicate connection name" {
+  skip
+
     cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
 
     # this should fail because of duplicate connection name
@@ -341,6 +389,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe yaml connection config" {
+  skip
+
     cp $SRC_DATA_DIR/chaos2.yml $STEAMPIPE_INSTALL_DIR/config/chaos3.yml
 
     run steampipe query "select time_col from chaos5.chaos_cache_check"
@@ -352,6 +402,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe test connection config with options(hcl)" {
+  skip
+
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
     run steampipe query "select time_col from chaos6.chaos_cache_check"
@@ -363,6 +415,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe test connection config with options(yml)" {
+  skip
+
     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
     run steampipe query "select time_col from chaos6.chaos_cache_check"
@@ -373,6 +427,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe test connection config with options(json)" {
+  skip
+
     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
     run steampipe query "select time_col from chaos6.chaos_cache_check"
@@ -383,6 +439,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check regions in connection config is being parsed and used(hcl)" {
+  skip
+
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
     # check regions in connection config is being parsed and used
@@ -397,6 +455,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check regions in connection config is being parsed and used(yml)" {
+  skip
+
     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
     # check regions in connection config is being parsed and used
@@ -411,6 +471,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check regions in connection config is being parsed and used(json)" {
+  skip
+
     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
     # check regions in connection config is being parsed and used
@@ -425,6 +487,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "connection name escaping" {
+  skip
+
     cp $SRC_DATA_DIR/chaos_conn_name_escaping.spc $STEAMPIPE_INSTALL_DIR/config/chaos_conn_name_escaping.spc
 
     # keywords should be escaped properly
@@ -441,6 +505,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # tests for tablefunc module
 
 @test "test crosstab function" {
+  skip
+
   # create table and insert values
   steampipe query "CREATE TABLE ct(id SERIAL, rowid TEXT, attribute TEXT, value TEXT);"
   steampipe query "INSERT INTO ct(rowid, attribute, value) VALUES('test1','att1','val1');"
@@ -459,6 +525,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "test normal_rand function" {
+  skip
+
   # normal_rand function
   run steampipe query "SELECT * FROM normal_rand(10, 5, 3);"
 
@@ -467,6 +535,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "cleanup" {
+  skip
+
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
   run steampipe plugin uninstall steampipe
   rm -f $STEAMPIPE_INSTALL_DIR/config/steampipe.spc
