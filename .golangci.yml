@@ -9,14 +9,11 @@ linters:
     - staticcheck
     - typecheck
     - unused
-    # other enabled rules
+    # other rules
     - asasalint
     - asciicheck
     - bidichk
-    # - contextcheck -> need investigation
-    - depguard
     - durationcheck
-    # - exhaustive -> need investigation
     - exportloopref
     - forbidigo
     - gocritic
