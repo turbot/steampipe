@@ -605,7 +605,7 @@ func (m *ModParseContext) getErrorStringForUnresolvedArg(parsedVarName *modconfi
 	varName := parsedVarName.Name
 	var modDependencyName string
 	// determine the mod dependency name as that is how it will be keyed in the require map
-	for depName, modVersion := range m.WorkspaceLock.InstallCache[m.CurrentMod.ShortName] {
+	for depName, modVersion := range m.WorkspaceLock.InstallCache[m.CurrentMod.GetInstallCacheKey()] {
 		if modVersion.Alias == modShortName {
 			modDependencyName = depName
 			break

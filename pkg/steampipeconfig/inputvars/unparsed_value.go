@@ -169,7 +169,7 @@ func getUndeclaredVariableError(name string, variablesMap *modconfig.ModVariable
 	// is this a qualified variable?
 	if len(strings.Split(name, ".")) == 1 {
 		// unqualifid
-		return fmt.Sprintf("\"%s\" not found. If you meant to use this value, add a \"variable\" block to the mod.\n", name)
+		return fmt.Sprintf("\"%s\". If you meant to use this value, add a \"variable\" block to the mod.\n", name)
 	}
 
 	// parse to extract the mod name
