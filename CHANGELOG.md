@@ -1,4 +1,4 @@
-## v0.20.6 [tbd]
+## v0.20.6 [2023-06-14]
 _Bug fixes_
 * Fix variable validation ([#3546](https://github.com/turbot/steampipe/issues/3546)):
   * Raise warning or error when setting a value for a variable which is not found or inaccessible (e.g. because it is in a transitive dependency). 
