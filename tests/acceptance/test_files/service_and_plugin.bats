@@ -542,6 +542,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f $STEAMPIPE_INSTALL_DIR/config/steampipe.spc
 }
 
-setup_file() {
+function setup_file() {
   export BATS_TEST_TIMEOUT=60
 }
