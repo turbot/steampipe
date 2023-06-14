@@ -1,7 +1,6 @@
 package steampipeconfig
 
 import (
-	"log"
 	"sort"
 	"strings"
 	"time"
@@ -103,11 +102,6 @@ func (d *ConnectionState) SetError(err string) {
 // Loaded returns true if the connection state is 'ready' or 'error'
 // Disabled connections are considered as 'loaded'
 func (d *ConnectionState) Loaded() bool {
-	log.Println("[INFO] ConnectionState.Loaded")
-	log.Println("[INFO] ConnectionState.Loaded name:", d.ConnectionName)
-	log.Println("[INFO] ConnectionState.Loaded disabled:", d.Disabled())
-	log.Println("[INFO] ConnectionState.Loaded state:", d.State)
-	log.Println("[INFO] >< ConnectionState.Loaded")
 	return d.Disabled() || d.State == constants.ConnectionStateReady || d.State == constants.ConnectionStateError
 }
 
