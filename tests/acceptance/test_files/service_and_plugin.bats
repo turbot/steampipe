@@ -543,5 +543,5 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 setup_file() {
-  BATS_TEST_TIMEOUT=60
+  export BATS_TEST_TIMEOUT=60
 }
