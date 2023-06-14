@@ -636,9 +636,10 @@ func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, fai
 		return nil, nil, nil, res
 	}
 
-	// TODO do we really need to look at installed plugins - can't we just use the plugin connection map
 	// get a list of the installed plugins by inspecting the install location
 	// pass pluginConnectionMap so we can populate the connections for each plugin
+	// we need to look at installed plugins - we can't just use the plugin connection map
+	// because the plugin connection map only contains entries for plugins which have connections
 	pluginList, err := plugin.List(pluginConnectionMap)
 	if err != nil {
 		res.Error = err
