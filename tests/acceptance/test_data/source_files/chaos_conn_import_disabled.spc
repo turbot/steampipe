@@ -4,5 +4,5 @@ connection "chaos01" {
 
 connection "chaos02" {
   plugin = "chaos"
-  import_schema = "disabled"
+#  import_schema = "disabled"
 }
