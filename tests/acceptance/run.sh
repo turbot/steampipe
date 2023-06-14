@@ -65,6 +65,8 @@ batversion=$(bats --version)
 echo $batversion
 echo "Running with STEAMPIPE_INSTALL_DIR set to $STEAMPIPE_INSTALL_DIR"
 
+BATS_TEST_TIMEOUT=60
+
 if [ $# -eq 0 ]; then
   # Run all test files
   bats --tap $MY_PATH/test_files
