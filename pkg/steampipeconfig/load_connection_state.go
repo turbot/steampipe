@@ -30,7 +30,7 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 	retryInterval := 250 * time.Millisecond
 	if config.WaitMode == WaitForReady || config.WaitMode == WaitForSearchPath {
 		// is we are waiting for all connections to be ready, wait up to 10 minutes
-		maxDuration = 2 * time.Minute
+		maxDuration = 10 * time.Minute
 	}
 	backoff := retry.NewConstant(retryInterval)
 
