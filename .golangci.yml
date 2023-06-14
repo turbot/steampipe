@@ -1,14 +1,15 @@
 linters:
   disable-all: true
   enable:
-    # - errcheck
-    # - gosimple
-    # - govet
-    # - ineffassign
-    # - staticcheck
-    # - typecheck
-    # - unused
-    # defaults till here
+    # default rules
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    # other enabled rules
     - asasalint
     - asciicheck
     - bidichk
