@@ -150,13 +150,8 @@ func installPluginConfigFiles(image *SteampipeImage, tempdir string) error {
 	}
 	// install config files (if they dont already exist)
 	sourcePath := filepath.Join(tempdir, image.Plugin.ConfigFileDir)
-	directory, err := os.Open(sourcePath)
-	if err != nil {
-		return fmt.Errorf("couldn't open source dir: %s", err)
-	}
-	defer directory.Close()
 
-	objects, err := directory.Readdir(-1)
+	objects, err := os.ReadDir(sourcePath)
 	if err != nil {
 		return fmt.Errorf("couldn't read source dir: %s", err)
 	}
