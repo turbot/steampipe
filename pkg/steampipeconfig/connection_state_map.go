@@ -108,17 +108,19 @@ func (m ConnectionStateMap) Loaded(connections ...string) bool {
 	if len(connections) == 0 {
 		connections = maps.Keys(m)
 	}
-	allLoaded := true
+
 	for _, connectionName := range connections {
 		connectionState, ok := m[connectionName]
 		if !ok {
 			// ignore if we have no state loaded for this conneciton name
 			continue
 		}
-		log.Println("[INFO] Checking state for", connectionName)
-		allLoaded = allLoaded && connectionState.Loaded()
+		log.Println("[TRACE] Checking state for", connectionName)
+		if !connectionState.Loaded() {
+			return false
+		}
 	}
-	return allLoaded
+	return true
 }
 
 // ConnectionsInState returns whether there are any connections one of the given states
