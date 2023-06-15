@@ -102,6 +102,7 @@ func (d *ConnectionState) SetError(err string) {
 // Loaded returns true if the connection state is 'ready' or 'error'
 // Disabled connections are considered as 'loaded'
 func (d *ConnectionState) Loaded() bool {
+	// HACK always return true
 	return true
 	// return d.Disabled() || d.State == constants.ConnectionStateReady || d.State == constants.ConnectionStateError
 }

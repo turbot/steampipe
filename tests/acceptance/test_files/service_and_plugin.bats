@@ -302,6 +302,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe plugin list works with disabled connections" {
   echo "# steampipe plugin list works with disabled connections()">&3
+  env >&3
   rm -f $STEAMPIPE_INSTALL_DIR/config/*
   echo "# removed all config">&3
   cp $SRC_DATA_DIR/chaos_conn_import_disabled.spc $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
