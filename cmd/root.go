@@ -420,7 +420,7 @@ func Execute() int {
 
 // create the root context - add a status renderer
 func createRootContext() context.Context {
-	statusRenderer := statushooks.NewStatusSpinnerHook()
+	statusRenderer := statushooks.NullHooks
 	// if the client is a TTY, inject a status spinner
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		statusRenderer = statushooks.NewStatusSpinnerHook()
