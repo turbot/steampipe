@@ -309,7 +309,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   export STEAMPIPE_LOG=trace
   echo "# Steampipe set to TRACE">&3
   echo "# Running plugin list">&3
-  run steampipe plugin list
+  run steampipe plugin list>&3
   echo "# Ran plugin list">&3
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
   assert_success
