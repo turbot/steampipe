@@ -55,7 +55,7 @@ type DbClient struct {
 	onConnectionCallback DbConnectionCallback
 }
 
-func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback) (*DbClient, error) {
+func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback) (_ *DbClient, err error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
@@ -81,25 +81,29 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		connectionString:     connectionString,
 	}
 
+	defer func() {
+		if err != nil {
+			// try closing the client
+			client.Close(ctx)
+		}
+	}()
+
 	if err := client.establishConnectionPool(ctx); err != nil {
 		return nil, err
 	}
 
 	// load up the server settings
 	if err := client.loadServerSettings(ctx); err != nil {
-		client.Close(ctx)
 		return nil, err
 	}
 
 	// set user search path
 	if err := client.LoadUserSearchPath(ctx); err != nil {
-		client.Close(ctx)
 		return nil, err
 	}
 
 	// populate customSearchPath
 	if err := client.SetRequiredSessionSearchPath(ctx); err != nil {
-		client.Close(ctx)
 		return nil, err
 	}
 
