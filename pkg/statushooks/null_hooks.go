@@ -1,6 +1,6 @@
 package statushooks
 
-var NullHooks = &NullStatusHook{}
+var NullHooks StatusHooks = &NullStatusHook{}
 
 type NullStatusHook struct{}
 
