@@ -352,16 +352,17 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe should return an error for duplicate connection name" {
+  export STEAMPIPE_SYNC_REFRESH=true
+  
+  cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
 
-    cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
+  # this should fail because of duplicate connection name
+  run steampipe query "select time_col from chaos.chaos_cache_check"
 
-    # this should fail because of duplicate connection name
-    run steampipe query "select time_col from chaos.chaos_cache_check"
+  # remove the config file
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos2.json
 
-    # remove the config file
-    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos2.json
-
-    assert_output --partial 'duplicate connection name'
+  assert_output --partial 'duplicate connection name'
 }
 
 @test "steampipe yaml connection config" {
