@@ -301,12 +301,19 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe plugin list works with disabled connections" {
+  echo "# steampipe plugin list works with disabled connections()">&3
   rm -f $STEAMPIPE_INSTALL_DIR/config/*
+  echo "# removed all config">&3
   cp $SRC_DATA_DIR/chaos_conn_import_disabled.spc $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
+  echo "# copied new config">&3
   export STEAMPIPE_LOG=trace
+  echo "# Steampipe set to TRACE">&3
+  echo "# Running plugin list">&3
   run steampipe plugin list
+  echo "# Ran plugin list">&3
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
   assert_success
+  echo "# steampipe plugin list works with disabled connections end()">&3
 }
 
 ## connection config
@@ -545,4 +552,5 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 function setup_file() {
   export BATS_TEST_TIMEOUT=60
+  echo "# setup_file()">&3
 }
