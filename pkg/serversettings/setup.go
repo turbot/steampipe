@@ -11,7 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-type mappedValue struct {
+type valueWithType struct {
 	val     any
 	valType string
 }
@@ -111,42 +111,52 @@ func dropServerSettingsTable(ctx context.Context, tx pgx.Tx) error {
 }
 
 // uses reflection to create a map of the settings struct that can be persisted
-func (s *ServerSettings) createMap(ctx context.Context) map[string]mappedValue {
-	mappedSettings := map[string]mappedValue{}
+func (s *ServerSettings) createMap(ctx context.Context) map[string]valueWithType {
+	mappedSettings := map[string]valueWithType{}
 
 	// get the value of interface{}/ pointer point to
 	val := reflect.Indirect(reflect.ValueOf(s))
 	for i := 0; i < val.NumField(); i++ {
-
 		field := val.Type().Field(i)
-
 		tag := field.Tag.Get("setting_key")
 		if tag == "" {
 			continue
 		}
 
-		fieldValue := val.Field(i).Interface()
-
 		log.Println("[INFO] serversetting: persisting value of", field.Name, "into key", tag)
-
-		var valType string
-		kind := field.Type.Kind()
-		switch kind {
-		case reflect.Bool:
-			valType = "bool"
-		case reflect.String:
-			valType = "text"
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			valType = "integer"
-		default:
-			log.Printf("[INFO] serversetting : skipping unknown server setting type '%s' for '%s' (%v)", kind.String(), tag, fieldValue)
-			continue
+		if mappedValue := getValueWithType(val.Field(i)); mappedValue != nil {
+			mappedSettings[tag] = *mappedValue
 		}
 
-		mappedSettings[tag] = mappedValue{
-			val:     fieldValue,
-			valType: valType,
-		}
 	}
 	return mappedSettings
+}
+
+func getValueWithType(field reflect.Value) *valueWithType {
+	fieldValue := field.Interface()
+	var valType string
+
+	switch field.Kind() {
+	case reflect.Bool:
+		valType = "bool"
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		valType = "integer"
+	case reflect.String:
+		valType = "text"
+	case reflect.Struct:
+		valType = "text"
+		if timeString, converted := tryConvertFromTime(field, fieldValue); converted {
+			fieldValue = timeString
+		} else {
+			// we don't know of any other struct types
+			return nil
+		}
+	default:
+		return nil
+	}
+
+	return &valueWithType{
+		valType: valType,
+		val:     fieldValue,
+	}
 }
