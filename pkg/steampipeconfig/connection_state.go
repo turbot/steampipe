@@ -37,19 +37,19 @@ type ConnectionState struct {
 	PluginModTime time.Time `json:"plugin_mod_time" db:"plugin_mod_time"`
 	// the update time of the connection
 	ConnectionModTime time.Time `json:"connection_mod_time" db:"connection_mod_time"`
-	// the names of child connections (for aggregators)
-	ConnectionNames []string `json:"-" db:"-"`
+	// the matching patterns of child connections (for aggregators)
+	Connections []string `json:"connections" db:"connections"`
 }
 
 func NewConnectionState(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionState {
 	return &ConnectionState{
-		Plugin:          remoteSchema,
-		ConnectionName:  connection.Name,
-		PluginModTime:   creationTime,
-		State:           constants.ConnectionStateReady,
-		Type:            &connection.Type,
-		ImportSchema:    connection.ImportSchema,
-		ConnectionNames: connection.ConnectionNames,
+		Plugin:         remoteSchema,
+		ConnectionName: connection.Name,
+		PluginModTime:  creationTime,
+		State:          constants.ConnectionStateReady,
+		Type:           &connection.Type,
+		ImportSchema:   connection.ImportSchema,
+		Connections:    connection.ConnectionNames,
 	}
 }
 
@@ -68,9 +68,9 @@ func (d *ConnectionState) Equals(other *ConnectionState) bool {
 		return false
 	}
 
-	names := d.ConnectionNames
+	names := d.Connections
 	sort.Strings(names)
-	otherNames := other.ConnectionNames
+	otherNames := other.Connections
 	sort.Strings(otherNames)
 	if strings.Join(names, ",") != strings.Join(otherNames, "'") {
 		return false

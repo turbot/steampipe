@@ -14,6 +14,7 @@ func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
     			name TEXT PRIMARY KEY,
     			state TEXT NOT NULL,
  			    type TEXT NULL,
+    			connections TEXT[] NULLqqq
  			    import_schema TEXT NOT NULL,
     			error TEXT NULL,
     			plugin TEXT NOT NULL,
@@ -21,7 +22,7 @@ func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
     			schema_hash TEXT NULL,
     			comments_set BOOL DEFAULT FALSE,
     			connection_mod_time TIMESTAMPTZ NOT NULL,
-    			plugin_mod_time TIMESTAMPTZ NOT NULL
+    			plugin_mod_time TIMESTAMPTZ NOT NULL,
     			);`, constants.InternalSchema, constants.ConnectionStateTable)
 	return db_common.QueryWithArgs{Query: query}
 }
@@ -98,8 +99,9 @@ func GetUpdateConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.Q
 		schema_hash,
 		comments_set,
 		connection_mod_time,
-		plugin_mod_time)
-VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now(),$10) 
+		plugin_mod_time,
+		connections)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now(),$10, $11) 
 ON CONFLICT (name) 
 DO 
    UPDATE SET 
@@ -112,7 +114,8 @@ DO
 			  schema_hash = $8,
 			  comments_set = $9,
 			  connection_mod_time = now(),
-			  plugin_mod_time = $10
+			  plugin_mod_time = $10,
+			  connections = $11
 `, constants.InternalSchema, constants.ConnectionStateTable)
 	args := []any{
 		c.ConnectionName,
@@ -124,7 +127,8 @@ DO
 		c.SchemaMode,
 		c.SchemaHash,
 		c.CommentsSet,
-		c.PluginModTime}
+		c.PluginModTime,
+		c.Connections}
 	return db_common.QueryWithArgs{query, args}
 }
 
