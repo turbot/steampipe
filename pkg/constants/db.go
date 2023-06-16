@@ -73,15 +73,6 @@ const (
 	FunctionCacheSetTtl = "meta_cache_ttl"
 
 	// legacy
-	LegacyCommandSchema = "steampipe_command"
-
-	LegacyCommandTableCache                = "cache"
-	LegacyCommandTableCacheOperationColumn = "operation"
-	LegacyCommandCacheOn                   = "cache_on"
-	LegacyCommandCacheOff                  = "cache_off"
-	LegacyCommandCacheClear                = "cache_clear"
-
-	LegacyCommandTableScanMetadata = "scan_metadata"
 )
 
 // ConnectionStates is a handy array of all states
