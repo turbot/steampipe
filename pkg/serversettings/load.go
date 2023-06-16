@@ -11,7 +11,15 @@ import (
 	"github.com/turbot/steampipe/sperr"
 )
 
-func Load(ctx context.Context, conn *pgx.Conn) (*ServerSettings, error) {
+func Load(ctx context.Context, conn *pgx.Conn) (_ *ServerSettings, e error) {
+	defer func() {
+		// this function uses reflection to extract and convert values
+		// we need to be able to recover from panics while using reflection
+		if r := recover(); r != nil {
+			e = sperr.ToError(r, sperr.WithMessage("error loading server settings"))
+		}
+	}()
+
 	rows, err := conn.Query(ctx, fmt.Sprintf("SELECT name,value FROM %s.%s", constants.InternalSchema, constants.ServerSettingsTable))
 	if err != nil {
 		return nil, err
