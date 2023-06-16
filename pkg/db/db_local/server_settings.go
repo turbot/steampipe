@@ -19,7 +19,7 @@ func setupServerSettingsTable(ctx context.Context, conn *pgx.Conn) error {
 	settings := serversettings.ServerSettings{
 		SteampipeVersion: version.VersionString,
 		FdwVersion:       constants.FdwVersion,
-		StartTime:        time.Now(),
+		StartTime:        time.Now().UTC().Format(time.RFC3339),
 		CacheEnabled:     viper.GetBool(constants.ArgServiceCacheEnabled),
 		CacheMaxTtl:      viper.GetInt(constants.ArgCacheMaxTtl),
 		CacheMaxSizeMb:   viper.GetInt(constants.ArgMaxCacheSizeMb),
