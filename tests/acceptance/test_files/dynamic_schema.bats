@@ -93,3 +93,7 @@ function teardown() {
   rm -f $STEAMPIPE_INSTALL_DIR/config/csv*.spc
   rm -f output.*
 }
+
+function setup_file() {
+  export STEAMPIPE_SYNC_REFRESH=true
+}

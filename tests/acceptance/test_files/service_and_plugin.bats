@@ -262,6 +262,14 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
 }
 
+@test "steampipe plugin list works with disabled connections" {
+  rm -f $STEAMPIPE_INSTALL_DIR/config/*
+  cp $SRC_DATA_DIR/chaos_conn_import_disabled.spc $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
+  run steampipe plugin list 2>&3 1>&3
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
+  assert_success
+}
+
 ## connection config
 
 @test "steampipe aggregator connection wildcard check" {
@@ -322,12 +330,14 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe should return an error for duplicate connection name" {
     cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
-
+    cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos3.json
+    
     # this should fail because of duplicate connection name
     run steampipe query "select time_col from chaos.chaos_cache_check"
 
     # remove the config file
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos2.json
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos3.json
 
     assert_output --partial 'duplicate connection name'
 }
@@ -462,4 +472,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
   run steampipe plugin uninstall steampipe
   rm -f $STEAMPIPE_INSTALL_DIR/config/steampipe.spc
+}
+
+function setup_file() {
+  export BATS_TEST_TIMEOUT=60
+  echo "# setup_file()">&3
 }

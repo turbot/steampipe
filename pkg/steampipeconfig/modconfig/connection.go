@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
@@ -115,7 +116,7 @@ func NewConnection(block *hcl.Block) *Connection {
 }
 
 func (c *Connection) ImportDisabled() bool {
-	return c.ImportSchema == "disabled"
+	return c.ImportSchema == constants.ConnectionStateDisabled
 }
 
 func (c *Connection) Equals(other *Connection) bool {

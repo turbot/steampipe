@@ -92,3 +92,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_4.spc
   assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_4.json)"
 }
+
+function setup_file() {
+  export STEAMPIPE_SYNC_REFRESH=true
+}
