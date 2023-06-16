@@ -11,11 +11,6 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-type valueWithType struct {
-	val     any
-	valType string
-}
-
 // SetupSql returns the set of SQL statements to fully replace any existing
 // settings table with a new one and populates the values
 func (s *ServerSettings) SetupTable(ctx context.Context, conn *pgx.Conn) (err error) {
@@ -130,6 +125,11 @@ func (s *ServerSettings) createMap(ctx context.Context) map[string]valueWithType
 
 	}
 	return mappedSettings
+}
+
+type valueWithType struct {
+	val     any
+	valType string
 }
 
 func getValueWithType(field reflect.Value) *valueWithType {
