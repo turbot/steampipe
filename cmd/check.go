@@ -167,6 +167,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
 		error_helpers.FailOnError(err)
 
+		// only export/publish if the parent context has not been cancelled
 		if !error_helpers.IsContextCanceled(ctx) {
 
 			// get the export name before execution(fail if not a valid export name)
