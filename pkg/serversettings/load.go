@@ -25,7 +25,5 @@ func Load(ctx context.Context, conn *pgx.Conn) (_ *db_common.ServerSettings, e e
 	}
 	defer rows.Close()
 
-	settings := new(db_common.ServerSettings)
-	pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[db_common.ServerSettings])
-	return settings, nil
+	return pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[db_common.ServerSettings])
 }
