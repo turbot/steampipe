@@ -125,7 +125,6 @@ func (c *DbClient) loadServerSettings(ctx context.Context) error {
 		return err
 	}
 	c.serverSettings = serverSettings
-	log.Println("[INFO] loaded server settings", serverSettings)
 	return nil
 }
 
