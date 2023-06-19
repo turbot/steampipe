@@ -55,7 +55,12 @@ func (p *ParsedResourceName) ToFullNameWithMod(mod string) string {
 }
 
 func BuildFullResourceName(mod, blockType, name string) string {
-	return fmt.Sprintf("%s.%s.%s", mod, blockType, name)
+	res := []string{mod}
+	if len(blockType) > 0 {
+		res = append(res, blockType)
+	}
+	res = append(res, name)
+	return strings.Join(res, ".")
 }
 
 // UnqualifiedResourceName removes the mod prefix from the given name
