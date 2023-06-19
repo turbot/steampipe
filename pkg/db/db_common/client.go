@@ -5,7 +5,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
-	"github.com/turbot/steampipe/pkg/serversettings"
 )
 
 type Client interface {
@@ -30,5 +29,5 @@ type Client interface {
 	RefreshSessions(context.Context) *AcquireSessionResult
 	GetSchemaFromDB(context.Context) (*SchemaMetadata, error)
 
-	ServerSettings() *serversettings.ServerSettings
+	ServerSettings() *ServerSettings
 }

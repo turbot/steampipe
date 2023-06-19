@@ -27,7 +27,7 @@ type DbClient struct {
 
 	// the settings of the server that this client is
 	// connected to
-	serverSettings *serversettings.ServerSettings
+	serverSettings *db_common.ServerSettings
 
 	// this flag is set if the service that this client
 	// is connected to is running in the same physical system
@@ -125,6 +125,7 @@ func (c *DbClient) loadServerSettings(ctx context.Context) error {
 		return err
 	}
 	c.serverSettings = serverSettings
+	log.Println("[INFO] loaded server settings", serverSettings)
 	return nil
 }
 
@@ -144,7 +145,7 @@ func (c *DbClient) shouldShowTiming() bool {
 	return c.showTimingFlag && !c.disableTiming
 }
 
-func (c *DbClient) ServerSettings() *serversettings.ServerSettings {
+func (c *DbClient) ServerSettings() *db_common.ServerSettings {
 	return c.serverSettings
 }
 
