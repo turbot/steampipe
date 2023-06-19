@@ -16,7 +16,6 @@ import (
 // signalling does not always work reliably when the destination of the signal
 // is a child of the source of the signal - which may be the case then starting
 // implicit services
-//
 func PidExists(targetPid int) (bool, error) {
 	LogTime("PidExists start")
 	defer LogTime("PidExists end")
@@ -48,8 +47,6 @@ func FindProcess(targetPid int) (*psutils.Process, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to get status: %s", err.Error())
 			}
-
-			// TODO KAI consider other statuses.....
 
 			if status == "Z" {
 				// this means that postgres went away, but the process itself is still a zombie.
