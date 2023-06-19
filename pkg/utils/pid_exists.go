@@ -49,6 +49,8 @@ func FindProcess(targetPid int) (*psutils.Process, error) {
 				return nil, fmt.Errorf("failed to get status: %s", err.Error())
 			}
 
+			// TODO KAI consider other statuses.....
+
 			if status == "Z" {
 				// this means that postgres went away, but the process itself is still a zombie.
 				return nil, nil
