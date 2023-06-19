@@ -167,20 +167,22 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
 		error_helpers.FailOnError(err)
 
-		// add the mod name to the target name to get the export file root
-		parsedName, _ := modconfig.ParseResourceName(targetName)
-		exportName := parsedName.ToFullNameWithMod(w.Mod.ShortName)
+		if !error_helpers.IsContextCanceled(ctx) {
+			// add the mod name to the target name to get the export file root
+			parsedName, _ := modconfig.ParseResourceName(targetName)
+			exportName := parsedName.ToFullNameWithMod(w.Mod.ShortName)
 
-		exportArgs := viper.GetStringSlice(constants.ArgExport)
-		exportMsg, err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
-		error_helpers.FailOnError(err)
+			exportArgs := viper.GetStringSlice(constants.ArgExport)
+			exportMsg, err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
+			error_helpers.FailOnError(err)
 
-		// if the share args are set, create a snapshot and share it
-		if generateSnapshot {
-			err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
-			if err != nil {
-				exitCode = constants.ExitCodeSnapshotUploadFailed
-				error_helpers.FailOnError(err)
+			// if the share args are set, create a snapshot and share it
+			if generateSnapshot {
+				err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
+				if err != nil {
+					exitCode = constants.ExitCodeSnapshotUploadFailed
+					error_helpers.FailOnError(err)
+				}
 			}
 		}
 
