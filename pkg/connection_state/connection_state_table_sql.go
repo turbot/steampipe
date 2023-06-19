@@ -13,16 +13,16 @@ func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
     			name TEXT PRIMARY KEY,
     			state TEXT NOT NULL,
- 			    type TEXT NULL,
-    			connections TEXT[] NULLqqq
- 			    import_schema TEXT NOT NULL,
+ 			type TEXT NULL,
+    			connections TEXT[] NULL,
+ 		        import_schema TEXT NOT NULL,
     			error TEXT NULL,
     			plugin TEXT NOT NULL,
     			schema_mode TEXT NOT NULL,
     			schema_hash TEXT NULL,
     			comments_set BOOL DEFAULT FALSE,
     			connection_mod_time TIMESTAMPTZ NOT NULL,
-    			plugin_mod_time TIMESTAMPTZ NOT NULL,
+    			plugin_mod_time TIMESTAMPTZ NOT NULL
     			);`, constants.InternalSchema, constants.ConnectionStateTable)
 	return db_common.QueryWithArgs{Query: query}
 }
