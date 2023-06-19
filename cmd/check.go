@@ -157,10 +157,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, targetName, initData.ControlFilterWhereClause)
 		error_helpers.FailOnError(err)
 
-		// get the export name before execution(fail if not a valid export name)
-		exportName, err := getExportName(targetName, w.Mod.ShortName)
-		error_helpers.FailOnError(err)
-
 		// execute controls synchronously (execute returns the number of alarms and errors)
 		stats, err := executionTree.Execute(ctx)
 		error_helpers.FailOnError(err)
@@ -171,16 +167,23 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
 		error_helpers.FailOnError(err)
 
-		exportArgs := viper.GetStringSlice(constants.ArgExport)
-		exportMsg, err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
-		error_helpers.FailOnError(err)
+		if !error_helpers.IsContextCanceled(ctx) {
 
-		// if the share args are set, create a snapshot and share it
-		if generateSnapshot {
-			err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
-			if err != nil {
-				exitCode = constants.ExitCodeSnapshotUploadFailed
-				error_helpers.FailOnError(err)
+			// get the export name before execution(fail if not a valid export name)
+			exportName, err := getExportName(targetName, w.Mod.ShortName)
+			error_helpers.FailOnError(err)
+
+			exportArgs := viper.GetStringSlice(constants.ArgExport)
+			exportMsg, err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
+			error_helpers.FailOnError(err)
+
+			// if the share args are set, create a snapshot and share it
+			if generateSnapshot {
+				err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
+				if err != nil {
+					exitCode = constants.ExitCodeSnapshotUploadFailed
+					error_helpers.FailOnError(err)
+				}
 			}
 		}
 
