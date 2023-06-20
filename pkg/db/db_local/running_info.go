@@ -39,6 +39,10 @@ func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int,
 		StructVersion:   RunningDBStructVersion,
 	}
 
+	if len(dbState.ListenAddresses) == 1 && dbState.ListenAddresses[0] == "*" {
+		addrs, _ := utils.LocalAddresses()
+		dbState.ListenAddresses = append(dbState.ListenAddresses, addrs...)
+	}
 	return dbState
 }
 
