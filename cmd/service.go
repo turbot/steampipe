@@ -219,7 +219,7 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 		}
 		if !utils.StringSlicesEqual(listenAddresses, startResult.DbState.ListenAddresses) {
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
-			error_helpers.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen addresses while it's running", startResult.DbState.ListenAddresses))
+			error_helpers.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen addresses while it's running. If you need to change listen addresses, use %s", startResult.DbState.ListenAddresses, constants.Bold("steampipe service restart")))
 		}
 
 		// convert to being invoked by service
