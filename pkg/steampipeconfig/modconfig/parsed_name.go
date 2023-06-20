@@ -54,6 +54,7 @@ func (p *ParsedResourceName) ToFullNameWithMod(mod string) string {
 	return BuildFullResourceName(mod, p.ItemType, p.Name)
 }
 
+// BuildFullResourceName generates a Fully Qualified name from the given components
 func BuildFullResourceName(mod, blockType, name string) string {
 	return fmt.Sprintf("%s.%s.%s", mod, blockType, name)
 }
