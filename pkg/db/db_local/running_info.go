@@ -8,6 +8,7 @@ import (
 	"os/exec"
 
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -28,6 +29,8 @@ type RunningDBInstanceInfo struct {
 }
 
 func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int, databaseName string, password string, invoker constants.Invoker) *RunningDBInstanceInfo {
+	listenAddresses = getListenAddresses(listenAddresses)
+
 	dbState := &RunningDBInstanceInfo{
 		Pid:             cmd.Process.Pid,
 		ListenAddresses: listenAddresses,
@@ -40,6 +43,32 @@ func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int,
 	}
 
 	return dbState
+}
+
+func getListenAddresses(listenAddresses []string) []string {
+	addresses := []string{}
+
+	if helpers.StringSliceContains(listenAddresses, "localhost") {
+		loopAddrs, err := utils.LocalLoopbackAddresses()
+		if err != nil {
+			return nil
+		}
+		addresses = loopAddrs
+	}
+
+	if helpers.StringSliceContains(listenAddresses, "*") {
+		loopAddrs, err := utils.LocalLoopbackAddresses()
+		if err != nil {
+			return nil
+		}
+		publicAddrs, err := utils.LocalPublicAddresses()
+		if err != nil {
+			return nil
+		}
+		addresses = append(loopAddrs, publicAddrs...)
+	}
+
+	return addresses
 }
 
 func (r *RunningDBInstanceInfo) Save() error {

@@ -85,6 +85,9 @@ func SetDefaultsFromConfig(configMap map[string]interface{}) {
 // for keys which do not have a corresponding command flag, we need a separate defaulting mechanism
 // any option setting, workspace profile property or env var which does not have a command line
 // MUST have a default (unless we want the zero value to take effect)
+//
+// Do not add keys here which have command line defaults - the way this is setup, this value takes
+// precedence over command line default
 func setBaseDefaults() {
 	defaults := map[string]interface{}{
 		// global general options
@@ -96,7 +99,6 @@ func setBaseDefaults() {
 		constants.ArgIntrospection: constants.IntrospectionNone,
 
 		// from global database options
-		constants.ArgDatabasePort:         constants.DatabaseDefaultPort,
 		constants.ArgDatabaseStartTimeout: constants.DBStartTimeout.Seconds(),
 		constants.ArgServiceCacheEnabled:  true,
 		constants.ArgCacheMaxTtl:          300,

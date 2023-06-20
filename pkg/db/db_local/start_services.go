@@ -81,7 +81,7 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 
 		listenAddresses = append([]string{"127.0.0.1"}, listenAddresses...)
 	}
-	log.Println(fmt.Sprintf("[TRACE] StartServices - listenAddresses=%s, port=%d", listenAddresses, port))
+	log.Println("[TRACE] StartServices - listenAddresses=%s, port=%d", listenAddresses, port)
 
 	res := &StartResult{}
 
