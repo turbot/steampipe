@@ -167,10 +167,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
 		error_helpers.FailOnError(err)
 
-		// add the mod name to the target name to get the export file root
-		parsedName, _ := modconfig.ParseResourceName(targetName)
-		exportName := parsedName.ToFullNameWithMod(w.Mod.ShortName)
-
+		exportName := getExportName(targetName, w.Mod.ShortName)
 		exportArgs := viper.GetStringSlice(constants.ArgExport)
 		exportMsg, err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
 		error_helpers.FailOnError(err)
@@ -200,6 +197,17 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// set the defined exit code after successful execution
 	exitCode = getExitCode(totalAlarms, totalErrors)
+}
+
+// getExportName resolves the base name of the target file
+func getExportName(targetName string, modShortName string) string {
+	parsedName, _ := modconfig.ParseResourceName(targetName)
+	if targetName == "all" {
+		// there will be no block type = manually construct name
+		return fmt.Sprintf("%s.%s", modShortName, parsedName.Name)
+	}
+	// default to just converting to valid resource name
+	return parsedName.ToFullNameWithMod(modShortName)
 }
 
 // get the exit code for successful check run
