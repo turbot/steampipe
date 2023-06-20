@@ -47,3 +47,39 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # remove the sample sql file
   rm -f sample.sql
 }
+
+@test "verify steampipe_connection_state table is getting properly migrated" {
+  # create a temp directory to install steampipe(0.13.6)
+  tmpdir="$(mktemp -d)"
+  mkdir -p "${tmpdir}"
+  tmpdir="${tmpdir%/}"
+
+  # find the name of the zip file as per OS and arch
+  case $(uname -sm) in
+	"Darwin x86_64") target="darwin_amd64.zip" ;;
+	"Darwin arm64") target="darwin_arm64.zip" ;;
+	"Linux x86_64") target="linux_amd64.tar.gz" ;;
+	"Linux aarch64") target="linux_arm64.tar.gz" ;;
+	*) echo "Error: '$(uname -sm)' is not supported yet." 1>&2;exit 1 ;;
+	esac
+
+  # download the zip and extract
+  steampipe_uri="https://github.com/turbot/steampipe/releases/download/v0.20.6/steampipe_${target}"
+  case $(uname -s) in
+    "Darwin") zip_location="${tmpdir}/steampipe.zip" ;;
+    "Linux") zip_location="${tmpdir}/steampipe.tar.gz" ;;
+    *) echo "Error: steampipe is not supported on '$(uname -s)' yet." 1>&2;exit 1 ;;
+  esac
+  curl --fail --location --progress-bar --output "$zip_location" "$steampipe_uri"
+  tar -xf "$zip_location" -C "$tmpdir"
+
+  # install a couple of plugins which can work with default config
+  $tmpdir/steampipe --install-dir $tmpdir plugin install chaos net  
+  $tmpdir/steampipe --install-dir $tmpdir query "select * from steampipe_internal.steampipe_connection_state" --output json
+
+  run steampipe --install-dir $tmpdir query "select * from steampipe_internal.steampipe_connection_state" --output json
+  
+  rm -rf $tmpdir
+    
+  assert_success
+}
