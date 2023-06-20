@@ -35,8 +35,8 @@ func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{Query: query}
 }
 
-// GetConnectionStateGrantSql returns the sql to setup SELECT permission for the 'steampipe_users' role
-func GetConnectionStateGrantSql() db_common.QueryWithArgs {
+// GetConnectionStateTableGrantSql returns the sql to setup SELECT permission for the 'steampipe_users' role
+func GetConnectionStateTableGrantSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{Query: fmt.Sprintf(
 		`GRANT SELECT ON TABLE %s.%s TO %s;`,
 		constants.InternalSchema,

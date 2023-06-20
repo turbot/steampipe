@@ -209,13 +209,14 @@ func validateFunction(f db_common.SQLFunction) error {
 
 func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 
-	createQueries := db_common.QueriesWithArgs{}.
-		// first create the table if necessary
-		Add(connection_state.GetConnectionStateTableCreateSql()).
-		// add columns which were added later than 0.20.0
-		Add(connection_state.GetConnectionStateTableColumnAlterSql()...).
-		// setup grants on the table
-		Add(connection_state.GetConnectionStateGrantSql())
+	createQueries := []db_common.QueryWithArgs{
+		connection_state.GetConnectionStateTableCreateSql(),
+		connection_state.GetConnectionStateTableGrantSql(),
+	}
+
+	// apply any alterations
+	// this is for changes which are applied to the table after v0.20.0
+	createQueries = append(createQueries, connection_state.GetConnectionStateTableColumnAlterSql()...)
 
 	if _, err := ExecuteSqlWithArgsInTransaction(ctx, conn, createQueries...); err != nil {
 		return err
