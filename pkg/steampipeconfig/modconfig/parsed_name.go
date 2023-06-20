@@ -11,6 +11,11 @@ type ParsedResourceName struct {
 	Name     string
 }
 
+// ParseResourceName splits up a resource name into it's components
+// e.g:
+//
+//	mod.benchmark.benchmark1 -> { Mod:mod, ItemType: benchmark, Name: benchmark1 }
+//	benchmark.benchmark1 -> { ItemType: benchmark, Name: benchmark1, Mod: }
 func ParseResourceName(fullName string) (res *ParsedResourceName, err error) {
 	if fullName == "" {
 		return &ParsedResourceName{}, nil
