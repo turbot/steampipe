@@ -2,6 +2,7 @@ package connection_state
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -214,7 +215,8 @@ func GetSetConnectionStateSql(connectionName string, state string) db_common.Que
 		constants.InternalSchema, constants.ConnectionStateTable, state,
 	)
 	args := []any{connectionName}
-	return db_common.QueryWithArgs{Query: query, Args: args}
+	log.Printf("[INFO] >> query: %s", query)
+	return db_common.QueryWithArgs{query, args}
 }
 
 func GetDeleteConnectionStateSql(connectionName string) db_common.QueryWithArgs {

@@ -2,6 +2,8 @@ package connection
 
 import (
 	"context"
+	"log"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/connection_state"
@@ -9,7 +11,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"log"
 )
 
 type connectionStateTableUpdater struct {
@@ -33,11 +34,17 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 	// update the conection state table to set appropriate state for all connections
 	// set updates to "updating"
 	for name, connectionState := range u.updates.FinalConnectionState {
+		log.Printf("[INFO] >> name: %s", name)
+		log.Printf("[INFO] >> connectionState: %s", connectionState)
 		// set the connection data state based on whether this connection is being created or deleted
 		if _, updatingConnection := u.updates.Update[name]; updatingConnection {
+			log.Printf("[INFO] >> (in if) name: %s", name)
+			log.Printf("[INFO] >> (in if) connectionState: %s", connectionState)
 			connectionState.State = constants.ConnectionStateUpdating
 			connectionState.CommentsSet = false
 		} else if validationError, connectionIsInvalid := u.updates.InvalidConnections[name]; connectionIsInvalid {
+			log.Printf("[INFO] >> (in else) name: %s", name)
+			log.Printf("[INFO] >> (in else) connectionState: %s", connectionState)
 			// if this connection has an error, set to error
 			connectionState.State = constants.ConnectionStateError
 			connectionState.ConnectionError = &validationError.Message
@@ -47,6 +54,7 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 	}
 	// set deletions to "deleting"
 	for name := range u.updates.Delete {
+		log.Printf("[INFO] >>> name: %s", name)
 		// if we are we deleting the schema because schema_import="disabled", DO NOT set state to deleting -
 		// it will be set to "disabled below
 		if _, connectionDisabled := u.updates.Disabled[name]; connectionDisabled {
@@ -76,6 +84,7 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, conn *pgx.Conn, name string) error {
 	connection := u.updates.FinalConnectionState[name]
 	q := connection_state.GetSetConnectionStateSql(connection.ConnectionName, constants.ConnectionStateReady)
+	log.Printf("[INFO] >> connection %v", connection.ConnectionModTime)
 	_, err := conn.Exec(ctx, q.Query, q.Args...)
 	if err != nil {
 		return err
