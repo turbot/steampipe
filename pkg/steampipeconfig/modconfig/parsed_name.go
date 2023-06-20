@@ -11,11 +11,6 @@ type ParsedResourceName struct {
 	Name     string
 }
 
-// ParseResourceName splits up a resource name into it's components
-// e.g:
-//
-//	mod.benchmark.benchmark1 -> { Mod:mod, ItemType: benchmark, Name: benchmark1 }
-//	benchmark.benchmark1 -> { ItemType: benchmark, Name: benchmark1, Mod: }
 func ParseResourceName(fullName string) (res *ParsedResourceName, err error) {
 	if fullName == "" {
 		return &ParsedResourceName{}, nil
@@ -60,6 +55,12 @@ func (p *ParsedResourceName) ToFullNameWithMod(mod string) string {
 }
 
 // BuildFullResourceName generates a fully qualified name from the given components
+// e.g:
+//
+//	{ mod:aws, blockType: benchmark, name: benchmark1 } -> aws.benchmark.benchmark1
+//	{ mod:   , blockType: benchmark, name: benchmark1 } -> .benchmark.benchmark1
+//	{ mod:aws, blockType:          , name: benchmark1 } -> aws..benchmark1
+//
 // TODO: validate argument are not empty strings [https://github.com/turbot/steampipe/issues/3601]
 func BuildFullResourceName(mod, blockType, name string) string {
 	return fmt.Sprintf("%s.%s.%s", mod, blockType, name)
