@@ -96,11 +96,10 @@ func setBaseDefaults() {
 		constants.ArgIntrospection: constants.IntrospectionNone,
 
 		// from global database options
-		constants.ArgDatabaseListenAddresses: constants.DatabaseDefaultListenAddresses,
-		constants.ArgDatabasePort:            constants.DatabaseDefaultPort,
-		constants.ArgDatabaseStartTimeout:    constants.DBStartTimeout.Seconds(),
-		constants.ArgServiceCacheEnabled:     true,
-		constants.ArgCacheMaxTtl:             300,
+		constants.ArgDatabasePort:         constants.DatabaseDefaultPort,
+		constants.ArgDatabaseStartTimeout: constants.DBStartTimeout.Seconds(),
+		constants.ArgServiceCacheEnabled:  true,
+		constants.ArgCacheMaxTtl:          300,
 	}
 
 	for k, v := range defaults {
