@@ -427,7 +427,7 @@ func (m *PluginManager) startPluginIfNeeded(pluginName string, connectionConfigs
 }
 
 func (m *PluginManager) startPlugin(pluginName string, connectionConfigs []*sdkproto.ConnectionConfig, req *pb.GetRequest) (_ *pb.ReattachConfig, err error) {
-	log.Printf("[INFO] startPlugin %s (%p)", req)
+	log.Printf("[INFO] startPlugin %s (%p)", pluginName, req)
 
 	// add a new running plugin to pluginMultiConnectionMap
 	// (if someone beat us to it and added a starting plugin before we get the write lock,
