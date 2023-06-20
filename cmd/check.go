@@ -202,13 +202,12 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 // getExportName resolves the base name of the target file
 func getExportName(targetName string, modShortName string) string {
 	parsedName, _ := modconfig.ParseResourceName(targetName)
-	exportName := ""
 	if targetName == "all" {
-		exportName = fmt.Sprintf("%s.%s", modShortName, parsedName.Name)
-	} else {
-		exportName = parsedName.ToFullNameWithMod(modShortName)
+		// there will be no block type = manually construct name
+		return fmt.Sprintf("%s.%s", modShortName, parsedName.Name)
 	}
-	return exportName
+	// default to just converting to valid resource name
+	return parsedName.ToFullNameWithMod(modShortName)
 }
 
 // get the exit code for successful check run
