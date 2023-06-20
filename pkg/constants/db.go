@@ -15,7 +15,7 @@ const (
 )
 
 const (
-	DatabaseDefaultListenAddresses   = "localhost"
+	DatabaseDefaultListenAddresses   = "network"
 	DatabaseDefaultPort              = 9193
 	DatabaseDefaultCheckQueryTimeout = 240
 	DatabaseSuperUser                = "root"
