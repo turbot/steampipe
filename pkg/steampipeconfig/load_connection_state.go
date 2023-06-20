@@ -96,7 +96,8 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionStateMa
 		schema_hash,
 		comments_set,
 		connection_mod_time,
-		plugin_mod_time
+		plugin_mod_time,
+		connections
 	FROM  %s.%s `, constants.InternalSchema, constants.ConnectionStateTable)
 
 	rows, err := conn.Query(ctx, query)

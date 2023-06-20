@@ -2,6 +2,7 @@ package connection_state
 
 import (
 	"fmt"
+
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -11,19 +12,55 @@ import (
 // GetConnectionStateTableCreateSql returns the sql to create the conneciton state table
 func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
-    			name TEXT PRIMARY KEY,
-    			state TEXT NOT NULL,
- 			    type TEXT NULL,
- 			    import_schema TEXT NOT NULL,
-    			error TEXT NULL,
-    			plugin TEXT NOT NULL,
-    			schema_mode TEXT NOT NULL,
-    			schema_hash TEXT NULL,
-    			comments_set BOOL DEFAULT FALSE,
-    			connection_mod_time TIMESTAMPTZ NOT NULL,
-    			plugin_mod_time TIMESTAMPTZ NOT NULL
-    			);`, constants.InternalSchema, constants.ConnectionStateTable)
+	name TEXT PRIMARY KEY,
+	state TEXT NOT NULL,
+	type TEXT NULL,
+	connections TEXT[] NULL,
+	import_schema TEXT NOT NULL,
+	error TEXT NULL,
+	plugin TEXT NOT NULL,
+	schema_mode TEXT NOT NULL,
+	schema_hash TEXT NULL,
+	comments_set BOOL DEFAULT FALSE,
+	connection_mod_time TIMESTAMPTZ NOT NULL,
+	plugin_mod_time TIMESTAMPTZ NOT NULL
+);`, constants.InternalSchema, constants.ConnectionStateTable)
 	return db_common.QueryWithArgs{Query: query}
+}
+
+// GetConnectionStateTableGrantSql returns the sql to setup SELECT permission for the 'steampipe_users' role
+func GetConnectionStateTableGrantSql() db_common.QueryWithArgs {
+	return db_common.QueryWithArgs{Query: fmt.Sprintf(
+		`GRANT SELECT ON TABLE %s.%s TO %s;`,
+		constants.InternalSchema,
+		constants.ConnectionStateTable,
+		constants.DatabaseUsersRole,
+	)}
+}
+
+// GetConnectionStateTableColumnAlterSql returns the SQL to make alterations to the table
+// this is for changes to the table made after the 0.20.0 release
+func GetConnectionStateTableColumnAlterSql() []db_common.QueryWithArgs {
+
+	// extraColumnsWithType is a map of column names to the SQL type
+	// these are columns which needed to be added after 0.20.0 with the
+	// steampipe_connection_state table was released
+	var extraColumnsWithType map[string]string = map[string]string{
+		"connections": "TEXT[]",
+	}
+
+	queries := []db_common.QueryWithArgs{}
+	for columnName, columnType := range extraColumnsWithType {
+		queries = append(queries, db_common.QueryWithArgs{
+			Query: fmt.Sprintf(`ALTER TABLE %s.%s ADD COLUMN IF NOT EXISTS %s %s;`,
+				constants.InternalSchema,
+				constants.ConnectionStateTable,
+				columnName,
+				columnType,
+			),
+		})
+	}
+	return queries
 }
 
 // GetConnectionStateErrorSql returns the sql to set a connection to 'error'
@@ -37,7 +74,7 @@ WHERE
 	`,
 		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStateError)
 	args := []any{constants.ConnectionStateError, err.Error(), connectionName}
-	return db_common.QueryWithArgs{query, args}
+	return db_common.QueryWithArgs{Query: query, Args: args}
 }
 
 // GetIncompleteConnectionStateErrorSql returns the sql to set all incomplete connections to 'error' (unless they alre already in error)
@@ -98,8 +135,9 @@ func GetUpdateConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.Q
 		schema_hash,
 		comments_set,
 		connection_mod_time,
-		plugin_mod_time)
-VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now(),$10) 
+		plugin_mod_time,
+		connections)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now(),$10, $11) 
 ON CONFLICT (name) 
 DO 
    UPDATE SET 
@@ -112,7 +150,8 @@ DO
 			  schema_hash = $8,
 			  comments_set = $9,
 			  connection_mod_time = now(),
-			  plugin_mod_time = $10
+			  plugin_mod_time = $10,
+			  connections = $11
 `, constants.InternalSchema, constants.ConnectionStateTable)
 	args := []any{
 		c.ConnectionName,
@@ -124,8 +163,9 @@ DO
 		c.SchemaMode,
 		c.SchemaHash,
 		c.CommentsSet,
-		c.PluginModTime}
-	return db_common.QueryWithArgs{query, args}
+		c.PluginModTime,
+		c.Connections}
+	return db_common.QueryWithArgs{Query: query, Args: args}
 }
 
 func GetNewConnectionStateTableInsertSql(c *modconfig.Connection) db_common.QueryWithArgs {
@@ -174,13 +214,13 @@ func GetSetConnectionStateSql(connectionName string, state string) db_common.Que
 		constants.InternalSchema, constants.ConnectionStateTable, state,
 	)
 	args := []any{connectionName}
-	return db_common.QueryWithArgs{query, args}
+	return db_common.QueryWithArgs{Query: query, Args: args}
 }
 
 func GetDeleteConnectionStateSql(connectionName string) db_common.QueryWithArgs {
 	query := fmt.Sprintf(`DELETE FROM %s.%s WHERE NAME=$1`, constants.InternalSchema, constants.ConnectionStateTable)
 	args := []any{connectionName}
-	return db_common.QueryWithArgs{query, args}
+	return db_common.QueryWithArgs{Query: query, Args: args}
 }
 
 func GetSetConnectionStateCommentLoadedSql(connectionName string, commentsLoaded bool) db_common.QueryWithArgs {
@@ -188,5 +228,5 @@ func GetSetConnectionStateCommentLoadedSql(connectionName string, commentsLoaded
 SET comments_set = $1
 WHERE NAME=$2`, constants.InternalSchema, constants.ConnectionStateTable)
 	args := []any{commentsLoaded, connectionName}
-	return db_common.QueryWithArgs{query, args}
+	return db_common.QueryWithArgs{Query: query, Args: args}
 }
