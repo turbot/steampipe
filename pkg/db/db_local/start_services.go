@@ -76,12 +76,11 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 	utils.LogTime("db_local.StartServices start")
 	defer utils.LogTime("db_local.StartServices end")
 
+	// we want the service to always listen on IPv4 loopback
 	if !utils.ListenAddressesContainsOneOfAddresses(listenAddresses, []string{"127.0.0.1", "*", "localhost"}) {
 		log.Println("[TRACE] StartServices - prepending 127.0.0.1 to listenAddresses")
-
 		listenAddresses = append([]string{"127.0.0.1"}, listenAddresses...)
 	}
-	log.Println("[TRACE] StartServices - listenAddresses=%s, port=%d", listenAddresses, port)
 
 	res := &StartResult{}
 
