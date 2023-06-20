@@ -211,7 +211,7 @@ jobs:
       - name: Verify No Steampipe Processes Running
         continue-on-error: false
         run: |
-          if [ $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') -eq 0 ]; then  
+          if [ $(ps aux | grep steampipe | grep -v bats |grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ') -eq 0 ]; then  
             exit 0
           else
             exit 1
