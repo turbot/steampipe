@@ -169,7 +169,12 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 		// add the mod name to the target name to get the export file root
 		parsedName, _ := modconfig.ParseResourceName(targetName)
-		exportName := parsedName.ToFullNameWithMod(w.Mod.ShortName)
+		exportName := ""
+		if targetName == "all" {
+			exportName = fmt.Sprintf("%s.%s", w.Mod.ShortName, parsedName.Name)
+		} else {
+			exportName = parsedName.ToFullNameWithMod(w.Mod.ShortName)
+		}
 
 		exportArgs := viper.GetStringSlice(constants.ArgExport)
 		exportMsg, err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
