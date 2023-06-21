@@ -183,9 +183,8 @@ jobs:
         continue-on-error: false
         run: |
           export STEAMPIPE_LOG=info
-          steampipe service start
-          steampipe plugin install chaos chaosdynamic
-          steampipe service stop
+          steampipe query "select 1"
+          steampipe plugin install chaos chaosdynamic --progress=false
           ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance
 
       - name: Save Install DB Logs
