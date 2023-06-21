@@ -6,11 +6,12 @@ host all root samehost trust
 `
 
 // PgHbaTemplate is to be formatted with two variables:
-// 		* databaseName
-//		* username
+//   - databaseName
+//   - username
 //
 // Example:
-//		fmt.Sprintf(template, datName, username)
+//
+//	fmt.Sprintf(template, datName, username)
 var PgHbaTemplate string = `
 # PostgreSQL Client Authentication Configuration File
 # ===================================================

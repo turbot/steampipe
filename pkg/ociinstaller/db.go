@@ -2,9 +2,9 @@ package ociinstaller
 
 import (
 	"context"
+	"log"
 	"path/filepath"
 	"time"
-	"log"
 
 	"github.com/turbot/steampipe/pkg/constants"
 	versionfile "github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
