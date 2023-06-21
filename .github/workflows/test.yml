@@ -182,10 +182,18 @@ jobs:
         id: install-db
         continue-on-error: false
         run: |
+          export STEAMPIPE_LOG=info
           steampipe service start
           steampipe plugin install chaos chaosdynamic
           steampipe service stop
           ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance
+
+      - name: Save Install DB Logs
+        uses: actions/upload-artifact@v3
+        with:
+          name: install-db-logs-${{ matrix.test_block }}-${{ matrix.platform }}
+          path: ~/.steampipe/logs
+          if-no-files-found: error
 
       - name: Run Test Suite
         id: run-test-suite
