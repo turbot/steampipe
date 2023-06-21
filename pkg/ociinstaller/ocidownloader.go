@@ -27,16 +27,12 @@ func NewOciDownloader() *ociDownloader {
 	}
 }
 
-/*
-*
-
+/* 
 Pull downloads the image from the given `ref` to the supplied `destDir`
 
 Returns
 
 	imageDescription, configDescription, config, imageLayers, error
-
-*
 */
 func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []string, destDir string) (*ocispec.Descriptor, *ocispec.Descriptor, []byte, []ocispec.Descriptor, error) {
 	log.Println("[TRACE] ociDownloader.Pull:", "pulling", ref)
