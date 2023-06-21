@@ -54,6 +54,9 @@ func (p *ParsedResourceName) ToFullNameWithMod(mod string) string {
 	return BuildFullResourceName(mod, p.ItemType, p.Name)
 }
 
+// BuildFullResourceName generates a fully qualified name from the given components
+// e.g: aws_compliance.benchmark.cis_v150_1
+// TODO: validate argument are not empty strings [https://github.com/turbot/steampipe/issues/3601]
 func BuildFullResourceName(mod, blockType, name string) string {
 	return fmt.Sprintf("%s.%s.%s", mod, blockType, name)
 }

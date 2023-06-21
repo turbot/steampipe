@@ -31,7 +31,6 @@ export BLANK_DIMENSION_VALUE_TEST_MOD=$MY_PATH/test_data/mod_with_blank_dimensio
 export STEAMPIPE_CONNECTION_WATCHER=false
 export STEAMPIPE_INTROSPECTION=info
 export DEFAULT_WORKSPACE_PROFILE_LOCATION=$MY_PATH/test_data/source_files/workspace_profile_default
-export STEAMPIPE_SYNC_REFRESH=true
 # from GH action env variables
 export SPIPETOOLS_PG_CONN_STRING=$SPIPETOOLS_PG_CONN_STRING
 export SPIPETOOLS_TOKEN=$SPIPETOOLS_TOKEN

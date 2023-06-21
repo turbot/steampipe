@@ -208,11 +208,16 @@ func validateFunction(f db_common.SQLFunction) error {
 }
 
 func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
-	// first create the table if necessary
+
 	createQueries := []db_common.QueryWithArgs{
 		connection_state.GetConnectionStateTableCreateSql(),
-		{Query: fmt.Sprintf(`GRANT SELECT ON TABLE %s.%s to %s;`, constants.InternalSchema, constants.ConnectionStateTable, constants.DatabaseUsersRole)},
+		connection_state.GetConnectionStateTableGrantSql(),
 	}
+
+	// apply any alterations
+	// this is for changes which are applied to the table after v0.20.0
+	createQueries = append(createQueries, connection_state.GetConnectionStateTableColumnAlterSql()...)
+
 	if _, err := ExecuteSqlWithArgsInTransaction(ctx, conn, createQueries...); err != nil {
 		return err
 	}
