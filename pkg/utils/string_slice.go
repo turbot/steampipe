@@ -8,7 +8,7 @@ import (
 func UnquoteStringArray(stringArray []string) []string {
 	res := make([]string, len(stringArray))
 	for i, s := range stringArray {
-		res[i] = strings.Replace(s, `"`, ``, -1)
+		res[i] = strings.ReplaceAll(s, `"`, ``)
 	}
 	return res
 }

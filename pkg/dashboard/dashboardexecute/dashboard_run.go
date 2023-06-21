@@ -11,7 +11,7 @@ import (
 
 // DashboardRun is a struct representing a container run
 type DashboardRun struct {
-	RuntimeDependencyPublisherImpl
+	runtimeDependencyPublisherImpl
 
 	parent    dashboardtypes.DashboardParent
 	dashboard *modconfig.Dashboard
@@ -42,7 +42,7 @@ func NewDashboardRun(dashboard *modconfig.Dashboard, parent dashboardtypes.Dashb
 	// create RuntimeDependencyPublisherImpl- this handles 'with' run creation and resolving runtime dependency resolution
 	// (we must create after creating the run as it requires a ref to the run)
 	// TODO [node_reuse] do this a different way https://github.com/turbot/steampipe/issues/2919
-	r.RuntimeDependencyPublisherImpl = NewRuntimeDependencyPublisherImpl(dashboard, parent, r, executionTree)
+	r.runtimeDependencyPublisherImpl = newRuntimeDependencyPublisherImpl(dashboard, parent, r, executionTree)
 	// add r into execution tree BEFORE creating child runs or initialising runtime depdencies
 	// - this is so child runs can find this dashboard run
 	executionTree.runs[r.Name] = r

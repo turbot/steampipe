@@ -66,10 +66,10 @@ type requiredPluginVersion struct {
 }
 
 func (v *requiredPluginVersion) SetRequiredVersion(requiredVersion *semver.Constraints) {
-	requiredVersionString := requiredVersion.String()
 	if requiredVersion == nil {
 		v.requiredVersion = "*"
 	} else {
+		requiredVersionString := requiredVersion.String()
 		v.requiredVersion = requiredVersionString
 	}
 }

@@ -117,28 +117,6 @@ func (s *StatusSpinner) UpdateSpinnerMessage(newMessage string) {
 	}
 }
 
-func (s *StatusSpinner) startSpinner() {
-	if s.cancel != nil {
-		// if there is a cancel channel, we are already waiting for the service to start after a delay
-		return
-	}
-	if s.delay == 0 {
-		s.spinner.Start()
-		return
-	}
-
-	s.cancel = make(chan struct{}, 1)
-	go func() {
-		select {
-		case <-s.cancel:
-		case <-time.After(s.delay):
-			s.spinner.Start()
-			s.cancel = nil
-		}
-		time.Sleep(50 * time.Millisecond)
-	}()
-}
-
 func (s *StatusSpinner) closeSpinner() {
 	if s.spinner != nil {
 		s.spinner.Stop()

@@ -10,11 +10,10 @@ import (
 
 // SnapshotProgressReporter is an implementation of SnapshotProgress
 type SnapshotProgressReporter struct {
-	rows     int
-	errors   int
-	nodeType string
-	name     string
-	mut      sync.Mutex
+	rows   int
+	errors int
+	name   string
+	mut    sync.Mutex
 }
 
 func NewSnapshotProgressReporter(target string) *SnapshotProgressReporter {

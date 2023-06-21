@@ -42,8 +42,6 @@ func (w *Workspace) GetQueriesFromArgs(args []string) (map[string]*modconfig.Res
 
 // ResolveQueryAndArgsFromSQLString attempts to resolve 'arg' to a query and query args
 func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (*modconfig.ResolvedQuery, modconfig.QueryProvider, error) {
-	var args = &modconfig.QueryArgs{}
-
 	var err error
 
 	// 1) check if this is a resource
@@ -139,12 +137,13 @@ func (w *Workspace) getQueryFromFile(input string) (*modconfig.ResolvedQuery, bo
 	// get absolute filename
 	path, err := filepath.Abs(input)
 	if err != nil {
+		//nolint:golint,nilerr // if this gives any error, return not exist
 		return nil, false, nil
 	}
 
 	// does it exist?
 	if _, err := os.Stat(path); err != nil {
-		// if this gives any error, return not exist. we may get a not found or a path too long for example
+		//nolint:golint,nilerr // if this gives any error, return not exist (we may get a not found or a path too long for example)
 		return nil, false, nil
 	}
 

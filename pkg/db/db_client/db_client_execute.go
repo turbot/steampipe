@@ -244,6 +244,7 @@ func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_comm
 			session.ScanMetadataMaxId = id
 		}
 
+		//nolint:golint,staticcheck // we only need to only read the first row
 		break
 	}
 	return nil

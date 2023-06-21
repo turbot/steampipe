@@ -26,7 +26,6 @@ func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
 
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
 	if err != nil {
-		// if we failed to load connection state, just use unoptimised autocomplete loading
 		c.initialiseSuggestionsLegacy()
 		//nolint:golint,nilerr // valid condition - not an error
 		return nil

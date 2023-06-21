@@ -437,7 +437,7 @@ func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context
 		exemplarSchemaName, haveExemplarSchema := s.exemplarSchemaMap[connectionState.Plugin]
 		if haveExemplarSchema && cloneSchemaEnabled {
 			// we can clone!
-			sql = getCloneSchemaQuery(sql, exemplarSchemaName, connectionState)
+			sql = getCloneSchemaQuery(exemplarSchemaName, connectionState)
 		} else {
 			// just get sql to execute update query, and update the connection state table, in a transaction
 			sql = db_common.GetUpdateConnectionQuery(connectionName, remoteSchema)
@@ -634,14 +634,13 @@ func (s *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, c
 	return nil
 }
 
-func getCloneSchemaQuery(sql string, exemplarSchemaName string, connectionState *steampipeconfig.ConnectionState) string {
-	sql = fmt.Sprintf("select clone_foreign_schema('%s', '%s', '%s');", exemplarSchemaName, connectionState.ConnectionName, connectionState.Plugin)
-	return sql
+func getCloneSchemaQuery(exemplarSchemaName string, connectionState *steampipeconfig.ConnectionState) string {
+	return fmt.Sprintf("select clone_foreign_schema('%s', '%s', '%s');", exemplarSchemaName, connectionState.ConnectionName, connectionState.Plugin)
 }
 
-func getCloneCommentsQuery(sql string, exemplarSchemaName string, connectionState *steampipeconfig.ConnectionState) string {
-	sql = fmt.Sprintf("select clone_table_comments('%s', '%s');", exemplarSchemaName, connectionState.ConnectionName)
-	return sql
+func getCloneCommentsQuery(exemplarSchemaName string, connectionState *steampipeconfig.ConnectionState) string {
+	return fmt.Sprintf("select clone_table_comments('%s', '%s');", exemplarSchemaName, connectionState.ConnectionName)
+
 }
 
 func (s *refreshConnectionState) getInitialAndRemainingUpdates() (initialUpdates, remainingUpdates map[string]*steampipeconfig.ConnectionState, dynamicUpdates map[string][]*steampipeconfig.ConnectionState) {
