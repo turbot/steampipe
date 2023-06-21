@@ -10,7 +10,7 @@ type DashboardChartSeries struct {
 	PointsList []*DashboardChartSeriesPoint          `hcl:"point,block" json:"-"`
 }
 
-func (s DashboardChartSeries) Equals(other *DashboardChartSeries) bool {
+func (s *DashboardChartSeries) Equals(other *DashboardChartSeries) bool {
 	if other == nil {
 		return false
 	}

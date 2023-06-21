@@ -129,16 +129,16 @@ func pluginVersionError(pluginsNotInstalled []requiredPluginVersion) string {
 	notificationLines = append(notificationLines, msg)
 
 	for i, req := range pluginsNotInstalled {
-		_, plugin, _ := strings.Cut(req.plugin, "/")
+		_, p, _ := strings.Cut(req.plugin, "/")
 
 		// check if plugin needs to be installed/updated
 		if strings.Contains(notInstalledStrings[i], "none") {
 			notificationLines = append(notificationLines, fmt.Sprintf(
-				"  steampipe plugin install %s", plugin,
+				"  steampipe plugin install %s", p,
 			))
 		} else {
 			notificationLines = append(notificationLines, fmt.Sprintf(
-				"  steampipe plugin update %s", plugin,
+				"  steampipe plugin update %s", p,
 			))
 		}
 	}

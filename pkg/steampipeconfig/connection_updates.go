@@ -309,14 +309,14 @@ func (u *ConnectionUpdates) HasUpdates() bool {
 func (u *ConnectionUpdates) String() string {
 	var op strings.Builder
 	update := utils.SortedMapKeys(u.Update)
-	delete := maps.Keys(u.Delete)
-	sort.Strings(delete)
+	toDelete := maps.Keys(u.Delete)
+	sort.Strings(toDelete)
 	stateConnections := utils.SortedMapKeys(u.FinalConnectionState)
 	if len(update) > 0 {
 		op.WriteString(fmt.Sprintf("Update: %s\n", strings.Join(update, ",")))
 	}
-	if len(delete) > 0 {
-		op.WriteString(fmt.Sprintf("Delete: %s\n", strings.Join(delete, ",")))
+	if len(toDelete) > 0 {
+		op.WriteString(fmt.Sprintf("Delete: %s\n", strings.Join(toDelete, ",")))
 	}
 	if len(stateConnections) > 0 {
 		op.WriteString(fmt.Sprintf("Connection state: %s\n", strings.Join(stateConnections, ",")))
