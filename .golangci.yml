@@ -1,16 +1,42 @@
 linters:
   disable-all: true
   enable:
-    - deadcode
+    # default rules
     - errcheck
     - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - structcheck
     - typecheck
     - unused
-    - varcheck
+    # other rules
+    - asasalint
+    - asciicheck
+    - bidichk
+    - durationcheck
+    - exportloopref
+    - forbidigo
+    - gocritic
+    - gocheckcompilerdirectives
+    - gosec
+    - makezero
+    - nilerr
+    - nolintlint
+    - reassign
+    - sqlclosecheck
+    - unconvert
+
+linters-settings:
+  nolintlint:
+    require-explanation: true
+    require-specific: true
+
+  gocritic:
+    disabled-checks:
+      - ifElseChain       # style
+      - singleCaseSwitch  # style & it's actually not a bad idea to use single case switch in some cases
+      - assignOp          # style
+      - commentFormatting # style
 
 run:
   timeout: 5m
