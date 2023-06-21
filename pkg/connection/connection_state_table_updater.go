@@ -34,20 +34,17 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 	// update the conection state table to set appropriate state for all connections
 	// set updates to "updating"
 	for name, connectionState := range u.updates.FinalConnectionState {
-		log.Printf("[INFO] >> name: %s", name)
-		log.Printf("[INFO] >> connectionState: %s", connectionState)
+		log.Printf("[INFO] >> name: %s connectionState: %s modtime: %v", name, connectionState.State, connectionState.ConnectionModTime)
 		// set the connection data state based on whether this connection is being created or deleted
 		if _, updatingConnection := u.updates.Update[name]; updatingConnection {
-			log.Printf("[INFO] >> (in if) name: %s", name)
-			log.Printf("[INFO] >> (in if) connectionState: %s", connectionState)
 			connectionState.State = constants.ConnectionStateUpdating
 			connectionState.CommentsSet = false
+			log.Printf("[INFO] >> (in if) name: %s connectionState: %s modtime: %v", name, connectionState.State, connectionState.ConnectionModTime)
 		} else if validationError, connectionIsInvalid := u.updates.InvalidConnections[name]; connectionIsInvalid {
-			log.Printf("[INFO] >> (in else) name: %s", name)
-			log.Printf("[INFO] >> (in else) connectionState: %s", connectionState)
 			// if this connection has an error, set to error
 			connectionState.State = constants.ConnectionStateError
 			connectionState.ConnectionError = &validationError.Message
+			log.Printf("[INFO] >> (in else) name: %s connectionState: %s modtime: %v", name, connectionState.State, connectionState.ConnectionModTime)
 		}
 		// get the sql to update the connection state in the table to match the struct
 		queries = append(queries, connection_state.GetUpdateConnectionStateSql(connectionState))
