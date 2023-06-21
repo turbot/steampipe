@@ -7,6 +7,6 @@
 +--------------------------------------------------+-------------+------------------------+
 | Failed                                           | Connections | Reason                 |
 +--------------------------------------------------+-------------+------------------------+
-| hub.steampipe.io/plugins/turbot/hackernews@0.4.0 | hackernews  | plugin failed to start |
+| hub.steampipe.io/plugins/turbot/hackernews@0.6.0 | hackernews  | plugin failed to start |
 +--------------------------------------------------+-------------+------------------------+
 

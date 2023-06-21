@@ -471,7 +471,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "plugin list - output table" {
   export STEAMPIPE_DISPLAY_WIDTH=100
   tmpdir="$(mktemp -d)"
-  steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
+  steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
   run steampipe plugin list --install-dir $tmpdir
   echo $output
   rm -rf $tmpdir
@@ -481,7 +481,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "plugin list - output json" {
   export STEAMPIPE_DISPLAY_WIDTH=100
   tmpdir="$(mktemp -d)"
-  steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
+  steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
   run steampipe plugin list --install-dir $tmpdir --output json
   echo $output
   rm -rf $tmpdir
@@ -491,9 +491,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "plugin list - output table (with a missing plugin)" {
   export STEAMPIPE_DISPLAY_WIDTH=100
   tmpdir="$(mktemp -d)"
-  steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
+  steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
   # uninstall a plugin but dont remove the config - to simulate the missing plugin scenario
-  steampipe plugin uninstall hackernews@0.4.0 --install-dir $tmpdir
+  steampipe plugin uninstall hackernews@0.6.0 --install-dir $tmpdir
   run steampipe plugin list --install-dir $tmpdir
   echo $output
   rm -rf $tmpdir
@@ -502,9 +502,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "plugin list - output json (with a missing plugin)" {
   tmpdir="$(mktemp -d)"
-  steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
+  steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
   # uninstall a plugin but dont remove the config - to simulate the missing plugin scenario
-  steampipe plugin uninstall hackernews@0.4.0 --install-dir $tmpdir
+  steampipe plugin uninstall hackernews@0.6.0 --install-dir $tmpdir
   run steampipe plugin list --install-dir $tmpdir --output json
   echo $output
   rm -rf $tmpdir
@@ -516,9 +516,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "plugin list - output table (with a failed plugin)" {
   export STEAMPIPE_DISPLAY_WIDTH=100
   tmpdir="$(mktemp -d)"
-  steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
+  steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
   # remove the contents of a plugin execuatable to simulate the failed plugin scenario
-  cat /dev/null > $tmpdir/plugins/hub.steampipe.io/plugins/turbot/hackernews@0.4.0/steampipe-plugin-hackernews.plugin
+  cat /dev/null > $tmpdir/plugins/hub.steampipe.io/plugins/turbot/hackernews@0.6.0/steampipe-plugin-hackernews.plugin
   run steampipe plugin list --install-dir $tmpdir
   echo $output
   rm -rf $tmpdir
@@ -527,9 +527,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "plugin list - output json (with a failed plugin)" {
   tmpdir="$(mktemp -d)"
-  steampipe plugin install hackernews@0.4.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
+  steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $tmpdir
   # remove the contents of a plugin binary execuatable to simulate the failed plugin scenario
-  cat /dev/null > $tmpdir/plugins/hub.steampipe.io/plugins/turbot/hackernews@0.4.0/steampipe-plugin-hackernews.plugin
+  cat /dev/null > $tmpdir/plugins/hub.steampipe.io/plugins/turbot/hackernews@0.6.0/steampipe-plugin-hackernews.plugin
   run steampipe plugin list --install-dir $tmpdir --output json
   echo $output
   rm -rf $tmpdir
