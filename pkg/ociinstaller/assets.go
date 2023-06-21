@@ -3,8 +3,8 @@ package ociinstaller
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"log"
+	"path/filepath"
 
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"

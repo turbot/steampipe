@@ -28,9 +28,9 @@ func RegisteredFileExtensions() []string {
 // PseudoResourceNameFromPath converts  a filepath into a resource name
 //
 // It operates as follows:
-// 	1) get filename
-// 	2) remove extension
-// 	3) sluggify, with '_' as the divider
+//  1. get filename
+//  2. remove extension
+//  3. sluggify, with '_' as the divider
 func PseudoResourceNameFromPath(modPath, filePath string) (string, error) {
 	filename := filepath.Base(filePath)
 	// remove the extension

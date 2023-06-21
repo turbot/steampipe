@@ -10,7 +10,7 @@
   ],
   "failed": [
     {
-      "name": "hub.steampipe.io/plugins/turbot/hackernews@0.4.0",
+      "name": "hub.steampipe.io/plugins/turbot/hackernews@0.6.0",
       "reason": "Not installed",
       "connections": [
         "hackernews"

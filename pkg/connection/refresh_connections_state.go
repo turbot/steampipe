@@ -218,7 +218,6 @@ func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {
 			// just log
 			log.Printf("[WARN] failed to send schema deletion Postgres notification: %s", err.Error())
 		}
-
 	}
 
 	return

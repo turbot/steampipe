@@ -139,6 +139,15 @@ top_level.benchmark.bm_version_dependency_mod_1,Benchmark version dependency mod
 top_level.benchmark.bm_version_dependency_mod_2,Benchmark version dependency mod 2,,dependency_2.control.version,,,3,3,ok,'
 }
 
+function teardown_file() {
+  # list running processes
+  ps -ef | grep steampipe
+
+  # check if any processes are running
+  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  assert_equal $num 0
+}
+
 function teardown() {
   rm -rf .steampipe/
   rm -rf .mod.cache.json

@@ -14,6 +14,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/sethvargo/go-retry"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
@@ -36,34 +37,27 @@ type runningPlugin struct {
 	client      *plugin.Client
 	reattach    *pb.ReattachConfig
 	initialized chan struct{}
+	failed      chan struct{}
+	error       error
 }
 
 // PluginManager is the implementation of grpc.PluginManager
 type PluginManager struct {
 	pb.UnimplementedPluginManagerServer
 
-	// map of multi connection running plugins keyed by plugin name
-	pluginMultiConnectionMap map[string]*runningPlugin
-	// TACTICAL
-	// until a plugin has loaded we do not know if it supports multi connection or not
-	// keep the runningPlugin in this map until it is loaded to avoid race condition
-	// starting multiple connections for a multi-connection plugin
-	// (keyed by plugin name)
-	loadingPlugins map[string]*runningPlugin
-
-	// map of ALL running plugins keyed by connection name
-	connectionPluginMap map[string]*runningPlugin
-
+	// map of running plugins keyed by plugin name
+	runningPluginMap map[string]*runningPlugin
 	// map of connection configs, keyed by plugin name
-	// NOTE - for legacy plugins, one entry in this map may correspond to multiple running plugins
+	// this is populated at startup and updated when a connection config change is detected
 	pluginConnectionConfigMap map[string][]*sdkproto.ConnectionConfig
 	// map of connection configs, keyed by connection name
+	// this is populated at startup and updated when a connection config change is detected
 	connectionConfigMap connection.ConnectionConfigMap
 	// map of max cache size, keyed by plugin name
 	pluginCacheSizeMap map[string]int64
 
 	// map lock
-	mut sync.Mutex
+	mut sync.RWMutex
 
 	// shutdown syncronozation
 	// do not start any plugins while shutting down
@@ -76,15 +70,11 @@ type PluginManager struct {
 }
 
 func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
-	log.Printf("[TRACE] NewPluginManager")
+	log.Printf("[INFO] NewPluginManager")
 	pluginManager := &PluginManager{
-		logger:                   logger,
-		pluginMultiConnectionMap: make(map[string]*runningPlugin),
-		loadingPlugins:           make(map[string]*runningPlugin),
-		connectionPluginMap:      make(map[string]*runningPlugin),
-		connectionConfigMap:      connectionConfig,
-		// pluginConnectionConfigMap is created by populatePluginConnectionConfigs
-
+		logger:              logger,
+		runningPluginMap:    make(map[string]*runningPlugin),
+		connectionConfigMap: connectionConfig,
 	}
 	messageServer, err := NewPluginMessageServer(pluginManager)
 	if err != nil {
@@ -116,42 +106,67 @@ func (m *PluginManager) Serve() {
 }
 
 func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
+	log.Printf("[TRACE] PluginManager Get %p", req)
+	defer log.Printf("[TRACE] PluginManager Get DONE %p", req)
+
 	resp := &pb.GetResponse{
 		ReattachMap: make(map[string]*pb.ReattachConfig),
 		FailureMap:  make(map[string]string),
 	}
+	// TODO validate we have config for this plugin
 
-	// build a map of plugins required
-	var plugins = make(map[string][]*sdkproto.ConnectionConfig)
-	for _, connectionName := range req.Connections {
-		connectionConfig, err := m.getConnectionConfig(connectionName)
-		if err != nil {
-			return nil, err
-		}
-		pluginName := connectionConfig.Plugin
-		plugins[pluginName] = append(plugins[pluginName], connectionConfig)
+	// build map of plugins to start, and also a lookup of required connecitons
+	plugins, requestedConnectionsLookup, err := m.buildRequiredPluginMap(req)
+	if err != nil {
+		return resp, err
 	}
 
 	log.Printf("[TRACE] PluginManager Get, connections: '%s'\n", req.Connections)
 	for pluginName, connectionConfigs := range plugins {
-		// have we already tried and failed to load this plugin - if so skip
-		if _, pluginAlreadyFailed := resp.FailureMap[pluginName]; pluginAlreadyFailed {
-			continue
-		}
 		// ensure plugin is running
-		err := m.ensurePlugin(pluginName, connectionConfigs)
+		reattach, err := m.ensurePlugin(pluginName, connectionConfigs, req)
 		if err != nil {
+			log.Printf("[WARN] PluginManager Get failed for %s: %s (%p)", pluginName, err.Error(), resp)
 			resp.FailureMap[pluginName] = err.Error()
 		} else {
-			// the running plugin will have been populated in connectionPluginMap for all connections
-			// copy reattach into responses
+			log.Printf("[TRACE] PluginManager Get succeeded for %s, pid %d (%p)", pluginName, reattach.Pid, resp)
+
+			// assign reattach for requested connections
+			// (NOTE: connectionConfigs contains ALL connections for the plugin)
 			for _, config := range connectionConfigs {
-				resp.ReattachMap[config.Connection] = m.connectionPluginMap[config.Connection].reattach
+				// if this connection was requested, copy reattach into responses
+				if _, connectionWasRequested := requestedConnectionsLookup[config.Connection]; connectionWasRequested {
+					resp.ReattachMap[config.Connection] = reattach
+				}
 			}
 		}
 	}
 
 	return resp, nil
+}
+
+func (m *PluginManager) buildRequiredPluginMap(req *pb.GetRequest) (map[string][]*sdkproto.ConnectionConfig, map[string]struct{}, error) {
+	// build a map of plugins required
+	var plugins = make(map[string][]*sdkproto.ConnectionConfig)
+	// also make a map of target connections - used when assigning resuts to the response
+	var requestedConnectionsLookup = make(map[string]struct{}, len(req.Connections))
+	for _, connectionName := range req.Connections {
+		// store connection in requested connection map
+		requestedConnectionsLookup[connectionName] = struct{}{}
+
+		connectionConfig, err := m.getConnectionConfig(connectionName)
+		if err != nil {
+			return nil, nil, err
+		}
+		pluginName := connectionConfig.Plugin
+		// if we have not added this plugin, add it now
+		if _, addedPlugin := plugins[pluginName]; !addedPlugin {
+			// now get ALL connection configs for this plugin
+			// (not just the requested connections)
+			plugins[pluginName] = m.pluginConnectionConfigMap[pluginName]
+		}
+	}
+	return plugins, requestedConnectionsLookup, nil
 }
 
 func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.RefreshConnectionsResponse, error) {
@@ -181,6 +196,7 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connection.Connectio
 
 func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
 	log.Printf("[INFO] PluginManager Shutdown")
+	defer log.Printf("[INFO] PluginManager Shutdown complete")
 
 	// lock shutdownMut before waiting for startPluginWg
 	// this enables us to exit from ensurePlugin early if needed
@@ -197,18 +213,8 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 	}()
 
 	// kill all plugins in pluginMultiConnectionMap
-	for _, p := range m.pluginMultiConnectionMap {
+	for _, p := range m.runningPluginMap {
 		log.Printf("[INFO] Kill plugin %s (%p)", p.pluginName, p.client)
-		m.killPlugin(p)
-		// remove entries from the connectionPluginMap
-		for _, c := range p.reattach.Connections {
-			delete(m.connectionPluginMap, c)
-		}
-	}
-	// if there are any entries left in connectionPluginMap, these must be legacy plugins
-	// kill these also
-	for _, p := range m.connectionPluginMap {
-		log.Printf("[INFO] Kill legacy plugin %s (%p)", p.pluginName, p.client)
 		m.killPlugin(p)
 	}
 
@@ -217,7 +223,7 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 
 func (m *PluginManager) killPlugin(p *runningPlugin) {
 	if p.client == nil {
-		log.Printf("[WARN] plugin %s has no client - cannot kill", p.pluginName)
+		log.Printf("[WARN] plugin %s has no client - cannot kill client", p.pluginName)
 		// shouldn't happen but has been observed in error situations
 		return
 	}
@@ -251,8 +257,8 @@ func (m *PluginManager) handleConnectionConfigChanges(newConfigMap map[string]*s
 func (m *PluginManager) sendUpdateConnectionConfigs(requestMap map[string]*sdkproto.UpdateConnectionConfigsRequest) error {
 	var errors []error
 	for plugin, req := range requestMap {
-		runningPlugin, pluginAlreadyRunning := m.pluginMultiConnectionMap[plugin]
-		// TODO what if the plugin crashed - should we restart here?
+		runningPlugin, pluginAlreadyRunning := m.runningPluginMap[plugin]
+
 		// if the plugin is not running (or is not multi connection, so is not in this map), return
 		if !pluginAlreadyRunning {
 			continue
@@ -279,7 +285,7 @@ func (m *PluginManager) handleAddedConnections(addedConnections map[string][]*sd
 	for p, connections := range addedConnections {
 		// find the existing running plugin for this plugin
 		// if this plugins is NOT running (or is not multi connection), skip here - we will start it when running refreshConnections
-		runningPlugin, pluginAlreadyRunning := m.pluginMultiConnectionMap[p]
+		runningPlugin, pluginAlreadyRunning := m.runningPluginMap[p]
 		if !pluginAlreadyRunning {
 			log.Printf("[TRACE] handleAddedConnections - plugin '%s' has been added to connection config and is not running - doing nothing here as it will be started by refreshConnections", p)
 			continue
@@ -297,10 +303,6 @@ func (m *PluginManager) handleAddedConnections(addedConnections map[string][]*sd
 
 			// add to updateConnectionConfigsRequest
 			req.Added = append(req.Added, connection)
-
-			// add this connection to connection-running plugin map
-			log.Printf("[TRACE] add connection to running plugin map %s (%p)", runningPlugin.pluginName, runningPlugin.client)
-			m.connectionPluginMap[connection.Connection] = runningPlugin
 		}
 		// write back to map
 		requestMap[p] = req
@@ -310,7 +312,7 @@ func (m *PluginManager) handleAddedConnections(addedConnections map[string][]*sd
 // this mutates requestMap
 func (m *PluginManager) handleDeletedConnections(deletedConnections map[string][]*sdkproto.ConnectionConfig, requestMap map[string]*sdkproto.UpdateConnectionConfigsRequest) {
 	for p, connections := range deletedConnections {
-		runningPlugin, pluginAlreadyRunning := m.pluginMultiConnectionMap[p]
+		runningPlugin, pluginAlreadyRunning := m.runningPluginMap[p]
 		if !pluginAlreadyRunning {
 			continue
 		}
@@ -327,9 +329,6 @@ func (m *PluginManager) handleDeletedConnections(deletedConnections map[string][
 
 			// add to updateConnectionConfigsRequest
 			req.Deleted = append(req.Deleted, connection)
-
-			// remove this connection from connection plugin map
-			delete(m.connectionPluginMap, connection.Connection)
 		}
 		// write back to map
 		requestMap[p] = req
@@ -362,7 +361,17 @@ func (m *PluginManager) getConnectionConfig(connectionName string) (*sdkproto.Co
 	return connectionConfig, nil
 }
 
-func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdkproto.ConnectionConfig) (err error) {
+func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdkproto.ConnectionConfig, req *pb.GetRequest) (reattach *pb.ReattachConfig, err error) {
+	/* call startPluginIfNeeded within a retry block
+	 we will retry if:
+	 - we enter the plugin startup flow, but discover another process has beaten us to it an is starting the plugin already
+	 - plugin initialization fails
+	- there was a runningPlugin entry in our map but the pid did not exist
+	  (i.e we thought the plugin was running, but it was not)
+	*/
+
+	backoff := retry.WithMaxRetries(5, retry.NewConstant(10*time.Millisecond))
+
 	// ensure we do not shutdown until this has finished
 	m.startPluginWg.Add(1)
 	defer func() {
@@ -374,121 +383,254 @@ func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdk
 
 	// do not install a plugin while shutting down
 	if m.shuttingDown() {
-		return fmt.Errorf("plugin manager is shutting down")
+		return nil, fmt.Errorf("plugin manager is shutting down")
 	}
 
-	for _, connectionConfig := range connectionConfigs {
-		connectionName := connectionConfig.Connection
+	log.Printf("[TRACE] PluginManager ensurePlugin %s (%p)", pluginName, req)
 
-		log.Printf("[INFO] PluginManager ensurePlugin %s connection '%s'\n", pluginName, connectionName)
+	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
+		reattach, err = m.startPluginIfNeeded(pluginName, connectionConfigs, req)
+		return err
+	})
 
-		// reason for starting the plugin (if we need to)
-		var reason string
+	return
+}
 
-		// is this plugin already running
-		// lock access to plugin map
-		m.mut.Lock()
-		runningPlugin := m.isPluginRunning(connectionName, pluginName)
-		// do we now have a plugin?
-		if runningPlugin != nil {
-			// unlock access to map to allow other ensurePlugin calls to proceed
-			m.mut.Unlock()
-			var reattach *pb.ReattachConfig
+func (m *PluginManager) startPluginIfNeeded(pluginName string, connectionConfigs []*sdkproto.ConnectionConfig, req *pb.GetRequest) (*pb.ReattachConfig, error) {
+	// is this plugin already running
+	// lock access to plugin map
+	m.mut.RLock()
+	startingPlugin, ok := m.runningPluginMap[pluginName]
+	m.mut.RUnlock()
 
-			// wait for plugin to load, verify it is running and check it provides the required connection
-			reason, reattach, err = m.verifyLoadingPlugin(connectionName, runningPlugin)
-			if err != nil {
-				return err
-			}
-			if reason == "" {
-				// so we have a reattach - if this plugin handles multiple connections, we are done
-				log.Printf("[INFO] found running plugin for connection %s", connectionName)
-				if reattach.SupportedOperations.MultipleConnections {
-					return nil
-				}
-				log.Printf("[INFO] found running plugin for connection %s but it does not support multiple connections", connectionName)
-				// this must be a legacy plugin - keep looping
-				continue
-			}
+	if ok {
+		log.Printf("[TRACE] startPluginIfNeeded got running plugin (%p)", req)
 
-			// so we have not yet found a compatible plugin
-
-			// NOTE: re-lock the mutex before falling through to addLoadingPlugin
-			m.mut.Lock()
-
-			// TACTICAL there is a race condition here - multiple threads may be here at the same time
-			// check whether another thread has one and started loading the required plugin
-			// recheck the connection map
-			p, ok := m.connectionPluginMap[connectionName]
-			if ok {
-				// unlock before calling verifyLoadingPlugin
-				m.mut.Unlock()
-
-				log.Printf("[INFO] after waiting for plugin %s to load, and discovering it does not support connection %s, found a loading plugin in connectionPluginMap, so using that", pluginName, connectionName)
-				reason, reattach, err = m.verifyLoadingPlugin(connectionName, p)
-				if err != nil {
-					return err
-				}
-
-				if reason == "" {
-					log.Printf("[TRACE] now we have one")
-					// so we have a reattach - if this plugin handles multiple connections, we are done
-					if reattach.SupportedOperations.MultipleConnections {
-						return nil
-					}
-					// this must be a legacy plugin - keep looping
-					continue
-				}
-				// relock
-				m.mut.Lock()
-			}
-
-			//  either the pid does not exist or the plugin has exited
-
-		} else {
-			log.Printf("[INFO] the plugin is NOT loaded or loading - this is the first time anyone has requested this plugin")
-
-			// so the plugin is NOT loaded or loading - this is the first time anyone has requested this plugin
-			reason = fmt.Sprintf("PluginManager %p plugin %s (%s) NOT started or starting - start now", m, pluginName, connectionName)
+		// wait for plugin to process connection config, and verify it is running
+		err := m.waitForPluginLoad(startingPlugin, req)
+		if err == nil {
+			// so plugin has loaded - we are done
+			log.Printf("[TRACE] waitForPluginLoad succeeded %s (%p)", pluginName, req)
+			return startingPlugin.reattach, nil
 		}
+		log.Printf("[TRACE] waitForPluginLoad failed %s (%p)", err.Error(), req)
 
-		// to get here, for whatever reason, we need to start the plugin
+		// just return the error
+		return nil, err
+	}
 
-		log.Printf("[INFO] starting plugin %s", pluginName)
+	// so the plugin is NOT loaded or loading
+	// fall through to plugin startup
+	log.Printf("[INFO] plugin %s NOT started or starting - start now (%p)", pluginName, req)
 
-		// NOTE: at this point, m.mut is locked
-		// put in a placeholder so no other thread tries to create start this plugin
-		m.addLoadingPlugin(connectionName, pluginName)
+	return m.startPlugin(pluginName, connectionConfigs, req)
+}
 
-		// unlock access to map
-		m.mut.Unlock()
+func (m *PluginManager) startPlugin(pluginName string, connectionConfigs []*sdkproto.ConnectionConfig, req *pb.GetRequest) (_ *pb.ReattachConfig, err error) {
+	log.Printf("[INFO] startPlugin %s (%p)", pluginName, req)
 
-		// NOTE: It is an error to try to start a plugin which is already running
-		// this may happen if the file watcher has been triggered by a connection being added for an existing plugin
-		// if this happened, the plugin manager should ALREADY have called UpdateConnectionConfig to send the config
-		// for the new connection to the plugin
+	// add a new running plugin to pluginMultiConnectionMap
+	// (if someone beat us to it and added a starting plugin before we get the write lock,
+	// this will return a retryable error)
+	startingPlugin, err := m.addRunningPlugin(pluginName)
+	if err != nil {
+		log.Printf("[INFO] addRunningPlugin returned error %s (%p)", err.Error(), req)
+		return nil, err
+	}
 
-		// fall through to plugin startup
-		// log the startup reason
-		log.Printf("[INFO] %s", reason)
-		// so we need to start the plugin
-		client, reattach, err := m.startPlugin(connectionName)
+	log.Printf("[INFO] added running plugin (%p)", req)
+
+	// ensure we clean up the starting plugin in case of error
+	defer func() {
 		if err != nil {
 			m.mut.Lock()
-			delete(m.connectionPluginMap, connectionName)
+			// delete from map
+			delete(m.runningPluginMap, pluginName)
+			// set error on running plugin
+			startingPlugin.error = err
+
+			// close failed chan to signal to anyone waiting for the plugin to startup that it failed
+			close(startingPlugin.failed)
+
+			log.Printf("[WARN] startPluginProcess failed: %s (%p)", err.Error(), req)
+			// kill the client
+			if startingPlugin.client != nil {
+				log.Printf("[WARN] failed pid: %d (%p)", startingPlugin.client.ReattachConfig().Pid, req)
+				startingPlugin.client.Kill()
+			}
+
 			m.mut.Unlock()
-
-			log.Println("[TRACE] startPlugin failed with", err)
-			return err
 		}
+	}()
 
-		// store the client to our map
-		m.storePluginToMap(connectionName, client, reattach)
+	// OK so now proceed with plugin startup
 
-		log.Printf("[TRACE] PluginManager ensurePlugin complete, returning reattach config with PID: %d", reattach.Pid)
+	log.Printf("[INFO] start plugin (%p)", req)
+	// now start the process
+	client, err := m.startPluginProcess(pluginName, connectionConfigs)
+	if err != nil {
+		// do not retry - no reason to think this will fix itself
+		return nil, err
 	}
+
+	startingPlugin.client = client
+
+	// set the connection configs and build a ReattachConfig
+	reattach, err := m.initializePlugin(connectionConfigs, client, req)
+	if err != nil {
+		log.Printf("[WARN] initializePlugin failed: %s (%p)", err.Error(), req)
+		return nil, err
+	}
+	startingPlugin.reattach = reattach
+
+	// close initialized chan to advertise that this plugin is ready
+	close(startingPlugin.initialized)
+
+	log.Printf("[INFO] PluginManager ensurePlugin complete, returning reattach config with PID: %d (%p)", reattach.Pid, req)
+
 	// and return
-	return nil
+	return reattach, nil
+}
+
+func (m *PluginManager) addRunningPlugin(pluginName string) (*runningPlugin, error) {
+	// add a new running plugin to pluginMultiConnectionMap
+	// this is a placeholder so no other thread tries to create start this plugin
+
+	// acquire write lock
+	m.mut.Lock()
+	defer m.mut.Unlock()
+	log.Printf("[TRACE] add running plugin for %s (if someone didn't beat us to it)", pluginName)
+
+	// check someone else has beaten us to it (there is a race condition to starting a plugin)
+	if _, ok := m.runningPluginMap[pluginName]; ok {
+		log.Printf("[TRACE] re checked map and found a starting plugin - return retryable error so we wait for this plugin")
+		// if so, just retry, which will wait for the loading plugin
+		return nil, retry.RetryableError(fmt.Errorf("another client has already started the plugin"))
+	}
+
+	// create the running plugin
+	startingPlugin := &runningPlugin{
+		pluginName:  pluginName,
+		initialized: make(chan struct{}),
+		failed:      make(chan struct{}),
+	}
+	// write back
+	m.runningPluginMap[pluginName] = startingPlugin
+	log.Printf("[INFO] written running plugin to map")
+
+	return startingPlugin, nil
+}
+
+func (m *PluginManager) startPluginProcess(pluginName string, connectionConfigs []*sdkproto.ConnectionConfig) (*plugin.Client, error) {
+	log.Printf("[INFO] ************ start plugin %s ********************\n", pluginName)
+
+	exemplarConnectionConfig := connectionConfigs[0]
+	pluginPath, err := filepaths.GetPluginPath(pluginName, exemplarConnectionConfig.PluginShortName)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("[INFO] ************ plugin path %s ********************\n", pluginPath)
+
+	// create the plugin map
+	pluginMap := map[string]plugin.Plugin{
+		pluginName: &sdkshared.WrapperPlugin{},
+	}
+
+	utils.LogTime("getting plugin exec hash")
+	pluginChecksum, err := helpers.FileMD5Hash(pluginPath)
+	if err != nil {
+		return nil, err
+	}
+	utils.LogTime("got plugin exec hash")
+	cmd := exec.Command(pluginPath)
+	client := plugin.NewClient(&plugin.ClientConfig{
+		HandshakeConfig:  sdkshared.Handshake,
+		Plugins:          pluginMap,
+		Cmd:              cmd,
+		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
+		SecureConfig: &plugin.SecureConfig{
+			Checksum: pluginChecksum,
+			Hash:     md5.New(),
+		},
+		// pass our logger to the plugin client to ensure plugin logs end up in logfile
+		Logger: m.logger,
+	})
+
+	if _, err := client.Start(); err != nil {
+		return nil, err
+	}
+
+	return client, nil
+
+}
+
+// set the connection configs and build a ReattachConfig
+func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.ConnectionConfig, client *plugin.Client, req *pb.GetRequest) (_ *pb.ReattachConfig, err error) {
+
+	// extract connection names
+	connectionNames := make([]string, len(connectionConfigs))
+	for i, c := range connectionConfigs {
+		connectionNames[i] = c.Connection
+	}
+	exemplarConnectionConfig := connectionConfigs[0]
+	pluginName := exemplarConnectionConfig.Plugin
+
+	log.Printf("[INFO] initializePlugin %s pid %d (%p)", pluginName, client.ReattachConfig().Pid, req)
+
+	// get the supported operations
+	pluginClient, err := sdkgrpc.NewPluginClient(client, pluginName)
+	if err != nil {
+		return nil, err
+	}
+
+	// fetch the supported operations
+	supportedOperations, _ := pluginClient.GetSupportedOperations()
+	// ignore errors  - just create an empty support structure if needed
+	if supportedOperations == nil {
+		supportedOperations = &sdkproto.GetSupportedOperationsResponse{}
+	}
+	// if this plugin does not support multiple connections, we no longer support is
+	if !supportedOperations.MultipleConnections {
+		// TODO SEND NOTIFICATION TO CLI
+		return nil, fmt.Errorf("plugins which do not supprt multiple connections (using SDK version < v4) are no longer supported. Upgrade plugin '%s", pluginName)
+	}
+
+	// provide opportunity to avoid setting connection configs if we are shutting down
+	if m.shuttingDown() {
+		log.Printf("[INFO] aborting plugin %s initialization - plugin manager is shutting down", pluginName)
+		return nil, fmt.Errorf("plugin manager is shutting down")
+	}
+
+	// send the connection config for all connections for this plugin
+	// this returns a list of all connections provided by this plugin
+	err = m.setAllConnectionConfigs(connectionConfigs, pluginClient, supportedOperations)
+	if err != nil {
+		// return retryable error
+		log.Printf("[WARN] failed to set connection config for %s: %s", pluginName, err.Error())
+		return nil, retry.RetryableError(err)
+	}
+
+	// if this plugin supports setting cache options, do so
+	if supportedOperations.SetCacheOptions {
+		err = m.setCacheOptions(pluginClient)
+		if err != nil {
+			// return retryable error
+			log.Printf("[WARN] failed to set cache options for %s: %s", pluginName, err.Error())
+			return nil, retry.RetryableError(err)
+		}
+	}
+
+	reattach := pb.NewReattachConfig(pluginName, client.ReattachConfig(), pb.SupportedOperationsFromSdk(supportedOperations), connectionNames)
+
+	// if this plugin has a dynamic schema, add connections to message server
+	err = m.notifyNewDynamicSchemas(pluginClient, exemplarConnectionConfig, connectionNames)
+	if err != nil {
+		// send err down running plugin error channel
+		return nil, retry.RetryableError(err)
+	}
+
+	log.Printf("[INFO] initializePlugin complete pid %d", client.ReattachConfig().Pid)
+	return reattach, nil
 }
 
 // return whether the plugin manager is shutting down
@@ -501,105 +643,6 @@ func (m *PluginManager) shuttingDown() bool {
 	}
 	m.shutdownMut.Unlock()
 	return false
-}
-
-func (m *PluginManager) isPluginRunning(connectionName string, pluginName string) *runningPlugin {
-	p, ok := m.connectionPluginMap[connectionName]
-	if ok {
-		log.Printf("[TRACE] connection %s found in connectionPluginMap\n", connectionName)
-		return p
-	}
-	// so there is no entry in connectionPluginMap for this connection - check whether there is an entry in either
-	// - pluginMultiConnectionMap (indicating this is a multi connection plugin which has been loaded for another connection
-	// - loadingPlugins (indicating this is a plugin which is still loading and we do not yet know if it supports multi connection
-	p, ok = m.pluginMultiConnectionMap[pluginName]
-	if ok {
-		log.Printf("[TRACE] %s found in pluginMultiConnectionMap\n", pluginName)
-		return p
-	}
-	p, ok = m.loadingPlugins[pluginName]
-	if ok {
-		log.Printf("[TRACE] %s found in loadingPlugins\n", pluginName)
-		return p
-	}
-
-	return nil
-}
-
-// wait for plugin to load, verify it is running and check it provides the required connection
-func (m *PluginManager) verifyLoadingPlugin(connectionName string, p *runningPlugin) (string, *pb.ReattachConfig, error) {
-	var reason string
-	// so we have a plugin in our map for this connection - is it started?
-	err := m.waitForPluginLoad(p)
-	if err != nil {
-		return "", nil, err
-	}
-	log.Printf("[TRACE] connection %s is loaded, check for running PID", connectionName)
-
-	// ok so the plugin _should_ now be running
-
-	// check if this plugin provides this connection
-	// this should always be the case for multiconnection plugins but may not be the case for legacy plugins
-	reattach := p.reattach
-	if helpers.StringSliceContains(p.reattach.Connections, connectionName) {
-		// now check if the plugins process IS running
-		exists, _ := utils.PidExists(int(reattach.Pid))
-		if exists {
-			// so the plugin is good
-			log.Printf("[TRACE] PluginManager found '%s' in map, pid %d", connectionName, reattach.Pid)
-			return "", reattach, nil
-		} else {
-			// otherwise we need to start the plugin again -  update reason
-			reason = fmt.Sprintf("PluginManager found pid %d for connection '%s' in plugin map but plugin process does not exist - killing client and removing from map", reattach.Pid, connectionName)
-		}
-	} else {
-		// so the plugin does not support this connection (must be a legacy plugin)
-
-		// update reason
-		reason = fmt.Sprintf("plugin %s does NOT provide connection %s", p.reattach.Plugin, connectionName)
-	}
-	return reason, nil, nil
-}
-
-func (m *PluginManager) addLoadingPlugin(connectionName string, pluginName string) {
-	// add a new running plugin to both connectionPluginMap and pluginMap
-	// NOTE: m.mut must be locked before calling this
-	p := &runningPlugin{
-		pluginName:  pluginName,
-		initialized: make(chan struct{}, 1),
-	}
-	m.connectionPluginMap[connectionName] = p
-	// also add to loadingPlugins
-	m.loadingPlugins[pluginName] = p
-}
-
-// create reattach config for plugin, store to map for all connections and close initialized channel
-func (m *PluginManager) storePluginToMap(connection string, client *plugin.Client, reattach *pb.ReattachConfig) {
-	// lock access to map
-	m.mut.Lock()
-	defer m.mut.Unlock()
-
-	// a RunningPlugin in initializing state will already have been put into the Plugins map
-	// populate its properties
-	p := m.connectionPluginMap[connection]
-	p.client = client
-	p.reattach = reattach
-
-	// store fully initialised runningPlugin to pluginMap
-	if reattach.SupportedOperations.MultipleConnections {
-		log.Printf("[INFO] store fully initialised runningPlugin to pluginMap %s (%p)", p.pluginName, p.client)
-		m.pluginMultiConnectionMap[reattach.Plugin] = p
-	}
-	// remove from loadingPlugins
-	delete(m.loadingPlugins, reattach.Plugin)
-	// NOTE: if this plugin supports multiple connections, reattach.Connections will be a list of all connections
-	// provided by this plugin
-	// add map entries for all other connections using this plugin (all pointing to same RunningPlugin)
-	for _, c := range reattach.Connections {
-		m.connectionPluginMap[c] = p
-	}
-	// mark as initialized
-	close(p.initialized)
 }
 
 // populate map of connection configs for each plugin
@@ -634,163 +677,86 @@ func (m *PluginManager) setPluginCacheSizeMap() {
 			if size == 0 {
 				size = 1
 			}
-			log.Printf("[WARN] Plugin '%s', %d %s, max cache size %dMb", plugin, numPluginConnections, utils.Pluralize("connection", numPluginConnections), size)
+			log.Printf("[INFO] Plugin '%s', %d %s, max cache size %dMb", plugin, numPluginConnections, utils.Pluralize("connection", numPluginConnections), size)
 		}
 
 		m.pluginCacheSizeMap[plugin] = size
 	}
 }
 
-func (m *PluginManager) startPlugin(connectionName string) (_ *plugin.Client, _ *pb.ReattachConfig, err error) {
-	log.Printf("[INFO] ************ start plugin %s ********************\n", connectionName)
-
-	// get connection config
-	connectionConfig, err := m.getConnectionConfig(connectionName)
+func (m *PluginManager) notifyNewDynamicSchemas(pluginClient *sdkgrpc.PluginClient, exemplarConnectionConfig *sdkproto.ConnectionConfig, connectionNames []string) error {
+	// fetch the schema for the first connection so we know if it is dynamic
+	schema, err := pluginClient.GetSchema(exemplarConnectionConfig.Connection)
 	if err != nil {
-		return nil, nil, err
+		log.Printf("[WARN] failed to set fetch schema for %s: %s", exemplarConnectionConfig, err.Error())
+		return err
 	}
-
-	pluginPath, err := filepaths.GetPluginPath(connectionConfig.Plugin, connectionConfig.PluginShortName)
-	if err != nil {
-		return nil, nil, err
-	}
-	log.Printf("[INFO] ************ plugin path %s ********************\n", pluginPath)
-
-	// create the plugin map
-	pluginName := connectionConfig.Plugin
-	pluginMap := map[string]plugin.Plugin{
-		pluginName: &sdkshared.WrapperPlugin{},
-	}
-
-	utils.LogTime("getting plugin exec hash")
-	pluginChecksum, err := helpers.FileMD5Hash(pluginPath)
-	if err != nil {
-		return nil, nil, err
-	}
-	utils.LogTime("got plugin exec hash")
-	cmd := exec.Command(pluginPath)
-	client := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig:  sdkshared.Handshake,
-		Plugins:          pluginMap,
-		Cmd:              cmd,
-		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
-		SecureConfig: &plugin.SecureConfig{
-			Checksum: pluginChecksum,
-			Hash:     md5.New(),
-		},
-		// pass our logger to the plugin client to ensure plugin logs end up in logfile
-		Logger: m.logger,
-	})
-
-	if _, err := client.Start(); err != nil {
-		return nil, nil, err
-	}
-
-	// ensure we shut down in case of failure
-	defer func() {
-		if err != nil {
-			// we failed - shut down the plugin again
-			client.Kill()
-		}
-	}()
-
-	// get the supported operations
-	pluginClient, err := sdkgrpc.NewPluginClient(client, pluginName)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// fetch the supported operations
-	supportedOperations, _ := pluginClient.GetSupportedOperations()
-	// ignore errors  - just create an empty support structure if needed
-	if supportedOperations == nil {
-		supportedOperations = &sdkproto.GetSupportedOperationsResponse{}
-	}
-
-	log.Printf("[TRACE] supportedOperations: %v", supportedOperations)
-	var connectionNames = []string{connectionName}
-
-	// provide opportunity to avoid setting connection configs if we are shutting down
-	if m.shuttingDown() {
-		log.Printf("[INFO] aborting plugin %s startup - plugin manager is shutting down", pluginName)
-		client.Kill()
-		return nil, nil, fmt.Errorf("plugin manager is shutting down")
-	}
-
-	if supportedOperations.MultipleConnections {
-		// send the connection config for all connections for this plugin
-		// this returns a list of all connections provided by this plugin
-		connectionNames, err = m.setAllConnectionConfigs(pluginClient, pluginName, supportedOperations)
-		if err != nil {
-			log.Printf("[WARN] failed to set connection config for %s: %s", connectionName, err.Error())
-			return nil, nil, err
-		}
-	} else {
-		// send the connection config using legacy single connection function
-		err = m.setSingleConnectionConfig(pluginClient, connectionName)
-		if err != nil {
-			log.Printf("[WARN] failed to set connection config for %s: %s", connectionName, err.Error())
-			return nil, nil, err
-		}
-	}
-	// if this plugin supports setting cache options, do so
-	if supportedOperations.SetCacheOptions {
-		err = m.setCacheOptions(pluginClient)
-		if err != nil {
-			log.Printf("[WARN] failed to set cache options for %s: %s", connectionName, err.Error())
-			return nil, nil, err
-		}
-	}
-
-	reattach := pb.NewReattachConfig(pluginName, client.ReattachConfig(), pb.SupportedOperationsFromSdk(supportedOperations), connectionNames)
-
-	// if this plugin has a dynamic schema, add connections to message server
-	schema, err := pluginClient.GetSchema(connectionName)
-	if err != nil {
-		log.Printf("[WARN] failed to set fetch schema for %s: %s", connectionName, err.Error())
-		return nil, nil, err
-	}
-
 	if schema.Mode == sdkplugin.SchemaModeDynamic {
-		_ = m.messageServer.AddConnection(pluginClient, pluginName, connectionNames...)
+		_ = m.messageServer.AddConnection(pluginClient, exemplarConnectionConfig.Plugin, connectionNames...)
 	}
-
-	// TODO how to handle error here
-	return client, reattach, nil
+	return nil
 }
 
-func (m *PluginManager) waitForPluginLoad(p *runningPlugin) error {
-	pluginStartTimeoutSecs := 20
+func (m *PluginManager) waitForPluginLoad(p *runningPlugin, req *pb.GetRequest) error {
+	log.Printf("[TRACE] waitForPluginLoad (%p)", req)
+	// TODO make this configurable
+	pluginStartTimeoutSecs := 30
 
+	// wait for the plugin to be initialized
 	select {
-	case <-p.initialized:
-		log.Printf("[TRACE] initialized: %d", p.reattach.Pid)
-		return nil
-
 	case <-time.After(time.Duration(pluginStartTimeoutSecs) * time.Second):
-		log.Printf("[WARN] timed out waiting for %s to startup after %d seconds", p.pluginName, pluginStartTimeoutSecs)
-		return fmt.Errorf("timed out waiting for %s to startup after %d seconds", p.pluginName, pluginStartTimeoutSecs)
+		log.Printf("[WARN] timed out waiting for %s to startup after %d seconds (%p)", p.pluginName, pluginStartTimeoutSecs, req)
+		// do not retry
+		return fmt.Errorf("timed out waiting for %s to startup after %d seconds (%p)", p.pluginName, pluginStartTimeoutSecs, req)
+	case <-p.initialized:
+		log.Printf("[TRACE] plugin initialized: pid %d (%p)", p.reattach.Pid, req)
+	case <-p.failed:
+		log.Printf("[TRACE] plugin pid %d failed %s (%p)", p.reattach.Pid, p.error.Error(), req)
+		// get error from running plugin
+		return p.error
 	}
+
+	// now double-check the plugins process IS running
+	if !p.client.Exited() {
+		// so the plugin is good
+		log.Printf("[INFO] waitForPluginLoad: %s is now loaded and ready (%p)", p.pluginName, req)
+		return nil
+	}
+
+	// so even though our data structure indicates the plugin is running, the client says the underlying pid has exited
+	// - it must have terminated for some reason
+	log.Printf("[INFO] waitForPluginLoad: pid %d exists in runningPluginMap but pid has exited (%p)", p.reattach.Pid, req)
+
+	// remove this plugin from the map
+	// NOTE: multiple thread may be trying to remove the failed plugin from the map
+	// - and then someone will add a new running plugin when the startup is retried
+	// So we must check the pid before deleting
+	m.mut.Lock()
+	if r, ok := m.runningPluginMap[p.pluginName]; ok {
+		// is the running plugin we read from the map the same as our running plugin?
+		// if not, it must already have been removed by another thread - do nothing
+		if r == p {
+			log.Printf("[INFO] delete plugin %s from runningPluginMap (%p)", p.pluginName, req)
+			delete(m.runningPluginMap, p.pluginName)
+		}
+	}
+	m.mut.Unlock()
+
+	// so the pid does not exist
+	err := fmt.Errorf("PluginManager found pid %d for plugin '%s' in plugin map but plugin process does not exist (%p)", p.reattach.Pid, p.pluginName, req)
+	// we need to start the plugin again - make the error retryable
+	return retry.RetryableError(err)
 }
 
-func (m *PluginManager) getConnectionsForPlugin(pluginName string) []string {
-	var res = make([]string, len(m.pluginConnectionConfigMap[pluginName]))
-	for i, c := range m.pluginConnectionConfigMap[pluginName] {
-		res[i] = c.Connection
-	}
-	return res
-}
-
-// set connection config for multiple connection, for compatible plugins
+// set connection config for multiple connection
 // NOTE: we DO NOT set connection config for aggregator connections
-func (m *PluginManager) setAllConnectionConfigs(pluginClient *sdkgrpc.PluginClient, pluginName string, supportedOperations *sdkproto.GetSupportedOperationsResponse) ([]string, error) {
-	configs, ok := m.pluginConnectionConfigMap[pluginName]
-	if !ok {
-		// should never happen
-		return nil, fmt.Errorf("no config loaded for plugin '%s'", pluginName)
-	}
+func (m *PluginManager) setAllConnectionConfigs(connectionConfigs []*sdkproto.ConnectionConfig, pluginClient *sdkgrpc.PluginClient, supportedOperations *sdkproto.GetSupportedOperationsResponse) error {
+	// TODO does this fail all connections if one fails
+	exemplarConnectionConfig := connectionConfigs[0]
+	pluginName := exemplarConnectionConfig.Plugin
+
 	req := &sdkproto.SetAllConnectionConfigsRequest{
-		Configs: configs,
+		Configs: connectionConfigs,
 		// NOTE: set MaxCacheSizeMb to -1so that query cache is not created until we call SetCacheOptions (if supported)
 		MaxCacheSizeMb: -1,
 	}
@@ -800,28 +766,8 @@ func (m *PluginManager) setAllConnectionConfigs(pluginClient *sdkgrpc.PluginClie
 		req.MaxCacheSizeMb = m.pluginCacheSizeMap[pluginName]
 	}
 
-	// build list of connections
-	connections := make([]string, len(configs))
-	for i, config := range configs {
-		connections[i] = config.Connection
-	}
 	_, err := pluginClient.SetAllConnectionConfigs(req)
-	return connections, err
-}
-
-// set connection config for single connection, for legacy plugins)
-func (m *PluginManager) setSingleConnectionConfig(pluginClient *sdkgrpc.PluginClient, connectionName string) error {
-	connectionConfig, err := m.getConnectionConfig(connectionName)
-	if err != nil {
-		return err
-	}
-	// set the connection config
-	req := &sdkproto.SetConnectionConfigRequest{
-		ConnectionName:   connectionName,
-		ConnectionConfig: connectionConfig.Config,
-	}
-
-	return pluginClient.SetConnectionConfig(req)
+	return err
 }
 
 func (m *PluginManager) setCacheOptions(pluginClient *sdkgrpc.PluginClient) error {

@@ -182,9 +182,15 @@ jobs:
         id: install-db
         continue-on-error: false
         run: |
-          steampipe service start
-          steampipe plugin install chaos chaosdynamic
-          steampipe service stop
+          steampipe query "select 1"
+          steampipe plugin install chaos chaosdynamic --progress=false
+
+      - name: Save Install DB Logs
+        uses: actions/upload-artifact@v3
+        with:
+          name: install-db-logs-${{ matrix.test_block }}-${{ matrix.platform }}
+          path: ~/.steampipe/logs
+          if-no-files-found: error
 
       - name: Run Test Suite
         id: run-test-suite
@@ -203,7 +209,7 @@ jobs:
           path: ~/.steampipe/logs
           if-no-files-found: error
 
-      - name: Check steampipe processes running
+      - name: List running steampipe processes
         continue-on-error: true
         run: |
           ps -ef | grep "steampipe"
@@ -211,7 +217,7 @@ jobs:
       - name: Verify No Steampipe Processes Running
         continue-on-error: false
         run: |
-          if [ $(ps aux | grep steampipe | grep -v bats |grep -v grep | wc -l | tr -d ' ') -eq 0 ]; then  
+          if [ $(ps aux | grep steampipe | grep -v bats |grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ') -eq 0 ]; then  
             exit 0
           else
             exit 1

@@ -8,7 +8,8 @@ import (
 	"github.com/turbot/steampipe/pkg/export"
 )
 
-var 	contextKeyFormatterPurpose = contexthelpers.ContextKey("formatter_purpose")
+var contextKeyFormatterPurpose = contexthelpers.ContextKey("formatter_purpose")
+
 const formatterPurposeExport = "export"
 
 type ControlExporter struct {

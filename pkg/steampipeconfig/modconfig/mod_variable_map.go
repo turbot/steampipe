@@ -106,4 +106,3 @@ func (m *ModVariableMap) GetPublicVariableValues() (map[string]string, error) {
 	}
 	return res, nil
 }
-
