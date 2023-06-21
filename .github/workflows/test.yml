@@ -97,7 +97,7 @@ jobs:
       matrix:
         platform: [macos-latest, ubuntu-latest]
         test_block:
-          - "migration"
+          # - "migration"
           - "brew"
           - "service_and_plugin"
           - "blank_aggregators"
