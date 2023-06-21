@@ -65,3 +65,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe dashboard dashboard.node_edge_providers_nested --output snapshot
   assert_output --partial 'does not define a query or SQL, and has no edges/nodes'
 }
+
+function teardown_file() {
+  # list running processes
+  ps -ef | grep steampipe
+
+  # check if any processes are running
+  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  assert_equal $num 0
+}

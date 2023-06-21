@@ -21,7 +21,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal $directory_count 0
 }
 
-@test "check running steampipe processes" {
+function teardown_file() {
   # list running processes
   ps -ef | grep steampipe
 

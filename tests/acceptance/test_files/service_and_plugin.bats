@@ -546,3 +546,12 @@ function setup_file() {
   export BATS_TEST_TIMEOUT=60
   echo "# setup_file()">&3
 }
+
+function teardown_file() {
+  # list running processes
+  ps -ef | grep steampipe
+
+  # check if any processes are running
+  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  assert_equal $num 0
+}
