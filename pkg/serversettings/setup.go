@@ -17,8 +17,9 @@ fdw_version,
 cache_max_ttl,
 cache_max_size_mb,
 cache_enabled)
-	VALUES(now(),$1,$2,$3,$4,$5)`, constants.InternalSchema, constants.ServerSettingsTable),
+	VALUES($1,$2,$3,$4,$5,$6)`, constants.InternalSchema, constants.ServerSettingsTable),
 		Args: []any{
+			settings.StartTime,
 			settings.SteampipeVersion,
 			settings.FdwVersion,
 			settings.CacheMaxTtl,

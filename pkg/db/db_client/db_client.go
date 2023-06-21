@@ -25,8 +25,7 @@ type DbClient struct {
 	connectionString string
 	pool             *pgxpool.Pool
 
-	// the settings of the server that this client is
-	// connected to
+	// the settings of the server that this client is connected to
 	serverSettings *db_common.ServerSettings
 
 	// this flag is set if the service that this client
@@ -119,12 +118,16 @@ func (c *DbClient) loadServerSettings(ctx context.Context) error {
 	serverSettings, err := serversettings.Load(ctx, conn.Conn())
 	if err != nil {
 		if _, _, notFound := IsRelationNotFoundError(err); notFound {
+			// when connecting to pre-0.21.0 services, the server_settings table will not be available.
+			// this is expected and not an error
+			// code which uses server_settings should handle this
 			log.Printf("[INFO] could not find %s.%s table.", constants.InternalSchema, constants.ServerSettingsTable)
 			return nil
 		}
 		return err
 	}
 	c.serverSettings = serverSettings
+	log.Println("[TRACE] loaded server settings:", serverSettings)
 	return nil
 }
 
@@ -144,6 +147,10 @@ func (c *DbClient) shouldShowTiming() bool {
 	return c.showTimingFlag && !c.disableTiming
 }
 
+// ServerSettings returns the settings of the steampipe service that this DbClient is connected to
+//
+// Keep in mind that when connecting to pre-0.21.x servers, the server_settings data is not available. This is expected.
+// Code which read server_settings should take this into account.
 func (c *DbClient) ServerSettings() *db_common.ServerSettings {
 	return c.serverSettings
 }
