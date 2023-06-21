@@ -270,38 +270,30 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 		return res.SetError(err)
 	}
 
-	// create a maintenance client that can be used from here on out
-	// we don't have a database to connect to, since we can only fetch the name
-	// of the installed database after we have connected
-	janitor, err := createMaintenanceClient(ctx, port)
-	if err != nil {
-		return res.SetError(err)
-	}
-	defer janitor.Close(ctx)
-
-	databaseName, err := getDatabaseName(ctx, janitor)
-	if err != nil {
-		return res.SetError(err)
-	}
-
-	err = setServicePassword(ctx, password, janitor)
-	if err != nil {
-		return res.SetError(err)
-	}
-
-	err = ensureService(ctx, janitor)
-	if err != nil {
-		return res.SetError(err)
-	}
-
-	// ensure permissions for writing to temp tables
-	err = ensureTempTablePermissions(ctx, databaseName, janitor)
-	if err != nil {
-		return res.SetError(err)
-	}
-
-	res.DbState = newRunningDBInstanceInfo(postgresCmd, listenAddresses, port, databaseName, password, invoker)
+	// create a RunningInfo with empty database name
+	// we need this to connect to the service using 'root', required retrieve the name of the installed database
+	res.DbState = newRunningDBInstanceInfo(postgresCmd, listenAddresses, port, "", password, invoker)
 	err = res.DbState.Save()
+	if err != nil {
+		return res.SetError(err)
+	}
+
+	databaseName, err := getDatabaseName(ctx, port)
+	if err != nil {
+		return res.SetError(err)
+	}
+
+	res.DbState, err = updateDatabaseNameInRunningInfo(ctx, databaseName)
+	if err != nil {
+		return res.SetError(err)
+	}
+
+	err = setServicePassword(ctx, password)
+	if err != nil {
+		return res.SetError(err)
+	}
+
+	err = ensureService(ctx, databaseName)
 	if err != nil {
 		return res.SetError(err)
 	}
@@ -317,9 +309,15 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 	return res
 }
 
-func ensureService(ctx context.Context, connection *pgx.Conn) error {
+func ensureService(ctx context.Context, databaseName string) error {
+	connection, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
+	if err != nil {
+		return err
+	}
+	defer connection.Close(ctx)
+
 	// ensure the foreign server exists in the database
-	err := ensureSteampipeServer(ctx, connection)
+	err = ensureSteampipeServer(ctx, connection)
 	if err != nil {
 		return err
 	}
@@ -331,12 +329,18 @@ func ensureService(ctx context.Context, connection *pgx.Conn) error {
 		return err
 	}
 
+	// ensure permissions for writing to temp tables
+	err = ensureTempTablePermissions(ctx, databaseName, connection)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // getDatabaseName connects to the service and retrieves the database name
-func getDatabaseName(ctx context.Context, conn *pgx.Conn) (string, error) {
-	databaseName, err := retrieveDatabaseNameFromService(ctx, conn)
+func getDatabaseName(ctx context.Context, port int) (string, error) {
+	databaseName, err := retrieveDatabaseNameFromService(ctx, port)
 	if err != nil {
 		return "", err
 	}
@@ -383,11 +387,17 @@ func startPostgresProcess(ctx context.Context, listenAddresses []string, port in
 	return postgresCmd, nil
 }
 
-func retrieveDatabaseNameFromService(ctx context.Context, connection *pgx.Conn) (string, error) {
+func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, error) {
+	connection, err := createMaintenanceClient(ctx, port)
+	if err != nil {
+		return "", fmt.Errorf("failed to connect to the database: %v - please try again or reset your steampipe database", err)
+	}
+	defer connection.Close(ctx)
+
 	out := connection.QueryRow(ctx, "select datname from pg_database where datistemplate=false AND datname <> 'postgres';")
 
 	var databaseName string
-	err := out.Scan(&databaseName)
+	err = out.Scan(&databaseName)
 	if err != nil {
 		return "", err
 	}
@@ -412,6 +422,15 @@ func writePGConf(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) (*RunningDBInstanceInfo, error) {
+	runningInfo, err := loadRunningInstanceInfo()
+	if err != nil {
+		return runningInfo, err
+	}
+	runningInfo.Database = databaseName
+	return runningInfo, runningInfo.Save()
 }
 
 func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cmd {
@@ -482,12 +501,17 @@ func traceoutServiceLogs(logChannel chan string, stopLogStreamFn func()) {
 	}
 }
 
-func setServicePassword(ctx context.Context, password string, connection *pgx.Conn) error {
+func setServicePassword(ctx context.Context, password string) error {
+	connection, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: "postgres", Username: constants.DatabaseSuperUser})
+	if err != nil {
+		return err
+	}
+	defer connection.Close(ctx)
 	statements := []string{
 		"LOCK TABLE pg_user IN SHARE ROW EXCLUSIVE MODE;",
 		fmt.Sprintf(`ALTER USER steampipe WITH PASSWORD '%s';`, password),
 	}
-	_, err := ExecuteSqlInTransaction(ctx, connection, statements...)
+	_, err = ExecuteSqlInTransaction(ctx, connection, statements...)
 	return err
 }
 

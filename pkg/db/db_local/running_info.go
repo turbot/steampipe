@@ -46,12 +46,14 @@ func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int,
 }
 
 func getListenAddresses(listenAddresses []string) []string {
+	addresses := []string{}
+
 	if helpers.StringSliceContains(listenAddresses, "localhost") {
 		loopAddrs, err := utils.LocalLoopbackAddresses()
 		if err != nil {
 			return nil
 		}
-		listenAddresses = loopAddrs
+		addresses = loopAddrs
 	}
 
 	if helpers.StringSliceContains(listenAddresses, "*") {
@@ -63,10 +65,10 @@ func getListenAddresses(listenAddresses []string) []string {
 		if err != nil {
 			return nil
 		}
-		listenAddresses = append(loopAddrs, publicAddrs...)
+		addresses = append(loopAddrs, publicAddrs...)
 	}
 
-	return helpers.StringSliceDistinct(listenAddresses)
+	return addresses
 }
 
 func (r *RunningDBInstanceInfo) Save() error {

@@ -180,14 +180,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 
 	runConfig := &pgRunningInfo{cmd: cmd, port: port}
 
-	janitor, err := createMaintenanceClient(ctx, port)
-	if err != nil {
-		_ = runConfig.stop(ctx)
-		return nil, err
-	}
-	defer janitor.Close(ctx)
-
-	dbName, err := getDatabaseName(ctx, janitor)
+	dbName, err := getDatabaseName(ctx, port)
 	if err != nil {
 		runConfig.stop(ctx)
 		return nil, err
