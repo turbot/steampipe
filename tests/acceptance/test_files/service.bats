@@ -1,6 +1,16 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
+@test "verify installed fdw version" {
+  run steampipe query "select * from steampipe_internal.steampipe_server_settings" --output=json
+
+  # extract the first mod_name from the list 
+  fdw_version=$(echo $output | jq '.[0].fdw_version')  
+  desired_fdw_version=$(cat $STEAMPIPE_INSTALL_DIR/db/versions.json | jq '.fdw_extension.version')
+  
+  assert_equal "$fdw_version" "$desired_fdw_version"
+}
+
 @test "service stability" {
   echo "# Setting up"
   steampipe query "select 1"

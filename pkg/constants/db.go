@@ -50,6 +50,9 @@ const (
 	// also used to send commands to the FDW
 	InternalSchema = "steampipe_internal"
 
+	// ServerSettingsTable is the table used to store steampipe service configuration
+	ServerSettingsTable = "steampipe_server_settings"
+
 	// ConnectionStateTable is the table used to store steampipe connection state
 	ConnectionStateTable             = "steampipe_connection_state"
 	ConnectionStatePending           = "pending"

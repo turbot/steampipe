@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/serversettings"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
@@ -23,6 +24,9 @@ import (
 type DbClient struct {
 	connectionString string
 	pool             *pgxpool.Pool
+
+	// the settings of the server that this client is connected to
+	serverSettings *db_common.ServerSettings
 
 	// this flag is set if the service that this client
 	// is connected to is running in the same physical system
@@ -50,7 +54,7 @@ type DbClient struct {
 	onConnectionCallback DbConnectionCallback
 }
 
-func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback) (*DbClient, error) {
+func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback) (_ *DbClient, err error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
@@ -76,23 +80,55 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		connectionString:     connectionString,
 	}
 
+	defer func() {
+		if err != nil {
+			// try closing the client
+			client.Close(ctx)
+		}
+	}()
+
 	if err := client.establishConnectionPool(ctx); err != nil {
 		return nil, err
 	}
 
+	// load up the server settings
+	if err := client.loadServerSettings(ctx); err != nil {
+		return nil, err
+	}
+
 	// set user search path
-	err := client.LoadUserSearchPath(ctx)
-	if err != nil {
+	if err := client.LoadUserSearchPath(ctx); err != nil {
 		return nil, err
 	}
 
 	// populate customSearchPath
 	if err := client.SetRequiredSessionSearchPath(ctx); err != nil {
-		client.Close(ctx)
 		return nil, err
 	}
 
 	return client, nil
+}
+
+func (c *DbClient) loadServerSettings(ctx context.Context) error {
+	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+	serverSettings, err := serversettings.Load(ctx, conn.Conn())
+	if err != nil {
+		if _, _, notFound := IsRelationNotFoundError(err); notFound {
+			// when connecting to pre-0.21.0 services, the server_settings table will not be available.
+			// this is expected and not an error
+			// code which uses server_settings should handle this
+			log.Printf("[INFO] could not find %s.%s table.", constants.InternalSchema, constants.ServerSettingsTable)
+			return nil
+		}
+		return err
+	}
+	c.serverSettings = serverSettings
+	log.Println("[TRACE] loaded server settings:", serverSettings)
+	return nil
 }
 
 func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.DatabaseSession) {
@@ -109,6 +145,14 @@ func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.D
 
 func (c *DbClient) shouldShowTiming() bool {
 	return c.showTimingFlag && !c.disableTiming
+}
+
+// ServerSettings returns the settings of the steampipe service that this DbClient is connected to
+//
+// Keep in mind that when connecting to pre-0.21.x servers, the server_settings data is not available. This is expected.
+// Code which read server_settings should take this into account.
+func (c *DbClient) ServerSettings() *db_common.ServerSettings {
+	return c.serverSettings
 }
 
 // Close implements Client

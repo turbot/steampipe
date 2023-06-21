@@ -9,10 +9,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
 // SetRequiredSessionSearchPath implements Client
@@ -86,19 +84,6 @@ func (c *DbClient) GetRequiredSessionSearchPath() []string {
 
 func (c *DbClient) GetCustomSearchPath() []string {
 	return c.customSearchPath
-}
-
-// reload Steampipe config, update viper and re-set required search path
-func (c *DbClient) updateRequiredSearchPath(ctx context.Context) error {
-	config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), "dashboard")
-	if errorsAndWarnings.GetError() != nil {
-		return errorsAndWarnings.GetError()
-	}
-	// todo review this usage of GlobalConfig
-	// https://github.com/turbot/steampipe/issues/3387
-	steampipeconfig.GlobalConfig = config
-	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
-	return c.SetRequiredSessionSearchPath(ctx)
 }
 
 // ensure the search path for the database session is as required
