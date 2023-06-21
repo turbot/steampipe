@@ -68,6 +68,10 @@ func getListenAddresses(listenAddresses []string) []string {
 		addresses = append(loopAddrs, publicAddrs...)
 	}
 
+	// now add back the listenAddresses to address arguments where the interface addresses were sent
+	addresses = append(addresses, listenAddresses...)
+	addresses = helpers.StringSliceDistinct(addresses)
+
 	return addresses
 }
 
