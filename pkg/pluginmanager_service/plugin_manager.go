@@ -196,6 +196,7 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connection.Connectio
 
 func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
 	log.Printf("[INFO] PluginManager Shutdown")
+	defer log.Printf("[INFO] PluginManager Shutdown complete")
 
 	// lock shutdownMut before waiting for startPluginWg
 	// this enables us to exit from ensurePlugin early if needed
@@ -475,8 +476,7 @@ func (m *PluginManager) startPlugin(pluginName string, connectionConfigs []*sdkp
 	// set the connection configs and build a ReattachConfig
 	reattach, err := m.initializePlugin(connectionConfigs, client)
 	if err != nil {
-		// if initialization failed, we DO retry - just in case it was a temporary error (network etc)
-		return nil, retry.RetryableError(err)
+		return nil, err
 	}
 
 	startingPlugin.reattach = reattach
@@ -590,7 +590,7 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 
 	// provide opportunity to avoid setting connection configs if we are shutting down
 	if m.shuttingDown() {
-		log.Printf("[INFO] aborting plugin %s startup - plugin manager is shutting down", pluginName)
+		log.Printf("[INFO] aborting plugin %s initialization - plugin manager is shutting down", pluginName)
 		return nil, fmt.Errorf("plugin manager is shutting down")
 	}
 
@@ -598,16 +598,18 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	// this returns a list of all connections provided by this plugin
 	err = m.setAllConnectionConfigs(connectionConfigs, pluginClient, supportedOperations)
 	if err != nil {
+		// return retryable error
 		log.Printf("[WARN] failed to set connection config for %s: %s", pluginName, err.Error())
-		return nil, err
+		return nil, retry.RetryableError(err)
 	}
 
 	// if this plugin supports setting cache options, do so
 	if supportedOperations.SetCacheOptions {
 		err = m.setCacheOptions(pluginClient)
 		if err != nil {
+			// return retryable error
 			log.Printf("[WARN] failed to set cache options for %s: %s", pluginName, err.Error())
-			return nil, err
+			return nil, retry.RetryableError(err)
 		}
 	}
 
@@ -616,8 +618,8 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	// if this plugin has a dynamic schema, add connections to message server
 	err = m.notifyNewDynamicSchemas(pluginClient, exemplarConnectionConfig, connectionNames)
 	if err != nil {
-		// send err down  running plugin error channel
-		return nil, err
+		// send err down running plugin error channel
+		return nil, retry.RetryableError(err)
 	}
 
 	log.Printf("[INFO] initializePlugin complete pid %d", client.ReattachConfig().Pid)
