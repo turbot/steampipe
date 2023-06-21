@@ -214,7 +214,6 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 
 	// kill all plugins in pluginMultiConnectionMap
 	for _, p := range m.runningPluginMap {
-
 		log.Printf("[INFO] Kill plugin %s (%p)", p.pluginName, p.client)
 		m.killPlugin(p)
 	}
@@ -445,11 +444,11 @@ func (m *PluginManager) startPlugin(pluginName string, connectionConfigs []*sdkp
 	defer func() {
 		if err != nil {
 			m.mut.Lock()
-
 			// delete from map
 			delete(m.runningPluginMap, pluginName)
 			// set error on running plugin
 			startingPlugin.error = err
+
 			// close failed chan to signal to anyone waiting for the plugin to startup that it failed
 			close(startingPlugin.failed)
 
@@ -459,6 +458,7 @@ func (m *PluginManager) startPlugin(pluginName string, connectionConfigs []*sdkp
 				log.Printf("[WARN] failed pid: %d (%p)", startingPlugin.client.ReattachConfig().Pid, req)
 				startingPlugin.client.Kill()
 			}
+
 			m.mut.Unlock()
 		}
 	}()
@@ -473,14 +473,15 @@ func (m *PluginManager) startPlugin(pluginName string, connectionConfigs []*sdkp
 		return nil, err
 	}
 
+	startingPlugin.client = client
+
 	// set the connection configs and build a ReattachConfig
-	reattach, err := m.initializePlugin(connectionConfigs, client)
+	reattach, err := m.initializePlugin(connectionConfigs, client, req)
 	if err != nil {
+		log.Printf("[WARN] initializePlugin failed: %s (%p)", err.Error(), req)
 		return nil, err
 	}
-
 	startingPlugin.reattach = reattach
-	startingPlugin.client = client
 
 	// close initialized chan to advertise that this plugin is ready
 	close(startingPlugin.initialized)
@@ -564,8 +565,7 @@ func (m *PluginManager) startPluginProcess(pluginName string, connectionConfigs 
 }
 
 // set the connection configs and build a ReattachConfig
-func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.ConnectionConfig, client *plugin.Client) (_ *pb.ReattachConfig, err error) {
-	log.Printf("[INFO] initializePlugin pid %d", client.ReattachConfig().Pid)
+func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.ConnectionConfig, client *plugin.Client, req *pb.GetRequest) (_ *pb.ReattachConfig, err error) {
 
 	// extract connection names
 	connectionNames := make([]string, len(connectionConfigs))
@@ -574,6 +574,8 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	}
 	exemplarConnectionConfig := connectionConfigs[0]
 	pluginName := exemplarConnectionConfig.Plugin
+
+	log.Printf("[INFO] initializePlugin %s pid %d (%p)", pluginName, client.ReattachConfig().Pid, req)
 
 	// get the supported operations
 	pluginClient, err := sdkgrpc.NewPluginClient(client, pluginName)
@@ -586,6 +588,11 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	// ignore errors  - just create an empty support structure if needed
 	if supportedOperations == nil {
 		supportedOperations = &sdkproto.GetSupportedOperationsResponse{}
+	}
+	// if this plugin does not support multiple connections, we no longer support is
+	if !supportedOperations.MultipleConnections {
+		// TODO SEND NOTIFICATION TO CLI
+		return nil, fmt.Errorf("plugins which do not supprt multiple connections (using SDK version < v4) are no longer supported. Upgrade plugin '%s", pluginName)
 	}
 
 	// provide opportunity to avoid setting connection configs if we are shutting down
