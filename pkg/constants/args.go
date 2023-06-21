@@ -19,6 +19,7 @@ const (
 	ArgDashboardListen         = "dashboard-listen"
 	ArgDashboardPort           = "dashboard-port"
 	ArgForeground              = "foreground"
+	ArgSingleLogFile           = "single-log-file"
 	ArgInvoker                 = "invoker"
 	ArgUpdateCheck             = "update-check"
 	ArgTelemetry               = "telemetry"

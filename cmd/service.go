@@ -72,6 +72,9 @@ connection from any Postgres compatible database client.`,
 		// foreground enables the service to run in the foreground - till exit
 		AddBoolFlag(constants.ArgForeground, false, "Run the service in the foreground").
 
+		// log to a single file only
+		AddBoolFlag(constants.ArgSingleLogFile, false, "Log to a single file, rather than one per day").
+
 		// flags relevant only if the --dashboard arg is used:
 		AddStringSliceFlag(constants.ArgVarFile, nil, "Specify an .spvar file containing variable values (only applies if '--dashboard' flag is also set)").
 		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag

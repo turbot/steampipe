@@ -12,6 +12,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -31,6 +32,9 @@ func pluginManagerCmd() *cobra.Command {
 		Hidden: true,
 	}
 	cmdconfig.OnCmd(cmd)
+	cmdconfig.
+		OnCmd(cmd).
+		AddBoolFlag(constants.ArgSingleLogFile, false, "Log to a single file, rather than one per day")
 	return cmd
 }
 
@@ -100,7 +104,12 @@ func shouldRunConnectionWatcher() bool {
 }
 
 func createPluginManagerLog() hclog.Logger {
-	logName := fmt.Sprintf("plugin-%s.log", time.Now().Format("2006-01-02"))
+	var logName string
+	if viper.GetBool(constants.ArgSingleLogFile) {
+		logName = "plugin.log"
+	} else {
+		logName = fmt.Sprintf("plugin-%s.log", time.Now().Format("2006-01-02"))
+	}
 	logPath := filepath.Join(filepaths.EnsureLogDir(), logName)
 	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
