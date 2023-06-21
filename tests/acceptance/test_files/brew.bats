@@ -6,6 +6,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # in their workflows
 
 @test "steampipe completion should not create INSTALL DIRs" {
+  export STEAMPIPE_LOG=info
   # create a fresh target install dir
   target_install_directory=$(mktemp -d)
 
