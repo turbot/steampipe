@@ -148,5 +148,5 @@ func IsRelationNotFoundError(err error) (string, string, bool) {
 	if len(captureGroups) == 2 {
 		return "", captureGroups[1], true
 	}
-	return "", "", true
+	return "", "", false
 }
