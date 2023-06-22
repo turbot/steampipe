@@ -128,7 +128,7 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 			// truncate to second
 			// otherwise, comparisons may get skewed because of the
 			// underlying monotonic clock
-			installDate = installDate.UTC().Truncate(time.Second)
+			installDate = installDate.UTC().Truncate(time.Millisecond)
 
 			// get the modtime of the plugin binary
 			stat, err := os.Lstat(pluginBinary)
@@ -136,11 +136,12 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 				log.Printf("[WARN] could not parse install date for %s: %s", fullPluginName, installation.InstallDate)
 				continue
 			}
-			modTime := stat.ModTime().UTC()
-			// truncate to second
-			// otherwise, comparisons may get skewed because of the
-			// underlying monotonic clock
-			modTime = modTime.Truncate(time.Second)
+			modTime := stat.ModTime().UTC().
+				// truncate to second
+				// otherwise, comparisons may get skewed because of the
+				// underlying monotonic clock
+				Truncate(time.Millisecond)
+
 			if installDate.Before(modTime) {
 				item.Version = "local"
 			}
@@ -148,8 +149,12 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 			if pluginConnectionMap != nil {
 				// extract only the connection names
 				var connectionNames []string
-				for _, y := range pluginConnectionMap[fullPluginName] {
-					connectionNames = append(connectionNames, y.Name)
+				for _, connection := range pluginConnectionMap[fullPluginName] {
+					connectionName := connection.Name
+					if connection.ImportDisabled() {
+						connectionName = fmt.Sprintf("%s(disabled)", connectionName)
+					}
+					connectionNames = append(connectionNames, connectionName)
 				}
 				item.Connections = connectionNames
 			}
