@@ -41,16 +41,8 @@ func GetConnectionStateTableGrantSql() db_common.QueryWithArgs {
 // GetConnectionStateTableColumnAlterSql returns the SQL to make alterations to the table
 // this is for changes to the table made after the 0.20.0 release
 func GetConnectionStateTableColumnAlterSql() []db_common.QueryWithArgs {
-
-	// extraColumnsWithType is a map of column names to the SQL type
-	// these are columns which needed to be added after 0.20.0 with the
-	// steampipe_connection_state table was released
-	var extraColumnsWithType map[string]string = map[string]string{
-		"connections": "TEXT[]",
-	}
-
 	queries := []db_common.QueryWithArgs{}
-	for columnName, columnType := range extraColumnsWithType {
+	for columnName, columnType := range steampipeconfig.ConnectionStateTableAddedColumns {
 		queries = append(queries, db_common.QueryWithArgs{
 			Query: fmt.Sprintf(`ALTER TABLE %s.%s ADD COLUMN IF NOT EXISTS %s %s;`,
 				constants.InternalSchema,

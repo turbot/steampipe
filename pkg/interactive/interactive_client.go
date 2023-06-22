@@ -544,7 +544,7 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 	connectionState, err := c.getConnectionState(ctx)
 	if err != nil {
 		// swallow error - it may just be that we are connected to a server which does not support connection state
-		log.Printf("[TRACE] failed to load connection state - are we connected to a server running a previous steampipe version?")
+		log.Println("[TRACE] failed to load connection state - are we connected to a server running a previous steampipe version?", err)
 	}
 
 	// validation passed, now we will run
