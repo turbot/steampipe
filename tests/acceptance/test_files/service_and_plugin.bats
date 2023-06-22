@@ -536,6 +536,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_json_with_failed_plugins.json)"
 }
 
+@test "verify that backfilling of individual plugin version.json works" {}
+@test "verify that composition of holistic plugin/versions.json work from individual version.json files" {}
+@test "verify that installing plugins creates individual version.json files" {}
+
 @test "cleanup" {
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
   run steampipe plugin uninstall steampipe
