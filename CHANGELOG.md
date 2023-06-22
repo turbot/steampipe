@@ -1,6 +1,7 @@
-## v0.20.7 [tbd]
+## v0.20.7 [2023-06-22]
 _Bug fixes_
-* Fixes issue where aggregator connections are updated every time RefreshConnections runs. Add `connections` column to steampipe_connection_state table. ([#3582](https://github.com/turbot/steampipe/issues/3582))
+* Fixes issue where aggregator connections are updated every time RefreshConnections runs. ([#3582](https://github.com/turbot/steampipe/issues/3582))
+* Add `connections` column to steampipe_connection_state table. ([#3582](https://github.com/turbot/steampipe/issues/3582))
 * Fixes issue where exporting check all yields a badly formatted filename. ([#3591](https://github.com/turbot/steampipe/issues/3591))
 * Fix variable value validation not taking into account command line variable values. ([#3606](https://github.com/turbot/steampipe/issues/3606))
 
