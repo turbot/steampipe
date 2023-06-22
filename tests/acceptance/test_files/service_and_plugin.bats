@@ -546,15 +546,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   vFile1="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
   vFile2="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/chaos@latest/version.json"
   
-  if [[ -f vFile1 ]]; then
-  else
-    fail "could not find $vFile1"
-  fi
-  
-  if [[ -f vFile2 ]]; then
-  else
-    fail "could not find $vFile2"
-  fi
+  [ ! -f $vFile1 ] && fail "could not find $vFile1"
+  [ ! -f $vFile2 ] && fail "could not find $vFile2"
   
   rm -rf $tmpdir
 }
