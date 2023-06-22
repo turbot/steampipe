@@ -85,6 +85,7 @@ func prepareBackup(ctx context.Context) (*string, error) {
 		log.Printf("[TRACE] Error while starting old db in %s: %v", location, err)
 		return nil, err
 	}
+	//nolint:golint,errcheck // this will probably never error - if it does, it's not something we can recover from with code
 	defer runConfig.stop(ctx)
 
 	if err := takeBackup(ctx, runConfig); err != nil {

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/turbot/steampipe/pkg/error_helpers"
+
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -67,7 +69,7 @@ func inspectSchemaOrUnqualifiedTable(tableOrConnection string, input *HandlerInp
 	// there was no schema
 	// add the temporary schema to the search_path so that it becomes searchable
 	// for the next step
-	//nolint:golint,gocritic // we are building up the searchpath
+	//nolint:golint,gocritic // we don't want to modify the input value
 	searchPath := append(input.SearchPath, input.Schema.TemporarySchemaName)
 
 	// go through the searchPath one by one and try to find the table by this name
