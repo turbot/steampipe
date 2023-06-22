@@ -116,11 +116,10 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnec
 		// service which doesn't have some of these columns
 		if column, isColumNotFound := isColumnNotFoundError(err); isColumNotFound {
 			// if this was not an added column, return the error as is
-			if _, isAddedColumn := ConnectionStateTableAddedColumns[column]; !isAddedColumn {
-				return nil, err
+			if _, isAddedColumn := ConnectionStateTableAddedColumns[column]; isAddedColumn {
+				// try to load with the added column ignored
+				return loadConnectionState(ctx, conn, ignoreColumns(append(config.ignoredColumns, column)...))
 			}
-			// try to load with the added column ignored
-			return loadConnectionState(ctx, conn, ignoreColumns(append(config.ignoredColumns, column)...))
 		}
 		return nil, err
 	}
