@@ -58,3 +58,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query "show search_path" --search-path foo1,steampipe_internal,foo2
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_internal_schema_once_2.txt)"
 }
+
+function teardown_file() {
+  # list running processes
+  ps -ef | grep steampipe
+
+  # check if any processes are running
+  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  assert_equal $num 0
+}

@@ -340,3 +340,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$(cat output.json)" "$(cat $TEST_DATA_DIR/expected_introspection_check_where.json)"
   rm -f output.json*
 }
+
+function teardown_file() {
+  # list running processes
+  ps -ef | grep steampipe
+
+  # check if any processes are running
+  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  assert_equal $num 0
+}

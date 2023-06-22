@@ -161,3 +161,12 @@ Error: could not find plugin which satisfies requirement 'gcp' in 'mod.bad_mod_w
   # block is added
   assert_output --partial "1"
 }
+
+function teardown_file() {
+  # list running processes
+  ps -ef | grep steampipe
+
+  # check if any processes are running
+  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  assert_equal $num 0
+}
