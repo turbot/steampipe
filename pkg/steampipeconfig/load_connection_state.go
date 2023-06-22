@@ -21,6 +21,9 @@ import (
 // ConnectionStateTableAddedColumns is a map of column names to the SQL type
 // these are columns which needed to be added after 0.20.0 with the
 // steampipe_connection_state table was released
+//
+// these columns are loaded optionally when loading up the connection state table
+// make sure these columns are NULLABLE
 var ConnectionStateTableAddedColumns map[string]string = map[string]string{
 	"connections": "TEXT[]",
 }
