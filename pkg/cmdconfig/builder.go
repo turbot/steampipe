@@ -27,6 +27,11 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 		defer utils.LogTime(fmt.Sprintf("cmd.%s.PreRun end", cmd.CommandPath()))
 		// bind flags
 		for flagName, flag := range cfg.bindings {
+			if flag == nil {
+				// we can panic here since this is bootstrap code and not execution path specific
+				panic(fmt.Sprintf("flag for %s cannot be nil", flagName))
+			}
+			//nolint:golint,errcheck // nil check above
 			viper.GetViper().BindPFlag(flagName, flag)
 		}
 		// run the original PreRun

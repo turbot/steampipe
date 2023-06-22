@@ -6,6 +6,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 var requiredColor = color.New(color.Bold).SprintfFunc()
@@ -30,7 +31,8 @@ var FlagOptions = struct {
 // Helper function to mark a flag as required
 func requiredOpt() flagOpt {
 	return func(c *cobra.Command, name, key string) {
-		c.MarkFlagRequired(key)
+		err := c.MarkFlagRequired(key)
+		error_helpers.FailOnErrorWithMessage(err, "could not mark flag as required")
 		key = fmt.Sprintf("required.%s", key)
 		viper.GetViper().Set(key, true)
 		u := c.Flag(name).Usage
