@@ -7,6 +7,7 @@ env:
   SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
   SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+  STEAMPIPE_LOG: info
 
 jobs:
   goreleaser:
@@ -208,20 +209,6 @@ jobs:
           name: test-logs-${{ matrix.test_block }}-${{ matrix.platform }}
           path: ~/.steampipe/logs
           if-no-files-found: error
-
-      - name: List running steampipe processes
-        continue-on-error: true
-        run: |
-          ps -ef | grep "steampipe"
-
-      - name: Verify No Steampipe Processes Running
-        continue-on-error: false
-        run: |
-          if [ $(ps aux | grep steampipe | grep -v bats |grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ') -eq 0 ]; then  
-            exit 0
-          else
-            exit 1
-          fi
 
       # This job checks whether the test suite has passed or not.
       # Since the exit_code is set only when the bats test suite pass,

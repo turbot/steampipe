@@ -3,16 +3,30 @@ package steampipeconfig
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 )
+
+// ConnectionStateTableAddedColumns is a map of column names to the SQL type
+// these are columns which needed to be added after 0.20.0 with the
+// steampipe_connection_state table was released
+//
+// these columns are loaded optionally when loading up the connection state table
+// make sure these columns are NULLABLE
+var ConnectionStateTableAddedColumns map[string]string = map[string]string{
+	"connections": "TEXT[]",
+}
 
 // LoadConnectionState populates a ConnectionStateMap from the connection_state table
 // it verifies the table has been initialised by calling RefreshConnections after db startup
@@ -85,23 +99,28 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 	return connectionStateMap, err
 }
 
-func loadConnectionState(ctx context.Context, conn *pgx.Conn) (ConnectionStateMap, error) {
-	query := fmt.Sprintf(`SELECT name,
-		type,
-		import_schema,
-		state,
-		error,	
-		plugin,
-		schema_mode,
-		schema_hash,
-		comments_set,
-		connection_mod_time,
-		plugin_mod_time,
-		connections
-	FROM  %s.%s `, constants.InternalSchema, constants.ConnectionStateTable)
+func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnectionStateOption) (ConnectionStateMap, error) {
+	config := &loadConnectionStateConfig{}
+	for _, configOption := range opts {
+		configOption(config)
+	}
+	log.Println("[TRACE] with config", config)
 
+	query := buildLoadConnectionStateQuery(config)
+
+	log.Println("[TRACE] running query", query)
 	rows, err := conn.Query(ctx, query)
 	if err != nil {
+		// columns were added after the 0.20.0 release (connections for now)
+		// we need to handle the case where we are connected to an old version of
+		// service which doesn't have some of these columns
+		if column, isColumNotFound := isColumnNotFoundError(err); isColumNotFound {
+			// if this was not an added column, return the error as is
+			if _, isAddedColumn := ConnectionStateTableAddedColumns[column]; isAddedColumn {
+				// try to load with the added column ignored
+				return loadConnectionState(ctx, conn, ignoreColumns(append(config.ignoredColumns, column)...))
+			}
+		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -188,4 +207,87 @@ func SaveConnectionStateFile(res *RefreshConnectionResult, connectionUpdates *Co
 
 func DeleteConnectionStateFile() {
 	os.Remove(filepaths.ConnectionStatePath())
+}
+
+func isColumnNotFoundError(err error) (string, bool) {
+	if err == nil {
+		return "", false
+	}
+	pgErr, ok := err.(*pgconn.PgError)
+	if !ok || pgErr.Code != "42703" {
+		return "", false
+	}
+
+	// at this point, we know that it's a PgError with code 42703 (column not found)
+	// let's try to find out the name of the column
+
+	// try to find out the name from <tablename>.<columnname>
+	r := regexp.MustCompile(`^column "(.*)\.(.*)" does not exist$`)
+	captureGroups := r.FindStringSubmatch(pgErr.Message)
+	if len(captureGroups) == 3 {
+		return captureGroups[2], true
+	}
+
+	// maybe there is no table name
+	// try to find out the name from <columnname>
+	r = regexp.MustCompile(`^column "(.*)" does not exist$`)
+	captureGroups = r.FindStringSubmatch(pgErr.Message)
+	if len(captureGroups) == 2 {
+		return captureGroups[1], true
+	}
+	return "", true
+}
+
+// buildLoadConnectionStateQuery builds up the SQL we send to the service
+func buildLoadConnectionStateQuery(config *loadConnectionStateConfig) string {
+	prefix := `SELECT name,
+	type,
+	import_schema,
+	state,
+	error,	
+	plugin,
+	schema_mode,
+	schema_hash,
+	comments_set,
+	connection_mod_time,
+	plugin_mod_time`
+
+	// because columns were added post 0.20.0 release, we have to handle cases
+	// where we are selecting from a service which doesn't have the columns added later
+	//
+	// for every colmn added
+	//		is it ignored already -> select "NULL as colname"
+	//		else select the column value
+	var extraCols []string
+	ignoreLookup := utils.SliceToLookup(config.ignoredColumns)
+	for ignoreColumn := range ConnectionStateTableAddedColumns {
+		// is this ignored
+		if _, ignored := ignoreLookup[ignoreColumn]; ignored {
+			// read NULL for this column
+			extraCols = append(extraCols, fmt.Sprintf("NULL as %s", ignoreColumn))
+		} else {
+			extraCols = append(extraCols, ignoreColumn)
+		}
+	}
+
+	query := fmt.Sprintf(
+		`%s,%s FROM %s.%s `,
+		prefix,
+		strings.Join(extraCols, ",\n"),
+		constants.InternalSchema,
+		constants.ConnectionStateTable,
+	)
+	return query
+}
+
+type loadConnectionStateConfig struct {
+	ignoredColumns []string
+}
+
+type loadConnectionStateOption func(l *loadConnectionStateConfig)
+
+func ignoreColumns(cols ...string) loadConnectionStateOption {
+	return func(l *loadConnectionStateConfig) {
+		l.ignoredColumns = cols
+	}
 }

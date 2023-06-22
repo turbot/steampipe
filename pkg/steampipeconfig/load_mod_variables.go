@@ -2,9 +2,9 @@ package steampipeconfig
 
 import (
 	"context"
-	"github.com/hashicorp/terraform/tfdiags"
 	"sort"
 
+	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -12,6 +12,8 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
+	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 )
 
 func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext) (*modconfig.ModVariableMap, error) {
@@ -78,7 +80,7 @@ func newVariableValidationResult(diags tfdiags.Diagnostics) *modconfig.ErrorAndW
 
 func identifyAllMissingVariables(parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, variableValues map[string]inputvars.UnparsedVariableValue) error {
 	// convert variableValues into a lookup
-	var variableValueLookup = make(map[string]struct{}, len(variableValues))
+	var variableValueLookup = utils.SliceToLookup(maps.Keys(variableValues))
 	missingVarsMap, err := identifyMissingVariablesForDependencies(parseCtx.WorkspaceLock, variableMap, variableValueLookup, nil)
 
 	if err != nil {
