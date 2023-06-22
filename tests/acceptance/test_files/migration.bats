@@ -82,3 +82,23 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $tmpdir
   rm -f verify*
 }
+
+function teardown_file() {
+  # list running processes
+  ps -ef | grep steampipe
+
+  # check if any processes are running
+  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  assert_equal $num 0
+}
+
+function setup() {
+  # skip if this test is run on Linux ARM64, since there is no linux_arm binary available
+  # for v0.13.6 to run this test
+  sys=$(uname -sm)
+  if [[ "$sys" == "Linux aarch64" ]]; then
+    skip
+  else
+    echo "Running migration test..."
+  fi
+}
