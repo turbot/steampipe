@@ -31,8 +31,7 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Das
 	c := &CheckRun{SessionId: executionTree.sessionId}
 	// create NewDashboardTreeRunImpl
 	// (we must create after creating the run as it requires a ref to the run)
-	// TODO [node_reuse] do this a different way https://github.com/turbot/steampipe/issues/2919
-	c.DashboardTreeRunImpl = NewDashboardTreeRunImpl(resource, parent, c, executionTree)
+	c.DashboardParentImpl = newDashboardParentImpl(resource, parent, c, executionTree)
 
 	c.NodeType = resource.BlockType()
 	//  set status to initialized
