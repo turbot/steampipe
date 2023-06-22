@@ -538,7 +538,26 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "verify that backfilling of individual plugin version.json works" {}
 @test "verify that composition of holistic plugin/versions.json work from individual version.json files" {}
-@test "verify that installing plugins creates individual version.json files" {}
+@test "verify that installing plugins creates individual version.json files" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+  
+  vFile1="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
+  vFile2="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/chaos@latest/version.json"
+  
+  if [[ -f vFile1 ]]; then
+  else
+    fail "could not find $vFile1"
+  fi
+  
+  if [[ -f vFile2 ]]; then
+  else
+    fail "could not find $vFile2"
+  fi
+  
+  rm -rf $tmpdir
+}
 
 @test "cleanup" {
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
