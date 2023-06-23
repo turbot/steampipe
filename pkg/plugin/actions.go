@@ -128,7 +128,7 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 			// truncate to second
 			// otherwise, comparisons may get skewed because of the
 			// underlying monotonic clock
-			installDate = installDate.UTC().Truncate(time.Millisecond)
+			installDate = installDate.Truncate(time.Second)
 
 			// get the modtime of the plugin binary
 			stat, err := os.Lstat(pluginBinary)
@@ -136,11 +136,11 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 				log.Printf("[WARN] could not parse install date for %s: %s", fullPluginName, installation.InstallDate)
 				continue
 			}
-			modTime := stat.ModTime().UTC().
+			modTime := stat.ModTime().
 				// truncate to second
 				// otherwise, comparisons may get skewed because of the
 				// underlying monotonic clock
-				Truncate(time.Millisecond)
+				Truncate(time.Second)
 
 			if installDate.Before(modTime) {
 				item.Version = "local"
