@@ -536,9 +536,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_json_with_failed_plugins.json)"
 }
 
-@test "verify that backfilling of individual plugin version.json works" {}
-@test "verify that backfilling of individual plugin version.json works where it is only partially backfilled" {}
-@test "verify that composition of holistic plugin/versions.json work from individual version.json files" {}
 @test "verify that installing plugins creates individual version.json files" {
   tmpdir=$(mktemp -d)
   run steampipe plugin install net chaos --install-dir $tmpdir
@@ -551,6 +548,41 @@ load "$LIB_BATS_SUPPORT/load.bash"
   [ ! -f $vFile2 ] && fail "could not find $vFile2"
   
   rm -rf $tmpdir
+}
+
+@test "verify that backfilling of individual plugin version.json works" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+  
+  vFile1="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
+  vFile2="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/chaos@latest/version.json"
+  
+  file1Content=$(cat $vFile1)
+  file2Content=$(cat $vFile2)
+  
+  # remove the individual version files
+  rm -f $vFile1
+  rm -f $vFile2
+  
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe query "select 1" --install-dir $tmpdir
+  
+  [ ! -f $vFile1 ] && fail "could not find $vFile1"
+  [ ! -f $vFile2 ] && fail "could not find $vFile2"
+  
+  assert_equal $(cat $vFile1) file1Content
+  assert_equal $(cat $vFile2) file2Content
+  
+  rm -rf $tmpdir
+}
+
+@test "verify that backfilling of individual plugin version.json works where it is only partially backfilled" {
+  skip
+}
+
+@test "verify that composition of holistic plugin/versions.json work from individual version.json files" {
+  skip
 }
 
 @test "cleanup" {
