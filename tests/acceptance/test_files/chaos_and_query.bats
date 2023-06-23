@@ -32,6 +32,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "select error from chaos_transform_errors" {
+  skip "to be enabled after re-modeling the chaos_transform_errors table"
   run steampipe query "select error from chaos_transform_errors"
   assert_output --partial 'TRANSFORM ERROR'
 }

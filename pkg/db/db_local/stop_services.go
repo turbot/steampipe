@@ -56,6 +56,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 		// there are other steampipe clients connected to the database
 		// we don't need to stop the service
 		// the last one to exit will shutdown the service
+		log.Printf("[INFO] ShutdownService not closing database service - %d steampipe %s connected", clientCounts.SteampipeClients, utils.Pluralize("client", clientCounts.SteampipeClients))
 		log.Printf("[TRACE] ShutdownService not closing database service - %d steampipe %s connected", clientCounts.SteampipeClients, utils.Pluralize("client", clientCounts.SteampipeClients))
 		return
 	}
