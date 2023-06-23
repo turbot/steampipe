@@ -299,6 +299,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
+	cleanupOldTmpDirs()
 	pluginAlreadyInstalled, _ := plugin.Exists(pluginName)
 	if pluginAlreadyInstalled {
 		// set the bar to MAX

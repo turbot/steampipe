@@ -117,3 +117,26 @@ func createPluginManagerLog() hclog.Logger {
 	log.SetFlags(0)
 	return logger
 }
+
+func cleanupOldTmpDirs() {
+	const tmpDirAgeThreshold = 24 * time.Hour
+	tmpDirPattern := filepath.Join(filepaths.EnsurePluginDir(), "tmp-*")
+	tmpDirs, err := filepath.Glob(tmpDirPattern)
+	if err != nil {
+		log.Printf("Error while globbing for tmp dirs in plugin dir: %s\n", err)
+		return
+	}
+
+	for _, tmpDir := range tmpDirs {
+		stat, err := os.Stat(tmpDir)
+		if err != nil {
+			log.Printf("Error while stating tmp dir %s: %s\n", tmpDir, err)
+			continue
+		}
+		if time.Since(stat.ModTime()) > tmpDirAgeThreshold {
+			if err := os.RemoveAll(tmpDir); err != nil {
+				log.Printf("Error while removing old tmp dir %s: %s\n", tmpDir, err)
+			}
+		}
+	}
+}
