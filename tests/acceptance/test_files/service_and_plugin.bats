@@ -1,5 +1,6 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
+load "$LIB_BATS_FILE/load.bash"
 
 @test "steampipe plugin help is displayed when no sub command given" {
   steampipe plugin > test.txt
@@ -544,8 +545,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   vFile1="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
   vFile2="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/chaos@latest/version.json"
   
-  [ ! -f $vFile1 ] && fail "could not find $vFile1"
-  [ ! -f $vFile2 ] && fail "could not find $vFile2"
+  assert_file_exists $vFile1
+  assert_file_exists $vFile2
   
   rm -rf $tmpdir
 }
@@ -568,8 +569,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # run steampipe again so that the plugin version files get backfilled
   run steampipe query "select 1" --install-dir $tmpdir
   
-  [ ! -f $vFile1 ] && fail "could not find $vFile1"
-  [ ! -f $vFile2 ] && fail "could not find $vFile2"
+  assert_exists $vFile1
+  assert_exists $vFile2
   
   assert_equal "$(cat $vFile1)" "$file1Content"
   assert_equal "$(cat $vFile2)" "$file2Content"
@@ -594,8 +595,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # run steampipe again so that the plugin version files get backfilled
   run steampipe query "select 1" --install-dir $tmpdir
   
-  [ ! -f $vFile1 ] && fail "could not find $vFile1"
-  [ ! -f $vFile2 ] && fail "could not find $vFile2"
+  assert_exists $vFile1
+  assert_exists $vFile2
   
   assert_equal "$(cat $vFile1)" "$file1Content"
   assert_equal "$(cat $vFile2)" "$file2Content"
@@ -603,7 +604,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $tmpdir
 }
 
-@test "verify that global plugin/versions.json is composed from individual version.json files when it is absent" {
+@test "verify that global plugin/versions.json is composed from individual version.json files when global is absent" {
   tmpdir=$(mktemp -d)
   run steampipe plugin install net chaos --install-dir $tmpdir
   assert_success
@@ -618,7 +619,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # run steampipe again so that the plugin version files get backfilled
   run steampipe query "select 1" --install-dir $tmpdir
   
-  [ ! -f $vFile ] && fail "could not find $vFile"
+  assert_file_exists $vFile
   
   assert_equal "$(cat $vFile)" "$fileContent"
   
@@ -639,7 +640,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # run steampipe again so that the plugin version files get backfilled
   run steampipe query "select 1" --install-dir $tmpdir
   
-  [ ! -f $vFile ] && fail "could not find $vFile"
+  assert_file_exists $vFile
   
   assert_equal "$(cat $vFile)" "$fileContent"
   
@@ -664,7 +665,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query "select 1" --install-dir $tmpdir
 
   # verify that global file got created
-  [ ! -f $vFile ] && fail "could not find $vFile"
+  assert_file_exists $vFile
   
   rm -rf $tmpdir
 }
