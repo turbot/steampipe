@@ -571,13 +571,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   [ ! -f $vFile1 ] && fail "could not find $vFile1"
   [ ! -f $vFile2 ] && fail "could not find $vFile2"
   
-  echo "vFile1Old: $file1Content"
-  echo "vFile1New: $(cat $vFile1)"
-  assert_equal $(cat $vFile1) $file1Content
-  
-  echo "vFile2Old: $file2Content"
-  echo "vFile2New: $(cat $vFile2)"
-  assert_equal $(cat $vFile2) $file2Content
+  assert_equal "$(cat $vFile1)" "$file1Content"
+  assert_equal "$(cat $vFile2)" "$file2Content"
   
   rm -rf $tmpdir
 }
