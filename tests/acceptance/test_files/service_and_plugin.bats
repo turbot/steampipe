@@ -571,8 +571,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   [ ! -f $vFile1 ] && fail "could not find $vFile1"
   [ ! -f $vFile2 ] && fail "could not find $vFile2"
   
-  assert_equal $(cat $vFile1) file1Content
-  assert_equal $(cat $vFile2) file2Content
+  assert_equal $(cat $vFile1) $file1Content
+  assert_equal $(cat $vFile2) $file2Content
   
   rm -rf $tmpdir
 }
