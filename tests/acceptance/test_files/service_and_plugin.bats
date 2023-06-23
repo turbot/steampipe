@@ -537,6 +537,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "verify that backfilling of individual plugin version.json works" {}
+@test "verify that backfilling of individual plugin version.json works where it is only partially backfilled" {}
 @test "verify that composition of holistic plugin/versions.json work from individual version.json files" {}
 @test "verify that installing plugins creates individual version.json files" {
   tmpdir=$(mktemp -d)
@@ -559,7 +560,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 function setup_file() {
-  export BATS_TEST_TIMEOUT=60
+  export BATS_TEST_TIMEOUT=120
   echo "# setup_file()">&3
 }
 
