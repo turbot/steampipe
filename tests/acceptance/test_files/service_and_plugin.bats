@@ -578,7 +578,29 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "verify that backfilling of individual plugin version.json works where it is only partially backfilled" {
-  skip
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+  
+  vFile1="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
+  vFile2="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/chaos@latest/version.json"
+  
+  file1Content=$(cat $vFile1)
+  file2Content=$(cat $vFile2)
+  
+  # remove one individual version file
+  rm -f $vFile1
+  
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe query "select 1" --install-dir $tmpdir
+  
+  [ ! -f $vFile1 ] && fail "could not find $vFile1"
+  [ ! -f $vFile2 ] && fail "could not find $vFile2"
+  
+  assert_equal "$(cat $vFile1)" "$file1Content"
+  assert_equal "$(cat $vFile2)" "$file2Content"
+  
+  rm -rf $tmpdir
 }
 
 @test "verify that composition of holistic plugin/versions.json work from individual version.json files" {
