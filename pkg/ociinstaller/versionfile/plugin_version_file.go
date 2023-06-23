@@ -69,6 +69,9 @@ func (f *PluginVersionFile) EnsureVersionFile(installData *InstalledVersion, for
 		}
 	}
 
+	// make sure that the legacy fields are also filled in
+	installData.MaintainLegacy()
+
 	theBytes, err := json.MarshalIndent(installData, "", "  ")
 	if err != nil {
 		return err
