@@ -15,6 +15,7 @@ fi
 export BATS_PATH=$MY_PATH/lib/bats-core/bin/bats
 export LIB_BATS_ASSERT=$MY_PATH/lib/bats-assert
 export LIB_BATS_SUPPORT=$MY_PATH/lib/bats-support
+export LIB_BATS_FILE=$MY_PATH/lib/bats-file
 export TEST_DATA_DIR=$MY_PATH/test_data/templates
 export SNAPSHOTS_DIR=$MY_PATH/test_data/snapshots
 export SRC_DATA_DIR=$MY_PATH/test_data/source_files
