@@ -603,8 +603,70 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $tmpdir
 }
 
-@test "verify that composition of holistic plugin/versions.json work from individual version.json files" {
-  skip
+@test "verify that global plugin/versions.json is composed from individual version.json files when it is absent" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+  
+  vFile="$tmpdir/plugins/versions.json"
+  
+  fileContent=$(cat $vFile)
+  
+  # remove global version file
+  rm -f $vFile
+  
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe query "select 1" --install-dir $tmpdir
+  
+  [ ! -f $vFile ] && fail "could not find $vFile"
+  
+  assert_equal "$(cat $vFile)" "$fileContent"
+  
+  rm -rf $tmpdir
+}
+
+@test "verify that holistic plugin/versions.json is composed from individual version.json files when it is corrupt" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+  
+  vFile="$tmpdir/plugins/versions.json"
+  fileContent=$(cat $vFile)
+  
+  # remove global version file
+  echo "badline to corrupt versions.json" >> $vFile
+  
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe query "select 1" --install-dir $tmpdir
+  
+  [ ! -f $vFile ] && fail "could not find $vFile"
+  
+  assert_equal "$(cat $vFile)" "$fileContent"
+  
+  rm -rf $tmpdir
+}
+
+@test "verify that composition of global plugin/versions.json works when an individual version.json file is corrupt" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+  
+  vFile="$tmpdir/plugins/versions.json"  
+  vFile1="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
+  
+  # corrupt a version file
+  echo "bad line to corrupt" >> $vFile1
+  
+  # remove global file
+  rm -f $vFile
+  
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe query "select 1" --install-dir $tmpdir
+
+  # verify that global file got created
+  [ ! -f $vFile ] && fail "could not find $vFile"
+  
+  rm -rf $tmpdir
 }
 
 @test "cleanup" {
