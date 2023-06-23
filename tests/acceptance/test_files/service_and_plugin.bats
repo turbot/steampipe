@@ -566,7 +566,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f $vFile2
   
   # run steampipe again so that the plugin version files get backfilled
-  run steampipe query "select 1" --install-dir $tmpdir
+  run steampipe plugin list --install-dir $tmpdir
   
   [ ! -f $vFile1 ] && fail "could not find $vFile1"
   [ ! -f $vFile2 ] && fail "could not find $vFile2"
@@ -592,7 +592,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f $vFile1
   
   # run steampipe again so that the plugin version files get backfilled
-  run steampipe query "select 1" --install-dir $tmpdir
+  run steampipe plugin list --install-dir $tmpdir
   
   [ ! -f $vFile1 ] && fail "could not find $vFile1"
   [ ! -f $vFile2 ] && fail "could not find $vFile2"
@@ -616,7 +616,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f $vFile
   
   # run steampipe again so that the plugin version files get backfilled
-  run steampipe query "select 1" --install-dir $tmpdir
+  run steampipe plugin list --install-dir $tmpdir
   
   [ ! -f $vFile ] && fail "could not find $vFile"
   
@@ -637,7 +637,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo "badline to corrupt versions.json" >> $vFile
   
   # run steampipe again so that the plugin version files get backfilled
-  run steampipe query "select 1" --install-dir $tmpdir
+  run steampipe plugin list --install-dir $tmpdir
   
   [ ! -f $vFile ] && fail "could not find $vFile"
   
@@ -661,7 +661,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f $vFile
   
   # run steampipe again so that the plugin version files get backfilled
-  run steampipe query "select 1" --install-dir $tmpdir
+  run steampipe plugin list --install-dir $tmpdir
 
   # verify that global file got created
   [ ! -f $vFile ] && fail "could not find $vFile"
