@@ -2,14 +2,22 @@ package ociinstaller
 
 import (
 	"context"
+	"encoding/json"
 	"log"
+	"strings"
 
 	"github.com/containerd/containerd/remotes"
 	"github.com/containerd/containerd/remotes/docker"
-	"github.com/deislabs/oras/pkg/content"
-	"github.com/deislabs/oras/pkg/oras"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	credentials "github.com/oras-project/oras-credentials-go"
 	"github.com/sirupsen/logrus"
+	"oras.land/oras-go/v2"
+	"oras.land/oras-go/v2/content"
+	"oras.land/oras-go/v2/content/file"
+	"oras.land/oras-go/v2/content/memory"
+	"oras.land/oras-go/v2/registry/remote"
+	"oras.land/oras-go/v2/registry/remote/auth"
+	"oras.land/oras-go/v2/registry/remote/retry"
 )
 
 type ociDownloader struct {
@@ -27,7 +35,7 @@ func NewOciDownloader() *ociDownloader {
 	}
 }
 
-/* 
+/*
 Pull downloads the image from the given `ref` to the supplied `destDir`
 
 Returns
@@ -35,19 +43,83 @@ Returns
 	imageDescription, configDescription, config, imageLayers, error
 */
 func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []string, destDir string) (*ocispec.Descriptor, *ocispec.Descriptor, []byte, []ocispec.Descriptor, error) {
-	log.Println("[TRACE] ociDownloader.Pull:", "pulling", ref)
-	fileStore := content.NewFileStore(destDir)
+	split := strings.Split(ref, ":")
+	tag := split[len(split)-1]
+	log.Println("[TRACE] ociDownloader.Pull:", "preparing to pull ref", ref, "tag", tag, "destDir", destDir)
+
+	// Create the target file store
+	memoryStore := memory.New()
+	fileStore, err := file.NewWithFallbackStorage(destDir, memoryStore)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
 	defer fileStore.Close()
 
-	hybridStore := newHybridStore(fileStore)
-	pullOpts := []oras.PullOpt{
-		oras.WithAllowedMediaTypes(append(mediaTypes, MediaTypeConfig, MediaTypePluginConfig)),
-		oras.WithPullEmptyNameAllowed(),
-	}
-	desc, layers, err := oras.Pull(ctx, o.resolver, ref, hybridStore, pullOpts...)
+	// Connect to the remote repository
+	repo, err := remote.NewRepository(ref)
 	if err != nil {
-		return &desc, nil, nil, layers, err
+		return nil, nil, nil, nil, err
 	}
-	configDesc, configData, err := hybridStore.GetConfig()
-	return &desc, &configDesc, configData, layers, err
+
+	// Get credentials from the docker credentials store
+	storeOpts := credentials.StoreOptions{}
+	credStore, err := credentials.NewStoreFromDocker(storeOpts)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	// Prepare the auth client for the registry and credential store
+	repo.Client = &auth.Client{
+		Client:     retry.DefaultClient,
+		Cache:      auth.DefaultCache,
+		Credential: credentials.Credential(credStore), // Use the credential store
+	}
+
+	// Copy from the remote repository to the file store
+	log.Println("[TRACE] ociDownloader.Pull:", "pulling...")
+
+	copyOpt := oras.DefaultCopyOptions
+	// TODO: use WithTargetPlatform to limit downloads
+	// copyOpt.WithTargetPlatform(&ocispec.Platform{
+	// 	Architecture: "amd64",
+	// 	OS:           "linux",
+	// })
+	manifestDescriptor, err := oras.Copy(ctx, repo, tag, fileStore, tag, copyOpt)
+	if err != nil {
+		log.Println("[ERROR] ociDownloader.Pull:", "failed to pull", ref, err)
+		return &manifestDescriptor, nil, nil, nil, err
+	}
+	log.Println("[TRACE] ociDownloader.Pull:", "manifest", manifestDescriptor.Digest, manifestDescriptor.MediaType)
+
+	// FIXME: this seems redundant as oras.Copy() already downloads all artifacts, but that's the only I found
+	// to access the manifest config. Also, it shouldn't be an issue as files are not re-downloaded.
+	manifestJson, err := content.FetchAll(ctx, fileStore, manifestDescriptor)
+	if err != nil {
+		log.Println("[TRACE] ociDownloader.Pull:", "failed to fetch manifest", manifestDescriptor)
+		return &manifestDescriptor, nil, nil, nil, err
+	}
+	log.Println("[TRACE] ociDownloader.Pull:", "manifest content", string(manifestJson))
+	var manifest ocispec.Manifest
+	err = json.Unmarshal(manifestJson, &manifest)
+	if err != nil {
+		log.Println("[TRACE] ociDownloader.Pull:", "failed to unmarshall manifest", manifestJson)
+		return &manifestDescriptor, nil, nil, nil, err
+	}
+
+	rc, err := memoryStore.Fetch(ctx, manifest.Config)
+	if err != nil {
+		log.Println("[ERROR] ociDownloader.Pull:", "failed to fetch config", manifest.Config, err)
+		return &manifestDescriptor, nil, nil, nil, err
+	}
+	defer rc.Close()
+
+	configData := make([]byte, manifest.Config.Size)
+	_, err = rc.Read(configData)
+	if err != nil {
+		log.Println("[ERROR] ociDownloader.Pull:", "failed to read config", ocispec.MediaTypeImageConfig, err)
+		return &manifestDescriptor, nil, nil, nil, err
+	}
+	log.Println("[TRACE] ociDownloader.Pull:", "config", string(configData))
+
+	return &manifestDescriptor, &manifest.Config, configData, manifest.Layers, err
 }
