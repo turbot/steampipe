@@ -71,7 +71,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 function teardown() {
-  sleep 25
+  sleep 30
   # list running processes
   ps -ef | grep steampipe
 
