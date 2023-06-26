@@ -3,7 +3,7 @@ package versionfile
 import (
 	"encoding/json"
 	"errors"
-	"io/fs"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -110,54 +110,55 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 		var syntaxError *json.SyntaxError
 		isSyntaxError := errors.As(err, &syntaxError)
 		if !isSyntaxError {
-			// no - return
 			return nil, err
 		}
-
-		// generate the version file from the individual version files
-		// by walking the plugin directories
-		pluginVersions = recomposePluginVersionFile()
-		err = pluginVersions.Save()
-
-		return pluginVersions, err
 	}
 
-	return NewPluginVersionFile(), nil
+	// generate the version file from the individual version files
+	// by walking the plugin directories - this will return an Empty Version file
+	pluginVersions := recomposePluginVersionFile()
+	err := pluginVersions.Save()
+	if err != nil {
+		return nil, err
+	}
+	return pluginVersions, err
 }
 
+// recomposePluginVersionFile recursively traverses down the plugin direcory and tries to
+// recompose the global version file from the plugin version files
+// if there are no plugin version files, this returns a ready to use empty global version file
 func recomposePluginVersionFile() *PluginVersionFile {
 	pvf := NewPluginVersionFile()
-	pluginDir := filepaths.EnsurePluginDir()
 
-	err := filepath.WalkDir(pluginDir, func(path string, d fs.DirEntry, _ error) error {
-		if !d.IsDir() {
-			return nil
-		}
-		versionFile := filepath.Join(path, pluginVersionFileName)
-		if !filehelpers.FileExists(versionFile) {
-			return nil
-		}
+	versionFiles, err := filehelpers.ListFiles(filepaths.EnsurePluginDir(), &filehelpers.ListOptions{
+		Include: []string{fmt.Sprintf("**/%s", pluginVersionFileName)},
+		Flags:   filehelpers.FilesRecursive,
+	})
+
+	if err != nil {
+		log.Println("[TRACE]", "error while walking plugin directory for version files", err)
+		return pvf
+	}
+
+	for _, versionFile := range versionFiles {
 		data, err := os.ReadFile(versionFile)
 		if err != nil {
-			return nil
+			log.Println("[TRACE] could not read file", versionFile)
+			continue
 		}
 		install := EmptyInstalledVersion()
 		if err := json.Unmarshal(data, &install); err != nil {
 			// this wasn't the version file (probably) - keep going
-			return nil
+			log.Println("[TRACE] unmarshal failed for file:", versionFile)
+			continue
 		}
 		pvf.Plugins[install.Name] = install
-		// now that we have an entry - lets skip sub directories
-		return fs.SkipDir
-	})
 
-	if err != nil {
-		log.Println("[ERROR]", "error while walking plugin directory for version files", err)
+		// mark that this is a composed version file
+		// and not directly read
+		pvf.composed = true
 	}
 
-	// mark that this is a composed version file
-	// and not directly read
-	pvf.composed = true
 	return pvf
 }
 
