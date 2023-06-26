@@ -669,6 +669,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $tmpdir
 }
 
+@test "verify that plugin installed from registry are marked as 'local' when the modtime of the binary is after the install time" {
+  
+}
+
 @test "cleanup" {
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
   run steampipe plugin uninstall steampipe
