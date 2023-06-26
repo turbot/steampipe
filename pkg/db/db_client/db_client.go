@@ -121,7 +121,7 @@ func (c *DbClient) loadServerSettings(ctx context.Context) error {
 			// when connecting to pre-0.21.0 services, the server_settings table will not be available.
 			// this is expected and not an error
 			// code which uses server_settings should handle this
-			log.Printf("[INFO] could not find %s.%s table.", constants.InternalSchema, constants.ServerSettingsTable)
+			log.Println("[INFO] could not find %s.%s table. skipping", constants.InternalSchema, constants.ServerSettingsTable)
 			return nil
 		}
 		return err
