@@ -22,9 +22,9 @@ type InstalledVersion struct {
 }
 
 func EmptyInstalledVersion() *InstalledVersion {
-	i := InstalledVersion{}
+	i := new(InstalledVersion)
 	i.StructVersion = InstalledVersionStructVersion
-	return &i
+	return i
 }
 
 // MigrateLegacy migrates the legacy properties into new properties

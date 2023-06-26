@@ -28,9 +28,16 @@ type PluginVersionFile struct {
 	Plugins       map[string]*InstalledVersion `json:"plugins"`
 	StructVersion int64                        `json:"struct_version"`
 
-	// used when this structure was populated by traversion plugin directory
+	// used when this structure is populated by traversing individual plugin directory
 	// if so, there's no need to attempt a backfill
 	composed bool
+}
+
+func newPluginVersionFile() *PluginVersionFile {
+	return &PluginVersionFile{
+		Plugins:       map[string]*InstalledVersion{},
+		StructVersion: PluginStructVersion,
+	}
 }
 
 // IsValid checks whether the struct was correctly deserialized,
@@ -47,26 +54,16 @@ func (f *PluginVersionFile) MigrateFrom() migrate.Migrateable {
 	return f
 }
 
-func (f *PluginVersionFile) Backfill() error {
-	for _, installation := range f.Plugins {
-		if err := f.EnsureVersionFile(installation, false); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (f *PluginVersionFile) EnsureVersionFile(installData *InstalledVersion, force bool) error {
 	pluginFolder, err := filepaths.FindPluginFolder(installData.Name)
 	if err != nil {
 		return err
 	}
 	versionFile := filepath.Join(pluginFolder, pluginVersionFileName)
-	if !force {
-		// if this is not forced, make sure that the file doesn't exist before overwriting it
-		if filehelpers.FileExists(versionFile) {
-			return nil
-		}
+
+	// if this is not forced, make sure that the file doesn't exist before overwriting it
+	if !force && filehelpers.FileExists(versionFile) {
+		return nil
 	}
 
 	// make sure that the legacy fields are also filled in
@@ -79,11 +76,38 @@ func (f *PluginVersionFile) EnsureVersionFile(installData *InstalledVersion, for
 	return os.WriteFile(versionFile, theBytes, 0644)
 }
 
-func NewPluginVersionFile() *PluginVersionFile {
-	return &PluginVersionFile{
-		Plugins:       map[string]*InstalledVersion{},
-		StructVersion: PluginStructVersion,
+// Save writes the config file to disk
+func (f *PluginVersionFile) Save() error {
+	// set struct version
+	f.StructVersion = PluginStructVersion
+	versionFilePath := filepaths.PluginVersionFilePath()
+	// maintain the legacy properties for backward compatibility
+	for _, v := range f.Plugins {
+		v.MaintainLegacy()
 	}
+	return f.write(versionFilePath)
+}
+
+func (f *PluginVersionFile) write(path string) error {
+	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
+	if err != nil {
+		log.Println("[ERROR]", "Error while writing version file", err)
+		return err
+	}
+	if len(versionFileJSON) == 0 {
+		log.Println("[ERROR]", "Cannot write 0 bytes to file")
+		return sperr.WrapWithMessage(ErrNoContent, "cannot write versions file")
+	}
+	return os.WriteFile(path, versionFileJSON, 0644)
+}
+
+func (f *PluginVersionFile) backfill() error {
+	for _, installation := range f.Plugins {
+		if err := f.EnsureVersionFile(installation, false); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // to lock plugin version file loads
@@ -114,6 +138,7 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 		}
 	}
 
+	// we don't have a global plugin/versions.json or it is not parseable
 	// generate the version file from the individual version files
 	// by walking the plugin directories - this will return an Empty Version file if there are no version
 	// files in the plugin directories
@@ -125,11 +150,26 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 	return pluginVersions, err
 }
 
+// BackfillPluginVersionFile attempts a backfill of the individual version.json for plugins
+// this is required only once when upgrading from 0.20.x
+func BackfillPluginVersionFile() error {
+	versions, err := LoadPluginVersionFile()
+	if err != nil {
+		return err
+	}
+	if versions.composed {
+		// this was composed from the plugin directories
+		// it's already backfilled
+		return nil
+	}
+	return versions.backfill()
+}
+
 // recomposePluginVersionFile recursively traverses down the plugin direcory and tries to
 // recompose the global version file from the plugin version files
 // if there are no plugin version files, this returns a ready to use empty global version file
 func recomposePluginVersionFile() *PluginVersionFile {
-	pvf := NewPluginVersionFile()
+	pvf := newPluginVersionFile()
 
 	versionFiles, err := filehelpers.ListFiles(filepaths.EnsurePluginDir(), &filehelpers.ListOptions{
 		Include: []string{fmt.Sprintf("**/%s", pluginVersionFileName)},
@@ -163,44 +203,6 @@ func recomposePluginVersionFile() *PluginVersionFile {
 	return pvf
 }
 
-func BackfillPluginVersionFile() error {
-	versions, err := LoadPluginVersionFile()
-	if err != nil {
-		return err
-	}
-	if versions.composed {
-		// this was composed from the plugin directories
-		// no point backfilling
-		return nil
-	}
-	return versions.Backfill()
-}
-
-// Save writes the config file to disk
-func (f *PluginVersionFile) Save() error {
-	// set struct version
-	f.StructVersion = PluginStructVersion
-	versionFilePath := filepaths.PluginVersionFilePath()
-	// maintain the legacy properties for backward compatibility
-	for _, v := range f.Plugins {
-		v.MaintainLegacy()
-	}
-	return f.write(versionFilePath)
-}
-
-func (f *PluginVersionFile) write(path string) error {
-	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
-	if err != nil {
-		log.Println("[ERROR]", "Error while writing version file", err)
-		return err
-	}
-	if len(versionFileJSON) == 0 {
-		log.Println("[ERROR]", "Cannot write 0 bytes to file")
-		return sperr.WrapWithMessage(ErrNoContent, "cannot write versions file")
-	}
-	return os.WriteFile(path, versionFileJSON, 0644)
-}
-
 func readPluginVersionFile(path string) (*PluginVersionFile, error) {
 	file, err := os.ReadFile(path)
 	if err != nil {
@@ -209,7 +211,7 @@ func readPluginVersionFile(path string) (*PluginVersionFile, error) {
 	if len(file) == 0 {
 		// the file exists, but is empty
 		// start from scratch
-		return NewPluginVersionFile(), nil
+		return newPluginVersionFile(), nil
 	}
 
 	var data PluginVersionFile
@@ -226,7 +228,7 @@ func readPluginVersionFile(path string) (*PluginVersionFile, error) {
 		// hard code the name to the key
 		installedPlugin.Name = key
 		if installedPlugin.StructVersion == 0 {
-			// also backfill the StructVersion in the values
+			// also backfill the StructVersion in map values
 			installedPlugin.StructVersion = InstalledVersionStructVersion
 		}
 	}
