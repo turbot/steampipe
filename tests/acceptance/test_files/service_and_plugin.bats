@@ -618,6 +618,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # run steampipe again so that the plugin version files get backfilled
   run steampipe plugin list --install-dir $tmpdir
   
+  ls -la $vFile
+  
   [ ! -f $vFile ] && fail "could not find $vFile"
   
   assert_equal "$(cat $vFile)" "$fileContent"
