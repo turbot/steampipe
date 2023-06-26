@@ -112,6 +112,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$diff" ""
 }
 
+# run teardown with 30s sleep after each test since it takes some time to kill all plugins in pluginMultiConnectionMap
 function teardown() {
   sleep 30
   # list running processes

@@ -70,6 +70,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output --partial 'does not define a query or SQL, and has no edges/nodes'
 }
 
+# run teardown with 30s sleep after each test since it takes some time to kill all plugins in pluginMultiConnectionMap
 function teardown() {
   sleep 30
   # list running processes
