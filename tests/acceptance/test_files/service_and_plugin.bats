@@ -627,7 +627,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $tmpdir
 }
 
-@test "verify that holistic plugin/versions.json is composed from individual version.json files when it is corrupt" {
+@test "verify that global plugin/versions.json is composed from individual version.json files when it is corrupt" {
   tmpdir=$(mktemp -d)
   run steampipe plugin install net chaos --install-dir $tmpdir
   assert_success
@@ -675,19 +675,19 @@ load "$LIB_BATS_SUPPORT/load.bash"
   tmpdir=$(mktemp -d)
   run steampipe plugin install net chaos --install-dir $tmpdir
   assert_success
-  
+
   # wait for a couple of seconds
   sleep 2
-  
+
   # touch one of the plugin binaries
   touch $tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/steampipe-plugin-net.plugin
-  
+
   # run steampipe again so that the plugin version files get backfilled
-  version=$(steampipe plugin list --install-dir $tmpdir --output json | jq '.installed' | jq '. | map(select(.name | contains("csv@latest")))' | jq '.[0].version')
+  version=$(steampipe plugin list --install-dir $tmpdir --output json | jq '.installed' | jq '. | map(select(.name | contains("net@latest")))' | jq '.[0].version')
 
   # assert
-  assert_equal "$version" "local"
-  
+  assert_equal "$version" '"local"'
+
   rm -rf $tmpdir
 }
 

@@ -101,7 +101,7 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 	if filehelpers.FileExists(versionFilePath) {
 		pluginVersions, err := readPluginVersionFile(versionFilePath)
 
-		// we could read out the file
+		// we could read and parse out the file
 		if err == nil {
 			return pluginVersions, nil
 		}
@@ -115,7 +115,8 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 	}
 
 	// generate the version file from the individual version files
-	// by walking the plugin directories - this will return an Empty Version file
+	// by walking the plugin directories - this will return an Empty Version file if there are no version
+	// files in the plugin directories
 	pluginVersions := recomposePluginVersionFile()
 	err := pluginVersions.Save()
 	if err != nil {
@@ -155,7 +156,7 @@ func recomposePluginVersionFile() *PluginVersionFile {
 		pvf.Plugins[install.Name] = install
 
 		// mark that this is a composed version file
-		// and not directly read
+		// and not just read
 		pvf.composed = true
 	}
 
