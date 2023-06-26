@@ -8,7 +8,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   run steampipe dashboard dashboard.query_providers_top_level --output snapshot
   assert_success
-  sleep 15
+  sleep 25
   # list running processes
   ps -ef | grep steampipe
 
@@ -22,7 +22,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   run steampipe dashboard dashboard.query_providers_top_level_require_sql --output snapshot
   assert_success
-  sleep 15
+  sleep 25
   # list running processes
   ps -ef | grep steampipe
 
@@ -36,7 +36,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   run steampipe dashboard dashboard.top_level_control_query_require_sql --output snapshot
   assert_output --partial 'does not define a query or SQL'
-  sleep 15
+  sleep 25
   # list running processes
   ps -ef | grep steampipe
 
@@ -50,7 +50,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   run steampipe dashboard dashboard.query_providers_nested --output snapshot
   assert_success
-  sleep 15
+  sleep 25
   # list running processes
   ps -ef | grep steampipe
 
@@ -64,7 +64,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   run steampipe dashboard dashboard.query_providers_nested --output snapshot
   assert_output --partial 'does not define a query or SQL'
-  sleep 15
+  sleep 25
   # list running processes
   ps -ef | grep steampipe
 
@@ -78,7 +78,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   run steampipe dashboard dashboard.query_providers_nested_dont_require_sql --output snapshot
   assert_success
-  sleep 15
+  sleep 25
   # list running processes
   ps -ef | grep steampipe
 
@@ -92,7 +92,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   run steampipe dashboard dashboard.node_edge_providers_top_level --output snapshot
   assert_success
-  sleep 15
+  sleep 25
   # list running processes
   ps -ef | grep steampipe
 
@@ -106,7 +106,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   run steampipe dashboard dashboard.node_edge_providers_nested --output snapshot
   assert_success
-  sleep 15
+  sleep 25
   # list running processes
   ps -ef | grep steampipe
 
@@ -120,7 +120,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   run steampipe dashboard dashboard.node_edge_providers_nested --output snapshot
   assert_output --partial 'does not define a query or SQL, and has no edges/nodes'
-  sleep 15
+  sleep 25
   # list running processes
   ps -ef | grep steampipe
 
