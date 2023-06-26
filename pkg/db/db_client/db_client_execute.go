@@ -128,7 +128,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 			statushooks.Done(ctxExecute)
 			// error - rollback transaction if we have one
 			if tx != nil {
-				tx.Rollback()
+				_ = tx.Rollback()
 			}
 			// in case of error call the onComplete callback
 			if onComplete != nil {
@@ -176,7 +176,7 @@ func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
 	}
 	// create a context with a deadline
 	shouldBeDoneBy := time.Now().Add(queryTimeout)
-	// we don't use this cancel fn because, pgx prematurely cancels the PG connection when this cancel gets called in 'defer'
+	//nolint:golint,lostcancel //we don't use this cancel fn because, pgx prematurely cancels the PG connection when this cancel gets called in 'defer'
 	newCtx, _ := context.WithDeadline(ctx, shouldBeDoneBy)
 
 	return newCtx
@@ -226,8 +226,6 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 	}
 	// update the max id for this session
 	session.ScanMetadataMaxId = id
-
-	return
 }
 
 func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_common.DatabaseSession) error {
