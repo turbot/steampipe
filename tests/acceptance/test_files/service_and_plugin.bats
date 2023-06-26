@@ -672,7 +672,23 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "verify that plugin installed from registry are marked as 'local' when the modtime of the binary is after the install time" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
   
+  # wait for a couple of seconds
+  sleep 2
+  
+  # touch one of the plugin binaries
+  touch $tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/steampipe-plugin-net.plugin
+  
+  # run steampipe again so that the plugin version files get backfilled
+  version=$(steampipe plugin list --install-dir $tmpdir --output json | jq '.installed' | jq '. | map(select(.name | contains("csv@latest")))' | jq '.[0].version')
+
+  # assert
+  assert_equal "$version" "local"
+  
+  rm -rf $tmpdir
 }
 
 @test "cleanup" {
