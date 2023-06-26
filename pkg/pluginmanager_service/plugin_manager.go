@@ -212,18 +212,10 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 		}
 	}()
 
-	var pids []int64
 	// kill all plugins in pluginMultiConnectionMap
 	for _, p := range m.runningPluginMap {
-		pids = append(pids, p.reattach.Pid)
 		log.Printf("[INFO] Kill plugin %s (%p)", p.pluginName, p.client)
 		m.killPlugin(p)
-	}
-
-	for _, pid := range pids {
-		if exists, _ := utils.PidExists(int(pid)); exists {
-			log.Printf("[WARN] Plugin pid %d still exists after we killed the plugin", pid)
-		}
 	}
 
 	return &pb.ShutdownResponse{}, nil
