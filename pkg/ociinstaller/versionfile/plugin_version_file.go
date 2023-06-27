@@ -20,7 +20,8 @@ var (
 )
 
 const (
-	PluginStructVersion   = 20220411
+	PluginStructVersion = 20220411
+	// the name of the version files that are put in the plugin installation directories
 	pluginVersionFileName = "version.json"
 )
 
@@ -180,7 +181,7 @@ func recomposePluginVersionFile() *PluginVersionFile {
 	})
 
 	if err != nil {
-		log.Println("[TRACE]", "error while walking plugin directory for version files", err)
+		log.Println("[TRACE] recomposePluginVersionFile failed - error while walking plugin directory for version files", err)
 		return pvf
 	}
 

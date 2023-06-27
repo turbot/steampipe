@@ -119,30 +119,8 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 			item.Version = installation.Version
 			// but if the modtime of the binary is after the installation date,
 			// this is "local"
-			installDate, err := time.Parse(time.RFC3339, installation.InstallDate)
-			if err != nil {
-				log.Printf("[WARN] could not parse install date for %s: %s", fullPluginName, installation.InstallDate)
-				continue
-			}
 
-			// truncate to second
-			// otherwise, comparisons may get skewed because of the
-			// underlying monotonic clock
-			installDate = installDate.Truncate(time.Second)
-
-			// get the modtime of the plugin binary
-			stat, err := os.Lstat(pluginBinary)
-			if err != nil {
-				log.Printf("[WARN] could not parse install date for %s: %s", fullPluginName, installation.InstallDate)
-				continue
-			}
-			modTime := stat.ModTime().
-				// truncate to second
-				// otherwise, comparisons may get skewed because of the
-				// underlying monotonic clock
-				Truncate(time.Second)
-
-			if installDate.Before(modTime) {
+			if detectLocalPlugin(installation, pluginBinary) {
 				item.Version = "local"
 			}
 
@@ -164,4 +142,33 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 	}
 
 	return items, nil
+}
+
+// detectLocalPlugin returns true if the modTime of the `pluginBinary` is after the installation date as recorded in the installation data
+// this may happen when a plugin is installed from the registry, but is then compiled from source
+func detectLocalPlugin(installation *versionfile.InstalledVersion, pluginBinary string) bool {
+	installDate, err := time.Parse(time.RFC3339, installation.InstallDate)
+	if err != nil {
+		log.Printf("[WARN] could not parse install date for %s: %s", installation.Name, installation.InstallDate)
+		return false
+	}
+
+	// truncate to second
+	// otherwise, comparisons may get skewed because of the
+	// underlying monotonic clock
+	installDate = installDate.Truncate(time.Second)
+
+	// get the modtime of the plugin binary
+	stat, err := os.Lstat(pluginBinary)
+	if err != nil {
+		log.Printf("[WARN] could not parse install date for %s: %s", installation.Name, installation.InstallDate)
+		return false
+	}
+	modTime := stat.ModTime().
+		// truncate to second
+		// otherwise, comparisons may get skewed because of the
+		// underlying monotonic clock
+		Truncate(time.Second)
+
+	return installDate.Before(modTime)
 }

@@ -60,6 +60,8 @@ func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}) (*St
 	return image, nil
 }
 
+// updatePluginVersionFiles updates the global versions.json to add installation of the plugin
+// also adds a version file in the plugin installation directory with the information
 func updatePluginVersionFiles(image *SteampipeImage) error {
 	versionFileUpdateLock.Lock()
 	defer versionFileUpdateLock.Unlock()
@@ -72,28 +74,28 @@ func updatePluginVersionFiles(image *SteampipeImage) error {
 
 	pluginFullName := image.ImageRef.DisplayImageRef()
 
-	installation, ok := v.Plugins[pluginFullName]
+	installedVersion, ok := v.Plugins[pluginFullName]
 	if !ok {
-		installation = versionfile.EmptyInstalledVersion()
+		installedVersion = versionfile.EmptyInstalledVersion()
 	}
 
-	installation.Name = pluginFullName
-	installation.Version = image.Config.Plugin.Version
-	installation.ImageDigest = string(image.OCIDescriptor.Digest)
-	installation.BinaryDigest = image.Plugin.BinaryDigest
-	installation.BinaryArchitecture = image.Plugin.BinaryArchitecture
-	installation.InstalledFrom = image.ImageRef.ActualImageRef()
-	installation.LastCheckedDate = timeNow
-	installation.InstallDate = timeNow
+	installedVersion.Name = pluginFullName
+	installedVersion.Version = image.Config.Plugin.Version
+	installedVersion.ImageDigest = string(image.OCIDescriptor.Digest)
+	installedVersion.BinaryDigest = image.Plugin.BinaryDigest
+	installedVersion.BinaryArchitecture = image.Plugin.BinaryArchitecture
+	installedVersion.InstalledFrom = image.ImageRef.ActualImageRef()
+	installedVersion.LastCheckedDate = timeNow
+	installedVersion.InstallDate = timeNow
 
-	v.Plugins[pluginFullName] = installation
+	v.Plugins[pluginFullName] = installedVersion
 
-	// Ensure that the version file is written.
+	// Ensure that the version file is written to the plugin installation folder
 	// Having this file is important, since this can be used
 	// to compose the global version file if it is unavailable or unparseable
 	// This makes sure that in the event of corruption (global/individual) we don't end up
 	// losing all the plugin install data
-	if err := v.EnsureVersionFile(installation, true); err != nil {
+	if err := v.EnsureVersionFile(installedVersion, true); err != nil {
 		return err
 	}
 
