@@ -66,9 +66,6 @@ func (f *PluginVersionFile) EnsureVersionFile(installData *InstalledVersion, for
 		return nil
 	}
 
-	// make sure that the legacy fields are also filled in
-	installData.MaintainLegacy()
-
 	theBytes, err := json.MarshalIndent(installData, "", "  ")
 	if err != nil {
 		return err
@@ -193,6 +190,10 @@ func recomposePluginVersionFile() *PluginVersionFile {
 			log.Println("[TRACE] unmarshal failed for file:", versionFile)
 			continue
 		}
+
+		// make sure that the legacy fields are also filled in for backward compatibility
+		install.MaintainLegacy()
+
 		pvf.Plugins[install.Name] = install
 
 		// mark that this is a composed version file
