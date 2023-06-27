@@ -3,6 +3,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "simple dashboard test" {
   export STEAMPIPE_LOG=info
+  env
   # run a dashboard and shapshot the output
   run steampipe dashboard dashboard.sibling_containers_report --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_sibling_containers"
 
@@ -21,6 +22,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "dashboard with 'with' blocks" {
   export STEAMPIPE_LOG=info
+  env
   # run a dashboard and shapshot the output
   run steampipe dashboard dashboard.testing_with_blocks --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_withs"
 
@@ -43,6 +45,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "dashboard with 'text' blocks" {
   export STEAMPIPE_LOG=info
+  env
   # run a dashboard and shapshot the output
   run steampipe dashboard dashboard.testing_text_blocks --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_texts"
 
@@ -61,6 +64,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "dashboard with 'card' blocks" {
   export STEAMPIPE_LOG=info
+  env
   # run a dashboard and shapshot the output
   run steampipe dashboard dashboard.testing_card_blocks --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_cards"
 
@@ -80,6 +84,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "dashboard with node and edge blocks" {
   export STEAMPIPE_LOG=info
+  env
   # run a dashboard and shapshot the output
   run steampipe dashboard dashboard.testing_nodes_and_edges --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_graphs"
 
@@ -102,6 +107,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "dashboard with 'input' and test --dashboard-input arg" {
   export STEAMPIPE_LOG=info
+  env
   # run a dashboard and shapshot the output
   run steampipe dashboard dashboard.testing_dashboard_inputs --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_inputs" --dashboard-input new_input=test
 
