@@ -222,7 +222,7 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 
 	for _, pid := range pids {
 		if exists, _ := utils.PidExists(int(pid)); exists {
-			log.Printf("[WARN] Plugin pid %d still exists after we killed the plugin", pid)
+			log.Printf("[INFO] Plugin pid %d still exists after we killed the plugin", pid)
 		}
 	}
 
