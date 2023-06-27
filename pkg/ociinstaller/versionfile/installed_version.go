@@ -27,6 +27,11 @@ func EmptyInstalledVersion() *InstalledVersion {
 	return i
 }
 
+// Equal compares the `Name` and `BinaryDigest`
+func (f *InstalledVersion) Equal(other *InstalledVersion) bool {
+	return f.Name == other.Name && f.BinaryDigest == other.BinaryDigest
+}
+
 // MigrateLegacy migrates the legacy properties into new properties
 func (f *InstalledVersion) MigrateLegacy() {
 	f.ImageDigest = f.LegacyImageDigest

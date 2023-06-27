@@ -55,16 +55,25 @@ func (f *PluginVersionFile) MigrateFrom() migrate.Migrateable {
 	return f
 }
 
-func (f *PluginVersionFile) EnsureVersionFile(installData *InstalledVersion, force bool) error {
+// EnsureVersionFile reads the version file in the plugin directory (if exists) and overwrites it if the data in the
+// argument is different. The comparison is done using the `Name` and `BinaryDigest` properties.
+// If the file doesn't exist, or cannot be read/parsed, EnsureVersionFile fails over wo overwriting the data
+func (f *PluginVersionFile) EnsureVersionFile(installData *InstalledVersion) error {
 	pluginFolder, err := filepaths.FindPluginFolder(installData.Name)
 	if err != nil {
 		return err
 	}
 	versionFile := filepath.Join(pluginFolder, pluginVersionFileName)
 
-	// if this is not forced, make sure that the file doesn't exist before overwriting it
-	if !force && filehelpers.FileExists(versionFile) {
-		return nil
+	// If the version file already exists, we only write to it if the incoming data is newer
+	if filehelpers.FileExists(versionFile) {
+		installation, err := readPluginVersionFile(versionFile)
+		if err == nil && installation.Equal(installData) {
+			// the new and old digests match
+			// no need to overwrite
+			return nil
+		}
+		// in case of error, just failover to a overwrite
 	}
 
 	// make sure that the legacy fields are also filled in
@@ -104,7 +113,7 @@ func (f *PluginVersionFile) write(path string) error {
 
 func (f *PluginVersionFile) backfill() error {
 	for _, installation := range f.Plugins {
-		if err := f.EnsureVersionFile(installation, false); err != nil {
+		if err := f.EnsureVersionFile(installation); err != nil {
 			return err
 		}
 	}
@@ -186,15 +195,9 @@ func recomposePluginVersionFile() *PluginVersionFile {
 	}
 
 	for _, versionFile := range versionFiles {
-		data, err := os.ReadFile(versionFile)
+		install, err := readPluginVersionFile(versionFile)
 		if err != nil {
 			log.Println("[TRACE] could not read file", versionFile)
-			continue
-		}
-		install := EmptyInstalledVersion()
-		if err := json.Unmarshal(data, &install); err != nil {
-			// this wasn't the version file (probably) - keep going
-			log.Println("[TRACE] unmarshal failed for file:", versionFile)
 			continue
 		}
 		pvf.Plugins[install.Name] = install
@@ -205,6 +208,21 @@ func recomposePluginVersionFile() *PluginVersionFile {
 	}
 
 	return pvf
+}
+
+func readPluginVersionFile(versionFile string) (*InstalledVersion, error) {
+	data, err := os.ReadFile(versionFile)
+	if err != nil {
+		log.Println("[TRACE] could not read file", versionFile)
+		return nil, err
+	}
+	install := EmptyInstalledVersion()
+	if err := json.Unmarshal(data, &install); err != nil {
+		// this wasn't the version file (probably) - keep going
+		log.Println("[TRACE] unmarshal failed for file:", versionFile)
+		return nil, err
+	}
+	return install, nil
 }
 
 func readGlobalPluginVersionsFile(path string) (*PluginVersionFile, error) {
