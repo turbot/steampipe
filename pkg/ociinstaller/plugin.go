@@ -19,8 +19,6 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-// a lock for writing to the plugin/versions.json file
-// and the individual version.json files
 var versionFileUpdateLock = &sync.Mutex{}
 
 // InstallPlugin installs a plugin from an OCI Image
@@ -90,11 +88,9 @@ func updatePluginVersionFiles(image *SteampipeImage) error {
 
 	v.Plugins[pluginFullName] = installation
 
-	// Ensure that the version file is written.
-	// Having this file is important, since this can be used
-	// to compose the global version file if it is unavailable or unparseable
-	// This makes sure that in the event of corruption (global/individual) we don't end up
-	// losing all the plugin install data
+	// ensure that the version file is written
+	// having this file is important, since this can be used
+	// to compose the holistic version file if need be
 	if err := v.EnsureVersionFile(installation, true); err != nil {
 		return err
 	}
