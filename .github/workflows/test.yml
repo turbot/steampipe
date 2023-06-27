@@ -39,14 +39,6 @@ jobs:
           path: ${{ steps.go-cache-paths.outputs.go-build }}
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
 
-      # Cache go mod cache, used to speedup builds
-      # - name: Go Mod Cache
-      #   id: mod-cache
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: ${{ steps.go-cache-paths.outputs.go-mod }}
-      #     key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
-
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         continue-on-error: true # we dont want to enforce just yet
