@@ -112,6 +112,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "dashboard with 'input' and test --dashboard-input arg" {
   export STEAMPIPE_LOG=info
+  
   env
   # run a dashboard and shapshot the output
   run steampipe dashboard dashboard.testing_dashboard_inputs --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_inputs" --dashboard-input new_input=test
