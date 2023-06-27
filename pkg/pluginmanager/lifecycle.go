@@ -108,6 +108,7 @@ func stop(state *PluginManagerState) error {
 		return err
 	}
 
+	log.Printf("[INFO] >>> plugin_manager pid: %d", state.Pid)
 	// kill the underlying client
 	pluginManager.rawClient.Kill()
 
