@@ -99,6 +99,8 @@ func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []strin
 		return &manifestDescriptor, nil, nil, nil, err
 	}
 	log.Println("[TRACE] ociDownloader.Pull:", "manifest content", string(manifestJson))
+
+	// Parse the fetched manifest
 	var manifest ocispec.Manifest
 	err = json.Unmarshal(manifestJson, &manifest)
 	if err != nil {
@@ -106,17 +108,10 @@ func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []strin
 		return &manifestDescriptor, nil, nil, nil, err
 	}
 
-	rc, err := memoryStore.Fetch(ctx, manifest.Config)
+	// Fetch the config from the file store
+	configData, err := content.FetchAll(ctx, fileStore, manifest.Config)
 	if err != nil {
-		log.Println("[ERROR] ociDownloader.Pull:", "failed to fetch config", manifest.Config, err)
-		return &manifestDescriptor, nil, nil, nil, err
-	}
-	defer rc.Close()
-
-	configData := make([]byte, manifest.Config.Size)
-	_, err = rc.Read(configData)
-	if err != nil {
-		log.Println("[ERROR] ociDownloader.Pull:", "failed to read config", ocispec.MediaTypeImageConfig, err)
+		log.Println("[ERROR] ociDownloader.Pull:", "failed to fetch config", manifest.Config.MediaType, err)
 		return &manifestDescriptor, nil, nil, nil, err
 	}
 	log.Println("[TRACE] ociDownloader.Pull:", "config", string(configData))
