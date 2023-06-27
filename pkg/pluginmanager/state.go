@@ -108,15 +108,17 @@ func (s *PluginManagerState) kill() error {
 		return err
 	}
 	if process == nil {
-		log.Printf("[TRACE] tried to kill plugin_manager, but couldn't find process (%d)", s.Pid)
+		log.Printf("[INFO] tried to kill plugin_manager, but couldn't find process (%d)", s.Pid)
 		return nil
 	}
+	log.Printf("[INFO] >> plugin_manager process %d", process.Pid)
 	// kill the plugin manager process by sending a SIGTERM (to give it a chance to clean up its children)
 	err = process.SendSignal(syscall.SIGTERM)
 	if err != nil {
-		log.Println("[TRACE] tried to kill plugin_manager, but couldn't send signal to process", err)
+		log.Println("[INFO] tried to kill plugin_manager, but couldn't send signal to process", err)
 		return err
 	}
+	log.Printf("[INFO] >> killed plugin_manager process %d", process.Pid)
 	// delete the state file as we have shutdown the plugin manager
 	s.delete()
 	return nil
