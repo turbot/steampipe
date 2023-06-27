@@ -89,6 +89,7 @@ func Stop() error {
 		// nothing to do
 		return nil
 	}
+	log.Printf("[INFO] plugin manager stopping here???")
 	return stop(state)
 }
 
