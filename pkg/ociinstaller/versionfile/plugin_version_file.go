@@ -70,10 +70,6 @@ func (f *PluginVersionFile) EnsureVersionFile(installData *InstalledVersion, for
 	if err != nil {
 		return err
 	}
-
-	// make sure that the legacy fields are also filled in
-	installData.MaintainLegacy()
-
 	return os.WriteFile(versionFile, theBytes, 0644)
 }
 
