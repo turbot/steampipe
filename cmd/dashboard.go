@@ -91,7 +91,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 		}
 		setExitCodeForDashboardError(err)
 	}()
-
+	log.Printf("[INFO] >> in dashboard cmd")
 	// first check whether a dashboard name has been passed as an arg
 	dashboardName, err := validateDashboardArgs(dashboardCtx, args)
 	error_helpers.FailOnError(err)
@@ -247,7 +247,7 @@ func getInitData(ctx context.Context) *initialisation.InitData {
 	if errAndWarnings.GetError() != nil {
 		return initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", errAndWarnings.GetError().Error()))
 	}
-
+	log.Printf("[INFO] >> inside getInitData")
 	i := initialisation.NewInitData()
 	i.Workspace = w
 	i.Result.Warnings = errAndWarnings.Warnings

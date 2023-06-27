@@ -71,9 +71,9 @@ func (c *LocalDbClient) Close(ctx context.Context) error {
 	if err := c.DbClient.Close(ctx); err != nil {
 		return err
 	}
-	log.Printf("[TRACE] local client close complete")
+	log.Printf("[INFO] local client close complete")
 
-	log.Printf("[TRACE] shutdown local service %v", c.invoker)
+	log.Printf("[INFO] shutdown local service %v", c.invoker)
 	ShutdownService(ctx, c.invoker)
 	return nil
 }

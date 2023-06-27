@@ -3,6 +3,7 @@ package initialisation
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
@@ -171,13 +172,18 @@ func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCal
 }
 
 func (i *InitData) Cleanup(ctx context.Context) {
+	log.Printf("[INFO] >> inside Cleanup")
 	if i.Client != nil {
+		log.Printf("[INFO] >> inside if 1")
 		i.Client.Close(ctx)
 	}
 	if i.ShutdownTelemetry != nil {
+		log.Printf("[INFO] >> inside if 2")
 		i.ShutdownTelemetry()
 	}
 	if i.Workspace != nil {
+		log.Printf("[INFO] >> inside if 3")
 		i.Workspace.Close()
 	}
+	log.Printf("[INFO] >> done Cleanup")
 }

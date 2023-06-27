@@ -165,6 +165,7 @@ func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (s
 		}
 		utils.LogTime("db_local.StopDB end")
 	}()
+	log.Printf("[INFO] >> inside StopServices")
 
 	// stop the plugin manager
 	// this means it may be stopped even if we fail to stop the service - that is ok - we will restart it if needed
