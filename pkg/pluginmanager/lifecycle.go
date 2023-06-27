@@ -108,7 +108,7 @@ func stop(state *PluginManagerState) error {
 	}
 
 	// kill the underlying client
-	pluginManager.rawClient.Kill()
+	// pluginManager.rawClient.Kill()
 
 	log.Printf("[TRACE] pluginManager state.kill")
 	// now kill the plugin manager
