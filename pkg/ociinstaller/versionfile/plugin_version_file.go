@@ -124,7 +124,7 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 
 	versionFilePath := filepaths.PluginVersionFilePath()
 	if filehelpers.FileExists(versionFilePath) {
-		pluginVersions, err := readPluginVersionFile(versionFilePath)
+		pluginVersions, err := readGlobalPluginVersionsFile(versionFilePath)
 
 		// we could read and parse out the file - all is well
 		if err == nil {
@@ -207,7 +207,7 @@ func recomposePluginVersionFile() *PluginVersionFile {
 	return pvf
 }
 
-func readPluginVersionFile(path string) (*PluginVersionFile, error) {
+func readGlobalPluginVersionsFile(path string) (*PluginVersionFile, error) {
 	file, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

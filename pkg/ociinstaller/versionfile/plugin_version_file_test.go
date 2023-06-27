@@ -38,7 +38,7 @@ func TestWrite(t *testing.T) {
 	if err := v.write(fileName); err != nil {
 		t.Errorf("\nError writing file: %s", err.Error())
 	}
-	v2, err := readPluginVersionFile(fileName)
+	v2, err := readGlobalPluginVersionsFile(fileName)
 	if err != nil {
 		t.Errorf("\nError reading file: %s", err.Error())
 	}
