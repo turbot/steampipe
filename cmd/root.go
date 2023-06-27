@@ -97,6 +97,8 @@ var rootCmd = &cobra.Command{
 		waitForTasksChannel = runScheduledTasks(cmd.Context(), cmd, args, ew)
 
 		// decompose the plugin version file
+		// no point doing this for the plugin-manager since that would have been done
+		// by the initiating CLI process anyway
 		if !task.IsPluginManagerCmd(cmd) {
 			versionfile.BackfillPluginVersionFile()
 		}

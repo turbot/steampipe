@@ -122,24 +122,27 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 	if filehelpers.FileExists(versionFilePath) {
 		pluginVersions, err := readPluginVersionFile(versionFilePath)
 
-		// we could read and parse out the file
+		// we could read and parse out the file - all is well
 		if err == nil {
 			return pluginVersions, nil
 		}
 
 		// check if this was a syntax error during parsing
+		// if it is a syntax error, either the file is corrupted or empty
 		var syntaxError *json.SyntaxError
 		isSyntaxError := errors.As(err, &syntaxError)
 		if !isSyntaxError {
+			// not a syntax error - return as-is
 			return nil, err
 		}
 	}
 
 	// we don't have a global plugin/versions.json or it is not parseable
-	// generate the version file from the individual version files
-	// by walking the plugin directories - this will return an Empty Version file if there are no version
-	// files in the plugin directories
+	// generate the version file from the individual version files by walking the plugin directories
+	// this will return an Empty Version file if there are no version files in the plugin directories
 	pluginVersions := recomposePluginVersionFile()
+
+	// save the recomposed file
 	err := pluginVersions.Save()
 	if err != nil {
 		return nil, err
@@ -156,7 +159,7 @@ func BackfillPluginVersionFile() error {
 	}
 	if versions.composed {
 		// this was composed from the plugin directories
-		// it's already backfilled
+		// no point backfilling
 		return nil
 	}
 	return versions.backfill()
