@@ -195,8 +195,8 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connection.Connectio
 }
 
 func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
-	log.Printf("[INFO] PluginManager Shutdown")
-	defer log.Printf("[INFO] PluginManager Shutdown complete")
+	log.Printf("[INFO] PluginManager Shutdown (%d)", os.Getpid())
+	defer log.Printf("[INFO] PluginManager Shutdown complete (%d)", os.Getpid())
 
 	// lock shutdownMut before waiting for startPluginWg
 	// this enables us to exit from ensurePlugin early if needed
