@@ -112,7 +112,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "dashboard with 'input' and test --dashboard-input arg" {
   export STEAMPIPE_LOG=info
-  
+
   env
   # run a dashboard and shapshot the output
   run steampipe dashboard dashboard.testing_dashboard_inputs --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_inputs" --dashboard-input new_input=test
@@ -133,11 +133,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 # run teardown with 30s sleep after each test since it takes some time to kill all plugins in pluginMultiConnectionMap
 function teardown() {
-  sleep 30
+  ps aux | grep steampipe
+  sleep 30s
   # list running processes
-  ps -ef | grep steampipe
+  psx=$(ps aux | grep steampipe)
+  echo $psx
 
   # check if any processes are running
-  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  num=$($psx | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
   assert_equal $num 0
 }
