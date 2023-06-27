@@ -111,7 +111,7 @@ func (f *PluginVersionFile) write(path string) error {
 	return os.WriteFile(path, versionFileJSON, 0644)
 }
 
-func (f *PluginVersionFile) backfill() error {
+func (f *PluginVersionFile) ensureVersionFilesInPluginDirectories() error {
 	for _, installation := range f.Plugins {
 		if err := f.EnsureVersionFile(installation); err != nil {
 			return err
@@ -163,9 +163,9 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 	return pluginVersions, err
 }
 
-// BackfillPluginVersionFile attempts a backfill of the individual version.json for plugins
+// EnsureVersionFilesInPluginDirectories attempts a backfill of the individual version.json for plugins
 // this is required only once when upgrading from 0.20.x
-func BackfillPluginVersionFile() error {
+func EnsureVersionFilesInPluginDirectories() error {
 	versions, err := LoadPluginVersionFile()
 	if err != nil {
 		return err
@@ -175,7 +175,7 @@ func BackfillPluginVersionFile() error {
 		// no point backfilling
 		return nil
 	}
-	return versions.backfill()
+	return versions.ensureVersionFilesInPluginDirectories()
 }
 
 // recomposePluginVersionFile recursively traverses down the plugin direcory and tries to
