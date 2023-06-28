@@ -99,14 +99,15 @@ func stop(state *PluginManagerState) error {
 		return err
 	}
 
-	log.Printf("[TRACE] pluginManager.Shutdown")
+	log.Printf("[INFO] pluginManager.Shutdown")
 	// tell plugin manager to kill all plugins
 	_, err = pluginManager.Shutdown(&pb.ShutdownRequest{})
 	if err != nil {
 		return err
 	}
+	log.Printf("[INFO] >>> plugin_manager pid: %d", state.Pid)
 
-	log.Printf("[TRACE] pluginManager state.kill")
+	log.Printf("[INFO] pluginManager state.kill")
 	// now kill the plugin manager
 	return state.kill()
 }
