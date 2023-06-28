@@ -92,8 +92,9 @@ func setBaseDefaults() {
 		constants.ArgUpdateCheck: true,
 
 		// workspace profile
-		constants.ArgAutoComplete:  true,
-		constants.ArgIntrospection: constants.IntrospectionNone,
+		constants.ArgAutoComplete:       true,
+		constants.ArgIntrospection:      constants.IntrospectionNone,
+		constants.ArgClientCacheEnabled: true,
 
 		// from global database options
 		constants.ArgDatabaseListenAddresses: constants.DatabaseDefaultListenAddresses,
