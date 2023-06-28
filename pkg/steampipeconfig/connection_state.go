@@ -92,11 +92,14 @@ func (d *ConnectionState) CanCloneSchema() bool {
 
 func (d *ConnectionState) Error() string {
 	return typehelpers.SafeString(d.ConnectionError)
-
 }
 
 func (d *ConnectionState) SetError(err string) {
 	d.ConnectionError = &err
+}
+
+func (d *ConnectionState) IsStateError() bool {
+	return d.State == constants.ConnectionStateError
 }
 
 // Loaded returns true if the connection state is 'ready' or 'error'
