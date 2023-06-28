@@ -20,7 +20,8 @@ func showCache(_ context.Context, input *HandlerInput) error {
 
 	currentStatusString := "off"
 	action := "on"
-	if viper.GetBool(constants.ArgClientCacheEnabled) {
+
+	if !viper.IsSet(constants.ArgClientCacheEnabled) || viper.GetBool(constants.ArgClientCacheEnabled) {
 		currentStatusString = "on"
 		action = "off"
 	}
