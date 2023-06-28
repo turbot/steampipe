@@ -5,8 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/connectionwatcher"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"os"
 	"os/exec"
@@ -14,6 +12,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/turbot/steampipe/pkg/connectionwatcher"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -157,7 +158,7 @@ func (m *PluginManager) OnConnectionsChanged(refreshResult *steampipeconfig.Refr
 }
 
 func (m *PluginManager) Shutdown(*proto.ShutdownRequest) (resp *proto.ShutdownResponse, err error) {
-	log.Printf("[INFO] PluginManager Shutdown")
+	log.Printf("[INFO] PluginManager Shutdown (%d)", os.Getpid())
 
 	m.mut.Lock()
 	defer func() {

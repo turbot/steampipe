@@ -38,7 +38,7 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 	logger := createPluginManagerLog()
 
-	log.Printf("[INFO] starting plugin manager")
+	log.Printf("[INFO] starting plugin manager (%d)", os.Getpid())
 	// build config map
 	steampipeConfig, err := steampipeconfig.LoadConnectionConfig()
 	if err != nil {
@@ -113,7 +113,7 @@ func createPluginManagerLog() hclog.Logger {
 		TimeFormat: "2006-01-02 15:04:05.000 UTC",
 	})
 	log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
-	log.SetPrefix("")
+	log.SetPrefix(fmt.Sprintf("(%d)", os.Getpid()))
 	log.SetFlags(0)
 	return logger
 }

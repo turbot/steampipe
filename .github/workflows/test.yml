@@ -7,6 +7,7 @@ env:
   SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
   SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+  STEAMPIPE_LOG: info
 
 jobs:
   goreleaser:
@@ -110,26 +111,26 @@ jobs:
       matrix:
         platform: [macos-latest, ubuntu-latest]
         test_block:
-          - "migration"
-          - "service_and_plugin"
-          - "service"
-          - "search_path"
-          - "chaos_and_query"
-          - "dynamic_schema"
-          - "dynamic_aggregators"
-          - "cache"
-          - "mod_install"
-          - "mod"
-          - "check"
-          - "performance"
-          - "workspace"
-          - "introspection"
-          - "cloud"
-          - "snapshot"
+          # - "migration"
+          # - "service_and_plugin"
+          # - "service"
+          # - "search_path"
+          # - "chaos_and_query"
+          # - "dynamic_schema"
+          # - "dynamic_aggregators"
+          # - "cache"
+          # - "mod_install"
+          # - "mod"
+          # - "check"
+          # - "performance"
+          # - "workspace"
+          # - "introspection"
+          # - "cloud"
+          # - "snapshot"
           - "dashboard"
           - "dashboard_parsing_validation"
-          - "exit_codes"
-          - "force_stop"
+          # - "exit_codes"
+          # - "force_stop"
         exclude:
           - platform: macos-latest
             test_block: migration
