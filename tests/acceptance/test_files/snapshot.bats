@@ -15,7 +15,7 @@ function setup() {
 # Related to https://github.com/turbot/steampipe/issues/3112
 
 @test "snapshot mode - query output csv" {
-  cd $FILE_PATH/test_data/functionality_test_mod
+  cd $FILE_PATH/test_data/mods/functionality_test_mod
 
   steampipe query query.static_query_2 --snapshot --output csv --cloud-token $SPIPETOOLS_TOKEN --snapshot-location spipetools/toolstest > output.csv
 
@@ -44,7 +44,7 @@ function setup() {
 }
 
 @test "snapshot mode - query output json" {
-  cd $FILE_PATH/test_data/functionality_test_mod
+  cd $FILE_PATH/test_data/mods/functionality_test_mod
 
   steampipe query query.static_query_2 --snapshot --output json --cloud-token $SPIPETOOLS_TOKEN --snapshot-location spipetools/toolstest > output.json
 
@@ -73,7 +73,7 @@ function setup() {
 }
 
 @test "snapshot mode - query output table" {
-  cd $FILE_PATH/test_data/functionality_test_mod
+  cd $FILE_PATH/test_data/mods/functionality_test_mod
 
   steampipe query query.static_query_2 --snapshot --output table --cloud-token $SPIPETOOLS_TOKEN --snapshot-location spipetools/toolstest > output.txt
 

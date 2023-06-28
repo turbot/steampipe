@@ -155,5 +155,5 @@ function teardown() {
 }
 
 function setup() {
-  cd $FILE_PATH/test_data/mod_install
+  cd $FILE_PATH/test_data/mods/mod_install
 }

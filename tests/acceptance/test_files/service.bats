@@ -22,7 +22,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   test_indices=$(echo $tests | jq '. | keys[]')
 
-  cd $FILE_PATH/test_data/service_mod
+  cd $FILE_PATH/test_data/mods/service_mod
 
   # prepare a sample sql file
   echo 'select 1' > sample.sql

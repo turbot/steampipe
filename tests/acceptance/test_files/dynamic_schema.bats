@@ -4,7 +4,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "dynamic schema - add csv and query" {
  # copy the csv file from csv source folder
- cp $SRC_DATA_DIR/csv/a.csv $FILE_PATH/test_data/csv_plugin_test/a.csv
+ cp $SRC_DATA_DIR/csv/a.csv $FILE_PATH/test_data/mods/csv_plugin_test/a.csv
 
  # run the query and verify - should pass
  run steampipe query "select * from csv1.a"
@@ -17,10 +17,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
  assert_success
 
  # remove the a.csv file
- rm -f $FILE_PATH/test_data/csv_plugin_test/a.csv
+ rm -f $FILE_PATH/test_data/mods/csv_plugin_test/a.csv
 
  # copy the csv file with extra column from csv source folder and give the same name(a.csv)
- cp $SRC_DATA_DIR/csv/a_extra_col.csv $FILE_PATH/test_data/csv_plugin_test/a.csv
+ cp $SRC_DATA_DIR/csv/a_extra_col.csv $FILE_PATH/test_data/mods/csv_plugin_test/a.csv
 
  # query the extra column and verify - should pass
  run steampipe query 'select "column_D" from csv1.a'
@@ -33,32 +33,32 @@ load "$LIB_BATS_SUPPORT/load.bash"
  assert_success
 
  # remove the a.csv file with extra column and copy the old one again
- rm -f $FILE_PATH/test_data/csv_plugin_test/a.csv
- cp $SRC_DATA_DIR/csv/a.csv $FILE_PATH/test_data/csv_plugin_test/a.csv
+ rm -f $FILE_PATH/test_data/mods/csv_plugin_test/a.csv
+ cp $SRC_DATA_DIR/csv/a.csv $FILE_PATH/test_data/mods/csv_plugin_test/a.csv
 
  # query the extra column and verify - should fail
  run steampipe query 'select "column_D" from csv1.a'
  assert_output --partial 'does not exist'
 
- rm -f $FILE_PATH/test_data/csv_plugin_test/a.csv
+ rm -f $FILE_PATH/test_data/mods/csv_plugin_test/a.csv
 }
 
 @test "dynamic schema - remove csv and query (should fail)" {
  # copy the csv file from csv source folder
- cp $SRC_DATA_DIR/csv/b.csv $FILE_PATH/test_data/csv_plugin_test/b.csv
+ cp $SRC_DATA_DIR/csv/b.csv $FILE_PATH/test_data/mods/csv_plugin_test/b.csv
   
  # run the query and verify - should pass
  run steampipe query "select * from csv1.b"
  assert_success
 
  # remove the b.csv file
- rm -f $FILE_PATH/test_data/csv_plugin_test/b.csv
+ rm -f $FILE_PATH/test_data/mods/csv_plugin_test/b.csv
 
 # run the query and verify - should fail
  run steampipe query "select * from csv1.b"
  assert_output --partial 'does not exist'
 
- rm -f $FILE_PATH/test_data/csv_plugin_test/b.csv
+ rm -f $FILE_PATH/test_data/mods/csv_plugin_test/b.csv
 }
 
 function teardown_file() {
@@ -77,7 +77,7 @@ function setup() {
 
  cd $SRC_DATA_DIR
  # appending the csv_plugin_test path
- full_path="${FILE_PATH}/test_data/csv_plugin_test/*.csv"
+ full_path="${FILE_PATH}/test_data/mods/csv_plugin_test/*.csv"
  echo "${full_path}"
 
  # escaping the slashes(/)
