@@ -109,3 +109,8 @@ function teardown() {
   date +"%Y-%m-%dT%H:%M:%S%z">&3
   echo "">&3
 }
+
+# disable parallelisation only within the containing file.
+function setup_file() {
+  export BATS_NO_PARALLELIZE_WITHIN_FILE=true
+}
