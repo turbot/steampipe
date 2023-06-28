@@ -26,11 +26,14 @@ func showCache(_ context.Context, input *HandlerInput) error {
 	}
 
 	fmt.Printf(
-		`Caching is %s. To turn it %s, type %s\n`,
+		`Caching is %s. To turn it %s, type %s`,
 		constants.Bold(currentStatusString),
 		constants.Bold(action),
 		constants.Bold(fmt.Sprintf(".cache %s", action)),
 	)
+
+	// add an empty line here so that the rendering buffer can start from the next line
+	fmt.Println()
 
 	return nil
 }
