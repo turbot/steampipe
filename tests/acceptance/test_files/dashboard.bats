@@ -127,9 +127,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # run teardown with 30s sleep after each test since it takes some time to kill all plugins in pluginMultiConnectionMap
 function teardown() {
   ps aux | grep steampipe
-  # sleep 30
-  sleep 1
-  echo "after 1s sleep"
+  sleep 30s
+  # sleep 1
+  echo "after 30s sleep"
   # list running processes
   psx=$(ps aux | grep steampipe)
   echo $psx
