@@ -10,7 +10,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # run the script to evaluate the patch
   # returns nothing if there is no diff(except start_time, end_time & search_path)
-  diff=$($FILE_PATH/test_files/json_patch.sh $output)
+  diff=$($FILE_PATH/json_patch.sh $output)
   echo $diff
   rm -f test.sps
 
@@ -30,7 +30,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # run the script to evaluate the patch
   # returns nothing if there is no diff(except start_time, end_time & search_path)
-  diff=$($FILE_PATH/test_files/json_patch.sh $output)
+  diff=$($FILE_PATH/json_patch.sh $output)
   echo $diff
   rm -f test.sps
   rm -f test2.json
@@ -48,7 +48,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # run the script to evaluate the patch
   # returns nothing if there is no diff(except start_time, end_time & search_path)
-  diff=$($FILE_PATH/test_files/json_patch.sh $output)
+  diff=$($FILE_PATH/json_patch.sh $output)
   echo $diff
   rm -f test.sps
 
@@ -66,7 +66,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # run the script to evaluate the patch
   # returns nothing if there is no diff(except start_time, end_time & search_path)
-  diff=$($FILE_PATH/test_files/json_patch.sh $output)
+  diff=$($FILE_PATH/json_patch.sh $output)
   echo $diff
   rm -f test.sps
 
@@ -86,7 +86,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # run the script to evaluate the patch
   # returns nothing if there is no diff(except start_time, end_time & search_path)
-  diff=$($FILE_PATH/test_files/json_patch.sh $output)
+  diff=$($FILE_PATH/json_patch.sh $output)
   echo $diff
   rm -f test.sps
   rm -f test2.json
@@ -104,7 +104,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # run the script to evaluate the patch
   # returns nothing if there is no diff(except start_time, end_time & search_path)
-  diff=$($FILE_PATH/test_files/json_patch.sh $output)
+  diff=$($FILE_PATH/json_patch.sh $output)
   echo $diff
   rm -f test.sps
 

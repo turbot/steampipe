@@ -33,7 +33,7 @@ function setup() {
   cat output.csv
 
   # create the snapshot DELETE Request URL
-  req_url=$($FILE_PATH/test_files/url_parse.sh $url)
+  req_url=$($FILE_PATH/url_parse.sh $url)
   echo $req_url
 
   assert_equal "$(cat output.csv)" "$(cat $TEST_DATA_DIR/expected_static_query_csv_snapshot_mode.csv)"
@@ -62,7 +62,7 @@ function setup() {
   cat output.json
 
   # create the snapshot DELETE Request URL
-  req_url=$($FILE_PATH/test_files/url_parse.sh $url)
+  req_url=$($FILE_PATH/url_parse.sh $url)
   echo $req_url
 
   assert_equal "$(cat output.json)" "$(cat $TEST_DATA_DIR/expected_static_query_json_snapshot_mode.json)"
@@ -91,7 +91,7 @@ function setup() {
   cat output.txt
 
   # create the snapshot DELETE Request URL
-  req_url=$($FILE_PATH/test_files/url_parse.sh $url)
+  req_url=$($FILE_PATH/url_parse.sh $url)
   echo $req_url
 
   assert_equal "$(cat output.txt)" "$(cat $TEST_DATA_DIR/expected_static_query_table_snapshot_mode.txt)"
