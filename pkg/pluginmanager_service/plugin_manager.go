@@ -195,8 +195,8 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connection.Connectio
 }
 
 func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
-	log.Printf("[INFO] PluginManager Shutdown")
-	defer log.Printf("[INFO] PluginManager Shutdown complete")
+	log.Printf("[INFO] PluginManager Shutdown (%d)", os.Getpid())
+	defer log.Printf("[INFO] PluginManager Shutdown complete (%d)", os.Getpid())
 
 	// lock shutdownMut before waiting for startPluginWg
 	// this enables us to exit from ensurePlugin early if needed
@@ -212,10 +212,19 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 		}
 	}()
 
+	var pids []int64
 	// kill all plugins in pluginMultiConnectionMap
 	for _, p := range m.runningPluginMap {
+		pids = append(pids, p.reattach.Pid)
 		log.Printf("[INFO] Kill plugin %s (%p)", p.pluginName, p.client)
 		m.killPlugin(p)
+	}
+
+	for _, pid := range pids {
+		log.Printf("[INFO] Looking for pid: %d", pid)
+		if exists, _ := utils.PidExists(int(pid)); exists {
+			log.Printf("[INFO] Plugin pid %d still exists after we killed the plugin", pid)
+		}
 	}
 
 	return &pb.ShutdownResponse{}, nil
