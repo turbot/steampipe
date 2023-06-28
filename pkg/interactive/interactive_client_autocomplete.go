@@ -61,7 +61,7 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 	firstConnectionPerPluginLookup[c.schemaMetadata.TemporarySchemaName] = struct{}{}
 
 	for schemaName, schemaDetails := range c.schemaMetadata.Schemas {
-		if connectionState, found := connectionStateMap[schemaName]; found && connectionState.IsStateError() {
+		if connectionState, found := connectionStateMap[schemaName]; found && connectionState.State != constants.ConnectionStateReady {
 			log.Println("[TRACE] could not find schema in state map or connection is not Ready", schemaName)
 			continue
 		}
