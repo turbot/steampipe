@@ -66,8 +66,8 @@ echo "Running with STEAMPIPE_INSTALL_DIR set to $STEAMPIPE_INSTALL_DIR"
 
 if [ $# -eq 0 ]; then
   # Run all test files
-  # Disable parallelisation within test files and also across files(for steampipe plugin manager processes to shutdown properly)
-  bats --tap $MY_PATH/test_files
+  # Disable parallelisation only within test file(for steampipe plugin manager processes to shutdown properly)
+  bats --tap $MY_PATH/test_files --no-parallelize-within-files
   # Run a single test file
   # Disable parallelisation only within test file(for steampipe plugin manager processes to shutdown properly)
   bats --tap $MY_PATH/test_files/${1} --no-parallelize-within-files
