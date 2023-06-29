@@ -95,7 +95,7 @@ func updatePluginVersionFiles(image *SteampipeImage) error {
 	// to compose the global version file if it is unavailable or unparseable
 	// This makes sure that in the event of corruption (global/individual) we don't end up
 	// losing all the plugin install data
-	if err := v.EnsureVersionFile(installedVersion); err != nil {
+	if err := v.EnsurePluginVersionFile(installedVersion); err != nil {
 		return err
 	}
 

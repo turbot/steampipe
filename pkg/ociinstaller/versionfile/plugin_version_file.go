@@ -51,10 +51,10 @@ func (f *PluginVersionFile) MigrateFrom() migrate.Migrateable {
 	return f
 }
 
-// EnsureVersionFile reads the version file in the plugin directory (if exists) and overwrites it if the data in the
+// EnsurePluginVersionFile reads the version file in the plugin directory (if exists) and overwrites it if the data in the
 // argument is different. The comparison is done using the `Name` and `BinaryDigest` properties.
-// If the file doesn't exist, or cannot be read/parsed, EnsureVersionFile fails over wo overwriting the data
-func (f *PluginVersionFile) EnsureVersionFile(installData *InstalledVersion) error {
+// If the file doesn't exist, or cannot be read/parsed, EnsurePluginVersionFile fails over to overwriting the data
+func (f *PluginVersionFile) EnsurePluginVersionFile(installData *InstalledVersion) error {
 	pluginFolder, err := filepaths.FindPluginFolder(installData.Name)
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func (f *PluginVersionFile) write(path string) error {
 
 func (f *PluginVersionFile) ensureVersionFilesInPluginDirectories() error {
 	for _, installation := range f.Plugins {
-		if err := f.EnsureVersionFile(installation); err != nil {
+		if err := f.EnsurePluginVersionFile(installation); err != nil {
 			return err
 		}
 	}
