@@ -34,8 +34,6 @@ export DEFAULT_WORKSPACE_PROFILE_LOCATION=$MY_PATH/test_data/source_files/worksp
 # from GH action env variables
 export SPIPETOOLS_PG_CONN_STRING=$SPIPETOOLS_PG_CONN_STRING
 export SPIPETOOLS_TOKEN=$SPIPETOOLS_TOKEN
-# disable parallelisation only within test file
-export BATS_NO_PARALLELIZE_WITHIN_FILE=true
 
 # Must have these commands for the test suite to run
 declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch" "jd")
@@ -68,7 +66,10 @@ echo "Running with STEAMPIPE_INSTALL_DIR set to $STEAMPIPE_INSTALL_DIR"
 
 if [ $# -eq 0 ]; then
   # Run all test files
-  bats --tap $MY_PATH/test_files
+  # Disable parallelisation within test files and also across files(for steampipe plugin manager processes to shutdown properly)
+  bats --tap $MY_PATH/test_files --no-parallelize-within-files --no-parallelize-across-files
 else
-  bats --tap $MY_PATH/test_files/${1}
+  # Run a single test file
+  # Disable parallelisation only within test file(for steampipe plugin manager processes to shutdown properly)
+  bats --tap $MY_PATH/test_files/${1} --no-parallelize-within-files
 fi
