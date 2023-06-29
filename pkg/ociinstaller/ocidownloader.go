@@ -87,7 +87,7 @@ func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []strin
 	manifestDescriptor, err := oras.Copy(ctx, repo, tag, fileStore, tag, copyOpt)
 	if err != nil {
 		log.Println("[ERROR] ociDownloader.Pull:", "failed to pull", ref, err)
-		return &manifestDescriptor, nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	log.Println("[TRACE] ociDownloader.Pull:", "manifest", manifestDescriptor.Digest, manifestDescriptor.MediaType)
 
@@ -96,7 +96,7 @@ func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []strin
 	manifestJson, err := content.FetchAll(ctx, fileStore, manifestDescriptor)
 	if err != nil {
 		log.Println("[TRACE] ociDownloader.Pull:", "failed to fetch manifest", manifestDescriptor)
-		return &manifestDescriptor, nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	log.Println("[TRACE] ociDownloader.Pull:", "manifest content", string(manifestJson))
 
@@ -105,14 +105,14 @@ func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []strin
 	err = json.Unmarshal(manifestJson, &manifest)
 	if err != nil {
 		log.Println("[TRACE] ociDownloader.Pull:", "failed to unmarshall manifest", manifestJson)
-		return &manifestDescriptor, nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// Fetch the config from the file store
 	configData, err := content.FetchAll(ctx, fileStore, manifest.Config)
 	if err != nil {
 		log.Println("[ERROR] ociDownloader.Pull:", "failed to fetch config", manifest.Config.MediaType, err)
-		return &manifestDescriptor, nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	log.Println("[TRACE] ociDownloader.Pull:", "config", string(configData))
 
