@@ -108,9 +108,9 @@ func (d *Database) String() string {
 		str = append(str, fmt.Sprintf("  SearchPath: %s", *d.SearchPath))
 	}
 	if d.StartTimeout == nil {
-		str = append(str, "  ServiceStartTimeout: nil")
+		str = append(str, "  StartTimeout: nil")
 	} else {
-		str = append(str, fmt.Sprintf("  ServiceStartTimeout: %d", *d.StartTimeout))
+		str = append(str, fmt.Sprintf("  StartTimeout: %d", *d.StartTimeout))
 	}
 	if d.SearchPathPrefix == nil {
 		str = append(str, "  SearchPathPrefix: nil")

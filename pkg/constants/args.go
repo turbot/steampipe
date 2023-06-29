@@ -18,6 +18,7 @@ const (
 	ArgDashboard               = "dashboard"
 	ArgDashboardListen         = "dashboard-listen"
 	ArgDashboardPort           = "dashboard-port"
+	ArgDashboardStartTimeout   = "dashboard-start-timeout"
 	ArgForeground              = "foreground"
 	ArgInvoker                 = "invoker"
 	ArgUpdateCheck             = "update-check"
@@ -63,7 +64,6 @@ const (
 	ArgSnapshotLocation        = "snapshot-location"
 	ArgSnapshotTitle           = "snapshot-title"
 	ArgDatabaseStartTimeout    = "database-start-timeout"
-	ArgDashboardStartTimeout = "dashboard-start-timeout"
 )
 
 // metaquery mode arguments

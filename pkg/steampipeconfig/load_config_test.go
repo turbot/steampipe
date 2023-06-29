@@ -26,6 +26,9 @@ var databaseListen = "local"
 var databaseSearchPath = "aws,gcp,foo"
 var databaseQueryTimeout int64 = 240
 
+var globalDashboardPort = 9194
+var globalDashboardListen = "local"
+
 var terminalMulti = false
 var terminalOutput = "table"
 var terminalHeader = true
@@ -162,6 +165,10 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				Listen:     &databaseListen,
 				SearchPath: &databaseSearchPath,
 			},
+			GlobalDashboardOptions: &options.GlobalDashboard{
+				Port:   &globalDashboardPort,
+				Listen: &globalDashboardListen,
+			},
 			GeneralOptions: &options.General{
 				UpdateCheck: &generalUpdateCheck,
 			},
@@ -208,6 +215,10 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				Listen:     &databaseListen,
 				SearchPath: &databaseSearchPath,
 			},
+			GlobalDashboardOptions: &options.GlobalDashboard{
+				Port:   &globalDashboardPort,
+				Listen: &globalDashboardListen,
+			},
 			GeneralOptions: &options.General{
 				UpdateCheck: &generalUpdateCheck,
 			},
@@ -248,6 +259,10 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				Port:       &databasePort,
 				Listen:     &databaseListen,
 				SearchPath: &databaseSearchPath,
+			},
+			GlobalDashboardOptions: &options.GlobalDashboard{
+				Port:   &globalDashboardPort,
+				Listen: &globalDashboardListen,
 			},
 			GeneralOptions: &options.General{
 				UpdateCheck: &generalUpdateCheck,
@@ -292,6 +307,10 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				Listen:     &databaseListen,
 				SearchPath: &databaseSearchPath,
 			},
+			GlobalDashboardOptions: &options.GlobalDashboard{
+				Port:   &globalDashboardPort,
+				Listen: &globalDashboardListen,
+			},
 			GeneralOptions: &options.General{
 				UpdateCheck: &generalUpdateCheck,
 			},
@@ -309,6 +328,10 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				Port:       &databasePort,
 				Listen:     &databaseListen,
 				SearchPath: &databaseSearchPath,
+			},
+			GlobalDashboardOptions: &options.GlobalDashboard{
+				Port:   &globalDashboardPort,
+				Listen: &globalDashboardListen,
 			},
 			GeneralOptions: &options.General{
 				UpdateCheck: &generalUpdateCheck,
@@ -383,6 +406,7 @@ func SteampipeConfigEquals(left, right *SteampipeConfig) bool {
 
 	return reflect.DeepEqual(left.DefaultConnectionOptions, right.DefaultConnectionOptions) &&
 		reflect.DeepEqual(left.DatabaseOptions, right.DatabaseOptions) &&
+		reflect.DeepEqual(left.GlobalDashboardOptions, right.GlobalDashboardOptions) &&
 		reflect.DeepEqual(left.TerminalOptions, right.TerminalOptions) &&
 		reflect.DeepEqual(left.GeneralOptions, right.GeneralOptions)
 }

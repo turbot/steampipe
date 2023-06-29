@@ -22,6 +22,7 @@ type SteampipeConfig struct {
 	// Steampipe options
 	DefaultConnectionOptions *options.Connection
 	DatabaseOptions          *options.Database
+	GlobalDashboardOptions   *options.GlobalDashboard
 	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
 	// TODO remove this
@@ -73,6 +74,9 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	if c.DatabaseOptions != nil {
 		res.PopulateConfigMapForOptions(c.DatabaseOptions)
 	}
+	if c.GlobalDashboardOptions != nil {
+		res.PopulateConfigMapForOptions(c.GlobalDashboardOptions)
+	}
 	if c.TerminalOptions != nil {
 		res.PopulateConfigMapForOptions(c.TerminalOptions)
 	}
@@ -98,6 +102,12 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *m
 			c.DatabaseOptions = o
 		} else {
 			c.DatabaseOptions.Merge(o)
+		}
+	case *options.GlobalDashboard:
+		if c.GlobalDashboardOptions == nil {
+			c.GlobalDashboardOptions = o
+		} else {
+			c.GlobalDashboardOptions.Merge(o)
 		}
 	case *options.Terminal:
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
@@ -228,6 +238,12 @@ DefaultConnectionOptions:
 
 DatabaseOptions:
 %s`, c.DatabaseOptions.String())
+	}
+	if c.GlobalDashboardOptions != nil {
+		str += fmt.Sprintf(`
+
+GlobalDashboardOptions:
+%s`, c.GlobalDashboardOptions.String())
 	}
 	if c.TerminalOptions != nil {
 		str += fmt.Sprintf(`
