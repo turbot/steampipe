@@ -141,13 +141,16 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 		}
 
 		// check if this was a syntax error during parsing
-		// if it is a syntax error, either the file is corrupted or empty
 		var syntaxError *json.SyntaxError
 		isSyntaxError := errors.As(err, &syntaxError)
 		if !isSyntaxError {
 			// not a syntax error - return as-is
 			return nil, err
 		}
+
+		// it was a syntax error, either the file is corrupted or empty - try to regenerate it
+		// if it was empty, and there are no plugin version files, regeneration will detect it and
+		// return and Empty structure
 	}
 
 	// we don't have a global plugin/versions.json or it is not parseable
