@@ -28,10 +28,6 @@ const (
 type PluginVersionFile struct {
 	Plugins       map[string]*InstalledVersion `json:"plugins"`
 	StructVersion int64                        `json:"struct_version"`
-
-	// used when this structure is populated by traversing individual plugin directory
-	// if so, there's no need to attempt a backfill
-	composed bool
 }
 
 func newPluginVersionFile() *PluginVersionFile {
@@ -69,8 +65,7 @@ func (f *PluginVersionFile) EnsureVersionFile(installData *InstalledVersion) err
 	if filehelpers.FileExists(versionFile) {
 		installation, err := readPluginVersionFile(versionFile)
 		if err == nil && installation.Equal(installData) {
-			// the new and old digests match
-			// no need to overwrite
+			// the new and old data match - no need to overwrite
 			return nil
 		}
 		// in case of error, just failover to a overwrite
@@ -144,7 +139,7 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 		var syntaxError *json.SyntaxError
 		isSyntaxError := errors.As(err, &syntaxError)
 		if !isSyntaxError {
-			// not a syntax error - return as-is
+			// not a syntax error - return the error
 			return nil, err
 		}
 
@@ -173,11 +168,6 @@ func EnsureVersionFilesInPluginDirectories() error {
 	if err != nil {
 		return err
 	}
-	if versions.composed {
-		// this was composed from the plugin directories
-		// no point backfilling
-		return nil
-	}
 	return versions.ensureVersionFilesInPluginDirectories()
 }
 
@@ -204,10 +194,6 @@ func recomposePluginVersionFile() *PluginVersionFile {
 			continue
 		}
 		pvf.Plugins[install.Name] = install
-
-		// mark that this is a composed version file
-		// and not just read
-		pvf.composed = true
 	}
 
 	return pvf
