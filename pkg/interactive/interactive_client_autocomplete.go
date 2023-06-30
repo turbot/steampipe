@@ -3,6 +3,9 @@ package interactive
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -10,8 +13,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
-	"log"
-	"strings"
 )
 
 func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
@@ -60,6 +61,11 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 	firstConnectionPerPluginLookup[c.schemaMetadata.TemporarySchemaName] = struct{}{}
 
 	for schemaName, schemaDetails := range c.schemaMetadata.Schemas {
+		if connectionState, found := connectionStateMap[schemaName]; found && connectionState.State != constants.ConnectionStateReady {
+			log.Println("[TRACE] could not find schema in state map or connection is not Ready", schemaName)
+			continue
+		}
+
 		// fully qualified table names
 		var qualifiedTablesToAdd []prompt.Suggest
 
