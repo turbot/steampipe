@@ -67,7 +67,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c .listen)
   echo $listen
 
-  assert_equal "$listen" '["127.0.0.1","::1","$IPV4_ADDR"]'
+  assert_equal "$listen" '["127.0.0.1","::1","'$IPV4_ADDR'"]'
 
   run steampipe service stop
 
@@ -108,7 +108,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c .listen)
   echo $listen
 
-  assert_equal "$listen" '["127.0.0.1","::1","$IPV4_ADDR"]'
+  assert_equal "$listen" '["127.0.0.1","::1","'$IPV4_ADDR'"]'
 
   run steampipe service stop
 
