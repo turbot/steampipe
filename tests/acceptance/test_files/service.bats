@@ -176,7 +176,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe test database config with listen IPv4 address option(hcl)" {
   cp $SRC_DATA_DIR/database_options_listen_placeholder.spc $STEAMPIPE_INSTALL_DIR/config/database_options_listen.spc
 
-  IPV4_ADDR=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | head -n 1)
   sed -i.bak "s/LISTEN_PLACEHOLDER/$IPV4_ADDR/" $STEAMPIPE_INSTALL_DIR/config/database_options_listen.spc
 
   run steampipe service start
@@ -201,8 +200,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe test database config with listen IPv6 address option(hcl)" {
-  IPV6_ADDR=$(ifconfig | grep -Eo 'inet6 (addr:)?([0-9a-f]*:){7}[0-9a-f]*' | grep -Eo '([0-9a-f]*:){7}[0-9a-f]*' | head -n 1)
-
   if [ -z "$IPV6_ADDR" ]; then
     skip "No IPv6 address is available, skipping test."
   fi
@@ -265,6 +262,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $tmpdir
 
   assert_success
+}
+
+function setup_file() {
+  export IPV4_ADDR=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | head -n 1)
+  export IPV6_ADDR=$(ifconfig | grep -Eo 'inet6 (addr:)?([0-9a-f]*:){7}[0-9a-f]*' | grep -Eo '([0-9a-f]*:){7}[0-9a-f]*' | head -n 1)
 }
 
 function teardown_file() {
