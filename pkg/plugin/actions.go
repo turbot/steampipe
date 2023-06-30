@@ -3,17 +3,18 @@ package plugin
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
-	"strings"
+	"time"
 
+	"github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/sperr"
 )
 
 const (
@@ -85,22 +86,6 @@ type PluginListItem struct {
 func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListItem, error) {
 	var items []PluginListItem
 
-	var installedPlugins []string
-
-	err := filepath.Walk(filepaths.EnsurePluginDir(), func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".plugin") {
-			rel, err := filepath.Rel(filepaths.EnsurePluginDir(), filepath.Dir(path))
-			if err != nil {
-				return err
-			}
-			installedPlugins = append(installedPlugins, rel)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, sperr.WrapWithMessage(err, "could not traverse plugins directory")
-	}
-
 	v, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
 		return nil, err
@@ -108,32 +93,82 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 
 	pluginVersions := v.Plugins
 
-	for _, plugin := range installedPlugins {
-		version := "local"
-		pluginDetails, found := pluginVersions[plugin]
-		if found {
-			version = pluginDetails.Version
+	pluginBinaries, err := files.ListFiles(filepaths.EnsurePluginDir(), &files.ListOptions{
+		Include: []string{"**/*.plugin"},
+		Flags:   files.AllRecursive,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// we have the plugin binary paths
+	for _, pluginBinary := range pluginBinaries {
+		parent := filepath.Dir(pluginBinary)
+		fullPluginName, err := filepath.Rel(filepaths.EnsurePluginDir(), parent)
+		if err != nil {
+			return nil, err
 		}
 		item := PluginListItem{
-			Name:    plugin,
-			Version: version,
+			Name:    fullPluginName,
+			Version: "local",
 		}
+		// check if this plugin is recorded in plugin versions
+		installation, found := pluginVersions[fullPluginName]
+		if found {
+			// use the version as recorded
+			item.Version = installation.Version
+			// but if the modtime of the binary is after the installation date,
+			// this is "local"
 
-		if pluginConnectionMap != nil {
-			// extract only the connection names
-			var connectionNames []string
-			for _, connection := range pluginConnectionMap[plugin] {
-				connectionName := connection.Name
-				if connection.ImportDisabled() {
-					connectionName = fmt.Sprintf("%s(disabled)", connectionName)
-				}
-				connectionNames = append(connectionNames, connectionName)
+			if detectLocalPlugin(installation, pluginBinary) {
+				item.Version = "local"
 			}
-			item.Connections = connectionNames
 
+			if pluginConnectionMap != nil {
+				// extract only the connection names
+				var connectionNames []string
+				for _, connection := range pluginConnectionMap[fullPluginName] {
+					connectionName := connection.Name
+					if connection.ImportDisabled() {
+						connectionName = fmt.Sprintf("%s(disabled)", connectionName)
+					}
+					connectionNames = append(connectionNames, connectionName)
+				}
+				item.Connections = connectionNames
+			}
+
+			items = append(items, item)
 		}
-		items = append(items, item)
 	}
 
 	return items, nil
+}
+
+// detectLocalPlugin returns true if the modTime of the `pluginBinary` is after the installation date as recorded in the installation data
+// this may happen when a plugin is installed from the registry, but is then compiled from source
+func detectLocalPlugin(installation *versionfile.InstalledVersion, pluginBinary string) bool {
+	installDate, err := time.Parse(time.RFC3339, installation.InstallDate)
+	if err != nil {
+		log.Printf("[WARN] could not parse install date for %s: %s", installation.Name, installation.InstallDate)
+		return false
+	}
+
+	// truncate to second
+	// otherwise, comparisons may get skewed because of the
+	// underlying monotonic clock
+	installDate = installDate.Truncate(time.Second)
+
+	// get the modtime of the plugin binary
+	stat, err := os.Lstat(pluginBinary)
+	if err != nil {
+		log.Printf("[WARN] could not parse install date for %s: %s", installation.Name, installation.InstallDate)
+		return false
+	}
+	modTime := stat.ModTime().
+		// truncate to second
+		// otherwise, comparisons may get skewed because of the
+		// underlying monotonic clock
+		Truncate(time.Second)
+
+	return installDate.Before(modTime)
 }

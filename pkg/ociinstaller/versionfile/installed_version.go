@@ -1,5 +1,7 @@
 package versionfile
 
+const InstalledVersionStructVersion = 20230502
+
 type InstalledVersion struct {
 	Name               string `json:"name"`
 	Version            string `json:"version"`
@@ -15,6 +17,19 @@ type InstalledVersion struct {
 	LegacyInstalledFrom   string `json:"installedFrom,omitempty"`
 	LegacyLastCheckedDate string `json:"lastCheckedDate,omitempty"`
 	LegacyInstallDate     string `json:"installDate,omitempty"`
+
+	StructVersion int64 `json:"struct_version"`
+}
+
+func EmptyInstalledVersion() *InstalledVersion {
+	i := new(InstalledVersion)
+	i.StructVersion = InstalledVersionStructVersion
+	return i
+}
+
+// Equal compares the `Name` and `BinaryDigest`
+func (f *InstalledVersion) Equal(other *InstalledVersion) bool {
+	return f.Name == other.Name && f.BinaryDigest == other.BinaryDigest
 }
 
 // MigrateLegacy migrates the legacy properties into new properties

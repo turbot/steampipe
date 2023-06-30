@@ -96,6 +96,13 @@ var rootCmd = &cobra.Command{
 		// runScheduledTasks skips running tasks if this instance is the plugin manager
 		waitForTasksChannel = runScheduledTasks(cmd.Context(), cmd, args, ew)
 
+		// ensure all plugin installation directories have a version.json file
+		// (this is to handle the case of migrating an existing installation from v0.20.x)
+		// no point doing this for the plugin-manager since that would have been done by the initiating CLI process
+		if !task.IsPluginManagerCmd(cmd) {
+			versionfile.EnsureVersionFilesInPluginDirectories()
+		}
+
 		// set the max memory
 		debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())
 	},

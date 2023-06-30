@@ -19,6 +19,8 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
+var versionFileUpdateLock = &sync.Mutex{}
+
 // InstallPlugin installs a plugin from an OCI Image
 func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}) (*SteampipeImage, error) {
 	tempDir := NewTempDir(filepaths.EnsurePluginDir())
@@ -51,17 +53,16 @@ func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}) (*St
 	if err = installPluginConfigFiles(image, tempDir.Path); err != nil {
 		return nil, fmt.Errorf("plugin installation failed: %s", err)
 	}
-
 	sub <- struct{}{}
-	if err := updateVersionFilePlugin(image); err != nil {
+	if err := updatePluginVersionFiles(image); err != nil {
 		return nil, err
 	}
 	return image, nil
 }
 
-var versionFileUpdateLock = &sync.Mutex{}
-
-func updateVersionFilePlugin(image *SteampipeImage) error {
+// updatePluginVersionFiles updates the global versions.json to add installation of the plugin
+// also adds a version file in the plugin installation directory with the information
+func updatePluginVersionFiles(image *SteampipeImage) error {
 	versionFileUpdateLock.Lock()
 	defer versionFileUpdateLock.Unlock()
 
@@ -73,22 +74,30 @@ func updateVersionFilePlugin(image *SteampipeImage) error {
 
 	pluginFullName := image.ImageRef.DisplayImageRef()
 
-	plugin, ok := v.Plugins[pluginFullName]
+	installedVersion, ok := v.Plugins[pluginFullName]
 	if !ok {
-		plugin = &versionfile.InstalledVersion{}
+		installedVersion = versionfile.EmptyInstalledVersion()
 	}
 
-	//change this to the path????
-	plugin.Name = pluginFullName
-	plugin.Version = image.Config.Plugin.Version
-	plugin.ImageDigest = string(image.OCIDescriptor.Digest)
-	plugin.BinaryDigest = image.Plugin.BinaryDigest
-	plugin.BinaryArchitecture = image.Plugin.BinaryArchitecture
-	plugin.InstalledFrom = image.ImageRef.ActualImageRef()
-	plugin.LastCheckedDate = timeNow
-	plugin.InstallDate = timeNow
+	installedVersion.Name = pluginFullName
+	installedVersion.Version = image.Config.Plugin.Version
+	installedVersion.ImageDigest = string(image.OCIDescriptor.Digest)
+	installedVersion.BinaryDigest = image.Plugin.BinaryDigest
+	installedVersion.BinaryArchitecture = image.Plugin.BinaryArchitecture
+	installedVersion.InstalledFrom = image.ImageRef.ActualImageRef()
+	installedVersion.LastCheckedDate = timeNow
+	installedVersion.InstallDate = timeNow
 
-	v.Plugins[pluginFullName] = plugin
+	v.Plugins[pluginFullName] = installedVersion
+
+	// Ensure that the version file is written to the plugin installation folder
+	// Having this file is important, since this can be used
+	// to compose the global version file if it is unavailable or unparseable
+	// This makes sure that in the event of corruption (global/individual) we don't end up
+	// losing all the plugin install data
+	if err := v.EnsurePluginVersionFile(installedVersion); err != nil {
+		return err
+	}
 
 	return v.Save()
 }

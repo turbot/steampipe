@@ -536,6 +536,161 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_json_with_failed_plugins.json)"
 }
 
+@test "verify that installing plugins creates individual version.json files" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+  
+  vFile1="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
+  vFile2="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/chaos@latest/version.json"
+  
+  [ ! -f $vFile1 ] && fail "could not find $vFile1"
+  [ ! -f $vFile2 ] && fail "could not find $vFile2"
+  
+  rm -rf $tmpdir
+}
+
+@test "verify that backfilling of individual plugin version.json works" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+  
+  vFile1="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
+  vFile2="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/chaos@latest/version.json"
+  
+  file1Content=$(cat $vFile1)
+  file2Content=$(cat $vFile2)
+  
+  # remove the individual version files
+  rm -f $vFile1
+  rm -f $vFile2
+  
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe plugin list --install-dir $tmpdir
+  
+  [ ! -f $vFile1 ] && fail "could not find $vFile1"
+  [ ! -f $vFile2 ] && fail "could not find $vFile2"
+  
+  assert_equal "$(cat $vFile1)" "$file1Content"
+  assert_equal "$(cat $vFile2)" "$file2Content"
+  
+  rm -rf $tmpdir
+}
+
+@test "verify that backfilling of individual plugin version.json works where it is only partially backfilled" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+  
+  vFile1="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
+  vFile2="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/chaos@latest/version.json"
+  
+  file1Content=$(cat $vFile1)
+  file2Content=$(cat $vFile2)
+  
+  # remove one individual version file
+  rm -f $vFile1
+  
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe plugin list --install-dir $tmpdir
+  
+  [ ! -f $vFile1 ] && fail "could not find $vFile1"
+  [ ! -f $vFile2 ] && fail "could not find $vFile2"
+  
+  assert_equal "$(cat $vFile1)" "$file1Content"
+  assert_equal "$(cat $vFile2)" "$file2Content"
+  
+  rm -rf $tmpdir
+}
+
+@test "verify that global plugin/versions.json is composed from individual version.json files when it is absent" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+  
+  vFile="$tmpdir/plugins/versions.json"
+  
+  fileContent=$(cat $vFile)
+  
+  # remove global version file
+  rm -f $vFile
+  
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe plugin list --install-dir $tmpdir
+  
+  ls -la $vFile
+  
+  [ ! -f $vFile ] && fail "could not find $vFile"
+  
+  assert_equal "$(cat $vFile)" "$fileContent"
+  
+  rm -rf $tmpdir
+}
+
+@test "verify that global plugin/versions.json is composed from individual version.json files when it is corrupt" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+  
+  vFile="$tmpdir/plugins/versions.json"
+  fileContent=$(cat $vFile)
+  
+  # remove global version file
+  echo "badline to corrupt versions.json" >> $vFile
+  
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe plugin list --install-dir $tmpdir
+  
+  [ ! -f $vFile ] && fail "could not find $vFile"
+  
+  assert_equal "$(cat $vFile)" "$fileContent"
+  
+  rm -rf $tmpdir
+}
+
+@test "verify that composition of global plugin/versions.json works when an individual version.json file is corrupt" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+  
+  vFile="$tmpdir/plugins/versions.json"  
+  vFile1="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
+  
+  # corrupt a version file
+  echo "bad line to corrupt" >> $vFile1
+  
+  # remove global file
+  rm -f $vFile
+  
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe plugin list --install-dir $tmpdir
+
+  # verify that global file got created
+  [ ! -f $vFile ] && fail "could not find $vFile"
+  
+  rm -rf $tmpdir
+}
+
+@test "verify that plugin installed from registry are marked as 'local' when the modtime of the binary is after the install time" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+
+  # wait for a couple of seconds
+  sleep 2
+
+  # touch one of the plugin binaries
+  touch $tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/steampipe-plugin-net.plugin
+
+  # run steampipe again so that the plugin version files get backfilled
+  version=$(steampipe plugin list --install-dir $tmpdir --output json | jq '.installed' | jq '. | map(select(.name | contains("net@latest")))' | jq '.[0].version')
+
+  # assert
+  assert_equal "$version" '"local"'
+
+  rm -rf $tmpdir
+}
+
 @test "cleanup" {
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
   run steampipe plugin uninstall steampipe
@@ -543,7 +698,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 function setup_file() {
-  export BATS_TEST_TIMEOUT=60
+  export BATS_TEST_TIMEOUT=120
   echo "# setup_file()">&3
 }
 

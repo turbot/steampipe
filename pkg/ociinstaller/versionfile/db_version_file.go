@@ -47,13 +47,6 @@ func (s *DatabaseVersionFile) MigrateFrom() migrate.Migrateable {
 	return s
 }
 
-func databaseVersionFileFromLegacy(legacyFile *LegacyCompositeVersionFile) *DatabaseVersionFile {
-	return &DatabaseVersionFile{
-		FdwExtension: legacyFile.FdwExtension,
-		EmbeddedDB:   legacyFile.EmbeddedDB,
-	}
-}
-
 // LoadDatabaseVersionFile migrates from the old version file format if necessary and loads the database version data
 func LoadDatabaseVersionFile() (*DatabaseVersionFile, error) {
 	versionFilePath := filepaths.DatabaseVersionFilePath()
