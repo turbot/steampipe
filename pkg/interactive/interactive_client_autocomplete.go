@@ -28,7 +28,8 @@ func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
 	if err != nil {
 		// if we failed to load connection state, just use unoptimised autocomplete loading
 		c.initialiseSuggestionsLegacy()
-		return nil //nolint:golint,nilerr // valid condition - not an error
+		//nolint:golint,nilerr // valid condition - not an error
+		return nil
 	}
 
 	// reset suggestions
