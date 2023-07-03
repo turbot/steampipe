@@ -45,7 +45,7 @@ end;
 		Language: "plpgsql",
 		Body: `
 begin
-	INSERT INTO steampipe_internal.steampipe_settings("name","value") VALUES ('cache_clear_time',duration);
+	INSERT INTO steampipe_internal.steampipe_settings("name","value") VALUES ('cache_ttl',duration);
 end;
 `,
 	},

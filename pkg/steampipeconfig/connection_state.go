@@ -92,7 +92,6 @@ func (d *ConnectionState) CanCloneSchema() bool {
 
 func (d *ConnectionState) Error() string {
 	return typehelpers.SafeString(d.ConnectionError)
-
 }
 
 func (d *ConnectionState) SetError(err string) {
