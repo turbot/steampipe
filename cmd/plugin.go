@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -14,7 +12,6 @@ import (
 	"github.com/gosuri/uiprogress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -22,7 +19,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/installationstate"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
@@ -75,8 +71,12 @@ Examples:
 
   # Uninstall a plugin
   steampipe plugin uninstall aws`,
+		PersistentPostRun: func(_ *cobra.Command, args []string) {
+			utils.LogTime("cmd.plugin.PersistentPostRun start")
+			defer utils.LogTime("cmd.plugin.PersistentPostRun end")
+			plugin.CleanupOldTmpDirs()
+		},
 	}
-
 	cmd.AddCommand(pluginInstallCmd())
 	cmd.AddCommand(pluginListCmd())
 	cmd.AddCommand(pluginUninstallCmd())
@@ -303,7 +303,6 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
-	cleanupOldTmpDirs()
 	pluginAlreadyInstalled, _ := plugin.Exists(pluginName)
 	if pluginAlreadyInstalled {
 		// set the bar to MAX
@@ -868,29 +867,4 @@ func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionStateMap
 	}
 
 	return connectionStateMap, res
-}
-
-func cleanupOldTmpDirs() {
-	const tmpDirAgeThreshold = 24 * time.Hour
-	tmpDirs, err := files.ListFiles(filepaths.EnsurePluginDir(), &files.ListOptions{
-		Include: []string{"tmp-*"},
-		Flags:   files.AllRecursive,
-	})
-	if err != nil {
-		log.Printf("Error while globbing for tmp dirs in plugin dir: %s\n", err)
-		return
-	}
-
-	for _, tmpDir := range tmpDirs {
-		stat, err := os.Stat(tmpDir)
-		if err != nil {
-			log.Printf("Error while stating tmp dir %s: %s\n", tmpDir, err)
-			continue
-		}
-		if time.Since(stat.ModTime()) > tmpDirAgeThreshold {
-			if err := os.RemoveAll(tmpDir); err != nil {
-				log.Printf("Error while removing old tmp dir %s: %s\n", tmpDir, err)
-			}
-		}
-	}
 }
