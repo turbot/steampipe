@@ -360,7 +360,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "verify cache ttl works when set in workspace profile" {
-  cp $FILE_PATH/test_data/source_files/config_tests/workspace_cache_ttl.spc $STEAMPIPE_INSTALL_DIR/config/workspace.spc
+  cp $FILE_PATH/test_data/source_files/workspace_cache_ttl.spc $STEAMPIPE_INSTALL_DIR/config/workspace.spc
   cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
 
   # start the service
