@@ -10,7 +10,7 @@ import (
 )
 
 func CleanupOldTmpDirs() {
-	const tmpDirAgeThreshold = 24 * time.Second
+	const tmpDirAgeThreshold = 24 * time.Hour
 	tmpDirs, err := files.ListFiles(filepaths.EnsurePluginDir(), &files.ListOptions{
 		Include: []string{"tmp-*"},
 		Flags:   files.DirectoriesRecursive,
