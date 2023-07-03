@@ -1,3 +1,7 @@
+## v0.20.8 [2023-07-03]
+_Bug fixes_
+* Fixes issue where setting cache ttl from the CLI results in cache being disabled for that session. ([#3639](https://github.com/turbot/steampipe/issues/3639))
+
 ## v0.20.7 [2023-06-22]
 _Bug fixes_
 * Fixes issue where aggregator connections are updated every time RefreshConnections runs. ([#3582](https://github.com/turbot/steampipe/issues/3582))
