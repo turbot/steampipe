@@ -152,7 +152,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $unique3
   # remove the output and the config files
   rm -f out*.json
-  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_ttl_options.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
 
   # the first and the seconds query should have the same value
   assert_equal "$unique1" "$unique2"
