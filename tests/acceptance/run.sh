@@ -18,22 +18,24 @@ export LIB_BATS_SUPPORT=$MY_PATH/lib/bats-support
 export TEST_DATA_DIR=$MY_PATH/test_data/templates
 export SNAPSHOTS_DIR=$MY_PATH/test_data/snapshots
 export SRC_DATA_DIR=$MY_PATH/test_data/source_files
-export WORKSPACE_DIR=$MY_PATH/test_data/sample_workspace
-export BAD_TEST_MOD_DIR=$MY_PATH/test_data/failure_test_mod
+export WORKSPACE_DIR=$MY_PATH/test_data/mods/sample_workspace
+export BAD_TEST_MOD_DIR=$MY_PATH/test_data/mods/failure_test_mod
 export TIME_TO_QUERY=$TIME_TO_QUERY
-export SIMPLE_MOD_DIR=$MY_PATH/test_data/introspection_table_mod
-export CONFIG_PARSING_TEST_MOD=$MY_PATH/test_data/config_parsing_test_mod
+export SIMPLE_MOD_DIR=$MY_PATH/test_data/mods/introspection_table_mod
+export CONFIG_PARSING_TEST_MOD=$MY_PATH/test_data/mods/config_parsing_test_mod
 export FILE_PATH=$MY_PATH
-export CHECK_ALL_MOD=$MY_PATH/test_data/check_all_mod
-export FUNCTIONALITY_TEST_MOD=$MY_PATH/test_data/functionality_test_mod
-export CONTROL_RENDERING_TEST_MOD=$MY_PATH/test_data/control_rendering_test_mod
-export BLANK_DIMENSION_VALUE_TEST_MOD=$MY_PATH/test_data/mod_with_blank_dimension_value
+export CHECK_ALL_MOD=$MY_PATH/test_data/mods/check_all_mod
+export FUNCTIONALITY_TEST_MOD=$MY_PATH/test_data/mods/functionality_test_mod
+export CONTROL_RENDERING_TEST_MOD=$MY_PATH/test_data/mods/control_rendering_test_mod
+export BLANK_DIMENSION_VALUE_TEST_MOD=$MY_PATH/test_data/mods/mod_with_blank_dimension_value
 export STEAMPIPE_CONNECTION_WATCHER=false
 export STEAMPIPE_INTROSPECTION=info
 export DEFAULT_WORKSPACE_PROFILE_LOCATION=$MY_PATH/test_data/source_files/workspace_profile_default
 # from GH action env variables
 export SPIPETOOLS_PG_CONN_STRING=$SPIPETOOLS_PG_CONN_STRING
 export SPIPETOOLS_TOKEN=$SPIPETOOLS_TOKEN
+# Disable parallelisation only within test file(for steampipe plugin manager processes to shutdown properly)
+export BATS_NO_PARALLELIZE_WITHIN_FILE=true
 
 # Must have these commands for the test suite to run
 declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch" "jd")
@@ -68,5 +70,6 @@ if [ $# -eq 0 ]; then
   # Run all test files
   bats --tap $MY_PATH/test_files
 else
+  # Run a single test file
   bats --tap $MY_PATH/test_files/${1}
 fi

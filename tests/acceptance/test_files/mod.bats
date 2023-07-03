@@ -327,7 +327,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # up the directory tree
 @test "load a mod from an arbitrarily nested sub folder - PASS" {
   # go to the nested sub directory within the mod
-  cd $FILE_PATH/test_data/nested_mod/folder1/folder11/folder111
+  cd $FILE_PATH/test_data/mods/nested_mod/folder1/folder11/folder111
 
   run steampipe check all
   assert_success
@@ -339,7 +339,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # up the directory tree
 @test "load a mod from an arbitrarily nested sub folder - FAIL" {
   # go to the nested sub directory within the mod
-  cd $FILE_PATH/test_data/nested_mod/folder1
+  cd $FILE_PATH/test_data/mods/nested_mod/folder1
 
   run steampipe check all
   assert_output --partial "This command requires a mod definition file (mod.sp) - could not find in the current directory tree."
@@ -352,7 +352,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # Running steampipe query from folder11 should give us the result since query is independent of mod.sp file.
 @test "check and query from an arbitrarily nested sub folder - PASS & FAIL" {
   # go to the nested sub directory within the mod
-  cd $FILE_PATH/test_data/nested_mod_no_mod_file/folder1/folder11
+  cd $FILE_PATH/test_data/mods/nested_mod_no_mod_file/folder1/folder11
 
   run steampipe check all
   assert_output --partial "This command requires a mod definition file (mod.sp) - could not find in the current directory tree."
@@ -427,7 +427,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 ## dependency resolution tests
 
 @test "complex mod dependency resolution - test vars resolution from require section of local mod" {
-  cd $FILE_PATH/test_data/local_mod_with_args_in_require
+  cd $FILE_PATH/test_data/mods/local_mod_with_args_in_require
   steampipe mod install
 
   run steampipe query dependency_vars_1.query.version --output csv

@@ -15,7 +15,7 @@ function setup() {
 # Related to https://github.com/turbot/steampipe/issues/3112
 
 @test "snapshot mode - query output csv" {
-  cd $FILE_PATH/test_data/functionality_test_mod
+  cd $FILE_PATH/test_data/mods/functionality_test_mod
 
   steampipe query query.static_query_2 --snapshot --output csv --cloud-token $SPIPETOOLS_TOKEN --snapshot-location spipetools/toolstest > output.csv
 
@@ -33,7 +33,7 @@ function setup() {
   cat output.csv
 
   # create the snapshot DELETE Request URL
-  req_url=$($FILE_PATH/test_files/url_parse.sh $url)
+  req_url=$($FILE_PATH/url_parse.sh $url)
   echo $req_url
 
   assert_equal "$(cat output.csv)" "$(cat $TEST_DATA_DIR/expected_static_query_csv_snapshot_mode.csv)"
@@ -44,7 +44,7 @@ function setup() {
 }
 
 @test "snapshot mode - query output json" {
-  cd $FILE_PATH/test_data/functionality_test_mod
+  cd $FILE_PATH/test_data/mods/functionality_test_mod
 
   steampipe query query.static_query_2 --snapshot --output json --cloud-token $SPIPETOOLS_TOKEN --snapshot-location spipetools/toolstest > output.json
 
@@ -62,7 +62,7 @@ function setup() {
   cat output.json
 
   # create the snapshot DELETE Request URL
-  req_url=$($FILE_PATH/test_files/url_parse.sh $url)
+  req_url=$($FILE_PATH/url_parse.sh $url)
   echo $req_url
 
   assert_equal "$(cat output.json)" "$(cat $TEST_DATA_DIR/expected_static_query_json_snapshot_mode.json)"
@@ -73,7 +73,7 @@ function setup() {
 }
 
 @test "snapshot mode - query output table" {
-  cd $FILE_PATH/test_data/functionality_test_mod
+  cd $FILE_PATH/test_data/mods/functionality_test_mod
 
   steampipe query query.static_query_2 --snapshot --output table --cloud-token $SPIPETOOLS_TOKEN --snapshot-location spipetools/toolstest > output.txt
 
@@ -91,7 +91,7 @@ function setup() {
   cat output.txt
 
   # create the snapshot DELETE Request URL
-  req_url=$($FILE_PATH/test_files/url_parse.sh $url)
+  req_url=$($FILE_PATH/url_parse.sh $url)
   echo $req_url
 
   assert_equal "$(cat output.txt)" "$(cat $TEST_DATA_DIR/expected_static_query_table_snapshot_mode.txt)"
