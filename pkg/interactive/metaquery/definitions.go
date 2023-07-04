@@ -101,7 +101,7 @@ func init() {
 		constants.CmdCache: {
 			title:       constants.CmdCache,
 			handler:     cacheControl,
-			validator:   composeValidator(exactlyNArgs(1), validatorFromArgsOf(constants.CmdCache)),
+			validator:   validatorFromArgsOf(constants.CmdCache),
 			description: "Enable, disable or clear the query cache",
 			args: []metaQueryArg{
 				{value: constants.ArgOn, description: "Turn on caching"},

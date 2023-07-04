@@ -77,9 +77,11 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	}
 
 	// initialise autocomplete suggestions
+	//nolint:golint,errcheck // worst case is we won't have autocomplete - this is not a failure
 	c.initialiseSuggestions(ctx)
 	// tell the workspace to reset the prompt after displaying async filewatcher messages
 	c.initData.Workspace.SetOnFileWatcherEventMessages(func() {
+		//nolint:golint,errcheck // worst case is we won't have autocomplete - this is not a failure
 		c.initialiseSuggestions(ctx)
 		c.interactivePrompt.Render()
 	})
@@ -127,6 +129,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 
 	// create a cancellation context used to cancel the listen thread when we exit
 	listenCtx, cancel := context.WithCancel(ctx)
+	//nolint:golint,errcheck // worst case is autocomplete isn't update - not a failure
 	go c.listenToPgNotifications(listenCtx)
 	c.cancelNotificationListener = cancel
 }

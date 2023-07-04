@@ -155,6 +155,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 
 		case <-promptResultChan:
 			// persist saved history
+			//nolint:golint,errcheck // worst case is history is not persisted - not a failure
 			c.interactiveQueryHistory.Persist()
 			// check post-close action
 			if c.afterClose == AfterPromptCloseExit {
@@ -648,6 +649,7 @@ func (c *InteractiveClient) getFirstWordSuggestions(word string) []prompt.Sugges
 			querySuggestions = modQueries
 		} else {
 			//  otherwise return mods names and unqualified queries
+			//nolint:golint,gocritic // we want this to go into a different slice
 			querySuggestions = append(c.suggestions.mods, c.suggestions.unqualifiedQueries...)
 		}
 	}
@@ -801,6 +803,7 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	}
 
 	// reinitialise autocomplete suggestions
+	//nolint:golint,errcheck // worst case is autocomplete isn't reinitialized
 	c.initialiseSuggestions(ctx)
 
 	// refresh the db session inside an execution lock
