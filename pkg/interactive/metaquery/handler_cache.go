@@ -81,12 +81,23 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 
 // sets the cache TTL
 func cacheTTL(ctx context.Context, input *HandlerInput) error {
+	if len(input.args()) == 0 {
+		return showCacheTtl(ctx, input)
+	}
 	seconds, err := strconv.Atoi(input.args()[0])
 	if err != nil {
 		return sperr.WrapWithMessage(err, "valid value is the number of seconds")
 	}
 	if seconds < 0 {
 		return sperr.New("ttl must be greater than 0")
+	}
+	if input.Client.ServerSettings() != nil {
+		serverttl := time.Duration(input.Client.ServerSettings().CacheMaxTtl) * time.Second
+		newttl := time.Duration(seconds) * time.Second
+		if newttl > serverttl {
+			fmt.Println("Cannot set cache ttl to higher than server max ttl. Server max TTL is set to", serverttl)
+			return nil
+		}
 	}
 	sessionResult := input.Client.AcquireSession(ctx)
 	if sessionResult.Error != nil {
@@ -99,4 +110,24 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 		viper.Set(constants.ArgCacheTtl, seconds)
 	}()
 	return db_common.SetCacheTtl(ctx, time.Duration(seconds)*time.Second, sessionResult.Session.Connection.Conn())
+}
+
+func showCacheTtl(ctx context.Context, input *HandlerInput) error {
+	if viper.IsSet(constants.ArgCacheTtl) {
+		// if there is a client override, show that
+		//nolint:golint,durationcheck // ArgCacheTtl is an int of the number of seconds
+		ttl := viper.GetDuration(constants.ArgCacheTtl) * time.Second
+		fmt.Println("Cache TTL is overridden to", ttl, "at the client")
+	} else {
+		if input.Client.ServerSettings() != nil {
+			serverTtl := time.Duration(input.Client.ServerSettings().CacheMaxTtl) * time.Second
+			fmt.Println("Cache TTL is set to", serverTtl, "on the server")
+		}
+	}
+	ew := db_common.ValidateClientCacheTtl(input.Client)
+	if ew != nil {
+		ew.ShowWarnings()
+	}
+	// we don't know what the setting is
+	return nil
 }
