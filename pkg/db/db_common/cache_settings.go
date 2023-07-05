@@ -2,7 +2,6 @@ package db_common
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -10,25 +9,24 @@ import (
 )
 
 func ValidateClientCacheSettings(c Client) *modconfig.ErrorAndWarnings {
-	errorsAndWarnings := modconfig.NewErrorsAndWarning(nil)
-	errorsAndWarnings.Merge(ValidateClientCacheEnabled(c))
-	errorsAndWarnings.Merge(ValidateClientCacheTtl(c))
-	return errorsAndWarnings
+	cacheEnabledResult := ValidateClientCacheEnabled(c)
+	cacheTtlResult := ValidateClientCacheTtl(c)
+
+	return modconfig.EmptyErrorsAndWarning().Merge(cacheEnabledResult).Merge(cacheTtlResult)
 }
 
 func ValidateClientCacheEnabled(c Client) *modconfig.ErrorAndWarnings {
-	errorsAndWarnings := modconfig.NewErrorsAndWarning(nil)
 
 	if c.ServerSettings() == nil || !viper.IsSet(constants.ArgClientCacheEnabled) {
 		// if there's no serverSettings, then this is a pre-21 server
 		// behave as if there's no problem
-		return errorsAndWarnings
+		return modconfig.EmptyErrorsAndWarning()
 	}
 
+	errorsAndWarnings := modconfig.NewErrorsAndWarning(nil)
 	if !c.ServerSettings().CacheEnabled && viper.GetBool(constants.ArgClientCacheEnabled) {
 		errorsAndWarnings.AddWarning("Caching is disabled on the server.")
 	}
-
 	// if there's no serverSettings, then this is a pre-21 server
 	// nothing to check
 	return errorsAndWarnings
@@ -43,12 +41,21 @@ func ValidateClientCacheTtl(c Client) *modconfig.ErrorAndWarnings {
 		return errorsAndWarnings
 	}
 
-	serverMaxTtl := time.Duration(c.ServerSettings().CacheMaxTtl) * time.Second
-	//nolint:golint,durationcheck //ArgCacheTtl is an int which is the number of TTL seconds
-	clientTtl := viper.GetDuration(constants.ArgCacheTtl) * time.Second
-
-	if serverMaxTtl < clientTtl {
-		errorsAndWarnings.AddWarning(fmt.Sprintf("Server enforces maximum TTL at %d seconds. Setting TTL to %d seconds.", int(serverMaxTtl.Seconds()), int(serverMaxTtl.Seconds())))
+	clientTtl := viper.GetInt(constants.ArgCacheTtl)
+	if can, whyCannotSet := CanSetCacheTtl(c.ServerSettings(), clientTtl); !can {
+		errorsAndWarnings.AddWarning(whyCannotSet)
 	}
 	return errorsAndWarnings
+}
+
+func CanSetCacheTtl(ss *ServerSettings, newTtl int) (bool, string) {
+	if ss == nil {
+		// nothing to enforce
+		return true, ""
+	}
+	serverMaxTtl := ss.CacheMaxTtl
+	if newTtl > serverMaxTtl {
+		return false, fmt.Sprintf("Server enforces maximum TTL of %d seconds. Setting TTL to %d seconds.", serverMaxTtl, serverMaxTtl)
+	}
+	return true, ""
 }
