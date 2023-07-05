@@ -12,33 +12,6 @@ import (
 	"github.com/turbot/steampipe/sperr"
 )
 
-func showCache(_ context.Context, input *HandlerInput) error {
-	if input.Client.ServerSettings() != nil && !input.Client.ServerSettings().CacheEnabled {
-		fmt.Println("Caching is disabled on the server")
-		return nil
-	}
-
-	currentStatusString := "off"
-	action := "on"
-
-	if !viper.IsSet(constants.ArgClientCacheEnabled) || viper.GetBool(constants.ArgClientCacheEnabled) {
-		currentStatusString = "on"
-		action = "off"
-	}
-
-	fmt.Printf(
-		`Caching is %s. To turn it %s, type %s`,
-		constants.Bold(currentStatusString),
-		constants.Bold(action),
-		constants.Bold(fmt.Sprintf(".cache %s", action)),
-	)
-
-	// add an empty line here so that the rendering buffer can start from the next line
-	fmt.Println()
-
-	return nil
-}
-
 // controls the cache in the connected FDW
 func cacheControl(ctx context.Context, input *HandlerInput) error {
 	if len(input.args()) == 0 {
@@ -110,6 +83,33 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 		viper.Set(constants.ArgCacheTtl, seconds)
 	}()
 	return db_common.SetCacheTtl(ctx, time.Duration(seconds)*time.Second, sessionResult.Session.Connection.Conn())
+}
+
+func showCache(_ context.Context, input *HandlerInput) error {
+	if input.Client.ServerSettings() != nil && !input.Client.ServerSettings().CacheEnabled {
+		fmt.Println("Caching is disabled on the server")
+		return nil
+	}
+
+	currentStatusString := "off"
+	action := "on"
+
+	if !viper.IsSet(constants.ArgClientCacheEnabled) || viper.GetBool(constants.ArgClientCacheEnabled) {
+		currentStatusString = "on"
+		action = "off"
+	}
+
+	fmt.Printf(
+		`Caching is %s. To turn it %s, type %s`,
+		constants.Bold(currentStatusString),
+		constants.Bold(action),
+		constants.Bold(fmt.Sprintf(".cache %s", action)),
+	)
+
+	// add an empty line here so that the rendering buffer can start from the next line
+	fmt.Println()
+
+	return nil
 }
 
 func showCacheTtl(ctx context.Context, input *HandlerInput) error {
