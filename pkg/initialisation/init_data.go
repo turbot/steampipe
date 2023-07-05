@@ -20,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/workspace"
+	"github.com/turbot/steampipe/sperr"
 )
 
 type InitData struct {
@@ -64,6 +65,11 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 			i.Result.Error = ctx.Err()
 		}
 	}()
+
+	if i.Workspace == nil {
+		i.Result.Error = sperr.WrapWithRootMessage(error_helpers.InvalidStateError, "InitData.Init called before setting up Workspace")
+		return
+	}
 
 	statushooks.SetStatus(ctx, "Initializing")
 
@@ -132,6 +138,14 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		return
 	}
 	i.Result.AddWarnings(errorsAndWarnings.Warnings...)
+
+	if errorsAndWarnings := db_common.ValidateClientCacheSettings(client); errorsAndWarnings != nil {
+		if errorsAndWarnings.GetError() != nil {
+			i.Result.Error = errorsAndWarnings.GetError()
+		}
+		i.Result.AddWarnings(errorsAndWarnings.Warnings...)
+	}
+
 	i.Client = client
 }
 
