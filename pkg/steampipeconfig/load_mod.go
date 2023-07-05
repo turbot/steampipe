@@ -21,10 +21,10 @@ import (
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings *error_helpers.ErrorAndWarnings) {
+func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings *modconfig.ErrorAndWarnings) {
 	defer func() {
 		if r := recover(); r != nil {
-			errorsAndWarnings = error_helpers.NewErrorsAndWarning(helpers.ToError(r))
+			errorsAndWarnings = modconfig.NewErrorsAndWarning(helpers.ToError(r))
 		}
 	}()
 
@@ -40,12 +40,12 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mo
 
 	// set the current mod on the run context
 	if err := parseCtx.SetCurrentMod(mod); err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
 	// load the mod dependencies
 	if err := loadModDependencies(mod, parseCtx); err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
 	// populate the resource maps of the current mod using the dependency mods
@@ -58,19 +58,19 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mo
 	return mod, errorsAndWarnings
 }
 
-func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings *error_helpers.ErrorAndWarnings) {
-	errorsAndWarnings = &error_helpers.ErrorAndWarnings{}
+func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings *modconfig.ErrorAndWarnings) {
+	errorsAndWarnings = &modconfig.ErrorAndWarnings{}
 	// verify the mod folder exists
 	_, err := os.Stat(modPath)
 	if os.IsNotExist(err) {
-		return nil, error_helpers.NewErrorsAndWarning(fmt.Errorf("mod folder %s does not exist", modPath))
+		return nil, modconfig.NewErrorsAndWarning(fmt.Errorf("mod folder %s does not exist", modPath))
 	}
 
 	if parse.ModfileExists(modPath) {
 		// load the mod definition to get the dependencies
 		var res *parse.DecodeResult
 		mod, res = parse.ParseModDefinition(modPath, parseCtx.EvalCtx)
-		errorsAndWarnings = error_helpers.DiagsToErrorsAndWarnings("mod load failed", res.Diags)
+		errorsAndWarnings = modconfig.DiagsToErrorsAndWarnings("mod load failed", res.Diags)
 		if res.Diags.HasErrors() {
 			return nil, errorsAndWarnings
 		}
@@ -150,7 +150,7 @@ func loadModDependency(modDependency *versionmap.ResolvedVersionConstraint, pars
 
 }
 
-func loadModResources(mod *modconfig.Mod, parseCtx *parse.ModParseContext) (*modconfig.Mod, *error_helpers.ErrorAndWarnings) {
+func loadModResources(mod *modconfig.Mod, parseCtx *parse.ModParseContext) (*modconfig.Mod, *modconfig.ErrorAndWarnings) {
 	// if flag is set, create pseudo resources by mapping files
 	var pseudoResources []modconfig.MappableResource
 	var err error
@@ -158,7 +158,7 @@ func loadModResources(mod *modconfig.Mod, parseCtx *parse.ModParseContext) (*mod
 		// now execute any pseudo-resource creations based on file mappings
 		pseudoResources, err = createPseudoResources(mod, parseCtx)
 		if err != nil {
-			return nil, error_helpers.NewErrorsAndWarning(err)
+			return nil, modconfig.NewErrorsAndWarning(err)
 		}
 	}
 
@@ -166,13 +166,13 @@ func loadModResources(mod *modconfig.Mod, parseCtx *parse.ModParseContext) (*mod
 	sourcePaths, err := getSourcePaths(mod.ModPath, parseCtx.ListOptions)
 	if err != nil {
 		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
 	// load the raw file data
 	fileData, diags := parse.LoadFileData(sourcePaths...)
 	if diags.HasErrors() {
-		return nil, error_helpers.NewErrorsAndWarning(plugin.DiagsToError("Failed to load all mod files", diags))
+		return nil, modconfig.NewErrorsAndWarning(plugin.DiagsToError("Failed to load all mod files", diags))
 	}
 
 	// parse all hcl files (NOTE - this reads the CurrentMod out of ParseContext and adds to it)

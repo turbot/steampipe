@@ -1,8 +1,8 @@
 package db_common
 
-import "github.com/turbot/steampipe/pkg/error_helpers"
+import "github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 
 type AcquireSessionResult struct {
 	Session *DatabaseSession
-	error_helpers.ErrorAndWarnings
+	modconfig.ErrorAndWarnings
 }

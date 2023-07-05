@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -19,7 +19,7 @@ type LocalDbClient struct {
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
-func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (*LocalDbClient, *error_helpers.ErrorAndWarnings) {
+func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (*LocalDbClient, *modconfig.ErrorAndWarnings) {
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
@@ -28,7 +28,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	log.Println(fmt.Sprintf("[TRACE] GetLocalClient - listenAddresses=%s, port=%d", listenAddresses, port))
 	// start db if necessary
 	if err := EnsureDBInstalled(ctx); err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
 	startResult := StartServices(ctx, listenAddresses, port, invoker)

@@ -60,13 +60,13 @@ type Workspace struct {
 }
 
 // Load creates a Workspace and loads the workspace mod
-func Load(ctx context.Context, workspacePath string) (*Workspace, *error_helpers.ErrorAndWarnings) {
+func Load(ctx context.Context, workspacePath string) (*Workspace, *modconfig.ErrorAndWarnings) {
 	utils.LogTime("workspace.Load start")
 	defer utils.LogTime("workspace.Load end")
 
 	workspace, err := createShellWorkspace(workspacePath)
 	if err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
 	// load the workspace mod
@@ -76,14 +76,14 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, *error_helpers
 
 // LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
 // this is use for the variable list command
-func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Variable, *error_helpers.ErrorAndWarnings) {
+func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Variable, *modconfig.ErrorAndWarnings) {
 	utils.LogTime("workspace.LoadVariables start")
 	defer utils.LogTime("workspace.LoadVariables end")
 
 	// create shell workspace
 	workspace, err := createShellWorkspace(workspacePath)
 	if err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
 	// resolve variables values, WITHOUT validating missing vars
@@ -243,7 +243,7 @@ func (w *Workspace) findModFilePath(folder string) (string, error) {
 	return modFilePath, nil
 }
 
-func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAndWarnings {
+func (w *Workspace) loadWorkspaceMod(ctx context.Context) *modconfig.ErrorAndWarnings {
 	// resolve values of all input variables
 	// we WILL validate missing variables when loading
 	validateMissing := true
@@ -292,21 +292,21 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAn
 	return errorsAndWarnings
 }
 
-func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
+func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, *modconfig.ErrorAndWarnings) {
 	// build a run context just to use to load variable definitions
 	variablesParseCtx, err := w.getParseContext(ctx)
 	if err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 
 	return w.getVariableValues(ctx, variablesParseCtx, validateMissing)
 }
 
-func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
+func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, *modconfig.ErrorAndWarnings) {
 	// load variable definitions
 	variableMap, err := steampipeconfig.LoadVariableDefinitions(w.Path, variablesParseCtx)
 	if err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, modconfig.NewErrorsAndWarning(err)
 	}
 	// get the values
 	return steampipeconfig.GetVariableValues(ctx, variablesParseCtx, variableMap, validateMissing)

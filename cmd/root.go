@@ -29,6 +29,7 @@ import (
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/task"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
@@ -136,7 +137,7 @@ Getting started:
 // task run is complete
 //
 // runScheduledTasks skips running tasks if this instance is the plugin manager
-func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, ew *error_helpers.ErrorAndWarnings) chan struct{} {
+func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, ew *modconfig.ErrorAndWarnings) chan struct{} {
 	// skip running the task runner if this is the plugin manager
 	// since it's supposed to be a daemon
 	if task.IsPluginManagerCmd(cmd) {
@@ -231,7 +232,7 @@ func hideRootFlags(flags ...string) {
 }
 
 // initConfig reads in config file and ENV variables if set.
-func initGlobalConfig() *error_helpers.ErrorAndWarnings {
+func initGlobalConfig() *modconfig.ErrorAndWarnings {
 	utils.LogTime("cmd.root.initGlobalConfig start")
 	defer utils.LogTime("cmd.root.initGlobalConfig end")
 
@@ -437,7 +438,7 @@ func createRootContext() context.Context {
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way
-func displayDeprecationWarnings(errorsAndWarnings *error_helpers.ErrorAndWarnings) {
+func displayDeprecationWarnings(errorsAndWarnings *modconfig.ErrorAndWarnings) {
 	if len(errorsAndWarnings.Warnings) > 0 {
 		fmt.Println(color.YellowString(fmt.Sprintf("\nDeprecation %s:", utils.Pluralize("warning", len(errorsAndWarnings.Warnings)))))
 		for _, warning := range errorsAndWarnings.Warnings {
