@@ -103,7 +103,7 @@ func wrap(err error, options ...Option) *Error {
 		msg := inferMessageFromError(err)
 		// hide the child error if we could infer a message from the error
 		isRoot := len(msg) > 0
-		return &Error{
+		e = &Error{
 			cause:         err,
 			message:       msg,
 			isRootMessage: isRoot,
