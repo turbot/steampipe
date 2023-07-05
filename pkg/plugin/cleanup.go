@@ -16,19 +16,19 @@ func CleanupOldTmpDirs() {
 		Flags:   files.DirectoriesRecursive,
 	})
 	if err != nil {
-		log.Printf("Error while globbing for tmp dirs in plugin dir: %s\n", err)
+		log.Printf("[TRACE] Error while globbing for tmp dirs in plugin dir: %s", err)
 		return
 	}
 
 	for _, tmpDir := range tmpDirs {
 		stat, err := os.Stat(tmpDir)
 		if err != nil {
-			log.Printf("Error while stating tmp dir %s: %s\n", tmpDir, err)
+			log.Printf("[TRACE] Error while stating tmp dir %s: %s", tmpDir, err)
 			continue
 		}
 		if time.Since(stat.ModTime()) > tmpDirAgeThreshold {
 			if err := os.RemoveAll(tmpDir); err != nil {
-				log.Printf("Error while removing old tmp dir %s: %s\n", tmpDir, err)
+				log.Printf("[TRACE] Error while removing old tmp dir %s: %s", tmpDir, err)
 			}
 		}
 	}

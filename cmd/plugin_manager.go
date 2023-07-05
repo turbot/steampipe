@@ -117,4 +117,3 @@ func createPluginManagerLog() hclog.Logger {
 	log.SetFlags(0)
 	return logger
 }
-
