@@ -66,6 +66,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		}
 	}()
 
+	// code after this depends of i.Workspace being defined. make sure that it is
 	if i.Workspace == nil {
 		i.Result.Error = sperr.WrapWithRootMessage(error_helpers.InvalidStateError, "InitData.Init called before setting up Workspace")
 		return
