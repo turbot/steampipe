@@ -116,9 +116,9 @@ func showCacheTtl(ctx context.Context, input *HandlerInput) error {
 		serverTtl := input.Client.ServerSettings().CacheMaxTtl
 		fmt.Println("Cache TTL is", serverTtl, "seconds")
 	}
-	ew := db_common.ValidateClientCacheTtl(input.Client)
-	if ew != nil {
-		ew.ShowWarnings()
+	errorsAndWarnings := db_common.ValidateClientCacheTtl(input.Client)
+	if errorsAndWarnings != nil {
+		errorsAndWarnings.ShowWarnings()
 	}
 	// we don't know what the setting is
 	return nil
