@@ -29,6 +29,7 @@ import (
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -756,10 +757,12 @@ func (m *PluginManager) setAllConnectionConfigs(connectionConfigs []*sdkproto.Co
 	pluginName := exemplarConnectionConfig.Plugin
 
 	req := &sdkproto.SetAllConnectionConfigsRequest{
-		Configs: connectionConfigs,
 		// NOTE: set MaxCacheSizeMb to -1so that query cache is not created until we call SetCacheOptions (if supported)
 		MaxCacheSizeMb: -1,
+		// NOTE: exclude aggregator connections
+		Configs: nonAggregatorConnections(connectionConfigs),
 	}
+
 	// if plugin _does not_ support setting the cache options separately, pass the max size now
 	// (if it does support SetCacheOptions, it will be called after we return)
 	if !supportedOperations.SetCacheOptions {
@@ -813,13 +816,16 @@ func (m *PluginManager) nonAggregatorConnectionCount() int {
 	return res
 }
 
-func nonAggregatorConnectionCount(connections []*sdkproto.ConnectionConfig) int {
-	res := 0
+func nonAggregatorConnections(connections []*sdkproto.ConnectionConfig) []*sdkproto.ConnectionConfig {
+	var res []*sdkproto.ConnectionConfig
 	for _, c := range connections {
-		if len(c.ChildConnections) == 0 {
-			res++
+		if steampipeconfig.GlobalConfig.Connections[c.Connection].Type != modconfig.ConnectionTypeAggregator {
+			res = append(res, c)
 		}
 	}
 	return res
 
+}
+func nonAggregatorConnectionCount(connections []*sdkproto.ConnectionConfig) int {
+	return len(nonAggregatorConnections(connections))
 }
