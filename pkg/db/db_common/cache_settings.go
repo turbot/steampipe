@@ -26,7 +26,7 @@ func ValidateClientCacheEnabled(c Client) *modconfig.ErrorAndWarnings {
 	}
 
 	if !c.ServerSettings().CacheEnabled && viper.GetBool(constants.ArgClientCacheEnabled) {
-		errorsAndWarnings.AddWarning("client cache is enabled, but will have no effect since server cache is disabled")
+		errorsAndWarnings.AddWarning("Caching is disabled on the server.")
 	}
 
 	// if there's no serverSettings, then this is a pre-21 server
@@ -48,7 +48,7 @@ func ValidateClientCacheTtl(c Client) *modconfig.ErrorAndWarnings {
 	clientTtl := viper.GetDuration(constants.ArgCacheTtl) * time.Second
 
 	if serverMaxTtl < clientTtl {
-		errorsAndWarnings.AddWarning(fmt.Sprintf("client cache TTL (%v) is higher than server cache TTL (%v) - server TTL is the effective TTL", clientTtl, serverMaxTtl))
+		errorsAndWarnings.AddWarning(fmt.Sprintf("Server enforces maximum TTL at %d seconds. Setting TTL to %d seconds.", int(serverMaxTtl.Seconds()), int(serverMaxTtl.Seconds())))
 	}
 	return errorsAndWarnings
 }

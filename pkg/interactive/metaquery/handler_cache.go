@@ -38,7 +38,7 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 	case constants.ArgOn:
 		serverSettings := input.Client.ServerSettings()
 		if serverSettings != nil && !serverSettings.CacheEnabled {
-			fmt.Println("Cannot turn on cache - caching is disabled on the server")
+			fmt.Println("Caching is disabled on the server")
 		}
 		viper.Set(constants.ArgClientCacheEnabled, true)
 		return db_common.SetCacheEnabled(ctx, true, conn)
@@ -62,13 +62,13 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 		return sperr.WrapWithMessage(err, "valid value is the number of seconds")
 	}
 	if seconds < 0 {
-		return sperr.New("ttl must be greater than 0")
+		return sperr.New("TTL must be greater than 0")
 	}
 	if input.Client.ServerSettings() != nil {
 		serverttl := time.Duration(input.Client.ServerSettings().CacheMaxTtl) * time.Second
 		newttl := time.Duration(seconds) * time.Second
 		if newttl > serverttl {
-			fmt.Println("Cannot set cache ttl to higher than server max ttl. Server max TTL is set to", serverttl)
+			fmt.Println("Server enforces maximum TTL to", serverttl.Seconds(), "seconds. Setting to", serverttl.Seconds(), "seconds.")
 			return nil
 		}
 	}
