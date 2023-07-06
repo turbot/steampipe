@@ -92,6 +92,7 @@ jobs:
         test_block:
           - "migration"
           - "brew"
+          - "installation"
           - "service_and_plugin"
           - "blank_aggregators"
           - "service"

@@ -312,6 +312,7 @@ jobs:
         platform: [ macos-latest ]
         test_block:
           - "migration"
+          - "installation"
           - "service_and_plugin"
           - "service"
           - "settings"
