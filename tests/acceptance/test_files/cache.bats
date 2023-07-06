@@ -408,6 +408,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe service start
   
   sleep 5
+  steampipe query "select 1"
   steampipe query "select * from steampipe_connection_state"
 
   # cache functionality check since cache=true in options
@@ -446,6 +447,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # start the service
   steampipe service start
+  
+  sleep 5
+  steampipe query "select 1"
+  steampipe query "select * from steampipe_connection_state"
 
   # cache functionality check since cache=true in options
   steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out1.json
@@ -483,7 +488,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
 
   # start the service
-  steampipe service start  
+  steampipe service start
+  
+  sleep 5
+  steampipe query "select 1"
+  steampipe query "select * from steampipe_connection_state"
 
   # cache functionality check since cache=true in options
   steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out1.json
