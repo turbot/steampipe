@@ -1,4 +1,4 @@
-connection "chaos6" {
+connection "chaos_ttl_options" {
     plugin = "chaos"
     options "connection" {
       cache = true

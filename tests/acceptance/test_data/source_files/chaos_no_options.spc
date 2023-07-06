@@ -1,3 +1,3 @@
-connection "chaos6" {
+connection "chaos_no_options" {
   plugin = "chaos"
 }
