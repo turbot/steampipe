@@ -55,7 +55,7 @@ func CanSetCacheTtl(ss *ServerSettings, newTtl int) (bool, string) {
 	}
 	serverMaxTtl := ss.CacheMaxTtl
 	if newTtl > serverMaxTtl {
-		return false, fmt.Sprintf("Server enforces maximum TTL of %d seconds. Setting TTL to %d seconds.", serverMaxTtl, serverMaxTtl)
+		return false, fmt.Sprintf("Server enforces maximum TTL of %d seconds. TTL set to %d seconds.", serverMaxTtl, serverMaxTtl)
 	}
 	return true, ""
 }
