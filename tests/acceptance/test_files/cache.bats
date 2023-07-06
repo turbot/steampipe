@@ -462,6 +462,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   unique1=$(cat out1.json | jq '.[].unique_col')
   unique2=$(cat out2.json | jq '.[].unique_col')
   unique3=$(cat out3.json | jq '.[].unique_col')
+  
+  echo unique1 >&3
+  echo unique2 >&3
+  echo unique3 >&3
 
   # remove the output and the config files
   rm -f out*.json
