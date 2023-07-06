@@ -4,7 +4,6 @@ import (
 	"embed"
 	"encoding/json"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -52,7 +51,7 @@ func EnsureTemplates() error {
 }
 
 func getCurrentTemplateVersion(path string) string {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Println("[TRACE] template version file does not exist - install the new template")

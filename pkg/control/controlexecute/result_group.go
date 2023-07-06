@@ -91,12 +91,12 @@ func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootI
 // NewResultGroup creates a result group from a ModTreeItem
 func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem modconfig.ModTreeItem, parent *ResultGroup) *ResultGroup {
 	// only show qualified group names for controls from dependent mods
-	groupId := treeItem.Name()
-	if mod := treeItem.GetMod(); mod != nil && mod.Name() == executionTree.Workspace.Mod.Name() {
-		// TODO: We should be able to use the unqualified name for the Root Mod.
-		// https://github.com/turbot/steampipe/issues/1301
-		groupId = modconfig.UnqualifiedResourceName(groupId)
-	}
+	//groupId := treeItem.Name()
+	//if mod := treeItem.GetMod(); mod != nil && mod.Name() == executionTree.Workspace.Mod.Name() {
+	// TODO: We should be able to use the unqualified name for the Root Mod.
+	// https://github.com/turbot/steampipe/issues/1301
+	//	groupId = modconfig.UnqualifiedResourceName(groupId)
+	//}
 
 	group := &ResultGroup{
 		GroupId:     treeItem.Name(),

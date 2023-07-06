@@ -35,7 +35,7 @@ func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
 
 		// now that the viper is set, call back into the client (exposed via QueryExecutor) which
 		// already knows how to setup the search_paths with the viper values
-		input.Client.SetRequiredSessionSearchPath(ctx)
+		return input.Client.SetRequiredSessionSearchPath(ctx)
 	}
 	return nil
 }
@@ -52,6 +52,5 @@ func setSearchPathPrefix(ctx context.Context, input *HandlerInput) error {
 
 	// now that the viper is set, call back into the client (exposed via QueryExecutor) which
 	// already knows how to setup the search_paths with the viper values
-	input.Client.SetRequiredSessionSearchPath(ctx)
-	return nil
+	return input.Client.SetRequiredSessionSearchPath(ctx)
 }

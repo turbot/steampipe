@@ -33,8 +33,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 	r := &DashboardContainerRun{dashboardNode: container}
 	// create NewDashboardTreeRunImpl
 	// (we must create after creating the run as it requires a ref to the run)
-	// TODO [node_reuse] do this a different way https://github.com/turbot/steampipe/issues/2919
-	r.DashboardTreeRunImpl = NewDashboardTreeRunImpl(container, parent, r, executionTree)
+	r.DashboardParentImpl = newDashboardParentImpl(container, parent, r, executionTree)
 
 	if container.Title != nil {
 		r.Title = *container.Title

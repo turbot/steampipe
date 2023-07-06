@@ -99,10 +99,8 @@ func (d *DashboardTreeItemDiffs) queryProviderDiff(l QueryProvider, r QueryProvi
 		// we have args
 		if rArgs := r.GetArgs(); rArgs == nil {
 			d.AddPropertyDiff("Args")
-		} else {
-			if !lArgs.Equals(rArgs) {
-				d.AddPropertyDiff("Args")
-			}
+		} else if !lArgs.Equals(rArgs) {
+			d.AddPropertyDiff("Args")
 		}
 	}
 

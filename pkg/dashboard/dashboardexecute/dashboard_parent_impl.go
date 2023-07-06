@@ -15,7 +15,14 @@ type DashboardParentImpl struct {
 	childCompleteChan chan dashboardtypes.DashboardTreeRun
 	// are we blocked by a child run
 	blockedByChild  bool
-	childStatusLock sync.Mutex
+	childStatusLock *sync.Mutex
+}
+
+func newDashboardParentImpl(resource modconfig.DashboardLeafNode, parent dashboardtypes.DashboardParent, run dashboardtypes.DashboardTreeRun, executionTree *DashboardExecutionTree) DashboardParentImpl {
+	return DashboardParentImpl{
+		DashboardTreeRunImpl: NewDashboardTreeRunImpl(resource, parent, run, executionTree),
+		childStatusLock:      new(sync.Mutex),
+	}
 }
 
 func (r *DashboardParentImpl) initialiseChildren(ctx context.Context) error {

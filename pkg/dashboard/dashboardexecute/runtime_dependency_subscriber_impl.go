@@ -16,7 +16,7 @@ import (
 
 type RuntimeDependencySubscriberImpl struct {
 	// all RuntimeDependencySubscribers are also publishers as they have args/params
-	RuntimeDependencyPublisherImpl
+	runtimeDependencyPublisherImpl
 	// if the underlying resource has a base resource, create a RuntimeDependencySubscriberImpl instance to handle
 	// generation and publication of runtime depdencies from the base resource
 	baseDependencySubscriber *RuntimeDependencySubscriberImpl
@@ -35,7 +35,7 @@ func NewRuntimeDependencySubscriber(resource modconfig.DashboardLeafNode, parent
 
 	// create RuntimeDependencyPublisherImpl
 	// (we must create after creating the run as iut requires a ref to the run)
-	b.RuntimeDependencyPublisherImpl = NewRuntimeDependencyPublisherImpl(resource, parent, run, executionTree)
+	b.runtimeDependencyPublisherImpl = newRuntimeDependencyPublisherImpl(resource, parent, run, executionTree)
 
 	return b
 }
@@ -58,7 +58,7 @@ func (s *RuntimeDependencySubscriberImpl) initRuntimeDependencies(executionTree 
 	}
 
 	// call into publisher to start any with runs
-	if err := s.RuntimeDependencyPublisherImpl.initWiths(); err != nil {
+	if err := s.runtimeDependencyPublisherImpl.initWiths(); err != nil {
 		return err
 	}
 	// resolve any runtime dependencies
@@ -408,15 +408,6 @@ func (s *RuntimeDependencySubscriberImpl) buildRuntimeDependencyArgs() (*modconf
 	return res, nil
 }
 
-func (s *RuntimeDependencySubscriberImpl) hasParam(paramName string) bool {
-	for _, p := range s.Params {
-		if p.ShortName == paramName {
-			return true
-		}
-	}
-	return false
-}
-
 // populate the list of runtime dependencies that this run depends on
 func (s *RuntimeDependencySubscriberImpl) setRuntimeDependencies() {
 	names := make(map[string]struct{}, len(s.runtimeDependencies))
@@ -465,5 +456,5 @@ func (s *RuntimeDependencySubscriberImpl) argsResolved(args []any) {
 	if s.baseDependencySubscriber != nil {
 		s.baseDependencySubscriber.argsResolved(args)
 	}
-	s.RuntimeDependencyPublisherImpl.argsResolved(args)
+	s.runtimeDependencyPublisherImpl.argsResolved(args)
 }
