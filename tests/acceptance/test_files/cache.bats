@@ -371,8 +371,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select unique_col from chaos6.chaos_cache_check where id=2" --output json > out1.json
   steampipe query "select unique_col from chaos6.chaos_cache_check where id=2" --output json > out2.json
   
-  # wait for 10 seconds - the value of the TTL in connection options
-  steampipe query "select pg_sleep(10)"
+  # wait for 10 seconds - the value of the TTL in environment
+  sleep 10
   
   # run the query again
   steampipe query "select unique_col from chaos6.chaos_cache_check where id=2" --output json > out3.json
@@ -408,7 +408,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select unique_col from chaos6.chaos_cache_check where id=2" --output json > out2.json
   
   # wait for 10 seconds - the value of the TTL in connection options
-  steampipe query "select pg_sleep(10)"
+  sleep 10
   
   # run the query again
   steampipe query "select unique_col from chaos6.chaos_cache_check where id=2" --output json > out3.json
@@ -422,6 +422,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $unique1 >&3
   echo $unique2 >&3
   echo $unique3 >&3
+
   # remove the output and the config files
   rm -f out*.json
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_ttl_options.spc
@@ -431,6 +432,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # the third query should have a different value
   assert_not_equal "$unique1" "$unique3"
 }
+
 @test "verify cache ttl works when set in workspace profile" {
   cp $FILE_PATH/test_data/source_files/workspace_cache_ttl.spc $STEAMPIPE_INSTALL_DIR/config/workspace.spc
   cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
@@ -443,7 +445,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select unique_col from chaos6.chaos_cache_check where id=2" --output json > out2.json
 
   # wait for 10 seconds - the value of the TTL in connection options
-  steampipe query "select pg_sleep(10)"
+  sleep 10
 
   # run the query again
   steampipe query "select unique_col from chaos6.chaos_cache_check where id=2" --output json > out3.json
