@@ -71,8 +71,12 @@ Examples:
 
   # Uninstall a plugin
   steampipe plugin uninstall aws`,
+		PersistentPostRun: func(_ *cobra.Command, args []string) {
+			utils.LogTime("cmd.plugin.PersistentPostRun start")
+			defer utils.LogTime("cmd.plugin.PersistentPostRun end")
+			plugin.CleanupOldTmpDirs()
+		},
 	}
-
 	cmd.AddCommand(pluginInstallCmd())
 	cmd.AddCommand(pluginListCmd())
 	cmd.AddCommand(pluginUninstallCmd())
