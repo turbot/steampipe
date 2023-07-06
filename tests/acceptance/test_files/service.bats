@@ -64,12 +64,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 
   # Extract listen from the state file
-  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .listen)
+  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c '.listen | index("'$IPV4_ADDR'")')
   echo $listen
 
-  assert_equal "$listen" '[
-  "localhost"
-]'
+  assert_not_equal "$listen" "null"
 
   run steampipe service stop
 
@@ -85,12 +83,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 
   # Extract listen from the state file
-  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .listen)
+  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c .listen)
   echo $listen
 
-  assert_equal "$listen" '[
-  "localhost"
-]'
+  assert_equal "$listen" '["127.0.0.1","::1","localhost"]'
 
   run steampipe service stop
 
@@ -109,12 +105,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 
   # Extract listen from the state file
-  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .listen)
+  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c '.listen | index("'$IPV4_ADDR'")')
   echo $listen
 
-  assert_equal "$listen" '[
-  "*"
-]'
+  assert_not_equal "$listen" "null"
 
   run steampipe service stop
 
@@ -133,12 +127,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 
   # Extract listen from the state file
-  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .listen)
+  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c .listen)
   echo $listen
 
-  assert_equal "$listen" '[
-  "127.0.0.1"
-]'
+  assert_equal "$listen" '["127.0.0.1"]'
 
   run steampipe service stop
 
@@ -157,13 +149,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 
   # Extract listen from the state file
-  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .listen)
+  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c .listen)
   echo $listen
 
-  assert_equal "$listen" '[
-  "127.0.0.1",
-  "::1"
-]'
+  assert_equal "$listen" '["127.0.0.1","::1"]'
 
   run steampipe service stop
 
@@ -176,7 +165,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe test database config with listen IPv4 address option(hcl)" {
   cp $SRC_DATA_DIR/database_options_listen_placeholder.spc $STEAMPIPE_INSTALL_DIR/config/database_options_listen.spc
 
-  IPV4_ADDR=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | head -n 1)
   sed -i.bak "s/LISTEN_PLACEHOLDER/$IPV4_ADDR/" $STEAMPIPE_INSTALL_DIR/config/database_options_listen.spc
 
   run steampipe service start
@@ -184,13 +172,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 
   # Extract listen from the state file
-  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .listen)
+  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c '.listen | index("'$IPV4_ADDR'")')
   echo $listen
 
-  assert_equal "$listen" '[
-  "127.0.0.1",
-  "'$IPV4_ADDR'"
-]'
+  assert_not_equal "$listen" "null"
 
   run steampipe service stop
 
@@ -201,8 +186,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe test database config with listen IPv6 address option(hcl)" {
-  IPV6_ADDR=$(ifconfig | grep -Eo 'inet6 (addr:)?([0-9a-f]*:){7}[0-9a-f]*' | grep -Eo '([0-9a-f]*:){7}[0-9a-f]*' | head -n 1)
-
   if [ -z "$IPV6_ADDR" ]; then
     skip "No IPv6 address is available, skipping test."
   fi
@@ -215,13 +198,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 
   # Extract listen from the state file
-  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .listen)
+  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c .listen)
   echo $listen
 
-  assert_equal "$listen" '[
-  "127.0.0.1",
-  "'$IPV6_ADDR'"
-]'
+  assert_equal "$listen" '["127.0.0.1","'$IPV6_ADDR'"]'
 
   run steampipe service stop
 
@@ -265,6 +245,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $tmpdir
 
   assert_success
+}
+
+function setup_file() {
+  export IPV4_ADDR=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | head -n 1)
+  export IPV6_ADDR=$(ifconfig | grep -Eo 'inet6 (addr:)?([0-9a-f]*:){7}[0-9a-f]*' | grep -Eo '([0-9a-f]*:){7}[0-9a-f]*' | head -n 1)
 }
 
 function teardown_file() {

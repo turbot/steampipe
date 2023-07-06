@@ -6,8 +6,10 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sort"
 
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -28,6 +30,8 @@ type RunningDBInstanceInfo struct {
 }
 
 func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int, databaseName string, password string, invoker constants.Invoker) *RunningDBInstanceInfo {
+	listenAddresses = getListenAddresses(listenAddresses)
+
 	dbState := &RunningDBInstanceInfo{
 		Pid:             cmd.Process.Pid,
 		ListenAddresses: listenAddresses,
@@ -40,6 +44,48 @@ func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int,
 	}
 
 	return dbState
+}
+
+func getListenAddresses(listenAddresses []string) []string {
+	addresses := []string{}
+
+	if helpers.StringSliceContains(listenAddresses, "localhost") {
+		loopAddrs, err := utils.LocalLoopbackAddresses()
+		if err != nil {
+			return nil
+		}
+		addresses = loopAddrs
+	}
+
+	if helpers.StringSliceContains(listenAddresses, "*") {
+		// remove the * wildcard, we want to replace that with the actual addresses
+		listenAddresses = helpers.RemoveFromStringSlice(listenAddresses, "*")
+		loopAddrs, err := utils.LocalLoopbackAddresses()
+		if err != nil {
+			return nil
+		}
+		publicAddrs, err := utils.LocalPublicAddresses()
+		if err != nil {
+			return nil
+		}
+		addresses = append(loopAddrs, publicAddrs...)
+	}
+
+	// now add back the listenAddresses to address arguments where the interface addresses were sent
+	addresses = append(addresses, listenAddresses...)
+	addresses = helpers.StringSliceDistinct(addresses)
+
+	// sort locals to the top
+	sort.SliceStable(addresses, func(i, j int) bool {
+		locals := []string{
+			"127.0.0.1",
+			"::1",
+			"localhost",
+		}
+		return !helpers.StringSliceContains(locals, addresses[j])
+	})
+
+	return addresses
 }
 
 func (r *RunningDBInstanceInfo) Save() error {

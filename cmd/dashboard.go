@@ -439,7 +439,7 @@ func saveDashboardState(serverPort dashboardserver.ListenPort, serverListen dash
 	}
 
 	if serverListen == dashboardserver.ListenTypeNetwork {
-		addrs, _ := utils.LocalAddresses()
+		addrs, _ := utils.LocalPublicAddresses()
 		state.Listen = append(state.Listen, addrs...)
 	}
 	error_helpers.FailOnError(dashboardserver.WriteServiceStateFile(state))

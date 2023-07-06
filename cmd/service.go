@@ -188,7 +188,7 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 func startService(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState, dbServiceStarted bool) {
 	statushooks.Show(ctx)
 	defer statushooks.Done(ctx)
-	log.Println(fmt.Sprintf("[TRACE] startService - listenAddresses=%q", listenAddresses))
+	log.Printf("[TRACE] startService - listenAddresses=%q", listenAddresses)
 
 	err := db_local.EnsureDBInstalled(ctx)
 	if err != nil {
@@ -713,7 +713,7 @@ Database:
 `
 	postgresMsg := fmt.Sprintf(
 		postgresFmt,
-		dbState.ListenAddresses,
+		strings.Join(dbState.ListenAddresses, ", "),
 		dbState.Port,
 		dbState.Database,
 		dbState.User,
