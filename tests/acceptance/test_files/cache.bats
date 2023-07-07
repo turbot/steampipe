@@ -349,6 +349,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe cache functionality check ON(check content of results, not just the unique column)" {
   # skip
+  
+  env
+  
   # start service to turn on caching
   steampipe service start
 
@@ -478,11 +481,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $unique3 >&3
   
   cat $STEAMPIPE_INSTALL_DIR/config/default.spc
-  cat $STEAMPIPE_INSTALL_DIR/config/chaos_ttl_options.spc
+  cat $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
 
   # remove the output and the config files
   rm -f out*.json
-  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_ttl_options.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
   rm -f $STEAMPIPE_INSTALL_DIR/config/default.spc
 
   # the first and the seconds query should have the same value
