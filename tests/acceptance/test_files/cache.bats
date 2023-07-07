@@ -476,6 +476,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $unique1 >&3
   echo $unique2 >&3
   echo $unique3 >&3
+  
+  cat $STEAMPIPE_INSTALL_DIR/config/default.spc
+  cat $STEAMPIPE_INSTALL_DIR/config/chaos_ttl_options.spc
 
   # remove the output and the config files
   rm -f out*.json
