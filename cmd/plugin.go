@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +21,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/installationstate"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
@@ -109,12 +112,16 @@ Examples:
   steampipe plugin install turbot/azure@0.1.0
 
   # Hide progress bars during installation
-  steampipe plugin install --progress=false aws`,
+  steampipe plugin install --progress=false aws
+
+  # Delete default plugin config file
+  steampipe plugin install --default-config=false aws`,
 	}
 
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgProgress, true, "Display installation progress").
+		AddBoolFlag(constants.ArgDefaultConfig, true, "Use default config file for plugin").
 		AddBoolFlag(constants.ArgHelp, false, "Help for plugin install", cmdconfig.FlagOptions.WithShortHand("h"))
 	return cmd
 }
@@ -237,6 +244,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// or full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
 	showProgress := viper.GetBool(constants.ArgProgress)
+	defaultConfig := viper.GetBool(constants.ArgDefaultConfig)
 	installReports := make(display.PluginInstallReports, 0, len(plugins))
 
 	if len(plugins) == 0 {
@@ -293,6 +301,14 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		}
 
 		statushooks.Done(ctx)
+	}
+	// if --default-config is set to false
+	if !defaultConfig {
+		//remove the config file
+		for _, plugin := range plugins {
+			configFilePath := filepath.Join(filepaths.EnsureConfigDir(), fmt.Sprintf("%s.spc", plugin))
+			os.Remove(configFilePath)
+		}
 	}
 	display.PrintInstallReports(installReports, false)
 
