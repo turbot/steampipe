@@ -59,7 +59,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 
 		connectionStateMap, stateErr := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitUntilLoading())
 		if stateErr != nil {
-			log.Println("[INFO] could not load connection state map", stateErr)
+			log.Println("[INFO] could not load connection state map:", stateErr)
 			// just return the query error
 			return queryError
 		}
