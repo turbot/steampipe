@@ -2,8 +2,6 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe check options config is being parsed and used(cache=true; hcl)" {
-    
-    
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
     # cache functionality check since cache=true in options
@@ -25,7 +23,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check options config is being parsed and used(cache=true; yml)" {
-    
     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
     # cache functionality check since cache=true in options
@@ -47,7 +44,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check options config is being parsed and used(cache=true; json)" {
-    
     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
     # cache functionality check since cache=true in options
@@ -70,7 +66,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check options config is being parsed and used(cache=false; hcl)" {
-    
     cp $SRC_DATA_DIR/chaos_options_2.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.spc
 
     # cache functionality check since cache=false in options
@@ -98,7 +93,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check options config is being parsed and used(cache=false; yml)" {
-    
     cp $SRC_DATA_DIR/chaos_options_2.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.yml
 
     # cache functionality check since cache=false in options
@@ -132,7 +126,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 #   3. Run the query twice and store the values to compare, before stopping the service.
 #   4. Compare the values, both the unique values should be equal since we had cache enabled in config.
 @test "steampipe query options config is being parsed and used(cache=true; hcl)" {
-    
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
 
     # start the service
@@ -166,7 +159,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 #   3. Run the query twice and store the values to compare, before stopping the service.
 #   4. Compare the values, both the unique values should be equal since we had cache enabled in config.
 @test "steampipe query options config is being parsed and used(cache=true; yml)" {
-    
     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
     # start the service
@@ -200,7 +192,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 #   3. Run the query twice and store the values to compare, before stopping the service.
 #   4. Compare the values, both the unique values should be equal since we had cache enabled in config.
 @test "steampipe query options config is being parsed and used(cache=true; json)" {
-    
     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
     # start the service
@@ -234,7 +225,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 #   3. Run the query twice and store the values to compare, before stopping the service.
 #   4. Compare the values, both the unique values should different since we had cache disabled in config.
 @test "steampipe query options config is being parsed and used(cache=false; hcl)" {
-    
     cp $SRC_DATA_DIR/chaos_options_2.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.spc
 
     # start the service
@@ -272,7 +262,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 #   3. Run the query twice and store the values to compare, before stopping the service.
 #   4. Compare the values, both the unique values should different since we had cache disabled in config.
 @test "steampipe query options config is being parsed and used(cache=false; yml)" {
-    
     cp $SRC_DATA_DIR/chaos_options_2.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options_2.yml
 
     # start the service
@@ -304,7 +293,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe cache functionality check ON" {
-  
   run steampipe plugin install chaos
   cd $FUNCTIONALITY_TEST_MOD
 
@@ -323,7 +311,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe cache functionality check OFF" {
-  
   cd $FUNCTIONALITY_TEST_MOD
 
   # set the env variable to false
@@ -404,7 +391,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$unique1" "$unique2"
   # the third query should have a different value
   assert_not_equal "$unique1" "$unique3"
-  
 }
 
 @test "verify cache ttl works when set in connections options" {
