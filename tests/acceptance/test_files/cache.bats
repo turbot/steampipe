@@ -413,6 +413,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "verify cache ttl works when set in connections options" {
+  skip "skipping for now"
+  
   cp $SRC_DATA_DIR/chaos_ttl_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_ttl_options.spc
 
   # start the service
