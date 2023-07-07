@@ -325,7 +325,7 @@ func (u *ConnectionUpdates) String() string {
 	if len(stateConnections) > 0 {
 		op.WriteString(fmt.Sprintf("Connection state: %s\n", strings.Join(stateConnections, ",")))
 	} else {
-		op.WriteString(fmt.Sprintf("Connection state EMPTY\n"))
+		op.WriteString("Connection state EMPTY\n")
 	}
 	return op.String()
 }
