@@ -42,7 +42,7 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 	// TODO this time can be reduced once all; plugins are using v5.4.1 of the sdk
 	maxDuration := 1 * time.Minute
 	retryInterval := 250 * time.Millisecond
-	if config.WaitMode == WaitForReady || config.WaitMode == WaitForSearchPath {
+	if config.WaitMode == WaitForReady || config.WaitMode == WaitForSearchPath || config.WaitMode == WaitForLoading {
 		// is we are waiting for all connections to be ready, wait up to 10 minutes
 		maxDuration = 10 * time.Minute
 	}

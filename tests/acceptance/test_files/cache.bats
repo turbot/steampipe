@@ -532,7 +532,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 function setup_file() {
-  export STEAMPIPE_LOG=trace
+  export STEAMPIPE_LOG=info
 }
 
 function teardown_file() {
