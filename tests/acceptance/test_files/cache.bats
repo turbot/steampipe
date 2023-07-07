@@ -531,6 +531,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_not_equal "$unique1" "$unique3"
 }
 
+function setup_file() {
+  export STEAMPIPE_LOG=trace
+}
+
 function teardown_file() {
   # list running processes
   ps -ef | grep steampipe
