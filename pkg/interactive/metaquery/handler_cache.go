@@ -62,7 +62,7 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 	if err != nil {
 		return sperr.WrapWithMessage(err, "valid value is the number of seconds")
 	}
-	if seconds < 0 {
+	if seconds <= 0 {
 		return sperr.New("TTL must be greater than 0")
 	}
 	if can, whyCannotSet := db_common.CanSetCacheTtl(input.Client.ServerSettings(), seconds); !can {
