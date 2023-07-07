@@ -380,10 +380,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe service start
   
   export STEAMPIPE_CACHE_TTL=10
-  
-  sleep 5
-  steampipe query "select 1"
-  steampipe query "select * from steampipe_connection_state"
 
   # cache functionality check since cache=true in options
   steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out1.json
@@ -417,10 +413,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # start the service
   steampipe service start
-  
-  sleep 5
-  steampipe query "select 1"
-  steampipe query "select * from steampipe_connection_state"
 
   # cache functionality check since cache=true in options
   steampipe query "select unique_col from chaos_ttl_options.chaos_cache_check where id=2" --output json > out1.json
@@ -455,10 +447,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # start the service
   steampipe service start
-  
-  sleep 5
-  steampipe query "select 1"
-  steampipe query "select * from steampipe_connection_state"
 
   # cache functionality check since cache=true in options
   steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out1.json
@@ -498,10 +486,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # start the service
   steampipe service start
-  
-  sleep 5
-  steampipe query "select 1"
-  steampipe query "select * from steampipe_connection_state"
 
   # cache functionality check since cache=true in options
   steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out1.json
