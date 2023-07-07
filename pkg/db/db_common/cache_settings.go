@@ -16,14 +16,13 @@ func ValidateClientCacheSettings(c Client) *modconfig.ErrorAndWarnings {
 }
 
 func ValidateClientCacheEnabled(c Client) *modconfig.ErrorAndWarnings {
-
+	errorsAndWarnings := modconfig.EmptyErrorsAndWarning()
 	if c.ServerSettings() == nil || !viper.IsSet(constants.ArgClientCacheEnabled) {
 		// if there's no serverSettings, then this is a pre-21 server
 		// behave as if there's no problem
-		return modconfig.EmptyErrorsAndWarning()
+		return errorsAndWarnings
 	}
 
-	errorsAndWarnings := modconfig.NewErrorsAndWarning(nil)
 	if !c.ServerSettings().CacheEnabled && viper.GetBool(constants.ArgClientCacheEnabled) {
 		errorsAndWarnings.AddWarning("Caching is disabled on the server.")
 	}
@@ -33,7 +32,7 @@ func ValidateClientCacheEnabled(c Client) *modconfig.ErrorAndWarnings {
 }
 
 func ValidateClientCacheTtl(c Client) *modconfig.ErrorAndWarnings {
-	errorsAndWarnings := modconfig.NewErrorsAndWarning(nil)
+	errorsAndWarnings := modconfig.EmptyErrorsAndWarning()
 
 	if c.ServerSettings() == nil || !viper.IsSet(constants.ArgCacheTtl) {
 		// if there's no serverSettings, then this is a pre-21 server
