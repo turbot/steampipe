@@ -448,6 +448,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "verify cache ttl works when set in database options" {
+  export STEAMPIPE_LOG=info
+
   cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
   cp $SRC_DATA_DIR/default_cache_ttl_10.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
 
@@ -471,9 +473,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   unique2=$(cat out2.json | jq '.[].unique_col')
   unique3=$(cat out3.json | jq '.[].unique_col')
   
-  echo unique1 >&3
-  echo unique2 >&3
-  echo unique3 >&3
+  echo $unique1 >&3
+  echo $unique2 >&3
+  echo $unique3 >&3
 
   # remove the output and the config files
   rm -f out*.json
@@ -519,10 +521,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$unique1" "$unique2"
   # the third query should have a different value
   assert_not_equal "$unique1" "$unique3"
-}
-
-function setup_file() {
-  export STEAMPIPE_LOG=info
 }
 
 function teardown_file() {
