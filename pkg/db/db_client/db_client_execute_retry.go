@@ -85,12 +85,15 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		// so a schema was specified
 		// verify it exists in the connection state and is not disabled
 		connectionState, missingSchemaExistsInStateMap := connectionStateMap[missingSchema]
-		if !missingSchemaExistsInStateMap || connectionState.Disabled() {
+		if !missingSchemaExistsInStateMap {
 			//, missing schema is not in connection state map - just return the error
 			return queryError
 		}
 
 		// so schema _is_ in the state map
+		if connectionState.Disabled() {
+			return queryError
+		}
 
 		// if the connection is ready (and has been for more than the backoff interval) , just return the relation not found error
 		if connectionState.State == constants.ConnectionStateReady && time.Since(connectionState.ConnectionModTime) > backoffInterval {
