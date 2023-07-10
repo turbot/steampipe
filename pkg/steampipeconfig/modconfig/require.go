@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
+	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
 	"github.com/turbot/steampipe/sperr"
 )
@@ -136,7 +137,7 @@ func (r *Require) validateSteampipeVersion(modName string) error {
 }
 
 // validatePluginVersions validates that for every plugin requirement there's at least one plugin installed
-func (r *Require) validatePluginVersions(modName string, plugins map[string]*semver.Version) []error {
+func (r *Require) validatePluginVersions(modName string, plugins map[string]*utils.PluginVersion) []error {
 	if len(r.Plugins) == 0 {
 		return nil
 	}
@@ -149,14 +150,14 @@ func (r *Require) validatePluginVersions(modName string, plugins map[string]*sem
 	return validationErrors
 }
 
-func (r *Require) searchInstalledPluginForRequirement(modName string, requirement *PluginVersion, plugins map[string]*semver.Version) error {
+func (r *Require) searchInstalledPluginForRequirement(modName string, requirement *PluginVersion, plugins map[string]*utils.PluginVersion) error {
 	for installedName, installed := range plugins {
 		org, name, _ := ociinstaller.NewSteampipeImageRef(installedName).GetOrgNameAndStream()
 		if org != requirement.Org || name != requirement.Name {
 			// no point check - different plugin
 			continue
 		}
-		if requirement.Constraint.Check(installed) {
+		if requirement.Constraint.Check(installed.Semver()) {
 			// constraint is satisfied
 			return nil
 		}

@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -16,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 const (
@@ -79,34 +79,8 @@ func Install(ctx context.Context, plugin string, sub chan struct{}) (*ociinstall
 // PluginListItem is a struct representing an item in the list of plugins
 type PluginListItem struct {
 	Name        string
-	Version     *PluginItemVersion
+	Version     *utils.PluginVersion
 	Connections []string
-}
-
-type PluginItemVersion struct {
-	version string
-}
-
-func (p PluginItemVersion) IsLocal() bool {
-	return p.version == "local"
-}
-
-func (p PluginItemVersion) IsSemver() bool {
-	if _, err := semver.NewVersion(p.version); err != nil {
-		return true
-	}
-	return false
-}
-
-func (p PluginItemVersion) String() string {
-	return p.version
-}
-
-func (p PluginItemVersion) Semver() *semver.Version {
-	if smv, err := semver.NewVersion(p.version); err != nil {
-		return smv
-	}
-	return nil
 }
 
 // List returns all installed plugins
@@ -137,23 +111,17 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 		}
 		item := PluginListItem{
 			Name: fullPluginName,
-			Version: &PluginItemVersion{
-				version: "local",
+			Version: &utils.PluginVersion{
+				Version: "local",
 			},
 		}
 		// check if this plugin is recorded in plugin versions
 		installation, found := pluginVersions[fullPluginName]
 		if found {
-			// use the version as recorded
-			item.Version = &PluginItemVersion{
-				version: "local",
-			}
-			// but if the modtime of the binary is after the installation date,
-			// this is "local"
-
-			if detectLocalPlugin(installation, pluginBinary) {
-				item.Version = &PluginItemVersion{
-					version: "local",
+			// TODO comment
+			if !detectLocalPlugin(installation, pluginBinary) {
+				item.Version = &utils.PluginVersion{
+					Version: installation.Version,
 				}
 			}
 

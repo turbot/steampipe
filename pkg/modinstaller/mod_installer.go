@@ -34,7 +34,7 @@ type ModInstaller struct {
 	oldRequire *modconfig.Require
 
 	// installed plugins
-	installedPlugins map[string]*semver.Version
+	installedPlugins map[string]*utils.PluginVersion
 
 	mods versionmap.VersionConstraintMap
 
