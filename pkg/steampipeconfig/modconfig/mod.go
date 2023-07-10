@@ -13,6 +13,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -340,7 +341,7 @@ func (m *Mod) SetFilePath(modFilePath string) {
 }
 
 // ValidateRequirements validates that the current steampipe CLI and the installed plugins is compatible with the mod
-func (m *Mod) ValidateRequirements(pluginVersionMap map[string]*semver.Version) []error {
+func (m *Mod) ValidateRequirements(pluginVersionMap map[string]*plugin.PluginItemVersion) []error {
 	validationErrors := []error{}
 	if err := m.validateSteampipeVersion(); err != nil {
 		validationErrors = append(validationErrors, err)

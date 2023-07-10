@@ -29,9 +29,14 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 		req.SetRequiredVersion(requiredVersion)
 
 		if installedVersion, found := installedPlugins[name]; found {
-			req.SetInstalledVersion(installedVersion)
+			if installedVersion.String() == "local" {
+				req.installedVersion = installedVersion
+				continue
+			}
+			smv, _ := semver.NewVersion(installedVersion) // handle err
+			req.SetInstalledVersion(smv)
 
-			if !requiredVersion.Check(installedPlugins[name]) {
+			if !requiredVersion.Check(smv) {
 				pluginsNotInstalled = append(pluginsNotInstalled, req)
 			}
 		} else {
