@@ -687,6 +687,26 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $tmpdir
 }
 
+@test "verify that steampipe check should bypass plugin requirement detection if installed plugin is local" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install net chaos --install-dir $tmpdir
+  assert_success
+
+  # wait for a couple of seconds
+  sleep 2
+
+  # touch one of the plugin binaries
+  touch $tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/steampipe-plugin-net.plugin
+
+  # install a mod which has a net plugin requirement
+  run steampipe mod install https://github.com/turbot/steampipe-mod-net-insights
+
+  # should succeed
+  assert_success
+
+  rm -rf $tmpdir
+}
+
 @test "cleanup" {
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
   run steampipe plugin uninstall steampipe
