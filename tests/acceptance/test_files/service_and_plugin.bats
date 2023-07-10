@@ -699,6 +699,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   touch $tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/steampipe-plugin-net.plugin
 
   # install a mod which has a net plugin requirement
+  cd $tmpdir
   run steampipe mod install https://github.com/turbot/steampipe-mod-net-insights
 
   # should succeed
