@@ -39,7 +39,7 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 	case constants.ArgOn:
 		serverSettings := input.Client.ServerSettings()
 		if serverSettings != nil && !serverSettings.CacheEnabled {
-			fmt.Println("Caching is disabled on the server")
+			fmt.Println("Caching is disabled on the server.")
 		}
 		viper.Set(constants.ArgClientCacheEnabled, true)
 		return db_common.SetCacheEnabled(ctx, true, conn)
@@ -83,7 +83,7 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 
 func showCache(_ context.Context, input *HandlerInput) error {
 	if input.Client.ServerSettings() != nil && !input.Client.ServerSettings().CacheEnabled {
-		fmt.Println("Caching is disabled on the server")
+		fmt.Println("Caching is disabled on the server.")
 		return nil
 	}
 

@@ -26,8 +26,6 @@ func ValidateClientCacheEnabled(c Client) *modconfig.ErrorAndWarnings {
 	if !c.ServerSettings().CacheEnabled && viper.GetBool(constants.ArgClientCacheEnabled) {
 		errorsAndWarnings.AddWarning("Caching is disabled on the server.")
 	}
-	// if there's no serverSettings, then this is a pre-21 server
-	// nothing to check
 	return errorsAndWarnings
 }
 
@@ -54,7 +52,7 @@ func CanSetCacheTtl(ss *ServerSettings, newTtl int) (bool, string) {
 	}
 	serverMaxTtl := ss.CacheMaxTtl
 	if newTtl > serverMaxTtl {
-		return false, fmt.Sprintf("Server enforces maximum TTL of %d seconds. TTL set to %d seconds.", serverMaxTtl, serverMaxTtl)
+		return false, fmt.Sprintf("Server enforces maximum TTL of %d seconds. Cannot set TTL to %d seconds. TTL set to %d seconds.", serverMaxTtl, newTtl, serverMaxTtl)
 	}
 	return true, ""
 }
