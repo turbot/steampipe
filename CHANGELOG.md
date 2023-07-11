@@ -1,3 +1,9 @@
+## v0.20.9 [2023-07-11]
+_Bug fixes_
+* Fix aggregator connections being dropped intermittently when refreshing connections. ([#3664](https://github.com/turbot/steampipe/issues/3664))
+* Ensure dynamic aggregator schema is updated if connections are added. ([#3645](https://github.com/turbot/steampipe/issues/3645))
+
+
 ## v0.20.8 [2023-07-03]
 _Bug fixes_
 * Fixes issue where setting cache ttl from the CLI results in cache being disabled for that session. ([#3639](https://github.com/turbot/steampipe/issues/3639))
