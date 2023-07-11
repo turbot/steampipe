@@ -46,11 +46,6 @@ func (p ConnectionPlugin) addConnection(name string, config string, connectionOp
 	}
 }
 
-func (p ConnectionPlugin) IncludesConnection(name string) bool {
-	_, ok := p.ConnectionMap[name]
-	return ok
-}
-
 // GetSchema returns the cached schema if it is static, or if it is dynamic, refetch it
 func (p ConnectionPlugin) GetSchema(connectionName string) (*sdkproto.Schema, error) {
 	connectionData, ok := p.ConnectionMap[connectionName]
