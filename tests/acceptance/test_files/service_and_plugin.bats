@@ -689,7 +689,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "verify that steampipe check should bypass plugin requirement detection if installed plugin is local" {
   tmpdir=$(mktemp -d)
-  run steampipe plugin install net chaos --install-dir $tmpdir
+  run steampipe plugin install net --install-dir $tmpdir
   assert_success
 
   # wait for a couple of seconds
@@ -698,21 +698,26 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # touch one of the plugin binaries
   touch $tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/steampipe-plugin-net.plugin
 
-  # install a mod which has a net plugin requirement
-  mkdir $tmpdir/net-mod
-  cd $tmpdir/net-mod
-  run steampipe mod install https://github.com/turbot/steampipe-mod-net-insights
+  run steampipe plugin list --install-dir $tmpdir
   echo $output
-  cd .steampipe/mods/github.com/turbot/steampipe-mod-net-insights@v0.5.0
+
+  # clone a mod which has a net plugin requirement
+  cd $tmpdir
+  git clone https://github.com/turbot/steampipe-mod-net-insights.git
+  cd steampipe-mod-net-insights
 
   # run steampipe check
-  run steampipe check all
+  run steampipe check all --install-dir $tmpdir
 
-  echo $output
+  # check - the plugin requirement warning should not be present in the output
+  substring="Warning: could not find plugin which satisfies requirement"
+  if [[ ! $output == *"$substring"* ]]; then
+    run echo "Warning is not present in the output"
+  else
+    run echo "Warning is present in the output"
+  fi
 
-  # should succeed
-  assert_equal 1 0
-
+  assert_equal "$output" "Warning is not present in the output"
   rm -rf $tmpdir
 }
 
