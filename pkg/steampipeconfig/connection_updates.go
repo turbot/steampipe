@@ -126,12 +126,10 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 
 			// set the connection mod time of required connection data to now
 			requiredConnectionState.ConnectionModTime = modTime
-		} else {
-			log.Printf("[INFO] connection %s does not require update", name)
 		}
 	}
 
-	log.Printf("[TRACE] Identify connections to delete")
+	log.Printf("[INFO] Identify connections to delete")
 	// connections to delete - any connection which is in connection state but NOT required connections
 	for name, currentState := range currentConnectionStateMap {
 		if _, connectionRequired := requiredConnectionStateMap[name]; !connectionRequired {
@@ -188,8 +186,6 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 	// this uses data from the ConnectionPlugins which we have now loaded
 	updates.updateRequiredStateWithSchemaProperties(dynamicSchemaHashMap)
 
-	log.Printf("[INFO] Returning, updates: %v", maps.Keys(updates.Update))
-	log.Printf("[INFO] %s", updates)
 	res.Updates = updates
 	return updates, res
 }
