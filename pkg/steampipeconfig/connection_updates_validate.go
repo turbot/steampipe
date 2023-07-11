@@ -48,11 +48,11 @@ func (u *ConnectionUpdates) validateUpdates() {
 			// try to get the validation failure - should be in InvalidConnections
 			validationFailure, ok := u.InvalidConnections[connectionName]
 			if ok {
-				log.Printf("[WARN] validateUpdates - connection update %s failed validation as the connection failed validation: %s", connectionName, validationFailure.Message)
+				log.Printf("[WARN] validateUpdates - connection update '%s' failed validation: %s", connectionName, validationFailure.Message)
 			} else {
 				// not expected
 				// for some reason there was no validation failure in the map
-				log.Printf("[WARN] validateUpdates - connection update %s failed validation (connection not found in validated ConnectionPlugins but InvalidConnections does not contain the connection - this is unexpected)", connectionName)
+				log.Printf("[WARN] validateUpdates - connection update '%s' failed validation (connection not found in validated ConnectionPlugins but InvalidConnections does not contain the connection - this is unexpected)", connectionName)
 			}
 		}
 	}
