@@ -702,6 +702,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   mkdir $tmpdir/net-mod
   cd $tmpdir/net-mod
   run steampipe mod install https://github.com/turbot/steampipe-mod-net-insights
+  echo $output
   cd .steampipe/mods/github.com/turbot/steampipe-mod-net-insights@v0.5.0
 
   # run steampipe check
