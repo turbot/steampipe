@@ -60,7 +60,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 	}
 	defer conn.Release()
 
-	log.Printf("[TRACE] Loading connection state")
+	log.Printf("[INFO] Loading connection state")
 	// load the connection state file and filter out any connections which are not in the list of schemas
 	// this allows for the database being rebuilt,modified externally
 	currentConnectionStateMap, err := LoadConnectionState(ctx, conn.Conn())
@@ -77,7 +77,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 		log.Printf("[WARN] failed to build required connection state: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
 	}
-	log.Printf("[TRACE] built required connection state")
+	log.Printf("[INFO] built required connection state")
 
 	// build lookup of disabled connections
 	disabled := make(map[string]struct{})
@@ -100,7 +100,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 	log.Printf("[INFO] loaded connection state")
 	updates.CurrentConnectionState = currentConnectionStateMap
 
-	log.Printf("[INFO] Loading dynamic schema hashes")
+	log.Printf("[INFO] loading dynamic schema hashes")
 
 	// for any connections with dynamic schema, we need to reload their schema
 	// instantiate connection plugins for all connections with dynamic schema - this will retrieve their current schema
@@ -115,22 +115,22 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 	for k, v := range dynamicSchemaHashMap {
 		log.Printf("[INFO] %s: %s", k, v)
 	}
-	log.Printf("[INFO] Identify connections to update")
+	log.Printf("[INFO] identify connections to update")
 
 	modTime := time.Now()
 	// connections to create/update
 	for name, requiredConnectionState := range requiredConnectionStateMap {
 		// if the connection requires update, add to list
 		if connectionRequiresUpdate(forceUpdateConnectionNames, name, currentConnectionStateMap, requiredConnectionState) {
-			log.Printf("[TRACE] connection %s is out of date or missing", name)
 			updates.Update[name] = requiredConnectionState
+			log.Printf("[INFO] connection %s is out of date or missing. updates: %v", name, maps.Keys(updates.Update))
 
 			// set the connection mod time of required connection data to now
 			requiredConnectionState.ConnectionModTime = modTime
 		}
 	}
 
-	log.Printf("[TRACE] Identify connections to delete")
+	log.Printf("[INFO] Identify connections to delete")
 	// connections to delete - any connection which is in connection state but NOT required connections
 	for name, currentState := range currentConnectionStateMap {
 		if _, connectionRequired := requiredConnectionStateMap[name]; !connectionRequired {
