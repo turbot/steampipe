@@ -17,6 +17,7 @@ func (u *ConnectionUpdates) validate() {
 }
 
 func (u *ConnectionUpdates) validatePluginsAndConnections() {
+	// TODO should plugin manager do this when starting the plugin???
 	var validatedPlugins = make(map[string]*ConnectionPlugin)
 
 	for connectionName, connectionPlugin := range u.ConnectionPlugins {
@@ -46,13 +47,16 @@ func (u *ConnectionUpdates) validateUpdates() {
 		} else {
 			// try to get the validation failure - should be in InvalidConnections
 			validationFailure, ok := u.InvalidConnections[connectionName]
-			// not expected
-			if !ok {
+			if ok {
+				log.Printf("[WARN] validateUpdates - connection update %s failed validation as the connection failed validation: %s", connectionName, validationFailure.Message)
+			} else {
+				// not expected
+				// for some reason there was no validation failure in the map
 				log.Printf("[WARN] validateUpdates - connection update %s failed validation - connection not found in validated ConnectionPlugins but InvalidConnections does not contain the connection - unexpected")
 			}
-			log.Printf("[WARN] validateUpdates - connection update %s failed validation as the connection failed validation: %s", connectionName, validationFailure.Message)
 		}
 	}
+
 	for connectionName, connectionState := range u.MissingComments {
 		// if this connection has a validated connection plugin, add to validated comment updates
 		if _, ok := u.ConnectionPlugins[connectionName]; ok {
