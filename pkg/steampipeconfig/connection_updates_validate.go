@@ -52,7 +52,7 @@ func (u *ConnectionUpdates) validateUpdates() {
 			} else {
 				// not expected
 				// for some reason there was no validation failure in the map
-				log.Printf("[WARN] validateUpdates - connection update %s failed validation - connection not found in validated ConnectionPlugins but InvalidConnections does not contain the connection - unexpected")
+				log.Printf("[WARN] validateUpdates - connection update %s failed validation (connection not found in validated ConnectionPlugins but InvalidConnections does not contain the connection - this is unexpected)", connectionName)
 			}
 		}
 	}
