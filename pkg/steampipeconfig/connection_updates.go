@@ -44,6 +44,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	// validate the updates
 	// this will validate all plugins and connection names  and remove any updates which use invalid connections
 	updates.validate()
+
 	return updates, res
 }
 
@@ -186,6 +187,8 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 	// this uses data from the ConnectionPlugins which we have now loaded
 	updates.updateRequiredStateWithSchemaProperties(dynamicSchemaHashMap)
 
+	// for all updates/deletes, if there any aggregators of the same plugin type, update those as well
+	updates.populateAggregators()
 	res.Updates = updates
 	return updates, res
 }
@@ -366,6 +369,42 @@ func (u *ConnectionUpdates) DynamicUpdates() []string {
 		}
 	}
 	return dynamicUpdates
+}
+
+func (u *ConnectionUpdates) populateAggregators() {
+	log.Printf("[INFO] populateAggregators")
+	// build map of aggregator connections keyed by plugin
+	pluginAggregatorMap := make(map[string][]string)
+
+	for connectionName, state := range u.FinalConnectionState {
+		if state.GetType() == modconfig.ConnectionTypeAggregator {
+			pluginAggregatorMap[state.Plugin] = append(pluginAggregatorMap[state.Plugin], connectionName)
+		}
+	}
+
+	log.Printf("[INFO] found %d %s with aggregators", len(pluginAggregatorMap), utils.Pluralize("plugin", len(pluginAggregatorMap)))
+
+	// for all updates/deletes, if there any aggregators of the same plugin type, update those as well
+	// build a map of all plugins with connecitons being updated/deleted
+	modifiedPluginLookup := make(map[string]struct{})
+	for _, c := range u.Update {
+		modifiedPluginLookup[c.Plugin] = struct{}{}
+	}
+	for c := range u.Delete {
+		plugin := u.CurrentConnectionState[c].Plugin
+		modifiedPluginLookup[plugin] = struct{}{}
+	}
+	for plugin := range modifiedPluginLookup {
+		aggregatorsForPlugin := pluginAggregatorMap[plugin]
+		numAggregatorsForPlugin := len(aggregatorsForPlugin)
+		if numAggregatorsForPlugin > 0 {
+			log.Printf("[INFO] plugin %s has modified connections - marking  %d %s as requiring update", plugin, numAggregatorsForPlugin, utils.Pluralize("aggregator", numAggregatorsForPlugin))
+			for _, aggregatorConnection := range aggregatorsForPlugin {
+				u.Update[aggregatorConnection] = u.FinalConnectionState[aggregatorConnection]
+			}
+		}
+	}
+
 }
 
 func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionStateMap, connectionState ConnectionStateMap) (map[string]string, map[string]*ConnectionPlugin, error) {
