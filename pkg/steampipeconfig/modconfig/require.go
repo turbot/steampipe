@@ -150,22 +150,26 @@ func (r *Require) validatePluginVersions(modName string, plugins map[string]*uti
 	return validationErrors
 }
 
+// searchInstalledPluginForRequirement returns plugin validation errors if no plugin is found which satisfies
+// the mod requirement. If plugin is found nil error is returned.
 func (r *Require) searchInstalledPluginForRequirement(modName string, requirement *PluginVersion, plugins map[string]*utils.PluginVersion) error {
 	for installedName, installed := range plugins {
 		org, name, _ := ociinstaller.NewSteampipeImageRef(installedName).GetOrgNameAndStream()
 		if org != requirement.Org || name != requirement.Name {
-			// no point check - different plugin
+			// no point checking - different plugin
 			continue
 		}
-		// if org and name matches but the plugin is built locally, return
-		if installed.Version == "local" {
+		// if org and name matches but the plugin is built locally, return without any validation error
+		if installed.IsLocal() {
 			return nil
 		}
+		// if org and name matches, check whether the version constraint is satisfied
 		if requirement.Constraint.Check(installed.Semver()) {
 			// constraint is satisfied
 			return nil
 		}
 	}
+	// validation failed - return error
 	return sperr.New("could not find plugin which satisfies requirement '%s@%s' - required by '%s'", requirement.RawName, requirement.MinVersionString, modName)
 }
 

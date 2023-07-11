@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/sperr"
 )
 
 const (
@@ -109,19 +110,19 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 		if err != nil {
 			return nil, err
 		}
+		// for local plugin
 		item := PluginListItem{
-			Name: fullPluginName,
-			Version: &utils.PluginVersion{
-				Version: "local",
-			},
+			Name:    fullPluginName,
+			Version: utils.LocalPluginVersion(),
 		}
 		// check if this plugin is recorded in plugin versions
 		installation, found := pluginVersions[fullPluginName]
 		if found {
-			// TODO comment
+			// if not a local plugin, get the semver version
 			if !detectLocalPlugin(installation, pluginBinary) {
-				item.Version = &utils.PluginVersion{
-					Version: installation.Version,
+				item.Version, err = utils.NewPluginVersion(installation.Version)
+				if err != nil {
+					return nil, sperr.WrapWithMessage(err, "could not evaluate plugin version %s", installation.Version)
 				}
 			}
 
