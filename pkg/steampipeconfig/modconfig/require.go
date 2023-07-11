@@ -158,7 +158,7 @@ func (r *Require) searchInstalledPluginForRequirement(modName string, requiremen
 			continue
 		}
 		// if org and name matches but the plugin is built locally, return
-		if org == requirement.Org && name == requirement.Name && installed.Version == "local" {
+		if installed.Version == "local" {
 			return nil
 		}
 		if requirement.Constraint.Check(installed.Semver()) {

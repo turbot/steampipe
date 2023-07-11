@@ -29,11 +29,11 @@ func (w *Workspace) CheckRequiredPluginsInstalled() error {
 		req.SetRequiredVersion(requiredVersion)
 
 		if installedVersion, found := installedPlugins[name]; found {
-			if installedVersion.String() == "local" {
+			if installedVersion.IsLocal() {
 				req.installedVersion = installedVersion.String()
 				continue
 			}
-			smv, _ := semver.NewVersion(installedVersion.String()) // handle err
+			smv := installedVersion.Semver()
 			req.SetInstalledVersion(smv)
 
 			if !requiredVersion.Check(smv) {

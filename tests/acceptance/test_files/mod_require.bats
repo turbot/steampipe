@@ -118,6 +118,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # or error, and check the output
   cd $FILE_PATH/test_data/mods/mod_with_old_plugin_block_with_version
   run steampipe query "select 1"
+  echo $output
 
   assert_output --partial "Warning: Property 'version' is deprecated - use 'min_version' instead, in plugin 'chaos' require block"
 }
@@ -136,6 +137,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # or error, and check the output
   cd $FILE_PATH/test_data/mods/mod_with_minversion_in_plugin_block
   run steampipe query "select 1"
+  echo $output
 
   assert_output --partial "1"
 }
