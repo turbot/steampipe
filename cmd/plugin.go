@@ -409,7 +409,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			ref := ociinstaller.NewSteampipeImageRef(p)
 			isExists, _ := plugin.Exists(p)
 			if isExists {
-				if strings.HasPrefix(ref.DisplayImageRef(), "hub.steampipe.io/") {
+				if strings.HasPrefix(ref.DisplayImageRef(), constants.SteampipeHubOCIBase) {
 					runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
 				} else {
 					error_helpers.ShowError(ctx, fmt.Errorf("cannot check updates for plugins not distributed via hub.steampipe.io, you should uninstall then reinstall the plugin to get the latest version"))
