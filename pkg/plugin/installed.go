@@ -2,9 +2,9 @@ package plugin
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 
 	"github.com/turbot/steampipe/pkg/ociinstaller"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 // GetInstalledPlugins returns the list of plugins keyed by the shortname (org/name) and its specific version

@@ -1,8 +1,9 @@
-package error_helpers
+package modconfig
 
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/sperr"
 )
 
@@ -40,7 +41,7 @@ func (r *ErrorAndWarnings) AddWarning(warnings ...string) {
 
 func (r *ErrorAndWarnings) ShowWarnings() {
 	for _, w := range r.Warnings {
-		ShowWarning(w)
+		error_helpers.ShowWarning(w)
 	}
 }
 

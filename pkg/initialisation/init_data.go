@@ -3,7 +3,6 @@ package initialisation
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
@@ -151,7 +150,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 }
 
 func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap map[string]*modconfig.PluginVersionString) []string {
-	validationErrors := []string{}
+	var validationErrors []string
 
 	// validate this mod
 	for _, err := range mod.ValidateRequirements(pluginVersionMap) {
@@ -175,11 +174,11 @@ func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap map
 }
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
-func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (db_common.Client, *error_helpers.ErrorAndWarnings) {
+func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (db_common.Client, *modconfig.ErrorAndWarnings) {
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		statushooks.SetStatus(ctx, "Connecting to remote Steampipe database")
 		client, err := db_client.NewDbClient(ctx, connectionString, onConnectionCallback)
-		return client, error_helpers.NewErrorsAndWarning(err)
+		return client, modconfig.NewErrorsAndWarning(err)
 	}
 
 	statushooks.SetStatus(ctx, "Starting local Steampipe database")
