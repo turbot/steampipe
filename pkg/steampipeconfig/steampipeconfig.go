@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
@@ -80,9 +81,9 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	return res
 }
 
-func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *modconfig.ErrorAndWarnings) {
+func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *error_helpers.ErrorAndWarnings) {
 
-	errorsAndWarnings = modconfig.NewErrorsAndWarning(nil)
+	errorsAndWarnings = error_helpers.NewErrorsAndWarning(nil)
 
 	switch o := opts.(type) {
 	case *options.Connection:
