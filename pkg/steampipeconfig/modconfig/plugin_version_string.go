@@ -10,7 +10,7 @@ type PluginVersionString struct {
 	semver  *semver.Version
 }
 
-func NewPluginVersion(version string) (*PluginVersionString, error) {
+func NewPluginVersionString(version string) (*PluginVersionString, error) {
 	if smv, err := semver.NewVersion(version); err == nil {
 		pluginVersion := &PluginVersionString{
 			version: version,
@@ -19,12 +19,12 @@ func NewPluginVersion(version string) (*PluginVersionString, error) {
 		return pluginVersion, nil
 	}
 	if version == "local" {
-		return LocalPluginVersion(), nil
+		return LocalPluginVersionString(), nil
 	}
 	return nil, sperr.New("version must be a valid semver or 'local'; got: %s", version)
 }
 
-func LocalPluginVersion() *PluginVersionString {
+func LocalPluginVersionString() *PluginVersionString {
 	return &PluginVersionString{
 		version: "local",
 	}

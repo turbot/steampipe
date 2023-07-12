@@ -112,14 +112,14 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 		// for local plugin
 		item := PluginListItem{
 			Name:    fullPluginName,
-			Version: modconfig.LocalPluginVersion(),
+			Version: modconfig.LocalPluginVersionString(),
 		}
 		// check if this plugin is recorded in plugin versions
 		installation, found := pluginVersions[fullPluginName]
 		if found {
 			// if not a local plugin, get the semver version
 			if !detectLocalPlugin(installation, pluginBinary) {
-				item.Version, err = modconfig.NewPluginVersion(installation.Version)
+				item.Version, err = modconfig.NewPluginVersionString(installation.Version)
 				if err != nil {
 					return nil, sperr.WrapWithMessage(err, "could not evaluate plugin version %s", installation.Version)
 				}
