@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"log"
 	"time"
 

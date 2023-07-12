@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"sort"
 
 	"github.com/hashicorp/terraform/tfdiags"

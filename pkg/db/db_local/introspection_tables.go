@@ -1,9 +1,10 @@
-package db_common
+package db_local
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"reflect"
 	"strings"
 
@@ -327,13 +328,13 @@ func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (stri
 		if err != nil {
 			return "", err
 		}
-		return PgEscapeString(str), nil
+		return db_common.PgEscapeString(str), nil
 	case cty.Type:
 		// if the item is a cty value, we always represent it as json
 		if columnTag.ColumnType != "text" {
 			return "nil", fmt.Errorf("data for column %s is of type cty.Type so column type should be 'text' but is actually %s", columnTag.Column, columnTag.ColumnType)
 		}
-		return PgEscapeString(t.FriendlyName()), nil
+		return db_common.PgEscapeString(t.FriendlyName()), nil
 	}
 
 	switch columnTag.ColumnType {
@@ -343,12 +344,12 @@ func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (stri
 			return "", err
 		}
 
-		res := PgEscapeString(string(jsonBytes))
+		res := db_common.PgEscapeString(string(jsonBytes))
 		return res, nil
 	case "integer", "numeric", "decimal", "boolean":
 		return typeHelpers.ToString(item), nil
 	default:
 		// for string column, escape the data
-		return PgEscapeString(typeHelpers.ToString(item)), nil
+		return db_common.PgEscapeString(typeHelpers.ToString(item)), nil
 	}
 }

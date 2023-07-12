@@ -3,6 +3,7 @@ package initialisation
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
@@ -18,7 +19,6 @@ import (
 	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 	"github.com/turbot/steampipe/sperr"
 )
@@ -150,7 +150,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	i.Client = client
 }
 
-func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap map[string]*utils.PluginVersion) []string {
+func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap map[string]*modconfig.PluginVersionString) []string {
 	validationErrors := []string{}
 
 	// validate this mod

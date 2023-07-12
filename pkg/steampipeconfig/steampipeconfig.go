@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"log"
 	"os"
 	"strings"

@@ -766,7 +766,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	reports := display.PluginRemoveReports{}
+	reports := steampipeconfig.PluginRemoveReports{}
 	statushooks.SetStatus(ctx, fmt.Sprintf("Uninstalling %s", utils.Pluralize("plugin", len(args))))
 	for _, p := range args {
 		statushooks.SetStatus(ctx, fmt.Sprintf("Uninstalling %s", p))

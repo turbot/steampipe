@@ -1,18 +1,18 @@
-package utils
+package modconfig
 
 import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/turbot/steampipe/sperr"
 )
 
-type PluginVersion struct {
+type PluginVersionString struct {
 	version string
 	semver  *semver.Version
 }
 
-func NewPluginVersion(version string) (*PluginVersion, error) {
+func NewPluginVersion(version string) (*PluginVersionString, error) {
 	if smv, err := semver.NewVersion(version); err == nil {
-		pluginVersion := &PluginVersion{
+		pluginVersion := &PluginVersionString{
 			version: version,
 			semver:  smv,
 		}
@@ -24,24 +24,24 @@ func NewPluginVersion(version string) (*PluginVersion, error) {
 	return nil, sperr.New("version must be a valid semver or 'local'; got: %s", version)
 }
 
-func LocalPluginVersion() *PluginVersion {
-	return &PluginVersion{
+func LocalPluginVersion() *PluginVersionString {
+	return &PluginVersionString{
 		version: "local",
 	}
 }
 
-func (p *PluginVersion) IsLocal() bool {
+func (p *PluginVersionString) IsLocal() bool {
 	return p.semver == nil
 }
 
-func (p *PluginVersion) IsSemver() bool {
+func (p *PluginVersionString) IsSemver() bool {
 	return p.semver != nil
 }
 
-func (p *PluginVersion) Semver() *semver.Version {
+func (p *PluginVersionString) Semver() *semver.Version {
 	return p.semver
 }
 
-func (p *PluginVersion) String() string {
+func (p *PluginVersionString) String() string {
 	return p.version
 }
