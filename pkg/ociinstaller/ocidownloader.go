@@ -79,11 +79,6 @@ func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []strin
 	log.Println("[TRACE] ociDownloader.Pull:", "pulling...")
 
 	copyOpt := oras.DefaultCopyOptions
-	// TODO: use WithTargetPlatform to limit downloads
-	// copyOpt.WithTargetPlatform(&ocispec.Platform{
-	// 	Architecture: "amd64",
-	// 	OS:           "linux",
-	// })
 	manifestDescriptor, err := oras.Copy(ctx, repo, tag, fileStore, tag, copyOpt)
 	if err != nil {
 		log.Println("[ERROR] ociDownloader.Pull:", "failed to pull", ref, err)
