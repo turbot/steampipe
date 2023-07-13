@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
+	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/sperr"
@@ -14,7 +16,6 @@ import (
 
 // controls the cache in the connected FDW
 func cacheControl(ctx context.Context, input *HandlerInput) error {
-	command := input.args()[0]
 	// just get the active session from the connection pool
 	// and set the cache parameters on it.
 	// NOTE: this works because the interactive client
@@ -29,13 +30,12 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 		// and not in call-time
 		sessionResult.Session.Close(false)
 	}()
+	command := strings.ToLower(input.args()[0])
 	switch command {
-	case constants.ArgOn:
-		viper.Set(constants.ArgClientCacheEnabled, true)
-		return db_common.SetCacheEnabled(ctx, true, sessionResult.Session.Connection.Conn())
-	case constants.ArgOff:
-		viper.Set(constants.ArgClientCacheEnabled, false)
-		return db_common.SetCacheEnabled(ctx, false, sessionResult.Session.Connection.Conn())
+	case constants.ArgOn, constants.ArgOff:
+		val := types.StringToBool(command)
+		viper.Set(constants.ArgClientCacheEnabled, val)
+		return db_common.SetCacheEnabled(ctx, val, sessionResult.Session.Connection.Conn())
 	case constants.ArgClear:
 		return db_common.CacheClear(ctx, conn)
 	}
