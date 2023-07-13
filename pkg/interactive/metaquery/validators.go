@@ -8,6 +8,8 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // ValidationResult :: response for Validate
@@ -33,12 +35,22 @@ func Validate(query string) ValidationResult {
 	return ValidationResult{Err: fmt.Errorf("'%s' is not a known command", query)}
 }
 
+func titleSentenceCase(title string) string {
+	caser := cases.Title(language.English)
+	titleSegments := strings.SplitN(title, "-", 2)
+	if len(titleSegments) == 1 {
+		return caser.String(title)
+	}
+	titleSegments = []string{caser.String(titleSegments[0]), titleSegments[1]}
+	return strings.Join(titleSegments, "-")
+}
+
 func booleanValidator(metaquery string, validators ...validator) validator {
 	return func(args []string) ValidationResult {
 		//	Error: argument required multi-line mode is off.  You can enable it with: .multi on
 		//	headers mode is off.  You can enable it with: .headers on
 		//	timing mode is off.  You can enable it with: .timing on
-		title := metaQueryDefinitions[metaquery].title
+		title := titleSentenceCase(metaQueryDefinitions[metaquery].title)
 		numArgs := len(args)
 
 		if numArgs == 0 {
@@ -56,7 +68,7 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 			actionString := constants.BoolToEnableDisable(newStatus)
 
 			return ValidationResult{
-				Message: fmt.Sprintf(`%s mode is %s. You can %s it with: %s `,
+				Message: fmt.Sprintf(`%s mode is %s. You can %s it with: %s.`,
 					title,
 					constants.Bold(currentStatusString),
 					actionString,
