@@ -81,7 +81,7 @@ func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []strin
 	copyOpt := oras.DefaultCopyOptions
 	manifestDescriptor, err := oras.Copy(ctx, repo, tag, fileStore, tag, copyOpt)
 	if err != nil {
-		log.Println("[ERROR] ociDownloader.Pull:", "failed to pull", ref, err)
+		log.Println("[TRACE] ociDownloader.Pull:", "failed to pull", ref, err)
 		return nil, nil, nil, nil, err
 	}
 	log.Println("[TRACE] ociDownloader.Pull:", "manifest", manifestDescriptor.Digest, manifestDescriptor.MediaType)
@@ -106,7 +106,7 @@ func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []strin
 	// Fetch the config from the file store
 	configData, err := content.FetchAll(ctx, fileStore, manifest.Config)
 	if err != nil {
-		log.Println("[ERROR] ociDownloader.Pull:", "failed to fetch config", manifest.Config.MediaType, err)
+		log.Println("[TRACE] ociDownloader.Pull:", "failed to fetch config", manifest.Config.MediaType, err)
 		return nil, nil, nil, nil, err
 	}
 	log.Println("[TRACE] ociDownloader.Pull:", "config", string(configData))
