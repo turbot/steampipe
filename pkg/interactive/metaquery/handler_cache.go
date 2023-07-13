@@ -109,13 +109,13 @@ func showCache(_ context.Context, input *HandlerInput) error {
 }
 
 func showCacheTtl(ctx context.Context, input *HandlerInput) error {
-	var ttl int
 	if viper.IsSet(constants.ArgCacheTtl) {
-		ttl = getEffectiveCacheTtl(input.Client.ServerSettings(), viper.GetInt(constants.ArgCacheTtl))
+		ttl := getEffectiveCacheTtl(input.Client.ServerSettings(), viper.GetInt(constants.ArgCacheTtl))
+		fmt.Println("Cache TTL is", ttl, "seconds.")
 	} else if input.Client.ServerSettings() != nil {
-		ttl = input.Client.ServerSettings().CacheMaxTtl
+		serverTtl := input.Client.ServerSettings().CacheMaxTtl
+		fmt.Println("Cache TTL is", serverTtl, "seconds.")
 	}
-	fmt.Println("Cache TTL is", ttl, "seconds.")
 	errorsAndWarnings := db_common.ValidateClientCacheTtl(input.Client)
 	if errorsAndWarnings != nil {
 		errorsAndWarnings.ShowWarnings()
