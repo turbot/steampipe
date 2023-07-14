@@ -7,4 +7,6 @@ const (
 	InstallMessagePluginNotFound               = "Not found"
 	ConnectionErrorPluginFailedToStart         = "plugin failed to start"
 	ConnectionErrorPluginNotInstalled          = "plugin not installed"
+
+	SteampipeHubOCIBase = "hub.steampipe.io/"
 )
