@@ -31,7 +31,7 @@ require (
 	github.com/mattn/go-isatty v0.0.19
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/opencontainers/image-spec v1.1.0-rc.3
+	github.com/opencontainers/image-spec v1.1.0-rc4
 	github.com/oras-project/oras-credentials-go v0.2.0
 	github.com/otiai10/copy v1.12.0
 	github.com/pkg/errors v0.9.1
@@ -55,7 +55,7 @@ require (
 	google.golang.org/grpc v1.56.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
-	oras.land/oras-go/v2 v2.2.0
+	oras.land/oras-go/v2 v2.2.1
 	sigs.k8s.io/yaml v1.3.0
 )
 
