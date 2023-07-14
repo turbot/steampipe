@@ -5,18 +5,18 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
-func ValidateClientCacheSettings(c Client) *modconfig.ErrorAndWarnings {
+func ValidateClientCacheSettings(c Client) *error_helpers.ErrorAndWarnings {
 	cacheEnabledResult := ValidateClientCacheEnabled(c)
 	cacheTtlResult := ValidateClientCacheTtl(c)
 
-	return modconfig.EmptyErrorsAndWarning().Merge(cacheEnabledResult).Merge(cacheTtlResult)
+	return error_helpers.EmptyErrorsAndWarning().Merge(cacheEnabledResult).Merge(cacheTtlResult)
 }
 
-func ValidateClientCacheEnabled(c Client) *modconfig.ErrorAndWarnings {
-	errorsAndWarnings := modconfig.EmptyErrorsAndWarning()
+func ValidateClientCacheEnabled(c Client) *error_helpers.ErrorAndWarnings {
+	errorsAndWarnings := error_helpers.EmptyErrorsAndWarning()
 	if c.ServerSettings() == nil || !viper.IsSet(constants.ArgClientCacheEnabled) {
 		// if there's no serverSettings, then this is a pre-21 server
 		// behave as if there's no problem
@@ -29,8 +29,8 @@ func ValidateClientCacheEnabled(c Client) *modconfig.ErrorAndWarnings {
 	return errorsAndWarnings
 }
 
-func ValidateClientCacheTtl(c Client) *modconfig.ErrorAndWarnings {
-	errorsAndWarnings := modconfig.EmptyErrorsAndWarning()
+func ValidateClientCacheTtl(c Client) *error_helpers.ErrorAndWarnings {
+	errorsAndWarnings := error_helpers.EmptyErrorsAndWarning()
 
 	if c.ServerSettings() == nil || !viper.IsSet(constants.ArgCacheTtl) {
 		// if there's no serverSettings, then this is a pre-21 server

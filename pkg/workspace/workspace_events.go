@@ -103,7 +103,7 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 	w.raiseDashboardChangedEvents(ctx, resourceMaps, prevResourceMaps)
 }
 
-func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ResourceMaps, *modconfig.ResourceMaps, *modconfig.ErrorAndWarnings) {
+func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ResourceMaps, *modconfig.ResourceMaps, *error_helpers.ErrorAndWarnings) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 
