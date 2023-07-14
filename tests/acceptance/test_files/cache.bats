@@ -359,6 +359,150 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f output2.json
 }
 
+@test "verify cache ttl works when set in Environment" {
+  cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
+
+  # start the service
+  steampipe service start
+  
+  export STEAMPIPE_CACHE_TTL=10
+
+  # cache functionality check since cache=true in options
+  steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out1.json
+  steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out2.json
+  
+  # wait for 15 seconds - the value of the TTL in environment
+  sleep 15
+  
+  # run the query again
+  steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out3.json
+
+  # stop the service
+  steampipe service stop
+
+  unique1=$(cat out1.json | jq '.[].unique_col')
+  unique2=$(cat out2.json | jq '.[].unique_col')
+  unique3=$(cat out3.json | jq '.[].unique_col')
+  # remove the output and the config files
+  rm -f out*.json
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
+
+  # the first and the seconds query should have the same value
+  assert_equal "$unique1" "$unique2"
+  # the third query should have a different value
+  assert_not_equal "$unique1" "$unique3"
+}
+
+@test "verify cache ttl works when set in connections options" {
+  skip "skipping - this is a deprecated functionality"
+  
+  cp $SRC_DATA_DIR/chaos_ttl_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_ttl_options.spc
+
+  # start the service
+  steampipe service start
+
+  # cache functionality check since cache=true in options
+  steampipe query "select unique_col from chaos_ttl_options.chaos_cache_check where id=2" --output json > out1.json
+  steampipe query "select unique_col from chaos_ttl_options.chaos_cache_check where id=2" --output json > out2.json
+
+  # wait for 15 seconds - the value of the TTL in connection options
+  sleep 15
+  
+  # run the query again
+  steampipe query "select unique_col from chaos_ttl_options.chaos_cache_check where id=2" --output json > out3.json
+
+  # stop the service
+  steampipe service stop
+
+  unique1=$(cat out1.json | jq '.[].unique_col')
+  unique2=$(cat out2.json | jq '.[].unique_col')
+  unique3=$(cat out3.json | jq '.[].unique_col')
+
+  # remove the output and the config files
+  rm -f out*.json
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_ttl_options.spc
+
+  # the first and the seconds query should have the same value
+  assert_equal "$unique1" "$unique2"
+  # the third query should have a different value
+  assert_not_equal "$unique1" "$unique3"
+}
+
+@test "verify cache ttl works when set in database options" {
+  export STEAMPIPE_LOG=info
+
+  cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
+  cp $SRC_DATA_DIR/default_cache_ttl_10.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
+
+  # start the service
+  steampipe service start
+
+  # cache functionality check since cache=true in options
+  steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out1.json
+  steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out2.json
+  
+  # wait for 15 seconds - the value of the TTL in connection options
+  sleep 15
+  
+  # run the query again
+  steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out3.json
+
+  # stop the service
+  steampipe service stop
+
+  unique1=$(cat out1.json | jq '.[].unique_col')
+  unique2=$(cat out2.json | jq '.[].unique_col')
+  unique3=$(cat out3.json | jq '.[].unique_col')
+
+  cat $STEAMPIPE_INSTALL_DIR/config/default.spc
+  cat $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
+
+  # remove the output and the config files
+  rm -f out*.json
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/default.spc
+
+  # the first and the seconds query should have the same value
+  assert_equal "$unique1" "$unique2"
+  # the third query should have a different value
+  assert_not_equal "$unique1" "$unique3"
+}
+
+@test "verify cache ttl works when set in workspace profile" {
+  cp $FILE_PATH/test_data/source_files/workspace_cache_ttl.spc $STEAMPIPE_INSTALL_DIR/config/workspace.spc
+  cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
+
+  # start the service
+  steampipe service start
+
+  # cache functionality check since cache=true in options
+  steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out1.json
+  steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out2.json
+
+  # wait for 15 seconds - the value of the TTL in connection options
+  sleep 15
+
+  # run the query again
+  steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out3.json
+
+  # stop the service
+  steampipe service stop
+
+  unique1=$(cat out1.json | jq '.[].unique_col')
+  unique2=$(cat out2.json | jq '.[].unique_col')
+  unique3=$(cat out3.json | jq '.[].unique_col')
+
+  # remove the output and the config files
+  rm -f out*.json
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/workspace.spc
+
+  # the first and the seconds query should have the same value
+  assert_equal "$unique1" "$unique2"
+  # the third query should have a different value
+  assert_not_equal "$unique1" "$unique3"
+}
+
 function teardown_file() {
   # list running processes
   ps -ef | grep steampipe

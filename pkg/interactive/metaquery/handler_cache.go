@@ -3,6 +3,7 @@ package metaquery
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 
@@ -11,33 +12,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/sperr"
 )
-
-func showCache(_ context.Context, input *HandlerInput) error {
-	if input.Client.ServerSettings() != nil && !input.Client.ServerSettings().CacheEnabled {
-		fmt.Println("Caching is disabled on the server")
-		return nil
-	}
-
-	currentStatusString := "off"
-	action := "on"
-
-	if !viper.IsSet(constants.ArgClientCacheEnabled) || viper.GetBool(constants.ArgClientCacheEnabled) {
-		currentStatusString = "on"
-		action = "off"
-	}
-
-	fmt.Printf(
-		`Caching is %s. To turn it %s, type %s`,
-		constants.Bold(currentStatusString),
-		constants.Bold(action),
-		constants.Bold(fmt.Sprintf(".cache %s", action)),
-	)
-
-	// add an empty line here so that the rendering buffer can start from the next line
-	fmt.Println()
-
-	return nil
-}
 
 // controls the cache in the connected FDW
 func cacheControl(ctx context.Context, input *HandlerInput) error {
@@ -65,7 +39,7 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 	case constants.ArgOn:
 		serverSettings := input.Client.ServerSettings()
 		if serverSettings != nil && !serverSettings.CacheEnabled {
-			fmt.Println("Cannot turn on cache - caching is disabled on the server")
+			fmt.Println("Caching is disabled on the server.")
 		}
 		viper.Set(constants.ArgClientCacheEnabled, true)
 		return db_common.SetCacheEnabled(ctx, true, conn)
@@ -81,12 +55,18 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 
 // sets the cache TTL
 func cacheTTL(ctx context.Context, input *HandlerInput) error {
+	if len(input.args()) == 0 {
+		return showCacheTtl(ctx, input)
+	}
 	seconds, err := strconv.Atoi(input.args()[0])
 	if err != nil {
 		return sperr.WrapWithMessage(err, "valid value is the number of seconds")
 	}
-	if seconds < 0 {
-		return sperr.New("ttl must be greater than 0")
+	if seconds <= 0 {
+		return sperr.New("TTL must be greater than 0")
+	}
+	if can, whyCannotSet := db_common.CanSetCacheTtl(input.Client.ServerSettings(), seconds); !can {
+		fmt.Println(whyCannotSet)
 	}
 	sessionResult := input.Client.AcquireSession(ctx)
 	if sessionResult.Error != nil {
@@ -99,4 +79,55 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 		viper.Set(constants.ArgCacheTtl, seconds)
 	}()
 	return db_common.SetCacheTtl(ctx, time.Duration(seconds)*time.Second, sessionResult.Session.Connection.Conn())
+}
+
+func showCache(_ context.Context, input *HandlerInput) error {
+	if input.Client.ServerSettings() != nil && !input.Client.ServerSettings().CacheEnabled {
+		fmt.Println("Caching is disabled on the server.")
+		return nil
+	}
+
+	currentStatusString := "off"
+	action := "on"
+
+	if !viper.IsSet(constants.ArgClientCacheEnabled) || viper.GetBool(constants.ArgClientCacheEnabled) {
+		currentStatusString = "on"
+		action = "off"
+	}
+
+	fmt.Printf(
+		`Caching is %s. To turn it %s, type %s`,
+		constants.Bold(currentStatusString),
+		constants.Bold(action),
+		constants.Bold(fmt.Sprintf(".cache %s", action)),
+	)
+
+	// add an empty line here so that the rendering buffer can start from the next line
+	fmt.Println()
+
+	return nil
+}
+
+func showCacheTtl(ctx context.Context, input *HandlerInput) error {
+	if viper.IsSet(constants.ArgCacheTtl) {
+		ttl := getEffectiveCacheTtl(input.Client.ServerSettings(), viper.GetInt(constants.ArgCacheTtl))
+		fmt.Println("Cache TTL is", ttl, "seconds.")
+	} else if input.Client.ServerSettings() != nil {
+		serverTtl := input.Client.ServerSettings().CacheMaxTtl
+		fmt.Println("Cache TTL is", serverTtl, "seconds.")
+	}
+	errorsAndWarnings := db_common.ValidateClientCacheTtl(input.Client)
+	if errorsAndWarnings != nil {
+		errorsAndWarnings.ShowWarnings()
+	}
+	// we don't know what the setting is
+	return nil
+}
+
+// getEffectiveCacheTtl returns the lower of the server TTL and the clientTtl
+func getEffectiveCacheTtl(serverSettings *db_common.ServerSettings, clientTtl int) int {
+	if serverSettings != nil {
+		return int(math.Min(float64(serverSettings.CacheMaxTtl), float64(clientTtl)))
+	}
+	return clientTtl
 }

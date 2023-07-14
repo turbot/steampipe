@@ -113,7 +113,7 @@ func init() {
 		constants.CmdCacheTtl: {
 			title:       constants.CmdCacheTtl,
 			handler:     cacheTTL,
-			validator:   exactlyNArgs(1),
+			validator:   atMostNArgs(1),
 			description: "Set the cache ttl (time-to-live)",
 		},
 		constants.CmdInspect: {

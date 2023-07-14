@@ -17,6 +17,9 @@ func DiagsToErrorsAndWarnings(errPrefix string, diags hcl.Diagnostics) *ErrorAnd
 		plugin.DiagsToWarnings(diags)...,
 	)
 }
+func EmptyErrorsAndWarning() *ErrorAndWarnings {
+	return NewErrorsAndWarning(nil)
+}
 
 func NewErrorsAndWarning(err error, warnings ...string) *ErrorAndWarnings {
 	return &ErrorAndWarnings{
@@ -48,14 +51,18 @@ func (r *ErrorAndWarnings) GetError() error {
 	return r.Error
 }
 
-func (r *ErrorAndWarnings) Merge(other *ErrorAndWarnings) {
+func (r *ErrorAndWarnings) Merge(other *ErrorAndWarnings) *ErrorAndWarnings {
 	if other == nil {
-		return
+		return r
 	}
+
+	// TODO: Restructure ErrorsAndWarning
+	// [issue](https://github.com/turbot/steampipe/issues/3653)
 	if r.Error == nil {
 		r.Error = other.Error
 	}
 	if len(other.Warnings) > 0 {
 		r.AddWarning(other.Warnings...)
 	}
+	return r
 }
