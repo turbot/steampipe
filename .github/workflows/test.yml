@@ -92,9 +92,11 @@ jobs:
         test_block:
           - "migration"
           - "brew"
+          - "installation"
           - "service_and_plugin"
           - "blank_aggregators"
           - "service"
+          - "settings"
           - "search_path"
           - "chaos_and_query"
           - "dynamic_schema"
