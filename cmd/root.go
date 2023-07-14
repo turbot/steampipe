@@ -3,12 +3,15 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"golang.org/x/exp/maps"
+	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"golang.org/x/exp/maps"
 
 	"github.com/fatih/color"
 
@@ -23,6 +26,7 @@ import (
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
@@ -63,14 +67,14 @@ var rootCmd = &cobra.Command{
 		viper.Set(constants.ConfigKeyActiveCommandArgs, args)
 		viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
 
-		// create a logger before initGlobalConfig - we may need to reinitialize the logger
-		// depending on the value of the log_level value in global general options
-		createLogger()
-
 		// steampipe completion should not create INSTALL DIR or seup/init global config
 		if cmd.Name() == "completion" {
 			return
 		}
+
+		// create a logger before initGlobalConfig - we may need to reinitialize the logger
+		// depending on the value of the log_level value in global general options
+		createLogger()
 
 		// set up the global viper config with default values from
 		// config files and ENV variables
@@ -345,20 +349,34 @@ func validateConfig() error {
 // create a hclog logger with the level specified by the SP_LOG env var
 func createLogger() {
 	level := logging.LogLevel()
-
+	var logWriter io.Writer
+	if len(filepaths.SteampipeDir) == 0 {
+		logWriter = os.Stdout
+	} else {
+		logName := fmt.Sprintf("steampipe-%s.log", time.Now().Format("2006-01-02"))
+		logPath := filepath.Join(filepaths.EnsureLogDir(), logName)
+		f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			fmt.Printf("failed to open steampipe log file: %s\n", err.Error())
+			os.Exit(3)
+		}
+		logWriter = f
+	}
 	options := &hclog.LoggerOptions{
 		Name:       "steampipe",
 		Level:      hclog.LevelFromString(level),
+		Output:     logWriter,
 		TimeFn:     func() time.Time { return time.Now().UTC() },
 		TimeFormat: "2006-01-02 15:04:05.000 UTC",
 	}
-	if options.Output == nil {
-		options.Output = os.Stderr
-	}
-	logger := hclog.New(options)
+	logger := logging.NewLogger(options)
 	log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
-	log.SetPrefix("")
+	log.SetPrefix(runtime.ExecutionID)
 	log.SetFlags(0)
+	log.Printf("[INFO] .\n******************************************************\n\n\t\tsteampipe cli\n\n******************************************************\n")
+	log.Printf("[INFO] Version:   v%s\n", version.VersionString)
+	log.Printf("[INFO] Log level: %s\n", logging.LogLevel())
+	log.Printf("[INFO] Log date: %s\n", time.Now().Format("2006-01-02"))
 }
 
 func ensureInstallDir(installDir string) {
