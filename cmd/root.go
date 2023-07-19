@@ -184,11 +184,15 @@ func logLevelNeedsReset() bool {
 
 // envLogLevelSet checks whether any of the current or legacy log level env vars are set
 func envLogLevelSet() bool {
-	envLogLevelKeys := append([]string{logging.EnvLogLevel}, logging.LegacyLogLevelEnvVars...)
-	for _, legacyLogLevelEnvVar := range envLogLevelKeys {
-		_, isSet := os.LookupEnv(legacyLogLevelEnvVar)
-		if isSet {
-			return true
+	_, ok := os.LookupEnv(logging.EnvLogLevel)
+	if ok {
+		return ok
+	}
+	// handle legacy env vars
+	for _, e := range logging.LegacyLogLevelEnvVars {
+		_, ok = os.LookupEnv(e)
+		if ok {
+			return ok
 		}
 	}
 	return false
@@ -394,7 +398,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command, args ...string) {
 		logWriter = f
 
 		// if we want duplication to console, multiwrite to stderr
-		if value, exists := os.LookupEnv("STEAMPIPE_LOG_TO_STDERR"); exists && types.StringToBool(value) {
+		if value, exists := os.LookupEnv(constants.EnvLogToStderr); exists && types.StringToBool(value) {
 			logWriter = io.MultiWriter(os.Stderr, logWriter)
 		}
 
