@@ -68,6 +68,9 @@ func SaveToken(token string) error {
 }
 
 func LoadToken() (string, error) {
+	if err := migrateDefaultTokenFile; err != nil {
+		log.Println("[TRACE] ERROR during migrating token file", err)
+	}
 	tokenPath := tokenFilePath(viper.GetString(constants.ArgCloudHost))
 	if !filehelpers.FileExists(tokenPath) {
 		return "", nil
@@ -77,6 +80,27 @@ func LoadToken() (string, error) {
 		return "", sperr.WrapWithMessage(err, "failed to load token file '%s'", tokenPath)
 	}
 	return string(tokenBytes), nil
+}
+
+// migrateDefaultTokenFile migrates the cloud.steampipe.io.sptt token file
+// to the pipes.turbot.com.sptt token file
+func migrateDefaultTokenFile() error {
+	defaultTokenPath := tokenFilePath(constants.DefaultCloudHost)
+	defaultLegacyTokenPath := tokenFilePath(constants.DefaultCloudHostLegacy)
+
+	if filehelpers.FileExists(defaultTokenPath) {
+		return nil
+	}
+
+	// the default file does not exist
+	// check if the legacy one exists
+	if filehelpers.FileExists(defaultLegacyTokenPath) {
+		// move the legacy to the new
+		return utils.MoveFile(defaultLegacyTokenPath, defaultTokenPath)
+	}
+
+	// none exists - nothing to do
+	return nil
 }
 
 func GetUserName(ctx context.Context, token string) (string, error) {

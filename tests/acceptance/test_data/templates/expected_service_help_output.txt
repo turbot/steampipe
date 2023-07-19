@@ -16,7 +16,7 @@ Flags:
   -h, --help   Help for service
 
 Global Flags:
-      --cloud-host string           Steampipe Cloud host (default "cloud.steampipe.io")
+      --cloud-host string           Steampipe Cloud host (default "pipes.turbot.com")
       --cloud-token string          Steampipe Cloud authentication token
       --install-dir string          Path to the Config Directory (default "~/.steampipe")
       --workspace string            The workspace profile to use (default "default")
