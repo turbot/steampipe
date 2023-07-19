@@ -394,7 +394,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command, args ...string) {
 		logWriter = f
 
 		// if we want duplication to console, multiwrite to stderr
-		if value, exists := os.LookupEnv("STEAMPIPE_LOG_STDERR"); exists && types.StringToBool(value) {
+		if value, exists := os.LookupEnv("STEAMPIPE_LOG_TO_STDERR"); exists && types.StringToBool(value) {
 			logWriter = io.MultiWriter(os.Stderr, logWriter)
 		}
 
