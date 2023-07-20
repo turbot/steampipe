@@ -50,7 +50,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $output
 
   # check the error message
-  assert_output --partial 'Error: Not authenticated for Steampipe Cloud.'
+  assert_output --partial 'Error: Not authenticated for Turbot Pipes.'
 }
 
 @test "install a large mod, query and check if time taken is less than 20s" {

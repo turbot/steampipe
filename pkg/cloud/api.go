@@ -14,7 +14,7 @@ func newSteampipeCloudClient(token string) *steampipecloud.APIClient {
 	configuration := steampipecloud.NewConfiguration()
 	configuration.Host = viper.GetString(constants.ArgCloudHost)
 
-	// Add your Steampipe Cloud user token as an auth header
+	// Add your Turbot Pipes user token as an auth header
 	if token != "" {
 		configuration.AddDefaultHeader("Authorization", fmt.Sprintf("Bearer %s", token))
 	}

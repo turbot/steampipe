@@ -22,8 +22,8 @@ func loginCmd() *cobra.Command {
 		TraverseChildren: true,
 		Args:             cobra.NoArgs,
 		Run:              runLoginCmd,
-		Short:            "Login to Steampipe Cloud",
-		Long:             `Login to Steampipe Cloud.`,
+		Short:            "Login to Turbot Pipes",
+		Long:             `Login to Turbot Pipes.`,
 	}
 
 	cmdconfig.OnCmd(cmd).
