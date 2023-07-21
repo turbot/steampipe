@@ -61,14 +61,14 @@ func GetLoginToken(ctx context.Context, id, code string) (string, error) {
 	return tokenResp.GetToken(), nil
 }
 
-// SaveToken writes the token to  ~/.steampipe/internal/{cloud-host}.sptt
+// SaveToken writes the token to  ~/.steampipe/internal/{cloud-host}.tptt
 func SaveToken(token string) error {
 	tokenPath := tokenFilePath(viper.GetString(constants.ArgCloudHost))
 	return sperr.Wrap(os.WriteFile(tokenPath, []byte(token), 0600))
 }
 
 func LoadToken() (string, error) {
-	if err := migrateDefaultTokenFile; err != nil {
+	if err := migrateDefaultTokenFile(); err != nil {
 		log.Println("[TRACE] ERROR during migrating token file", err)
 	}
 	tokenPath := tokenFilePath(viper.GetString(constants.ArgCloudHost))
@@ -83,12 +83,13 @@ func LoadToken() (string, error) {
 }
 
 // migrateDefaultTokenFile migrates the cloud.steampipe.io.sptt token file
-// to the pipes.turbot.com.sptt token file
+// to the pipes.turbot.com.tptt token file
 func migrateDefaultTokenFile() error {
 	defaultTokenPath := tokenFilePath(constants.DefaultCloudHost)
-	defaultLegacyTokenPath := tokenFilePath(constants.DefaultCloudHostLegacy)
+	defaultLegacyTokenPath := legacyTokenFilePath(constants.LegacyDefaultCloudHost)
 
 	if filehelpers.FileExists(defaultTokenPath) {
+		// we have the new token file
 		return nil
 	}
 
@@ -121,5 +122,10 @@ func getActorName(actor steampipecloud.User) string {
 
 func tokenFilePath(cloudHost string) string {
 	tokenPath := path.Join(filepaths.EnsureInternalDir(), fmt.Sprintf("%s%s", cloudHost, constants.TokenExtension))
+	return tokenPath
+}
+
+func legacyTokenFilePath(cloudHost string) string {
+	tokenPath := path.Join(filepaths.EnsureInternalDir(), fmt.Sprintf("%s%s", cloudHost, constants.LegacyTokenExtension))
 	return tokenPath
 }

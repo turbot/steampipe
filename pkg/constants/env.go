@@ -16,6 +16,9 @@ const (
 	EnvCloudHost         = "STEAMPIPE_CLOUD_HOST"
 	EnvCloudToken        = "STEAMPIPE_CLOUD_TOKEN"
 
+	EnvPipesHost  = "PIPES_HOST"
+	EnvPipesToken = "PIPES_TOKEN"
+
 	EnvDisplayWidth = "STEAMPIPE_DISPLAY_WIDTH"
 	EnvCacheEnabled = "STEAMPIPE_CACHE"
 	EnvCacheTTL     = "STEAMPIPE_CACHE_TTL"
