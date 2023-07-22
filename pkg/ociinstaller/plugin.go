@@ -22,7 +22,7 @@ import (
 var versionFileUpdateLock = &sync.Mutex{}
 
 // InstallPlugin installs a plugin from an OCI Image
-func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}) (*SteampipeImage, error) {
+func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, withSkipConfig bool) (*SteampipeImage, error) {
 	tempDir := NewTempDir(filepaths.EnsurePluginDir())
 	defer func() {
 		// send a last beacon to signal completion
@@ -50,8 +50,10 @@ func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}) (*St
 		return nil, fmt.Errorf("plugin installation failed: %s", err)
 	}
 	sub <- struct{}{}
-	if err = installPluginConfigFiles(image, tempDir.Path); err != nil {
-		return nil, fmt.Errorf("plugin installation failed: %s", err)
+	if !withSkipConfig {
+		if err = installPluginConfigFiles(image, tempDir.Path); err != nil {
+			return nil, fmt.Errorf("plugin installation failed: %s", err)
+		}
 	}
 	sub <- struct{}{}
 	if err := updatePluginVersionFiles(image); err != nil {

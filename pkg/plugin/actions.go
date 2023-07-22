@@ -71,8 +71,9 @@ func Exists(plugin string) (bool, error) {
 }
 
 // Install installs a plugin in the local file system
-func Install(ctx context.Context, plugin string, sub chan struct{}) (*ociinstaller.SteampipeImage, error) {
-	image, err := ociinstaller.InstallPlugin(ctx, plugin, sub)
+func Install(ctx context.Context, plugin string, sub chan struct{}, options ...bool) (*ociinstaller.SteampipeImage, error) {
+	withSkipConfig := options[0]
+	image, err := ociinstaller.InstallPlugin(ctx, plugin, sub, withSkipConfig)
 	return image, err
 }
 
