@@ -47,25 +47,6 @@ type pluginJsonOutput struct {
 	Warnings  []string          `json:"warnings"`
 }
 
-type configFileOption struct {
-	skip bool
-}
-
-func NewConfigFileOption() *configFileOption {
-	skip := cmdconfig.Viper().GetBool(constants.ArgSkipConfig)
-	return &configFileOption{
-		skip: skip,
-	}
-}
-
-type SkipConfigFile = func(config *configFileOption)
-
-func WithSkipConfig() SkipConfigFile {
-	return func(o *configFileOption) {
-		o.skip = false
-	}
-}
-
 // Plugin management commands
 func pluginCmd() *cobra.Command {
 	var cmd = &cobra.Command{
@@ -565,8 +546,7 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		}
 	}()
 
-	withSkipConfig := NewConfigFileOption().skip
-	image, err := plugin.Install(ctx, pluginName, progress, withSkipConfig)
+	image, err := plugin.Install(ctx, pluginName, progress, ociinstaller.WithSkipConfigEnabled(viper.GetBool(constants.ArgSkipConfig)))
 	if err != nil {
 		msg := ""
 		_, name, stream := ociinstaller.NewSteampipeImageRef(pluginName).GetOrgNameAndStream()

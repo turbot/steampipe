@@ -747,6 +747,39 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $tmpdir
 }
 
+@test "verify reinstalling a plugin does not overwrite existing plugin config" {
+  # check if the default/tweaked config file for a plugin is not deleted after
+  # re-installation of a plugin
+
+  tmpdir=$(mktemp -d)
+
+  run steampipe plugin install aws --install-dir $tmpdir
+
+  run test -f $tmpdir/config/aws.spc
+  assert_success
+
+  echo '
+  connection "aws" {
+    plugin = "aws"
+    endpoint_url = "http://localhost:4566"
+  }
+  ' >> $tmpdir/config/aws.spc
+  cp $tmpdir/config/aws.spc config.spc
+
+  run steampipe plugin uninstall aws --install-dir $tmpdir
+
+  run steampipe plugin install aws --skip-config=true --install-dir $tmpdir
+
+  run test -f $tmpdir/config/aws.spc
+  assert_success
+
+  run diff $tmpdir/config/aws.spc config.spc
+  assert_success
+
+  rm config.spc
+  rm -rf $tmpdir
+}
+
 @test "cleanup" {
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
   run steampipe plugin uninstall steampipe
