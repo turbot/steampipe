@@ -6,22 +6,16 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )
 
 func executeSqlAsRoot(ctx context.Context, statements ...string) ([]pgconn.CommandTag, error) {
-	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser, AppName: runtime.ServiceConnectionAppName})
 	if err != nil {
 		return nil, err
 	}
 	return ExecuteSqlInTransaction(ctx, rootClient, statements...)
-}
-func executeSqlWithArgsAsRoot(ctx context.Context, queries ...db_common.QueryWithArgs) ([]pgconn.CommandTag, error) {
-	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
-	if err != nil {
-		return nil, err
-	}
-	return ExecuteSqlWithArgsInTransaction(ctx, rootClient, queries...)
 }
 
 func ExecuteSqlInTransaction(ctx context.Context, conn *pgx.Conn, statements ...string) (results []pgconn.CommandTag, err error) {

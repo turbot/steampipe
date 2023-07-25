@@ -100,7 +100,9 @@ func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	utils.LogTime("db_local.GetClientCount start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetClientCount end"))
 
-	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	appName := runtime.ServiceConnectionAppName
+
+	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser, AppName: appName})
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +128,7 @@ GROUP BY application_name
 
 	counts := &ClientCount{}
 
-	rows, err := rootClient.Query(ctx, query, "client backend", runtime.PgClientAppName)
+	rows, err := rootClient.Query(ctx, query, "client backend", appName)
 	if err != nil {
 		return nil, err
 	}
@@ -141,10 +143,12 @@ GROUP BY application_name
 		}
 
 		counts.TotalClients += count
-		if strings.HasPrefix(appName, constants.AppName) {
+		if strings.HasPrefix(appName, constants.ClientConnectionAppNamePrefix) {
 			counts.SteampipeClients += count
 		}
-		if strings.HasPrefix(appName, runtime.PgClientAppNamePluginManagerPrefix) {
+
+		// plugin manager uses the service prefix
+		if strings.HasPrefix(appName, constants.ServiceConnectionAppNamePrefix) {
 			counts.PluginManagerClients += count
 		}
 	}

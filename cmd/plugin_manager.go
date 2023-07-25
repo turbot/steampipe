@@ -17,7 +17,6 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -54,12 +53,6 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 			<-signalCh
 		}
 	}()
-
-	// add a prefix to the PgClientAppName so that out DB connecitons are not treated as
-	// another Steampipe instance connected to the DB
-	// (as our lifecycle is managed by the db service,
-	// so we will be shut down when the service is stopped)
-	runtime.PgClientAppName = runtime.PgClientAppNamePluginManagerPrefix + runtime.PgClientAppName
 
 	configMap := connection.NewConnectionConfigMap(steampipeConfig.Connections)
 	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
