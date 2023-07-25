@@ -23,7 +23,12 @@ import (
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
 	connectionString string
-	pool             *pgxpool.Pool
+
+	// connection pool for user initiated queries
+	pool *pgxpool.Pool
+
+	// connection used to run system/plumbing queries (connection state, server settings)
+	sysPool *pgxpool.Pool
 
 	// the settings of the server that this client is connected to
 	serverSettings *db_common.ServerSettings
@@ -109,13 +114,17 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 	return client, nil
 }
 
-func (c *DbClient) loadServerSettings(ctx context.Context) error {
-	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
-	if err != nil {
-		return err
+func (c *DbClient) closePools(ctx context.Context) {
+	if c.pool != nil {
+		c.pool.Close()
 	}
-	defer conn.Release()
-	serverSettings, err := serversettings.Load(ctx, conn.Conn())
+	if c.sysPool != nil {
+		c.sysPool.Close()
+	}
+}
+
+func (c *DbClient) loadServerSettings(ctx context.Context) error {
+	serverSettings, err := serversettings.Load(ctx, c.sysPool)
 	if err != nil {
 		if _, _, notFound := IsRelationNotFoundError(err); notFound {
 			// when connecting to pre-0.21.0 services, the server_settings table will not be available.
@@ -157,13 +166,12 @@ func (c *DbClient) ServerSettings() *db_common.ServerSettings {
 
 // Close implements Client
 // closes the connection to the database and shuts down the backend
-func (c *DbClient) Close(context.Context) error {
+func (c *DbClient) Close(ctx context.Context) error {
 	log.Printf("[TRACE] DbClient.Close %v", c.pool)
-	if c.pool != nil {
-		// clear the sessions map - so that we can't reuse it
-		c.sessions = nil
-		c.pool.Close()
-	}
+	c.closePools(ctx)
+	// nullify active sessions, since with the closing of the pools
+	// none of the sessions will be valid anymore
+	c.sessions = nil
 
 	return nil
 }
@@ -188,7 +196,7 @@ func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireS
 // NOTE: it optimises the schema extraction by extracting schema information for
 // connections backed by distinct plugins and then fanning back out.
 func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetadata, error) {
-	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
+	conn, err := c.sysPool.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +273,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	defer utils.LogTime("db_client.refreshDbClient end")
 
 	// close the connection pool and recreate
-	c.pool.Close()
+	c.closePools(ctx)
 	if err := c.establishConnectionPool(ctx); err != nil {
 		return err
 	}
