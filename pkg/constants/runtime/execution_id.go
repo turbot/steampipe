@@ -9,7 +9,16 @@ import (
 )
 
 var (
-	ExecutionID                        = helpers.GetMD5Hash(fmt.Sprintf("%d", time.Now().Nanosecond()))[:4]
-	PgClientAppName                    = fmt.Sprintf("%s_%s", constants.AppName, ExecutionID)
-	PgClientAppNamePluginManagerPrefix = "pm_"
+	ExecutionID = helpers.GetMD5Hash(fmt.Sprintf("%d", time.Now().Nanosecond()))[:4]
+)
+
+var (
+	// App name used by connections which issue user-initiated queries
+	ClientConnectionAppName = fmt.Sprintf("%s_%s", constants.ClientConnectionAppNamePrefix, ExecutionID)
+
+	// App name used for queries which support user-initiated queries (load schema, load connection state etc.)
+	ClientSystemConnectionAppName = fmt.Sprintf("%s_%s", constants.ClientSystemConnectionAppNamePrefix, ExecutionID)
+
+	// App name used for service related queries (plugin manager, refresh connection)
+	ServiceConnectionAppName = fmt.Sprintf("%s_%s", constants.ServiceConnectionAppNamePrefix, ExecutionID)
 )
