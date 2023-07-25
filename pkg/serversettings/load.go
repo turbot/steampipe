@@ -5,12 +5,18 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )
 
-func Load(ctx context.Context, conn *pgx.Conn) (_ *db_common.ServerSettings, e error) {
+func Load(ctx context.Context, pool *pgxpool.Pool) (_ *db_common.ServerSettings, e error) {
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Release()
 	defer func() {
 		// this function uses reflection to extract and convert values
 		// we need to be able to recover from panics while using reflection
