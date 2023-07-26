@@ -1,6 +1,6 @@
 package error_helpers
 
-func IsBadWorkspaceDatabaseArg(err error) bool {
+func IsInvalidWorkspaceDatabaseArg(err error) bool {
 	return err != nil && err.Error() == "404 Not Found"
 }
 
