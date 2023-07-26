@@ -143,12 +143,17 @@ GROUP BY application_name
 		}
 
 		counts.TotalClients += count
-		if strings.HasPrefix(appName, constants.ClientConnectionAppNamePrefix) {
+
+		isSteampipeClient := strings.HasPrefix(appName, constants.ClientConnectionAppNamePrefix)
+		isSteampipeSystemClient := strings.HasPrefix(appName, constants.ClientSystemConnectionAppNamePrefix)
+		isSteampipeServiceClient := strings.HasPrefix(appName, constants.ServiceConnectionAppNamePrefix)
+
+		if isSteampipeClient && !isSteampipeSystemClient {
 			counts.SteampipeClients += count
 		}
 
 		// plugin manager uses the service prefix
-		if strings.HasPrefix(appName, constants.ServiceConnectionAppNamePrefix) {
+		if isSteampipeServiceClient {
 			counts.PluginManagerClients += count
 		}
 	}
