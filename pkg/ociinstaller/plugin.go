@@ -23,6 +23,10 @@ var versionFileUpdateLock = &sync.Mutex{}
 
 // InstallPlugin installs a plugin from an OCI Image
 func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, opts ...PluginInstallOption) (*SteampipeImage, error) {
+	config := &pluginInstallConfig{}
+	for _, opt := range opts {
+		opt(config)
+	}
 	tempDir := NewTempDir(filepaths.EnsurePluginDir())
 	defer func() {
 		// send a last beacon to signal completion
@@ -34,11 +38,6 @@ func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, opts
 
 	ref := NewSteampipeImageRef(imageRef)
 	imageDownloader := NewOciDownloader()
-	config := &pluginInstallConfig{}
-	for _, opt := range opts {
-		opt(config)
-	}
-	skipPluginConfig := config.skipConfigFile
 
 	sub <- struct{}{}
 	image, err := imageDownloader.Download(ctx, ref, ImageTypePlugin, tempDir.Path)
@@ -54,7 +53,7 @@ func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, opts
 	if err = installPluginDocs(image, tempDir.Path); err != nil {
 		return nil, fmt.Errorf("plugin installation failed: %s", err)
 	}
-	if !skipPluginConfig {
+	if !config.skipConfigFile {
 		if err = installPluginConfigFiles(image, tempDir.Path); err != nil {
 			return nil, fmt.Errorf("plugin installation failed: %s", err)
 		}
