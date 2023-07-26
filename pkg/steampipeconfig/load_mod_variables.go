@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
@@ -29,7 +30,7 @@ func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContex
 	return variableMap, nil
 }
 
-func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, *modconfig.ErrorAndWarnings) {
+func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
 	// now resolve all input variables
 	inputValues, errorsAndWarnings := getInputVariables(ctx, parseCtx, variableMap, validate)
 	if errorsAndWarnings.Error == nil {
@@ -40,7 +41,7 @@ func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, var
 	return variableMap, errorsAndWarnings
 }
 
-func getInputVariables(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (inputvars.InputValues, *modconfig.ErrorAndWarnings) {
+func getInputVariables(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (inputvars.InputValues, *error_helpers.ErrorAndWarnings) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
@@ -50,12 +51,12 @@ func getInputVariables(ctx context.Context, parseCtx *parse.ModParseContext, var
 
 	var inputValuesUnparsed, err = inputvars.CollectVariableValues(path, variableFileArgs, variableArgs, parseCtx.CurrentMod.ShortName)
 	if err != nil {
-		return nil, modconfig.NewErrorsAndWarning(err)
+		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
 
 	if validate {
 		if err := identifyAllMissingVariables(parseCtx, variableMap, inputValuesUnparsed); err != nil {
-			return nil, modconfig.NewErrorsAndWarning(err)
+			return nil, error_helpers.NewErrorsAndWarning(err)
 		}
 	}
 	// only parse values for public variables
@@ -69,13 +70,13 @@ func getInputVariables(ctx context.Context, parseCtx *parse.ModParseContext, var
 	return parsedValues, newVariableValidationResult(diags)
 }
 
-func newVariableValidationResult(diags tfdiags.Diagnostics) *modconfig.ErrorAndWarnings {
+func newVariableValidationResult(diags tfdiags.Diagnostics) *error_helpers.ErrorAndWarnings {
 	warnings := plugin.DiagsToWarnings(diags.ToHCL())
 	var err error
 	if diags.HasErrors() {
 		err = newVariableValidationFailedError(diags)
 	}
-	return modconfig.NewErrorsAndWarning(err, warnings...)
+	return error_helpers.NewErrorsAndWarning(err, warnings...)
 }
 
 func identifyAllMissingVariables(parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, variableValues map[string]inputvars.UnparsedVariableValue) error {

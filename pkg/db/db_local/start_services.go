@@ -22,14 +22,13 @@ import (
 	"github.com/turbot/steampipe/pkg/pluginmanager"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
 )
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
 type StartResult struct {
-	modconfig.ErrorAndWarnings
+	error_helpers.ErrorAndWarnings
 	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
 	PluginManagerState *pluginmanager.PluginManagerState

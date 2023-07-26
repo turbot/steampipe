@@ -4,20 +4,20 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // RefreshConnectionResult is a structure used to contain the result of either a RefreshConnections or a NewLocalClient operation
 type RefreshConnectionResult struct {
-	modconfig.ErrorAndWarnings
+	error_helpers.ErrorAndWarnings
 	UpdatedConnections bool
 	Updates            *ConnectionUpdates
 	FailedConnections  map[string]string
 }
 
 func NewErrorRefreshConnectionResult(err error) *RefreshConnectionResult {
-	return &RefreshConnectionResult{ErrorAndWarnings: *modconfig.NewErrorsAndWarning(err)}
+	return &RefreshConnectionResult{ErrorAndWarnings: *error_helpers.NewErrorsAndWarning(err)}
 }
 
 func (r *RefreshConnectionResult) Merge(other *RefreshConnectionResult) {
