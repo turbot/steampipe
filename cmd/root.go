@@ -24,8 +24,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/installationstate"
-	"github.com/turbot/steampipe/pkg/migrate"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -267,9 +265,6 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	err = validateConfig()
 	error_helpers.FailOnErrorWithMessage(err, "failed to validate config")
 
-	// migrate all legacy config files to use snake casing (migrated in v0.14.0)
-	migrateLegacyFiles(cmd)
-
 	return loadConfigErrorsAndWarnings
 }
 
@@ -327,20 +322,6 @@ func loadWorkspaceProfile() (*steampipeconfig.WorkspaceProfileLoader, error) {
 	}
 
 	return loader, nil
-}
-
-// migrate all data files to use snake casing for property names
-func migrateLegacyFiles(cmd *cobra.Command) {
-	// skip migration for plugin manager commands because the plugin-manager will have
-	// been started by some other steampipe command, which would have done the migration already
-	if cmd.Name() == "plugin-manager" {
-		return
-	}
-
-	migrate.Migrate(&installationstate.InstallationState{}, filepaths.LegacyStateFilePath())
-	migrate.Migrate(&versionfile.PluginVersionFile{}, filepaths.PluginVersionFilePath())
-	migrate.Migrate(&versionfile.DatabaseVersionFile{}, filepaths.DatabaseVersionFilePath())
-
 }
 
 // now validate  config values have appropriate values

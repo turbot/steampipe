@@ -11,7 +11,6 @@ import (
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/migrate"
 	"github.com/turbot/steampipe/sperr"
 )
 
@@ -43,14 +42,6 @@ func (f PluginVersionFile) IsValid() bool {
 	return f.StructVersion > 0
 }
 
-func (f *PluginVersionFile) MigrateFrom() migrate.Migrateable {
-	f.StructVersion = PluginStructVersion
-	for p := range f.Plugins {
-		f.Plugins[p].MigrateLegacy()
-	}
-	return f
-}
-
 // EnsurePluginVersionFile reads the version file in the plugin directory (if exists) and overwrites it if the data in the
 // argument is different. The comparison is done using the `Name` and `BinaryDigest` properties.
 // If the file doesn't exist, or cannot be read/parsed, EnsurePluginVersionFile fails over to overwriting the data
@@ -71,9 +62,6 @@ func (f *PluginVersionFile) EnsurePluginVersionFile(installData *InstalledVersio
 		// in case of error, just failover to a overwrite
 	}
 
-	// make sure that the legacy fields are also filled in
-	installData.MaintainLegacy()
-
 	theBytes, err := json.MarshalIndent(installData, "", "  ")
 	if err != nil {
 		return err
@@ -86,10 +74,6 @@ func (f *PluginVersionFile) Save() error {
 	// set struct version
 	f.StructVersion = PluginStructVersion
 	versionFilePath := filepaths.PluginVersionFilePath()
-	// maintain the legacy properties for backward compatibility
-	for _, v := range f.Plugins {
-		v.MaintainLegacy()
-	}
 	return f.write(versionFilePath)
 }
 
