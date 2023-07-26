@@ -15,21 +15,51 @@ import (
 // templateFuncs merges desired functions from sprig with custom functions that we
 // define in steampipe
 func templateFuncs(renderContext TemplateRenderContext) template.FuncMap {
-	useFromSprigMap := []string{"upper", "toJson", "quote", "dict", "add", "now", "toPrettyJson"}
+	removeFromSprigMap := map[string]struct{}{
+		// reflection function - no real use case in check templates
+		"typeOf":     {},
+		"typeIs":     {},
+		"typeIsLike": {},
+		"kindOf":     {},
+		"kindIs":     {},
+		"deepEqual":  {},
+
+		// functions which access OS resources
+		"env":           {},
+		"expandenv":     {},
+		"getHostByName": {},
+		"osBase":        {},
+		"osClean":       {},
+		"osDir":         {},
+		"osExt":         {},
+		"osIsAbs":       {},
+
+		// crypto function - generally CPU hungry and no real use case in check templates
+		"bcrypt":                   {},
+		"htpasswd":                 {},
+		"genPrivateKey":            {},
+		"derivePassword":           {},
+		"buildCustomCert":          {},
+		"genCA":                    {},
+		"genCAWithKey":             {},
+		"genSelfSignedCert":        {},
+		"genSelfSignedCertWithKey": {},
+		"genSignedCert":            {},
+		"genSignedCertWithKey":     {},
+		"encryptAES":               {},
+		"decryptAES":               {},
+	}
 
 	var funcs template.FuncMap = template.FuncMap{}
 	sprigMap := sprig.TxtFuncMap()
-	for _, use := range useFromSprigMap {
-		f, found := sprigMap[use]
-		if !found {
-			// guarantee that when a function is expected to be present
-			// it does not slip through any crack
-			panic(fmt.Sprintf("%s not found", use))
+	for name, fn := range sprigMap {
+		if _, found := removeFromSprigMap[name]; found {
+			// do not include this
+			continue
 		}
-		if found {
-			funcs[use] = f
-		}
+		funcs[name] = fn
 	}
+
 	// custom steampipe functions - ones we couldn't find in sprig
 	formatterTemplateFuncMap := template.FuncMap{
 		"durationInSeconds": durationInSeconds,
