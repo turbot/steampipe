@@ -25,12 +25,13 @@ import (
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/sperr"
 )
 
 type runningPlugin struct {
@@ -68,15 +69,23 @@ type PluginManager struct {
 
 	logger        hclog.Logger
 	messageServer *PluginMessageServer
+	// map of rater limiters, keyed by name
+	// todo instead have map of limiters per plugin???
+	limiters connection.LimiterMap
+	// map of plugin short name to long name
+	pluginNameMap map[string]string
 }
 
-func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, logger hclog.Logger) (*PluginManager, error) {
+func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, limiters map[string]*modconfig.RateLimiter, logger hclog.Logger) (*PluginManager, error) {
 	log.Printf("[INFO] NewPluginManager")
 	pluginManager := &PluginManager{
 		logger:              logger,
 		runningPluginMap:    make(map[string]*runningPlugin),
 		connectionConfigMap: connectionConfig,
+		limiters:            limiters,
+		pluginNameMap:       make(map[string]string),
 	}
+
 	messageServer, err := NewPluginMessageServer(pluginManager)
 	if err != nil {
 		return nil, err
@@ -181,7 +190,7 @@ func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.R
 }
 
 // OnConnectionConfigChanged is the callback function invoked by the connection watcher when the config changed
-func (m *PluginManager) OnConnectionConfigChanged(configMap connection.ConnectionConfigMap) {
+func (m *PluginManager) OnConnectionConfigChanged(configMap connection.ConnectionConfigMap, limiters connection.LimiterMap) {
 	m.mut.Lock()
 	defer m.mut.Unlock()
 
@@ -190,9 +199,12 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connection.Connectio
 
 	err := m.handleConnectionConfigChanges(configMap)
 	if err != nil {
-		log.Printf("[WARN] handleConnectionConfigChanges returned error: %s", err.Error())
+		log.Printf("[WARN] handleConnectionConfigChanges failed: %s", err.Error())
 	}
-
+	err = m.handleLimiterChanges(limiters)
+	if err != nil {
+		log.Printf("[WARN] handleLimiterChanges failed: %s", err.Error())
+	}
 }
 
 func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
@@ -232,134 +244,47 @@ func (m *PluginManager) killPlugin(p *runningPlugin) {
 	p.client.Kill()
 }
 
-func (m *PluginManager) handleConnectionConfigChanges(newConfigMap map[string]*sdkproto.ConnectionConfig) error {
-	// now determine whether there are any new or deleted connections
-	addedConnections, deletedConnections, changedConnections := m.connectionConfigMap.Diff(newConfigMap)
+func (m *PluginManager) handleLimiterChanges(newLimiters connection.LimiterMap) error {
+	pluginsWithChangedLimiters := m.limiters.GetPluginsWithChangedLimiters(newLimiters)
 
-	requestMap := make(map[string]*sdkproto.UpdateConnectionConfigsRequest)
+	if len(pluginsWithChangedLimiters) == 0 {
+		return nil
+	}
 
-	// for deleted connections, remove from plugins and pluginConnectionConfigs
-	m.handleDeletedConnections(deletedConnections, requestMap)
+	// update stored limiters to the new map
+	m.limiters = newLimiters
 
-	// for new connections, add to plugins and pluginConnectionConfigs
-	m.handleAddedConnections(addedConnections, requestMap)
-	// for updated connections just add to request map
-	m.handleUpdatedConnections(changedConnections, requestMap)
-	// update connectionConfigMap
-	m.connectionConfigMap = newConfigMap
-
-	// rebuild pluginConnectionConfigMap
-	m.populatePluginConnectionConfigs()
-
-	// now send UpdateConnectionConfigs for all update plugins
-	return m.sendUpdateConnectionConfigs(requestMap)
-}
-
-func (m *PluginManager) sendUpdateConnectionConfigs(requestMap map[string]*sdkproto.UpdateConnectionConfigsRequest) error {
-	var errors []error
-	for plugin, req := range requestMap {
-		runningPlugin, pluginAlreadyRunning := m.runningPluginMap[plugin]
-
-		// if the plugin is not running (or is not multi connection, so is not in this map), return
-		if !pluginAlreadyRunning {
+	// now update the plugins
+	for p := range pluginsWithChangedLimiters {
+		// get running plugin for this plugin
+		// if plugin is not running we havenothing to do
+		// TODO KAI USED FXN TO MAP
+		longName, ok := m.pluginNameMap[p]
+		if !ok {
+			log.Printf("[INFO] handleLimiterChanges: plugin %s is not currently running - ignoring", p)
+			continue
+		}
+		runningPlugin, ok := m.runningPluginMap[longName]
+		if !ok {
+			log.Printf("[INFO] handleLimiterChanges: plugin %s is not currently running - ignoring", p)
+			continue
+		}
+		if !runningPlugin.reattach.SupportedOperations.SetRateLimiters {
+			log.Printf("[INFO] handleLimiterChanges: plugin %s does not support setting rate limit - ignoring", p)
 			continue
 		}
 
-		pluginClient, err := sdkgrpc.NewPluginClient(runningPlugin.client, plugin)
+		pluginClient, err := sdkgrpc.NewPluginClient(runningPlugin.client, longName)
 		if err != nil {
-			errors = append(errors, err)
-			continue
+			return sperr.WrapWithMessage(err, "failed to create a plugin client when updating the rate limiter for plugin '%s'", longName)
 		}
 
-		err = pluginClient.UpdateConnectionConfigs(req)
-		if err != nil {
-			errors = append(errors, err)
+		if err := m.setRateLimiters(p, pluginClient); err != nil {
+			return sperr.WrapWithMessage(err, "failed to update rate limiters for plugin '%s'", longName)
 		}
 	}
-	return error_helpers.CombineErrors(errors...)
-}
 
-// this mutates requestMap
-func (m *PluginManager) handleAddedConnections(addedConnections map[string][]*sdkproto.ConnectionConfig, requestMap map[string]*sdkproto.UpdateConnectionConfigsRequest) {
-	// for new connections, add to plugins , pluginConnectionConfigs and connectionConfig
-	// (but only if the plugin is already started - if not we do nothing here - refreshConnections will start the plugin)
-	for p, connections := range addedConnections {
-		// find the existing running plugin for this plugin
-		// if this plugins is NOT running (or is not multi connection), skip here - we will start it when running refreshConnections
-		runningPlugin, pluginAlreadyRunning := m.runningPluginMap[p]
-		if !pluginAlreadyRunning {
-			log.Printf("[TRACE] handleAddedConnections - plugin '%s' has been added to connection config and is not running - doing nothing here as it will be started by refreshConnections", p)
-			continue
-		}
-
-		// get or create req for this plugin
-		req, ok := requestMap[p]
-		if !ok {
-			req = &sdkproto.UpdateConnectionConfigsRequest{}
-		}
-
-		for _, connection := range connections {
-			// add this connection to the running plugin
-			runningPlugin.reattach.AddConnection(connection.Connection)
-
-			// add to updateConnectionConfigsRequest
-			req.Added = append(req.Added, connection)
-		}
-		// write back to map
-		requestMap[p] = req
-	}
-}
-
-// this mutates requestMap
-func (m *PluginManager) handleDeletedConnections(deletedConnections map[string][]*sdkproto.ConnectionConfig, requestMap map[string]*sdkproto.UpdateConnectionConfigsRequest) {
-	for p, connections := range deletedConnections {
-		runningPlugin, pluginAlreadyRunning := m.runningPluginMap[p]
-		if !pluginAlreadyRunning {
-			continue
-		}
-
-		// get or create req for this plugin
-		req, ok := requestMap[p]
-		if !ok {
-			req = &sdkproto.UpdateConnectionConfigsRequest{}
-		}
-
-		for _, connection := range connections {
-			// remove this connection from the running plugin
-			runningPlugin.reattach.RemoveConnection(connection.Connection)
-
-			// add to updateConnectionConfigsRequest
-			req.Deleted = append(req.Deleted, connection)
-		}
-		// write back to map
-		requestMap[p] = req
-	}
-}
-
-// this mutates requestMap
-func (m *PluginManager) handleUpdatedConnections(updatedConnections map[string][]*sdkproto.ConnectionConfig, requestMap map[string]*sdkproto.UpdateConnectionConfigsRequest) {
-	// for new connections, add to plugins , pluginConnectionConfigs and connectionConfig
-	// (but only if the plugin is already started - if not we do nothing here - refreshConnections will start the plugin)
-	for p, connections := range updatedConnections {
-		// get or create req for this plugin
-		req, ok := requestMap[p]
-		if !ok {
-			req = &sdkproto.UpdateConnectionConfigsRequest{}
-		}
-
-		// add to updateConnectionConfigsRequest
-		req.Changed = append(req.Changed, connections...)
-		// write back to map
-		requestMap[p] = req
-	}
-}
-
-func (m *PluginManager) getConnectionConfig(connectionName string) (*sdkproto.ConnectionConfig, error) {
-	connectionConfig, ok := m.connectionConfigMap[connectionName]
-	if !ok {
-		return nil, fmt.Errorf("connection '%s' does not exist in connection config", connectionName)
-	}
-	return connectionConfig, nil
+	return nil
 }
 
 func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdkproto.ConnectionConfig, req *pb.GetRequest) (reattach *pb.ReattachConfig, err error) {
@@ -517,6 +442,7 @@ func (m *PluginManager) addRunningPlugin(pluginName string) (*runningPlugin, err
 	}
 	// write back
 	m.runningPluginMap[pluginName] = startingPlugin
+
 	log.Printf("[INFO] written running plugin to map")
 
 	return startingPlugin, nil
@@ -568,7 +494,6 @@ func (m *PluginManager) startPluginProcess(pluginName string, connectionConfigs 
 
 // set the connection configs and build a ReattachConfig
 func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.ConnectionConfig, client *plugin.Client, req *pb.GetRequest) (_ *pb.ReattachConfig, err error) {
-
 	// extract connection names
 	connectionNames := make([]string, len(connectionConfigs))
 	for i, c := range connectionConfigs {
@@ -576,10 +501,15 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	}
 	exemplarConnectionConfig := connectionConfigs[0]
 	pluginName := exemplarConnectionConfig.Plugin
+	pluginShortName := exemplarConnectionConfig.PluginShortName
+
+	// also store name mapping
+	// TODO KAI will hopefully not be necessary
+	m.pluginNameMap[pluginShortName] = pluginName
 
 	log.Printf("[INFO] initializePlugin %s pid %d (%p)", pluginName, client.ReattachConfig().Pid, req)
 
-	// get the supported operations
+	// build a client
 	pluginClient, err := sdkgrpc.NewPluginClient(client, pluginName)
 	if err != nil {
 		return nil, err
@@ -617,6 +547,16 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 		if err != nil {
 			log.Printf("[WARN] failed to set cache options for %s: %s", pluginName, err.Error())
 			return nil, err
+		}
+	}
+
+	// if this plugin supports setting cache options, do so
+	if supportedOperations.SetRateLimiters {
+		err = m.setRateLimiters(pluginShortName, pluginClient)
+		if err != nil {
+			// return retryable error
+			log.Printf("[WARN] failed to set cache rate limiters for %s: %s", pluginName, err.Error())
+			return nil, retry.RetryableError(err)
 		}
 	}
 
@@ -776,6 +716,22 @@ func (m *PluginManager) setCacheOptions(pluginClient *sdkgrpc.PluginClient) erro
 		MaxSizeMb: viper.GetInt64(constants.ArgMaxCacheSizeMb),
 	}
 	_, err := pluginClient.SetCacheOptions(req)
+	return err
+}
+
+func (m *PluginManager) setRateLimiters(pluginName string, pluginClient *sdkgrpc.PluginClient) error {
+	var defs []*sdkproto.RateLimiterDefinition
+
+	for _, l := range m.limiters {
+		// only add limiters for this plugin
+		if l.Plugin == pluginName {
+			defs = append(defs, l.AsProto())
+		}
+	}
+
+	req := &sdkproto.SetRateLimitersRequest{Definitions: defs}
+
+	_, err := pluginClient.SetRateLimiters(req)
 	return err
 }
 
