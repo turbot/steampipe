@@ -10,5 +10,5 @@ const (
 const (
 	ClientConnectionAppNamePrefix       = "steampipe_client"
 	ServiceConnectionAppNamePrefix      = "steampipe_service"
-	ClientSystemConnectionAppNamePrefix = "steampipe_system_client"
+	ClientSystemConnectionAppNamePrefix = "steampipe_client_system"
 )
