@@ -16,10 +16,10 @@ import (
 type ConnectionWatcher struct {
 	fileWatcherErrorHandler   func(error)
 	watcher                   *filewatcher.FileWatcher
-	onConnectionConfigChanged func(ConnectionConfigMap)
+	onConnectionConfigChanged func(ConnectionConfigMap, LimiterMap)
 }
 
-func NewConnectionWatcher(onConnectionChanged func(ConnectionConfigMap)) (*ConnectionWatcher, error) {
+func NewConnectionWatcher(onConnectionChanged func(ConnectionConfigMap, LimiterMap)) (*ConnectionWatcher, error) {
 	w := &ConnectionWatcher{
 		onConnectionConfigChanged: onConnectionChanged,
 	}
@@ -79,7 +79,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
 	// convert config to format expected by plugin manager
 	// (plugin manager cannot reference steampipe config to avoid circular deps)
 	configMap := NewConnectionConfigMap(config.Connections)
-	w.onConnectionConfigChanged(configMap)
+	w.onConnectionConfigChanged(configMap, config.Limiters)
 
 	// The only configurations from GlobalConfig which have
 	// impact during Refresh are Database options and the Connections
