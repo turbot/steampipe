@@ -8,7 +8,6 @@ import (
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/migrate"
 )
 
 const DatabaseStructVersion = 20220411
@@ -17,10 +16,6 @@ type DatabaseVersionFile struct {
 	FdwExtension  InstalledVersion `json:"fdw_extension"`
 	EmbeddedDB    InstalledVersion `json:"embedded_db"`
 	StructVersion int64            `json:"struct_version"`
-
-	// legacy properties included for backwards compatibility with v0.13
-	LegacyFdwExtension InstalledVersion `json:"fdwExtension"`
-	LegacyEmbeddedDB   InstalledVersion `json:"embeddedDB"`
 }
 
 func NewDBVersionFile() *DatabaseVersionFile {
@@ -35,16 +30,6 @@ func NewDBVersionFile() *DatabaseVersionFile {
 // by checking if the StructVersion is populated
 func (s DatabaseVersionFile) IsValid() bool {
 	return s.StructVersion > 0
-}
-
-func (s *DatabaseVersionFile) MigrateFrom() migrate.Migrateable {
-	s.StructVersion = DatabaseStructVersion
-	s.FdwExtension = s.LegacyFdwExtension
-	s.FdwExtension.MigrateLegacy()
-	s.EmbeddedDB = s.LegacyEmbeddedDB
-	s.EmbeddedDB.MigrateLegacy()
-
-	return s
 }
 
 // LoadDatabaseVersionFile migrates from the old version file format if necessary and loads the database version data
@@ -78,11 +63,6 @@ func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 func (f *DatabaseVersionFile) Save() error {
 	// set the struct version
 	f.StructVersion = DatabaseStructVersion
-	// maintain the legacy properties for backward compatibility
-	f.LegacyFdwExtension = f.FdwExtension
-	f.LegacyFdwExtension.MaintainLegacy()
-	f.LegacyEmbeddedDB = f.EmbeddedDB
-	f.LegacyEmbeddedDB.MaintainLegacy()
 
 	versionFilePath := filepaths.DatabaseVersionFilePath()
 	return f.write(versionFilePath)

@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/migrate"
 )
 
 const StateStructVersion = 20220411
@@ -70,15 +69,6 @@ func (s *InstallationState) Save() error {
 // by checking if the StructVersion is populated
 func (s *InstallationState) IsValid() bool {
 	return s.StructVersion > 0
-}
-
-func (s *InstallationState) MigrateFrom() migrate.Migrateable {
-	// save the existing property values to the new legacy properties
-	s.StructVersion = StateStructVersion
-	s.LastCheck = nowTimeString()
-	s.InstallationID = newInstallationID()
-
-	return s
 }
 
 func newInstallationID() string {
