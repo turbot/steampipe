@@ -35,9 +35,9 @@ func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string
 		cloudWorkspace, _, err = client.OrgWorkspaces.Get(ctx, identityHandle, workspaceHandle).Execute()
 	}
 
-	if err != nil && err.Error() == "404 Not Found" {
+	if error_helpers.IsBadWorkspaceDatabaseArg(err) {
 		return nil, sperr.New("Invalid 'workspace-database' argument '%s'.\nPlease check the workspace name and try again.", workspaceDatabaseString)
-	} else if err != nil && err.Error() == "401 Unauthorized" {
+	} else if error_helpers.IsInvalidCloudToken(err) {
 		return nil, error_helpers.InvalidCloudTokenError
 	}
 
