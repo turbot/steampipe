@@ -720,6 +720,7 @@ func (m *PluginManager) setCacheOptions(pluginClient *sdkgrpc.PluginClient) erro
 }
 
 func (m *PluginManager) setRateLimiters(pluginName string, pluginClient *sdkgrpc.PluginClient) error {
+	log.Printf("[INFO] setRateLimiters for plugin '%s'", pluginName)
 	var defs []*sdkproto.RateLimiterDefinition
 
 	for _, l := range m.limiters {
