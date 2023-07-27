@@ -1,7 +1,6 @@
-package ratelimit
+package rate_limiters
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/turbot/steampipe/pkg/constants"
@@ -9,7 +8,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func GetPopulateRateLimiterSql(ctx context.Context, settings *modconfig.RateLimiter) db_common.QueryWithArgs {
+func GetPopulateRateLimiterSql(settings *modconfig.RateLimiter) db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
 "name",
@@ -31,7 +30,17 @@ scope,
 	}
 }
 
-func CreateRateLimiterTable(ctx context.Context) db_common.QueryWithArgs {
+func DropRateLimiterTable() db_common.QueryWithArgs {
+	return db_common.QueryWithArgs{
+		Query: fmt.Sprintf(
+			`DROP TABLE IF EXISTS %s.%s;`,
+			constants.InternalSchema,
+			constants.RateLimiterDefinitionTable,
+		),
+	}
+}
+
+func CreateRateLimiterTable() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
 				name TEXT NOT NULL,
@@ -44,23 +53,13 @@ func CreateRateLimiterTable(ctx context.Context) db_common.QueryWithArgs {
 	}
 }
 
-func GrantsOnRateLimiterTable(ctx context.Context) db_common.QueryWithArgs {
+func GrantsOnRateLimiterTable() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`GRANT SELECT ON TABLE %s.%s to %s;`,
 			constants.InternalSchema,
 			constants.RateLimiterDefinitionTable,
 			constants.DatabaseUsersRole,
-		),
-	}
-}
-
-func DropRateLimiterTable(ctx context.Context) db_common.QueryWithArgs {
-	return db_common.QueryWithArgs{
-		Query: fmt.Sprintf(
-			`DROP TABLE IF EXISTS %s.%s;`,
-			constants.InternalSchema,
-			constants.RateLimiterDefinitionTable,
 		),
 	}
 }

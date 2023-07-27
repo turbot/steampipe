@@ -2,26 +2,21 @@ package pluginmanager_service
 
 import (
 	"context"
-	"log"
-
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
-	ratelimit "github.com/turbot/steampipe/pkg/rate_limit"
+	"github.com/turbot/steampipe/pkg/rate_limiters"
 )
 
 func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
-	log.Println("[TRACE] >>> refreshRateLimiterTable")
-	defer log.Println("[TRACE] <<< refreshRateLimiterTable")
-
 	queries := []db_common.QueryWithArgs{
-		ratelimit.DropRateLimiterTable(ctx),
-		ratelimit.CreateRateLimiterTable(ctx),
-		ratelimit.GrantsOnRateLimiterTable(ctx),
+		rate_limiters.DropRateLimiterTable(),
+		rate_limiters.CreateRateLimiterTable(),
+		rate_limiters.GrantsOnRateLimiterTable(),
 	}
 
 	for _, limiter := range m.limiters {
-		queries = append(queries, ratelimit.GetPopulateRateLimiterSql(ctx, limiter))
+		queries = append(queries, rate_limiters.GetPopulateRateLimiterSql(limiter))
 	}
 
 	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{
