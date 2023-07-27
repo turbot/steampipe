@@ -687,7 +687,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $tmpdir
 }
 
-<<<<<<< HEAD
 @test "verify that steampipe check should bypass plugin requirement detection if installed plugin is local" {
   tmpdir=$(mktemp -d)
   run steampipe plugin install net --install-dir $tmpdir
@@ -722,10 +721,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $tmpdir
 }
 
-@test "verify that plugin installed with --default-config as false, should not have default config .spc file in config folder" {
-=======
 @test "verify that plugin installed with --skip-config as true, should not have create a default config .spc file in config folder" {
->>>>>>> 76591edb (fix: reviewd changes for skip config file creation)
   tmpdir=$(mktemp -d)
   run steampipe plugin install aws --skip-config --install-dir $tmpdir
   assert_success

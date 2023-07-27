@@ -6,7 +6,7 @@ type pluginInstallConfig struct {
 
 type PluginInstallOption = func(config *pluginInstallConfig)
 
-func WithSkipConfigEnabled(skipConfigFile bool) PluginInstallOption {
+func WithSkipConfig(skipConfigFile bool) PluginInstallOption {
 	return func(o *pluginInstallConfig) {
 		o.skipConfigFile = skipConfigFile
 	}

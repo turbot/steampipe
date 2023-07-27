@@ -546,7 +546,7 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		}
 	}()
 
-	image, err := plugin.Install(ctx, pluginName, progress, ociinstaller.WithSkipConfigEnabled(viper.GetBool(constants.ArgSkipConfig)))
+	image, err := plugin.Install(ctx, pluginName, progress, ociinstaller.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
 	if err != nil {
 		msg := ""
 		_, name, stream := ociinstaller.NewSteampipeImageRef(pluginName).GetOrgNameAndStream()
