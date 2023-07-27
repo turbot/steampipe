@@ -721,6 +721,28 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -rf $tmpdir
 }
 
+@test "verify that plugin installed with --default-config as false, should not have default config .spc file in config folder" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install aws --default-config=false --install-dir $tmpdir
+  assert_success
+
+  run test -f $tmpdir/config/aws.spc
+  assert_failure
+
+  rm -rf $tmpdir
+}
+
+@test "verify that plugin installed with --default-config as true, should have default config .spc file in config folder" {
+  tmpdir=$(mktemp -d)
+  run steampipe plugin install aws --default-config=true --install-dir $tmpdir
+  assert_success
+
+  run test -f $tmpdir/config/aws.spc
+  assert_success
+
+  rm -rf $tmpdir
+}
+
 @test "cleanup" {
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
   run steampipe plugin uninstall steampipe
