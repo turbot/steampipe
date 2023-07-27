@@ -85,6 +85,8 @@ func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, li
 		pluginNameMap:       make(map[string]string),
 	}
 
+	// TODO BINAEK populate the rate_limiters table
+
 	messageServer, err := NewPluginMessageServer(pluginManager)
 	if err != nil {
 		return nil, err
@@ -252,6 +254,8 @@ func (m *PluginManager) handleLimiterChanges(newLimiters connection.LimiterMap) 
 
 	// update stored limiters to the new map
 	m.limiters = newLimiters
+
+	// TODO BINAEK update the rate_limiters table
 
 	// now update the plugins
 	for p := range pluginsWithChangedLimiters {
