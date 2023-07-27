@@ -1,4 +1,4 @@
-package db_common
+package db_local
 
 import (
 	"reflect"

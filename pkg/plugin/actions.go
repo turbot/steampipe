@@ -9,12 +9,13 @@ import (
 	"time"
 
 	"github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/sperr"
 )
 
 const (
@@ -24,7 +25,7 @@ const (
 )
 
 // Remove removes an installed plugin
-func Remove(ctx context.Context, image string, pluginConnections map[string][]*modconfig.Connection) (*display.PluginRemoveReport, error) {
+func Remove(ctx context.Context, image string, pluginConnections map[string][]*modconfig.Connection) (*steampipeconfig.PluginRemoveReport, error) {
 	statushooks.SetStatus(ctx, fmt.Sprintf("Removing plugin %s", image))
 
 	imageRef := ociinstaller.NewSteampipeImageRef(image)
@@ -52,7 +53,7 @@ func Remove(ctx context.Context, image string, pluginConnections map[string][]*m
 	delete(v.Plugins, fullPluginName)
 	err = v.Save()
 
-	return &display.PluginRemoveReport{Connections: conns, Image: imageRef}, err
+	return &steampipeconfig.PluginRemoveReport{Connections: conns, Image: imageRef}, err
 }
 
 // Exists looks up the version file and reports whether a plugin is already installed
@@ -78,7 +79,7 @@ func Install(ctx context.Context, plugin string, sub chan struct{}) (*ociinstall
 // PluginListItem is a struct representing an item in the list of plugins
 type PluginListItem struct {
 	Name        string
-	Version     string
+	Version     *modconfig.PluginVersionString
 	Connections []string
 }
 
@@ -108,20 +109,20 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 		if err != nil {
 			return nil, err
 		}
+		// for local plugin
 		item := PluginListItem{
 			Name:    fullPluginName,
-			Version: "local",
+			Version: modconfig.LocalPluginVersionString(),
 		}
 		// check if this plugin is recorded in plugin versions
 		installation, found := pluginVersions[fullPluginName]
 		if found {
-			// use the version as recorded
-			item.Version = installation.Version
-			// but if the modtime of the binary is after the installation date,
-			// this is "local"
-
-			if detectLocalPlugin(installation, pluginBinary) {
-				item.Version = "local"
+			// if not a local plugin, get the semver version
+			if !detectLocalPlugin(installation, pluginBinary) {
+				item.Version, err = modconfig.NewPluginVersionString(installation.Version)
+				if err != nil {
+					return nil, sperr.WrapWithMessage(err, "could not evaluate plugin version %s", installation.Version)
+				}
 			}
 
 			if pluginConnectionMap != nil {

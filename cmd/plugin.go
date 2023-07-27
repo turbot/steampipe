@@ -641,7 +641,7 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 		headers := []string{"Installed", "Version", "Connections"}
 		var rows [][]string
 		for _, item := range pluginList {
-			rows = append(rows, []string{item.Name, item.Version, strings.Join(item.Connections, ",")})
+			rows = append(rows, []string{item.Name, item.Version.String(), strings.Join(item.Connections, ",")})
 		}
 		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 		fmt.Printf("\n")
@@ -689,7 +689,7 @@ func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, m
 	for _, item := range pluginList {
 		installed := installedPlugin{
 			Name:        item.Name,
-			Version:     item.Version,
+			Version:     item.Version.String(),
 			Connections: item.Connections,
 		}
 		output.Installed = append(output.Installed, installed)
@@ -766,7 +766,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	reports := display.PluginRemoveReports{}
+	reports := steampipeconfig.PluginRemoveReports{}
 	statushooks.SetStatus(ctx, fmt.Sprintf("Uninstalling %s", utils.Pluralize("plugin", len(args))))
 	for _, p := range args {
 		statushooks.SetStatus(ctx, fmt.Sprintf("Uninstalling %s", p))

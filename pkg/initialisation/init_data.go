@@ -18,7 +18,6 @@ import (
 	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/workspace"
 	"github.com/turbot/steampipe/sperr"
 )
@@ -150,8 +149,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	i.Client = client
 }
 
-func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap versionmap.VersionMap) []string {
-	validationErrors := []string{}
+func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap map[string]*modconfig.PluginVersionString) []string {
+	var validationErrors []string
 
 	// validate this mod
 	for _, err := range mod.ValidateRequirements(pluginVersionMap) {
