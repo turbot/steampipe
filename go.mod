@@ -2,8 +2,6 @@ module github.com/turbot/steampipe
 
 go 1.19
 
-replace github.com/turbot/steampipe-plugin-sdk/v5 => /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
-
 require (
 	github.com/Machiel/slugify v1.0.1
 	github.com/Masterminds/semver/v3 v3.2.1
@@ -47,7 +45,7 @@ require (
 	github.com/stevenle/topsort v0.2.0
 	github.com/turbot/go-kit v0.8.0-rc.0
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
-	github.com/turbot/steampipe-plugin-sdk/v5 v5.5.1
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-dev.7
 	github.com/xlab/treeprint v1.2.0
 	github.com/zclconf/go-cty v1.13.2
 	github.com/zclconf/go-cty-yaml v1.0.3
@@ -240,5 +238,6 @@ replace (
 	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
 	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
 	github.com/hashicorp/go-plugin => github.com/binaek/go-plugin v1.14.10-steampipe.0
+//github.com/turbot/steampipe-plugin-sdk/v5 => /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
 
 )
