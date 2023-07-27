@@ -53,6 +53,9 @@ const (
 	// ServerSettingsTable is the table used to store steampipe service configuration
 	ServerSettingsTable = "steampipe_server_settings"
 
+	// RateLimiterDefinitionTable is the table used to store rate limiters defined in the config
+	RateLimiterDefinitionTable = "steampipe_rate_limiter"
+
 	// ConnectionStateTable is the table used to store steampipe connection state
 	ConnectionStateTable             = "steampipe_connection_state"
 	ConnectionStatePending           = "pending"

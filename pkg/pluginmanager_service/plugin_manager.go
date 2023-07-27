@@ -75,7 +75,7 @@ type PluginManager struct {
 	pluginNameMap map[string]string
 }
 
-func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, limiters map[string]*modconfig.RateLimiter, logger hclog.Logger) (*PluginManager, error) {
+func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, limiters map[string]*modconfig.RateLimiter, logger hclog.Logger) (*PluginManager, error) {
 	log.Printf("[INFO] NewPluginManager")
 	pluginManager := &PluginManager{
 		logger:              logger,
@@ -85,14 +85,16 @@ func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, li
 		pluginNameMap:       make(map[string]string),
 	}
 
-	// TODO BINAEK populate the rate_limiters table
-
 	messageServer, err := NewPluginMessageServer(pluginManager)
 	if err != nil {
 		return nil, err
 	}
 	pluginManager.messageServer = messageServer
 
+	// create/update the rate limiter table
+	if err := pluginManager.refreshRateLimiterTable(ctx); err != nil {
+		log.Println("[TRACE] could not refresh rate limiter table", err)
+	}
 	// populate plugin connection config map
 	pluginManager.populatePluginConnectionConfigs()
 	// determine cache size for each plugin
@@ -255,7 +257,10 @@ func (m *PluginManager) handleLimiterChanges(newLimiters connection.LimiterMap) 
 	// update stored limiters to the new map
 	m.limiters = newLimiters
 
-	// TODO BINAEK update the rate_limiters table
+	// update the rate_limiters table
+	if err := m.refreshRateLimiterTable(context.TODO()); err != nil {
+		log.Println("[TRACE] could not refresh rate limiter table", err)
+	}
 
 	// now update the plugins
 	for p := range pluginsWithChangedLimiters {
