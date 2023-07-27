@@ -91,9 +91,9 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 	}
 	pluginManager.messageServer = messageServer
 
-	// create/update the rate limiter table
+	// create and populate the rate limiter table
 	if err := pluginManager.refreshRateLimiterTable(ctx); err != nil {
-		log.Println("[TRACE] could not refresh rate limiter table", err)
+		log.Println("[WARN] could not refresh rate limiter table", err)
 	}
 	// populate plugin connection config map
 	pluginManager.populatePluginConnectionConfigs()
@@ -258,15 +258,14 @@ func (m *PluginManager) handleLimiterChanges(newLimiters connection.LimiterMap) 
 	m.limiters = newLimiters
 
 	// update the rate_limiters table
-	if err := m.refreshRateLimiterTable(context.TODO()); err != nil {
-		log.Println("[TRACE] could not refresh rate limiter table", err)
+	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
+		log.Println("[WARN] could not refresh rate limiter table", err)
 	}
 
 	// now update the plugins
 	for p := range pluginsWithChangedLimiters {
 		// get running plugin for this plugin
-		// if plugin is not running we havenothing to do
-		// TODO KAI USED FXN TO MAP
+		// if plugin is not running we have nothing to do
 		longName, ok := m.pluginNameMap[p]
 		if !ok {
 			log.Printf("[INFO] handleLimiterChanges: plugin %s is not currently running - ignoring", p)
