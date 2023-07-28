@@ -14,7 +14,6 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 		rate_limiters.CreateRateLimiterTable(),
 		rate_limiters.GrantsOnRateLimiterTable(),
 	}
-
 	for _, limiter := range m.limiters {
 		queries = append(queries, rate_limiters.GetPopulateRateLimiterSql(limiter))
 	}

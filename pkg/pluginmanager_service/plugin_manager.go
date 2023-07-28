@@ -94,7 +94,9 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 
 	// create and populate the rate limiter table
 	if err := pluginManager.refreshRateLimiterTable(ctx); err != nil {
+		// TODO better handle plugin manager startup failures
 		log.Println("[WARN] could not refresh rate limiter table", err)
+		return nil, err
 	}
 	// populate plugin connection config map
 	pluginManager.populatePluginConnectionConfigs()
