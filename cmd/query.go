@@ -118,11 +118,11 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	err := validateQueryArgs(ctx, args)
 	error_helpers.FailOnError(err)
 
-	// if diagnostic mode is set, print out config and return
-	if _, ok := os.LookupEnv(constants.EnvDiagnostics); ok {
-		cmdconfig.DisplayConfig()
-		return
-	}
+	//// if diagnostic mode is set, print out config and return
+	//if _, ok := os.LookupEnv(constants.EnvDiagnostics); ok {
+	//	cmdconfig.DisplayConfig()
+	//	return
+	//}
 
 	// enable paging only in interactive mode
 	interactiveMode := len(args) == 0
