@@ -18,7 +18,6 @@ import (
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -73,11 +72,9 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 
 	if shouldRunConnectionWatcher() {
 		log.Printf("[INFO] starting connection watcher")
-
 		connectionWatcher, err := connection.NewConnectionWatcher(pluginManager.OnConnectionConfigChanged)
 		if err != nil {
 			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
-			error_helpers.ShowError(ctx, err)
 			os.Exit(1)
 		}
 

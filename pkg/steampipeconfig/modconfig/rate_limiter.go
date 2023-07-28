@@ -6,13 +6,25 @@ import (
 	"strings"
 )
 
+const (
+	LimiterSourceConfig    = "config"
+	LimiterSourcePlugin    = "plugin"
+	LimiterStatusActive    = "active"
+	LimiterStatusOverriden = "overriden"
+)
+
 type RateLimiter struct {
-	Name       string   `hcl:"name,label"`
-	Plugin     string   `hcl:"plugin"`
-	BucketSize int64    `hcl:"bucket_size"`
-	FillRate   float32  `hcl:"fill_rate"`
-	Scope      []string `hcl:"scope"`
-	Where      string   `hcl:"where"`
+	Name            string   `hcl:"name,label"`
+	Plugin          string   `hcl:"plugin"`
+	BucketSize      int64    `hcl:"bucket_size"`
+	FillRate        float32  `hcl:"fill_rate"`
+	Scope           []string `hcl:"scope"`
+	Where           string   `hcl:"where"`
+	Status          string
+	Source          string
+	FileName        *string
+	StartLineNumber *int
+	EndLineNumber   *int
 }
 
 func (l RateLimiter) scopeString() string {
