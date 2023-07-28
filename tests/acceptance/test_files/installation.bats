@@ -10,20 +10,26 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # check postgres binary is present in correct location
   run file $target_install_directory/db/14.2.0/postgres/bin/postgres
-  if [[ "$os" == "Darwin" ]]; then
+  if [[ "$arch" == "x86_64" && "$os" == "Darwin" ]]; then
     assert_output --partial 'Mach-O 64-bit executable x86_64'
+  elif [[ "$arch" == "arm64" && "$os" == "Darwin" ]]; then
     assert_output --partial 'Mach-O 64-bit executable arm64'
-  else
+  elif [[ "$arch" == "x86_64" && "$os" == "Linux" ]]; then
     assert_output --partial 'ELF 64-bit LSB executable, x86-64'
+  elif [[ "$arch" == "aarch64" && "$os" == "Linux" ]]; then
+    assert_output --partial 'ELF 64-bit LSB executable, ARM aarch64'
   fi
 
   # check initdb binary is present in the correct location
   run file $target_install_directory/db/14.2.0/postgres/bin/initdb
-  if [[ "$os" == "Darwin" ]]; then
-    assert_output --partial 'Mach-O 64-bit executable x86_64'
+  if [[ "$arch" == "arm64" && "$os" == "Darwin" ]]; then
     assert_output --partial 'Mach-O 64-bit executable arm64'
-  else
+  elif [[ "$arch" == "x86_64" && "$os" == "Darwin" ]]; then
+    assert_output --partial 'Mach-O 64-bit executable x86_64'
+  elif [[ "$arch" == "x86_64" && "$os" == "Linux" ]]; then
     assert_output --partial 'ELF 64-bit LSB executable, x86-64'
+  elif [[ "$arch" == "aarch64" && "$os" == "Linux" ]]; then
+    assert_output --partial 'ELF 64-bit LSB executable, ARM aarch64'
   fi
 
   # check fdw binary(steampipe_postgres_fdw.so) is present in the correct location
@@ -34,6 +40,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_output --partial 'Mach-O 64-bit bundle x86_64'
   elif [[ "$arch" == "x86_64" && "$os" == "Linux" ]]; then
     assert_output --partial 'ELF 64-bit LSB shared object, x86-64'
+  elif [[ "$arch" == "aarch64" && "$os" == "Linux" ]]; then
+    assert_output --partial 'ELF 64-bit LSB shared object, ARM aarch64'
   fi
 
   # check fdw extension(steampipe_postgres_fdw.control) is present in the correct location
@@ -59,6 +67,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_output --partial 'Mach-O 64-bit executable x86_64'
   elif [[ "$arch" == "x86_64" && "$os" == "Linux" ]]; then
     assert_output --partial 'ELF 64-bit LSB executable, x86-64'
+  elif [[ "$arch" == "aarch64" && "$os" == "Linux" ]]; then
+    assert_output --partial 'ELF 64-bit LSB executable, ARM aarch64'
   fi
 
   # check spc config file is present in correct location
