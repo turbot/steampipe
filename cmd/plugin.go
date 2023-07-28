@@ -109,12 +109,16 @@ Examples:
   steampipe plugin install turbot/azure@0.1.0
 
   # Hide progress bars during installation
-  steampipe plugin install --progress=false aws`,
+  steampipe plugin install --progress=false aws
+
+  # Skip creation of default plugin config file
+  steampipe plugin install --skip-config aws`,
 	}
 
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgProgress, true, "Display installation progress").
+		AddBoolFlag(constants.ArgSkipConfig, false, "Skip creating the default config file for plugin").
 		AddBoolFlag(constants.ArgHelp, false, "Help for plugin install", cmdconfig.FlagOptions.WithShortHand("h"))
 	return cmd
 }
@@ -542,7 +546,7 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		}
 	}()
 
-	image, err := plugin.Install(ctx, pluginName, progress)
+	image, err := plugin.Install(ctx, pluginName, progress, ociinstaller.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
 	if err != nil {
 		msg := ""
 		_, name, stream := ociinstaller.NewSteampipeImageRef(pluginName).GetOrgNameAndStream()
