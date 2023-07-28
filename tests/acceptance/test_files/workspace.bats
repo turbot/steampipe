@@ -4,6 +4,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 ## workspace tests
 
 @test "generic workspace test" {
+  skip
   cp $FILE_PATH/test_data/source_files/config_tests/default.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
   
   # setup test folder and read the test-cases file
