@@ -159,7 +159,7 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 
 	// setup internal schema
 	// this includes setting the state of all connections in the connection_state table to pending
-	statushooks.SetStatus(ctx, "Setting up functions")
+	statushooks.SetStatus(ctx, "Setting up internal schema")
 	if err := setupInternal(ctx, conn); err != nil {
 		return err
 	}
