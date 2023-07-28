@@ -237,7 +237,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   tar -xf "$zip_location" -C "$tmpdir"
 
   # install a couple of plugins which can work with default config
-  $tmpdir/steampipe --install-dir $tmpdir plugin install chaos net
+  $tmpdir/steampipe --install-dir $tmpdir plugin install chaos net --progress=false
   $tmpdir/steampipe --install-dir $tmpdir query "select * from steampipe_internal.steampipe_connection_state" --output json
 
   run steampipe --install-dir $tmpdir query "select * from steampipe_internal.steampipe_connection_state" --output json

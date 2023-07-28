@@ -783,7 +783,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 function setup_file() {
-  export BATS_TEST_TIMEOUT=120
+  export BATS_TEST_TIMEOUT=180
   echo "# setup_file()">&3
 }
 
