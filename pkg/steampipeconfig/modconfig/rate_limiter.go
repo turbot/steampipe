@@ -19,7 +19,7 @@ type RateLimiter struct {
 	BucketSize      int64    `hcl:"bucket_size"`
 	FillRate        float32  `hcl:"fill_rate"`
 	Scope           []string `hcl:"scope"`
-	Where           string   `hcl:"where"`
+	Where           string   `hcl:"where,optional"`
 	Status          string
 	Source          string
 	FileName        *string
