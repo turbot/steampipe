@@ -107,8 +107,17 @@ func createPluginManagerLog() hclog.Logger {
 		fmt.Printf("failed to open plugin manager log file: %s\n", err.Error())
 		os.Exit(3)
 	}
+
+	// we use this logger to log the logs from the plugin processes
+	// the plugin processes use a mapper to map "\n" and "\r" characters in the log line
+	// to special sequences. this is to allow the plugin to send multiline log messages
+	// as a single log line.
+	//
+	// here we apply the reverse mapping to get back the original message
+	writer := logging.NewMappingWriter(f, logging.LogMapping.Reverse())
+
 	logger := logging.NewLogger(&hclog.LoggerOptions{
-		Output:     f,
+		Output:     writer,
 		TimeFn:     func() time.Time { return time.Now().UTC() },
 		TimeFormat: "2006-01-02 15:04:05.000 UTC",
 	})
