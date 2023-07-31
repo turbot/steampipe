@@ -58,6 +58,8 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	config.ConnConfig.Config.RuntimeParams = map[string]string{
 		"application_name": runtime.ClientConnectionAppName,
 	}
+	// disable automatic prepared statements
+	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
 	// this returns connection pool
 	dbPool, err := pgxpool.NewWithConfig(context.Background(), config)
