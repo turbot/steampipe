@@ -107,7 +107,7 @@ jobs:
           - "mod_require"
           - "check"
           - "performance"
-          - "workspace"
+          - "config_precedence"
           - "introspection"
           - "cloud"
           - "snapshot"
