@@ -13,6 +13,7 @@ function setup_file() {
 
   # steampipe query with timing set
   run steampipe query "select 1" --timing
+  echo $output
   timing=$(echo $output | jq .timing)
   echo "timing: $timing"
   # timing should be true
@@ -21,6 +22,7 @@ function setup_file() {
   # steampipe check with timing set
   cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --timing
+  echo $output
   timing=$(echo $output | jq .timing)
   cd - # go back to the previous directory
   echo "timing: $timing"
@@ -32,6 +34,7 @@ function setup_file() {
   # steampipe query with no timing set, but STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set,
   # so timing should be set from the "default" workspace profile
   run steampipe query "select 1"
+  echo $output
   timing=$(echo $output | jq .timing)
   echo "timing: $timing"
   # timing should be true(since options.query.timing=true in "default" workspace)
@@ -40,6 +43,7 @@ function setup_file() {
   # steampipe query with no timing set, but --workspace is set to "sample",
   # so timing should be set from the "sample" workspace profile
   run steampipe query "select 1" --workspace=sample
+  echo $output
   timing=$(echo $output | jq .timing)
   echo "timing: $timing"
   # timing should be false(since options.query.timing=false in "sample" workspace)
@@ -49,6 +53,7 @@ function setup_file() {
   # so timing should be set from the "default" workspace profile
   cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all
+  echo $output
   timing=$(echo $output | jq .timing)
   cd - # go back to the previous directory
   echo "timing: $timing"
@@ -59,6 +64,7 @@ function setup_file() {
   # so timing should be set from the "sample" workspace profile
   cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --workspace=sample
+  echo $output
   timing=$(echo $output | jq .timing)
   cd - # go back to the previous directory
   echo "timing: $timing"
@@ -72,6 +78,7 @@ function setup_file() {
 
   # steampipe query with query-timeout set to 250
   run steampipe query "select 1" --query-timeout=250
+  echo $output
   querytimeout=$(echo $output | jq '."query-timeout"')
   echo "querytimeout: $querytimeout"
   # query-timeout should be 250
@@ -80,6 +87,7 @@ function setup_file() {
   # steampipe check with query-timeout set to 240
   cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --query-timeout=240
+  echo $output
   querytimeout=$(echo $output | jq '."query-timeout"')
   cd - # go back to the previous directory
   echo "querytimeout: $querytimeout"
@@ -91,6 +99,7 @@ function setup_file() {
   # steampipe query with STEAMPIPE_QUERY_TIMEOUT set to 250
   export STEAMPIPE_QUERY_TIMEOUT=250
   run steampipe query "select 1"
+  echo $output
   querytimeout=$(echo $output | jq '."query-timeout"')
   echo "querytimeout: $querytimeout"
   # query-timeout should be 250
@@ -100,6 +109,7 @@ function setup_file() {
   export STEAMPIPE_QUERY_TIMEOUT=240
   cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all
+  echo $output
   querytimeout=$(echo $output | jq '."query-timeout"')
   cd - # go back to the previous directory
   echo "querytimeout: $querytimeout"
@@ -112,6 +122,7 @@ function setup_file() {
   # steampipe query with no query-timeout set, but STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set,
   # so query-timeout should be set from the "default" workspace profile
   run steampipe query "select 1"
+  echo $output
   querytimeout=$(echo $output | jq '."query-timeout"')
   echo "querytimeout: $querytimeout"
   # query-timeout should be 180(since query-timeout=180 in "default" workspace)
@@ -120,6 +131,7 @@ function setup_file() {
   # steampipe query with no query-timeout set, but --workspace is set to "sample",
   # so query-timeout should be set from the "sample" workspace profile
   run steampipe query "select 1" --workspace=sample
+  echo $output
   querytimeout=$(echo $output | jq '."query-timeout"')
   echo "querytimeout: $querytimeout"
   # query-timeout should be 200(since query-timeout=200 in "sample" workspace)
@@ -129,6 +141,7 @@ function setup_file() {
   # so query-timeout should be set from the "default" workspace profile
   cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all
+  echo $output
   querytimeout=$(echo $output | jq '."query-timeout"')
   cd - # go back to the previous directory
   echo "querytimeout: $querytimeout"
@@ -139,6 +152,7 @@ function setup_file() {
   # so query-timeout should be set from the "sample" workspace profile
   cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --workspace=sample
+  echo $output
   querytimeout=$(echo $output | jq '."query-timeout"')
   cd - # go back to the previous directory
   echo "querytimeout: $querytimeout"
@@ -152,6 +166,7 @@ function setup_file() {
 
   # steampipe query with output set to json
   run steampipe query "select 1" --output=json
+  echo $output
   op=$(echo $output | jq .output)
   echo "output: $op"
   # output should be json
@@ -160,6 +175,7 @@ function setup_file() {
   # steampipe check with output set to line
   cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --output=line
+  echo $output
   op=$(echo $output | jq .output)
   cd - # go back to the previous directory
   echo "output: $op"
@@ -171,6 +187,7 @@ function setup_file() {
   # steampipe query with no output set, but STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set,
   # so output should be set from the "default" workspace profile
   run steampipe query "select 1"
+  echo $output
   op=$(echo $output | jq .output)
   echo "output: $op"
   # output should be json(since options.query.output=json in "default" workspace)
@@ -179,6 +196,7 @@ function setup_file() {
   # steampipe query with no output set, but --workspace is set to "sample",
   # so output should be set from the "sample" workspace profile
   run steampipe query "select 1" --workspace=sample
+  echo $output
   op=$(echo $output | jq .output)
   echo "output: $op"
   # output should be csv(since options.query.output=csv in "sample" workspace)
@@ -188,6 +206,7 @@ function setup_file() {
   # so output should be set from the "default" workspace profile
   cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all
+  echo $output
   op=$(echo $output | jq .output)
   cd - # go back to the previous directory
   echo "output: $op"
@@ -198,6 +217,7 @@ function setup_file() {
   # so output should be set from the "sample" workspace profile
   cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --workspace=sample
+  echo $output
   op=$(echo $output | jq .output)
   cd - # go back to the previous directory
   echo "output: $op"
@@ -211,6 +231,7 @@ function setup_file() {
 
   # steampipe query with header set
   run steampipe query "select 1" --header
+  echo $output
   header=$(echo $output | jq .header)
   echo "header: $header"
   # header should be true
@@ -219,6 +240,7 @@ function setup_file() {
   # steampipe check with header set
   cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --header
+  echo $output
   header=$(echo $output | jq .header)
   cd - # go back to the previous directory
   echo "header: $header"
@@ -230,6 +252,7 @@ function setup_file() {
   # steampipe query with no header set, but STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set,
   # so header should be set from the "default" workspace profile
   run steampipe query "select 1"
+  echo $output
   header=$(echo $output | jq .header)
   echo "header: $header"
   # header should be false(since options.query.header=false in "default" workspace)
@@ -238,6 +261,7 @@ function setup_file() {
   # steampipe query with no header set, but --workspace is set to "sample",
   # so header should be set from the "sample" workspace profile
   run steampipe query "select 1" --workspace=sample
+  echo $output
   header=$(echo $output | jq .header)
   echo "header: $header"
   # header should be true(since options.query.header=true in "sample" workspace)
@@ -247,6 +271,7 @@ function setup_file() {
   # so header should be set from the "default" workspace profile
   cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all
+  echo $output
   header=$(echo $output | jq .header)
   cd - # go back to the previous directory
   echo "header: $header"
@@ -257,6 +282,7 @@ function setup_file() {
   # so header should be set from the "sample" workspace profile
   cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --workspace=sample
+  echo $output
   header=$(echo $output | jq .header)
   cd - # go back to the previous directory
   echo "header: $header"
@@ -271,6 +297,7 @@ function setup_file() {
   # steampipe query with no multi set, but STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set,
   # so multi should be set from the "default" workspace profile
   run steampipe query "select 1"
+  echo $output
   multi=$(echo $output | jq .multi)
   echo "multi: $multi"
   # multi should be true(since options.query.multi=true in "default" workspace)
@@ -279,6 +306,7 @@ function setup_file() {
   # steampipe query with no multi set, but --workspace is set to "sample",
   # so multi should be set from the "sample" workspace profile
   run steampipe query "select 1" --workspace=sample
+  echo $output
   multi=$(echo $output | jq .multi)
   echo "multi: $multi"
   # multi should be false(since options.query.multi=false in "sample" workspace)
@@ -292,6 +320,7 @@ function setup_file() {
   # steampipe query with no autocomplete set, but STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set,
   # so autocomplete should be set from the "default" workspace profile
   run steampipe query "select 1"
+  echo $output
   autocomplete=$(echo $output | jq .autocomplete)
   echo "autocomplete: $autocomplete"
   # autocomplete should be false(since options.query.autocomplete=false in "default" workspace)
@@ -300,6 +329,7 @@ function setup_file() {
   # steampipe query with no autocomplete set, but --workspace is set to "sample",
   # so autocomplete should be set from the "sample" workspace profile
   run steampipe query "select 1" --workspace=sample
+  echo $output
   autocomplete=$(echo $output | jq .autocomplete)
   echo "autocomplete: $autocomplete"
   # autocomplete should be true(since options.query.autocomplete=true in "sample" workspace)
