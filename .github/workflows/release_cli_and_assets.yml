@@ -317,6 +317,7 @@ jobs:
           - "service"
           - "settings"
           - "search_path"
+          - "config"
           - "chaos_and_query"
           - "dynamic_schema"
           - "dynamic_aggregators"

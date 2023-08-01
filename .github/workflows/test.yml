@@ -95,6 +95,7 @@ jobs:
           - "installation"
           - "service_and_plugin"
           - "blank_aggregators"
+          - "config"
           - "service"
           - "settings"
           - "search_path"
