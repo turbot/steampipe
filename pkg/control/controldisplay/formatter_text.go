@@ -21,7 +21,7 @@ type TextFormatter struct {
 func (tf TextFormatter) Format(_ context.Context, tree *controlexecute.ExecutionTree) (io.Reader, error) {
 	renderer := NewTableRenderer(tree)
 	widthConstraint := utils.NewRangeConstraint(renderer.MinimumWidth(), MaxColumns)
-	renderedText := renderer.Render(display.GetMaxCols(widthConstraint))
+	renderedText := renderer.Render(widthConstraint.Constrain(display.GetMaxCols()))
 	res := strings.NewReader(fmt.Sprintf("\n%s\n", renderedText))
 	return res, nil
 }
