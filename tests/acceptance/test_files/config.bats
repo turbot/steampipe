@@ -20,11 +20,9 @@ function setup_file() {
   assert_equal $timing true
 
   # steampipe check with timing set
-  cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --timing
   echo $output
   timing=$(echo $output | jq .timing)
-  cd - # go back to the previous directory
   echo "timing: $timing"
   # timing should be true
   assert_equal $timing true
@@ -51,22 +49,18 @@ function setup_file() {
 
   # steampipe check with no timing set, but STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set,
   # so timing should be set from the "default" workspace profile
-  cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all
   echo $output
   timing=$(echo $output | jq .timing)
-  cd - # go back to the previous directory
   echo "timing: $timing"
   # timing should be true(since options.check.timing=true in "default" workspace)
   assert_equal $timing true
 
   # steampipe check with no timing set, but --workspace is set to "sample",
   # so timing should be set from the "sample" workspace profile
-  cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --workspace=sample
   echo $output
   timing=$(echo $output | jq .timing)
-  cd - # go back to the previous directory
   echo "timing: $timing"
   # timing should be false(since options.check.timing=false in "sample" workspace)
   assert_equal $timing false
@@ -85,11 +79,9 @@ function setup_file() {
   assert_equal $querytimeout 250
 
   # steampipe check with query-timeout set to 240
-  cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --query-timeout=240
   echo $output
   querytimeout=$(echo $output | jq '."query-timeout"')
-  cd - # go back to the previous directory
   echo "querytimeout: $querytimeout"
   # query-timeout should be 240
   assert_equal $querytimeout 240
@@ -107,11 +99,9 @@ function setup_file() {
 
   # steampipe check with STEAMPIPE_QUERY_TIMEOUT set to 240
   export STEAMPIPE_QUERY_TIMEOUT=240
-  cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all
   echo $output
   querytimeout=$(echo $output | jq '."query-timeout"')
-  cd - # go back to the previous directory
   echo "querytimeout: $querytimeout"
   # query-timeout should be 240
   assert_equal $querytimeout 240
@@ -139,22 +129,18 @@ function setup_file() {
 
   # steampipe check with no query-timeout set, but STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set,
   # so query-timeout should be set from the "default" workspace profile
-  cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all
   echo $output
   querytimeout=$(echo $output | jq '."query-timeout"')
-  cd - # go back to the previous directory
   echo "querytimeout: $querytimeout"
   # query-timeout should be 180(since query-timeout=180 in "default" workspace)
   assert_equal $querytimeout 180
 
   # steampipe check with no query-timeout set, but --workspace is set to "sample",
   # so query-timeout should be set from the "sample" workspace profile
-  cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --workspace=sample
   echo $output
   querytimeout=$(echo $output | jq '."query-timeout"')
-  cd - # go back to the previous directory
   echo "querytimeout: $querytimeout"
   # query-timeout should be 200(since query-timeout=200 in "sample" workspace)
   assert_equal $querytimeout 200
@@ -173,11 +159,9 @@ function setup_file() {
   assert_equal $op '"json"'
 
   # steampipe check with output set to line
-  cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --output=line
   echo $output
   op=$(echo $output | jq .output)
-  cd - # go back to the previous directory
   echo "output: $op"
   # output should be line
   assert_equal $op '"line"'
@@ -204,22 +188,18 @@ function setup_file() {
 
   # steampipe check with no output set, but STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set,
   # so output should be set from the "default" workspace profile
-  cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all
   echo $output
   op=$(echo $output | jq .output)
-  cd - # go back to the previous directory
   echo "output: $op"
   # output should be json(since options.check.output=json in "default" workspace)
   assert_equal $op '"json"'
 
   # steampipe check with no output set, but --workspace is set to "sample",
   # so output should be set from the "sample" workspace profile
-  cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --workspace=sample
   echo $output
   op=$(echo $output | jq .output)
-  cd - # go back to the previous directory
   echo "output: $op"
   # output should be csv(since options.check.output=csv in "sample" workspace)
   assert_equal $op '"csv"'
@@ -238,11 +218,9 @@ function setup_file() {
   assert_equal $header true
 
   # steampipe check with header set
-  cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --header
   echo $output
   header=$(echo $output | jq .header)
-  cd - # go back to the previous directory
   echo "header: $header"
   # header should be true
   assert_equal $header true
@@ -269,22 +247,18 @@ function setup_file() {
 
   # steampipe check with no header set, but STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set,
   # so header should be set from the "default" workspace profile
-  cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all
   echo $output
   header=$(echo $output | jq .header)
-  cd - # go back to the previous directory
   echo "header: $header"
   # header should be false(since options.check.header=false in "default" workspace)
   assert_equal $header false
 
   # steampipe check with no header set, but --workspace is set to "sample",
   # so header should be set from the "sample" workspace profile
-  cd $FILE_PATH/test_data/mods/functionality_test_mod # cd to a mod directory to run check
   run steampipe check all --workspace=sample
   echo $output
   header=$(echo $output | jq .header)
-  cd - # go back to the previous directory
   echo "header: $header"
   # header should be true(since options.check.header=true in "sample" workspace)
   assert_equal $header true

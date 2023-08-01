@@ -1,0 +1,1 @@
+This is a test directory created to run acceptance tests.
