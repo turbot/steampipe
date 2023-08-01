@@ -309,3 +309,173 @@ function setup_file() {
   # autocomplete should be true(since options.query.autocomplete=true in "sample" workspace)
   assert_equal $autocomplete true
 }
+
+@test "separator" {
+
+  #### test command line args ####
+
+  # steampipe query with separator set
+  run steampipe query "select 1" --separator="|"
+  echo $output
+  separator=$(echo $output | jq .separator)
+  echo "separator: $separator"
+  # separator should be |
+  assert_equal $separator '"|"'
+
+  # steampipe check with separator set
+  run steampipe check all --separator=","
+  echo $output
+  separator=$(echo $output | jq .separator)
+  echo "separator: $separator"
+  # separator should be ,
+  assert_equal $separator '","'
+
+  #### test workspace profile options ####
+
+  # steampipe query with no separator set, but STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set,
+  # so separator should be set from the "default" workspace profile
+  run steampipe query "select 1"
+  echo $output
+  separator=$(echo $output | jq .separator)
+  echo "separator: $separator"
+  # separator should be |(since options.query.separator="|" in "default" workspace)
+  assert_equal $separator '"|"'
+
+  # steampipe query with no separator set, but --workspace is set to "sample",
+  # so separator should be set from the "sample" workspace profile
+  run steampipe query "select 1" --workspace=sample
+  echo $output
+  separator=$(echo $output | jq .separator)
+  echo "separator: $separator"
+  # separator should be ,(since options.query.separator="," in "sample" workspace)
+  assert_equal $separator '","'
+
+  # steampipe check with no separator set, but STEAMPIPE_WORKSPACE_PROFILES_LOCATION is set,
+  # so separator should be set from the "default" workspace profile
+  run steampipe check all
+  echo $output
+  separator=$(echo $output | jq .separator)
+  echo "separator: $separator"
+  # separator should be |(since options.check.separator="|" in "default" workspace)
+  assert_equal $separator '"|"'
+
+  # steampipe check with no separator set, but --workspace is set to "sample",
+  # so separator should be set from the "sample" workspace profile
+  run steampipe check all --workspace=sample
+  echo $output
+  separator=$(echo $output | jq .separator)
+  echo "separator: $separator"
+  # separator should be ,(since options.check.separator="," in "sample" workspace)
+  assert_equal $separator '","'
+}
+
+@test "database-password" {
+
+  #### test command line args ####
+
+  # steampipe service start with database-password set
+  run steampipe service start --database-password=redhood
+  echo $output
+  databasepassword=$(echo $output | jq '."database-password"')
+  echo "databasepassword: $databasepassword"
+  # database-password should be redhood
+  assert_equal $databasepassword '"redhood"'
+
+  #### test ENV vars ####
+
+  # steampipe query with STEAMPIPE_DATABASE_PASSWORD set
+  export STEAMPIPE_DATABASE_PASSWORD=deathstroke
+  run steampipe service start
+  echo $output
+  databasepassword=$(echo $output | jq '."database-password"')
+  echo "databasepassword: $databasepassword"
+  # database-password should be deathstroke
+  assert_equal $databasepassword '"deathstroke"'
+
+  unset STEAMPIPE_DATABASE_PASSWORD # unset the env var
+}
+
+@test "show-password" {
+
+  #### test command line args ####
+
+  # steampipe service start with show-password set
+  run steampipe service start --show-password
+  echo $output
+  showpassword=$(echo $output | jq '."show-password"')
+  echo "showpassword: $showpassword"
+  # show-password should be true
+  assert_equal $showpassword true
+}
+
+@test "database-port" {
+
+  #### test command line args ####
+
+  # steampipe service start with database-port set
+  run steampipe service start --database-port=123
+  echo $output
+  databaseport=$(echo $output | jq '."database-port"')
+  echo "databaseport: $databaseport"
+  # database-port should be 123
+  assert_equal $databaseport 123
+
+  #### global options(default.spc) ####
+
+  cp $FILE_PATH/test_data/source_files/config_tests/default_config.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
+
+  # steampipe service start with no database-port set, but database.port is set in default.spc(global config),
+  # so database-port should be set from there
+  run steampipe service start
+  echo $output
+  databaseport=$(echo $output | jq '."database-port"')
+  echo "databaseport: $databaseport"
+  # database-port should be 9193
+  assert_equal $databaseport 9193
+
+  rm -f $STEAMPIPE_INSTALL_DIR/config/default.spc
+}
+
+@test "database-listen" {
+
+  #### test command line args ####
+
+  # steampipe service start with database-listen set
+  run steampipe service start --database-listen=network
+  echo $output
+  databaselisten=$(echo $output | jq '."database-listen"')
+  echo "databaselisten: $databaselisten"
+  # database-listen should be network
+  assert_equal $databaselisten '"network"'
+
+  #### global options(default.spc) ####
+
+  cp $FILE_PATH/test_data/source_files/config_tests/default_config.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
+
+  # steampipe service start with no database-listen set, but database.listen is set in default.spc(global config),
+  # so database-listen should be set from there
+  run steampipe service start
+  echo $output
+  databaselisten=$(echo $output | jq '."database-listen"')
+  echo "databaselisten: $databaselisten"
+  # database-listen should be local
+  assert_equal $databaselisten '"local"'
+
+  rm -f $STEAMPIPE_INSTALL_DIR/config/default.spc
+}
+
+@test "cache-max-ttl" {
+
+  #### test ENV vars ####
+
+  # steampipe query with STEAMPIPE_CACHE_MAX_TTL set
+  export STEAMPIPE_CACHE_MAX_TTL=1000
+  run steampipe service start
+  echo $output
+  cachemaxttl=$(echo $output | jq '."cache-max-ttl"')
+  echo "cachemaxttl: $cachemaxttl"
+  # cache-max-ttl should be 1000
+  assert_equal $cachemaxttl 1000
+
+  unset STEAMPIPE_CACHE_MAX_TTL # unset the env var
+}
