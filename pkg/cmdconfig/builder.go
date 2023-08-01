@@ -2,10 +2,12 @@ package cmdconfig
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -46,6 +48,11 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 		utils.LogTime(fmt.Sprintf("cmd.%s.Run start", cmd.CommandPath()))
 		defer utils.LogTime(fmt.Sprintf("cmd.%s.Run end", cmd.CommandPath()))
 
+		// if diagnostic mode is set, print out config and return
+		if _, ok := os.LookupEnv(constants.EnvDiagnostics); ok {
+			DisplayConfig()
+			return
+		}
 		// run the original Run
 		if originalRun != nil {
 			originalRun(cmd, args)
