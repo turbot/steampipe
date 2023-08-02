@@ -96,7 +96,7 @@ func (c *DbClient) establishSystemConnectionPool(ctx context.Context, config *pg
 	}
 
 	// this returns connection pool
-	dbPool, err := pgxpool.NewWithConfig(context.Background(), config)
+	dbPool, err := pgxpool.NewWithConfig(context.Background(), copiedConfig)
 	if err != nil {
 		return err
 	}
