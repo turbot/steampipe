@@ -22,22 +22,22 @@ import (
 // TagColumn is the tag used to specify the column name and type in the introspection tables
 const TagColumn = "column"
 
-func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, conn *pgx.Conn) error {
+func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx pgx.Tx) error {
 	// get the sql for columns which every table has
 	commonColumnSql := getColumnDefinitions(modconfig.ResourceMetadata{})
 
 	// convert to lowercase to avoid case sensitivity
 	switch strings.ToLower(viper.GetString(constants.ArgIntrospection)) {
 	case constants.IntrospectionInfo:
-		return populateAllIntrospectionTables(ctx, workspaceResources, conn, commonColumnSql)
+		return populateAllIntrospectionTables(ctx, workspaceResources, tx, commonColumnSql)
 	case constants.IntrospectionControl:
-		return populateControlIntrospectionTables(ctx, workspaceResources, conn, commonColumnSql)
+		return populateControlIntrospectionTables(ctx, workspaceResources, tx, commonColumnSql)
 	default:
 		return nil
 	}
 }
 
-func populateAllIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, conn *pgx.Conn, commonColumnSql []string) error {
+func populateAllIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx pgx.Tx, commonColumnSql []string) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
@@ -48,10 +48,29 @@ func populateAllIntrospectionTables(ctx context.Context, workspaceResources *mod
 	insertSql := getTableInsertSql(workspaceResources)
 	sql := []string{createSql, insertSql}
 
-	_, err := conn.Exec(ctx, strings.Join(sql, "\n"))
+	_, err := tx.Exec(ctx, strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create introspection tables: %v", err)
 	}
+	// return context error - this enables calling code to respond to cancellation
+	return ctx.Err()
+}
+
+func populateControlIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx pgx.Tx, commonColumnSql []string) error {
+	utils.LogTime("db.CreateIntrospectionTables start")
+	defer utils.LogTime("db.CreateIntrospectionTables end")
+
+	// get the create sql for control and benchmark tables
+	createSql := getCreateControlTablesSql(commonColumnSql)
+	// now get sql to populate the control and benchmark tables
+	insertSql := getControlTableInsertSql(workspaceResources)
+	sql := []string{createSql, insertSql}
+
+	_, err := tx.Exec(ctx, strings.Join(sql, "\n"))
+	if err != nil {
+		return fmt.Errorf("failed to create introspection tables: %v", err)
+	}
+
 	// return context error - this enables calling code to respond to cancellation
 	return ctx.Err()
 }
@@ -177,25 +196,6 @@ func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnS
 %s
 );`, tableName, strings.Join(columnDefinitions, ",\n"))
 	return tableSql
-}
-
-func populateControlIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, conn *pgx.Conn, commonColumnSql []string) error {
-	utils.LogTime("db.CreateIntrospectionTables start")
-	defer utils.LogTime("db.CreateIntrospectionTables end")
-
-	// get the create sql for control and benchmark tables
-	createSql := getCreateControlTablesSql(commonColumnSql)
-	// now get sql to populate the control and benchmark tables
-	insertSql := getControlTableInsertSql(workspaceResources)
-	sql := []string{createSql, insertSql}
-
-	_, err := conn.Exec(ctx, strings.Join(sql, "\n"))
-	if err != nil {
-		return fmt.Errorf("failed to create introspection tables: %v", err)
-	}
-
-	// return context error - this enables calling code to respond to cancellation
-	return ctx.Err()
 }
 
 func getCreateControlTablesSql(commonColumnSql []string) string {
