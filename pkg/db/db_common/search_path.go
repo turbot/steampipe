@@ -46,29 +46,37 @@ func BuildSearchPathResult(searchPathString string) ([]string, error) {
 }
 
 func GetUserSearchPath(ctx context.Context, conn *pgx.Conn) ([]string, error) {
-	query := `SELECT rs.setconfig
-	FROM   pg_db_role_setting rs
-	LEFT   JOIN pg_roles      r ON r.oid = rs.setrole
-	LEFT   JOIN pg_database   d ON d.oid = rs.setdatabase
-	WHERE  r.rolname = 'steampipe'`
+	searchPath := []string{}
 
-	rows, err := conn.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+	err := ExecuteSystemClientCallOnConnection(ctx, conn, func(c context.Context, tx pgx.Tx) error {
+		query := `SELECT rs.setconfig
+		FROM   pg_db_role_setting rs
+		LEFT   JOIN pg_roles      r ON r.oid = rs.setrole
+		LEFT   JOIN pg_database   d ON d.oid = rs.setdatabase
+		WHERE  r.rolname = 'steampipe'`
 
-	for rows.Next() {
-		var configStrings []string
-
-		if err := rows.Scan(&configStrings); err != nil {
-			return nil, err
+		rows, err := tx.Query(ctx, query)
+		if err != nil {
+			return err
 		}
-		if len(configStrings) > 0 {
-			return BuildSearchPathResult(configStrings[0])
-		}
-	}
+		defer rows.Close()
 
-	// should not get here
-	return nil, nil
+		for rows.Next() {
+			var configStrings []string
+
+			if err := rows.Scan(&configStrings); err != nil {
+				return err
+			}
+			if len(configStrings) > 0 {
+				sp, err := BuildSearchPathResult(configStrings[0])
+				if err != nil {
+					return err
+				}
+				searchPath = sp
+			}
+		}
+		return nil
+	})
+
+	return searchPath, err
 }

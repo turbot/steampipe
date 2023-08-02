@@ -32,21 +32,25 @@ func SetCacheEnabled(ctx context.Context, enabled bool, connection *pgx.Conn) er
 }
 
 func executeCacheSetFunction(ctx context.Context, settingValue string, connection *pgx.Conn) error {
-	_, err := connection.Exec(ctx, fmt.Sprintf(
-		"select %s.%s('%s')",
-		constants.InternalSchema,
-		constants.FunctionCacheSet,
-		settingValue,
-	))
-	return err
+	return ExecuteSystemClientCallOnConnection(ctx, connection, func(ctx context.Context, tx pgx.Tx) error {
+		_, err := connection.Exec(ctx, fmt.Sprintf(
+			"select %s.%s('%s')",
+			constants.InternalSchema,
+			constants.FunctionCacheSet,
+			settingValue,
+		))
+		return err
+	})
 }
 
 func executeCacheTtlSetFunction(ctx context.Context, seconds string, connection *pgx.Conn) error {
-	_, err := connection.Exec(ctx, fmt.Sprintf(
-		"select %s.%s('%s')",
-		constants.InternalSchema,
-		constants.FunctionCacheSetTtl,
-		seconds,
-	))
-	return err
+	return ExecuteSystemClientCallOnConnection(ctx, connection, func(ctx context.Context, tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, fmt.Sprintf(
+			"select %s.%s('%s')",
+			constants.InternalSchema,
+			constants.FunctionCacheSetTtl,
+			seconds,
+		))
+		return err
+	})
 }
