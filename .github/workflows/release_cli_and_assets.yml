@@ -313,7 +313,7 @@ jobs:
         test_block:
           - "migration"
           - "installation"
-          - "service_and_plugin"
+          - "plugin"
           - "service"
           - "settings"
           - "search_path"

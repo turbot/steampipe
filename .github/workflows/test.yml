@@ -93,7 +93,7 @@ jobs:
           - "migration"
           - "brew"
           - "installation"
-          - "service_and_plugin"
+          - "plugin"
           - "blank_aggregators"
           - "service"
           - "settings"
