@@ -1,6 +1,234 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
+@test "steampipe service help is displayed when no sub command given" {
+  steampipe service > test.txt
+
+  # checking for OS type, since sed command is different for linux and OSX
+  # removing lines, since they contain absolute file paths
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    run sed -i ".txt" "22d" test.txt
+  else
+    run sed -i "22d" test.txt
+  fi
+
+  assert_equal "$(cat test.txt)" "$(cat $TEST_DATA_DIR/expected_service_help_output.txt)"
+  rm -f test.txt*
+}
+
+@test "steampipe service start" {
+    run steampipe service start
+    assert_success
+}
+
+@test "steampipe service restart" {
+    run steampipe service restart
+    assert_success
+}
+
+@test "steampipe service stop" {
+    run steampipe service stop
+    assert_success
+}
+
+@test "custom database name" {
+  # Set the STEAMPIPE_INITDB_DATABASE_NAME env variable
+  export STEAMPIPE_INITDB_DATABASE_NAME="custom_db_name"
+  
+  target_install_directory=$(mktemp -d)
+  
+  # Start the service
+  run steampipe service start --install-dir $target_install_directory
+  echo $output
+  # Check if database name in the output is the same
+  assert_output --partial 'custom_db_name'
+  
+  # Extract password from the state file
+  db_name=$(cat $target_install_directory/internal/steampipe.json | jq .database)
+  echo $db_name
+  
+  # Both should be equal
+  assert_equal "$db_name" "\"custom_db_name\""
+  
+  run steampipe service stop --install-dir $target_install_directory
+  
+  rm -rf $target_install_directory
+}
+
+@test "custom database name - should not start with uppercase characters" {
+  # Set the STEAMPIPE_INITDB_DATABASE_NAME env variable
+  export STEAMPIPE_INITDB_DATABASE_NAME="Custom_db_name"
+  
+  target_install_directory=$(mktemp -d)
+  
+  # Start the service
+  run steampipe service start --install-dir $target_install_directory
+  
+  assert_failure
+  run steampipe service stop --force
+  rm -rf $target_install_directory
+}
+
+@test "start service and verify that passwords stored in .passwd and steampipe.json are same" {
+  # Start the service
+  run steampipe service start
+
+  # Extract password from the state file
+  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .password)
+  echo $state_file_pass
+
+  # Extract password stored in .passwd file
+  pass_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/.passwd)
+  pass_file_pass=\"${pass_file_pass}\"
+  echo "$pass_file_pass"
+
+  # Both should be equal
+  assert_equal "$state_file_pass" "$pass_file_pass"
+
+  run steampipe service stop
+}
+
+@test "start service with --database-password flag and verify that the password used in flag and stored in steampipe.json are same" {
+  # Start the service with --database-password flag
+  run steampipe service start --database-password "abcd-efgh-ijkl"
+
+  # Extract password from the state file
+  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .password)
+  echo $state_file_pass
+
+  # Both should be equal
+  assert_equal "$state_file_pass" "\"abcd-efgh-ijkl\""
+
+  run steampipe service stop
+}
+
+@test "start service with password in env variable and verify that the password used in env and stored in steampipe.json are same" {
+  # Set the STEAMPIPE_DATABASE_PASSWORD env variable
+  export STEAMPIPE_DATABASE_PASSWORD="dcba-hgfe-lkji"
+
+  # Start the service
+  run steampipe service start
+
+  # Extract password from the state file
+  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .password)
+  echo $state_file_pass
+
+  # Both should be equal
+  assert_equal "$state_file_pass" "\"dcba-hgfe-lkji\""
+
+  run steampipe service stop
+}
+
+@test "start service with --database-password flag and env variable set, verify that the password used in flag gets higher precedence and is stored in steampipe.json" {
+  # Set the STEAMPIPE_DATABASE_PASSWORD env variable
+  export STEAMPIPE_DATABASE_PASSWORD="dcba-hgfe-lkji"
+
+  # Start the service with --database-password flag
+  run steampipe service start --database-password "abcd-efgh-ijkl"
+
+  # Extract password from the state file
+  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .password)
+  echo $state_file_pass
+
+  # Both should be equal
+  assert_equal "$state_file_pass" "\"abcd-efgh-ijkl\""
+
+  run steampipe service stop
+}
+
+@test "start service after removing .passwd file, verify new .passwd file gets created and also passwords stored in .passwd and steampipe.json are same" {
+  # Remove the .passwd file
+  rm -f $STEAMPIPE_INSTALL_DIR/internal/.passwd
+
+  # Start the service
+  run steampipe service start
+
+  # Extract password from the state file
+  state_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq .password)
+  echo $state_file_pass
+
+  # Extract password stored in new .passwd file
+  pass_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/.passwd)
+  pass_file_pass=\"${pass_file_pass}\"
+  echo "$pass_file_pass"
+
+  # Both should be equal
+  assert_equal "$state_file_pass" "$pass_file_pass"
+
+  run steampipe service stop
+}
+
+@test "start service with --database-password flag and verify that the password used in flag is not stored in .passwd file" {
+  # Start the service with --database-password flag
+  run steampipe service start --database-password "abcd-efgh-ijkl"
+
+  # Extract password stored in .passwd file
+  pass_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/.passwd)
+  echo "$pass_file_pass"
+
+  # Both should not be equal
+  if [[ "$pass_file_pass" != "abcd-efgh-ijkl" ]]
+  then
+    temp=1
+  fi
+
+  assert_equal "$temp" "1"
+
+  run steampipe service stop
+}
+
+@test "start service with password in env variable and verify that the password used in env is not stored in .passwd file" {
+  # Set the STEAMPIPE_DATABASE_PASSWORD env variable
+  export STEAMPIPE_DATABASE_PASSWORD="dcba-hgfe-lkji"
+
+  # Start the service
+  run steampipe service start
+
+  # Extract password stored in .passwd file
+  pass_file_pass=$(cat $STEAMPIPE_INSTALL_DIR/internal/.passwd)
+  echo "$pass_file_pass"
+
+  # Both should not be equal
+  if [[ "$pass_file_pass" != "dcba-hgfe-lkji" ]]
+  then
+    temp=1
+  fi
+
+  assert_equal "$temp" "1"
+  
+  run steampipe service stop
+}
+
+## service extensions
+
+# tests for tablefunc module
+
+@test "test crosstab function" {
+  # create table and insert values
+  steampipe query "CREATE TABLE ct(id SERIAL, rowid TEXT, attribute TEXT, value TEXT);"
+  steampipe query "INSERT INTO ct(rowid, attribute, value) VALUES('test1','att1','val1');"
+  steampipe query "INSERT INTO ct(rowid, attribute, value) VALUES('test1','att2','val2');"
+  steampipe query "INSERT INTO ct(rowid, attribute, value) VALUES('test1','att3','val3');"
+
+  # crosstab function
+  run steampipe query "SELECT * FROM crosstab('select rowid, attribute, value from ct where attribute = ''att2'' or attribute = ''att3'' order by 1,2') AS ct(row_name text, category_1 text, category_2 text);"
+  echo $output
+
+  # drop table
+  steampipe query "DROP TABLE ct"
+
+  # match output with expected
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_crosstab_results.txt)"
+}
+
+@test "test normal_rand function" {
+  # normal_rand function
+  run steampipe query "SELECT * FROM normal_rand(10, 5, 3);"
+
+  # previous query should pass
+  assert_success
+}
+
 @test "verify installed fdw version" {
   run steampipe query "select * from steampipe_internal.steampipe_server_settings" --output=json
 
@@ -248,6 +476,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 function setup_file() {
+  export BATS_TEST_TIMEOUT=180
+  echo "# setup_file()">&3
   export IPV4_ADDR=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | head -n 1)
   export IPV6_ADDR=$(ifconfig | grep -Eo 'inet6 (addr:)?([0-9a-f]*:){7}[0-9a-f]*' | grep -Eo '([0-9a-f]*:){7}[0-9a-f]*' | head -n 1)
 }
