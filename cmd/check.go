@@ -207,7 +207,8 @@ func getExportName(targetName string, modShortName string) string {
 		return fmt.Sprintf("%s.%s", modShortName, parsedName.Name)
 	}
 	// default to just converting to valid resource name
-	return parsedName.ToFullNameWithMod(modShortName)
+	exportName, _ := parsedName.ToFullNameWithMod(modShortName)
+	return exportName
 }
 
 // get the exit code for successful check run
