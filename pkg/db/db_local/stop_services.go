@@ -12,6 +12,7 @@ import (
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
@@ -144,16 +145,12 @@ GROUP BY application_name
 
 		counts.TotalClients += count
 
-		isSteampipeClient := strings.HasPrefix(appName, constants.ClientConnectionAppNamePrefix)
-		isSteampipeSystemClient := strings.HasPrefix(appName, constants.ClientSystemConnectionAppNamePrefix)
-		isSteampipeServiceClient := strings.HasPrefix(appName, constants.ServiceConnectionAppNamePrefix)
-
-		if isSteampipeClient && !isSteampipeSystemClient {
+		if db_common.IsClientAppName(appName) {
 			counts.SteampipeClients += count
 		}
 
 		// plugin manager uses the service prefix
-		if isSteampipeServiceClient {
+		if db_common.IsServiceAppName(appName) {
 			counts.PluginManagerClients += count
 		}
 	}
