@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
@@ -254,7 +255,7 @@ func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string,
 	doneChan := make(chan bool)
 	go func() {
 		// start asynchronous query
-		rows, err = conn.Query(ctx, query, args...)
+		rows, err = conn.Query(ctx, fmt.Sprintf("%s;;/** %s **/", query, runtime.ClientConnectionAppName), args...)
 		close(doneChan)
 	}()
 

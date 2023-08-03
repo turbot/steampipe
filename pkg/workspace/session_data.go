@@ -5,6 +5,8 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -28,7 +30,7 @@ func EnsureSessionData(ctx context.Context, source *modconfig.ResourceMaps, conn
 			return err
 		}
 		if count == 0 {
-			if err := db_common.CreateIntrospectionTables(ctx, source, tx); err != nil {
+			if err := db_local.CreateIntrospectionTables(ctx, source, tx); err != nil {
 				return err
 			}
 		}
