@@ -56,7 +56,7 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	// set an app name so that we can track database connections from this Steampipe execution
 	// this is used to determine whether the database can safely be closed
 	config.ConnConfig.Config.RuntimeParams = map[string]string{
-		"application_name": runtime.ClientConnectionAppName,
+		constants.RuntimeParamsKeyApplicationName: runtime.ClientConnectionAppName,
 	}
 	// disable automatic prepared statements
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
