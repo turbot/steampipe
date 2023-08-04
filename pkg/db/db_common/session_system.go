@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 )
 
@@ -17,7 +18,7 @@ type SystemClientExecutor func(context.Context, pgx.Tx) error
 // one used by the system client, executes the callback and sets the application name back to the client app name
 func ExecuteSystemClientCallOnConnection(ctx context.Context, conn *pgx.Conn, executor SystemClientExecutor) error {
 	// checks that the appname is the one reserved for user-originating queries
-	appNameNeedsUpdate := IsClientAppName(conn.Config().RuntimeParams["application_name"])
+	appNameNeedsUpdate := IsClientAppName(conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName])
 
 	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) (e error) {
 		// if the appName is the ClientAppName, we need to set it to ClientSystemAppName
@@ -28,7 +29,8 @@ func ExecuteSystemClientCallOnConnection(ctx context.Context, conn *pgx.Conn, ex
 				return err
 			}
 			defer func() {
-				_, e = tx.Exec(ctx, fmt.Sprintf("SET application_name TO '%s'", conn.Config().RuntimeParams["application_name"]))
+				// set back the original application name
+				_, e = tx.Exec(ctx, fmt.Sprintf("SET application_name TO '%s'", conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName]))
 			}()
 		}
 

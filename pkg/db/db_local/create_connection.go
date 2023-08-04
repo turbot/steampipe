@@ -97,7 +97,7 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 		appName = opts.AppName
 	}
 	connConfig.Config.RuntimeParams = map[string]string{
-		"application_name": appName,
+		constants.RuntimeParamsKeyApplicationName: appName,
 	}
 	err = db_common.AddRootCertToConfig(&connConfig.Config, getRootCertLocation())
 	if err != nil {
@@ -148,7 +148,7 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 		appName = opts.AppName
 	}
 	connConfig.ConnConfig.Config.RuntimeParams = map[string]string{
-		"application_name": appName,
+		constants.RuntimeParamsKeyApplicationName: appName,
 	}
 
 	// this returns connection pool
