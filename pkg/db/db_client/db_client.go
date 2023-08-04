@@ -218,14 +218,8 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetada
 	// build a query to retrieve these schemas
 	query := c.buildSchemasQuery(schemas...)
 
-	//execute
-	tablesResult, err := conn.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-
 	// build schema metadata from query result
-	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
+	metadata, err := db_common.LoadSchemaMetadata(ctx, conn.Conn(), query)
 	if err != nil {
 		return nil, err
 	}
@@ -251,14 +245,8 @@ func (c *DbClient) GetSchemaFromDBLegacy(ctx context.Context, conn *pgxpool.Conn
 	// build a query to retrieve these schemas
 	query := c.buildSchemasQueryLegacy()
 
-	//execute
-	tablesResult, err := conn.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-
 	// build schema metadata from query result
-	return db_common.BuildSchemaMetadata(tablesResult)
+	return db_common.LoadSchemaMetadata(ctx, conn.Conn(), query)
 }
 
 // refreshDbClient terminates the current connection and opens up a new connection to the service.

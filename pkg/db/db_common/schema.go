@@ -45,28 +45,40 @@ func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, erro
 	return foreignSchemaNames, nil
 }
 
-func BuildSchemaMetadata(rows pgx.Rows) (_ *SchemaMetadata, err error) {
-	utils.LogTime("db.buildSchemaMetadata start")
-	defer func() {
-		utils.LogTime("db.buildSchemaMetadata end")
-		// ensure rows are closed
-		rows.Close()
-	}()
-
-	records, err := getSchemaRecordsFromRows(rows)
+func LoadSchemaMetadata(ctx context.Context, conn *pgx.Conn, query string) (*SchemaMetadata, error) {
+	var schemaRecords []schemaRecord
+	err := ExecuteSystemClientCallOnConnection(ctx, conn, func(ctx context.Context, tx pgx.Tx) error {
+		rows, err := conn.Query(ctx, query)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		schemaRecords, err = getSchemaRecordsFromRows(rows)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
-	SchemaMetadata := NewSchemaMetadata()
+
+	// build schema metadata from query result
+	return buildSchemaMetadata(schemaRecords)
+}
+
+func buildSchemaMetadata(records []schemaRecord) (_ *SchemaMetadata, err error) {
+	utils.LogTime("db.buildSchemaMetadata start")
+	defer func() {
+		utils.LogTime("db.buildSchemaMetadata end")
+	}()
+	schemaMetadata := NewSchemaMetadata()
 
 	utils.LogTime("db.buildSchemaMetadata.iteration start")
 	for _, record := range records {
-		if _, schemaFound := SchemaMetadata.Schemas[record.TableSchema]; !schemaFound {
-			SchemaMetadata.Schemas[record.TableSchema] = map[string]TableSchema{}
+		if _, schemaFound := schemaMetadata.Schemas[record.TableSchema]; !schemaFound {
+			schemaMetadata.Schemas[record.TableSchema] = map[string]TableSchema{}
 		}
 
-		if _, tblFound := SchemaMetadata.Schemas[record.TableSchema][record.TableName]; !tblFound {
-			SchemaMetadata.Schemas[record.TableSchema][record.TableName] = TableSchema{
+		if _, tblFound := schemaMetadata.Schemas[record.TableSchema][record.TableName]; !tblFound {
+			schemaMetadata.Schemas[record.TableSchema][record.TableName] = TableSchema{
 				Schema:      record.TableSchema,
 				Name:        record.TableName,
 				FullName:    fmt.Sprintf("%s.%s", record.TableSchema, record.TableName),
@@ -75,7 +87,7 @@ func BuildSchemaMetadata(rows pgx.Rows) (_ *SchemaMetadata, err error) {
 			}
 		}
 
-		SchemaMetadata.Schemas[record.TableSchema][record.TableName].Columns[record.ColumnName] = ColumnSchema{
+		schemaMetadata.Schemas[record.TableSchema][record.TableName].Columns[record.ColumnName] = ColumnSchema{
 			Name:        record.ColumnName,
 			NotNull:     typeHelpers.StringToBool(record.IsNullable),
 			Type:        record.DataType,
@@ -84,12 +96,12 @@ func BuildSchemaMetadata(rows pgx.Rows) (_ *SchemaMetadata, err error) {
 		}
 
 		if strings.HasPrefix(record.TableSchema, "pg_temp") {
-			SchemaMetadata.TemporarySchemaName = record.TableSchema
+			schemaMetadata.TemporarySchemaName = record.TableSchema
 		}
 	}
 	utils.LogTime("db.buildSchemaMetadata.iteration end")
 
-	return SchemaMetadata, err
+	return schemaMetadata, err
 }
 
 func getSchemaRecordsFromRows(rows pgx.Rows) ([]schemaRecord, error) {
