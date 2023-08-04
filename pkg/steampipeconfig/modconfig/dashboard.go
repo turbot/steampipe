@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/viper"
+	"github.com/stevenle/topsort"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/zclconf/go-cty/cty"
-
-	"github.com/hashicorp/hcl/v2"
-	"github.com/stevenle/topsort"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
