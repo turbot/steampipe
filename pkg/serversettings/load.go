@@ -11,7 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )
 
-func Load(ctx context.Context, pool *pgxpool.Pool) (_ *db_common.ServerSettings, e error) {
+func Load(ctx context.Context, pool *pgxpool.Pool) (serverSettings *db_common.ServerSettings, e error) {
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
 		return nil, err
@@ -24,12 +24,16 @@ func Load(ctx context.Context, pool *pgxpool.Pool) (_ *db_common.ServerSettings,
 			e = sperr.ToError(r, sperr.WithMessage("error loading server settings"))
 		}
 	}()
+	e = db_common.ExecuteSystemClientCallOnConnection(ctx, conn.Conn(), func(ctx context.Context, tx pgx.Tx) error {
+		rows, err := conn.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.ServerSettingsTable))
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
 
-	rows, err := conn.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.ServerSettingsTable))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[db_common.ServerSettings])
+		ss, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[db_common.ServerSettings])
+		serverSettings = ss
+		return err
+	})
+	return
 }
