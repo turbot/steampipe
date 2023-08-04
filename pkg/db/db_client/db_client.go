@@ -27,9 +27,6 @@ type DbClient struct {
 	// connection pool for user initiated queries
 	pool *pgxpool.Pool
 
-	// connection used to run system/plumbing queries (connection state, server settings)
-	sysPool *pgxpool.Pool
-
 	// the settings of the server that this client is connected to
 	serverSettings *db_common.ServerSettings
 
@@ -118,13 +115,10 @@ func (c *DbClient) closePools(ctx context.Context) {
 	if c.pool != nil {
 		c.pool.Close()
 	}
-	if c.sysPool != nil {
-		c.sysPool.Close()
-	}
 }
 
 func (c *DbClient) loadServerSettings(ctx context.Context) error {
-	serverSettings, err := serversettings.Load(ctx, c.sysPool)
+	serverSettings, err := serversettings.Load(ctx, c.pool)
 	if err != nil {
 		if _, _, notFound := IsRelationNotFoundError(err); notFound {
 			// when connecting to pre-0.21.0 services, the server_settings table will not be available.
@@ -196,7 +190,7 @@ func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireS
 // NOTE: it optimises the schema extraction by extracting schema information for
 // connections backed by distinct plugins and then fanning back out.
 func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetadata, error) {
-	conn, err := c.sysPool.Acquire(ctx)
+	conn, err := c.pool.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
