@@ -1,6 +1,7 @@
 package display
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/csv"
@@ -15,7 +16,6 @@ import (
 	"github.com/karrick/gows"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/utils"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -85,13 +85,13 @@ func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableO
 	t.Render()
 }
 
-func GetMaxCols(constraint utils.RangeConstraint) int {
+func GetMaxCols() int {
 	colsAvailable, _, _ := gows.GetWinSize()
 	// check if STEAMPIPE_DISPLAY_WIDTH env variable is set
 	if viper.IsSet(constants.ArgDisplayWidth) {
 		colsAvailable = viper.GetInt(constants.ArgDisplayWidth)
 	}
-	return constraint.Constrain(colsAvailable)
+	return colsAvailable
 }
 
 // calculate and returns column configuration based on header and row content
@@ -108,7 +108,7 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 		headerRow[idx] = colName
 
 		// get the maximum len of strings in this column
-		maxLen := 0
+		maxLen := getTerminalColumnsRequiredForString(colName)
 		colHasValue := false
 		for _, row := range rows {
 			colVal := row[idx]
@@ -118,11 +118,11 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 				// evaluating the length
 				colHasValue = true
 			}
-			if len(colVal) > maxLen {
-				maxLen = len(colVal)
-			}
-			if len(colName) > maxLen {
-				maxLen = len(colName)
+
+			// get the maximum line length of the value
+			colLen := getTerminalColumnsRequiredForString(colVal)
+			if colLen > maxLen {
+				maxLen = colLen
 			}
 		}
 		colConfigs[idx] = table.ColumnConfig{
@@ -139,11 +139,9 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 
 	// now that all columns are set to the widths that they need,
 	// set the last one to occupy as much as is available - no more - no less
-	const MaxWidth = 200
 	sumOfRest := sumOfAllCols - colConfigs[len(colConfigs)-1].WidthMax
-	widthConstraint := utils.NewRangeConstraint(sumOfAllCols, MaxWidth)
 	// get the max cols width
-	maxCols := GetMaxCols(widthConstraint)
+	maxCols := GetMaxCols()
 	if sumOfAllCols > maxCols {
 		colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
 		colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
@@ -218,11 +216,15 @@ func displayLine(ctx context.Context, result *queryresult.Result) int {
 	return rowErrors
 }
 
+// getTerminalColumnsRequiredForString returns the length of the longest line in the string
 func getTerminalColumnsRequiredForString(str string) int {
 	colsRequired := 0
-	for _, line := range strings.Split(str, "\n") {
-		if colsRequired < utf8.RuneCountInString(line) {
-			colsRequired = utf8.RuneCountInString(line)
+	scanner := bufio.NewScanner(bytes.NewBufferString(str))
+	for scanner.Scan() {
+		line := scanner.Text()
+		runeCount := utf8.RuneCountInString(line)
+		if runeCount > colsRequired {
+			colsRequired = runeCount
 		}
 	}
 	return colsRequired
