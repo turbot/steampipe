@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"log"
 	"os"
 	"os/exec"
