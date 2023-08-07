@@ -142,8 +142,8 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 	)
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors
-	promptResultChan := make(chan utils.InteractiveExitStatus, 1)
-	c.runInteractivePromptAsync(ctx, &promptResultChan)
+	promptResultChan := make(chan struct{}, 1)
+	c.runInteractivePromptAsync(ctx, promptResultChan)
 
 	// select results
 	for {
@@ -172,7 +172,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 			// create new context with a cancellation func
 			ctx = c.createPromptContext(parentContext)
 			// now run it again
-			c.runInteractivePromptAsync(ctx, &promptResultChan)
+			c.runInteractivePromptAsync(ctx, promptResultChan)
 		}
 	}
 }
@@ -199,13 +199,14 @@ func (c *InteractiveClient) loadSchema() error {
 	return nil
 }
 
-func (c *InteractiveClient) runInteractivePromptAsync(ctx context.Context, promptResultChan *chan utils.InteractiveExitStatus) {
+func (c *InteractiveClient) runInteractivePromptAsync(ctx context.Context, promptResultChan chan struct{}) {
 	go func() {
-		*promptResultChan <- c.runInteractivePrompt(ctx)
+		c.runInteractivePrompt(ctx)
+		promptResultChan <- struct{}{}
 	}()
 }
 
-func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils.InteractiveExitStatus) {
+func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) {
 	defer func() {
 		// this is to catch the PANIC that gets raised by
 		// the executor of go-prompt
@@ -214,17 +215,12 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) (ret utils
 		// clean way to reload go-prompt so that we can
 		// populate the history stack
 		//
-		r := recover()
-		switch v := r.(type) {
-		case utils.InteractiveExitStatus:
-			// this is a planned exit
-			// set the return value
-			ret = v
-		default:
-			if r != nil {
-				// for everything else, float up the panic
-				panic(r)
-			}
+		if r := recover(); r != nil {
+			// show the panic and restart the prompt
+			error_helpers.ShowError(ctx, helpers.ToError(r))
+			c.afterClose = AfterPromptCloseRestart
+			c.hidePrompt = false
+			return
 		}
 	}()
 
