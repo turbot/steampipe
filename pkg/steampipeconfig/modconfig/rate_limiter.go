@@ -18,6 +18,7 @@ type RateLimiter struct {
 	Plugin          string   `hcl:"plugin"`
 	BucketSize      int64    `hcl:"bucket_size"`
 	FillRate        float32  `hcl:"fill_rate"`
+	MaxConcurrency  int64    `hcl:"max_concurrency"`
 	Scope           []string `hcl:"scope"`
 	Where           string   `hcl:"where,optional"`
 	Status          string
@@ -35,11 +36,12 @@ func (l RateLimiter) scopeString() string {
 
 func (l RateLimiter) AsProto() *proto.RateLimiterDefinition {
 	return &proto.RateLimiterDefinition{
-		Name:       l.Name,
-		FillRate:   l.FillRate,
-		BucketSize: l.BucketSize,
-		Scope:      l.Scope,
-		Where:      l.Where,
+		Name:           l.Name,
+		FillRate:       l.FillRate,
+		BucketSize:     l.BucketSize,
+		MaxConcurrency: l.MaxConcurrency,
+		Scope:          l.Scope,
+		Where:          l.Where,
 	}
 }
 
