@@ -624,7 +624,6 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	// if this plugin has a dynamic schema, add connections to message server
 	err = m.notifyNewDynamicSchemas(pluginClient, exemplarConnectionConfig, connectionNames)
 	if err != nil {
-		//return nil, retry.RetryableError(err)
 		return nil, err
 	}
 
