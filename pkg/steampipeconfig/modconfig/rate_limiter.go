@@ -38,7 +38,7 @@ func (l RateLimiter) AsProto() *proto.RateLimiterDefinition {
 		Name:       l.Name,
 		FillRate:   l.FillRate,
 		BucketSize: l.BucketSize,
-		Scopes:     l.Scope,
+		Scope:      l.Scope,
 		Where:      l.Where,
 	}
 }
