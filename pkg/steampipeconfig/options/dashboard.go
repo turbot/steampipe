@@ -15,8 +15,9 @@ type WorkspaceProfileDashboard struct {
 
 type GlobalDashboard struct {
 	// server settings
-	Port   *int    `hcl:"port"`
-	Listen *string `hcl:"listen"`
+	Port         *int    `hcl:"port"`
+	Listen       *string `hcl:"listen"`
+	StartTimeout *int    `hcl:"start_timeout"`
 }
 
 func (t *WorkspaceProfileDashboard) SetBaseProperties(otherOptions Options) {
@@ -77,6 +78,11 @@ func (d *GlobalDashboard) ConfigMap() map[string]interface{} {
 	if d.Listen != nil {
 		res[constants.ArgDashboardListen] = d.Listen
 	}
+	if d.StartTimeout != nil {
+		res[constants.ArgDashboardStartTimeout] = d.StartTimeout
+	} else {
+		res[constants.ArgDashboardStartTimeout] = constants.DashboardStartTimeout.Seconds()
+	}
 	return res
 }
 
@@ -93,6 +99,9 @@ func (d *GlobalDashboard) Merge(otherOptions Options) {
 		}
 		if o.Listen != nil {
 			d.Listen = o.Listen
+		}
+		if o.StartTimeout != nil {
+			d.StartTimeout = o.StartTimeout
 		}
 	}
 }
@@ -111,6 +120,11 @@ func (d *GlobalDashboard) String() string {
 		str = append(str, "  Listen: nil")
 	} else {
 		str = append(str, fmt.Sprintf("  Listen: %s", *d.Listen))
+	}
+	if d.StartTimeout == nil {
+		str = append(str, "  StartTimeout: nil")
+	} else {
+		str = append(str, fmt.Sprintf("  StartTimeout: %d", *d.StartTimeout))
 	}
 	return strings.Join(str, "\n")
 }
