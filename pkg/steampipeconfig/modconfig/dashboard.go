@@ -2,15 +2,15 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
-	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/zclconf/go-cty/cty"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/spf13/viper"
 	"github.com/stevenle/topsort"
+	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 const rootRuntimeDependencyNode = "rootRuntimeDependencyNode"
@@ -65,6 +65,10 @@ func NewQueryDashboard(qp QueryProvider) (*Dashboard, error) {
 	if err != nil {
 		return nil, err
 	}
+	fullName, err := parsedName.ToFullName()
+	if err != nil {
+		return nil, err
+	}
 
 	// for query dashboard use generated title, for control use original title
 	if qp.BlockType() != BlockTypeQuery {
@@ -78,7 +82,7 @@ func NewQueryDashboard(qp QueryProvider) (*Dashboard, error) {
 		ModTreeItemImpl: ModTreeItemImpl{
 			HclResourceImpl: HclResourceImpl{
 				ShortName:       parsedName.Name,
-				FullName:        parsedName.ToFullName(),
+				FullName:        fullName,
 				UnqualifiedName: parsedName.ToResourceName(),
 				Title:           utils.ToStringPointer(title),
 				Description:     utils.ToStringPointer(qp.GetDescription()),

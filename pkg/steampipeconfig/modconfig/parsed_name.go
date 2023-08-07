@@ -44,10 +44,11 @@ func (p *ParsedResourceName) ToResourceName() string {
 	return BuildModResourceName(p.ItemType, p.Name)
 }
 
-func (p *ParsedResourceName) ToFullName() string {
+func (p *ParsedResourceName) ToFullName() (string, error) {
 	return BuildFullResourceName(p.Mod, p.ItemType, p.Name)
 }
-func (p *ParsedResourceName) ToFullNameWithMod(mod string) string {
+
+func (p *ParsedResourceName) ToFullNameWithMod(mod string) (string, error) {
 	if p.Mod != "" {
 		return p.ToFullName()
 	}
@@ -56,9 +57,17 @@ func (p *ParsedResourceName) ToFullNameWithMod(mod string) string {
 
 // BuildFullResourceName generates a fully qualified name from the given components
 // e.g: aws_compliance.benchmark.cis_v150_1
-// TODO: validate argument are not empty strings [https://github.com/turbot/steampipe/issues/3601]
-func BuildFullResourceName(mod, blockType, name string) string {
-	return fmt.Sprintf("%s.%s.%s", mod, blockType, name)
+func BuildFullResourceName(mod, blockType, name string) (string, error) {
+	if mod == "" {
+		return "", fmt.Errorf("mod name not provided")
+	}
+	if blockType == "" {
+		return "", fmt.Errorf("block type not provided")
+	}
+	if name == "" {
+		return "", fmt.Errorf("resource name not provided")
+	}
+	return fmt.Sprintf("%s.%s.%s", mod, blockType, name), nil
 }
 
 // UnqualifiedResourceName removes the mod prefix from the given name

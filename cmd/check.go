@@ -157,6 +157,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, targetName, initData.ControlFilterWhereClause)
 		error_helpers.FailOnError(err)
 
+		// get the export name before execution(fail if not a valid export name)
+		exportName, err := getExportName(targetName, w.Mod.ShortName)
+		error_helpers.FailOnError(err)
+
 		// execute controls synchronously (execute returns the number of alarms and errors)
 		stats, err := executionTree.Execute(ctx)
 		error_helpers.FailOnError(err)
@@ -167,7 +171,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
 		error_helpers.FailOnError(err)
 
-		exportName := getExportName(targetName, w.Mod.ShortName)
 		exportArgs := viper.GetStringSlice(constants.ArgExport)
 		exportMsg, err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
 		error_helpers.FailOnError(err)
@@ -200,11 +203,11 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 }
 
 // getExportName resolves the base name of the target file
-func getExportName(targetName string, modShortName string) string {
+func getExportName(targetName string, modShortName string) (string, error) {
 	parsedName, _ := modconfig.ParseResourceName(targetName)
 	if targetName == "all" {
 		// there will be no block type = manually construct name
-		return fmt.Sprintf("%s.%s", modShortName, parsedName.Name)
+		return fmt.Sprintf("%s.%s", modShortName, parsedName.Name), nil
 	}
 	// default to just converting to valid resource name
 	return parsedName.ToFullNameWithMod(modShortName)

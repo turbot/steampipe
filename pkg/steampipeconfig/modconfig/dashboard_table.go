@@ -59,6 +59,10 @@ func NewQueryDashboardTable(qp QueryProvider) (*DashboardTable, error) {
 	if err != nil {
 		return nil, err
 	}
+	fullName, err := parsedName.ToFullName()
+	if err != nil {
+		return nil, err
+	}
 
 	c := &DashboardTable{
 		ResourceWithMetadataImpl: ResourceWithMetadataImpl{
@@ -69,7 +73,7 @@ func NewQueryDashboardTable(qp QueryProvider) (*DashboardTable, error) {
 				ModTreeItemImpl: ModTreeItemImpl{
 					HclResourceImpl: HclResourceImpl{
 						ShortName:       parsedName.Name,
-						FullName:        parsedName.ToFullName(),
+						FullName:        fullName,
 						UnqualifiedName: parsedName.ToResourceName(),
 						Title:           utils.ToStringPointer(qp.GetTitle()),
 						blockType:       BlockTypeTable,

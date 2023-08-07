@@ -3,7 +3,6 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"log"
 	"sync"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
+	"golang.org/x/exp/maps"
 )
 
 // DashboardExecutionTree is a structure representing the control result hierarchy
@@ -64,13 +64,17 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 	if err != nil {
 		return nil, err
 	}
+	fullName, err := parsedName.ToFullName()
+	if err != nil {
+		return nil, err
+	}
 	if parsedName.ItemType == "" {
 		return nil, fmt.Errorf("root item is not valid named resource")
 	}
 	// if no mod is specified, assume the workspace mod
 	if parsedName.Mod == "" {
 		parsedName.Mod = e.workspace.Mod.ShortName
-		rootName = parsedName.ToFullName()
+		rootName = fullName
 	}
 	switch parsedName.ItemType {
 	case modconfig.BlockTypeDashboard:
