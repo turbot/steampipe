@@ -236,6 +236,6 @@ replace (
 	github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50
 	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
 	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
-	github.com/turbot/steampipe-plugin-sdk/v5 => github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-rc.2.0.20230731135605-f5bf4d1bb7f4
-
+	github.com/turbot/steampipe-plugin-sdk/v5 => github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-rc.2.0.20230807170628-acea12015032
+// github.com/turbot/steampipe-plugin-sdk/v5 => /Users/binaek/work/sources/steampipe-plugin-sdk
 )
