@@ -127,7 +127,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 		reattach, err := m.ensurePlugin(pluginName, connectionConfigs, req)
 		if err != nil {
 			log.Printf("[WARN] PluginManager Get failed for %s: %s (%p)", pluginName, err.Error(), resp)
-			resp.FailureMap[pluginName] = err.Error()
+			resp.FailureMap[pluginName] = sperr.WrapWithMessage(err, "failed to start '%s'", pluginName).Error()
 		} else {
 			log.Printf("[TRACE] PluginManager Get succeeded for %s, pid %d (%p)", pluginName, reattach.Pid, resp)
 
@@ -452,10 +452,10 @@ func (m *PluginManager) startPlugin(pluginName string, connectionConfigs []*sdkp
 			// close failed chan to signal to anyone waiting for the plugin to startup that it failed
 			close(startingPlugin.failed)
 
-			log.Printf("[WARN] startPluginProcess failed: %s (%p)", err.Error(), req)
+			log.Printf("[INFO] startPluginProcess failed: %s (%p)", err.Error(), req)
 			// kill the client
 			if startingPlugin.client != nil {
-				log.Printf("[WARN] failed pid: %d (%p)", startingPlugin.client.ReattachConfig().Pid, req)
+				log.Printf("[INFO] failed pid: %d (%p)", startingPlugin.client.ReattachConfig().Pid, req)
 				startingPlugin.client.Kill()
 			}
 
@@ -557,6 +557,7 @@ func (m *PluginManager) startPluginProcess(pluginName string, connectionConfigs 
 	})
 
 	if _, err := client.Start(); err != nil {
+		err := m.handleStartFailure(err)
 		return nil, err
 	}
 
@@ -589,7 +590,7 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	if supportedOperations == nil {
 		supportedOperations = &sdkproto.GetSupportedOperationsResponse{}
 	}
-	// if this plugin does not support multiple connections, we no longer support is
+	// if this plugin does not support multiple connections, we no longer support it
 	if !supportedOperations.MultipleConnections {
 		// TODO SEND NOTIFICATION TO CLI
 		return nil, fmt.Errorf("plugins which do not supprt multiple connections (using SDK version < v4) are no longer supported. Upgrade plugin '%s", pluginName)
@@ -605,18 +606,16 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	// this returns a list of all connections provided by this plugin
 	err = m.setAllConnectionConfigs(connectionConfigs, pluginClient, supportedOperations)
 	if err != nil {
-		// return retryable error
 		log.Printf("[WARN] failed to set connection config for %s: %s", pluginName, err.Error())
-		return nil, retry.RetryableError(err)
+		return nil, err
 	}
 
 	// if this plugin supports setting cache options, do so
 	if supportedOperations.SetCacheOptions {
 		err = m.setCacheOptions(pluginClient)
 		if err != nil {
-			// return retryable error
 			log.Printf("[WARN] failed to set cache options for %s: %s", pluginName, err.Error())
-			return nil, retry.RetryableError(err)
+			return nil, err
 		}
 	}
 
@@ -625,8 +624,8 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	// if this plugin has a dynamic schema, add connections to message server
 	err = m.notifyNewDynamicSchemas(pluginClient, exemplarConnectionConfig, connectionNames)
 	if err != nil {
-		// send err down running plugin error channel
-		return nil, retry.RetryableError(err)
+		//return nil, retry.RetryableError(err)
+		return nil, err
 	}
 
 	log.Printf("[INFO] initializePlugin complete pid %d", client.ReattachConfig().Pid)
@@ -811,6 +810,24 @@ func (m *PluginManager) nonAggregatorConnectionCount() int {
 		res += nonAggregatorConnectionCount(connections)
 	}
 	return res
+}
+
+func (m *PluginManager) handleStartFailure(err error) error {
+	// extract the plugin message
+	_, pluginMessage, found := strings.Cut(err.Error(), sdkplugin.UnrecognizedRemotePluginMessage)
+	if !found {
+		return err
+	}
+	pluginMessage, _, found = strings.Cut(pluginMessage, sdkplugin.UnrecognizedRemotePluginMessageSuffix)
+	if !found {
+		return err
+	}
+
+	// if this was a panic during startup, reraise an error with the panic string
+	if strings.Contains(pluginMessage, sdkplugin.StartupPanicMessage) {
+		return fmt.Errorf(pluginMessage)
+	}
+	return err
 }
 
 func nonAggregatorConnectionCount(connections []*sdkproto.ConnectionConfig) int {
