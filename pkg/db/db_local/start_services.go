@@ -100,7 +100,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 
 	// start plugin manager if needed
 	res = ensurePluginManager(res)
-	if res.Status == ServiceStarted {
+	if res.Status == ServiceStarted || res.Status == ServiceAlreadyRunning {
 		// execute post startup setup
 		if err := postServiceStart(ctx, res); err != nil {
 			// NOTE do not update res.Status - this will be done by defer block
