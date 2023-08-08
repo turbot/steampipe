@@ -24,7 +24,7 @@ func Load(ctx context.Context, pool *pgxpool.Pool) (serverSettings *db_common.Se
 			e = sperr.ToError(r, sperr.WithMessage("error loading server settings"))
 		}
 	}()
-	e = db_common.ExecuteSystemClientCallOnConnection(ctx, conn.Conn(), func(ctx context.Context, tx pgx.Tx) error {
+	e = db_common.ExecuteSystemClientCall(ctx, conn.Conn(), func(ctx context.Context, tx pgx.Tx) error {
 		rows, err := conn.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.ServerSettingsTable))
 		if err != nil {
 			return err

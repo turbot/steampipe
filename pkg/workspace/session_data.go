@@ -21,7 +21,7 @@ func EnsureSessionData(ctx context.Context, source *modconfig.ResourceMaps, conn
 		return errors.New("nil conn passed to EnsureSessionData")
 	}
 
-	return db_common.ExecuteSystemClientCallOnConnection(ctx, conn, func(ctx context.Context, tx pgx.Tx) error {
+	return db_common.ExecuteSystemClientCall(ctx, conn, func(ctx context.Context, tx pgx.Tx) error {
 		// check for introspection tables
 		// if the steampipe_mod table is missing, assume we have no session data - go ahead and create it
 		row := tx.QueryRow(ctx, "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema LIKE 'pg_temp%' AND table_name='steampipe_mod' ")

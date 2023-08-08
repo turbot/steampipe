@@ -54,7 +54,7 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 }
 
 func (c *DbClient) LoadUserSearchPath(ctx context.Context) error {
-	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
+	conn, err := c.sysPool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_comm
 	// so we need to set the search path
 	log.Printf("[TRACE] session search path will be updated to  %s", strings.Join(c.customSearchPath, ","))
 
-	err := db_common.ExecuteSystemClientCallOnConnection(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
+	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, fmt.Sprintf("set search_path to %s", strings.Join(db_common.PgEscapeSearchPath(requiredSearchPath), ",")))
 		return err
 	})

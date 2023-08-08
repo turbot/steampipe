@@ -47,7 +47,7 @@ func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, erro
 
 func LoadSchemaMetadata(ctx context.Context, conn *pgx.Conn, query string) (*SchemaMetadata, error) {
 	var schemaRecords []schemaRecord
-	err := ExecuteSystemClientCallOnConnection(ctx, conn, func(ctx context.Context, tx pgx.Tx) error {
+	err := ExecuteSystemClientCall(ctx, conn, func(ctx context.Context, tx pgx.Tx) error {
 		rows, err := conn.Query(ctx, query)
 		if err != nil {
 			return err

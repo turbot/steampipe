@@ -116,13 +116,9 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 	return client, nil
 }
 
-func (c *DbClient) closePools(ctx context.Context) {
-	if c.pool != nil {
-		c.pool.Close()
-	}
-	if c.sysPool != nil {
-		c.sysPool.Close()
-	}
+func (c *DbClient) closePools() {
+	c.pool.Close()
+	c.sysPool.Close()
 }
 
 func (c *DbClient) loadServerSettings(ctx context.Context) error {
@@ -170,7 +166,7 @@ func (c *DbClient) ServerSettings() *db_common.ServerSettings {
 // closes the connection to the database and shuts down the backend
 func (c *DbClient) Close(ctx context.Context) error {
 	log.Printf("[TRACE] DbClient.Close %v", c.pool)
-	c.closePools(ctx)
+	c.closePools()
 	// nullify active sessions, since with the closing of the pools
 	// none of the sessions will be valid anymore
 	c.sessions = nil
@@ -263,7 +259,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	defer utils.LogTime("db_client.refreshDbClient end")
 
 	// close the connection pool and recreate
-	c.closePools(ctx)
+	c.closePools()
 	if err := c.establishConnectionPool(ctx); err != nil {
 		return err
 	}
