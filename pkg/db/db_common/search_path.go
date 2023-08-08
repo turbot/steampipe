@@ -48,7 +48,7 @@ func BuildSearchPathResult(searchPathString string) ([]string, error) {
 func GetUserSearchPath(ctx context.Context, conn *pgx.Conn) ([]string, error) {
 	searchPath := []string{}
 
-	err := ExecuteSystemClientCallOnConnection(ctx, conn, func(c context.Context, tx pgx.Tx) error {
+	err := ExecuteSystemClientCall(ctx, conn, func(c context.Context, tx pgx.Tx) error {
 		query := `SELECT rs.setconfig
 		FROM   pg_db_role_setting rs
 		LEFT   JOIN pg_roles      r ON r.oid = rs.setrole

@@ -108,7 +108,7 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnec
 	log.Println("[TRACE] with config", config)
 
 	var connectionStateList []ConnectionState
-	err := db_common.ExecuteSystemClientCallOnConnection(ctx, conn, func(ctx context.Context, tx pgx.Tx) error {
+	err := db_common.ExecuteSystemClientCall(ctx, conn, func(ctx context.Context, tx pgx.Tx) error {
 		query := buildLoadConnectionStateQuery(config)
 		log.Println("[TRACE] running query", query)
 		rows, err := tx.Query(ctx, query)

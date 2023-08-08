@@ -201,13 +201,13 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 	}()
 
 	var scanRows []ScanMetadataRow
-	_ = db_common.ExecuteSystemClientCallOnConnection(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId))
+	_ = db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
+		query := fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
+		rows, err := tx.Query(ctx, query)
 		if err != nil {
 			return err
 		}
-		collected, err := pgx.CollectRows(rows, pgx.RowToStructByName[ScanMetadataRow])
-		scanRows = collected
+		scanRows, err = pgx.CollectRows(rows, pgx.RowToStructByName[ScanMetadataRow])
 		return err
 	})
 
@@ -220,21 +220,21 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 	// so we have scan metadata - create the metadata struct
 	var id int64
 	timingResult.Metadata = &queryresult.TimingMetadata{}
-	for _, smr := range scanRows {
-		timingResult.Metadata.HydrateCalls += smr.hydrateCalls
-		if smr.cacheHit {
-			timingResult.Metadata.CachedRowsFetched += smr.rowsFetched
+	for _, r := range scanRows {
+		timingResult.Metadata.HydrateCalls += r.hydrateCalls
+		if r.cacheHit {
+			timingResult.Metadata.CachedRowsFetched += r.rowsFetched
 		} else {
-			timingResult.Metadata.RowsFetched += smr.rowsFetched
+			timingResult.Metadata.RowsFetched += r.rowsFetched
 		}
-		id = smr.id
+		id = r.id
 	}
 	// update the max id for this session
 	session.ScanMetadataMaxId = id
 }
 
 func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_common.DatabaseSession) error {
-	return db_common.ExecuteSystemClientCallOnConnection(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
+	return db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
 		row := tx.QueryRow(ctx, fmt.Sprintf("select max(id) from %s.%s", constants.InternalSchema, constants.ForeignTableScanMetadata))
 		err := row.Scan(&session.ScanMetadataMaxId)
 		return err

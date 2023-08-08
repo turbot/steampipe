@@ -38,6 +38,11 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	}
 
 	// this will yield a false negative when connecting to a local service using a network IP
+	//
+	// this is a temporary workaround to make sure
+	// that we can turn off caching for plugins compiled with SDK pre-V5
+	// worst case scenario is that we don't switch off the cache for pre-V5 plugins
+	// refer to: https://github.com/turbot/steampipe/blob/f7f983a552a07e50e526fcadf2ccbfdb7b247cc0/pkg/db/db_client/db_client_session.go#L66
 	if helpers.StringSliceContains(locals, config.ConnConfig.Host) {
 		c.isLocalService = true
 	}

@@ -53,6 +53,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 			return queryError
 		}
 
+		// get a connection from the system pool to query the connection state table
 		sysConn, err := c.sysPool.Acquire(ctx)
 		if err != nil {
 			return retry.RetryableError(err)

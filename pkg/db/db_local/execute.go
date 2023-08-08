@@ -19,28 +19,17 @@ func executeSqlAsRoot(ctx context.Context, statements ...string) ([]pgconn.Comma
 }
 
 func ExecuteSqlInTransaction(ctx context.Context, conn *pgx.Conn, statements ...string) (results []pgconn.CommandTag, err error) {
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback(ctx)
+	err = pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
+		for _, statement := range statements {
+			result, err := tx.Exec(ctx, statement)
+			if err != nil {
+				return err
+			}
+			results = append(results, result)
 		}
-	}()
-
-	for _, statement := range statements {
-		result, err := tx.Exec(ctx, statement)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, result)
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return nil, err
-	}
-
-	return results, nil
+		return nil
+	})
+	return results, err
 }
 
 func ExecuteSqlWithArgsInTransaction(ctx context.Context, conn *pgx.Conn, queries ...db_common.QueryWithArgs) (results []pgconn.CommandTag, err error) {
