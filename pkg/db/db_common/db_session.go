@@ -7,13 +7,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// DatabaseSession wraps over the raw database/sql.Conn and also allows for retaining useful instrumentation
+// DatabaseSession wraps over the raw database connection
+// the purpose is to be able
+//   - to store the current search path of the connection without having to make a database round-trip
+//   - To store the last scan_metadata id used on this connection
 type DatabaseSession struct {
-	BackendPid  uint32    `json:"backend_pid"`
-	UsedCount   int       `json:"used"`
-	LastUsed    time.Time `json:"last_used"`
-	SearchPath  []string  `json:"-"`
-	Initialized bool      `json:"-"`
+	BackendPid uint32   `json:"backend_pid"`
+	SearchPath []string `json:"-"`
 
 	// this gets rewritten, since the database/sql gives back a new instance everytime
 	Connection *pgxpool.Conn `json:"-"`
@@ -26,12 +26,6 @@ func NewDBSession(backendPid uint32) *DatabaseSession {
 	return &DatabaseSession{
 		BackendPid: backendPid,
 	}
-}
-
-// UpdateUsage updates the UsedCount of the DatabaseSession and also the lastUsed time
-func (s *DatabaseSession) UpdateUsage() {
-	s.UsedCount++
-	s.LastUsed = time.Now()
 }
 
 func (s *DatabaseSession) Close(waitForCleanup bool) {

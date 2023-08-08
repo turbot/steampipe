@@ -91,10 +91,12 @@ func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_comm
 	log.Printf("[TRACE] ensureSessionSearchPath")
 
 	// update the stored value of user search path
+	// this might have changed if a connection has been added/removed
 	if err := c.loadUserSearchPath(ctx, session.Connection.Conn()); err != nil {
 		return err
 	}
 
+	// get the required search path which is either a custom search path (if present) or the user search path
 	requiredSearchPath := c.GetRequiredSessionSearchPath()
 
 	// now determine whether the session search path is the same as the required search path
@@ -108,7 +110,7 @@ func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_comm
 	log.Printf("[TRACE] session search path will be updated to  %s", strings.Join(c.customSearchPath, ","))
 
 	err := db_common.ExecuteSystemClientCallOnConnection(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
-		_, err := session.Connection.Exec(ctx, fmt.Sprintf("set search_path to %s", strings.Join(db_common.PgEscapeSearchPath(requiredSearchPath), ",")))
+		_, err := tx.Exec(ctx, fmt.Sprintf("set search_path to %s", strings.Join(db_common.PgEscapeSearchPath(requiredSearchPath), ",")))
 		return err
 	})
 

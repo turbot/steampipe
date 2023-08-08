@@ -42,7 +42,9 @@ type DbClient struct {
 
 	// map of database sessions, keyed to the backend_pid in postgres
 	// used to update session search path where necessary
+	// TODO: there's no code which cleans up this map when connections get dropped by pgx
 	sessions map[uint32]*db_common.DatabaseSession
+
 	// allows locked access to the 'sessions' map
 	sessionsMutex *sync.Mutex
 
