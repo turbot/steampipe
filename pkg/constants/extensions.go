@@ -14,7 +14,8 @@ const (
 	CsvExtension           = ".csv"
 	TextExtension          = ".txt"
 	SnapshotExtension      = ".sps"
-	TokenExtension         = ".sptt"
+	TokenExtension         = ".tptt"
+	LegacyTokenExtension   = ".sptt"
 )
 
 var YamlExtensions = []string{".yml", ".yaml"}

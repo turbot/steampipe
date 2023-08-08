@@ -180,9 +180,9 @@ func InitCmd() {
 	rootCmd.PersistentFlags().Bool(constants.ArgSchemaComments, true, "Include schema comments when importing connection schemas")
 	// TODO elevate these to specific command? they are not used for plugin or mod commands
 	// or else put validation for plugin commands or at least a warning
-	rootCmd.PersistentFlags().String(constants.ArgCloudHost, constants.DefaultCloudHost, "Steampipe Cloud host")
-	rootCmd.PersistentFlags().String(constants.ArgCloudToken, "", "Steampipe Cloud authentication token")
-	rootCmd.PersistentFlags().String(constants.ArgWorkspaceDatabase, constants.DefaultWorkspaceDatabase, "Steampipe Cloud workspace database")
+	rootCmd.PersistentFlags().String(constants.ArgCloudHost, constants.DefaultCloudHost, "Turbot Pipes host")
+	rootCmd.PersistentFlags().String(constants.ArgCloudToken, "", "Turbot Pipes authentication token")
+	rootCmd.PersistentFlags().String(constants.ArgWorkspaceDatabase, constants.DefaultWorkspaceDatabase, "Turbot Pipes workspace database")
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceProfile, "default", "The workspace profile to use")
 
 	error_helpers.FailOnError(viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir)))

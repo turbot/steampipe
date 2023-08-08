@@ -61,13 +61,16 @@ func GetLoginToken(ctx context.Context, id, code string) (string, error) {
 	return tokenResp.GetToken(), nil
 }
 
-// SaveToken writes the token to  ~/.steampipe/internal/{cloud-host}.sptt
+// SaveToken writes the token to  ~/.steampipe/internal/{cloud-host}.tptt
 func SaveToken(token string) error {
 	tokenPath := tokenFilePath(viper.GetString(constants.ArgCloudHost))
 	return sperr.Wrap(os.WriteFile(tokenPath, []byte(token), 0600))
 }
 
 func LoadToken() (string, error) {
+	if err := migrateDefaultTokenFile(); err != nil {
+		log.Println("[TRACE] ERROR during migrating token file", err)
+	}
 	tokenPath := tokenFilePath(viper.GetString(constants.ArgCloudHost))
 	if !filehelpers.FileExists(tokenPath) {
 		return "", nil
@@ -77,6 +80,30 @@ func LoadToken() (string, error) {
 		return "", sperr.WrapWithMessage(err, "failed to load token file '%s'", tokenPath)
 	}
 	return string(tokenBytes), nil
+}
+
+// migrateDefaultTokenFile migrates the cloud.steampipe.io.sptt token file
+// to the pipes.turbot.com.tptt token file
+func migrateDefaultTokenFile() error {
+	defaultTokenPath := tokenFilePath(constants.DefaultCloudHost)
+	defaultLegacyTokenPath := legacyTokenFilePath(constants.LegacyDefaultCloudHost)
+
+	if filehelpers.FileExists(defaultTokenPath) {
+		// try removing the old legacy file - no worries if os.Remove fails
+		os.Remove(defaultLegacyTokenPath)
+		// we have the new token file
+		return nil
+	}
+
+	// the default file does not exist
+	// check if the legacy one exists
+	if filehelpers.FileExists(defaultLegacyTokenPath) {
+		// move the legacy to the new
+		return utils.MoveFile(defaultLegacyTokenPath, defaultTokenPath)
+	}
+
+	// none exists - nothing to do
+	return nil
 }
 
 func GetUserName(ctx context.Context, token string) (string, error) {
@@ -97,5 +124,10 @@ func getActorName(actor steampipecloud.User) string {
 
 func tokenFilePath(cloudHost string) string {
 	tokenPath := path.Join(filepaths.EnsureInternalDir(), fmt.Sprintf("%s%s", cloudHost, constants.TokenExtension))
+	return tokenPath
+}
+
+func legacyTokenFilePath(cloudHost string) string {
+	tokenPath := path.Join(filepaths.EnsureInternalDir(), fmt.Sprintf("%s%s", cloudHost, constants.LegacyTokenExtension))
 	return tokenPath
 }

@@ -135,14 +135,21 @@ func SetDefaultsFromEnv() {
 
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
-		constants.EnvInstallDir:           {[]string{constants.ArgInstallDir}, String},
-		constants.EnvWorkspaceChDir:       {[]string{constants.ArgModLocation}, String},
-		constants.EnvModLocation:          {[]string{constants.ArgModLocation}, String},
-		constants.EnvIntrospection:        {[]string{constants.ArgIntrospection}, String},
-		constants.EnvTelemetry:            {[]string{constants.ArgTelemetry}, String},
-		constants.EnvUpdateCheck:          {[]string{constants.ArgUpdateCheck}, Bool},
-		constants.EnvCloudHost:            {[]string{constants.ArgCloudHost}, String},
-		constants.EnvCloudToken:           {[]string{constants.ArgCloudToken}, String},
+		constants.EnvInstallDir:     {[]string{constants.ArgInstallDir}, String},
+		constants.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, String},
+		constants.EnvModLocation:    {[]string{constants.ArgModLocation}, String},
+		constants.EnvIntrospection:  {[]string{constants.ArgIntrospection}, String},
+		constants.EnvTelemetry:      {[]string{constants.ArgTelemetry}, String},
+		constants.EnvUpdateCheck:    {[]string{constants.ArgUpdateCheck}, Bool},
+		// PIPES_HOST needs to be defined before STEAMPIPE_CLOUD_HOST,
+		// so that if STEAMPIPE_CLOUD_HOST is defined, it can override PIPES_HOST
+		constants.EnvPipesHost: {[]string{constants.ArgCloudHost}, String},
+		constants.EnvCloudHost: {[]string{constants.ArgCloudHost}, String},
+		// PIPES_TOKEN needs to be defined before STEAMPIPE_CLOUD_TOKEN,
+		// so that if STEAMPIPE_CLOUD_TOKEN is defined, it can override PIPES_TOKEN
+		constants.EnvPipesToken: {[]string{constants.ArgCloudToken}, String},
+		constants.EnvCloudToken: {[]string{constants.ArgCloudToken}, String},
+		//
 		constants.EnvSnapshotLocation:     {[]string{constants.ArgSnapshotLocation}, String},
 		constants.EnvWorkspaceDatabase:    {[]string{constants.ArgWorkspaceDatabase}, String},
 		constants.EnvServicePassword:      {[]string{constants.ArgServicePassword}, String},

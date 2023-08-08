@@ -105,7 +105,7 @@ it will be interpreted as an implicit workspace.
 
 Implicit workspaces, as the name suggests, do not need to be specified in the workspaces.spc file.
 
-Instead they will be assumed to refer to a Steampipe Cloud workspace,
+Instead they will be assumed to refer to a Turbot Pipes workspace,
 which will be used as both the database and snapshot location.
 
 Essentially, --workspace acme/dev is equivalent to:

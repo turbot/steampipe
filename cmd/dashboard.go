@@ -58,9 +58,9 @@ The current mod is the working directory, or the directory specified by the --mo
 		AddStringArrayFlag(constants.ArgVariable, nil, "Specify the value of a variable").
 		AddBoolFlag(constants.ArgInput, true, "Enable interactive prompts").
 		AddStringFlag(constants.ArgOutput, constants.OutputFormatNone, "Select a console output format: none, snapshot").
-		AddBoolFlag(constants.ArgSnapshot, false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility").
-		AddBoolFlag(constants.ArgShare, false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility").
-		AddStringFlag(constants.ArgSnapshotLocation, "", "The location to write snapshots - either a local file path or a Steampipe Cloud workspace").
+		AddBoolFlag(constants.ArgSnapshot, false, "Create snapshot in Turbot Pipes with the default (workspace) visibility").
+		AddBoolFlag(constants.ArgShare, false, "Create snapshot in Turbot Pipes with 'anyone_with_link' visibility").
+		AddStringFlag(constants.ArgSnapshotLocation, "", "The location to write snapshots - either a local file path or a Turbot Pipes workspace").
 		AddStringFlag(constants.ArgSnapshotTitle, "", "The title to give a snapshot").
 		// NOTE: use StringArrayFlag for ArgDashboardInput, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw

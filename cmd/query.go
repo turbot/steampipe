@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/connection_sync"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/turbot/steampipe/pkg/connection_sync"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/cobra"
@@ -85,13 +86,13 @@ Examples:
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, nil, "Specify the value of a variable").
 		AddBoolFlag(constants.ArgInput, true, "Enable interactive prompts").
-		AddBoolFlag(constants.ArgSnapshot, false, "Create snapshot in Steampipe Cloud with the default (workspace) visibility").
-		AddBoolFlag(constants.ArgShare, false, "Create snapshot in Steampipe Cloud with 'anyone_with_link' visibility").
+		AddBoolFlag(constants.ArgSnapshot, false, "Create snapshot in Turbot Pipes with the default (workspace) visibility").
+		AddBoolFlag(constants.ArgShare, false, "Create snapshot in Turbot Pipes with 'anyone_with_link' visibility").
 		AddStringArrayFlag(constants.ArgSnapshotTag, nil, "Specify tags to set on the snapshot").
 		AddStringFlag(constants.ArgSnapshotTitle, "", "The title to give a snapshot").
 		AddIntFlag(constants.ArgDatabaseQueryTimeout, 0, "The query timeout").
 		AddStringSliceFlag(constants.ArgExport, nil, "Export output to file, supported format: sps (snapshot)").
-		AddStringFlag(constants.ArgSnapshotLocation, "", "The location to write snapshots - either a local file path or a Steampipe Cloud workspace").
+		AddStringFlag(constants.ArgSnapshotLocation, "", "The location to write snapshots - either a local file path or a Turbot Pipes workspace").
 		AddBoolFlag(constants.ArgProgress, true, "Display snapshot upload status")
 
 	cmd.AddCommand(getListSubCmd(listSubCmdOptions{parentCmd: cmd}))

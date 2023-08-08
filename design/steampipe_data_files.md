@@ -8,7 +8,7 @@
 
 - `.passwd` - Stores the database password. Deleting the file does not effect steampipe, you can view your password by using the --show-password flag along with the service commands. Starting the service would re-create the file.
 
-- `cloud.steampipe.io.sptt` - Stores the steampipe cloud token. Deleting the file would require you to run steampipe login again.
+- `pipes.turbot.com.sptt` - Stores the [Turbot Pipes](https://pipes.turbot.com) token. Deleting the file would require you to run steampipe login again.
 
 - `connection.json` - Stores the connection config information. This file gets re-generated everytime RefreshConnections is called.
 
