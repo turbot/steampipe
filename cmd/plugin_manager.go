@@ -108,13 +108,12 @@ func createPluginManagerLog() hclog.Logger {
 		os.Exit(3)
 	}
 
-	// we use this logger to log the logs from the plugin processes
-	// the plugin processes use a mapper to add an extra escape to "\n" characters
-	// this is to allow the plugin to send multiline log messages
-	// as a single log line.
+	// we use this logger to log from the plugin processes
+	// the plugin processes uses the `EscapeNewlineWriter` to map the '\n' byte to "\n" string literal
+	// this is to allow the plugin to send multiline log messages as a single log line.
 	//
 	// here we apply the reverse mapping to get back the original message
-	writer := logging.NewLineUnescapeWriter(f)
+	writer := logging.NewUnescapeNewlineWriter(f)
 
 	logger := logging.NewLogger(&hclog.LoggerOptions{
 		Output:     writer,

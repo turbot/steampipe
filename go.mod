@@ -43,9 +43,9 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.16.0
 	github.com/stevenle/topsort v0.2.0
-	github.com/turbot/go-kit v0.7.0
+	github.com/turbot/go-kit v0.8.0-rc.0
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
-	github.com/turbot/steampipe-plugin-sdk/v5 v5.5.1
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-dev.15
 	github.com/xlab/treeprint v1.2.0
 	github.com/zclconf/go-cty v1.13.2
 	github.com/zclconf/go-cty-yaml v1.0.3
@@ -117,7 +117,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-getter v1.7.1 // indirect
+	github.com/hashicorp/go-getter v1.7.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.5.2 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
@@ -196,6 +196,7 @@ require (
 	golang.org/x/oauth2 v0.7.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/term v0.10.0 // indirect
+	golang.org/x/time v0.1.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.122.0 // indirect
@@ -236,6 +237,4 @@ replace (
 	github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50
 	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
 	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
-	github.com/turbot/steampipe-plugin-sdk/v5 => github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-rc.2.0.20230807170628-acea12015032
-// github.com/turbot/steampipe-plugin-sdk/v5 => /Users/binaek/work/sources/steampipe-plugin-sdk
 )
