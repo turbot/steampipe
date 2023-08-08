@@ -89,6 +89,8 @@ func migrateDefaultTokenFile() error {
 	defaultLegacyTokenPath := legacyTokenFilePath(constants.LegacyDefaultCloudHost)
 
 	if filehelpers.FileExists(defaultTokenPath) {
+		// try removing the old legacy file - no worries if os.Remove fails
+		os.Remove(defaultLegacyTokenPath)
 		// we have the new token file
 		return nil
 	}
