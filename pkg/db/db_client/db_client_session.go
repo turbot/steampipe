@@ -28,8 +28,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	defer func() {
 		if sessionResult != nil && sessionResult.Session != nil {
-			sessionResult.Session.UpdateUsage()
-
 			// fail safe - if there is no database connection, ensure we return an error
 			// NOTE: this should not be necessary but an occasional crash is occurring with a nil connection
 			if sessionResult.Session.Connection == nil && sessionResult.Error == nil {
