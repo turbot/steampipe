@@ -104,15 +104,19 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 	} else {
 		res.Status = ServiceAlreadyRunning
 	}
+	log.Printf("[INFO] >> starting plugin manager")
 
 	// start plugin manager if needed
 	res = ensurePluginManager(res)
 	if res.Status == ServiceStarted {
+		log.Printf("[INFO] >> started plugin manager")
 		// execute post startup setup
 		if err := postServiceStart(ctx, res); err != nil {
 			// NOTE do not update res.Status - this will be done by defer block
 			res.Error = err
 		}
+	} else {
+		log.Printf("[INFO] >> failed to start plugin manager %v", res.Status)
 	}
 	return res
 }
@@ -190,11 +194,13 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	if err := restoreDBBackup(ctx); err != nil {
 		return sperr.WrapWithMessage(err, "failed to migrate db public schema")
 	}
+	log.Printf("[INFO] >> starting refresh connections")
 
 	// call initial refresh connections
 	// get plugin manager client
 	pluginManager, err := pluginmanager.GetPluginManager()
 	if err != nil {
+		log.Printf("[INFO] >> failed to get plugin manager %s", err.Error())
 		return err
 	}
 
@@ -202,8 +208,10 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	// execute async and ignore result (if there is an error we will receive a PG notification)
 	// unless STEAMPIPE_SYNC_REFRESH is set - used for acceptance testing
 	if _, synchronousRefresh := os.LookupEnv("STEAMPIPE_SYNC_REFRESH"); synchronousRefresh {
+		log.Printf("[INFO] >> doing sync refresh")
 		pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
 	} else {
+		log.Printf("[INFO] >> doing async refresh")
 		go pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
 	}
 
