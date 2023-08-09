@@ -24,16 +24,12 @@ func Load(ctx context.Context, pool *pgxpool.Pool) (serverSettings *db_common.Se
 			e = sperr.ToError(r, sperr.WithMessage("error loading server settings"))
 		}
 	}()
-	e = db_common.ExecuteSystemClientCall(ctx, conn.Conn(), func(ctx context.Context, tx pgx.Tx) error {
-		rows, err := conn.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.ServerSettingsTable))
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
+	rows, err := conn.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.ServerSettingsTable))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-		ss, err := pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[db_common.ServerSettings])
-		serverSettings = ss
-		return err
-	})
+	serverSettings, e = pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[db_common.ServerSettings])
 	return
 }

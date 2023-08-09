@@ -13,7 +13,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -107,19 +106,15 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnec
 	}
 	log.Println("[TRACE] with config", config)
 
-	var connectionStateList []ConnectionState
-	err := db_common.ExecuteSystemClientCall(ctx, conn, func(ctx context.Context, tx pgx.Tx) error {
-		query := buildLoadConnectionStateQuery(config)
-		log.Println("[TRACE] running query", query)
-		rows, err := tx.Query(ctx, query)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-		list, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionState])
-		connectionStateList = list
-		return err
-	})
+	query := buildLoadConnectionStateQuery(config)
+	log.Println("[TRACE] running query", query)
+	rows, err := conn.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	connectionStateList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionState])
 	if err != nil {
 		// columns were added after the 0.20.0 release (connections for now)
 		// we need to handle the case where we are connected to an old version of
