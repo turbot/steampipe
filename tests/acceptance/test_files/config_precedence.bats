@@ -3,7 +3,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 ## workspace tests
 
-@test "generic workspace test" {
+@test "generic config precedence test" {
   cp $FILE_PATH/test_data/source_files/config_tests/default.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
   
   # setup test folder and read the test-cases file
@@ -59,12 +59,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
     for arg in $(echo "${args}" | jq -r '.[]'); do
       sp_cmd="${sp_cmd} ${arg}"
     done
-    # echo $sp_cmd
+    echo "steampipe command: $sp_cmd" # help debugging in case of failures
 
     # get the actual config by running the constructed steampipe command
     run $sp_cmd
     actual_config=$(echo $output | jq -c '.')
-    # echo $actual_config
+    echo "actual config: \n$actual_config" # help debugging in case of failures
 
     # get expected config from test case
     expected_config=$(echo $tests | jq -c ".[${i}]" | jq ".expected")
