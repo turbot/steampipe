@@ -24,7 +24,7 @@ file_name,
 start_line_number,
 end_line_number
 )
-	VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`, constants.InternalSchema, constants.RateLimiterDefinitionTable),
+	VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`, constants.InternalSchema, constants.RateLimiterDefinitionTable),
 		Args: []any{
 			settings.Name,
 			settings.Plugin,
