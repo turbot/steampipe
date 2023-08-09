@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -19,7 +20,6 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 		return showCache(ctx, input)
 	}
 
-	command := input.args()[0]
 	// just get the active session from the connection pool
 	// and set the cache parameters on it.
 	// NOTE: this works because the interactive client
@@ -35,6 +35,7 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 	}()
 
 	conn := sessionResult.Session.Connection.Conn()
+	command := strings.ToLower(input.args()[0])
 	switch command {
 	case constants.ArgOn:
 		serverSettings := input.Client.ServerSettings()
