@@ -154,6 +154,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 	return resp, nil
 }
 
+// Refresh connections asyncronously
 func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.RefreshConnectionsResponse, error) {
 	resp := &pb.RefreshConnectionsResponse{}
 	go m.doRefresh()
@@ -163,6 +164,7 @@ func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.R
 func (m *PluginManager) doRefresh() {
 	refreshResult := connection.RefreshConnections(context.Background())
 	if refreshResult.Error != nil {
+		// TODO send errors and warnings back to CLI from plugin manager - https://github.com/turbot/steampipe/issues/3603
 		log.Printf("[WARN] RefreshConnections failed with error: %s", refreshResult.Error.Error())
 	}
 }

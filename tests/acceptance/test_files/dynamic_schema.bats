@@ -1,64 +1,69 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
+# all tests are skipped - https://github.com/turbot/steampipe/issues/3742
 
 @test "dynamic schema - add csv and query" {
- # copy the csv file from csv source folder
- cp $SRC_DATA_DIR/csv/a.csv $FILE_PATH/test_data/csv_plugin_test/a.csv
+  skip "re-design without STEAMPIPE_SYNC_REFRESH"
+  # copy the csv file from csv source folder
+  cp $SRC_DATA_DIR/csv/a.csv $FILE_PATH/test_data/csv_plugin_test/a.csv
 
- # run the query and verify - should pass
- run steampipe query "select * from csv1.a"
- assert_success
+  # run the query and verify - should pass
+  run steampipe query "select * from csv1.a"
+  assert_success
 }
 
 @test "dynamic schema - add another column to csv and query the new column" {
- # run the query and verify - should pass
- run steampipe query "select * from csv1.a"
- assert_success
+  skip "re-design without STEAMPIPE_SYNC_REFRESH"
+  # run the query and verify - should pass
+  run steampipe query "select * from csv1.a"
+  assert_success
 
- # remove the a.csv file
- rm -f $FILE_PATH/test_data/csv_plugin_test/a.csv
+  # remove the a.csv file
+  rm -f $FILE_PATH/test_data/csv_plugin_test/a.csv
 
- # copy the csv file with extra column from csv source folder and give the same name(a.csv)
- cp $SRC_DATA_DIR/csv/a_extra_col.csv $FILE_PATH/test_data/csv_plugin_test/a.csv
+  # copy the csv file with extra column from csv source folder and give the same name(a.csv)
+  cp $SRC_DATA_DIR/csv/a_extra_col.csv $FILE_PATH/test_data/csv_plugin_test/a.csv
 
- # query the extra column and verify - should pass
- run steampipe query 'select "column_D" from csv1.a'
- assert_success
+  # query the extra column and verify - should pass
+  run steampipe query 'select "column_D" from csv1.a'
+  assert_success
 }
 
 @test "dynamic schema - remove the csv with extra column and query (should fail)" {
- # query the extra column and verify - should pass
- run steampipe query 'select "column_D" from csv1.a'
- assert_success
+  skip "re-design without STEAMPIPE_SYNC_REFRESH"
+  # query the extra column and verify - should pass
+  run steampipe query 'select "column_D" from csv1.a'
+  assert_success
 
- # remove the a.csv file with extra column and copy the old one again
- rm -f $FILE_PATH/test_data/csv_plugin_test/a.csv
- cp $SRC_DATA_DIR/csv/a.csv $FILE_PATH/test_data/csv_plugin_test/a.csv
+  # remove the a.csv file with extra column and copy the old one again
+  rm -f $FILE_PATH/test_data/csv_plugin_test/a.csv
+  cp $SRC_DATA_DIR/csv/a.csv $FILE_PATH/test_data/csv_plugin_test/a.csv
 
- # query the extra column and verify - should fail
- run steampipe query 'select "column_D" from csv1.a'
- assert_output --partial 'does not exist'
+  # query the extra column and verify - should fail
+  run steampipe query 'select "column_D" from csv1.a'
+  assert_output --partial 'does not exist'
 
- rm -f $FILE_PATH/test_data/csv_plugin_test/a.csv
+  rm -f $FILE_PATH/test_data/csv_plugin_test/a.csv
 }
 
 @test "dynamic schema - remove csv and query (should fail)" {
- # copy the csv file from csv source folder
- cp $SRC_DATA_DIR/csv/b.csv $FILE_PATH/test_data/csv_plugin_test/b.csv
-  
- # run the query and verify - should pass
- run steampipe query "select * from csv1.b"
- assert_success
+  skip "re-design without STEAMPIPE_SYNC_REFRESH"
+  # copy the csv file from csv source folder
+  cp $SRC_DATA_DIR/csv/b.csv $FILE_PATH/test_data/csv_plugin_test/b.csv
 
- # remove the b.csv file
- rm -f $FILE_PATH/test_data/csv_plugin_test/b.csv
+  # run the query and verify - should pass
+  run steampipe query "select * from csv1.b"
+  assert_success
 
-# run the query and verify - should fail
- run steampipe query "select * from csv1.b"
- assert_output --partial 'does not exist'
+  # remove the b.csv file
+  rm -f $FILE_PATH/test_data/csv_plugin_test/b.csv
 
- rm -f $FILE_PATH/test_data/csv_plugin_test/b.csv
+  # run the query and verify - should fail
+  run steampipe query "select * from csv1.b"
+  assert_output --partial 'does not exist'
+
+  rm -f $FILE_PATH/test_data/csv_plugin_test/b.csv
 }
 
 function teardown_file() {

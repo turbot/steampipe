@@ -184,6 +184,7 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 		return err
 	}
 	// ask the plugin manager to refresh connections
+	// this is executed asyncronously by the plugin manager
 	pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
 
 	statushooks.SetStatus(ctx, "Service startup complete")
