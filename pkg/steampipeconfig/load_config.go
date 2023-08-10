@@ -223,7 +223,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			if alreadyThere {
 				return error_helpers.NewErrorsAndWarning(sperr.New("duplicate limiter name: '%s' in '%s'", limiter.Name, block.TypeRange.Filename))
 			}
-			// TODO KAI key by plugin
+			// TODO key by plugin
 			steampipeConfig.Limiters[limiter.Name] = limiter
 		case modconfig.BlockTypeConnection:
 			connection, moreDiags := parse.DecodeConnection(block)

@@ -513,7 +513,6 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	pluginShortName := exemplarConnectionConfig.PluginShortName
 
 	// also store name mapping
-	// TODO KAI will hopefully not be necessary
 	m.pluginNameMap[pluginShortName] = pluginName
 
 	log.Printf("[INFO] initializePlugin %s pid %d (%p)", pluginName, client.ReattachConfig().Pid, req)
