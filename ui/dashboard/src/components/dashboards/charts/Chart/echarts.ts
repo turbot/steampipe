@@ -14,6 +14,7 @@ import {
   LegendComponent,
   TitleComponent,
   TooltipComponent,
+  MarkLineComponent,
 } from "echarts/components";
 import { LabelLayout } from "echarts/features";
 
@@ -26,6 +27,7 @@ echarts.use([
   LabelLayout,
   LegendComponent,
   LineChart,
+  MarkLineComponent,
   PieChart,
   SankeyChart,
   TitleComponent,
