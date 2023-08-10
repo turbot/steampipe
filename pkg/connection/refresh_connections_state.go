@@ -88,7 +88,6 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	// set state of all incomplete connections to error
 	defer func() {
 		if s.res != nil && s.res.Error != nil {
-			log.Printf("[INFO] >> refreshConnections failed before connection update was complete")
 			s.setIncompleteConnectionStateToError(ctx, sperr.WrapWithMessage(s.res.Error, "refreshConnections failed before connection update was complete"))
 			// TODO send error PG notification
 		}
@@ -100,7 +99,6 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	defer s.logRefreshConnectionResults()
 	// were we successful?
 	if s.res.Error != nil {
-		log.Printf("[INFO] >> refreshConnections result error: %v", s.res.Error.Error())
 		return
 	}
 

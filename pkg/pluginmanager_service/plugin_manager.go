@@ -156,13 +156,15 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 
 func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.RefreshConnectionsResponse, error) {
 	resp := &pb.RefreshConnectionsResponse{}
-	log.Printf("[INFO] >> comes here")
+	go m.doRefresh()
+	return resp, nil
+}
+
+func (m *PluginManager) doRefresh() {
 	refreshResult := connection.RefreshConnections(context.Background())
 	if refreshResult.Error != nil {
-		return nil, refreshResult.Error
+		log.Printf("[WARN] RefreshConnections failed with error: %s", refreshResult.Error.Error())
 	}
-
-	return resp, nil
 }
 
 // OnConnectionConfigChanged is the callback function invoked by the connection watcher when the config changed

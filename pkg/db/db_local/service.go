@@ -39,7 +39,6 @@ func GetState() (*RunningDBInstanceInfo, error) {
 		os.Remove(filepaths.RunningInfoFilePath())
 		return nil, nil
 	}
-	log.Printf("[INFO] >> pid exists - pid: %v", info.Pid)
 
 	return info, nil
 }

@@ -3,7 +3,6 @@ package db_client
 import (
 	"context"
 	"fmt"
-	"log"
 	"regexp"
 	"time"
 
@@ -39,7 +38,6 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 
 		// so there is an error - is it "relation not found"?
 		missingSchema, _, relationNotFound := IsRelationNotFoundError(queryError)
-		log.Printf("[INFO] >> relation not found here")
 		if !relationNotFound {
 			// just return it
 			return queryError
@@ -51,46 +49,36 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 
 		connectionStateMap, stateErr := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitUntilLoading())
 		if stateErr != nil {
-			log.Printf("[INFO] >> load connection state err: %v", stateErr.Error())
 			// just return the query error
 			return queryError
 		}
-		log.Printf("[INFO] >> connectionStateMap: %v", connectionStateMap)
 
 		// if there are no connections, just return the error
 		if len(connectionStateMap) == 0 {
-			log.Printf("[INFO] >> there are no connections")
 			return queryError
 		}
 
 		// is this an unqualified query...
 		if missingSchema == "" {
-			log.Printf("[INFO] >> this is an unqualified query")
 			// refresh the search path, as now the connection state is in loading state, search paths may have been updated
 			if err := c.ensureSessionSearchPath(ctx, session); err != nil {
-				log.Printf("[INFO] >> ensureSessionSearchPath err: %v", err.Error())
 				return queryError
 			}
 
 			// we need the first search path connection for each plugin to be loaded
 			searchPath := c.GetRequiredSessionSearchPath()
-			log.Printf("[INFO] >> search path here: %v", searchPath)
 			requiredConnections := connectionStateMap.GetFirstSearchPathConnectionForPlugins(searchPath)
-			log.Printf("[INFO] >> requiredConnections here: %v", requiredConnections)
 			// if required connections are ready (and have been for more than the backoff interval) , just return the relation not found error
 			if connectionStateMap.Loaded(requiredConnections...) && time.Since(connectionStateMap.ConnectionModTime()) > backoffInterval {
-				log.Printf("[INFO] >> required connections are ready (and have been for more than the backoff interval)")
 				return queryError
 			}
 
 			// otherwise we need to wait for the first schema of everything plugin to load
 			if _, err := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitForSearchPath(searchPath)); err != nil {
-				log.Printf("[INFO] >> err in LoadConnectionState, err: %v", err.Error())
 				return err
 			}
 
 			// so now the connections are loaded - retry the query
-			log.Printf("[INFO] >> finally connections are loaded - retrying the query")
 			return retry.RetryableError(queryError)
 		}
 
@@ -98,28 +86,23 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		// verify it exists in the connection state and is not disabled
 		connectionState, missingSchemaExistsInStateMap := connectionStateMap[missingSchema]
 		if !missingSchemaExistsInStateMap || connectionState.Disabled() {
-			log.Printf("[INFO] >> schema either not in the connection state or is disabled")
 			//, missing schema is not in connection state map - just return the error
 			return queryError
 		}
 
 		// so schema _is_ in the state map
 
-		log.Printf("[INFO] >> connection state here: %v", connectionState.State)
 		// if the connection is ready (and has been for more than the backoff interval) , just return the relation not found error
 		if connectionState.State == constants.ConnectionStateReady && time.Since(connectionState.ConnectionModTime) > backoffInterval {
-			log.Printf(" >> connection is ready (and has been for more than the backoff interval) , just return the relation not found error")
 			return queryError
 		}
 
 		// if connection is in error,return the connection error
 		if connectionState.State == constants.ConnectionStateError {
-			log.Printf(" >> connection is in error, return the connection error")
 			return fmt.Errorf("connection %s failed to load: %s", missingSchema, typehelpers.SafeString(connectionState.ConnectionError))
 		}
 
 		// ok so we will retry
-		log.Printf(" >> ok so we will retry")
 		// build the status message to display with a spinner, if needed
 		statusMessage := steampipeconfig.GetLoadingConnectionStatusMessage(connectionStateMap, missingSchema)
 		statushooks.SetStatus(ctx, statusMessage)
