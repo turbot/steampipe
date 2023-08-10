@@ -115,11 +115,11 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return
 	}
-	//// if diagnostic mode is set, print out config and return
-	//if _, ok := os.LookupEnv(constants.EnvDiagnostics); ok {
-	//	cmdconfig.DisplayConfig()
-	//	return
-	//}
+	// if diagnostic mode is set, print out config and return
+	if _, ok := os.LookupEnv(constants.EnvDiagnostics); ok {
+		cmdconfig.DisplayConfig()
+		return
+	}
 
 	// initialise
 	initData := control.NewInitData(ctx)
