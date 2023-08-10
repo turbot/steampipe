@@ -4,7 +4,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # all tests are skipped - https://github.com/turbot/steampipe/issues/3742
 
 @test "dynamic schema - add csv and query" {
-  skip "re-design without STEAMPIPE_SYNC_REFRESH"
+  skip "currently does not pass due to bug - https://github.com/turbot/steampipe/issues/3743"
   # copy the csv file from csv source folder
   cp $SRC_DATA_DIR/csv/a.csv $FILE_PATH/test_data/csv_plugin_test/a.csv
 
@@ -14,7 +14,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "dynamic schema - add another column to csv and query the new column" {
-  skip "re-design without STEAMPIPE_SYNC_REFRESH"
+  skip "currently does not pass due to bug - https://github.com/turbot/steampipe/issues/3743"
   # run the query and verify - should pass
   run steampipe query "select * from csv1.a"
   assert_success
@@ -31,7 +31,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "dynamic schema - remove the csv with extra column and query (should fail)" {
-  skip "re-design without STEAMPIPE_SYNC_REFRESH"
+  skip "currently does not pass due to bug - https://github.com/turbot/steampipe/issues/3743"
   # query the extra column and verify - should pass
   run steampipe query 'select "column_D" from csv1.a'
   assert_success
@@ -48,7 +48,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "dynamic schema - remove csv and query (should fail)" {
-  skip "re-design without STEAMPIPE_SYNC_REFRESH"
+  skip "currently does not pass due to bug - https://github.com/turbot/steampipe/issues/3743"
   # copy the csv file from csv source folder
   cp $SRC_DATA_DIR/csv/b.csv $FILE_PATH/test_data/csv_plugin_test/b.csv
 
