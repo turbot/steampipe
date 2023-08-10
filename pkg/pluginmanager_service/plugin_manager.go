@@ -562,9 +562,8 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	if supportedOperations.SetRateLimiters {
 		err = m.setRateLimiters(pluginShortName, pluginClient)
 		if err != nil {
-			// return retryable error
-			log.Printf("[WARN] failed to set cache rate limiters for %s: %s", pluginName, err.Error())
-			return nil, retry.RetryableError(err)
+			log.Printf("[WARN] failed to set rate limiters for %s: %s", pluginName, err.Error())
+			return nil, err
 		}
 	}
 
