@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"log"
 	"os"
 	"os/exec"
@@ -22,9 +21,9 @@ import (
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkshared "github.com/turbot/steampipe-plugin-sdk/v5/grpc/shared"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
@@ -763,7 +762,7 @@ func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionNa
 	// also send a postgres notification
 	notification := steampipeconfig.NewSchemaUpdateNotification(steampipeconfig.PgNotificationSchemaUpdate)
 
-	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser, AppName: runtime.ServiceConnectionAppName})
+	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		log.Printf("[WARN] failed to send schema update notification: %s", err)
 	}

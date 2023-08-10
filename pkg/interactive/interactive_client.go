@@ -23,7 +23,6 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
@@ -743,7 +742,8 @@ func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) error {
 }
 
 func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgx.Conn, error) {
-	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseUser, AppName: runtime.ClientSystemConnectionAppName})
+	// TODO::BINAEK -> change this to the management pool
+	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseUser})
 	if err != nil {
 		return nil, err
 	}

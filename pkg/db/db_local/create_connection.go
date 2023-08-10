@@ -67,7 +67,7 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 }
 
 type CreateDbOptions struct {
-	DatabaseName, Username, AppName string
+	DatabaseName, Username string
 }
 
 // CreateLocalDbConnection connects and returns a connection to the given database using
@@ -91,13 +91,8 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 
 	// set an app name so that we can track database connections from this Steampipe execution
 	// this is used to determine whether the database can safely be closed
-	// by default, this will use the SystemConnection app name, unless overridden
-	appName := runtime.ClientSystemConnectionAppName
-	if len(opts.AppName) != 0 {
-		appName = opts.AppName
-	}
 	connConfig.Config.RuntimeParams = map[string]string{
-		constants.RuntimeParamsKeyApplicationName: appName,
+		constants.RuntimeParamsKeyApplicationName: runtime.ServiceConnectionAppName,
 	}
 	err = db_common.AddRootCertToConfig(&connConfig.Config, getRootCertLocation())
 	if err != nil {
@@ -141,14 +136,8 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 	connConfig.MaxConnLifetime = connMaxLifetime
 	connConfig.MaxConnIdleTime = connMaxIdleTime
 
-	// set an app name so that we can track database connections from this Steampipe execution
-	// this is used to determine whether the database can safely be closed
-	appName := runtime.ServiceConnectionAppName
-	if len(opts.AppName) > 0 {
-		appName = opts.AppName
-	}
 	connConfig.ConnConfig.Config.RuntimeParams = map[string]string{
-		constants.RuntimeParamsKeyApplicationName: appName,
+		constants.RuntimeParamsKeyApplicationName: runtime.ServiceConnectionAppName,
 	}
 
 	// this returns connection pool

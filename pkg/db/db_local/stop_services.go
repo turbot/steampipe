@@ -11,7 +11,6 @@ import (
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -101,9 +100,7 @@ func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	utils.LogTime("db_local.GetClientCount start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetClientCount end"))
 
-	appName := runtime.ServiceConnectionAppName
-
-	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser, AppName: appName})
+	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +126,7 @@ GROUP BY application_name
 
 	counts := &ClientCount{}
 
-	rows, err := rootClient.Query(ctx, query, "client backend", appName)
+	rows, err := rootClient.Query(ctx, query, "client backend", constants.ServiceConnectionAppNamePrefix)
 	if err != nil {
 		return nil, err
 	}
