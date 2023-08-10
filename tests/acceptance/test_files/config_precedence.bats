@@ -23,7 +23,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     # each test case do the following
     unset STEAMPIPE_INSTALL_DIR
     cwd=$(pwd)
-    export STEAMPIPE_DIAGNOSTICS=config_json
+    export STEAMPIPE_CONFIG_DUMP=config_json
 
     # check the command(query/check/dashboard) and prepare the steampipe
     # command accordingly
