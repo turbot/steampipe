@@ -12,7 +12,7 @@ import (
 )
 
 func (c *DbClient) AcquireConnection(ctx context.Context) (*pgxpool.Conn, error) {
-	return c.pool.Acquire(ctx)
+	return c.userPool.Acquire(ctx)
 }
 
 func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common.AcquireSessionResult) {
@@ -30,7 +30,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
-	databaseConnection, err := c.pool.Acquire(ctx)
+	databaseConnection, err := c.userPool.Acquire(ctx)
 	if err != nil {
 		sessionResult.Error = err
 		return sessionResult

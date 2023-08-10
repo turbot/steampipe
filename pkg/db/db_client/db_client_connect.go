@@ -79,7 +79,7 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	c.pool = dbPool
+	c.userPool = dbPool
 
 	return c.establishSystemConnectionPool(ctx, config)
 }
@@ -103,6 +103,6 @@ func (c *DbClient) establishSystemConnectionPool(ctx context.Context, config *pg
 	if err != nil {
 		return err
 	}
-	c.sysPool = dbPool
+	c.managementPool = dbPool
 	return nil
 }

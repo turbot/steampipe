@@ -54,7 +54,7 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 }
 
 func (c *DbClient) LoadUserSearchPath(ctx context.Context) error {
-	conn, err := c.sysPool.Acquire(ctx)
+	conn, err := c.managementPool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
