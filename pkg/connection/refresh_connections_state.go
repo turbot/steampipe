@@ -142,7 +142,7 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	// execute any necessary queries
 	s.executeConnectionQueries(ctx)
 	if s.res.Error != nil {
-		log.Printf("[INFO] refreshConnections failed with err %s", s.res.Error.Error())
+		log.Printf("[WARN] refreshConnections failed with err %s", s.res.Error.Error())
 		return
 	}
 
@@ -185,7 +185,7 @@ func (s *refreshConnectionState) logRefreshConnectionResults() {
 		op.WriteString(fmt.Sprintf("%s\n", s.res.String()))
 	}
 
-	log.Printf("[INFO] refresh connections: \n%s\n", helpers.Tabify(op.String(), "    "))
+	log.Printf("[TRACE] refresh connections: \n%s\n", helpers.Tabify(op.String(), "    "))
 }
 
 func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {

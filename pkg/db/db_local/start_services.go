@@ -122,11 +122,11 @@ func ensurePluginManager(res *StartResult) *StartResult {
 		// get the location of the currently running steampipe process
 		executable, err := os.Executable()
 		if err != nil {
-			log.Printf("[INFO] plugin manager start() - failed to get steampipe executable path: %s", err)
+			log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
 			return res.SetError(err)
 		}
 		if err := pluginmanager.StartNewInstance(executable); err != nil {
-			log.Printf("[INFO] StartServices plugin manager failed to start: %s", err)
+			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
 			return res.SetError(err)
 		}
 		// set status to service started as started plugin manager

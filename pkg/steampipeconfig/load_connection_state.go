@@ -108,6 +108,7 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnec
 
 	query := buildLoadConnectionStateQuery(config)
 
+	log.Println("[TRACE] running query", query)
 	rows, err := conn.Query(ctx, query)
 	if err != nil {
 		// columns were added after the 0.20.0 release (connections for now)
