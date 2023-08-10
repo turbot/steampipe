@@ -46,34 +46,27 @@ func BuildSearchPathResult(searchPathString string) ([]string, error) {
 }
 
 func GetUserSearchPath(ctx context.Context, conn *pgx.Conn) ([]string, error) {
-	searchPath := []string{}
-
 	query := `SELECT rs.setconfig
-		FROM   pg_db_role_setting rs
-		LEFT   JOIN pg_roles      r ON r.oid = rs.setrole
-		LEFT   JOIN pg_database   d ON d.oid = rs.setdatabase
-		WHERE  r.rolname = 'steampipe'`
+	FROM   pg_db_role_setting rs
+	LEFT   JOIN pg_roles      r ON r.oid = rs.setrole
+	LEFT   JOIN pg_database   d ON d.oid = rs.setdatabase
+	WHERE  r.rolname = 'steampipe'`
 
 	rows, err := conn.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
 	for rows.Next() {
 		var configStrings []string
-
 		if err := rows.Scan(&configStrings); err != nil {
 			return nil, err
 		}
 		if len(configStrings) > 0 {
-			sp, err := BuildSearchPathResult(configStrings[0])
-			if err != nil {
-				return nil, err
-			}
-			searchPath = sp
+			return BuildSearchPathResult(configStrings[0])
 		}
 	}
 
-	return searchPath, err
+	// should not get here
+	return nil, nil
 }
