@@ -90,6 +90,7 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 	}
 
 	if res.DbState == nil {
+		log.Printf("[INFO] >> DbState is nil - starting db")
 		res = startDB(ctx, port, listen, invoker)
 		if res.Error != nil {
 			return res
@@ -97,15 +98,19 @@ func StartServices(ctx context.Context, port int, listen StartListenType, invoke
 	} else {
 		res.Status = ServiceAlreadyRunning
 	}
+	log.Printf("[INFO] >> starting plugin manager")
 
 	// start plugin manager if needed
 	res = ensurePluginManager(res)
-	if res.Status == ServiceStarted || res.Status == ServiceAlreadyRunning {
+	if res.Status == ServiceStarted {
+		log.Printf("[INFO] >> started plugin manager")
 		// execute post startup setup
 		if err := postServiceStart(ctx, res); err != nil {
 			// NOTE do not update res.Status - this will be done by defer block
 			res.Error = err
 		}
+	} else {
+		log.Printf("[INFO] >> failed to start plugin manager - status: %v", res.Status)
 	}
 	return res
 }
@@ -122,11 +127,11 @@ func ensurePluginManager(res *StartResult) *StartResult {
 		// get the location of the currently running steampipe process
 		executable, err := os.Executable()
 		if err != nil {
-			log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
+			log.Printf("[INFO] plugin manager start() - failed to get steampipe executable path: %s", err)
 			return res.SetError(err)
 		}
 		if err := pluginmanager.StartNewInstance(executable); err != nil {
-			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
+			log.Printf("[INFO] StartServices plugin manager failed to start: %s", err)
 			return res.SetError(err)
 		}
 		// set status to service started as started plugin manager
@@ -176,11 +181,13 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	if err := restoreDBBackup(ctx); err != nil {
 		return sperr.WrapWithMessage(err, "failed to migrate db public schema")
 	}
+	log.Printf("[INFO] >> starting refresh connections")
 
 	// call initial refresh connections
 	// get plugin manager client
 	pluginManager, err := pluginmanager.GetPluginManager()
 	if err != nil {
+		log.Printf("[INFO] >> failed to get plugin manager %s", err.Error())
 		return err
 	}
 
@@ -188,8 +195,10 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	// execute async and ignore result (if there is an error we will receive a PG notification)
 	// unless STEAMPIPE_SYNC_REFRESH is set - used for acceptance testing
 	if _, synchronousRefresh := os.LookupEnv("STEAMPIPE_SYNC_REFRESH"); synchronousRefresh {
+		log.Printf("[INFO] >> doing sync refresh")
 		pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
 	} else {
+		log.Printf("[INFO] >> doing async refresh")
 		go pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
 	}
 

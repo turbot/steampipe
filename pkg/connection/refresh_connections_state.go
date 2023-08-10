@@ -88,6 +88,7 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	// set state of all incomplete connections to error
 	defer func() {
 		if s.res != nil && s.res.Error != nil {
+			log.Printf("[INFO] >> refreshConnections failed before connection update was complete")
 			s.setIncompleteConnectionStateToError(ctx, sperr.WrapWithMessage(s.res.Error, "refreshConnections failed before connection update was complete"))
 			// TODO send error PG notification
 		}
@@ -99,6 +100,7 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	defer s.logRefreshConnectionResults()
 	// were we successful?
 	if s.res.Error != nil {
+		log.Printf("[INFO] >> refreshConnections result error: %v", s.res.Error.Error())
 		return
 	}
 
@@ -142,7 +144,7 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	// execute any necessary queries
 	s.executeConnectionQueries(ctx)
 	if s.res.Error != nil {
-		log.Printf("[WARN] refreshConnections failed with err %s", s.res.Error.Error())
+		log.Printf("[INFO] refreshConnections failed with err %s", s.res.Error.Error())
 		return
 	}
 
@@ -185,7 +187,7 @@ func (s *refreshConnectionState) logRefreshConnectionResults() {
 		op.WriteString(fmt.Sprintf("%s\n", s.res.String()))
 	}
 
-	log.Printf("[TRACE] refresh connections: \n%s\n", helpers.Tabify(op.String(), "    "))
+	log.Printf("[INFO] refresh connections: \n%s\n", helpers.Tabify(op.String(), "    "))
 }
 
 func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {

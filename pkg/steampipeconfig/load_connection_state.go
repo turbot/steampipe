@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -108,9 +109,11 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnec
 
 	query := buildLoadConnectionStateQuery(config)
 
-	log.Println("[TRACE] running query", query)
+	log.Println("[INFO] >> running query", query)
 	rows, err := conn.Query(ctx, query)
+	log.Printf("[INFO] >> err: %v", err)
 	if err != nil {
+		log.Println("[INFO] >> ", string(debug.Stack()))
 		// columns were added after the 0.20.0 release (connections for now)
 		// we need to handle the case where we are connected to an old version of
 		// service which doesn't have some of these columns
@@ -131,6 +134,7 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnec
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("[INFO] >> connectionStateList: %v", connectionStateList)
 
 	for _, c := range connectionStateList {
 		// copy into loop var

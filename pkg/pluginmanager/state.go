@@ -42,7 +42,7 @@ func LoadPluginManagerState() (*PluginManagerState, error) {
 	// always return empty state
 	s := new(PluginManagerState)
 	if !filehelpers.FileExists(filepaths.PluginManagerStateFilePath()) {
-		log.Printf("[TRACE] plugin manager state file not found")
+		log.Printf("[INFO] plugin manager state file not found")
 		return s, nil
 	}
 
@@ -52,8 +52,8 @@ func LoadPluginManagerState() (*PluginManagerState, error) {
 	}
 	err = json.Unmarshal(fileContent, s)
 	if err != nil {
-		log.Printf("[TRACE] failed to unmarshall plugin manager state file at %s with error %s\n", filepaths.PluginManagerStateFilePath(), err.Error())
-		log.Printf("[TRACE] deleting invalid plugin manager state file\n")
+		log.Printf("[INFO] failed to unmarshall plugin manager state file at %s with error %s\n", filepaths.PluginManagerStateFilePath(), err.Error())
+		log.Printf("[INFO] deleting invalid plugin manager state file\n")
 		s.delete()
 		return s, nil
 	}

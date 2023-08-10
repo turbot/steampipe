@@ -83,6 +83,7 @@ func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
 	defer utils.LogTime("db.loadRunningInstanceInfo end")
 
 	if !filehelpers.FileExists(filepaths.RunningInfoFilePath()) {
+		log.Printf("[INFO] >> databaseRunningInfoFile does not exist")
 		return nil, nil
 	}
 
@@ -93,12 +94,17 @@ func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
 	var info = new(RunningDBInstanceInfo)
 	err = json.Unmarshal(fileContent, info)
 	if err != nil {
-		log.Printf("[TRACE] failed to unmarshal database state file %s: %s\n", filepaths.RunningInfoFilePath(), err.Error())
+		log.Printf("[INFO] failed to unmarshal database state file %s: %s\n", filepaths.RunningInfoFilePath(), err.Error())
 		return nil, nil
 	}
+	log.Printf("[INFO] >> databaseRunningInfoFile exists, pid: %v", info.Pid)
 	return info, nil
 }
 
 func removeRunningInstanceInfo() error {
-	return os.Remove(filepaths.RunningInfoFilePath())
+	err := os.Remove(filepaths.RunningInfoFilePath())
+	if err != nil {
+		log.Printf("[INFO] >> err while removing databaseRunningInfoFile - %v", err.Error())
+	}
+	return err
 }

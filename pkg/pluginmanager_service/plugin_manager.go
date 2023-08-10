@@ -156,6 +156,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 
 func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.RefreshConnectionsResponse, error) {
 	resp := &pb.RefreshConnectionsResponse{}
+	log.Printf("[INFO] >> comes here")
 	refreshResult := connection.RefreshConnections(context.Background())
 	if refreshResult.Error != nil {
 		return nil, refreshResult.Error
