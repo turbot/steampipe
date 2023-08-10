@@ -200,7 +200,7 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 	}()
 
 	var scanRows []ScanMetadataRow
-	_ = db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
+	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
 		query := fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
 		rows, err := tx.Query(ctx, query)
 		if err != nil {
@@ -210,9 +210,9 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		return err
 	})
 
-	// if we failed to read scan metadata (either because the query failed or the plugin does not support it)
-	// just return
-	if len(scanRows) == 0 {
+	// if we failed to read scan metadata (either because the query failed or the plugin does not support it) just return
+	// we don't return the error, since we don't want to error out in this case
+	if err != nil || len(scanRows) == 0 {
 		return
 	}
 

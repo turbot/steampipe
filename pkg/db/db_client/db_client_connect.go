@@ -37,7 +37,10 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 		"localhost",
 	}
 
-	// this will yield a false negative when connecting to a local service using a network IP
+	// when connected to a service which is running a plugin compiled with SDK pre-v5, the plugin
+	// will not have the ability to turn off caching (feature introduced in SDKv5)
+	//
+	// the 'isLocalService' is used to set the client end cache to 'false' if caching is turned off in the local service
 	//
 	// this is a temporary workaround to make sure
 	// that we can turn off caching for plugins compiled with SDK pre-V5
@@ -81,21 +84,22 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	}
 	c.userPool = dbPool
 
-	return c.establishSystemConnectionPool(ctx, config)
+	return c.establishManagementConnectionPool(ctx, config)
 }
 
-// establishSystemConnectionPool creates a connection pool that can be used to support execution of user-initiated
-// queries (loading of connection state etc.)
-// unlike the other connection pool, this doesn't wait for the pool to completely start
-// this is because, the other pool will have established and verified a connection with the service
-func (c *DbClient) establishSystemConnectionPool(ctx context.Context, config *pgxpool.Config) error {
+// establishSystemConnectionPool creates a connection pool to use to execute
+// system-initiated queries (loading of connection state etc.)
+// unlike establishConnectionPool, which is run first to create the user-query pool
+// this doesn't wait for the pool to completely start, as establishConnectionPool will have established and verified a connection with the service
+func (c *DbClient) establishManagementConnectionPool(ctx context.Context, config *pgxpool.Config) error {
 	utils.LogTime("db_client.establishSystemConnectionPool start")
 	defer utils.LogTime("db_client.establishSystemConnectionPool end")
 
-	// create a copy of the config
+	// create a copy of the config which is used to setup the user connection pool
+	// we need to modify the config - don't want the original to get modified
 	copiedConfig := config.Copy()
 	copiedConfig.ConnConfig.Config.RuntimeParams = map[string]string{
-		"application_name": runtime.ClientSystemConnectionAppName,
+		constants.RuntimeParamsKeyApplicationName: runtime.ClientSystemConnectionAppName,
 	}
 
 	// this returns connection pool
