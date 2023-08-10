@@ -15,7 +15,6 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -142,7 +141,7 @@ func ensurePluginManager(res *StartResult) *StartResult {
 }
 
 func postServiceStart(ctx context.Context, res *StartResult) error {
-	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser, AppName: runtime.ServiceConnectionAppName})
+	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
@@ -302,7 +301,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 }
 
 func ensureService(ctx context.Context, databaseName string) error {
-	connection, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser, AppName: runtime.ServiceConnectionAppName})
+	connection, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
@@ -494,7 +493,7 @@ func traceoutServiceLogs(logChannel chan string, stopLogStreamFn func()) {
 }
 
 func setServicePassword(ctx context.Context, password string) error {
-	connection, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: "postgres", Username: constants.DatabaseSuperUser, AppName: runtime.ServiceConnectionAppName})
+	connection, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: "postgres", Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}

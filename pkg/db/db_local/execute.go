@@ -6,12 +6,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )
 
 func executeSqlAsRoot(ctx context.Context, statements ...string) ([]pgconn.CommandTag, error) {
-	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser, AppName: runtime.ServiceConnectionAppName})
+	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}
