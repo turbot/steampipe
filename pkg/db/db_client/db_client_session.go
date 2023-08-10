@@ -3,7 +3,6 @@ package db_client
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -13,14 +12,7 @@ import (
 )
 
 func (c *DbClient) AcquireConnection(ctx context.Context) (*pgxpool.Conn, error) {
-	// get a database connection and query its backend pid
-	// note - this will retry if the connection is bad
-	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return conn, nil
+	return c.pool.Acquire(ctx)
 }
 
 func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common.AcquireSessionResult) {
@@ -38,11 +30,12 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
-	databaseConnection, backendPid, err := c.GetDatabaseConnectionWithRetries(ctx)
+	databaseConnection, err := c.pool.Acquire(ctx)
 	if err != nil {
 		sessionResult.Error = err
 		return sessionResult
 	}
+	backendPid := databaseConnection.Conn().PgConn().PID()
 
 	c.sessionsMutex.Lock()
 	session, found := c.sessions[backendPid]
@@ -99,20 +92,4 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	sessionResult.Error = ctx.Err()
 	return sessionResult
-}
-
-func (c *DbClient) GetDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {
-	// get a database connection from the pool
-	databaseConnection, err := c.pool.Acquire(ctx)
-	if err != nil {
-		if databaseConnection != nil {
-			databaseConnection.Release()
-		}
-		log.Printf("[TRACE] GetDatabaseConnectionWithRetries failed: %s", err.Error())
-		return nil, 0, err
-	}
-
-	backendPid := databaseConnection.Conn().PgConn().PID()
-
-	return databaseConnection, backendPid, nil
 }
