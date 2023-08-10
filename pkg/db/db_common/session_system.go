@@ -3,7 +3,6 @@ package db_common
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -20,7 +19,7 @@ type SystemClientExecutor func(context.Context, pgx.Tx) error
 func ExecuteSystemClientCall(ctx context.Context, conn *pgx.Conn, executor SystemClientExecutor) error {
 	if !IsClientAppName(conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName]) {
 		// this should NEVER happen
-		log.Println("[TRACE] Warning => ExecuteSystemClientCall called with appname other than client:", conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName])
+		return fmt.Errorf("ExecuteSystemClientCall called with appname other than client: %s", conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName])
 	}
 
 	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) (e error) {
