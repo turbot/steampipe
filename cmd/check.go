@@ -116,7 +116,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 	// if diagnostic mode is set, print out config and return
-	if _, ok := os.LookupEnv(constants.EnvDiagnostics); ok {
+	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
 		cmdconfig.DisplayConfig()
 		return
 	}

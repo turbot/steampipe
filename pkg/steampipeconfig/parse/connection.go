@@ -2,13 +2,13 @@ package parse
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -151,15 +151,8 @@ func pluginConnectionConfigToHclString(body hcl.Body, connectionContent *hcl.Bod
 	}
 
 	// build ordered list attributes
-	// when we have generics we can add a GetOrderedMapKeys function
-	var keys = make([]string, len(attrExpressionMap))
-	i := 0
-	for k := range attrExpressionMap {
-		keys[i] = k
-		i++
-	}
-	sort.Strings(keys)
-	for _, name := range keys {
+	var sortedKeys = helpers.SortedMapKeys(attrExpressionMap)
+	for _, name := range sortedKeys {
 		expr := attrExpressionMap[name]
 		val, moreDiags := expr.Value(nil)
 		if moreDiags.HasErrors() {

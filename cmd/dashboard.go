@@ -97,7 +97,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	error_helpers.FailOnError(err)
 
 	// if diagnostic mode is set, print out config and return
-	if _, ok := os.LookupEnv(constants.EnvDiagnostics); ok {
+	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
 		cmdconfig.DisplayConfig()
 		return
 	}

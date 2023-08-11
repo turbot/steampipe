@@ -15,7 +15,7 @@ import (
 
 // DisplayConfig prints all config set via WorkspaceProfile or HCL options
 func DisplayConfig() {
-	diagnostics, ok := os.LookupEnv(constants.EnvDiagnostics)
+	diagnostics, ok := os.LookupEnv(constants.EnvConfigDump)
 	if !ok {
 		// shouldn't happen
 		return
@@ -23,7 +23,7 @@ func DisplayConfig() {
 	diagnostics = strings.ToLower(diagnostics)
 	configFormats := []string{"config", "config_json"}
 	if !helpers.StringSliceContains(configFormats, diagnostics) {
-		error_helpers.ShowWarning("invalid value for STEAMPIPE_DIAGNOSTICS, expected values: config,config_json")
+		error_helpers.ShowWarning("invalid value for STEAMPIPE_CONFIG_DUMP, expected values: config,config_json")
 		return
 	}
 

@@ -213,6 +213,18 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 
 	for _, block := range content.Blocks {
 		switch block.Type {
+		case modconfig.BlockTypeRateLimiter:
+			limiter, moreDiags := parse.DecodeLimiter(block)
+			diags = append(diags, moreDiags...)
+			if moreDiags.HasErrors() {
+				continue
+			}
+			_, alreadyThere := steampipeConfig.Limiters[limiter.Name]
+			if alreadyThere {
+				return error_helpers.NewErrorsAndWarning(sperr.New("duplicate limiter name: '%s' in '%s'", limiter.Name, block.TypeRange.Filename))
+			}
+			// TODO key by plugin
+			steampipeConfig.Limiters[limiter.Name] = limiter
 		case modconfig.BlockTypeConnection:
 			connection, moreDiags := parse.DecodeConnection(block)
 			diags = append(diags, moreDiags...)

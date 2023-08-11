@@ -9,5 +9,7 @@ func SupportedOperationsFromSdk(s *sdkproto.GetSupportedOperationsResponse) *Sup
 		QueryCache:          s.QueryCache,
 		MultipleConnections: s.MultipleConnections,
 		MessageStream:       s.MessageStream,
+		SetCacheOptions:     s.SetCacheOptions,
+		SetRateLimiters:     s.SetRateLimiters,
 	}
 }

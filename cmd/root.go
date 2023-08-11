@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"log"
 	"os"
 	"runtime/debug"
@@ -330,6 +331,13 @@ func validateConfig() error {
 	telemetry := viper.GetString(constants.ArgTelemetry)
 	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
 		return fmt.Errorf(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
+	}
+	diagnostics, ok := os.LookupEnv(plugin.EnvDiagnosticsLevel)
+	if ok {
+
+		if _, isValid := plugin.ValidDiagnosticsLevels[diagnostics]; !isValid {
+			return fmt.Errorf(`invalid value of '%s' (%s), must be one of: %s`, plugin.EnvDiagnosticsLevel, diagnostics, strings.Join(maps.Keys(plugin.ValidDiagnosticsLevels), ", "))
+		}
 	}
 	return nil
 }
