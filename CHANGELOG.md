@@ -1,8 +1,15 @@
+## v0.20.10 [2023-08-11]
+_Bug fixes_
+* Fixes issue where CAPITAL arguments to '.cache' meta command were not getting recognised.  ([#3670](https://github.com/turbot/steampipe/issues/3670))
+* Fixes issue where `port` property in dashboard options was not respected.  ([#3664](https://github.com/turbot/steampipe/issues/3685))
+* Fixes issue where using a bad workspace-database with a valid token gives invalid token as the error.  ([#3610](https://github.com/turbot/steampipe/issues/3610)) 
+* Fixes timing issue where refresh connections was sometimes not run when starting service.  ([#3734](https://github.com/turbot/steampipe/issues/3734))
+* Fixes issue where db connections are not closed after sending postgres notification.  ([#3744](https://github.com/turbot/steampipe/issues/3744))
+
 ## v0.20.9 [2023-07-11]
 _Bug fixes_
 * Fix aggregator connections being dropped intermittently when refreshing connections. ([#3664](https://github.com/turbot/steampipe/issues/3664))
 * Ensure dynamic aggregator schema is updated if connections are added. ([#3645](https://github.com/turbot/steampipe/issues/3645))
-
 
 ## v0.20.8 [2023-07-03]
 _Bug fixes_

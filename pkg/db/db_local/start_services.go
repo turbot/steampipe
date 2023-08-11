@@ -197,15 +197,9 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	if err != nil {
 		return err
 	}
-
 	// ask the plugin manager to refresh connections
-	// execute async and ignore result (if there is an error we will receive a PG notification)
-	// unless STEAMPIPE_SYNC_REFRESH is set - used for acceptance testing
-	if _, synchronousRefresh := os.LookupEnv("STEAMPIPE_SYNC_REFRESH"); synchronousRefresh {
-		pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
-	} else {
-		go pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
-	}
+	// this is executed asyncronously by the plugin manager
+	pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
 
 	statushooks.SetStatus(ctx, "Service startup complete")
 	return nil

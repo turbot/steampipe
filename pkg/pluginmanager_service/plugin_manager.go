@@ -170,14 +170,19 @@ func (m *PluginManager) buildRequiredPluginMap(req *pb.GetRequest) (map[string][
 	return plugins, requestedConnectionsLookup, nil
 }
 
+// Refresh connections asyncronously
 func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.RefreshConnectionsResponse, error) {
 	resp := &pb.RefreshConnectionsResponse{}
+	go m.doRefresh()
+	return resp, nil
+}
+
+func (m *PluginManager) doRefresh() {
 	refreshResult := connection.RefreshConnections(context.Background())
 	if refreshResult.Error != nil {
-		return nil, refreshResult.Error
+		// TODO send errors and warnings back to CLI from plugin manager - https://github.com/turbot/steampipe/issues/3603
+		log.Printf("[WARN] RefreshConnections failed with error: %s", refreshResult.Error.Error())
 	}
-
-	return resp, nil
 }
 
 // OnConnectionConfigChanged is the callback function invoked by the connection watcher when the config changed
