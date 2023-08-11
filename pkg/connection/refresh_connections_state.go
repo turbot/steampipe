@@ -760,6 +760,7 @@ func (s *refreshConnectionState) sendPostgreSchemaNotification(ctx context.Conte
 	if err != nil {
 		return err
 	}
+	defer conn.Close(ctx)
 	notification := steampipeconfig.NewSchemaUpdateNotification(steampipeconfig.PgNotificationSchemaUpdate)
 
 	return db_local.SendPostgresNotification(ctx, conn, notification)
