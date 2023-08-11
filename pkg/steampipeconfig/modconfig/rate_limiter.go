@@ -16,11 +16,11 @@ const (
 type RateLimiter struct {
 	Name            string   `hcl:"name,label"`
 	Plugin          string   `hcl:"plugin"`
-	BucketSize      int64    `hcl:"bucket_size"`
-	FillRate        float32  `hcl:"fill_rate"`
-	MaxConcurrency  *int64   `hcl:"max_concurrency"`
+	BucketSize      *int64   `hcl:"bucket_size,optional"`
+	FillRate        *float32 `hcl:"fill_rate,optional"`
+	MaxConcurrency  *int64   `hcl:"max_concurrency,optional"`
 	Scope           []string `hcl:"scope"`
-	Where           string   `hcl:"where,optional"`
+	Where           *string  `hcl:"where,optional"`
 	Status          string
 	Source          string
 	FileName        *string
@@ -36,14 +36,20 @@ func (l RateLimiter) scopeString() string {
 
 func (l RateLimiter) AsProto() *proto.RateLimiterDefinition {
 	res := &proto.RateLimiterDefinition{
-		Name:       l.Name,
-		FillRate:   l.FillRate,
-		BucketSize: l.BucketSize,
-		Scope:      l.Scope,
-		Where:      l.Where,
+		Name:  l.Name,
+		Scope: l.Scope,
 	}
 	if l.MaxConcurrency != nil {
 		res.MaxConcurrency = *l.MaxConcurrency
+	}
+	if l.BucketSize != nil {
+		res.BucketSize = *l.BucketSize
+	}
+	if l.FillRate != nil {
+		res.FillRate = *l.FillRate
+	}
+	if l.Where != nil {
+		res.Where = *l.Where
 	}
 	return res
 }
