@@ -8,13 +8,15 @@ import (
 // cache resource schemas
 var resourceSchemaCache = make(map[string]*hcl.BodySchema)
 
-// TODO  [node_reuse] Replace all block type with consts https://github.com/turbot/steampipe/issues/2922
-
 var ConfigBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
 			Type:       "connection",
+			LabelNames: []string{"name"},
+		},
+		{
+			Type:       "limiter",
 			LabelNames: []string{"name"},
 		},
 

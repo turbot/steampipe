@@ -50,8 +50,9 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 	// (this is needed as GetFirstSearchPathConnectionForPlugins will return ALL dynamic connections)
 	var unqualifiedTablesToAdd = make(map[string]struct{})
 
-	// add connection state
+	// add connection state and rate limit
 	unqualifiedTablesToAdd[constants.ConnectionStateTable] = struct{}{}
+	unqualifiedTablesToAdd[constants.RateLimiterDefinitionTable] = struct{}{}
 
 	// get the first search path connection for each plugin
 	firstConnectionPerPlugin := connectionStateMap.GetFirstSearchPathConnectionForPlugins(c.client().GetRequiredSessionSearchPath())

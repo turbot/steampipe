@@ -28,7 +28,7 @@ const (
 // constants for installing db and fdw images
 const (
 	DatabaseVersion = "14.2.0"
-	FdwVersion      = "1.7.2"
+	FdwVersion      = "1.8.0-rc.3"
 
 	// PostgresImageRef is the OCI Image ref for the database binaries
 	PostgresImageRef    = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
@@ -52,6 +52,9 @@ const (
 
 	// ServerSettingsTable is the table used to store steampipe service configuration
 	ServerSettingsTable = "steampipe_server_settings"
+
+	// RateLimiterDefinitionTable is the table used to store rate limiters defined in the config
+	RateLimiterDefinitionTable = "steampipe_rate_limiter"
 
 	// ConnectionStateTable is the table used to store steampipe connection state
 	ConnectionStateTable             = "steampipe_connection_state"

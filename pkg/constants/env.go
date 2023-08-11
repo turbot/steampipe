@@ -32,8 +32,9 @@ const (
 	EnvTelemetry                = "STEAMPIPE_TELEMETRY"
 	EnvIntrospection            = "STEAMPIPE_INTROSPECTION"
 	EnvWorkspaceProfileLocation = "STEAMPIPE_WORKSPACE_PROFILES_LOCATION"
-	EnvDiagnostics              = "STEAMPIPE_DIAGNOSTICS"
-
 	// EnvInputVarPrefix is the prefix for environment variables that represent values for input variables.
 	EnvInputVarPrefix = "SP_VAR_"
+
+	// EnvConfigDump is an undocumented variable is subject to change in the future
+	EnvConfigDump = "STEAMPIPE_CONFIG_DUMP"
 )

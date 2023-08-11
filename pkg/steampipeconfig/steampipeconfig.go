@@ -19,6 +19,8 @@ import (
 type SteampipeConfig struct {
 	// map of connection name to partially parsed connection config
 	Connections map[string]*modconfig.Connection
+	// rate limiters
+	Limiters map[string]*modconfig.RateLimiter
 
 	// Steampipe options
 	DefaultConnectionOptions *options.Connection
@@ -27,7 +29,7 @@ type SteampipeConfig struct {
 	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
 	// TODO remove this
-	// it is only needed due to conflicts with output nbame in terminal options
+	// it is only needed due to conflicts with output name in terminal options
 	// https://github.com/turbot/steampipe/issues/2534
 	commandName string
 }
@@ -35,6 +37,7 @@ type SteampipeConfig struct {
 func NewSteampipeConfig(commandName string) *SteampipeConfig {
 	return &SteampipeConfig{
 		Connections: make(map[string]*modconfig.Connection),
+		Limiters:    make(map[string]*modconfig.RateLimiter),
 		commandName: commandName,
 	}
 }
