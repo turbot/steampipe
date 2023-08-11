@@ -1,5 +1,6 @@
 ## v0.21.0 [tbd]
 _Whats new_
+* Add HCL support for defining rate limiters, with filewatching as per connection config. ([#3746](https://github.com/turbot/steampipe/issues/3746))
 * Improve mod require arg validation errors - include value expressions and arg file ranges. ([#3456](https://github.com/turbot/steampipe/issues/3456))
 * Show deprecation warning for `version` field in require block of mod definition.
 * Update refresh connections to execute updates serially by default. ([#3498](https://github.com/turbot/steampipe/issues/3498))
