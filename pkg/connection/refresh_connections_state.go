@@ -84,13 +84,17 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	// set state of all incomplete connections to error
 	defer func() {
 		if s.res != nil {
-
+			log.Printf("[INFO] refreshConnections DEFER")
 			if s.res.Error != nil {
 				s.setIncompleteConnectionStateToError(ctx, sperr.WrapWithMessage(s.res.Error, "refreshConnections failed before connection update was complete"))
 			}
 			if !s.res.ErrorAndWarnings.Empty() {
+				log.Printf("[INFO] WE GOT US SOME ERRORS")
 				s.sendPostgreErrorNotification(ctx, s.res.ErrorAndWarnings)
+			} else {
+				log.Printf("[INFO] NO ERRORS")
 			}
+
 		}
 	}()
 	log.Printf("[INFO] building connectionUpdates")

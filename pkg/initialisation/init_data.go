@@ -29,6 +29,7 @@ type InitData struct {
 
 	ShutdownTelemetry func()
 	ExportManager     *export.Manager
+	NotificationCache *db_common.NotificationCache
 }
 
 func NewErrorInitData(err error) *InitData {
@@ -139,6 +140,16 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 	client, errorsAndWarnings := GetDbClient(getClientCtx, invoker, ensureSessionData, opts...)
 	if errorsAndWarnings.Error != nil {
 		i.Result.Error = errorsAndWarnings.Error
+		return
+	}
+	notificationConnection, err := client.AcquireConnection(ctx)
+	if err != nil {
+		i.Result.Error = err
+		return
+	}
+	i.NotificationCache = db_common.NewNotificationCache(ctx, notificationConnection.Conn())
+	if err != nil {
+		i.Result.Error = err
 		return
 	}
 	i.Result.AddWarnings(errorsAndWarnings.Warnings...)

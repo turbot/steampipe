@@ -2,6 +2,7 @@ package interactive
 
 import (
 	"context"
+	"log"
 )
 
 // create a cancel context for the interactive prompt, and set c.cancelFunc
@@ -23,7 +24,10 @@ func (c *InteractiveClient) createQueryContext(ctx context.Context) context.Cont
 
 func (c *InteractiveClient) cancelActiveQueryIfAny() {
 	if c.cancelActiveQuery != nil {
+		log.Println("[WARN] CALLING cancelActiveQuery")
 		c.cancelActiveQuery()
 		c.cancelActiveQuery = nil
+	} else {
+		log.Println("[WARN] NO active query")
 	}
 }

@@ -66,7 +66,7 @@ func (c *InteractiveClient) showMessages(ctx context.Context, showMessages func(
 	// call ClearLine to render the empty prefix
 	c.interactivePrompt.ClearLine()
 
-	// call the passed in func to display the messages
+	// call the passed in func to display themessages
 	showMessages()
 
 	// show the prompt again
@@ -112,7 +112,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	//  fetch the schema
 	// TODO make this async https://github.com/turbot/steampipe/issues/3400
 	// NOTE: we would like to do this asyncronously, but we are currently limited to a single Db conneciton in our
-	// as the client cache settings are set per connection so we rely on only haveing a single connection
+	// as the client cache settings are set per connection so we rely on only having a single connection
 	// This means that the schema load would block other queries anyway so there is no benefit right not in making asyncronous
 
 	if err := c.loadSchema(); err != nil {
@@ -122,6 +122,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 
 	log.Printf("[TRACE] SetupWatcher")
 
+	statushooks.SetStatus(ctx, "Start file watcher…")
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
 		// provide an explicit error handler which re-renders the prompt after displaying the error
@@ -133,13 +134,17 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	statushooks.SetStatus(ctx, "Start notifications listener…")
 	log.Printf("[TRACE] Start notifications listener")
 
-	// create a cancellation context used to cancel the listen thread when we exit
-	listenCtx, cancel := context.WithCancel(ctx)
-	//nolint:golint,errcheck // worst case is autocomplete isn't update - not a failure
-	go c.listenToPgNotifications(listenCtx)
-	c.cancelNotificationListener = cancel
+	// TODO KAI CHECK
+	//// create a cancellation context used to cancel the listen thread when we exit
+	//listenCtx, cancel := context.WithCancel(ctx)
+	////nolint:golint,errcheck // worst case is autocomplete isn't update - not a failure
+	//go c.listenToPgNotifications(listenCtx)
+	//c.cancelNotificationListener = cancel
 
-	statushooks.SetStatus(ctx, "Completing initialization…")
+	// subscribe to postgres notifications
+	statushooks.SetStatus(ctx, "Subscribe to postgres notifications…")
+	c.listenToPgNotifications(ctx)
+
 }
 
 func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {
