@@ -18,6 +18,7 @@ const (
 	ArgDashboard               = "dashboard"
 	ArgDashboardListen         = "dashboard-listen"
 	ArgDashboardPort           = "dashboard-port"
+	ArgDashboardStartTimeout   = "dashboard-start-timeout"
 	ArgSkipConfig              = "skip-config"
 	ArgForeground              = "foreground"
 	ArgInvoker                 = "invoker"
