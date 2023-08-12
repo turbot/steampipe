@@ -120,7 +120,8 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 
 	// if there were any failures, display them
 	for failedPlugin, failure := range getResponse.FailureMap {
-		res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", failedPlugin, failure))
+		// add failures as warnings
+		res.AddWarning(failure)
 		// figure out which connections are provided by any failed plugins
 		for _, c := range connectionsToCreate {
 			if c.Plugin == failedPlugin {
@@ -130,11 +131,14 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 	}
 
 	// now create or retrieve a connection plugin for each connection
-	multiConnectionPlugins := make(map[string]*ConnectionPlugin)
+
+	// NOTE: multiple connections use the same plugin
+	// store a map of multi ConnectionPlugins, keyed by plugin name
+	connectionPluginMap := make(map[string]*ConnectionPlugin)
 
 	for _, connection := range connectionsToCreate {
 		// is this connection provided by a plugin we have already instantiated?
-		if existingConnectionPlugin, ok := multiConnectionPlugins[connection.Plugin]; ok {
+		if existingConnectionPlugin, ok := connectionPluginMap[connection.Plugin]; ok {
 			log.Printf("[TRACE] CreateConnectionPlugins - connection %s is provided by existing connectionPlugin %s - reusing", connection.Name, connection.Plugin)
 			// store the existing connection plugin in the result map
 			requestedConnectionPluginMap[connection.Name] = existingConnectionPlugin
@@ -149,22 +153,14 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 
 		// so we have a reattach - create a connection plugin
 		reattach := getResponse.ReattachMap[connection.Name]
-		// if this is a legacy aggregator connection, skip - we do not instantiate connectionPlugins for these
-		if connection.Type == modconfig.ConnectionTypeAggregator && !reattach.SupportedOperations.MultipleConnections {
-			log.Printf("[TRACE] %s is a legacy aggregator connection - NOT creating a ConnectionPlugin", connection.Name)
-			continue
-		}
-
 		connectionPlugin, err := createConnectionPlugin(connection, reattach)
 		if err != nil {
-			res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", connection.PluginAlias, err))
+			res.AddWarning(fmt.Sprintf("failed to attach to plugin process for '%s': %s", connection.Plugin, err))
 			continue
 		}
 		requestedConnectionPluginMap[connection.Name] = connectionPlugin
-		if connectionPlugin.SupportedOperations.MultipleConnections {
-			// if it supports multiple connections, store in multiConnectionPlugins too
-			multiConnectionPlugins[connection.Plugin] = connectionPlugin
-		}
+		// store in connectionPluginMap too
+		connectionPluginMap[connection.Plugin] = connectionPlugin
 	}
 	log.Printf("[TRACE] all connection plugins created, populating schemas")
 
@@ -260,8 +256,8 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 	log.Printf("[TRACE] plugin manager returned reattach config for connection '%s' - pid %d",
 		connectionName, reattach.Pid)
 	if reattach.Pid == 0 {
-		log.Printf("[WARN] plugin manager returned nil PID for %s", connectionName)
-		return nil, fmt.Errorf("plugin manager returned nil PID for %s", connectionName)
+		log.Printf("[WARN] reattach config has a zero pid for connection %s", connectionName)
+		return nil, fmt.Errorf("reattach config has a zero pid for connection %s", connectionName)
 	}
 
 	// attach to the plugin process

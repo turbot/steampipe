@@ -27,6 +27,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -479,7 +480,8 @@ func (m *PluginManager) startPluginProcess(pluginName string, connectionConfigs 
 	})
 
 	if _, err := client.Start(); err != nil {
-		err := m.handleStartFailure(err)
+		// attempt to retrieve error message encoded in the plugin stdout
+		err := grpc.HandleStartFailure(err)
 		return nil, err
 	}
 
@@ -767,24 +769,24 @@ func (m *PluginManager) nonAggregatorConnectionCount() int {
 	}
 	return res
 }
-
-func (m *PluginManager) handleStartFailure(err error) error {
-	// extract the plugin message
-	_, pluginMessage, found := strings.Cut(err.Error(), sdkplugin.UnrecognizedRemotePluginMessage)
-	if !found {
-		return err
-	}
-	pluginMessage, _, found = strings.Cut(pluginMessage, sdkplugin.UnrecognizedRemotePluginMessageSuffix)
-	if !found {
-		return err
-	}
-
-	// if this was a panic during startup, reraise an error with the panic string
-	if strings.Contains(pluginMessage, sdkplugin.PluginStartupFailureMessage) {
-		return fmt.Errorf(pluginMessage)
-	}
-	return err
-}
+//
+//func (m *PluginManager) handleStartFailure(err error) error {
+//	// extract the plugin message
+//	_, pluginMessage, found := strings.Cut(err.Error(), sdkplugin.UnrecognizedRemotePluginMessage)
+//	if !found {
+//		return err
+//	}
+//	pluginMessage, _, found = strings.Cut(pluginMessage, sdkplugin.UnrecognizedRemotePluginMessageSuffix)
+//	if !found {
+//		return err
+//	}
+//
+//	// if this was a panic during startup, reraise an error with the panic string
+//	if strings.Contains(pluginMessage, sdkplugin.PluginStartupFailureMessage) {
+//		return fmt.Errorf(pluginMessage)
+//	}
+//	return err
+//}
 
 // getPluginExemplarConnections returns a map of keyed by plugin short name with the value an exemplar connection
 func (m *PluginManager) getPluginExemplarConnections() map[string]string {

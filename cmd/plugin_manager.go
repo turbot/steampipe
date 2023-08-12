@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
+	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -33,6 +34,38 @@ func pluginManagerCmd() *cobra.Command {
 }
 
 func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
+	var pluginManager *pluginmanager_service.PluginManager
+
+	var err error
+	defer func() {
+		if err != nil {
+			// write to stdout so the plugin manager can extract the error message
+			fmt.Println(fmt.Sprintf("%s%s", plugin.PluginStartupFailureMessage, err.Error()))
+		}
+		os.Exit(1)
+	}()
+
+	pluginManager, err = createPluginManager(cmd)
+	if err != nil {
+		return
+	}
+
+	if shouldRunConnectionWatcher() {
+		log.Printf("[INFO] starting connection watcher")
+		connectionWatcher, err := connection.NewConnectionWatcher(pluginManager)
+		if err != nil {
+			return
+		}
+
+		// close the connection watcher
+		defer connectionWatcher.Close()
+	}
+
+	log.Printf("[INFO] about to serve")
+	pluginManager.Serve()
+}
+
+func createPluginManager(cmd *cobra.Command) (*pluginmanager_service.PluginManager, error) {
 	logger := createPluginManagerLog()
 
 	log.Printf("[INFO] starting plugin manager")
@@ -40,7 +73,7 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 	steampipeConfig, errorsAndWarnings := steampipeconfig.LoadConnectionConfig()
 	if errorsAndWarnings.GetError() != nil {
 		log.Printf("[WARN] failed to load connection config: %v", errorsAndWarnings.GetError())
-		os.Exit(1)
+		return nil, errorsAndWarnings.Error
 	}
 
 	// add signal handler for sigpipe - this will be raised if we call displayWarning as stdout is piped
@@ -59,23 +92,10 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 	pluginManager, err := pluginmanager_service.NewPluginManager(cmd.Context(), configMap, steampipeConfig.Plugins, logger)
 	if err != nil {
 		log.Printf("[WARN] failed to create plugin manager: %s", err.Error())
-		os.Exit(1)
+		return nil, err
 	}
 
-	if shouldRunConnectionWatcher() {
-		log.Printf("[INFO] starting connection watcher")
-		connectionWatcher, err := connection.NewConnectionWatcher(pluginManager)
-		if err != nil {
-			log.Printf("[WARN] failed to create connection watcher: %s", err.Error())
-			os.Exit(1)
-		}
-
-		// close the connection watcher
-		defer connectionWatcher.Close()
-	}
-
-	log.Printf("[TRACE] about to serve")
-	pluginManager.Serve()
+	return pluginManager, nil
 }
 
 func shouldRunConnectionWatcher() bool {
