@@ -83,9 +83,14 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	// if there was an error (other than a connection error, which will NOT have been assigned to res),
 	// set state of all incomplete connections to error
 	defer func() {
-		if s.res != nil && s.res.Error != nil {
-			s.setIncompleteConnectionStateToError(ctx, sperr.WrapWithMessage(s.res.Error, "refreshConnections failed before connection update was complete"))
-			// TODO send error PG notification
+		if s.res != nil {
+
+			if s.res.Error != nil {
+				s.setIncompleteConnectionStateToError(ctx, sperr.WrapWithMessage(s.res.Error, "refreshConnections failed before connection update was complete"))
+			}
+			if !s.res.ErrorAndWarnings.Empty() {
+				s.sendPostgreErrorNotification(ctx, s.res.ErrorAndWarnings)
+			}
 		}
 	}()
 	log.Printf("[INFO] building connectionUpdates")
@@ -786,6 +791,19 @@ func (s *refreshConnectionState) sendPostgreSchemaNotification(ctx context.Conte
 		return err
 	}
 	defer conn.Release()
-	notification := steampipeconfig.NewSchemaUpdateNotification(steampipeconfig.PgNotificationSchemaUpdate)
+	notification := steampipeconfig.NewSchemaUpdateNotification()
+
 	return db_local.SendPostgresNotification(ctx, conn.Conn(), notification)
+}
+
+func (s *refreshConnectionState) sendPostgreErrorNotification(ctx context.Context, errorAndWarnings error_helpers.ErrorAndWarnings) error {
+	log.Printf("[INFO] sending postgres error notificaiton")
+	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
+	if err != nil {
+		return err
+	}
+	defer conn.Close(ctx)
+	notification := steampipeconfig.NewConnectionErrorNotification(errorAndWarnings)
+
+	return db_local.SendPostgresNotification(ctx, conn, notification)
 }

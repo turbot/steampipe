@@ -765,7 +765,6 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 	if notification == nil {
 		return
 	}
-	log.Printf("[TRACE] handleConnectionUpdateNotification")
 	n := &steampipeconfig.PostgresNotification{}
 	err := json.Unmarshal([]byte(notification.Payload), n)
 	if err != nil {
@@ -774,16 +773,32 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 	}
 	switch n.Type {
 	case steampipeconfig.PgNotificationSchemaUpdate:
+		c.handleConnectionUpdateNotification(ctx)
+	case steampipeconfig.PgNotificationConnectionError:
 		// unmarshal the notification again, into the correct type
-		schemaUpdateNotification := &steampipeconfig.SteampipeNotification{}
-		if err := json.Unmarshal([]byte(notification.Payload), schemaUpdateNotification); err != nil {
+		errorNotification := &steampipeconfig.ConnectionErrorNotification{}
+		if err := json.Unmarshal([]byte(notification.Payload), errorNotification); err != nil {
 			log.Printf("[WARN] Error unmarshalling notification: %s", err)
 			return
 		}
-		c.handleConnectionUpdateNotification(ctx)
+		c.handleConnectionErrorNotification(ctx, errorNotification)
 	}
 }
 
+func (c *InteractiveClient) handleConnectionErrorNotification(ctx context.Context, notification *steampipeconfig.ConnectionErrorNotification) {
+	log.Printf("[TRACE] handleConnectionErrorNotification")
+	output := viper.Get(constants.ArgOutput)
+	if output == constants.OutputFormatJSON || output == constants.OutputFormatCSV {
+		return
+	}
+
+	c.showMessages(ctx, func() {
+		for _, m := range notification.Errors {
+			error_helpers.ShowWarning(m)
+		}
+	})
+
+}
 func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context) {
 	// at present, we do not actually use the payload, we just do a brute force reload
 	// as an optimization we could look at the updates and only reload the required schemas

@@ -1,11 +1,16 @@
 package steampipeconfig
 
+import (
+	"github.com/turbot/steampipe/pkg/error_helpers"
+)
+
 const PostgresNotificationStructVersion = 20230306
 
 type PostgresNotificationType int
 
 const (
 	PgNotificationSchemaUpdate PostgresNotificationType = iota + 1
+	PgNotificationConnectionError
 )
 
 type PostgresNotification struct {
@@ -13,14 +18,28 @@ type PostgresNotification struct {
 	Type          PostgresNotificationType
 }
 
-type SteampipeNotification struct {
+type ConnectionErrorNotification struct {
 	StructVersion int
 	Type          PostgresNotificationType
+	Errors        []string
 }
 
-func NewSchemaUpdateNotification(notificationType PostgresNotificationType) *SteampipeNotification {
-	return &SteampipeNotification{
+func NewSchemaUpdateNotification() *PostgresNotification {
+	return &PostgresNotification{
 		StructVersion: PostgresNotificationStructVersion,
-		Type:          notificationType,
+		Type:          PgNotificationSchemaUpdate,
 	}
+}
+
+func NewConnectionErrorNotification(errorAndWarnings error_helpers.ErrorAndWarnings) *ConnectionErrorNotification {
+	res := &ConnectionErrorNotification{
+		StructVersion: PostgresNotificationStructVersion,
+		Type:          PgNotificationConnectionError,
+	}
+	// TODO colour - add Error:/Warning prefix?
+	if errorAndWarnings.Error != nil {
+		res.Errors = []string{errorAndWarnings.Error.Error()}
+	}
+	res.Errors = append(res.Errors, errorAndWarnings.Warnings...)
+	return res
 }

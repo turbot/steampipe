@@ -17,6 +17,7 @@ func DiagsToErrorsAndWarnings(errPrefix string, diags hcl.Diagnostics) *ErrorAnd
 		plugin.DiagsToWarnings(diags)...,
 	)
 }
+
 func EmptyErrorsAndWarning() *ErrorAndWarnings {
 	return NewErrorsAndWarning(nil)
 }
@@ -65,4 +66,8 @@ func (r *ErrorAndWarnings) Merge(other *ErrorAndWarnings) *ErrorAndWarnings {
 		r.AddWarning(other.Warnings...)
 	}
 	return r
+}
+
+func (r *ErrorAndWarnings) Empty() bool {
+	return r.Error == nil && len(r.Warnings) == 0
 }

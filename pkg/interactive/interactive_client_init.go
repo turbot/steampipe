@@ -40,40 +40,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	}
 
 	if initResult.HasMessages() {
-		statushooks.Done(ctx)
-		// clear the prompt
-		// NOTE: this must be done BEFORE setting hidePrompt
-		// otherwise the cursor calculations in go-prompt do not work and multi-line test is not cleared
-		c.interactivePrompt.ClearLine()
-		// set the flag hide the prompt prefix in the next prompt render cycle
-		c.hidePrompt = true
-		// call ClearLine to render the empty prefix
-		c.interactivePrompt.ClearLine()
-
-		// display messages
-		initResult.DisplayMessages()
-		// show the prompt again
-		c.hidePrompt = false
-
-		// We need to render the prompt here to make sure that it comes back
-		// after the messages have been displayed (only if there's no execution)
-		//
-		// We check for query execution by TRYING to acquire the same lock that
-		// execution locks on
-		//
-		// If we can acquire a lock, that means that there's no
-		// query execution underway - and it is safe to render the prompt
-		//
-		// otherwise, that query execution is waiting for this init to finish
-		// and as such will be out of the prompt - in which case, we shouldn't
-		// re-render the prompt
-		//
-		// the prompt will be re-rendered when the query execution finished
-		if c.executionLock.TryLock() {
-			c.interactivePrompt.Render()
-			// release the lock
-			c.executionLock.Unlock()
-		}
+		c.showMessages(ctx, initResult.DisplayMessages)
 	}
 
 	// initialise autocomplete suggestions
@@ -86,6 +53,44 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 		c.interactivePrompt.Render()
 	})
 
+}
+
+func (c *InteractiveClient) showMessages(ctx context.Context, showMessages func()) {
+	statushooks.Done(ctx)
+	// clear the prompt
+	// NOTE: this must be done BEFORE setting hidePrompt
+	// otherwise the cursor calculations in go-prompt do not work and multi-line test is not cleared
+	c.interactivePrompt.ClearLine()
+	// set the flag hide the prompt prefix in the next prompt render cycle
+	c.hidePrompt = true
+	// call ClearLine to render the empty prefix
+	c.interactivePrompt.ClearLine()
+
+	// call the passed in func to display the messages
+	showMessages()
+
+	// show the prompt again
+	c.hidePrompt = false
+
+	// We need to render the prompt here to make sure that it comes back
+	// after the messages have been displayed (only if there's no execution)
+	//
+	// We check for query execution by TRYING to acquire the same lock that
+	// execution locks on
+	//
+	// If we can acquire a lock, that means that there's no
+	// query execution underway - and it is safe to render the prompt
+	//
+	// otherwise, that query execution is waiting for this init to finish
+	// and as such will be out of the prompt - in which case, we shouldn't
+	// re-render the prompt
+	//
+	// the prompt will be re-rendered when the query execution finished
+	if c.executionLock.TryLock() {
+		c.interactivePrompt.Render()
+		// release the lock
+		c.executionLock.Unlock()
+	}
 }
 
 func (c *InteractiveClient) readInitDataStream(ctx context.Context) {

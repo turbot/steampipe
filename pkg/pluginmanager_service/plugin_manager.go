@@ -199,7 +199,7 @@ func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.R
 func (m *PluginManager) doRefresh() {
 	refreshResult := connection.RefreshConnections(context.Background(), m)
 	if refreshResult.Error != nil {
-		// TODO send errors and warnings back to CLI from plugin manager - https://github.com/turbot/steampipe/issues/3603
+		// NOTE: the RefreshConnectionState will already have sent a notification to the CLI
 		log.Printf("[WARN] RefreshConnections failed with error: %s", refreshResult.Error.Error())
 	}
 }
@@ -749,7 +749,7 @@ func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionNa
 	}
 
 	// also send a postgres notification
-	notification := steampipeconfig.NewSchemaUpdateNotification(steampipeconfig.PgNotificationSchemaUpdate)
+	notification := steampipeconfig.NewSchemaUpdateNotification()
 
 	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
