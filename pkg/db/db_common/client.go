@@ -8,7 +8,7 @@ import (
 )
 
 type Client interface {
-	Close(ctx context.Context) error
+	Close(context.Context) error
 	LoadUserSearchPath(ctx context.Context) error
 
 	SetRequiredSessionSearchPath(context.Context) error
@@ -17,6 +17,8 @@ type Client interface {
 
 	// acquire a database connection - must be closed
 	AcquireConnection(ctx context.Context) (*pgxpool.Conn, error)
+	// acquire a management database connection - must be closed
+	AcquireManagementConnection(ctx context.Context) (*pgxpool.Conn, error)
 	// acquire a query execution session (which search pathand cache options  set) - must be closed
 	AcquireSession(context.Context) *AcquireSessionResult
 
