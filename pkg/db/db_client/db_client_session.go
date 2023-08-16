@@ -15,6 +15,10 @@ func (c *DbClient) AcquireConnection(ctx context.Context) (*pgxpool.Conn, error)
 	return c.userPool.Acquire(ctx)
 }
 
+func (c *DbClient) AcquireManagementConnection(ctx context.Context) (*pgxpool.Conn, error) {
+	return c.managementPool.Acquire(ctx)
+}
+
 func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common.AcquireSessionResult) {
 	sessionResult = &db_common.AcquireSessionResult{}
 
