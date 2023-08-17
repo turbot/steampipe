@@ -102,6 +102,9 @@ func (c *DbClient) establishManagementConnectionPool(ctx context.Context, config
 		constants.RuntimeParamsKeyApplicationName: runtime.ClientSystemConnectionAppName,
 	}
 
+	// remove the afterConnect hook - we don't need the session data in management connections
+	copiedConfig.AfterConnect = nil
+
 	// this returns connection pool
 	dbPool, err := pgxpool.NewWithConfig(context.Background(), copiedConfig)
 	if err != nil {
