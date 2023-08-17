@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"runtime/debug"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -21,6 +22,7 @@ type SystemClientExecutor func(context.Context, pgx.Tx) error
 func ExecuteSystemClientCall(ctx context.Context, conn *pgx.Conn, executor SystemClientExecutor) error {
 	if !IsClientAppName(conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName]) {
 		// this should NEVER happen
+		debug.PrintStack()
 		return sperr.New("ExecuteSystemClientCall called with appname other than client: %s", conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName])
 	}
 
