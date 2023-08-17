@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -19,7 +20,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/sperr"
 )
 
 var GlobalConfig *SteampipeConfig

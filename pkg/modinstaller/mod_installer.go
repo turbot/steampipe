@@ -12,6 +12,7 @@ import (
 	git "github.com/go-git/go-git/v5"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -20,7 +21,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/sperr"
 )
 
 type ModInstaller struct {

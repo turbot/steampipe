@@ -9,11 +9,11 @@ import (
 
 	"github.com/spf13/viper"
 	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/sperr"
 )
 
 func PublishSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {

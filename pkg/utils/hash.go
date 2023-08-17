@@ -3,8 +3,9 @@ package utils
 import (
 	"crypto/md5"
 	"fmt"
-	"github.com/turbot/steampipe/sperr"
 	"strconv"
+
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 )
 
 func Base36Hash(input string, length int) (string, error) {

@@ -9,11 +9,11 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/sperr"
 )
 
 func loginCmd() *cobra.Command {

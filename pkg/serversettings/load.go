@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/sperr"
 )
 
 func Load(ctx context.Context, conn *pgx.Conn) (_ *db_common.ServerSettings, e error) {
