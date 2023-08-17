@@ -3,8 +3,10 @@ package db_common
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 )
@@ -19,7 +21,7 @@ type SystemClientExecutor func(context.Context, pgx.Tx) error
 func ExecuteSystemClientCall(ctx context.Context, conn *pgx.Conn, executor SystemClientExecutor) error {
 	if !IsClientAppName(conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName]) {
 		// this should NEVER happen
-		return fmt.Errorf("ExecuteSystemClientCall called with appname other than client: %s", conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName])
+		return sperr.New("ExecuteSystemClientCall called with appname other than client: %s", conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName])
 	}
 
 	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) (e error) {
@@ -27,15 +29,18 @@ func ExecuteSystemClientCall(ctx context.Context, conn *pgx.Conn, executor Syste
 		// and then revert when done
 		_, err := tx.Exec(ctx, fmt.Sprintf("SET application_name TO '%s'", runtime.ClientSystemConnectionAppName))
 		if err != nil {
-			return err
+			return sperr.WrapWithRootMessage(err, "could not set application name on connection")
 		}
 		defer func() {
 			// set back the original application name
 			_, e = tx.Exec(ctx, fmt.Sprintf("SET application_name TO '%s'", conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName]))
+			if e != nil {
+				log.Println("[TRACE] could not reset application_name", e)
+			}
 		}()
 
 		if err := executor(ctx, tx); err != nil {
-			return err
+			return sperr.WrapWithMessage(err, "scoped execution failed with management client")
 		}
 		return nil
 	})
