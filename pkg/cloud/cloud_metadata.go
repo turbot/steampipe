@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/sperr"
 )
 
 func GetCloudMetadata(ctx context.Context, workspaceDatabaseString, token string) (*steampipeconfig.CloudMetadata, error) {

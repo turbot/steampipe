@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/sperr"
 )
 
 var (

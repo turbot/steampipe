@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/sperr"
 )
 
 // GetUserWorkspaceHandle returns the handle of the user workspace

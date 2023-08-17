@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgx/v5"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/sperr"
 	"log"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe/pkg/constants"
 )
 
 // SendPostgresNotification send a postgres notification that the schema has chganged

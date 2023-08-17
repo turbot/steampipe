@@ -3,7 +3,7 @@ package error_helpers
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/sperr"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 )
 
 type ErrorAndWarnings struct {
