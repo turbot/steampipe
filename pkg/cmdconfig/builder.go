@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -84,6 +85,20 @@ func (c *CmdBuilder) AddBoolFlag(name string, defaultValue bool, desc string, op
 		o(c.cmd, name, name)
 	}
 	return c
+}
+
+// AddCloudFlags is helper function to add the cloud flags to a command
+func (c *CmdBuilder) AddCloudFlags() *CmdBuilder {
+	return c.
+		AddStringFlag(constants.ArgCloudHost, constants.DefaultCloudHost, "Turbot Pipes host").
+		AddStringFlag(constants.ArgCloudToken, "", "Turbot Pipes authentication token").
+		AddStringFlag(constants.ArgWorkspaceDatabase, constants.DefaultWorkspaceDatabase, "Turbot Pipes workspace database")
+}
+
+// AddWorkspaceFlags is helper function to add the workspace flags to a command
+func (c *CmdBuilder) AddWorkspaceFlags() *CmdBuilder {
+	return c.
+		AddStringFlag(constants.ArgWorkspaceProfile, "default", "The workspace profile to use")
 }
 
 // AddStringSliceFlag is a helper function to add a flag that accepts an array of strings
