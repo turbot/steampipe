@@ -2,6 +2,7 @@ package db_common
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -55,6 +56,9 @@ func GetUserSearchPath(ctx context.Context, conn *pgx.Conn) ([]string, error) {
 	rows := conn.QueryRow(ctx, query)
 	var configStrings []string
 	if err := rows.Scan(&configStrings); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []string{}, nil
+		}
 		return nil, err
 	}
 	if len(configStrings) > 0 {
