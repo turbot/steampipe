@@ -868,7 +868,7 @@ func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionStateMap
 	}
 	defer client.Close(ctx)
 
-	conn, err := client.AcquireConnection(ctx)
+	conn, err := client.AcquireManagementConnection(ctx)
 	if err != nil {
 		res.Error = err
 		return nil, res
