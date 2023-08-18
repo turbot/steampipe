@@ -132,7 +132,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	})
 
 	statushooks.SetStatus(ctx, "Connecting to steampipe")
-	client, errorsAndWarnings := GetDbClient(getClientCtx, invoker, ensureSessionData)
+	client, errorsAndWarnings := GetDbClient(getClientCtx, invoker, db_client.WithConnectionCallback(ensureSessionData))
 	if errorsAndWarnings.Error != nil {
 		i.Result.Error = errorsAndWarnings.Error
 		return
@@ -174,15 +174,15 @@ func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap map
 }
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
-func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (db_common.Client, *error_helpers.ErrorAndWarnings) {
+func GetDbClient(ctx context.Context, invoker constants.Invoker, options ...db_client.DbClientConnectionOption) (db_common.Client, *error_helpers.ErrorAndWarnings) {
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		statushooks.SetStatus(ctx, "Connecting to remote Steampipe database")
-		client, err := db_client.NewDbClient(ctx, connectionString, onConnectionCallback)
+		client, err := db_client.NewDbClient(ctx, connectionString, options...)
 		return client, error_helpers.NewErrorsAndWarning(err)
 	}
 
 	statushooks.SetStatus(ctx, "Starting local Steampipe database")
-	return db_local.GetLocalClient(ctx, invoker, onConnectionCallback)
+	return db_local.GetLocalClient(ctx, invoker, options...)
 }
 
 func (i *InitData) Cleanup(ctx context.Context) {

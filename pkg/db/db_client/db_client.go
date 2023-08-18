@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -58,22 +59,30 @@ type DbClient struct {
 	// (cached to avoid concurrent access error on viper)
 	showTimingFlag bool
 	// disable timing - set whilst in process of querying the timing
-	disableTiming        bool
+	disableTiming bool
+
 	onConnectionCallback DbConnectionCallback
+	maxIdleTime          time.Duration
+	maxLifeTime          time.Duration
 }
 
-func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback) (_ *DbClient, err error) {
+func NewDbClient(ctx context.Context, connectionString string, options ...DbClientConnectionOption) (_ *DbClient, err error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
+
+	config := newDbClientConnectionConfig()
+	for _, dcco := range options {
+		dcco(config)
+	}
 
 	wg := &sync.WaitGroup{}
 	// wrap onConnectionCallback to use wait group
 	var wrappedOnConnectionCallback DbConnectionCallback
-	if onConnectionCallback != nil {
+	if config.connectionCallback != nil {
 		wrappedOnConnectionCallback = func(ctx context.Context, conn *pgx.Conn) error {
 			wg.Add(1)
 			defer wg.Done()
-			return onConnectionCallback(ctx, conn)
+			return config.connectionCallback(ctx, conn)
 		}
 	}
 
@@ -83,9 +92,11 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
 		sessions:                make(map[uint32]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
+		connectionString:        connectionString,
 		// store the callback
 		onConnectionCallback: wrappedOnConnectionCallback,
-		connectionString:     connectionString,
+		maxIdleTime:          config.maxIdleTime,
+		maxLifeTime:          config.maxLifeTime,
 	}
 
 	defer func() {
