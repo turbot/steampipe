@@ -2,11 +2,13 @@ package cmdconfig
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -97,8 +99,11 @@ func (c *CmdBuilder) AddCloudFlags() *CmdBuilder {
 
 // AddWorkspaceFlags is helper function to add the workspace flags to a command
 func (c *CmdBuilder) AddWorkspaceFlags() *CmdBuilder {
+	cwd, err := os.Getwd()
+	error_helpers.FailOnError(err)
 	return c.
-		AddStringFlag(constants.ArgWorkspaceProfile, "default", "The workspace profile to use")
+		AddStringFlag(constants.ArgWorkspaceProfile, "default", "The workspace profile to use").
+		AddStringFlag(constants.ArgModLocation, cwd, "Path to the workspace working directory")
 }
 
 // AddStringSliceFlag is a helper function to add a flag that accepts an array of strings
