@@ -24,7 +24,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 }
 
-@test "schema cloning - quoting issue" {
+@test "verify mixed case connection name works" {
   # remove existing connections
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos.spc
 
