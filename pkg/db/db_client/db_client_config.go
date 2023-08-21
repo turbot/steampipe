@@ -30,6 +30,22 @@ func WithConnectionRecycleDisabled() DbClientConnectionOption {
 
 func WithConnectionCallback(cb DbConnectionCallback) DbClientConnectionOption {
 	return func(dcc *dbClientConnectionConfig) {
+		if dcc.connectionCallback != nil {
+			originalCallback := dcc.connectionCallback
+			wrappedCallback := func(ctx context.Context, c *pgx.Conn) error {
+				// call the original one first
+				if err := originalCallback(ctx, c); err != nil {
+					return err
+				}
+				// then this one
+				if err := cb(ctx, c); err != nil {
+					return err
+				}
+				return nil
+			}
+			dcc.connectionCallback = wrappedCallback
+			return
+		}
 		dcc.connectionCallback = cb
 	}
 }

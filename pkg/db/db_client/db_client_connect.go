@@ -59,9 +59,15 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	if c.recycleConnections {
 		config.MaxConnLifetime = connMaxLifetime
 		config.MaxConnIdleTime = connMaxIdleTime
+		// add a jitter so that the pool doesn't starve when the initial set of connections expire
+		config.MaxConnLifetimeJitter = 5 * time.Second
+	} else {
+		// set these to very high numbers, so that pgx doesn't recycle them
+		// if we don't set them at all, pgx sets them to defaults and they would recycle anyway
+		config.MaxConnLifetime = 30 * 24 * time.Hour   // 30 days - really high
+		config.MaxConnIdleTime = 30 * 24 * time.Hour   // 30 days - really high
+		config.HealthCheckPeriod = 30 * 24 * time.Hour // 30 days - really high
 	}
-	// add a jitter so that closing connections do not starve the pool
-	config.MaxConnLifetimeJitter = 5 * time.Second
 
 	if c.onConnectionCallback != nil {
 		config.AfterConnect = c.onConnectionCallback

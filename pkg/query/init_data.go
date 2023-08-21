@@ -31,7 +31,7 @@ func NewInitData(ctx context.Context, args []string, connectionOptions ...db_cli
 		InitData: *initialisation.NewInitData(),
 		Loaded:   make(chan struct{}),
 	}
-	go i.init(ctx, args)
+	go i.init(ctx, args, connectionOptions...)
 
 	return i
 }
