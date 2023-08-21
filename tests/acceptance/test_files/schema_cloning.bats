@@ -63,7 +63,6 @@ function teardown_file() {
 }
 
 function teardown() {
-  steampipe query "select * from information_schema.schemata" >&3
-  # remove the files created as part of these tests
+  # remove the files created as part of these tests 
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos.spc
 }
