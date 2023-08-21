@@ -97,12 +97,17 @@ func (c *CmdBuilder) AddCloudFlags() *CmdBuilder {
 		AddStringFlag(constants.ArgWorkspaceDatabase, constants.DefaultWorkspaceDatabase, "Turbot Pipes workspace database")
 }
 
-// AddWorkspaceFlags is helper function to add the workspace flags to a command
-func (c *CmdBuilder) AddWorkspaceFlags() *CmdBuilder {
+// AddWorkspaceFlag is helper function to add the workspace flag to a command
+func (c *CmdBuilder) AddWorkspaceFlag() *CmdBuilder {
+	return c.
+		AddStringFlag(constants.ArgWorkspaceProfile, "default", "The workspace profile to use")
+}
+
+// AddModLocationFlag is helper function to add the mod-location flag to a command
+func (c *CmdBuilder) AddModLocationFlag() *CmdBuilder {
 	cwd, err := os.Getwd()
 	error_helpers.FailOnError(err)
 	return c.
-		AddStringFlag(constants.ArgWorkspaceProfile, "default", "The workspace profile to use").
 		AddStringFlag(constants.ArgModLocation, cwd, "Path to the workspace working directory")
 }
 

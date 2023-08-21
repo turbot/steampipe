@@ -74,7 +74,8 @@ Examples:
 	cmdconfig.
 		OnCmd(cmd).
 		AddCloudFlags().
-		AddWorkspaceFlags().
+		AddWorkspaceFlag().
+		AddModLocationFlag().
 		AddBoolFlag(constants.ArgHelp, false, "Help for query", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddBoolFlag(constants.ArgHeader, true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, ",", "Separator string for csv output").
