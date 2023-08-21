@@ -6,7 +6,6 @@ import (
 	"log"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -62,8 +61,7 @@ type DbClient struct {
 	disableTiming bool
 
 	onConnectionCallback DbConnectionCallback
-	maxIdleTime          time.Duration
-	maxLifeTime          time.Duration
+	recycleConnections   bool
 }
 
 func NewDbClient(ctx context.Context, connectionString string, options ...DbClientConnectionOption) (_ *DbClient, err error) {
@@ -95,8 +93,7 @@ func NewDbClient(ctx context.Context, connectionString string, options ...DbClie
 		connectionString:        connectionString,
 		// store the callback
 		onConnectionCallback: wrappedOnConnectionCallback,
-		maxIdleTime:          config.maxIdleTime,
-		maxLifeTime:          config.maxLifeTime,
+		recycleConnections:   config.recycleConnections,
 	}
 
 	defer func() {

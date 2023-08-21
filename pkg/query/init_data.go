@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/statushooks"
@@ -25,7 +26,7 @@ type InitData struct {
 // NewInitData returns a new InitData object
 // It also starts an asynchronous population of the object
 // InitData.Done closes after asynchronous initialization completes
-func NewInitData(ctx context.Context, args []string) *InitData {
+func NewInitData(ctx context.Context, args []string, connectionOptions ...db_client.DbClientConnectionOption) *InitData {
 	i := &InitData{
 		InitData: *initialisation.NewInitData(),
 		Loaded:   make(chan struct{}),
@@ -66,7 +67,7 @@ func (i *InitData) Cleanup(ctx context.Context) {
 	}
 }
 
-func (i *InitData) init(ctx context.Context, args []string) {
+func (i *InitData) init(ctx context.Context, args []string, connectionOptions ...db_client.DbClientConnectionOption) {
 	defer func() {
 		close(i.Loaded)
 		// clear the cancelInitialisation function
@@ -111,5 +112,5 @@ func (i *InitData) init(ctx context.Context, args []string) {
 	i.Queries = resolvedQueries
 
 	// and call base init
-	i.InitData.Init(ctx, constants.InvokerQuery)
+	i.InitData.Init(ctx, constants.InvokerQuery, connectionOptions...)
 }

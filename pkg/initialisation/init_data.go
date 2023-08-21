@@ -54,7 +54,7 @@ func (i *InitData) RegisterExporters(exporters ...export.Exporter) *InitData {
 	return i
 }
 
-func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
+func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, connectionOptions ...db_client.DbClientConnectionOption) {
 	defer func() {
 		if r := recover(); r != nil {
 			i.Result.Error = helpers.ToError(r)
@@ -132,7 +132,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	})
 
 	statushooks.SetStatus(ctx, "Connecting to steampipe")
-	client, errorsAndWarnings := GetDbClient(getClientCtx, invoker, db_client.WithConnectionCallback(ensureSessionData))
+	connectionOptions = append(connectionOptions, db_client.WithConnectionCallback(ensureSessionData))
+	client, errorsAndWarnings := GetDbClient(getClientCtx, invoker, connectionOptions...)
 	if errorsAndWarnings.Error != nil {
 		i.Result.Error = errorsAndWarnings.Error
 		return
