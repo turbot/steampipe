@@ -10,19 +10,42 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"strings"
 	"time"
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/sperr"
 )
 
-const CertIssuer = "steampipe.io"
-
-var (
-	CertExpiryTolerance      = 180 * (24 * time.Hour)     // 180 days
-	RootCertValidityPeriod   = 5 * 365 * (24 * time.Hour) // 5 years
-	ServerCertValidityPeriod = 365 * (24 * time.Hour)     // 1 year
+const (
+	CertIssuer               = "steampipe.io"
+	ServerCertValidityPeriod = 365 * (24 * time.Hour) // 1 year
 )
+
+func RemoveExpiringCertificates() error {
+	if !CertificatesExist() {
+		// don't do anything - certificates haven't been installed yet
+		return nil
+	}
+
+	if !ValidateRootCertificate() {
+		// if root certificate is not valid (i.e. expired), remove root and server certs,
+		// they will both be regenerated
+		err := RemoveAllCertificates()
+		if err != nil {
+			return sperr.WrapWithRootMessage(err, "issue removing invalid root certificate")
+		}
+	} else if !ValidateServerCertificate() {
+		// if server certificate is not valid (i.e. expired), remove it,
+		// it will be regenerated
+		err := RemoveServerCertificate()
+		if err != nil {
+			return sperr.WrapWithRootMessage(err, "issue removing invalid server certificate")
+		}
+	}
+	return nil
+}
 
 // CertificatesExist checks if the root and server certificate and key files exist
 func CertificatesExist() bool {
@@ -57,26 +80,28 @@ func RemoveAllCertificates() error {
 func ValidateRootCertificate() bool {
 	utils.LogTime("db_local.ValidateRootCertificates start")
 	defer utils.LogTime("db_local.ValidateRootCertificates end")
-
 	rootCertificate, err := utils.ParseCertificateInLocation(getRootCertLocation())
 	if err != nil {
 		return false
 	}
-
-	return (rootCertificate.Subject.CommonName == CertIssuer) && isCerticateExpiring(rootCertificate)
+	return validateCertificate(rootCertificate)
 }
 
 // ValidateServerCertificate checks the server certificate exists, is not expired and has correct issuer
 func ValidateServerCertificate() bool {
 	utils.LogTime("db_local.ValidateServerCertificates start")
 	defer utils.LogTime("db_local.ValidateServerCertificates end")
-
 	serverCertificate, err := utils.ParseCertificateInLocation(getServerCertLocation())
 	if err != nil {
 		return false
 	}
+	return validateCertificate(serverCertificate)
+}
 
-	return (serverCertificate.Issuer.CommonName == CertIssuer) && isCerticateExpiring(serverCertificate)
+func validateCertificate(cert *x509.Certificate) bool {
+	commonNameMatch := strings.EqualFold(cert.Subject.CommonName, CertIssuer)
+	expiring := isCerticateExpiring(cert)
+	return commonNameMatch && !expiring
 }
 
 // if certificate or private key files do not exist, generate them
@@ -104,7 +129,7 @@ func ensureSelfSignedCertificate() (err error) {
 	}
 
 	// now generate new server cert
-	return generateServerCertificates(rootCertificate, rootPrivateKey)
+	return generateServerCertificate(rootCertificate, rootPrivateKey)
 
 }
 
@@ -120,9 +145,22 @@ func serverCertificateAndKeyExist() bool {
 
 // isCerticateExpiring checks whether the certificate expires within a predefined CertExpiryTolerance period (defined above)
 func isCerticateExpiring(certificate *x509.Certificate) bool {
-	return certificate.NotAfter.Add(-CertExpiryTolerance).After(time.Now())
+	if certificate.NotAfter.IsZero() || certificate.NotBefore.IsZero() {
+		// the certificate does not have any time bounds
+		return false
+	}
+
+	// has the certificate elapsed 3/4 of its lifetime
+	notBefore := certificate.NotBefore
+	notAfter := certificate.NotAfter
+	maxAllowedAge := float64(notAfter.Sub(notBefore)) * (0.75)
+	currentAge := float64(time.Since(notBefore))
+
+	// has current age exceeded the maximum allowed age
+	return currentAge > maxAllowedAge
 }
 
+// generateRootCertificate generates a CA certificate along with a Private key
 func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 	utils.LogTime("db_local.generateServiceCertificates start")
 	defer utils.LogTime("db_local.generateServiceCertificates end")
@@ -133,13 +171,10 @@ func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 		return nil, nil, err
 	}
 
-	now := time.Now()
-
 	// Certificate authority input
 	caCertificateData := &x509.Certificate{
 		SerialNumber:          big.NewInt(2020),
-		NotBefore:             now,
-		NotAfter:              now.Add(RootCertValidityPeriod),
+		NotBefore:             time.Now(),
 		Subject:               pkix.Name{CommonName: CertIssuer},
 		IsCA:                  true,
 		BasicConstraintsValid: true,
@@ -159,7 +194,7 @@ func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 	return caCertificateData, caPrivateKey, nil
 }
 
-func generateServerCertificates(caCertificateData *x509.Certificate, caPrivateKey *rsa.PrivateKey) error {
+func generateServerCertificate(caCertificateData *x509.Certificate, caPrivateKey *rsa.PrivateKey) error {
 	utils.LogTime("db_local.generateServerCertificates start")
 	defer utils.LogTime("db_local.generateServerCertificates end")
 

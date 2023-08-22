@@ -110,7 +110,11 @@ func (r *Runner) run(ctx context.Context) {
 	r.runJobAsync(ctx, func(_ context.Context) { db_local.TrimLogs() }, &waitGroup)
 
 	// validate and regenerate service SSL certificates
-	r.runJobAsync(ctx, func(_ context.Context) { validateServiceCertificates() }, &waitGroup)
+	r.runJobAsync(ctx, func(_ context.Context) {
+		if err := db_local.RemoveExpiringCertificates(); err != nil {
+			log.Println("[TRACE] issue in taskrunner:", err)
+		}
+	}, &waitGroup)
 
 	// wait for all jobs to complete
 	waitGroup.Wait()
