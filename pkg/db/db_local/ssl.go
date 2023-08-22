@@ -24,22 +24,22 @@ const (
 )
 
 func RemoveExpiringCertificates() error {
-	if !CertificatesExist() {
+	if !certificatesExist() {
 		// don't do anything - certificates haven't been installed yet
 		return nil
 	}
 
-	if !ValidateRootCertificate() {
+	if !isRootCertificateValid() {
 		// if root certificate is not valid (i.e. expired), remove root and server certs,
 		// they will both be regenerated
-		err := RemoveAllCertificates()
+		err := removeAllCertificates()
 		if err != nil {
 			return sperr.WrapWithRootMessage(err, "issue removing invalid root certificate")
 		}
-	} else if !ValidateServerCertificate() {
+	} else if !isServerCertificateValid() {
 		// if server certificate is not valid (i.e. expired), remove it,
 		// it will be regenerated
-		err := RemoveServerCertificate()
+		err := removeServerCertificate()
 		if err != nil {
 			return sperr.WrapWithRootMessage(err, "issue removing invalid server certificate")
 		}
@@ -47,13 +47,13 @@ func RemoveExpiringCertificates() error {
 	return nil
 }
 
-// CertificatesExist checks if the root and server certificate and key files exist
-func CertificatesExist() bool {
+// certificatesExist checks if the root and server certificate and key files exist
+func certificatesExist() bool {
 	return filehelpers.FileExists(getRootCertLocation()) && filehelpers.FileExists(getServerCertLocation())
 }
 
-// RemoveServerCertificate removes the server certificate certificates so it will be regenerated
-func RemoveServerCertificate() error {
+// removeServerCertificate removes the server certificate certificates so it will be regenerated
+func removeServerCertificate() error {
 	utils.LogTime("db_local.RemoveServerCertificate start")
 	defer utils.LogTime("db_local.RemoveServerCertificate end")
 
@@ -63,8 +63,8 @@ func RemoveServerCertificate() error {
 	return os.Remove(getServerCertKeyLocation())
 }
 
-// RemoveAllCertificates removes root and server certificates so that they can be regenerated
-func RemoveAllCertificates() error {
+// removeAllCertificates removes root and server certificates so that they can be regenerated
+func removeAllCertificates() error {
 	utils.LogTime("db_local.RemoveAllCertificates start")
 	defer utils.LogTime("db_local.RemoveAllCertificates end")
 
@@ -73,32 +73,33 @@ func RemoveAllCertificates() error {
 		return err
 	}
 	// remove the server cert and key
-	return RemoveServerCertificate()
+	return removeServerCertificate()
 }
 
-// ValidateRootCertificate checks the root certificate exists, is not expired and has correct Subject
-func ValidateRootCertificate() bool {
+// isRootCertificateValid checks the root certificate exists, is not expired and has correct Subject
+func isRootCertificateValid() bool {
 	utils.LogTime("db_local.ValidateRootCertificates start")
 	defer utils.LogTime("db_local.ValidateRootCertificates end")
 	rootCertificate, err := utils.ParseCertificateInLocation(getRootCertLocation())
 	if err != nil {
 		return false
 	}
-	return validateCertificate(rootCertificate)
+	return isCertificateValid(rootCertificate)
 }
 
-// ValidateServerCertificate checks the server certificate exists, is not expired and has correct issuer
-func ValidateServerCertificate() bool {
+// isServerCertificateValid checks the server certificate exists, is not expired and has correct issuer
+func isServerCertificateValid() bool {
 	utils.LogTime("db_local.ValidateServerCertificates start")
 	defer utils.LogTime("db_local.ValidateServerCertificates end")
 	serverCertificate, err := utils.ParseCertificateInLocation(getServerCertLocation())
 	if err != nil {
 		return false
 	}
-	return validateCertificate(serverCertificate)
+	return isCertificateValid(serverCertificate)
 }
 
-func validateCertificate(cert *x509.Certificate) bool {
+// isCertificateValid checks that the certificate has not exceeded it's maximum allowed age (3/4 of lifetime) and has an expected CommonName
+func isCertificateValid(cert *x509.Certificate) bool {
 	commonNameMatch := strings.EqualFold(cert.Subject.CommonName, CertIssuer)
 	expiring := isCerticateExpiring(cert)
 	return commonNameMatch && !expiring
