@@ -9,13 +9,13 @@ benchmark "config_parsing_benchmark" {
 control "cache_test_11" {
   title         = "Control to verify that the options config is parsed and used 1"
   description   = "Control to verify that the options config is parsed and used."
-  query           = query.chaos6_query
+  query         = query.chaos6_query
   severity      = "high"
 }
 
 control "cache_test_12" {
   title         = "Control to verify that the options config is parsed and used 2"
   description   = "Control to verify that the options config is parsed and used."
-  query           = query.chaos6_query
+  query         = query.chaos6_query
   severity      = "high"
 }
