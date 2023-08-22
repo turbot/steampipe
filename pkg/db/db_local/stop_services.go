@@ -6,10 +6,12 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -180,8 +182,9 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 		// check if we have a process from another install-dir
 		statushooks.SetStatus(ctx, "Checking for running instances…")
 		// do not use a context that can be cancelled
-		anyStopped := killInstanceIfAny(context.Background())
-		if anyStopped {
+		anyStopped := killPostgresInstanceIfAny(context.Background())
+		pmStopped := killPluginManagerInstanceIfAny(context.Background())
+		if anyStopped || pmStopped {
 			return ServiceStopped, nil
 		}
 		return ServiceNotRunning, nil
@@ -350,4 +353,101 @@ func getPrintableProcessDetails(process *psutils.Process, indent int) string {
 	}
 
 	return strings.Join(appendTo, "\n")
+}
+
+// kill all postgres processes that were started as part of steampipe (if any)
+func killPostgresInstanceIfAny(ctx context.Context) bool {
+	processes, err := FindAllSteampipePostgresInstances(ctx)
+	if err != nil {
+		return false
+	}
+	wg := sync.WaitGroup{}
+	for _, process := range processes {
+		wg.Add(1)
+		go func(p *psutils.Process) {
+			doThreeStepPostgresExit(ctx, p)
+			wg.Done()
+		}(process)
+	}
+	wg.Wait()
+	return len(processes) > 0
+}
+
+// kill all plugin manager processes that were started as part of steampipe (if any)
+func killPluginManagerInstanceIfAny(ctx context.Context) bool {
+	processes, err := FindAllSteampipePluginManagerInstances(ctx)
+	if err != nil {
+		return false
+	}
+	wg := sync.WaitGroup{}
+	for _, process := range processes {
+		wg.Add(1)
+		go func(p *psutils.Process) {
+			err = p.SendSignal(syscall.SIGKILL)
+			// log err
+			wg.Done()
+		}(process)
+	}
+	wg.Wait()
+	return len(processes) > 0
+}
+
+func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process, error) {
+	var instances []*psutils.Process
+	allProcesses, err := psutils.ProcessesWithContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range allProcesses {
+		cmdLine, err := p.CmdlineSliceWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if isSteampipePostgresProcess(ctx, cmdLine) {
+			instances = append(instances, p)
+		}
+	}
+	return instances, nil
+}
+
+func FindAllSteampipePluginManagerInstances(ctx context.Context) ([]*psutils.Process, error) {
+	var instances []*psutils.Process
+	allProcesses, err := psutils.ProcessesWithContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range allProcesses {
+		cmdLine, err := p.CmdlineSliceWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if isSteampipePluginManagerProcess(ctx, cmdLine) {
+			for _, q := range allProcesses {
+				if ppid, err := q.Ppid(); err == nil && ppid == p.Pid {
+					// add all child plugin processes too
+					instances = append(instances, q)
+				}
+			}
+			instances = append(instances, p)
+		}
+	}
+	return instances, nil
+}
+
+func isSteampipePostgresProcess(ctx context.Context, cmdline []string) bool {
+	if len(cmdline) < 1 {
+		return false
+	}
+	if strings.Contains(cmdline[0], "postgres") {
+		// this is a postgres process - but is it a steampipe service?
+		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", constants.AppName))
+	}
+	return false
+}
+
+func isSteampipePluginManagerProcess(ctx context.Context, cmdline []string) bool {
+	if len(cmdline) < 1 {
+		return false
+	}
+	return strings.HasSuffix(cmdline[0], "steampipe") && strings.EqualFold(cmdline[1], "plugin-manager")
 }
