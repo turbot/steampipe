@@ -183,8 +183,8 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 		statushooks.SetStatus(ctx, "Checking for running instances…")
 		// do not use a context that can be cancelled
 		anyStopped := killPostgresInstanceIfAny(context.Background())
-		pmStopped := killPluginManagerInstanceIfAny(context.Background())
-		if anyStopped || pmStopped {
+		pluginManagerStopped := killPluginManagerInstanceIfAny(context.Background())
+		if anyStopped || pluginManagerStopped {
 			return ServiceStopped, nil
 		}
 		return ServiceNotRunning, nil
