@@ -11,7 +11,6 @@ import (
 	"math/big"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	filehelpers "github.com/turbot/go-kit/files"
@@ -22,7 +21,7 @@ import (
 
 const (
 	CertIssuer               = "steampipe.io"
-	ServerCertValidityPeriod = 365 * (24 * time.Hour) // 1 year
+	ServerCertValidityPeriod = 3 * (365 * (24 * time.Hour)) // 3 years
 )
 
 var EndOfTime = time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)
@@ -33,14 +32,14 @@ func RemoveExpiringCertificates() error {
 		return nil
 	}
 
-	if !isRootCertificateValid() {
+	if isRootCertificateExpiring() {
 		// if root certificate is not valid (i.e. expired), remove root and server certs,
 		// they will both be regenerated
 		err := removeAllCertificates()
 		if err != nil {
 			return sperr.WrapWithRootMessage(err, "issue removing invalid root certificate")
 		}
-	} else if !isServerCertificateValid() {
+	} else if isServerCertificateExpiring() {
 		// if server certificate is not valid (i.e. expired), remove it,
 		// it will be regenerated
 		err := removeServerCertificate()
@@ -80,33 +79,27 @@ func removeAllCertificates() error {
 	return removeServerCertificate()
 }
 
-// isRootCertificateValid checks the root certificate exists, is not expired and has correct Subject
-func isRootCertificateValid() bool {
+// isRootCertificateExpiring checks the root certificate exists, is not expired and has correct Subject
+func isRootCertificateExpiring() bool {
 	utils.LogTime("db_local.ValidateRootCertificates start")
 	defer utils.LogTime("db_local.ValidateRootCertificates end")
 	rootCertificate, err := sslio.ParseCertificateInLocation(getRootCertLocation())
 	if err != nil {
 		return false
 	}
-	return isCertificateValid(rootCertificate)
+	return isCerticateExpiring(rootCertificate)
 }
 
-// isServerCertificateValid checks the server certificate exists, is not expired and has correct issuer
-func isServerCertificateValid() bool {
+// isServerCertificateExpiring checks the server certificate exists, is not expired and has correct issuer
+func isServerCertificateExpiring() bool {
 	utils.LogTime("db_local.ValidateServerCertificates start")
 	defer utils.LogTime("db_local.ValidateServerCertificates end")
 	serverCertificate, err := sslio.ParseCertificateInLocation(getServerCertLocation())
 	if err != nil {
 		return false
 	}
-	return isCertificateValid(serverCertificate)
-}
-
-// isCertificateValid checks that the certificate has not exceeded it's maximum allowed age (3/4 of lifetime) and has an expected CommonName
-func isCertificateValid(cert *x509.Certificate) bool {
-	commonNameMatch := strings.EqualFold(cert.Subject.CommonName, CertIssuer)
-	expiring := isCerticateExpiring(cert)
-	return commonNameMatch && !expiring
+	expiring := isCerticateExpiring(serverCertificate)
+	return expiring
 }
 
 // if certificate or private key files do not exist, generate them
