@@ -10,6 +10,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -163,6 +164,7 @@ func isCerticateExpiring(certificate *x509.Certificate) bool {
 }
 
 // generateRootCertificate generates a CA certificate along with a Private key
+// the CA certificate sign itself
 func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 	utils.LogTime("db_local.generateServiceCertificates start")
 	defer utils.LogTime("db_local.generateServiceCertificates end")
@@ -175,7 +177,7 @@ func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 	now := time.Now()
 	// Certificate authority input
 	caCertificateData := &x509.Certificate{
-		SerialNumber:          big.NewInt(2020),
+		SerialNumber:          getSerialNumber(now),
 		NotBefore:             now,
 		NotAfter:              now.Add(RootCertValidityPeriod),
 		Subject:               pkix.Name{CommonName: CertIssuer},
@@ -197,6 +199,7 @@ func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 	return caCertificateData, caPrivateKey, nil
 }
 
+// generateServerCertificate creates a certificate signed by the CA certificate
 func generateServerCertificate(caCertificateData *x509.Certificate, caPrivateKey *rsa.PrivateKey) error {
 	utils.LogTime("db_local.generateServerCertificates start")
 	defer utils.LogTime("db_local.generateServerCertificates end")
@@ -205,7 +208,7 @@ func generateServerCertificate(caCertificateData *x509.Certificate, caPrivateKey
 
 	// set up for server certificate
 	serverCertificateData := &x509.Certificate{
-		SerialNumber: big.NewInt(2019),
+		SerialNumber: getSerialNumber(now),
 		Subject:      caCertificateData.Subject,
 		Issuer:       caCertificateData.Subject,
 		NotBefore:    now,
@@ -235,6 +238,15 @@ func generateServerCertificate(caCertificateData *x509.Certificate, caPrivateKey
 	}
 
 	return nil
+}
+
+func getSerialNumber(t time.Time) *big.Int {
+	serialNumber, _ := strconv.ParseInt(
+		t.Format("20060102"),
+		10,
+		64,
+	)
+	return big.NewInt(serialNumber)
 }
 
 // derive ssl status from out ssl mode
