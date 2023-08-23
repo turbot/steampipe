@@ -6,12 +6,8 @@ import (
 	"log"
 	"os"
 	"strings"
-	"sync"
-	"syscall"
-	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -183,8 +179,12 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 		statushooks.SetStatus(ctx, "Checking for running instances…")
 		// do not use a context that can be cancelled
 		anyStopped := killPostgresInstanceIfAny(context.Background())
-		pluginManagerStopped := killPluginManagerInstanceIfAny(context.Background())
-		if anyStopped || pluginManagerStopped {
+		// plugin manager is already stopped at this point, but we have seen instances where stray plugin manager
+		// processes were left behind even after force stop. So we kill any leftover plugin manager processes(if any).
+		// Adding this step adds 1 process call(in the best case scenario) but confirms that no plugin manager processes
+		// are leftover.
+		anyPluginManagerStopped := killPluginManagerInstanceIfAny(context.Background())
+		if anyStopped || anyPluginManagerStopped {
 			return ServiceStopped, nil
 		}
 		return ServiceNotRunning, nil
@@ -215,239 +215,4 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	}
 
 	return ServiceStopped, nil
-}
-
-/*
-Postgres has three levels of shutdown:
-
-  - SIGTERM   - Smart Shutdown	 :  Wait for children to end normally - exit self
-  - SIGINT    - Fast Shutdown      :  SIGTERM children, causing them to abort current
-    transations and exit - wait for children to exit -
-    exit self
-  - SIGQUIT   - Immediate Shutdown :  SIGQUIT children - wait at most 5 seconds,
-    send SIGKILL to children - exit self immediately
-
-Postgres recommended shutdown is to send a SIGTERM - which initiates
-a Smart-Shutdown sequence.
-
-IMPORTANT:
-As per documentation, it is best not to use SIGKILL
-to shut down postgres. Doing so will prevent the server
-from releasing shared memory and semaphores.
-
-Reference:
-https://www.postgresql.org/docs/12/server-shutdown.html
-
-By the time we actually try to run this sequence, we will have
-checked that the service can indeed shutdown gracefully,
-the sequence is there only as a backup.
-*/
-func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) error {
-	utils.LogTime("db_local.doThreeStepPostgresExit start")
-	defer utils.LogTime("db_local.doThreeStepPostgresExit end")
-
-	var err error
-	var exitSuccessful bool
-
-	// send a SIGTERM
-	err = process.SendSignal(syscall.SIGTERM)
-	if err != nil {
-		return err
-	}
-	exitSuccessful = waitForProcessExit(process, 2*time.Second)
-	if !exitSuccessful {
-		// process didn't quit
-
-		// set status, as this is taking time
-		statushooks.SetStatus(ctx, "Shutting down…")
-
-		// try a SIGINT
-		err = process.SendSignal(syscall.SIGINT)
-		if err != nil {
-			return err
-		}
-		exitSuccessful = waitForProcessExit(process, 2*time.Second)
-	}
-	if !exitSuccessful {
-		// process didn't quit
-		// desperation prevails
-		err = process.SendSignal(syscall.SIGQUIT)
-		if err != nil {
-			return err
-		}
-		exitSuccessful = waitForProcessExit(process, 5*time.Second)
-	}
-
-	if !exitSuccessful {
-		log.Println("[ERROR] Failed to stop service")
-		log.Printf("[ERROR] Service Details:\n%s\n", getPrintableProcessDetails(process, 0))
-		return fmt.Errorf("service shutdown timed out")
-	}
-
-	return nil
-}
-
-func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
-	utils.LogTime("db_local.waitForProcessExit start")
-	defer utils.LogTime("db_local.waitForProcessExit end")
-
-	checkTimer := time.NewTicker(50 * time.Millisecond)
-	timeoutAt := time.After(waitFor)
-
-	for {
-		select {
-		case <-checkTimer.C:
-			pEx, _ := utils.PidExists(int(process.Pid))
-			if pEx {
-				continue
-			}
-			return true
-		case <-timeoutAt:
-			checkTimer.Stop()
-			return false
-		}
-	}
-}
-
-func getPrintableProcessDetails(process *psutils.Process, indent int) string {
-	utils.LogTime("db_local.getPrintableProcessDetails start")
-	defer utils.LogTime("db_local.getPrintableProcessDetails end")
-
-	indentString := strings.Repeat("  ", indent)
-	appendTo := []string{}
-
-	if name, err := process.Name(); err == nil {
-		appendTo = append(appendTo, fmt.Sprintf("%s> Name: %s", indentString, name))
-	}
-	if cmdLine, err := process.Cmdline(); err == nil {
-		appendTo = append(appendTo, fmt.Sprintf("%s> CmdLine: %s", indentString, cmdLine))
-	}
-	if status, err := process.Status(); err == nil {
-		appendTo = append(appendTo, fmt.Sprintf("%s> Status: %s", indentString, status))
-	}
-	if cwd, err := process.Cwd(); err == nil {
-		appendTo = append(appendTo, fmt.Sprintf("%s> CWD: %s", indentString, cwd))
-	}
-	if executable, err := process.Exe(); err == nil {
-		appendTo = append(appendTo, fmt.Sprintf("%s> Executable: %s", indentString, executable))
-	}
-	if username, err := process.Username(); err == nil {
-		appendTo = append(appendTo, fmt.Sprintf("%s> Username: %s", indentString, username))
-	}
-	if indent == 0 {
-		// I do not care about the parent of my parent
-		if parent, err := process.Parent(); err == nil && parent != nil {
-			appendTo = append(appendTo, "", fmt.Sprintf("%s> Parent Details", indentString))
-			parentLog := getPrintableProcessDetails(parent, indent+1)
-			appendTo = append(appendTo, parentLog, "")
-		}
-
-		// I do not care about all the children of my parent
-		if children, err := process.Children(); err == nil && len(children) > 0 {
-			appendTo = append(appendTo, fmt.Sprintf("%s> Children Details", indentString))
-			for _, child := range children {
-				childLog := getPrintableProcessDetails(child, indent+1)
-				appendTo = append(appendTo, childLog, "")
-			}
-		}
-	}
-
-	return strings.Join(appendTo, "\n")
-}
-
-// kill all postgres processes that were started as part of steampipe (if any)
-func killPostgresInstanceIfAny(ctx context.Context) bool {
-	processes, err := FindAllSteampipePostgresInstances(ctx)
-	if err != nil {
-		return false
-	}
-	wg := sync.WaitGroup{}
-	for _, process := range processes {
-		wg.Add(1)
-		go func(p *psutils.Process) {
-			doThreeStepPostgresExit(ctx, p)
-			wg.Done()
-		}(process)
-	}
-	wg.Wait()
-	return len(processes) > 0
-}
-
-// kill all plugin manager processes that were started as part of steampipe (if any)
-func killPluginManagerInstanceIfAny(ctx context.Context) bool {
-	processes, err := FindAllSteampipePluginManagerInstances(ctx)
-	if err != nil {
-		return false
-	}
-	wg := sync.WaitGroup{}
-	for _, process := range processes {
-		wg.Add(1)
-		go func(p *psutils.Process) {
-			err = p.SendSignal(syscall.SIGKILL)
-			// log err
-			wg.Done()
-		}(process)
-	}
-	wg.Wait()
-	return len(processes) > 0
-}
-
-func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process, error) {
-	var instances []*psutils.Process
-	allProcesses, err := psutils.ProcessesWithContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	for _, p := range allProcesses {
-		cmdLine, err := p.CmdlineSliceWithContext(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if isSteampipePostgresProcess(ctx, cmdLine) {
-			instances = append(instances, p)
-		}
-	}
-	return instances, nil
-}
-
-func FindAllSteampipePluginManagerInstances(ctx context.Context) ([]*psutils.Process, error) {
-	var instances []*psutils.Process
-	allProcesses, err := psutils.ProcessesWithContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	for _, p := range allProcesses {
-		cmdLine, err := p.CmdlineSliceWithContext(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if isSteampipePluginManagerProcess(ctx, cmdLine) {
-			for _, q := range allProcesses {
-				if ppid, err := q.Ppid(); err == nil && ppid == p.Pid {
-					// add all child plugin processes too
-					instances = append(instances, q)
-				}
-			}
-			instances = append(instances, p)
-		}
-	}
-	return instances, nil
-}
-
-func isSteampipePostgresProcess(ctx context.Context, cmdline []string) bool {
-	if len(cmdline) < 1 {
-		return false
-	}
-	if strings.Contains(cmdline[0], "postgres") {
-		// this is a postgres process - but is it a steampipe service?
-		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", constants.AppName))
-	}
-	return false
-}
-
-func isSteampipePluginManagerProcess(ctx context.Context, cmdline []string) bool {
-	if len(cmdline) < 1 {
-		return false
-	}
-	return strings.HasSuffix(cmdline[0], "steampipe") && strings.EqualFold(cmdline[1], "plugin-manager")
 }

@@ -220,6 +220,7 @@ func prepareDb(ctx context.Context) error {
 	if needsInit() {
 		statushooks.SetStatus(ctx, "Cleanup any Steampipe processes…")
 		killPostgresInstanceIfAny(ctx)
+		killPluginManagerInstanceIfAny(ctx)
 		if err := runInstall(ctx, nil); err != nil {
 			return err
 		}
