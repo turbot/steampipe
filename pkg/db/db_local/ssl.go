@@ -134,7 +134,6 @@ func ensureSelfSignedCertificate() (err error) {
 
 	// now generate new server cert
 	return generateServerCertificate(rootCertificate, rootPrivateKey)
-
 }
 
 // rootCertificateAndKeyExists checks if the root certificate ands private key files exist
@@ -149,11 +148,6 @@ func serverCertificateAndKeyExist() bool {
 
 // isCerticateExpiring checks whether the certificate expires within a predefined CertExpiryTolerance period (defined above)
 func isCerticateExpiring(certificate *x509.Certificate) bool {
-	if certificate.NotAfter.IsZero() || certificate.NotBefore.IsZero() {
-		// the certificate does not have any time bounds
-		return false
-	}
-
 	// has the certificate elapsed 3/4 of its lifetime
 	notBefore := certificate.NotBefore
 	notAfter := certificate.NotAfter
