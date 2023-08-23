@@ -11,6 +11,7 @@ import (
 	"math/big"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	filehelpers "github.com/turbot/go-kit/files"
@@ -26,20 +27,20 @@ const (
 
 var EndOfTime = time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)
 
-func RemoveExpiringCertificates() error {
+func removeExpiringSelfIssuedCertificates() error {
 	if !certificatesExist() {
 		// don't do anything - certificates haven't been installed yet
 		return nil
 	}
 
-	if isRootCertificateExpiring() {
+	if isRootCertificateExpiring() && isRootCertificateSelfIssued() {
 		// if root certificate is not valid (i.e. expired), remove root and server certs,
 		// they will both be regenerated
 		err := removeAllCertificates()
 		if err != nil {
 			return sperr.WrapWithRootMessage(err, "issue removing invalid root certificate")
 		}
-	} else if isServerCertificateExpiring() {
+	} else if isServerCertificateExpiring() && isServerCertificateSelfIssued() {
 		// if server certificate is not valid (i.e. expired), remove it,
 		// it will be regenerated
 		err := removeServerCertificate()
@@ -48,6 +49,22 @@ func RemoveExpiringCertificates() error {
 		}
 	}
 	return nil
+}
+
+func isRootCertificateSelfIssued() bool {
+	rootCertificate, err := sslio.ParseCertificateInLocation(getRootCertLocation())
+	if err != nil {
+		return false
+	}
+	return rootCertificate.IsCA && strings.EqualFold(rootCertificate.Subject.CommonName, CertIssuer)
+}
+
+func isServerCertificateSelfIssued() bool {
+	serverCertificate, err := sslio.ParseCertificateInLocation(getServerCertLocation())
+	if err != nil {
+		return false
+	}
+	return !serverCertificate.IsCA && strings.EqualFold(serverCertificate.Issuer.CommonName, CertIssuer)
 }
 
 // certificatesExist checks if the root and server certificate and key files exist
@@ -81,8 +98,8 @@ func removeAllCertificates() error {
 
 // isRootCertificateExpiring checks the root certificate exists, is not expired and has correct Subject
 func isRootCertificateExpiring() bool {
-	utils.LogTime("db_local.ValidateRootCertificates start")
-	defer utils.LogTime("db_local.ValidateRootCertificates end")
+	utils.LogTime("db_local.isRootCertificateExpiring start")
+	defer utils.LogTime("db_local.isRootCertificateExpiring end")
 	rootCertificate, err := sslio.ParseCertificateInLocation(getRootCertLocation())
 	if err != nil {
 		return false
@@ -103,7 +120,7 @@ func isServerCertificateExpiring() bool {
 }
 
 // if certificate or private key files do not exist, generate them
-func ensureSelfSignedCertificate() (err error) {
+func ensureCertificates() (err error) {
 	if serverCertificateAndKeyExist() && rootCertificateAndKeyExists() {
 		return nil
 	}
