@@ -15,6 +15,7 @@ import (
 	"time"
 
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/pkg/db/sslio"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/sperr"
 )
@@ -82,7 +83,7 @@ func removeAllCertificates() error {
 func isRootCertificateValid() bool {
 	utils.LogTime("db_local.ValidateRootCertificates start")
 	defer utils.LogTime("db_local.ValidateRootCertificates end")
-	rootCertificate, err := utils.ParseCertificateInLocation(getRootCertLocation())
+	rootCertificate, err := sslio.ParseCertificateInLocation(getRootCertLocation())
 	if err != nil {
 		return false
 	}
@@ -93,7 +94,7 @@ func isRootCertificateValid() bool {
 func isServerCertificateValid() bool {
 	utils.LogTime("db_local.ValidateServerCertificates start")
 	defer utils.LogTime("db_local.ValidateServerCertificates end")
-	serverCertificate, err := utils.ParseCertificateInLocation(getServerCertLocation())
+	serverCertificate, err := sslio.ParseCertificateInLocation(getServerCertLocation())
 	if err != nil {
 		return false
 	}
@@ -122,7 +123,7 @@ func ensureSelfSignedCertificate() (err error) {
 		if err != nil {
 			return err
 		}
-		rootCertificate, err = utils.ParseCertificateInLocation(getRootCertLocation())
+		rootCertificate, err = sslio.ParseCertificateInLocation(getRootCertLocation())
 	} else {
 		// otherwise generate them
 		rootCertificate, rootPrivateKey, err = generateRootCertificate()
@@ -191,7 +192,7 @@ func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 		return nil, nil, err
 	}
 
-	if err := utils.WriteCertificate(getRootCertLocation(), caCertificate); err != nil {
+	if err := sslio.WriteCertificate(getRootCertLocation(), caCertificate); err != nil {
 		log.Println("[WARN] failed to save the certificate")
 		return nil, nil, err
 	}
@@ -228,11 +229,11 @@ func generateServerCertificate(caCertificateData *x509.Certificate, caPrivateKey
 		return err
 	}
 
-	if err := utils.WriteCertificate(getServerCertLocation(), serverCertBytes); err != nil {
+	if err := sslio.WriteCertificate(getServerCertLocation(), serverCertBytes); err != nil {
 		log.Println("[INFO] Failed to save server certificate")
 		return err
 	}
-	if err := utils.WritePrivateKey(getServerCertKeyLocation(), serverPrivKey); err != nil {
+	if err := sslio.WritePrivateKey(getServerCertKeyLocation(), serverPrivKey); err != nil {
 		log.Println("[INFO] Failed to save server private key")
 		return err
 	}
@@ -293,7 +294,7 @@ func ensureRootPrivateKey() (*rsa.PrivateKey, error) {
 		log.Println("[WARN] private key creation failed for ca failed")
 		return nil, err
 	}
-	if err := utils.WritePrivateKey(getRootCertKeyLocation(), caPrivateKey); err != nil {
+	if err := sslio.WritePrivateKey(getRootCertKeyLocation(), caPrivateKey); err != nil {
 		log.Println("[WARN] failed to save root private key")
 		return nil, err
 	}
