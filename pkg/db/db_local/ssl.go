@@ -22,9 +22,10 @@ import (
 
 const (
 	CertIssuer               = "steampipe.io"
-	RootCertValidityPeriod   = 5 * 365 * (24 * time.Hour) // 5 years
-	ServerCertValidityPeriod = 365 * (24 * time.Hour)     // 1 year
+	ServerCertValidityPeriod = 365 * (24 * time.Hour) // 1 year
 )
+
+var EndOfTime = time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)
 
 func RemoveExpiringCertificates() error {
 	if !certificatesExist() {
@@ -174,7 +175,7 @@ func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 	caCertificateData := &x509.Certificate{
 		SerialNumber:          getSerialNumber(now),
 		NotBefore:             now,
-		NotAfter:              now.Add(RootCertValidityPeriod),
+		NotAfter:              EndOfTime,
 		Subject:               pkix.Name{CommonName: CertIssuer},
 		IsCA:                  true,
 		BasicConstraintsValid: true,
