@@ -66,16 +66,20 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (*modconf
 	}
 
 	// 2) is this a file
-	fileQuery, fileExists, err := w.getQueryFromFile(sqlString)
-	if fileExists {
-		if err != nil {
-			return nil, nil, fmt.Errorf("ResolveQueryAndArgsFromSQLString failed: error opening file '%s': %v", sqlString, err)
+	if strings.HasSuffix(strings.ToLower(sqlString), ".sql") {
+		fileQuery, fileExists, err := w.getQueryFromFile(sqlString)
+		if fileExists {
+			if err != nil {
+				return nil, nil, fmt.Errorf("ResolveQueryAndArgsFromSQLString failed: error opening file '%s': %v", sqlString, err)
+			}
+			if fileQuery == nil {
+				error_helpers.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", sqlString))
+				// (just return the empty query - it will be filtered above)
+			}
+			return fileQuery, nil, nil
+		} else {
+			return nil, nil, fmt.Errorf("File '%s' not found in %s (%s)", sqlString, w.Mod.Name(), w.Path)
 		}
-		if fileQuery == nil {
-			error_helpers.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", sqlString))
-			// (just return the empty query - it will be filtered above)
-		}
-		return fileQuery, nil, nil
 	}
 
 	// 3) so we have not managed to resolve this - if it looks like a named query or control, return an error
