@@ -49,9 +49,10 @@ type refreshConnectionState struct {
 	exemplarSchemaMap map[string]string
 	// if a plugin has an entry in this map, all connections schemas can be cloned from teh exemplar schema
 	exemplarCommentsMap map[string]string
+	pluginManager       pluginManager
 }
 
-func newRefreshConnectionState(ctx context.Context, forceUpdateConnectionNames []string) (*refreshConnectionState, error) {
+func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager, forceUpdateConnectionNames []string) (*refreshConnectionState, error) {
 	// create a connection pool to connection refresh
 	poolsize := 20
 	pool, err := db_local.CreateConnectionPool(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
@@ -72,7 +73,40 @@ func newRefreshConnectionState(ctx context.Context, forceUpdateConnectionNames [
 		pool:                       pool,
 		searchPath:                 searchPath,
 		forceUpdateConnectionNames: forceUpdateConnectionNames,
+		pluginManager:              pluginManager,
 	}, nil
+}
+
+func (s *refreshConnectionState) ensureRateLimiterTable(ctx context.Context) error {
+	// if the raste limiter table exists, nothing to do
+	exists, err := rateLimiterTableExists(ctx, s.pool)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+	// so we must load all plugins
+	return nil
+}
+
+func rateLimiterTableExists(ctx context.Context, pool *pgxpool.Pool) (bool, error) {
+	query := fmt.Sprintf(`SELECT EXISTS (
+    SELECT FROM 
+        pg_tables
+    WHERE 
+        schemaname = '%s' AND 
+        tablename  = '%s'
+    );`, constants.InternalSchema, constants.RateLimiterDefinitionTable)
+
+	row := pool.QueryRow(ctx, query)
+	var exists bool
+	err := row.Scan(&exists)
+
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 func (s *refreshConnectionState) close() {
@@ -95,6 +129,7 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	}()
 	log.Printf("[INFO] building connectionUpdates")
 
+	time.Sleep(10 * time.Second)
 	// determine any necessary connection updates
 	s.connectionUpdates, s.res = steampipeconfig.NewConnectionUpdates(ctx, s.pool, s.forceUpdateConnectionNames...)
 	defer s.logRefreshConnectionResults()
@@ -105,6 +140,7 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 
 	log.Printf("[INFO] created connectionUpdates")
 
+	// reload plugin rate limiter definitions for all plugins which are
 	// delete the connection state file - it will be rewritten when we are complete
 	log.Printf("[INFO] deleting connections state file")
 	steampipeconfig.DeleteConnectionStateFile()

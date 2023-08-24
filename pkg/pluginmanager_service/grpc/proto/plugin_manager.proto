@@ -45,7 +45,7 @@ message SupportedOperations {
   bool multiple_connections = 2;
   bool message_stream = 3;
   bool set_cache_options = 4;
-  bool set_rate_limiters = 5;
+  bool rate_limiters = 5;
 }
 
 message NetAddr {
