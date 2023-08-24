@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -13,10 +14,16 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
+type DbConnectionCallback func(context.Context, *pgx.Conn) error
+
 func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	utils.LogTime("db_client.establishConnectionPool start")
 	defer utils.LogTime("db_client.establishConnectionPool end")
 
+	const (
+		connMaxIdleTime = 1 * time.Minute
+		connMaxLifetime = 10 * time.Minute
+	)
 	maxConnections := db_common.MaxDbConnections()
 
 	config, err := pgxpool.ParseConfig(c.connectionString)
@@ -49,8 +56,8 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	// We need to be sure that it is not an issue with service management
 	config.MinConns = 0
 	config.MaxConns = int32(maxConnections)
-	config.MaxConnLifetime = c.maxLifeTime
-	config.MaxConnIdleTime = c.maxIdleTime
+	config.MaxConnLifetime = connMaxLifetime
+	config.MaxConnIdleTime = connMaxIdleTime
 	if c.onConnectionCallback != nil {
 		config.AfterConnect = c.onConnectionCallback
 	}
