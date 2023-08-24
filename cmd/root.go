@@ -72,11 +72,13 @@ var rootCmd = &cobra.Command{
 			return
 		}
 
+		// create a buffer which can be used as a sink for log writes
+		// till INSTALL_DIR is setup in initGlobalConfig
 		logBuffer := bytes.NewBuffer([]byte{})
 
 		// create a logger before initGlobalConfig - we may need to reinitialize the logger
 		// depending on the value of the log_level value in global general options
-		createLogger(logBuffer, cmd, args...)
+		createLogger(logBuffer, cmd)
 
 		// set up the global viper config with default values from
 		// config files and ENV variables
@@ -97,7 +99,7 @@ var rootCmd = &cobra.Command{
 		// recreate the logger
 		// this will put the new log level (if any) to effect as well as start streaming to the
 		// log file.
-		createLogger(logBuffer, cmd, args...)
+		createLogger(logBuffer, cmd)
 
 		// runScheduledTasks skips running tasks if this instance is the plugin manager
 		waitForTasksChannel = runScheduledTasks(cmd.Context(), cmd, args, ew)
@@ -371,7 +373,7 @@ func validateConfig() error {
 }
 
 // create a hclog logger with the level specified by the SP_LOG env var
-func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command, args ...string) {
+func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 	if task.IsPluginManagerCmd(cmd) {
 		// nothing to do here - plugin manager sets up it's own logger
 		// refer https://github.com/turbot/steampipe/blob/710a96d45fd77294de8d63d77bf78db65133e5ca/cmd/plugin_manager.go#L102
@@ -382,6 +384,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command, args ...string) {
 	var logWriter io.Writer
 	if len(filepaths.SteampipeDir) == 0 {
 		// write to the buffer - this is to make sure that we don't lose logs
+		// till the time we get the log directory
 		logWriter = logBuffer
 	} else {
 		logName := fmt.Sprintf("steampipe-%s.log", time.Now().Format("2006-01-02"))
@@ -395,7 +398,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command, args ...string) {
 		// use the file as the writer
 		logWriter = f
 
-		// if we want duplication to console, multiwrite to stderr
+		// if we want duplication to console, multi-write to stderr
 		if value, exists := os.LookupEnv(constants.EnvLogToStderr); exists && types.StringToBool(value) {
 			logWriter = io.MultiWriter(os.Stderr, logWriter)
 		}
