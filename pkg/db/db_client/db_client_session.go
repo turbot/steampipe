@@ -28,13 +28,21 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 		}
 	}()
 
-	// get a database connection and query its backend pid
-	// note - this will retry if the connection is bad
-	databaseConnection, err := c.userPool.Acquire(ctx)
-	if err != nil {
-		sessionResult.Error = err
-		return sessionResult
+	var databaseConnection db_common.Releasable
+
+	if c.hijackedConnection != nil {
+		// get a database connection and query its backend pid
+		// note - this will retry if the connection is bad
+		var err error
+		databaseConnection, err = c.userPool.Acquire(ctx)
+		if err != nil {
+			sessionResult.Error = err
+			return sessionResult
+		}
+	} else {
+		databaseConnection = db_common.ReleasableFromConn(c.hijackedConnection)
 	}
+
 	backendPid := databaseConnection.Conn().PgConn().PID()
 
 	c.sessionsMutex.Lock()
@@ -84,7 +92,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	}
 
 	// update required session search path if needed
-	err = c.ensureSessionSearchPath(ctx, session)
+	err := c.ensureSessionSearchPath(ctx, session)
 	if err != nil {
 		sessionResult.Error = err
 		return sessionResult

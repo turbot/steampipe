@@ -30,4 +30,6 @@ type Client interface {
 	GetSchemaFromDB(context.Context) (*SchemaMetadata, error)
 
 	ServerSettings() *ServerSettings
+
+	DisablePool(context.Context) error
 }

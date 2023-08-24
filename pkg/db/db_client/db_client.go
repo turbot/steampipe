@@ -30,6 +30,8 @@ type DbClient struct {
 	// connection used to run system/plumbing queries (connection state, server settings)
 	managementPool *pgxpool.Pool
 
+	hijackedConnection *pgx.Conn
+
 	// the settings of the server that this client is connected to
 	serverSettings *db_common.ServerSettings
 
@@ -122,6 +124,19 @@ func (c *DbClient) closePools() {
 	c.managementPool.Close()
 }
 
+func (c *DbClient) DisablePool(ctx context.Context) error {
+	if c.hijackedConnection == nil {
+		conn, err := c.userPool.Acquire(ctx)
+		if err != nil {
+			return err
+		}
+		// hijack this connection - so that it's not managed by the pool anymore
+		c.hijackedConnection = conn.Hijack()
+		c.userPool.Close()
+	}
+	return nil
+}
+
 func (c *DbClient) loadServerSettings(ctx context.Context) error {
 	serverSettings, err := serversettings.Load(ctx, c.managementPool)
 	if err != nil {
@@ -165,7 +180,10 @@ func (c *DbClient) ServerSettings() *db_common.ServerSettings {
 
 // Close implements Client
 // closes the connection to the database and shuts down the backend
-func (c *DbClient) Close(context.Context) error {
+func (c *DbClient) Close(ctx context.Context) error {
+	if c.hijackedConnection != nil {
+		c.hijackedConnection.Close(ctx)
+	}
 	log.Printf("[TRACE] DbClient.Close %v", c.userPool)
 	c.closePools()
 	// nullify active sessions, since with the closing of the pools
