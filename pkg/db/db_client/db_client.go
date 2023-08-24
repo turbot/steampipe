@@ -195,20 +195,20 @@ func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireS
 // NOTE: it optimises the schema extraction by extracting schema information for
 // connections backed by distinct plugins and then fanning back out.
 func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetadata, error) {
-	conn, err := c.managementPool.Acquire(ctx)
+	mgmtConn, err := c.managementPool.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Release()
+	defer mgmtConn.Release()
 
 	// for optimisation purposes, try to load connection state and build a map of schemas to load
 	// (if we are connected to a remote server running an older CLI,
 	// this load may fail, in which case bypass the optimisation)
-	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
+	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, mgmtConn.Conn(), steampipeconfig.WithWaitUntilLoading())
 	// NOTE: if we failed to load conenction state, this may be because we are connected to an older version of the CLI
 	// use legacy (v0.19.x) schema loading code
 	if err != nil {
-		return c.GetSchemaFromDBLegacy(ctx, conn)
+		return c.GetSchemaFromDBLegacy(ctx, mgmtConn)
 	}
 
 	// build a ConnectionSchemaMap object to identify the schemas to load
@@ -224,7 +224,7 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetada
 	query := c.buildSchemasQuery(schemas...)
 
 	// build schema metadata from query result
-	metadata, err := db_common.LoadSchemaMetadata(ctx, conn.Conn(), query)
+	metadata, err := db_common.LoadSchemaMetadata(ctx, mgmtConn.Conn(), query)
 	if err != nil {
 		return nil, err
 	}
