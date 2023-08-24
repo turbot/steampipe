@@ -409,7 +409,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command, args ...string) {
 	hcLevel := hclog.LevelFromString(level)
 
 	options := &hclog.LoggerOptions{
-		// make the name unique so that
+		// make the name unique so that logs from this instance can be filtered
 		Name:       fmt.Sprintf("steampipe [%s]", runtime.ExecutionID),
 		Level:      hcLevel,
 		Output:     logWriter,
