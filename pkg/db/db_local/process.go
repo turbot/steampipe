@@ -95,7 +95,7 @@ func waitForProcessExit(ctx context.Context, process *psutils.Process) bool {
 	for {
 		select {
 		case <-checkTimer.C:
-			pEx, _ := process.IsRunningWithContext(context.Background())
+			pEx, _ := utils.PidExists(int(process.Pid))
 			if pEx {
 				continue
 			}
