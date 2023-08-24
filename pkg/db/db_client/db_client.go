@@ -165,7 +165,7 @@ func (c *DbClient) ServerSettings() *db_common.ServerSettings {
 
 // Close implements Client
 // closes the connection to the database and shuts down the backend
-func (c *DbClient) Close(ctx context.Context) error {
+func (c *DbClient) Close(context.Context) error {
 	log.Printf("[TRACE] DbClient.Close %v", c.userPool)
 	c.closePools()
 	// nullify active sessions, since with the closing of the pools

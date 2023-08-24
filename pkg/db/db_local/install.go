@@ -318,8 +318,7 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	// resolve the name of the database that is to be installed
 	databaseName := resolveDatabaseName(oldDbName)
 	// validate db name
-	validDBName := databaseName[0] == '-' || (databaseName[0] >= 'a' && databaseName[0] <= 'z')
-	if !validDBName {
+	if !isValidDatabaseName(databaseName) {
 		return fmt.Errorf("Invalid database name '%s' - must start with either a lowercase character or an underscore", databaseName)
 	}
 
@@ -380,6 +379,10 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 	}
 
 	return psutils.NewProcess(int32(postgresCmd.Process.Pid))
+}
+
+func isValidDatabaseName(databaseName string) bool {
+	return databaseName[0] == '_' || (databaseName[0] >= 'a' && databaseName[0] <= 'z')
 }
 
 func getNextFreePort() (int, error) {
