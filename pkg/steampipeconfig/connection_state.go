@@ -54,7 +54,6 @@ func NewConnectionState(remoteSchema string, connection *modconfig.Connection, c
 }
 
 func (d *ConnectionState) Equals(other *ConnectionState) bool {
-
 	if d.Plugin != other.Plugin {
 		return false
 	}
@@ -77,12 +76,19 @@ func (d *ConnectionState) Equals(other *ConnectionState) bool {
 	}
 
 	// allow for sub ms rounding errors when converting from PG
-	if d.PluginModTime.Sub(other.PluginModTime).Abs() > 1*time.Millisecond {
+	if d.pluginModTimeChanged(other) {
 		return false
 	}
 	// do not look at connection mod time as the mod time for the desired state is not relevant
 
 	return true
+}
+
+func (d *ConnectionState) pluginModTimeChanged(other *ConnectionState) bool {
+	if d.PluginModTime.Sub(other.PluginModTime).Abs() > 1*time.Millisecond {
+		return true
+	}
+	return false
 }
 
 func (d *ConnectionState) CanCloneSchema() bool {

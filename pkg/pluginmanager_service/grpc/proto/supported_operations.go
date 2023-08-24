@@ -10,6 +10,6 @@ func SupportedOperationsFromSdk(s *sdkproto.GetSupportedOperationsResponse) *Sup
 		MultipleConnections: s.MultipleConnections,
 		MessageStream:       s.MessageStream,
 		SetCacheOptions:     s.SetCacheOptions,
-		SetRateLimiters:     s.SetRateLimiters,
+		RateLimiters:        s.RateLimiters,
 	}
 }

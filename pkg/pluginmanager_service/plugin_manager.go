@@ -75,7 +75,7 @@ type PluginManager struct {
 	pluginNameMap map[string]string
 }
 
-func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, limiters map[string]*modconfig.RateLimiter, logger hclog.Logger) (*PluginManager, error) {
+func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, limiters map[string]*modconfig.RateLimiter, logger hclog.Logger) (*PluginManager, error) {
 	log.Printf("[INFO] NewPluginManager")
 	pluginManager := &PluginManager{
 		logger:              logger,
@@ -91,12 +91,6 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 	}
 	pluginManager.messageServer = messageServer
 
-	// create and populate the rate limiter table
-	if err := pluginManager.refreshRateLimiterTable(ctx); err != nil {
-		// TODO better handle plugin manager startup failures
-		log.Println("[WARN] could not refresh rate limiter table", err)
-		return nil, err
-	}
 	// populate plugin connection config map
 	pluginManager.populatePluginConnectionConfigs()
 	// determine cache size for each plugin
@@ -192,7 +186,7 @@ func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.R
 }
 
 func (m *PluginManager) doRefresh() {
-	refreshResult := connection.RefreshConnections(context.Background())
+	refreshResult := connection.RefreshConnections(context.Background(), m)
 	if refreshResult.Error != nil {
 		// TODO send errors and warnings back to CLI from plugin manager - https://github.com/turbot/steampipe/issues/3603
 		log.Printf("[WARN] RefreshConnections failed with error: %s", refreshResult.Error.Error())
@@ -283,7 +277,7 @@ func (m *PluginManager) handleLimiterChanges(newLimiters connection.LimiterMap) 
 			log.Printf("[INFO] handleLimiterChanges: plugin %s is not currently running - ignoring", p)
 			continue
 		}
-		if !runningPlugin.reattach.SupportedOperations.SetRateLimiters {
+		if !runningPlugin.reattach.SupportedOperations.RateLimiters {
 			log.Printf("[INFO] handleLimiterChanges: plugin %s does not support setting rate limit - ignoring", p)
 			continue
 		}
@@ -564,7 +558,7 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	}
 
 	// if this plugin supports setting cache options, do so
-	if supportedOperations.SetRateLimiters {
+	if supportedOperations.RateLimiters {
 		err = m.setRateLimiters(pluginShortName, pluginClient)
 		if err != nil {
 			log.Printf("[WARN] failed to set rate limiters for %s: %s", pluginName, err.Error())
@@ -753,7 +747,7 @@ func (m *PluginManager) setRateLimiters(pluginName string, pluginClient *sdkgrpc
 func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionName string) {
 	log.Printf("[TRACE] updateConnectionSchema connection %s", connectionName)
 
-	refreshResult := connection.RefreshConnections(ctx, connectionName)
+	refreshResult := connection.RefreshConnections(ctx, m, connectionName)
 	if refreshResult.Error != nil {
 		log.Printf("[TRACE] error refreshing connections: %s", refreshResult.Error)
 		return
@@ -793,7 +787,7 @@ func (m *PluginManager) handleStartFailure(err error) error {
 	}
 
 	// if this was a panic during startup, reraise an error with the panic string
-	if strings.Contains(pluginMessage, sdkplugin.StartupPanicMessage) {
+	if strings.Contains(pluginMessage, sdkplugin.PluginStartupFailureMessage) {
 		return fmt.Errorf(pluginMessage)
 	}
 	return err

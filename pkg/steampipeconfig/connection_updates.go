@@ -128,6 +128,11 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 
 			// set the connection mod time of required connection data to now
 			requiredConnectionState.ConnectionModTime = modTime
+			// if the plugin mod time has canged, add this to the list of plugins we need to
+			// refetch the rate limiters for
+			if d.pluginModTimeChanged(other) {
+				return false
+			}
 		}
 	}
 
@@ -195,13 +200,12 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 }
 
 func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, currentConnectionStateMap ConnectionStateMap, requiredConnectionState *ConnectionState) bool {
-	// check whether this connection exists in the state
-	currentConnectionState, schemaExistsInState := currentConnectionStateMap[name]
-
 	// if the required plugin is not installed, return false
 	if typehelpers.SafeString(requiredConnectionState.ConnectionError) == constants.ConnectionErrorPluginNotInstalled {
 		return false
 	}
+	// check whether this connection exists in the state
+	currentConnectionState, schemaExistsInState := currentConnectionStateMap[name]
 	// if the connection has been disabled, return false
 	if requiredConnectionState.Disabled() {
 		return false
@@ -386,7 +390,8 @@ func (u *ConnectionUpdates) populateAggregators() {
 	log.Printf("[INFO] found %d %s with aggregators", len(pluginAggregatorMap), utils.Pluralize("plugin", len(pluginAggregatorMap)))
 
 	// for all updates/deletes, if there any aggregators of the same plugin type, update those as well
-	// build a map of all plugins with connecitons being updated/deleted
+	// build a map of all plugins with connecti
+	//ons being updated/deleted
 	modifiedPluginLookup := make(map[string]struct{})
 	for _, c := range u.Update {
 		modifiedPluginLookup[c.Plugin] = struct{}{}
