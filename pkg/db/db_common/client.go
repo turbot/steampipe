@@ -15,8 +15,6 @@ type Client interface {
 	GetRequiredSessionSearchPath() []string
 	GetCustomSearchPath() []string
 
-	// acquire a database connection - must be closed
-	AcquireConnection(context.Context) (*pgxpool.Conn, error)
 	// acquire a management database connection - must be closed
 	AcquireManagementConnection(context.Context) (*pgxpool.Conn, error)
 	// acquire a query execution session (which search pathand cache options  set) - must be closed

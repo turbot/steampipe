@@ -11,10 +11,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )
 
-func (c *DbClient) AcquireConnection(ctx context.Context) (*pgxpool.Conn, error) {
-	return c.userPool.Acquire(ctx)
-}
-
 func (c *DbClient) AcquireManagementConnection(ctx context.Context) (*pgxpool.Conn, error) {
 	return c.managementPool.Acquire(ctx)
 }

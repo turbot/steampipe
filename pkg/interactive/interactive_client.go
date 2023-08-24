@@ -562,7 +562,7 @@ func (c *InteractiveClient) getConnectionState(ctx context.Context) (steampipeco
 
 	statushooks.SetStatus(ctx, "Loading connection state…")
 
-	conn, err := c.client().AcquireConnection(ctx)
+	conn, err := c.client().AcquireManagementConnection(ctx)
 	if err != nil {
 		return nil, err
 	}
