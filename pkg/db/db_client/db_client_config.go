@@ -2,6 +2,7 @@ package db_client
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -9,22 +10,30 @@ import (
 type DbConnectionCallback func(context.Context, *pgx.Conn) error
 
 type dbClientConnectionConfig struct {
-	recycleConnections bool
+	maxIdleTime        time.Duration
+	maxLifeTime        time.Duration
 	connectionCallback DbConnectionCallback
 }
 
 func newDbClientConnectionConfig() *dbClientConnectionConfig {
 	c := &dbClientConnectionConfig{
-		recycleConnections: true,
+		maxIdleTime: 1 * time.Minute,
+		maxLifeTime: 10 * time.Minute,
 	}
 	return c
 }
 
 type DbClientConnectionOption func(*dbClientConnectionConfig)
 
-func WithConnectionRecycleDisabled() DbClientConnectionOption {
+func WithMaxLifeTime(d time.Duration) DbClientConnectionOption {
 	return func(dcc *dbClientConnectionConfig) {
-		dcc.recycleConnections = false
+		dcc.maxLifeTime = d
+	}
+}
+
+func WithMaxIdleTime(d time.Duration) DbClientConnectionOption {
+	return func(dcc *dbClientConnectionConfig) {
+		dcc.maxIdleTime = d
 	}
 }
 

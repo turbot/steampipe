@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/turbot/steampipe/pkg/connection_sync"
-	"github.com/turbot/steampipe/pkg/db/db_client"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/cobra"
@@ -131,12 +130,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
 	// start the initializer
-	var initData *query.InitData
-	if interactiveMode {
-		initData = query.NewInitData(ctx, args, db_client.WithConnectionRecycleDisabled())
-	} else {
-		initData = query.NewInitData(ctx, args)
-	}
+	initData := query.NewInitData(ctx, args)
 	if initData.Result.Error != nil {
 		exitCode = constants.ExitCodeInitializationFailed
 		error_helpers.ShowError(ctx, initData.Result.Error)

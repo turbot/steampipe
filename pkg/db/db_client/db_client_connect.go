@@ -19,11 +19,6 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 
 	maxConnections := db_common.MaxDbConnections()
 
-	const (
-		connMaxIdleTime = 1 * time.Minute
-		connMaxLifetime = 1 * time.Minute
-	)
-
 	config, err := pgxpool.ParseConfig(c.connectionString)
 	if err != nil {
 		return err
@@ -54,15 +49,8 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	// We need to be sure that it is not an issue with service management
 	config.MinConns = 0
 	config.MaxConns = int32(maxConnections)
-
-	// if recycling is enabled, we should drop and recreate connections
-	if c.recycleConnections {
-		config.MaxConnLifetime = connMaxLifetime
-		config.MaxConnIdleTime = connMaxIdleTime
-	}
-	// add a jitter so that closing connections do not starve the pool
-	config.MaxConnLifetimeJitter = 5 * time.Second
-
+	config.MaxConnLifetime = c.maxLifeTime
+	config.MaxConnIdleTime = c.maxIdleTime
 	if c.onConnectionCallback != nil {
 		config.AfterConnect = c.onConnectionCallback
 	}
