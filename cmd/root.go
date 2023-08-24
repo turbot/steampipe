@@ -12,10 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/exp/maps"
-
 	"github.com/fatih/color"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -37,6 +34,7 @@ import (
 	"github.com/turbot/steampipe/pkg/task"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
+	"golang.org/x/exp/maps"
 )
 
 var exitCode int
