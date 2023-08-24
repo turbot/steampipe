@@ -103,6 +103,14 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	if c.initData.Result.Error != nil {
 		return
 	}
+
+	// disable the user connection pool
+	// this will ensure that we are always working off of only one connection
+	if err := c.initData.Client.DisablePool(ctx); err != nil {
+		c.initData.Result.Error = err
+		return
+	}
+
 	statushooks.SetStatus(ctx, "Completing initialization…")
 	//  fetch the schema
 	// TODO make this async https://github.com/turbot/steampipe/issues/3400
