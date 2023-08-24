@@ -9,16 +9,16 @@ import (
 
 type Client interface {
 	Close(context.Context) error
-	LoadUserSearchPath(ctx context.Context) error
+	LoadUserSearchPath(context.Context) error
 
 	SetRequiredSessionSearchPath(context.Context) error
 	GetRequiredSessionSearchPath() []string
 	GetCustomSearchPath() []string
 
 	// acquire a database connection - must be closed
-	AcquireConnection(ctx context.Context) (*pgxpool.Conn, error)
+	AcquireConnection(context.Context) (*pgxpool.Conn, error)
 	// acquire a management database connection - must be closed
-	AcquireManagementConnection(ctx context.Context) (*pgxpool.Conn, error)
+	AcquireManagementConnection(context.Context) (*pgxpool.Conn, error)
 	// acquire a query execution session (which search pathand cache options  set) - must be closed
 	AcquireSession(context.Context) *AcquireSessionResult
 
