@@ -6,8 +6,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/sethvargo/go-retry"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -155,21 +157,14 @@ func (c *InteractiveClient) isInitialised() bool {
 }
 
 func (c *InteractiveClient) waitForInitData(ctx context.Context) error {
-	var initTimeout = 40 * time.Second
-	ticker := time.NewTicker(20 * time.Millisecond)
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			if c.isInitialised() {
-				// if there was an error in initialisation, return it
-				return c.initData.Result.Error
-			}
-		case <-time.After(initTimeout):
-			return fmt.Errorf("timed out waiting for initialisation to complete")
+	backOff := retry.WithMaxDuration(40*time.Second, retry.NewConstant(20*time.Millisecond))
+	return retry.Do(ctx, backOff, func(ctx context.Context) error {
+		if c.isInitialised() {
+			// if there was an error in initialisation, return it
+			return c.initData.Result.Error
 		}
-	}
+		return retry.RetryableError(sperr.New("initialization timeout"))
+	})
 }
 
 // return the workspace, or nil if not yet initialised

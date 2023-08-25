@@ -30,6 +30,7 @@ type DbClient struct {
 	// connection used to run system/plumbing queries (connection state, server settings)
 	managementPool *pgxpool.Pool
 
+	// a connection hijacked from the pool before the pool is disabled
 	hijackedConnection *pgx.Conn
 
 	// the settings of the server that this client is connected to
@@ -132,6 +133,7 @@ func (c *DbClient) DisablePool(ctx context.Context) error {
 		}
 		// hijack this connection - so that it's not managed by the pool anymore
 		c.hijackedConnection = conn.Hijack()
+		// close the user pool - we don't want any queries to go through the pool
 		c.userPool.Close()
 	}
 	return nil

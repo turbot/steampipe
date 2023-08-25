@@ -30,7 +30,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	var databaseConnection db_common.Releasable
 
-	if c.hijackedConnection != nil {
+	if c.hijackedConnection == nil {
 		// get a database connection and query its backend pid
 		// note - this will retry if the connection is bad
 		var err error
