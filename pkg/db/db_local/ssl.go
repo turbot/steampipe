@@ -33,14 +33,22 @@ func removeExpiringSelfIssuedCertificates() error {
 		return nil
 	}
 
-	if isRootCertificateExpiring() && isRootCertificateSelfIssued() {
+	if isRootCertificateExpiring() && !isRootCertificateSelfIssued() {
+		return sperr.New("cannot rotate certificate not issue by steampipe")
+	}
+
+	if isServerCertificateExpiring() && !isServerCertificateSelfIssued() {
+		return sperr.New("cannot rotate certificate not issue by steampipe")
+	}
+
+	if isRootCertificateExpiring() {
 		// if root certificate is not valid (i.e. expired), remove root and server certs,
 		// they will both be regenerated
 		err := removeAllCertificates()
 		if err != nil {
 			return sperr.WrapWithRootMessage(err, "issue removing invalid root certificate")
 		}
-	} else if isServerCertificateExpiring() && isServerCertificateSelfIssued() {
+	} else if isServerCertificateExpiring() {
 		// if server certificate is not valid (i.e. expired), remove it,
 		// it will be regenerated
 		err := removeServerCertificate()
