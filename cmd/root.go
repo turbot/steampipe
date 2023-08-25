@@ -19,7 +19,6 @@ import (
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/cloud"
@@ -381,11 +380,11 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 	}
 
 	level := logging.LogLevel()
-	var logWriter io.Writer
+	var logDestination io.Writer
 	if len(filepaths.SteampipeDir) == 0 {
 		// write to the buffer - this is to make sure that we don't lose logs
 		// till the time we get the log directory
-		logWriter = logBuffer
+		logDestination = logBuffer
 	} else {
 		logName := fmt.Sprintf("steampipe-%s.log", time.Now().Format("2006-01-02"))
 		logPath := filepath.Join(filepaths.EnsureLogDir(), logName)
@@ -394,17 +393,10 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 			fmt.Printf("failed to open steampipe log file: %s\n", err.Error())
 			os.Exit(3)
 		}
+		logDestination = f
 
-		// use the file as the writer
-		logWriter = f
-
-		// if we want duplication to console, multi-write to stderr
-		if value, exists := os.LookupEnv(constants.EnvLogToStderr); exists && types.StringToBool(value) {
-			logWriter = io.MultiWriter(os.Stderr, logWriter)
-		}
-
-		// write out the buffer contents
-		_, _ = logWriter.Write(logBuffer.Bytes())
+		// write out the buffered contents
+		_, _ = logDestination.Write(logBuffer.Bytes())
 	}
 
 	hcLevel := hclog.LevelFromString(level)
@@ -413,7 +405,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 		// make the name unique so that logs from this instance can be filtered
 		Name:       fmt.Sprintf("steampipe [%s]", runtime.ExecutionID),
 		Level:      hcLevel,
-		Output:     logWriter,
+		Output:     logDestination,
 		TimeFn:     func() time.Time { return time.Now().UTC() },
 		TimeFormat: "2006-01-02 15:04:05.000 UTC",
 	}
