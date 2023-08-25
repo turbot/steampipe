@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/pkg/constants"
