@@ -24,6 +24,35 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 }
 
+@test "schema cloning - quoting issue" {
+  # remove existing connections
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos.spc
+
+  # remove db, to trigger a clean installation with no connections
+  rm -rf $STEAMPIPE_INSTALL_DIR/db
+
+  # run steampipe(installs db)
+  steampipe query "select 1"
+
+  # add connections(more than 1 - with names containing both uppercase and lowercase chars) 
+  # to trigger schema cloning
+  cp $SRC_DATA_DIR/chaos_case_sensitivity.spc $STEAMPIPE_INSTALL_DIR/config/chaos.spc
+
+  # query all connections(all connections should be ready and should work)
+  run steampipe query 'select * from "M_t0".chaos_all_column_types'
+  assert_success
+  run steampipe query 'select * from "M_t1".chaos_all_column_types'
+  assert_success
+  run steampipe query 'select * from "M_t2".chaos_all_column_types'
+  assert_success
+  run steampipe query 'select * from "M_t3".chaos_all_column_types'
+  assert_success
+  run steampipe query 'select * from "M_t4".chaos_all_column_types'
+  assert_success
+  run steampipe query 'select * from "M_t5".chaos_all_column_types'
+  assert_success
+}
+
 function teardown_file() {
   # list running processes
   ps -ef | grep steampipe
@@ -35,5 +64,5 @@ function teardown_file() {
 
 function teardown() {
   # remove the files created as part of these tests 
-  rm -f $STEAMPIPE_INSTALL_DIR/config/two_chaos.spc
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos.spc
 }

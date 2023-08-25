@@ -29,10 +29,10 @@ BEGIN
     END IF;
 
 -- Create schema
-    EXECUTE 'DROP SCHEMA IF EXISTS ' ||  dest_schema || ' CASCADE';
-    EXECUTE 'CREATE SCHEMA ' || dest_schema;
-    EXECUTE 'GRANT USAGE ON SCHEMA ' || dest_schema || ' TO steampipe_users';
-    EXECUTE 'ALTER DEFAULT PRIVILEGES IN SCHEMA ' || dest_schema || ' GRANT SELECT ON TABLES TO steampipe_users';
+    EXECUTE 'DROP SCHEMA IF EXISTS "' ||  dest_schema || '" CASCADE';
+    EXECUTE 'CREATE SCHEMA "' || dest_schema || '"';
+    EXECUTE 'GRANT USAGE ON SCHEMA "' || dest_schema || '" TO steampipe_users';
+    EXECUTE 'ALTER DEFAULT PRIVILEGES IN SCHEMA "' || dest_schema || '" GRANT SELECT ON TABLES TO steampipe_users';
 
 -- Create tables
     FOR object IN

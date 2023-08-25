@@ -201,4 +201,8 @@ func (i *DashboardInput) setBaseProperties() {
 	if i.Width == nil {
 		i.Width = i.Base.Width
 	}
+
+	if i.Options == nil {
+		i.Options = i.Base.Options
+	}
 }
