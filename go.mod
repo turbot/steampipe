@@ -1,6 +1,6 @@
 module github.com/turbot/steampipe
 
-go 1.19
+go 1.21
 
 require (
 	github.com/Machiel/slugify v1.0.1
