@@ -69,11 +69,11 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (*modconf
 	// get absolute filename
 	filePath, err := filepath.Abs(sqlString)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error opening file '%s': %s", sqlString, err.Error())
+		return nil, nil, fmt.Errorf("%s", err.Error())
 	}
 	fileQuery, fileExists, err := w.getQueryFromFile(filePath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error opening file '%s': %s", filePath, err.Error())
+		return nil, nil, fmt.Errorf("%s", err.Error())
 	}
 	if fileExists {
 		if fileQuery.ExecuteSQL == "" {
