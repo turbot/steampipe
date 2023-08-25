@@ -114,14 +114,15 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "dashboard input with base" {
   # run a dashboard and shapshot the output
-  run steampipe dashboard dashboard.resource_details --export test.sps --output none --mod-location "$FILE_PATH/test_data/mods/dashboard_inputs_with_base"
+  run steampipe dashboard dashboard.resource_details --export test.sps --output none --mod-location "$FILE_PATH/test_data/dashboard_inputs_with_base"
 
-  # get the patch diff between the two snapshots (update this with the actual expected snapshot after the issue is fixed)
-  run jd -f patch $SNAPSHOTS_DIR/expected_sps_testing_dashboard_inputs.json test.sps
+  # get the patch diff between the two snapshots
+  run jd -f patch $SNAPSHOTS_DIR/expected_sps_testing_dashboard_inputs_with_base.json test.sps
+  echo $output
 
   # run the script to evaluate the patch
   # returns nothing if there is no diff(except start_time, end_time & search_path)
-  diff=$($FILE_PATH/json_patch.sh $output)
+  diff=$($FILE_PATH/test_files/json_patch.sh $output)
   echo $diff
   rm -f test.sps
 
