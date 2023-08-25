@@ -2,6 +2,7 @@ package connection_sync
 
 import (
 	"context"
+
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -13,7 +14,7 @@ import (
 // if any of the connections are in error state, return an error
 // this is used to ensure unqualified queries and tables are resolved to the correct connection
 func WaitForSearchPathSchemas(ctx context.Context, client db_common.Client, searchPath []string) error {
-	conn, err := client.AcquireConnection(ctx)
+	conn, err := client.AcquireManagementConnection(ctx)
 	if err != nil {
 		return err
 	}

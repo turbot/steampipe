@@ -3,7 +3,6 @@ package db_client
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -12,15 +11,8 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )
 
-func (c *DbClient) AcquireConnection(ctx context.Context) (*pgxpool.Conn, error) {
-	// get a database connection and query its backend pid
-	// note - this will retry if the connection is bad
-	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return conn, nil
+func (c *DbClient) AcquireManagementConnection(ctx context.Context) (*pgxpool.Conn, error) {
+	return c.managementPool.Acquire(ctx)
 }
 
 func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common.AcquireSessionResult) {
@@ -28,8 +20,6 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	defer func() {
 		if sessionResult != nil && sessionResult.Session != nil {
-			sessionResult.Session.UpdateUsage()
-
 			// fail safe - if there is no database connection, ensure we return an error
 			// NOTE: this should not be necessary but an occasional crash is occurring with a nil connection
 			if sessionResult.Session.Connection == nil && sessionResult.Error == nil {
@@ -40,11 +30,12 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
-	databaseConnection, backendPid, err := c.GetDatabaseConnectionWithRetries(ctx)
+	databaseConnection, err := c.userPool.Acquire(ctx)
 	if err != nil {
 		sessionResult.Error = err
 		return sessionResult
 	}
+	backendPid := databaseConnection.Conn().PgConn().PID()
 
 	c.sessionsMutex.Lock()
 	session, found := c.sessions[backendPid]
@@ -101,20 +92,4 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	sessionResult.Error = ctx.Err()
 	return sessionResult
-}
-
-func (c *DbClient) GetDatabaseConnectionWithRetries(ctx context.Context) (*pgxpool.Conn, uint32, error) {
-	// get a database connection from the pool
-	databaseConnection, err := c.pool.Acquire(ctx)
-	if err != nil {
-		if databaseConnection != nil {
-			databaseConnection.Release()
-		}
-		log.Printf("[TRACE] GetDatabaseConnectionWithRetries failed: %s", err.Error())
-		return nil, 0, err
-	}
-
-	backendPid := databaseConnection.Conn().PgConn().PID()
-
-	return databaseConnection, backendPid, nil
 }

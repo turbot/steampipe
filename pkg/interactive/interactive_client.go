@@ -16,15 +16,14 @@ import (
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
 	"github.com/c-bata/go-prompt"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/interactive/metaquery"
@@ -563,7 +562,7 @@ func (c *InteractiveClient) getConnectionState(ctx context.Context) (steampipeco
 
 	statushooks.SetStatus(ctx, "Loading connection state…")
 
-	conn, err := c.client().AcquireConnection(ctx)
+	conn, err := c.client().AcquireManagementConnection(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -723,7 +722,7 @@ func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) error {
 		}
 
 		log.Printf("[TRACE] Wait for notification")
-		notification, err := conn.WaitForNotification(ctx)
+		notification, err := conn.Conn().WaitForNotification(ctx)
 		if err != nil && !error_helpers.IsContextCancelledError(err) {
 			log.Printf("[INFO] Error waiting for notification: %s", err)
 			// TODO what to do about connection closed error
@@ -735,14 +734,14 @@ func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) error {
 		}
 		log.Printf("[TRACE] Handled notification")
 	}
-	conn.Close(ctx)
+	conn.Release()
 
 	log.Printf("[TRACE] InteractiveClient listenToPgNotifications DONE")
 	return nil
 }
 
-func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgx.Conn, error) {
-	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseUser})
+func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgxpool.Conn, error) {
+	conn, err := c.client().AcquireManagementConnection(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -751,7 +750,7 @@ func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgx
 	_, err = conn.Exec(ctx, listenSql)
 	if err != nil {
 		log.Printf("[INFO] Error listening to schema channel: %s", err)
-		conn.Close(ctx)
+		conn.Release()
 		return nil, err
 	}
 	return conn, nil

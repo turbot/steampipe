@@ -2,6 +2,7 @@ package db_common
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -52,23 +53,17 @@ func GetUserSearchPath(ctx context.Context, conn *pgx.Conn) ([]string, error) {
 	LEFT   JOIN pg_database   d ON d.oid = rs.setdatabase
 	WHERE  r.rolname = 'steampipe'`
 
-	rows, err := conn.Query(ctx, query)
-	if err != nil {
+	rows := conn.QueryRow(ctx, query)
+	var configStrings []string
+	if err := rows.Scan(&configStrings); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []string{}, nil
+		}
 		return nil, err
 	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var configStrings []string
-
-		if err := rows.Scan(&configStrings); err != nil {
-			return nil, err
-		}
-		if len(configStrings) > 0 {
-			return BuildSearchPathResult(configStrings[0])
-		}
+	if len(configStrings) > 0 {
+		return BuildSearchPathResult(configStrings[0])
 	}
-
 	// should not get here
 	return nil, nil
 }

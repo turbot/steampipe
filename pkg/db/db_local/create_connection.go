@@ -92,7 +92,7 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 	// set an app name so that we can track database connections from this Steampipe execution
 	// this is used to determine whether the database can safely be closed
 	connConfig.Config.RuntimeParams = map[string]string{
-		"application_name": runtime.PgClientAppName,
+		constants.RuntimeParamsKeyApplicationName: runtime.ServiceConnectionAppName,
 	}
 	err = db_common.AddRootCertToConfig(&connConfig.Config, getRootCertLocation())
 	if err != nil {
@@ -136,10 +136,8 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 	connConfig.MaxConnLifetime = connMaxLifetime
 	connConfig.MaxConnIdleTime = connMaxIdleTime
 
-	// set an app name so that we can track database connections from this Steampipe execution
-	// this is used to determine whether the database can safely be closed
 	connConfig.ConnConfig.Config.RuntimeParams = map[string]string{
-		"application_name": runtime.PgClientAppName,
+		constants.RuntimeParamsKeyApplicationName: runtime.ServiceConnectionAppName,
 	}
 
 	// this returns connection pool
@@ -172,7 +170,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 	utils.LogTime("db_local.createMaintenanceClient start")
 	defer utils.LogTime("db_local.createMaintenanceClient end")
 
-	connStr := fmt.Sprintf("host=127.0.0.1 port=%d user=%s dbname=postgres sslmode=disable", port, constants.DatabaseSuperUser)
+	connStr := fmt.Sprintf("host=127.0.0.1 port=%d user=%s dbname=postgres sslmode=disable application_name=%s", port, constants.DatabaseSuperUser, runtime.ServiceConnectionAppName)
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second)
 	defer cancel()

@@ -33,6 +33,7 @@ type connectionError struct {
 }
 
 type refreshConnectionState struct {
+	// a connection pool to the DB service which uses the server appname
 	pool                       *pgxpool.Pool
 	searchPath                 []string
 	connectionUpdates          *steampipeconfig.ConnectionUpdates
@@ -638,11 +639,6 @@ func getCloneSchemaQuery(exemplarSchemaName string, connectionState *steampipeco
 	return fmt.Sprintf("select clone_foreign_schema('%s', '%s', '%s');", exemplarSchemaName, connectionState.ConnectionName, connectionState.Plugin)
 }
 
-func getCloneCommentsQuery(exemplarSchemaName string, connectionState *steampipeconfig.ConnectionState) string {
-	return fmt.Sprintf("select clone_table_comments('%s', '%s');", exemplarSchemaName, connectionState.ConnectionName)
-
-}
-
 func (s *refreshConnectionState) getInitialAndRemainingUpdates() (initialUpdates, remainingUpdates map[string]*steampipeconfig.ConnectionState, dynamicUpdates map[string][]*steampipeconfig.ConnectionState) {
 	updates := s.connectionUpdates.Update
 	searchPathConnections := s.connectionUpdates.FinalConnectionState.GetFirstSearchPathConnectionForPlugins(s.searchPath)
@@ -754,12 +750,11 @@ func (s *refreshConnectionState) setIncompleteConnectionStateToError(ctx context
 
 // OnConnectionsChanged is the callback function invoked by the connection watcher when connections are added or removed
 func (s *refreshConnectionState) sendPostgreSchemaNotification(ctx context.Context) error {
-	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
+	conn, err := s.pool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
-	defer conn.Close(ctx)
+	defer conn.Release()
 	notification := steampipeconfig.NewSchemaUpdateNotification(steampipeconfig.PgNotificationSchemaUpdate)
-
-	return db_local.SendPostgresNotification(ctx, conn, notification)
+	return db_local.SendPostgresNotification(ctx, conn.Conn(), notification)
 }

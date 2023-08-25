@@ -107,9 +107,14 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnec
 	log.Println("[TRACE] with config", config)
 
 	query := buildLoadConnectionStateQuery(config)
-
 	log.Println("[TRACE] running query", query)
 	rows, err := conn.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	connectionStateList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionState])
 	if err != nil {
 		// columns were added after the 0.20.0 release (connections for now)
 		// we need to handle the case where we are connected to an old version of
@@ -123,14 +128,8 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnec
 		}
 		return nil, err
 	}
-	defer rows.Close()
 
 	var res = make(ConnectionStateMap)
-
-	connectionStateList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionState])
-	if err != nil {
-		return nil, err
-	}
 
 	for _, c := range connectionStateList {
 		// copy into loop var

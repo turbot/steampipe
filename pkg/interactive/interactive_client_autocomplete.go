@@ -18,7 +18,7 @@ import (
 func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
 	log.Printf("[TRACE] initialiseSuggestions")
 
-	conn, err := c.client().AcquireConnection(ctx)
+	conn, err := c.client().AcquireManagementConnection(ctx)
 	if err != nil {
 		return err
 	}

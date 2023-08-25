@@ -127,6 +127,10 @@ const (
 	IntrospectionTableReference          = "steampipe_reference"
 )
 
+const (
+	RuntimeParamsKeyApplicationName = "application_name"
+)
+
 // Invoker is a pseudoEnum for the command/operation which starts the service
 type Invoker string
 

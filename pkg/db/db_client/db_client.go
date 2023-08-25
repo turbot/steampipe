@@ -23,7 +23,12 @@ import (
 // DbClient wraps over `sql.DB` and gives an interface to the database
 type DbClient struct {
 	connectionString string
-	pool             *pgxpool.Pool
+
+	// connection userPool for user initiated queries
+	userPool *pgxpool.Pool
+
+	// connection used to run system/plumbing queries (connection state, server settings)
+	managementPool *pgxpool.Pool
 
 	// the settings of the server that this client is connected to
 	serverSettings *db_common.ServerSettings
@@ -37,7 +42,10 @@ type DbClient struct {
 
 	// map of database sessions, keyed to the backend_pid in postgres
 	// used to update session search path where necessary
+	// TODO: there's no code which cleans up this map when connections get dropped by pgx
+	// https://github.com/turbot/steampipe/issues/3737
 	sessions map[uint32]*db_common.DatabaseSession
+
 	// allows locked access to the 'sessions' map
 	sessionsMutex *sync.Mutex
 
@@ -109,13 +117,13 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 	return client, nil
 }
 
+func (c *DbClient) closePools() {
+	c.userPool.Close()
+	c.managementPool.Close()
+}
+
 func (c *DbClient) loadServerSettings(ctx context.Context) error {
-	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-	serverSettings, err := serversettings.Load(ctx, conn.Conn())
+	serverSettings, err := serversettings.Load(ctx, c.managementPool)
 	if err != nil {
 		if _, _, notFound := IsRelationNotFoundError(err); notFound {
 			// when connecting to pre-0.21.0 services, the server_settings table will not be available.
@@ -158,12 +166,11 @@ func (c *DbClient) ServerSettings() *db_common.ServerSettings {
 // Close implements Client
 // closes the connection to the database and shuts down the backend
 func (c *DbClient) Close(context.Context) error {
-	log.Printf("[TRACE] DbClient.Close %v", c.pool)
-	if c.pool != nil {
-		// clear the sessions map - so that we can't reuse it
-		c.sessions = nil
-		c.pool.Close()
-	}
+	log.Printf("[TRACE] DbClient.Close %v", c.userPool)
+	c.closePools()
+	// nullify active sessions, since with the closing of the pools
+	// none of the sessions will be valid anymore
+	c.sessions = nil
 
 	return nil
 }
@@ -188,20 +195,20 @@ func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireS
 // NOTE: it optimises the schema extraction by extracting schema information for
 // connections backed by distinct plugins and then fanning back out.
 func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetadata, error) {
-	conn, _, err := c.GetDatabaseConnectionWithRetries(ctx)
+	mgmtConn, err := c.managementPool.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Release()
+	defer mgmtConn.Release()
 
 	// for optimisation purposes, try to load connection state and build a map of schemas to load
 	// (if we are connected to a remote server running an older CLI,
 	// this load may fail, in which case bypass the optimisation)
-	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
+	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, mgmtConn.Conn(), steampipeconfig.WithWaitUntilLoading())
 	// NOTE: if we failed to load conenction state, this may be because we are connected to an older version of the CLI
 	// use legacy (v0.19.x) schema loading code
 	if err != nil {
-		return c.GetSchemaFromDBLegacy(ctx, conn)
+		return c.GetSchemaFromDBLegacy(ctx, mgmtConn)
 	}
 
 	// build a ConnectionSchemaMap object to identify the schemas to load
@@ -216,14 +223,8 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetada
 	// build a query to retrieve these schemas
 	query := c.buildSchemasQuery(schemas...)
 
-	//execute
-	tablesResult, err := conn.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-
 	// build schema metadata from query result
-	metadata, err := db_common.BuildSchemaMetadata(tablesResult)
+	metadata, err := db_common.LoadSchemaMetadata(ctx, mgmtConn.Conn(), query)
 	if err != nil {
 		return nil, err
 	}
@@ -249,14 +250,8 @@ func (c *DbClient) GetSchemaFromDBLegacy(ctx context.Context, conn *pgxpool.Conn
 	// build a query to retrieve these schemas
 	query := c.buildSchemasQueryLegacy()
 
-	//execute
-	tablesResult, err := conn.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-
 	// build schema metadata from query result
-	return db_common.BuildSchemaMetadata(tablesResult)
+	return db_common.LoadSchemaMetadata(ctx, conn.Conn(), query)
 }
 
 // refreshDbClient terminates the current connection and opens up a new connection to the service.
@@ -265,7 +260,7 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	defer utils.LogTime("db_client.refreshDbClient end")
 
 	// close the connection pool and recreate
-	c.pool.Close()
+	c.closePools()
 	if err := c.establishConnectionPool(ctx); err != nil {
 		return err
 	}

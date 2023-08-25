@@ -37,6 +37,15 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 		"localhost",
 	}
 
+	// when connected to a service which is running a plugin compiled with SDK pre-v5, the plugin
+	// will not have the ability to turn off caching (feature introduced in SDKv5)
+	//
+	// the 'isLocalService' is used to set the client end cache to 'false' if caching is turned off in the local service
+	//
+	// this is a temporary workaround to make sure
+	// that we can turn off caching for plugins compiled with SDK pre-V5
+	// worst case scenario is that we don't switch off the cache for pre-V5 plugins
+	// refer to: https://github.com/turbot/steampipe/blob/f7f983a552a07e50e526fcadf2ccbfdb7b247cc0/pkg/db/db_client/db_client_session.go#L66
 	if helpers.StringSliceContains(locals, config.ConnConfig.Host) {
 		c.isLocalService = true
 	}
@@ -55,7 +64,7 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	// set an app name so that we can track database connections from this Steampipe execution
 	// this is used to determine whether the database can safely be closed
 	config.ConnConfig.Config.RuntimeParams = map[string]string{
-		"application_name": runtime.PgClientAppName,
+		constants.RuntimeParamsKeyApplicationName: runtime.ClientConnectionAppName,
 	}
 
 	// this returns connection pool
@@ -73,6 +82,34 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	c.pool = dbPool
+	c.userPool = dbPool
+
+	return c.establishManagementConnectionPool(ctx, config)
+}
+
+// establishSystemConnectionPool creates a connection pool to use to execute
+// system-initiated queries (loading of connection state etc.)
+// unlike establishConnectionPool, which is run first to create the user-query pool
+// this doesn't wait for the pool to completely start, as establishConnectionPool will have established and verified a connection with the service
+func (c *DbClient) establishManagementConnectionPool(ctx context.Context, config *pgxpool.Config) error {
+	utils.LogTime("db_client.establishSystemConnectionPool start")
+	defer utils.LogTime("db_client.establishSystemConnectionPool end")
+
+	// create a copy of the config which is used to setup the user connection pool
+	// we need to modify the config - don't want the original to get modified
+	copiedConfig := config.Copy()
+	copiedConfig.ConnConfig.Config.RuntimeParams = map[string]string{
+		constants.RuntimeParamsKeyApplicationName: runtime.ClientSystemConnectionAppName,
+	}
+
+	// remove the afterConnect hook - we don't need the session data in management connections
+	copiedConfig.AfterConnect = nil
+
+	// this returns connection pool
+	dbPool, err := pgxpool.NewWithConfig(context.Background(), copiedConfig)
+	if err != nil {
+		return err
+	}
+	c.managementPool = dbPool
 	return nil
 }

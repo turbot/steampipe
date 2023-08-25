@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
@@ -124,7 +123,7 @@ GROUP BY application_name
 
 	counts := &ClientCount{}
 
-	rows, err := rootClient.Query(ctx, query, "client backend", runtime.PgClientAppName)
+	rows, err := rootClient.Query(ctx, query, "client backend", constants.ServiceConnectionAppNamePrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -139,10 +138,13 @@ GROUP BY application_name
 		}
 
 		counts.TotalClients += count
-		if strings.HasPrefix(appName, constants.AppName) {
+
+		if db_common.IsClientAppName(appName) {
 			counts.SteampipeClients += count
 		}
-		if strings.HasPrefix(appName, runtime.PgClientAppNamePluginManagerPrefix) {
+
+		// plugin manager uses the service prefix
+		if db_common.IsServiceAppName(appName) {
 			counts.PluginManagerClients += count
 		}
 	}

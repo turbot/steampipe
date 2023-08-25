@@ -3,6 +3,7 @@ package db_client
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/netip"
 	"strings"
@@ -199,53 +200,48 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		resultChannel <- timingResult
 	}()
 
-	res, err := c.ExecuteSyncInSession(ctx, session, fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId))
-	// if we failed to read scan metadata (either because the query failed or the plugin does not support it)
-	// just return
-	if err != nil || len(res.Rows) == 0 {
+	var scanRows []ScanMetadataRow
+	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
+		query := fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
+		rows, err := tx.Query(ctx, query)
+		if err != nil {
+			return err
+		}
+		scanRows, err = pgx.CollectRows(rows, pgx.RowToStructByName[ScanMetadataRow])
+		return err
+	})
+
+	// if we failed to read scan metadata (either because the query failed or the plugin does not support it) just return
+	// we don't return the error, since we don't want to error out in this case
+	if err != nil || len(scanRows) == 0 {
 		return
 	}
 
 	// so we have scan metadata - create the metadata struct
-	timingResult.Metadata = &queryresult.TimingMetadata{}
 	var id int64
-	for _, r := range res.Rows {
-		rw := r.(*queryresult.RowResult)
-		id = rw.Data[0].(int64)
-		rowsFetched := rw.Data[1].(int64)
-		cacheHit := rw.Data[2].(bool)
-		hydrateCalls := rw.Data[3].(int64)
-
-		timingResult.Metadata.HydrateCalls += hydrateCalls
-		if cacheHit {
-			timingResult.Metadata.CachedRowsFetched += rowsFetched
+	timingResult.Metadata = &queryresult.TimingMetadata{}
+	for _, r := range scanRows {
+		timingResult.Metadata.HydrateCalls += r.hydrateCalls
+		if r.cacheHit {
+			timingResult.Metadata.CachedRowsFetched += r.rowsFetched
 		} else {
-			timingResult.Metadata.RowsFetched += rowsFetched
+			timingResult.Metadata.RowsFetched += r.rowsFetched
 		}
-
+		id = r.id
 	}
 	// update the max id for this session
 	session.ScanMetadataMaxId = id
 }
 
 func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_common.DatabaseSession) error {
-	res, err := c.ExecuteSyncInSession(ctx, session, fmt.Sprintf("select max(id) from %s.%s", constants.InternalSchema, constants.ForeignTableScanMetadata))
-	if err != nil {
-		return err
-	}
-
-	for _, r := range res.Rows {
-		rw := r.(*queryresult.RowResult)
-		id, ok := rw.Data[0].(int64)
-		if ok {
-			// update the max id for this session
-			session.ScanMetadataMaxId = id
+	return db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
+		row := tx.QueryRow(ctx, fmt.Sprintf("select max(id) from %s.%s", constants.InternalSchema, constants.ForeignTableScanMetadata))
+		err := row.Scan(&session.ScanMetadataMaxId)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
 		}
-
-		//nolint:golint,staticcheck // we only need to only read the first row
-		break
-	}
-	return nil
+		return err
+	})
 }
 
 // run query in a goroutine, so we can check for cancellation
