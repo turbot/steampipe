@@ -72,17 +72,17 @@ func (w *Workspace) ResolveQueryAndArgsFromSQLString(sqlString string) (*modconf
 		return nil, nil, fmt.Errorf("error opening file '%s': %s", sqlString, err.Error())
 	}
 	fileQuery, fileExists, err := w.getQueryFromFile(filePath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error opening file '%s': %s", filePath, err.Error())
+	}
 	if fileExists {
-		if err != nil {
-			return nil, nil, fmt.Errorf("error opening file '%s': %s", filePath, err.Error())
-		}
-		if fileQuery == nil {
+		if fileQuery.ExecuteSQL == "" {
 			error_helpers.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", filePath))
 			// (just return the empty query - it will be filtered above)
 		}
 		return fileQuery, nil, nil
 	}
-	// sqlString is not a file name that exists
+	// the argument cannot be resolved as an existing file
 	// if it has a sql suffix (i.e we believe the user meant to specify a file) return a file not found error
 	if strings.HasSuffix(strings.ToLower(sqlString), ".sql") {
 		return nil, nil, fmt.Errorf("file '%s' does not exist", filePath)
