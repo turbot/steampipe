@@ -1,0 +1,76 @@
+{
+    "end_time": "2023-08-25T12:19:23.652519+05:30",
+    "inputs": {},
+    "layout": {
+        "children": [
+            {
+                "name": "dashboard_inputs_with_base.dashboard.resource_details.input.resource_compliance_state",
+                "panel_type": "input"
+            },
+            {
+                "name": "dashboard_inputs_with_base.table.dashboard_resource_details_anonymous_table_0",
+                "panel_type": "table"
+            }
+        ],
+        "name": "dashboard_inputs_with_base.dashboard.resource_details",
+        "panel_type": "dashboard"
+    },
+    "panels": {
+        "dashboard_inputs_with_base.dashboard.resource_details": {
+            "dashboard": "dashboard_inputs_with_base.dashboard.resource_details",
+            "name": "dashboard_inputs_with_base.dashboard.resource_details",
+            "panel_type": "dashboard",
+            "status": "complete",
+            "title": "Resource Details"
+        },
+        "dashboard_inputs_with_base.dashboard.resource_details.input.resource_compliance_state": {
+            "dashboard": "dashboard_inputs_with_base.dashboard.resource_details",
+            "display_type": "select",
+            "name": "dashboard_inputs_with_base.dashboard.resource_details.input.resource_compliance_state",
+            "panel_type": "input",
+            "properties": {
+                "name": "resource_compliance_state",
+                "options": [
+                    {
+                        "label": "Compliant",
+                        "name": "compliant"
+                    },
+                    {
+                        "label": "Non-Compliant",
+                        "name": "non-compliant"
+                    }
+                ],
+                "unqualified_name": "input.resource_compliance_state"
+            },
+            "status": "complete",
+            "title": "Select resource compliance state",
+            "width": 4
+        },
+        "dashboard_inputs_with_base.table.dashboard_resource_details_anonymous_table_0": {
+            "dashboard": "dashboard_inputs_with_base.dashboard.resource_details",
+            "data": {
+                "columns": [
+                    {
+                        "data_type": "INT4",
+                        "name": "?column?"
+                    }
+                ],
+                "rows": [
+                    {
+                        "?column?": 1
+                    }
+                ]
+            },
+            "name": "dashboard_inputs_with_base.table.dashboard_resource_details_anonymous_table_0",
+            "panel_type": "table",
+            "properties": {
+                "name": "dashboard_resource_details_anonymous_table_0"
+            },
+            "status": "complete",
+            "width": 12
+        }
+    },
+    "schema_version": "20221222",
+    "start_time": "2023-08-25T12:19:23.651226+05:30",
+    "variables": {}
+}
