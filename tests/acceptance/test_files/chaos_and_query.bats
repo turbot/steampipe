@@ -186,6 +186,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_sql_file.txt)"
 }
 
+@test "sql file(not found)" {
+  run steampipe query $FILE_PATH/test_files/workspace_folder/query_folder/named_query_70.sql
+  assert_equal "$output" "Error: file '$FILE_PATH/test_files/workspace_folder/query_folder/named_query_70.sql' does not exist"
+}
+
 #@test "sql glob" {
 #  cd $FILE_PATH/test_files
 #  run steampipe query *.sql

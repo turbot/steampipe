@@ -38,6 +38,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # to trigger schema cloning
   cp $SRC_DATA_DIR/chaos_case_sensitivity.spc $STEAMPIPE_INSTALL_DIR/config/chaos.spc
 
+  steampipe query "select 1"
+
   # query all connections(all connections should be ready and should work)
   run steampipe query 'select * from "M_t0".chaos_all_column_types'
   assert_success
