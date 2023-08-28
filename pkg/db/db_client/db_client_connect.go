@@ -105,6 +105,12 @@ func (c *DbClient) establishManagementConnectionPool(ctx context.Context, config
 	// remove the afterConnect hook - we don't need the session data in management connections
 	copiedConfig.AfterConnect = nil
 
+	if copiedConfig.MaxConns == 1 {
+		// we need a few extra connections in the management pool, since this pool
+		// is used to LISTEN and search path resolution
+		copiedConfig.MaxConns = config.MaxConns + constants.ManagementConnectionDelta
+	}
+
 	// this returns connection pool
 	dbPool, err := pgxpool.NewWithConfig(context.Background(), copiedConfig)
 	if err != nil {
