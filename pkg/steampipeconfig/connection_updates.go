@@ -34,13 +34,13 @@ type ConnectionUpdates struct {
 	ConnectionPlugins      map[string]*ConnectionPlugin
 	CurrentConnectionState ConnectionStateMap
 	InvalidConnections     map[string]*ValidationFailure
-	// connection plugins for which we must refetch the rate limiters, keyed by blugin name to dedupe
-	ConnectionPluginsToFetchRateLimiters map[string]*ConnectionPlugin
+	// connections for which we must refetch the rate limiter defintions
+	FetchRateLimiterDefsForConnections map[string]struct{}
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
-func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
-	updates, res := populateConnectionUpdates(ctx, pool, forceUpdateConnectionNames...)
+func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...ConnectionUpdatesOption) (*ConnectionUpdates, *RefreshConnectionResult) {
+	updates, res := populateConnectionUpdates(ctx, pool, opts...)
 	if res.Error != nil {
 		return updates, res
 	}
@@ -51,14 +51,18 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	return updates, res
 }
 
-func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
+func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...ConnectionUpdatesOption) (*ConnectionUpdates, *RefreshConnectionResult) {
+	var settings = &connectionUpdatesSettings{}
+	for _, opt := range opts {
+		opt(settings)
+	}
 	utils.LogTime("NewConnectionUpdates start")
 	defer utils.LogTime("NewConnectionUpdates end")
 	log.Printf("[TRACE] NewConnectionUpdates")
 
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
-		log.Printf("[WARN] failed to acquire conneciton from pool: %s", err.Error())
+		log.Printf("[WARN] failed to acquire connection from pool: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
 	}
 	defer conn.Release()
@@ -91,13 +95,14 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 	}
 
 	updates := &ConnectionUpdates{
-		Delete:               make(map[string]struct{}),
-		Disabled:             disabled,
-		Update:               ConnectionStateMap{},
-		MissingComments:      ConnectionStateMap{},
-		MissingPlugins:       missingPlugins,
-		FinalConnectionState: requiredConnectionStateMap,
-		InvalidConnections:   make(map[string]*ValidationFailure),
+		Delete:                             make(map[string]struct{}),
+		Disabled:                           disabled,
+		Update:                             ConnectionStateMap{},
+		MissingComments:                    ConnectionStateMap{},
+		MissingPlugins:                     missingPlugins,
+		FinalConnectionState:               requiredConnectionStateMap,
+		InvalidConnections:                 make(map[string]*ValidationFailure),
+		FetchRateLimiterDefsForConnections: helpers.SliceToLookup(settings.FetchRateLimiterDefsConnectionNames),
 	}
 
 	log.Printf("[INFO] loaded connection state")
@@ -122,23 +127,21 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 
 	modTime := time.Now()
 
-	// keep track of plugins which we need to fetch the rate limiter defs for
-	var fetchRateLimiterDefs []string
-
 	// connections to create/update
 	for name, requiredConnectionState := range requiredConnectionStateMap {
 		// if the connection requires update, add to list
-		if connectionRequiresUpdate(forceUpdateConnectionNames, name, currentConnectionStateMap, requiredConnectionState) {
+		if connectionRequiresUpdate(settings.ForceUpdateConnectionNames, name, currentConnectionStateMap, requiredConnectionState) {
 			updates.Update[name] = requiredConnectionState
 			log.Printf("[INFO] connection %s is out of date or missing. updates: %v", name, maps.Keys(updates.Update))
 
 			// set the connection mod time of required connection data to now
 			requiredConnectionState.ConnectionModTime = modTime
 
-			// if the plugin mod time has changed, add this to the list of plugins we need to refetch the rate limiters for
+			// if the plugin mod time has changed, add this to the map of connections
+			// we need to refetch the rate limiters for
 			if currentConnectionState, schemaExistsInState := currentConnectionStateMap[name]; schemaExistsInState &&
 				currentConnectionState.pluginModTimeChanged(requiredConnectionState) {
-				fetchRateLimiterDefs = append(fetchRateLimiterDefs, requiredConnectionState.ConnectionName)
+				updates.FetchRateLimiterDefsForConnections[requiredConnectionState.ConnectionName] = struct{}{}
 			}
 		}
 	}
@@ -195,8 +198,6 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 	if res.Error != nil {
 		return nil, res
 	}
-
-	updates.setPluginsToFetchRateLimiterDefs(fetchRateLimiterDefs)
 
 	// set the schema mode and hash on the connection data in required state
 	// this uses data from the ConnectionPlugins which we have now loaded
@@ -310,6 +311,13 @@ func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugi
 			connectionMap[child.Name] = child
 		}
 	}
+	// add in all connections which we need to fetch ratreh limiter defs for
+	for connectionName := range u.FetchRateLimiterDefsForConnections {
+		connectionMap[connectionName] = GlobalConfig.Connections[connectionName]
+		// // NOTE: don't bother adding aggreagtor children
+		//- for rate limiter defs we will only make a single call to each plugin
+	}
+
 	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
 	// - remove these from list of plugins to create
 	for name := range alreadyCreatedConnectionPlugins {

@@ -36,6 +36,20 @@ type RateLimiter struct {
 	EndLineNumber   *int
 }
 
+// RateLimiterFromProto converts the proto format RateLimiterDefinition into a Defintion
+func RateLimiterFromProto(p *proto.RateLimiterDefinition) (*RateLimiter, error) {
+	// TODO FINISH
+	var res = &RateLimiter{
+		Name: p.Name,
+		//FillRate:       rate.Limit(p.FillRate),
+		//BucketSize:     p.BucketSize,
+		//MaxConcurrency: p.MaxConcurrency,
+		Scope: p.Scope,
+		//Where:          p.Where,
+	}
+	return res, nil
+}
+
 func (l RateLimiter) scopeString() string {
 	scope := l.Scope
 	sort.Strings(scope)

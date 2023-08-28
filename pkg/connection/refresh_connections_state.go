@@ -40,6 +40,8 @@ type refreshConnectionState struct {
 	tableUpdater               *connectionStateTableUpdater
 	res                        *steampipeconfig.RefreshConnectionResult
 	forceUpdateConnectionNames []string
+	// TODO rename
+	fetchRateLimiterDefsForConnectionNames []string
 
 	// properties for schema/comment cloning
 	exemplarSchemaMapMut sync.Mutex
@@ -69,12 +71,22 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 		return nil, err
 	}
 
-	return &refreshConnectionState{
+	res := &refreshConnectionState{
 		pool:                       pool,
 		searchPath:                 searchPath,
 		forceUpdateConnectionNames: forceUpdateConnectionNames,
 		pluginManager:              pluginManager,
-	}, nil
+	}
+
+	// check whether steampipe_rate_limiter table exists and if not, update fetchRateLimiterDefsForConnectionNames
+	// to contain all connections
+	if err := res.ensureRateLimiterTable(ctx); err != nil {
+		res.close()
+		return nil, err
+	}
+
+	return res, nil
+
 }
 
 func (s *refreshConnectionState) close() {
@@ -97,8 +109,12 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	}()
 	log.Printf("[INFO] building connectionUpdates")
 
-	// determine any necessary connection updates
-	s.connectionUpdates, s.res = steampipeconfig.NewConnectionUpdates(ctx, s.pool, s.forceUpdateConnectionNames...)
+	// build a ConnectionUpdates struct
+	// this determine any necessary connection updates and starts any necessary plugins
+	s.connectionUpdates, s.res = steampipeconfig.NewConnectionUpdates(ctx, s.pool,
+		steampipeconfig.WithForceUpdate(s.forceUpdateConnectionNames),
+		steampipeconfig.WithFetchRateLimiterDefs(s.forceUpdateConnectionNames))
+
 	defer s.logRefreshConnectionResults()
 	// were we successful?
 	if s.res.Error != nil {
@@ -107,7 +123,16 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 
 	log.Printf("[INFO] created connectionUpdates")
 
-	// TODO reload plugin rate limiter definitions for all plugins which are updated
+	//  reload plugin rate limiter definitions for all plugins which are updated - the plugin will allready be loaded
+	updatedPluginLimiters, err := s.reloadPluginRateLimiters()
+	if err != nil {
+		s.res.Error = err
+		return
+	}
+	// TODO KAI check if any updates
+	if len(updatedPluginLimiters) > 0 {
+		s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
+	}
 
 	// delete the connection state file - it will be rewritten when we are complete
 	log.Printf("[INFO] deleting connections state file")
@@ -336,7 +361,7 @@ func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	return
 }
 
-// convert map upd update sets (used for dynamic schemas) to an array of the underlying connection states
+// convert map update sets (used for dynamic schemas) to an array of the underlying connection states
 func updateSetMapToArray(updateSetMap map[string][]*steampipeconfig.ConnectionState) []*steampipeconfig.ConnectionState {
 	var res []*steampipeconfig.ConnectionState
 	for _, updates := range updateSetMap {
