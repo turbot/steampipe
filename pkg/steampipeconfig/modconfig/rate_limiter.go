@@ -23,12 +23,13 @@ type ResolvedRateLimiter struct {
 }
 
 type RateLimiter struct {
-	Name            string   `hcl:"name,label"`
-	Plugin          string   `hcl:"plugin"`
-	BucketSize      *int64   `hcl:"bucket_size,optional"`
-	FillRate        *float32 `hcl:"fill_rate,optional"`
-	MaxConcurrency  *int64   `hcl:"max_concurrency,optional"`
-	Scope           []string `hcl:"scope"`
+	Name           string   `hcl:"name,label"`
+	Plugin         string   `hcl:"plugin"`
+	BucketSize     *int64   `hcl:"bucket_size,optional"`
+	FillRate       *float32 `hcl:"fill_rate,optional"`
+	MaxConcurrency *int64   `hcl:"max_concurrency,optional"`
+	// TODO KAI CAN SCOPE BE OPTIONAL???
+	Scope           []string `hcl:"scope,optional"`
 	Where           *string  `hcl:"where,optional"`
 	QualifiedName   string
 	FileName        *string
@@ -48,6 +49,16 @@ func RateLimiterFromProto(p *proto.RateLimiterDefinition) (*RateLimiter, error) 
 		//Where:          p.Where,
 	}
 	return res, nil
+}
+
+func (l RateLimiter) OnDecoded(block *hcl.Block) {
+	l.FileName = &block.DefRange.Filename
+	l.StartLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.Start.Line
+	l.EndLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.End.Line
+	l.QualifiedName = fmt.Sprintf("%s.%s", l.Plugin, l.Name)
+	if l.Scope == nil {
+		l.Scope = []string{}
+	}
 }
 
 func (l RateLimiter) scopeString() string {
@@ -82,12 +93,4 @@ func (l RateLimiter) Equals(other *RateLimiter) bool {
 		l.FillRate == other.FillRate &&
 		l.scopeString() == other.scopeString() &&
 		l.Where == other.Where
-}
-
-func (l RateLimiter) OnDecoded(block *hcl.Block) {
-	l.FileName = &block.DefRange.Filename
-	l.StartLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.Start.Line
-	l.EndLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.End.Line
-	l.QualifiedName = fmt.Sprintf("%s.%s", l.Plugin, l.Name)
-
 }
