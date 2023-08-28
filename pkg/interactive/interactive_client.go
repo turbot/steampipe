@@ -348,8 +348,6 @@ func (c *InteractiveClient) breakMultilinePrompt(buffer *prompt.Buffer) {
 }
 
 func (c *InteractiveClient) executor(ctx context.Context, line string) {
-	log.Println("[TRACE]", "InteractiveClient.executor start")
-	defer log.Println("[TRACE]", "InteractiveClient.executor end")
 	// take an execution lock, so that errors and warnings don't show up while
 	// we are underway
 	c.executionLock.Lock()
@@ -360,7 +358,6 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 
 	line = strings.TrimSpace(line)
 
-	log.Println("[TRACE]", "InteractiveClient.executor", "resolving query")
 	resolvedQuery := c.getQuery(ctx, line)
 	if resolvedQuery == nil {
 		// we failed to resolve a query, or are in the middle of a multi-line entry
@@ -368,21 +365,16 @@ func (c *InteractiveClient) executor(ctx context.Context, line string) {
 		c.restartInteractiveSession()
 		return
 	}
-	log.Println("[TRACE]", "InteractiveClient.executor", "resolved query")
 
 	// we successfully retrieved a query
 
 	// create a  context for the execution of the query
-	log.Println("[TRACE]", "InteractiveClient.executor", "creating query context")
 	queryCtx := c.createQueryContext(ctx)
-	log.Println("[TRACE]", "InteractiveClient.executor", "created query context")
 
-	log.Println("[TRACE]", "InteractiveClient.executor", "ismetaquery", resolvedQuery.IsMetaQuery)
 	if resolvedQuery.IsMetaQuery {
 		c.hidePrompt = true
 		c.interactivePrompt.Render()
 
-		log.Println("[TRACE]", "InteractiveClient.executor", "executing meta query")
 		if err := c.executeMetaquery(queryCtx, resolvedQuery.ExecuteSQL); err != nil {
 			error_helpers.ShowError(ctx, err)
 		}
@@ -527,8 +519,6 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfi
 }
 
 func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) error {
-	log.Println("[TRACE]", "InteractiveClient.executeMetaquery start")
-	defer log.Println("[TRACE]", "InteractiveClient.executeMetaquery end")
 	// the client must be initialised to get here
 	if !c.isInitialised() {
 		panic("client is not initalised")
@@ -544,14 +534,10 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 	if !validateResult.ShouldRun {
 		return nil
 	}
-	log.Println("[TRACE]", "InteractiveClient.executeMetaquery", "getting client")
 	client := c.client()
-	log.Println("[TRACE]", "InteractiveClient.executeMetaquery", "got client")
 
 	// load connection state and put into input
-	log.Println("[TRACE]", "InteractiveClient.executeMetaquery", "getting connection state")
 	connectionState, err := c.getConnectionState(ctx)
-	log.Println("[TRACE]", "InteractiveClient.executeMetaquery", "got connection state")
 	if err != nil {
 		// swallow error - it may just be that we are connected to a server which does not support connection state
 		log.Println("[TRACE] failed to load connection state - are we connected to a server running a previous steampipe version?", err)
@@ -571,18 +557,12 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 
 // helper function to acquire db connection and retrieve connection state
 func (c *InteractiveClient) getConnectionState(ctx context.Context) (steampipeconfig.ConnectionStateMap, error) {
-	log.Println("[TRACE]", "InteractiveClient.getConnectionState", "start")
-	defer log.Println("[TRACE]", "InteractiveClient.getConnectionState", "end")
-
 	statushooks.Show(ctx)
 	defer statushooks.Done(ctx)
 
-	log.Println("[TRACE]", "InteractiveClient.getConnectionState", "loading")
 	statushooks.SetStatus(ctx, "Loading connection state…")
 
-	log.Println("[TRACE]", "InteractiveClient.getConnectionState", "getting management connection")
 	conn, err := c.client().AcquireManagementConnection(ctx)
-	log.Println("[TRACE]", "InteractiveClient.getConnectionState", "got management connection")
 	if err != nil {
 		return nil, err
 	}
