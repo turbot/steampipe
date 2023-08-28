@@ -39,6 +39,11 @@ _Deprecations and migrations_
 * Refactor Plugin manager:remove support for plugins which do not support multiple connections, simplify startup
 
 
+## v0.20.11 [2023-08-28]
+_Bug fixes_
+* Fix validation error for `input` blocks using `base` inheritance. ([#3755](https://github.com/turbot/steampipe/issues/3755))
+* Fix support for mixed case schema names. ([#3753](https://github.com/turbot/steampipe/issues/3753))
+* If the SQL file passed as an argument to `steampipe query` does not exist, display the `file does not exist` error. ([#1752](https://github.com/turbot/steampipe/issues/1752))
 
 ## v0.20.10 [2023-08-11]
 _Bug fixes_
