@@ -98,9 +98,6 @@ func (c *DbClient) establishManagementConnectionPool(ctx context.Context, config
 	// create a config from the config of the user pool
 	copiedConfig := createManagementPoolConfig(config)
 
-	// max connections is higher than the user pool
-	copiedConfig.MaxConns = config.MaxConns + constants.ManagementConnectionDelta
-
 	// this returns connection pool
 	dbPool, err := pgxpool.NewWithConfig(context.Background(), copiedConfig)
 	if err != nil {
