@@ -746,6 +746,9 @@ func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgx
 		return nil, err
 	}
 
+	// let's hijack this connection, since we will be using this for listening to notifications
+	// from postgres. The lifecycle of this connection is tied to the lifecycle of the interactive
+	// prompt. No point having the pool manage this.
 	conn := poolConn.Hijack()
 
 	listenSql := fmt.Sprintf("listen %s", constants.PostgresNotificationChannel)
