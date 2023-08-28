@@ -95,21 +95,8 @@ func (c *DbClient) establishManagementConnectionPool(ctx context.Context, config
 	utils.LogTime("db_client.establishSystemConnectionPool start")
 	defer utils.LogTime("db_client.establishSystemConnectionPool end")
 
-	// create a copy of the config which is used to setup the user connection pool
-	// we need to modify the config - don't want the original to get modified
-	copiedConfig := config.Copy()
-	copiedConfig.ConnConfig.Config.RuntimeParams = map[string]string{
-		constants.RuntimeParamsKeyApplicationName: runtime.ClientSystemConnectionAppName,
-	}
-
-	// remove the afterConnect hook - we don't need the session data in management connections
-	copiedConfig.AfterConnect = nil
-
-	if copiedConfig.MaxConns == 1 {
-		// we need a few extra connections in the management pool, since this pool
-		// is used to LISTEN and search path resolution
-		copiedConfig.MaxConns = config.MaxConns + constants.ManagementConnectionDelta
-	}
+	// create a config from the config of the user pool
+	copiedConfig := createManagementPoolConfig(config)
 
 	// this returns connection pool
 	dbPool, err := pgxpool.NewWithConfig(context.Background(), copiedConfig)
@@ -118,4 +105,20 @@ func (c *DbClient) establishManagementConnectionPool(ctx context.Context, config
 	}
 	c.managementPool = dbPool
 	return nil
+}
+
+func createManagementPoolConfig(config *pgxpool.Config) *pgxpool.Config {
+	// create a copy - we will be modifying this
+	copiedConfig := config.Copy()
+
+	copiedConfig.ConnConfig.Config.RuntimeParams = map[string]string{
+		constants.RuntimeParamsKeyApplicationName: runtime.ClientSystemConnectionAppName,
+	}
+	// set the max connections to a default
+	copiedConfig.MaxConns = constants.DefaultMaxManagementConnections
+
+	// remove the afterConnect hook - we don't need the session data in management connections
+	copiedConfig.AfterConnect = nil
+
+	return copiedConfig
 }
