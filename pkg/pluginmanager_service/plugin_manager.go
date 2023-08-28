@@ -208,10 +208,13 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connection.Connectio
 	if err != nil {
 		log.Printf("[WARN] handleConnectionConfigChanges failed: %s", err.Error())
 	}
-	err = m.handleLimiterChanges(limiters)
+	err = m.handleUserLimiterChanges(limiters)
 	if err != nil {
-		log.Printf("[WARN] handleLimiterChanges failed: %s", err.Error())
+		log.Printf("[WARN] handleUserLimiterChanges failed: %s", err.Error())
 	}
+}
+func (m *PluginManager) GetConnectionConfig() connection.ConnectionConfigMap {
+	return m.connectionConfigMap
 }
 
 func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
@@ -254,7 +257,22 @@ func (m *PluginManager) killPlugin(p *runningPlugin) {
 // respond to changes in the HCL rate limiter config
 // update the stored limiters, refrresh the rate limiter table and call `setRateLimiters`
 // for all plugins with changed limiters
-func (m *PluginManager) handleLimiterChanges(newLimiters connection.LimiterMap) error {
+func (m *PluginManager) HandlePluginLimiterChanges(newLimiters map[string]connection.LimiterMap) error {
+	for plugin, limitersForPlugin := range newLimiters {
+		m.pluginLimiters[plugin] = limitersForPlugin
+	}
+
+	// update the rate_limiters table
+	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
+		log.Println("[WARN] could not refresh rate limiter table", err)
+	}
+	return nil
+}
+
+// respond to changes in the HCL rate limiter config
+// update the stored limiters, refrresh the rate limiter table and call `setRateLimiters`
+// for all plugins with changed limiters
+func (m *PluginManager) handleUserLimiterChanges(newLimiters connection.LimiterMap) error {
 	newLimiterPluginMap := newLimiters.ToPluginMap()
 
 	pluginsWithChangedLimiters := m.getPluginsWithChangedLimiters(newLimiterPluginMap)
@@ -277,16 +295,16 @@ func (m *PluginManager) handleLimiterChanges(newLimiters connection.LimiterMap) 
 		// if plugin is not running we have nothing to do
 		longName, ok := m.pluginNameMap[p]
 		if !ok {
-			log.Printf("[INFO] handleLimiterChanges: plugin %s is not currently running - ignoring", p)
+			log.Printf("[INFO] handleUserLimiterChanges: plugin %s is not currently running - ignoring", p)
 			continue
 		}
 		runningPlugin, ok := m.runningPluginMap[longName]
 		if !ok {
-			log.Printf("[INFO] handleLimiterChanges: plugin %s is not currently running - ignoring", p)
+			log.Printf("[INFO] handleUserLimiterChanges: plugin %s is not currently running - ignoring", p)
 			continue
 		}
 		if !runningPlugin.reattach.SupportedOperations.RateLimiters {
-			log.Printf("[INFO] handleLimiterChanges: plugin %s does not support setting rate limit - ignoring", p)
+			log.Printf("[INFO] handleUserLimiterChanges: plugin %s does not support setting rate limit - ignoring", p)
 			continue
 		}
 
