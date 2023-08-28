@@ -44,15 +44,8 @@ func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceU
 	queueLock.Unlock()
 	log.Printf("[INFO] acquired refreshExecuteLock, released refreshQueueLock")
 
-	// first
-	//// create and populate the rate limiter table
-	//if err := pluginManager.refreshRateLimiterTable(ctx); err != nil {
-	//	// TODO better handle plugin manager startup failures
-	//	log.Println("[WARN] could not refresh rate limiter table", err)
-	//	return nil, err
-	//}
 	// now refresh connections
-	// package up all necessary data into a state object6
+	// package up all necessary data into a state object
 	state, err := newRefreshConnectionState(ctx, pluginManager, forceUpdateConnectionNames)
 	if err != nil {
 		return steampipeconfig.NewErrorRefreshConnectionResult(err)

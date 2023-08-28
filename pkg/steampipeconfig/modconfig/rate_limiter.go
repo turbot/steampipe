@@ -1,6 +1,9 @@
 package modconfig
 
 import (
+	"fmt"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"sort"
 	"strings"
@@ -13,6 +16,12 @@ const (
 	LimiterStatusOverriden = "overriden"
 )
 
+type ResolvedRateLimiter struct {
+	*RateLimiter
+	Status string
+	Source string
+}
+
 type RateLimiter struct {
 	Name            string   `hcl:"name,label"`
 	Plugin          string   `hcl:"plugin"`
@@ -21,8 +30,7 @@ type RateLimiter struct {
 	MaxConcurrency  *int64   `hcl:"max_concurrency,optional"`
 	Scope           []string `hcl:"scope"`
 	Where           *string  `hcl:"where,optional"`
-	Status          string
-	Source          string
+	QualifiedName   string
 	FileName        *string
 	StartLineNumber *int
 	EndLineNumber   *int
@@ -60,4 +68,12 @@ func (l RateLimiter) Equals(other *RateLimiter) bool {
 		l.FillRate == other.FillRate &&
 		l.scopeString() == other.scopeString() &&
 		l.Where == other.Where
+}
+
+func (l RateLimiter) OnDecoded(block *hcl.Block) {
+	l.FileName = &block.DefRange.Filename
+	l.StartLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.Start.Line
+	l.EndLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.End.Line
+	l.QualifiedName = fmt.Sprintf("%s.%s", l.Plugin, l.Name)
+
 }

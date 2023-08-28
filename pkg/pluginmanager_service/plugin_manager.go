@@ -68,20 +68,23 @@ type PluginManager struct {
 
 	logger        hclog.Logger
 	messageServer *PluginMessageServer
-	// map of rater limiters, keyed by name
-	// todo instead have map of limiters per plugin???
-	limiters connection.LimiterMap
+
+	// map of user configured rate limiter maps, keyed by plugin
+	userLimiters map[string]connection.LimiterMap
+	// map of plugin configured rate limiter maps, keyed by plugin
+	pluginLimiters map[string]connection.LimiterMap
+
 	// map of plugin short name to long name
 	pluginNameMap map[string]string
 }
 
-func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, limiters map[string]*modconfig.RateLimiter, logger hclog.Logger) (*PluginManager, error) {
+func NewPluginManager(connectionConfig map[string]*sdkproto.ConnectionConfig, limiters connection.LimiterMap, logger hclog.Logger) (*PluginManager, error) {
 	log.Printf("[INFO] NewPluginManager")
 	pluginManager := &PluginManager{
 		logger:              logger,
 		runningPluginMap:    make(map[string]*runningPlugin),
 		connectionConfigMap: connectionConfig,
-		limiters:            limiters,
+		userLimiters:        limiters.ToPluginMap(),
 		pluginNameMap:       make(map[string]string),
 	}
 
@@ -248,15 +251,20 @@ func (m *PluginManager) killPlugin(p *runningPlugin) {
 	p.client.Kill()
 }
 
+// respond to changes in the HCL rate limiter config
+// update the stored limiters, refrresh the rate limiter table and call `setRateLimiters`
+// for all plugins with changed limiters
 func (m *PluginManager) handleLimiterChanges(newLimiters connection.LimiterMap) error {
-	pluginsWithChangedLimiters := m.limiters.GetPluginsWithChangedLimiters(newLimiters)
+	newLimiterPluginMap := newLimiters.ToPluginMap()
+
+	pluginsWithChangedLimiters := m.getPluginsWithChangedLimiters(newLimiterPluginMap)
 
 	if len(pluginsWithChangedLimiters) == 0 {
 		return nil
 	}
 
 	// update stored limiters to the new map
-	m.limiters = newLimiters
+	m.userLimiters = newLimiterPluginMap
 
 	// update the rate_limiters table
 	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
@@ -293,6 +301,18 @@ func (m *PluginManager) handleLimiterChanges(newLimiters connection.LimiterMap) 
 	}
 
 	return nil
+}
+
+func (m *PluginManager) getPluginsWithChangedLimiters(newLimiters map[string]connection.LimiterMap) map[string]struct{} {
+	var pluginsWithChangedLimiters = make(map[string]struct{})
+
+	for plugin, limitersForPlugin := range m.userLimiters {
+		newLimitersForPlugin := newLimiters[plugin]
+		if !limitersForPlugin.Equals(newLimitersForPlugin) {
+			pluginsWithChangedLimiters[plugin] = struct{}{}
+		}
+	}
+	return pluginsWithChangedLimiters
 }
 
 func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdkproto.ConnectionConfig, req *pb.GetRequest) (reattach *pb.ReattachConfig, err error) {
@@ -729,11 +749,8 @@ func (m *PluginManager) setRateLimiters(pluginName string, pluginClient *sdkgrpc
 	log.Printf("[INFO] setRateLimiters for plugin '%s'", pluginName)
 	var defs []*sdkproto.RateLimiterDefinition
 
-	for _, l := range m.limiters {
-		// only add limiters for this plugin
-		if l.Plugin == pluginName {
-			defs = append(defs, l.AsProto())
-		}
+	for _, l := range m.userLimiters[pluginName] {
+		defs = append(defs, l.AsProto())
 	}
 
 	req := &sdkproto.SetRateLimitersRequest{Definitions: defs}
@@ -791,6 +808,47 @@ func (m *PluginManager) handleStartFailure(err error) error {
 		return fmt.Errorf(pluginMessage)
 	}
 	return err
+}
+
+func (m *PluginManager) resolveRateLimiterDefs() (res []*modconfig.ResolvedRateLimiter) {
+	// add all plugin limiters
+	for plugin, pluginDefinedLimiters := range m.pluginLimiters {
+		// are there any user defined limiters for this plugin
+		userDefinedLimiters := m.getUserDefinedLimitersForPlugin(plugin)
+		for name, pluginLimiter := range pluginDefinedLimiters {
+			resolvedLimiter := &modconfig.ResolvedRateLimiter{
+				RateLimiter: pluginLimiter,
+				Status:      modconfig.LimiterStatusActive,
+				Source:      modconfig.LimiterSourcePlugin,
+			}
+			// is there a user override - if set set status to overriden
+			if _, isOverriden := userDefinedLimiters[name]; isOverriden {
+				resolvedLimiter.Status = modconfig.LimiterStatusOverriden
+			}
+
+			res = append(res, resolvedLimiter)
+		}
+
+		// add all user defined limiters
+		for _, userLimiter := range userDefinedLimiters {
+			resolvedLimiter := &modconfig.ResolvedRateLimiter{
+				RateLimiter: userLimiter,
+				Status:      modconfig.LimiterStatusActive,
+				Source:      modconfig.LimiterSourceConfig,
+			}
+
+			res = append(res, resolvedLimiter)
+		}
+	}
+	return res
+}
+
+func (m *PluginManager) getUserDefinedLimitersForPlugin(plugin string) connection.LimiterMap {
+	userDefinedLimiters := m.userLimiters[plugin]
+	if userDefinedLimiters == nil {
+		userDefinedLimiters = make(connection.LimiterMap)
+	}
+	return userDefinedLimiters
 }
 
 func nonAggregatorConnectionCount(connections []*sdkproto.ConnectionConfig) int {

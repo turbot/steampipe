@@ -34,6 +34,8 @@ type ConnectionUpdates struct {
 	ConnectionPlugins      map[string]*ConnectionPlugin
 	CurrentConnectionState ConnectionStateMap
 	InvalidConnections     map[string]*ValidationFailure
+	// connection plugins for which we must refetch the rate limiters, keyed by blugin name to dedupe
+	ConnectionPluginsToFetchRateLimiters map[string]*ConnectionPlugin
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
@@ -119,6 +121,10 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 	log.Printf("[INFO] identify connections to update")
 
 	modTime := time.Now()
+
+	// keep track of plugins which we need to fetch the rate limiter defs for
+	var fetchRateLimiterDefs []string
+
 	// connections to create/update
 	for name, requiredConnectionState := range requiredConnectionStateMap {
 		// if the connection requires update, add to list
@@ -128,10 +134,11 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 
 			// set the connection mod time of required connection data to now
 			requiredConnectionState.ConnectionModTime = modTime
-			// if the plugin mod time has canged, add this to the list of plugins we need to
-			// refetch the rate limiters for
-			if d.pluginModTimeChanged(other) {
-				return false
+
+			// if the plugin mod time has changed, add this to the list of plugins we need to refetch the rate limiters for
+			if currentConnectionState, schemaExistsInState := currentConnectionStateMap[name]; schemaExistsInState &&
+				currentConnectionState.pluginModTimeChanged(requiredConnectionState) {
+				fetchRateLimiterDefs = append(fetchRateLimiterDefs, requiredConnectionState.ConnectionName)
 			}
 		}
 	}
@@ -188,6 +195,8 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 	if res.Error != nil {
 		return nil, res
 	}
+
+	updates.setPluginsToFetchRateLimiterDefs(fetchRateLimiterDefs)
 
 	// set the schema mode and hash on the connection data in required state
 	// this uses data from the ConnectionPlugins which we have now loaded
@@ -270,7 +279,7 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	// - for any aggregator connections, instantiate the first child connection instead
 	connectionsToCreate := u.getConnectionsToCreate(alreadyCreatedConnectionPlugins)
 	// now create them
-	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate)
+	connectionPluginsByConnection, res := CreateConnectionPlugins(connectionsToCreate)
 	// if any plugins failed to load, set those connections to error
 	for c, reason := range res.FailedConnections {
 		u.setError(c, reason)
@@ -281,10 +290,10 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	}
 	// add back in the already created plugins
 	for name, connectionPlugin := range alreadyCreatedConnectionPlugins {
-		connectionPlugins[name] = connectionPlugin
+		connectionPluginsByConnection[name] = connectionPlugin
 	}
 	// and set our ConnectionPlugins property
-	u.ConnectionPlugins = connectionPlugins
+	u.ConnectionPlugins = connectionPluginsByConnection
 	return res
 }
 
@@ -410,6 +419,10 @@ func (u *ConnectionUpdates) populateAggregators() {
 			}
 		}
 	}
+
+}
+
+func (u *ConnectionUpdates) setPluginsToFetchRateLimiterDefs(connectionsToFetchRateLimiterDefs []string) {
 
 }
 

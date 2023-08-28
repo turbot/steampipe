@@ -77,38 +77,6 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 	}, nil
 }
 
-func (s *refreshConnectionState) ensureRateLimiterTable(ctx context.Context) error {
-	// if the raste limiter table exists, nothing to do
-	exists, err := rateLimiterTableExists(ctx, s.pool)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return nil
-	}
-	// so we must load all plugins
-	return nil
-}
-
-func rateLimiterTableExists(ctx context.Context, pool *pgxpool.Pool) (bool, error) {
-	query := fmt.Sprintf(`SELECT EXISTS (
-    SELECT FROM 
-        pg_tables
-    WHERE 
-        schemaname = '%s' AND 
-        tablename  = '%s'
-    );`, constants.InternalSchema, constants.RateLimiterDefinitionTable)
-
-	row := pool.QueryRow(ctx, query)
-	var exists bool
-	err := row.Scan(&exists)
-
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
-}
-
 func (s *refreshConnectionState) close() {
 	if s.pool != nil {
 		s.pool.Close()
@@ -129,7 +97,6 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	}()
 	log.Printf("[INFO] building connectionUpdates")
 
-	time.Sleep(10 * time.Second)
 	// determine any necessary connection updates
 	s.connectionUpdates, s.res = steampipeconfig.NewConnectionUpdates(ctx, s.pool, s.forceUpdateConnectionNames...)
 	defer s.logRefreshConnectionResults()
@@ -140,7 +107,8 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 
 	log.Printf("[INFO] created connectionUpdates")
 
-	// reload plugin rate limiter definitions for all plugins which are
+	// TODO reload plugin rate limiter definitions for all plugins which are updated
+
 	// delete the connection state file - it will be rewritten when we are complete
 	log.Printf("[INFO] deleting connections state file")
 	steampipeconfig.DeleteConnectionStateFile()

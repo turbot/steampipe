@@ -123,9 +123,6 @@ func CreateConnectionPlugins(connectionNamesToCreate []string) (requestedConnect
 	}
 
 	// now create or retrieve a connection plugin for each connection
-
-	// NOTE: multiple connections may use the same plugin
-	// store a map of multi connection plugins, keyed by connection name
 	multiConnectionPlugins := make(map[string]*ConnectionPlugin)
 
 	for _, connection := range connectionsToCreate {
