@@ -23,6 +23,10 @@ const (
 	DatabaseName                     = "steampipe"
 	DatabaseUsersRole                = "steampipe_users"
 	DefaultMaxConnections            = 10
+
+	// maximum management connection needs to be higher than the user pool connections
+	// this is because the management pool is used for notification listening
+	ManagementConnectionDelta = 2
 )
 
 // constants for installing db and fdw images
