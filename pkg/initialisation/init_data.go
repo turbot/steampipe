@@ -3,6 +3,7 @@ package initialisation
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
@@ -55,6 +56,9 @@ func (i *InitData) RegisterExporters(exporters ...export.Exporter) *InitData {
 }
 
 func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
+	log.Println("[TRACE] $$$$ InitData.Init start")
+	defer log.Println("[TRACE] $$$$ InitData.Init end")
+
 	defer func() {
 		if r := recover(); r != nil {
 			i.Result.Error = helpers.ToError(r)
@@ -73,6 +77,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 
 	statushooks.SetStatus(ctx, "Initializing")
 
+	log.Println("[TRACE] InitData.Init", "$$$$ telemetry init")
 	// initialise telemetry
 	shutdownTelemetry, err := telemetry.Init(constants.AppName)
 	if err != nil {
@@ -80,6 +85,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	} else {
 		i.ShutdownTelemetry = shutdownTelemetry
 	}
+	log.Println("[TRACE] InitData.Init", "$$$$ telemetry init done")
 
 	// install mod dependencies if needed
 	if viper.GetBool(constants.ArgModInstall) {
@@ -94,6 +100,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 			return
 		}
 	}
+	log.Println("[TRACE] InitData.Init", "$$$$ mod install done")
 
 	// retrieve cloud metadata
 	cloudMetadata, err := getCloudMetadata(ctx)
@@ -101,6 +108,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		i.Result.Error = err
 		return
 	}
+	log.Println("[TRACE] InitData.Init", "$$$$ got cloud metadata")
 
 	// set cloud metadata (may be nil)
 	i.Workspace.CloudMetadata = cloudMetadata
@@ -111,6 +119,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		i.Result.Error = err
 		return
 	}
+	log.Println("[TRACE] InitData.Init", "$$$$ got installed plugins")
 
 	//validate steampipe version
 	validationWarnings := validateModRequirementsRecursively(i.Workspace.Mod, pluginsInstalled)
@@ -131,6 +140,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		i.Result.AddMessage(fmt.Sprintf(format, a...))
 	})
 
+	log.Println("[TRACE] InitData.Init", "$$$$ connecting to steampipe")
 	statushooks.SetStatus(ctx, "Connecting to steampipe")
 	client, errorsAndWarnings := GetDbClient(getClientCtx, invoker, ensureSessionData)
 	if errorsAndWarnings.Error != nil {
@@ -138,13 +148,16 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		return
 	}
 	i.Result.AddWarnings(errorsAndWarnings.Warnings...)
+	log.Println("[TRACE] InitData.Init", "$$$$ connected to steampipe")
 
+	log.Println("[TRACE] InitData.Init", "$$$$ validating cache settings")
 	if errorsAndWarnings := db_common.ValidateClientCacheSettings(client); errorsAndWarnings != nil {
 		if errorsAndWarnings.GetError() != nil {
 			i.Result.Error = errorsAndWarnings.GetError()
 		}
 		i.Result.AddWarnings(errorsAndWarnings.Warnings...)
 	}
+	log.Println("[TRACE] InitData.Init", "$$$$ validated cache settings")
 
 	i.Client = client
 }
