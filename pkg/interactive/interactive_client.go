@@ -16,8 +16,8 @@ import (
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
 	"github.com/c-bata/go-prompt"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -722,7 +722,7 @@ func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) error {
 		}
 
 		log.Printf("[TRACE] Wait for notification")
-		notification, err := conn.Conn().WaitForNotification(ctx)
+		notification, err := conn.WaitForNotification(ctx)
 		if err != nil && !error_helpers.IsContextCancelledError(err) {
 			log.Printf("[INFO] Error waiting for notification: %s", err)
 			// TODO what to do about connection closed error
@@ -734,23 +734,25 @@ func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) error {
 		}
 		log.Printf("[TRACE] Handled notification")
 	}
-	conn.Release()
+	conn.Close(ctx)
 
 	log.Printf("[TRACE] InteractiveClient listenToPgNotifications DONE")
 	return nil
 }
 
-func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgxpool.Conn, error) {
-	conn, err := c.client().AcquireManagementConnection(ctx)
+func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgx.Conn, error) {
+	poolConn, err := c.client().AcquireManagementConnection(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	conn := poolConn.Hijack()
 
 	listenSql := fmt.Sprintf("listen %s", constants.PostgresNotificationChannel)
 	_, err = conn.Exec(ctx, listenSql)
 	if err != nil {
 		log.Printf("[INFO] Error listening to schema channel: %s", err)
-		conn.Release()
+		conn.Close(ctx)
 		return nil, err
 	}
 	return conn, nil

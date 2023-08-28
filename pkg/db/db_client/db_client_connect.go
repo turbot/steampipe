@@ -111,11 +111,10 @@ func createManagementPoolConfig(config *pgxpool.Config) *pgxpool.Config {
 	// create a copy - we will be modifying this
 	copiedConfig := config.Copy()
 
+	// update the app name of the connection
 	copiedConfig.ConnConfig.Config.RuntimeParams = map[string]string{
 		constants.RuntimeParamsKeyApplicationName: runtime.ClientSystemConnectionAppName,
 	}
-	// set the max connections to a default
-	copiedConfig.MaxConns = constants.DefaultMaxManagementConnections
 
 	// remove the afterConnect hook - we don't need the session data in management connections
 	copiedConfig.AfterConnect = nil
