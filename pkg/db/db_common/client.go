@@ -31,5 +31,9 @@ type Client interface {
 
 	ServerSettings() *ServerSettings
 
+	// DisablePool will disable the user pool and use a single connection for all query executions
+	// This allows us to retain the state of the client when we are in the interactive prompt
+	//
+	// Note: this does not disable the management pool.
 	DisablePool(context.Context) error
 }

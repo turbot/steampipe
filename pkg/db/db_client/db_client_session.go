@@ -30,17 +30,18 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	var databaseConnection db_common.Releasable
 
-	if c.hijackedConnection == nil {
-		// get a database connection and query its backend pid
-		// note - this will retry if the connection is bad
+	// if we are using a single user connection, we will use this for the session
+	// NOTE: we must convert the connection into a `Releasable` interface so we can call `Release` on it when we are done
+	if c.userConnection != nil {
+		databaseConnection = db_common.ReleasableFromConn(c.userConnection)
+	} else {
+		// we are using a connection pool - retrieve a connection from the pool
 		var err error
 		databaseConnection, err = c.userPool.Acquire(ctx)
 		if err != nil {
 			sessionResult.Error = err
 			return sessionResult
 		}
-	} else {
-		databaseConnection = db_common.ReleasableFromConn(c.hijackedConnection)
 	}
 
 	backendPid := databaseConnection.Conn().PgConn().PID()

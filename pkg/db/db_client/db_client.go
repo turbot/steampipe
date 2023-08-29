@@ -30,8 +30,8 @@ type DbClient struct {
 	// connection used to run system/plumbing queries (connection state, server settings)
 	managementPool *pgxpool.Pool
 
-	// a connection hijacked from the pool before the pool is disabled
-	hijackedConnection *pgx.Conn
+	// a connection hijacked from the pool before the pool is disabled (in interactive prompt)
+	userConnection *pgx.Conn
 
 	// the settings of the server that this client is connected to
 	serverSettings *db_common.ServerSettings
@@ -125,14 +125,18 @@ func (c *DbClient) closePools() {
 	c.managementPool.Close()
 }
 
+// DisablePool will disable the user pool and use a single connection for all query executions
+// This allows us to retain the state of the client when we are in the interactive prompt
+//
+// Note: this does not disable the management pool.
 func (c *DbClient) DisablePool(ctx context.Context) error {
-	if c.hijackedConnection == nil {
+	if c.userConnection == nil {
 		conn, err := c.userPool.Acquire(ctx)
 		if err != nil {
 			return err
 		}
 		// hijack this connection - so that it's not managed by the pool anymore
-		c.hijackedConnection = conn.Hijack()
+		c.userConnection = conn.Hijack()
 		// close the user pool - we don't want any queries to go through the pool
 		c.userPool.Close()
 	}
@@ -183,8 +187,8 @@ func (c *DbClient) ServerSettings() *db_common.ServerSettings {
 // Close implements Client
 // closes the connection to the database and shuts down the backend
 func (c *DbClient) Close(ctx context.Context) error {
-	if c.hijackedConnection != nil {
-		c.hijackedConnection.Close(ctx)
+	if c.userConnection != nil {
+		c.userConnection.Close(ctx)
 	}
 	log.Printf("[TRACE] DbClient.Close %v", c.userPool)
 	c.closePools()
