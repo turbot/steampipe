@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 	"strings"
+
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 )
 
 type ParsedResourceName struct {
@@ -21,7 +23,7 @@ func ParseResourceName(fullName string) (res *ParsedResourceName, err error) {
 
 	switch len(parts) {
 	case 0:
-		err = fmt.Errorf("empty name passed to ParseResourceName")
+		err = sperr.New("empty name passed to ParseResourceName")
 	case 1:
 		res.Name = parts[0]
 	case 2:
@@ -32,10 +34,10 @@ func ParseResourceName(fullName string) (res *ParsedResourceName, err error) {
 		res.ItemType = parts[1]
 		res.Name = parts[2]
 	default:
-		err = fmt.Errorf("invalid name '%s' passed to ParseResourceName", fullName)
+		err = sperr.New("invalid name '%s' passed to ParseResourceName", fullName)
 	}
 	if !IsValidResourceItemType(res.ItemType) {
-		err = fmt.Errorf("invalid name '%s' passed to ParseResourceName", fullName)
+		err = sperr.New("invalid name '%s' passed to ParseResourceName", fullName)
 	}
 	return
 }
@@ -59,13 +61,13 @@ func (p *ParsedResourceName) ToFullNameWithMod(mod string) (string, error) {
 // e.g: aws_compliance.benchmark.cis_v150_1
 func BuildFullResourceName(mod, blockType, name string) (string, error) {
 	if mod == "" {
-		return "", fmt.Errorf("mod name not provided")
+		return "", sperr.New("mod name not provided")
 	}
 	if blockType == "" {
-		return "", fmt.Errorf("block type not provided")
+		return "", sperr.New("block type not provided")
 	}
 	if name == "" {
-		return "", fmt.Errorf("resource name not provided")
+		return "", sperr.New("resource name not provided")
 	}
 	return fmt.Sprintf("%s.%s.%s", mod, blockType, name), nil
 }
