@@ -330,6 +330,13 @@ func (m *PluginManager) getPluginsWithChangedLimiters(newLimiters map[string]con
 			pluginsWithChangedLimiters[plugin] = struct{}{}
 		}
 	}
+	// look for plugins did not have limiters before
+	for plugin := range newLimiters {
+		_, pluginHasLimiters := m.userLimiters[plugin]
+		if !pluginHasLimiters {
+			pluginsWithChangedLimiters[plugin] = struct{}{}
+		}
+	}
 	return pluginsWithChangedLimiters
 }
 

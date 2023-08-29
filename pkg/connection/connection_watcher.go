@@ -52,7 +52,7 @@ func NewConnectionWatcher(pluginManager pluginManager) (*ConnectionWatcher, erro
 	return w, nil
 }
 
-func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
+func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("[WARN] ConnectionWatcher caught a panic: %s", helpers.ToError(r).Error())

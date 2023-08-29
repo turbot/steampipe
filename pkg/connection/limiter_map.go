@@ -20,6 +20,7 @@ func (l LimiterMap) ToPluginMap() map[string]LimiterMap {
 			limitersForPlugin = make(LimiterMap)
 		}
 		limitersForPlugin[name] = limiter
+		res[limiter.Plugin] = limitersForPlugin
 	}
 	return res
 }
