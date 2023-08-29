@@ -147,6 +147,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	shouldUpload := viper.GetBool(constants.ArgSnapshot)
 	generateSnapshot := shouldShare || shouldUpload
 
+	var executions map[string]*controlexecute.ExecutionTree = make(map[string]*controlexecute.ExecutionTree, len(args))
+
 	// treat each arg as a separate execution
 	for _, targetName := range args {
 		if error_helpers.IsContextCanceled(ctx) {
@@ -156,9 +158,17 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 			continue
 		}
 
+		if _, found := executions[targetName]; found {
+			error_helpers.ShowWarning(fmt.Sprintf("%s has already been executed. Skipping.", targetName))
+			continue
+		}
+
 		// create the execution tree
 		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, targetName, initData.ControlFilterWhereClause)
 		error_helpers.FailOnError(err)
+
+		// add this tree to the list of executions
+		executions[targetName] = executionTree
 
 		// execute controls synchronously (execute returns the number of alarms and errors)
 		stats, err := executionTree.Execute(ctx)
