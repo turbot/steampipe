@@ -23,12 +23,11 @@ type ResolvedRateLimiter struct {
 }
 
 type RateLimiter struct {
-	Name           string   `hcl:"name,label"`
-	Plugin         string   `hcl:"plugin"`
-	BucketSize     *int64   `hcl:"bucket_size,optional"`
-	FillRate       *float32 `hcl:"fill_rate,optional"`
-	MaxConcurrency *int64   `hcl:"max_concurrency,optional"`
-	// TODO KAI CAN SCOPE BE OPTIONAL???
+	Name            string   `hcl:"name,optional"`
+	Plugin          string   `hcl:"plugin"`
+	BucketSize      *int64   `hcl:"bucket_size,optional"`
+	FillRate        *float32 `hcl:"fill_rate,optional"`
+	MaxConcurrency  *int64   `hcl:"max_concurrency,optional"`
 	Scope           []string `hcl:"scope,optional"`
 	Where           *string  `hcl:"where,optional"`
 	QualifiedName   string
@@ -39,7 +38,7 @@ type RateLimiter struct {
 
 // RateLimiterFromProto converts the proto format RateLimiterDefinition into a Defintion
 func RateLimiterFromProto(p *proto.RateLimiterDefinition) (*RateLimiter, error) {
-	// TODO FINISH
+	// TODO KAI FINISH
 	var res = &RateLimiter{
 		Name: p.Name,
 		//FillRate:       rate.Limit(p.FillRate),
@@ -58,6 +57,9 @@ func (l RateLimiter) OnDecoded(block *hcl.Block) {
 	l.QualifiedName = fmt.Sprintf("%s.%s", l.Plugin, l.Name)
 	if l.Scope == nil {
 		l.Scope = []string{}
+	}
+	if l.Name == "" {
+		l.Name = block.Labels[0]
 	}
 }
 
