@@ -335,7 +335,7 @@ func validateConfig() error {
 	diagnostics, ok := os.LookupEnv(plugin.EnvDiagnosticsLevel)
 	if ok {
 
-		if _, isValid := plugin.ValidDiagnosticsLevels[diagnostics]; !isValid {
+		if _, isValid := plugin.ValidDiagnosticsLevels[strings.ToUpper(diagnostics)]; !isValid {
 			return fmt.Errorf(`invalid value of '%s' (%s), must be one of: %s`, plugin.EnvDiagnosticsLevel, diagnostics, strings.Join(maps.Keys(plugin.ValidDiagnosticsLevels), ", "))
 		}
 	}

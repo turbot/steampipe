@@ -161,6 +161,8 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	if err := setupInternal(ctx, conn); err != nil {
 		return err
 	}
+
+	statushooks.SetStatus(ctx, "Initialize steampipe_connection_state table")
 	// ensure connection state table contains entries for all connections in connection config
 	// (this is to allow for the race condition between polling connection state and calling refresh connections,
 	// which does not update the connection_state with added connections until it has built the ConnectionUpdates
@@ -168,6 +170,7 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 		return err
 	}
 
+	statushooks.SetStatus(ctx, "Create steampipe_server_settings table")
 	// create the server settings table
 	// this table contains configuration that this instance of the service
 	// is booting with
@@ -189,6 +192,7 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 		return sperr.WrapWithMessage(err, "failed to migrate db public schema")
 	}
 
+	statushooks.SetStatus(ctx, "Call initial refresh connections")
 	// call initial refresh connections
 	// get plugin manager client
 	pluginManager, err := pluginmanager.GetPluginManager()
