@@ -64,11 +64,14 @@ func ParseResourcePropertyPath(propertyPath string) (*ParsedPropertyPath, error)
 		res.Mod = parts[0]
 		res.ItemType = parts[1]
 		res.Name = parts[2]
-	default:
+	case 4:
 		res.Mod = parts[0]
 		res.ItemType = parts[1]
 		res.Name = parts[2]
 		res.PropertyPath = parts[3:]
+	default:
+		res.Mod = parts[0]
+		res.ItemType = parts[1]
 	}
 
 	if !IsValidResourceItemType(res.ItemType) {
