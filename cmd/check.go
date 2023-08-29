@@ -164,15 +164,15 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		stats, err := executionTree.Execute(ctx)
 		error_helpers.FailOnError(err)
 
-		// append the total number of alarms and errors for multiple runs
-		totalAlarms += stats.Alarm
-		totalErrors += stats.Error
 		err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
 		error_helpers.FailOnError(err)
 
+		// append the total number of alarms and errors for multiple runs
+		totalAlarms += stats.Alarm
+		totalErrors += stats.Error
+
 		// only export/publish if the parent context has not been cancelled
 		if !error_helpers.IsContextCanceled(ctx) {
-
 			// get the export name before execution(fail if not a valid export name)
 			exportName, err := getExportName(targetName, w.Mod.ShortName)
 			error_helpers.FailOnError(err)
@@ -211,7 +211,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 // getExportName resolves the base name of the target file
 func getExportName(targetName string, modShortName string) (string, error) {
-	parsedName, _ := modconfig.ParseResourceName(targetName)
+	parsedName, err := modconfig.ParseResourceName(targetName)
+	if err != nil {
+		return "", err
+	}
 	if targetName == "all" {
 		// there will be no block type = manually construct name
 		return fmt.Sprintf("%s.%s", modShortName, parsedName.Name), nil
