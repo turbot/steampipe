@@ -4,8 +4,26 @@ import (
 	"log"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 )
+
+// Releasable is the bare minimum set of functions that DatabaseSession needs from it's underlying
+// connection.
+type Releasable interface {
+	Release()
+	Conn() *pgx.Conn
+}
+
+type releasableConn struct {
+	conn *pgx.Conn
+}
+
+func (r *releasableConn) Release()        {}
+func (r *releasableConn) Conn() *pgx.Conn { return r.conn }
+
+func ReleasableFromConn(conn *pgx.Conn) Releasable {
+	return &releasableConn{conn: conn}
+}
 
 // DatabaseSession wraps over the raw database connection
 // the purpose is to be able
@@ -16,7 +34,7 @@ type DatabaseSession struct {
 	SearchPath []string `json:"-"`
 
 	// this gets rewritten, since the database/sql gives back a new instance everytime
-	Connection *pgxpool.Conn `json:"-"`
+	Connection Releasable `json:"-"`
 
 	// the id of the last scan metadata retrieved
 	ScanMetadataMaxId int64 `json:"-"`
@@ -42,5 +60,4 @@ func (s *DatabaseSession) Close(waitForCleanup bool) {
 		s.Connection.Release()
 	}
 	s.Connection = nil
-
 }
