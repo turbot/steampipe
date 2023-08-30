@@ -8,27 +8,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"golang.org/x/exp/maps"
 )
-
-func (s *refreshConnectionState) ensureRateLimiterTable(ctx context.Context) error {
-	// if the rate limiter table exists, nothing to do
-	exists, err := s.rateLimiterTableExists(ctx)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return nil
-	}
-
-	// so the table does not exist
-	// all we need to do is populate FetchRateLimiterDefsForConnections with a list of all connecitons
-	// - then the connection updates will start all plugins and when we refresh the rate limiter table
-	// we will fully populate it
-	s.fetchRateLimiterDefsForConnectionNames = maps.Keys(s.pluginManager.GetConnectionConfig())
-
-	return nil
-}
 
 func (s *refreshConnectionState) rateLimiterTableExists(ctx context.Context) (bool, error) {
 	query := fmt.Sprintf(`SELECT EXISTS (
@@ -53,17 +33,28 @@ func (s *refreshConnectionState) reloadPluginRateLimiters() (map[string]LimiterM
 	// FetchRateLimiterDefsForConnections contains all connections we need to update the rate limiters defs for
 	// in fact we only need to query ask each plugin for the defs so
 	// build lookup of the connectionPlugins needed, keyed by plugin name
-	connectionPlugins := make(map[string]*steampipeconfig.ConnectionPlugin)
-	for connection := range s.connectionUpdates.FetchRateLimiterDefsForConnections {
-		conectionPlugin := s.connectionUpdates.ConnectionPlugins[connection]
-		connectionPlugins[conectionPlugin.PluginName] = conectionPlugin
+	connectionPluginsToReladDefs := make(map[string]*steampipeconfig.ConnectionPlugin)
+	for plugin := range s.connectionUpdates.FetchRateLimiterDefsForPlugins {
+		// find a connection plugin for this plugin
+		// // annoying as we key the loaded conne
+		for _,
+		if connectionPlugin := s.connectionUpdates.ConnectionPlugins[connection]; connectionPlugin != nil {
+			connectionPluginsToReladDefs[connectionPlugin.PluginShortName] = connectionPlugin
+		}
 	}
+
 	var errors []error
 	var res = make(map[string]LimiterMap)
-	for pluginName, connectionPlugin := range connectionPlugins {
+	for pluginShortName, connectionPlugin := range connectionPluginsToReladDefs {
+		if !connectionPlugin.SupportedOperations.RateLimiters {
+			continue
+		}
 		rateLimiterResp, err := connectionPlugin.PluginClient.GetRateLimiters(&proto.GetRateLimitersRequest{})
 		if err != nil {
 			return nil, err
+		}
+		if rateLimiterResp == nil || rateLimiterResp.Definitions == nil {
+			continue
 		}
 		m := make(LimiterMap)
 		for _, l := range rateLimiterResp.Definitions {
@@ -75,7 +66,7 @@ func (s *refreshConnectionState) reloadPluginRateLimiters() (map[string]LimiterM
 
 			m[l.Name] = r
 		}
-		res[pluginName] = m
+		res[pluginShortName] = m
 	}
 	return res, nil
 }
