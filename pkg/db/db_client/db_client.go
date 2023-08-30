@@ -180,10 +180,9 @@ func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireS
 	utils.LogTime("db_client.RefreshSessions start")
 	defer utils.LogTime("db_client.RefreshSessions end")
 
-	if err := c.refreshDbClient(ctx); err != nil {
-		res.Error = err
-		return res
-	}
+	// reset the pools - this will ensure that all connections in the pool
+	// are dropped and new ones are created
+	c.resetPools(ctx)
 	res = c.AcquireSession(ctx)
 	if res.Session != nil {
 		res.Session.Close(error_helpers.IsContextCanceled(ctx))
@@ -259,13 +258,8 @@ func (c *DbClient) refreshDbClient(ctx context.Context) error {
 	utils.LogTime("db_client.refreshDbClient start")
 	defer utils.LogTime("db_client.refreshDbClient end")
 
-	// close the connection pool and recreate
-	c.closePools()
-	if err := c.establishConnectionPool(ctx); err != nil {
-		return err
-	}
-
-	return nil
+	c.userPool.Reset()
+	c.managementPool.Reset()
 }
 
 func (c *DbClient) buildSchemasQuery(schemas ...string) string {

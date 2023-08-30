@@ -811,5 +811,6 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
-	c.client().RefreshSessions(ctx)
+	session := c.client().RefreshSessions(ctx)
+	session.Session.Close(true)
 }
