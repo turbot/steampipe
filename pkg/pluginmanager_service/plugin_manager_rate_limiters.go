@@ -20,6 +20,10 @@ func (m *PluginManager) ShouldFetchRateLimiterDefs() bool {
 // update the stored limiters, refrresh the rate limiter table and call `setRateLimiters`
 // for all plugins with changed limiters
 func (m *PluginManager) HandlePluginLimiterChanges(newLimiters map[string]connection.LimiterMap) error {
+	if m.pluginLimiters == nil {
+		// this must be the first time we have poplkated them
+		m.pluginLimiters = make(map[string]connection.LimiterMap)
+	}
 	for plugin, limitersForPlugin := range newLimiters {
 		m.pluginLimiters[plugin] = limitersForPlugin
 	}
