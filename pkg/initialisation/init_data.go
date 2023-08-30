@@ -112,7 +112,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		return
 	}
 
-	// no need to validate local steampipe and plugin versions for when running on a cloud workspace
+	// no need to validate local steampipe and plugin versions when running with a cloud workspace
 	if !viper.IsSet(constants.ArgWorkspaceDatabase) {
 		//validate steampipe version and required plugin version
 		validationWarnings := validateModRequirementsRecursively(i.Workspace.Mod, pluginsInstalled)
