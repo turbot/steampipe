@@ -426,6 +426,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 		log.Printf("[INFO] Version:   v%s\n", version.VersionString)
 		log.Printf("[INFO] Log level: %s\n", logging.LogLevel())
 		log.Printf("[INFO] Log date: %s\n", time.Now().Format("2006-01-02"))
+		//
 	}
 }
 
