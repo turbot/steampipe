@@ -31,11 +31,13 @@ type ConnectionUpdates struct {
 	// the connections which will exist after the update
 	FinalConnectionState ConnectionStateMap
 	// connection plugins required to perform the updates, keyed by connection name
-	ConnectionPlugins      map[string]*ConnectionPlugin
-	CurrentConnectionState ConnectionStateMap
-	InvalidConnections     map[string]*ValidationFailure
-	// connections for which we must refetch the rate limiter defintions
-	FetchRateLimiterDefsForConnections map[string]struct{}
+	ConnectionPlugins map[string]*ConnectionPlugin
+	// connection plugins keyed by plugin short name
+	ConnectionPluginsByPlugin map[string][]*ConnectionPlugin
+	CurrentConnectionState    ConnectionStateMap
+	InvalidConnections        map[string]*ValidationFailure
+	// connections for which we must refetch the rate limiter definitions
+	FetchRateLimiterDefsForPlugins map[string]struct{}
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
@@ -44,6 +46,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...Conne
 	if res.Error != nil {
 		return updates, res
 	}
+
 	// validate the updates
 	// this will validate all plugins and connection names  and remove any updates which use invalid connections
 	updates.validate()
@@ -52,7 +55,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...Conne
 }
 
 func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...ConnectionUpdatesOption) (*ConnectionUpdates, *RefreshConnectionResult) {
-	var settings = &connectionUpdatesSettings{}
+	var settings = newConnectionUpdatesSettings()
 	for _, opt := range opts {
 		opt(settings)
 	}
@@ -95,14 +98,15 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...
 	}
 
 	updates := &ConnectionUpdates{
-		Delete:                             make(map[string]struct{}),
-		Disabled:                           disabled,
-		Update:                             ConnectionStateMap{},
-		MissingComments:                    ConnectionStateMap{},
-		MissingPlugins:                     missingPlugins,
-		FinalConnectionState:               requiredConnectionStateMap,
-		InvalidConnections:                 make(map[string]*ValidationFailure),
-		FetchRateLimiterDefsForConnections: helpers.SliceToLookup(settings.FetchRateLimiterDefsConnectionNames),
+		Delete:                         make(map[string]struct{}),
+		Disabled:                       disabled,
+		Update:                         ConnectionStateMap{},
+		MissingComments:                ConnectionStateMap{},
+		MissingPlugins:                 missingPlugins,
+		FinalConnectionState:           requiredConnectionStateMap,
+		InvalidConnections:             make(map[string]*ValidationFailure),
+		FetchRateLimiterDefsForPlugins: settings.FetchRateLimitersForPlugins,
+		ConnectionPluginsByPlugin:      make(map[string][]*ConnectionPlugin),
 	}
 
 	log.Printf("[INFO] loaded connection state")
@@ -141,7 +145,8 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...
 			// we need to refetch the rate limiters for
 			if currentConnectionState, schemaExistsInState := currentConnectionStateMap[name]; schemaExistsInState &&
 				currentConnectionState.pluginModTimeChanged(requiredConnectionState) {
-				updates.FetchRateLimiterDefsForConnections[requiredConnectionState.ConnectionName] = struct{}{}
+				// TODO KAI SHORT?LONG NAME????
+				updates.FetchRateLimiterDefsForPlugins[requiredConnectionState.Plugin] = struct{}{}
 			}
 		}
 	}
@@ -310,12 +315,6 @@ func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugi
 		for _, child := range connection.Connections {
 			connectionMap[child.Name] = child
 		}
-	}
-	// add in all connections which we need to fetch ratreh limiter defs for
-	for connectionName := range u.FetchRateLimiterDefsForConnections {
-		connectionMap[connectionName] = GlobalConfig.Connections[connectionName]
-		// // NOTE: don't bother adding aggreagtor children
-		//- for rate limiter defs we will only make a single call to each plugin
 	}
 
 	// NOTE - we may have already created some connection plugins (if they have dynamic schema)

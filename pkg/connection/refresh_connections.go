@@ -17,6 +17,7 @@ var executeLock sync.Mutex
 var queueLock sync.Mutex
 
 func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
+	//time.Sleep(10 * time.Second)
 	utils.LogTime("RefreshConnections start")
 	defer utils.LogTime("RefreshConnections end")
 

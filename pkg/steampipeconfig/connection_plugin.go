@@ -35,6 +35,7 @@ type ConnectionPlugin struct {
 	PluginName          string
 	PluginClient        *sdkgrpc.PluginClient
 	SupportedOperations *proto.SupportedOperations
+	PluginShortName     string
 }
 
 func (p ConnectionPlugin) addConnection(name string, config string, connectionOptions *options.Connection, connectionType string) {
@@ -68,8 +69,9 @@ func (p ConnectionPlugin) GetSchema(connectionName string) (*sdkproto.Schema, er
 	return schema, nil
 }
 
-func NewConnectionPlugin(pluginName string, pluginClient *sdkgrpc.PluginClient, supportedOperations *proto.SupportedOperations) *ConnectionPlugin {
+func NewConnectionPlugin(pluginShortName, pluginName string, pluginClient *sdkgrpc.PluginClient, supportedOperations *proto.SupportedOperations) *ConnectionPlugin {
 	return &ConnectionPlugin{
+		PluginShortName:     pluginShortName,
 		PluginName:          pluginName,
 		PluginClient:        pluginClient,
 		SupportedOperations: supportedOperations,
@@ -268,7 +270,7 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 	log.Printf("[TRACE] plugin client created for %s", pluginName)
 
 	// now create ConnectionPlugin object return
-	connectionPlugin := NewConnectionPlugin(pluginName, pluginClient, reattach.SupportedOperations)
+	connectionPlugin := NewConnectionPlugin(connection.PluginShortName, pluginName, pluginClient, reattach.SupportedOperations)
 
 	// if multiple connections are NOT supported, add the config for our one and only connection
 	if reattach.SupportedOperations == nil || !reattach.SupportedOperations.MultipleConnections {

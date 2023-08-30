@@ -40,9 +40,6 @@ type refreshConnectionState struct {
 	tableUpdater               *connectionStateTableUpdater
 	res                        *steampipeconfig.RefreshConnectionResult
 	forceUpdateConnectionNames []string
-	// TODO rename
-	fetchRateLimiterDefsForConnectionNames []string
-
 	// properties for schema/comment cloning
 	exemplarSchemaMapMut sync.Mutex
 
@@ -55,19 +52,11 @@ type refreshConnectionState struct {
 }
 
 func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager, forceUpdateConnectionNames []string) (*refreshConnectionState, error) {
-	// create a connection pool to connection refresh
-	poolsize := 20
-	pool, err := db_local.CreateConnectionPool(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
-	if err != nil {
-		return nil, err
-	}
-
+	pool := pluginManager.Pool()
 	// set user search path first
 	log.Printf("[INFO] setting up search path")
 	searchPath, err := db_local.SetUserSearchPath(ctx, pool)
 	if err != nil {
-		// note: close pool in case of error
-		pool.Close()
 		return nil, err
 	}
 
@@ -76,13 +65,6 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 		searchPath:                 searchPath,
 		forceUpdateConnectionNames: forceUpdateConnectionNames,
 		pluginManager:              pluginManager,
-	}
-
-	// check whether steampipe_rate_limiter table exists and if not, update fetchRateLimiterDefsForConnectionNames
-	// to contain all connections
-	if err := res.ensureRateLimiterTable(ctx); err != nil {
-		res.close()
-		return nil, err
 	}
 
 	return res, nil
@@ -111,9 +93,14 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 
 	// build a ConnectionUpdates struct
 	// this determine any necessary connection updates and starts any necessary plugins
-	s.connectionUpdates, s.res = steampipeconfig.NewConnectionUpdates(ctx, s.pool,
+	s.connectionUpdates, s.res = steampipeconfig.NewConnectionUpdates(
+		ctx,
+		s.pool,
+		// if force update connection names have been provided, pass them
+		// (this happens when a schema update notification is received)
 		steampipeconfig.WithForceUpdate(s.forceUpdateConnectionNames),
-		steampipeconfig.WithFetchRateLimiterDefs(s.forceUpdateConnectionNames))
+		// NOTE: the first time we run we must fetch plugin rate limiter defs for all active plugins
+		steampipeconfig.WithFetchRateLimiterDefs(s.getFetchRateLimitersForPlugins()))
 
 	defer s.logRefreshConnectionResults()
 	// were we successful?
@@ -123,13 +110,13 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 
 	log.Printf("[INFO] created connectionUpdates")
 
-	//  reload plugin rate limiter definitions for all plugins which are updated - the plugin will allready be loaded
+	//  reload plugin rate limiter definitions for all plugins which are updated - the plugin will already be loaded
 	updatedPluginLimiters, err := s.reloadPluginRateLimiters()
 	if err != nil {
 		s.res.Error = err
 		return
 	}
-	// TODO KAI check if any updates
+
 	if len(updatedPluginLimiters) > 0 {
 		s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
 	}
@@ -177,6 +164,16 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	}
 
 	s.res.UpdatedConnections = true
+}
+
+func (s *refreshConnectionState) getFetchRateLimitersForPlugins() map[string]struct{} {
+	var fetchRateLimitersForPlugins = make(map[string]struct{})
+	if s.pluginManager.ShouldFetchRateLimiterDefs() {
+		for _, c := range s.pluginManager.GetConnectionConfig() {
+			fetchRateLimitersForPlugins[c.PluginShortName] = struct{}{}
+		}
+	}
+	return fetchRateLimitersForPlugins
 }
 
 func (s *refreshConnectionState) addMissingPluginWarnings() {
