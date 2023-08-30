@@ -16,7 +16,7 @@ func (m *PluginManager) ShouldFetchRateLimiterDefs() bool {
 	return m.pluginLimiters == nil
 }
 
-// respond to changes in the HCL rate limiter config
+// HandlePluginLimiterChanges responds to changes in the plugin rate limiter defintions
 // update the stored limiters, refrresh the rate limiter table and call `setRateLimiters`
 // for all plugins with changed limiters
 func (m *PluginManager) HandlePluginLimiterChanges(newLimiters map[string]connection.LimiterMap) error {
@@ -27,6 +27,9 @@ func (m *PluginManager) HandlePluginLimiterChanges(newLimiters map[string]connec
 	for plugin, limitersForPlugin := range newLimiters {
 		m.pluginLimiters[plugin] = limitersForPlugin
 	}
+
+	// update the status of the plugin rate limiters (determine which are overriden and set state accordingly)
+	m.updateRateLimiterStatus()
 
 	// update the rate_limiters table
 	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
@@ -49,6 +52,9 @@ func (m *PluginManager) handleUserLimiterChanges(newLimiters connection.LimiterM
 
 	// update stored limiters to the new map
 	m.userLimiters = newLimiterPluginMap
+
+	// update the status of the plugin rate limiters (determine which are overriden and set state accordingly)
+	m.updateRateLimiterStatus()
 
 	// update the rate_limiters table
 	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
@@ -106,30 +112,22 @@ func (m *PluginManager) getPluginsWithChangedLimiters(newLimiters map[string]con
 	return pluginsWithChangedLimiters
 }
 
-func (m *PluginManager) resolveRateLimiterDefs() (res []*modconfig.ResolvedRateLimiter) {
+func (m *PluginManager) updateRateLimiterStatus() {
 	// add all plugin limiters
 	for plugin, pluginDefinedLimiters := range m.pluginLimiters {
 		// are there any user defined limiters for this plugin
 		userDefinedLimiters := m.getUserDefinedLimitersForPlugin(plugin)
 		log.Printf("[WARN] %v", userDefinedLimiters)
 		for name, pluginLimiter := range pluginDefinedLimiters {
-			resolvedLimiter := modconfig.NewResolvedRateLimiter(pluginLimiter, modconfig.LimiterStatusActive, modconfig.LimiterSourcePlugin)
-
-			// is there a user override - if set set status to overriden
-			if _, isOverriden := userDefinedLimiters[name]; isOverriden {
-				resolvedLimiter.Status = modconfig.LimiterStatusOverriden
+			// is there a user override? - if so set status to overriden
+			_, isOverriden := userDefinedLimiters[name]
+			if isOverriden {
+				pluginLimiter.Status = modconfig.LimiterStatusOverriden
+			} else {
+				pluginLimiter.Status = modconfig.LimiterStatusActive
 			}
-
-			res = append(res, resolvedLimiter)
-		}
-
-		// add all user defined limiters
-		for _, userLimiter := range userDefinedLimiters {
-			resolvedLimiter := modconfig.NewResolvedRateLimiter(userLimiter, modconfig.LimiterStatusActive, modconfig.LimiterSourceConfig)
-			res = append(res, resolvedLimiter)
 		}
 	}
-	return res
 }
 
 func (m *PluginManager) getUserDefinedLimitersForPlugin(plugin string) connection.LimiterMap {
@@ -152,11 +150,6 @@ func (m *PluginManager) populatePluginRateLimiterDefs(ctx context.Context) (e er
 		return nil
 	}
 
-	conn, err := m.pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
 	defer func() {
 		// this function uses reflection to extract and convert values
 		// we need to be able to recover from panics while using reflection
@@ -164,13 +157,13 @@ func (m *PluginManager) populatePluginRateLimiterDefs(ctx context.Context) (e er
 			e = sperr.ToError(r, sperr.WithMessage("error loading server settings"))
 		}
 	}()
-	rows, err := conn.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.RateLimiterDefinitionTable))
+	rows, err := m.pool.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.RateLimiterDefinitionTable))
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 
-	rateLimiters, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[modconfig.ResolvedRateLimiter])
+	rateLimiters, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[modconfig.RateLimiter])
 
 	if err != nil {
 		return err
@@ -184,7 +177,7 @@ func (m *PluginManager) populatePluginRateLimiterDefs(ctx context.Context) (e er
 			if limitersForPlugin == nil {
 				limitersForPlugin = make(connection.LimiterMap)
 			}
-			limitersForPlugin[r.Name] = r.Limiter()
+			limitersForPlugin[r.Name] = r
 			m.pluginLimiters[r.Plugin] = limitersForPlugin
 		}
 

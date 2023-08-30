@@ -68,13 +68,6 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 	}
 
 	return res, nil
-
-}
-
-func (s *refreshConnectionState) close() {
-	if s.pool != nil {
-		s.pool.Close()
-	}
 }
 
 // RefreshConnections loads required connections from config

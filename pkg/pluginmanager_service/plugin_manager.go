@@ -69,7 +69,8 @@ type PluginManager struct {
 
 	// map of plugin short name to long name
 	pluginShortToLongNameMap map[string]string
-	pool                     *pgxpool.Pool
+
+	pool *pgxpool.Pool
 }
 
 func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, limiters connection.LimiterMap, logger hclog.Logger) (*PluginManager, error) {
@@ -90,6 +91,7 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 	// determine cache size for each plugin
 	pluginManager.setPluginCacheSizeMap()
 
+	time.Sleep(10 * time.Second)
 	// create a connection pool to connection refresh
 	poolsize := 20
 	pool, err := db_local.CreateConnectionPool(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
@@ -218,6 +220,7 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connection.Connectio
 		log.Printf("[WARN] handleUserLimiterChanges failed: %s", err.Error())
 	}
 }
+
 func (m *PluginManager) GetConnectionConfig() connection.ConnectionConfigMap {
 	return m.connectionConfigMap
 }
@@ -246,6 +249,8 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 		m.killPlugin(p)
 	}
 
+	// close our pool
+	m.pool.Close()
 	return &pb.ShutdownResponse{}, nil
 }
 

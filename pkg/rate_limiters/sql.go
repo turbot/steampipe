@@ -8,7 +8,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func GetPopulateRateLimiterSql(settings *modconfig.ResolvedRateLimiter) db_common.QueryWithArgs {
+func GetPopulateRateLimiterSql(settings *modconfig.RateLimiter) db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
 "name",
