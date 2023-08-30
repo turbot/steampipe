@@ -32,11 +32,10 @@ type ConnectionUpdates struct {
 	FinalConnectionState ConnectionStateMap
 	// connection plugins required to perform the updates, keyed by connection name
 	ConnectionPlugins map[string]*ConnectionPlugin
-	// connection plugins keyed by plugin short name
-	ConnectionPluginsByPlugin map[string][]*ConnectionPlugin
-	CurrentConnectionState    ConnectionStateMap
-	InvalidConnections        map[string]*ValidationFailure
-	// connections for which we must refetch the rate limiter definitions
+
+	CurrentConnectionState ConnectionStateMap
+	InvalidConnections     map[string]*ValidationFailure
+	// plugin (short names) for which we must refetch the rate limiter definitions
 	FetchRateLimiterDefsForPlugins map[string]struct{}
 }
 
@@ -106,7 +105,6 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...
 		FinalConnectionState:           requiredConnectionStateMap,
 		InvalidConnections:             make(map[string]*ValidationFailure),
 		FetchRateLimiterDefsForPlugins: settings.FetchRateLimitersForPlugins,
-		ConnectionPluginsByPlugin:      make(map[string][]*ConnectionPlugin),
 	}
 
 	log.Printf("[INFO] loaded connection state")
@@ -145,8 +143,8 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...
 			// we need to refetch the rate limiters for
 			if currentConnectionState, schemaExistsInState := currentConnectionStateMap[name]; schemaExistsInState &&
 				currentConnectionState.pluginModTimeChanged(requiredConnectionState) {
-				// TODO KAI SHORT?LONG NAME????
-				updates.FetchRateLimiterDefsForPlugins[requiredConnectionState.Plugin] = struct{}{}
+				pluginShortName := GlobalConfig.Connections[requiredConnectionState.ConnectionName].PluginShortName
+				updates.FetchRateLimiterDefsForPlugins[pluginShortName] = struct{}{}
 			}
 		}
 	}
@@ -426,10 +424,6 @@ func (u *ConnectionUpdates) populateAggregators() {
 			}
 		}
 	}
-
-}
-
-func (u *ConnectionUpdates) setPluginsToFetchRateLimiterDefs(connectionsToFetchRateLimiterDefs []string) {
 
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"golang.org/x/exp/maps"
 )
 
 func (s *refreshConnectionState) rateLimiterTableExists(ctx context.Context) (bool, error) {
@@ -30,22 +31,38 @@ func (s *refreshConnectionState) rateLimiterTableExists(ctx context.Context) (bo
 }
 
 func (s *refreshConnectionState) reloadPluginRateLimiters() (map[string]LimiterMap, error) {
-	// FetchRateLimiterDefsForConnections contains all connections we need to update the rate limiters defs for
-	// in fact we only need to query ask each plugin for the defs so
-	// build lookup of the connectionPlugins needed, keyed by plugin name
-	connectionPluginsToReladDefs := make(map[string]*steampipeconfig.ConnectionPlugin)
-	for plugin := range s.connectionUpdates.FetchRateLimiterDefsForPlugins {
-		// find a connection plugin for this plugin
-		// // annoying as we key the loaded conne
-		for _,
-		if connectionPlugin := s.connectionUpdates.ConnectionPlugins[connection]; connectionPlugin != nil {
-			connectionPluginsToReladDefs[connectionPlugin.PluginShortName] = connectionPlugin
-		}
+
+	// build lookup of the connectionPlugins we need to fetch rate limiter defs for
+	var connectionPluginsToReloadDefs []*steampipeconfig.ConnectionPlugin
+
+	// build map of the connection plugins already started, keyed by plugin short name
+	connectionPluginsByPlugin := make(map[string]*steampipeconfig.ConnectionPlugin)
+	for _, c := range s.connectionUpdates.ConnectionPlugins {
+		// potentially overwire so we only store the final connection per plugin
+		connectionPluginsByPlugin[c.PluginShortName] = c
 	}
 
+	var missingPlugins []string
+	for plugin := range s.connectionUpdates.FetchRateLimiterDefsForPlugins {
+		if connectionPlugin, started := connectionPluginsByPlugin[plugin]; started {
+			connectionPluginsToReloadDefs = append(connectionPluginsToReloadDefs, connectionPlugin)
+		} else {
+			missingPlugins = append(missingPlugins, plugin)
+		}
+	}
+	if len(missingPlugins) > 0 {
+		missingConnectionPlugins, res := s.startPlugins(missingPlugins)
+		if res.Error != nil {
+			// TODO just warn?
+			return nil, res.Error
+		}
+		connectionPluginsToReloadDefs = append(connectionPluginsToReloadDefs, maps.Values(missingConnectionPlugins)...)
+	}
+
+	// ok so now we have all necessary connection plugins - fetch the rate limiter defs
 	var errors []error
 	var res = make(map[string]LimiterMap)
-	for pluginShortName, connectionPlugin := range connectionPluginsToReladDefs {
+	for _, connectionPlugin := range connectionPluginsToReloadDefs {
 		if !connectionPlugin.SupportedOperations.RateLimiters {
 			continue
 		}
@@ -66,7 +83,22 @@ func (s *refreshConnectionState) reloadPluginRateLimiters() (map[string]LimiterM
 
 			m[l.Name] = r
 		}
-		res[pluginShortName] = m
+		res[connectionPlugin.PluginShortName] = m
 	}
 	return res, nil
+}
+
+func (s *refreshConnectionState) startPlugins(plugins []string) (map[string]*steampipeconfig.ConnectionPlugin, *steampipeconfig.RefreshConnectionResult) {
+	var exemplarConnections []string
+	connectionConfig := s.pluginManager.GetConnectionConfig()
+	// for each plugin we need to find an exemplat connection
+	for _, p := range plugins {
+		for _, c := range connectionConfig {
+			if c.PluginShortName == p {
+				exemplarConnections = append(exemplarConnections, c.Connection)
+			}
+		}
+	}
+	return steampipeconfig.CreateConnectionPlugins(exemplarConnections)
+
 }
