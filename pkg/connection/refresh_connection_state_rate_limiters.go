@@ -31,7 +31,6 @@ func (s *refreshConnectionState) rateLimiterTableExists(ctx context.Context) (bo
 }
 
 func (s *refreshConnectionState) reloadPluginRateLimiters() (map[string]LimiterMap, error) {
-
 	// build lookup of the connectionPlugins we need to fetch rate limiter defs for
 	var connectionPluginsToReloadDefs []*steampipeconfig.ConnectionPlugin
 
@@ -80,9 +79,16 @@ func (s *refreshConnectionState) reloadPluginRateLimiters() (map[string]LimiterM
 				errors = append(errors, sperr.WrapWithMessage(err, "failed to create rate limiter %s from plugin definition", err))
 				continue
 			}
-
+			// populate the plugin name
+			r.Plugin = connectionPlugin.PluginShortName
+			// set plugin as source
+			r.Source = modconfig.LimiterSourcePlugin
+			// derfaulty status to active
+			r.Status = modconfig.LimiterStatusActive
+			// add to map
 			m[l.Name] = r
 		}
+		// store back
 		res[connectionPlugin.PluginShortName] = m
 	}
 	return res, nil

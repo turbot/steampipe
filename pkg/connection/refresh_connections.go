@@ -52,7 +52,6 @@ func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceU
 	if err != nil {
 		return steampipeconfig.NewErrorRefreshConnectionResult(err)
 	}
-	defer state.close()
 
 	// now do the refresh
 	state.refreshConnections(ctx)

@@ -2,7 +2,6 @@ package pluginmanager_service
 
 import (
 	"context"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/rate_limiters"
@@ -14,18 +13,25 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 		rate_limiters.CreateRateLimiterTable(),
 		rate_limiters.GrantsOnRateLimiterTable(),
 	}
-	// build a resolved set of rate limiter def from the plugin and user defined rate limiters
-	var resolvedLimiters = m.resolveRateLimiterDefs()
-	for _, resolvedLimiter := range resolvedLimiters {
-		queries = append(queries, rate_limiters.GetPopulateRateLimiterSql(resolvedLimiter))
+
+	for _, limitersForPlugin := range m.pluginLimiters {
+		for _, l := range limitersForPlugin {
+			queries = append(queries, rate_limiters.GetPopulateRateLimiterSql(l))
+		}
 	}
 
-	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{
-		Username: constants.DatabaseSuperUser,
-	})
+	for _, limitersForPlugin := range m.userLimiters {
+		for _, l := range limitersForPlugin {
+			queries = append(queries, rate_limiters.GetPopulateRateLimiterSql(l))
+		}
+	}
+
+	conn, err := m.pool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn, queries...)
+	defer conn.Release()
+
+	_, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn.Conn(), queries...)
 	return err
 }

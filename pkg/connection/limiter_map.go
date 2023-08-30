@@ -24,5 +24,3 @@ func (l LimiterMap) ToPluginMap() map[string]LimiterMap {
 	}
 	return res
 }
-
-type ResolvedLimiterMap map[string]*modconfig.ResolvedRateLimiter
