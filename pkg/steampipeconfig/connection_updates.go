@@ -36,6 +36,7 @@ type ConnectionUpdates struct {
 	CurrentConnectionState ConnectionStateMap
 	InvalidConnections     map[string]*ValidationFailure
 	// plugin (short names) for which we must refetch the rate limiter definitions
+	// TO DO KAI make map plugin to exemplar connection
 	FetchRateLimiterDefsForPlugins map[string]struct{}
 }
 
@@ -132,7 +133,8 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...
 	// connections to create/update
 	for name, requiredConnectionState := range requiredConnectionStateMap {
 		// if the connection requires update, add to list
-		if connectionRequiresUpdate(settings.ForceUpdateConnectionNames, name, currentConnectionStateMap, requiredConnectionState) {
+		requiresUpdateResult := connectionRequiresUpdate(settings.ForceUpdateConnectionNames, name, currentConnectionStateMap, requiredConnectionState)
+		if requiresUpdateResult.requiresUpdate {
 			updates.Update[name] = requiredConnectionState
 			log.Printf("[INFO] connection %s is out of date or missing. updates: %v", name, maps.Keys(updates.Update))
 
@@ -141,9 +143,9 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...
 
 			// if the plugin mod time has changed, add this to the map of connections
 			// we need to refetch the rate limiters for
-			if currentConnectionState, schemaExistsInState := currentConnectionStateMap[name]; schemaExistsInState &&
-				currentConnectionState.pluginModTimeChanged(requiredConnectionState) {
+			if requiresUpdateResult.pluginBinaryChanged {
 				pluginShortName := GlobalConfig.Connections[requiredConnectionState.ConnectionName].PluginShortName
+				//updates.FetchRateLimiterDefsForPlugins[pluginShortName] = requiredConnectionState.connection
 				updates.FetchRateLimiterDefsForPlugins[pluginShortName] = struct{}{}
 			}
 		}
@@ -208,41 +210,62 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...
 
 	// for all updates/deletes, if there any aggregators of the same plugin type, update those as well
 	updates.populateAggregators()
+	// TODO KAI why return res.updates AND updates
+	// TODO maybe return ErrorsAndWarnings
 	res.Updates = updates
 	return updates, res
 }
 
-func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, currentConnectionStateMap ConnectionStateMap, requiredConnectionState *ConnectionState) bool {
+type connectionRequiresUpdateResult struct {
+	requiresUpdate      bool
+	pluginBinaryChanged bool
+}
+
+func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, currentConnectionStateMap ConnectionStateMap, requiredConnectionState *ConnectionState) connectionRequiresUpdateResult {
+	var res = connectionRequiresUpdateResult{}
 	// if the required plugin is not installed, return false
 	if typehelpers.SafeString(requiredConnectionState.ConnectionError) == constants.ConnectionErrorPluginNotInstalled {
-		return false
+		return res
 	}
 	// check whether this connection exists in the state
 	currentConnectionState, schemaExistsInState := currentConnectionStateMap[name]
 	// if the connection has been disabled, return false
 	if requiredConnectionState.Disabled() {
-		return false
+		return res
 	}
 	// is this is a new connection
 	if !schemaExistsInState {
-		return true
+		res.requiresUpdate = true
+		return res
 	}
+
+	// determine whethe the plugin mod time has changed
+	if currentConnectionState.pluginModTimeChanged(requiredConnectionState) {
+		res.pluginBinaryChanged = true
+		return res
+	}
+
 	// if the connection has been enabled (i.e. if it was previously DISABLED) , return true
 	if currentConnectionState.Disabled() {
-		return true
+		res.requiresUpdate = true
+		return res
 	}
 
 	// are we are forcing an update of this connection,
 	if helpers.StringSliceContains(forceUpdateConnectionNames, name) {
-		return true
+		res.requiresUpdate = true
+		return res
 	}
 
 	// has this connection previously not fully loaded
 	if currentConnectionState.State == constants.ConnectionStatePendingIncomplete {
-		return true
+		res.requiresUpdate = true
+		return res
 	}
+
 	// update if the connection state is different
-	return !currentConnectionState.Equals(requiredConnectionState)
+	res.requiresUpdate = !currentConnectionState.Equals(requiredConnectionState)
+	return res
 }
 
 // update requiredConnections - set the schema hash and schema mode for all elements of FinalConnectionState
@@ -302,6 +325,14 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 }
 
 func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) []string {
+
+	// TODO KAI ADD IN maps.Values(u.FetchRateLimiterDefsForPlugins)
+	// TODO in fact mayb eplugin manager just stores a map of plugin to exemplar conneciton ot has function to get it
+	// if (update all rate limiters){
+	// 	- which plugins not being started
+	// 	- add exemplar connections for these plugins
+	// }
+
 	// ensure we instantiate all plugins required for schema AND comment updates
 	connections := append(maps.Keys(u.Update), maps.Keys(u.MissingComments)...)
 	// put connections into a map to avoid dupes

@@ -61,6 +61,7 @@ type PluginManager struct {
 	messageServer *PluginMessageServer
 
 	// map of user configured rate limiter maps, keyed by plugin short name
+	// NOTE: this is populated from config
 	userLimiters map[string]connection.LimiterMap
 	// map of plugin configured rate limiter maps, keyed by plugin short name
 	// NOTE: if this is nil, that means the steampipe_rate_limiter tables has not been populalated yet -
@@ -73,13 +74,13 @@ type PluginManager struct {
 	pool *pgxpool.Pool
 }
 
-func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, limiters connection.LimiterMap, logger hclog.Logger) (*PluginManager, error) {
+func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, userLimiters connection.LimiterMap, logger hclog.Logger) (*PluginManager, error) {
 	log.Printf("[INFO] NewPluginManager")
 	pluginManager := &PluginManager{
 		logger:              logger,
 		runningPluginMap:    make(map[string]*runningPlugin),
 		connectionConfigMap: connectionConfig,
-		userLimiters:        limiters.ToPluginMap(),
+		userLimiters:        userLimiters.ToPluginMap(),
 
 		pluginShortToLongNameMap: make(map[string]string),
 	}
@@ -91,8 +92,9 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 	// determine cache size for each plugin
 	pluginManager.setPluginCacheSizeMap()
 
-	time.Sleep(10 * time.Second)
+	//time.Sleep(10 * time.Second)
 	// create a connection pool to connection refresh
+	// TODO KAI use const?? comment why 20
 	poolsize := 20
 	pool, err := db_local.CreateConnectionPool(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
 	if err != nil {
@@ -100,6 +102,7 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 	}
 	pluginManager.pool = pool
 
+	// try to load the _plugin_ rate limiter defintions from the steampipe_rate_limiter table
 	if err := pluginManager.populatePluginRateLimiterDefs(ctx); err != nil {
 		return nil, err
 	}
@@ -215,6 +218,7 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connection.Connectio
 	if err != nil {
 		log.Printf("[WARN] handleConnectionConfigChanges failed: %s", err.Error())
 	}
+
 	err = m.handleUserLimiterChanges(limiters)
 	if err != nil {
 		log.Printf("[WARN] handleUserLimiterChanges failed: %s", err.Error())

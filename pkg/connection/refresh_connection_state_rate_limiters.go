@@ -34,6 +34,9 @@ func (s *refreshConnectionState) reloadPluginRateLimiters() (map[string]LimiterM
 	// build lookup of the connectionPlugins we need to fetch rate limiter defs for
 	var connectionPluginsToReloadDefs []*steampipeconfig.ConnectionPlugin
 
+	// TODO KAI add in s.getFetchRateLimitersForPlugins() to s.connectionUpdates.FetchRateLimiterDefsForPlugins
+	// instead of pass in
+
 	// build map of the connection plugins already started, keyed by plugin short name
 	connectionPluginsByPlugin := make(map[string]*steampipeconfig.ConnectionPlugin)
 	for _, c := range s.connectionUpdates.ConnectionPlugins {
@@ -41,6 +44,7 @@ func (s *refreshConnectionState) reloadPluginRateLimiters() (map[string]LimiterM
 		connectionPluginsByPlugin[c.PluginShortName] = c
 	}
 
+	// TODO KAI put into function
 	var missingPlugins []string
 	for plugin := range s.connectionUpdates.FetchRateLimiterDefsForPlugins {
 		if connectionPlugin, started := connectionPluginsByPlugin[plugin]; started {

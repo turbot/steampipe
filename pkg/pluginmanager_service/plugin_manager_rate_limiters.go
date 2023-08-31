@@ -61,8 +61,11 @@ func (m *PluginManager) handleUserLimiterChanges(newLimiters connection.LimiterM
 		log.Println("[WARN] could not refresh rate limiter table", err)
 	}
 
-	// now update the plugins
+	// now update the plugins - call setRateLimiters for any plugin witrh updated user limiters
 	for p := range pluginsWithChangedLimiters {
+		// TODO KAI put in function
+
+		// TODO verify plugin respects changes in plugin limiter defs _without_ setRateLimiters being called
 		// get running plugin for this plugin
 		// if plugin is not running we have nothing to do
 		longName, ok := m.pluginShortToLongNameMap[p]
@@ -113,13 +116,13 @@ func (m *PluginManager) getPluginsWithChangedLimiters(newLimiters map[string]con
 }
 
 func (m *PluginManager) updateRateLimiterStatus() {
-	// add all plugin limiters
+	// iterate through limiters for each plug
 	for plugin, pluginDefinedLimiters := range m.pluginLimiters {
-		// are there any user defined limiters for this plugin
+		// get user limiters for this plugin
 		userDefinedLimiters := m.getUserDefinedLimitersForPlugin(plugin)
-		log.Printf("[WARN] %v", userDefinedLimiters)
+
+		// is there a user override? - if so set status to overriden
 		for name, pluginLimiter := range pluginDefinedLimiters {
-			// is there a user override? - if so set status to overriden
 			_, isOverriden := userDefinedLimiters[name]
 			if isOverriden {
 				pluginLimiter.Status = modconfig.LimiterStatusOverriden
@@ -140,8 +143,17 @@ func (m *PluginManager) getUserDefinedLimitersForPlugin(plugin string) connectio
 }
 
 func (m *PluginManager) populatePluginRateLimiterDefs(ctx context.Context) (e error) {
+	defer func() {
+		// this function uses reflection to extract and convert values
+		// we need to be able to recover from panics while using reflection
+		if r := recover(); r != nil {
+			e = sperr.ToError(r, sperr.WithMessage("error loading rate limiter definitions"))
+		}
+	}()
 
+	// TODO KAI probably not necessary - just catch relation not found error
 	// if the rate limiter table exists, nothing to do
+	// leave pluginLimiters nil as the table is not yet populated are not
 	exists, err := m.rateLimiterTableExists(ctx)
 	if err != nil {
 		return err
@@ -150,21 +162,13 @@ func (m *PluginManager) populatePluginRateLimiterDefs(ctx context.Context) (e er
 		return nil
 	}
 
-	defer func() {
-		// this function uses reflection to extract and convert values
-		// we need to be able to recover from panics while using reflection
-		if r := recover(); r != nil {
-			e = sperr.ToError(r, sperr.WithMessage("error loading server settings"))
-		}
-	}()
-	rows, err := m.pool.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.RateLimiterDefinitionTable))
+	rows, err := m.pool.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s WHERE source=$1", constants.InternalSchema, constants.RateLimiterDefinitionTable), modconfig.LimiterSourcePlugin)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 
 	rateLimiters, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[modconfig.RateLimiter])
-
 	if err != nil {
 		return err
 	}
@@ -172,21 +176,18 @@ func (m *PluginManager) populatePluginRateLimiterDefs(ctx context.Context) (e er
 	// ok so populate pluginLimiters
 	m.pluginLimiters = make(map[string]connection.LimiterMap)
 	for _, r := range rateLimiters {
-		if r.Source == modconfig.LimiterSourcePlugin {
-			limitersForPlugin := m.pluginLimiters[r.Plugin]
-			if limitersForPlugin == nil {
-				limitersForPlugin = make(connection.LimiterMap)
-			}
-			limitersForPlugin[r.Name] = r
-			m.pluginLimiters[r.Plugin] = limitersForPlugin
+		limitersForPlugin := m.pluginLimiters[r.Plugin]
+		if limitersForPlugin == nil {
+			limitersForPlugin = make(connection.LimiterMap)
 		}
-
+		limitersForPlugin[r.Name] = r
+		m.pluginLimiters[r.Plugin] = limitersForPlugin
 	}
 	return nil
 
 }
 
-func (s *PluginManager) rateLimiterTableExists(ctx context.Context) (bool, error) {
+func (m *PluginManager) rateLimiterTableExists(ctx context.Context) (bool, error) {
 	query := fmt.Sprintf(`SELECT EXISTS (
     SELECT FROM 
         pg_tables
@@ -195,7 +196,7 @@ func (s *PluginManager) rateLimiterTableExists(ctx context.Context) (bool, error
         tablename  = '%s'
     );`, constants.InternalSchema, constants.RateLimiterDefinitionTable)
 
-	row := s.pool.QueryRow(ctx, query)
+	row := m.pool.QueryRow(ctx, query)
 	var exists bool
 	err := row.Scan(&exists)
 
