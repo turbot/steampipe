@@ -94,6 +94,7 @@ jobs:
           - "migration"
           - "brew"
           - "service_and_plugin"
+          - "ssl"
           - "blank_aggregators"
           - "service"
           - "search_path"
