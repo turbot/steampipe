@@ -159,9 +159,15 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	s.res.UpdatedConnections = true
 }
 
+// getFetchRateLimitersForPlugins returns a list of plugins (shjort name) for which we must fetch rate limiter defs
+// this is used ONLY for initial populate of the steampipe_rate_limiter table
 func (s *refreshConnectionState) getFetchRateLimitersForPlugins() map[string]struct{} {
 	var fetchRateLimitersForPlugins = make(map[string]struct{})
+
+	// do we need to initialize steampipe_rate_limiter?
 	if s.pluginManager.ShouldFetchRateLimiterDefs() {
+		// TODO KAI would be good to have a map of plugins to list of connections
+		// if so add all plugins
 		for _, c := range s.pluginManager.GetConnectionConfig() {
 			fetchRateLimitersForPlugins[c.PluginShortName] = struct{}{}
 		}
@@ -209,6 +215,7 @@ func (s *refreshConnectionState) logRefreshConnectionResults() {
 }
 
 func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {
+	// TODO WHY? WHY NOT FROM ourselves
 	// retrieve updates from the table updater
 	connectionUpdates := s.tableUpdater.updates
 
