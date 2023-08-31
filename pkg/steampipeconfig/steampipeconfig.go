@@ -21,9 +21,6 @@ type SteampipeConfig struct {
 	Plugins map[string]*modconfig.Plugin
 	// map of connection name to partially parsed connection config
 	Connections map[string]*modconfig.Connection
-	// rate limiters
-	// TODO move to plugin
-	Limiters map[string]*modconfig.RateLimiter
 
 	// Steampipe options
 	DefaultConnectionOptions *options.Connection
@@ -40,7 +37,7 @@ type SteampipeConfig struct {
 func NewSteampipeConfig(commandName string) *SteampipeConfig {
 	return &SteampipeConfig{
 		Connections: make(map[string]*modconfig.Connection),
-		Limiters:    make(map[string]*modconfig.RateLimiter),
+		Plugins:     make(map[string]*modconfig.Plugin),
 		commandName: commandName,
 	}
 }

@@ -81,17 +81,16 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 // respond to changes in the HCL rate limiter config
 // update the stored limiters, refrresh the rate limiter table and call `setRateLimiters`
 // for all plugins with changed limiters
-func (m *PluginManager) handleUserLimiterChanges(newLimiters connection.LimiterMap) error {
-	newLimiterPluginMap := newLimiters.ToPluginMap()
-
-	pluginsWithChangedLimiters := m.getPluginsWithChangedLimiters(newLimiterPluginMap)
+func (m *PluginManager) handleUserLimiterChanges(plugins connection.PluginMap) error {
+	limiterPluginMap := plugins.ToPluginLimiterMap()
+	pluginsWithChangedLimiters := m.getPluginsWithChangedLimiters(limiterPluginMap)
 
 	if len(pluginsWithChangedLimiters) == 0 {
 		return nil
 	}
 
 	// update stored limiters to the new map
-	m.userLimiters = newLimiterPluginMap
+	m.userLimiters = limiterPluginMap
 
 	// update the rate_limiters table
 	if err := m.refreshRateLimiterTable(context.Background()); err != nil {

@@ -57,7 +57,7 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
 
 	//time.Sleep(10 * time.Second)
-	pluginManager, err := pluginmanager_service.NewPluginManager(cmd.Context(), configMap, steampipeConfig.Limiters, logger)
+	pluginManager, err := pluginmanager_service.NewPluginManager(cmd.Context(), configMap, steampipeConfig.Plugins, logger)
 	if err != nil {
 		log.Printf("[WARN] failed to create plugin manager: %s", err.Error())
 		os.Exit(1)

@@ -68,6 +68,8 @@ type PluginManager struct {
 	// the first time we refresh connections we must load all plugins and fetch their rate limiter defs
 	pluginLimiters connection.PluginLimiterMap
 
+	// map of plugin configs
+	plugins connection.PluginMap
 	// map of plugin short name to long name
 	pluginShortToLongNameMap map[string]string
 	pluginLongToShortNameMap map[string]string
@@ -75,14 +77,14 @@ type PluginManager struct {
 	pool *pgxpool.Pool
 }
 
-func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, userLimiters connection.LimiterMap, logger hclog.Logger) (*PluginManager, error) {
+func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, pluginConfigs connection.PluginMap, logger hclog.Logger) (*PluginManager, error) {
 	log.Printf("[INFO] NewPluginManager")
 	pluginManager := &PluginManager{
-		logger:              logger,
-		runningPluginMap:    make(map[string]*runningPlugin),
-		connectionConfigMap: connectionConfig,
-		userLimiters:        userLimiters.ToPluginMap(),
-
+		logger:                   logger,
+		runningPluginMap:         make(map[string]*runningPlugin),
+		connectionConfigMap:      connectionConfig,
+		userLimiters:             pluginConfigs.ToPluginLimiterMap(),
+		plugins:                  pluginConfigs,
 		pluginShortToLongNameMap: make(map[string]string),
 		pluginLongToShortNameMap: make(map[string]string),
 	}
@@ -207,7 +209,7 @@ func (m *PluginManager) doRefresh() {
 }
 
 // OnConnectionConfigChanged is the callback function invoked by the connection watcher when the config changed
-func (m *PluginManager) OnConnectionConfigChanged(configMap connection.ConnectionConfigMap, limiters connection.LimiterMap) {
+func (m *PluginManager) OnConnectionConfigChanged(configMap connection.ConnectionConfigMap, plugins connection.PluginMap) {
 	m.mut.Lock()
 	defer m.mut.Unlock()
 
@@ -219,7 +221,7 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connection.Connectio
 		log.Printf("[WARN] handleConnectionConfigChanges failed: %s", err.Error())
 	}
 
-	err = m.handleUserLimiterChanges(limiters)
+	err = m.handleUserLimiterChanges(plugins)
 	if err != nil {
 		log.Printf("[WARN] handleUserLimiterChanges failed: %s", err.Error())
 	}

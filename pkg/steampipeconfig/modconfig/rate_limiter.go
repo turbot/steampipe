@@ -17,12 +17,12 @@ const (
 
 type RateLimiter struct {
 	Name            string   `hcl:"name,optional" db:"name"`
-	Plugin          string   `hcl:"plugin" db:"plugin"`
 	BucketSize      *int64   `hcl:"bucket_size,optional" db:"bucket_size"`
 	FillRate        *float32 `hcl:"fill_rate,optional" db:"fill_rate"`
 	MaxConcurrency  *int64   `hcl:"max_concurrency,optional" db:"max_concurrency"`
 	Scope           []string `hcl:"scope,optional" db:"scope"`
 	Where           *string  `hcl:"where,optional" db:"where"`
+	Plugin          string   `db:"plugin"`
 	FileName        *string  `db:"file_name"`
 	StartLineNumber *int     `db:"start_line_number"`
 	EndLineNumber   *int     `db:"end_line_number"`
@@ -79,9 +79,6 @@ func (l *RateLimiter) OnDecoded(block *hcl.Block) {
 	l.EndLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.End.Line
 	if l.Scope == nil {
 		l.Scope = []string{}
-	}
-	if l.Name == "" {
-		l.Name = block.Labels[0]
 	}
 	l.Status = LimiterStatusActive
 	l.Source = LimiterSourceConfig
