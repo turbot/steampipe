@@ -1,13 +1,21 @@
 package modconfig
 
-import "github.com/hashicorp/hcl/v2"
+import (
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
+)
 
 type Plugin struct {
-	Source      string        `hcl:"source"`
-	MaxMemoryMb int           `hcl:"max_memory_mb"`
-	Limiters    []RateLimiter `hcl:"limiter,block"`
+	Source          string         `hcl:"source,optional"`
+	MaxMemoryMb     int            `hcl:"max_memory_mb,optional"`
+	Limiters        []*RateLimiter `hcl:"limiter,block"`
+	FileName        *string
+	StartLineNumber *int
+	EndLineNumber   *int
 }
 
-func (p Plugin) OnDecoded(block *hcl.Block) {
-
+func (l *Plugin) OnDecoded(block *hcl.Block) {
+	l.FileName = &block.DefRange.Filename
+	l.StartLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.Start.Line
+	l.EndLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.End.Line
 }

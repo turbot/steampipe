@@ -215,6 +215,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 		switch block.Type {
 
 		case modconfig.BlockTypePlugin:
+			// TODO CHECK label unique check
 			plugin, moreDiags := parse.DecodePlugin(block)
 			diags = append(diags, moreDiags...)
 			if moreDiags.HasErrors() {
@@ -225,18 +226,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 				return error_helpers.NewErrorsAndWarning(sperr.New("duplicate plugin: '%s' in '%s'", plugin.Source, block.TypeRange.Filename))
 			}
 			steampipeConfig.Plugins[plugin.Source] = plugin
-		case modconfig.BlockTypeRateLimiter:
-			limiter, moreDiags := parse.DecodeLimiter(block)
-			diags = append(diags, moreDiags...)
-			if moreDiags.HasErrors() {
-				continue
-			}
-			_, alreadyThere := steampipeConfig.Limiters[limiter.Name]
-			if alreadyThere {
-				return error_helpers.NewErrorsAndWarning(sperr.New("duplicate limiter name: '%s' in '%s'", limiter.Name, block.TypeRange.Filename))
-			}
 
-			steampipeConfig.Limiters[limiter.Name] = limiter
 		case modconfig.BlockTypeConnection:
 			connection, moreDiags := parse.DecodeConnection(block)
 			diags = append(diags, moreDiags...)

@@ -7,7 +7,6 @@ const (
 	// require blocks
 	BlockTypeSteampipe = "steampipe"
 	BlockTypeMod       = "mod"
-	BlockTypePlugin    = "plugin"
 	// resource blocks
 	BlockTypeQuery          = "query"
 	BlockTypeControl        = "control"
