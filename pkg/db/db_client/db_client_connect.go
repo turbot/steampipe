@@ -16,15 +16,20 @@ import (
 
 type DbConnectionCallback func(context.Context, *pgx.Conn) error
 
-func (c *DbClient) establishConnectionPool(ctx context.Context) error {
+func (c *DbClient) establishConnectionPool(ctx context.Context, po ...PoolOverride) error {
 	utils.LogTime("db_client.establishConnectionPool start")
 	defer utils.LogTime("db_client.establishConnectionPool end")
 
-	const (
-		connMaxIdleTime = 1 * time.Minute
-		connMaxLifetime = 10 * time.Minute
-	)
-	maxConnections := db_common.MaxDbConnections()
+	pco := &poolConfigOverrides{
+		userPoolSize:          db_common.MaxDbConnections(),
+		managementPoolSize:    max(2, db_common.MaxDbConnections()),
+		maxConnectionLifeTime: 10 * time.Minute,
+		maxConnectionIdleTime: 1 * time.Minute,
+	}
+
+	for _, override := range po {
+		override(pco)
+	}
 
 	config, err := pgxpool.ParseConfig(c.connectionString)
 	if err != nil {
@@ -55,9 +60,9 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	// TODO BINAEK dig into this and figure out why this is happening.
 	// We need to be sure that it is not an issue with service management
 	config.MinConns = 0
-	config.MaxConns = int32(maxConnections)
-	config.MaxConnLifetime = connMaxLifetime
-	config.MaxConnIdleTime = connMaxIdleTime
+	config.MaxConns = int32(pco.userPoolSize)
+	config.MaxConnLifetime = pco.maxConnectionLifeTime
+	config.MaxConnIdleTime = pco.maxConnectionIdleTime
 	if c.onConnectionCallback != nil {
 		config.AfterConnect = c.onConnectionCallback
 	}
@@ -84,19 +89,19 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	}
 	c.userPool = dbPool
 
-	return c.establishManagementConnectionPool(ctx, config)
+	return c.establishManagementConnectionPool(ctx, config, pco)
 }
 
 // establishSystemConnectionPool creates a connection pool to use to execute
 // system-initiated queries (loading of connection state etc.)
 // unlike establishConnectionPool, which is run first to create the user-query pool
 // this doesn't wait for the pool to completely start, as establishConnectionPool will have established and verified a connection with the service
-func (c *DbClient) establishManagementConnectionPool(ctx context.Context, config *pgxpool.Config) error {
+func (c *DbClient) establishManagementConnectionPool(ctx context.Context, config *pgxpool.Config, overrides *poolConfigOverrides) error {
 	utils.LogTime("db_client.establishSystemConnectionPool start")
 	defer utils.LogTime("db_client.establishSystemConnectionPool end")
 
 	// create a config from the config of the user pool
-	copiedConfig := createManagementPoolConfig(config)
+	copiedConfig := createManagementPoolConfig(config, overrides)
 
 	// this returns connection pool
 	dbPool, err := pgxpool.NewWithConfig(context.Background(), copiedConfig)
@@ -107,7 +112,7 @@ func (c *DbClient) establishManagementConnectionPool(ctx context.Context, config
 	return nil
 }
 
-func createManagementPoolConfig(config *pgxpool.Config) *pgxpool.Config {
+func createManagementPoolConfig(config *pgxpool.Config, overrides *poolConfigOverrides) *pgxpool.Config {
 	// create a copy - we will be modifying this
 	copiedConfig := config.Copy()
 

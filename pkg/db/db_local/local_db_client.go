@@ -19,7 +19,7 @@ type LocalDbClient struct {
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
-func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (*LocalDbClient, *error_helpers.ErrorAndWarnings) {
+func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, po ...db_client.PoolOverride) (*LocalDbClient, *error_helpers.ErrorAndWarnings) {
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
@@ -36,7 +36,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 		return nil, &startResult.ErrorAndWarnings
 	}
 
-	client, err := newLocalClient(ctx, invoker, onConnectionCallback)
+	client, err := newLocalClient(ctx, invoker, onConnectionCallback, po...)
 	if err != nil {
 		ShutdownService(ctx, invoker)
 		startResult.Error = err
@@ -46,7 +46,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 
 // newLocalClient verifies that the local database instance is running and returns a LocalDbClient to interact with it
 // (This FAILS if local service is not running - use GetLocalClient to start service first)
-func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (*LocalDbClient, error) {
+func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, po ...db_client.PoolOverride) (*LocalDbClient, error) {
 	utils.LogTime("db.newLocalClient start")
 	defer utils.LogTime("db.newLocalClient end")
 
@@ -54,7 +54,7 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	if err != nil {
 		return nil, err
 	}
-	dbClient, err := db_client.NewDbClient(ctx, connString, onConnectionCallback)
+	dbClient, err := db_client.NewDbClient(ctx, connString, onConnectionCallback, po...)
 	if err != nil {
 		log.Printf("[TRACE] error getting local client %s", err.Error())
 		return nil, err

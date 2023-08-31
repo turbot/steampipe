@@ -3,9 +3,11 @@ package query
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/statushooks"
@@ -111,5 +113,12 @@ func (i *InitData) init(ctx context.Context, args []string) {
 	i.Queries = resolvedQueries
 
 	// and call base init
-	i.InitData.Init(ctx, constants.InvokerQuery)
+	i.InitData.Init(
+		ctx,
+		constants.InvokerQuery,
+		db_client.WithUserPoolSize(1),
+		db_client.WithMaxLife(24*time.Hour),
+		db_client.WithMaxIdle(24*time.Hour),
+		db_client.WithManagementPoolSize(2),
+	)
 }

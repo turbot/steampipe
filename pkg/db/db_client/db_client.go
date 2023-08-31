@@ -62,7 +62,7 @@ type DbClient struct {
 	onConnectionCallback DbConnectionCallback
 }
 
-func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback) (_ *DbClient, err error) {
+func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback, po ...PoolOverride) (_ *DbClient, err error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
