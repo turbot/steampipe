@@ -10,4 +10,5 @@ type pluginManager interface {
 	HandlePluginLimiterChanges(map[string]LimiterMap) error
 	Pool() *pgxpool.Pool
 	ShouldFetchRateLimiterDefs() bool
+	GetPluginExemplarConnections() map[string]string
 }

@@ -8,6 +8,14 @@ import (
 )
 
 func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
+	// if we have not yet populated the rate limiter table, do nothing
+	if m.pluginLimiters == nil {
+		return nil
+	}
+
+	// update the status of the plugin rate limiters (determine which are overriden and set state accordingly)
+	m.updateRateLimiterStatus()
+
 	queries := []db_common.QueryWithArgs{
 		rate_limiters.DropRateLimiterTable(),
 		rate_limiters.CreateRateLimiterTable(),

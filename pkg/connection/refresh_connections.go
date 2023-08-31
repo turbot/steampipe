@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -16,7 +17,13 @@ var executeLock sync.Mutex
 // only allow one queued execution
 var queueLock sync.Mutex
 
-func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceUpdateConnectionNames ...string) *steampipeconfig.RefreshConnectionResult {
+func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceUpdateConnectionNames ...string) (res *steampipeconfig.RefreshConnectionResult) {
+	// TODO KAI if we, for example, access a nil map, this does not seem to catch it and starup hangs
+	defer func() {
+		if r := recover(); r != nil {
+			res = steampipeconfig.NewErrorRefreshConnectionResult(helpers.ToError(r))
+		}
+	}()
 	//time.Sleep(10 * time.Second)
 	utils.LogTime("RefreshConnections start")
 	defer utils.LogTime("RefreshConnections end")

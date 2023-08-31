@@ -84,16 +84,17 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	}()
 	log.Printf("[INFO] building connectionUpdates")
 
+	var opts []steampipeconfig.ConnectionUpdatesOption
+	if len(s.forceUpdateConnectionNames) > 0 {
+		opts = append(opts, steampipeconfig.WithForceUpdate(s.forceUpdateConnectionNames))
+	}
+	if s.pluginManager.ShouldFetchRateLimiterDefs() {
+		opts = append(opts, steampipeconfig.WithFetchRateLimiterDefs(s.pluginManager.GetPluginExemplarConnections()))
+	}
+
 	// build a ConnectionUpdates struct
 	// this determine any necessary connection updates and starts any necessary plugins
-	s.connectionUpdates, s.res = steampipeconfig.NewConnectionUpdates(
-		ctx,
-		s.pool,
-		// if force update connection names have been provided, pass them
-		// (this happens when a schema update notification is received)
-		steampipeconfig.WithForceUpdate(s.forceUpdateConnectionNames),
-		// NOTE: the first time we run we must fetch plugin rate limiter defs for all active plugins
-		steampipeconfig.WithFetchRateLimiterDefs(s.getFetchRateLimitersForPlugins()))
+	s.connectionUpdates, s.res = steampipeconfig.NewConnectionUpdates(ctx, s.pool, opts...)
 
 	defer s.logRefreshConnectionResults()
 	// were we successful?

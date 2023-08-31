@@ -94,7 +94,7 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 
 	//time.Sleep(10 * time.Second)
 	// create a connection pool to connection refresh
-	// TODO KAI use const?? comment why 20
+	// in testing, a size of 20 seemed optimal
 	poolsize := 20
 	pool, err := db_local.CreateConnectionPool(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
 	if err != nil {
@@ -102,8 +102,10 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 	}
 	pluginManager.pool = pool
 
-	// try to load the _plugin_ rate limiter defintions from the steampipe_rate_limiter table
-	if err := pluginManager.populatePluginRateLimiterDefs(ctx); err != nil {
+	// try to load the _plugin_ rate limiter definitions from the steampipe_rate_limiter table
+	// then (re)write the steampipe_rate_limiter table
+	// this is to ensure we include any updates made to the rate limiter config since the last execution)
+	if err := pluginManager.initialiseRateLimiterDefs(ctx); err != nil {
 		return nil, err
 	}
 	return pluginManager, nil

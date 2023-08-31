@@ -12,7 +12,6 @@ import (
 type RefreshConnectionResult struct {
 	error_helpers.ErrorAndWarnings
 	UpdatedConnections bool
-	Updates            *ConnectionUpdates
 	FailedConnections  map[string]string
 }
 
