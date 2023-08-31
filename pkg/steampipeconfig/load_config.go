@@ -213,6 +213,18 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 
 	for _, block := range content.Blocks {
 		switch block.Type {
+
+		case modconfig.BlockTypePlugin:
+			plugin, moreDiags := parse.DecodePlugin(block)
+			diags = append(diags, moreDiags...)
+			if moreDiags.HasErrors() {
+				continue
+			}
+			_, alreadyThere := steampipeConfig.Plugins[plugin.Source]
+			if alreadyThere {
+				return error_helpers.NewErrorsAndWarning(sperr.New("duplicate plugin: '%s' in '%s'", plugin.Source, block.TypeRange.Filename))
+			}
+			steampipeConfig.Plugins[plugin.Source] = plugin
 		case modconfig.BlockTypeRateLimiter:
 			limiter, moreDiags := parse.DecodeLimiter(block)
 			diags = append(diags, moreDiags...)
@@ -272,9 +284,14 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 		}
 	}
 
+	// now resolve which plugin each connection refers to
+	// if there is no explicit plugin config for a conneciton's plugin, add an empty plugin config to thhe plugins map
+
 	if diags.HasErrors() {
 		return error_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
 	}
+
+	steampipeConfig.initializePlugins()
 
 	return error_helpers.DiagsToErrorsAndWarnings("", diags)
 }

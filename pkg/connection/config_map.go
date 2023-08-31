@@ -12,7 +12,7 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) Conn
 	for k, v := range connectionMap {
 		configMap[k] = &sdkproto.ConnectionConfig{
 			Connection:       v.Name,
-			Plugin:           v.Plugin,
+			Plugin:           v.PluginLongName,
 			PluginShortName:  v.PluginShortName,
 			Config:           v.Config,
 			ChildConnections: v.GetResolveConnectionNames(),

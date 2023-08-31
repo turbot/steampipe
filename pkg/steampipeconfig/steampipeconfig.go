@@ -17,9 +17,12 @@ import (
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
 type SteampipeConfig struct {
+	// map of plugin configs
+	Plugins map[string]*modconfig.Plugin
 	// map of connection name to partially parsed connection config
 	Connections map[string]*modconfig.Connection
 	// rate limiters
+	// TODO move to plugin
 	Limiters map[string]*modconfig.RateLimiter
 
 	// Steampipe options
@@ -269,7 +272,7 @@ func (c *SteampipeConfig) ConnectionsForPlugin(pluginLongName string, pluginVers
 	var res []*modconfig.Connection
 	for _, con := range c.Connections {
 		// extract stream from plugin
-		ref := ociinstaller.NewSteampipeImageRef(con.Plugin)
+		ref := ociinstaller.NewSteampipeImageRef(con.PluginLongName)
 		org, plugin, stream := ref.GetOrgNameAndStream()
 		longName := fmt.Sprintf("%s/%s", org, plugin)
 		if longName == pluginLongName {
@@ -305,4 +308,15 @@ func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
 		idx++
 	}
 	return res
+}
+
+func (c *SteampipeConfig) initializePlugins() {
+	for _, connection := range c.Connections {
+		plugin := c.Plugins[connection.PluginShortName]
+		if plugin != nil {
+			plugin = &modconfig.Plugin{Source: connection.PluginShortName}
+			c.Plugins[connection.PluginShortName] = plugin
+		}
+		connection.Plugin = plugin
+	}
 }

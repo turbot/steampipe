@@ -34,7 +34,8 @@ type Connection struct {
 	// name of plugin as mentioned in config
 	PluginShortName string `json:"plugin_short_name,omitempty"`
 	// fully qualified name of the plugin. derived from the short name
-	Plugin string `json:"plugin,omitempty"`
+	PluginLongName string  `json:"plugin,omitempty"`
+	Plugin         *Plugin `json:"-"`
 	// connection type - supported values: "aggregator"
 	Type string `json:"type,omitempty"`
 	// should a schema be created for this connection - supported values: "enabled", "disabled"
@@ -125,7 +126,7 @@ func (c *Connection) Equals(other *Connection) bool {
 		connectionOptionsEqual = c.Options.Equals(other.Options)
 	}
 	return c.Name == other.Name &&
-		c.Plugin == other.Plugin &&
+		c.PluginLongName == other.PluginLongName &&
 		c.Type == other.Type &&
 		strings.Join(c.ConnectionNames, ",") == strings.Join(other.ConnectionNames, ",") &&
 		connectionOptionsEqual &&
@@ -152,7 +153,7 @@ func (c *Connection) SetOptions(opts options.Options, block *hcl.Block) hcl.Diag
 }
 
 func (c *Connection) String() string {
-	return fmt.Sprintf("\n----\nName: %s\nPlugin: %s\nConfig:\n%s\nOptions:\n%s\n", c.Name, c.Plugin, c.Config, c.Options.String())
+	return fmt.Sprintf("\n----\nName: %s\nPlugin: %s\nConfig:\n%s\nOptions:\n%s\n", c.Name, c.PluginLongName, c.Config, c.Options.String())
 }
 
 // Validate verifies the Type property is valid,
@@ -193,13 +194,13 @@ func (c *Connection) ValidateAggregatorConnection() (warnings, errors []string) 
 
 	// now ensure all child connections are loaded and use the same plugin as the parent connection
 	for _, childConnection := range c.Connections {
-		if childConnection.Plugin != c.Plugin {
+		if childConnection.PluginLongName != c.PluginLongName {
 			validationErrors = append(validationErrors,
 				fmt.Sprintf("aggregator connection '%s' uses plugin %s but child connection '%s' uses plugin '%s'",
 					c.Name,
-					c.Plugin,
+					c.PluginLongName,
 					childConnection.Name,
-					childConnection.Plugin,
+					childConnection.PluginLongName,
 				))
 		}
 
@@ -245,7 +246,7 @@ func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {
 			}
 			if match, _ := path.Match(childName, name); match {
 				// verify that this connection is of a compatible type
-				if connection.Plugin == c.Plugin {
+				if connection.PluginLongName == c.PluginLongName {
 					c.Connections[name] = connection
 					log.Printf("[TRACE] connection '%s' matches pattern '%s'", name, childName)
 				}
