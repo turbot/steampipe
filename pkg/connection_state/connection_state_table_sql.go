@@ -184,7 +184,7 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now(),now())
 		c.Type,
 		c.ImportSchema,
 		nil,
-		c.Plugin,
+		c.PluginLongName,
 		schemaMode,
 		schemaHash,
 		commentsSet,

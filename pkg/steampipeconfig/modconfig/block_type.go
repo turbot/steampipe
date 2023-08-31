@@ -35,6 +35,7 @@ const (
 
 	// config blocks
 	BlockTypeRateLimiter      = "limiter"
+	BlockTypePlugin           = "plugin"
 	BlockTypeConnection       = "connection"
 	BlockTypeOptions          = "options"
 	BlockTypeWorkspaceProfile = "workspace"
