@@ -1,14 +1,11 @@
 package steampipeconfig
 
 type connectionUpdatesSettings struct {
-	ForceUpdateConnectionNames  []string
-	FetchRateLimitersForPlugins map[string]struct{}
-}
-
-func newConnectionUpdatesSettings() *connectionUpdatesSettings {
-	return &connectionUpdatesSettings{
-		FetchRateLimitersForPlugins: make(map[string]struct{}),
-	}
+	ForceUpdateConnectionNames []string
+	// if we need to fetch rate limiter defs for all plugins, this will be populated
+	// map of plugin to exemplar connection
+	FetchRateLimitersForAllPlugins bool
+	PluginExemplarConnections      map[string]string
 }
 
 type ConnectionUpdatesOption func(opt *connectionUpdatesSettings)
@@ -18,8 +15,9 @@ func WithForceUpdate(connections []string) ConnectionUpdatesOption {
 		opt.ForceUpdateConnectionNames = connections
 	}
 }
-func WithFetchRateLimiterDefs(fetchRateLimitersForPlugins map[string]struct{}) ConnectionUpdatesOption {
+func WithFetchRateLimiterDefs(PluginExemplarConnections map[string]string) ConnectionUpdatesOption {
 	return func(opt *connectionUpdatesSettings) {
-		opt.FetchRateLimitersForPlugins = fetchRateLimitersForPlugins
+		opt.FetchRateLimitersForAllPlugins = true
+		opt.PluginExemplarConnections = PluginExemplarConnections
 	}
 }

@@ -16,6 +16,15 @@ func (m *PluginManager) ShouldFetchRateLimiterDefs() bool {
 	return m.pluginLimiters == nil
 }
 
+// GetPluginExemplarConnections returns a map of keyed by plugin short name with the value an exemplar connection
+func (m *PluginManager) GetPluginExemplarConnections() map[string]string {
+	res := make(map[string]string)
+	for _, c := range m.connectionConfigMap {
+		res[c.PluginShortName] = c.Connection
+	}
+	return res
+}
+
 // HandlePluginLimiterChanges responds to changes in the plugin rate limiter defintions
 // update the stored limiters, refrresh the rate limiter table and call `setRateLimiters`
 // for all plugins with changed limiters
@@ -27,9 +36,6 @@ func (m *PluginManager) HandlePluginLimiterChanges(newLimiters map[string]connec
 	for plugin, limitersForPlugin := range newLimiters {
 		m.pluginLimiters[plugin] = limitersForPlugin
 	}
-
-	// update the status of the plugin rate limiters (determine which are overriden and set state accordingly)
-	m.updateRateLimiterStatus()
 
 	// update the rate_limiters table
 	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
@@ -53,9 +59,6 @@ func (m *PluginManager) handleUserLimiterChanges(newLimiters connection.LimiterM
 	// update stored limiters to the new map
 	m.userLimiters = newLimiterPluginMap
 
-	// update the status of the plugin rate limiters (determine which are overriden and set state accordingly)
-	m.updateRateLimiterStatus()
-
 	// update the rate_limiters table
 	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
 		log.Println("[WARN] could not refresh rate limiter table", err)
@@ -63,36 +66,40 @@ func (m *PluginManager) handleUserLimiterChanges(newLimiters connection.LimiterM
 
 	// now update the plugins - call setRateLimiters for any plugin witrh updated user limiters
 	for p := range pluginsWithChangedLimiters {
-		// TODO KAI put in function
-
-		// TODO verify plugin respects changes in plugin limiter defs _without_ setRateLimiters being called
-		// get running plugin for this plugin
-		// if plugin is not running we have nothing to do
-		longName, ok := m.pluginShortToLongNameMap[p]
-		if !ok {
-			log.Printf("[INFO] handleUserLimiterChanges: plugin %s is not currently running - ignoring", p)
-			continue
-		}
-		runningPlugin, ok := m.runningPluginMap[longName]
-		if !ok {
-			log.Printf("[INFO] handleUserLimiterChanges: plugin %s is not currently running - ignoring", p)
-			continue
-		}
-		if !runningPlugin.reattach.SupportedOperations.RateLimiters {
-			log.Printf("[INFO] handleUserLimiterChanges: plugin %s does not support setting rate limit - ignoring", p)
-			continue
-		}
-
-		pluginClient, err := sdkgrpc.NewPluginClient(runningPlugin.client, longName)
-		if err != nil {
-			return sperr.WrapWithMessage(err, "failed to create a plugin client when updating the rate limiter for plugin '%s'", longName)
-		}
-
-		if err := m.setRateLimiters(p, pluginClient); err != nil {
-			return sperr.WrapWithMessage(err, "failed to update rate limiters for plugin '%s'", longName)
+		if err := m.setRateLimitersForPlugin(p); err != nil {
+			return err
 		}
 	}
 
+	return nil
+}
+
+func (m *PluginManager) setRateLimitersForPlugin(pluginShortName string) error {
+	// get running plugin for this plugin
+	// if plugin is not running we have nothing to do
+	longName, ok := m.pluginShortToLongNameMap[pluginShortName]
+	if !ok {
+		log.Printf("[INFO] handleUserLimiterChanges: plugin %s is not currently running - ignoring", pluginShortName)
+		return nil
+	}
+	runningPlugin, ok := m.runningPluginMap[longName]
+	if !ok {
+		log.Printf("[INFO] handleUserLimiterChanges: plugin %s is not currently running - ignoring", pluginShortName)
+		return nil
+	}
+	if !runningPlugin.reattach.SupportedOperations.RateLimiters {
+		log.Printf("[INFO] handleUserLimiterChanges: plugin %s does not support setting rate limit - ignoring", pluginShortName)
+		return nil
+	}
+
+	pluginClient, err := sdkgrpc.NewPluginClient(runningPlugin.client, longName)
+	if err != nil {
+		return sperr.WrapWithMessage(err, "failed to create a plugin client when updating the rate limiter for plugin '%s'", longName)
+	}
+
+	if err := m.setRateLimiters(pluginShortName, pluginClient); err != nil {
+		return sperr.WrapWithMessage(err, "failed to update rate limiters for plugin '%s'", longName)
+	}
 	return nil
 }
 
@@ -142,7 +149,7 @@ func (m *PluginManager) getUserDefinedLimitersForPlugin(plugin string) connectio
 	return userDefinedLimiters
 }
 
-func (m *PluginManager) populatePluginRateLimiterDefs(ctx context.Context) (e error) {
+func (m *PluginManager) initialiseRateLimiterDefs(ctx context.Context) (e error) {
 	defer func() {
 		// this function uses reflection to extract and convert values
 		// we need to be able to recover from panics while using reflection
@@ -151,19 +158,9 @@ func (m *PluginManager) populatePluginRateLimiterDefs(ctx context.Context) (e er
 		}
 	}()
 
-	// TODO KAI probably not necessary - just catch relation not found error
-	// if the rate limiter table exists, nothing to do
-	// leave pluginLimiters nil as the table is not yet populated are not
-	exists, err := m.rateLimiterTableExists(ctx)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return nil
-	}
-
 	rows, err := m.pool.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s WHERE source=$1", constants.InternalSchema, constants.RateLimiterDefinitionTable), modconfig.LimiterSourcePlugin)
 	if err != nil {
+		// TODO KAI if this is a table not found error, do not return error
 		return err
 	}
 	defer rows.Close()
@@ -183,7 +180,10 @@ func (m *PluginManager) populatePluginRateLimiterDefs(ctx context.Context) (e er
 		limitersForPlugin[r.Name] = r
 		m.pluginLimiters[r.Plugin] = limitersForPlugin
 	}
-	return nil
+
+	// then (re)write the steampipe_rate_limiter table
+	// this is to ensure we include any updates made to the rate limiter config since the last execution)
+	return m.refreshRateLimiterTable(ctx)
 
 }
 

@@ -35,16 +35,17 @@ type ConnectionUpdates struct {
 
 	CurrentConnectionState ConnectionStateMap
 	InvalidConnections     map[string]*ValidationFailure
-	// plugin (short names) for which we must refetch the rate limiter definitions
-	// TO DO KAI make map plugin to exemplar connection
-	FetchRateLimiterDefsForPlugins map[string]struct{}
+	// map of plugin to connection for which we must refetch the rate limiter definitions
+	FetchRateLimiterDefsForPlugins map[string]string
+
+	settings *connectionUpdatesSettings
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
 func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...ConnectionUpdatesOption) (*ConnectionUpdates, *RefreshConnectionResult) {
 	updates, res := populateConnectionUpdates(ctx, pool, opts...)
 	if res.Error != nil {
-		return updates, res
+		return nil, res
 	}
 
 	// validate the updates
@@ -55,10 +56,11 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...Conne
 }
 
 func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...ConnectionUpdatesOption) (*ConnectionUpdates, *RefreshConnectionResult) {
-	var settings = newConnectionUpdatesSettings()
+	var settings = &connectionUpdatesSettings{}
 	for _, opt := range opts {
 		opt(settings)
 	}
+
 	utils.LogTime("NewConnectionUpdates start")
 	defer utils.LogTime("NewConnectionUpdates end")
 	log.Printf("[TRACE] NewConnectionUpdates")
@@ -105,7 +107,8 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...
 		MissingPlugins:                 missingPlugins,
 		FinalConnectionState:           requiredConnectionStateMap,
 		InvalidConnections:             make(map[string]*ValidationFailure),
-		FetchRateLimiterDefsForPlugins: settings.FetchRateLimitersForPlugins,
+		settings:                       settings,
+		FetchRateLimiterDefsForPlugins: make(map[string]string),
 	}
 
 	log.Printf("[INFO] loaded connection state")
@@ -133,20 +136,20 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...
 	// connections to create/update
 	for name, requiredConnectionState := range requiredConnectionStateMap {
 		// if the connection requires update, add to list
-		requiresUpdateResult := connectionRequiresUpdate(settings.ForceUpdateConnectionNames, name, currentConnectionStateMap, requiredConnectionState)
-		if requiresUpdateResult.requiresUpdate {
-			updates.Update[name] = requiredConnectionState
+		res := connectionRequiresUpdate(settings.ForceUpdateConnectionNames, name, currentConnectionStateMap, requiredConnectionState)
+		if res.requiresUpdate {
 			log.Printf("[INFO] connection %s is out of date or missing. updates: %v", name, maps.Keys(updates.Update))
+			updates.Update[name] = requiredConnectionState
 
 			// set the connection mod time of required connection data to now
 			requiredConnectionState.ConnectionModTime = modTime
 
 			// if the plugin mod time has changed, add this to the map of connections
 			// we need to refetch the rate limiters for
-			if requiresUpdateResult.pluginBinaryChanged {
+			if res.pluginBinaryChanged {
+				// store map item of plugin name to connection name (so we only have one entry per plugin)
 				pluginShortName := GlobalConfig.Connections[requiredConnectionState.ConnectionName].PluginShortName
-				//updates.FetchRateLimiterDefsForPlugins[pluginShortName] = requiredConnectionState.connection
-				updates.FetchRateLimiterDefsForPlugins[pluginShortName] = struct{}{}
+				updates.FetchRateLimiterDefsForPlugins[pluginShortName] = requiredConnectionState.ConnectionName
 			}
 		}
 	}
@@ -190,6 +193,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...
 		connectionData, ok := currentConnectionStateMap[name]
 		// if the connection exists in the state, does the schemas hash match?
 		if ok && connectionData.SchemaHash != requiredHash {
+			log.Printf("[INFO] %s dynamic schema hash does not match - update", connectionData.ConnectionName)
 			updates.Update[name] = connectionData
 		}
 	}
@@ -210,9 +214,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, opts ...
 
 	// for all updates/deletes, if there any aggregators of the same plugin type, update those as well
 	updates.populateAggregators()
-	// TODO KAI why return res.updates AND updates
-	// TODO maybe return ErrorsAndWarnings
-	res.Updates = updates
+
 	return updates, res
 }
 
@@ -241,6 +243,7 @@ func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, 
 
 	// determine whethe the plugin mod time has changed
 	if currentConnectionState.pluginModTimeChanged(requiredConnectionState) {
+		res.requiresUpdate = true
 		res.pluginBinaryChanged = true
 		return res
 	}
@@ -321,17 +324,11 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	}
 	// and set our ConnectionPlugins property
 	u.ConnectionPlugins = connectionPluginsByConnection
+
 	return res
 }
 
 func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) []string {
-
-	// TODO KAI ADD IN maps.Values(u.FetchRateLimiterDefsForPlugins)
-	// TODO in fact mayb eplugin manager just stores a map of plugin to exemplar conneciton ot has function to get it
-	// if (update all rate limiters){
-	// 	- which plugins not being started
-	// 	- add exemplar connections for these plugins
-	// }
 
 	// ensure we instantiate all plugins required for schema AND comment updates
 	connections := append(maps.Keys(u.Update), maps.Keys(u.MissingComments)...)
@@ -352,7 +349,34 @@ func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugi
 		delete(connectionMap, name)
 	}
 
-	return maps.Keys(connectionMap)
+	connectionsToStart := maps.Keys(connectionMap)
+	// if we need to fetch all rate limiter defs, for all plugins we are NOT already creating, add in an exemplar connection
+	if u.settings.FetchRateLimitersForAllPlugins {
+		additionalConnections := u.getExemplarConnectionsForMissingPlugins(alreadyCreatedConnectionPlugins, connectionMap)
+		connectionsToStart = append(connectionsToStart, additionalConnections...)
+	}
+
+	return connectionsToStart
+}
+
+func (u *ConnectionUpdates) getExemplarConnectionsForMissingPlugins(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin, connectionToStart map[string]*modconfig.Connection) []string {
+	// build map of plugins which we are planning to start (or have already started)
+	pluginsWeAreStarting := make(map[string]struct{})
+	for _, c := range connectionToStart {
+		pluginsWeAreStarting[c.PluginShortName] = struct{}{}
+	}
+	for _, c := range alreadyCreatedConnectionPlugins {
+		pluginsWeAreStarting[c.PluginShortName] = struct{}{}
+	}
+
+	// now build list of exemplar connections for all plugins we are NOT already planning to start
+	var additionalConnections []string
+	for p, c := range u.settings.PluginExemplarConnections {
+		if _, planningToStart := pluginsWeAreStarting[p]; !planningToStart {
+			additionalConnections = append(additionalConnections, c)
+		}
+	}
+	return additionalConnections
 }
 
 func (u *ConnectionUpdates) HasUpdates() bool {
@@ -380,6 +404,7 @@ func (u *ConnectionUpdates) String() string {
 }
 
 func (u *ConnectionUpdates) setError(connectionName string, error string) {
+	log.Printf("[INFO] ConnectionUpdates.setError connection %s: %s", connectionName, error)
 	failedConnection, ok := u.FinalConnectionState[connectionName]
 	if !ok {
 		return
