@@ -89,12 +89,12 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 
 	pluginManager.messageServer = &PluginMessageServer{pluginManager: pluginManager}
 
+	//time.Sleep(10 * time.Second)
 	// populate plugin connection config map
 	pluginManager.populatePluginConnectionConfigs()
 	// determine cache size for each plugin
 	pluginManager.setPluginCacheSizeMap()
 
-	//time.Sleep(10 * time.Second)
 	// create a connection pool to connection refresh
 	// in testing, a size of 20 seemed optimal
 	poolsize := 20
@@ -563,11 +563,11 @@ func (m *PluginManager) shuttingDown() bool {
 // populate map of connection configs for each plugin
 func (m *PluginManager) populatePluginConnectionConfigs() {
 	m.pluginConnectionConfigMap = make(map[string][]*sdkproto.ConnectionConfig)
-	for pluginShortName, config := range m.connectionConfigMap {
+	for _, config := range m.connectionConfigMap {
 		m.pluginConnectionConfigMap[config.Plugin] = append(m.pluginConnectionConfigMap[config.Plugin], config)
 		// populate plugin name map
-		m.pluginShortToLongNameMap[pluginShortName] = config.Plugin
-		m.pluginLongToShortNameMap[config.Plugin] = pluginShortName
+		m.pluginShortToLongNameMap[config.PluginShortName] = config.Plugin
+		m.pluginLongToShortNameMap[config.Plugin] = config.PluginShortName
 	}
 }
 
