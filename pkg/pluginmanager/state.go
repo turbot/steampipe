@@ -15,7 +15,7 @@ import (
 
 const PluginManagerStructVersion = 20220411
 
-type PluginManagerState struct {
+type State struct {
 	Protocol        plugin.Protocol `json:"protocol"`
 	ProtocolVersion int             `json:"protocol_version"`
 	Addr            *pb.SimpleAddr  `json:"addr"`
@@ -27,8 +27,8 @@ type PluginManagerState struct {
 	StructVersion int64 `json:"struct_version"`
 }
 
-func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *PluginManagerState {
-	return &PluginManagerState{
+func NewState(executable string, reattach *plugin.ReattachConfig) *State {
+	return &State{
 		Executable:      executable,
 		Protocol:        reattach.Protocol,
 		ProtocolVersion: reattach.ProtocolVersion,
@@ -38,9 +38,9 @@ func NewPluginManagerState(executable string, reattach *plugin.ReattachConfig) *
 	}
 }
 
-func LoadPluginManagerState() (*PluginManagerState, error) {
+func LoadState() (*State, error) {
 	// always return empty state
-	s := new(PluginManagerState)
+	s := new(State)
 	if !filehelpers.FileExists(filepaths.PluginManagerStateFilePath()) {
 		log.Printf("[TRACE] plugin manager state file not found")
 		return s, nil
@@ -71,7 +71,7 @@ func LoadPluginManagerState() (*PluginManagerState, error) {
 	return s, err
 }
 
-func (s *PluginManagerState) Save() error {
+func (s *State) Save() error {
 	// set struct version
 	s.StructVersion = PluginManagerStructVersion
 
@@ -82,7 +82,7 @@ func (s *PluginManagerState) Save() error {
 	return os.WriteFile(filepaths.PluginManagerStateFilePath(), content, 0644)
 }
 
-func (s *PluginManagerState) reattachConfig() *plugin.ReattachConfig {
+func (s *State) reattachConfig() *plugin.ReattachConfig {
 	return &plugin.ReattachConfig{
 		Protocol:        s.Protocol,
 		ProtocolVersion: s.ProtocolVersion,
@@ -92,7 +92,7 @@ func (s *PluginManagerState) reattachConfig() *plugin.ReattachConfig {
 }
 
 // check whether the plugin manager is running
-func (s *PluginManagerState) verifyRunning() (bool, error) {
+func (s *State) verifyRunning() (bool, error) {
 	pidExists, err := utils.PidExists(s.Pid)
 	if err != nil {
 		return false, err
@@ -101,7 +101,7 @@ func (s *PluginManagerState) verifyRunning() (bool, error) {
 }
 
 // kill the plugin manager process and delete the state
-func (s *PluginManagerState) kill() error {
+func (s *State) kill() error {
 	// the state file contains the Pid of the daemon process - find and kill the process
 	process, err := utils.FindProcess(s.Pid)
 	if err != nil {
@@ -122,6 +122,6 @@ func (s *PluginManagerState) kill() error {
 	return nil
 }
 
-func (s *PluginManagerState) delete() {
+func (s *State) delete() {
 	_ = os.Remove(filepaths.PluginManagerStateFilePath())
 }

@@ -29,7 +29,7 @@ type StartResult struct {
 	error_helpers.ErrorAndWarnings
 	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
-	PluginManagerState *pluginmanager.PluginManagerState
+	PluginManagerState *pluginmanager.State
 }
 
 func (r *StartResult) SetError(err error) *StartResult {
