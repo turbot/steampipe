@@ -1,14 +1,14 @@
 package modconfig
 
 import (
-	"github.com/turbot/go-kit/helpers"
 	"reflect"
 	"testing"
 )
 
 type parsePropertyPathTest struct {
-	input    string
-	expected any
+	input        string
+	expected     any
+	errorMessage string
 }
 
 var parsePropertyPathTestCases = map[string]parsePropertyPathTest{
@@ -19,6 +19,11 @@ var parsePropertyPathTestCases = map[string]parsePropertyPathTest{
 			Name:     "q1",
 			Original: "query.q1",
 		},
+	},
+	"invalid resource name": {
+		input:        "m1.q1",
+		expected:     "ERROR",
+		errorMessage: "invalid property path 'm1.q1' passed to ParseResourcePropertyPath",
 	},
 	"qualified resource name": {
 		input: "m1.query.q1",
@@ -77,23 +82,17 @@ var parsePropertyPathTestCases = map[string]parsePropertyPathTest{
 }
 
 func TestParsePropertyPath(t *testing.T) {
-	testsToRun := []string{"self input"}
-
 	for name, test := range parsePropertyPathTestCases {
-		if len(testsToRun) > 0 && !helpers.StringSliceContains(testsToRun, name) {
-			continue
-		}
-
 		res, err := ParseResourcePropertyPath(test.input)
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf("Test: '%s'' FAILED : \nunexpected error %v", name, err)
+				continue
 			}
-			continue
-		}
-		if test.expected == "ERROR" {
-			t.Errorf("Test: '%s'' FAILED - expected error", name)
-			continue
+			if test.expected == "ERROR" && test.errorMessage == err.Error() {
+				// test passed and error message matched
+				continue
+			}
 		}
 		if !propertyPathsEqual(res, test.expected.(*ParsedPropertyPath)) {
 			t.Errorf("Test: '%s'' FAILED : \nexpected:\n %v, \ngot:\n %v\n", name, test.expected, res)

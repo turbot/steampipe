@@ -238,8 +238,14 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 		return res.SetError(fmt.Errorf("%s does not have the necessary permissions to start the service", getDataLocation()))
 	}
 
+	// Remove any old and expiring certificates
+	if err := removeExpiringSelfIssuedCertificates(); err != nil {
+		error_helpers.ShowWarning("failed to remove expired certificates")
+		log.Println("[TRACE] failed to remove expired certificates", err)
+	}
+
 	// Generate the certificate if it fails then set the ssl to off
-	if err := ensureSelfSignedCertificate(); err != nil {
+	if err := ensureCertificates(); err != nil {
 		error_helpers.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
 	}
 

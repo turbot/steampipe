@@ -55,8 +55,12 @@ func ParseResourcePropertyPath(propertyPath string) (*ParsedPropertyPath, error)
 	}
 
 	if IsValidResourceItemType(parts[0]) {
-		// put empty mod as first part
+		// put empty mod as first part - so we can assume always that the first part is mod
 		parts = append([]string{""}, parts...)
+	}
+	// at this point the length of property path must be at least 3 (i.e.<mod>.<resource>.<name>)
+	if len(parts) < 3 {
+		return nil, fmt.Errorf("invalid property path '%s' passed to ParseResourcePropertyPath", propertyPath)
 	}
 	switch len(parts) {
 	case 3:

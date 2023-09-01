@@ -112,9 +112,13 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 		return
 	}
 
-	//validate steampipe version
-	validationWarnings := validateModRequirementsRecursively(i.Workspace.Mod, pluginsInstalled)
-	i.Result.AddWarnings(validationWarnings...)
+	// no need to validate local steampipe and plugin versions for when connecting to remote steampipe database
+	// ArgConnectionString is empty when connecting to local database
+	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString == "" {
+		// validate steampipe version and required plugin version
+		validationWarnings := validateModRequirementsRecursively(i.Workspace.Mod, pluginsInstalled)
+		i.Result.AddWarnings(validationWarnings...)
+	}
 
 	// if introspection tables are enabled, setup the session data callback
 	var ensureSessionData db_client.DbConnectionCallback

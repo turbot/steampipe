@@ -1,4 +1,4 @@
-package utils
+package sslio
 
 import (
 	"bytes"
@@ -8,11 +8,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func ParseCertificateInLocation(location string) (*x509.Certificate, error) {
-	LogTime("db_local.parseCertificateInLocation start")
-	defer LogTime("db_local.parseCertificateInLocation end")
+	utils.LogTime("db_local.parseCertificateInLocation start")
+	defer utils.LogTime("db_local.parseCertificateInLocation end")
 
 	rootCertRaw, err := os.ReadFile(location)
 	if err != nil {

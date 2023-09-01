@@ -38,7 +38,7 @@ export SPIPETOOLS_TOKEN=$SPIPETOOLS_TOKEN
 export BATS_NO_PARALLELIZE_WITHIN_FILE=true
 
 # Must have these commands for the test suite to run
-declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch" "jd")
+declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch" "jd" "openssl" "cksum")
 
 for required_command in "${required_commands[@]}"
 do

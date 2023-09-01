@@ -109,9 +109,6 @@ func (r *Runner) run(ctx context.Context) {
 	// remove log files older than 7 days
 	r.runJobAsync(ctx, func(_ context.Context) { db_local.TrimLogs() }, &waitGroup)
 
-	// validate and regenerate service SSL certificates
-	r.runJobAsync(ctx, func(_ context.Context) { validateServiceCertificates() }, &waitGroup)
-
 	// wait for all jobs to complete
 	waitGroup.Wait()
 
