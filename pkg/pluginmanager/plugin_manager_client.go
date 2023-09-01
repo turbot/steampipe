@@ -15,11 +15,11 @@ import (
 // PluginManagerClient is the client used by steampipe to access the plugin manager
 type PluginManagerClient struct {
 	manager            pluginshared.PluginManager
-	pluginManagerState *PluginManagerState
+	pluginManagerState *State
 	rawClient          *plugin.Client
 }
 
-func NewPluginManagerClient(pluginManagerState *PluginManagerState) (*PluginManagerClient, error) {
+func NewPluginManagerClient(pluginManagerState *State) (*PluginManagerClient, error) {
 	res := &PluginManagerClient{
 		pluginManagerState: pluginManagerState,
 	}
