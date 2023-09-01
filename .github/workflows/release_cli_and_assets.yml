@@ -321,6 +321,7 @@ jobs:
           - "migration"
           - "brew"
           - "service_and_plugin"
+          - "ssl"
           - "blank_aggregators"
           - "search_path"
           - "chaos_and_query"

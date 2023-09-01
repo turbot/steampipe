@@ -10,27 +10,78 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/pkg/db/sslio"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/sperr"
 )
 
-const CertIssuer = "steampipe.io"
-
-var (
-	CertExpiryTolerance      = 180 * (24 * time.Hour)     // 180 days
-	RootCertValidityPeriod   = 5 * 365 * (24 * time.Hour) // 5 years
-	ServerCertValidityPeriod = 365 * (24 * time.Hour)     // 1 year
+const (
+	CertIssuer               = "steampipe.io"
+	ServerCertValidityPeriod = 3 * (365 * (24 * time.Hour)) // 3 years
 )
 
-// CertificatesExist checks if the root and server certificate and key files exist
-func CertificatesExist() bool {
+var EndOfTime = time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)
+
+func removeExpiringSelfIssuedCertificates() error {
+	if !certificatesExist() {
+		// don't do anything - certificates haven't been installed yet
+		return nil
+	}
+
+	if isRootCertificateExpiring() && !isRootCertificateSelfIssued() {
+		return sperr.New("cannot rotate certificate not issue by steampipe")
+	}
+
+	if isServerCertificateExpiring() && !isServerCertificateSelfIssued() {
+		return sperr.New("cannot rotate certificate not issue by steampipe")
+	}
+
+	if isRootCertificateExpiring() {
+		// if root certificate is not valid (i.e. expired), remove root and server certs,
+		// they will both be regenerated
+		err := removeAllCertificates()
+		if err != nil {
+			return sperr.WrapWithRootMessage(err, "issue removing invalid root certificate")
+		}
+	} else if isServerCertificateExpiring() {
+		// if server certificate is not valid (i.e. expired), remove it,
+		// it will be regenerated
+		err := removeServerCertificate()
+		if err != nil {
+			return sperr.WrapWithRootMessage(err, "issue removing invalid server certificate")
+		}
+	}
+	return nil
+}
+
+func isRootCertificateSelfIssued() bool {
+	rootCertificate, err := sslio.ParseCertificateInLocation(getRootCertLocation())
+	if err != nil {
+		return false
+	}
+	return rootCertificate.IsCA && strings.EqualFold(rootCertificate.Subject.CommonName, CertIssuer)
+}
+
+func isServerCertificateSelfIssued() bool {
+	serverCertificate, err := sslio.ParseCertificateInLocation(getServerCertLocation())
+	if err != nil {
+		return false
+	}
+	return !serverCertificate.IsCA && strings.EqualFold(serverCertificate.Issuer.CommonName, CertIssuer)
+}
+
+// certificatesExist checks if the root and server certificate and key files exist
+func certificatesExist() bool {
 	return filehelpers.FileExists(getRootCertLocation()) && filehelpers.FileExists(getServerCertLocation())
 }
 
-// RemoveServerCertificate removes the server certificate certificates so it will be regenerated
-func RemoveServerCertificate() error {
+// removeServerCertificate removes the server certificate certificates so it will be regenerated
+func removeServerCertificate() error {
 	utils.LogTime("db_local.RemoveServerCertificate start")
 	defer utils.LogTime("db_local.RemoveServerCertificate end")
 
@@ -40,8 +91,8 @@ func RemoveServerCertificate() error {
 	return os.Remove(getServerCertKeyLocation())
 }
 
-// RemoveAllCertificates removes root and server certificates so that they can be regenerated
-func RemoveAllCertificates() error {
+// removeAllCertificates removes root and server certificates so that they can be regenerated
+func removeAllCertificates() error {
 	utils.LogTime("db_local.RemoveAllCertificates start")
 	defer utils.LogTime("db_local.RemoveAllCertificates end")
 
@@ -50,37 +101,34 @@ func RemoveAllCertificates() error {
 		return err
 	}
 	// remove the server cert and key
-	return RemoveServerCertificate()
+	return removeServerCertificate()
 }
 
-// ValidateRootCertificate checks the root certificate exists, is not expired and has correct Subject
-func ValidateRootCertificate() bool {
-	utils.LogTime("db_local.ValidateRootCertificates start")
-	defer utils.LogTime("db_local.ValidateRootCertificates end")
-
-	rootCertificate, err := utils.ParseCertificateInLocation(getRootCertLocation())
+// isRootCertificateExpiring checks the root certificate exists, is not expired and has correct Subject
+func isRootCertificateExpiring() bool {
+	utils.LogTime("db_local.isRootCertificateExpiring start")
+	defer utils.LogTime("db_local.isRootCertificateExpiring end")
+	rootCertificate, err := sslio.ParseCertificateInLocation(getRootCertLocation())
 	if err != nil {
 		return false
 	}
-
-	return (rootCertificate.Subject.CommonName == CertIssuer) && isCerticateExpiring(rootCertificate)
+	return isCerticateExpiring(rootCertificate)
 }
 
-// ValidateServerCertificate checks the server certificate exists, is not expired and has correct issuer
-func ValidateServerCertificate() bool {
+// isServerCertificateExpiring checks the server certificate exists, is not expired and has correct issuer
+func isServerCertificateExpiring() bool {
 	utils.LogTime("db_local.ValidateServerCertificates start")
 	defer utils.LogTime("db_local.ValidateServerCertificates end")
-
-	serverCertificate, err := utils.ParseCertificateInLocation(getServerCertLocation())
+	serverCertificate, err := sslio.ParseCertificateInLocation(getServerCertLocation())
 	if err != nil {
 		return false
 	}
-
-	return (serverCertificate.Issuer.CommonName == CertIssuer) && isCerticateExpiring(serverCertificate)
+	expiring := isCerticateExpiring(serverCertificate)
+	return expiring
 }
 
 // if certificate or private key files do not exist, generate them
-func ensureSelfSignedCertificate() (err error) {
+func ensureCertificates() (err error) {
 	if serverCertificateAndKeyExist() && rootCertificateAndKeyExists() {
 		return nil
 	}
@@ -94,7 +142,7 @@ func ensureSelfSignedCertificate() (err error) {
 		if err != nil {
 			return err
 		}
-		rootCertificate, err = utils.ParseCertificateInLocation(getRootCertLocation())
+		rootCertificate, err = sslio.ParseCertificateInLocation(getRootCertLocation())
 	} else {
 		// otherwise generate them
 		rootCertificate, rootPrivateKey, err = generateRootCertificate()
@@ -104,8 +152,7 @@ func ensureSelfSignedCertificate() (err error) {
 	}
 
 	// now generate new server cert
-	return generateServerCertificates(rootCertificate, rootPrivateKey)
-
+	return generateServerCertificate(rootCertificate, rootPrivateKey)
 }
 
 // rootCertificateAndKeyExists checks if the root certificate ands private key files exist
@@ -120,9 +167,18 @@ func serverCertificateAndKeyExist() bool {
 
 // isCerticateExpiring checks whether the certificate expires within a predefined CertExpiryTolerance period (defined above)
 func isCerticateExpiring(certificate *x509.Certificate) bool {
-	return certificate.NotAfter.Add(-CertExpiryTolerance).After(time.Now())
+	// has the certificate elapsed 3/4 of its lifetime
+	notBefore := certificate.NotBefore
+	notAfter := certificate.NotAfter
+	maxAllowedAge := float64(notAfter.Sub(notBefore)) * (0.75)
+	currentAge := float64(time.Since(notBefore))
+
+	// has current age exceeded the maximum allowed age
+	return currentAge > maxAllowedAge
 }
 
+// generateRootCertificate generates a CA certificate along with a Private key
+// the CA certificate sign itself
 func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 	utils.LogTime("db_local.generateServiceCertificates start")
 	defer utils.LogTime("db_local.generateServiceCertificates end")
@@ -132,14 +188,12 @@ func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-
 	now := time.Now()
-
 	// Certificate authority input
 	caCertificateData := &x509.Certificate{
-		SerialNumber:          big.NewInt(2020),
+		SerialNumber:          getSerialNumber(now),
 		NotBefore:             now,
-		NotAfter:              now.Add(RootCertValidityPeriod),
+		NotAfter:              EndOfTime,
 		Subject:               pkix.Name{CommonName: CertIssuer},
 		IsCA:                  true,
 		BasicConstraintsValid: true,
@@ -151,7 +205,7 @@ func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 		return nil, nil, err
 	}
 
-	if err := utils.WriteCertificate(getRootCertLocation(), caCertificate); err != nil {
+	if err := sslio.WriteCertificate(getRootCertLocation(), caCertificate); err != nil {
 		log.Println("[WARN] failed to save the certificate")
 		return nil, nil, err
 	}
@@ -159,7 +213,8 @@ func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 	return caCertificateData, caPrivateKey, nil
 }
 
-func generateServerCertificates(caCertificateData *x509.Certificate, caPrivateKey *rsa.PrivateKey) error {
+// generateServerCertificate creates a certificate signed by the CA certificate
+func generateServerCertificate(caCertificateData *x509.Certificate, caPrivateKey *rsa.PrivateKey) error {
 	utils.LogTime("db_local.generateServerCertificates start")
 	defer utils.LogTime("db_local.generateServerCertificates end")
 
@@ -167,7 +222,7 @@ func generateServerCertificates(caCertificateData *x509.Certificate, caPrivateKe
 
 	// set up for server certificate
 	serverCertificateData := &x509.Certificate{
-		SerialNumber: big.NewInt(2019),
+		SerialNumber: getSerialNumber(now),
 		Subject:      caCertificateData.Subject,
 		Issuer:       caCertificateData.Subject,
 		NotBefore:    now,
@@ -187,16 +242,26 @@ func generateServerCertificates(caCertificateData *x509.Certificate, caPrivateKe
 		return err
 	}
 
-	if err := utils.WriteCertificate(getServerCertLocation(), serverCertBytes); err != nil {
+	if err := sslio.WriteCertificate(getServerCertLocation(), serverCertBytes); err != nil {
 		log.Println("[INFO] Failed to save server certificate")
 		return err
 	}
-	if err := utils.WritePrivateKey(getServerCertKeyLocation(), serverPrivKey); err != nil {
+	if err := sslio.WritePrivateKey(getServerCertKeyLocation(), serverPrivKey); err != nil {
 		log.Println("[INFO] Failed to save server private key")
 		return err
 	}
 
 	return nil
+}
+
+// getSerialNumber generates a serial number for the certificate based on the passed in time in the format YYYYMMDD
+func getSerialNumber(t time.Time) *big.Int {
+	serialNumber, _ := strconv.ParseInt(
+		t.Format("20060102"),
+		10,
+		64,
+	)
+	return big.NewInt(serialNumber)
 }
 
 // derive ssl status from out ssl mode
@@ -243,7 +308,7 @@ func ensureRootPrivateKey() (*rsa.PrivateKey, error) {
 		log.Println("[WARN] private key creation failed for ca failed")
 		return nil, err
 	}
-	if err := utils.WritePrivateKey(getRootCertKeyLocation(), caPrivateKey); err != nil {
+	if err := sslio.WritePrivateKey(getRootCertKeyLocation(), caPrivateKey); err != nil {
 		log.Println("[WARN] failed to save root private key")
 		return nil, err
 	}
