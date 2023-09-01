@@ -39,7 +39,7 @@ type ExecutionTree struct {
 	controlNameFilterMap map[string]bool
 }
 
-func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg, controlFilterWhereClause string) (*ExecutionTree, error) {
+func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, controlFilterWhereClause string, args ...string) (*ExecutionTree, error) {
 	searchPath := client.GetRequiredSessionSearchPath()
 
 	// now populate the ExecutionTree
@@ -56,14 +56,18 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 		return nil, err
 	}
 
-	// now identify the root item of the control list
-	rootItem, err := executionTree.getExecutionRootFromArg(arg)
-	if err != nil {
-		return nil, err
+	rootItems := []modconfig.ModTreeItem{}
+	for _, arg := range args {
+		// now identify the root item of the control list
+		rootItem, err := executionTree.getExecutionRootFromArg(arg)
+		if err != nil {
+			return nil, err
+		}
+		rootItems = append(rootItems, rootItem)
 	}
 
 	// build tree of result groups, starting with a synthetic 'root' node
-	executionTree.Root = NewRootResultGroup(ctx, executionTree, rootItem)
+	executionTree.Root = NewRootResultGroup(ctx, executionTree, rootItems...)
 
 	// after tree has built, ControlCount will be set - create progress rendered
 	executionTree.Progress = controlstatus.NewControlProgress(len(executionTree.ControlRuns))
