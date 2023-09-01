@@ -259,7 +259,7 @@ func (c *DbClient) GetSchemaFromDBLegacy(ctx context.Context, conn *pgxpool.Conn
 }
 
 // refreshDbClient terminates the current connection and opens up a new connection to the service.
-func (c *DbClient) refreshDbClient(ctx context.Context) error {
+func (c *DbClient) resetPools(ctx context.Context) {
 	utils.LogTime("db_client.refreshDbClient start")
 	defer utils.LogTime("db_client.refreshDbClient end")
 
