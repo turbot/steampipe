@@ -8,7 +8,6 @@ import (
 )
 
 func DecodePlugin(block *hcl.Block) (*modconfig.Plugin, hcl.Diagnostics) {
-
 	// manually decode child limiter blocks
 	content, rest, diags := block.Body.PartialContent(PluginBlockSchema)
 	if diags.HasErrors() {
@@ -38,7 +37,6 @@ func DecodePlugin(block *hcl.Block) (*modconfig.Plugin, hcl.Diagnostics) {
 			if moreDiags.HasErrors() {
 				continue
 			}
-
 			limiter.Plugin = plugin.Source
 			plugin.Limiters = append(plugin.Limiters, limiter)
 		}

@@ -470,6 +470,7 @@ func (m *PluginManager) startPluginProcess(pluginName string, connectionConfigs 
 	if maxMemoryBytes := pluginConfig.GetMaxMemoryBytes(); maxMemoryBytes != 0 {
 		log.Printf("[INFO] Setting max memory for plugin '%s' to %d Mb", pluginName, maxMemoryBytes/(1024*1024))
 		// set GOMEMLIMIT for the plugin command env
+		// TODO should I check for GOMEMLIMIT or does this just override
 		cmd.Env = append(os.Environ(), fmt.Sprintf("GOMEMLIMIT=%d", maxMemoryBytes))
 	}
 

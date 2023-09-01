@@ -274,12 +274,13 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 		}
 	}
 
-	// now resolve which plugin each connection refers to
-	// if there is no explicit plugin config for a conneciton's plugin, add an empty plugin config to thhe plugins map
-
 	if diags.HasErrors() {
 		return error_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
 	}
+
+	// ensure we have a plugin config struct for all plugins mentioned in conneciton config,
+	// even if there is not an explicit HCL config for it
+	steampipeConfig.initializePlugins()
 
 	return error_helpers.DiagsToErrorsAndWarnings("", diags)
 }
