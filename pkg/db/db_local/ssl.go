@@ -254,7 +254,7 @@ func generateServerCertificate(caCertificateData *x509.Certificate, caPrivateKey
 	return nil
 }
 
-// getSerialNumber generates a serial number based on the passed in time
+// getSerialNumber generates a serial number for the certificate based on the passed in time in the format YYYYMMDD
 func getSerialNumber(t time.Time) *big.Int {
 	serialNumber, _ := strconv.ParseInt(
 		t.Format("20060102"),
