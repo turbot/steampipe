@@ -116,9 +116,15 @@ func (i *InitData) init(ctx context.Context, args []string) {
 	i.InitData.Init(
 		ctx,
 		constants.InvokerQuery,
-		db_client.WithUserPoolSize(1),
-		db_client.WithMaxLife(24*time.Hour),
-		db_client.WithMaxIdle(24*time.Hour),
-		db_client.WithManagementPoolSize(2),
+		db_client.WithUserPoolOverride(db_client.PoolOverrides{
+			Size:        1,
+			MaxLifeTime: 24 * time.Hour,
+			MaxIdleTime: 24 * time.Hour,
+		}),
+		db_client.WithManagementPoolOverride(db_client.PoolOverrides{
+			// we need two connections here, since one of them will be reserved
+			// by the notification listener in the interactive prompt
+			Size: 2,
+		}),
 	)
 }
