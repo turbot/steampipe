@@ -88,13 +88,10 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	if len(s.forceUpdateConnectionNames) > 0 {
 		opts = append(opts, steampipeconfig.WithForceUpdate(s.forceUpdateConnectionNames))
 	}
-	if s.pluginManager.ShouldFetchRateLimiterDefs() {
-		opts = append(opts, steampipeconfig.WithFetchRateLimiterDefs(s.pluginManager.GetPluginExemplarConnections()))
-	}
 
 	// build a ConnectionUpdates struct
 	// this determine any necessary connection updates and starts any necessary plugins
-	s.connectionUpdates, s.res = steampipeconfig.NewConnectionUpdates(ctx, s.pool, opts...)
+	s.connectionUpdates, s.res = steampipeconfig.NewConnectionUpdates(ctx, s.pool, s.pluginManager, opts...)
 
 	defer s.logRefreshConnectionResults()
 	// were we successful?
@@ -105,14 +102,17 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	log.Printf("[INFO] created connectionUpdates")
 
 	//  reload plugin rate limiter definitions for all plugins which are updated - the plugin will already be loaded
-	updatedPluginLimiters, err := s.reloadPluginRateLimiters()
-	if err != nil {
-		s.res.Error = err
-		return
-	}
+	if len(s.connectionUpdates.PluginsWithUpdatedBinary) > 0 {
+		updatedPluginLimiters, err := s.pluginManager.LoadPluginRateLimiters(s.connectionUpdates.PluginsWithUpdatedBinary)
 
-	if len(updatedPluginLimiters) > 0 {
-		s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
+		if err != nil {
+			s.res.Error = err
+			return
+		}
+
+		if len(updatedPluginLimiters) > 0 {
+			s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
+		}
 	}
 
 	// delete the connection state file - it will be rewritten when we are complete

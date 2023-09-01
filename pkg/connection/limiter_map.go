@@ -5,6 +5,14 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// map of plugin short name to Limiter map for the plugin
+type PluginLimiterMap map[string]LimiterMap
+func (l PluginLimiterMap) Equals(other PluginLimiterMap) bool {
+	return maps.EqualFunc(l, other, func(m1, m2 LimiterMap) bool { return m1.Equals(m2) })
+}
+
+
+
 type LimiterMap map[string]*modconfig.RateLimiter
 
 func (l LimiterMap) Equals(other LimiterMap) bool {
@@ -12,8 +20,8 @@ func (l LimiterMap) Equals(other LimiterMap) bool {
 }
 
 // ToPluginMap converts limiter map keyed by limiter name to a map of limiter maps keyed by plugin
-func (l LimiterMap) ToPluginMap() map[string]LimiterMap {
-	res := make(map[string]LimiterMap)
+func (l LimiterMap) ToPluginMap() PluginLimiterMap{
+	res := make(PluginLimiterMap)
 	for name, limiter := range l {
 		limitersForPlugin := res[limiter.Plugin]
 		if limitersForPlugin == nil {

@@ -18,7 +18,7 @@ var executeLock sync.Mutex
 var queueLock sync.Mutex
 
 func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceUpdateConnectionNames ...string) (res *steampipeconfig.RefreshConnectionResult) {
-	// TODO KAI if we, for example, access a nil map, this does not seem to catch it and starup hangs
+	// TODO KAI if we, for example, access a nil map, this does not seem to catch it and startup hangs
 	defer func() {
 		if r := recover(); r != nil {
 			res = steampipeconfig.NewErrorRefreshConnectionResult(helpers.ToError(r))

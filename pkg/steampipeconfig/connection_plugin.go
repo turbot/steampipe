@@ -10,8 +10,8 @@ import (
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/pluginmanager"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -79,7 +79,8 @@ func NewConnectionPlugin(pluginShortName, pluginName string, pluginClient *sdkgr
 }
 
 // CreateConnectionPlugins instantiates plugins for specified connections, and fetches schemas
-func CreateConnectionPlugins(connectionNamesToCreate []string) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
+func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectionNamesToCreate []string) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
+
 	res = &RefreshConnectionResult{}
 	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin)
 	if len(connectionNamesToCreate) == 0 {
@@ -97,13 +98,6 @@ func CreateConnectionPlugins(connectionNamesToCreate []string) (requestedConnect
 	connectionNames := make([]string, len(connectionsToCreate))
 	for i, connection := range connectionsToCreate {
 		connectionNames[i] = connection.Name
-	}
-
-	// get plugin manager
-	pluginManager, err := pluginmanager.GetPluginManager()
-	if err != nil {
-		res.Error = err
-		return nil, res
 	}
 
 	// ask the plugin manager for the reattach config for all required plugins

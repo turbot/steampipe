@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/constants"
+	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"golang.org/x/exp/maps"
 	"log"
 )
 
@@ -16,22 +19,13 @@ func (m *PluginManager) ShouldFetchRateLimiterDefs() bool {
 	return m.pluginLimiters == nil
 }
 
-// GetPluginExemplarConnections returns a map of keyed by plugin short name with the value an exemplar connection
-func (m *PluginManager) GetPluginExemplarConnections() map[string]string {
-	res := make(map[string]string)
-	for _, c := range m.connectionConfigMap {
-		res[c.PluginShortName] = c.Connection
-	}
-	return res
-}
-
 // HandlePluginLimiterChanges responds to changes in the plugin rate limiter defintions
 // update the stored limiters, refrresh the rate limiter table and call `setRateLimiters`
 // for all plugins with changed limiters
-func (m *PluginManager) HandlePluginLimiterChanges(newLimiters map[string]connection.LimiterMap) error {
+func (m *PluginManager) HandlePluginLimiterChanges(newLimiters connection.PluginLimiterMap) error {
 	if m.pluginLimiters == nil {
 		// this must be the first time we have poplkated them
-		m.pluginLimiters = make(map[string]connection.LimiterMap)
+		m.pluginLimiters = make(connection.PluginLimiterMap)
 	}
 	for plugin, limitersForPlugin := range newLimiters {
 		m.pluginLimiters[plugin] = limitersForPlugin
@@ -103,7 +97,7 @@ func (m *PluginManager) setRateLimitersForPlugin(pluginShortName string) error {
 	return nil
 }
 
-func (m *PluginManager) getPluginsWithChangedLimiters(newLimiters map[string]connection.LimiterMap) map[string]struct{} {
+func (m *PluginManager) getPluginsWithChangedLimiters(newLimiters connection.PluginLimiterMap) map[string]struct{} {
 	var pluginsWithChangedLimiters = make(map[string]struct{})
 
 	for plugin, limitersForPlugin := range m.userLimiters {
@@ -149,44 +143,6 @@ func (m *PluginManager) getUserDefinedLimitersForPlugin(plugin string) connectio
 	return userDefinedLimiters
 }
 
-func (m *PluginManager) initialiseRateLimiterDefs(ctx context.Context) (e error) {
-	defer func() {
-		// this function uses reflection to extract and convert values
-		// we need to be able to recover from panics while using reflection
-		if r := recover(); r != nil {
-			e = sperr.ToError(r, sperr.WithMessage("error loading rate limiter definitions"))
-		}
-	}()
-
-	rows, err := m.pool.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s WHERE source=$1", constants.InternalSchema, constants.RateLimiterDefinitionTable), modconfig.LimiterSourcePlugin)
-	if err != nil {
-		// TODO KAI if this is a table not found error, do not return error
-		return err
-	}
-	defer rows.Close()
-
-	rateLimiters, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[modconfig.RateLimiter])
-	if err != nil {
-		return err
-	}
-
-	// ok so populate pluginLimiters
-	m.pluginLimiters = make(map[string]connection.LimiterMap)
-	for _, r := range rateLimiters {
-		limitersForPlugin := m.pluginLimiters[r.Plugin]
-		if limitersForPlugin == nil {
-			limitersForPlugin = make(connection.LimiterMap)
-		}
-		limitersForPlugin[r.Name] = r
-		m.pluginLimiters[r.Plugin] = limitersForPlugin
-	}
-
-	// then (re)write the steampipe_rate_limiter table
-	// this is to ensure we include any updates made to the rate limiter config since the last execution)
-	return m.refreshRateLimiterTable(ctx)
-
-}
-
 func (m *PluginManager) rateLimiterTableExists(ctx context.Context) (bool, error) {
 	query := fmt.Sprintf(`SELECT EXISTS (
     SELECT FROM 
@@ -204,4 +160,146 @@ func (m *PluginManager) rateLimiterTableExists(ctx context.Context) (bool, error
 		return false, err
 	}
 	return exists, nil
+}
+
+func (m *PluginManager) initialiseRateLimiterDefs(ctx context.Context) (e error) {
+	defer func() {
+		// this function uses reflection to extract and convert values
+		// we need to be able to recover from panics while using reflection
+		if r := recover(); r != nil {
+			e = sperr.ToError(r, sperr.WithMessage("error loading rate limiter definitions"))
+		}
+	}()
+
+	rateLimiterTableExists, err := m.rateLimiterTableExists(ctx)
+	if err != nil {
+		return err
+	}
+
+	if !rateLimiterTableExists {
+		return m.bootstrapRateLimiterTable(ctx)
+	}
+
+	rateLimiters, err := m.loadRateLimitersFromTable(ctx)
+	if err != nil {
+		return err
+	}
+
+	// split the table result into plugin and user limiters
+	pluginLimiters, previousUserLimiters := m.getUserAndPluginLimitersFromTableResult(rateLimiters)
+	// store the plugin limiters
+	m.pluginLimiters = pluginLimiters
+
+	if previousUserLimiters.Equals(m.userLimiters) {
+		return nil
+	}
+	// if the user limiter in the table are different from the current user listeners, the config must have changed
+	// since we last ran - call refreshRateLimiterTable to (re)write the steampipe_rate_limiter table
+	return m.refreshRateLimiterTable(ctx)
+}
+
+func (m *PluginManager) bootstrapRateLimiterTable(ctx context.Context) error {
+	pluginLimiters, err := m.LoadPluginRateLimiters(m.getPluginExemplarConnections())
+	if err != nil {
+		return err
+	}
+	m.pluginLimiters = pluginLimiters
+	// now populate the table
+	return m.refreshRateLimiterTable(ctx)
+}
+
+func (m *PluginManager) loadRateLimitersFromTable(ctx context.Context) ([]*modconfig.RateLimiter, error) {
+	rows, err := m.pool.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.RateLimiterDefinitionTable))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	rateLimiters, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[modconfig.RateLimiter])
+	if err != nil {
+		return nil, err
+	}
+	return rateLimiters, nil
+}
+
+func (m *PluginManager) getUserAndPluginLimitersFromTableResult(rateLimiters []*modconfig.RateLimiter) (connection.PluginLimiterMap, connection.PluginLimiterMap) {
+	pluginLimiters := make(connection.PluginLimiterMap)
+	userLimiters := make(connection.PluginLimiterMap)
+	for _, r := range rateLimiters {
+		if r.Source == modconfig.LimiterSourcePlugin {
+			pluginLimitersForPlugin := pluginLimiters[r.Plugin]
+			if pluginLimitersForPlugin == nil {
+				pluginLimitersForPlugin = make(connection.LimiterMap)
+			}
+
+			pluginLimitersForPlugin[r.Name] = r
+			pluginLimiters[r.Plugin] = pluginLimitersForPlugin
+		} else {
+			userLimitersForPlugin := userLimiters[r.Plugin]
+			if userLimitersForPlugin == nil {
+				userLimitersForPlugin = make(connection.LimiterMap)
+			}
+			userLimitersForPlugin[r.Name] = r
+			userLimiters[r.Plugin] = userLimitersForPlugin
+		}
+	}
+	return pluginLimiters, userLimiters
+}
+
+func (m *PluginManager) LoadPluginRateLimiters(pluginConnectionMap map[string]string) (connection.PluginLimiterMap, error) {
+
+	// build Get request
+	req := &pb.GetRequest{
+		Connections: maps.Values(pluginConnectionMap),
+	}
+	resp, err := m.Get(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// ok so now we have all necessary plugin reattach configs - fetch the rate limiter defs
+	var errors []error
+	var res = make(connection.PluginLimiterMap)
+	for _, reattach := range resp.ReattachMap {
+
+		if !reattach.SupportedOperations.RateLimiters {
+			continue
+		}
+		// attach to the plugin process
+		pluginClient, err := sdkgrpc.NewPluginClientFromReattach(reattach.Convert(), reattach.Plugin)
+		if err != nil {
+			log.Printf("[WARN] failed to attach to plugin '%s' - pid %d: %s",
+				reattach.Plugin, reattach.Pid, err)
+			return nil, err
+		}
+		rateLimiterResp, err := pluginClient.GetRateLimiters(&proto.GetRateLimitersRequest{})
+		if err != nil {
+			return nil, err
+		}
+		if rateLimiterResp == nil || rateLimiterResp.Definitions == nil {
+			continue
+		}
+		// populate the plugin name
+		pluginShortName := m.pluginLongToShortNameMap[reattach.Plugin]
+
+		limitersForPlugin := make(connection.LimiterMap)
+		for _, l := range rateLimiterResp.Definitions {
+			r, err := modconfig.RateLimiterFromProto(l)
+			if err != nil {
+				errors = append(errors, sperr.WrapWithMessage(err, "failed to create rate limiter %s from plugin definition", err))
+				continue
+			}
+			r.Plugin = pluginShortName
+			// set plugin as source
+			r.Source = modconfig.LimiterSourcePlugin
+			// derfaulty status to active
+			r.Status = modconfig.LimiterStatusActive
+			// add to map
+			limitersForPlugin[l.Name] = r
+		}
+		// store back
+		res[pluginShortName] = limitersForPlugin
+	}
+
+	return res, nil
 }

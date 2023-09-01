@@ -62,14 +62,15 @@ type PluginManager struct {
 
 	// map of user configured rate limiter maps, keyed by plugin short name
 	// NOTE: this is populated from config
-	userLimiters map[string]connection.LimiterMap
+	userLimiters connection.PluginLimiterMap
 	// map of plugin configured rate limiter maps, keyed by plugin short name
 	// NOTE: if this is nil, that means the steampipe_rate_limiter tables has not been populalated yet -
 	// the first time we refresh connections we must load all plugins and fetch their rate limiter defs
-	pluginLimiters map[string]connection.LimiterMap
+	pluginLimiters connection.PluginLimiterMap
 
 	// map of plugin short name to long name
 	pluginShortToLongNameMap map[string]string
+	pluginLongToShortNameMap map[string]string
 
 	pool *pgxpool.Pool
 }
@@ -83,6 +84,7 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 		userLimiters:        userLimiters.ToPluginMap(),
 
 		pluginShortToLongNameMap: make(map[string]string),
+		pluginLongToShortNameMap: make(map[string]string),
 	}
 
 	pluginManager.messageServer = &PluginMessageServer{pluginManager: pluginManager}
@@ -102,9 +104,6 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 	}
 	pluginManager.pool = pool
 
-	// try to load the _plugin_ rate limiter definitions from the steampipe_rate_limiter table
-	// then (re)write the steampipe_rate_limiter table
-	// this is to ensure we include any updates made to the rate limiter config since the last execution)
 	if err := pluginManager.initialiseRateLimiterDefs(ctx); err != nil {
 		return nil, err
 	}
@@ -134,9 +133,8 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 		ReattachMap: make(map[string]*pb.ReattachConfig),
 		FailureMap:  make(map[string]string),
 	}
-	// TODO validate we have config for this plugin
 
-	// build map of plugins to start, and also a lookup of required connecitons
+	// build a map of plugins to connection config for requested connections, and a lookup of the requested connections
 	plugins, requestedConnectionsLookup, err := m.buildRequiredPluginMap(req)
 	if err != nil {
 		return resp, err
@@ -166,8 +164,8 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 	return resp, nil
 }
 
+// build a map of plugins to connection config for requested connections, and a lookup of the requested connections
 func (m *PluginManager) buildRequiredPluginMap(req *pb.GetRequest) (map[string][]*sdkproto.ConnectionConfig, map[string]struct{}, error) {
-	// build a map of plugins required
 	var plugins = make(map[string][]*sdkproto.ConnectionConfig)
 	// also make a map of target connections - used when assigning resuts to the response
 	var requestedConnectionsLookup = make(map[string]struct{}, len(req.Connections))
@@ -569,6 +567,7 @@ func (m *PluginManager) populatePluginConnectionConfigs() {
 		m.pluginConnectionConfigMap[config.Plugin] = append(m.pluginConnectionConfigMap[config.Plugin], config)
 		// populate plugin name map
 		m.pluginShortToLongNameMap[pluginShortName] = config.Plugin
+		m.pluginLongToShortNameMap[config.Plugin] = pluginShortName
 	}
 }
 
@@ -762,6 +761,15 @@ func (m *PluginManager) handleStartFailure(err error) error {
 		return fmt.Errorf(pluginMessage)
 	}
 	return err
+}
+
+// getPluginExemplarConnections returns a map of keyed by plugin short name with the value an exemplar connection
+func (m *PluginManager) getPluginExemplarConnections() map[string]string {
+	res := make(map[string]string)
+	for _, c := range m.connectionConfigMap {
+		res[c.PluginShortName] = c.Connection
+	}
+	return res
 }
 
 func nonAggregatorConnectionCount(connections []*sdkproto.ConnectionConfig) int {
