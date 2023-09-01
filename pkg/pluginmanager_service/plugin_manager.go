@@ -458,6 +458,21 @@ func (m *PluginManager) startPluginProcess(pluginName string, connectionConfigs 
 	}
 	utils.LogTime("got plugin exec hash")
 	cmd := exec.Command(pluginPath)
+
+	// see if a the plugin config was specified - if so, get the max memory to allow the plugin
+	pluginConfig := m.plugins[exemplarConnectionConfig.PluginShortName]
+	// must be there
+	if pluginConfig == nil {
+		return nil, sperr.New("no plugin config is stored for plugin %s", exemplarConnectionConfig.PluginShortName)
+	}
+
+	// TODO take env var into account for default?
+	if maxMemoryBytes := pluginConfig.GetMaxMemoryBytes(); maxMemoryBytes != 0 {
+		log.Printf("[INFO] Setting max memory for plugin '%s' to %d Mb", pluginName, maxMemoryBytes/(1024*1024))
+		// set GOMEMLIMIT for the plugin command env
+		cmd.Env = append(os.Environ(), fmt.Sprintf("GOMEMLIMIT=%d", maxMemoryBytes))
+	}
+
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig:  sdkshared.Handshake,
 		Plugins:          pluginMap,

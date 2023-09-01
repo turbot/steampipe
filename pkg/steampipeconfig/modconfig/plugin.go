@@ -19,3 +19,7 @@ func (l *Plugin) OnDecoded(block *hcl.Block) {
 	l.StartLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.Start.Line
 	l.EndLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.End.Line
 }
+
+func (l *Plugin) GetMaxMemoryBytes() int64 {
+	return int64(1024 * 1024 * l.MaxMemoryMb)
+}

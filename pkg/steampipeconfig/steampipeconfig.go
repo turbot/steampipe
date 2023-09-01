@@ -307,13 +307,12 @@ func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
 	return res
 }
 
+// ensure we have a plugin config struct for all plugins mentioned in conneciton config,
+// even if there is not an explicit HCL config for it
 func (c *SteampipeConfig) initializePlugins() {
 	for _, connection := range c.Connections {
-		plugin := c.Plugins[connection.PluginShortName]
-		if plugin != nil {
-			plugin = &modconfig.Plugin{Source: connection.PluginShortName}
-			c.Plugins[connection.PluginShortName] = plugin
+		if c.Plugins[connection.PluginShortName] == nil {
+			c.Plugins[connection.PluginShortName] = &modconfig.Plugin{Source: connection.PluginShortName}
 		}
-		connection.Plugin = plugin
 	}
 }

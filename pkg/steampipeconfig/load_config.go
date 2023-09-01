@@ -281,8 +281,6 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 		return error_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
 	}
 
-	steampipeConfig.initializePlugins()
-
 	return error_helpers.DiagsToErrorsAndWarnings("", diags)
 }
 

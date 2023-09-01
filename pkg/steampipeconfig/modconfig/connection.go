@@ -34,8 +34,8 @@ type Connection struct {
 	// name of plugin as mentioned in config
 	PluginShortName string `json:"plugin_short_name,omitempty"`
 	// fully qualified name of the plugin. derived from the short name
-	PluginLongName string  `json:"plugin,omitempty"`
-	Plugin         *Plugin `json:"-"`
+	PluginLongName string `json:"plugin,omitempty"`
+
 	// connection type - supported values: "aggregator"
 	Type string `json:"type,omitempty"`
 	// should a schema be created for this connection - supported values: "enabled", "disabled"
