@@ -32,7 +32,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "custom database name" {
-  # Set the STEAMPIPE_INITDB_DATABASE_NAME env variable
+  # Set the STEAMPIPE_INITDB_DATABASE_NAME env variable 
   export STEAMPIPE_INITDB_DATABASE_NAME="custom_db_name"
   
   target_install_directory=$(mktemp -d)
