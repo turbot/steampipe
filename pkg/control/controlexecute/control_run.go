@@ -200,7 +200,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 		}
 		r.Duration = time.Since(startTime)
 		if r.Group != nil {
-			r.Group.addDuration(r.Duration)
+			r.Group.onChildDone()
 		}
 		log.Printf("[TRACE] finishing with concurrency, %s, , %d\n", r.Control.Name(), r.Tree.Progress.Executing)
 	}()

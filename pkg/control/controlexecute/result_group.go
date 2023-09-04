@@ -5,6 +5,7 @@ import (
 	"log"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/spf13/viper"
@@ -50,7 +51,8 @@ type ResultGroup struct {
 	// a list of distinct dimension keys from descendant controls
 	DimensionKeys []string `json:"-"`
 
-	actualDuration time.Duration
+	childrenComplete   uint32
+	executionStartTime time.Time
 	// lock to prevent multiple control_runs updating this
 	updateLock *sync.Mutex
 }
@@ -136,11 +138,6 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 	}
 
 	return group
-}
-
-// ActualDuration gives the actual duration of execution accounting for parallelism
-func (r *ResultGroup) ActualDuration() time.Duration {
-	return r.actualDuration
 }
 
 func (r *ResultGroup) AllTagKeys() []string {
@@ -251,7 +248,18 @@ func (r *ResultGroup) addDimensionKeys(keys ...string) {
 }
 
 func (r *ResultGroup) onChildDone() {
+	new := atomic.AddUint32(&r.childrenComplete, 1)
+	total := uint32(len(r.ControlRuns) + len(r.Groups))
+	if new < total {
+		// all children haven't finished execution yet
+		return
+	}
 
+	// all children are done
+	r.Duration = time.Since(r.executionStartTime)
+	if r.Parent != nil {
+		r.Parent.onChildDone()
+	}
 }
 
 func (r *ResultGroup) addDuration(d time.Duration) {
@@ -302,10 +310,8 @@ func (r *ResultGroup) updateSeverityCounts(severity string, summary *controlstat
 func (r *ResultGroup) execute(ctx context.Context, client db_common.Client, parallelismLock *semaphore.Weighted) {
 	log.Printf("[TRACE] begin ResultGroup.Execute: %s\n", r.GroupId)
 	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
-	startTime := time.Now()
-	defer func() {
-		r.actualDuration = time.Since(startTime)
-	}()
+
+	r.executionStartTime = time.Now()
 
 	for _, controlRun := range r.ControlRuns {
 		if error_helpers.IsContextCanceled(ctx) {
@@ -342,5 +348,4 @@ func executeRun(ctx context.Context, run *ControlRun, parallelismLock *semaphore
 	}()
 
 	run.execute(ctx, client)
-
 }
