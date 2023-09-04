@@ -46,9 +46,11 @@ type ResultGroup struct {
 	GroupItem modconfig.ModTreeItem `json:"-"`
 	Parent    *ResultGroup          `json:"-"`
 	Duration  time.Duration         `json:"-"`
+
 	// a list of distinct dimension keys from descendant controls
 	DimensionKeys []string `json:"-"`
 
+	actualDuration time.Duration
 	// lock to prevent multiple control_runs updating this
 	updateLock *sync.Mutex
 }
@@ -134,6 +136,11 @@ func NewResultGroup(ctx context.Context, executionTree *ExecutionTree, treeItem 
 	}
 
 	return group
+}
+
+// ActualDuration gives the actual duration of execution accounting for parallelism
+func (r *ResultGroup) ActualDuration() time.Duration {
+	return r.actualDuration
 }
 
 func (r *ResultGroup) AllTagKeys() []string {
@@ -243,6 +250,10 @@ func (r *ResultGroup) addDimensionKeys(keys ...string) {
 	sort.Strings(r.DimensionKeys)
 }
 
+func (r *ResultGroup) onChildDone() {
+
+}
+
 func (r *ResultGroup) addDuration(d time.Duration) {
 	r.updateLock.Lock()
 	defer r.updateLock.Unlock()
@@ -291,6 +302,10 @@ func (r *ResultGroup) updateSeverityCounts(severity string, summary *controlstat
 func (r *ResultGroup) execute(ctx context.Context, client db_common.Client, parallelismLock *semaphore.Weighted) {
 	log.Printf("[TRACE] begin ResultGroup.Execute: %s\n", r.GroupId)
 	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
+	startTime := time.Now()
+	defer func() {
+		r.actualDuration = time.Since(startTime)
+	}()
 
 	for _, controlRun := range r.ControlRuns {
 		if error_helpers.IsContextCanceled(ctx) {

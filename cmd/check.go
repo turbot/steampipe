@@ -6,11 +6,11 @@ import (
 	"io"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
@@ -140,78 +140,64 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	w := initData.Workspace
 	client := initData.Client
 	totalAlarms, totalErrors := 0, 0
-	var durations []time.Duration
-	var exportMsg []string
 
 	shouldShare := viper.GetBool(constants.ArgShare)
 	shouldUpload := viper.GetBool(constants.ArgSnapshot)
 	generateSnapshot := shouldShare || shouldUpload
 
-	var executions map[string]*controlexecute.ExecutionTree = make(map[string]*controlexecute.ExecutionTree, len(args))
-
-	// treat each arg as a separate execution
-	for _, targetName := range args {
-		if error_helpers.IsContextCanceled(ctx) {
-			durations = append(durations, 0)
-			// skip over this arg, since the execution was cancelled
-			// (do not just quit as we want to populate the durations)
-			continue
-		}
-
-		if _, found := executions[targetName]; found {
-			error_helpers.ShowWarning(fmt.Sprintf("%s has already been executed. Skipping.", targetName))
-			continue
-		}
-
-		// create the execution tree
-		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, targetName, initData.ControlFilterWhereClause)
-		error_helpers.FailOnError(err)
-
-		// add this tree to the list of executions
-		executions[targetName] = executionTree
-
-		// execute controls synchronously (execute returns the number of alarms and errors)
-		stats, err := executionTree.Execute(ctx)
-		error_helpers.FailOnError(err)
-
-		err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
-		error_helpers.FailOnError(err)
-
-		// append the total number of alarms and errors for multiple runs
-		totalAlarms += stats.Alarm
-		totalErrors += stats.Error
-
-		// only export/publish if the parent context has not been cancelled
-		if !error_helpers.IsContextCanceled(ctx) {
-			// get the export name before execution(fail if not a valid export name)
-			exportName, err := getExportName(targetName, w.Mod.ShortName)
-			error_helpers.FailOnError(err)
-
-			exportArgs := viper.GetStringSlice(constants.ArgExport)
-			exportMsg, err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
-			error_helpers.FailOnError(err)
-
-			// if the share args are set, create a snapshot and share it
-			if generateSnapshot {
-				err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
-				if err != nil {
-					exitCode = constants.ExitCodeSnapshotUploadFailed
-					error_helpers.FailOnError(err)
-				}
-			}
-		}
-
-		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))
+	if helpers.StringSliceContains(args, "all") && len(args) > 1 {
+		error_helpers.FailOnError(sperr.New("cannot execute 'all' with other benchmarks/controls"))
 	}
 
+	// create the execution tree
+	executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, initData.ControlFilterWhereClause, args...)
+	error_helpers.FailOnError(err)
+
+	// execute controls synchronously (execute returns the number of alarms and errors)
+	stats, err := executionTree.Execute(ctx)
+	error_helpers.FailOnError(err)
+
+	err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
+	error_helpers.FailOnError(err)
+
+	// append the total number of alarms and errors for multiple runs
+	totalAlarms += stats.Alarm
+	totalErrors += stats.Error
+
+	// if the share args are set, create a snapshot and share it
+	if generateSnapshot {
+		err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
+		if err != nil {
+			exitCode = constants.ExitCodeSnapshotUploadFailed
+			error_helpers.FailOnError(err)
+		}
+	}
+
+	exportMsg := "" // output of DoExport
+
+	// for _, targetName := range args {
+	// 	// only export/publish if the parent context has not been cancelled
+	// 	if !error_helpers.IsContextCanceled(ctx) {
+	// 		// get the export name before execution(fail if not a valid export name)
+	// 		exportName, err := getExportName(targetName, w.Mod.ShortName)
+	// 		error_helpers.FailOnError(err)
+
+	// 		exportArgs := viper.GetStringSlice(constants.ArgExport)
+	// 		exportMsg, err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
+	// 		error_helpers.FailOnError(err)
+	// 	}
+
+	// 	durations = append(durations, )
+	// }
+
 	if shouldPrintTiming() {
-		printTiming(args, durations)
+		printTiming(executionTree)
 	}
 
 	// print the location where the file is exported if progress=true
 	if len(exportMsg) > 0 && viper.GetBool(constants.ArgProgress) {
 		fmt.Printf("\n")
-		fmt.Println(strings.Join(exportMsg, "\n"))
+		fmt.Println(exportMsg)
 		fmt.Printf("\n")
 	}
 
@@ -288,11 +274,12 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 	return true
 }
 
-func printTiming(args []string, durations []time.Duration) {
+func printTiming(tree *controlexecute.ExecutionTree) {
 	headers := []string{"", "Duration"}
 	var rows [][]string
-	for idx, arg := range args {
-		rows = append(rows, []string{arg, durations[idx].String()})
+
+	for _, rg := range tree.Root.Groups {
+		rows = append(rows, []string{rg.Title, rg.Duration.String()})
 	}
 	// blank line after renderer output
 	fmt.Println()
