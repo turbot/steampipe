@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 	"strings"
 
@@ -141,6 +142,18 @@ INNER JOIN
 }
 
 func setupInternal(ctx context.Context, conn *pgx.Conn) error {
+	statushooks.SetStatus(ctx, "Dropping legacy schema")
+	if err := dropLegacyInternalSchema(ctx, conn); err != nil {
+		// do not fail
+		// worst case scenario is that we have a couple of extra schema
+		// these won't be in the search path anyway
+		log.Println("[INFO] failed to drop legacy 'internal' schema", err)
+	}
+
+	// setup internal schema
+	// this includes setting the state of all connections in the connection_state table to pending
+	statushooks.SetStatus(ctx, "Setting up internal schema")
+
 	utils.LogTime("db_local.setupInternal start")
 	defer utils.LogTime("db_local.setupInternal end")
 

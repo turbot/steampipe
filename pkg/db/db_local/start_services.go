@@ -103,11 +103,24 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 		res.Status = ServiceAlreadyRunning
 	}
 
+	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
+	if err != nil {
+		res.Error = err
+		return res
+	}
+	defer conn.Close(ctx)
+
+	// setup internal schema
+	// NOTE: we must do this BEFORE starting plugin manager
+	if err := setupInternal(ctx, conn); err != nil {
+		res.Error = err
+		return res
+	}
 	// start plugin manager if needed
 	res = ensurePluginManager(res)
 	if res.Status == ServiceStarted {
 		// execute post startup setup
-		if err := postServiceStart(ctx, res); err != nil {
+		if err := postServiceStart(ctx, conn); err != nil {
 			// NOTE do not update res.Status - this will be done by defer block
 			res.Error = err
 		}
@@ -140,27 +153,7 @@ func ensurePluginManager(res *StartResult) *StartResult {
 	return res
 }
 
-func postServiceStart(ctx context.Context, res *StartResult) error {
-	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
-	if err != nil {
-		return err
-	}
-	defer conn.Close(ctx)
-
-	statushooks.SetStatus(ctx, "Dropping legacy schema")
-	if err := dropLegacyInternalSchema(ctx, conn); err != nil {
-		// do not fail
-		// worst case scenario is that we have a couple of extra schema
-		// these won't be in the search path anyway
-		log.Println("[INFO] failed to drop legacy 'internal' schema", err)
-	}
-
-	// setup internal schema
-	// this includes setting the state of all connections in the connection_state table to pending
-	statushooks.SetStatus(ctx, "Setting up internal schema")
-	if err := setupInternal(ctx, conn); err != nil {
-		return err
-	}
+func postServiceStart(ctx context.Context, conn *pgx.Conn) error {
 
 	statushooks.SetStatus(ctx, "Initialize steampipe_connection_state table")
 	// ensure connection state table contains entries for all connections in connection config
