@@ -100,7 +100,7 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 	loadOptions := &loadConfigOptions{include: include}
 	if ew := loadConfig(filepaths.EnsureConfigDir(), steampipeConfig, loadOptions); ew != nil {
 		if ew.GetError() != nil {
-			return nil, ew.WrapErrorWithMessage("failed to load config")
+			return nil, ew
 		}
 		// merge the warning from this call
 		errorsAndWarnings.AddWarning(ew.Warnings...)

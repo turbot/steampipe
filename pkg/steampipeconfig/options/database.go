@@ -7,7 +7,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
-// Database
 type Database struct {
 	Cache            *bool   `hcl:"cache"`
 	CacheMaxTtl      *int    `hcl:"cache_max_ttl"`

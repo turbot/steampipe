@@ -39,4 +39,7 @@ const (
 
 	// EnvConfigDump is an undocumented variable is subject to change in the future
 	EnvConfigDump = "STEAMPIPE_CONFIG_DUMP"
+
+	EnvMemoryMaxMb       = "STEAMPIPE_MEMORY_MAX_MB"
+	EnvMemoryMaxMbPlugin = "STEAMPIPE_PLUGIN_MEMORY_MAX_MB"
 )

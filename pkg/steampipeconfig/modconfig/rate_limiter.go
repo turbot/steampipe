@@ -12,7 +12,7 @@ const (
 	LimiterSourceConfig    = "config"
 	LimiterSourcePlugin    = "plugin"
 	LimiterStatusActive    = "active"
-	LimiterStatusOverriden = "overriden"
+	LimiterStatusOverriden = "overridden"
 )
 
 type RateLimiter struct {

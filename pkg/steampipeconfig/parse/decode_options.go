@@ -45,6 +45,7 @@ func defaultOptionsBlockMapping() OptionsBlockMapping {
 		options.QueryBlock:      &options.Query{},
 		options.CheckBlock:      &options.Check{},
 		options.DashboardBlock:  &options.GlobalDashboard{},
+		options.PluginBlock:     &options.Plugin{},
 	}
 	return mapping
 }

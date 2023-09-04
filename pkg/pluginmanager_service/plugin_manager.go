@@ -30,6 +30,7 @@ import (
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -459,20 +460,14 @@ func (m *PluginManager) startPluginProcess(pluginName string, connectionConfigs 
 	utils.LogTime("got plugin exec hash")
 	cmd := exec.Command(pluginPath)
 
-	// see if a the plugin config was specified - if so, get the max memory to allow the plugin
+	// see if a plugin config was specified - if so, get the max memory to allow the plugin
 	pluginConfig := m.plugins[exemplarConnectionConfig.PluginShortName]
 	// must be there
 	if pluginConfig == nil {
 		return nil, sperr.New("no plugin config is stored for plugin %s", exemplarConnectionConfig.PluginShortName)
 	}
 
-	// TODO take env var into account for default?
-	if maxMemoryBytes := pluginConfig.GetMaxMemoryBytes(); maxMemoryBytes != 0 {
-		log.Printf("[INFO] Setting max memory for plugin '%s' to %d Mb", pluginName, maxMemoryBytes/(1024*1024))
-		// set GOMEMLIMIT for the plugin command env
-		// TODO should I check for GOMEMLIMIT or does this just override
-		cmd.Env = append(os.Environ(), fmt.Sprintf("GOMEMLIMIT=%d", maxMemoryBytes))
-	}
+	m.setPluginMaxMemory(pluginName, pluginConfig, cmd)
 
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig:  sdkshared.Handshake,
@@ -494,6 +489,21 @@ func (m *PluginManager) startPluginProcess(pluginName string, connectionConfigs 
 
 	return client, nil
 
+}
+
+func (m *PluginManager) setPluginMaxMemory(pluginName string, pluginConfig *modconfig.Plugin, cmd *exec.Cmd) {
+	maxMemoryBytes := pluginConfig.GetMaxMemoryBytes()
+	if maxMemoryBytes == 0 {
+		if viper.IsSet(constants.ArgMemoryMaxMbPlugin) {
+			maxMemoryBytes = viper.GetInt64(constants.ArgMemoryMaxMbPlugin) * 1024 * 1024
+		}
+	}
+	if maxMemoryBytes != 0 {
+		log.Printf("[INFO] Setting max memory for plugin '%s' to %d Mb", pluginName, maxMemoryBytes/(1024*1024))
+		// set GOMEMLIMIT for the plugin command env
+		// TODO should I check for GOMEMLIMIT or does this just override
+		cmd.Env = append(os.Environ(), fmt.Sprintf("GOMEMLIMIT=%d", maxMemoryBytes))
+	}
 }
 
 // set the connection configs and build a ReattachConfig

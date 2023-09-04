@@ -110,8 +110,8 @@ var rootCmd = &cobra.Command{
 			versionfile.EnsureVersionFilesInPluginDirectories()
 		}
 
-		// set the max memory
-		debug.SetMemoryLimit(plugin.GetMaxMemoryBytes())
+		// set the max memory if specified
+		setMemoryLimit()
 	},
 	Short: "Query cloud resources using SQL",
 	Long: `Query cloud resources using SQL.
@@ -138,6 +138,14 @@ Getting started:
 
   Documentation available at https://steampipe.io/docs
  `,
+}
+
+func setMemoryLimit() {
+	maxMemoryBytes := viper.GetInt64(constants.ArgMemoryMaxMb) * 1024 * 1024
+	if maxMemoryBytes > 0 {
+		// set the max memory
+		debug.SetMemoryLimit(maxMemoryBytes)
+	}
 }
 
 // runScheduledTasks runs the task runner and returns a channel which is closed when

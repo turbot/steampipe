@@ -28,6 +28,7 @@ type SteampipeConfig struct {
 	DashboardOptions         *options.GlobalDashboard
 	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
+	PluginOptions            *options.Plugin
 	// TODO remove this
 	// it is only needed due to conflicts with output name in terminal options
 	// https://github.com/turbot/steampipe/issues/2534
@@ -84,12 +85,14 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	if c.TerminalOptions != nil {
 		res.PopulateConfigMapForOptions(c.TerminalOptions)
 	}
+	if c.PluginOptions != nil {
+		res.PopulateConfigMapForOptions(c.PluginOptions)
+	}
 
 	return res
 }
 
 func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *error_helpers.ErrorAndWarnings) {
-
 	errorsAndWarnings = error_helpers.NewErrorsAndWarning(nil)
 
 	switch o := opts.(type) {
@@ -135,6 +138,17 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 		} else {
 			c.GeneralOptions.Merge(o)
 		}
+		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
+		if c.GeneralOptions.MaxParallel != nil {
+			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants.Bold("max_parallel"), constants.Bold("general options"))))
+		}
+	case *options.Plugin:
+		if c.PluginOptions == nil {
+			c.PluginOptions = o
+		} else {
+			c.PluginOptions.Merge(o)
+		}
+
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
 		if c.GeneralOptions.MaxParallel != nil {
 			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants.Bold("max_parallel"), constants.Bold("general options"))))
@@ -260,6 +274,12 @@ TerminalOptions:
 
 GeneralOptions:
 %s`, c.GeneralOptions.String())
+	}
+	if c.PluginOptions != nil {
+		str += fmt.Sprintf(`
+
+PluginOptions:
+%s`, c.PluginOptions.String())
 	}
 
 	return str

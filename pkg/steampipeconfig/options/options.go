@@ -9,6 +9,7 @@ const (
 	DatabaseBlock   = "database"
 	GeneralBlock    = "general"
 	TerminalBlock   = "terminal"
+	PluginBlock     = "plugin"
 )
 
 type Options interface {

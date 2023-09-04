@@ -7,7 +7,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
-// Terminal
 type Terminal struct {
 	Output           *string `hcl:"output"`
 	Separator        *string `hcl:"separator"`
