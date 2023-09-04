@@ -74,6 +74,7 @@ Examples:
 	cmdconfig.
 		OnCmd(cmd).
 		AddCloudFlags().
+		AddWorkspaceDatabaseFlag().
 		AddWorkspaceFlag().
 		AddModLocationFlag().
 		AddBoolFlag(constants.ArgHelp, false, "Help for query", cmdconfig.FlagOptions.WithShortHand("h")).
