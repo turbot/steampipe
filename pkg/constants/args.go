@@ -64,6 +64,8 @@ const (
 	ArgSnapshotLocation        = "snapshot-location"
 	ArgSnapshotTitle           = "snapshot-title"
 	ArgDatabaseStartTimeout    = "database-start-timeout"
+	ArgMemoryMaxMb             = "memory-max-mb"
+	ArgMemoryMaxMbPlugin       = "memory-max-mb-plugin"
 )
 
 // metaquery mode arguments

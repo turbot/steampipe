@@ -25,8 +25,13 @@ const DefaultConnectionConfigContent = `
 # }
 
 # options "general" {
-#   update_check = true    # true, false
-#   telemetry    = "info"  # info, none
-#   log_level    = "info"  # trace, debug, info, warn, error
+#   update_check = true    		# true, false
+#   telemetry    = "info"  		# info, none
+#   log_level    = "info"  		# trace, debug, info, warn, error
+#   max_memory_mb    = "1024"	# the maximum memory to allow the CLI process in MB 
+# }
+
+# options "plugin" {
+#   max_memory_mb    = "1024"	# the default maximum memory to allow a plugin process - used if there is not max memory specified in the 'plugin' block' for that plugin
 # }
 `
