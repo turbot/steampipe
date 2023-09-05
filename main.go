@@ -18,6 +18,8 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
+// a change
+
 var exitCode int = constants.ExitCodeSuccessful
 
 func main() {
