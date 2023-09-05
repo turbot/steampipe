@@ -509,6 +509,7 @@ func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, co
 		// update the state table
 		//(the transaction will be aborted - create a connection for the update)
 		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
+			defer conn.Release()
 			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
 				// NOTE: do not return the error - unless we failed to update the connection state table
 				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
@@ -644,6 +645,7 @@ func (s *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, c
 		// update the state table
 		//(the transaction will be aborted - create a connection for the update)
 		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
+			defer conn.Release()
 			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
 				// NOTE: do not return the error - unless we failed to update the connection state table
 				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
@@ -738,6 +740,7 @@ func (s *refreshConnectionState) executeDeleteQuery(ctx context.Context, connect
 		// update the state table
 		//(the transaction will be aborted - create a connection for the update)
 		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
+			defer conn.Release()
 			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
 				// NOTE: do not return the error - unless we failed to update the connection state table
 				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
