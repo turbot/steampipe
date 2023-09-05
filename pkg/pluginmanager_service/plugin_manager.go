@@ -126,6 +126,11 @@ func (m *PluginManager) Serve() {
 }
 
 func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[WARN] PluginManager Get panic %v", r)
+		}
+	}()
 	log.Printf("[TRACE] PluginManager Get %p", req)
 	defer log.Printf("[TRACE] PluginManager Get DONE %p", req)
 
@@ -147,8 +152,10 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 		reattach, err := m.ensurePlugin(pluginName, connectionConfigs, req)
 		if err != nil {
 			// NOTE: we do not return an error as otherwise the whole Get call fails
-			log.Printf("[WARN] PluginManager Get failed for %s: %s (%p)", pluginName, err.Error(), resp)
-			resp.FailureMap[pluginName] = sperr.WrapWithMessage(err, "failed to start '%s'", pluginName).Error()
+			wrappedError := sperr.WrapWithMessage(err, "failed to start '%s'", pluginName)
+			log.Printf("[WARN] PluginManager Get failed for %s: %s resp %p failure map %p (%v)", pluginName, err.Error(), resp, resp.FailureMap, wrappedError)
+
+			resp.FailureMap[pluginName] = wrappedError.Error()
 			log.Printf("[WARN] written to failure map")
 		} else {
 			log.Printf("[TRACE] PluginManager Get succeeded for %s, pid %d (%p)", pluginName, reattach.Pid, resp)
