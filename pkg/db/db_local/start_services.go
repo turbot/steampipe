@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"log"
 	"os"
 	"os/exec"
@@ -19,7 +20,6 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
-	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -110,20 +110,35 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 	}
 	defer conn.Close(ctx)
 
-	// setup internal schema
-	// NOTE: we must do this BEFORE starting plugin manager
-	if err := setupInternal(ctx, conn); err != nil {
-		res.Error = err
-		return res
-	}
-	// start plugin manager if needed
-	res = ensurePluginManager(res)
 	if res.Status == ServiceStarted {
 		// execute post startup setup
 		if err := postServiceStart(ctx, conn); err != nil {
 			// NOTE do not update res.Status - this will be done by defer block
 			res.Error = err
+			return res
 		}
+
+		// start plugin manager if needed
+		// TODO return plugin manager
+		res = ensurePluginManager(res)
+		if res.Error != nil {
+			return res
+		}
+
+		// call initial refresh connections
+		// get plugin manager client
+		// TODO remove
+		pluginManager, err := pluginmanager.GetPluginManager()
+		if err != nil {
+			res.Error = err
+			return res
+		}
+		// ask the plugin manager to refresh connections
+		// this is executed asyncronously by the plugin manager
+		pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
+
+		statushooks.SetStatus(ctx, "Service startup complete")
+
 	}
 	return res
 }
@@ -154,6 +169,12 @@ func ensurePluginManager(res *StartResult) *StartResult {
 }
 
 func postServiceStart(ctx context.Context, conn *pgx.Conn) error {
+
+	// setup internal schema
+	// NOTE: we must do this BEFORE starting plugin manager
+	if err := setupInternal(ctx, conn); err != nil {
+		return err
+	}
 
 	statushooks.SetStatus(ctx, "Initialize steampipe_connection_state table")
 	// ensure connection state table contains entries for all connections in connection config
@@ -186,17 +207,6 @@ func postServiceStart(ctx context.Context, conn *pgx.Conn) error {
 	}
 
 	statushooks.SetStatus(ctx, "Call initial refresh connections")
-	// call initial refresh connections
-	// get plugin manager client
-	pluginManager, err := pluginmanager.GetPluginManager()
-	if err != nil {
-		return err
-	}
-	// ask the plugin manager to refresh connections
-	// this is executed asyncronously by the plugin manager
-	pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
-
-	statushooks.SetStatus(ctx, "Service startup complete")
 	return nil
 }
 
