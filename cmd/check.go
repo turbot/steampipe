@@ -20,7 +20,7 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -164,31 +164,20 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	totalAlarms += stats.Alarm
 	totalErrors += stats.Error
 
+	statushooks.SetStatus(ctx, "Starting export")
+
 	// if the share args are set, create a snapshot and share it
 	if generateSnapshot {
+		statushooks.SetStatus(ctx, "Publishing snapshot")
 		err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
 		if err != nil {
 			exitCode = constants.ExitCodeSnapshotUploadFailed
 			error_helpers.FailOnError(err)
 		}
 	}
-
-	exportMsg := "" // output of DoExport
-
-	// for _, targetName := range args {
-	// 	// only export/publish if the parent context has not been cancelled
-	// 	if !error_helpers.IsContextCanceled(ctx) {
-	// 		// get the export name before execution(fail if not a valid export name)
-	// 		exportName, err := getExportName(targetName, w.Mod.ShortName)
-	// 		error_helpers.FailOnError(err)
-
-	// 		exportArgs := viper.GetStringSlice(constants.ArgExport)
-	// 		exportMsg, err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
-	// 		error_helpers.FailOnError(err)
-	// 	}
-
-	// 	durations = append(durations, )
-	// }
+	exportArgs := viper.GetStringSlice(constants.ArgExport)
+	exportMsg, err := initData.ExportManager.DoExport(ctx, fmt.Sprintf("check.%s", w.Mod.ShortName), executionTree, exportArgs)
+	error_helpers.FailOnError(err)
 
 	if shouldPrintTiming() {
 		printTiming(executionTree)
@@ -203,20 +192,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// set the defined exit code after successful execution
 	exitCode = getExitCode(totalAlarms, totalErrors)
-}
-
-// getExportName resolves the base name of the target file
-func getExportName(targetName string, modShortName string) (string, error) {
-	parsedName, err := modconfig.ParseResourceName(targetName)
-	if err != nil {
-		return "", err
-	}
-	if targetName == "all" {
-		// there will be no block type = manually construct name
-		return fmt.Sprintf("%s.%s", modShortName, parsedName.Name), nil
-	}
-	// default to just converting to valid resource name
-	return parsedName.ToFullNameWithMod(modShortName)
 }
 
 // get the exit code for successful check run

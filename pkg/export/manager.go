@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 )
@@ -148,6 +149,7 @@ func (m *Manager) DoExport(ctx context.Context, targetName string, source Export
 	}
 
 	for _, target := range targets {
+		statushooks.SetStatus(ctx, fmt.Sprintf("Exporting %s", target.exporter.Name()))
 		if msg, err = target.Export(ctx, source); err != nil {
 			errors = append(errors, err)
 		} else {
