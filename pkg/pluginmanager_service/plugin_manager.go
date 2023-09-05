@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
 	"os"
 	"os/exec"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sethvargo/go-retry"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -253,8 +253,11 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 		m.killPlugin(p)
 	}
 
+	log.Printf("[INFO] PluginManager closing pool")
 	// close our pool
 	m.pool.Close()
+	log.Printf("[INFO] PluginManager pool closed")
+
 	return &pb.ShutdownResponse{}, nil
 }
 

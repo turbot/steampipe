@@ -3,7 +3,6 @@ package db_local
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 	"strings"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )

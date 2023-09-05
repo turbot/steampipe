@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"log"
 	"os"
 	"os/exec"
@@ -20,6 +19,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
+	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -103,23 +103,16 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 		res.Status = ServiceAlreadyRunning
 	}
 
-	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
-	if err != nil {
-		res.Error = err
-		return res
-	}
-	defer conn.Close(ctx)
-
 	if res.Status == ServiceStarted {
 		// execute post startup setup
-		if err := postServiceStart(ctx, conn); err != nil {
+		if err := postServiceStart(ctx, res); err != nil {
 			// NOTE do not update res.Status - this will be done by defer block
 			res.Error = err
 			return res
 		}
 
 		// start plugin manager if needed
-		// TODO return plugin manager
+		// TODO KAI return plugin manager
 		res = ensurePluginManager(res)
 		if res.Error != nil {
 			return res
@@ -127,7 +120,7 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 
 		// call initial refresh connections
 		// get plugin manager client
-		// TODO remove
+		// TODO KAI remove
 		pluginManager, err := pluginmanager.GetPluginManager()
 		if err != nil {
 			res.Error = err
@@ -168,10 +161,14 @@ func ensurePluginManager(res *StartResult) *StartResult {
 	return res
 }
 
-func postServiceStart(ctx context.Context, conn *pgx.Conn) error {
+func postServiceStart(ctx context.Context, res *StartResult) error {
+	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
+	if err != nil {
+		return err
+	}
+	defer conn.Close(ctx)
 
 	// setup internal schema
-	// NOTE: we must do this BEFORE starting plugin manager
 	if err := setupInternal(ctx, conn); err != nil {
 		return err
 	}

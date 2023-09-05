@@ -3,23 +3,22 @@ package steampipeconfig
 import (
 	"context"
 	"fmt"
-	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"log"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"golang.org/x/exp/maps"
-
 	"github.com/turbot/go-kit/helpers"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_common"
+	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 )
 
 type ConnectionUpdates struct {
