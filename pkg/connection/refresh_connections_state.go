@@ -394,10 +394,12 @@ func (s *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Context
 					return
 				}
 				errors = append(errors, connectionError.err)
+				log.Printf("[INFO] pool acquire connectionError")
 				conn, poolErr := s.pool.Acquire(ctx)
 				if poolErr == nil {
 					s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionError.name, connectionError.err)
 					conn.Release()
+					log.Printf("[INFO] pool release connectionError")
 				}
 			}
 		}
@@ -472,6 +474,7 @@ func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context
 
 func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, connectionName string) error {
 	// create a transaction
+	log.Printf("[INFO] pool begin executeUpdateQuery")
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return sperr.WrapWithMessage(err, "failed to create transaction to perform update query")
@@ -479,8 +482,10 @@ func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, co
 	defer func() {
 		if err != nil {
 			tx.Rollback(ctx)
+			log.Printf("[INFO] pool Rollback executeUpdateQuery")
 		} else {
 			tx.Commit(ctx)
+			log.Printf("[INFO] pool Commit executeUpdateQuery")
 		}
 	}()
 
@@ -492,8 +497,12 @@ func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, co
 
 		// update the state table
 		//(the transaction will be aborted - create a connection for the update)
+		log.Printf("[INFO] pool Acquire executeUpdateQuery")
 		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
-			defer conn.Release()
+			defer func() {
+				conn.Release()
+				log.Printf("[INFO] pool Release executeUpdateQuery")
+			}()
 			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
 				// NOTE: do not return the error - unless we failed to update the connection state table
 				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
@@ -611,6 +620,7 @@ func (s *refreshConnectionState) updateCommentsForConnection(ctx context.Context
 
 func (s *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, connectionName string) error {
 	// create a transaction
+	log.Printf("[INFO] pool Begin executeCommentQuery")
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return sperr.WrapWithMessage(err, "failed to create transaction to perform update query")
@@ -618,8 +628,10 @@ func (s *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, c
 	defer func() {
 		if err != nil {
 			tx.Rollback(ctx)
+			log.Printf("[INFO] pool Rollback executeCommentQuery")
 		} else {
 			tx.Commit(ctx)
+			log.Printf("[INFO] pool Commit executeCommentQuery")
 		}
 	}()
 
@@ -628,8 +640,12 @@ func (s *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, c
 	if err != nil {
 		// update the state table
 		//(the transaction will be aborted - create a connection for the update)
+		log.Printf("[INFO] pool Acquire executeCommentQuery")
 		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
-			defer conn.Release()
+			defer func() {
+				conn.Release()
+				log.Printf("[INFO] pool Release executeCommentQuery")
+			}()
 			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
 				// NOTE: do not return the error - unless we failed to update the connection state table
 				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
@@ -704,6 +720,7 @@ func (s *refreshConnectionState) executeDeleteQueries(ctx context.Context, delet
 // NOTE: this only returns an error if we fail to update the state table
 func (s *refreshConnectionState) executeDeleteQuery(ctx context.Context, connectionName string) error {
 	// create a transaction
+	log.Printf("[INFO] pool Begin executeDeleteQuery")
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return sperr.WrapWithMessage(err, "failed to create transaction to perform delete query")
@@ -711,8 +728,10 @@ func (s *refreshConnectionState) executeDeleteQuery(ctx context.Context, connect
 	defer func() {
 		if err != nil {
 			tx.Rollback(ctx)
+			log.Printf("[INFO] pool Rollback executeDeleteQuery")
 		} else {
-			tx.Commit(ctx)
+			tx.Rollback(ctx)
+			log.Printf("[INFO] pool Rollback executeDeleteQuery")
 		}
 	}()
 
@@ -723,8 +742,12 @@ func (s *refreshConnectionState) executeDeleteQuery(ctx context.Context, connect
 	if err != nil {
 		// update the state table
 		//(the transaction will be aborted - create a connection for the update)
+		log.Printf("[INFO] pool Acquire executeDeleteQuery")
 		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
-			defer conn.Release()
+			defer func() {
+				conn.Release()
+				log.Printf("[INFO] pool Release executeDeleteQuery")
+			}()
 			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
 				// NOTE: do not return the error - unless we failed to update the connection state table
 				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
@@ -747,12 +770,16 @@ func (s *refreshConnectionState) setIncompleteConnectionStateToError(ctx context
 	// create wrapped error
 	connectionStateError := sperr.WrapWithMessage(err, "failed to update Steampipe connections")
 	// load connection state
+	log.Printf("[INFO] pool Acquire setIncompleteConnectionStateToError")
 	conn, err := s.pool.Acquire(ctx)
 	if err != nil {
 		log.Printf("[WARN] setAllConnectionStateToError failed to acquire connection from pool: %s", err.Error())
 		return
 	}
-	defer conn.Release()
+	defer func() {
+		conn.Release()
+		log.Printf("[INFO] pool Release setIncompleteConnectionStateToError")
+	}()
 
 	query := connection_state.GetIncompleteConnectionStateErrorSql(connectionStateError)
 
@@ -764,11 +791,15 @@ func (s *refreshConnectionState) setIncompleteConnectionStateToError(ctx context
 
 // OnConnectionsChanged is the callback function invoked by the connection watcher when connections are added or removed
 func (s *refreshConnectionState) sendPostgreSchemaNotification(ctx context.Context) error {
+	log.Printf("[INFO] pool Acquire sendPostgreSchemaNotification")
 	conn, err := s.pool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
-	defer conn.Release()
+	defer func() {
+		conn.Release()
+		log.Printf("[INFO] pool Release sendPostgreSchemaNotification")
+	}()
 	notification := steampipeconfig.NewSchemaUpdateNotification(steampipeconfig.PgNotificationSchemaUpdate)
 	return db_local.SendPostgresNotification(ctx, conn.Conn(), notification)
 }

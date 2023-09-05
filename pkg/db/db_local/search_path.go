@@ -37,11 +37,15 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 	log.Println("[TRACE] setting user search path to", searchPath)
 
 	// get all roles which are a member of steampipe_users
+	log.Printf("[INFO] pool acquire SetUserSearchPath")
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Release()
+	defer func() {
+		conn.Release()
+		log.Printf("[INFO] pool release SetUserSearchPath")
+	}()
 
 	query := fmt.Sprintf(`SELECT USENAME FROM pg_user WHERE pg_has_role(usename, '%s', 'member')`, constants.DatabaseUsersRole)
 	rows, err := conn.Query(ctx, query)

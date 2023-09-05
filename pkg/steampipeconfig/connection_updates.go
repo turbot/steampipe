@@ -66,12 +66,16 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	defer utils.LogTime("NewConnectionUpdates end")
 	log.Printf("[TRACE] NewConnectionUpdates")
 
+	log.Printf("[INFO] pool Acquire populateConnectionUpdates")
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
 		log.Printf("[WARN] failed to acquire connection from pool: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
 	}
-	defer conn.Release()
+	defer func() {
+		conn.Release()
+		log.Printf("[INFO] pool Release populateConnectionUpdates")
+	}()
 
 	log.Printf("[INFO] Loading connection state")
 	// load the connection state file and filter out any connections which are not in the list of schemas

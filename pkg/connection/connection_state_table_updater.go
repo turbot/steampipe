@@ -61,11 +61,15 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 	for name := range u.updates.Disabled {
 		queries = append(queries, connection_state.GetSetConnectionStateSql(name, constants.ConnectionStateDisabled))
 	}
+	log.Printf("[INFO] pool Acquire connectionStateTableUpdater start")
 	conn, err := u.pool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
-	defer conn.Release()
+	defer func() {
+		conn.Release()
+		log.Printf("[INFO] pool Release connectionStateTableUpdater start")
+	}()
 	if _, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn.Conn(), queries...); err != nil {
 		return err
 	}
