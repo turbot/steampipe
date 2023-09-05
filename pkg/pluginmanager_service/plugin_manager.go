@@ -142,11 +142,14 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 
 	log.Printf("[TRACE] PluginManager Get, connections: '%s'\n", req.Connections)
 	for pluginName, connectionConfigs := range plugins {
+		log.Printf("[WARN] calling ensurePlugin %s", pluginName)
 		// ensure plugin is running
 		reattach, err := m.ensurePlugin(pluginName, connectionConfigs, req)
 		if err != nil {
+			// NOTE: we do not return an error as otherwise the whole Get call fails
 			log.Printf("[WARN] PluginManager Get failed for %s: %s (%p)", pluginName, err.Error(), resp)
 			resp.FailureMap[pluginName] = sperr.WrapWithMessage(err, "failed to start '%s'", pluginName).Error()
+			log.Printf("[WARN] written to failure map")
 		} else {
 			log.Printf("[TRACE] PluginManager Get succeeded for %s, pid %d (%p)", pluginName, reattach.Pid, resp)
 

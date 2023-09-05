@@ -112,6 +112,8 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 	// if there were any failures, display them
 	for failedPlugin, failure := range getResponse.FailureMap {
 		res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", failedPlugin, failure))
+		log.Printf("[WARN] failed to start plugin '%s': %s", failedPlugin, failure)
+
 		// figure out which connections are provided by any failed plugins
 		for _, c := range connectionsToCreate {
 			if c.Plugin == failedPlugin {
