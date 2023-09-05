@@ -100,9 +100,11 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 		connectionNames[i] = connection.Name
 	}
 
+	log.Printf("[TRACE] CreateConnectionPlugin calling  pluginManager.Get")
 	// ask the plugin manager for the reattach config for all required plugins
 	getResponse, err := pluginManager.Get(&proto.GetRequest{Connections: connectionNames})
 	if err != nil {
+		log.Printf("[TRACE] CreateConnectionPlugin Get returned error %s", err.Error())
 		res.Error = err
 		return nil, res
 	}

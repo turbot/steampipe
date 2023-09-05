@@ -283,9 +283,11 @@ func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdk
 
 	backoff := retry.WithMaxRetries(5, retry.NewConstant(10*time.Millisecond))
 
+	log.Printf("[TRACE] PluginManager ensurePlugin %s (%p)", pluginName, req)
 	// ensure we do not shutdown until this has finished
 	m.startPluginWg.Add(1)
 	defer func() {
+		log.Printf("[WARN] PluginManager ensurePlugin %s DONE (%p)", pluginName, req)
 		m.startPluginWg.Done()
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
@@ -294,10 +296,9 @@ func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdk
 
 	// do not install a plugin while shutting down
 	if m.shuttingDown() {
+		log.Printf("[WARN] PluginManager ensurePlugin %s giving u[p as we are shutting down (%p)", pluginName, req)
 		return nil, fmt.Errorf("plugin manager is shutting down")
 	}
-
-	log.Printf("[TRACE] PluginManager ensurePlugin %s (%p)", pluginName, req)
 
 	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		reattach, err = m.startPluginIfNeeded(pluginName, connectionConfigs, req)

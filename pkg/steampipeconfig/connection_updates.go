@@ -211,6 +211,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	//  instantiate connection plugins for all updates (including comment updates)
 	res := updates.populateConnectionPlugins(connectionsPluginsWithDynamicSchema)
 	if res.Error != nil {
+		log.Printf("[WARN] populateConnectionPlugins returned error %s", err.Error())
 		return nil, res
 	}
 
@@ -309,6 +310,8 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	utils.LogTime("populateConnectionPlugins start")
 	defer utils.LogTime("populateConnectionPlugins end")
 
+	log.Printf("[WARN] populateConnectionPlugins")
+
 	// get list of connections to update:
 	// - add connections which will be updated or have the comments updated
 	// - exclude connections already created
@@ -324,6 +327,7 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	}
 
 	if res.Error != nil {
+		log.Printf("[WARN] populateConnectionPlugins  - CreateConnectionPlugins returned error %s", res.Error.Error())
 		return res
 	}
 	// add back in the already created plugins
