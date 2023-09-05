@@ -247,6 +247,7 @@ func (r *ResultGroup) addDimensionKeys(keys ...string) {
 	sort.Strings(r.DimensionKeys)
 }
 
+// onChildDone is a callback that gets called from the children of this result group when they are done
 func (r *ResultGroup) onChildDone() {
 	new := atomic.AddUint32(&r.childrenComplete, 1)
 	total := uint32(len(r.ControlRuns) + len(r.Groups))
@@ -259,16 +260,6 @@ func (r *ResultGroup) onChildDone() {
 	r.Duration = time.Since(r.executionStartTime)
 	if r.Parent != nil {
 		r.Parent.onChildDone()
-	}
-}
-
-func (r *ResultGroup) addDuration(d time.Duration) {
-	r.updateLock.Lock()
-	defer r.updateLock.Unlock()
-
-	r.Duration += d.Round(time.Millisecond)
-	if r.Parent != nil {
-		r.Parent.addDuration(d.Round(time.Millisecond))
 	}
 }
 
