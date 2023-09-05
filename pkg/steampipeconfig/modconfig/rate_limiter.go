@@ -16,7 +16,7 @@ const (
 )
 
 type RateLimiter struct {
-	Name            string   `hcl:"name,optional" db:"name"`
+	Name            string   `hcl:"name,label" db:"name"`
 	BucketSize      *int64   `hcl:"bucket_size,optional" db:"bucket_size"`
 	FillRate        *float32 `hcl:"fill_rate,optional" db:"fill_rate"`
 	MaxConcurrency  *int64   `hcl:"max_concurrency,optional" db:"max_concurrency"`
