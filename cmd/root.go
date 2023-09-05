@@ -1,17 +1,18 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"golang.org/x/exp/maps"
+	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"time"
 
 	"github.com/fatih/color"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -23,6 +24,7 @@ import (
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
@@ -31,6 +33,7 @@ import (
 	"github.com/turbot/steampipe/pkg/task"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
+	"golang.org/x/exp/maps"
 )
 
 var exitCode int
@@ -63,14 +66,18 @@ var rootCmd = &cobra.Command{
 		viper.Set(constants.ConfigKeyActiveCommandArgs, args)
 		viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
 
-		// create a logger before initGlobalConfig - we may need to reinitialize the logger
-		// depending on the value of the log_level value in global general options
-		createLogger()
-
 		// steampipe completion should not create INSTALL DIR or seup/init global config
 		if cmd.Name() == "completion" {
 			return
 		}
+
+		// create a buffer which can be used as a sink for log writes
+		// till INSTALL_DIR is setup in initGlobalConfig
+		logBuffer := bytes.NewBuffer([]byte{})
+
+		// create a logger before initGlobalConfig - we may need to reinitialize the logger
+		// depending on the value of the log_level value in global general options
+		createLogger(logBuffer, cmd)
 
 		// set up the global viper config with default values from
 		// config files and ENV variables
@@ -78,16 +85,20 @@ var rootCmd = &cobra.Command{
 
 		// if the log level was set in the general config
 		if logLevelNeedsReset() {
+			logLevel := viper.GetString(constants.ArgLogLevel)
 			// set my environment to the desired log level
 			// so that this gets inherited by any other process
 			// started by this process (postgres/plugin-manager)
 			error_helpers.FailOnErrorWithMessage(
-				os.Setenv(logging.EnvLogLevel, viper.GetString(constants.ArgLogLevel)),
+				os.Setenv(logging.EnvLogLevel, logLevel),
 				"Failed to setup logging",
 			)
-			// recreate the logger with the new log level
-			createLogger()
 		}
+
+		// recreate the logger
+		// this will put the new log level (if any) to effect as well as start streaming to the
+		// log file.
+		createLogger(logBuffer, cmd)
 
 		// runScheduledTasks skips running tasks if this instance is the plugin manager
 		waitForTasksChannel = runScheduledTasks(cmd.Context(), cmd, args, ew)
@@ -164,8 +175,26 @@ func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, e
 //	this process does not have a log level set in it's environment
 //	the GlobalConfig has a loglevel set
 func logLevelNeedsReset() bool {
-	_, envLogLevelIsSet := os.LookupEnv(logging.EnvLogLevel)
-	return (steampipeconfig.GlobalConfig.GeneralOptions != nil && steampipeconfig.GlobalConfig.GeneralOptions.LogLevel != nil && !envLogLevelIsSet)
+	envLogLevelIsSet := envLogLevelSet()
+	generalOptionsSet := (steampipeconfig.GlobalConfig.GeneralOptions != nil && steampipeconfig.GlobalConfig.GeneralOptions.LogLevel != nil)
+
+	return !envLogLevelIsSet && generalOptionsSet
+}
+
+// envLogLevelSet checks whether any of the current or legacy log level env vars are set
+func envLogLevelSet() bool {
+	_, ok := os.LookupEnv(logging.EnvLogLevel)
+	if ok {
+		return ok
+	}
+	// handle legacy env vars
+	for _, e := range logging.LegacyLogLevelEnvVars {
+		_, ok = os.LookupEnv(e)
+		if ok {
+			return ok
+		}
+	}
+	return false
 }
 
 func InitCmd() {
@@ -221,7 +250,7 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	defer utils.LogTime("cmd.root.initGlobalConfig end")
 
 	// load workspace profile from the configured install dir
-	loader, err := loadWorkspaceProfile()
+	loader, err := getWorkspaceProfileLoader()
 	error_helpers.FailOnError(err)
 
 	// set global workspace profile
@@ -299,7 +328,7 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 	return nil
 }
 
-func loadWorkspaceProfile() (*steampipeconfig.WorkspaceProfileLoader, error) {
+func getWorkspaceProfileLoader() (*steampipeconfig.WorkspaceProfileLoader, error) {
 	// set viper default for workspace profile, using STEAMPIPE_WORKSPACE env var
 	cmdconfig.SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, cmdconfig.String)
 	// set viper default for install dir, using STEAMPIPE_INSTALL_DIR env var
@@ -343,22 +372,62 @@ func validateConfig() error {
 }
 
 // create a hclog logger with the level specified by the SP_LOG env var
-func createLogger() {
+func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
+	if task.IsPluginManagerCmd(cmd) {
+		// nothing to do here - plugin manager sets up it's own logger
+		// refer https://github.com/turbot/steampipe/blob/710a96d45fd77294de8d63d77bf78db65133e5ca/cmd/plugin_manager.go#L102
+		return
+	}
+
 	level := logging.LogLevel()
+	var logDestination io.Writer
+	if len(filepaths.SteampipeDir) == 0 {
+		// write to the buffer - this is to make sure that we don't lose logs
+		// till the time we get the log directory
+		logDestination = logBuffer
+	} else {
+		logName := fmt.Sprintf("steampipe-%s.log", time.Now().Format("2006-01-02"))
+		logPath := filepath.Join(filepaths.EnsureLogDir(), logName)
+		f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			fmt.Printf("failed to open steampipe log file: %s\n", err.Error())
+			os.Exit(3)
+		}
+		logDestination = f
+
+		// write out the buffered contents
+		_, _ = logDestination.Write(logBuffer.Bytes())
+	}
+
+	hcLevel := hclog.LevelFromString(level)
 
 	options := &hclog.LoggerOptions{
-		Name:       "steampipe",
-		Level:      hclog.LevelFromString(level),
+		// make the name unique so that logs from this instance can be filtered
+		Name:       fmt.Sprintf("steampipe [%s]", runtime.ExecutionID),
+		Level:      hcLevel,
+		Output:     logDestination,
 		TimeFn:     func() time.Time { return time.Now().UTC() },
 		TimeFormat: "2006-01-02 15:04:05.000 UTC",
 	}
-	if options.Output == nil {
-		options.Output = os.Stderr
-	}
-	logger := hclog.New(options)
+	logger := logging.NewLogger(options)
 	log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
 	log.SetPrefix("")
 	log.SetFlags(0)
+
+	// if the buffer is empty then this is the first time the logger is getting setup
+	// write out a banner
+	if logBuffer.Len() == 0 {
+		// pump in the initial set of logs
+		// this will also write out the Execution ID - enabling easy filtering of logs for a single execution
+		// we need to do this since all instances will log to a single file and logs will be interleaved
+		log.Printf("[INFO] ********************************************************\n")
+		log.Printf("[INFO] **%16s%20s%16s**\n", " ", fmt.Sprintf("Steampipe [%s]", runtime.ExecutionID), " ")
+		log.Printf("[INFO] ********************************************************\n")
+		log.Printf("[INFO] Version:   v%s\n", version.VersionString)
+		log.Printf("[INFO] Log level: %s\n", logging.LogLevel())
+		log.Printf("[INFO] Log date: %s\n", time.Now().Format("2006-01-02"))
+		//
+	}
 }
 
 func ensureInstallDir(installDir string) {
