@@ -163,39 +163,41 @@ func (m *PluginManager) rateLimiterTableExists(ctx context.Context) (bool, error
 }
 
 func (m *PluginManager) initialiseRateLimiterDefs(ctx context.Context) (e error) {
-	defer func() {
-		// this function uses reflection to extract and convert values
-		// we need to be able to recover from panics while using reflection
-		if r := recover(); r != nil {
-			e = sperr.ToError(r, sperr.WithMessage("error loading rate limiter definitions"))
-		}
-	}()
-
-	rateLimiterTableExists, err := m.rateLimiterTableExists(ctx)
-	if err != nil {
-		return err
-	}
-
-	if !rateLimiterTableExists {
-		return m.bootstrapRateLimiterTable(ctx)
-	}
-
-	rateLimiters, err := m.loadRateLimitersFromTable(ctx)
-	if err != nil {
-		return err
-	}
-
-	// split the table result into plugin and user limiters
-	pluginLimiters, previousUserLimiters := m.getUserAndPluginLimitersFromTableResult(rateLimiters)
-	// store the plugin limiters
-	m.pluginLimiters = pluginLimiters
-
-	if previousUserLimiters.Equals(m.userLimiters) {
-		return nil
-	}
-	// if the user limiter in the table are different from the current user listeners, the config must have changed
-	// since we last ran - call refreshRateLimiterTable to (re)write the steampipe_rate_limiter table
-	return m.refreshRateLimiterTable(ctx)
+	//defer func() {
+	//	// this function uses reflection to extract and convert values
+	//	// we need to be able to recover from panics while using reflection
+	//	if r := recover(); r != nil {
+	//		e = sperr.ToError(r, sperr.WithMessage("error loading rate limiter definitions"))
+	//	}
+	//}()
+	//
+	//rateLimiterTableExists, err := m.rateLimiterTableExists(ctx)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//if !rateLimiterTableExists {
+	//	return m.bootstrapRateLimiterTable(ctx)
+	//}
+	//
+	//rateLimiters, err := m.loadRateLimitersFromTable(ctx)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//// split the table result into plugin and user limiters
+	//pluginLimiters, previousUserLimiters := m.getUserAndPluginLimitersFromTableResult(rateLimiters)
+	//// store the plugin limiters
+	//m.pluginLimiters = pluginLimiters
+	//
+	//if previousUserLimiters.Equals(m.userLimiters) {
+	//	return nil
+	//}
+	//// if the user limiter in the table are different from the current user listeners, the config must have changed
+	//// since we last ran - call refreshRateLimiterTable to (re)write the steampipe_rate_limiter table
+	//return m.refreshRateLimiterTable(ctx)
+	m.pluginLimiters = make(connection.PluginLimiterMap)
+	return nil
 }
 
 func (m *PluginManager) bootstrapRateLimiterTable(ctx context.Context) error {
