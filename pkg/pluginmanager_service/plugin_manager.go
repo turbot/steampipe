@@ -125,12 +125,20 @@ func (m *PluginManager) Serve() {
 	})
 }
 
-func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
+func (m *PluginManager) Get(req *pb.GetRequest) (_ *pb.GetResponse, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("[WARN] PluginManager Get panic %v", r)
 		}
 	}()
+	m.startPluginWg.Add(1)
+	defer func() {
+		m.startPluginWg.Done()
+		if r := recover(); r != nil {
+			err = helpers.ToError(r)
+		}
+	}()
+
 	log.Printf("[TRACE] PluginManager Get %p", req)
 	defer log.Printf("[TRACE] PluginManager Get DONE %p", req)
 
@@ -295,14 +303,14 @@ func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdk
 
 	log.Printf("[TRACE] PluginManager ensurePlugin %s (%p)", pluginName, req)
 	// ensure we do not shutdown until this has finished
-	m.startPluginWg.Add(1)
-	defer func() {
-		log.Printf("[WARN] PluginManager ensurePlugin %s DONE (%p)", pluginName, req)
-		m.startPluginWg.Done()
-		if r := recover(); r != nil {
-			err = helpers.ToError(r)
-		}
-	}()
+	//m.startPluginWg.Add(1)
+	//defer func() {
+	//	log.Printf("[WARN] PluginManager ensurePlugin %s DONE (%p)", pluginName, req)
+	//	m.startPluginWg.Done()
+	//	if r := recover(); r != nil {
+	//		err = helpers.ToError(r)
+	//	}
+	//}()
 
 	// do not install a plugin while shutting down
 	if m.shuttingDown() {
