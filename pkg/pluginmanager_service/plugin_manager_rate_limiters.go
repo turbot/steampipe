@@ -68,11 +68,16 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 		}
 	}
 
+	log.Printf("[WARN] acquire 1")
 	conn, err := m.pool.Acquire(ctx)
 	if err != nil {
+		log.Printf("[WARN] Error acquire 1 %s", err.Error())
 		return err
 	}
-	defer conn.Release()
+	defer func() {
+		conn.Release()
+		log.Printf("[WARN] released 1")
+	}()
 
 	_, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn.Conn(), queries...)
 	return err
@@ -184,22 +189,24 @@ func (m *PluginManager) getUserDefinedLimitersForPlugin(plugin string) connectio
 }
 
 func (m *PluginManager) rateLimiterTableExists(ctx context.Context) (bool, error) {
-	query := fmt.Sprintf(`SELECT EXISTS (
-    SELECT FROM 
-        pg_tables
-    WHERE 
-        schemaname = '%s' AND 
-        tablename  = '%s'
-    );`, constants.InternalSchema, constants.RateLimiterDefinitionTable)
-
-	row := m.pool.QueryRow(ctx, query)
-	var exists bool
-	err := row.Scan(&exists)
-
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
+	return false, nil
+	//query := fmt.Sprintf(`SELECT EXISTS (
+	//SELECT FROM
+	//    pg_tables
+	//WHERE
+	//    schemaname = '%s' AND
+	//    tablename  = '%s'
+	//);`, constants.InternalSchema, constants.RateLimiterDefinitionTable)
+	//
+	//row := m.pool.QueryRow(ctx, query)
+	//
+	//var exists bool
+	//err := row.Scan(&exists)
+	//
+	//if err != nil {
+	//	return false, err
+	//}
+	//return exists, nil
 }
 
 func (m *PluginManager) initialiseRateLimiterDefs(ctx context.Context) (e error) {
