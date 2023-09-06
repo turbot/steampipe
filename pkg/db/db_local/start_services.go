@@ -111,8 +111,16 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 			return res
 		}
 
+		// start plugin manager if needed
+		// TODO KAI return plugin manager
+		res = ensurePluginManager(res)
+		if res.Error != nil {
+			return res
+		}
+
 		// call initial refresh connections
-		// start plugin manager if needed and get  client
+		// get plugin manager client
+		// TODO KAI remove
 		pluginManager, err := pluginmanager.GetPluginManager()
 		if err != nil {
 			res.Error = err
@@ -124,6 +132,31 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 
 		statushooks.SetStatus(ctx, "Service startup complete")
 
+	}
+	return res
+}
+
+func ensurePluginManager(res *StartResult) *StartResult {
+	// start the plugin manager if needed
+	res.PluginManagerState, res.Error = pluginmanager.LoadPluginManagerState()
+	if res.Error != nil {
+		res.Status = ServiceFailedToStart
+		return res
+	}
+
+	if !res.PluginManagerState.Running {
+		// get the location of the currently running steampipe process
+		executable, err := os.Executable()
+		if err != nil {
+			log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
+			return res.SetError(err)
+		}
+		if err := pluginmanager.StartNewInstance(executable); err != nil {
+			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
+			return res.SetError(err)
+		}
+		// set status to service started as started plugin manager
+		res.Status = ServiceStarted
 	}
 	return res
 }
