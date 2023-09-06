@@ -14,14 +14,15 @@ import (
 )
 
 type ConnectionWatcher struct {
-	fileWatcherErrorHandler   func(error)
-	watcher                   *filewatcher.FileWatcher
-	onConnectionConfigChanged func(ConnectionConfigMap, LimiterMap)
+	fileWatcherErrorHandler func(error)
+	watcher                 *filewatcher.FileWatcher
+	// interface exposing the plugin manager functions we need
+	pluginManager pluginManager
 }
 
-func NewConnectionWatcher(onConnectionChanged func(ConnectionConfigMap, LimiterMap)) (*ConnectionWatcher, error) {
+func NewConnectionWatcher(pluginManager pluginManager) (*ConnectionWatcher, error) {
 	w := &ConnectionWatcher{
-		onConnectionConfigChanged: onConnectionChanged,
+		pluginManager: pluginManager,
 	}
 
 	watcherOptions := &filewatcher.WatcherOptions{
@@ -51,7 +52,7 @@ func NewConnectionWatcher(onConnectionChanged func(ConnectionConfigMap, LimiterM
 	return w, nil
 }
 
-func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
+func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("[WARN] ConnectionWatcher caught a panic: %s", helpers.ToError(r).Error())
@@ -79,7 +80,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
 	// convert config to format expected by plugin manager
 	// (plugin manager cannot reference steampipe config to avoid circular deps)
 	configMap := NewConnectionConfigMap(config.Connections)
-	w.onConnectionConfigChanged(configMap, config.Limiters)
+	w.pluginManager.OnConnectionConfigChanged(configMap, config.Limiters)
 
 	// The only configurations from GlobalConfig which have
 	// impact during Refresh are Database options and the Connections
@@ -99,7 +100,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent(events []fsnotify.Event) {
 	// call RefreshConnections asyncronously
 	// the RefreshConnections implements its own locking to ensure only a singler execution and a single queues execution
 	// TODO send warnings on warning_stream
-	go RefreshConnections(ctx)
+	go RefreshConnections(ctx, w.pluginManager)
 
 	log.Printf("[TRACE] File watch event done")
 }

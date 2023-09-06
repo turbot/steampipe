@@ -103,41 +103,56 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 		res.Status = ServiceAlreadyRunning
 	}
 
-	// start plugin manager if needed
-	res = ensurePluginManager(res)
 	if res.Status == ServiceStarted {
 		// execute post startup setup
 		if err := postServiceStart(ctx, res); err != nil {
 			// NOTE do not update res.Status - this will be done by defer block
 			res.Error = err
+			return res
 		}
+
+		// start plugin manager if needed
+		pluginManager, pluginManagerState, err := ensurePluginManager()
+		res.PluginManagerState = pluginManagerState
+		if err != nil {
+			res.Error = err
+			return res
+		}
+
+		// ask the plugin manager to refresh connections
+		// this is executed asyncronously by the plugin manager
+		pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
+
+		statushooks.SetStatus(ctx, "Service startup complete")
+
 	}
 	return res
 }
 
-func ensurePluginManager(res *StartResult) *StartResult {
+func ensurePluginManager() (*pluginmanager.PluginManagerClient, *pluginmanager.PluginManagerState, error) {
 	// start the plugin manager if needed
-	res.PluginManagerState, res.Error = pluginmanager.LoadPluginManagerState()
-	if res.Error != nil {
-		res.Status = ServiceFailedToStart
-		return res
+	state, err := pluginmanager.LoadPluginManagerState()
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if !res.PluginManagerState.Running {
+	if !state.Running {
 		// get the location of the currently running steampipe process
 		executable, err := os.Executable()
 		if err != nil {
 			log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
-			return res.SetError(err)
+			return nil, nil, err
 		}
-		if err := pluginmanager.StartNewInstance(executable); err != nil {
+		if state, err = pluginmanager.StartNewInstance(executable); err != nil {
 			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
-			return res.SetError(err)
+			return nil, nil, err
 		}
-		// set status to service started as started plugin manager
-		res.Status = ServiceStarted
 	}
-	return res
+	client, err := pluginmanager.NewPluginManagerClient(state)
+	if err != nil {
+		return nil, state, err
+	}
+	return client, state, nil
 }
 
 func postServiceStart(ctx context.Context, res *StartResult) error {
@@ -147,20 +162,12 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	}
 	defer conn.Close(ctx)
 
-	statushooks.SetStatus(ctx, "Dropping legacy schema")
-	if err := dropLegacyInternalSchema(ctx, conn); err != nil {
-		// do not fail
-		// worst case scenario is that we have a couple of extra schema
-		// these won't be in the search path anyway
-		log.Println("[INFO] failed to drop legacy 'internal' schema", err)
-	}
-
 	// setup internal schema
-	// this includes setting the state of all connections in the connection_state table to pending
-	statushooks.SetStatus(ctx, "Setting up internal schema")
 	if err := setupInternal(ctx, conn); err != nil {
 		return err
 	}
+
+	statushooks.SetStatus(ctx, "Initialize steampipe_connection_state table")
 	// ensure connection state table contains entries for all connections in connection config
 	// (this is to allow for the race condition between polling connection state and calling refresh connections,
 	// which does not update the connection_state with added connections until it has built the ConnectionUpdates
@@ -168,6 +175,7 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 		return err
 	}
 
+	statushooks.SetStatus(ctx, "Create steampipe_server_settings table")
 	// create the server settings table
 	// this table contains configuration that this instance of the service
 	// is booting with
@@ -189,17 +197,7 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 		return sperr.WrapWithMessage(err, "failed to migrate db public schema")
 	}
 
-	// call initial refresh connections
-	// get plugin manager client
-	pluginManager, err := pluginmanager.GetPluginManager()
-	if err != nil {
-		return err
-	}
-	// ask the plugin manager to refresh connections
-	// this is executed asyncronously by the plugin manager
-	pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
-
-	statushooks.SetStatus(ctx, "Service startup complete")
+	statushooks.SetStatus(ctx, "Call initial refresh connections")
 	return nil
 }
 

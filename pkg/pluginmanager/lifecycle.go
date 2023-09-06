@@ -17,12 +17,12 @@ import (
 )
 
 // StartNewInstance loads the plugin manager state, stops any previous instance and instantiates a new plugin manager
-func StartNewInstance(steampipeExecutablePath string) error {
+func StartNewInstance(steampipeExecutablePath string) (*PluginManagerState, error) {
 	// try to load the plugin manager state
 	state, err := LoadPluginManagerState()
 	if err != nil {
 		log.Printf("[WARN] plugin manager StartNewInstance() - load state failed: %s", err)
-		return err
+		return nil, err
 	}
 
 	if state.Running {
@@ -30,7 +30,7 @@ func StartNewInstance(steampipeExecutablePath string) error {
 		// stop the current instance
 		if err := stop(state); err != nil {
 			log.Printf("[WARN] failed to stop previous instance of plugin manager: %s", err)
-			return err
+			return nil, err
 		}
 	}
 	return start(steampipeExecutablePath)
@@ -40,7 +40,7 @@ func StartNewInstance(steampipeExecutablePath string) error {
 // we need to be provided with the exe path as we have no way of knowing where the steampipe exe it
 // when the plugin mananager is first started by steampipe, we derive the exe path from the running process and
 // store it in the plugin manager state file - then if the fdw needs to start the plugin manager it knows how to
-func start(steampipeExecutablePath string) error {
+func start(steampipeExecutablePath string) (*PluginManagerState, error) {
 	// note: we assume the install dir has been assigned to file_paths.SteampipeDir
 	// - this is done both by the FDW and Steampipe
 	pluginManagerCmd := exec.Command(steampipeExecutablePath,
@@ -52,7 +52,7 @@ func start(steampipeExecutablePath string) error {
 	}
 
 	// discard logging from the plugin manager client (plugin manager logs will still flow through to the log file
-	// as this is set up in the pluginb manager)
+	// as this is set up in the plugin manager)
 	logger := logging.NewLogger(&hclog.LoggerOptions{Name: "plugin", Output: io.Discard})
 
 	// launch the plugin manager the plugin process
@@ -66,7 +66,7 @@ func start(steampipeExecutablePath string) error {
 
 	if _, err := client.Start(); err != nil {
 		log.Printf("[WARN] plugin manager start() failed to start GRPC client for plugin manager: %s", err)
-		return err
+		return nil, err
 	}
 
 	// create a plugin manager state.
@@ -75,7 +75,10 @@ func start(steampipeExecutablePath string) error {
 	log.Printf("[TRACE] start: started plugin manager, pid %d", state.Pid)
 
 	// now save the state
-	return state.Save()
+	if err := state.Save(); err != nil {
+		return nil, err
+	}
+	return state, nil
 }
 
 // Stop loads the plugin manager state and if a running instance is found, stop it
@@ -136,22 +139,23 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	if state.Executable == "" {
 		return nil, fmt.Errorf("plugin manager is not running and there is no state file")
 	}
-	// if the plugin manager is not running, it must have crashed/terminated
-	if !state.Running {
-		log.Printf("[TRACE] GetPluginManager called but plugin manager not running")
-		// is we are not already recursing, start the plugin manager then recurse back into this function
-		if startIfNeeded {
-			log.Printf("[TRACE] calling StartNewInstance()")
-			// start the plugin manager
-			if err := start(state.Executable); err != nil {
-				return nil, err
-			}
-			// recurse in, setting startIfNeeded to false to avoid further recursion on failure
-			return getPluginManager(false)
-		}
-		// not retrying - just fail
-		return nil, fmt.Errorf("plugin manager is not running")
+	if state.Running {
+		log.Printf("[TRACE] plugin manager is running - returning client")
+		return NewPluginManagerClient(state)
 	}
-	log.Printf("[TRACE] plugin manager is running - returning client")
-	return NewPluginManagerClient(state)
+
+	// if the plugin manager is not running, it must have crashed/terminated
+	log.Printf("[TRACE] GetPluginManager called but plugin manager not running")
+	// is we are not already recursing, start the plugin manager then recurse back into this function
+	if startIfNeeded {
+		log.Printf("[TRACE] calling StartNewInstance()")
+		// start the plugin manager
+		if _, err := start(state.Executable); err != nil {
+			return nil, err
+		}
+		// recurse in, setting startIfNeeded to false to avoid further recursion on failure
+		return getPluginManager(false)
+	}
+	// not retrying - just fail
+	return nil, fmt.Errorf("plugin manager is not running")
 }

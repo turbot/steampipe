@@ -103,7 +103,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	if c.initData.Result.Error != nil {
 		return
 	}
-	statushooks.SetStatus(ctx, "Completing initialization…")
+	statushooks.SetStatus(ctx, "Load plugin schemas…")
 	//  fetch the schema
 	// TODO make this async https://github.com/turbot/steampipe/issues/3400
 	// NOTE: we would like to do this asyncronously, but we are currently limited to a single Db conneciton in our
@@ -125,6 +125,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 		}
 	}
 
+	statushooks.SetStatus(ctx, "Start notifications listener…")
 	log.Printf("[TRACE] Start notifications listener")
 
 	// create a cancellation context used to cancel the listen thread when we exit
@@ -132,6 +133,8 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	//nolint:golint,errcheck // worst case is autocomplete isn't update - not a failure
 	go c.listenToPgNotifications(listenCtx)
 	c.cancelNotificationListener = cancel
+
+	statushooks.SetStatus(ctx, "Completing initialization…")
 }
 
 func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {

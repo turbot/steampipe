@@ -9,16 +9,16 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"golang.org/x/exp/maps"
-
 	"github.com/turbot/go-kit/helpers"
+	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_common"
+	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 )
 
 type ConnectionUpdates struct {
@@ -31,17 +31,24 @@ type ConnectionUpdates struct {
 	// the connections which will exist after the update
 	FinalConnectionState ConnectionStateMap
 	// connection plugins required to perform the updates, keyed by connection name
-	ConnectionPlugins      map[string]*ConnectionPlugin
+	ConnectionPlugins map[string]*ConnectionPlugin
+
 	CurrentConnectionState ConnectionStateMap
 	InvalidConnections     map[string]*ValidationFailure
+	// map of plugin to connection for which we must refetch the rate limiter definitions
+	PluginsWithUpdatedBinary map[string]string
+
+	forceUpdateConnectionNames []string
+	pluginManager              pluginshared.PluginManager
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
-func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
-	updates, res := populateConnectionUpdates(ctx, pool, forceUpdateConnectionNames...)
+func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginManager pluginshared.PluginManager, opts ...ConnectionUpdatesOption) (*ConnectionUpdates, *RefreshConnectionResult) {
+	updates, res := populateConnectionUpdates(ctx, pool, pluginManager, opts...)
 	if res.Error != nil {
-		return updates, res
+		return nil, res
 	}
+
 	// validate the updates
 	// this will validate all plugins and connection names  and remove any updates which use invalid connections
 	updates.validate()
@@ -49,14 +56,19 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateCo
 	return updates, res
 }
 
-func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpdateConnectionNames ...string) (*ConnectionUpdates, *RefreshConnectionResult) {
+func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginManager pluginshared.PluginManager, opts ...ConnectionUpdatesOption) (*ConnectionUpdates, *RefreshConnectionResult) {
+	var config = &connectionUpdatesConfig{}
+	for _, opt := range opts {
+		opt(config)
+	}
+
 	utils.LogTime("NewConnectionUpdates start")
 	defer utils.LogTime("NewConnectionUpdates end")
 	log.Printf("[TRACE] NewConnectionUpdates")
 
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
-		log.Printf("[WARN] failed to acquire conneciton from pool: %s", err.Error())
+		log.Printf("[WARN] failed to acquire connection from pool: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
 	}
 	defer conn.Release()
@@ -89,13 +101,16 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 	}
 
 	updates := &ConnectionUpdates{
-		Delete:               make(map[string]struct{}),
-		Disabled:             disabled,
-		Update:               ConnectionStateMap{},
-		MissingComments:      ConnectionStateMap{},
-		MissingPlugins:       missingPlugins,
-		FinalConnectionState: requiredConnectionStateMap,
-		InvalidConnections:   make(map[string]*ValidationFailure),
+		Delete:                     make(map[string]struct{}),
+		Disabled:                   disabled,
+		Update:                     ConnectionStateMap{},
+		MissingComments:            ConnectionStateMap{},
+		MissingPlugins:             missingPlugins,
+		FinalConnectionState:       requiredConnectionStateMap,
+		InvalidConnections:         make(map[string]*ValidationFailure),
+		PluginsWithUpdatedBinary:   make(map[string]string),
+		forceUpdateConnectionNames: config.ForceUpdateConnectionNames,
+		pluginManager:              pluginManager,
 	}
 
 	log.Printf("[INFO] loaded connection state")
@@ -105,7 +120,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 
 	// for any connections with dynamic schema, we need to reload their schema
 	// instantiate connection plugins for all connections with dynamic schema - this will retrieve their current schema
-	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, err := getSchemaHashesForDynamicSchemas(requiredConnectionStateMap, currentConnectionStateMap)
+	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, err := updates.getSchemaHashesForDynamicSchemas(requiredConnectionStateMap, currentConnectionStateMap)
 	if err != nil {
 		log.Printf("[WARN] getSchemaHashesForDynamicSchemas failed: %s", err.Error())
 		return nil, NewErrorRefreshConnectionResult(err)
@@ -119,15 +134,25 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 	log.Printf("[INFO] identify connections to update")
 
 	modTime := time.Now()
+
 	// connections to create/update
 	for name, requiredConnectionState := range requiredConnectionStateMap {
 		// if the connection requires update, add to list
-		if connectionRequiresUpdate(forceUpdateConnectionNames, name, currentConnectionStateMap, requiredConnectionState) {
-			updates.Update[name] = requiredConnectionState
+		res := connectionRequiresUpdate(config.ForceUpdateConnectionNames, name, currentConnectionStateMap, requiredConnectionState)
+		if res.requiresUpdate {
 			log.Printf("[INFO] connection %s is out of date or missing. updates: %v", name, maps.Keys(updates.Update))
+			updates.Update[name] = requiredConnectionState
 
 			// set the connection mod time of required connection data to now
 			requiredConnectionState.ConnectionModTime = modTime
+
+			// if the plugin mod time has changed, add this to the map of connections
+			// we need to refetch the rate limiters for
+			if res.pluginBinaryChanged {
+				// store map item of plugin name to connection name (so we only have one entry per plugin)
+				pluginShortName := GlobalConfig.Connections[requiredConnectionState.ConnectionName].PluginShortName
+				updates.PluginsWithUpdatedBinary[pluginShortName] = requiredConnectionState.ConnectionName
+			}
 		}
 	}
 
@@ -170,6 +195,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 		connectionData, ok := currentConnectionStateMap[name]
 		// if the connection exists in the state, does the schemas hash match?
 		if ok && connectionData.SchemaHash != requiredHash {
+			log.Printf("[INFO] %s dynamic schema hash does not match - update", connectionData.ConnectionName)
 			updates.Update[name] = connectionData
 		}
 	}
@@ -190,42 +216,61 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, forceUpd
 
 	// for all updates/deletes, if there any aggregators of the same plugin type, update those as well
 	updates.populateAggregators()
-	res.Updates = updates
+
 	return updates, res
 }
 
-func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, currentConnectionStateMap ConnectionStateMap, requiredConnectionState *ConnectionState) bool {
-	// check whether this connection exists in the state
-	currentConnectionState, schemaExistsInState := currentConnectionStateMap[name]
+type connectionRequiresUpdateResult struct {
+	requiresUpdate      bool
+	pluginBinaryChanged bool
+}
 
+func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, currentConnectionStateMap ConnectionStateMap, requiredConnectionState *ConnectionState) connectionRequiresUpdateResult {
+	var res = connectionRequiresUpdateResult{}
 	// if the required plugin is not installed, return false
 	if typehelpers.SafeString(requiredConnectionState.ConnectionError) == constants.ConnectionErrorPluginNotInstalled {
-		return false
+		return res
 	}
+	// check whether this connection exists in the state
+	currentConnectionState, schemaExistsInState := currentConnectionStateMap[name]
 	// if the connection has been disabled, return false
 	if requiredConnectionState.Disabled() {
-		return false
+		return res
 	}
 	// is this is a new connection
 	if !schemaExistsInState {
-		return true
+		res.requiresUpdate = true
+		return res
 	}
+
+	// determine whethe the plugin mod time has changed
+	if currentConnectionState.pluginModTimeChanged(requiredConnectionState) {
+		res.requiresUpdate = true
+		res.pluginBinaryChanged = true
+		return res
+	}
+
 	// if the connection has been enabled (i.e. if it was previously DISABLED) , return true
 	if currentConnectionState.Disabled() {
-		return true
+		res.requiresUpdate = true
+		return res
 	}
 
 	// are we are forcing an update of this connection,
 	if helpers.StringSliceContains(forceUpdateConnectionNames, name) {
-		return true
+		res.requiresUpdate = true
+		return res
 	}
 
 	// has this connection previously not fully loaded
 	if currentConnectionState.State == constants.ConnectionStatePendingIncomplete {
-		return true
+		res.requiresUpdate = true
+		return res
 	}
+
 	// update if the connection state is different
-	return !currentConnectionState.Equals(requiredConnectionState)
+	res.requiresUpdate = !currentConnectionState.Equals(requiredConnectionState)
+	return res
 }
 
 // update requiredConnections - set the schema hash and schema mode for all elements of FinalConnectionState
@@ -264,9 +309,11 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	// - add connections which will be updated or have the comments updated
 	// - exclude connections already created
 	// - for any aggregator connections, instantiate the first child connection instead
+	// - if FetchRateLimitersForAllPlugins, start ALL plugins, using an abitrary exemplar connection if necessary
 	connectionsToCreate := u.getConnectionsToCreate(alreadyCreatedConnectionPlugins)
+
 	// now create them
-	connectionPlugins, res := CreateConnectionPlugins(connectionsToCreate)
+	connectionPluginsByConnection, res := CreateConnectionPlugins(u.pluginManager, connectionsToCreate)
 	// if any plugins failed to load, set those connections to error
 	for c, reason := range res.FailedConnections {
 		u.setError(c, reason)
@@ -277,10 +324,11 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	}
 	// add back in the already created plugins
 	for name, connectionPlugin := range alreadyCreatedConnectionPlugins {
-		connectionPlugins[name] = connectionPlugin
+		connectionPluginsByConnection[name] = connectionPlugin
 	}
 	// and set our ConnectionPlugins property
-	u.ConnectionPlugins = connectionPlugins
+	u.ConnectionPlugins = connectionPluginsByConnection
+
 	return res
 }
 
@@ -297,13 +345,16 @@ func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugi
 			connectionMap[child.Name] = child
 		}
 	}
+
 	// NOTE - we may have already created some connection plugins (if they have dynamic schema)
 	// - remove these from list of plugins to create
 	for name := range alreadyCreatedConnectionPlugins {
 		delete(connectionMap, name)
 	}
 
-	return maps.Keys(connectionMap)
+	connectionsToStart := maps.Keys(connectionMap)
+
+	return connectionsToStart
 }
 
 func (u *ConnectionUpdates) HasUpdates() bool {
@@ -331,6 +382,7 @@ func (u *ConnectionUpdates) String() string {
 }
 
 func (u *ConnectionUpdates) setError(connectionName string, error string) {
+	log.Printf("[INFO] ConnectionUpdates.setError connection %s: %s", connectionName, error)
 	failedConnection, ok := u.FinalConnectionState[connectionName]
 	if !ok {
 		return
@@ -386,7 +438,8 @@ func (u *ConnectionUpdates) populateAggregators() {
 	log.Printf("[INFO] found %d %s with aggregators", len(pluginAggregatorMap), utils.Pluralize("plugin", len(pluginAggregatorMap)))
 
 	// for all updates/deletes, if there any aggregators of the same plugin type, update those as well
-	// build a map of all plugins with connecitons being updated/deleted
+	// build a map of all plugins with connecti
+	//ons being updated/deleted
 	modifiedPluginLookup := make(map[string]struct{})
 	for _, c := range u.Update {
 		modifiedPluginLookup[c.Plugin] = struct{}{}
@@ -408,7 +461,7 @@ func (u *ConnectionUpdates) populateAggregators() {
 
 }
 
-func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionStateMap, connectionState ConnectionStateMap) (map[string]string, map[string]*ConnectionPlugin, error) {
+func (u *ConnectionUpdates) getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionStateMap, connectionState ConnectionStateMap) (map[string]string, map[string]*ConnectionPlugin, error) {
 	log.Printf("[TRACE] getSchemaHashesForDynamicSchemas")
 	// for every required connection, check the connection state to determine whether the schema mode is 'dynamic'
 	// if we have never loaded the connection, there will be no state, so we cannot retrieve this information
@@ -426,7 +479,7 @@ func getSchemaHashesForDynamicSchemas(requiredConnectionData ConnectionStateMap,
 			}
 		}
 	}
-	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(maps.Keys(connectionsWithDynamicSchema))
+	connectionsPluginsWithDynamicSchema, res := CreateConnectionPlugins(u.pluginManager, maps.Keys(connectionsWithDynamicSchema))
 	if res.Error != nil {
 		return nil, nil, res.Error
 	}

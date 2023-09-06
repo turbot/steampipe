@@ -40,7 +40,6 @@ type refreshConnectionState struct {
 	tableUpdater               *connectionStateTableUpdater
 	res                        *steampipeconfig.RefreshConnectionResult
 	forceUpdateConnectionNames []string
-
 	// properties for schema/comment cloning
 	exemplarSchemaMapMut sync.Mutex
 
@@ -49,36 +48,26 @@ type refreshConnectionState struct {
 	exemplarSchemaMap map[string]string
 	// if a plugin has an entry in this map, all connections schemas can be cloned from teh exemplar schema
 	exemplarCommentsMap map[string]string
+	pluginManager       pluginManager
 }
 
-func newRefreshConnectionState(ctx context.Context, forceUpdateConnectionNames []string) (*refreshConnectionState, error) {
-	// create a connection pool to connection refresh
-	poolsize := 20
-	pool, err := db_local.CreateConnectionPool(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
-	if err != nil {
-		return nil, err
-	}
-
+func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager, forceUpdateConnectionNames []string) (*refreshConnectionState, error) {
+	pool := pluginManager.Pool()
 	// set user search path first
 	log.Printf("[INFO] setting up search path")
 	searchPath, err := db_local.SetUserSearchPath(ctx, pool)
 	if err != nil {
-		// note: close pool in case of error
-		pool.Close()
 		return nil, err
 	}
 
-	return &refreshConnectionState{
+	res := &refreshConnectionState{
 		pool:                       pool,
 		searchPath:                 searchPath,
 		forceUpdateConnectionNames: forceUpdateConnectionNames,
-	}, nil
-}
-
-func (s *refreshConnectionState) close() {
-	if s.pool != nil {
-		s.pool.Close()
+		pluginManager:              pluginManager,
 	}
+
+	return res, nil
 }
 
 // RefreshConnections loads required connections from config
@@ -95,8 +84,15 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	}()
 	log.Printf("[INFO] building connectionUpdates")
 
-	// determine any necessary connection updates
-	s.connectionUpdates, s.res = steampipeconfig.NewConnectionUpdates(ctx, s.pool, s.forceUpdateConnectionNames...)
+	var opts []steampipeconfig.ConnectionUpdatesOption
+	if len(s.forceUpdateConnectionNames) > 0 {
+		opts = append(opts, steampipeconfig.WithForceUpdate(s.forceUpdateConnectionNames))
+	}
+
+	// build a ConnectionUpdates struct
+	// this determine any necessary connection updates and starts any necessary plugins
+	s.connectionUpdates, s.res = steampipeconfig.NewConnectionUpdates(ctx, s.pool, s.pluginManager, opts...)
+
 	defer s.logRefreshConnectionResults()
 	// were we successful?
 	if s.res.Error != nil {
@@ -104,6 +100,20 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	}
 
 	log.Printf("[INFO] created connectionUpdates")
+
+	//  reload plugin rate limiter definitions for all plugins which are updated - the plugin will already be loaded
+	if len(s.connectionUpdates.PluginsWithUpdatedBinary) > 0 {
+		updatedPluginLimiters, err := s.pluginManager.LoadPluginRateLimiters(s.connectionUpdates.PluginsWithUpdatedBinary)
+
+		if err != nil {
+			s.res.Error = err
+			return
+		}
+
+		if len(updatedPluginLimiters) > 0 {
+			s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
+		}
+	}
 
 	// delete the connection state file - it will be rewritten when we are complete
 	log.Printf("[INFO] deleting connections state file")
@@ -190,6 +200,7 @@ func (s *refreshConnectionState) logRefreshConnectionResults() {
 }
 
 func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {
+	// TODO WHY? WHY NOT FROM ourselves
 	// retrieve updates from the table updater
 	connectionUpdates := s.tableUpdater.updates
 
@@ -332,7 +343,7 @@ func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	return
 }
 
-// convert map upd update sets (used for dynamic schemas) to an array of the underlying connection states
+// convert map update sets (used for dynamic schemas) to an array of the underlying connection states
 func updateSetMapToArray(updateSetMap map[string][]*steampipeconfig.ConnectionState) []*steampipeconfig.ConnectionState {
 	var res []*steampipeconfig.ConnectionState
 	for _, updates := range updateSetMap {
@@ -482,6 +493,7 @@ func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, co
 		// update the state table
 		//(the transaction will be aborted - create a connection for the update)
 		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
+			defer conn.Release()
 			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
 				// NOTE: do not return the error - unless we failed to update the connection state table
 				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
@@ -617,6 +629,7 @@ func (s *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, c
 		// update the state table
 		//(the transaction will be aborted - create a connection for the update)
 		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
+			defer conn.Release()
 			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
 				// NOTE: do not return the error - unless we failed to update the connection state table
 				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)
@@ -711,6 +724,7 @@ func (s *refreshConnectionState) executeDeleteQuery(ctx context.Context, connect
 		// update the state table
 		//(the transaction will be aborted - create a connection for the update)
 		if conn, poolErr := s.pool.Acquire(ctx); poolErr == nil {
+			defer conn.Release()
 			if statusErr := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionName, err); statusErr != nil {
 				// NOTE: do not return the error - unless we failed to update the connection state table
 				return error_helpers.CombineErrorsWithPrefix(fmt.Sprintf("failed to update connection %s and failed to update connection_state table", connectionName), err, statusErr)

@@ -10,8 +10,8 @@ import (
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/pluginmanager"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -35,6 +35,7 @@ type ConnectionPlugin struct {
 	PluginName          string
 	PluginClient        *sdkgrpc.PluginClient
 	SupportedOperations *proto.SupportedOperations
+	PluginShortName     string
 }
 
 func (p ConnectionPlugin) addConnection(name string, config string, connectionOptions *options.Connection, connectionType string) {
@@ -68,8 +69,9 @@ func (p ConnectionPlugin) GetSchema(connectionName string) (*sdkproto.Schema, er
 	return schema, nil
 }
 
-func NewConnectionPlugin(pluginName string, pluginClient *sdkgrpc.PluginClient, supportedOperations *proto.SupportedOperations) *ConnectionPlugin {
+func NewConnectionPlugin(pluginShortName, pluginName string, pluginClient *sdkgrpc.PluginClient, supportedOperations *proto.SupportedOperations) *ConnectionPlugin {
 	return &ConnectionPlugin{
+		PluginShortName:     pluginShortName,
 		PluginName:          pluginName,
 		PluginClient:        pluginClient,
 		SupportedOperations: supportedOperations,
@@ -77,7 +79,8 @@ func NewConnectionPlugin(pluginName string, pluginClient *sdkgrpc.PluginClient, 
 }
 
 // CreateConnectionPlugins instantiates plugins for specified connections, and fetches schemas
-func CreateConnectionPlugins(connectionNamesToCreate []string) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
+func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectionNamesToCreate []string) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
+
 	res = &RefreshConnectionResult{}
 	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin)
 	if len(connectionNamesToCreate) == 0 {
@@ -95,13 +98,6 @@ func CreateConnectionPlugins(connectionNamesToCreate []string) (requestedConnect
 	connectionNames := make([]string, len(connectionsToCreate))
 	for i, connection := range connectionsToCreate {
 		connectionNames[i] = connection.Name
-	}
-
-	// get plugin manager
-	pluginManager, err := pluginmanager.GetPluginManager()
-	if err != nil {
-		res.Error = err
-		return nil, res
 	}
 
 	// ask the plugin manager for the reattach config for all required plugins
@@ -123,9 +119,6 @@ func CreateConnectionPlugins(connectionNamesToCreate []string) (requestedConnect
 	}
 
 	// now create or retrieve a connection plugin for each connection
-
-	// NOTE: multiple connections may use the same plugin
-	// store a map of multi connection plugins, keyed by connection name
 	multiConnectionPlugins := make(map[string]*ConnectionPlugin)
 
 	for _, connection := range connectionsToCreate {
@@ -271,7 +264,7 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 	log.Printf("[TRACE] plugin client created for %s", pluginName)
 
 	// now create ConnectionPlugin object return
-	connectionPlugin := NewConnectionPlugin(pluginName, pluginClient, reattach.SupportedOperations)
+	connectionPlugin := NewConnectionPlugin(connection.PluginShortName, pluginName, pluginClient, reattach.SupportedOperations)
 
 	// if multiple connections are NOT supported, add the config for our one and only connection
 	if reattach.SupportedOperations == nil || !reattach.SupportedOperations.MultipleConnections {

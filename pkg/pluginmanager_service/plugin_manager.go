@@ -14,6 +14,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sethvargo/go-retry"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -29,18 +30,8 @@ import (
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
-
-type runningPlugin struct {
-	pluginName  string
-	client      *plugin.Client
-	reattach    *pb.ReattachConfig
-	initialized chan struct{}
-	failed      chan struct{}
-	error       error
-}
 
 // PluginManager is the implementation of grpc.PluginManager
 type PluginManager struct {
@@ -68,40 +59,54 @@ type PluginManager struct {
 
 	logger        hclog.Logger
 	messageServer *PluginMessageServer
-	// map of rater limiters, keyed by name
-	// todo instead have map of limiters per plugin???
-	limiters connection.LimiterMap
+
+	// map of user configured rate limiter maps, keyed by plugin short name
+	// NOTE: this is populated from config
+	userLimiters connection.PluginLimiterMap
+	// map of plugin configured rate limiter maps, keyed by plugin short name
+	// NOTE: if this is nil, that means the steampipe_rate_limiter tables has not been populalated yet -
+	// the first time we refresh connections we must load all plugins and fetch their rate limiter defs
+	pluginLimiters connection.PluginLimiterMap
+
 	// map of plugin short name to long name
-	pluginNameMap map[string]string
+	pluginShortToLongNameMap map[string]string
+	pluginLongToShortNameMap map[string]string
+
+	pool *pgxpool.Pool
 }
 
-func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, limiters map[string]*modconfig.RateLimiter, logger hclog.Logger) (*PluginManager, error) {
+func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, userLimiters connection.LimiterMap, logger hclog.Logger) (*PluginManager, error) {
 	log.Printf("[INFO] NewPluginManager")
 	pluginManager := &PluginManager{
 		logger:              logger,
 		runningPluginMap:    make(map[string]*runningPlugin),
 		connectionConfigMap: connectionConfig,
-		limiters:            limiters,
-		pluginNameMap:       make(map[string]string),
+		userLimiters:        userLimiters.ToPluginMap(),
+
+		pluginShortToLongNameMap: make(map[string]string),
+		pluginLongToShortNameMap: make(map[string]string),
 	}
 
-	messageServer, err := NewPluginMessageServer(pluginManager)
-	if err != nil {
-		return nil, err
-	}
-	pluginManager.messageServer = messageServer
+	pluginManager.messageServer = &PluginMessageServer{pluginManager: pluginManager}
 
-	// create and populate the rate limiter table
-	if err := pluginManager.refreshRateLimiterTable(ctx); err != nil {
-		// TODO better handle plugin manager startup failures
-		log.Println("[WARN] could not refresh rate limiter table", err)
-		return nil, err
-	}
+	//time.Sleep(10 * time.Second)
 	// populate plugin connection config map
 	pluginManager.populatePluginConnectionConfigs()
 	// determine cache size for each plugin
 	pluginManager.setPluginCacheSizeMap()
 
+	// create a connection pool to connection refresh
+	// in testing, a size of 20 seemed optimal
+	poolsize := 20
+	pool, err := db_local.CreateConnectionPool(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
+	if err != nil {
+		return nil, err
+	}
+	pluginManager.pool = pool
+
+	if err := pluginManager.initialiseRateLimiterDefs(ctx); err != nil {
+		return nil, err
+	}
 	return pluginManager, nil
 }
 
@@ -128,9 +133,8 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 		ReattachMap: make(map[string]*pb.ReattachConfig),
 		FailureMap:  make(map[string]string),
 	}
-	// TODO validate we have config for this plugin
 
-	// build map of plugins to start, and also a lookup of required connecitons
+	// build a map of plugins to connection config for requested connections, and a lookup of the requested connections
 	plugins, requestedConnectionsLookup, err := m.buildRequiredPluginMap(req)
 	if err != nil {
 		return resp, err
@@ -160,8 +164,8 @@ func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
 	return resp, nil
 }
 
+// build a map of plugins to connection config for requested connections, and a lookup of the requested connections
 func (m *PluginManager) buildRequiredPluginMap(req *pb.GetRequest) (map[string][]*sdkproto.ConnectionConfig, map[string]struct{}, error) {
-	// build a map of plugins required
 	var plugins = make(map[string][]*sdkproto.ConnectionConfig)
 	// also make a map of target connections - used when assigning resuts to the response
 	var requestedConnectionsLookup = make(map[string]struct{}, len(req.Connections))
@@ -184,7 +188,10 @@ func (m *PluginManager) buildRequiredPluginMap(req *pb.GetRequest) (map[string][
 	return plugins, requestedConnectionsLookup, nil
 }
 
-// Refresh connections asyncronously
+func (m *PluginManager) Pool() *pgxpool.Pool {
+	return m.pool
+}
+
 func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.RefreshConnectionsResponse, error) {
 	resp := &pb.RefreshConnectionsResponse{}
 	go m.doRefresh()
@@ -192,7 +199,7 @@ func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.R
 }
 
 func (m *PluginManager) doRefresh() {
-	refreshResult := connection.RefreshConnections(context.Background())
+	refreshResult := connection.RefreshConnections(context.Background(), m)
 	if refreshResult.Error != nil {
 		// TODO send errors and warnings back to CLI from plugin manager - https://github.com/turbot/steampipe/issues/3603
 		log.Printf("[WARN] RefreshConnections failed with error: %s", refreshResult.Error.Error())
@@ -211,10 +218,15 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connection.Connectio
 	if err != nil {
 		log.Printf("[WARN] handleConnectionConfigChanges failed: %s", err.Error())
 	}
-	err = m.handleLimiterChanges(limiters)
+
+	err = m.handleUserLimiterChanges(limiters)
 	if err != nil {
-		log.Printf("[WARN] handleLimiterChanges failed: %s", err.Error())
+		log.Printf("[WARN] handleUserLimiterChanges failed: %s", err.Error())
 	}
+}
+
+func (m *PluginManager) GetConnectionConfig() connection.ConnectionConfigMap {
+	return m.connectionConfigMap
 }
 
 func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse, err error) {
@@ -241,6 +253,13 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 		m.killPlugin(p)
 	}
 
+	log.Printf("[INFO] PluginManager closing pool")
+
+	// close our pool
+	// log.Println("[INFO] PluginManager pool stats:", m.pool.Stat().TotalConns(), m.pool.Stat().IdleConns())
+	// m.pool.Close()
+	// log.Printf("[INFO] PluginManager pool closed")
+
 	return &pb.ShutdownResponse{}, nil
 }
 
@@ -252,53 +271,6 @@ func (m *PluginManager) killPlugin(p *runningPlugin) {
 	}
 	log.Printf("[INFO] PluginManager killing plugin %s (%v)", p.pluginName, p.reattach.Pid)
 	p.client.Kill()
-}
-
-func (m *PluginManager) handleLimiterChanges(newLimiters connection.LimiterMap) error {
-	pluginsWithChangedLimiters := m.limiters.GetPluginsWithChangedLimiters(newLimiters)
-
-	if len(pluginsWithChangedLimiters) == 0 {
-		return nil
-	}
-
-	// update stored limiters to the new map
-	m.limiters = newLimiters
-
-	// update the rate_limiters table
-	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
-		log.Println("[WARN] could not refresh rate limiter table", err)
-	}
-
-	// now update the plugins
-	for p := range pluginsWithChangedLimiters {
-		// get running plugin for this plugin
-		// if plugin is not running we have nothing to do
-		longName, ok := m.pluginNameMap[p]
-		if !ok {
-			log.Printf("[INFO] handleLimiterChanges: plugin %s is not currently running - ignoring", p)
-			continue
-		}
-		runningPlugin, ok := m.runningPluginMap[longName]
-		if !ok {
-			log.Printf("[INFO] handleLimiterChanges: plugin %s is not currently running - ignoring", p)
-			continue
-		}
-		if !runningPlugin.reattach.SupportedOperations.SetRateLimiters {
-			log.Printf("[INFO] handleLimiterChanges: plugin %s does not support setting rate limit - ignoring", p)
-			continue
-		}
-
-		pluginClient, err := sdkgrpc.NewPluginClient(runningPlugin.client, longName)
-		if err != nil {
-			return sperr.WrapWithMessage(err, "failed to create a plugin client when updating the rate limiter for plugin '%s'", longName)
-		}
-
-		if err := m.setRateLimiters(p, pluginClient); err != nil {
-			return sperr.WrapWithMessage(err, "failed to update rate limiters for plugin '%s'", longName)
-		}
-	}
-
-	return nil
 }
 
 func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdkproto.ConnectionConfig, req *pb.GetRequest) (reattach *pb.ReattachConfig, err error) {
@@ -517,9 +489,6 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	pluginName := exemplarConnectionConfig.Plugin
 	pluginShortName := exemplarConnectionConfig.PluginShortName
 
-	// also store name mapping
-	m.pluginNameMap[pluginShortName] = pluginName
-
 	log.Printf("[INFO] initializePlugin %s pid %d (%p)", pluginName, client.ReattachConfig().Pid, req)
 
 	// build a client
@@ -564,7 +533,7 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	}
 
 	// if this plugin supports setting cache options, do so
-	if supportedOperations.SetRateLimiters {
+	if supportedOperations.RateLimiters {
 		err = m.setRateLimiters(pluginShortName, pluginClient)
 		if err != nil {
 			log.Printf("[WARN] failed to set rate limiters for %s: %s", pluginName, err.Error())
@@ -601,6 +570,9 @@ func (m *PluginManager) populatePluginConnectionConfigs() {
 	m.pluginConnectionConfigMap = make(map[string][]*sdkproto.ConnectionConfig)
 	for _, config := range m.connectionConfigMap {
 		m.pluginConnectionConfigMap[config.Plugin] = append(m.pluginConnectionConfigMap[config.Plugin], config)
+		// populate plugin name map
+		m.pluginShortToLongNameMap[config.PluginShortName] = config.Plugin
+		m.pluginLongToShortNameMap[config.Plugin] = config.PluginShortName
 	}
 }
 
@@ -735,11 +707,8 @@ func (m *PluginManager) setRateLimiters(pluginName string, pluginClient *sdkgrpc
 	log.Printf("[INFO] setRateLimiters for plugin '%s'", pluginName)
 	var defs []*sdkproto.RateLimiterDefinition
 
-	for _, l := range m.limiters {
-		// only add limiters for this plugin
-		if l.Plugin == pluginName {
-			defs = append(defs, l.AsProto())
-		}
+	for _, l := range m.userLimiters[pluginName] {
+		defs = append(defs, l.AsProto())
 	}
 
 	req := &sdkproto.SetRateLimitersRequest{Definitions: defs}
@@ -753,7 +722,7 @@ func (m *PluginManager) setRateLimiters(pluginName string, pluginClient *sdkgrpc
 func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionName string) {
 	log.Printf("[TRACE] updateConnectionSchema connection %s", connectionName)
 
-	refreshResult := connection.RefreshConnections(ctx, connectionName)
+	refreshResult := connection.RefreshConnections(ctx, m, connectionName)
 	if refreshResult.Error != nil {
 		log.Printf("[TRACE] error refreshing connections: %s", refreshResult.Error)
 		return
@@ -793,10 +762,19 @@ func (m *PluginManager) handleStartFailure(err error) error {
 	}
 
 	// if this was a panic during startup, reraise an error with the panic string
-	if strings.Contains(pluginMessage, sdkplugin.StartupPanicMessage) {
+	if strings.Contains(pluginMessage, sdkplugin.PluginStartupFailureMessage) {
 		return fmt.Errorf(pluginMessage)
 	}
 	return err
+}
+
+// getPluginExemplarConnections returns a map of keyed by plugin short name with the value an exemplar connection
+func (m *PluginManager) getPluginExemplarConnections() map[string]string {
+	res := make(map[string]string)
+	for _, c := range m.connectionConfigMap {
+		res[c.PluginShortName] = c.Connection
+	}
+	return res
 }
 
 func nonAggregatorConnectionCount(connections []*sdkproto.ConnectionConfig) int {
