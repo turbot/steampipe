@@ -17,7 +17,7 @@ import (
 )
 
 // StartNewInstance loads the plugin manager state, stops any previous instance and instantiates a new plugin manager
-func StartNewInstance(steampipeExecutablePath string) (*PluginManagerState, error) {
+func StartNewInstance(steampipeExecutablePath string) (*State, error) {
 	// try to load the plugin manager state
 	state, err := LoadState()
 	if err != nil {
@@ -40,7 +40,7 @@ func StartNewInstance(steampipeExecutablePath string) (*PluginManagerState, erro
 // we need to be provided with the exe path as we have no way of knowing where the steampipe exe it
 // when the plugin mananager is first started by steampipe, we derive the exe path from the running process and
 // store it in the plugin manager state file - then if the fdw needs to start the plugin manager it knows how to
-func start(steampipeExecutablePath string) (*PluginManagerState, error) {
+func start(steampipeExecutablePath string) (*State, error) {
 	// note: we assume the install dir has been assigned to file_paths.SteampipeDir
 	// - this is done both by the FDW and Steampipe
 	pluginManagerCmd := exec.Command(steampipeExecutablePath,
