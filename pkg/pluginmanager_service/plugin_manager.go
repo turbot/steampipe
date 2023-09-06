@@ -258,10 +258,10 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 	}()
 
 	// kill all plugins in pluginMultiConnectionMap
-	//for _, p := range m.runningPluginMap {
-	//	log.Printf("[INFO] Kill plugin %s (%p)", p.pluginName, p.client)
-	//	m.killPlugin(p)
-	//}
+	for _, p := range m.runningPluginMap {
+		log.Printf("[INFO] Kill plugin %s (%p)", p.pluginName, p.client)
+		m.killPlugin(p)
+	}
 
 	log.Printf("[INFO] PluginManager closing pool")
 
