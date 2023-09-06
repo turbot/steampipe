@@ -482,7 +482,7 @@ function setup_file() {
   export IPV6_ADDR=$(ifconfig | grep -Eo 'inet6 (addr:)?([0-9a-f]*:){7}[0-9a-f]*' | grep -Eo '([0-9a-f]*:){7}[0-9a-f]*' | head -n 1)
 }
 
-function teardown_file() {
+function teardown() {
   # list running processes
   ps -ef | grep steampipe
 

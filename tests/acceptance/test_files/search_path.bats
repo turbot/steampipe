@@ -60,7 +60,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_internal_schema_once_2.txt)"
 }
 
-function teardown_file() {
+function teardown() {
   # list running processes
   ps -ef | grep steampipe
 

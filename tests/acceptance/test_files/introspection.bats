@@ -341,7 +341,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f output.json*
 }
 
-function teardown_file() {
+function teardown() {
   # list running processes
   ps -ef | grep steampipe
 

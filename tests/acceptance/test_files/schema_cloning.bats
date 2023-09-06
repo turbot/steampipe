@@ -55,7 +55,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 }
 
-function teardown_file() {
+function teardown() {
+  # remove the files created as part of these tests 
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos.spc
   # list running processes
   ps -ef | grep steampipe
 
@@ -64,7 +66,3 @@ function teardown_file() {
   assert_equal $num 0
 }
 
-function teardown() {
-  # remove the files created as part of these tests 
-  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos.spc
-}
