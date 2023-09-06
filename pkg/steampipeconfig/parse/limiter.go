@@ -8,6 +8,7 @@ import (
 
 func DecodeLimiter(block *hcl.Block) (*modconfig.RateLimiter, hcl.Diagnostics) {
 	var limiter = &modconfig.RateLimiter{
+		// populate name from label
 		Name: block.Labels[0],
 	}
 	diags := gohcl.DecodeBody(block.Body, nil, limiter)

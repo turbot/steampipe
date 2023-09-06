@@ -49,7 +49,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				"aws_dmi_001": {
 					Name:            "aws_dmi_001",
 					PluginShortName: "aws",
-					Plugin:          "hub.steampipe.io/plugins/turbot/aws@latest",
+					PluginLongName:  "hub.steampipe.io/plugins/turbot/aws@latest",
 					Type:            "",
 					ImportSchema:    "enabled",
 					Config:          "access_key = \"aws_dmi_001_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_001_secret_key\"\n",
@@ -70,7 +70,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				"aws_dmi_002": {
 					Name:            "aws_dmi_002",
 					PluginShortName: "aws",
-					Plugin:          "hub.steampipe.io/plugins/turbot/aws@latest",
+					PluginLongName:  "hub.steampipe.io/plugins/turbot/aws@latest",
 					Type:            "",
 					ImportSchema:    "enabled",
 					Config:          "access_key = \"aws_dmi_002_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_002_secret_key\"\n",
@@ -102,7 +102,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				"a": {
 					Name:            "a",
 					PluginShortName: "test_data/connection-test-1",
-					Plugin:          "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginLongName:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 					Type:            "",
 					ImportSchema:    "enabled",
 					Config:          "",
@@ -134,7 +134,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				"a": {
 					Name:            "a",
 					PluginShortName: "test_data/connection-test-1",
-					Plugin:          "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginLongName:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 					Type:            "",
 					ImportSchema:    "enabled",
 					Config:          "",
@@ -180,7 +180,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				"a": {
 					Name:            "a",
 					PluginShortName: "test_data/connection-test-1",
-					Plugin:          "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginLongName:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 					Type:            "",
 					ImportSchema:    "enabled",
 					Config:          "",
@@ -221,7 +221,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 				"a": {
 					Name:            "a",
 					PluginShortName: "test_data/connection-test-1",
-					Plugin:          "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginLongName:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 					Type:            "",
 					ImportSchema:    "enabled",
 					Config:          "",
@@ -262,7 +262,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Name:            "a",
 					ImportSchema:    "enabled",
 					PluginShortName: "test_data/connection-test-1",
-					Plugin:          "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginLongName:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 					Config:          "",
 					Options: &options.Connection{
 						Cache:    &trueVal,

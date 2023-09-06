@@ -7,7 +7,7 @@ import (
 
 type pluginManager interface {
 	shared.PluginManager
-	OnConnectionConfigChanged(ConnectionConfigMap, LimiterMap)
+	OnConnectionConfigChanged(ConnectionConfigMap, PluginMap)
 	GetConnectionConfig() ConnectionConfigMap
 	HandlePluginLimiterChanges(limiterMap PluginLimiterMap) error
 	Pool() *pgxpool.Pool

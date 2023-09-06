@@ -29,7 +29,7 @@ type StartResult struct {
 	error_helpers.ErrorAndWarnings
 	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
-	PluginManagerState *pluginmanager.PluginManagerState
+	PluginManagerState *pluginmanager.State
 }
 
 func (r *StartResult) SetError(err error) *StartResult {
@@ -129,9 +129,9 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 	return res
 }
 
-func ensurePluginManager() (*pluginmanager.PluginManagerClient, *pluginmanager.PluginManagerState, error) {
+func ensurePluginManager() (*pluginmanager.PluginManagerClient, *pluginmanager.State, error) {
 	// start the plugin manager if needed
-	state, err := pluginmanager.LoadPluginManagerState()
+	state, err := pluginmanager.LoadState()
 	if err != nil {
 		return nil, nil, err
 	}

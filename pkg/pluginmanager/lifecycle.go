@@ -17,9 +17,9 @@ import (
 )
 
 // StartNewInstance loads the plugin manager state, stops any previous instance and instantiates a new plugin manager
-func StartNewInstance(steampipeExecutablePath string) (*PluginManagerState, error) {
+func StartNewInstance(steampipeExecutablePath string) (*State, error) {
 	// try to load the plugin manager state
-	state, err := LoadPluginManagerState()
+	state, err := LoadState()
 	if err != nil {
 		log.Printf("[WARN] plugin manager StartNewInstance() - load state failed: %s", err)
 		return nil, err
@@ -40,7 +40,7 @@ func StartNewInstance(steampipeExecutablePath string) (*PluginManagerState, erro
 // we need to be provided with the exe path as we have no way of knowing where the steampipe exe it
 // when the plugin mananager is first started by steampipe, we derive the exe path from the running process and
 // store it in the plugin manager state file - then if the fdw needs to start the plugin manager it knows how to
-func start(steampipeExecutablePath string) (*PluginManagerState, error) {
+func start(steampipeExecutablePath string) (*State, error) {
 	// note: we assume the install dir has been assigned to file_paths.SteampipeDir
 	// - this is done both by the FDW and Steampipe
 	pluginManagerCmd := exec.Command(steampipeExecutablePath,
@@ -70,7 +70,7 @@ func start(steampipeExecutablePath string) (*PluginManagerState, error) {
 	}
 
 	// create a plugin manager state.
-	state := NewPluginManagerState(steampipeExecutablePath, client.ReattachConfig())
+	state := NewState(steampipeExecutablePath, client.ReattachConfig())
 
 	log.Printf("[TRACE] start: started plugin manager, pid %d", state.Pid)
 
@@ -84,7 +84,7 @@ func start(steampipeExecutablePath string) (*PluginManagerState, error) {
 // Stop loads the plugin manager state and if a running instance is found, stop it
 func Stop() error {
 	// try to load the plugin manager state
-	state, err := LoadPluginManagerState()
+	state, err := LoadState()
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func Stop() error {
 }
 
 // stop the running plugin manager instance
-func stop(state *PluginManagerState) error {
+func stop(state *State) error {
 	log.Printf("[TRACE] plugin manager stop")
 	pluginManager, err := NewPluginManagerClient(state)
 	if err != nil {
@@ -128,7 +128,7 @@ func GetPluginManager() (pluginshared.PluginManager, error) {
 // it then returns a plugin manager client
 func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	// try to load the plugin manager state
-	state, err := LoadPluginManagerState()
+	state, err := LoadState()
 	if err != nil {
 		log.Printf("[WARN] failed to load plugin manager state: %s", err.Error())
 		return nil, err

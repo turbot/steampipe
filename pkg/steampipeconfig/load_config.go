@@ -100,7 +100,7 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 	loadOptions := &loadConfigOptions{include: include}
 	if ew := loadConfig(filepaths.EnsureConfigDir(), steampipeConfig, loadOptions); ew != nil {
 		if ew.GetError() != nil {
-			return nil, ew.WrapErrorWithMessage("failed to load config")
+			return nil, ew
 		}
 		// merge the warning from this call
 		errorsAndWarnings.AddWarning(ew.Warnings...)
@@ -213,18 +213,20 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 
 	for _, block := range content.Blocks {
 		switch block.Type {
-		case modconfig.BlockTypeRateLimiter:
-			limiter, moreDiags := parse.DecodeLimiter(block)
+
+		case modconfig.BlockTypePlugin:
+			// TODO CHECK label unique check
+			plugin, moreDiags := parse.DecodePlugin(block)
 			diags = append(diags, moreDiags...)
 			if moreDiags.HasErrors() {
 				continue
 			}
-			_, alreadyThere := steampipeConfig.Limiters[limiter.Name]
+			_, alreadyThere := steampipeConfig.Plugins[plugin.Source]
 			if alreadyThere {
-				return error_helpers.NewErrorsAndWarning(sperr.New("duplicate limiter name: '%s' in '%s'", limiter.Name, block.TypeRange.Filename))
+				return error_helpers.NewErrorsAndWarning(sperr.New("duplicate plugin: '%s' in '%s'", plugin.Source, block.TypeRange.Filename))
 			}
+			steampipeConfig.Plugins[plugin.Source] = plugin
 
-			steampipeConfig.Limiters[limiter.Name] = limiter
 		case modconfig.BlockTypeConnection:
 			connection, moreDiags := parse.DecodeConnection(block)
 			diags = append(diags, moreDiags...)
@@ -275,6 +277,10 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 	if diags.HasErrors() {
 		return error_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
 	}
+
+	// ensure we have a plugin config struct for all plugins mentioned in connection config,
+	// even if there is not an explicit HCL config for it
+	steampipeConfig.initializePlugins()
 
 	return error_helpers.DiagsToErrorsAndWarnings("", diags)
 }

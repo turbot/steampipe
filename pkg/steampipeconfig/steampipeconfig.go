@@ -17,10 +17,10 @@ import (
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
 type SteampipeConfig struct {
+	// map of plugin configs
+	Plugins map[string]*modconfig.Plugin
 	// map of connection name to partially parsed connection config
 	Connections map[string]*modconfig.Connection
-	// rate limiters
-	Limiters map[string]*modconfig.RateLimiter
 
 	// Steampipe options
 	DefaultConnectionOptions *options.Connection
@@ -28,7 +28,8 @@ type SteampipeConfig struct {
 	DashboardOptions         *options.GlobalDashboard
 	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
-	// TODO remove this
+	PluginOptions            *options.Plugin
+	// TODO remove this  in 0.22
 	// it is only needed due to conflicts with output name in terminal options
 	// https://github.com/turbot/steampipe/issues/2534
 	commandName string
@@ -37,7 +38,7 @@ type SteampipeConfig struct {
 func NewSteampipeConfig(commandName string) *SteampipeConfig {
 	return &SteampipeConfig{
 		Connections: make(map[string]*modconfig.Connection),
-		Limiters:    make(map[string]*modconfig.RateLimiter),
+		Plugins:     make(map[string]*modconfig.Plugin),
 		commandName: commandName,
 	}
 }
@@ -84,12 +85,14 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	if c.TerminalOptions != nil {
 		res.PopulateConfigMapForOptions(c.TerminalOptions)
 	}
+	if c.PluginOptions != nil {
+		res.PopulateConfigMapForOptions(c.PluginOptions)
+	}
 
 	return res
 }
 
 func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *error_helpers.ErrorAndWarnings) {
-
 	errorsAndWarnings = error_helpers.NewErrorsAndWarning(nil)
 
 	switch o := opts.(type) {
@@ -135,6 +138,17 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 		} else {
 			c.GeneralOptions.Merge(o)
 		}
+		// TODO: remove in 0.22 [https://github.com/turbot/steampipe/issues/3251]
+		if c.GeneralOptions.MaxParallel != nil {
+			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants.Bold("max_parallel"), constants.Bold("general options"))))
+		}
+	case *options.Plugin:
+		if c.PluginOptions == nil {
+			c.PluginOptions = o
+		} else {
+			c.PluginOptions.Merge(o)
+		}
+
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
 		if c.GeneralOptions.MaxParallel != nil {
 			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants.Bold("max_parallel"), constants.Bold("general options"))))
@@ -261,6 +275,12 @@ TerminalOptions:
 GeneralOptions:
 %s`, c.GeneralOptions.String())
 	}
+	if c.PluginOptions != nil {
+		str += fmt.Sprintf(`
+
+PluginOptions:
+%s`, c.PluginOptions.String())
+	}
 
 	return str
 }
@@ -269,7 +289,7 @@ func (c *SteampipeConfig) ConnectionsForPlugin(pluginLongName string, pluginVers
 	var res []*modconfig.Connection
 	for _, con := range c.Connections {
 		// extract stream from plugin
-		ref := ociinstaller.NewSteampipeImageRef(con.Plugin)
+		ref := ociinstaller.NewSteampipeImageRef(con.PluginLongName)
 		org, plugin, stream := ref.GetOrgNameAndStream()
 		longName := fmt.Sprintf("%s/%s", org, plugin)
 		if longName == pluginLongName {
@@ -305,4 +325,14 @@ func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
 		idx++
 	}
 	return res
+}
+
+// ensure we have a plugin config struct for all plugins mentioned in conneciton config,
+// even if there is not an explicit HCL config for it
+func (c *SteampipeConfig) initializePlugins() {
+	for _, connection := range c.Connections {
+		if c.Plugins[connection.PluginShortName] == nil {
+			c.Plugins[connection.PluginShortName] = &modconfig.Plugin{Source: connection.PluginShortName}
+		}
+	}
 }

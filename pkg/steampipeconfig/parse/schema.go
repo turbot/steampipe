@@ -12,20 +12,28 @@ var ConfigBlockSchema = &hcl.BodySchema{
 	Attributes: []hcl.AttributeSchema{},
 	Blocks: []hcl.BlockHeaderSchema{
 		{
-			Type:       "connection",
+			Type:       modconfig.BlockTypeConnection,
 			LabelNames: []string{"name"},
 		},
 		{
-			Type:       "limiter",
+			Type:       modconfig.BlockTypePlugin,
 			LabelNames: []string{"name"},
 		},
-
 		{
-			Type:       "options",
+			Type:       modconfig.BlockTypeOptions,
 			LabelNames: []string{"type"},
 		},
 		{
-			Type:       "workspace",
+			Type:       modconfig.BlockTypeWorkspaceProfile,
+			LabelNames: []string{"name"},
+		},
+	},
+}
+var PluginBlockSchema = &hcl.BodySchema{
+	Attributes: []hcl.AttributeSchema{},
+	Blocks: []hcl.BlockHeaderSchema{
+		{
+			Type:       modconfig.BlockTypeRateLimiter,
 			LabelNames: []string{"name"},
 		},
 	},

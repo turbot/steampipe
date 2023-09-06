@@ -7,7 +7,6 @@ const (
 	// require blocks
 	BlockTypeSteampipe = "steampipe"
 	BlockTypeMod       = "mod"
-	BlockTypePlugin    = "plugin"
 	// resource blocks
 	BlockTypeQuery          = "query"
 	BlockTypeControl        = "control"
@@ -35,6 +34,7 @@ const (
 
 	// config blocks
 	BlockTypeRateLimiter      = "limiter"
+	BlockTypePlugin           = "plugin"
 	BlockTypeConnection       = "connection"
 	BlockTypeOptions          = "options"
 	BlockTypeWorkspaceProfile = "workspace"

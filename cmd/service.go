@@ -469,7 +469,7 @@ func runServiceStatusCmd(cmd *cobra.Command, _ []string) {
 		showAllStatus(cmd.Context())
 	} else {
 		dbState, dbStateErr := db_local.GetState()
-		pmState, pmStateErr := pluginmanager.LoadPluginManagerState()
+		pmState, pmStateErr := pluginmanager.LoadState()
 		dashboardState, dashboardStateErr := dashboardserver.GetDashboardServiceState()
 
 		if dbStateErr != nil || pmStateErr != nil {
@@ -648,7 +648,7 @@ func getServiceProcessDetails(process *psutils.Process) (string, string, string,
 	return fmt.Sprintf("%d", process.Pid), installDir, port, listenType
 }
 
-func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.PluginManagerState, dashboardState *dashboardserver.DashboardServiceState, alreadyRunning bool) {
+func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.State, dashboardState *dashboardserver.DashboardServiceState, alreadyRunning bool) {
 	if dbState == nil && !pmState.Running {
 		fmt.Println("Service is not running")
 		return
