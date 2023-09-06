@@ -7,11 +7,10 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/turbot/steampipe/pkg/utils"
-
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
+	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
 
