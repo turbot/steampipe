@@ -475,14 +475,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 }
 
-function setup_file() {
-  export BATS_TEST_TIMEOUT=180
-  echo "# setup_file()">&3
-  export IPV4_ADDR=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | head -n 1)
-  export IPV6_ADDR=$(ifconfig | grep -Eo 'inet6 (addr:)?([0-9a-f]*:){7}[0-9a-f]*' | grep -Eo '([0-9a-f]*:){7}[0-9a-f]*' | head -n 1)
-}
-
-function teardown_file() {
+@test "check left over processes" {
   # list running processes
   ps -ef | grep steampipe
 
@@ -490,3 +483,19 @@ function teardown_file() {
   num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
   assert_equal $num 0
 }
+
+function setup_file() {
+  export BATS_TEST_TIMEOUT=180
+  echo "# setup_file()">&3
+  export IPV4_ADDR=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | head -n 1)
+  export IPV6_ADDR=$(ifconfig | grep -Eo 'inet6 (addr:)?([0-9a-f]*:){7}[0-9a-f]*' | grep -Eo '([0-9a-f]*:){7}[0-9a-f]*' | head -n 1)
+}
+
+# function teardown_file() {
+#   # list running processes
+#   ps -ef | grep steampipe
+
+#   # check if any processes are running
+#   num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+#   assert_equal $num 0
+# }

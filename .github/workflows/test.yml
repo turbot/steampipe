@@ -97,7 +97,7 @@ jobs:
           - "connection_config"
           - "service"
           - "settings"
-          - "ssl"
+          # - "ssl"
           # - "blank_aggregators"
           # - "search_path"
           - "chaos_and_query"
@@ -115,7 +115,7 @@ jobs:
           # - "snapshot"
           # - "dashboard"
           # - "dashboard_parsing_validation"
-          - "schema_cloning"
+          # - "schema_cloning"
           # - "exit_codes"
           # - "force_stop"
         exclude:

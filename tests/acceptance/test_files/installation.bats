@@ -76,12 +76,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output --partial 'ASCII text'
 }
 
-function setup() {
-  arch=$(uname -m)
-  os=$(uname -s)
-}
-
-function teardown_file() {
+@test "check left over processes" {
   # list running processes
   ps -ef | grep steampipe
 
@@ -89,3 +84,17 @@ function teardown_file() {
   num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
   assert_equal $num 0
 }
+
+function setup() {
+  arch=$(uname -m)
+  os=$(uname -s)
+}
+
+# function teardown_file() {
+#   # list running processes
+#   ps -ef | grep steampipe
+
+#   # check if any processes are running
+#   num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+#   assert_equal $num 0
+# }

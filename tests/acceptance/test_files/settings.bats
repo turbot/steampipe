@@ -5,3 +5,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run steampipe query "select * from steampipe_server_settings"
     assert_success
 }
+
+@test "check left over processes" {
+  # list running processes
+  ps -ef | grep steampipe
+
+  # check if any processes are running
+  num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
+  assert_equal $num 0
+}
