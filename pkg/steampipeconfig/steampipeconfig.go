@@ -29,7 +29,7 @@ type SteampipeConfig struct {
 	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
 	PluginOptions            *options.Plugin
-	// TODO remove this
+	// TODO remove this  in 0.22
 	// it is only needed due to conflicts with output name in terminal options
 	// https://github.com/turbot/steampipe/issues/2534
 	commandName string
@@ -138,7 +138,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 		} else {
 			c.GeneralOptions.Merge(o)
 		}
-		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
+		// TODO: remove in 0.22 [https://github.com/turbot/steampipe/issues/3251]
 		if c.GeneralOptions.MaxParallel != nil {
 			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants.Bold("max_parallel"), constants.Bold("general options"))))
 		}
