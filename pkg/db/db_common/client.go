@@ -26,7 +26,7 @@ type Client interface {
 	ExecuteSyncInSession(context.Context, *DatabaseSession, string, ...any) (*queryresult.SyncQueryResult, error)
 	ExecuteInSession(context.Context, *DatabaseSession, func(), string, ...any) (*queryresult.Result, error)
 
-	RefreshSessions(context.Context) *AcquireSessionResult
+	ResetPools(context.Context)
 	GetSchemaFromDB(context.Context) (*SchemaMetadata, error)
 
 	ServerSettings() *ServerSettings

@@ -811,5 +811,6 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
-	c.client().RefreshSessions(ctx)
+	// refresh all connections in the pool - since the search path may have changed
+	c.client().ResetPools(ctx)
 }

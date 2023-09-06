@@ -14,17 +14,16 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
+const (
+	MaxConnLifeTime = 10 * time.Minute
+	MaxConnIdleTime = 1 * time.Minute
+)
+
 type DbConnectionCallback func(context.Context, *pgx.Conn) error
 
-func (c *DbClient) establishConnectionPool(ctx context.Context) error {
+func (c *DbClient) establishConnectionPool(ctx context.Context, overrides clientConfig) error {
 	utils.LogTime("db_client.establishConnectionPool start")
 	defer utils.LogTime("db_client.establishConnectionPool end")
-
-	const (
-		connMaxIdleTime = 1 * time.Minute
-		connMaxLifetime = 10 * time.Minute
-	)
-	maxConnections := db_common.MaxDbConnections()
 
 	config, err := pgxpool.ParseConfig(c.connectionString)
 	if err != nil {
@@ -55,9 +54,9 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	// TODO BINAEK dig into this and figure out why this is happening.
 	// We need to be sure that it is not an issue with service management
 	config.MinConns = 0
-	config.MaxConns = int32(maxConnections)
-	config.MaxConnLifetime = connMaxLifetime
-	config.MaxConnIdleTime = connMaxIdleTime
+	config.MaxConns = int32(db_common.MaxDbConnections())
+	config.MaxConnLifetime = MaxConnLifeTime
+	config.MaxConnIdleTime = MaxConnIdleTime
 	if c.onConnectionCallback != nil {
 		config.AfterConnect = c.onConnectionCallback
 	}
@@ -66,6 +65,10 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	config.ConnConfig.Config.RuntimeParams = map[string]string{
 		constants.RuntimeParamsKeyApplicationName: runtime.ClientConnectionAppName,
 	}
+
+	// apply any overrides
+	// this is used to set the pool size and lifetimes of the connections from up top
+	overrides.userPoolSettings.apply(config)
 
 	// this returns connection pool
 	dbPool, err := pgxpool.NewWithConfig(context.Background(), config)
@@ -84,19 +87,19 @@ func (c *DbClient) establishConnectionPool(ctx context.Context) error {
 	}
 	c.userPool = dbPool
 
-	return c.establishManagementConnectionPool(ctx, config)
+	return c.establishManagementConnectionPool(ctx, config, overrides)
 }
 
 // establishSystemConnectionPool creates a connection pool to use to execute
 // system-initiated queries (loading of connection state etc.)
 // unlike establishConnectionPool, which is run first to create the user-query pool
 // this doesn't wait for the pool to completely start, as establishConnectionPool will have established and verified a connection with the service
-func (c *DbClient) establishManagementConnectionPool(ctx context.Context, config *pgxpool.Config) error {
+func (c *DbClient) establishManagementConnectionPool(ctx context.Context, config *pgxpool.Config, overrides clientConfig) error {
 	utils.LogTime("db_client.establishSystemConnectionPool start")
 	defer utils.LogTime("db_client.establishSystemConnectionPool end")
 
 	// create a config from the config of the user pool
-	copiedConfig := createManagementPoolConfig(config)
+	copiedConfig := createManagementPoolConfig(config, overrides)
 
 	// this returns connection pool
 	dbPool, err := pgxpool.NewWithConfig(context.Background(), copiedConfig)
@@ -107,7 +110,7 @@ func (c *DbClient) establishManagementConnectionPool(ctx context.Context, config
 	return nil
 }
 
-func createManagementPoolConfig(config *pgxpool.Config) *pgxpool.Config {
+func createManagementPoolConfig(config *pgxpool.Config, overrides clientConfig) *pgxpool.Config {
 	// create a copy - we will be modifying this
 	copiedConfig := config.Copy()
 
@@ -118,6 +121,8 @@ func createManagementPoolConfig(config *pgxpool.Config) *pgxpool.Config {
 
 	// remove the afterConnect hook - we don't need the session data in management connections
 	copiedConfig.AfterConnect = nil
+
+	overrides.managementPoolSettings.apply(copiedConfig)
 
 	return copiedConfig
 }

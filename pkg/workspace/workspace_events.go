@@ -88,19 +88,31 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 	}
 	// if resources have changed, update introspection tables
 	if !prevResourceMaps.Equals(resourceMaps) {
-		if viper.GetString(constants.ArgIntrospection) != constants.IntrospectionNone {
-			res := client.RefreshSessions(context.Background())
-			if res.Error != nil || len(res.Warnings) > 0 {
-				fmt.Println()
-				error_helpers.ShowErrorWithMessage(ctx, res.Error, "error when refreshing session data")
-				error_helpers.ShowWarning(strings.Join(res.Warnings, "\n"))
-			}
-		}
+		// update the client with the new introspection data
+		w.onNewIntrospectionData(ctx, client)
+
 		if w.onFileWatcherEventMessages != nil {
 			w.onFileWatcherEventMessages()
 		}
 	}
 	w.raiseDashboardChangedEvents(ctx, resourceMaps, prevResourceMaps)
+}
+
+func (w *Workspace) onNewIntrospectionData(ctx context.Context, client db_common.Client) {
+	if viper.GetString(constants.ArgIntrospection) == constants.IntrospectionNone {
+		// nothing to do here
+		return
+	}
+	client.ResetPools(ctx)
+	res := client.AcquireSession(ctx)
+	if res.Session != nil {
+		res.Session.Close(error_helpers.IsContextCanceled(ctx))
+	}
+	if res != nil {
+		fmt.Println()
+		error_helpers.ShowErrorWithMessage(ctx, res.Error, "error when refreshing session data")
+		error_helpers.ShowWarning(strings.Join(res.Warnings, "\n"))
+	}
 }
 
 func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ResourceMaps, *modconfig.ResourceMaps, *error_helpers.ErrorAndWarnings) {

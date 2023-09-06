@@ -54,7 +54,7 @@ func (i *InitData) RegisterExporters(exporters ...export.Exporter) *InitData {
 	return i
 }
 
-func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
+func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...db_client.ClientOption) {
 	defer func() {
 		if r := recover(); r != nil {
 			i.Result.Error = helpers.ToError(r)
@@ -136,7 +136,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker) {
 	})
 
 	statushooks.SetStatus(ctx, "Connecting to steampipe")
-	client, errorsAndWarnings := GetDbClient(getClientCtx, invoker, ensureSessionData)
+	client, errorsAndWarnings := GetDbClient(getClientCtx, invoker, ensureSessionData, opts...)
 	if errorsAndWarnings.Error != nil {
 		i.Result.Error = errorsAndWarnings.Error
 		return
@@ -178,15 +178,15 @@ func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap map
 }
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
-func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback) (db_common.Client, *error_helpers.ErrorAndWarnings) {
+func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (db_common.Client, *error_helpers.ErrorAndWarnings) {
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		statushooks.SetStatus(ctx, "Connecting to remote Steampipe database")
-		client, err := db_client.NewDbClient(ctx, connectionString, onConnectionCallback)
+		client, err := db_client.NewDbClient(ctx, connectionString, onConnectionCallback, opts...)
 		return client, error_helpers.NewErrorsAndWarning(err)
 	}
 
 	statushooks.SetStatus(ctx, "Starting local Steampipe database")
-	return db_local.GetLocalClient(ctx, invoker, onConnectionCallback)
+	return db_local.GetLocalClient(ctx, invoker, onConnectionCallback, opts...)
 }
 
 func (i *InitData) Cleanup(ctx context.Context) {

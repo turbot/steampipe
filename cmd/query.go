@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/connection_sync"
 
 	"github.com/hashicorp/hcl/v2"
@@ -167,11 +168,11 @@ func validateQueryArgs(ctx context.Context, args []string) error {
 	interactiveMode := len(args) == 0
 	if interactiveMode && (viper.IsSet(constants.ArgSnapshot) || viper.IsSet(constants.ArgShare)) {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
-		return fmt.Errorf("cannot share snapshots in interactive mode")
+		return sperr.New("cannot share snapshots in interactive mode")
 	}
 	if interactiveMode && len(viper.GetStringSlice(constants.ArgExport)) > 0 {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
-		return fmt.Errorf("cannot export query results in interactive mode")
+		return sperr.New("cannot export query results in interactive mode")
 	}
 	// if share or snapshot args are set, there must be a query specified
 	err := cmdconfig.ValidateSnapshotArgs(ctx)
@@ -184,7 +185,7 @@ func validateQueryArgs(ctx context.Context, args []string) error {
 	output := viper.GetString(constants.ArgOutput)
 	if !helpers.StringSliceContains(validOutputFormats, output) {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
-		return fmt.Errorf("invalid output format: '%s', must be one of [%s]", output, strings.Join(validOutputFormats, ", "))
+		return sperr.New("invalid output format: '%s', must be one of [%s]", output, strings.Join(validOutputFormats, ", "))
 	}
 
 	return nil
@@ -280,11 +281,11 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot) (*queryresult
 	// the table of a snapshot query has a fixed name
 	tablePanel, ok := snap.Panels[modconfig.SnapshotQueryTableName]
 	if !ok {
-		return nil, fmt.Errorf("dashboard does not contain table result for query")
+		return nil, sperr.New("dashboard does not contain table result for query")
 	}
 	chartRun := tablePanel.(*dashboardexecute.LeafRun)
 	if !ok {
-		return nil, fmt.Errorf("failed to read query result from snapshot")
+		return nil, sperr.New("failed to read query result from snapshot")
 	}
 	// check for error
 	if err := chartRun.GetError(); err != nil {

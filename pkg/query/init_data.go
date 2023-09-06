@@ -3,9 +3,11 @@ package query
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/statushooks"
@@ -111,5 +113,18 @@ func (i *InitData) init(ctx context.Context, args []string) {
 	i.Queries = resolvedQueries
 
 	// and call base init
-	i.InitData.Init(ctx, constants.InvokerQuery)
+	i.InitData.Init(
+		ctx,
+		constants.InvokerQuery,
+		db_client.WithUserPoolOverride(db_client.PoolOverrides{
+			Size:        1,
+			MaxLifeTime: 24 * time.Hour,
+			MaxIdleTime: 24 * time.Hour,
+		}),
+		db_client.WithManagementPoolOverride(db_client.PoolOverrides{
+			// we need two connections here, since one of them will be reserved
+			// by the notification listener in the interactive prompt
+			Size: 2,
+		}),
+	)
 }
