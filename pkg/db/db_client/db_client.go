@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/serversettings"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -62,7 +61,7 @@ type DbClient struct {
 	onConnectionCallback DbConnectionCallback
 }
 
-func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback, options ...ClientOption) (_ *DbClient, err error) {
+func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback, opts ...ClientOption) (_ *DbClient, err error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
@@ -96,8 +95,8 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 	}()
 
 	config := clientConfig{}
-	for _, option := range options {
-		option(&config)
+	for _, o := range opts {
+		o(&config)
 	}
 
 	if err := client.establishConnectionPool(ctx, config); err != nil {
@@ -180,21 +179,6 @@ func (c *DbClient) Close(context.Context) error {
 	return nil
 }
 
-// RefreshSessions terminates the current connections and creates a new one - repopulating session data
-func (c *DbClient) RefreshSessions(ctx context.Context) (res *db_common.AcquireSessionResult) {
-	utils.LogTime("db_client.RefreshSessions start")
-	defer utils.LogTime("db_client.RefreshSessions end")
-
-	// reset the pools - this will ensure that all connections in the pool
-	// are dropped and new ones are created
-	c.resetPools(ctx)
-	res = c.AcquireSession(ctx)
-	if res.Session != nil {
-		res.Session.Close(error_helpers.IsContextCanceled(ctx))
-	}
-	return res
-}
-
 // GetSchemaFromDB  retrieves schemas for all steampipe connections (EXCEPT DISABLED CONNECTIONS)
 // NOTE: it optimises the schema extraction by extracting schema information for
 // connections backed by distinct plugins and then fanning back out.
@@ -259,9 +243,9 @@ func (c *DbClient) GetSchemaFromDBLegacy(ctx context.Context, conn *pgxpool.Conn
 }
 
 // refreshDbClient terminates the current connection and opens up a new connection to the service.
-func (c *DbClient) resetPools(ctx context.Context) {
-	utils.LogTime("db_client.refreshDbClient start")
-	defer utils.LogTime("db_client.refreshDbClient end")
+func (c *DbClient) ResetPools(ctx context.Context) {
+	log.Println("[TRACE] db_client.ResetPools start")
+	defer log.Println("[TRACE] db_client.ResetPools end")
 
 	c.userPool.Reset()
 	c.managementPool.Reset()
