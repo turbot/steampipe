@@ -16,26 +16,6 @@ import (
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 )
 
-// StartNewInstance loads the plugin manager state, stops any previous instance and instantiates a new plugin manager
-func StartNewInstance(steampipeExecutablePath string) error {
-	// try to load the plugin manager state
-	state, err := LoadPluginManagerState()
-	if err != nil {
-		log.Printf("[WARN] plugin manager StartNewInstance() - load state failed: %s", err)
-		return err
-	}
-
-	if state.Running {
-		log.Printf("[TRACE] plugin manager StartNewInstance() found previous instance of plugin manager still running - stopping it")
-		// stop the current instance
-		if err := stop(state); err != nil {
-			log.Printf("[WARN] failed to stop previous instance of plugin manager: %s", err)
-			return err
-		}
-	}
-	return start(steampipeExecutablePath)
-}
-
 // start plugin manager, without checking it is already running
 // we need to be provided with the exe path as we have no way of knowing where the steampipe exe it
 // when the plugin mananager is first started by steampipe, we derive the exe path from the running process and
