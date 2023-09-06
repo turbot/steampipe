@@ -30,6 +30,8 @@ const (
 
 // ShutdownService stops the database instance if the given 'invoker' matches
 func ShutdownService(ctx context.Context, invoker constants.Invoker) {
+	log.Println("[INFO] ShutdownService start")
+	defer log.Println("[INFO] ShutdownService end")
 	utils.LogTime("db_local.ShutdownService start")
 	defer utils.LogTime("db_local.ShutdownService end")
 
@@ -48,6 +50,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	// how many clients are connected
 	// under a fresh context
 	clientCounts, err := GetClientCount(context.Background())
+	log.Println("[INFO] clientCounts: ", clientCounts.TotalClients, clientCounts.SteampipeClients, clientCounts.PluginManagerClients)
 	// if there are other clients connected
 	// and if there's no error
 	if err == nil && clientCounts.SteampipeClients > 0 {
