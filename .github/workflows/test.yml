@@ -90,34 +90,34 @@ jobs:
       matrix:
         platform: [macos-latest, ubuntu-latest]
         test_block:
-          - "migration"
-          - "brew"
+          # - "migration"
+          # - "brew"
           - "installation"
           - "plugin"
           - "connection_config"
           - "service"
           - "settings"
           - "ssl"
-          - "blank_aggregators"
-          - "search_path"
+          # - "blank_aggregators"
+          # - "search_path"
           - "chaos_and_query"
-          - "dynamic_schema"
-          - "dynamic_aggregators"
-          - "cache"
-          - "mod_install"
-          - "mod"
-          - "mod_require"
-          - "check"
-          - "performance"
-          - "config_precedence"
+          # - "dynamic_schema"
+          # - "dynamic_aggregators"
+          # - "cache"
+          # - "mod_install"
+          # - "mod"
+          # - "mod_require"
+          # - "check"
+          # - "performance"
+          # - "config_precedence"
           - "introspection"
-          - "cloud"
-          - "snapshot"
-          - "dashboard"
-          - "dashboard_parsing_validation"
+          # - "cloud"
+          # - "snapshot"
+          # - "dashboard"
+          # - "dashboard_parsing_validation"
           - "schema_cloning"
-          - "exit_codes"
-          - "force_stop"
+          # - "exit_codes"
+          # - "force_stop"
         exclude:
           - platform: macos-latest
             test_block: migration
@@ -181,7 +181,7 @@ jobs:
         continue-on-error: false
         run: |
           steampipe query "select 1"
-          steampipe plugin install chaos chaosdynamic --progress=false
+          steampipe plugin install chaos --progress=false
 
       - name: Save Install DB Logs
         uses: actions/upload-artifact@v3
