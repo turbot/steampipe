@@ -7,7 +7,7 @@ env:
   SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
   SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-  STEAMPIPE_LOG: trace
+  STEAMPIPE_LOG: info
 
 jobs:
   goreleaser:
