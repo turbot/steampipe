@@ -254,9 +254,11 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 	}
 
 	log.Printf("[INFO] PluginManager closing pool")
+
 	// close our pool
-	m.pool.Close()
-	log.Printf("[INFO] PluginManager pool closed")
+	// log.Println("[INFO] PluginManager pool stats:", m.pool.Stat().TotalConns(), m.pool.Stat().IdleConns())
+	// m.pool.Close()
+	// log.Printf("[INFO] PluginManager pool closed")
 
 	return &pb.ShutdownResponse{}, nil
 }
