@@ -264,6 +264,29 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 	//}
 
 	log.Printf("[INFO] PluginManager closing pool")
+	_, err = m.pool.Exec(context.Background(), `
+	SELECT 
+    pg_terminate_backend(pid) 
+	FROM 
+		pg_stat_activity 
+	WHERE 
+		-- don't kill my own connection!
+		pid <> pg_backend_pid()
+		-- get only the network client processes
+		client_port IS NOT NULL 
+		AND
+		-- which are client backends
+		backend_type=$1 
+		AND
+		-- which are from the plugin manager
+		application_name!=$2
+		;
+	`, "client backend", constants.ServiceConnectionAppNamePrefix)
+
+	if err != nil {
+		log.Println("[INFO] there was a problem shutting down other connections", err)
+	}
+
 	// close our pool
 	log.Println("[INFO] PluginManager pool stats:", m.pool.Stat().TotalConns(), m.pool.Stat().IdleConns())
 	m.pool.Close()
