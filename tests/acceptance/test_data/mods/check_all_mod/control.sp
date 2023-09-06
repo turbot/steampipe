@@ -6,6 +6,24 @@ benchmark "check_all" {
   ]
 }
 
+benchmark "check_all_1" {
+  title = "Benchmark to test the steampipe check all functionality"
+  children = [
+    control.check_1,
+    control.check_2
+  ]
+}
+
+benchmark "check_all_2" {
+  title = "Benchmark to test the steampipe check all functionality"
+  children = [
+    control.check_1,
+    control.check_2
+  ]
+}
+
+
+
 control "check_1" {
   title         = "Control to verify steampipe check all functionality 1"
   description   = "Control to verify steampipe check all functionality."
