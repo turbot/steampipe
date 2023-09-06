@@ -112,20 +112,13 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 		}
 
 		// start plugin manager if needed
-		// TODO KAI return plugin manager
-		res = ensurePluginManager(res)
-		if res.Error != nil {
-			return res
-		}
-
-		// call initial refresh connections
-		// get plugin manager client
-		// TODO KAI remove
-		pluginManager, err := pluginmanager.GetPluginManager()
+		pluginManager, pluginManagerState, err := ensurePluginManager()
+		res.PluginManagerState = pluginManagerState
 		if err != nil {
 			res.Error = err
 			return res
 		}
+
 		// ask the plugin manager to refresh connections
 		// this is executed asyncronously by the plugin manager
 		pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
@@ -136,29 +129,30 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 	return res
 }
 
-func ensurePluginManager(res *StartResult) *StartResult {
+func ensurePluginManager() (*pluginmanager.PluginManagerClient, *pluginmanager.PluginManagerState, error) {
 	// start the plugin manager if needed
-	res.PluginManagerState, res.Error = pluginmanager.LoadPluginManagerState()
-	if res.Error != nil {
-		res.Status = ServiceFailedToStart
-		return res
+	state, err := pluginmanager.LoadPluginManagerState()
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if !res.PluginManagerState.Running {
+	if !state.Running {
 		// get the location of the currently running steampipe process
 		executable, err := os.Executable()
 		if err != nil {
 			log.Printf("[WARN] plugin manager start() - failed to get steampipe executable path: %s", err)
-			return res.SetError(err)
+			return nil, nil, err
 		}
-		if err := pluginmanager.StartNewInstance(executable); err != nil {
+		if state, err = pluginmanager.StartNewInstance(executable); err != nil {
 			log.Printf("[WARN] StartServices plugin manager failed to start: %s", err)
-			return res.SetError(err)
+			return nil, nil, err
 		}
-		// set status to service started as started plugin manager
-		res.Status = ServiceStarted
 	}
-	return res
+	client, err := pluginmanager.NewPluginManagerClient(state)
+	if err != nil {
+		return nil, state, err
+	}
+	return client, state, nil
 }
 
 func postServiceStart(ctx context.Context, res *StartResult) error {
