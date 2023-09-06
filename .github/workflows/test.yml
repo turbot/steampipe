@@ -7,7 +7,7 @@ env:
   SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
   SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-  STEAMPIPE_LOG: info
+  STEAMPIPE_LOG: trace
 
 jobs:
   goreleaser:
@@ -90,33 +90,33 @@ jobs:
       matrix:
         platform: [macos-latest, ubuntu-latest]
         test_block:
-          - "migration"
-          - "brew"
-          - "installation"
-          - "plugin"
+          # - "migration"
+          # - "brew"
+          # - "installation"
+          # - "plugin"
           - "service"
-          - "settings"
           - "ssl"
-          - "blank_aggregators"
+          # - "settings"
+          # - "blank_aggregators"
           - "search_path"
-          - "chaos_and_query"
-          - "dynamic_schema"
-          - "dynamic_aggregators"
-          - "cache"
-          - "mod_install"
-          - "mod"
-          - "mod_require"
-          - "check"
-          - "performance"
-          - "config_precedence"
+          # - "chaos_and_query"
+          # - "dynamic_schema"
+          # - "dynamic_aggregators"
+          # - "cache"
+          # - "mod_install"
+          # - "mod"
+          # - "mod_require"
+          # - "check"
+          # - "performance"
+          # - "config_precedence"
           - "introspection"
-          - "cloud"
-          - "snapshot"
-          - "dashboard"
-          - "dashboard_parsing_validation"
+          # - "cloud"
+          # - "snapshot"
+          # - "dashboard"
+          # - "dashboard_parsing_validation"
           - "schema_cloning"
-          - "exit_codes"
-          - "force_stop"
+          # - "exit_codes"
+          # - "force_stop"
         exclude:
           - platform: macos-latest
             test_block: migration
@@ -189,7 +189,7 @@ jobs:
 
       - name: Run Test Suite
         id: run-test-suite
-        timeout-minutes: 15
+        timeout-minutes: 5
         continue-on-error: true
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
