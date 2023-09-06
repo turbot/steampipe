@@ -811,6 +811,8 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	c.executionLock.Lock()
 	defer c.executionLock.Unlock()
 
+	// refresh all connections in the pool
 	session := c.client().RefreshSessions(ctx)
+	// release the session which was acquired as part of refreshing (we don't need this)
 	session.Session.Close(true)
 }

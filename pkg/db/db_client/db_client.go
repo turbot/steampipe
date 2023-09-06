@@ -62,7 +62,7 @@ type DbClient struct {
 	onConnectionCallback DbConnectionCallback
 }
 
-func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback, opts ...ClientOption) (_ *DbClient, err error) {
+func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback, options ...ClientOption) (_ *DbClient, err error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
 
@@ -96,8 +96,8 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 	}()
 
 	config := clientConfig{}
-	for _, co := range opts {
-		co(&config)
+	for _, option := range options {
+		option(&config)
 	}
 
 	if err := client.establishConnectionPool(ctx, config); err != nil {
