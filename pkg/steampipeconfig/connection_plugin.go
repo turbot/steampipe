@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/pluginmanager"
 	"log"
 
 	"github.com/hashicorp/go-plugin"
@@ -98,6 +99,14 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 	connectionNames := make([]string, len(connectionsToCreate))
 	for i, connection := range connectionsToCreate {
 		connectionNames[i] = connection.Name
+	}
+
+	// HACK do not use passed in plugin manager, retrieve GRPC interface
+	// get plugin manager
+	pluginManager, err := pluginmanager.GetPluginManager()
+	if err != nil {
+		res.Error = err
+		return nil, res
 	}
 
 	log.Printf("[TRACE] CreateConnectionPlugin calling  pluginManager.Get")
