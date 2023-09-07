@@ -1,84 +1,80 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
-# @test "steampipe plugin help is displayed when no sub command given" {
-#   steampipe plugin > test.txt
+@test "steampipe plugin help is displayed when no sub command given" {
+  steampipe plugin > test.txt
 
-#   # checking for OS type, since sed command is different for linux and OSX
-#   # removing lines, since they contain absolute file paths
-#   if [[ "$OSTYPE" == "darwin"* ]]; then
-#     run sed -i ".txt" "36d" test.txt
-#   else
-#     run sed -i "36d" test.txt
-#   fi
+  # checking for OS type, since sed command is different for linux and OSX
+  # removing lines, since they contain absolute file paths
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    run sed -i ".txt" "36d" test.txt
+  else
+    run sed -i "36d" test.txt
+  fi
 
-#   assert_equal "$(cat test.txt)" "$(cat $TEST_DATA_DIR/expected_plugin_help_output.txt)"
-#   rm -f test.txt*
-# }
+  assert_equal "$(cat test.txt)" "$(cat $TEST_DATA_DIR/expected_plugin_help_output.txt)"
+  rm -f test.txt*
+}
 
-# @test "plugin install" {
-#   run steampipe plugin install net
-#   assert_success
-#   steampipe plugin uninstall net
-# }
+@test "plugin install" {
+  run steampipe plugin install net
+  assert_success
+  steampipe plugin uninstall net
+}
 
-# @test "plugin install from stream" {
-#   run steampipe plugin install net@0.2
-#   assert_success
-#   steampipe plugin uninstall net@0.2
-# }
+@test "plugin install from stream" {
+  run steampipe plugin install net@0.2
+  assert_success
+  steampipe plugin uninstall net@0.2
+}
 
-# @test "plugin install from stream (prefixed with v)" {
-#   run steampipe plugin install net@v0.2
-#   assert_success
-#   steampipe plugin uninstall net@0.2
-# }
+@test "plugin install from stream (prefixed with v)" {
+  run steampipe plugin install net@v0.2
+  assert_success
+  steampipe plugin uninstall net@0.2
+}
 
-# @test "start service, install plugin and query" {
-#   # start service
-#   steampipe service start
+@test "start service, install plugin and query" {
+  # start service
+  steampipe service start
 
-#   # install plugin
-#   steampipe plugin install chaos
+  # install plugin
+  steampipe plugin install chaos
 
-#   # query the plugin
-#   run steampipe query "select time_col from chaos_cache_check limit 1"
-#   # check if the query passes
-#   assert_success
+  steampipe query "select 1"
 
-#   # stop service
-#   steampipe service stop
+  # query the plugin
+  run steampipe query "select time_col from chaos_cache_check limit 1"
+  # check if the query passes
+  assert_success
 
-#   # check service status
-#   run steampipe service status
+  # stop service
+  steampipe service stop
 
-#   assert_output "$output" "Service is not running"
-# }
+  # check service status
+  run steampipe service status
 
-# @test "steampipe plugin list" {
-#     run steampipe plugin list
-#     assert_success
-# }
+  assert_output "$output" "Service is not running"
+}
 
-# @test "steampipe plugin list works with disabled connections" {
-#   rm -f $STEAMPIPE_INSTALL_DIR/config/*
-#   cp $SRC_DATA_DIR/chaos_conn_import_disabled.spc $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
-#   run steampipe plugin list 2>&3 1>&3
-#   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
-#   assert_success
-# }
+@test "steampipe plugin list" {
+    run steampipe plugin list
+    assert_success
+}
 
-# Custom function to create a copy of the directory
-copy_directory() {
-  cp -r "$MY_TEST_DIRECTORY" "/tmp/test_copy"
-  export MY_TEST_COPY="/tmp/test_copy"
+@test "steampipe plugin list works with disabled connections" {
+  rm -f $STEAMPIPE_INSTALL_DIR/config/*
+  cp $SRC_DATA_DIR/chaos_conn_import_disabled.spc $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
+  run steampipe plugin list 2>&3 1>&3
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_conn_import_disabled.spc
+  assert_success
 }
 
 @test "plugin list - output table and json" {
   export STEAMPIPE_DISPLAY_WIDTH=100
 
-  # Create a copy of the directory
-  copy_directory
+  # Create a copy of the install directory
+  copy_install_directory
 
   steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $MY_TEST_COPY
 
@@ -97,8 +93,8 @@ copy_directory() {
 @test "plugin list - output table and json (with a missing plugin)" {
   export STEAMPIPE_DISPLAY_WIDTH=100
 
-  # Create a copy of the directory
-  copy_directory
+  # Create a copy of the install directory
+  copy_install_directory
 
   steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $MY_TEST_COPY
   # uninstall a plugin but dont remove the config - to simulate the missing plugin scenario
@@ -121,8 +117,8 @@ copy_directory() {
 @test "plugin list - output table and json (with a failed plugin)" {
   export STEAMPIPE_DISPLAY_WIDTH=100
   
-  # Create a copy of the directory
-  copy_directory
+  # Create a copy of the install directory
+  copy_install_directory
 
   steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $MY_TEST_COPY
   # remove the contents of a plugin execuatable to simulate the failed plugin scenario
@@ -141,8 +137,8 @@ copy_directory() {
 }
 
 @test "verify that installing plugins creates individual version.json files" {
-  # Create a copy of the directory
-  copy_directory
+  # Create a copy of the install directory
+  copy_install_directory
 
   run steampipe plugin install net chaos --install-dir $MY_TEST_COPY
   assert_success
@@ -157,8 +153,8 @@ copy_directory() {
 }
 
 @test "verify that backfilling of individual plugin version.json works" {
-  # Create a copy of the directory
-  copy_directory
+  # Create a copy of the install directory
+  copy_install_directory
 
   run steampipe plugin install net chaos --install-dir $MY_TEST_COPY
   assert_success
@@ -185,208 +181,231 @@ copy_directory() {
   rm -rf $MY_TEST_COPY
 }
 
-# @test "verify that backfilling of individual plugin version.json works where it is only partially backfilled" {
-#   tmpdir=$(mktemp -d)
-#   run steampipe plugin install net chaos --install-dir $tmpdir
-#   assert_success
+@test "verify that backfilling of individual plugin version.json works where it is only partially backfilled" {
+  # Create a copy of the install directory
+  copy_install_directory
+
+  run steampipe plugin install net chaos --install-dir $MY_TEST_COPY
+  assert_success
   
-#   vFile1="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
-#   vFile2="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/chaos@latest/version.json"
+  vFile1="$MY_TEST_COPY/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
+  vFile2="$MY_TEST_COPY/plugins/hub.steampipe.io/plugins/turbot/chaos@latest/version.json"
   
-#   file1Content=$(cat $vFile1)
-#   file2Content=$(cat $vFile2)
+  file1Content=$(cat $vFile1)
+  file2Content=$(cat $vFile2)
   
-#   # remove one individual version file
-#   rm -f $vFile1
+  # remove one individual version file
+  rm -f $vFile1
   
-#   # run steampipe again so that the plugin version files get backfilled
-#   run steampipe plugin list --install-dir $tmpdir
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe plugin list --install-dir $MY_TEST_COPY
   
-#   [ ! -f $vFile1 ] && fail "could not find $vFile1"
-#   [ ! -f $vFile2 ] && fail "could not find $vFile2"
+  [ ! -f $vFile1 ] && fail "could not find $vFile1"
+  [ ! -f $vFile2 ] && fail "could not find $vFile2"
   
-#   assert_equal "$(cat $vFile1)" "$file1Content"
-#   assert_equal "$(cat $vFile2)" "$file2Content"
+  assert_equal "$(cat $vFile1)" "$file1Content"
+  assert_equal "$(cat $vFile2)" "$file2Content"
   
-#   rm -rf $tmpdir
-# }
+  rm -rf $MY_TEST_COPY
+}
 
-# @test "verify that global plugin/versions.json is composed from individual version.json files when it is absent" {
-#   tmpdir=$(mktemp -d)
-#   run steampipe plugin install net chaos --install-dir $tmpdir
-#   assert_success
+@test "verify that global plugin/versions.json is composed from individual version.json files when it is absent" {
+  # Create a copy of the install directory
+  copy_install_directory
+
+  run steampipe plugin install net chaos --install-dir $MY_TEST_COPY
+  assert_success
   
-#   vFile="$tmpdir/plugins/versions.json"
+  vFile="$MY_TEST_COPY/plugins/versions.json"
   
-#   fileContent=$(cat $vFile)
+  fileContent=$(cat $vFile)
   
-#   # remove global version file
-#   rm -f $vFile
+  # remove global version file
+  rm -f $vFile
   
-#   # run steampipe again so that the plugin version files get backfilled
-#   run steampipe plugin list --install-dir $tmpdir
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe plugin list --install-dir $MY_TEST_COPY
   
-#   ls -la $vFile
+  ls -la $vFile
   
-#   [ ! -f $vFile ] && fail "could not find $vFile"
+  [ ! -f $vFile ] && fail "could not find $vFile"
   
-#   assert_equal "$(cat $vFile)" "$fileContent"
+  assert_equal "$(cat $vFile)" "$fileContent"
   
-#   rm -rf $tmpdir
-# }
+  rm -rf $MY_TEST_COPY
+}
 
-# @test "verify that global plugin/versions.json is composed from individual version.json files when it is corrupt" {
-#   tmpdir=$(mktemp -d)
-#   run steampipe plugin install net chaos --install-dir $tmpdir
-#   assert_success
+@test "verify that global plugin/versions.json is composed from individual version.json files when it is corrupt" {
+  # Create a copy of the install directory
+  copy_install_directory
+
+  run steampipe plugin install net chaos --install-dir $MY_TEST_COPY
+  assert_success
   
-#   vFile="$tmpdir/plugins/versions.json"
-#   fileContent=$(cat $vFile)
+  vFile="$MY_TEST_COPY/plugins/versions.json"
+  fileContent=$(cat $vFile)
   
-#   # remove global version file
-#   echo "badline to corrupt versions.json" >> $vFile
+  # remove global version file
+  echo "badline to corrupt versions.json" >> $vFile
   
-#   # run steampipe again so that the plugin version files get backfilled
-#   run steampipe plugin list --install-dir $tmpdir
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe plugin list --install-dir $MY_TEST_COPY
   
-#   [ ! -f $vFile ] && fail "could not find $vFile"
+  [ ! -f $vFile ] && fail "could not find $vFile"
   
-#   assert_equal "$(cat $vFile)" "$fileContent"
+  assert_equal "$(cat $vFile)" "$fileContent"
   
-#   rm -rf $tmpdir
-# }
+  rm -rf $MY_TEST_COPY
+}
 
-# @test "verify that composition of global plugin/versions.json works when an individual version.json file is corrupt" {
-#   tmpdir=$(mktemp -d)
-#   run steampipe plugin install net chaos --install-dir $tmpdir
-#   assert_success
+@test "verify that composition of global plugin/versions.json works when an individual version.json file is corrupt" {
+  # Create a copy of the install directory
+  copy_install_directory
+
+  run steampipe plugin install net chaos --install-dir $MY_TEST_COPY
+  assert_success
   
-#   vFile="$tmpdir/plugins/versions.json"  
-#   vFile1="$tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
+  vFile="$MY_TEST_COPY/plugins/versions.json"  
+  vFile1="$MY_TEST_COPY/plugins/hub.steampipe.io/plugins/turbot/net@latest/version.json"
   
-#   # corrupt a version file
-#   echo "bad line to corrupt" >> $vFile1
+  # corrupt a version file
+  echo "bad line to corrupt" >> $vFile1
   
-#   # remove global file
-#   rm -f $vFile
+  # remove global file
+  rm -f $vFile
   
-#   # run steampipe again so that the plugin version files get backfilled
-#   run steampipe plugin list --install-dir $tmpdir
+  # run steampipe again so that the plugin version files get backfilled
+  run steampipe plugin list --install-dir $MY_TEST_COPY
 
-#   # verify that global file got created
-#   [ ! -f $vFile ] && fail "could not find $vFile"
+  # verify that global file got created
+  [ ! -f $vFile ] && fail "could not find $vFile"
   
-#   rm -rf $tmpdir
-# }
+  rm -rf $MY_TEST_COPY
+}
 
-# @test "verify that plugin installed from registry are marked as 'local' when the modtime of the binary is after the install time" {
-#   tmpdir=$(mktemp -d)
-#   run steampipe plugin install net chaos --install-dir $tmpdir
-#   assert_success
+@test "verify that plugin installed from registry are marked as 'local' when the modtime of the binary is after the install time" {
+  # Create a copy of the install directory
+  copy_install_directory
 
-#   # wait for a couple of seconds
-#   sleep 2
+  run steampipe plugin install net chaos --install-dir $MY_TEST_COPY
+  assert_success
 
-#   # touch one of the plugin binaries
-#   touch $tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/steampipe-plugin-net.plugin
+  # wait for a couple of seconds
+  sleep 2
 
-#   # run steampipe again so that the plugin version files get backfilled
-#   version=$(steampipe plugin list --install-dir $tmpdir --output json | jq '.installed' | jq '. | map(select(.name | contains("net@latest")))' | jq '.[0].version')
+  # touch one of the plugin binaries
+  touch $MY_TEST_COPY/plugins/hub.steampipe.io/plugins/turbot/net@latest/steampipe-plugin-net.plugin
 
-#   # assert
-#   assert_equal "$version" '"local"'
+  # run steampipe again so that the plugin version files get backfilled
+  version=$(steampipe plugin list --install-dir $MY_TEST_COPY --output json | jq '.installed' | jq '. | map(select(.name | contains("net@latest")))' | jq '.[0].version')
 
-#   rm -rf $tmpdir
-# }
+  # assert
+  assert_equal "$version" '"local"'
 
-# @test "verify that steampipe check should bypass plugin requirement detection if installed plugin is local" {
-#   tmpdir=$(mktemp -d)
-#   run steampipe plugin install net --install-dir $tmpdir
-#   assert_success
+  rm -rf $MY_TEST_COPY
+}
 
-#   # wait for a couple of seconds
-#   sleep 2
+@test "verify that steampipe check should bypass plugin requirement detection if installed plugin is local" {
+  # Create a copy of the install directory
+  copy_install_directory
 
-#   # touch one of the plugin binaries
-#   touch $tmpdir/plugins/hub.steampipe.io/plugins/turbot/net@latest/steampipe-plugin-net.plugin
+  run steampipe plugin install net --install-dir $MY_TEST_COPY
+  assert_success
 
-#   run steampipe plugin list --install-dir $tmpdir
-#   echo $output
+  # wait for a couple of seconds
+  sleep 2
 
-#   # clone a mod which has a net plugin requirement
-#   cd $tmpdir
-#   git clone https://github.com/turbot/steampipe-mod-net-insights.git
-#   cd steampipe-mod-net-insights
+  # touch one of the plugin binaries
+  touch $MY_TEST_COPY/plugins/hub.steampipe.io/plugins/turbot/net@latest/steampipe-plugin-net.plugin
 
-#   # run steampipe check
-#   run steampipe check all --install-dir $tmpdir
+  run steampipe plugin list --install-dir $MY_TEST_COPY
+  echo $output
 
-#   # check - the plugin requirement warning should not be present in the output
-#   substring="Warning: could not find plugin which satisfies requirement"
-#   if [[ ! $output == *"$substring"* ]]; then
-#     run echo "Warning is not present in the output"
-#   else
-#     run echo "Warning is present in the output"
-#   fi
+  # clone a mod which has a net plugin requirement
+  cd $MY_TEST_COPY
+  git clone https://github.com/turbot/steampipe-mod-net-insights.git
+  cd steampipe-mod-net-insights
 
-#   assert_equal "$output" "Warning is not present in the output"
-#   rm -rf $tmpdir
-# }
+  # run steampipe check
+  run steampipe check all --install-dir $MY_TEST_COPY
 
-# @test "verify that plugin installed with --skip-config as true, should not have create a default config .spc file in config folder" {
-#   tmpdir=$(mktemp -d)
-#   run steampipe plugin install aws --skip-config --install-dir $tmpdir
-#   assert_success
+  # check - the plugin requirement warning should not be present in the output
+  substring="Warning: could not find plugin which satisfies requirement"
+  if [[ ! $output == *"$substring"* ]]; then
+    run echo "Warning is not present in the output"
+  else
+    run echo "Warning is present in the output"
+  fi
 
-#   run test -f $tmpdir/config/aws.spc
-#   assert_failure
+  assert_equal "$output" "Warning is not present in the output"
+  rm -rf $MY_TEST_COPY
+}
 
-#   rm -rf $tmpdir
-# }
+@test "verify that plugin installed with --skip-config as true, should not have create a default config .spc file in config folder" {
+  # Create a copy of the install directory
+  copy_install_directory
 
-# @test "verify that plugin installed with --skip-config as false(default), should have default config .spc file in config folder" {
-#   tmpdir=$(mktemp -d)
-#   run steampipe plugin install aws --install-dir $tmpdir
-#   assert_success
+  run steampipe plugin install aws --skip-config --install-dir $MY_TEST_COPY
+  assert_success
 
-#   run test -f $tmpdir/config/aws.spc
-#   assert_success
+  run test -f $MY_TEST_COPY/config/aws.spc
+  assert_failure
 
-#   rm -rf $tmpdir
-# }
+  rm -rf $MY_TEST_COPY
+}
 
-# @test "verify reinstalling a plugin does not overwrite existing plugin config" {
-#   # check if the default/tweaked config file for a plugin is not deleted after
-#   # re-installation of a plugin
+@test "verify that plugin installed with --skip-config as false(default), should have default config .spc file in config folder" {
+  # Create a copy of the install directory
+  copy_install_directory
 
-#   tmpdir=$(mktemp -d)
+  run steampipe plugin install aws --install-dir $MY_TEST_COPY
+  assert_success
 
-#   run steampipe plugin install aws --install-dir $tmpdir
+  run test -f $MY_TEST_COPY/config/aws.spc
+  assert_success
 
-#   run test -f $tmpdir/config/aws.spc
-#   assert_success
+  rm -rf $MY_TEST_COPY
+}
 
-#   echo '
-#   connection "aws" {
-#     plugin = "aws"
-#     endpoint_url = "http://localhost:4566"
-#   }
-#   ' >> $tmpdir/config/aws.spc
-#   cp $tmpdir/config/aws.spc config.spc
+@test "verify reinstalling a plugin does not overwrite existing plugin config" {
+  # check if the default/tweaked config file for a plugin is not deleted after
+  # re-installation of a plugin
 
-#   run steampipe plugin uninstall aws --install-dir $tmpdir
+  # Create a copy of the install directory
+  copy_install_directory
 
-#   run steampipe plugin install aws --skip-config --install-dir $tmpdir
+  run steampipe plugin install aws --install-dir $MY_TEST_COPY
 
-#   run test -f $tmpdir/config/aws.spc
-#   assert_success
+  run test -f $MY_TEST_COPY/config/aws.spc
+  assert_success
 
-#   run diff $tmpdir/config/aws.spc config.spc
-#   assert_success
+  echo '
+  connection "aws" {
+    plugin = "aws"
+    endpoint_url = "http://localhost:4566"
+  }
+  ' >> $MY_TEST_COPY/config/aws.spc
+  cp $MY_TEST_COPY/config/aws.spc config.spc
 
-#   rm config.spc
-#   rm -rf $tmpdir
-# }
+  run steampipe plugin uninstall aws --install-dir $MY_TEST_COPY
+
+  run steampipe plugin install aws --skip-config --install-dir $MY_TEST_COPY
+
+  run test -f $MY_TEST_COPY/config/aws.spc
+  assert_success
+
+  run diff $MY_TEST_COPY/config/aws.spc config.spc
+  assert_success
+
+  rm config.spc
+  rm -rf $MY_TEST_COPY
+}
+
+# Custom function to create a copy of the install directory
+copy_install_directory() {
+  cp -r "$MY_TEST_DIRECTORY" "/tmp/test_copy"
+  export MY_TEST_COPY="/tmp/test_copy"
+}
 
 function setup_file() {
   export BATS_TEST_TIMEOUT=180
@@ -396,7 +415,6 @@ function setup_file() {
   steampipe query "select 1" --install-dir $tmpdir
   # Export the directory path as an environment variable
   export MY_TEST_DIRECTORY=$tmpdir
-  # ls $tmpdir>&3
 }
 
 function teardown_file() {
