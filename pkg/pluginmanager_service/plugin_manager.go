@@ -222,6 +222,8 @@ func (m *PluginManager) OnConnectionConfigChanged(configMap connection.Connectio
 		log.Printf("[WARN] handleConnectionConfigChanges failed: %s", err.Error())
 	}
 
+	// update our plugin configs
+	m.plugins = plugins
 	err = m.handleUserLimiterChanges(plugins)
 	if err != nil {
 		log.Printf("[WARN] handleUserLimiterChanges failed: %s", err.Error())

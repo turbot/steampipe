@@ -31,6 +31,7 @@ func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConf
 	utils.LogTime("steampipeconfig.LoadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
 
+	log.Printf("[INFO] ensureDefaultConfigFile")
 	if err := ensureDefaultConfigFile(filepaths.EnsureConfigDir()); err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(
 			sperr.WrapWithMessage(
@@ -174,6 +175,7 @@ type loadConfigOptions struct {
 }
 
 func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loadConfigOptions) *error_helpers.ErrorAndWarnings {
+	log.Printf("[INFO] loadConfig is loading connection config")
 	// get all the config files in the directory
 	configPaths, err := filehelpers.ListFiles(configFolder, &filehelpers.ListOptions{
 		Flags:   filehelpers.FilesFlat,
@@ -278,6 +280,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 		return error_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
 	}
 
+	log.Printf("[INFO] loadConfig calling initializePlugins")
 	// ensure we have a plugin config struct for all plugins mentioned in connection config,
 	// even if there is not an explicit HCL config for it
 	steampipeConfig.initializePlugins()

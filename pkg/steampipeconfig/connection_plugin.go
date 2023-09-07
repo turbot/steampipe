@@ -2,8 +2,6 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -15,6 +13,9 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
+	"log"
+	"strings"
 )
 
 type ConnectionPluginData struct {
@@ -48,17 +49,24 @@ func (p ConnectionPlugin) addConnection(name string, config string, connectionOp
 }
 
 // GetSchema returns the cached schema if it is static, or if it is dynamic, refetch it
-func (p ConnectionPlugin) GetSchema(connectionName string) (*sdkproto.Schema, error) {
+func (p ConnectionPlugin) GetSchema(connectionName string) (schema *sdkproto.Schema, err error) {
+	defer func() {
+		if err != nil {
+			log.Printf("[TRACE] GetSchema for connection '%s' returning tables: %s", connectionName, strings.Join(maps.Keys(schema.Schema), ","))
+		}
+	}()
+	log.Printf("[TRACE] GetSchema for connection '%s': %s", connectionName)
 	connectionData, ok := p.ConnectionMap[connectionName]
 	if ok {
 		// if the schema mode is static, return the cached schema
 		if connectionData.Schema.Mode == sdkplugin.SchemaModeStatic {
+			log.Printf("[TRACE] connection data for connection '%s' is already loaded and schema is static - returning cached schema", connectionName)
 			return connectionData.Schema, nil
 		}
 	}
 	// otherwise this is a dynamic schema - refetch it
 	// we need to do this in case it has changed (for example as a result of a file watching event)
-	schema, err := p.PluginClient.GetSchema(connectionName)
+	schema, err = p.PluginClient.GetSchema(connectionName)
 	if err != nil {
 		log.Printf("[TRACE] failed to get schema for connection '%s': %s", connectionName, err)
 		return nil, err
@@ -205,7 +213,7 @@ func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*Co
 				continue
 			}
 
-			log.Printf("[TRACE] got schema, mode: %s", schema.Mode)
+			log.Printf("[TRACE] got schema, mode: %s, table count %d", schema.Mode, len(schema.Schema))
 			// if the schema is static, add to static schema map
 			if schema.Mode == sdkplugin.SchemaModeStatic {
 				staticSchemas[connectionPlugin.PluginName] = schema

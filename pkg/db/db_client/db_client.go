@@ -183,6 +183,7 @@ func (c *DbClient) Close(context.Context) error {
 // NOTE: it optimises the schema extraction by extracting schema information for
 // connections backed by distinct plugins and then fanning back out.
 func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetadata, error) {
+	log.Printf("[INFO] DbClient GetSchemaFromDB")
 	mgmtConn, err := c.managementPool.Acquire(ctx)
 	if err != nil {
 		return nil, err

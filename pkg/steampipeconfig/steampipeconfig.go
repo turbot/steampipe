@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"golang.org/x/exp/maps"
 	"log"
 	"os"
 	"strings"
@@ -335,4 +336,5 @@ func (c *SteampipeConfig) initializePlugins() {
 			c.Plugins[connection.PluginShortName] = &modconfig.Plugin{Source: connection.PluginShortName}
 		}
 	}
+	log.Printf("[INFO] connections: %s plugins: %s", strings.Join(maps.Keys(c.Connections), ","), strings.Join(maps.Keys(c.Plugins), ","))
 }
