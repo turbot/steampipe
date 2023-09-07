@@ -1,8 +1,9 @@
 package db_client
 
 type ScanMetadataRow struct {
-	id           int64 `db:"id"`
-	rowsFetched  int64 `db:"rows_fetched"`
-	cacheHit     bool  `db:"cache_hit"`
-	hydrateCalls int64 `db:"hydrate_calls"`
+	// the fields of this struct need to be public since these are populated by pgx using RowsToStruct
+	Id           int64 `db:"id"`
+	RowsFetched  int64 `db:"rows_fetched"`
+	CacheHit     bool  `db:"cache_hit"`
+	HydrateCalls int64 `db:"hydrate_calls"`
 }
