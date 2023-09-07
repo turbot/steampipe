@@ -97,13 +97,13 @@ func Stop() error {
 
 // stop the running plugin manager instance
 func stop(state *State) error {
-	log.Printf("[INFO] plugin manager stop")
+	log.Printf("[TRACE] plugin manager stop")
 	pluginManager, err := NewPluginManagerClient(state)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("[INFO] pluginManager.Shutdown")
+	log.Printf("[TRACE] pluginManager.Shutdown")
 	// tell plugin manager to kill all plugins
 	_, err = pluginManager.Shutdown(&pb.ShutdownRequest{})
 	if err != nil {
@@ -113,7 +113,7 @@ func stop(state *State) error {
 	// kill the underlying client
 	pluginManager.rawClient.Kill()
 
-	log.Printf("[INFO] pluginManager state.kill")
+	log.Printf("[TRACE] pluginManager state.kill")
 	// now kill the plugin manager
 	return state.kill()
 }

@@ -157,7 +157,6 @@ GROUP BY application_name
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
 func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (status StopStatus, e error) {
-	log.Printf("[INFO] StopDB invoker %s, force %v", invoker, force)
 	utils.LogTime("db_local.StopDB start")
 
 	defer func() {
@@ -167,11 +166,11 @@ func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (s
 		utils.LogTime("db_local.StopDB end")
 	}()
 
-	log.Println("[INFO] shutting down plugin manager")
+	log.Println("[TRACE] shutting down plugin manager")
 	// stop the plugin manager
 	// this means it may be stopped even if we fail to stop the service - that is ok - we will restart it if needed
 	pluginManagerStopError := pluginmanager.Stop()
-	log.Println("[INFO] shut down plugin manager")
+	log.Println("[TRACE] shut down plugin manager")
 
 	// stop the DB Service
 	log.Println("[INFO] stopping DB Service")

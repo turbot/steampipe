@@ -84,8 +84,7 @@ func (c *PluginManagerClient) RefreshConnections(req *pb.RefreshConnectionsReque
 }
 
 func (c *PluginManagerClient) Shutdown(req *pb.ShutdownRequest) (*pb.ShutdownResponse, error) {
-	log.Printf("[INFO] PluginManagerClient Shutdown")
-	defer log.Printf("[INFO] PluginManagerClient Shutdown complete")
+	log.Printf("[TRACE] PluginManagerClient Shutdown")
 
 	res, err := c.manager.Shutdown(req)
 	if err != nil {
