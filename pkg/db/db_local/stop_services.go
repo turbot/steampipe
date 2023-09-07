@@ -29,6 +29,8 @@ const (
 
 // ShutdownService stops the database instance if the given 'invoker' matches
 func ShutdownService(ctx context.Context, invoker constants.Invoker) {
+	log.Println("[INFO] >> ShutdownService start")
+	defer log.Println("[INFO] >> ShutdownService complete")
 	utils.LogTime("db_local.ShutdownService start")
 	defer utils.LogTime("db_local.ShutdownService end")
 
@@ -37,29 +39,35 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	}
 
 	status, _ := GetState()
+	if status != nil {
+		log.Printf("[INFO] >> status: %d", status.Pid)
+	}
 
 	// if the service is not running or it was invoked by 'steampipe service',
 	// then we don't shut it down
 	if status == nil || status.Invoker == constants.InvokerService {
+		log.Println("[INFO] >> service is not running or it was invoked by 'steampipe service'")
 		return
 	}
 
 	// how many clients are connected
 	// under a fresh context
 	clientCounts, err := GetClientCount(context.Background())
+	log.Printf("[INFO] >> TotalClients: %d PluginManagerClients: %d SteampipeClients: %d", clientCounts.TotalClients, clientCounts.PluginManagerClients, clientCounts.SteampipeClients)
 	// if there are other clients connected
 	// and if there's no error
 	if err == nil && clientCounts.SteampipeClients > 0 {
 		// there are other steampipe clients connected to the database
 		// we don't need to stop the service
 		// the last one to exit will shutdown the service
-		log.Printf("[TRACE] ShutdownService not closing database service - %d steampipe %s connected", clientCounts.SteampipeClients, utils.Pluralize("client", clientCounts.SteampipeClients))
+		log.Printf("[INFO] >> ShutdownService not closing database service - %d steampipe %s connected", clientCounts.SteampipeClients, utils.Pluralize("client", clientCounts.SteampipeClients))
 		return
 	}
 
 	// we can shut down the database
 	stopStatus, err := StopServices(ctx, false, invoker)
 	if err != nil {
+		log.Printf("[INFO] >> StopServices returned error: %s", err.Error())
 		error_helpers.ShowError(ctx, err)
 	}
 	if stopStatus == ServiceStopped {
@@ -67,8 +75,10 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	}
 
 	// shutdown failed - try to force stop
+	log.Println("[INFO] >> Trying to force stop")
 	_, err = StopServices(ctx, true, invoker)
 	if err != nil {
+		log.Printf("[INFO] >> StopServices with force stop returned error: %s", err.Error())
 		error_helpers.ShowError(ctx, err)
 	}
 
@@ -154,11 +164,13 @@ GROUP BY application_name
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
 func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (status StopStatus, e error) {
-
-	log.Printf("[TRACE] StopDB invoker %s, force %v", invoker, force)
+	log.Printf("[INFO] >> StopServices started")
+	defer log.Printf("[INFO] >> StopServices complete")
+	log.Printf("[INFO] StopDB invoker %s, force %v", invoker, force)
 	utils.LogTime("db_local.StopDB start")
 
 	defer func() {
+		log.Printf("[INFO] >> in defer 1")
 		if e == nil {
 			os.Remove(filepaths.RunningInfoFilePath())
 		}
@@ -169,6 +181,9 @@ func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (s
 	// stop the plugin manager
 	// this means it may be stopped even if we fail to stop the service - that is ok - we will restart it if needed
 	pluginManagerStopError := pluginmanager.Stop()
+	if pluginManagerStopError != nil {
+		log.Printf("[INFO] >> pluginManagerStopError: %s", pluginManagerStopError.Error())
+	}
 	log.Println("[INFO] shut down plugin manager")
 
 	// stop the DB Service
@@ -180,7 +195,10 @@ func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (s
 }
 
 func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
+	log.Println("[INFO] >> stopDBService started")
+	defer log.Println("[INFO] >> stopDBService complete")
 	if force {
+		log.Println("[INFO] >> force stopping")
 		// check if we have a process from another install-dir
 		statushooks.SetStatus(ctx, "Checking for running instances…")
 		// do not use a context that can be cancelled
@@ -200,25 +218,35 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	if err != nil {
 		return ServiceStopFailed, err
 	}
+	if dbState != nil {
+		log.Printf("[INFO] >> dbState pid: %d", dbState.Pid)
+	}
 
 	if dbState == nil {
+		log.Println("[INFO] >> dbState is nil - service sis not running")
 		// we do not have a info file
 		// assume that the service is not running
 		return ServiceNotRunning, nil
 	}
 
 	// GetStatus has made sure that the process exists
+	log.Println("[INFO] >> checking if the process still exists")
 	process, err := psutils.NewProcess(int32(dbState.Pid))
 	if err != nil {
+		log.Println("[INFO] >> service stop failed here 1")
 		return ServiceStopFailed, err
 	}
 
+	log.Println("[INFO] >> doing three step postgres exit now")
 	err = doThreeStepPostgresExit(ctx, process)
 	if err != nil {
+		log.Println("[INFO] >> we couldn't stop it still. timeout")
 		// we couldn't stop it still.
 		// timeout
 		return ServiceStopTimedOut, err
 	}
+
+	log.Println("[INFO] >> here 2")
 
 	return ServiceStopped, nil
 }
