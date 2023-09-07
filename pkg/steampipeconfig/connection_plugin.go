@@ -55,7 +55,7 @@ func (p ConnectionPlugin) GetSchema(connectionName string) (schema *sdkproto.Sch
 			log.Printf("[TRACE] GetSchema for connection '%s' returning tables: %s", connectionName, strings.Join(maps.Keys(schema.Schema), ","))
 		}
 	}()
-	log.Printf("[TRACE] GetSchema for connection '%s': %s", connectionName)
+	log.Printf("[TRACE] GetSchema for connection '%s'", connectionName)
 	connectionData, ok := p.ConnectionMap[connectionName]
 	if ok {
 		// if the schema mode is static, return the cached schema
