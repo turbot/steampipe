@@ -40,7 +40,8 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 
 	status, _ := GetState()
 	if status != nil {
-		log.Printf("[INFO] >> status: %d", status.Pid)
+		log.Printf("[INFO] >> database instance pid: %d", status.Pid)
+		log.Println("[INFO] >> invoker: ", status.Invoker)
 	}
 
 	// if the service is not running or it was invoked by 'steampipe service',
@@ -65,6 +66,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 	}
 
 	// we can shut down the database
+	log.Println("[INFO] >> Trying to stop")
 	stopStatus, err := StopServices(ctx, false, invoker)
 	if err != nil {
 		log.Printf("[INFO] >> StopServices returned error: %s", err.Error())
@@ -146,6 +148,7 @@ GROUP BY application_name
 		if err := rows.Scan(&appName, &count); err != nil {
 			return nil, err
 		}
+		log.Println("[INFO] >> appName, count: ", appName, count)
 
 		counts.TotalClients += count
 

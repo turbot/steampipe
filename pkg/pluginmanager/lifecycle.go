@@ -83,6 +83,8 @@ func start(steampipeExecutablePath string) (*State, error) {
 
 // Stop loads the plugin manager state and if a running instance is found, stop it
 func Stop() error {
+	log.Printf("[INFO] >> pluginManager Stop started")
+	defer log.Printf("[INFO] >> pluginManager Stop complete")
 	// try to load the plugin manager state
 	state, err := LoadState()
 	if err != nil {
@@ -97,13 +99,15 @@ func Stop() error {
 
 // stop the running plugin manager instance
 func stop(state *State) error {
-	log.Printf("[TRACE] plugin manager stop")
+	log.Printf("[INFO] >> pluginManager stop started")
+	defer log.Printf("[INFO] >> pluginManager stop complete")
+	log.Printf("[INFO] plugin manager stop")
 	pluginManager, err := NewPluginManagerClient(state)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("[TRACE] pluginManager.Shutdown")
+	log.Printf("[INFO] pluginManager.Shutdown")
 	// tell plugin manager to kill all plugins
 	_, err = pluginManager.Shutdown(&pb.ShutdownRequest{})
 	if err != nil {
@@ -113,7 +117,7 @@ func stop(state *State) error {
 	// kill the underlying client
 	pluginManager.rawClient.Kill()
 
-	log.Printf("[TRACE] pluginManager state.kill")
+	log.Printf("[INFO] pluginManager state.kill")
 	// now kill the plugin manager
 	return state.kill()
 }
