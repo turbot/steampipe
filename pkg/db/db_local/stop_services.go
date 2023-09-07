@@ -8,6 +8,7 @@ import (
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -123,8 +124,8 @@ GROUP BY application_name
 
 	counts := &ClientCount{}
 
-	log.Println("[INFO] >> ClientConnectionAppName: ", constants.ServiceConnectionAppNamePrefix)
-	rows, err := rootClient.Query(ctx, query, "client backend", constants.ServiceConnectionAppNamePrefix)
+	log.Println("[INFO] >> ClientConnectionAppName: ", runtime.ClientConnectionAppName)
+	rows, err := rootClient.Query(ctx, query, "client backend", runtime.ClientConnectionAppName)
 	if err != nil {
 		return nil, err
 	}
