@@ -8,7 +8,6 @@ import (
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -124,8 +123,8 @@ GROUP BY application_name
 
 	counts := &ClientCount{}
 
-	log.Println("[INFO] >> ClientConnectionAppName: ", runtime.ClientConnectionAppName)
-	rows, err := rootClient.Query(ctx, query, "client backend", runtime.ClientConnectionAppName)
+	log.Println("[INFO] >> ClientConnectionAppName: ", constants.ServiceConnectionAppNamePrefix)
+	rows, err := rootClient.Query(ctx, query, "client backend", constants.ServiceConnectionAppNamePrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -157,6 +156,7 @@ GROUP BY application_name
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
 func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (status StopStatus, e error) {
+	log.Printf("[TRACE] StopDB invoker %s, force %v", invoker, force)
 	utils.LogTime("db_local.StopDB start")
 
 	defer func() {
@@ -166,11 +166,11 @@ func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (s
 		utils.LogTime("db_local.StopDB end")
 	}()
 
-	log.Println("[TRACE] shutting down plugin manager")
+	log.Println("[INFO] shutting down plugin manager")
 	// stop the plugin manager
 	// this means it may be stopped even if we fail to stop the service - that is ok - we will restart it if needed
 	pluginManagerStopError := pluginmanager.Stop()
-	log.Println("[TRACE] shut down plugin manager")
+	log.Println("[INFO] shut down plugin manager")
 
 	// stop the DB Service
 	log.Println("[INFO] stopping DB Service")

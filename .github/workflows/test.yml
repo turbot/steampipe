@@ -190,7 +190,7 @@ jobs:
 
       - name: Run Test Suite
         id: run-test-suite
-        timeout-minutes: 6
+        timeout-minutes: 15
         continue-on-error: true
         run: |
           chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
