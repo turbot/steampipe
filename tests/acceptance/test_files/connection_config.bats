@@ -62,8 +62,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe should return an error for duplicate connection name" {
     cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
     cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos3.json
-
-    steampipe query "select 1"
     
     # this should fail because of duplicate connection name
     run steampipe query "select time_col from chaos.chaos_cache_check"
