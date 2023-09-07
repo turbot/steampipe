@@ -62,6 +62,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe should return an error for duplicate connection name" {
     cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
     cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos3.json
+
+    steampipe query "select 1"
     
     # this should fail because of duplicate connection name
     run steampipe query "select time_col from chaos.chaos_cache_check"
@@ -76,6 +78,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe yaml connection config" {
     cp $SRC_DATA_DIR/chaos2.yml $STEAMPIPE_INSTALL_DIR/config/chaos3.yml
 
+    steampipe query "select 1"
+
     run steampipe query "select time_col from chaos5.chaos_cache_check"
 
     # remove the config file
@@ -86,6 +90,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe test connection config with options(hcl)" {
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+
+    steampipe query "select 1"
 
     run steampipe query "select time_col from chaos6.chaos_cache_check"
 
@@ -98,6 +104,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe test connection config with options(yml)" {
     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
+    steampipe query "select 1"
+
     run steampipe query "select time_col from chaos6.chaos_cache_check"
     # remove the config file
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
@@ -108,6 +116,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe test connection config with options(json)" {
     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
+    steampipe query "select 1"
+
     run steampipe query "select time_col from chaos6.chaos_cache_check"
     # remove the config file
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
@@ -117,6 +127,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe check regions in connection config is being parsed and used(hcl)" {
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+
+    steampipe query "select 1"
 
     # check regions in connection config is being parsed and used
     run steampipe query "select * from chaos6.chaos_regions order by id" --output json
@@ -132,6 +144,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe check regions in connection config is being parsed and used(yml)" {
     cp $SRC_DATA_DIR/chaos_options.yml $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
 
+    steampipe query "select 1"
+
     # check regions in connection config is being parsed and used
     run steampipe query "select * from chaos6.chaos_regions order by id" --output json
     result=$(echo $output | tr -d '[:space:]')
@@ -146,6 +160,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe check regions in connection config is being parsed and used(json)" {
     cp $SRC_DATA_DIR/chaos_options.json $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
 
+    steampipe query "select 1"
+
     # check regions in connection config is being parsed and used
     run steampipe query "select * from chaos6.chaos_regions order by id" --output json
     result=$(echo $output | tr -d '[:space:]')
@@ -159,6 +175,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "connection name escaping" {
     cp $SRC_DATA_DIR/chaos_conn_name_escaping.spc $STEAMPIPE_INSTALL_DIR/config/chaos_conn_name_escaping.spc
+
+    steampipe query "select 1"
 
     # keywords should be escaped properly
     run steampipe query "select * from \"escape\".chaos_limit limit 1"
