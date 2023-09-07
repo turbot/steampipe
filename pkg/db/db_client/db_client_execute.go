@@ -200,37 +200,33 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		resultChannel <- timingResult
 	}()
 
-	var scanRows []ScanMetadataRow
+	var scanRows *ScanMetadataRow
 	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
 		query := fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
 		rows, err := tx.Query(ctx, query)
 		if err != nil {
 			return err
 		}
-		scanRows, err = pgx.CollectRows(rows, pgx.RowToStructByName[ScanMetadataRow])
+		scanRows, err = pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[ScanMetadataRow])
 		return err
 	})
 
 	// if we failed to read scan metadata (either because the query failed or the plugin does not support it) just return
 	// we don't return the error, since we don't want to error out in this case
-	if err != nil || len(scanRows) == 0 {
+	if err != nil || scanRows == nil {
 		return
 	}
 
 	// so we have scan metadata - create the metadata struct
-	var id int64
 	timingResult.Metadata = &queryresult.TimingMetadata{}
-	for _, r := range scanRows {
-		timingResult.Metadata.HydrateCalls += r.hydrateCalls
-		if r.cacheHit {
-			timingResult.Metadata.CachedRowsFetched += r.rowsFetched
-		} else {
-			timingResult.Metadata.RowsFetched += r.rowsFetched
-		}
-		id = r.id
+	timingResult.Metadata.HydrateCalls += scanRows.HydrateCalls
+	if scanRows.CacheHit {
+		timingResult.Metadata.CachedRowsFetched += scanRows.RowsFetched
+	} else {
+		timingResult.Metadata.RowsFetched += scanRows.RowsFetched
 	}
 	// update the max id for this session
-	session.ScanMetadataMaxId = id
+	session.ScanMetadataMaxId = scanRows.Id
 }
 
 func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_common.DatabaseSession) error {
