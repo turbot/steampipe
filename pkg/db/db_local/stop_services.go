@@ -8,6 +8,7 @@ import (
 
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -53,7 +54,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 		// there are other steampipe clients connected to the database
 		// we don't need to stop the service
 		// the last one to exit will shutdown the service
-		log.Printf("[TRACE] ShutdownService not closing database service - %d steampipe %s connected", clientCounts.SteampipeClients, utils.Pluralize("client", clientCounts.SteampipeClients))
+		log.Printf("[INFO] ShutdownService not closing database service - %d steampipe %s connected", clientCounts.SteampipeClients, utils.Pluralize("client", clientCounts.SteampipeClients))
 		return
 	}
 
@@ -123,7 +124,8 @@ GROUP BY application_name
 
 	counts := &ClientCount{}
 
-	rows, err := rootClient.Query(ctx, query, "client backend", constants.ServiceConnectionAppNamePrefix)
+	log.Println("[INFO] >> ClientConnectionAppName: ", runtime.ClientConnectionAppName)
+	rows, err := rootClient.Query(ctx, query, "client backend", runtime.ClientConnectionAppName)
 	if err != nil {
 		return nil, err
 	}
@@ -136,6 +138,7 @@ GROUP BY application_name
 		if err := rows.Scan(&appName, &count); err != nil {
 			return nil, err
 		}
+		log.Printf("[INFO] >> appName: %s, count: %d", appName, count)
 
 		counts.TotalClients += count
 
@@ -154,7 +157,6 @@ GROUP BY application_name
 
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
 func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (status StopStatus, e error) {
-
 	log.Printf("[TRACE] StopDB invoker %s, force %v", invoker, force)
 	utils.LogTime("db_local.StopDB start")
 
