@@ -42,9 +42,6 @@ checked that the service can indeed shutdown gracefully,
 the sequence is there only as a backup.
 */
 func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) error {
-	log.Println("[INFO] >> doThreeStepPostgresExit started")
-	defer log.Println("[INFO] >> doThreeStepPostgresExit complete")
-
 	utils.LogTime("db_local.doThreeStepPostgresExit start")
 	defer utils.LogTime("db_local.doThreeStepPostgresExit end")
 
@@ -79,7 +76,6 @@ func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) erro
 		}
 		exitSuccessful = waitForProcessExit(ctx, process)
 	}
-	log.Println("[INFO] >> exitSuccessful: ", exitSuccessful)
 
 	if !exitSuccessful {
 		log.Println("[ERROR] Failed to stop service")
@@ -91,8 +87,6 @@ func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) erro
 }
 
 func waitForProcessExit(ctx context.Context, process *psutils.Process) bool {
-	log.Println("[INFO] >> waitForProcessExit started")
-	defer log.Println("[INFO] >> waitForProcessExit complete")
 	utils.LogTime("db_local.waitForProcessExit start")
 	defer utils.LogTime("db_local.waitForProcessExit end")
 

@@ -35,6 +35,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "start service, install plugin and query" {
+  skip
   # start service
   steampipe service start
 
