@@ -2,6 +2,7 @@ package pluginmanager
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"io"
 	"log"
 	"os/exec"
@@ -15,7 +16,6 @@ import (
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
-	"github.com/turbot/steampipe/sperr"
 )
 
 // StartNewInstance loads the plugin manager state, stops any previous instance and instantiates a new plugin manager
@@ -70,7 +70,7 @@ func start(steampipeExecutablePath string) (*State, error) {
 		log.Printf("[WARN] plugin manager start() failed to start GRPC client for plugin manager: %s", err)
 		// attempt to retrieve error message encoded in the plugin stdout
 		err = sperr.WrapWithMessage(grpc.HandleStartFailure(err), "failed to start plugin manager")
-		return err
+		return nil, err
 	}
 
 	// create a plugin manager state.

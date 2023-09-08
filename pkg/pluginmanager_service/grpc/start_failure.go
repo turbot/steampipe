@@ -2,7 +2,7 @@ package grpc
 
 import (
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/sperr"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"strings"
 )
 

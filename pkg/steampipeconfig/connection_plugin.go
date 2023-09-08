@@ -139,7 +139,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 	for _, connection := range connectionsToCreate {
 		// is this connection provided by a plugin we have already instantiated?
 		if existingConnectionPlugin, ok := connectionPluginMap[connection.Plugin]; ok {
-			log.Printf("[TRACE] CreateConnectionPlugins - connection %s is provided by existing connectionPlugin %s - reusing", connection.Name, connection.Plugin)
+			log.Printf("[TRACE] CreateConnectionPlugins - connection %s is provided by existing connectionPlugin %s - reusing", connection.Name, connection.PluginLongName)
 			// store the existing connection plugin in the result map
 			requestedConnectionPluginMap[connection.Name] = existingConnectionPlugin
 			continue

@@ -66,7 +66,7 @@ func (c *InteractiveClient) showMessages(ctx context.Context, showMessages func(
 	// call ClearLine to render the empty prefix
 	c.interactivePrompt.ClearLine()
 
-	// call the passed in func to display themessages
+	// call the passed in func to display the messages
 	showMessages()
 
 	// show the prompt again

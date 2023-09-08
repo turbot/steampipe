@@ -142,12 +142,17 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 		i.Result.Error = errorsAndWarnings.Error
 		return
 	}
-	notificationConnection, err := client.AcquireConnection(ctx)
+
+	// get a conneciton for the notificattion cache
+	c, err := client.AcquireManagementConnection(ctx)
 	if err != nil {
 		i.Result.Error = err
 		return
 	}
-	i.NotificationCache = db_common.NewNotificationCache(ctx, notificationConnection.Conn())
+	// TODO KAI DO NOT HIJACK!
+	// hijack from the pool  as we will be keeping open for th elifetime of this run
+	notificationConnection := c.Hijack()
+	i.NotificationCache = db_common.NewNotificationCache(ctx, notificationConnection)
 	if err != nil {
 		i.Result.Error = err
 		return
