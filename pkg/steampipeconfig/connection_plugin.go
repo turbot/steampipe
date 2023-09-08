@@ -89,8 +89,8 @@ func NewConnectionPlugin(pluginShortName, pluginName string, pluginClient *sdkgr
 
 // CreateConnectionPlugins instantiates plugins for specified connections, and fetches schemas
 func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectionNamesToCreate []string) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
-	log.Println("[INFO] CreateConnectionPlugins start")
-	defer log.Println("[INFO] CreateConnectionPlugins end")
+	log.Println("[DEBUG] CreateConnectionPlugins start")
+	defer log.Println("[DEBUG] CreateConnectionPlugins end")
 
 	res = &RefreshConnectionResult{}
 	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin)

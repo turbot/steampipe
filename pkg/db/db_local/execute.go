@@ -11,8 +11,8 @@ import (
 )
 
 func executeSqlAsRoot(ctx context.Context, statements ...string) ([]pgconn.CommandTag, error) {
-	log.Println("[INFO] executeSqlAsRoot start")
-	defer log.Println("[INFO] executeSqlAsRoot end")
+	log.Println("[DEBUG] executeSqlAsRoot start")
+	defer log.Println("[DEBUG] executeSqlAsRoot end")
 
 	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
@@ -22,8 +22,8 @@ func executeSqlAsRoot(ctx context.Context, statements ...string) ([]pgconn.Comma
 }
 
 func ExecuteSqlInTransaction(ctx context.Context, conn *pgx.Conn, statements ...string) (results []pgconn.CommandTag, err error) {
-	log.Println("[INFO] ExecuteSqlInTransaction start")
-	defer log.Println("[INFO] ExecuteSqlInTransaction end")
+	log.Println("[DEBUG] ExecuteSqlInTransaction start")
+	defer log.Println("[DEBUG] ExecuteSqlInTransaction end")
 
 	err = pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
 		for _, statement := range statements {
@@ -39,8 +39,8 @@ func ExecuteSqlInTransaction(ctx context.Context, conn *pgx.Conn, statements ...
 }
 
 func ExecuteSqlWithArgsInTransaction(ctx context.Context, conn *pgx.Conn, queries ...db_common.QueryWithArgs) (results []pgconn.CommandTag, err error) {
-	log.Println("[INFO] ExecuteSqlWithArgsInTransaction start")
-	defer log.Println("[INFO] ExecuteSqlWithArgsInTransaction end")
+	log.Println("[DEBUG] ExecuteSqlWithArgsInTransaction start")
+	defer log.Println("[DEBUG] ExecuteSqlWithArgsInTransaction end")
 
 	err = pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
 		for _, q := range queries {

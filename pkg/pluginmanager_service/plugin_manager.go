@@ -265,8 +265,8 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 }
 
 func (m *PluginManager) killPlugin(p *runningPlugin) {
-	log.Println("[INFO] PluginManager killPlugin start")
-	defer log.Println("[INFO] PluginManager killPlugin complete")
+	log.Println("[DEBUG] PluginManager killPlugin start")
+	defer log.Println("[DEBUG] PluginManager killPlugin complete")
 
 	if p.client == nil {
 		log.Printf("[WARN] plugin %s has no client - cannot kill client", p.pluginName)
@@ -343,8 +343,8 @@ func (m *PluginManager) startPluginIfNeeded(pluginName string, connectionConfigs
 }
 
 func (m *PluginManager) startPlugin(pluginName string, connectionConfigs []*sdkproto.ConnectionConfig, req *pb.GetRequest) (_ *pb.ReattachConfig, err error) {
-	log.Printf("[INFO] startPlugin %s (%p) start", pluginName, req)
-	defer log.Printf("[INFO] startPlugin %s (%p) end", pluginName, req)
+	log.Printf("[DEBUG] startPlugin %s (%p) start", pluginName, req)
+	defer log.Printf("[DEBUG] startPlugin %s (%p) end", pluginName, req)
 
 	// add a new running plugin to pluginMultiConnectionMap
 	// (if someone beat us to it and added a starting plugin before we get the write lock,

@@ -19,8 +19,8 @@ type connectionStateTableUpdater struct {
 }
 
 func newConnectionStateTableUpdater(updates *steampipeconfig.ConnectionUpdates, pool *pgxpool.Pool) *connectionStateTableUpdater {
-	log.Println("[INFO] newConnectionStateTableUpdater start")
-	defer log.Println("[INFO] newConnectionStateTableUpdater end")
+	log.Println("[DEBUG] newConnectionStateTableUpdater start")
+	defer log.Println("[DEBUG] newConnectionStateTableUpdater end")
 
 	return &connectionStateTableUpdater{
 		updates: updates,
@@ -30,8 +30,8 @@ func newConnectionStateTableUpdater(updates *steampipeconfig.ConnectionUpdates, 
 
 // update connection state table to indicate the updates that will be done
 func (u *connectionStateTableUpdater) start(ctx context.Context) error {
-	log.Println("[INFO] connectionStateTableUpdater.start start")
-	defer log.Println("[INFO] connectionStateTableUpdater.start end")
+	log.Println("[DEBUG] connectionStateTableUpdater.start start")
+	defer log.Println("[DEBUG] connectionStateTableUpdater.start end")
 
 	var queries []db_common.QueryWithArgs
 
@@ -78,8 +78,8 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 }
 
 func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, conn *pgx.Conn, name string) error {
-	log.Println("[INFO] connectionStateTableUpdater.onConnectionReady start")
-	defer log.Println("[INFO] connectionStateTableUpdater.onConnectionReady end")
+	log.Println("[DEBUG] connectionStateTableUpdater.onConnectionReady start")
+	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionReady end")
 
 	connection := u.updates.FinalConnectionState[name]
 	q := connection_state.GetSetConnectionStateSql(connection.ConnectionName, constants.ConnectionStateReady)
@@ -92,8 +92,8 @@ func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, con
 }
 
 func (u *connectionStateTableUpdater) onConnectionCommentsLoaded(ctx context.Context, conn *pgx.Conn, name string) error {
-	log.Println("[INFO] connectionStateTableUpdater.onConnectionCommentsLoaded start")
-	defer log.Println("[INFO] connectionStateTableUpdater.onConnectionCommentsLoaded end")
+	log.Println("[DEBUG] connectionStateTableUpdater.onConnectionCommentsLoaded start")
+	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionCommentsLoaded end")
 
 	connection := u.updates.FinalConnectionState[name]
 	q := connection_state.GetSetConnectionStateCommentLoadedSql(connection.ConnectionName, true)
@@ -106,8 +106,8 @@ func (u *connectionStateTableUpdater) onConnectionCommentsLoaded(ctx context.Con
 }
 
 func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, conn *pgx.Conn, name string) error {
-	log.Println("[INFO] connectionStateTableUpdater.onConnectionDeleted start")
-	defer log.Println("[INFO] connectionStateTableUpdater.onConnectionDeleted end")
+	log.Println("[DEBUG] connectionStateTableUpdater.onConnectionDeleted start")
+	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionDeleted end")
 
 	// if this connection has schema import disabled, DO NOT delete from the conneciotn state table
 	if _, connectionDisabled := u.updates.Disabled[name]; connectionDisabled {
@@ -123,8 +123,8 @@ func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, c
 }
 
 func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, conn *pgx.Conn, connectionName string, err error) error {
-	log.Println("[INFO] connectionStateTableUpdater.onConnectionError start")
-	defer log.Println("[INFO] connectionStateTableUpdater.onConnectionError end")
+	log.Println("[DEBUG] connectionStateTableUpdater.onConnectionError start")
+	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionError end")
 
 	q := connection_state.GetConnectionStateErrorSql(connectionName, err)
 	if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {

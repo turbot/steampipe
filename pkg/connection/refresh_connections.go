@@ -17,8 +17,8 @@ var executeLock sync.Mutex
 var queueLock sync.Mutex
 
 func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceUpdateConnectionNames ...string) (res *steampipeconfig.RefreshConnectionResult) {
-	log.Println("[INFO] RefreshConnections start")
-	defer log.Println("[INFO] RefreshConnections end")
+	log.Println("[DEBUG] RefreshConnections start")
+	defer log.Println("[DEBUG] RefreshConnections end")
 
 	// TODO KAI if we, for example, access a nil map, this does not seem to catch it and startup hangs
 	defer func() {
