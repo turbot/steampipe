@@ -31,6 +31,9 @@ var ConnectionStateTableAddedColumns map[string]string = map[string]string{
 // LoadConnectionState populates a ConnectionStateMap from the connection_state table
 // it verifies the table has been initialised by calling RefreshConnections after db startup
 func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnectionStateOption) (ConnectionStateMap, error) {
+	log.Println("[INFO] LoadConnectionState start")
+	defer log.Println("[INFO] LoadConnectionState end")
+
 	config := &LoadConnectionStateConfiguration{}
 	for _, opt := range opts {
 		opt(config)

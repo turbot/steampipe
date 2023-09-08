@@ -44,6 +44,9 @@ type ConnectionUpdates struct {
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
 func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginManager pluginshared.PluginManager, opts ...ConnectionUpdatesOption) (*ConnectionUpdates, *RefreshConnectionResult) {
+	log.Println("[INFO] NewConnectionUpdates start")
+	defer log.Println("[INFO] NewConnectionUpdates end")
+
 	updates, res := populateConnectionUpdates(ctx, pool, pluginManager, opts...)
 	if res.Error != nil {
 		return nil, res
@@ -57,14 +60,13 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginManager
 }
 
 func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginManager pluginshared.PluginManager, opts ...ConnectionUpdatesOption) (*ConnectionUpdates, *RefreshConnectionResult) {
+	log.Println("[INFO] populateConnectionUpdates start")
+	defer log.Println("[INFO] populateConnectionUpdates end")
+
 	var config = &connectionUpdatesConfig{}
 	for _, opt := range opts {
 		opt(config)
 	}
-
-	utils.LogTime("NewConnectionUpdates start")
-	defer utils.LogTime("NewConnectionUpdates end")
-	log.Printf("[TRACE] NewConnectionUpdates")
 
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
@@ -302,8 +304,8 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(dynamicSchem
 }
 
 func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) *RefreshConnectionResult {
-	utils.LogTime("populateConnectionPlugins start")
-	defer utils.LogTime("populateConnectionPlugins end")
+	log.Println("populateConnectionPlugins start")
+	defer log.Println("populateConnectionPlugins end")
 
 	// get list of connections to update:
 	// - add connections which will be updated or have the comments updated

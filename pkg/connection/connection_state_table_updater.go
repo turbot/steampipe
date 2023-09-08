@@ -2,6 +2,8 @@ package connection
 
 import (
 	"context"
+	"log"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/connection_state"
@@ -9,7 +11,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"log"
 )
 
 type connectionStateTableUpdater struct {
@@ -18,6 +19,9 @@ type connectionStateTableUpdater struct {
 }
 
 func newConnectionStateTableUpdater(updates *steampipeconfig.ConnectionUpdates, pool *pgxpool.Pool) *connectionStateTableUpdater {
+	log.Println("[INFO] newConnectionStateTableUpdater start")
+	defer log.Println("[INFO] newConnectionStateTableUpdater end")
+
 	return &connectionStateTableUpdater{
 		updates: updates,
 		pool:    pool,
@@ -26,7 +30,8 @@ func newConnectionStateTableUpdater(updates *steampipeconfig.ConnectionUpdates, 
 
 // update connection state table to indicate the updates that will be done
 func (u *connectionStateTableUpdater) start(ctx context.Context) error {
-	log.Printf("[INFO] connectionStateTableUpdater start - update connection_state with intended states")
+	log.Println("[INFO] connectionStateTableUpdater.start start")
+	defer log.Println("[INFO] connectionStateTableUpdater.start end")
 
 	var queries []db_common.QueryWithArgs
 
@@ -69,11 +74,13 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 	if _, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn.Conn(), queries...); err != nil {
 		return err
 	}
-	log.Printf("[INFO] connectionStateTableUpdater start - finished updating connection_state with intended states")
 	return nil
 }
 
 func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, conn *pgx.Conn, name string) error {
+	log.Println("[INFO] connectionStateTableUpdater.onConnectionReady start")
+	defer log.Println("[INFO] connectionStateTableUpdater.onConnectionReady end")
+
 	connection := u.updates.FinalConnectionState[name]
 	q := connection_state.GetSetConnectionStateSql(connection.ConnectionName, constants.ConnectionStateReady)
 	_, err := conn.Exec(ctx, q.Query, q.Args...)
@@ -85,6 +92,9 @@ func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, con
 }
 
 func (u *connectionStateTableUpdater) onConnectionCommentsLoaded(ctx context.Context, conn *pgx.Conn, name string) error {
+	log.Println("[INFO] connectionStateTableUpdater.onConnectionCommentsLoaded start")
+	defer log.Println("[INFO] connectionStateTableUpdater.onConnectionCommentsLoaded end")
+
 	connection := u.updates.FinalConnectionState[name]
 	q := connection_state.GetSetConnectionStateCommentLoadedSql(connection.ConnectionName, true)
 	_, err := conn.Exec(ctx, q.Query, q.Args...)
@@ -96,6 +106,9 @@ func (u *connectionStateTableUpdater) onConnectionCommentsLoaded(ctx context.Con
 }
 
 func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, conn *pgx.Conn, name string) error {
+	log.Println("[INFO] connectionStateTableUpdater.onConnectionDeleted start")
+	defer log.Println("[INFO] connectionStateTableUpdater.onConnectionDeleted end")
+
 	// if this connection has schema import disabled, DO NOT delete from the conneciotn state table
 	if _, connectionDisabled := u.updates.Disabled[name]; connectionDisabled {
 		return nil
@@ -110,6 +123,9 @@ func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, c
 }
 
 func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, conn *pgx.Conn, connectionName string, err error) error {
+	log.Println("[INFO] connectionStateTableUpdater.onConnectionError start")
+	defer log.Println("[INFO] connectionStateTableUpdater.onConnectionError end")
+
 	q := connection_state.GetConnectionStateErrorSql(connectionName, err)
 	if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {
 		return err

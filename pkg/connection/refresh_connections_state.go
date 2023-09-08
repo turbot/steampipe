@@ -52,6 +52,9 @@ type refreshConnectionState struct {
 }
 
 func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager, forceUpdateConnectionNames []string) (*refreshConnectionState, error) {
+	log.Println("[INFO] newRefreshConnectionState start")
+	defer log.Println("[INFO] newRefreshConnectionState end")
+
 	pool := pluginManager.Pool()
 	// set user search path first
 	log.Printf("[INFO] setting up search path")
@@ -74,6 +77,9 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
 func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
+	log.Println("[INFO] refreshConnectionState.refreshConnections start")
+	defer log.Println("[INFO] refreshConnectionState.refreshConnections end")
+
 	// if there was an error (other than a connection error, which will NOT have been assigned to res),
 	// set state of all incomplete connections to error
 	defer func() {
@@ -200,12 +206,12 @@ func (s *refreshConnectionState) logRefreshConnectionResults() {
 }
 
 func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {
+	log.Println("refreshConnectionState.executeConnectionQueries start")
+	defer log.Println("refreshConnectionState.executeConnectionQueries end")
+
 	// TODO WHY? WHY NOT FROM ourselves
 	// retrieve updates from the table updater
 	connectionUpdates := s.tableUpdater.updates
-
-	utils.LogTime("db.executeConnectionQueries start")
-	defer utils.LogTime("db.executeConnectionQueries start")
 
 	// execute deletions
 	if err := s.executeDeleteQueries(ctx, maps.Keys(s.connectionUpdates.Delete)); err != nil {
@@ -231,16 +237,14 @@ func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {
 			log.Printf("[WARN] failed to send schema deletion Postgres notification: %s", err.Error())
 		}
 	}
-
-	return
 }
 
 // execute all update queries
 // NOTE: this only sets res.Error if there is a failure to set update the connection state table
 // - all other connection based failures are recorded in the connection state table
 func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
-	utils.LogTime("db.executeUpdateQueries start")
-	defer utils.LogTime("db.executeUpdateQueries end")
+	log.Println("[INFO] refreshConnectionState.executeUpdateQueries start")
+	defer log.Println("[INFO] refreshConnectionState.executeUpdateQueries end")
 
 	defer func() {
 		if s.res.Error != nil {
@@ -355,13 +359,15 @@ func updateSetMapToArray(updateSetMap map[string][]*steampipeconfig.ConnectionSt
 // create/update connections
 
 func (s *refreshConnectionState) executeUpdatesInParallel(ctx context.Context, updates map[string]*steampipeconfig.ConnectionState) (errors []error) {
-	// just call executeUpdateSetsInParallel
+	log.Println("[TRACE] refreshConnectionState.executeUpdatesInParallel start")
+	defer log.Println("[TRACE] refreshConnectionState.executeUpdatesInParallel end")
 
 	// convert updates to update sets
 	updatesAsSets := make(map[string][]*steampipeconfig.ConnectionState, len(updates))
 	for k, v := range updates {
 		updatesAsSets[k] = []*steampipeconfig.ConnectionState{v}
 	}
+	// just call executeUpdateSetsInParallel
 	return s.executeUpdateSetsInParallel(ctx, updatesAsSets)
 }
 
@@ -370,6 +376,9 @@ func (s *refreshConnectionState) executeUpdatesInParallel(ctx context.Context, u
 // - for convenience we also use this function for static connections by mapping the input data
 // from map[string]*steampipeconfig.ConnectionState to map[string][]*steampipeconfig.ConnectionState
 func (s *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Context, updates map[string][]*steampipeconfig.ConnectionState) (errors []error) {
+	log.Println("[TRACE] refreshConnectionState.executeUpdateSetsInParallel start")
+	defer log.Println("[TRACE] refreshConnectionState.executeUpdateSetsInParallel end")
+
 	var wg sync.WaitGroup
 	var errChan = make(chan *connectionError)
 
@@ -438,6 +447,8 @@ func (s *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Context
 
 // syncronously execute the update queries for one or more connections
 func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context, errChan chan *connectionError, cloneSchemaEnabled bool, connectionStates ...*steampipeconfig.ConnectionState) {
+	log.Println("[INFO] refreshConnectionState.executeUpdateForConnections start")
+	defer log.Println("[INFO] refreshConnectionState.executeUpdateForConnections end")
 
 	for _, connectionState := range connectionStates {
 		connectionName := connectionState.ConnectionName
@@ -470,7 +481,10 @@ func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context
 	}
 }
 
-func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, connectionName string) error {
+func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, connectionName string) (err error) {
+	log.Println("[INFO] refreshConnectionState.executeUpdateQuery start")
+	defer log.Println("[INFO] refreshConnectionState.executeUpdateQuery end")
+
 	// create a transaction
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
@@ -764,6 +778,9 @@ func (s *refreshConnectionState) setIncompleteConnectionStateToError(ctx context
 
 // OnConnectionsChanged is the callback function invoked by the connection watcher when connections are added or removed
 func (s *refreshConnectionState) sendPostgreSchemaNotification(ctx context.Context) error {
+	log.Println("[INFO] refreshConnectionState.sendPostgreSchemaNotification start")
+	defer log.Println("[INFO] refreshConnectionState.sendPostgreSchemaNotification end")
+
 	conn, err := s.pool.Acquire(ctx)
 	if err != nil {
 		return err

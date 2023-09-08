@@ -84,7 +84,9 @@ func (c *PluginManagerClient) RefreshConnections(req *pb.RefreshConnectionsReque
 }
 
 func (c *PluginManagerClient) Shutdown(req *pb.ShutdownRequest) (*pb.ShutdownResponse, error) {
-	log.Printf("[TRACE] PluginManagerClient Shutdown")
+	log.Printf("[INFO] PluginManagerClient.Shutdown start")
+	defer log.Printf("[INFO] PluginManagerClient.Shutdown done")
+
 	res, err := c.manager.Shutdown(req)
 	if err != nil {
 		return nil, grpc.HandleGrpcError(err, "PluginManager", "Get")

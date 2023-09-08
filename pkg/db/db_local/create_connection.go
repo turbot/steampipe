@@ -111,7 +111,6 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 }
 
 // CreateConnectionPool
-
 func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnections int) (*pgxpool.Pool, error) {
 	utils.LogTime("db_client.establishConnectionPool start")
 	defer utils.LogTime("db_client.establishConnectionPool end")
@@ -121,7 +120,7 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 		return nil, err
 	}
 
-	connConfig, err := pgxpool.ParseConfig(psqlInfo)
+	poolConfig, err := pgxpool.ParseConfig(psqlInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -131,17 +130,17 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 		connMaxLifetime = 10 * time.Minute
 	)
 
-	connConfig.MinConns = 0
-	connConfig.MaxConns = int32(maxConnections)
-	connConfig.MaxConnLifetime = connMaxLifetime
-	connConfig.MaxConnIdleTime = connMaxIdleTime
+	poolConfig.MinConns = 0
+	poolConfig.MaxConns = int32(maxConnections)
+	poolConfig.MaxConnLifetime = connMaxLifetime
+	poolConfig.MaxConnIdleTime = connMaxIdleTime
 
-	connConfig.ConnConfig.Config.RuntimeParams = map[string]string{
+	poolConfig.ConnConfig.Config.RuntimeParams = map[string]string{
 		constants.RuntimeParamsKeyApplicationName: runtime.ServiceConnectionAppName,
 	}
 
 	// this returns connection pool
-	dbPool, err := pgxpool.NewWithConfig(context.Background(), connConfig)
+	dbPool, err := pgxpool.NewWithConfig(context.Background(), poolConfig)
 	if err != nil {
 		return nil, err
 	}
