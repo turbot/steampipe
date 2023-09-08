@@ -191,6 +191,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "Error: file '$FILE_PATH/test_files/workspace_folder/query_folder/named_query_70.sql' does not exist"
 }
 
+@test "verify fetch and hydrate data are populated with timing enabled" {
+  run steampipe query --timing "select id, string_column, json_column from chaos.chaos_all_column_types where id='0'" 
+  assert_output --partial "Time"
+  assert_output --partial "Rows fetched"
+  assert_output --partial "Hydrate calls"
+}
+
 #@test "sql glob" {
 #  cd $FILE_PATH/test_files
 #  run steampipe query *.sql
