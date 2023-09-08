@@ -36,6 +36,7 @@ export SPIPETOOLS_PG_CONN_STRING=$SPIPETOOLS_PG_CONN_STRING
 export SPIPETOOLS_TOKEN=$SPIPETOOLS_TOKEN
 # Disable parallelisation only within test file(for steampipe plugin manager processes to shutdown properly)
 export BATS_NO_PARALLELIZE_WITHIN_FILE=true
+export BATS_TEST_TIMEOUT=180
 
 # Must have these commands for the test suite to run
 declare -a required_commands=("jq" "sed" "steampipe" "rm" "mv" "cp" "mkdir" "cd" "head" "wc" "find" "basename" "dirname" "touch" "jd" "openssl" "cksum")
