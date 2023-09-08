@@ -585,9 +585,6 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 
 // return whether the plugin manager is shutting down
 func (m *PluginManager) shuttingDown() bool {
-	m.mut.Lock()
-	defer m.mut.Unlock()
-
 	if !m.shutdownMut.TryLock() {
 		return true
 	}
