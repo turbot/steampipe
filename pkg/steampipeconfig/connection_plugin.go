@@ -2,6 +2,9 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -14,8 +17,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
-	"log"
-	"strings"
 )
 
 type ConnectionPluginData struct {
@@ -88,6 +89,8 @@ func NewConnectionPlugin(pluginShortName, pluginName string, pluginClient *sdkgr
 
 // CreateConnectionPlugins instantiates plugins for specified connections, and fetches schemas
 func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectionNamesToCreate []string) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
+	log.Println("[DEBUG] CreateConnectionPlugins start")
+	defer log.Println("[DEBUG] CreateConnectionPlugins end")
 
 	res = &RefreshConnectionResult{}
 	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin)

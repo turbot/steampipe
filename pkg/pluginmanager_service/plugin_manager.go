@@ -241,12 +241,15 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 	// lock shutdownMut before waiting for startPluginWg
 	// this enables us to exit from ensurePlugin early if needed
 	m.shutdownMut.Lock()
-	log.Printf("[TRACE] locked shutdownMut, waiting for startPluginWg")
 	m.startPluginWg.Wait()
-	log.Printf("[TRACE] waited for startPluginWg, locking mut")
-	m.mut.Lock()
+
+	// close our pool
+	log.Printf("[INFO] PluginManager closing pool")
+	m.pool.Close()
+
+	m.mut.RLock()
 	defer func() {
-		m.mut.Unlock()
+		m.mut.RUnlock()
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
 		}
@@ -258,17 +261,13 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 		m.killPlugin(p)
 	}
 
-	log.Printf("[INFO] PluginManager closing pool")
-
-	// close our pool
-	// log.Println("[INFO] PluginManager pool stats:", m.pool.Stat().TotalConns(), m.pool.Stat().IdleConns())
-	// m.pool.Close()
-	// log.Printf("[INFO] PluginManager pool closed")
-
 	return &pb.ShutdownResponse{}, nil
 }
 
 func (m *PluginManager) killPlugin(p *runningPlugin) {
+	log.Println("[DEBUG] PluginManager killPlugin start")
+	defer log.Println("[DEBUG] PluginManager killPlugin complete")
+
 	if p.client == nil {
 		log.Printf("[WARN] plugin %s has no client - cannot kill client", p.pluginName)
 		// shouldn't happen but has been observed in error situations
@@ -344,7 +343,8 @@ func (m *PluginManager) startPluginIfNeeded(pluginName string, connectionConfigs
 }
 
 func (m *PluginManager) startPlugin(pluginName string, connectionConfigs []*sdkproto.ConnectionConfig, req *pb.GetRequest) (_ *pb.ReattachConfig, err error) {
-	log.Printf("[INFO] startPlugin %s (%p)", pluginName, req)
+	log.Printf("[DEBUG] startPlugin %s (%p) start", pluginName, req)
+	defer log.Printf("[DEBUG] startPlugin %s (%p) end", pluginName, req)
 
 	// add a new running plugin to pluginMultiConnectionMap
 	// (if someone beat us to it and added a starting plugin before we get the write lock,
@@ -585,9 +585,6 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 
 // return whether the plugin manager is shutting down
 func (m *PluginManager) shuttingDown() bool {
-	m.mut.Lock()
-	defer m.mut.Unlock()
-
 	if !m.shutdownMut.TryLock() {
 		return true
 	}
