@@ -426,8 +426,3 @@ function teardown_file() {
   num=$(ps aux | grep steampipe | grep -v bats | grep -v grep | grep -v tests/acceptance | wc -l | tr -d ' ')
   assert_equal $num 0
 }
-
-function setup_file() {
-  export BATS_TEST_TIMEOUT=180
-  echo "# setup_file()">&3
-}
