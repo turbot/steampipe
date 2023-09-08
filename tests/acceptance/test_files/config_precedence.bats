@@ -63,6 +63,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
     # get the actual config by running the constructed steampipe command
     run $sp_cmd
+    echo "output from steampipe command: $output" # help debugging in case of failures
     actual_config=$(echo $output | jq -c '.')
     echo "actual config: \n$actual_config" # help debugging in case of failures
 
