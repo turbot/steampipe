@@ -181,7 +181,7 @@ jobs:
         continue-on-error: false
         run: |
           steampipe query "select 1"
-          steampipe plugin install chaos --progress=false
+          steampipe plugin install chaos chaosdynamic --progress=false
 
       - name: Save Install DB Logs
         uses: actions/upload-artifact@v3

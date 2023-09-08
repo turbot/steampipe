@@ -6,7 +6,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
 }
 
-@test "check left over processes" {
+function teardown_file() {
   # list running processes
   ps -ef | grep steampipe
 
