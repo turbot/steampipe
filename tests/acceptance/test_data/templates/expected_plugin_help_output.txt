@@ -30,6 +30,6 @@ Flags:
   -h, --help   Help for plugin
 
 Global Flags:
-      --install-dir string          Path to the Config Directory (default "~/.steampipe")
+      --install-dir string   Path to the Config Directory (default "~/.steampipe")
 
 Use "steampipe plugin [command] --help" for more information about a command.

@@ -16,6 +16,6 @@ Flags:
   -h, --help   Help for service
 
 Global Flags:
-      --install-dir string          Path to the Config Directory (default "~/.steampipe")
+      --install-dir string   Path to the Config Directory (default "~/.steampipe")
 
 Use "steampipe service [command] --help" for more information about a command.
