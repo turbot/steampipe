@@ -34,6 +34,7 @@ func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConf
 	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
 
 	log.Printf("[INFO] ensureDefaultConfigFile")
+
 	if err := ensureDefaultConfigFile(filepaths.EnsureConfigDir()); err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(
 			sperr.WrapWithMessage(
