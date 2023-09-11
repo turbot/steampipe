@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
@@ -50,11 +51,11 @@ type PluginManager struct {
 	pluginCacheSizeMap map[string]int64
 
 	// map lock
-	mut sync.RWMutex
+	commonMapAccessMutex sync.RWMutex
 
 	// shutdown syncronozation
 	// do not start any plugins while shutting down
-	shutdownMut sync.Mutex
+	shutdownFlag int32
 	// do not shutdown until all plugins have loaded
 	startPluginWg sync.WaitGroup
 
@@ -211,8 +212,8 @@ func (m *PluginManager) doRefresh() {
 
 // OnConnectionConfigChanged is the callback function invoked by the connection watcher when the config changed
 func (m *PluginManager) OnConnectionConfigChanged(configMap connection.ConnectionConfigMap, plugins connection.PluginMap) {
-	m.mut.Lock()
-	defer m.mut.Unlock()
+	m.commonMapAccessMutex.Lock()
+	defer m.commonMapAccessMutex.Unlock()
 
 	names := utils.SortedMapKeys(configMap)
 	log.Printf("[TRACE] OnConnectionConfigChanged: %s", strings.Join(names, ","))
@@ -240,16 +241,16 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 
 	// lock shutdownMut before waiting for startPluginWg
 	// this enables us to exit from ensurePlugin early if needed
-	m.shutdownMut.Lock()
+	atomic.CompareAndSwapInt32(&m.shutdownFlag, 0, 1)
 	m.startPluginWg.Wait()
 
 	// close our pool
 	log.Printf("[INFO] PluginManager closing pool")
 	m.pool.Close()
 
-	m.mut.RLock()
+	m.commonMapAccessMutex.RLock()
 	defer func() {
-		m.mut.RUnlock()
+		m.commonMapAccessMutex.RUnlock()
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
 		}
@@ -315,9 +316,9 @@ func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdk
 func (m *PluginManager) startPluginIfNeeded(pluginName string, connectionConfigs []*sdkproto.ConnectionConfig, req *pb.GetRequest) (*pb.ReattachConfig, error) {
 	// is this plugin already running
 	// lock access to plugin map
-	m.mut.RLock()
+	m.commonMapAccessMutex.RLock()
 	startingPlugin, ok := m.runningPluginMap[pluginName]
-	m.mut.RUnlock()
+	m.commonMapAccessMutex.RUnlock()
 
 	if ok {
 		log.Printf("[TRACE] startPluginIfNeeded got running plugin (%p)", req)
@@ -360,7 +361,7 @@ func (m *PluginManager) startPlugin(pluginName string, connectionConfigs []*sdkp
 	// ensure we clean up the starting plugin in case of error
 	defer func() {
 		if err != nil {
-			m.mut.Lock()
+			m.commonMapAccessMutex.Lock()
 			// delete from map
 			delete(m.runningPluginMap, pluginName)
 			// set error on running plugin
@@ -376,7 +377,7 @@ func (m *PluginManager) startPlugin(pluginName string, connectionConfigs []*sdkp
 				startingPlugin.client.Kill()
 			}
 
-			m.mut.Unlock()
+			m.commonMapAccessMutex.Unlock()
 		}
 	}()
 
@@ -414,8 +415,8 @@ func (m *PluginManager) addRunningPlugin(pluginName string) (*runningPlugin, err
 	// this is a placeholder so no other thread tries to create start this plugin
 
 	// acquire write lock
-	m.mut.Lock()
-	defer m.mut.Unlock()
+	m.commonMapAccessMutex.Lock()
+	defer m.commonMapAccessMutex.Unlock()
 	log.Printf("[TRACE] add running plugin for %s (if someone didn't beat us to it)", pluginName)
 
 	// check someone else has beaten us to it (there is a race condition to starting a plugin)
@@ -585,11 +586,7 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 
 // return whether the plugin manager is shutting down
 func (m *PluginManager) shuttingDown() bool {
-	if !m.shutdownMut.TryLock() {
-		return true
-	}
-	m.shutdownMut.Unlock()
-	return false
+	return atomic.LoadInt32(&m.shutdownFlag) == 1
 }
 
 // populate map of connection configs for each plugin
@@ -681,7 +678,7 @@ func (m *PluginManager) waitForPluginLoad(p *runningPlugin, req *pb.GetRequest) 
 	// NOTE: multiple thread may be trying to remove the failed plugin from the map
 	// - and then someone will add a new running plugin when the startup is retried
 	// So we must check the pid before deleting
-	m.mut.Lock()
+	m.commonMapAccessMutex.Lock()
 	if r, ok := m.runningPluginMap[p.pluginName]; ok {
 		// is the running plugin we read from the map the same as our running plugin?
 		// if not, it must already have been removed by another thread - do nothing
@@ -690,7 +687,7 @@ func (m *PluginManager) waitForPluginLoad(p *runningPlugin, req *pb.GetRequest) 
 			delete(m.runningPluginMap, p.pluginName)
 		}
 	}
-	m.mut.Unlock()
+	m.commonMapAccessMutex.Unlock()
 
 	// so the pid does not exist
 	err := fmt.Errorf("PluginManager found pid %d for plugin '%s' in plugin map but plugin process does not exist (%p)", p.reattach.Pid, p.pluginName, req)
