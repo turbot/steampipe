@@ -16,12 +16,12 @@ const (
 	DefaultImageType = "plugins"
 )
 
-// SteampipeImageRef :: a ref to an OCI image
+// SteampipeImageRef a struct encapsulating a ref to an OCI image
 type SteampipeImageRef struct {
 	requestedRef string
 }
 
-// NewSteampipeImageRef :: creates and returns a New SteampipeImageRef
+// NewSteampipeImageRef creates and returns a New SteampipeImageRef
 func NewSteampipeImageRef(ref string) *SteampipeImageRef {
 	ref = sanitizeRefStream(ref)
 	return &SteampipeImageRef{
@@ -29,7 +29,7 @@ func NewSteampipeImageRef(ref string) *SteampipeImageRef {
 	}
 }
 
-// ActualImageRef :: returns the actual, physical full image ref
+// ActualImageRef returns the actual, physical full image ref
 // (us-docker.pkg.dev/steampipe/plugins/turbot/aws:1.0.0)
 func (r *SteampipeImageRef) ActualImageRef() string {
 	ref := r.requestedRef
@@ -47,7 +47,7 @@ func (r *SteampipeImageRef) ActualImageRef() string {
 	return fullRef
 }
 
-// DisplayImageRef :: returns the "friendly" user-facing full image ref
+// DisplayImageRef returns the "friendly" user-facing full image ref
 // (hub.steampipe.io/plugins/turbot/aws@1.0.0)
 func (r *SteampipeImageRef) DisplayImageRef() string {
 	fullRef := r.ActualImageRef()
@@ -84,8 +84,7 @@ func sanitizeRefStream(ref string) string {
 	return ref
 }
 
-// GetOrgNameAndStream :: splits the full image reference into
-// (org, name, stream)
+// GetOrgNameAndStream splits the full image reference into (org, name, stream)
 func (r *SteampipeImageRef) GetOrgNameAndStream() (string, string, string) {
 	// plugin.Name looks like `hub.steampipe.io/plugins/turbot/aws@latest`
 	split := strings.Split(r.DisplayImageRef(), "/")
@@ -94,6 +93,18 @@ func (r *SteampipeImageRef) GetOrgNameAndStream() (string, string, string) {
 		return split[len(split)-2], pluginNameAndStream[0], pluginNameAndStream[1]
 	}
 	return strings.Join(split[0:len(split)-2], "/"), pluginNameAndStream[0], pluginNameAndStream[1]
+}
+
+// GetFriendlyName returns a friendly name:
+// hub.steampipe.io/plugins/turbot/aws@1.0.0 => aws@1.0.0
+// hub.steampipe.io/plugins/turbot/aws@latest => aws
+func (r *SteampipeImageRef) GetFriendlyName() string {
+	_, pluginName, pluginStream := r.GetOrgNameAndStream()
+	if pluginStream == DefaultImageTag {
+		return pluginName
+	} else {
+		return fmt.Sprintf("%s@%s", pluginName, pluginStream)
+	}
 }
 
 // possible formats include

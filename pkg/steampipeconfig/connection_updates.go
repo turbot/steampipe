@@ -152,7 +152,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 			// we need to refetch the rate limiters for
 			if res.pluginBinaryChanged {
 				// store map item of plugin name to connection name (so we only have one entry per plugin)
-				pluginShortName := GlobalConfig.Connections[requiredConnectionState.ConnectionName].PluginShortName
+				pluginShortName := GlobalConfig.Connections[requiredConnectionState.ConnectionName].PluginAlias
 				updates.PluginsWithUpdatedBinary[pluginShortName] = requiredConnectionState.ConnectionName
 			}
 		}

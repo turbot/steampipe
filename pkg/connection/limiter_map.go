@@ -5,25 +5,7 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// map of plugin short name to Limiter map for the plugin
-type PluginLimiterMap map[string]LimiterMap
-
-func (l PluginLimiterMap) Equals(other PluginLimiterMap) bool {
-	return maps.EqualFunc(l, other, func(m1, m2 LimiterMap) bool { return m1.Equals(m2) })
-}
-
-type PluginMap map[string]*modconfig.Plugin
-
-func (p PluginMap) ToPluginLimiterMap() PluginLimiterMap {
-	var limiterPluginMap = make(PluginLimiterMap)
-	for name, p := range p {
-		if len(p.Limiters) > 0 {
-			limiterPluginMap[name] = NewLimiterMap(p.Limiters)
-		}
-	}
-	return limiterPluginMap
-}
-
+// LimiterMap is a map of limiter name to limiter definition
 type LimiterMap map[string]*modconfig.RateLimiter
 
 func NewLimiterMap(limiters []*modconfig.RateLimiter) LimiterMap {
@@ -37,7 +19,7 @@ func (l LimiterMap) Equals(other LimiterMap) bool {
 	return maps.EqualFunc(l, other, func(l1, l2 *modconfig.RateLimiter) bool { return l1.Equals(l2) })
 }
 
-// ToPluginLimiterMap converts limiter map keyed by limiter name to a map of limiter maps keyed by plugin
+// ToPluginLimiterMap converts limiter map keyed by limiter name to a map of limiter maps keyed by plugin image ref
 func (l LimiterMap) ToPluginLimiterMap() PluginLimiterMap {
 	res := make(PluginLimiterMap)
 	for name, limiter := range l {

@@ -61,19 +61,16 @@ type PluginManager struct {
 	logger        hclog.Logger
 	messageServer *PluginMessageServer
 
-	// map of user configured rate limiter maps, keyed by plugin short name
+	// map of user configured rate limiter maps, keyed by plugin image ref
 	// NOTE: this is populated from config
 	userLimiters connection.PluginLimiterMap
-	// map of plugin configured rate limiter maps, keyed by plugin short name
+	// map of plugin configured rate limiter maps  (keyed by plugin image ref)
 	// NOTE: if this is nil, that means the steampipe_rate_limiter tables has not been populalated yet -
 	// the first time we refresh connections we must load all plugins and fetch their rate limiter defs
 	pluginLimiters connection.PluginLimiterMap
 
-	// map of plugin configs
+	// map of plugin configs (keyed by plugin image ref)
 	plugins connection.PluginMap
-	// map of plugin short name to long name
-	pluginShortToLongNameMap map[string]string
-	pluginLongToShortNameMap map[string]string
 
 	pool *pgxpool.Pool
 }
@@ -81,18 +78,15 @@ type PluginManager struct {
 func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, pluginConfigs connection.PluginMap, logger hclog.Logger) (*PluginManager, error) {
 	log.Printf("[INFO] NewPluginManager")
 	pluginManager := &PluginManager{
-		logger:                   logger,
-		runningPluginMap:         make(map[string]*runningPlugin),
-		connectionConfigMap:      connectionConfig,
-		userLimiters:             pluginConfigs.ToPluginLimiterMap(),
-		plugins:                  pluginConfigs,
-		pluginShortToLongNameMap: make(map[string]string),
-		pluginLongToShortNameMap: make(map[string]string),
+		logger:              logger,
+		runningPluginMap:    make(map[string]*runningPlugin),
+		connectionConfigMap: connectionConfig,
+		userLimiters:        pluginConfigs.ToPluginLimiterMap(),
+		plugins:             pluginConfigs,
 	}
 
 	pluginManager.messageServer = &PluginMessageServer{pluginManager: pluginManager}
 
-	//time.Sleep(10 * time.Second)
 	// populate plugin connection config map
 	pluginManager.populatePluginConnectionConfigs()
 	// determine cache size for each plugin
@@ -463,7 +457,7 @@ func (m *PluginManager) startPluginProcess(pluginName string, connectionConfigs 
 	cmd := exec.Command(pluginPath)
 
 	// see if a plugin config was specified - if so, get the max memory to allow the plugin
-	pluginConfig := m.plugins[exemplarConnectionConfig.PluginShortName]
+	pluginConfig := m.plugins[exemplarConnectionConfig.Plugin]
 	// must be there
 	if pluginConfig == nil {
 		return nil, sperr.New("no plugin config is stored for plugin %s", exemplarConnectionConfig.PluginShortName)
@@ -597,9 +591,6 @@ func (m *PluginManager) populatePluginConnectionConfigs() {
 	m.pluginConnectionConfigMap = make(map[string][]*sdkproto.ConnectionConfig)
 	for _, config := range m.connectionConfigMap {
 		m.pluginConnectionConfigMap[config.Plugin] = append(m.pluginConnectionConfigMap[config.Plugin], config)
-		// populate plugin name map
-		m.pluginShortToLongNameMap[config.PluginShortName] = config.Plugin
-		m.pluginLongToShortNameMap[config.Plugin] = config.PluginShortName
 	}
 }
 

@@ -30,11 +30,11 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 	}
 
 	if strings.HasPrefix(pluginName, "local/") {
-		connection.PluginLongName = pluginName
+		connection.Plugin = pluginName
 	} else {
-		connection.PluginLongName = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
+		connection.Plugin = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
 	}
-	connection.PluginShortName = pluginName
+	connection.PluginAlias = pluginName
 
 	if connectionContent.Attributes["type"] != nil {
 		var connectionType string
