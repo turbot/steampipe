@@ -106,7 +106,7 @@ var rootCmd = &cobra.Command{
 		// ensure all plugin installation directories have a version.json file
 		// (this is to handle the case of migrating an existing installation from v0.20.x)
 		// no point doing this for the plugin-manager since that would have been done by the initiating CLI process
-		if !task.IsPluginManagerCmd(cmd) {
+		if !cmdconfig.IsPluginManagerCmd(cmd) {
 			versionfile.EnsureVersionFilesInPluginDirectories()
 		}
 
@@ -155,7 +155,7 @@ func setMemoryLimit() {
 func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, ew *error_helpers.ErrorAndWarnings) chan struct{} {
 	// skip running the task runner if this is the plugin manager
 	// since it's supposed to be a daemon
-	if task.IsPluginManagerCmd(cmd) {
+	if cmdconfig.IsPluginManagerCmd(cmd) {
 		return nil
 	}
 
@@ -381,7 +381,7 @@ func validateConfig() error {
 
 // create a hclog logger with the level specified by the SP_LOG env var
 func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
-	if task.IsPluginManagerCmd(cmd) {
+	if cmdconfig.IsPluginManagerCmd(cmd) {
 		// nothing to do here - plugin manager sets up it's own logger
 		// refer https://github.com/turbot/steampipe/blob/710a96d45fd77294de8d63d77bf78db65133e5ca/cmd/plugin_manager.go#L102
 		return

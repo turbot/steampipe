@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/turbot/go-kit/files"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -158,25 +159,9 @@ func (r *Runner) shouldRun() bool {
 }
 
 func showNotificationsForCommand(cmd *cobra.Command, cmdArgs []string) bool {
-	return !(isPluginUpdateCmd(cmd) ||
-		IsPluginManagerCmd(cmd) ||
-		isServiceStopCmd(cmd) ||
-		isBatchQueryCmd(cmd, cmdArgs) ||
-		isCompletionCmd(cmd))
-}
-
-func isServiceStopCmd(cmd *cobra.Command) bool {
-	return cmd.Parent() != nil && cmd.Parent().Name() == "service" && cmd.Name() == "stop"
-}
-func isCompletionCmd(cmd *cobra.Command) bool {
-	return cmd.Name() == "completion"
-}
-func IsPluginManagerCmd(cmd *cobra.Command) bool {
-	return cmd.Name() == "plugin-manager"
-}
-func isPluginUpdateCmd(cmd *cobra.Command) bool {
-	return cmd.Name() == "update" && cmd.Parent() != nil && cmd.Parent().Name() == "plugin"
-}
-func isBatchQueryCmd(cmd *cobra.Command, cmdArgs []string) bool {
-	return cmd.Name() == "query" && len(cmdArgs) > 0
+	return !(cmdconfig.IsPluginUpdateCmd(cmd) ||
+		cmdconfig.IsPluginManagerCmd(cmd) ||
+		cmdconfig.IsServiceStopCmd(cmd) ||
+		cmdconfig.IsBatchQueryCmd(cmd, cmdArgs) ||
+		cmdconfig.IsCompletionCmd(cmd))
 }
