@@ -65,7 +65,27 @@ func modInstallCmd() *cobra.Command {
 		Use:   "install",
 		Run:   runModInstallCmd,
 		Short: "Install one or more mods and their dependencies",
-		Long:  `Install one or more mods and their dependencies.`,
+		Long: `Install one or more mods and their dependencies.
+
+Mods provide an easy way to share Steampipe queries, controls, and benchmarks.
+Find mods using the public registry at hub.steampipe.io.
+
+Examples:
+
+  # Install a mod(steampipe-mod-aws-compliance)
+  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance
+
+  # Install a specific version of a mod
+  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance@0.1
+
+  # Install a version of a mod using a semver constraint
+  steampipe mod install github.com/turbot/steampipe-mod-aws-compliance@'^1'
+
+  # Install all mods specified in the mod.sp and their dependencies
+  steampipe mod install
+
+  # Preview what steampipe mod install will do, without actually installing anything
+  steampipe mod install --dry-run`,
 	}
 
 	cmdconfig.OnCmd(cmd).
@@ -121,7 +141,12 @@ func modUninstallCmd() *cobra.Command {
 		Use:   "uninstall",
 		Run:   runModUninstallCmd,
 		Short: "Uninstall a mod and its dependencies",
-		Long:  `Uninstall a mod and its dependencies.`,
+		Long: `Uninstall a mod and its dependencies.
+
+Example:
+  
+  # Uninstall a mod
+  steampipe mod uninstall github.com/turbot/steampipe-mod-azure-compliance`,
 	}
 
 	cmdconfig.OnCmd(cmd).
@@ -165,7 +190,15 @@ func modUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Run:   runModUpdateCmd,
 		Short: "Update one or more mods and their dependencies",
-		Long:  `Update one or more mods and their dependencies.`,
+		Long: `Update one or more mods and their dependencies.
+
+Example:
+
+  # Update a mod to the latest version allowed by its current constraint
+  steampipe mod update github.com/turbot/steampipe-mod-aws-compliance
+
+  # Update all mods specified in the mod.sp and their dependencies to the latest versions that meet their constraints, and install any that are missing
+  steampipe mod update`,
 	}
 
 	cmdconfig.OnCmd(cmd).
@@ -211,7 +244,12 @@ func modListCmd() *cobra.Command {
 		Use:   "list",
 		Run:   runModListCmd,
 		Short: "List currently installed mods",
-		Long:  `List currently installed mods.`,
+		Long: `List currently installed mods.
+		
+Example:
+
+  # List installed mods
+  steampipe mod list`,
 	}
 
 	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, false, "Help for list", cmdconfig.FlagOptions.WithShortHand("h"))
@@ -255,7 +293,12 @@ func modInitCmd() *cobra.Command {
 		Use:   "init",
 		Run:   runModInitCmd,
 		Short: "Initialize the current directory with a mod.sp file",
-		Long:  `Initialize the current directory with a mod.sp file.`,
+		Long: `Initialize the current directory with a mod.sp file.
+		
+Example:
+
+  # Initialize the current directory with a mod.sp file
+  steampipe mod init`,
 	}
 
 	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, false, "Help for init", cmdconfig.FlagOptions.WithShortHand("h"))
