@@ -47,12 +47,12 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"aws_dmi_001": {
-					Name:            "aws_dmi_001",
-					PluginShortName: "aws",
-					PluginLongName:  "hub.steampipe.io/plugins/turbot/aws@latest",
-					Type:            "",
-					ImportSchema:    "enabled",
-					Config:          "access_key = \"aws_dmi_001_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_001_secret_key\"\n",
+					Name:         "aws_dmi_001",
+					PluginAlias:  "aws",
+					Plugin:       "hub.steampipe.io/plugins/turbot/aws@latest",
+					Type:         "",
+					ImportSchema: "enabled",
+					Config:       "access_key = \"aws_dmi_001_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_001_secret_key\"\n",
 					DeclRange: modconfig.Range{
 						Filename: "$$test_pwd$$/testdata/connection_config/multiple_connections/config/connection1.spc",
 						Start: modconfig.Pos{
@@ -68,12 +68,12 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					},
 				},
 				"aws_dmi_002": {
-					Name:            "aws_dmi_002",
-					PluginShortName: "aws",
-					PluginLongName:  "hub.steampipe.io/plugins/turbot/aws@latest",
-					Type:            "",
-					ImportSchema:    "enabled",
-					Config:          "access_key = \"aws_dmi_002_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_002_secret_key\"\n",
+					Name:         "aws_dmi_002",
+					PluginAlias:  "aws",
+					Plugin:       "hub.steampipe.io/plugins/turbot/aws@latest",
+					Type:         "",
+					ImportSchema: "enabled",
+					Config:       "access_key = \"aws_dmi_002_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_002_secret_key\"\n",
 					DeclRange: modconfig.Range{
 						Filename: "$$test_pwd$$/testdata/connection_config/multiple_connections/config/connection2.spc",
 						Start: modconfig.Pos{
@@ -100,12 +100,12 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:            "a",
-					PluginShortName: "test_data/connection-test-1",
-					PluginLongName:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
-					Type:            "",
-					ImportSchema:    "enabled",
-					Config:          "",
+					Name:         "a",
+					PluginAlias:  "test_data/connection-test-1",
+					Plugin:       "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Type:         "",
+					ImportSchema: "enabled",
+					Config:       "",
 					DeclRange: modconfig.Range{
 						Filename: "$$test_pwd$$/testdata/connection_config/single_connection/config/connection1.spc",
 						Start: modconfig.Pos{
@@ -132,12 +132,12 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:            "a",
-					PluginShortName: "test_data/connection-test-1",
-					PluginLongName:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
-					Type:            "",
-					ImportSchema:    "enabled",
-					Config:          "",
+					Name:         "a",
+					PluginAlias:  "test_data/connection-test-1",
+					Plugin:       "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Type:         "",
+					ImportSchema: "enabled",
+					Config:       "",
 					DeclRange: modconfig.Range{
 						Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
 						Start: modconfig.Pos{
@@ -178,12 +178,12 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:            "a",
-					PluginShortName: "test_data/connection-test-1",
-					PluginLongName:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
-					Type:            "",
-					ImportSchema:    "enabled",
-					Config:          "",
+					Name:         "a",
+					PluginAlias:  "test_data/connection-test-1",
+					Plugin:       "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Type:         "",
+					ImportSchema: "enabled",
+					Config:       "",
 					DeclRange: modconfig.Range{
 						Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
 						Start: modconfig.Pos{
@@ -219,12 +219,12 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:            "a",
-					PluginShortName: "test_data/connection-test-1",
-					PluginLongName:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
-					Type:            "",
-					ImportSchema:    "enabled",
-					Config:          "",
+					Name:         "a",
+					PluginAlias:  "test_data/connection-test-1",
+					Plugin:       "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Type:         "",
+					ImportSchema: "enabled",
+					Config:       "",
 					DeclRange: modconfig.Range{
 						Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
 						Start: modconfig.Pos{
@@ -259,11 +259,11 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"a": {
-					Name:            "a",
-					ImportSchema:    "enabled",
-					PluginShortName: "test_data/connection-test-1",
-					PluginLongName:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
-					Config:          "",
+					Name:         "a",
+					ImportSchema: "enabled",
+					PluginAlias:  "test_data/connection-test-1",
+					Plugin:       "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Config:       "",
 					Options: &options.Connection{
 						Cache:    &trueVal,
 						CacheTTL: &ttlVal,

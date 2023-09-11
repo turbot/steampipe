@@ -123,7 +123,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 		res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", failedPlugin, failure))
 		// figure out which connections are provided by any failed plugins
 		for _, c := range connectionsToCreate {
-			if c.PluginLongName == failedPlugin {
+			if c.Plugin == failedPlugin {
 				res.AddFailedConnection(c.Name, constants.ConnectionErrorPluginFailedToStart)
 			}
 		}
@@ -134,8 +134,8 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 
 	for _, connection := range connectionsToCreate {
 		// is this connection provided by a plugin we have already instantiated?
-		if existingConnectionPlugin, ok := multiConnectionPlugins[connection.PluginLongName]; ok {
-			log.Printf("[TRACE] CreateConnectionPlugins - connection %s is provided by existing connectionPlugin %s - reusing", connection.Name, connection.PluginLongName)
+		if existingConnectionPlugin, ok := multiConnectionPlugins[connection.Plugin]; ok {
+			log.Printf("[TRACE] CreateConnectionPlugins - connection %s is provided by existing connectionPlugin %s - reusing", connection.Name, connection.Plugin)
 			// store the existing connection plugin in the result map
 			requestedConnectionPluginMap[connection.Name] = existingConnectionPlugin
 			continue
@@ -143,7 +143,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 
 		// do we have a reattach config for this connection's plugin
 		if _, ok := getResponse.ReattachMap[connection.Name]; !ok {
-			log.Printf("[TRACE] CreateConnectionPlugins skipping connection '%s', plugin '%s' as plugin manager failed to start it", connection.Name, connection.PluginLongName)
+			log.Printf("[TRACE] CreateConnectionPlugins skipping connection '%s', plugin '%s' as plugin manager failed to start it", connection.Name, connection.Plugin)
 			continue
 		}
 
@@ -157,13 +157,13 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 
 		connectionPlugin, err := createConnectionPlugin(connection, reattach)
 		if err != nil {
-			res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", connection.PluginShortName, err))
+			res.AddWarning(fmt.Sprintf("failed to start plugin '%s': %s", connection.PluginAlias, err))
 			continue
 		}
 		requestedConnectionPluginMap[connection.Name] = connectionPlugin
 		if connectionPlugin.SupportedOperations.MultipleConnections {
 			// if it supports multiple connections, store in multiConnectionPlugins too
-			multiConnectionPlugins[connection.PluginLongName] = connectionPlugin
+			multiConnectionPlugins[connection.Plugin] = connectionPlugin
 		}
 	}
 	log.Printf("[TRACE] all connection plugins created, populating schemas")
@@ -254,7 +254,7 @@ func fullConnectionPluginMap(sparseConnectionPluginMap map[string]*ConnectionPlu
 // createConnectionPlugin sttaches to the plugin process
 func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.ReattachConfig) (*ConnectionPlugin, error) {
 	log.Printf("[TRACE] createConnectionPlugin for connection %s", connection.Name)
-	pluginName := connection.PluginLongName
+	pluginName := connection.Plugin
 	connectionName := connection.Name
 
 	log.Printf("[TRACE] plugin manager returned reattach config for connection '%s' - pid %d",
@@ -275,7 +275,7 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 	log.Printf("[TRACE] plugin client created for %s", pluginName)
 
 	// now create ConnectionPlugin object return
-	connectionPlugin := NewConnectionPlugin(connection.PluginShortName, pluginName, pluginClient, reattach.SupportedOperations)
+	connectionPlugin := NewConnectionPlugin(connection.PluginAlias, pluginName, pluginClient, reattach.SupportedOperations)
 
 	// if multiple connections are NOT supported, add the config for our one and only connection
 	if reattach.SupportedOperations == nil || !reattach.SupportedOperations.MultipleConnections {

@@ -4,6 +4,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"sort"
 	"strings"
 )
@@ -16,22 +17,23 @@ const (
 )
 
 type RateLimiter struct {
-	Name            string   `hcl:"name,label" db:"name"`
-	BucketSize      *int64   `hcl:"bucket_size,optional" db:"bucket_size"`
-	FillRate        *float32 `hcl:"fill_rate,optional" db:"fill_rate"`
-	MaxConcurrency  *int64   `hcl:"max_concurrency,optional" db:"max_concurrency"`
-	Scope           []string `hcl:"scope,optional" db:"scope"`
-	Where           *string  `hcl:"where,optional" db:"where"`
-	Plugin          string   `db:"plugin"`
-	FileName        *string  `db:"file_name"`
-	StartLineNumber *int     `db:"start_line_number"`
-	EndLineNumber   *int     `db:"end_line_number"`
-	Status          string   `db:"status"`
-	Source          string   `db:"source"`
+	Name            string                          `hcl:"name,label" db:"name"`
+	BucketSize      *int64                          `hcl:"bucket_size,optional" db:"bucket_size"`
+	FillRate        *float32                        `hcl:"fill_rate,optional" db:"fill_rate"`
+	MaxConcurrency  *int64                          `hcl:"max_concurrency,optional" db:"max_concurrency"`
+	Scope           []string                        `hcl:"scope,optional" db:"scope"`
+	Where           *string                         `hcl:"where,optional" db:"where"`
+	Plugin          string                          `db:"plugin"`
+	FileName        *string                         `db:"file_name"`
+	StartLineNumber *int                            `db:"start_line_number"`
+	EndLineNumber   *int                            `db:"end_line_number"`
+	Status          string                          `db:"status"`
+	Source          string                          `db:"source"`
+	ImageRef        *ociinstaller.SteampipeImageRef `db:"-"`
 }
 
 // RateLimiterFromProto converts the proto format RateLimiterDefinition into a Defintion
-func RateLimiterFromProto(p *proto.RateLimiterDefinition) (*RateLimiter, error) {
+func RateLimiterFromProto(p *proto.RateLimiterDefinition, pluginImageRef string) (*RateLimiter, error) {
 	var res = &RateLimiter{
 		Name:  p.Name,
 		Scope: p.Scope,
@@ -49,6 +51,8 @@ func RateLimiterFromProto(p *proto.RateLimiterDefinition) (*RateLimiter, error) 
 	if res.Scope == nil {
 		res.Scope = []string{}
 	}
+	res.ImageRef = ociinstaller.NewSteampipeImageRef(pluginImageRef)
+	res.Plugin = res.ImageRef.GetFriendlyName()
 	return res, nil
 }
 

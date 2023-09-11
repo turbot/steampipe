@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
+	"github.com/turbot/steampipe/pkg/ociinstaller"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/rate_limiters"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -27,7 +28,7 @@ func (m *PluginManager) ShouldFetchRateLimiterDefs() bool {
 // for all plugins with changed limiters
 func (m *PluginManager) HandlePluginLimiterChanges(newLimiters connection.PluginLimiterMap) error {
 	if m.pluginLimiters == nil {
-		// this must be the first time we have poplkated them
+		// this must be the first time we have populated them
 		m.pluginLimiters = make(connection.PluginLimiterMap)
 	}
 	for plugin, limitersForPlugin := range newLimiters {
@@ -109,13 +110,9 @@ func (m *PluginManager) handleUserLimiterChanges(plugins connection.PluginMap) e
 
 func (m *PluginManager) setRateLimitersForPlugin(pluginShortName string) error {
 	// get running plugin for this plugin
-	// if plugin is not running we have nothing to do
-	longName, ok := m.pluginShortToLongNameMap[pluginShortName]
-	if !ok {
-		log.Printf("[INFO] handleUserLimiterChanges: plugin %s is not currently running - ignoring", pluginShortName)
-		return nil
-	}
-	runningPlugin, ok := m.runningPluginMap[longName]
+	imageRef := ociinstaller.NewSteampipeImageRef(pluginShortName).DisplayImageRef()
+
+	runningPlugin, ok := m.runningPluginMap[imageRef]
 	if !ok {
 		log.Printf("[INFO] handleUserLimiterChanges: plugin %s is not currently running - ignoring", pluginShortName)
 		return nil
@@ -125,13 +122,13 @@ func (m *PluginManager) setRateLimitersForPlugin(pluginShortName string) error {
 		return nil
 	}
 
-	pluginClient, err := sdkgrpc.NewPluginClient(runningPlugin.client, longName)
+	pluginClient, err := sdkgrpc.NewPluginClient(runningPlugin.client, imageRef)
 	if err != nil {
-		return sperr.WrapWithMessage(err, "failed to create a plugin client when updating the rate limiter for plugin '%s'", longName)
+		return sperr.WrapWithMessage(err, "failed to create a plugin client when updating the rate limiter for plugin '%s'", imageRef)
 	}
 
 	if err := m.setRateLimiters(pluginShortName, pluginClient); err != nil {
-		return sperr.WrapWithMessage(err, "failed to update rate limiters for plugin '%s'", longName)
+		return sperr.WrapWithMessage(err, "failed to update rate limiters for plugin '%s'", imageRef)
 	}
 	return nil
 }
@@ -318,26 +315,24 @@ func (m *PluginManager) LoadPluginRateLimiters(pluginConnectionMap map[string]st
 		if rateLimiterResp == nil || rateLimiterResp.Definitions == nil {
 			continue
 		}
-		// populate the plugin name
-		pluginShortName := m.pluginLongToShortNameMap[reattach.Plugin]
 
 		limitersForPlugin := make(connection.LimiterMap)
 		for _, l := range rateLimiterResp.Definitions {
-			r, err := modconfig.RateLimiterFromProto(l)
+			r, err := modconfig.RateLimiterFromProto(l, reattach.Plugin)
 			if err != nil {
 				errors = append(errors, sperr.WrapWithMessage(err, "failed to create rate limiter %s from plugin definition", err))
 				continue
 			}
-			r.Plugin = pluginShortName
+
 			// set plugin as source
 			r.Source = modconfig.LimiterSourcePlugin
-			// derfaulty status to active
+			// default status to active
 			r.Status = modconfig.LimiterStatusActive
 			// add to map
 			limitersForPlugin[l.Name] = r
 		}
 		// store back
-		res[pluginShortName] = limitersForPlugin
+		res[reattach.Plugin] = limitersForPlugin
 	}
 
 	return res, nil

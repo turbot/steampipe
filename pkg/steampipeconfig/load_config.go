@@ -256,11 +256,14 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			if moreDiags.HasErrors() {
 				continue
 			}
-			_, alreadyThere := steampipeConfig.Plugins[plugin.Source]
+			// get the _display_ image ref to key the map
+			imageRef := plugin.GetImageRef()
+
+			_, alreadyThere := steampipeConfig.Plugins[imageRef]
 			if alreadyThere {
 				return error_helpers.NewErrorsAndWarning(sperr.New("duplicate plugin: '%s' in '%s'", plugin.Source, block.TypeRange.Filename))
 			}
-			steampipeConfig.Plugins[plugin.Source] = plugin
+			steampipeConfig.Plugins[imageRef] = plugin
 
 		case modconfig.BlockTypeConnection:
 			connection, moreDiags := parse.DecodeConnection(block)
