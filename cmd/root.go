@@ -273,7 +273,7 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	ensureInstallDir(viper.GetString(constants.ArgInstallDir))
 
 	// load the connection config and HCL options
-	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd)
+	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
 	error_helpers.FailOnError(loadConfigErrorsAndWarnings.GetError())
 
 	// store global config
