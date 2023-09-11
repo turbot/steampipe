@@ -11,6 +11,7 @@ import (
 
 	"github.com/gertd/go-pluralize"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/spf13/cobra"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -29,11 +30,12 @@ var defaultConfigFileName = "default.spc"
 var defaultConfigSampleFileName = "default.spc.sample"
 
 // LoadSteampipeConfig loads the HCL connection config and workspace options
-func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConfig, *error_helpers.ErrorAndWarnings) {
+func LoadSteampipeConfig(modLocation string, cmd *cobra.Command) (*SteampipeConfig, *error_helpers.ErrorAndWarnings) {
 	utils.LogTime("steampipeconfig.LoadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
 
 	log.Printf("[INFO] ensureDefaultConfigFile")
+
 	if err := ensureDefaultConfigFile(filepaths.EnsureConfigDir()); err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(
 			sperr.WrapWithMessage(
@@ -42,13 +44,13 @@ func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConf
 			),
 		)
 	}
-	return loadSteampipeConfig(modLocation, commandName)
+	return loadSteampipeConfig(modLocation, cmd.Name())
 }
 
 // LoadConnectionConfig loads the connection config but not the workspace options
 // this is called by the fdw
 func LoadConnectionConfig() (*SteampipeConfig, *error_helpers.ErrorAndWarnings) {
-	return LoadSteampipeConfig("", "")
+	return LoadSteampipeConfig("", nil)
 }
 
 func ensureDefaultConfigFile(configFolder string) error {
