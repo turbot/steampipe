@@ -52,6 +52,7 @@ func LoadConnectionConfig() (*SteampipeConfig, *error_helpers.ErrorAndWarnings) 
 }
 
 func ensureDefaultConfigFile(configFolder string) error {
+	// get the filepaths
 	defaultConfigFile := filepath.Join(configFolder, defaultConfigFileName)
 	defaultConfigSampleFile := filepath.Join(configFolder, defaultConfigSampleFileName)
 
