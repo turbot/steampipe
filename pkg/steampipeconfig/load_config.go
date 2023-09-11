@@ -1,11 +1,13 @@
 package steampipeconfig
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gertd/go-pluralize"
 	"github.com/hashicorp/hcl/v2"
@@ -32,6 +34,7 @@ func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConf
 	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
 
 	log.Printf("[INFO] ensureDefaultConfigFile")
+
 	if err := ensureDefaultConfigFile(filepaths.EnsureConfigDir()); err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(
 			sperr.WrapWithMessage(
@@ -50,32 +53,62 @@ func LoadConnectionConfig() (*SteampipeConfig, *error_helpers.ErrorAndWarnings) 
 }
 
 func ensureDefaultConfigFile(configFolder string) error {
-	var equal bool
+	// get the filepaths
 	defaultConfigFile := filepath.Join(configFolder, defaultConfigFileName)
 	defaultConfigSampleFile := filepath.Join(configFolder, defaultConfigSampleFileName)
 
-	// always write the default.spc.sample file
-	err := os.WriteFile(defaultConfigSampleFile, []byte(constants.DefaultConnectionConfigContent), 0755)
-	if err != nil {
-		return err
-	}
-	// if default.spc exists, and if the content of the default.spc and the default.spc.sample
-	// file are the same, remove the default.spc file.
-	if _, err := os.Stat(defaultConfigFile); err == nil {
-		if equal, err = utils.AreFilesEqual(defaultConfigFile, defaultConfigSampleFile); err != nil {
+	// check if sample and default files exist
+	sampleExists := filehelpers.FileExists(defaultConfigSampleFile)
+	defaultExists := filehelpers.FileExists(defaultConfigFile)
+
+	var sampleContent []byte
+	var sampleModTime, defaultModTime time.Time
+
+	// if the sample file exists, load content and read mod time
+	if sampleExists {
+		sampleStat, err := os.Stat(defaultConfigSampleFile)
+		if err != nil {
 			return err
 		}
-		if equal {
-			// remove default.spc file
-			err := os.Remove(defaultConfigFile)
-			if err != nil {
-				return err
-			}
+		sampleContent, err = os.ReadFile(defaultConfigSampleFile)
+		if err != nil {
+			return err
+		}
+		sampleModTime = sampleStat.ModTime()
+	}
+
+	// if the default file exists read mod time
+	if defaultExists {
+		// get the file infos
+		defaultStat, err := os.Stat(defaultConfigFile)
+		if err != nil {
+			return err
+		}
+		// get the file mod times
+		defaultModTime = defaultStat.ModTime()
+	}
+
+	// check if the files are modified
+
+	// has the user modified the default file?
+	userModifiedDefault := defaultModTime.IsZero() ||
+		defaultModTime.After(sampleModTime) && defaultModTime.Sub(sampleModTime) > 100*time.Millisecond
+
+	// has the DefaultConnectionConfigContent been updated since the sample file was last writtne
+	sampleModified := sampleModTime.IsZero() ||
+		!bytes.Equal([]byte(constants.DefaultConnectionConfigContent), sampleContent)
+
+	// case: if sample is modified - always write new sample file content
+	if sampleModified {
+		err := os.WriteFile(defaultConfigSampleFile, []byte(constants.DefaultConnectionConfigContent), 0755)
+		if err != nil {
+			return err
 		}
 	}
-	// write default.spc if it does not exist
-	if _, err := os.Stat(defaultConfigFile); os.IsNotExist(err) {
-		err = os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0755)
+
+	// case: if sample is modified but default is not modified - write the new default file content
+	if sampleModified && !userModifiedDefault {
+		err := os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0755)
 		if err != nil {
 			return err
 		}
