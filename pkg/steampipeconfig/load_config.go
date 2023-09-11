@@ -61,41 +61,42 @@ func ensureDefaultConfigFile(configFolder string) error {
 	sampleExists := filehelpers.FileExists(defaultConfigSampleFile)
 	defaultExists := filehelpers.FileExists(defaultConfigFile)
 
-	// case: neither sample nor default.spc exists - write both
-	if !sampleExists {
-		err := os.WriteFile(defaultConfigSampleFile, []byte(constants.DefaultConnectionConfigContent), 0755)
+	var sampleContent []byte
+	var sampleModTime, defaultModTime time.Time
+
+	// if the sample file exists, load content and read mod time
+	if sampleExists {
+		sampleStat, err := os.Stat(defaultConfigSampleFile)
 		if err != nil {
 			return err
 		}
-	}
-	if !defaultExists {
-		err := os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0755)
+		sampleContent, err = os.ReadFile(defaultConfigSampleFile)
 		if err != nil {
 			return err
 		}
+		sampleModTime = sampleStat.ModTime()
 	}
 
-	// get the file infos
-	defaultStat, err := os.Stat(defaultConfigFile)
-	if err != nil {
-		return err
+	// if the default file exists read mod time
+	if defaultExists {
+		// get the file infos
+		defaultStat, err := os.Stat(defaultConfigFile)
+		if err != nil {
+			return err
+		}
+		// get the file mod times
+		defaultModTime = defaultStat.ModTime()
 	}
-	sampleStat, err := os.Stat(defaultConfigSampleFile)
-	if err != nil {
-		return err
-	}
-	sampleContent, err := os.ReadFile(defaultConfigSampleFile)
-	if err != nil {
-		return err
-	}
-
-	// get the file mod times
-	defaultModTime := defaultStat.ModTime()
-	sampleModTime := sampleStat.ModTime()
 
 	// check if the files are modified
-	defaultModified := defaultModTime.After(sampleModTime) && defaultModTime.Sub(sampleModTime) > 100*time.Millisecond
-	sampleModified := !bytes.Equal([]byte(constants.DefaultConnectionConfigContent), sampleContent)
+
+	// has the user modified the default file?
+	userModifiedDefault := defaultModTime.IsZero() ||
+		defaultModTime.After(sampleModTime) && defaultModTime.Sub(sampleModTime) > 100*time.Millisecond
+
+	// has the DefaultConnectionConfigContent been updated since the sample file was last writtne
+	sampleModified := sampleModTime.IsZero() ||
+		!bytes.Equal([]byte(constants.DefaultConnectionConfigContent), sampleContent)
 
 	// case: if sample is modified - always write new sample file content
 	if sampleModified {
@@ -106,7 +107,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 	}
 
 	// case: if sample is modified but default is not modified - write the new default file content
-	if sampleModified && !defaultModified {
+	if sampleModified && !userModifiedDefault {
 		err := os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0755)
 		if err != nil {
 			return err
