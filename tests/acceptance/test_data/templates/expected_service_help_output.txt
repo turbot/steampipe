@@ -17,5 +17,6 @@ Flags:
 
 Global Flags:
       --install-dir string   Path to the Config Directory (default "~/.steampipe")
+      --workspace string     The workspace profile to use (default "default")
 
 Use "steampipe service [command] --help" for more information about a command.

@@ -4,14 +4,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe plugin help is displayed when no sub command given" {
   steampipe plugin > test.txt
 
-  # checking for OS type, since sed command is different for linux and OSX
-  # removing lines, since they contain absolute file paths
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".txt" "36d" test.txt
-  else
-    run sed -i "36d" test.txt
-  fi
-
   assert_equal "$(cat test.txt)" "$(cat $TEST_DATA_DIR/expected_plugin_help_output.txt)"
   rm -f test.txt*
 }
