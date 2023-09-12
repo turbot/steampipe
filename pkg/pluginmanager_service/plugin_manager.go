@@ -171,8 +171,12 @@ func (m *PluginManager) doRefresh() {
 
 // OnConnectionConfigChanged is the callback function invoked by the connection watcher when the config changed
 func (m *PluginManager) OnConnectionConfigChanged(configMap connection.ConnectionConfigMap) {
+	log.Println("[INFO] >>>>>> PluginManager.OnConnectionConfigChanged mut lock")
 	m.mut.Lock()
-	defer m.mut.Unlock()
+	defer func() {
+		log.Println("[INFO] >>>>>> PluginManager.OnConnectionConfigChanged mut unlock")
+		m.mut.Unlock()
+	}()
 
 	names := utils.SortedMapKeys(configMap)
 	log.Printf("[TRACE] OnConnectionConfigChanged: %s", strings.Join(names, ","))
@@ -193,8 +197,10 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 	log.Printf("[TRACE] locked shutdownMut, waiting for startPluginWg")
 	m.startPluginWg.Wait()
 	log.Printf("[TRACE] waited for startPluginWg, locking mut")
+	log.Println("[INFO] >>>>>> PluginManager.Shutdown mut lock")
 	m.mut.Lock()
 	defer func() {
+		log.Println("[INFO] >>>>>> PluginManager.Shutdown mut unlock")
 		m.mut.Unlock()
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
@@ -392,11 +398,13 @@ func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdk
 
 		// is this plugin already running
 		// lock access to plugin map
+		log.Println("[INFO] >>>>>> PluginManager.ensurePlugin mut lock 1")
 		m.mut.Lock()
 		runningPlugin := m.isPluginRunning(connectionName, pluginName)
 		// do we now have a plugin?
 		if runningPlugin != nil {
 			// unlock access to map to allow other ensurePlugin calls to proceed
+			log.Println("[INFO] >>>>>> PluginManager.ensurePlugin mut unlock 1")
 			m.mut.Unlock()
 			var reattach *pb.ReattachConfig
 
@@ -419,6 +427,7 @@ func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdk
 			// so we have not yet found a compatible plugin
 
 			// NOTE: re-lock the mutex before falling through to addLoadingPlugin
+			log.Println("[INFO] >>>>>> PluginManager.ensurePlugin mut lock 2")
 			m.mut.Lock()
 
 			// TACTICAL there is a race condition here - multiple threads may be here at the same time
@@ -427,6 +436,7 @@ func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdk
 			p, ok := m.connectionPluginMap[connectionName]
 			if ok {
 				// unlock before calling verifyLoadingPlugin
+				log.Println("[INFO] >>>>>> PluginManager.ensurePlugin mut unlock 2")
 				m.mut.Unlock()
 
 				log.Printf("[INFO] after waiting for plugin %s to load, and discovering it does not support connection %s, found a loading plugin in connectionPluginMap, so using that", pluginName, connectionName)
@@ -445,6 +455,7 @@ func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdk
 					continue
 				}
 				// relock
+				log.Println("[INFO] >>>>>> PluginManager.ensurePlugin mut unlock 3")
 				m.mut.Lock()
 			}
 
@@ -466,6 +477,7 @@ func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdk
 		m.addLoadingPlugin(connectionName, pluginName)
 
 		// unlock access to map
+		log.Println("[INFO] >>>>>> PluginManager.ensurePlugin mut unlock 3")
 		m.mut.Unlock()
 
 		// NOTE: It is an error to try to start a plugin which is already running
@@ -479,8 +491,10 @@ func (m *PluginManager) ensurePlugin(pluginName string, connectionConfigs []*sdk
 		// so we need to start the plugin
 		client, reattach, err := m.startPlugin(connectionName)
 		if err != nil {
+			log.Println("[INFO] >>>>>> PluginManager.ensurePlugin mut lock 4")
 			m.mut.Lock()
 			delete(m.connectionPluginMap, connectionName)
+			log.Println("[INFO] >>>>>> PluginManager.ensurePlugin mut unlock 4")
 			m.mut.Unlock()
 
 			log.Println("[TRACE] startPlugin failed with", err)
@@ -578,8 +592,12 @@ func (m *PluginManager) addLoadingPlugin(connectionName string, pluginName strin
 // create reattach config for plugin, store to map for all connections and close initialized channel
 func (m *PluginManager) storePluginToMap(connection string, client *plugin.Client, reattach *pb.ReattachConfig) {
 	// lock access to map
+	log.Println("[INFO] >>>>>> PluginManager.storePluginToMap mut lock")
 	m.mut.Lock()
-	defer m.mut.Unlock()
+	defer func() {
+		log.Println("[INFO] >>>>>> PluginManager.storePluginToMap mut unlock")
+		m.mut.Unlock()
+	}()
 
 	// a RunningPlugin in initializing state will already have been put into the Plugins map
 	// populate its properties
