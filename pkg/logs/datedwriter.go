@@ -31,6 +31,11 @@ func NewDatedWriter(directory string, prefix string) *DatedWriter {
 
 func (dwr *DatedWriter) Write(p []byte) (n int, err error) {
 	pathShouldBe := filepath.Join(dwr.directory, fmt.Sprintf("%s-%s.log", dwr.prefix, time.Now().Format(time.DateOnly)))
+
+	// the code outside of this IF block should be simple and blazing fast
+	//
+	// the code inside the IF block will probably execute once in 24 hours at most
+	// for an instance, but the code outside is used by every log line
 	if dwr.currentPath != pathShouldBe {
 		dwr.rotateLock.Lock()
 		defer dwr.rotateLock.Unlock()
