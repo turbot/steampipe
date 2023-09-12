@@ -35,6 +35,9 @@ func (dwr *DatedWriter) Write(p []byte) (n int, err error) {
 		dwr.rotateLock.Lock()
 		defer dwr.rotateLock.Unlock()
 
+		// update to the current path
+		dwr.currentPath = pathShouldBe
+
 		// check if the file actually doesn't exist
 		// another thread may have created it while we were waiting for the lock
 		if !files.FileExists(pathShouldBe) {
@@ -44,13 +47,16 @@ func (dwr *DatedWriter) Write(p []byte) (n int, err error) {
 			if isCloseable {
 				closeableWriter.Close()
 			}
+		}
+
+		// we could be in here because the file exists,
+		// but we are starting up for the first time
+		if dwr.currentWriter == nil {
 			// create a new one
-			dwr.currentPath = pathShouldBe
-			f, err := os.OpenFile(dwr.currentPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+			dwr.currentWriter, err = os.OpenFile(dwr.currentPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 			if err != nil {
 				return 0, sperr.WrapWithRootMessage(err, "failed to open steampipe log file")
 			}
-			dwr.currentWriter = f
 		}
 	}
 
