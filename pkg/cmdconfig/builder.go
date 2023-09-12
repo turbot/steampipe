@@ -2,10 +2,13 @@ package cmdconfig
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -84,6 +87,27 @@ func (c *CmdBuilder) AddBoolFlag(name string, defaultValue bool, desc string, op
 		o(c.cmd, name, name)
 	}
 	return c
+}
+
+// AddCloudFlags is helper function to add the cloud flags to a command
+func (c *CmdBuilder) AddCloudFlags() *CmdBuilder {
+	return c.
+		AddStringFlag(constants.ArgCloudHost, constants.DefaultCloudHost, "Turbot Pipes host").
+		AddStringFlag(constants.ArgCloudToken, "", "Turbot Pipes authentication token")
+}
+
+// AddWorkspaceDatabaseFlag is helper function to add the workspace-databse flag to a command
+func (c *CmdBuilder) AddWorkspaceDatabaseFlag() *CmdBuilder {
+	return c.
+		AddStringFlag(constants.ArgWorkspaceDatabase, constants.DefaultWorkspaceDatabase, "Turbot Pipes workspace database")
+}
+
+// AddModLocationFlag is helper function to add the mod-location flag to a command
+func (c *CmdBuilder) AddModLocationFlag() *CmdBuilder {
+	cwd, err := os.Getwd()
+	error_helpers.FailOnError(err)
+	return c.
+		AddStringFlag(constants.ArgModLocation, cwd, "Path to the workspace working directory")
 }
 
 // AddStringSliceFlag is a helper function to add a flag that accepts an array of strings

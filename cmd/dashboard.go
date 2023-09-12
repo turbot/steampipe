@@ -43,6 +43,9 @@ The current mod is the working directory, or the directory specified by the --mo
 	}
 
 	cmdconfig.OnCmd(cmd).
+		AddCloudFlags().
+		AddWorkspaceDatabaseFlag().
+		AddModLocationFlag().
 		AddBoolFlag(constants.ArgHelp, false, "Help for dashboard", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddBoolFlag(constants.ArgModInstall, true, "Specify whether to install mod dependencies before running the dashboard").
 		AddStringFlag(constants.ArgDashboardListen, string(dashboardserver.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").

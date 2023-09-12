@@ -25,6 +25,10 @@ func variableCmd() *cobra.Command {
 	cmd.AddCommand(variableListCmd())
 	cmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for variable")
 
+	cmdconfig.
+		OnCmd(cmd).
+		AddModLocationFlag()
+
 	return cmd
 }
 

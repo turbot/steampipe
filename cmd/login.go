@@ -27,6 +27,7 @@ func loginCmd() *cobra.Command {
 	}
 
 	cmdconfig.OnCmd(cmd).
+		AddCloudFlags().
 		AddBoolFlag(constants.ArgHelp, false, "Help for dashboard", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd

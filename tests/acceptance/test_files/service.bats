@@ -4,14 +4,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe service help is displayed when no sub command given" {
   steampipe service > test.txt
 
-  # checking for OS type, since sed command is different for linux and OSX
-  # removing lines, since they contain absolute file paths
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".txt" "22d" test.txt
-  else
-    run sed -i "22d" test.txt
-  fi
-
   assert_equal "$(cat test.txt)" "$(cat $TEST_DATA_DIR/expected_service_help_output.txt)"
   rm -f test.txt*
 }

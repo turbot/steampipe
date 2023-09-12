@@ -56,6 +56,9 @@ Examples:
 	cmd.AddCommand(modInitCmd())
 	cmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for mod")
 
+	cmdconfig.OnCmd(cmd).
+		AddModLocationFlag()
+
 	return cmd
 }
 
@@ -92,7 +95,8 @@ Examples:
 		AddBoolFlag(constants.ArgPrune, true, "Remove unused dependencies after installation is complete").
 		AddBoolFlag(constants.ArgDryRun, false, "Show which mods would be installed/updated/uninstalled without modifying them").
 		AddBoolFlag(constants.ArgForce, false, "Install mods even if plugin/cli version requirements are not met (cannot be used with --dry-run)").
-		AddBoolFlag(constants.ArgHelp, false, "Help for install", cmdconfig.FlagOptions.WithShortHand("h"))
+		AddBoolFlag(constants.ArgHelp, false, "Help for install", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddModLocationFlag()
 
 	return cmd
 }
@@ -152,7 +156,8 @@ Example:
 	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgPrune, true, "Remove unused dependencies after uninstallation is complete").
 		AddBoolFlag(constants.ArgDryRun, false, "Show which mods would be uninstalled without modifying them").
-		AddBoolFlag(constants.ArgHelp, false, "Help for uninstall", cmdconfig.FlagOptions.WithShortHand("h"))
+		AddBoolFlag(constants.ArgHelp, false, "Help for uninstall", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddModLocationFlag()
 
 	return cmd
 }
@@ -205,7 +210,8 @@ Example:
 		AddBoolFlag(constants.ArgPrune, true, "Remove unused dependencies after update is complete").
 		AddBoolFlag(constants.ArgForce, false, "Update mods even if plugin/cli version requirements are not met (cannot be used with --dry-run)").
 		AddBoolFlag(constants.ArgDryRun, false, "Show which mods would be updated without modifying them").
-		AddBoolFlag(constants.ArgHelp, false, "Help for update", cmdconfig.FlagOptions.WithShortHand("h"))
+		AddBoolFlag(constants.ArgHelp, false, "Help for update", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddModLocationFlag()
 
 	return cmd
 }
@@ -252,7 +258,9 @@ Example:
   steampipe mod list`,
 	}
 
-	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, false, "Help for list", cmdconfig.FlagOptions.WithShortHand("h"))
+	cmdconfig.OnCmd(cmd).
+		AddBoolFlag(constants.ArgHelp, false, "Help for list", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddModLocationFlag()
 	return cmd
 }
 
@@ -301,7 +309,9 @@ Example:
   steampipe mod init`,
 	}
 
-	cmdconfig.OnCmd(cmd).AddBoolFlag(constants.ArgHelp, false, "Help for init", cmdconfig.FlagOptions.WithShortHand("h"))
+	cmdconfig.OnCmd(cmd).
+		AddBoolFlag(constants.ArgHelp, false, "Help for init", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddModLocationFlag()
 	return cmd
 }
 
