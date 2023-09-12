@@ -13,13 +13,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
+	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/logs"
+	"github.com/turbot/steampipe/pkg/logging"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
@@ -121,9 +121,9 @@ func createPluginManagerLog() hclog.Logger {
 	// this is to allow the plugin to send multiline log messages as a single log line.
 	//
 	// here we apply the reverse mapping to get back the original message
-	writer := logging.NewUnescapeNewlineWriter(logs.NewRotatingLogWriter(filepaths.EnsureLogDir(), "plugin"))
+	writer := sdklogging.NewUnescapeNewlineWriter(logging.NewRotatingLogWriter(filepaths.EnsureLogDir(), "plugin"))
 
-	logger := logging.NewLogger(&hclog.LoggerOptions{
+	logger := sdklogging.NewLogger(&hclog.LoggerOptions{
 		Output:     writer,
 		TimeFn:     func() time.Time { return time.Now().UTC() },
 		TimeFormat: "2006-01-02 15:04:05.000 UTC",
