@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -27,6 +26,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/logs"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -383,14 +383,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 		// till the time we get the log directory
 		logDestination = logBuffer
 	} else {
-		logName := fmt.Sprintf("steampipe-%s.log", time.Now().Format("2006-01-02"))
-		logPath := filepath.Join(filepaths.EnsureLogDir(), logName)
-		f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			fmt.Printf("failed to open steampipe log file: %s\n", err.Error())
-			os.Exit(3)
-		}
-		logDestination = f
+		logDestination = logs.NewDatedWriter(filepaths.EnsureLogDir(), "steampipe")
 
 		// write out the buffered contents
 		_, _ = logDestination.Write(logBuffer.Bytes())
