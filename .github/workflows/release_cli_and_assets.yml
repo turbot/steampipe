@@ -273,7 +273,7 @@ jobs:
         go test -timeout 30s ./... -test.v
 
     - name: Run GoReleaser
-      uses: goreleaser/goreleaser-action@v4
+      uses: goreleaser/goreleaser-action@v5
       with:
         version: latest
         args: release --snapshot --clean --skip-publish
@@ -700,7 +700,7 @@ jobs:
         go-version: 1.21
 
     - name: Run GoReleaser
-      uses: goreleaser/goreleaser-action@v4
+      uses: goreleaser/goreleaser-action@v5
       with:
         version: latest
         args: release --clean
