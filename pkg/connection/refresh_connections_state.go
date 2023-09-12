@@ -796,11 +796,11 @@ func (s *refreshConnectionState) sendPostgresErrorNotification(ctx context.Conte
 
 }
 func (s *refreshConnectionState) sendPostgresNotification(ctx context.Context, notification any) error {
-	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
+	conn, err := s.pool.Acquire(ctx)
 	if err != nil {
 		return err
 	}
-	defer conn.Close(ctx)
+	defer conn.Release()
 
-	return db_local.SendPostgresNotification(ctx, conn, notification)
+	return db_local.SendPostgresNotification(ctx, conn.Conn(), notification)
 }

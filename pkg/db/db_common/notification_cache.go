@@ -2,11 +2,14 @@ package db_common
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"fmt"
 	"log"
 	"sync"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 type NotificationCache struct {
@@ -17,14 +20,22 @@ type NotificationCache struct {
 	mut            sync.Mutex
 }
 
-func NewNotificationCache(ctx context.Context, connection *pgx.Conn) *NotificationCache {
-	res := &NotificationCache{conn: connection,
+func NewNotificationCache(ctx context.Context, conn *pgx.Conn) (*NotificationCache, error) {
+	res := &NotificationCache{conn: conn,
 		doneChan: make(chan struct{}),
+	}
+	// tell the connection to listen to notifications
+	listenSql := fmt.Sprintf("listen %s", constants.PostgresNotificationChannel)
+	_, err := conn.Exec(ctx, listenSql)
+	if err != nil {
+		log.Printf("[INFO] Error listening to notification channel: %s", err)
+		conn.Close(ctx)
+		return nil, err
 	}
 
 	res.listenToPgNotifications(ctx)
 
-	return res
+	return res, nil
 }
 
 func (c *NotificationCache) Stop() {
@@ -55,20 +66,21 @@ func (c *NotificationCache) listenToPgNotifications(ctx context.Context) {
 			for notificationCtx.Err() == nil {
 				log.Printf("[INFO] Wait for notification")
 				notification, err := c.conn.WaitForNotification(notificationCtx)
-				log.Printf("[INFO] DONE WAITING")
 				if err != nil && !error_helpers.IsContextCancelledError(err) {
 					log.Printf("[WARN] Error waiting for notification: %s", err)
 					return
 				}
 
 				if notification != nil {
-					log.Printf("[INFO] GOT NOTIFICATION")
+					log.Printf("[INFO] got notification")
 					c.mut.Lock()
 					// if we have a callback, call it
 					if c.onNotification != nil {
+						log.Printf("[INFO] call notification handler")
 						c.onNotification(notification)
 					} else {
 						// otherwise cache the notification
+						log.Printf("[INFO] cache notification")
 						c.notifications = append(c.notifications, notification)
 					}
 					c.mut.Unlock()
