@@ -95,10 +95,21 @@ func (r *SteampipeImageRef) GetOrgNameAndStream() (string, string, string) {
 	return strings.Join(split[0:len(split)-2], "/"), pluginNameAndStream[0], pluginNameAndStream[1]
 }
 
-// GetFriendlyName returns a friendly name:
+// GetCondensedName returns the minimum friendly name so taht the original name can be rebuilt using preset defaults:
 // hub.steampipe.io/plugins/turbot/aws@1.0.0 => aws@1.0.0
 // hub.steampipe.io/plugins/turbot/aws@latest => aws
-func (r *SteampipeImageRef) GetFriendlyName() string {
+// hub.steampipe.io/plugins/otherOrg/aws@latest => otherOrg/aws
+// hub.steampipe.io/plugins/otherOrg/aws@1.0.0 => otherOrg/aws@1.0.0
+// differentRegistry.com/otherOrg/aws@latest => differentRegistry.com/otherOrg/aws@latest
+// differentRegistry.com/otherOrg/aws@1.0.0 => differentRegistry.com/otherOrg/aws@1.0.0
+func (r *SteampipeImageRef) GetCondensedName() string {
+
+	split := strings.Split(r.DisplayImageRef(), "/")
+
+	switch len(split) {
+
+	}
+
 	_, pluginName, pluginStream := r.GetOrgNameAndStream()
 	if pluginStream == DefaultImageTag {
 		return pluginName

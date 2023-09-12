@@ -244,13 +244,13 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	installReports := make(display.PluginInstallReports, 0, len(plugins))
 
 	if len(plugins) == 0 {
-		fmt.Println()
-		error_helpers.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to install"))
-		fmt.Println()
-		_ = cmd.Help()
-		fmt.Println()
-		exitCode = constants.ExitCodeInsufficientOrWrongInputs
-		return
+		// get the list of plugins to install
+		for _, plugin := range steampipeconfig.GlobalConfig.Plugins {
+			ref := ociinstaller.NewSteampipeImageRef(plugin.GetImageRef())
+			if !helpers.StringSliceContains(plugins, ref.GetCondensedName()) {
+				plugins = append(plugins, ref.GetCondensedName())
+			}
+		}
 	}
 
 	// a leading blank line - since we always output multiple lines
