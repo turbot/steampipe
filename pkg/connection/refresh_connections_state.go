@@ -84,15 +84,12 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	// set state of all incomplete connections to error
 	defer func() {
 		if s.res != nil {
-			log.Printf("[INFO] refreshConnections DEFER")
 			if s.res.Error != nil {
 				s.setIncompleteConnectionStateToError(ctx, sperr.WrapWithMessage(s.res.Error, "refreshConnections failed before connection update was complete"))
 			}
 			if !s.res.ErrorAndWarnings.Empty() {
-				log.Printf("[INFO] WE GOT US SOME ERRORS")
-				s.sendPostgreErrorNotification(ctx, s.res.ErrorAndWarnings)
-			} else {
-				log.Printf("[INFO] NO ERRORS")
+				log.Printf("[INFO] refreshConnections completed with errors, sending notificationrt SP_LOG=")
+				s.sendPostgresErrorNotification(ctx, s.res.ErrorAndWarnings)
 			}
 
 		}
@@ -105,7 +102,7 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	}
 
 	// build a ConnectionUpdates struct
-	// this determine any necessary connection updates and starts any necessary plugins
+	// this determines any necessary connection updates and starts any necessary plugins
 	s.connectionUpdates, s.res = steampipeconfig.NewConnectionUpdates(ctx, s.pool, s.pluginManager, opts...)
 
 	defer s.logRefreshConnectionResults()
@@ -790,24 +787,20 @@ func (s *refreshConnectionState) sendPostgreSchemaNotification(ctx context.Conte
 	log.Println("[DEBUG] refreshConnectionState.sendPostgreSchemaNotification start")
 	defer log.Println("[DEBUG] refreshConnectionState.sendPostgreSchemaNotification end")
 
-	conn, err := s.pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-	notification := steampipeconfig.NewSchemaUpdateNotification()
+	return s.sendPostgresNotification(ctx, steampipeconfig.NewSchemaUpdateNotification())
 
-	return db_local.SendPostgresNotification(ctx, conn.Conn(), notification)
 }
 
-func (s *refreshConnectionState) sendPostgreErrorNotification(ctx context.Context, errorAndWarnings error_helpers.ErrorAndWarnings) error {
-	log.Printf("[INFO] sending postgres error notificaiton")
+func (s *refreshConnectionState) sendPostgresErrorNotification(ctx context.Context, errorAndWarnings error_helpers.ErrorAndWarnings) error {
+	return s.sendPostgresNotification(ctx, steampipeconfig.NewConnectionErrorNotification(errorAndWarnings))
+
+}
+func (s *refreshConnectionState) sendPostgresNotification(ctx context.Context, notification any) error {
 	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
 	defer conn.Close(ctx)
-	notification := steampipeconfig.NewConnectionErrorNotification(errorAndWarnings)
 
 	return db_local.SendPostgresNotification(ctx, conn, notification)
 }

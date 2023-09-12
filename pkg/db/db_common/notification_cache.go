@@ -47,22 +47,22 @@ func (c *NotificationCache) RegisterListener(onNotification func(*pgconn.Notific
 }
 
 func (c *NotificationCache) listenToPgNotifications(ctx context.Context) {
-	log.Printf("[WARN] NotificationCache listenToPgNotifications")
+	log.Printf("[INFO] NotificationCache listenToPgNotifications")
 	notificationCtx, cancel := context.WithCancel(ctx)
 
 	go func() {
 		go func() {
 			for notificationCtx.Err() == nil {
-				log.Printf("[WARN] Wait for notification")
+				log.Printf("[INFO] Wait for notification")
 				notification, err := c.conn.WaitForNotification(notificationCtx)
-				log.Printf("[WARN] DONE WAITING")
+				log.Printf("[INFO] DONE WAITING")
 				if err != nil && !error_helpers.IsContextCancelledError(err) {
 					log.Printf("[WARN] Error waiting for notification: %s", err)
 					return
 				}
 
 				if notification != nil {
-					log.Printf("[WARN] GOT NOTIFICATIOn")
+					log.Printf("[INFO] GOT NOTIFICATION")
 					c.mut.Lock()
 					// if we have a callback, call it
 					if c.onNotification != nil {
@@ -79,7 +79,7 @@ func (c *NotificationCache) listenToPgNotifications(ctx context.Context) {
 
 		select {
 		case <-ctx.Done():
-			log.Printf("[WARN] CONTEXT LLED")
+			log.Printf("[INFO] NotificationCache context cancelklked - returning")
 		case <-c.doneChan:
 			// cancel the notificationCtx
 			cancel()

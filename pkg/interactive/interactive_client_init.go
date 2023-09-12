@@ -134,13 +134,6 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	statushooks.SetStatus(ctx, "Start notifications listener…")
 	log.Printf("[TRACE] Start notifications listener")
 
-	// TODO KAI CHECK
-	//// create a cancellation context used to cancel the listen thread when we exit
-	//listenCtx, cancel := context.WithCancel(ctx)
-	////nolint:golint,errcheck // worst case is autocomplete isn't update - not a failure
-	//go c.listenToPgNotifications(listenCtx)
-	//c.cancelNotificationListener = cancel
-
 	// subscribe to postgres notifications
 	statushooks.SetStatus(ctx, "Subscribe to postgres notifications…")
 	c.listenToPgNotifications(ctx)

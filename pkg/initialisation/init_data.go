@@ -149,8 +149,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 		i.Result.Error = err
 		return
 	}
-	// TODO KAI DO NOT HIJACK!
-	// hijack from the pool  as we will be keeping open for th elifetime of this run
+	// TODO KAI DO NOT HIJACK
+	// hijack from the pool  as we will be keeping open for the lifetime of this run
 	notificationConnection := c.Hijack()
 	i.NotificationCache = db_common.NewNotificationCache(ctx, notificationConnection)
 	if err != nil {

@@ -19,9 +19,8 @@ type PostgresNotification struct {
 }
 
 type ConnectionErrorNotification struct {
-	StructVersion int
-	Type          PostgresNotificationType
-	Errors        []string
+	PostgresNotification
+	Errors []string
 }
 
 func NewSchemaUpdateNotification() *PostgresNotification {
@@ -33,8 +32,10 @@ func NewSchemaUpdateNotification() *PostgresNotification {
 
 func NewConnectionErrorNotification(errorAndWarnings error_helpers.ErrorAndWarnings) *ConnectionErrorNotification {
 	res := &ConnectionErrorNotification{
-		StructVersion: PostgresNotificationStructVersion,
-		Type:          PgNotificationConnectionError,
+		PostgresNotification: PostgresNotification{
+			StructVersion: PostgresNotificationStructVersion,
+			Type:          PgNotificationConnectionError,
+		},
 	}
 	// TODO colour - add Error:/Warning prefix?
 	if errorAndWarnings.Error != nil {

@@ -78,6 +78,7 @@ type PluginManager struct {
 
 func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, pluginConfigs connection.PluginMap, logger hclog.Logger) (*PluginManager, error) {
 	log.Printf("[INFO] NewPluginManager")
+
 	pluginManager := &PluginManager{
 		logger:              logger,
 		runningPluginMap:    make(map[string]*runningPlugin),
@@ -751,10 +752,12 @@ func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionNa
 	// also send a postgres notification
 	notification := steampipeconfig.NewSchemaUpdateNotification()
 
+	// TODO pool acquire
 	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		log.Printf("[WARN] failed to send schema update notification: %s", err)
 	}
+	defer conn.Close(ctx)
 
 	err = db_local.SendPostgresNotification(ctx, conn, notification)
 	if err != nil {
@@ -769,6 +772,7 @@ func (m *PluginManager) nonAggregatorConnectionCount() int {
 	}
 	return res
 }
+
 //
 //func (m *PluginManager) handleStartFailure(err error) error {
 //	// extract the plugin message

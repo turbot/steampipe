@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/turbot/go-kit/helpers"
 	"log"
 	"os"
 	"os/signal"
@@ -34,10 +35,11 @@ func pluginManagerCmd() *cobra.Command {
 }
 
 func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
-	var pluginManager *pluginmanager_service.PluginManager
-
 	var err error
 	defer func() {
+		if r := recover(); r != nil {
+			err = helpers.ToError(r)
+		}
 		if err != nil {
 			// write to stdout so the plugin manager can extract the error message
 			fmt.Println(fmt.Sprintf("%s%s", plugin.PluginStartupFailureMessage, err.Error()))
@@ -45,16 +47,21 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 		os.Exit(1)
 	}()
 
-	pluginManager, err = createPluginManager(cmd)
+	err = doRunPluginManager(cmd)
+}
+
+func doRunPluginManager(cmd *cobra.Command) error {
+
+	pluginManager, err := createPluginManager(cmd)
 	if err != nil {
-		return
+		return err
 	}
 
 	if shouldRunConnectionWatcher() {
 		log.Printf("[INFO] starting connection watcher")
 		connectionWatcher, err := connection.NewConnectionWatcher(pluginManager)
 		if err != nil {
-			return
+			return err
 		}
 
 		// close the connection watcher
@@ -63,6 +70,7 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 
 	log.Printf("[INFO] about to serve")
 	pluginManager.Serve()
+	return nil
 }
 
 func createPluginManager(cmd *cobra.Command) (*pluginmanager_service.PluginManager, error) {

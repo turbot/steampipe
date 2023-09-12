@@ -55,13 +55,6 @@ type InteractiveClient struct {
 	cancelActiveQuery context.CancelFunc
 	cancelPrompt      context.CancelFunc
 
-	// TODO KAI NO LONGER NEEDED?
-	// this cancellation is used to stop the pg notification listener which
-	// we use to get connection config updates from the plugin manager
-	// this is tied to a context which remaing valid throughout the life of the
-	// interactive session
-	//cancelNotificationListener context.CancelFunc
-
 	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
 	// flag set when initialisation is complete (with or without errors)
@@ -162,13 +155,6 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 				// clear prompt so any messages/warnings can be displayed without the prompt
 				c.hidePrompt = true
 				c.interactivePrompt.ClearLine()
-
-				// TODO KAI NO LONGER NEEDED
-				// stop the notification listener
-				//if c.cancelNotificationListener != nil {
-				//	c.cancelNotificationListener()
-				//}
-
 				return
 			}
 			// create new context with a cancellation func
@@ -691,7 +677,7 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 		for {
 			select {
 			case <-sigIntChannel:
-				log.Println("[WARN] interactive client cancel handler got SIGINT")
+				log.Println("[INFO] interactive client cancel handler got SIGINT")
 				// if initialisation is not complete, just close the prompt
 				// this will cancel the context used for initialisation so cancel any initialisation queries
 				if !c.isInitialised() {
@@ -703,7 +689,7 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 					// keep waiting for further cancellations
 				}
 			case <-quitChannel:
-				log.Println("[WARN] cancel handler exiting")
+				log.Println("[INFO] cancel handler exiting")
 				c.cancelActiveQueryIfAny()
 				// we're done
 				return
