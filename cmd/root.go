@@ -383,7 +383,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 		// till the time we get the log directory
 		logDestination = logBuffer
 	} else {
-		logDestination = logs.NewDatedWriter(filepaths.EnsureLogDir(), "steampipe")
+		logDestination = logs.NewRotatingLogWriter(filepaths.EnsureLogDir(), "steampipe")
 
 		// write out the buffered contents
 		_, _ = logDestination.Write(logBuffer.Bytes())

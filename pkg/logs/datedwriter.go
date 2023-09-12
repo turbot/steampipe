@@ -12,7 +12,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 )
 
-type DatedWriter struct {
+type RotatingLogWriter struct {
 	directory string
 	prefix    string
 
@@ -22,14 +22,14 @@ type DatedWriter struct {
 	rotateLock sync.Mutex
 }
 
-func NewDatedWriter(directory string, prefix string) *DatedWriter {
-	return &DatedWriter{
+func NewRotatingLogWriter(directory string, prefix string) *RotatingLogWriter {
+	return &RotatingLogWriter{
 		directory: directory,
 		prefix:    prefix,
 	}
 }
 
-func (dwr *DatedWriter) Write(p []byte) (n int, err error) {
+func (dwr *RotatingLogWriter) Write(p []byte) (n int, err error) {
 	pathShouldBe := filepath.Join(dwr.directory, fmt.Sprintf("%s-%s.log", dwr.prefix, time.Now().Format(time.DateOnly)))
 
 	// the code outside of this IF block should be simple and blazing fast

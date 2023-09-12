@@ -121,7 +121,7 @@ func createPluginManagerLog() hclog.Logger {
 	// this is to allow the plugin to send multiline log messages as a single log line.
 	//
 	// here we apply the reverse mapping to get back the original message
-	writer := logging.NewUnescapeNewlineWriter(logs.NewDatedWriter(filepaths.EnsureLogDir(), "plugin"))
+	writer := logging.NewUnescapeNewlineWriter(logs.NewRotatingLogWriter(filepaths.EnsureLogDir(), "plugin"))
 
 	logger := logging.NewLogger(&hclog.LoggerOptions{
 		Output:     writer,
