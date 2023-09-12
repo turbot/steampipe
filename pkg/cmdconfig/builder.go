@@ -96,12 +96,6 @@ func (c *CmdBuilder) AddCloudFlags() *CmdBuilder {
 		AddStringFlag(constants.ArgCloudToken, "", "Turbot Pipes authentication token")
 }
 
-// AddWorkspaceFlag is helper function to add the workspace flag to a command
-func (c *CmdBuilder) AddWorkspaceFlag() *CmdBuilder {
-	return c.
-		AddStringFlag(constants.ArgWorkspaceProfile, "default", "The workspace profile to use")
-}
-
 // AddWorkspaceDatabaseFlag is helper function to add the workspace-databse flag to a command
 func (c *CmdBuilder) AddWorkspaceDatabaseFlag() *CmdBuilder {
 	return c.

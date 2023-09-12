@@ -27,7 +27,6 @@ func variableCmd() *cobra.Command {
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddWorkspaceFlag().
 		AddModLocationFlag()
 
 	return cmd

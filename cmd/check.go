@@ -58,7 +58,6 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		OnCmd(cmd).
 		AddCloudFlags().
 		AddWorkspaceDatabaseFlag().
-		AddWorkspaceFlag().
 		AddModLocationFlag().
 		AddBoolFlag(constants.ArgHeader, true, "Include column headers for csv and table output").
 		AddBoolFlag(constants.ArgHelp, false, "Help for check", cmdconfig.FlagOptions.WithShortHand("h")).
