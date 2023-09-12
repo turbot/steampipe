@@ -106,6 +106,10 @@ func setBaseDefaults() {
 
 		// dashboard
 		constants.ArgDashboardStartTimeout: constants.DashboardStartTimeout.Seconds(),
+
+		// memory
+		constants.ArgMemoryMaxMbPlugin: 1024,
+		constants.ArgMemoryMaxMb:       1024,
 	}
 
 	for k, v := range defaults {
