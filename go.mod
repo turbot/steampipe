@@ -59,6 +59,10 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
+replace (
+github.com/turbot/go-kit => /Users/binaek/work/sources/go-kit
+)
+
 require (
 	cloud.google.com/go v0.110.4 // indirect
 	cloud.google.com/go/compute v1.21.0 // indirect
