@@ -43,7 +43,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.16.0
 	github.com/stevenle/topsort v0.2.0
-	github.com/turbot/go-kit v0.8.0-rc.0
+	github.com/turbot/go-kit v0.8.0
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-rc.27
 	github.com/xlab/treeprint v1.2.0
@@ -57,10 +57,6 @@ require (
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
 	oras.land/oras-go/v2 v2.2.1
 	sigs.k8s.io/yaml v1.3.0
-)
-
-replace (
-github.com/turbot/go-kit => /Users/binaek/work/sources/go-kit
 )
 
 require (
