@@ -103,19 +103,28 @@ func (r *SteampipeImageRef) GetOrgNameAndStream() (string, string, string) {
 // differentRegistry.com/otherOrg/aws@latest => differentRegistry.com/otherOrg/aws@latest
 // differentRegistry.com/otherOrg/aws@1.0.0 => differentRegistry.com/otherOrg/aws@1.0.0
 func (r *SteampipeImageRef) GetCondensedName() string {
+	return getCondensedImageRef(r.DisplayImageRef())
+}
 
-	split := strings.Split(r.DisplayImageRef(), "/")
-
-	switch len(split) {
-
+func getCondensedImageRef(imagePath string) string {
+	// if this is not from the steampipe hub registry, return as is
+	// we are not aware of any conventions in the registry
+	if !strings.HasPrefix(imagePath, DefaultImageRepoDisplayURL) {
+		return imagePath
 	}
 
-	_, pluginName, pluginStream := r.GetOrgNameAndStream()
-	if pluginStream == DefaultImageTag {
-		return pluginName
-	} else {
-		return fmt.Sprintf("%s@%s", pluginName, pluginStream)
-	}
+	// remove the registry
+	ref := strings.TrimPrefix(imagePath, DefaultImageRepoDisplayURL)
+	// remove the 'plugins' namespace where steampipe hub keeps the images
+	ref = strings.TrimPrefix(ref, "/plugins/")
+	// remove the default organization "turbot"
+	ref = strings.TrimPrefix(ref, DefaultImageOrg)
+	// remove any leading '/'
+	ref = strings.TrimPrefix(ref, "/")
+	// remove the '@latest' tag (not others)
+	ref = strings.TrimSuffix(ref, fmt.Sprintf("@%s", DefaultImageTag))
+
+	return ref
 }
 
 // possible formats include
