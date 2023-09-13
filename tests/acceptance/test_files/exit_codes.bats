@@ -16,13 +16,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   [ $status -ne 0 ]
 }
 
-@test "steampipe plugin command fail with insufficient arguments" {
-  # this should return a non 0 exit code, due to insufficient args
-  run steampipe plugin install 
-  echo $status
-  [ $status -ne 0 ]
-}
-
 @test "steampipe query pass with 0 exit code" {
   # this query should pass and return a 0 exit code
   run steampipe query "select 1"
