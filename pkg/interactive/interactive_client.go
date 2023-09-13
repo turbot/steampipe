@@ -16,7 +16,6 @@ import (
 	"github.com/alecthomas/chroma/lexers"
 	"github.com/alecthomas/chroma/styles"
 	"github.com/c-bata/go-prompt"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -55,11 +54,6 @@ type InteractiveClient struct {
 	// NOTE: should ONLY be called by cancelActiveQueryIfAny
 	cancelActiveQuery context.CancelFunc
 	cancelPrompt      context.CancelFunc
-	// this cancellation is used to stop the pg notification listener which
-	// we use to get connection config updates from the plugin manager
-	// this is tied to a context which remaing valid throughout the life of the
-	// interactive session
-	cancelNotificationListener context.CancelFunc
 
 	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
@@ -161,11 +155,6 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 				// clear prompt so any messages/warnings can be displayed without the prompt
 				c.hidePrompt = true
 				c.interactivePrompt.ClearLine()
-
-				// stop the notification listener
-				if c.cancelNotificationListener != nil {
-					c.cancelNotificationListener()
-				}
 				return
 			}
 			// create new context with a cancellation func
@@ -688,7 +677,7 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 		for {
 			select {
 			case <-sigIntChannel:
-				log.Println("[TRACE] interactive client cancel handler got SIGINT")
+				log.Println("[INFO] interactive client cancel handler got SIGINT")
 				// if initialisation is not complete, just close the prompt
 				// this will cancel the context used for initialisation so cancel any initialisation queries
 				if !c.isInitialised() {
@@ -700,7 +689,7 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 					// keep waiting for further cancellations
 				}
 			case <-quitChannel:
-				log.Println("[TRACE] cancel handler exiting")
+				log.Println("[INFO] cancel handler exiting")
 				c.cancelActiveQueryIfAny()
 				// we're done
 				return
@@ -710,62 +699,16 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 	return quitChannel
 }
 
-func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) error {
-	log.Printf("[TRACE] InteractiveClient listenToPgNotifications")
-	conn, err := c.getNotificationConnection(ctx)
-	if err != nil {
-		return err
-	}
-	for ctx.Err() == nil {
-		if err != nil {
-			return err
-		}
-
-		log.Printf("[TRACE] Wait for notification")
-		notification, err := conn.WaitForNotification(ctx)
-		if err != nil && !error_helpers.IsContextCancelledError(err) {
-			log.Printf("[INFO] Error waiting for notification: %s", err)
-			// TODO what to do about connection closed error
-			return err
-		}
-
-		if notification != nil {
-			c.handlePostgresNotification(ctx, notification)
-		}
-		log.Printf("[TRACE] Handled notification")
-	}
-	conn.Close(ctx)
-
-	log.Printf("[TRACE] InteractiveClient listenToPgNotifications DONE")
-	return nil
-}
-
-func (c *InteractiveClient) getNotificationConnection(ctx context.Context) (*pgx.Conn, error) {
-	poolConn, err := c.client().AcquireManagementConnection(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// let's hijack this connection, since we will be using this for listening to notifications
-	// from postgres. The lifecycle of this connection is tied to the lifecycle of the interactive
-	// prompt. No point having the pool manage this.
-	conn := poolConn.Hijack()
-
-	listenSql := fmt.Sprintf("listen %s", constants.PostgresNotificationChannel)
-	_, err = conn.Exec(ctx, listenSql)
-	if err != nil {
-		log.Printf("[INFO] Error listening to schema channel: %s", err)
-		conn.Close(ctx)
-		return nil, err
-	}
-	return conn, nil
+func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) {
+	c.initData.Client.RegisterNotificationListener(func(notification *pgconn.Notification) {
+		c.handlePostgresNotification(ctx, notification)
+	})
 }
 
 func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, notification *pgconn.Notification) {
 	if notification == nil {
 		return
 	}
-	log.Printf("[TRACE] handleConnectionUpdateNotification")
 	n := &steampipeconfig.PostgresNotification{}
 	err := json.Unmarshal([]byte(notification.Payload), n)
 	if err != nil {
@@ -774,16 +717,32 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 	}
 	switch n.Type {
 	case steampipeconfig.PgNotificationSchemaUpdate:
+		c.handleConnectionUpdateNotification(ctx)
+	case steampipeconfig.PgNotificationConnectionError:
 		// unmarshal the notification again, into the correct type
-		schemaUpdateNotification := &steampipeconfig.SteampipeNotification{}
-		if err := json.Unmarshal([]byte(notification.Payload), schemaUpdateNotification); err != nil {
+		errorNotification := &steampipeconfig.ConnectionErrorNotification{}
+		if err := json.Unmarshal([]byte(notification.Payload), errorNotification); err != nil {
 			log.Printf("[WARN] Error unmarshalling notification: %s", err)
 			return
 		}
-		c.handleConnectionUpdateNotification(ctx)
+		c.handleConnectionErrorNotification(ctx, errorNotification)
 	}
 }
 
+func (c *InteractiveClient) handleConnectionErrorNotification(ctx context.Context, notification *steampipeconfig.ConnectionErrorNotification) {
+	log.Printf("[TRACE] handleConnectionErrorNotification")
+	output := viper.Get(constants.ArgOutput)
+	if output == constants.OutputFormatJSON || output == constants.OutputFormatCSV {
+		return
+	}
+
+	c.showMessages(ctx, func() {
+		for _, m := range notification.Errors {
+			error_helpers.ShowWarning(m)
+		}
+	})
+
+}
 func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context) {
 	// at present, we do not actually use the payload, we just do a brute force reload
 	// as an optimization we could look at the updates and only reload the required schemas

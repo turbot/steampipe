@@ -3,6 +3,7 @@ package db_client
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgconn"
 	"log"
 	"strings"
 	"sync"
@@ -167,7 +168,12 @@ func (c *DbClient) ServerSettings() *db_common.ServerSettings {
 	return c.serverSettings
 }
 
+// RegisterNotificationListener has an empty implementation
+// NOTE: we do not (currently) support notifications from remote connections
+func (c *DbClient) RegisterNotificationListener(func(notification *pgconn.Notification)) {}
+
 // Close implements Client
+
 // closes the connection to the database and shuts down the backend
 func (c *DbClient) Close(context.Context) error {
 	log.Printf("[TRACE] DbClient.Close %v", c.userPool)

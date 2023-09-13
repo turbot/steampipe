@@ -141,6 +141,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 		i.Result.Error = errorsAndWarnings.Error
 		return
 	}
+
 	i.Result.AddWarnings(errorsAndWarnings.Warnings...)
 
 	if errorsAndWarnings := db_common.ValidateClientCacheSettings(client); errorsAndWarnings != nil {
