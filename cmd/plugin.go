@@ -247,8 +247,8 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		// get the list of plugins to install
 		for _, plugin := range steampipeconfig.GlobalConfig.Plugins {
 			ref := ociinstaller.NewSteampipeImageRef(plugin.GetImageRef())
-			if !helpers.StringSliceContains(plugins, ref.GetCondensedName()) {
-				plugins = append(plugins, ref.GetCondensedName())
+			if !helpers.StringSliceContains(plugins, ref.GetFriendlyName()) {
+				plugins = append(plugins, ref.GetFriendlyName())
 			}
 		}
 	}

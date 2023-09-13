@@ -95,14 +95,14 @@ func (r *SteampipeImageRef) GetOrgNameAndStream() (string, string, string) {
 	return strings.Join(split[0:len(split)-2], "/"), pluginNameAndStream[0], pluginNameAndStream[1]
 }
 
-// GetCondensedName returns the minimum friendly name so taht the original name can be rebuilt using preset defaults:
+// GetFriendlyName returns the minimum friendly name so taht the original name can be rebuilt using preset defaults:
 // hub.steampipe.io/plugins/turbot/aws@1.0.0 => aws@1.0.0
 // hub.steampipe.io/plugins/turbot/aws@latest => aws
 // hub.steampipe.io/plugins/otherOrg/aws@latest => otherOrg/aws
 // hub.steampipe.io/plugins/otherOrg/aws@1.0.0 => otherOrg/aws@1.0.0
 // differentRegistry.com/otherOrg/aws@latest => differentRegistry.com/otherOrg/aws@latest
 // differentRegistry.com/otherOrg/aws@1.0.0 => differentRegistry.com/otherOrg/aws@1.0.0
-func (r *SteampipeImageRef) GetCondensedName() string {
+func (r *SteampipeImageRef) GetFriendlyName() string {
 	return getCondensedImageRef(r.DisplayImageRef())
 }
 
