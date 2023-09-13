@@ -20,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -629,7 +630,7 @@ func showAllStatus(ctx context.Context) {
 
 func getServiceProcessDetails(process *psutils.Process) (string, string, string, db_local.StartListenType) {
 	cmdLine, _ := process.CmdlineSlice()
-	installDir := strings.TrimSuffix(cmdLine[0], db_local.ServiceExecutableRelativeLocation())
+	installDir := strings.TrimSuffix(cmdLine[0], filepaths.ServiceExecutableRelativeLocation())
 	var port string
 	var listenType db_local.StartListenType
 

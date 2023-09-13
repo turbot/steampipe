@@ -232,8 +232,8 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 	// remove the stale info file, ignoring errors - will overwrite anyway
 	_ = removeRunningInstanceInfo()
 
-	if err := utils.EnsureDirectoryPermission(getDataLocation()); err != nil {
-		return res.SetError(fmt.Errorf("%s does not have the necessary permissions to start the service", getDataLocation()))
+	if err := utils.EnsureDirectoryPermission(filepaths.GetDataLocation()); err != nil {
+		return res.SetError(fmt.Errorf("%s does not have the necessary permissions to start the service", filepaths.GetDataLocation()))
 	}
 
 	// Remove any old and expiring certificates
@@ -402,17 +402,17 @@ func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, err
 
 func writePGConf(ctx context.Context) error {
 	// Apply default settings in conf files
-	err := os.WriteFile(getPostgresqlConfLocation(), []byte(constants.PostgresqlConfContent), 0600)
+	err := os.WriteFile(filepaths.GetPostgresqlConfLocation(), []byte(constants.PostgresqlConfContent), 0600)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(getSteampipeConfLocation(), []byte(constants.SteampipeConfContent), 0600)
+	err = os.WriteFile(filepaths.GetSteampipeConfLocation(), []byte(constants.SteampipeConfContent), 0600)
 	if err != nil {
 		return err
 	}
 
 	// create the postgresql.conf.d location, don't fail if it errors
-	err = os.MkdirAll(getPostgresqlConfDLocation(), 0700)
+	err = os.MkdirAll(filepaths.GetPostgresqlConfDLocation(), 0700)
 	if err != nil {
 		return err
 	}
@@ -430,7 +430,7 @@ func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) (
 
 func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cmd {
 	postgresCmd := exec.Command(
-		getPostgresBinaryExecutablePath(),
+		filepaths.GetPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port is free to listen to
 		"-p", fmt.Sprint(port),
 		"-c", fmt.Sprintf("listen_addresses=%s", strings.Join(listenAddresses, ",")),
@@ -443,11 +443,11 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		// If ssl is off  it doesnot matter what we pass in the ssl_cert_file and ssl_key_file
 		// SSL will only get validated if ssl is on
 		"-c", fmt.Sprintf("ssl=%s", sslStatus()),
-		"-c", fmt.Sprintf("ssl_cert_file=%s", getServerCertLocation()),
-		"-c", fmt.Sprintf("ssl_key_file=%s", getServerCertKeyLocation()),
+		"-c", fmt.Sprintf("ssl_cert_file=%s", filepaths.GetServerCertLocation()),
+		"-c", fmt.Sprintf("ssl_key_file=%s", filepaths.GetServerCertKeyLocation()),
 
 		// Data Directory
-		"-D", getDataLocation())
+		"-D", filepaths.GetDataLocation())
 
 	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths.SteampipeDir))
 

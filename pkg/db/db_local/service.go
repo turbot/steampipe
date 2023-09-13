@@ -52,12 +52,12 @@ func GetState() (*RunningDBInstanceInfo, error) {
 // is running without us knowing about it, then it's an irrecoverable state
 func errorIfUnknownService() error {
 	// no postmaster.pid, we are good
-	if !filehelpers.FileExists(getPostmasterPidLocation()) {
+	if !filehelpers.FileExists(filepaths.GetPostmasterPidLocation()) {
 		return nil
 	}
 
 	// read the content of the postmaster.pid file
-	fileContent, err := os.ReadFile(getPostmasterPidLocation())
+	fileContent, err := os.ReadFile(filepaths.GetPostmasterPidLocation())
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func errorIfUnknownService() error {
 	// the pid does not exist
 	// this can confuse postgres as per https://postgresapp.com/documentation/troubleshooting.html
 	// delete it
-	os.Remove(getPostmasterPidLocation())
+	os.Remove(filepaths.GetPostmasterPidLocation())
 
 	// this must be a stale file left over by PG. Ignore
 	return nil
