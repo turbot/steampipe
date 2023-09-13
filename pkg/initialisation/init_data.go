@@ -29,7 +29,6 @@ type InitData struct {
 
 	ShutdownTelemetry func()
 	ExportManager     *export.Manager
-	NotificationCache *db_common.NotificationCache
 }
 
 func NewErrorInitData(err error) *InitData {
@@ -143,20 +142,6 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 		return
 	}
 
-	// get a conneciton for the notificattion cache
-	c, err := client.AcquireManagementConnection(ctx)
-	if err != nil {
-		i.Result.Error = err
-		return
-	}
-	// hijack from the pool  as we will be keeping open for the lifetime of this run
-	// notification cache will manage the lifecycle of the connection
-	notificationConnection := c.Hijack()
-	i.NotificationCache, err = db_common.NewNotificationCache(ctx, notificationConnection)
-	if err != nil {
-		i.Result.Error = err
-		return
-	}
 	i.Result.AddWarnings(errorsAndWarnings.Warnings...)
 
 	if errorsAndWarnings := db_common.ValidateClientCacheSettings(client); errorsAndWarnings != nil {

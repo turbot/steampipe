@@ -3,6 +3,7 @@ package db_common
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"log"
 	"sync"
 
@@ -12,18 +13,22 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
-type NotificationCache struct {
-	notifications  []*pgconn.Notification
-	conn           *pgx.Conn
-	doneChan       chan struct{}
+type NotificationListener struct {
+	notifications []*pgconn.Notification
+	conn          *pgx.Conn
+
 	onNotification func(*pgconn.Notification)
 	mut            sync.Mutex
+	cancel         context.CancelFunc
 }
 
-func NewNotificationCache(ctx context.Context, conn *pgx.Conn) (*NotificationCache, error) {
-	res := &NotificationCache{conn: conn,
-		doneChan: make(chan struct{}),
+func NewNotificationListener(ctx context.Context, conn *pgx.Conn) (*NotificationListener, error) {
+	if conn == nil {
+		return nil, sperr.New("nil connection passed to NewNotificationListener")
 	}
+
+	res := &NotificationListener{conn: conn}
+
 	// tell the connection to listen to notifications
 	listenSql := fmt.Sprintf("listen %s", constants.PostgresNotificationChannel)
 	_, err := conn.Exec(ctx, listenSql)
@@ -33,18 +38,23 @@ func NewNotificationCache(ctx context.Context, conn *pgx.Conn) (*NotificationCac
 		return nil, err
 	}
 
-	res.listenToPgNotifications(ctx)
+	// create cancel context to shutdown the listener
+	cancelCtx, cancel := context.WithCancel(ctx)
+	res.cancel = cancel
+
+	// start the goroutine to listen
+	res.listenToPgNotificationsAsync(cancelCtx)
 
 	return res, nil
 }
 
-func (c *NotificationCache) Stop() {
-	if c.doneChan != nil {
-		close(c.doneChan)
-		c.doneChan = nil
-	}
+func (c *NotificationListener) Stop(ctx context.Context) {
+	c.conn.Close(ctx)
+	// stop the listener goroutine
+	c.cancel()
 }
-func (c *NotificationCache) RegisterListener(onNotification func(*pgconn.Notification)) {
+
+func (c *NotificationListener) RegisterListener(onNotification func(*pgconn.Notification)) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 
@@ -57,48 +67,35 @@ func (c *NotificationCache) RegisterListener(onNotification func(*pgconn.Notific
 	c.notifications = nil
 }
 
-func (c *NotificationCache) listenToPgNotifications(ctx context.Context) {
-	log.Printf("[INFO] NotificationCache listenToPgNotifications")
-	notificationCtx, cancel := context.WithCancel(ctx)
+func (c *NotificationListener) listenToPgNotificationsAsync(ctx context.Context) {
+	log.Printf("[INFO] NotificationListener listenToPgNotificationsAsync")
 
 	go func() {
-		go func() {
-			for notificationCtx.Err() == nil {
-				log.Printf("[INFO] Wait for notification")
-				notification, err := c.conn.WaitForNotification(notificationCtx)
-				if err != nil && !error_helpers.IsContextCancelledError(err) {
-					log.Printf("[WARN] Error waiting for notification: %s", err)
-					return
-				}
-
-				if notification != nil {
-					log.Printf("[INFO] got notification")
-					c.mut.Lock()
-					// if we have a callback, call it
-					if c.onNotification != nil {
-						log.Printf("[INFO] call notification handler")
-						c.onNotification(notification)
-					} else {
-						// otherwise cache the notification
-						log.Printf("[INFO] cache notification")
-						c.notifications = append(c.notifications, notification)
-					}
-					c.mut.Unlock()
-					log.Printf("[WARN] Handled notification")
-				}
+		for ctx.Err() == nil {
+			log.Printf("[INFO] Wait for notification")
+			notification, err := c.conn.WaitForNotification(ctx)
+			if err != nil && !error_helpers.IsContextCancelledError(err) {
+				log.Printf("[WARN] Error waiting for notification: %s", err)
+				return
 			}
-		}()
 
-		select {
-		case <-ctx.Done():
-			log.Printf("[INFO] NotificationCache context cancelklked - returning")
-		case <-c.doneChan:
-			// cancel the notificationCtx
-			cancel()
+			if notification != nil {
+				log.Printf("[INFO] got notification")
+				c.mut.Lock()
+				// if we have a callback, call it
+				if c.onNotification != nil {
+					log.Printf("[INFO] call notification handler")
+					c.onNotification(notification)
+				} else {
+					// otherwise cache the notification
+					log.Printf("[INFO] cache notification")
+					c.notifications = append(c.notifications, notification)
+				}
+				c.mut.Unlock()
+				log.Printf("[INFO] Handled notification")
+			}
 		}
-
-		c.conn.Close(ctx)
-
 	}()
-	log.Printf("[TRACE] InteractiveClient listenToPgNotifications DONE")
+
+	log.Printf("[TRACE] InteractiveClient listenToPgNotificationsAsync DONE")
 }

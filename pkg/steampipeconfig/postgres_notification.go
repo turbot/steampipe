@@ -21,6 +21,7 @@ type PostgresNotification struct {
 type ConnectionErrorNotification struct {
 	PostgresNotification
 	Errors []string
+	// TODO separate Warning
 }
 
 func NewSchemaUpdateNotification() *PostgresNotification {

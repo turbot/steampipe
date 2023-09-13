@@ -78,7 +78,6 @@ type PluginManager struct {
 
 func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, pluginConfigs connection.PluginMap, logger hclog.Logger) (*PluginManager, error) {
 	log.Printf("[INFO] NewPluginManager")
-
 	pluginManager := &PluginManager{
 		logger:              logger,
 		runningPluginMap:    make(map[string]*runningPlugin),
@@ -752,14 +751,13 @@ func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionNa
 	// also send a postgres notification
 	notification := steampipeconfig.NewSchemaUpdateNotification()
 
-	// TODO pool acquire
-	conn, err := db_local.CreateLocalDbConnection(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser})
+	conn, err := m.pool.Acquire(ctx)
 	if err != nil {
 		log.Printf("[WARN] failed to send schema update notification: %s", err)
 	}
-	defer conn.Close(ctx)
+	defer conn.Release()
 
-	err = db_local.SendPostgresNotification(ctx, conn, notification)
+	err = db_local.SendPostgresNotification(ctx, conn.Conn(), notification)
 	if err != nil {
 		log.Printf("[WARN] failed to send schema update notification: %s", err)
 	}
@@ -772,25 +770,6 @@ func (m *PluginManager) nonAggregatorConnectionCount() int {
 	}
 	return res
 }
-
-//
-//func (m *PluginManager) handleStartFailure(err error) error {
-//	// extract the plugin message
-//	_, pluginMessage, found := strings.Cut(err.Error(), sdkplugin.UnrecognizedRemotePluginMessage)
-//	if !found {
-//		return err
-//	}
-//	pluginMessage, _, found = strings.Cut(pluginMessage, sdkplugin.UnrecognizedRemotePluginMessageSuffix)
-//	if !found {
-//		return err
-//	}
-//
-//	// if this was a panic during startup, reraise an error with the panic string
-//	if strings.Contains(pluginMessage, sdkplugin.PluginStartupFailureMessage) {
-//		return fmt.Errorf(pluginMessage)
-//	}
-//	return err
-//}
 
 // getPluginExemplarConnections returns a map of keyed by plugin short name with the value an exemplar connection
 func (m *PluginManager) getPluginExemplarConnections() map[string]string {

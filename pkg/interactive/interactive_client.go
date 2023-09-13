@@ -700,7 +700,7 @@ func (c *InteractiveClient) startCancelHandler() chan bool {
 }
 
 func (c *InteractiveClient) listenToPgNotifications(ctx context.Context) {
-	c.initData.NotificationCache.RegisterListener(func(notification *pgconn.Notification) {
+	c.initData.Client.RegisterNotificationListener(func(notification *pgconn.Notification) {
 		c.handlePostgresNotification(ctx, notification)
 	})
 }

@@ -3,6 +3,8 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"log"
 
 	"github.com/spf13/viper"
@@ -15,7 +17,8 @@ import (
 // LocalDbClient wraps over DbClient
 type LocalDbClient struct {
 	db_client.DbClient
-	invoker constants.Invoker
+	NotificationCache *db_common.NotificationListener
+	invoker           constants.Invoker
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
@@ -41,6 +44,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 		ShutdownService(ctx, invoker)
 		startResult.Error = err
 	}
+
 	return client, &startResult.ErrorAndWarnings
 }
 
@@ -60,14 +64,34 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 		return nil, err
 	}
 
-	c := &LocalDbClient{DbClient: *dbClient, invoker: invoker}
-	log.Printf("[TRACE] created local client %p", c)
-	return c, nil
+	client := &LocalDbClient{DbClient: *dbClient, invoker: invoker}
+	log.Printf("[TRACE] created local client %p", client)
+
+	// get a connection for the notification cache
+	conn, err := client.AcquireManagementConnection(ctx)
+	if err != nil {
+		client.Close(ctx)
+		return nil, err
+	}
+	// hijack from the pool  as we will be keeping open for the lifetime of this run
+	// notification cache will manage the lifecycle of the connection
+	notificationConnection := conn.Hijack()
+	client.NotificationCache, err = db_common.NewNotificationListener(ctx, notificationConnection)
+	if err != nil {
+		client.Close(ctx)
+		return nil, err
+	}
+
+	return client, nil
 }
 
 // Close implements Client
 // close the connection to the database and shuts down the db service if we are the last connection
 func (c *LocalDbClient) Close(ctx context.Context) error {
+	if c.NotificationCache != nil {
+		c.NotificationCache.Stop(ctx)
+	}
+
 	if err := c.DbClient.Close(ctx); err != nil {
 		return err
 	}
@@ -76,4 +100,8 @@ func (c *LocalDbClient) Close(ctx context.Context) error {
 	log.Printf("[TRACE] shutdown local service %v", c.invoker)
 	ShutdownService(ctx, c.invoker)
 	return nil
+}
+
+func (c *LocalDbClient) RegisterNotificationListener(f func(notification *pgconn.Notification)) {
+	c.NotificationCache.RegisterListener(f)
 }

@@ -2,7 +2,7 @@ package db_common
 
 import (
 	"context"
-
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
@@ -30,4 +30,5 @@ type Client interface {
 	GetSchemaFromDB(context.Context) (*SchemaMetadata, error)
 
 	ServerSettings() *ServerSettings
+	RegisterNotificationListener(f func(notification *pgconn.Notification))
 }

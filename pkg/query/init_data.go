@@ -59,9 +59,6 @@ func (i *InitData) Cleanup(ctx context.Context) {
 	// the client is set after the cancel hits
 	<-i.Loaded
 
-	if i.NotificationCache != nil {
-		i.NotificationCache.Stop()
-	}
 	// if a client was initialised, close it
 	if i.Client != nil {
 		i.Client.Close(ctx)
