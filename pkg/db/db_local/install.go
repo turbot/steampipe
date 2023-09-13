@@ -90,7 +90,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	if err != nil {
 		if errors.Is(err, errDbInstanceRunning) {
 			// remove the installation - otherwise, the backup won't get triggered, even if the user stops the service
-			os.RemoveAll(databaseInstanceDir())
+			os.RemoveAll(filepaths.DatabaseInstanceDir())
 			return err
 		}
 		// ignore all other errors with the backup, displaying a warning instead
@@ -125,14 +125,14 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 func downloadAndInstallDbFiles(ctx context.Context) error {
 	statushooks.SetStatus(ctx, "Prepare database install location…")
 	// clear all db files
-	err := os.RemoveAll(getDatabaseLocation())
+	err := os.RemoveAll(filepaths.GetDatabaseLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Prepare database install location... FAILED!")
 	}
 
 	statushooks.SetStatus(ctx, "Download & install embedded PostgreSQL database…")
-	_, err = ociinstaller.InstallDB(ctx, getDatabaseLocation())
+	_, err = ociinstaller.InstallDB(ctx, filepaths.GetDatabaseLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Download & install embedded PostgreSQL database... FAILED!")
@@ -148,19 +148,19 @@ func IsInstalled() bool {
 	// check that both postgres binary and initdb binary exist
 	// and are executable by us
 
-	if _, err := os.Stat(getInitDbBinaryExecutablePath()); os.IsNotExist(err) {
+	if _, err := os.Stat(filepaths.GetInitDbBinaryExecutablePath()); os.IsNotExist(err) {
 		return false
 	}
 
-	if _, err := os.Stat(getPostgresBinaryExecutablePath()); os.IsNotExist(err) {
+	if _, err := os.Stat(filepaths.GetPostgresBinaryExecutablePath()); os.IsNotExist(err) {
 		return false
 	}
 
-	if _, err := os.Stat(getFDWBinaryLocation()); os.IsNotExist(err) {
+	if _, err := os.Stat(filepaths.GetFDWBinaryLocation()); os.IsNotExist(err) {
 		return false
 	}
 
-	fdwSQLFile, fdwControlFile := getFDWSQLAndControlLocation()
+	fdwSQLFile, fdwControlFile := filepaths.GetFDWSQLAndControlLocation()
 
 	if _, err := os.Stat(fdwSQLFile); os.IsNotExist(err) {
 		return false
@@ -253,7 +253,7 @@ func installFDW(ctx context.Context, firstSetup bool) (string, error) {
 		}()
 	}
 	statushooks.SetStatus(ctx, fmt.Sprintf("Download & install %s…", constants.Bold("steampipe-postgres-fdw")))
-	return ociinstaller.InstallFdw(ctx, getDatabaseLocation())
+	return ociinstaller.InstallFdw(ctx, filepaths.GetDatabaseLocation())
 }
 
 func needsInit() bool {
@@ -261,7 +261,7 @@ func needsInit() bool {
 	defer utils.LogTime("db_local.needsInit end")
 
 	// test whether pg_hba.conf exists in our target directory
-	return !filehelpers.FileExists(getPgHbaConfLocation())
+	return !filehelpers.FileExists(filepaths.GetPgHbaConfLocation())
 }
 
 func runInstall(ctx context.Context, oldDbName *string) error {
@@ -270,7 +270,7 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 
 	statushooks.SetStatus(ctx, "Cleaning up…")
 
-	err := utils.RemoveDirectoryContents(getDataLocation())
+	err := utils.RemoveDirectoryContents(filepaths.GetDataLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Prepare database install location... FAILED!")
@@ -355,7 +355,7 @@ func resolveDatabaseName(oldDbName *string) string {
 
 func startServiceForInstall(port int) (*psutils.Process, error) {
 	postgresCmd := exec.Command(
-		getPostgresBinaryExecutablePath(),
+		filepaths.GetPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port if free to listen to
 		"-p", fmt.Sprint(port),
 		"-c", "listen_addresses=127.0.0.1",
@@ -369,7 +369,7 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 		"-c", fmt.Sprintf("log_directory=%s", filepaths.EnsureLogDir()),
 
 		// Data Directory
-		"-D", getDataLocation())
+		"-D", filepaths.GetDataLocation())
 
 	setupLogCollection(postgresCmd)
 
@@ -414,7 +414,7 @@ func initDatabase() error {
 		return err
 	}
 
-	initDBExecutable := getInitDbBinaryExecutablePath()
+	initDBExecutable := filepaths.GetInitDbBinaryExecutablePath()
 	initDbProcess := exec.Command(
 		initDBExecutable,
 		// Steampipe runs Postgres as a local, embedded database so trust local
@@ -425,7 +425,7 @@ func initDatabase() error {
 		// embedded database.
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 		// Postgres data should placed under the Steampipe install directory.
-		fmt.Sprintf("--pgdata=%s", getDataLocation()),
+		fmt.Sprintf("--pgdata=%s", filepaths.GetDataLocation()),
 		// Ensure the encoding is consistent across installs. By default it would
 		// be based on the system locale.
 		fmt.Sprintf("--encoding=%s", "UTF-8"),
@@ -448,7 +448,7 @@ func initDatabase() error {
 
 	// intentionally overwriting existing pg_hba.conf with a minimal config which only allows root
 	// so that we can setup the database and permissions
-	return os.WriteFile(getPgHbaConfLocation(), []byte(constants.MinimalPgHbaContent), 0600)
+	return os.WriteFile(filepaths.GetPgHbaConfLocation(), []byte(constants.MinimalPgHbaContent), 0600)
 }
 
 func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *pgx.Conn) error {
@@ -521,7 +521,7 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 
 func writePgHbaContent(databaseName string, username string) error {
 	content := fmt.Sprintf(constants.PgHbaTemplate, databaseName, username)
-	return os.WriteFile(getPgHbaConfLocation(), []byte(content), 0600)
+	return os.WriteFile(filepaths.GetPgHbaConfLocation(), []byte(content), 0600)
 }
 
 func installForeignServer(ctx context.Context, rawClient *pgx.Conn) error {
@@ -557,5 +557,5 @@ func updateDownloadedBinarySignature() error {
 		return err
 	}
 	installedSignature := fmt.Sprintf("%s|%s", versionInfo.EmbeddedDB.ImageDigest, versionInfo.FdwExtension.ImageDigest)
-	return os.WriteFile(getDBSignatureLocation(), []byte(installedSignature), 0755)
+	return os.WriteFile(filepaths.GetDBSignatureLocation(), []byte(installedSignature), 0755)
 }

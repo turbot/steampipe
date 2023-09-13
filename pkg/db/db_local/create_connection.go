@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -94,7 +95,7 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 	connConfig.Config.RuntimeParams = map[string]string{
 		constants.RuntimeParamsKeyApplicationName: runtime.ServiceConnectionAppName,
 	}
-	err = db_common.AddRootCertToConfig(&connConfig.Config, getRootCertLocation())
+	err = db_common.AddRootCertToConfig(&connConfig.Config, filepaths.GetRootCertLocation())
 	if err != nil {
 		return nil, err
 	}

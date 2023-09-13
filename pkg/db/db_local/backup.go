@@ -127,7 +127,7 @@ func killRunningDbInstance(ctx context.Context) error {
 func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 	cmd := pgDumpCmd(
 		ctx,
-		fmt.Sprintf("--file=%s", databaseBackupFilePath()),
+		fmt.Sprintf("--file=%s", filepaths.DatabaseBackupFilePath()),
 		fmt.Sprintf("--format=%s", backupFormat),
 		// of the public schema only
 		"--schema=public",
@@ -229,7 +229,7 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 
 // restoreDBBackup loads the back up file into the database
 func restoreDBBackup(ctx context.Context) error {
-	backupFilePath := databaseBackupFilePath()
+	backupFilePath := filepaths.DatabaseBackupFilePath()
 	if !files.FileExists(backupFilePath) {
 		// nothing to do here
 		return nil
@@ -314,7 +314,7 @@ func restoreDBBackup(ctx context.Context) error {
 func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listFile string) error {
 	cmd := pgRestoreCmd(
 		ctx,
-		databaseBackupFilePath(),
+		filepaths.DatabaseBackupFilePath(),
 		fmt.Sprintf("--format=%s", backupFormat),
 		// only the public schema is backed up
 		"--schema=public",
@@ -369,7 +369,7 @@ func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []str
 func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 	cmd := pgRestoreCmd(
 		ctx,
-		databaseBackupFilePath(),
+		filepaths.DatabaseBackupFilePath(),
 		fmt.Sprintf("--format=%s", backupFormat),
 		// only the public schema is backed up
 		"--schema=public",
@@ -420,7 +420,7 @@ func retainBackup(ctx context.Context) error {
 	textBackupFilePath := filepath.Join(backupDir, textBackupRetentionFileName)
 
 	log.Println("[TRACE] moving database back up to", binaryBackupFilePath)
-	if err := utils.MoveFile(databaseBackupFilePath(), binaryBackupFilePath); err != nil {
+	if err := utils.MoveFile(filepaths.DatabaseBackupFilePath(), binaryBackupFilePath); err != nil {
 		return err
 	}
 	log.Println("[TRACE] converting database back up to", textBackupFilePath)
@@ -444,7 +444,7 @@ func retainBackup(ctx context.Context) error {
 func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(
 		ctx,
-		pgDumpBinaryExecutablePath(),
+		filepaths.PgDumpBinaryExecutablePath(),
 		args...,
 	)
 	cmd.Env = append(os.Environ(), "PGSSLMODE=disable")
@@ -456,7 +456,7 @@ func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
 func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(
 		ctx,
-		pgRestoreBinaryExecutablePath(),
+		filepaths.PgRestoreBinaryExecutablePath(),
 		args...,
 	)
 	cmd.Env = append(os.Environ(), "PGSSLMODE=disable")
