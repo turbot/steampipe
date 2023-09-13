@@ -20,7 +20,7 @@ jobs:
         uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       # TODO: v0.21.x will be the last version we publish our images to Docker Hub. Update Docker
       # publish workflow to stop publishing to Docker Hub just before v0.22.0 comes out.
