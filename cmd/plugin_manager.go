@@ -51,7 +51,6 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 }
 
 func doRunPluginManager(cmd *cobra.Command) error {
-
 	pluginManager, err := createPluginManager(cmd)
 	if err != nil {
 		return err

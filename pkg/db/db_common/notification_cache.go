@@ -27,7 +27,7 @@ func NewNotificationListener(ctx context.Context, conn *pgx.Conn) (*Notification
 		return nil, sperr.New("nil connection passed to NewNotificationListener")
 	}
 
-	res := &NotificationListener{conn: conn}
+	listener := &NotificationListener{conn: conn}
 
 	// tell the connection to listen to notifications
 	listenSql := fmt.Sprintf("listen %s", constants.PostgresNotificationChannel)
@@ -40,12 +40,12 @@ func NewNotificationListener(ctx context.Context, conn *pgx.Conn) (*Notification
 
 	// create cancel context to shutdown the listener
 	cancelCtx, cancel := context.WithCancel(ctx)
-	res.cancel = cancel
+	listener.cancel = cancel
 
 	// start the goroutine to listen
-	res.listenToPgNotificationsAsync(cancelCtx)
+	listener.listenToPgNotificationsAsync(cancelCtx)
 
-	return res, nil
+	return listener, nil
 }
 
 func (c *NotificationListener) Stop(ctx context.Context) {
