@@ -17,8 +17,8 @@ import (
 // LocalDbClient wraps over DbClient
 type LocalDbClient struct {
 	db_client.DbClient
-	NotificationCache *db_common.NotificationListener
-	invoker           constants.Invoker
+	notificationListener *db_common.NotificationListener
+	invoker              constants.Invoker
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
@@ -67,17 +67,7 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	client := &LocalDbClient{DbClient: *dbClient, invoker: invoker}
 	log.Printf("[TRACE] created local client %p", client)
 
-	// get a connection for the notification cache
-	conn, err := client.AcquireManagementConnection(ctx)
-	if err != nil {
-		client.Close(ctx)
-		return nil, err
-	}
-	// hijack from the pool  as we will be keeping open for the lifetime of this run
-	// notification cache will manage the lifecycle of the connection
-	notificationConnection := conn.Hijack()
-	client.NotificationCache, err = db_common.NewNotificationListener(ctx, notificationConnection)
-	if err != nil {
+	if err := client.initNotificationListener(ctx); err != nil {
 		client.Close(ctx)
 		return nil, err
 	}
@@ -85,11 +75,30 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	return client, nil
 }
 
+func (c *LocalDbClient) initNotificationListener(ctx context.Context) error {
+	// get a connection for the notification cache
+	conn, err := c.AcquireManagementConnection(ctx)
+	if err != nil {
+		c.Close(ctx)
+		return err
+	}
+	// hijack from the pool  as we will be keeping open for the lifetime of this run
+	// notification cache will manage the lifecycle of the connection
+	notificationConnection := conn.Hijack()
+	listener, err := db_common.NewNotificationListener(ctx, notificationConnection)
+	if err != nil {
+		return err
+	}
+	c.notificationListener = listener
+
+	return nil
+}
+
 // Close implements Client
 // close the connection to the database and shuts down the db service if we are the last connection
 func (c *LocalDbClient) Close(ctx context.Context) error {
-	if c.NotificationCache != nil {
-		c.NotificationCache.Stop(ctx)
+	if c.notificationListener != nil {
+		c.notificationListener.Stop(ctx)
 	}
 
 	if err := c.DbClient.Close(ctx); err != nil {
@@ -103,5 +112,5 @@ func (c *LocalDbClient) Close(ctx context.Context) error {
 }
 
 func (c *LocalDbClient) RegisterNotificationListener(f func(notification *pgconn.Notification)) {
-	c.NotificationCache.RegisterListener(f)
+	c.notificationListener.RegisterListener(f)
 }

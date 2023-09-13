@@ -168,9 +168,9 @@ func (c *DbClient) ServerSettings() *db_common.ServerSettings {
 	return c.serverSettings
 }
 
-func (c *DbClient) RegisterNotificationListener(func(notification *pgconn.Notification)) {
-
-}
+// RegisterNotificationListener has an empty implementation
+// NOTE: we do not (currently) support notifications from remote connections
+func (c *DbClient) RegisterNotificationListener(func(notification *pgconn.Notification)) {}
 
 // Close implements Client
 

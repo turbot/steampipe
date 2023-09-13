@@ -68,7 +68,7 @@ func (c *NotificationListener) RegisterListener(onNotification func(*pgconn.Noti
 }
 
 func (c *NotificationListener) listenToPgNotificationsAsync(ctx context.Context) {
-	log.Printf("[INFO] NotificationListener listenToPgNotificationsAsync")
+	log.Printf("[INFO] notificationListener listenToPgNotificationsAsync")
 
 	go func() {
 		for ctx.Err() == nil {
