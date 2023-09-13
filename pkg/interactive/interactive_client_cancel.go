@@ -24,10 +24,10 @@ func (c *InteractiveClient) createQueryContext(ctx context.Context) context.Cont
 
 func (c *InteractiveClient) cancelActiveQueryIfAny() {
 	if c.cancelActiveQuery != nil {
-		log.Println("[WARN] CALLING cancelActiveQuery")
+		log.Println("[INFO] cancelActiveQueryIfAny CALLING cancelActiveQuery")
 		c.cancelActiveQuery()
 		c.cancelActiveQuery = nil
 	} else {
-		log.Println("[WARN] NO active query")
+		log.Println("[INFO] cancelActiveQueryIfAny NO active query")
 	}
 }
