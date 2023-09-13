@@ -106,15 +106,15 @@ func (r *SteampipeImageRef) GetFriendlyName() string {
 	return getCondensedImageRef(r.DisplayImageRef())
 }
 
-func getCondensedImageRef(imagePath string) string {
+func getCondensedImageRef(imageRef string) string {
 	// if this is not from the steampipe hub registry, return as is
 	// we are not aware of any conventions in the registry
-	if !strings.HasPrefix(imagePath, DefaultImageRepoDisplayURL) {
-		return imagePath
+	if !strings.HasPrefix(imageRef, DefaultImageRepoDisplayURL) {
+		return imageRef
 	}
 
 	// remove the registry
-	ref := strings.TrimPrefix(imagePath, DefaultImageRepoDisplayURL)
+	ref := strings.TrimPrefix(imageRef, DefaultImageRepoDisplayURL)
 	// remove the 'plugins' namespace where steampipe hub keeps the images
 	ref = strings.TrimPrefix(ref, "/plugins/")
 	// remove the default organization "turbot"

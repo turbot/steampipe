@@ -28,6 +28,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 )
 
 type installedPlugin struct {
@@ -245,20 +246,22 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	installReports := make(display.PluginInstallReports, 0, len(plugins))
 
 	if len(plugins) == 0 {
-
 		if len(steampipeconfig.GlobalConfig.Plugins) == 0 {
-			error_helpers.ShowError(ctx, sperr.New("No connections/plugins configured"))
+			error_helpers.ShowError(ctx, sperr.New("No connections or plugins configured"))
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
 			return
 		}
 
+		pluginsToInstall := map[string]struct{}{}
 		// get the list of plugins to install
 		for _, plugin := range steampipeconfig.GlobalConfig.Plugins {
 			ref := ociinstaller.NewSteampipeImageRef(plugin.GetImageRef())
-			if !helpers.StringSliceContains(plugins, ref.GetFriendlyName()) {
-				plugins = append(plugins, ref.GetFriendlyName())
+			friendlyName := ref.GetFriendlyName()
+			if _, found := pluginsToInstall[friendlyName]; !found {
+				pluginsToInstall[friendlyName] = struct{}{}
 			}
 		}
+		plugins = maps.Keys(pluginsToInstall)
 	}
 
 	// a leading blank line - since we always output multiple lines
