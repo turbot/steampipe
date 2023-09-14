@@ -107,17 +107,18 @@ func (r *SteampipeImageRef) GetFriendlyName() string {
 }
 
 func getCondensedImageRef(imageRef string) string {
-	// if this is not from the steampipe hub registry, return as is
-	// we are not aware of any conventions in the registry
+	// if this is not from the default steampipe registry - DO NOT CONDENSE - return as is
+	// (we are not aware of any conventions in the registry)
 	if !strings.HasPrefix(imageRef, DefaultImageRepoDisplayURL) {
 		return imageRef
 	}
 
-	// remove the registry
+	// So this is an image reference from the Steampipe HUB registry
+	// remove the registry URL
 	ref := strings.TrimPrefix(imageRef, DefaultImageRepoDisplayURL)
 	// remove the 'plugins' namespace where steampipe hub keeps the images
 	ref = strings.TrimPrefix(ref, "/plugins/")
-	// remove the default organization "turbot"
+	// remove the default organization - "turbot"
 	ref = strings.TrimPrefix(ref, DefaultImageOrg)
 	// remove any leading '/'
 	ref = strings.TrimPrefix(ref, "/")
