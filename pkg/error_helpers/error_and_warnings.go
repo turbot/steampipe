@@ -58,7 +58,7 @@ func (r *ErrorAndWarnings) Merge(other *ErrorAndWarnings) *ErrorAndWarnings {
 	}
 
 	// TODO: Restructure ErrorsAndWarning
-	// [issue](https://github.com/turbot/steampipe/issues/3653)
+	// [issue](https://github.com/turbot/steampipe/issues/3845)
 	if r.Error == nil {
 		r.Error = other.Error
 	}

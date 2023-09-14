@@ -159,7 +159,6 @@ func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.Install
 	}
 	// if Digest field is missing, populate with dummy field
 	// - this will force and update an in doing so fix the versions.json
-	// https://github.com/turbot/steampipe/issues/2030
 	if payload.Digest == "" {
 		payload.Digest = "no digest"
 	}
