@@ -38,6 +38,14 @@ _Deprecations and migrations_
 * Migrate from 'cloud.steampipe.io' to 'pipes.turbot.com'. ([#3724](https://github.com/turbot/steampipe/issues/3724))
 * Refactor Plugin manager:remove support for plugins which do not support multiple connections, simplify startup
 
+## v0.20.12 [2023-09-14]
+_Whats new_
+* Updated help outputs for steampipe mod commands. ([#1817](https://github.com/turbot/steampipe/issues/1817))
+
+_Bug fixes_
+* Fixes issue where expired root and server SSL certificates were not getting rotated. ([#3596](https://github.com/turbot/steampipe/issues/3596))
+* Fixes issue where steampipe was returning an `index out of range` error when the `children` property of a `benchmark` contains an invalid name. ([#3563](https://github.com/turbot/steampipe/issues/3563))
+* Steampipe should not validate locally installed plugins when connecting to remote database. ([#3516](https://github.com/turbot/steampipe/issues/3516))
 
 ## v0.20.11 [2023-08-28]
 _Bug fixes_
