@@ -10,10 +10,12 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/fatih/color"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/filewatcher"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -244,6 +246,13 @@ func (w *Workspace) findModFilePath(folder string) (string, error) {
 }
 
 func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAndWarnings {
+	// check if your workspace path is home dir and if modfile exists - if yes then warn and ask user to continue or not
+	home, _ := os.UserHomeDir()
+	if w.Path == home && w.ModfileExists() {
+		if confirm := utils.UserConfirmation(fmt.Sprintf("%s: You have a mod.sp file in your home directory. If you have a mod.sp file in your home directory, \nsteampipe will try to load all the files in home and its sub-directories, which can cause steampipe to hang. \nBest practice is to not have mod.sp files in your home directory.\nDo you still want to continue? (y/n)", color.YellowString("Warning"))); !confirm {
+			return error_helpers.NewErrorsAndWarning(sperr.New("load cancelled"))
+		}
+	}
 	// resolve values of all input variables
 	// we WILL validate missing variables when loading
 	validateMissing := true
