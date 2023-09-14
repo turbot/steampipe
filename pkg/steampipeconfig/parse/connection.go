@@ -2,15 +2,12 @@ package parse
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -29,11 +26,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 		return nil, diags
 	}
 
-	if strings.HasPrefix(pluginName, "local/") {
-		connection.Plugin = pluginName
-	} else {
-		connection.Plugin = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
-	}
+	// NOTE: plugin property is set in initializePluginss
 	connection.PluginAlias = pluginName
 
 	if connectionContent.Attributes["type"] != nil {

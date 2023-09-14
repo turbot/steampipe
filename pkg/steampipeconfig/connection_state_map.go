@@ -35,7 +35,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 	// populate file mod time for each referenced plugin
 	for name, connection := range connectionMap {
 		remoteSchema := connection.Plugin
-		pluginPath, _ := filepaths.GetPluginPath(connection.Plugin, connection.PluginAlias)
+		pluginPath, _ := filepaths.GetPluginPath(connection.Plugin)
 		// ignore error if plugin is not available
 		// if plugin is not installed, the path will be returned as empty
 		if pluginPath == "" {

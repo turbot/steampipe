@@ -2,7 +2,8 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"golang.org/x/exp/maps"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"log"
 	"os"
 	"strings"
@@ -19,7 +20,9 @@ import (
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
 type SteampipeConfig struct {
 	// map of plugin configs, keyed by plugin image ref
-	Plugins map[string]*modconfig.Plugin
+	Plugins map[string][]*modconfig.Plugin
+	// map of plugin configs, keyed by plugin config label
+	PluginsByLabel map[string]*modconfig.Plugin
 	// map of connection name to partially parsed connection config
 	Connections map[string]*modconfig.Connection
 
@@ -38,9 +41,10 @@ type SteampipeConfig struct {
 
 func NewSteampipeConfig(commandName string) *SteampipeConfig {
 	return &SteampipeConfig{
-		Connections: make(map[string]*modconfig.Connection),
-		Plugins:     make(map[string]*modconfig.Plugin),
-		commandName: commandName,
+		Connections:    make(map[string]*modconfig.Connection),
+		Plugins:        make(map[string][]*modconfig.Plugin),
+		PluginsByLabel: make(map[string]*modconfig.Plugin),
+		commandName:    commandName,
 	}
 }
 
@@ -328,13 +332,80 @@ func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
 	return res
 }
 
+func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin, block *hcl.Block) error {
+	if _, exists := c.PluginsByLabel[plugin.Label]; exists {
+		return sperr.New("duplicate plugin: '%s' in '%s'", plugin.Source, block.TypeRange.Filename)
+	}
+	// get the _display_ image ref to key the map
+	imageRef := plugin.GetImageRef()
+	// add to list of plugin configs for this image ref
+	c.Plugins[imageRef] = append(c.Plugins[imageRef], plugin)
+	c.PluginsByLabel[plugin.Label] = plugin
+	return nil
+}
+
 // ensure we have a plugin config struct for all plugins mentioned in connection config,
 // even if there is not an explicit HCL config for it
-func (c *SteampipeConfig) initializePlugins() {
+func (c *SteampipeConfig) initializePlugins() map[string]error {
+
+	var failedConnections = make(map[string]error)
 	for _, connection := range c.Connections {
-		if c.Plugins[connection.Plugin] == nil {
-			c.Plugins[connection.Plugin] = modconfig.PluginForConnection(connection)
+		plugin, err := c.resolvePluginForConnection(connection)
+		if err != nil {
+			failedConnections[connection.Name] = err
+		} else {
+			// set the Plugin property on the connection
+			connection.Plugin = plugin.GetImageRef()
+			connection.PluginConfig = plugin
 		}
 	}
-	log.Printf("[INFO] connections: %s plugins: %s", strings.Join(maps.Keys(c.Connections), ","), strings.Join(maps.Keys(c.Plugins), ","))
+	return failedConnections
+}
+
+func (c *SteampipeConfig) resolvePluginForConnection(connection *modconfig.Connection) (*modconfig.Plugin, error) {
+	// NOTE: must set connection plugin property
+
+	/* resolution steps:
+		1) is there a plugin config with a name which matches the connection 'plugin' field
+	 	2) is there a SINGLE plugin config for the image ref resolved from the connection 'plugin' field
+	       NOTE: if there is more than one config for the plugin this is an error
+		3) create an empty config for the plugin with the name set to the image ref
+	*/
+
+	// NOTE: at this point, c.Plugin is NOT populated, only c.PluginAlias
+	// we populate c.Plugin AFTER resolving te plugin
+	// 1) does this connection 'plugin' field refer to the label of a plugin config block
+	if p := c.PluginsByLabel[connection.PluginAlias]; p != nil {
+		return p, nil
+	}
+
+	// ok so there is no name match - treat the connection PluginAlias as an image ref
+	imageRef := ociinstaller.NewSteampipeImageRef(connection.PluginAlias).DisplayImageRef()
+	// is there a default plugin config for this plugin - if so the label will be the image ref
+	if p := c.PluginsByLabel[imageRef]; p != nil {
+		return p, nil
+	}
+
+	// no default config - check if there is configured config for this plugin
+	pluginsForImageRef := c.Plugins[imageRef]
+
+	switch len(pluginsForImageRef) {
+	case 0:
+		// there is no plugin config for this connection - add one
+		p := modconfig.PluginForConnection(connection)
+		// now add to our map
+		// (NOTE: it;s ok to pass an empty HCL block - it is only used for the duplicate config error
+		// and we know we will not get that
+		c.addPlugin(p, &hcl.Block{})
+		return p, nil
+
+	case 1:
+		return pluginsForImageRef[0], nil
+
+	default:
+		// so there is more than one plugin config for the plugin, and the connection DOES NOT specify which one to use
+		// this is an error
+		return nil, sperr.New("connection '%s' specifies plugin '%s' but there are %d plugin configs defined so the correct config cannot be resolved", connection.Name, connection.PluginAlias, len(pluginsForImageRef))
+
+	}
 }

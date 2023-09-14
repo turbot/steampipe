@@ -19,7 +19,7 @@ func DecodePlugin(block *hcl.Block) (*modconfig.Plugin, hcl.Diagnostics) {
 	// decode attributes using 'rest' (these are automativally parsed so are not in schema)
 	var plugin = &modconfig.Plugin{
 		// default source and name to label
-		Name:   block.Labels[0],
+		Label:  block.Labels[0],
 		Source: block.Labels[0],
 	}
 	moreDiags := gohcl.DecodeBody(body, nil, plugin)
@@ -30,7 +30,7 @@ func DecodePlugin(block *hcl.Block) (*modconfig.Plugin, hcl.Diagnostics) {
 
 	// decode limiter blocks using 'content'
 	for _, block := range content.Blocks {
-		// TODO ensure unique label check works (if name property used)
+		// TODO KAI ensure unique label check works (if name property used)
 		switch block.Type {
 		// only block defined in schema
 		case modconfig.BlockTypeRateLimiter:

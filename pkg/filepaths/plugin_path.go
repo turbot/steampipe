@@ -10,27 +10,26 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-func GetPluginPath(plugin, pluginShortName string) (string, error) {
-	remoteSchema := plugin
+func GetPluginPath(pluginImageRef string) (string, error) {
 	// the fully qualified name of the plugin is the relative path of the folder containing the plugin
 	// calculate absolute folder path
-	pluginFolder := filepath.Join(EnsurePluginDir(), remoteSchema)
+	pluginFolder := filepath.Join(EnsurePluginDir(), pluginImageRef)
 
 	// if the plugin folder is missing, it is possible the plugin path was truncated to create a schema name
 	// - so search for a folder which when truncated would match the schema
 	if _, err := os.Stat(pluginFolder); os.IsNotExist(err) {
 		log.Printf("[TRACE] plugin path %s not found - searching for folder using hashed name\n", pluginFolder)
-		if pluginFolder, err = FindPluginFolder(remoteSchema); err != nil {
+		if pluginFolder, err = FindPluginFolder(pluginImageRef); err != nil {
 			return "", err
 		} else if pluginFolder == "" {
-			return "", fmt.Errorf("no plugin installed matching %s", pluginShortName)
+			return "", fmt.Errorf("no plugin installed matching %s", pluginImageRef)
 		}
 	}
 
 	// there should be just 1 file with extension pluginExtension (".plugin")
 	entries, err := os.ReadDir(pluginFolder)
 	if err != nil {
-		return "", fmt.Errorf("failed to load plugin %s: %v", remoteSchema, err)
+		return "", fmt.Errorf("failed to load plugin %s: %v", pluginImageRef, err)
 	}
 	matches := []string{}
 	for _, entry := range entries {

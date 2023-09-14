@@ -16,9 +16,9 @@ type PluginMap map[string]*modconfig.Plugin
 
 func (p PluginMap) ToPluginLimiterMap() PluginLimiterMap {
 	var limiterPluginMap = make(PluginLimiterMap)
-	for imageRef, p := range p {
+	for pluginConfigLabel, p := range p {
 		if len(p.Limiters) > 0 {
-			limiterPluginMap[imageRef] = NewLimiterMap(p.Limiters)
+			limiterPluginMap[pluginConfigLabel] = NewLimiterMap(p.Limiters)
 		}
 	}
 	return limiterPluginMap

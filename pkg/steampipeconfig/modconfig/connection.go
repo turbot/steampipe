@@ -53,8 +53,9 @@ type Connection struct {
 	Config string `json:"config,omitempty"`
 
 	// options
-	Options   *options.Connection `json:"options,omitempty"`
-	DeclRange Range               `json:"decl_range,omitempty"`
+	Options      *options.Connection `json:"options,omitempty"`
+	DeclRange    Range               `json:"decl_range,omitempty"`
+	PluginConfig *Plugin
 }
 
 // Range represents a span of characters between two positions in a source file.
