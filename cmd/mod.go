@@ -348,7 +348,10 @@ func createWorkspaceMod(ctx context.Context, cmd *cobra.Command, workspacePath s
 	if err := mod.Save(); err != nil {
 		return nil, err
 	}
-	fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
+	// only print message for mod init (not for mod install)
+	if cmd.Name() == "init" {
+		fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
+	}
 
 	// load up the written mod file so that we get the updated
 	// block ranges
