@@ -4,6 +4,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -17,7 +18,8 @@ func DecodePlugin(block *hcl.Block) (*modconfig.Plugin, hcl.Diagnostics) {
 
 	// decode attributes using 'rest' (these are automativally parsed so are not in schema)
 	var plugin = &modconfig.Plugin{
-		// default source to label
+		// default source and name to label
+		Name:   block.Labels[0],
 		Source: block.Labels[0],
 	}
 	moreDiags := gohcl.DecodeBody(body, nil, plugin)

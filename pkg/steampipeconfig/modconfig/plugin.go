@@ -7,6 +7,7 @@ import (
 )
 
 type Plugin struct {
+	Name            string         `hcl:"name,label"`
 	Source          string         `hcl:"source,optional"`
 	MaxMemoryMb     int            `hcl:"max_memory_mb,optional"`
 	Limiters        []*RateLimiter `hcl:"limiter,block"`
@@ -16,7 +17,7 @@ type Plugin struct {
 	imageRef        *ociinstaller.SteampipeImageRef
 }
 
-func NewPlugin(connection *Connection) *Plugin {
+func PluginForConnection(connection *Connection) *Plugin {
 	return &Plugin{
 		Source:   connection.PluginAlias,
 		imageRef: ociinstaller.NewSteampipeImageRef(connection.PluginAlias),

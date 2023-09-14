@@ -333,7 +333,7 @@ func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
 func (c *SteampipeConfig) initializePlugins() {
 	for _, connection := range c.Connections {
 		if c.Plugins[connection.Plugin] == nil {
-			c.Plugins[connection.Plugin] = modconfig.NewPlugin(connection)
+			c.Plugins[connection.Plugin] = modconfig.PluginForConnection(connection)
 		}
 	}
 	log.Printf("[INFO] connections: %s plugins: %s", strings.Join(maps.Keys(c.Connections), ","), strings.Join(maps.Keys(c.Plugins), ","))
