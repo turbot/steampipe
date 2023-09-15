@@ -532,7 +532,7 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	// if this plugin does not support multiple connections, we no longer support it
 	if !supportedOperations.MultipleConnections {
 		// TODO SEND NOTIFICATION TO CLI
-		return nil, fmt.Errorf("plugins which do not supprt multiple connections (using SDK version < v4) are no longer supported. Upgrade plugin '%s", pluginName)
+		return nil, fmt.Errorf("plugins which do not support multiple connections (using SDK version < v4) are no longer supported. Upgrade plugin '%s", pluginName)
 	}
 
 	// provide opportunity to avoid setting connection configs if we are shutting down
