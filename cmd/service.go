@@ -213,7 +213,6 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 
 	// if the service is already running, then service start should make the service persistent
 	if startResult.Status == db_local.ServiceAlreadyRunning {
-
 		// check that we have the same port and listen parameters
 		if port != startResult.DbState.Port {
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
@@ -221,7 +220,7 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 		}
 		if !utils.StringSlicesEqual(listenAddresses, startResult.DbState.ListenAddresses) {
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
-			error_helpers.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen addresses while it's running", startResult.DbState.ListenAddresses))
+			error_helpers.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen address while it's running", strings.Join(startResult.DbState.ListenAddresses, ", ")))
 		}
 
 		// convert to being invoked by service
