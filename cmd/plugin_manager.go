@@ -2,19 +2,19 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/helpers"
 	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/go-kit/logging"
 	"github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
+	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection"
@@ -116,22 +116,14 @@ func shouldRunConnectionWatcher() bool {
 }
 
 func createPluginManagerLog() hclog.Logger {
-	logName := fmt.Sprintf("plugin-%s.log", time.Now().Format("2006-01-02"))
-	logPath := filepath.Join(filepaths.EnsureLogDir(), logName)
-	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		fmt.Printf("failed to open plugin manager log file: %s\n", err.Error())
-		os.Exit(3)
-	}
-
 	// we use this logger to log from the plugin processes
 	// the plugin processes uses the `EscapeNewlineWriter` to map the '\n' byte to "\n" string literal
 	// this is to allow the plugin to send multiline log messages as a single log line.
 	//
 	// here we apply the reverse mapping to get back the original message
-	writer := logging.NewUnescapeNewlineWriter(f)
+	writer := sdklogging.NewUnescapeNewlineWriter(logging.NewRotatingLogWriter(filepaths.EnsureLogDir(), "plugin"))
 
-	logger := logging.NewLogger(&hclog.LoggerOptions{
+	logger := sdklogging.NewLogger(&hclog.LoggerOptions{
 		Output:     writer,
 		TimeFn:     func() time.Time { return time.Now().UTC() },
 		TimeFormat: "2006-01-02 15:04:05.000 UTC",

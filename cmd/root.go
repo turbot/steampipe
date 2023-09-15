@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -19,7 +18,8 @@ import (
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
+	"github.com/turbot/go-kit/logging"
+	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -90,7 +90,7 @@ var rootCmd = &cobra.Command{
 			// so that this gets inherited by any other process
 			// started by this process (postgres/plugin-manager)
 			error_helpers.FailOnErrorWithMessage(
-				os.Setenv(logging.EnvLogLevel, logLevel),
+				os.Setenv(sdklogging.EnvLogLevel, logLevel),
 				"Failed to setup logging",
 			)
 		}
@@ -191,12 +191,12 @@ func logLevelNeedsReset() bool {
 
 // envLogLevelSet checks whether any of the current or legacy log level env vars are set
 func envLogLevelSet() bool {
-	_, ok := os.LookupEnv(logging.EnvLogLevel)
+	_, ok := os.LookupEnv(sdklogging.EnvLogLevel)
 	if ok {
 		return ok
 	}
 	// handle legacy env vars
-	for _, e := range logging.LegacyLogLevelEnvVars {
+	for _, e := range sdklogging.LegacyLogLevelEnvVars {
 		_, ok = os.LookupEnv(e)
 		if ok {
 			return ok
@@ -376,21 +376,14 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 		return
 	}
 
-	level := logging.LogLevel()
+	level := sdklogging.LogLevel()
 	var logDestination io.Writer
 	if len(filepaths.SteampipeDir) == 0 {
 		// write to the buffer - this is to make sure that we don't lose logs
 		// till the time we get the log directory
 		logDestination = logBuffer
 	} else {
-		logName := fmt.Sprintf("steampipe-%s.log", time.Now().Format("2006-01-02"))
-		logPath := filepath.Join(filepaths.EnsureLogDir(), logName)
-		f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			fmt.Printf("failed to open steampipe log file: %s\n", err.Error())
-			os.Exit(3)
-		}
-		logDestination = f
+		logDestination = logging.NewRotatingLogWriter(filepaths.EnsureLogDir(), "steampipe")
 
 		// write out the buffered contents
 		_, _ = logDestination.Write(logBuffer.Bytes())
@@ -406,7 +399,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 		TimeFn:     func() time.Time { return time.Now().UTC() },
 		TimeFormat: "2006-01-02 15:04:05.000 UTC",
 	}
-	logger := logging.NewLogger(options)
+	logger := sdklogging.NewLogger(options)
 	log.SetOutput(logger.StandardWriter(&hclog.StandardLoggerOptions{InferLevels: true}))
 	log.SetPrefix("")
 	log.SetFlags(0)
@@ -421,7 +414,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 		log.Printf("[INFO] **%16s%20s%16s**\n", " ", fmt.Sprintf("Steampipe [%s]", runtime.ExecutionID), " ")
 		log.Printf("[INFO] ********************************************************\n")
 		log.Printf("[INFO] Version:   v%s\n", version.VersionString)
-		log.Printf("[INFO] Log level: %s\n", logging.LogLevel())
+		log.Printf("[INFO] Log level: %s\n", sdklogging.LogLevel())
 		log.Printf("[INFO] Log date: %s\n", time.Now().Format("2006-01-02"))
 		//
 	}
