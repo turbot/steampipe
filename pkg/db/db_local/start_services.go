@@ -248,7 +248,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 	}
 
 	if err := utils.IsPortBindable(utils.GetFirstListenAddress(listenAddresses), port); err != nil {
-		return res.SetError(fmt.Errorf("cannot listen on %s %s and port %d. To check if there's any other steampipe services running, use %s", utils.Pluralize("address", len(listenAddresses)), constants.Bold(strings.Join(listenAddresses, ",")), constants.Bold(port), constants.Bold("steampipe service status --all")))
+		return res.SetError(fmt.Errorf("cannot listen on %s and port %d. To check if there's any other steampipe services running, use %s", constants.Bold(strings.Join(listenAddresses, ",")), constants.Bold(port), constants.Bold("steampipe service status --all")))
 	}
 
 	if err := migrateLegacyPasswordFile(); err != nil {
