@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -17,17 +16,6 @@ import (
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 )
-
-// ConnectionStateTableAddedColumns is a map of column names to the SQL type
-// these are columns which needed to be added after 0.20.0 with the
-// steampipe_connection_state table was released
-//
-// these columns are loaded optionally when loading up the connection state table
-// make sure these columns are NULLABLE
-var ConnectionStateTableAddedColumns = map[string]string{
-	"connections":  "TEXT[]",
-	"plugin_label": "TEXT",
-}
 
 // LoadConnectionState populates a ConnectionStateMap from the connection_state table
 // it verifies the table has been initialised by calling RefreshConnections after db startup
@@ -110,31 +98,26 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnec
 	}
 	log.Println("[TRACE] with config", config)
 
-	query := buildLoadConnectionStateQuery(config)
-	log.Println("[TRACE] running query", query)
+	query := fmt.Sprintf(
+		`select * FROM %s.%s `,
+		constants.InternalSchema,
+		constants.ConnectionStateTable,
+	)
+
 	rows, err := conn.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	connectionStateList, err := pgx.CollectRows(rows, pgx.RowToStructByName[ConnectionState])
+	connectionStateList, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[ConnectionState])
 	if err != nil {
-		// columns were added after the 0.20.0 release (connections for now)
-		// we need to handle the case where we are connected to an old version of
-		// service which doesn't have some of these columns
-		if column, isColumNotFound := isColumnNotFoundError(err); isColumNotFound {
-			// if this was not an added column, return the error as is
-			if _, isAddedColumn := ConnectionStateTableAddedColumns[column]; isAddedColumn {
-				// try to load with the added column ignored
-				return loadConnectionState(ctx, conn, ignoreColumns(append(config.ignoredColumns, column)...))
-			}
-		}
 		return nil, err
 	}
 
 	var res = make(ConnectionStateMap)
 
+	// convert to pointer arrau
 	for _, c := range connectionStateList {
 		// copy into loop var
 		connectionState := c
@@ -239,48 +222,6 @@ func isColumnNotFoundError(err error) (string, bool) {
 		return captureGroups[1], true
 	}
 	return "", true
-}
-
-// buildLoadConnectionStateQuery builds up the SQL we send to the service
-func buildLoadConnectionStateQuery(config *loadConnectionStateConfig) string {
-	prefix := `SELECT name,
-	type,
-	import_schema,
-	state,
-	error,	
-	plugin,
-	schema_mode,
-	schema_hash,
-	comments_set,
-	connection_mod_time,
-	plugin_mod_time`
-
-	// because columns were added post 0.20.0 release, we have to handle cases
-	// where we are selecting from a service which doesn't have the columns added later
-	//
-	// for every colmn added
-	//		is it ignored already -> select "NULL as colname"
-	//		else select the column value
-	var extraCols []string
-	ignoreLookup := utils.SliceToLookup(config.ignoredColumns)
-	for ignoreColumn := range ConnectionStateTableAddedColumns {
-		// is this ignored
-		if _, ignored := ignoreLookup[ignoreColumn]; ignored {
-			// read NULL for this column
-			extraCols = append(extraCols, fmt.Sprintf("NULL as %s", ignoreColumn))
-		} else {
-			extraCols = append(extraCols, ignoreColumn)
-		}
-	}
-
-	query := fmt.Sprintf(
-		`%s,%s FROM %s.%s `,
-		prefix,
-		strings.Join(extraCols, ",\n"),
-		constants.InternalSchema,
-		constants.ConnectionStateTable,
-	)
-	return query
 }
 
 type loadConnectionStateConfig struct {

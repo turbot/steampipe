@@ -24,6 +24,7 @@ type RateLimiter struct {
 	Scope           []string                        `hcl:"scope,optional" db:"scope"`
 	Where           *string                         `hcl:"where,optional" db:"where"`
 	Plugin          string                          `db:"plugin"`
+	PluginLabel     *string                         `db:"plugin_label"`
 	FileName        *string                         `db:"file_name"`
 	StartLineNumber *int                            `db:"start_line_number"`
 	EndLineNumber   *int                            `db:"end_line_number"`
@@ -33,7 +34,7 @@ type RateLimiter struct {
 }
 
 // RateLimiterFromProto converts the proto format RateLimiterDefinition into a Defintion
-func RateLimiterFromProto(p *proto.RateLimiterDefinition, pluginImageRef string) (*RateLimiter, error) {
+func RateLimiterFromProto(p *proto.RateLimiterDefinition, pluginImageRef, pluginLabel string) (*RateLimiter, error) {
 	var res = &RateLimiter{
 		Name:  p.Name,
 		Scope: p.Scope,
@@ -53,6 +54,10 @@ func RateLimiterFromProto(p *proto.RateLimiterDefinition, pluginImageRef string)
 	}
 	res.ImageRef = ociinstaller.NewSteampipeImageRef(pluginImageRef)
 	res.Plugin = res.ImageRef.GetFriendlyName()
+	// if the label is the same as the image ref, this plugin has no explicit config so do not set the label
+	if pluginLabel != pluginImageRef {
+		res.PluginLabel = &pluginLabel
+	}
 	return res, nil
 }
 

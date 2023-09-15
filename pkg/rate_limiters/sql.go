@@ -13,6 +13,7 @@ func GetPopulateRateLimiterSql(settings *modconfig.RateLimiter) db_common.QueryW
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
 "name",
 plugin,
+plugin_label,
 source,
 status,
 bucket_size,
@@ -24,10 +25,11 @@ file_name,
 start_line_number,
 end_line_number
 )
-	VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`, constants.InternalSchema, constants.RateLimiterDefinitionTable),
+	VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, constants.InternalSchema, constants.RateLimiterDefinitionTable),
 		Args: []any{
 			settings.Name,
 			settings.Plugin,
+			settings.PluginLabel,
 			settings.Source,
 			settings.Status,
 			settings.BucketSize,
@@ -57,6 +59,7 @@ func CreateRateLimiterTable() db_common.QueryWithArgs {
 		Query: fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
 				name TEXT NOT NULL,
 				plugin TEXT NOT NULL,
+				plugin_label TEXT NULL,
 				source TEXT NOT NULL,
 				status TEXT NOT NULL,
 				bucket_size INTEGER,

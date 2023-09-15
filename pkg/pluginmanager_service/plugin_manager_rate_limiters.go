@@ -251,11 +251,18 @@ func (m *PluginManager) loadRateLimitersFromTable(ctx context.Context) ([]*modco
 	}
 	defer rows.Close()
 
-	rateLimiters, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[modconfig.RateLimiter])
+	rateLimiters, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[modconfig.RateLimiter])
 	if err != nil {
 		return nil, err
 	}
-	return rateLimiters, nil
+	// convert to pointer array
+	pRateLimiters := make([]*modconfig.RateLimiter, len(rateLimiters))
+	for i, r := range rateLimiters {
+		// copy into loop var
+		rateLimiter := r
+		pRateLimiters[i] = &rateLimiter
+	}
+	return pRateLimiters, nil
 }
 
 func (m *PluginManager) getUserAndPluginLimitersFromTableResult(rateLimiters []*modconfig.RateLimiter) (connection.PluginLimiterMap, connection.PluginLimiterMap) {
@@ -283,7 +290,6 @@ func (m *PluginManager) getUserAndPluginLimitersFromTableResult(rateLimiters []*
 }
 
 func (m *PluginManager) LoadPluginRateLimiters(pluginConnectionMap map[string]string) (connection.PluginLimiterMap, error) {
-
 	// build Get request
 	req := &pb.GetRequest{
 		Connections: maps.Values(pluginConnectionMap),
@@ -296,7 +302,7 @@ func (m *PluginManager) LoadPluginRateLimiters(pluginConnectionMap map[string]st
 	// ok so now we have all necessary plugin reattach configs - fetch the rate limiter defs
 	var errors []error
 	var res = make(connection.PluginLimiterMap)
-	for _, reattach := range resp.ReattachMap {
+	for pluginLabel, reattach := range resp.ReattachMap {
 
 		if !reattach.SupportedOperations.RateLimiters {
 			continue
@@ -318,7 +324,7 @@ func (m *PluginManager) LoadPluginRateLimiters(pluginConnectionMap map[string]st
 
 		limitersForPlugin := make(connection.LimiterMap)
 		for _, l := range rateLimiterResp.Definitions {
-			r, err := modconfig.RateLimiterFromProto(l, reattach.Plugin)
+			r, err := modconfig.RateLimiterFromProto(l, reattach.Plugin, pluginLabel)
 			if err != nil {
 				errors = append(errors, sperr.WrapWithMessage(err, "failed to create rate limiter %s from plugin definition", err))
 				continue
