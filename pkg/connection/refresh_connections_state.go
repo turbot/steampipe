@@ -77,6 +77,8 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
 func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
+
+	time.Sleep(10 * time.Second)
 	log.Println("[DEBUG] refreshConnectionState.refreshConnections start")
 	defer log.Println("[DEBUG] refreshConnectionState.refreshConnections end")
 

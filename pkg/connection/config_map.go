@@ -16,7 +16,7 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) Conn
 			PluginShortName:  v.PluginAlias,
 			Config:           v.Config,
 			ChildConnections: v.GetResolveConnectionNames(),
-			PluginLabel:      v.PluginConfig.Label,
+			PluginLabel:      v.PluginLabel,
 		}
 	}
 
@@ -24,7 +24,7 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) Conn
 }
 
 func (m ConnectionConfigMap) Diff(otherMap ConnectionConfigMap) (addedConnections, deletedConnections, changedConnections map[string][]*sdkproto.ConnectionConfig) {
-	// results are maps os  connections keyed by plugin
+	// results are maps of connections keyed by plugin label
 	addedConnections = make(map[string][]*sdkproto.ConnectionConfig)
 	deletedConnections = make(map[string][]*sdkproto.ConnectionConfig)
 	changedConnections = make(map[string][]*sdkproto.ConnectionConfig)
@@ -35,17 +35,17 @@ func (m ConnectionConfigMap) Diff(otherMap ConnectionConfigMap) (addedConnection
 
 	for name, connection := range m {
 		if otherConnection, ok := otherMap[name]; !ok {
-			deletedConnections[connection.Plugin] = append(deletedConnections[connection.Plugin], connection)
+			deletedConnections[connection.PluginLabel] = append(deletedConnections[connection.PluginLabel], connection)
 		} else {
 			// check for changes
 
 			// special case - if the plugin has changed, treat this as a deletion and a re-add
-			if connection.Plugin != otherConnection.Plugin {
+			if connection.PluginLabel != otherConnection.Plugin {
 				addedConnections[otherConnection.Plugin] = append(addedConnections[otherConnection.Plugin], otherConnection)
-				deletedConnections[connection.Plugin] = append(deletedConnections[connection.Plugin], connection)
+				deletedConnections[connection.PluginLabel] = append(deletedConnections[connection.PluginLabel], connection)
 			} else {
 				if !connection.Equals(otherConnection) {
-					changedConnections[connection.Plugin] = append(changedConnections[connection.Plugin], otherConnection)
+					changedConnections[connection.PluginLabel] = append(changedConnections[connection.PluginLabel], otherConnection)
 				}
 			}
 		}

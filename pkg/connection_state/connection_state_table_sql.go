@@ -9,7 +9,12 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-// GetConnectionStateTableCreateSql returns the sql to create the conneciton state table
+// GetConnectionStateTableDropSql returns the sql to create the conneciton state table
+func GetConnectionStateTableDropSql() db_common.QueryWithArgs {
+	query := fmt.Sprintf(`DROP TABLE IF EXISTS %s.%s;`, constants.InternalSchema, constants.ConnectionStateTable)
+	return db_common.QueryWithArgs{Query: query}
+}
+
 func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
 	name TEXT PRIMARY KEY,
@@ -19,6 +24,7 @@ func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
 	import_schema TEXT NOT NULL,
 	error TEXT NULL,
 	plugin TEXT NOT NULL,
+	plugin_label TEXT NULL,
 	schema_mode TEXT NOT NULL,
 	schema_hash TEXT NULL,
 	comments_set BOOL DEFAULT FALSE,
@@ -36,23 +42,6 @@ func GetConnectionStateTableGrantSql() db_common.QueryWithArgs {
 		constants.ConnectionStateTable,
 		constants.DatabaseUsersRole,
 	)}
-}
-
-// GetConnectionStateTableColumnAlterSql returns the SQL to make alterations to the table
-// this is for changes to the table made after the 0.20.0 release
-func GetConnectionStateTableColumnAlterSql() []db_common.QueryWithArgs {
-	queries := []db_common.QueryWithArgs{}
-	for columnName, columnType := range steampipeconfig.ConnectionStateTableAddedColumns {
-		queries = append(queries, db_common.QueryWithArgs{
-			Query: fmt.Sprintf(`ALTER TABLE %s.%s ADD COLUMN IF NOT EXISTS %s %s;`,
-				constants.InternalSchema,
-				constants.ConnectionStateTable,
-				columnName,
-				columnType,
-			),
-		})
-	}
-	return queries
 }
 
 // GetConnectionStateErrorSql returns the sql to set a connection to 'error'
@@ -114,65 +103,72 @@ WHERE
 	return db_common.QueryWithArgs{Query: query}
 }
 
-// GetUpdateConnectionStateSql returns the sql to update the connection state in the able with the current properties
-func GetUpdateConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
+// GetUpsertConnectionStateSql returns the sql to update the connection state in the able with the current properties
+func GetUpsertConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
 	// upsert
 	query := fmt.Sprintf(`INSERT INTO %s.%s (name, 
 		state,
 		type,
+ 		connections,
  		import_schema,
 		error,
 		plugin,
-		schema_mode,
-		schema_hash,
-		comments_set,
-		connection_mod_time,
-		plugin_mod_time,
-		connections)
-VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now(),$10, $11) 
-ON CONFLICT (name) 
-DO 
-   UPDATE SET 
-			  state = $2, 
- 			  type = $3,
-              import_schema = $4,		
- 		      error = $5,
-			  plugin = $6,
-			  schema_mode = $7,
-			  schema_hash = $8,
-			  comments_set = $9,
-			  connection_mod_time = now(),
-			  plugin_mod_time = $10,
-			  connections = $11
-`, constants.InternalSchema, constants.ConnectionStateTable)
-	args := []any{
-		c.ConnectionName,
-		c.State,
-		c.Type,
-		c.ImportSchema,
-		c.ConnectionError,
-		c.Plugin,
-		c.SchemaMode,
-		c.SchemaHash,
-		c.CommentsSet,
-		c.PluginModTime,
-		c.Connections}
-	return db_common.QueryWithArgs{Query: query, Args: args}
-}
-
-func GetNewConnectionStateTableInsertSql(c *modconfig.Connection) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`INSERT INTO %s.%s (name, 
-		state,
-		type,
- 		import_schema,
-		error,
-		plugin,
+		plugin_label,
 		schema_mode,
 		schema_hash,
 		comments_set,
 		connection_mod_time,
 		plugin_mod_time)
-VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now(),now()) 
+VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),$12) 
+ON CONFLICT (name) 
+DO 
+   UPDATE SET 
+			  state = $2, 
+ 			  type = $3,
+              connections = $4,
+       		  import_schema = $5,		
+ 		      error = $6,
+			  plugin = $7,
+			  plugin_label = $8,
+			  schema_mode = $9,
+			  schema_hash = $10,
+			  comments_set = $11,
+			  connection_mod_time = now(),
+			  plugin_mod_time = $12
+			  
+`, constants.InternalSchema, constants.ConnectionStateTable)
+	args := []any{
+		c.ConnectionName,
+		c.State,
+		c.Type,
+		c.Connections,
+		c.ImportSchema,
+		c.ConnectionError,
+		c.Plugin,
+		c.PluginLabel,
+		c.SchemaMode,
+		c.SchemaHash,
+		c.CommentsSet,
+		c.PluginModTime,
+	}
+	return db_common.QueryWithArgs{Query: query, Args: args}
+}
+
+func GetNewConnectionStateFromConnectionInsertSql(c *modconfig.Connection) db_common.QueryWithArgs {
+	query := fmt.Sprintf(`INSERT INTO %s.%s (name, 
+		state,
+		type,
+	    connections,
+ 		import_schema,
+		error,
+		plugin,
+		plugin_label,
+		schema_mode,
+		schema_hash,
+		comments_set,
+		connection_mod_time,
+		plugin_mod_time)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),now()) 
 `, constants.InternalSchema, constants.ConnectionStateTable)
 
 	schemaMode := ""
@@ -182,9 +178,11 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now(),now())
 		c.Name,
 		constants.ConnectionStatePendingIncomplete,
 		c.Type,
+		c.Connections,
 		c.ImportSchema,
 		nil,
 		c.Plugin,
+		c.PluginLabel,
 		schemaMode,
 		schemaHash,
 		commentsSet,
@@ -194,8 +192,8 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,now(),now())
 		Query: query,
 		Args:  args,
 	}
-
 }
+
 func GetSetConnectionStateSql(connectionName string, state string) db_common.QueryWithArgs {
 	query := fmt.Sprintf(`UPDATE %s.%s 
     SET	state = '%s', 

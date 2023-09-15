@@ -24,8 +24,9 @@ import (
 //
 // these columns are loaded optionally when loading up the connection state table
 // make sure these columns are NULLABLE
-var ConnectionStateTableAddedColumns map[string]string = map[string]string{
-	"connections": "TEXT[]",
+var ConnectionStateTableAddedColumns = map[string]string{
+	"connections":  "TEXT[]",
+	"plugin_label": "TEXT",
 }
 
 // LoadConnectionState populates a ConnectionStateMap from the connection_state table

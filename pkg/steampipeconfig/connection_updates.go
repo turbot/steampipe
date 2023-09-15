@@ -280,9 +280,9 @@ func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, 
 func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(dynamicSchemaHashMap map[string]string) {
 	// we only need to update connections which are being updated
 	for k, v := range u.FinalConnectionState {
-		if currentConectionState, ok := u.CurrentConnectionState[k]; ok {
-			v.SchemaHash = currentConectionState.SchemaHash
-			v.SchemaMode = currentConectionState.SchemaMode
+		if currentConnectionState, ok := u.CurrentConnectionState[k]; ok {
+			v.SchemaHash = currentConnectionState.SchemaHash
+			v.SchemaMode = currentConnectionState.SchemaMode
 		}
 		// if the schemaHashMap contains this connection, use that value
 		if schemaHash, ok := dynamicSchemaHashMap[k]; ok {

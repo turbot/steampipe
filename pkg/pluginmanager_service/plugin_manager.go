@@ -47,7 +47,7 @@ type PluginManager struct {
 	// map of connection configs, keyed by connection name
 	// this is populated at startup and updated when a connection config change is detected
 	connectionConfigMap connection.ConnectionConfigMap
-	// map of max cache size, keyed by plugin name
+	// map of max cache size, keyed by plugin label
 	pluginCacheSizeMap map[string]int64
 
 	// map lock
@@ -77,7 +77,6 @@ type PluginManager struct {
 }
 
 func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, pluginConfigs connection.PluginMap, logger hclog.Logger) (*PluginManager, error) {
-	time.Sleep(10 * time.Second)
 	log.Printf("[INFO] NewPluginManager")
 	pluginManager := &PluginManager{
 		logger:              logger,
@@ -124,7 +123,12 @@ func (m *PluginManager) Serve() {
 	})
 }
 
-func (m *PluginManager) Get(req *pb.GetRequest) (*pb.GetResponse, error) {
+func (m *PluginManager) Get(req *pb.GetRequest) (_ *pb.GetResponse, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = sperr.ToError(r, sperr.WithMessage("unexpected error encountered"))
+		}
+	}()
 	log.Printf("[TRACE] PluginManager Get %p", req)
 	defer log.Printf("[TRACE] PluginManager Get DONE %p", req)
 
@@ -177,12 +181,12 @@ func (m *PluginManager) buildRequiredPluginMap(req *pb.GetRequest) (map[string][
 		if err != nil {
 			return nil, nil, err
 		}
-		PluginLabel := connectionConfig.PluginLabel
-		// if we have not added this plugin, add it now
-		if _, addedPlugin := plugins[PluginLabel]; !addedPlugin {
+		pluginLabel := connectionConfig.PluginLabel
+		// if we have not added this plugin label, add it now
+		if _, addedPlugin := plugins[pluginLabel]; !addedPlugin {
 			// now get ALL connection configs for this plugin
 			// (not just the requested connections)
-			plugins[PluginLabel] = m.pluginConnectionConfigMap[PluginLabel]
+			plugins[pluginLabel] = m.pluginConnectionConfigMap[pluginLabel]
 		}
 	}
 	return plugins, requestedConnectionsLookup, nil
@@ -439,15 +443,17 @@ func (m *PluginManager) addRunningPlugin(pluginLabel string) (*runningPlugin, er
 func (m *PluginManager) startPluginProcess(pluginLabel string, connectionConfigs []*sdkproto.ConnectionConfig) (*plugin.Client, error) {
 	// retrieve the plugin config
 	pluginConfig := m.plugins[pluginLabel]
-	// must be there
+	// must be there (if no explicit config was specified, we create a default)
 	if pluginConfig == nil {
-		return nil, sperr.New("no plugin config is stored for plugin label %s", pluginLabel)
+		panic(fmt.Sprintf("no plugin config is stored for plugin label %s", pluginLabel))
 	}
 
 	imageRef := pluginConfig.GetImageRef()
 	log.Printf("[INFO] ************ start plugin: %s, label: %s ********************\n", imageRef, pluginConfig.Label)
 
-	pluginPath, err := filepaths.GetPluginPath(imageRef)
+	// NOTE: pass pluginConfig.Source as the pluginAlias
+	// - this is just used for the error message if we fail to load
+	pluginPath, err := filepaths.GetPluginPath(imageRef, pluginConfig.Source)
 	if err != nil {
 		return nil, err
 	}
@@ -605,27 +611,27 @@ func (m *PluginManager) setPluginCacheSizeMap() {
 	// read the env var setting cache size
 	maxCacheSizeMb, _ := strconv.Atoi(os.Getenv(constants.EnvCacheMaxSize))
 
-	// get total connection count for this plugin (excluding aggregators)
+	// get total connection count for this pluginLabel (excluding aggregators)
 	numConnections := m.nonAggregatorConnectionCount()
 
 	log.Printf("[TRACE] PluginManager setPluginCacheSizeMap: %d %s.", numConnections, utils.Pluralize("connection", numConnections))
 	log.Printf("[TRACE] Total cache size %dMb", maxCacheSizeMb)
 
-	for plugin, connections := range m.pluginConnectionConfigMap {
+	for pluginLabel, connections := range m.pluginConnectionConfigMap {
 		var size int64 = 0
 		// if no max size is set, just set all plugins to zero (unlimited)
 		if maxCacheSizeMb > 0 {
-			// get connection count for this plugin (excluding aggregators)
+			// get connection count for this pluginLabel (excluding aggregators)
 			numPluginConnections := nonAggregatorConnectionCount(connections)
 			size = int64(float64(numPluginConnections) / float64(numConnections) * float64(maxCacheSizeMb))
 			// make this at least 1 Mb (as zero means unlimited)
 			if size == 0 {
 				size = 1
 			}
-			log.Printf("[INFO] Plugin '%s', %d %s, max cache size %dMb", plugin, numPluginConnections, utils.Pluralize("connection", numPluginConnections), size)
+			log.Printf("[INFO] Plugin '%s', %d %s, max cache size %dMb", pluginLabel, numPluginConnections, utils.Pluralize("connection", numPluginConnections), size)
 		}
 
-		m.pluginCacheSizeMap[plugin] = size
+		m.pluginCacheSizeMap[pluginLabel] = size
 	}
 }
 
@@ -698,7 +704,7 @@ func (m *PluginManager) waitForPluginLoad(p *runningPlugin, req *pb.GetRequest) 
 func (m *PluginManager) setAllConnectionConfigs(connectionConfigs []*sdkproto.ConnectionConfig, pluginClient *sdkgrpc.PluginClient, supportedOperations *sdkproto.GetSupportedOperationsResponse) error {
 	// TODO does this fail all connections if one fails
 	exemplarConnectionConfig := connectionConfigs[0]
-	pluginName := exemplarConnectionConfig.Plugin
+	pluginLabel := exemplarConnectionConfig.PluginLabel
 
 	req := &sdkproto.SetAllConnectionConfigsRequest{
 		Configs: connectionConfigs,
@@ -708,7 +714,7 @@ func (m *PluginManager) setAllConnectionConfigs(connectionConfigs []*sdkproto.Co
 	// if plugin _does not_ support setting the cache options separately, pass the max size now
 	// (if it does support SetCacheOptions, it will be called after we return)
 	if !supportedOperations.SetCacheOptions {
-		req.MaxCacheSizeMb = m.pluginCacheSizeMap[pluginName]
+		req.MaxCacheSizeMb = m.pluginCacheSizeMap[pluginLabel]
 	}
 
 	_, err := pluginClient.SetAllConnectionConfigs(req)

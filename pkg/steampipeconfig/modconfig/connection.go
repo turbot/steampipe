@@ -29,12 +29,18 @@ var ValidImportSchemaValues = []string{ImportSchemaEnabled, ImportSchemaDisabled
 // This will be parsed by the plugin)
 // json tags needed as this is stored in the connection state file
 type Connection struct {
+	// TODO KAI verify we can remove omitempty
 	// connection name
 	Name string `json:"name,omitempty"`
-	// name of plugin as mentioned in config
+	// name of plugin as mentioned in config - this may be an alias to a plugin image ref
+	// OR the label of a plugin config
 	PluginAlias string `json:"plugin_short_name,omitempty"`
-	// fully qualified name of the plugin. derived from the short name
+	// image ref plugin.
+	// we resolve this after loading all plugin configs
 	Plugin string `json:"plugin,omitempty"`
+	// the label of the plugin config we are using
+	// (NOTE: if no
+	PluginLabel string `json:"plugin_label,omitempty"`
 
 	// connection type - supported values: "aggregator"
 	Type string `json:"type,omitempty"`
@@ -53,9 +59,8 @@ type Connection struct {
 	Config string `json:"config,omitempty"`
 
 	// options
-	Options      *options.Connection `json:"options,omitempty"`
-	DeclRange    Range               `json:"decl_range,omitempty"`
-	PluginConfig *Plugin
+	Options   *options.Connection `json:"options,omitempty"`
+	DeclRange Range               `json:"decl_range,omitempty"`
 }
 
 // Range represents a span of characters between two positions in a source file.

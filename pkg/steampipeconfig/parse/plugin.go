@@ -30,7 +30,6 @@ func DecodePlugin(block *hcl.Block) (*modconfig.Plugin, hcl.Diagnostics) {
 
 	// decode limiter blocks using 'content'
 	for _, block := range content.Blocks {
-		// TODO KAI ensure unique label check works (if name property used)
 		switch block.Type {
 		// only block defined in schema
 		case modconfig.BlockTypeRateLimiter:

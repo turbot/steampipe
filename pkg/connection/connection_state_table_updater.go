@@ -48,7 +48,7 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 			connectionState.ConnectionError = &validationError.Message
 		}
 		// get the sql to update the connection state in the table to match the struct
-		queries = append(queries, connection_state.GetUpdateConnectionStateSql(connectionState))
+		queries = append(queries, connection_state.GetUpsertConnectionStateSql(connectionState))
 	}
 	// set deletions to "deleting"
 	for name := range u.updates.Delete {

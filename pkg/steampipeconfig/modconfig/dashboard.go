@@ -179,7 +179,7 @@ func (d *Dashboard) Diff(other *Dashboard) *DashboardTreeItemDiffs {
 	}
 
 	if !utils.SafeStringsEqual(d.FullName, other.FullName) {
-		res.AddPropertyDiff("Label")
+		res.AddPropertyDiff("Name")
 	}
 
 	if !utils.SafeStringsEqual(d.Title, other.Title) {

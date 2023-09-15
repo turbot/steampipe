@@ -17,7 +17,10 @@ type Plugin struct {
 	imageRef        *ociinstaller.SteampipeImageRef
 }
 
-func PluginForConnection(connection *Connection) *Plugin {
+// NewDefaultPlugin creates a default plugin config struct for a connection
+// this is called when there is no explicit plugin config defined
+// for a plugin which is used by a connection
+func NewDefaultPlugin(connection *Connection) *Plugin {
 	imageRef := ociinstaller.NewSteampipeImageRef(connection.PluginAlias)
 	return &Plugin{
 		// NOTE: set label to image ref
@@ -32,6 +35,13 @@ func (l *Plugin) OnDecoded(block *hcl.Block) {
 	l.StartLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.Start.Line
 	l.EndLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.End.Line
 	l.imageRef = ociinstaller.NewSteampipeImageRef(l.Source)
+}
+
+// IsDefault returns whether this config was created as a default
+// i.e. a connection reference this plugin but there was no plugin config
+// in this case the Label will be the ImageRef
+func (l *Plugin) IsDefault() bool {
+	return l.Label == l.GetImageRef()
 }
 
 func (l *Plugin) GetMaxMemoryBytes() int64 {

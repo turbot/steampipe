@@ -14,23 +14,26 @@ import (
 // ConnectionState is a struct containing all details for a connection
 // - the plugin name and checksum, the connection config and options
 // json tags needed as this is stored in the connection state file
+// TODO KAI WHY THE omitempty
 type ConnectionState struct {
 	// the connection name
 	ConnectionName string `json:"connection,omitempty"  db:"name"`
 	// connection type (expected value: "aggregator")
 	Type *string `json:"type,omitempty"  db:"type"`
-	// should we create apostgres schema for the connection (expected values: "enable", "disable")
+	// should we create a postgres schema for the connection (expected values: "enable", "disable")
 	ImportSchema string `json:"import_schema"  db:"import_schema"`
 	// the fully qualified name of the plugin
-	Plugin string `json:"plugin,omitempty"  db:"plugin"`
+	Plugin string `json:"plugin"  db:"plugin"`
+	// the config label of the plugin
+	PluginLabel *string `json:"plugin_label,omitempty" db:"plugin_label"`
 	// the connection state (pending, updating, deleting, error, ready)
-	State string `json:"state,omitempty"  db:"state"`
+	State string `json:"state"  db:"state"`
 	// error (if there is one - make a pointer to support null)
 	ConnectionError *string `json:"error,omitempty" db:"error"`
 	// schema mode - static or dynamic
-	SchemaMode string `json:"schema_mode,omitempty" db:"schema_mode"`
+	SchemaMode string `json:"schema_mode" db:"schema_mode"`
 	// the hash of the connection schema - this is used to determine if a dynamic schema has changed
-	SchemaHash string `json:"schema_hash,omitempty" db:"schema_hash"`
+	SchemaHash string `json:"schema_hash" db:"schema_hash"`
 	// are the comments set
 	CommentsSet bool `json:"comments_set" db:"comments_set"`
 	// the creation time of the plugin file
@@ -41,9 +44,9 @@ type ConnectionState struct {
 	Connections []string `json:"connections" db:"connections"`
 }
 
-func NewConnectionState(remoteSchema string, connection *modconfig.Connection, creationTime time.Time) *ConnectionState {
-	return &ConnectionState{
-		Plugin:         remoteSchema,
+func NewConnectionState(connection *modconfig.Connection, creationTime time.Time) *ConnectionState {
+	state := &ConnectionState{
+		Plugin:         connection.Plugin,
 		ConnectionName: connection.Name,
 		PluginModTime:  creationTime,
 		State:          constants.ConnectionStateReady,
@@ -51,6 +54,11 @@ func NewConnectionState(remoteSchema string, connection *modconfig.Connection, c
 		ImportSchema:   connection.ImportSchema,
 		Connections:    connection.ConnectionNames,
 	}
+	// only set label if it is not a default (oi.e. the label is the same as the plugin)
+	if connection.PluginLabel != connection.Plugin {
+		state.PluginLabel = &connection.PluginLabel
+	}
+	return state
 }
 
 func (d *ConnectionState) Equals(other *ConnectionState) bool {

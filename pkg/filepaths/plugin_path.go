@@ -10,7 +10,7 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-func GetPluginPath(pluginImageRef string) (string, error) {
+func GetPluginPath(pluginImageRef, pluginAlias string) (string, error) {
 	// the fully qualified name of the plugin is the relative path of the folder containing the plugin
 	// calculate absolute folder path
 	pluginFolder := filepath.Join(EnsurePluginDir(), pluginImageRef)
@@ -22,7 +22,7 @@ func GetPluginPath(pluginImageRef string) (string, error) {
 		if pluginFolder, err = FindPluginFolder(pluginImageRef); err != nil {
 			return "", err
 		} else if pluginFolder == "" {
-			return "", fmt.Errorf("no plugin installed matching %s", pluginImageRef)
+			return "", fmt.Errorf("no plugin installed matching %s", pluginAlias)
 		}
 	}
 
@@ -31,7 +31,7 @@ func GetPluginPath(pluginImageRef string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to load plugin %s: %v", pluginImageRef, err)
 	}
-	matches := []string{}
+	var matches []string
 	for _, entry := range entries {
 		if filepath.Ext(entry.Name()) == constants.PluginExtension {
 			matches = append(matches, entry.Name())

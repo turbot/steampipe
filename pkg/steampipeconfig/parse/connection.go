@@ -26,6 +26,13 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 		return nil, diags
 	}
 
+	// TODO KAI verifiy we can remove this
+	//if strings.HasPrefix(pluginName, "local/") {
+	//	connection.Plugin = pluginName
+	//} else {
+	//	connection.Plugin = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
+	//}
+
 	// NOTE: plugin property is set in initializePluginss
 	connection.PluginAlias = pluginName
 
