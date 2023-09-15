@@ -367,16 +367,37 @@ func (c *SteampipeConfig) initializePlugins() map[string]error {
 }
 
 func (c *SteampipeConfig) resolvePluginForConnection(connection *modconfig.Connection) (*modconfig.Plugin, error) {
+
+	//if strings.HasPrefix(pluginName, "local/") {
+	//	connection.Plugin = pluginName
+	//}
+
+	// NOTE: at this point, c.Plugin is NOT populated, only either c.PluginAlias or c.PluginLabel
+	// we populate c.Plugin AFTER resolving the plugin
+
 	/* resolution steps:
-		1) is there a plugin config with a label which matches the connection 'plugin' field
-	 	2) have we already created a default plugin config for this plugin
-		3) is there a SINGLE plugin config for the image ref resolved from the connection 'plugin' field
+		1) if PluginLabel is already set, the connection must have a HCL reference to a plugin block
+	 		- just validate the block exists
+		2) handle local???
+		3) is there a plugin config with a label which matches the connection 'plugin' field
+	 	4) have we already created a default plugin config for this plugin
+		5) is there a SINGLE plugin config for the image ref resolved from the connection 'plugin' field
 	       NOTE: if there is more than one config for the plugin this is an error
-		4) create an default config for the plugin (with the label set to the image ref)
+		6) create a default config for the plugin (with the label set to the image ref)
 	*/
 
-	// NOTE: at this point, c.Plugin is NOT populated, only c.PluginAlias
-	// we populate c.Plugin AFTER resolving the plugin
+	// if PluginLabel is already set, the connection must have a HCL reference to a plugin block
+	// find the block
+	if connection.PluginLabel != "" {
+		p := c.PluginsByLabel[connection.PluginLabel]
+		if p == nil {
+			// TODO should this return diagnostics?? Or at least include range in error
+			return nil, fmt.Errorf("connection %s refers to plugin.%s but this does not exist", connection.Name, connection.PluginLabel)
+		}
+		return p, nil
+	}
+
+	// TODO handle local???
 
 	// does this connection 'plugin' field refer to the label of a plugin config block
 	if p := c.PluginsByLabel[connection.PluginAlias]; p != nil {

@@ -8,7 +8,12 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/zclconf/go-cty/cty"
+	"golang.org/x/exp/maps"
+	"log"
+	"strings"
 )
 
 func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics) {
@@ -17,24 +22,14 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 		return nil, diags
 	}
 
-	// get connection name
 	connection := modconfig.NewConnection(block)
 
-	var pluginName string
-	diags = gohcl.DecodeExpression(connectionContent.Attributes["plugin"].Expr, nil, &pluginName)
+	// decode the plugin property
+	// NOTRE: this mutates connection to set either PluginAlias or PluginLabel
+	diags = decodeConnectionPluginProperty(connectionContent, connection)
 	if diags.HasErrors() {
 		return nil, diags
 	}
-
-	// TODO KAI verifiy we can remove this
-	//if strings.HasPrefix(pluginName, "local/") {
-	//	connection.Plugin = pluginName
-	//} else {
-	//	connection.Plugin = ociinstaller.NewSteampipeImageRef(pluginName).DisplayImageRef()
-	//}
-
-	// NOTE: plugin property is set in initializePluginss
-	connection.PluginAlias = pluginName
 
 	if connectionContent.Attributes["type"] != nil {
 		var connectionType string
@@ -103,6 +98,57 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 	}
 
 	return connection, diags
+}
+
+func decodeConnectionPluginProperty(connectionContent *hcl.BodyContent, connection *modconfig.Connection) hcl.Diagnostics {
+
+	var pluginName string
+	evalCtx := &hcl.EvalContext{Variables: make(map[string]cty.Value)}
+
+	diags := gohcl.DecodeExpression(connectionContent.Attributes["plugin"].Expr, evalCtx, &pluginName)
+	res := newDecodeResult()
+	res.handleDecodeDiags(diags)
+	if res.Diags.HasErrors() {
+		return res.Diags
+	}
+	if len(res.Depends) > 0 {
+		log.Printf("[INFO] decodeConnectionPluginProperty plugin property is HCL reference")
+		// if this is a plugin reference, extract the plugin label
+		pluginLabel, ok := getPluginFromDependency(maps.Values(res.Depends))
+		if !ok {
+			log.Printf("[INFO] failed to resolve plugin property")
+			// return the original diagnostics
+			return diags
+		}
+
+		// so we have resolved a reference to a plugin config
+		// we will validate that this block exists later in initializePlugins
+		// set both alias AND label properties
+		// (the label property being set means that we will raise the correct error if we fail to resolve the plugin block)
+		connection.PluginAlias = pluginLabel
+		connection.PluginLabel = pluginLabel
+		return nil
+	}
+
+	// NOTE: plugin property is set in initializePlugins
+	connection.PluginAlias = pluginName
+
+	return nil
+}
+
+func getPluginFromDependency(dependencies []*modconfig.ResourceDependency) (string, bool) {
+	if len(dependencies) != 1 {
+		return "", false
+	}
+	if len(dependencies[0].Traversals) != 1 {
+		return "", false
+	}
+	traversalString := hclhelpers.TraversalAsString(dependencies[0].Traversals[0])
+	split := strings.Split(traversalString, ".")
+	if len(split) != 2 || split[0] != "plugin" {
+		return "", false
+	}
+	return split[1], true
 }
 
 // build a hcl string with all attributes in the conneciton config which are NOT specified in the coneciton block schema
