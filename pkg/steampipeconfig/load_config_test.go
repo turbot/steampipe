@@ -1,6 +1,7 @@
 package steampipeconfig
 
 import (
+	"golang.org/x/exp/maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -11,6 +12,8 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
+
+// TODO KAI add plugin block tests
 
 type loadConfigTest struct {
 	steampipeDir string
@@ -42,7 +45,7 @@ var workspaceSearchPath = "bar,aws,gcp"
 var workspaceSearchPathPrefix = "foobar"
 
 var testCasesLoadConfig = map[string]loadConfigTest{
-	"multiple_connections": { // fixed
+	"multiple_connections": {
 		steampipeDir: "testdata/connection_config/multiple_connections",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
@@ -50,6 +53,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Name:         "aws_dmi_001",
 					PluginAlias:  "aws",
 					Plugin:       "hub.steampipe.io/plugins/turbot/aws@latest",
+					PluginLabel:  "hub.steampipe.io/plugins/turbot/aws@latest",
 					Type:         "",
 					ImportSchema: "enabled",
 					Config:       "access_key = \"aws_dmi_001_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_001_secret_key\"\n",
@@ -71,6 +75,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Name:         "aws_dmi_002",
 					PluginAlias:  "aws",
 					Plugin:       "hub.steampipe.io/plugins/turbot/aws@latest",
+					PluginLabel:  "hub.steampipe.io/plugins/turbot/aws@latest",
 					Type:         "",
 					ImportSchema: "enabled",
 					Config:       "access_key = \"aws_dmi_002_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_002_secret_key\"\n",
@@ -95,7 +100,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 			},
 		},
 	},
-	"single_connection": { // fixed
+	"single_connection": {
 		steampipeDir: "testdata/connection_config/single_connection",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
@@ -103,6 +108,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Name:         "a",
 					PluginAlias:  "test_data/connection-test-1",
 					Plugin:       "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginLabel:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 					Type:         "",
 					ImportSchema: "enabled",
 					Config:       "",
@@ -135,6 +141,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Name:         "a",
 					PluginAlias:  "test_data/connection-test-1",
 					Plugin:       "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginLabel:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 					Type:         "",
 					ImportSchema: "enabled",
 					Config:       "",
@@ -181,6 +188,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Name:         "a",
 					PluginAlias:  "test_data/connection-test-1",
 					Plugin:       "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginLabel:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 					Type:         "",
 					ImportSchema: "enabled",
 					Config:       "",
@@ -222,6 +230,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Name:         "a",
 					PluginAlias:  "test_data/connection-test-1",
 					Plugin:       "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginLabel:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 					Type:         "",
 					ImportSchema: "enabled",
 					Config:       "",
@@ -263,6 +272,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					ImportSchema: "enabled",
 					PluginAlias:  "test_data/connection-test-1",
 					Plugin:       "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginLabel:  "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
 					Config:       "",
 					Options: &options.Connection{
 						Cache:    &trueVal,
@@ -377,12 +387,21 @@ func SteampipeConfigEquals(left, right *SteampipeConfig) bool {
 		return left == nil && right == nil
 	}
 
-	if !reflect.DeepEqual(left.Connections, right.Connections) {
+	if !maps.EqualFunc(left.Connections, right.Connections,
+		func(c1, c2 *modconfig.Connection) bool { return c1.Equals(c2) }) {
 		return false
 	}
-
-	return reflect.DeepEqual(left.DefaultConnectionOptions, right.DefaultConnectionOptions) &&
-		reflect.DeepEqual(left.DatabaseOptions, right.DatabaseOptions) &&
-		reflect.DeepEqual(left.TerminalOptions, right.TerminalOptions) &&
-		reflect.DeepEqual(left.GeneralOptions, right.GeneralOptions)
+	if !reflect.DeepEqual(left.DefaultConnectionOptions, right.DefaultConnectionOptions) {
+		return false
+	}
+	if !reflect.DeepEqual(left.DatabaseOptions, right.DatabaseOptions) {
+		return false
+	}
+	if !reflect.DeepEqual(left.TerminalOptions, right.TerminalOptions) {
+		return false
+	}
+	if !reflect.DeepEqual(left.GeneralOptions, right.GeneralOptions) {
+		return false
+	}
+	return true
 }
