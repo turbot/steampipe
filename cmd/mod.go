@@ -331,7 +331,6 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 		exitCode = constants.ExitCodeModInitFailed
 		error_helpers.FailOnError(err)
 	}
-	fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
 }
 
 // helpers
@@ -344,9 +343,14 @@ func createWorkspaceMod(ctx context.Context, cmd *cobra.Command, workspacePath s
 		fmt.Println("Working folder already contains a mod definition file")
 		return nil, nil
 	}
+	// write mod definition file
 	mod := modconfig.CreateDefaultMod(workspacePath)
 	if err := mod.Save(); err != nil {
 		return nil, err
+	}
+	// only print message for mod init (not for mod install)
+	if cmd.Name() == "init" {
+		fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
 	}
 
 	// load up the written mod file so that we get the updated

@@ -73,7 +73,7 @@ func ParseModDefinition(modPath string, evalCtx *hcl.EvalContext) (*modconfig.Mo
 	if block == nil {
 		res.Diags = append(res.Diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("no mod definition found in %s", modPath),
+			Summary:  fmt.Sprintf("failed to parse mod definition file: no mod definition found in %s", fmt.Sprintf("%s/mod.sp", modPath)),
 		})
 		return nil, res
 	}
