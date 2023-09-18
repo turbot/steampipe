@@ -463,10 +463,11 @@ func runServiceStatusCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
-	if !db_local.IsInstalled() {
+	if !db_local.IsDBInstalled() || !db_local.IsFDWInstalled() {
 		fmt.Println("Steampipe service is not installed.")
 		return
 	}
+
 	if viper.GetBool(constants.ArgAll) {
 		showAllStatus(cmd.Context())
 	} else {

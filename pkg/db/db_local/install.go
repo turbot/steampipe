@@ -35,7 +35,7 @@ If you need to restore the contents of your public schema, please open an issue 
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
 
-// EnsureDBInstalled makes sure that the embedded pg database is installed and running
+// EnsureDBInstalled makes sure that the embedded postgres database is installed and ready to run
 func EnsureDBInstalled(ctx context.Context) (err error) {
 	utils.LogTime("db_local.EnsureDBInstalled start")
 
@@ -52,8 +52,8 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		close(doneChan)
 	}()
 
-	if IsInstalled() {
-		// check if the FDW need updating, and init the db id required
+	if IsDBInstalled() {
+		// check if the FDW need updating, and init the db if required
 		err := prepareDb(ctx)
 		return err
 	}
@@ -65,7 +65,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return err
 	}
 	if dbState != nil {
-		return fmt.Errorf("cannot install db - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
+		return fmt.Errorf("cannot install service - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
 	}
 
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
@@ -140,35 +140,32 @@ func downloadAndInstallDbFiles(ctx context.Context) error {
 	return nil
 }
 
-// IsInstalled checks and reports whether the embedded database is installed and setup
-func IsInstalled() bool {
+// IsDBInstalled checks and reports whether the embedded database binaries are available
+func IsDBInstalled() bool {
 	utils.LogTime("db_local.IsInstalled start")
 	defer utils.LogTime("db_local.IsInstalled end")
-
 	// check that both postgres binary and initdb binary exist
-	// and are executable by us
-
 	if _, err := os.Stat(filepaths.GetInitDbBinaryExecutablePath()); os.IsNotExist(err) {
 		return false
 	}
-
 	if _, err := os.Stat(filepaths.GetPostgresBinaryExecutablePath()); os.IsNotExist(err) {
 		return false
 	}
+	return true
+}
 
-	if _, err := os.Stat(filepaths.GetFDWBinaryLocation()); os.IsNotExist(err) {
-		return false
-	}
-
+// IsFDWInstalled chceks whether all files required for the Steampipe FDW are available
+func IsFDWInstalled() bool {
 	fdwSQLFile, fdwControlFile := filepaths.GetFDWSQLAndControlLocation()
-
 	if _, err := os.Stat(fdwSQLFile); os.IsNotExist(err) {
 		return false
 	}
 	if _, err := os.Stat(fdwControlFile); os.IsNotExist(err) {
 		return false
 	}
-
+	if _, err := os.Stat(filepaths.GetFDWBinaryLocation()); os.IsNotExist(err) {
+		return false
+	}
 	return true
 }
 
@@ -199,13 +196,11 @@ func prepareDb(ctx context.Context) error {
 			log.Printf("[TRACE] updateDownloadedBinarySignature failed: %v", err)
 			return fmt.Errorf("Updating install records... FAILED!")
 		}
+	}
 
+	// if the FDW is not installed, or needs an update
+	if !IsFDWInstalled() || fdwNeedsUpdate(versionInfo) {
 		// install fdw
-		if _, err := installFDW(ctx, false); err != nil {
-			log.Printf("[TRACE] installFDW failed: %v", err)
-			return fmt.Errorf("Update steampipe-postgres-fdw... FAILED!")
-		}
-	} else if fdwNeedsUpdate(versionInfo) {
 		if _, err := installFDW(ctx, false); err != nil {
 			log.Printf("[TRACE] installFDW failed: %v", err)
 			return fmt.Errorf("Update steampipe-postgres-fdw... FAILED!")
