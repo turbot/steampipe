@@ -284,7 +284,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 
   # Extract listen from the state file
-  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c '.listen | index("'$IPV4_ADDR'")')
+  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c '.resolved_listen | index("'$IPV4_ADDR'")')
   echo $listen
 
   assert_not_equal "$listen" "null"
@@ -325,7 +325,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 
   # Extract listen from the state file
-  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c '.listen | index("'$IPV4_ADDR'")')
+  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c '.resolved_listen | index("'$IPV4_ADDR'")')
   echo $listen
 
   assert_not_equal "$listen" "null"
@@ -392,7 +392,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 
   # Extract listen from the state file
-  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c '.listen | index("'$IPV4_ADDR'")')
+  listen=$(cat $STEAMPIPE_INSTALL_DIR/internal/steampipe.json | jq -c '.resolved_listen | index("'$IPV4_ADDR'")')
   echo $listen
 
   assert_not_equal "$listen" "null"
