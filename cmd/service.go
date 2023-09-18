@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
@@ -206,7 +207,7 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 	}
 
 	if startResult.Status == db_local.ServiceFailedToStart {
-		error_helpers.ShowError(ctx, fmt.Errorf("steampipe service failed to start"))
+		error_helpers.ShowError(ctx, sperr.New("steampipe service failed to start"))
 		exitCode = constants.ExitCodeServiceStartupFailure
 		return
 	}
@@ -216,11 +217,11 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 		// check that we have the same port and listen parameters
 		if port != startResult.DbState.Port {
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
-			error_helpers.FailOnError(fmt.Errorf("service is already running on port %d - cannot change port while it's running", startResult.DbState.Port))
+			error_helpers.FailOnError(sperr.New("service is already running on port %d - cannot change port while it's running", startResult.DbState.Port))
 		}
 		if !startResult.DbState.MatchGivenListenAddresses(listenAddresses) {
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
-			error_helpers.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen address while it's running", strings.Join(startResult.DbState.ResolvedListenAddresses, ", ")))
+			error_helpers.FailOnError(sperr.New("service is already running and listening on %s - cannot change listen address while it's running", strings.Join(startResult.DbState.ResolvedListenAddresses, ", ")))
 		}
 
 		// convert to being invoked by service
@@ -765,7 +766,7 @@ To keep the service running after the %s session completes, use %s.
 		// the service is running, but the plugin_manager is not running and there's no state file
 		// meaning that it cannot be restarted by the FDW
 		// it's an ERROR
-		error_helpers.ShowError(ctx, fmt.Errorf(`
+		error_helpers.ShowError(ctx, sperr.New(`
 Service is running, but the Plugin Manager cannot be recovered.
 Please use %s to recover the service
 `,
