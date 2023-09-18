@@ -218,9 +218,9 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
 			error_helpers.FailOnError(fmt.Errorf("service is already running on port %d - cannot change port while it's running", startResult.DbState.Port))
 		}
-		if !utils.StringSlicesEqual(listenAddresses, startResult.DbState.ListenAddresses) {
+		if !startResult.DbState.MatchGivenListenAddresses(listenAddresses) {
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
-			error_helpers.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen address while it's running", strings.Join(startResult.DbState.ListenAddresses, ", ")))
+			error_helpers.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen address while it's running", strings.Join(startResult.DbState.ResolvedListenAddresses, ", ")))
 		}
 
 		// convert to being invoked by service
@@ -431,7 +431,7 @@ to force a restart.
 	viper.Set(constants.ArgServicePassword, currentDbState.Password)
 
 	// start db
-	dbStartResult := db_local.StartServices(ctx, currentDbState.ListenAddresses, currentDbState.Port, currentDbState.Invoker)
+	dbStartResult := db_local.StartServices(ctx, currentDbState.ResolvedListenAddresses, currentDbState.Port, currentDbState.Invoker)
 	error_helpers.FailOnError(dbStartResult.Error)
 	if dbStartResult.Status == db_local.ServiceFailedToStart {
 		exitCode = constants.ExitCodeServiceStartupFailure
@@ -687,7 +687,7 @@ Managing the Steampipe service:
 			"postgres://%v:%v@%v:%v/%v",
 			dbState.User,
 			dbState.Password,
-			utils.GetFirstListenAddress(dbState.ListenAddresses),
+			utils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
 			dbState.Port,
 			dbState.Database,
 		)
@@ -696,7 +696,7 @@ Managing the Steampipe service:
 		connectionStr = fmt.Sprintf(
 			"postgres://%v@%v:%v/%v",
 			dbState.User,
-			utils.GetFirstListenAddress(dbState.ListenAddresses),
+			utils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
 			dbState.Port,
 			dbState.Database,
 		)
@@ -715,7 +715,7 @@ Database:
 `
 	postgresMsg := fmt.Sprintf(
 		postgresFmt,
-		strings.Join(dbState.ListenAddresses, ", "),
+		strings.Join(dbState.ResolvedListenAddresses, ", "),
 		dbState.Port,
 		dbState.Database,
 		dbState.User,
