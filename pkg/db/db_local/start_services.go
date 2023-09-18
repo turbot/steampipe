@@ -129,7 +129,10 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 
 		// ask the plugin manager to refresh connections
 		// this is executed asyncronously by the plugin manager
-		pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
+		// we ignore this error, since RefreshConnections is async and all errors will flow through
+		// the notification system
+		// we do not expect any I/O errors on this since the PluginManager is running in the same box
+		_, _ = pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
 
 		statushooks.SetStatus(ctx, "Service startup complete")
 
