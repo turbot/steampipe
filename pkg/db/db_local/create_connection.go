@@ -49,7 +49,7 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 	}
 
 	psqlInfoMap := map[string]string{
-		"host":   utils.GetFirstListenAddress(info.ListenAddresses),
+		"host":   utils.GetFirstListenAddress(info.ResolvedListenAddresses),
 		"port":   fmt.Sprintf("%d", info.Port),
 		"user":   opts.Username,
 		"dbname": opts.DatabaseName,

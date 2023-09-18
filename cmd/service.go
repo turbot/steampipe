@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
@@ -206,7 +207,7 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 	}
 
 	if startResult.Status == db_local.ServiceFailedToStart {
-		error_helpers.ShowError(ctx, fmt.Errorf("steampipe service failed to start"))
+		error_helpers.ShowError(ctx, sperr.New("steampipe service failed to start"))
 		exitCode = constants.ExitCodeServiceStartupFailure
 		return
 	}
@@ -216,11 +217,13 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 		// check that we have the same port and listen parameters
 		if port != startResult.DbState.Port {
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
-			error_helpers.FailOnError(fmt.Errorf("service is already running on port %d - cannot change port while it's running", startResult.DbState.Port))
+			error_helpers.FailOnError(sperr.New("service is already running on port %d - cannot change port while it's running", startResult.DbState.Port))
 		}
-		if !utils.StringSlicesEqual(listenAddresses, startResult.DbState.ListenAddresses) {
+		if !startResult.DbState.MatchWithGivenListenAddresses(listenAddresses) {
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
-			error_helpers.FailOnError(fmt.Errorf("service is already running and listening on %s - cannot change listen address while it's running", strings.Join(startResult.DbState.ListenAddresses, ", ")))
+			// this messaging assumes that the resolved addresses from the given addresses have not changed while the service is running
+			// although this is an edge case, ideally, we should check for the resolved addresses and give the relevant message
+			error_helpers.FailOnError(sperr.New("service is already running and listening on %s - cannot change listen address while it's running", strings.Join(startResult.DbState.ResolvedListenAddresses, ", ")))
 		}
 
 		// convert to being invoked by service
@@ -431,7 +434,7 @@ to force a restart.
 	viper.Set(constants.ArgServicePassword, currentDbState.Password)
 
 	// start db
-	dbStartResult := db_local.StartServices(ctx, currentDbState.ListenAddresses, currentDbState.Port, currentDbState.Invoker)
+	dbStartResult := db_local.StartServices(ctx, currentDbState.ResolvedListenAddresses, currentDbState.Port, currentDbState.Invoker)
 	error_helpers.FailOnError(dbStartResult.Error)
 	if dbStartResult.Status == db_local.ServiceFailedToStart {
 		exitCode = constants.ExitCodeServiceStartupFailure
@@ -687,7 +690,7 @@ Managing the Steampipe service:
 			"postgres://%v:%v@%v:%v/%v",
 			dbState.User,
 			dbState.Password,
-			utils.GetFirstListenAddress(dbState.ListenAddresses),
+			utils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
 			dbState.Port,
 			dbState.Database,
 		)
@@ -696,7 +699,7 @@ Managing the Steampipe service:
 		connectionStr = fmt.Sprintf(
 			"postgres://%v@%v:%v/%v",
 			dbState.User,
-			utils.GetFirstListenAddress(dbState.ListenAddresses),
+			utils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
 			dbState.Port,
 			dbState.Database,
 		)
@@ -715,7 +718,7 @@ Database:
 `
 	postgresMsg := fmt.Sprintf(
 		postgresFmt,
-		strings.Join(dbState.ListenAddresses, ", "),
+		strings.Join(dbState.ResolvedListenAddresses, ", "),
 		dbState.Port,
 		dbState.Database,
 		dbState.User,
@@ -765,7 +768,7 @@ To keep the service running after the %s session completes, use %s.
 		// the service is running, but the plugin_manager is not running and there's no state file
 		// meaning that it cannot be restarted by the FDW
 		// it's an ERROR
-		error_helpers.ShowError(ctx, fmt.Errorf(`
+		error_helpers.ShowError(ctx, sperr.New(`
 Service is running, but the Plugin Manager cannot be recovered.
 Please use %s to recover the service
 `,
