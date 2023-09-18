@@ -221,6 +221,8 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 		}
 		if !startResult.DbState.MatchGivenListenAddresses(listenAddresses) {
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
+			// this messaging assumes that the resolved addresses from the given addresses have not changed while the service is running
+			// although this is an edge case, ideally, we should check for the resolved addresses and give the relevant message
 			error_helpers.FailOnError(sperr.New("service is already running and listening on %s - cannot change listen address while it's running", strings.Join(startResult.DbState.ResolvedListenAddresses, ", ")))
 		}
 
