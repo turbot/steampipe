@@ -13,8 +13,8 @@ import (
 	"github.com/hashicorp/hcl/v2/json"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"sigs.k8s.io/yaml"
 )
 
@@ -127,13 +127,14 @@ func parseYamlFile(filename string) (*hcl.File, hcl.Diagnostics) {
 	return json.Parse(jsonData, filename)
 }
 
-func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclResources map[string]bool, mod *modconfig.Mod) {
-	var duplicates []string
+func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclResources map[string]bool, mod *modconfig.Mod) *error_helpers.ErrorAndWarnings {
+	res := error_helpers.EmptyErrorsAndWarning()
 	for _, r := range pseudoResources {
 		// is there a hcl resource with the same name as this pseudo resource - it takes precedence
 		name := r.GetUnqualifiedName()
 		if _, ok := hclResources[name]; ok {
-			duplicates = append(duplicates, r.GetDeclRange().Filename)
+			res.AddWarning(fmt.Sprintf("%s ignored as hcl resources of same name is already defined", r.GetDeclRange().Filename))
+			log.Printf("[TRACE] %s ignored as hcl resources of same name is already defined", r.GetDeclRange().Filename)
 			continue
 		}
 		// add pseudo resource to mod
@@ -141,10 +142,7 @@ func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclRe
 		// add to map of existing resources
 		hclResources[name] = true
 	}
-	numDupes := len(duplicates)
-	if numDupes > 0 {
-		log.Printf("[TRACE] %d %s  not converted into resources as hcl resources of same name are defined: %v", numDupes, utils.Pluralize("file", numDupes), duplicates)
-	}
+	return res
 }
 
 // get names of all resources defined in hcl which may also be created as pseudo resources
