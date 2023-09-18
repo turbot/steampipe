@@ -101,6 +101,14 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 		}
 	} else {
 		res.Status = ServiceAlreadyRunning
+
+		// if the service is already running, also load the state of the plugin manager
+		pmState, err := pluginmanager.LoadState()
+		if err != nil {
+			res.Error = err
+			return res
+		}
+		res.PluginManagerState = pmState
 	}
 
 	if res.Status == ServiceStarted {
