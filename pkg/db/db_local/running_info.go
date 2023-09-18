@@ -90,6 +90,26 @@ func getListenAddresses(listenAddresses []string) []string {
 	return addresses
 }
 
+func (r *RunningDBInstanceInfo) MatchGivenListenAddresses(listenAddresses []string) bool {
+	return r.matchListenAddresses(r.GivenListenAddresses, listenAddresses)
+}
+
+func (r *RunningDBInstanceInfo) MatchResolvedListenAddresses(listenAddresses []string) bool {
+	return r.matchListenAddresses(r.ResolvedListenAddresses, listenAddresses)
+}
+
+func (r *RunningDBInstanceInfo) matchListenAddresses(inStruct []string, listenAddresses []string) bool {
+	// make a clone of the slices - we don't want to modify the original data
+	left := slices.Clone(r.GivenListenAddresses)
+	right := slices.Clone(listenAddresses)
+
+	// sort both of them
+	slices.Sort(left)
+	slices.Sort(right)
+
+	return slices.Equal(left, right)
+}
+
 func (r *RunningDBInstanceInfo) Save() error {
 	// set struct version
 	r.StructVersion = RunningDBStructVersion
