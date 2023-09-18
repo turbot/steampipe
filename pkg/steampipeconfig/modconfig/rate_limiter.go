@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	LimiterSourceConfig    = "config"
-	LimiterSourcePlugin    = "plugin"
-	LimiterStatusActive    = "active"
-	LimiterStatusOverriden = "overridden"
+	LimiterSourceConfig     = "config"
+	LimiterSourcePlugin     = "plugin"
+	LimiterStatusActive     = "active"
+	LimiterStatusOverridden = "overridden"
 )
 
 type RateLimiter struct {
@@ -24,17 +24,17 @@ type RateLimiter struct {
 	Scope           []string                        `hcl:"scope,optional" db:"scope"`
 	Where           *string                         `hcl:"where,optional" db:"where"`
 	Plugin          string                          `db:"plugin"`
-	PluginLabel     *string                         `db:"plugin_label"`
-	FileName        *string                         `db:"file_name"`
-	StartLineNumber *int                            `db:"start_line_number"`
-	EndLineNumber   *int                            `db:"end_line_number"`
+	PluginInstance  *string                         `db:"plugin_instance"`
+	FileName        *string                         `db:"file_name" json:"-"`
+	StartLineNumber *int                            `db:"start_line_number"  json:"-"`
+	EndLineNumber   *int                            `db:"end_line_number"  json:"-"`
 	Status          string                          `db:"status"`
 	Source          string                          `db:"source"`
 	ImageRef        *ociinstaller.SteampipeImageRef `db:"-"`
 }
 
 // RateLimiterFromProto converts the proto format RateLimiterDefinition into a Defintion
-func RateLimiterFromProto(p *proto.RateLimiterDefinition, pluginImageRef, pluginLabel string) (*RateLimiter, error) {
+func RateLimiterFromProto(p *proto.RateLimiterDefinition, pluginImageRef, pluginInstance string) (*RateLimiter, error) {
 	var res = &RateLimiter{
 		Name:  p.Name,
 		Scope: p.Scope,
@@ -53,11 +53,8 @@ func RateLimiterFromProto(p *proto.RateLimiterDefinition, pluginImageRef, plugin
 		res.Scope = []string{}
 	}
 	res.ImageRef = ociinstaller.NewSteampipeImageRef(pluginImageRef)
-	res.Plugin = res.ImageRef.GetFriendlyName()
-	// if the label is the same as the image ref, this plugin has no explicit config so do not set the label
-	if pluginLabel != pluginImageRef {
-		res.PluginLabel = &pluginLabel
-	}
+	res.Plugin = res.ImageRef.DisplayImageRef()
+	res.PluginInstance = &pluginInstance
 	return res, nil
 }
 

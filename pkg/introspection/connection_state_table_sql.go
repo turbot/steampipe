@@ -1,4 +1,4 @@
-package connection_state
+package introspection
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
 	import_schema TEXT NOT NULL,
 	error TEXT NULL,
 	plugin TEXT NOT NULL,
-	plugin_label TEXT NULL,
+	plugin_instance TEXT NOT NULL,
 	schema_mode TEXT NOT NULL,
 	schema_hash TEXT NULL,
 	comments_set BOOL DEFAULT FALSE,
@@ -113,7 +113,7 @@ func GetUpsertConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.Q
  		import_schema,
 		error,
 		plugin,
-		plugin_label,
+		plugin_instance,
 		schema_mode,
 		schema_hash,
 		comments_set,
@@ -129,7 +129,7 @@ DO
        		  import_schema = $5,		
  		      error = $6,
 			  plugin = $7,
-			  plugin_label = $8,
+			  plugin_instance = $8,
 			  schema_mode = $9,
 			  schema_hash = $10,
 			  comments_set = $11,
@@ -162,7 +162,7 @@ func GetNewConnectionStateFromConnectionInsertSql(c *modconfig.Connection) db_co
  		import_schema,
 		error,
 		plugin,
-		plugin_label,
+		plugin_instance,
 		schema_mode,
 		schema_hash,
 		comments_set,
@@ -182,7 +182,7 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),now())
 		c.ImportSchema,
 		nil,
 		c.Plugin,
-		c.PluginLabel,
+		c.PluginInstance,
 		schemaMode,
 		schemaHash,
 		commentsSet,

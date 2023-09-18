@@ -449,7 +449,7 @@ func (m *PluginManager) startPluginProcess(pluginLabel string, connectionConfigs
 	}
 
 	imageRef := pluginConfig.GetImageRef()
-	log.Printf("[INFO] ************ start plugin: %s, label: %s ********************\n", imageRef, pluginConfig.Label)
+	log.Printf("[INFO] ************ start plugin: %s, label: %s ********************\n", imageRef, pluginConfig.Instance)
 
 	// NOTE: pass pluginConfig.Source as the pluginAlias
 	// - this is just used for the error message if we fail to load
@@ -505,7 +505,7 @@ func (m *PluginManager) setPluginMaxMemory(pluginConfig *modconfig.Plugin, cmd *
 		}
 	}
 	if maxMemoryBytes != 0 {
-		log.Printf("[INFO] Setting max memory for plugin '%s' to %d Mb", pluginConfig.Label, maxMemoryBytes/(1024*1024))
+		log.Printf("[INFO] Setting max memory for plugin '%s' to %d Mb", pluginConfig.Instance, maxMemoryBytes/(1024*1024))
 		// set GOMEMLIMIT for the plugin command env
 		// TODO should I check for GOMEMLIMIT or does this just override
 		cmd.Env = append(os.Environ(), fmt.Sprintf("GOMEMLIMIT=%d", maxMemoryBytes))

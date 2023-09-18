@@ -73,7 +73,7 @@ func (c *DashboardCard) Diff(other *DashboardCard) *DashboardTreeItemDiffs {
 	}
 
 	if !utils.SafeStringsEqual(c.Label, other.Label) {
-		res.AddPropertyDiff("Label")
+		res.AddPropertyDiff("Instance")
 	}
 
 	if !utils.SafeStringsEqual(c.Value, other.Value) {

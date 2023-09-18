@@ -38,7 +38,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 		// ignore error if plugin is not available
 		// if plugin is not installed, the path will be returned as empty
 		if pluginPath == "" {
-			missingPluginMap[connection.PluginLabel] = append(missingPluginMap[connection.Plugin], *connection)
+			missingPluginMap[connection.PluginInstance] = append(missingPluginMap[connection.Plugin], *connection)
 			continue
 		}
 

@@ -16,7 +16,7 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) Conn
 			PluginShortName:  v.PluginAlias,
 			Config:           v.Config,
 			ChildConnections: v.GetResolveConnectionNames(),
-			PluginLabel:      v.PluginLabel,
+			PluginLabel:      v.PluginInstance,
 		}
 	}
 

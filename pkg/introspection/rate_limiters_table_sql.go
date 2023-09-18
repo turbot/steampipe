@@ -1,4 +1,4 @@
-package rate_limiters
+package introspection
 
 import (
 	"fmt"
@@ -8,12 +8,42 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
+func CreateRateLimiterTable() db_common.QueryWithArgs {
+	return db_common.QueryWithArgs{
+		Query: fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
+				name TEXT NOT NULL,
+				plugin TEXT NOT NULL,
+				plugin_instance TEXT NULL,
+				source TEXT NOT NULL,
+				status TEXT NOT NULL,
+				bucket_size INTEGER,
+				fill_rate REAL ,
+				max_concurrency INTEGER,
+				scope JSONB NOT NULL,
+				"where" TEXT,
+				file_name TEXT, 
+				start_line_number INTEGER, 
+				end_line_number INTEGER 
+		);`, constants.InternalSchema, constants.RateLimiterDefinitionTable),
+	}
+}
+
+func DropRateLimiterTable() db_common.QueryWithArgs {
+	return db_common.QueryWithArgs{
+		Query: fmt.Sprintf(
+			`DROP TABLE IF EXISTS %s.%s;`,
+			constants.InternalSchema,
+			constants.RateLimiterDefinitionTable,
+		),
+	}
+}
+
 func GetPopulateRateLimiterSql(settings *modconfig.RateLimiter) db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
 "name",
 plugin,
-plugin_label,
+plugin_instance,
 source,
 status,
 bucket_size,
@@ -29,7 +59,7 @@ end_line_number
 		Args: []any{
 			settings.Name,
 			settings.Plugin,
-			settings.PluginLabel,
+			settings.PluginInstance,
 			settings.Source,
 			settings.Status,
 			settings.BucketSize,
@@ -41,36 +71,6 @@ end_line_number
 			settings.StartLineNumber,
 			settings.EndLineNumber,
 		},
-	}
-}
-
-func DropRateLimiterTable() db_common.QueryWithArgs {
-	return db_common.QueryWithArgs{
-		Query: fmt.Sprintf(
-			`DROP TABLE IF EXISTS %s.%s;`,
-			constants.InternalSchema,
-			constants.RateLimiterDefinitionTable,
-		),
-	}
-}
-
-func CreateRateLimiterTable() db_common.QueryWithArgs {
-	return db_common.QueryWithArgs{
-		Query: fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
-				name TEXT NOT NULL,
-				plugin TEXT NOT NULL,
-				plugin_label TEXT NULL,
-				source TEXT NOT NULL,
-				status TEXT NOT NULL,
-				bucket_size INTEGER,
-				fill_rate REAL ,
-				max_concurrency INTEGER,
-				scope JSONB NOT NULL,
-				"where" TEXT,
-				file_name TEXT, 
-				start_line_number INTEGER, 
-				end_line_number INTEGER 
-		);`, constants.InternalSchema, constants.RateLimiterDefinitionTable),
 	}
 }
 

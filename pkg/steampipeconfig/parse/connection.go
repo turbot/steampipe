@@ -25,7 +25,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 	connection := modconfig.NewConnection(block)
 
 	// decode the plugin property
-	// NOTRE: this mutates connection to set either PluginAlias or PluginLabel
+	// NOTE: this mutates connection to set PluginAlias and possible PluginInstance
 	diags = decodeConnectionPluginProperty(connectionContent, connection)
 	if diags.HasErrors() {
 		return nil, diags
@@ -101,7 +101,6 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 }
 
 func decodeConnectionPluginProperty(connectionContent *hcl.BodyContent, connection *modconfig.Connection) hcl.Diagnostics {
-
 	var pluginName string
 	evalCtx := &hcl.EvalContext{Variables: make(map[string]cty.Value)}
 
@@ -126,7 +125,7 @@ func decodeConnectionPluginProperty(connectionContent *hcl.BodyContent, connecti
 		// set both alias AND label properties
 		// (the label property being set means that we will raise the correct error if we fail to resolve the plugin block)
 		connection.PluginAlias = pluginLabel
-		connection.PluginLabel = pluginLabel
+		connection.PluginInstance = pluginLabel
 		return nil
 	}
 

@@ -19,8 +19,8 @@ func DecodePlugin(block *hcl.Block) (*modconfig.Plugin, hcl.Diagnostics) {
 	// decode attributes using 'rest' (these are automativally parsed so are not in schema)
 	var plugin = &modconfig.Plugin{
 		// default source and name to label
-		Label:  block.Labels[0],
-		Source: block.Labels[0],
+		Instance: block.Labels[0],
+		Source:   block.Labels[0],
 	}
 	moreDiags := gohcl.DecodeBody(body, nil, plugin)
 	if moreDiags.HasErrors() {

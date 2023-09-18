@@ -55,6 +55,8 @@ const (
 
 	// RateLimiterDefinitionTable is the table used to store rate limiters defined in the config
 	RateLimiterDefinitionTable = "steampipe_rate_limiter"
+	// PluginConfigTable is the table used to store plugin configs
+	PluginConfigTable = "steampipe_plugin"
 
 	// ConnectionStateTable is the table used to store steampipe connection state
 	ConnectionStateTable             = "steampipe_connection_state"
