@@ -16,7 +16,7 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) Conn
 			PluginShortName:  v.PluginAlias,
 			Config:           v.Config,
 			ChildConnections: v.GetResolveConnectionNames(),
-			PluginLabel:      v.PluginInstance,
+			PluginInstance:   v.PluginInstance,
 		}
 	}
 
@@ -35,17 +35,17 @@ func (m ConnectionConfigMap) Diff(otherMap ConnectionConfigMap) (addedConnection
 
 	for name, connection := range m {
 		if otherConnection, ok := otherMap[name]; !ok {
-			deletedConnections[connection.PluginLabel] = append(deletedConnections[connection.PluginLabel], connection)
+			deletedConnections[connection.PluginInstance] = append(deletedConnections[connection.PluginInstance], connection)
 		} else {
 			// check for changes
 
 			// special case - if the plugin has changed, treat this as a deletion and a re-add
-			if connection.PluginLabel != otherConnection.Plugin {
+			if connection.PluginInstance != otherConnection.Plugin {
 				addedConnections[otherConnection.Plugin] = append(addedConnections[otherConnection.Plugin], otherConnection)
-				deletedConnections[connection.PluginLabel] = append(deletedConnections[connection.PluginLabel], connection)
+				deletedConnections[connection.PluginInstance] = append(deletedConnections[connection.PluginInstance], connection)
 			} else {
 				if !connection.Equals(otherConnection) {
-					changedConnections[connection.PluginLabel] = append(changedConnections[connection.PluginLabel], otherConnection)
+					changedConnections[connection.PluginInstance] = append(changedConnections[connection.PluginInstance], otherConnection)
 				}
 			}
 		}

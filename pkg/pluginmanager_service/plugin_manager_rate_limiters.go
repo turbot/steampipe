@@ -52,20 +52,20 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 	m.updateRateLimiterStatus()
 
 	queries := []db_common.QueryWithArgs{
-		introspection.DropRateLimiterTable(),
-		introspection.CreateRateLimiterTable(),
-		introspection.GrantsOnRateLimiterTable(),
+		introspection.GetRateLimiterTableDropSql(),
+		introspection.GetRateLimiterTableCreateSql(),
+		introspection.GetRateLimiterTableGrantSql(),
 	}
 
 	for _, limitersForPlugin := range m.pluginLimiters {
 		for _, l := range limitersForPlugin {
-			queries = append(queries, introspection.GetPopulateRateLimiterSql(l))
+			queries = append(queries, introspection.GetRateLimiterTablePopulateSql(l))
 		}
 	}
 
 	for _, limitersForPlugin := range m.userLimiters {
 		for _, l := range limitersForPlugin {
-			queries = append(queries, introspection.GetPopulateRateLimiterSql(l))
+			queries = append(queries, introspection.GetRateLimiterTablePopulateSql(l))
 		}
 	}
 
@@ -80,7 +80,7 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 }
 
 // respond to changes in the HCL rate limiter config
-// update the stored limiters, refrresh the rate limiter table and call `setRateLimiters`
+// update the stored limiters, refresh the rate limiter table and call `setRateLimiters`
 // for all plugins with changed limiters
 func (m *PluginManager) handleUserLimiterChanges(plugins connection.PluginMap) error {
 	limiterPluginMap := plugins.ToPluginLimiterMap()

@@ -24,7 +24,7 @@ type RateLimiter struct {
 	Scope           []string                        `hcl:"scope,optional" db:"scope"`
 	Where           *string                         `hcl:"where,optional" db:"where"`
 	Plugin          string                          `db:"plugin"`
-	PluginInstance  *string                         `db:"plugin_instance"`
+	PluginInstance  string                          `db:"plugin_instance"`
 	FileName        *string                         `db:"file_name" json:"-"`
 	StartLineNumber *int                            `db:"start_line_number"  json:"-"`
 	EndLineNumber   *int                            `db:"end_line_number"  json:"-"`
@@ -52,9 +52,9 @@ func RateLimiterFromProto(p *proto.RateLimiterDefinition, pluginImageRef, plugin
 	if res.Scope == nil {
 		res.Scope = []string{}
 	}
-	res.ImageRef = ociinstaller.NewSteampipeImageRef(pluginImageRef)
-	res.Plugin = res.ImageRef.DisplayImageRef()
-	res.PluginInstance = &pluginInstance
+	// set ImageRef and Plugin fields
+	res.setPluginImageRef(pluginImageRef)
+	res.PluginInstance = pluginInstance
 	return res, nil
 }
 
@@ -102,4 +102,15 @@ func (l *RateLimiter) Equals(other *RateLimiter) bool {
 		l.FillRate == other.FillRate &&
 		l.scopeString() == other.scopeString() &&
 		l.Where == other.Where
+}
+
+func (l *RateLimiter) SetPlugin(plugin *Plugin) {
+	l.PluginInstance = plugin.Instance
+	l.setPluginImageRef(plugin.Source)
+}
+
+func (l *RateLimiter) setPluginImageRef(alias string) {
+	l.ImageRef = ociinstaller.NewSteampipeImageRef(alias)
+	l.Plugin = l.ImageRef.DisplayImageRef()
+
 }

@@ -38,7 +38,7 @@ func DecodePlugin(block *hcl.Block) (*modconfig.Plugin, hcl.Diagnostics) {
 			if moreDiags.HasErrors() {
 				continue
 			}
-			limiter.Plugin = plugin.Source
+			limiter.SetPlugin(plugin)
 			plugin.Limiters = append(plugin.Limiters, limiter)
 		}
 	}

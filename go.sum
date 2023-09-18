@@ -1099,8 +1099,8 @@ github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50 h1:
 github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
 github.com/turbot/steampipe-cloud-sdk-go v0.6.0 h1:ufAxOpKS1uq7eejuE5sfEu1+d7QAd0RBjl8Bn6+mIs8=
 github.com/turbot/steampipe-cloud-sdk-go v0.6.0/go.mod h1:M42TMBdMim4bV1YTMxhKyzfSGSMo4CXUkm3wt9w7t1Y=
-github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-rc.27 h1:bBh74qpBAJaLYEjBj6NAD3BVRr7E98B1UTN432UhF80=
-github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-rc.27/go.mod h1:ldQ2VDEBaHR3JdaUHtjjM+7DBoBTe9Fzg5D7CfNVAhA=
+github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-rc.27.0.20230918110034-8e03e5eb493b h1:YajZF6JZdna2jIC5AXcwn6nEDuAZ6jk+fXr8V55KYwo=
+github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-rc.27.0.20230918110034-8e03e5eb493b/go.mod h1:ldQ2VDEBaHR3JdaUHtjjM+7DBoBTe9Fzg5D7CfNVAhA=
 github.com/twitchyliquid64/golang-asm v0.15.1 h1:SU5vSMR7hnwNxj24w34ZyCi/FmDZTkS4MhqMhdFk5YI=
 github.com/twitchyliquid64/golang-asm v0.15.1/go.mod h1:a1lVb/DtPvCB8fslRZhAngC2+aY1QWCk3Cedj/Gdt08=
 github.com/ugorji/go v0.0.0-20180813092308-00b869d2f4a5/go.mod h1:hnLbHMwcvSihnDhEfx2/BzKp2xb0Y+ErdfYcrs9tkJQ=

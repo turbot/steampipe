@@ -77,6 +77,7 @@ type PluginManager struct {
 }
 
 func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, pluginConfigs connection.PluginMap, logger hclog.Logger) (*PluginManager, error) {
+
 	log.Printf("[INFO] NewPluginManager")
 	pluginManager := &PluginManager{
 		logger:              logger,
@@ -181,7 +182,7 @@ func (m *PluginManager) buildRequiredPluginMap(req *pb.GetRequest) (map[string][
 		if err != nil {
 			return nil, nil, err
 		}
-		pluginLabel := connectionConfig.PluginLabel
+		pluginLabel := connectionConfig.PluginInstance
 		// if we have not added this plugin label, add it now
 		if _, addedPlugin := plugins[pluginLabel]; !addedPlugin {
 			// now get ALL connection configs for this plugin
@@ -600,7 +601,7 @@ func (m *PluginManager) shuttingDown() bool {
 func (m *PluginManager) populatePluginConnectionConfigs() {
 	m.pluginConnectionConfigMap = make(map[string][]*sdkproto.ConnectionConfig)
 	for _, config := range m.connectionConfigMap {
-		m.pluginConnectionConfigMap[config.PluginLabel] = append(m.pluginConnectionConfigMap[config.PluginLabel], config)
+		m.pluginConnectionConfigMap[config.PluginInstance] = append(m.pluginConnectionConfigMap[config.PluginInstance], config)
 	}
 }
 
@@ -704,7 +705,7 @@ func (m *PluginManager) waitForPluginLoad(p *runningPlugin, req *pb.GetRequest) 
 func (m *PluginManager) setAllConnectionConfigs(connectionConfigs []*sdkproto.ConnectionConfig, pluginClient *sdkgrpc.PluginClient, supportedOperations *sdkproto.GetSupportedOperationsResponse) error {
 	// TODO does this fail all connections if one fails
 	exemplarConnectionConfig := connectionConfigs[0]
-	pluginLabel := exemplarConnectionConfig.PluginLabel
+	pluginLabel := exemplarConnectionConfig.PluginInstance
 
 	req := &sdkproto.SetAllConnectionConfigsRequest{
 		Configs: connectionConfigs,

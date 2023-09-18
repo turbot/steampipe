@@ -8,21 +8,21 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func CreatePluginTable() db_common.QueryWithArgs {
+func GetPluginTableCreateSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
 				plugin TEXT NOT NULL,
 				plugin_instance TEXT NULL,
 				max_memory_mb INTEGER,
 				rate_limiters JSONB NULL,
-				file_name TEXT NOT NULL, 
-				start_line_number INTEGER NOT NULL, 
-				end_line_number INTEGER NOT NULL
+				file_name TEXT, 
+				start_line_number INTEGER, 
+				end_line_number INTEGER
 		);`, constants.InternalSchema, constants.PluginConfigTable),
 	}
 }
 
-func GetPopulatePluginSql(plugin *modconfig.Plugin) db_common.QueryWithArgs {
+func GetPluginTablePopulateSql(plugin *modconfig.Plugin) db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
 plugin,
@@ -46,7 +46,7 @@ end_line_number
 	}
 }
 
-func DropPluginTable() db_common.QueryWithArgs {
+func GetPluginTableDropSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`DROP TABLE IF EXISTS %s.%s;`,
@@ -56,7 +56,7 @@ func DropPluginTable() db_common.QueryWithArgs {
 	}
 }
 
-func GrantsOnPluginTable() db_common.QueryWithArgs {
+func GetPluginTableGrantSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`GRANT SELECT ON TABLE %s.%s to %s;`,

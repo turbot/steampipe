@@ -24,8 +24,8 @@ type ConnectionState struct {
 	ImportSchema string `json:"import_schema"  db:"import_schema"`
 	// the fully qualified name of the plugin
 	Plugin string `json:"plugin"  db:"plugin"`
-	// the config label of the plugin
-	PluginLabel *string `json:"plugin_instance,omitempty" db:"plugin_instance"`
+	// the plugin instance
+	PluginInstance string `json:"plugin_instance,omitempty" db:"plugin_instance"`
 	// the connection state (pending, updating, deleting, error, ready)
 	State string `json:"state"  db:"state"`
 	// error (if there is one - make a pointer to support null)
@@ -47,6 +47,7 @@ type ConnectionState struct {
 func NewConnectionState(connection *modconfig.Connection, creationTime time.Time) *ConnectionState {
 	state := &ConnectionState{
 		Plugin:         connection.Plugin,
+		PluginInstance: connection.PluginInstance,
 		ConnectionName: connection.Name,
 		PluginModTime:  creationTime,
 		State:          constants.ConnectionStateReady,
@@ -54,10 +55,7 @@ func NewConnectionState(connection *modconfig.Connection, creationTime time.Time
 		ImportSchema:   connection.ImportSchema,
 		Connections:    connection.ConnectionNames,
 	}
-	// only set label if it is not a default (oi.e. the label is the same as the plugin)
-	if connection.PluginInstance != connection.Plugin {
-		state.PluginLabel = &connection.PluginInstance
-	}
+
 	return state
 }
 

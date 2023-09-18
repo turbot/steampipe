@@ -268,14 +268,14 @@ func populatePluginTable(ctx context.Context, conn *pgx.Conn) error {
 
 	// drop the table and recreate
 	queries := []db_common.QueryWithArgs{
-		introspection.DropPluginTable(),
-		introspection.CreatePluginTable(),
-		introspection.GrantsOnPluginTable(),
+		introspection.GetPluginTableDropSql(),
+		introspection.GetPluginTableCreateSql(),
+		introspection.GetPluginTableGrantSql(),
 	}
 
 	// add insert queries for all connection state
 	for _, p := range plugins {
-		queries = append(queries, introspection.GetPopulatePluginSql(p))
+		queries = append(queries, introspection.GetPluginTablePopulateSql(p))
 	}
 	_, err := ExecuteSqlWithArgsInTransaction(ctx, conn, queries...)
 	return err

@@ -20,8 +20,8 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/introspection"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 	"golang.org/x/sync/semaphore"
@@ -77,8 +77,6 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
 func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
-
-	time.Sleep(10 * time.Second)
 	log.Println("[DEBUG] refreshConnectionState.refreshConnections start")
 	defer log.Println("[DEBUG] refreshConnectionState.refreshConnections end")
 

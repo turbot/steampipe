@@ -18,18 +18,18 @@ func GetConnectionStateTableDropSql() db_common.QueryWithArgs {
 func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
 	name TEXT PRIMARY KEY,
-	state TEXT NOT NULL,
+	state TEXT,
 	type TEXT NULL,
 	connections TEXT[] NULL,
-	import_schema TEXT NOT NULL,
+	import_schema TEXT,
 	error TEXT NULL,
-	plugin TEXT NOT NULL,
-	plugin_instance TEXT NOT NULL,
-	schema_mode TEXT NOT NULL,
+	plugin TEXT,
+	plugin_instance TEXT,
+	schema_mode TEXT,
 	schema_hash TEXT NULL,
 	comments_set BOOL DEFAULT FALSE,
-	connection_mod_time TIMESTAMPTZ NOT NULL,
-	plugin_mod_time TIMESTAMPTZ NOT NULL
+	connection_mod_time TIMESTAMPTZ,
+	plugin_mod_time TIMESTAMPTZ
 );`, constants.InternalSchema, constants.ConnectionStateTable)
 	return db_common.QueryWithArgs{Query: query}
 }
@@ -74,35 +74,6 @@ AND state <> 'error'
 	return db_common.QueryWithArgs{Query: query, Args: args}
 }
 
-// GetIncompleteConnectionStatePendingIncompleteSql returns the sql to set all incomplete connections to 'incomplete'
-func GetIncompleteConnectionStatePendingIncompleteSql() db_common.QueryWithArgs {
-	query := fmt.Sprintf(`UPDATE %s.%s
-SET state = '%s',
-	connection_mod_time = now(),
-    error = null
-WHERE
-	state <> 'ready' 
-AND state <> 'disabled' 
-	`,
-		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStatePendingIncomplete)
-
-	return db_common.QueryWithArgs{Query: query}
-}
-
-// GetReadConnectionStatePendingSql returns the sql to set all ready connections to 'pending'
-func GetReadConnectionStatePendingSql() db_common.QueryWithArgs {
-	query := fmt.Sprintf(`UPDATE %s.%s
-SET state = '%s',
-	connection_mod_time = now(),
-    error = null
-WHERE
-	state = 'ready' 
-	`,
-		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStatePending)
-
-	return db_common.QueryWithArgs{Query: query}
-}
-
 // GetUpsertConnectionStateSql returns the sql to update the connection state in the able with the current properties
 func GetUpsertConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
 	// upsert
@@ -145,7 +116,7 @@ DO
 		c.ImportSchema,
 		c.ConnectionError,
 		c.Plugin,
-		c.PluginLabel,
+		c.PluginInstance,
 		c.SchemaMode,
 		c.SchemaHash,
 		c.CommentsSet,

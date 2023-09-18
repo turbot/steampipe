@@ -8,18 +8,18 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func CreateRateLimiterTable() db_common.QueryWithArgs {
+func GetRateLimiterTableCreateSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
-				name TEXT NOT NULL,
-				plugin TEXT NOT NULL,
+				name TEXT,
+				plugin TEXT,
 				plugin_instance TEXT NULL,
-				source TEXT NOT NULL,
-				status TEXT NOT NULL,
+				source TEXT,
+				status TEXT,
 				bucket_size INTEGER,
 				fill_rate REAL ,
 				max_concurrency INTEGER,
-				scope JSONB NOT NULL,
+				scope JSONB,
 				"where" TEXT,
 				file_name TEXT, 
 				start_line_number INTEGER, 
@@ -28,7 +28,7 @@ func CreateRateLimiterTable() db_common.QueryWithArgs {
 	}
 }
 
-func DropRateLimiterTable() db_common.QueryWithArgs {
+func GetRateLimiterTableDropSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`DROP TABLE IF EXISTS %s.%s;`,
@@ -38,7 +38,7 @@ func DropRateLimiterTable() db_common.QueryWithArgs {
 	}
 }
 
-func GetPopulateRateLimiterSql(settings *modconfig.RateLimiter) db_common.QueryWithArgs {
+func GetRateLimiterTablePopulateSql(settings *modconfig.RateLimiter) db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
 "name",
@@ -74,7 +74,7 @@ end_line_number
 	}
 }
 
-func GrantsOnRateLimiterTable() db_common.QueryWithArgs {
+func GetRateLimiterTableGrantSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`GRANT SELECT ON TABLE %s.%s to %s;`,
