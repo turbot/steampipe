@@ -4,6 +4,32 @@ import (
 	"testing"
 )
 
+func TestFriendlyImageRef(t *testing.T) {
+	cases := map[string]string{
+		"hub.steampipe.io/plugins/turbot/aws@latest":   "aws",
+		"turbot/aws@latest":                            "aws",
+		"aws@latest":                                   "aws",
+		"hub.steampipe.io/plugins/turbot/aws@1.0.0":    "aws@1.0.0",
+		"hub.steampipe.io/plugins/otherOrg/aws@latest": "otherOrg/aws",
+		"otherOrg/aws@latest":                          "otherOrg/aws",
+		"hub.steampipe.io/plugins/otherOrg/aws@1.0.0":  "otherOrg/aws@1.0.0",
+		"otherOrg/aws@1.0.0":                           "otherOrg/aws@1.0.0",
+		"differentRegistry.com/otherOrg/aws@latest":    "differentRegistry.com/otherOrg/aws@latest",
+		"differentRegistry.com/otherOrg/aws@1.0.0":     "differentRegistry.com/otherOrg/aws@1.0.0",
+	}
+
+	for testCase, want := range cases {
+		t.Run(testCase, func(t *testing.T) {
+			r := NewSteampipeImageRef(testCase)
+
+			if got := r.GetFriendlyName(); got != want {
+				t.Errorf("TestFriendlyImageRef failed for case '%s': expected %s, got %s", testCase, want, got)
+			}
+		})
+	}
+
+}
+
 func TestActualImageRef(t *testing.T) {
 	cases := map[string]string{
 		"us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0":                                                                   "us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0",

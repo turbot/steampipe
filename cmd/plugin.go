@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
@@ -244,13 +245,17 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	installReports := make(display.PluginInstallReports, 0, len(plugins))
 
 	if len(plugins) == 0 {
-		fmt.Println()
-		error_helpers.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to install"))
-		fmt.Println()
-		_ = cmd.Help()
-		fmt.Println()
-		exitCode = constants.ExitCodeInsufficientOrWrongInputs
-		return
+		if len(steampipeconfig.GlobalConfig.Plugins) == 0 {
+			error_helpers.ShowError(ctx, sperr.New("No connections or plugins configured"))
+			exitCode = constants.ExitCodeInsufficientOrWrongInputs
+			return
+		}
+
+		// get the list of plugins to install
+		for imageRef := range steampipeconfig.GlobalConfig.Plugins {
+			ref := ociinstaller.NewSteampipeImageRef(imageRef)
+			plugins = append(plugins, ref.GetFriendlyName())
+		}
 	}
 
 	// a leading blank line - since we always output multiple lines

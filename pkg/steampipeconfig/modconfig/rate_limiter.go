@@ -1,12 +1,13 @@
 package modconfig
 
 import (
+	"sort"
+	"strings"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
-	"sort"
-	"strings"
 )
 
 const (
