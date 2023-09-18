@@ -2,6 +2,7 @@ package db_client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -142,7 +143,8 @@ func IsRelationNotFoundError(err error) (string, string, bool) {
 	if err == nil {
 		return "", "", false
 	}
-	pgErr, ok := err.(*pgconn.PgError)
+	var pgErr *pgconn.PgError
+	ok := errors.As(err, &pgErr)
 	if !ok || pgErr.Code != "42P01" {
 		return "", "", false
 	}

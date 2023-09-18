@@ -2,15 +2,14 @@ package db_local
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/introspection"
 	"github.com/turbot/steampipe/pkg/statushooks"
@@ -222,15 +221,21 @@ func validateFunction(f db_common.SQLFunction) error {
 	return nil
 }
 
+/*
+	to initialize the connection state table:
+
+- load existing connection state (ignoring relation not found error)
+- delete and recreate the table
+- update status of existing connection state to pending or imncomplete as appropriate
+- write back connection state
+*/
 func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
-	// load the state
+	// load the state (if the table is there)
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn)
 	if err != nil {
-		// TODO KAI HOW DID IT WORK FOR FRESH DB BEFORE???
-		var pe *pgconn.PgError
-		ok := errors.As(err, &pe)
-		ignoreError := ok && pe.Code == "42P01"
-		if !ignoreError {
+		// ignore relation not found error
+		_, _, isRelationNotFound := db_client.IsRelationNotFoundError(err)
+		if !isRelationNotFound {
 			return err
 		}
 	}
