@@ -28,7 +28,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
-	"golang.org/x/exp/maps"
 )
 
 type installedPlugin struct {
@@ -252,16 +251,11 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			return
 		}
 
-		pluginsToInstall := map[string]struct{}{}
 		// get the list of plugins to install
-		for _, plugin := range steampipeconfig.GlobalConfig.Plugins {
-			ref := ociinstaller.NewSteampipeImageRef(plugin.GetImageRef())
-			friendlyName := ref.GetFriendlyName()
-			if _, found := pluginsToInstall[friendlyName]; !found {
-				pluginsToInstall[friendlyName] = struct{}{}
-			}
+		for imageRef := range steampipeconfig.GlobalConfig.Plugins {
+			ref := ociinstaller.NewSteampipeImageRef(imageRef)
+			plugins = append(plugins, ref.GetFriendlyName())
 		}
-		plugins = maps.Keys(pluginsToInstall)
 	}
 
 	// a leading blank line - since we always output multiple lines
