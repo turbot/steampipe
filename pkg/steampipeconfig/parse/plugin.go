@@ -4,6 +4,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -17,8 +18,9 @@ func DecodePlugin(block *hcl.Block) (*modconfig.Plugin, hcl.Diagnostics) {
 
 	// decode attributes using 'rest' (these are automativally parsed so are not in schema)
 	var plugin = &modconfig.Plugin{
-		// default source to label
-		Source: block.Labels[0],
+		// default source and name to label
+		Instance: block.Labels[0],
+		Source:   block.Labels[0],
 	}
 	moreDiags := gohcl.DecodeBody(body, nil, plugin)
 	if moreDiags.HasErrors() {
@@ -28,7 +30,6 @@ func DecodePlugin(block *hcl.Block) (*modconfig.Plugin, hcl.Diagnostics) {
 
 	// decode limiter blocks using 'content'
 	for _, block := range content.Blocks {
-		// TODO ensure unique label check works (if name property used)
 		switch block.Type {
 		// only block defined in schema
 		case modconfig.BlockTypeRateLimiter:
@@ -37,7 +38,7 @@ func DecodePlugin(block *hcl.Block) (*modconfig.Plugin, hcl.Diagnostics) {
 			if moreDiags.HasErrors() {
 				continue
 			}
-			limiter.Plugin = plugin.Source
+			limiter.SetPlugin(plugin)
 			plugin.Limiters = append(plugin.Limiters, limiter)
 		}
 	}

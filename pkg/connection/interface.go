@@ -3,11 +3,12 @@ package connection
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 type pluginManager interface {
 	shared.PluginManager
-	OnConnectionConfigChanged(ConnectionConfigMap, PluginMap)
+	OnConnectionConfigChanged(ConnectionConfigMap, map[string]*modconfig.Plugin)
 	GetConnectionConfig() ConnectionConfigMap
 	HandlePluginLimiterChanges(limiterMap PluginLimiterMap) error
 	Pool() *pgxpool.Pool

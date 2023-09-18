@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	LimiterSourceConfig    = "config"
-	LimiterSourcePlugin    = "plugin"
-	LimiterStatusActive    = "active"
-	LimiterStatusOverriden = "overridden"
+	LimiterSourceConfig     = "config"
+	LimiterSourcePlugin     = "plugin"
+	LimiterStatusActive     = "active"
+	LimiterStatusOverridden = "overridden"
 )
 
 type RateLimiter struct {
@@ -24,16 +24,17 @@ type RateLimiter struct {
 	Scope           []string                        `hcl:"scope,optional" db:"scope"`
 	Where           *string                         `hcl:"where,optional" db:"where"`
 	Plugin          string                          `db:"plugin"`
-	FileName        *string                         `db:"file_name"`
-	StartLineNumber *int                            `db:"start_line_number"`
-	EndLineNumber   *int                            `db:"end_line_number"`
+	PluginInstance  string                          `db:"plugin_instance"`
+	FileName        *string                         `db:"file_name" json:"-"`
+	StartLineNumber *int                            `db:"start_line_number"  json:"-"`
+	EndLineNumber   *int                            `db:"end_line_number"  json:"-"`
 	Status          string                          `db:"status"`
 	Source          string                          `db:"source"`
 	ImageRef        *ociinstaller.SteampipeImageRef `db:"-"`
 }
 
 // RateLimiterFromProto converts the proto format RateLimiterDefinition into a Defintion
-func RateLimiterFromProto(p *proto.RateLimiterDefinition, pluginImageRef string) (*RateLimiter, error) {
+func RateLimiterFromProto(p *proto.RateLimiterDefinition, pluginImageRef, pluginInstance string) (*RateLimiter, error) {
 	var res = &RateLimiter{
 		Name:  p.Name,
 		Scope: p.Scope,
@@ -51,8 +52,9 @@ func RateLimiterFromProto(p *proto.RateLimiterDefinition, pluginImageRef string)
 	if res.Scope == nil {
 		res.Scope = []string{}
 	}
-	res.ImageRef = ociinstaller.NewSteampipeImageRef(pluginImageRef)
-	res.Plugin = res.ImageRef.GetFriendlyName()
+	// set ImageRef and Plugin fields
+	res.setPluginImageRef(pluginImageRef)
+	res.PluginInstance = pluginInstance
 	return res, nil
 }
 
@@ -100,4 +102,15 @@ func (l *RateLimiter) Equals(other *RateLimiter) bool {
 		l.FillRate == other.FillRate &&
 		l.scopeString() == other.scopeString() &&
 		l.Where == other.Where
+}
+
+func (l *RateLimiter) SetPlugin(plugin *Plugin) {
+	l.PluginInstance = plugin.Instance
+	l.setPluginImageRef(plugin.Source)
+}
+
+func (l *RateLimiter) setPluginImageRef(alias string) {
+	l.ImageRef = ociinstaller.NewSteampipeImageRef(alias)
+	l.Plugin = l.ImageRef.DisplayImageRef()
+
 }

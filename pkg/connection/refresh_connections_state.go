@@ -16,11 +16,11 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/introspection"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
@@ -774,7 +774,7 @@ func (s *refreshConnectionState) setIncompleteConnectionStateToError(ctx context
 	}
 	defer conn.Release()
 
-	query := connection_state.GetIncompleteConnectionStateErrorSql(connectionStateError)
+	query := introspection.GetIncompleteConnectionStateErrorSql(connectionStateError)
 
 	if _, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn.Conn(), query); err != nil {
 		log.Printf("[WARN] setAllConnectionStateToError failed to set connection states to error: %s", err.Error())

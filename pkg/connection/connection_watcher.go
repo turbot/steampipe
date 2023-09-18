@@ -80,7 +80,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	// convert config to format expected by plugin manager
 	// (plugin manager cannot reference steampipe config to avoid circular deps)
 	configMap := NewConnectionConfigMap(config.Connections)
-	w.pluginManager.OnConnectionConfigChanged(configMap, config.Plugins)
+	w.pluginManager.OnConnectionConfigChanged(configMap, config.PluginsInstances)
 
 	// The only configurations from GlobalConfig which have
 	// impact during Refresh are Database options and the Connections

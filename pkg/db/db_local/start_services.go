@@ -168,10 +168,14 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	}
 
 	statushooks.SetStatus(ctx, "Initialize steampipe_connection_state table")
+
 	// ensure connection state table contains entries for all connections in connection config
 	// (this is to allow for the race condition between polling connection state and calling refresh connections,
 	// which does not update the connection_state with added connections until it has built the ConnectionUpdates
 	if err := initializeConnectionStateTable(ctx, conn); err != nil {
+		return err
+	}
+	if err := populatePluginTable(ctx, conn); err != nil {
 		return err
 	}
 

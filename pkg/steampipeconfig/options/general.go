@@ -60,13 +60,13 @@ func (g *General) String() string {
 		str = append(str, fmt.Sprintf("  UpdateCheck: %s", *g.UpdateCheck))
 	}
 
-	if g.UpdateCheck == nil {
+	if g.MaxParallel == nil {
 		str = append(str, "  MaxParallel: nil")
 	} else {
 		str = append(str, fmt.Sprintf("  MaxParallel: %d", *g.MaxParallel))
 	}
 
-	if g.UpdateCheck == nil {
+	if g.Telemetry == nil {
 		str = append(str, "  Telemetry: nil")
 	} else {
 		str = append(str, fmt.Sprintf("  Telemetry: %s", *g.Telemetry))

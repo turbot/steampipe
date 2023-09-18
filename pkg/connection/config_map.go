@@ -16,6 +16,7 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) Conn
 			PluginShortName:  v.PluginAlias,
 			Config:           v.Config,
 			ChildConnections: v.GetResolveConnectionNames(),
+			PluginInstance:   v.PluginInstance,
 		}
 	}
 
@@ -23,24 +24,24 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) Conn
 }
 
 func (m ConnectionConfigMap) Diff(otherMap ConnectionConfigMap) (addedConnections, deletedConnections, changedConnections map[string][]*sdkproto.ConnectionConfig) {
-	// results are maps os  connections keyed by plugin
+	// results are maps of connections keyed by plugin label
 	addedConnections = make(map[string][]*sdkproto.ConnectionConfig)
 	deletedConnections = make(map[string][]*sdkproto.ConnectionConfig)
 	changedConnections = make(map[string][]*sdkproto.ConnectionConfig)
 
 	for name, connection := range m {
 		if otherConnection, ok := otherMap[name]; !ok {
-			deletedConnections[connection.Plugin] = append(deletedConnections[connection.Plugin], connection)
+			deletedConnections[connection.PluginInstance] = append(deletedConnections[connection.PluginInstance], connection)
 		} else {
 			// check for changes
 
 			// special case - if the plugin has changed, treat this as a deletion and a re-add
-			if connection.Plugin != otherConnection.Plugin {
+			if connection.PluginInstance != otherConnection.Plugin {
 				addedConnections[otherConnection.Plugin] = append(addedConnections[otherConnection.Plugin], otherConnection)
-				deletedConnections[connection.Plugin] = append(deletedConnections[connection.Plugin], connection)
+				deletedConnections[connection.PluginInstance] = append(deletedConnections[connection.PluginInstance], connection)
 			} else {
 				if !connection.Equals(otherConnection) {
-					changedConnections[connection.Plugin] = append(changedConnections[connection.Plugin], otherConnection)
+					changedConnections[connection.PluginInstance] = append(changedConnections[connection.PluginInstance], otherConnection)
 				}
 			}
 		}

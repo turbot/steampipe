@@ -34,12 +34,11 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration start")
 	// populate file mod time for each referenced plugin
 	for name, connection := range connectionMap {
-		remoteSchema := connection.Plugin
 		pluginPath, _ := filepaths.GetPluginPath(connection.Plugin, connection.PluginAlias)
 		// ignore error if plugin is not available
 		// if plugin is not installed, the path will be returned as empty
 		if pluginPath == "" {
-			missingPluginMap[connection.Plugin] = append(missingPluginMap[connection.Plugin], *connection)
+			missingPluginMap[connection.PluginInstance] = append(missingPluginMap[connection.Plugin], *connection)
 			continue
 		}
 
@@ -54,7 +53,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 			}
 		}
 		pluginModTimeMap[pluginPath] = pluginModTime
-		res[name] = NewConnectionState(remoteSchema, connection, pluginModTime)
+		res[name] = NewConnectionState(connection, pluginModTime)
 		// the comments _will_ eventually be set
 		res[name].CommentsSet = true
 		// if schema import is disabled, set desired state as disabled
@@ -75,10 +74,10 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 }
 
 func addConnectionsMissingPlugins(connectionStateMap ConnectionStateMap, missingPlugins map[string][]modconfig.Connection) ConnectionStateMap {
-	for pluginName, connections := range missingPlugins {
+	for _, connections := range missingPlugins {
 		// add in missing connections
 		for _, c := range connections {
-			connectionData := NewConnectionState(pluginName, &c, time.Now())
+			connectionData := NewConnectionState(&c, time.Now())
 			connectionData.State = constants.ConnectionStateError
 			connectionData.SetError(constants.ConnectionErrorPluginNotInstalled)
 			connectionStateMap[c.Name] = connectionData
@@ -219,4 +218,21 @@ func (m ConnectionStateMap) getFirstSearchPathConnectionMapForPlugins(searchPath
 		}
 	}
 	return res
+}
+
+func (m ConnectionStateMap) SetReadyConnectionsToPending() {
+	for _, state := range m {
+		if state.State == constants.ConnectionStateReady {
+			state.State = constants.ConnectionStatePending
+			state.ConnectionModTime = time.Now()
+		}
+	}
+}
+
+func (m ConnectionStateMap) SetNotReadyConnectionsToIncomplete() {
+	for _, state := range m {
+		if state.State != constants.ConnectionStateReady && state.State != constants.ConnectionStateDisabled {
+			state.State = constants.ConnectionStatePendingIncomplete
+		}
+	}
 }

@@ -250,20 +250,16 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 		switch block.Type {
 
 		case modconfig.BlockTypePlugin:
-			// TODO CHECK label unique check
 			plugin, moreDiags := parse.DecodePlugin(block)
 			diags = append(diags, moreDiags...)
 			if moreDiags.HasErrors() {
 				continue
 			}
-			// get the _display_ image ref to key the map
-			imageRef := plugin.GetImageRef()
-
-			_, alreadyThere := steampipeConfig.Plugins[imageRef]
-			if alreadyThere {
-				return error_helpers.NewErrorsAndWarning(sperr.New("duplicate plugin: '%s' in '%s'", plugin.Source, block.TypeRange.Filename))
+			// add plugin to steampipeConfig
+			// NOTE: this errors if there is a plugin block with a duplicate label
+			if err := steampipeConfig.addPlugin(plugin, block); err != nil {
+				return error_helpers.NewErrorsAndWarning(err)
 			}
-			steampipeConfig.Plugins[imageRef] = plugin
 
 		case modconfig.BlockTypeConnection:
 			connection, moreDiags := parse.DecodeConnection(block)
@@ -316,12 +312,20 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 		return error_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
 	}
 
-	log.Printf("[INFO] loadConfig calling initializePlugins")
-	// ensure we have a plugin config struct for all plugins mentioned in connection config,
-	// even if there is not an explicit HCL config for it
-	steampipeConfig.initializePlugins()
+	res := error_helpers.DiagsToErrorsAndWarnings("", diags)
 
-	return error_helpers.DiagsToErrorsAndWarnings("", diags)
+	log.Printf("[INFO] loadConfig calling initializePlugins")
+
+	// resolve the plugins for each conneciton and create default plugin config
+	// for all plugins mentioned in connection config which have no explicit config
+	failedConnections := steampipeConfig.initializePlugins()
+	for connectionName, e := range failedConnections {
+		// remove failed connection
+		delete(steampipeConfig.Connections, connectionName)
+		res.AddWarning(e.Error())
+	}
+
+	return res
 }
 
 func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loadConfigOptions) error {

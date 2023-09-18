@@ -6,7 +6,7 @@ import (
 )
 
 type runningPlugin struct {
-	pluginName  string
+	pluginLabel string
 	client      *plugin.Client
 	reattach    *pb.ReattachConfig
 	initialized chan struct{}

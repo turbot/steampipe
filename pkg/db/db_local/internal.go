@@ -8,9 +8,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/connection_state"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/introspection"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -220,46 +221,67 @@ func validateFunction(f db_common.SQLFunction) error {
 	return nil
 }
 
+/*
+	to initialize the connection state table:
+
+- load existing connection state (ignoring relation not found error)
+- delete and recreate the table
+- update status of existing connection state to pending or imncomplete as appropriate
+- write back connection state
+*/
 func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
-
-	createQueries := []db_common.QueryWithArgs{
-		connection_state.GetConnectionStateTableCreateSql(),
-		connection_state.GetConnectionStateTableGrantSql(),
-	}
-
-	// apply any alterations
-	// this is for changes which are applied to the table after v0.20.0
-	createQueries = append(createQueries, connection_state.GetConnectionStateTableColumnAlterSql()...)
-
-	if _, err := ExecuteSqlWithArgsInTransaction(ctx, conn, createQueries...); err != nil {
-		return err
-	}
-
-	// now load the state
+	// load the state (if the table is there)
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn)
 	if err != nil {
-		return err
-	}
-
-	// if any connections are in a ready  state, set them to pending - we need to run refresh connections before we know this connection is still valid
-	pendingSql := connection_state.GetReadConnectionStatePendingSql()
-	// if any connections are not in a ready or error state, set them to pending_incomplete
-	incompleteErrorSql := connection_state.GetIncompleteConnectionStatePendingIncompleteSql()
-	queries := []db_common.QueryWithArgs{
-		incompleteErrorSql,
-		pendingSql,
-	}
-
-	// for any connection in the connection config but not in the connection state table,
-	// add an entry with `pending_incomplete` state this is to work around the race condition
-	// where we wait for connection state before RefreshConnections has added
-	// any new connections into the state table
-	for connection, connectionConfig := range steampipeconfig.GlobalConfig.Connections {
-		if _, ok := connectionStateMap[connection]; !ok {
-			queries = append(queries, connection_state.GetNewConnectionStateTableInsertSql(connectionConfig))
+		// ignore relation not found error
+		_, _, isRelationNotFound := db_client.IsRelationNotFoundError(err)
+		if !isRelationNotFound {
+			return err
 		}
 	}
+	// if any connections are in a ready  state, set them to pending - we need to run refresh connections before we know this connection is still valid
+	connectionStateMap.SetReadyConnectionsToPending()
+	// if any connections are not in a ready or error state, set them to pending_incomplete
+	connectionStateMap.SetNotReadyConnectionsToIncomplete()
 
+	// drop the table and recreate
+	queries := []db_common.QueryWithArgs{
+		introspection.GetConnectionStateTableDropSql(),
+		introspection.GetConnectionStateTableCreateSql(),
+		introspection.GetConnectionStateTableGrantSql(),
+	}
+
+	// add insert queries for all connection state
+	for _, s := range connectionStateMap {
+		queries = append(queries, introspection.GetUpsertConnectionStateSql(s))
+	}
+
+	// for any connection in the connection config but NOT in the connection state table,
+	// add an entry with `pending_incomplete` state this is to work around the race condition where
+	// we wait for connection state before RefreshConnections has added any new connections into the state table
+	for connection, connectionConfig := range steampipeconfig.GlobalConfig.Connections {
+		if _, ok := connectionStateMap[connection]; !ok {
+			queries = append(queries, introspection.GetNewConnectionStateFromConnectionInsertSql(connectionConfig))
+		}
+	}
 	_, err = ExecuteSqlWithArgsInTransaction(ctx, conn, queries...)
+	return err
+}
+
+func populatePluginTable(ctx context.Context, conn *pgx.Conn) error {
+	plugins := steampipeconfig.GlobalConfig.PluginsInstances
+
+	// drop the table and recreate
+	queries := []db_common.QueryWithArgs{
+		introspection.GetPluginTableDropSql(),
+		introspection.GetPluginTableCreateSql(),
+		introspection.GetPluginTableGrantSql(),
+	}
+
+	// add insert queries for all connection state
+	for _, p := range plugins {
+		queries = append(queries, introspection.GetPluginTablePopulateSql(p))
+	}
+	_, err := ExecuteSqlWithArgsInTransaction(ctx, conn, queries...)
 	return err
 }
