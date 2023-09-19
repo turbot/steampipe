@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
 
@@ -21,7 +22,7 @@ func DecodeOptions(block *hcl.Block, overrides ...BlockMappingOverride) (options
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("Unexpected options type '%s'", block.Labels[0]),
-			Subject:  &block.DefRange,
+			Subject:  hclhelpers.BlockRangePointer(block),
 		})
 		return nil, diags
 	}

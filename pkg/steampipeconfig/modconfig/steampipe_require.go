@@ -23,7 +23,7 @@ func (r *SteampipeRequire) initialise(requireBlock *hcl.Block) hcl.Diagnostics {
 		steampipeBlock = requireBlock
 	}
 	// set DeclRange
-	r.DeclRange = steampipeBlock.DefRange
+	r.DeclRange = hclhelpers.BlockRange(steampipeBlock)
 
 	if r.MinVersionString == "" {
 		return nil

@@ -7,7 +7,6 @@ import (
 	"path"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -77,10 +76,7 @@ func ParseModDefinition(modPath string, evalCtx *hcl.EvalContext) (*modconfig.Mo
 		})
 		return nil, res
 	}
-	var defRange = block.DefRange
-	if hclBody, ok := block.Body.(*hclsyntax.Body); ok {
-		defRange = hclBody.SrcRange
-	}
+	var defRange = hclhelpers.BlockRange(block)
 	mod := modconfig.NewMod(block.Labels[0], path.Dir(modFilePath), defRange)
 	// set modFilePath
 	mod.SetFilePath(modFilePath)

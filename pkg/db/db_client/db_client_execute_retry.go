@@ -2,14 +2,11 @@ package db_client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"regexp"
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sethvargo/go-retry"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -47,7 +44,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 
 		log.Println("[TRACE] queryError:", queryError)
 		// so there is an error - is it "relation not found"?
-		missingSchema, _, relationNotFound := IsRelationNotFoundError(queryError)
+		missingSchema, _, relationNotFound := db_common.GetMissingSchemaFromIsRelationNotFoundError(queryError)
 		if !relationNotFound {
 			log.Println("[TRACE] queryError not relation not found")
 			// just return it
@@ -137,30 +134,4 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 	})
 
 	return res, err
-}
-
-func IsRelationNotFoundError(err error) (string, string, bool) {
-	if err == nil {
-		return "", "", false
-	}
-	var pgErr *pgconn.PgError
-	ok := errors.As(err, &pgErr)
-	if !ok || pgErr.Code != "42P01" {
-		return "", "", false
-	}
-
-	r := regexp.MustCompile(`^relation "(.*)\.(.*)" does not exist$`)
-	captureGroups := r.FindStringSubmatch(pgErr.Message)
-	if len(captureGroups) == 3 {
-
-		return captureGroups[1], captureGroups[2], true
-	}
-
-	// maybe there is no schema
-	r = regexp.MustCompile(`^relation "(.*)" does not exist$`)
-	captureGroups = r.FindStringSubmatch(pgErr.Message)
-	if len(captureGroups) == 2 {
-		return "", captureGroups[1], true
-	}
-	return "", "", true
 }

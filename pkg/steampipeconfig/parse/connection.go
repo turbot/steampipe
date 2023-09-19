@@ -76,7 +76,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagWarning,
 					Summary:  fmt.Sprintf("%s in %s have been deprecated and will be removed in subsequent versions of steampipe", constants.Bold("'connection' options"), constants.Bold("'connection' blocks")),
-					Subject:  &connectionBlock.DefRange,
+					Subject:  hclhelpers.BlockRangePointer(connectionBlock),
 				})
 			}
 
@@ -85,7 +85,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  fmt.Sprintf("invalid block type '%s' - only 'options' blocks are supported for Connections", connectionBlock.Type),
-				Subject:  &connectionBlock.DefRange,
+				Subject:  hclhelpers.BlockRangePointer(connectionBlock),
 			})
 		}
 	}

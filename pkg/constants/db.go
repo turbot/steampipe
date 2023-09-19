@@ -54,12 +54,13 @@ const (
 	ServerSettingsTable = "steampipe_server_settings"
 
 	// RateLimiterDefinitionTable is the table used to store rate limiters defined in the config
-	RateLimiterDefinitionTable = "steampipe_rate_limiter"
+	RateLimiterDefinitionTable = "steampipe_plugin_limiter"
 	// PluginConfigTable is the table used to store plugin configs
 	PluginConfigTable = "steampipe_plugin"
 
-	// ConnectionStateTable is the table used to store steampipe connection state
-	ConnectionStateTable             = "steampipe_connection_state"
+	// LegacyConnectionStateTable is the table used to store steampipe connection state
+	LegacyConnectionStateTable       = "steampipe_connection_state"
+	ConnectionTable                  = "steampipe_connection"
 	ConnectionStatePending           = "pending"
 	ConnectionStatePendingIncomplete = "incomplete"
 	ConnectionStateReady             = "ready"
@@ -94,7 +95,7 @@ const (
 
 // ConnectionStates is a handy array of all states
 var ConnectionStates = []string{
-	ConnectionStateTable,
+	LegacyConnectionStateTable,
 	ConnectionStatePending,
 	ConnectionStateReady,
 	ConnectionStateUpdating,

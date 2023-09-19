@@ -44,3 +44,14 @@ func BlocksToMap(blocks hcl.Blocks) map[string]*hcl.Block {
 	}
 	return res
 }
+
+func BlockRange(block *hcl.Block) hcl.Range {
+	if hclBody, ok := block.Body.(*hclsyntax.Body); ok {
+		return hclBody.SrcRange
+	}
+	return block.DefRange
+}
+func BlockRangePointer(block *hcl.Block) *hcl.Range {
+	r := BlockRange(block)
+	return &r
+}

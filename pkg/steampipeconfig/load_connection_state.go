@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -98,24 +99,37 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnec
 	}
 	log.Println("[TRACE] with config", config)
 
+	var res = make(ConnectionStateMap)
+
 	query := fmt.Sprintf(
 		`select * FROM %s.%s `,
 		constants.InternalSchema,
-		constants.ConnectionStateTable,
+		constants.ConnectionTable,
+	)
+	legacyQuery := fmt.Sprintf(
+		`select * FROM %s.%s `,
+		constants.InternalSchema,
+		constants.LegacyConnectionStateTable,
 	)
 
 	rows, err := conn.Query(ctx, query)
 	if err != nil {
-		return nil, err
+		if !db_common.IsRelationNotFoundError(err) {
+			return nil, err
+		}
+		// so it was a relation not found - try with legacy table
+		rows, err = conn.Query(ctx, legacyQuery)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	defer rows.Close()
 
 	connectionStateList, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[ConnectionState])
 	if err != nil {
 		return nil, err
 	}
-
-	var res = make(ConnectionStateMap)
 
 	// convert to pointer arrau
 	for _, c := range connectionStateList {

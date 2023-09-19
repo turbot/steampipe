@@ -2,8 +2,8 @@ package modconfig
 
 import (
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 )
 
 type Plugin struct {
@@ -34,9 +34,10 @@ func NewImplicitPlugin(connection *Connection) *Plugin {
 }
 
 func (l *Plugin) OnDecoded(block *hcl.Block) {
-	l.FileName = &block.DefRange.Filename
-	l.StartLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.Start.Line
-	l.EndLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.End.Line
+	pluginRange := hclhelpers.BlockRange(block)
+	l.FileName = &pluginRange.Filename
+	l.StartLineNumber = &pluginRange.Start.Line
+	l.EndLineNumber = &pluginRange.End.Line
 	l.imageRef = ociinstaller.NewSteampipeImageRef(l.Source)
 	l.Plugin = l.imageRef.DisplayImageRef()
 }

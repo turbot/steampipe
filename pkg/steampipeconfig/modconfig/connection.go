@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
@@ -116,7 +117,7 @@ func NewPos(sourcePos hcl.Pos) Pos {
 func NewConnection(block *hcl.Block) *Connection {
 	return &Connection{
 		Name:         block.Labels[0],
-		DeclRange:    NewRange(block.TypeRange),
+		DeclRange:    NewRange(hclhelpers.BlockRange(block)),
 		ImportSchema: ImportSchemaEnabled,
 	}
 }
@@ -151,7 +152,7 @@ func (c *Connection) SetOptions(opts options.Options, block *hcl.Block) hcl.Diag
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("invalid nested option type %s - only 'connection' options blocks are supported for Connections", reflect.TypeOf(o).Name()),
-			Subject:  &block.DefRange,
+			Subject:  hclhelpers.BlockRangePointer(block),
 		})
 	}
 	return diags

@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 )
 
 type ParamDef struct {
@@ -25,7 +26,7 @@ func NewParamDef(block *hcl.Block) *ParamDef {
 	return &ParamDef{
 		ShortName:       block.Labels[0],
 		UnqualifiedName: fmt.Sprintf("param.%s", block.Labels[0]),
-		DeclRange:       block.DefRange,
+		DeclRange:       hclhelpers.BlockRange(block),
 	}
 }
 

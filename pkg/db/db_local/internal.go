@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/introspection"
 	"github.com/turbot/steampipe/pkg/statushooks"
@@ -121,8 +120,8 @@ INNER JOIN
 		"glob": true,
 	}
 	expectedTables := map[string]bool{
-		"connection_state":             true, // legacy table name
-		constants.ConnectionStateTable: true,
+		"connection_state":                   true, // previous legacy table name
+		constants.LegacyConnectionStateTable: true,
 	}
 
 	for _, f := range functions {
@@ -234,18 +233,22 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn)
 	if err != nil {
 		// ignore relation not found error
-		_, _, isRelationNotFound := db_client.IsRelationNotFoundError(err)
-		if !isRelationNotFound {
+		if !db_common.IsRelationNotFoundError(err) {
 			return err
 		}
+		return err
 	}
 	// if any connections are in a ready  state, set them to pending - we need to run refresh connections before we know this connection is still valid
 	connectionStateMap.SetReadyConnectionsToPending()
 	// if any connections are not in a ready or error state, set them to pending_incomplete
 	connectionStateMap.SetNotReadyConnectionsToIncomplete()
 
+	// migration: ensure filename and line numbers are set for all connection states
+	connectionStateMap.PopulateFilename()
+
 	// drop the table and recreate
 	queries := []db_common.QueryWithArgs{
+		introspection.GetLegacyConnectionStateTableDropSql(),
 		introspection.GetConnectionStateTableDropSql(),
 		introspection.GetConnectionStateTableCreateSql(),
 		introspection.GetConnectionStateTableGrantSql(),

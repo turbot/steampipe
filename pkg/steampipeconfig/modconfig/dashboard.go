@@ -9,6 +9,7 @@ import (
 	"github.com/stevenle/topsort"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -46,7 +47,7 @@ func NewDashboard(block *hcl.Block, mod *Mod, shortName string) HclResource {
 				ShortName:       shortName,
 				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-				DeclRange:       block.DefRange,
+				DeclRange:       hclhelpers.BlockRange(block),
 				blockType:       block.Type,
 			},
 			Mod: mod,

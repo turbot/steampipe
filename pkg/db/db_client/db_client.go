@@ -130,10 +130,10 @@ func (c *DbClient) closePools() {
 func (c *DbClient) loadServerSettings(ctx context.Context) error {
 	serverSettings, err := serversettings.Load(ctx, c.managementPool)
 	if err != nil {
-		if _, _, notFound := IsRelationNotFoundError(err); notFound {
-			// when connecting to pre-0.21.0 services, the server_settings table will not be available.
+		if notFound := db_common.IsRelationNotFoundError(err); notFound {
+			// when connecting to pre-0.21.0 services, the steampipe_server_settings table will not be available.
 			// this is expected and not an error
-			// code which uses server_settings should handle this
+			// code which uses steampipe_server_settings should handle this
 			log.Printf("[TRACE] could not find %s.%s table. skipping\n", constants.InternalSchema, constants.ServerSettingsTable)
 			return nil
 		}

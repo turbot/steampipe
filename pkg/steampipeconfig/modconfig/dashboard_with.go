@@ -2,9 +2,10 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // DashboardWith is a struct representing a leaf dashboard node
@@ -26,7 +27,7 @@ func NewDashboardWith(block *hcl.Block, mod *Mod, shortName string) HclResource 
 						ShortName:       shortName,
 						FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-						DeclRange:       block.DefRange,
+						DeclRange:       hclhelpers.BlockRange(block),
 						blockType:       block.Type,
 					},
 					Mod: mod,

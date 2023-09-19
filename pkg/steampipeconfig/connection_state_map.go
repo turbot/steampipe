@@ -236,3 +236,16 @@ func (m ConnectionStateMap) SetNotReadyConnectionsToIncomplete() {
 		}
 	}
 }
+
+// PopulateFilename sets the Filename, StartLineNumber and EndLineNumber properties
+// this is required as these fields were added to the table after release
+func (m ConnectionStateMap) PopulateFilename() {
+	// get the connection from config
+	connections := GlobalConfig.Connections
+	for name, state := range m {
+		// do we have config for this connection (
+		if connection := connections[name]; connection != nil {
+			state.setFilename(connection)
+		}
+	}
+}

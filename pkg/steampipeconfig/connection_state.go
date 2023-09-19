@@ -14,10 +14,9 @@ import (
 // ConnectionState is a struct containing all details for a connection
 // - the plugin name and checksum, the connection config and options
 // json tags needed as this is stored in the connection state file
-// TODO KAI WHY THE omitempty
 type ConnectionState struct {
 	// the connection name
-	ConnectionName string `json:"connection,omitempty"  db:"name"`
+	ConnectionName string `json:"connection"  db:"name"`
 	// connection type (expected value: "aggregator")
 	Type *string `json:"type,omitempty"  db:"type"`
 	// should we create a postgres schema for the connection (expected values: "enable", "disable")
@@ -25,7 +24,7 @@ type ConnectionState struct {
 	// the fully qualified name of the plugin
 	Plugin string `json:"plugin"  db:"plugin"`
 	// the plugin instance
-	PluginInstance string `json:"plugin_instance,omitempty" db:"plugin_instance"`
+	PluginInstance string `json:"plugin_instance" db:"plugin_instance"`
 	// the connection state (pending, updating, deleting, error, ready)
 	State string `json:"state"  db:"state"`
 	// error (if there is one - make a pointer to support null)
@@ -33,7 +32,7 @@ type ConnectionState struct {
 	// schema mode - static or dynamic
 	SchemaMode string `json:"schema_mode" db:"schema_mode"`
 	// the hash of the connection schema - this is used to determine if a dynamic schema has changed
-	SchemaHash string `json:"schema_hash" db:"schema_hash"`
+	SchemaHash string `json:"schema_hash,omitempty" db:"schema_hash"`
 	// are the comments set
 	CommentsSet bool `json:"comments_set" db:"comments_set"`
 	// the creation time of the plugin file
@@ -41,7 +40,10 @@ type ConnectionState struct {
 	// the update time of the connection
 	ConnectionModTime time.Time `json:"connection_mod_time" db:"connection_mod_time"`
 	// the matching patterns of child connections (for aggregators)
-	Connections []string `json:"connections" db:"connections"`
+	Connections     []string `json:"connections" db:"connections"`
+	FileName        string   `json:"file_name" db:"file_name"`
+	StartLineNumber int      `json:"start_line_number" db:"start_line_number"`
+	EndLineNumber   int      `json:"end_line_number" db:"end_line_number"`
 }
 
 func NewConnectionState(connection *modconfig.Connection, creationTime time.Time) *ConnectionState {
@@ -55,8 +57,14 @@ func NewConnectionState(connection *modconfig.Connection, creationTime time.Time
 		ImportSchema:   connection.ImportSchema,
 		Connections:    connection.ConnectionNames,
 	}
-
+	state.setFilename(connection)
 	return state
+}
+
+func (d *ConnectionState) setFilename(connection *modconfig.Connection) {
+	d.FileName = connection.DeclRange.Filename
+	d.StartLineNumber = connection.DeclRange.Start.Line
+	d.EndLineNumber = connection.DeclRange.End.Line
 }
 
 func (d *ConnectionState) Equals(other *ConnectionState) bool {

@@ -77,7 +77,6 @@ type PluginManager struct {
 }
 
 func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, pluginConfigs connection.PluginMap, logger hclog.Logger) (*PluginManager, error) {
-
 	log.Printf("[INFO] NewPluginManager")
 	pluginManager := &PluginManager{
 		logger:              logger,
