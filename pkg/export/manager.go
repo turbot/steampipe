@@ -151,8 +151,8 @@ func (m *Manager) DoExport(ctx context.Context, targetName string, source Export
 		return nil, err
 	}
 
-	for _, target := range targets {
-		statushooks.SetStatus(ctx, fmt.Sprintf("Exporting %s", target.exporter.Name()))
+	for idx, target := range targets {
+		statushooks.SetStatus(ctx, fmt.Sprintf("Exporting %d of %d", idx+1, len(targets)))
 		if msg, err = target.Export(ctx, source); err != nil {
 			errors = append(errors, err)
 		} else {

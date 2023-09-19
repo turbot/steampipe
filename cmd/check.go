@@ -103,8 +103,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	// setup a cancel context and start cancel handler
 	ctx, cancel := context.WithCancel(cmd.Context())
 	contexthelpers.StartCancelHandler(cancel)
-	// create a context with check status hooks
-	ctx = createCheckContext(ctx)
 
 	defer func() {
 		utils.LogTime("runCheckCmd end")
@@ -126,6 +124,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// initialise
+	statushooks.SetStatus(ctx, "Initializing...")
 	initData := control.NewInitData(ctx)
 	if initData.Result.Error != nil {
 		exitCode = constants.ExitCodeInitializationFailed
@@ -133,6 +132,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 	defer initData.Cleanup(ctx)
+	statushooks.Done(ctx)
 
 	// if there is a usage warning we display it
 	initData.Result.DisplayMessages()
@@ -150,46 +150,49 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		error_helpers.FailOnError(sperr.New("cannot execute 'all' with other benchmarks/controls"))
 	}
 
-	var trees []*controlexecute.ExecutionTree
+	trees := map[string]*controlexecute.ExecutionTree{}
 
 	if initData.ExportManager.HasNamedExport(viper.GetStringSlice(constants.ArgExport)) {
+		name := fmt.Sprintf("check.%s", w.Mod.ShortName)
 		// create a single merged execution tree
 		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, initData.ControlFilterWhereClause, args...)
-		error_helpers.FailOnError(err)
-		trees = []*controlexecute.ExecutionTree{executionTree}
+		error_helpers.FailOnError(sperr.WrapWithMessage(err, "could not create execution tree"))
+		trees[name] = executionTree
 	} else {
 		for _, arg := range args {
 			executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, initData.ControlFilterWhereClause, arg)
-			error_helpers.FailOnError(err)
-			trees = append(trees, executionTree)
+			error_helpers.FailOnError(sperr.WrapWithMessage(err, "could not create execution tree"))
+			name, err := getExportName(arg, w.Mod.ShortName)
+			error_helpers.FailOnError(sperr.WrapWithMessage(err, "could not evaluate export name for %s", arg))
+			trees[name] = executionTree
 		}
 	}
 
 	// execute controls synchronously (execute returns the number of alarms and errors)
-	for _, executionTree := range trees {
-		stats, err := executionTree.Execute(ctx)
+	for targetName, executionTree := range trees { // create a context with check status hooks
+		checkCtx := createCheckContext(ctx)
+		stats, err := executionTree.Execute(checkCtx)
 		error_helpers.FailOnError(err)
 
-		err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
+		err = displayControlResults(checkCtx, executionTree, initData.OutputFormatter)
 		error_helpers.FailOnError(err)
 
 		// append the total number of alarms and errors for multiple runs
 		totalAlarms += stats.Alarm
 		totalErrors += stats.Error
 
-		statushooks.SetStatus(ctx, "Starting export")
-
 		// if the share args are set, create a snapshot and share it
 		if generateSnapshot {
-			statushooks.SetStatus(ctx, "Publishing snapshot")
+			statushooks.SetStatus(checkCtx, "Publishing snapshot")
 			err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
 			if err != nil {
 				exitCode = constants.ExitCodeSnapshotUploadFailed
 				error_helpers.FailOnError(err)
 			}
 		}
+
 		exportArgs := viper.GetStringSlice(constants.ArgExport)
-		exportMsg, err := initData.ExportManager.DoExport(ctx, fmt.Sprintf("check.%s", w.Mod.ShortName), executionTree, exportArgs)
+		exportMsg, err := initData.ExportManager.DoExport(ctx, targetName, executionTree, exportArgs)
 		error_helpers.FailOnError(err)
 
 		if shouldPrintTiming() {
