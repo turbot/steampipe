@@ -148,20 +148,20 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	error_helpers.FailOnError(err)
 
 	// execute controls synchronously (execute returns the number of alarms and errors)
-	for targetName, executionTree := range trees { // create a context with check status hooks
-		err = executeTree(ctx, executionTree, initData)
+	for _, namedTree := range trees { // create a context with check status hooks
+		err = executeTree(ctx, namedTree.tree, initData)
 		error_helpers.FailOnError(err)
 
 		// append the total number of alarms and errors for multiple runs
-		totalAlarms += executionTree.Root.Summary.Status.Alarm
-		totalErrors += executionTree.Root.Summary.Status.Error
+		totalAlarms += namedTree.tree.Root.Summary.Status.Alarm
+		totalErrors += namedTree.tree.Root.Summary.Status.Error
 
-		err = publishSnapshot(ctx, executionTree, viper.GetBool(constants.ArgShare), viper.GetBool(constants.ArgSnapshot))
+		err = publishSnapshot(ctx, namedTree.tree, viper.GetBool(constants.ArgShare), viper.GetBool(constants.ArgSnapshot))
 		error_helpers.FailOnError(err)
 
-		printTiming(executionTree)
+		printTiming(namedTree.tree)
 
-		err = exportExecutionTree(ctx, executionTree, targetName, initData, viper.GetStringSlice(constants.ArgExport))
+		err = exportExecutionTree(ctx, namedTree, initData, viper.GetStringSlice(constants.ArgExport))
 		error_helpers.FailOnError(err)
 	}
 
@@ -169,11 +169,11 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = getExitCode(totalAlarms, totalErrors)
 }
 
-func exportExecutionTree(ctx context.Context, executionTree *controlexecute.ExecutionTree, targetName string, initData *control.InitData, exportArgs []string) error {
+func exportExecutionTree(ctx context.Context, namedTree *namedExecutionTree, initData *control.InitData, exportArgs []string) error {
 	if error_helpers.IsContextCanceled(ctx) {
 		return ctx.Err()
 	}
-	exportMsg, err := initData.ExportManager.DoExport(ctx, targetName, executionTree, exportArgs)
+	exportMsg, err := initData.ExportManager.DoExport(ctx, namedTree.name, namedTree.tree, exportArgs)
 	if err != nil {
 		return err
 	}
@@ -214,8 +214,8 @@ func publishSnapshot(ctx context.Context, executionTree *controlexecute.Executio
 	return nil
 }
 
-func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...string) (map[string]*controlexecute.ExecutionTree, error) {
-	trees := map[string]*controlexecute.ExecutionTree{}
+func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...string) ([]*namedExecutionTree, error) {
+	trees := []*namedExecutionTree{}
 	if initData.ExportManager.HasNamedExport(viper.GetStringSlice(constants.ArgExport)) {
 		// create a single merged execution tree
 		executionTree, err := controlexecute.NewExecutionTree(ctx, initData.Workspace, initData.Client, initData.ControlFilterWhereClause, args...)
@@ -223,7 +223,7 @@ func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...
 			return nil, sperr.WrapWithMessage(err, "could not create merged execution tree")
 		}
 		name := fmt.Sprintf("check.%s", initData.Workspace.Mod.ShortName)
-		trees[name] = executionTree
+		trees = append(trees, newNamedExecutionTree(name, executionTree))
 	} else {
 		for _, arg := range args {
 			executionTree, err := controlexecute.NewExecutionTree(ctx, initData.Workspace, initData.Client, initData.ControlFilterWhereClause, arg)
@@ -234,7 +234,7 @@ func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...
 			if err != nil {
 				return nil, sperr.WrapWithMessage(err, "could not evaluate export name for %s", arg)
 			}
-			trees[name] = executionTree
+			trees = append(trees, newNamedExecutionTree(name, executionTree))
 		}
 	}
 	return trees, nil
@@ -336,4 +336,16 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 	}
 	_, err = io.Copy(os.Stdout, reader)
 	return err
+}
+
+type namedExecutionTree struct {
+	tree *controlexecute.ExecutionTree
+	name string
+}
+
+func newNamedExecutionTree(name string, tree *controlexecute.ExecutionTree) *namedExecutionTree {
+	return &namedExecutionTree{
+		tree: tree,
+		name: name,
+	}
 }
