@@ -140,10 +140,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	// pull out useful properties
 	totalAlarms, totalErrors := 0, 0
 
-	shouldShare := viper.GetBool(constants.ArgShare)
-	shouldUpload := viper.GetBool(constants.ArgSnapshot)
-	generateSnapshot := shouldShare || shouldUpload
-
 	if helpers.StringSliceContains(args, "all") && len(args) > 1 {
 		error_helpers.FailOnError(sperr.New("cannot execute 'all' with other benchmarks/controls"))
 	}
@@ -153,45 +149,69 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// execute controls synchronously (execute returns the number of alarms and errors)
 	for targetName, executionTree := range trees { // create a context with check status hooks
-		checkCtx := createCheckContext(ctx)
-		stats, err := executionTree.Execute(checkCtx)
-		error_helpers.FailOnError(err)
-
-		err = displayControlResults(checkCtx, executionTree, initData.OutputFormatter)
+		err = executeTree(ctx, executionTree, initData)
 		error_helpers.FailOnError(err)
 
 		// append the total number of alarms and errors for multiple runs
-		totalAlarms += stats.Alarm
-		totalErrors += stats.Error
+		totalAlarms += executionTree.Root.Summary.Status.Alarm
+		totalErrors += executionTree.Root.Summary.Status.Error
 
-		// if the share args are set, create a snapshot and share it
-		if generateSnapshot {
-			statushooks.SetStatus(checkCtx, "Publishing snapshot")
-			err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
-			if err != nil {
-				exitCode = constants.ExitCodeSnapshotUploadFailed
-				error_helpers.FailOnError(err)
-			}
-		}
-
-		exportArgs := viper.GetStringSlice(constants.ArgExport)
-		exportMsg, err := initData.ExportManager.DoExport(ctx, targetName, executionTree, exportArgs)
+		err = publishSnapshot(ctx, executionTree, viper.GetBool(constants.ArgShare), viper.GetBool(constants.ArgSnapshot))
 		error_helpers.FailOnError(err)
 
-		if shouldPrintTiming() {
-			printTiming(executionTree)
-		}
+		printTiming(executionTree)
 
-		// print the location where the file is exported if progress=true
-		if len(exportMsg) > 0 && viper.GetBool(constants.ArgProgress) {
-			fmt.Printf("\n")
-			fmt.Println(exportMsg)
-			fmt.Printf("\n")
-		}
+		err = exportExecutionTree(ctx, executionTree, targetName, initData, viper.GetStringSlice(constants.ArgExport))
+		error_helpers.FailOnError(err)
 	}
 
 	// set the defined exit code after successful execution
 	exitCode = getExitCode(totalAlarms, totalErrors)
+}
+
+func exportExecutionTree(ctx context.Context, executionTree *controlexecute.ExecutionTree, targetName string, initData *control.InitData, exportArgs []string) error {
+	if error_helpers.IsContextCanceled(ctx) {
+		return ctx.Err()
+	}
+	exportMsg, err := initData.ExportManager.DoExport(ctx, targetName, executionTree, exportArgs)
+	if err != nil {
+		return err
+	}
+
+	// print the location where the file is exported if progress=true
+	if len(exportMsg) > 0 && viper.GetBool(constants.ArgProgress) {
+		fmt.Printf("\n")
+		fmt.Println(exportMsg)
+		fmt.Printf("\n")
+	}
+
+	return nil
+}
+
+func executeTree(ctx context.Context, tree *controlexecute.ExecutionTree, initData *control.InitData) error {
+	checkCtx := createCheckContext(ctx)
+	err := tree.Execute(checkCtx)
+	if err != nil {
+		return err
+	}
+
+	err = displayControlResults(checkCtx, tree, initData.OutputFormatter)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func publishSnapshot(ctx context.Context, executionTree *controlexecute.ExecutionTree, shouldShare bool, shouldUpload bool) error {
+	if error_helpers.IsContextCanceled(ctx) {
+		return ctx.Err()
+	}
+	// if the share args are set, create a snapshot and share it
+	if shouldShare || shouldUpload {
+		statushooks.SetStatus(ctx, "Publishing snapshot")
+		return controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
+	}
+	return nil
 }
 
 func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...string) (map[string]*controlexecute.ExecutionTree, error) {
@@ -287,6 +307,9 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 }
 
 func printTiming(tree *controlexecute.ExecutionTree) {
+	if !shouldPrintTiming() {
+		return
+	}
 	headers := []string{"", "Duration"}
 	var rows [][]string
 
