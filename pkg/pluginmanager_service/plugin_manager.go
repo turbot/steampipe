@@ -208,10 +208,6 @@ func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.R
 }
 
 func (m *PluginManager) doRefresh() {
-	// TODO HACK
-	// allow time for notification listener
-	time.Sleep(1 * time.Second)
-
 	refreshResult := connection.RefreshConnections(context.Background(), m)
 	if refreshResult.Error != nil {
 		// NOTE: the RefreshConnectionState will already have sent a notification to the CLI

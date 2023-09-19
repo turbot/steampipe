@@ -19,7 +19,6 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
-	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -30,6 +29,7 @@ type StartResult struct {
 	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
 	PluginManagerState *pluginmanager.State
+	PluginManager      *pluginmanager.PluginManagerClient
 }
 
 func (r *StartResult) SetError(err error) *StartResult {
@@ -122,17 +122,11 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 		// start plugin manager if needed
 		pluginManager, pluginManagerState, err := ensurePluginManager()
 		res.PluginManagerState = pluginManagerState
+		res.PluginManager = pluginManager
 		if err != nil {
 			res.Error = err
 			return res
 		}
-
-		// ask the plugin manager to refresh connections
-		// this is executed asyncronously by the plugin manager
-		// we ignore this error, since RefreshConnections is async and all errors will flow through
-		// the notification system
-		// we do not expect any I/O errors on this since the PluginManager is running in the same box
-		_, _ = pluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
 
 		statushooks.SetStatus(ctx, "Service startup complete")
 
