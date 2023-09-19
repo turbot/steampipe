@@ -20,7 +20,7 @@ func DecodePlugin(block *hcl.Block) (*modconfig.Plugin, hcl.Diagnostics) {
 	var plugin = &modconfig.Plugin{
 		// default source and name to label
 		Instance: block.Labels[0],
-		Source:   block.Labels[0],
+		Alias:    block.Labels[0],
 	}
 	moreDiags := gohcl.DecodeBody(body, nil, plugin)
 	if moreDiags.HasErrors() {

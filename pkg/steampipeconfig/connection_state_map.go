@@ -28,7 +28,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 	// cache plugin file creation times in a dictionary to avoid reloading the same plugin file multiple times
 	pluginModTimeMap := make(map[string]time.Time)
 
-	// map of missing plugins, keyed by plugin, value is list of connections using missing plugin
+	// map of missing plugins, keyed by plugin alias, value is list of connections using missing plugin
 	missingPluginMap := make(map[string][]modconfig.Connection)
 
 	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration start")
@@ -38,7 +38,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 		// ignore error if plugin is not available
 		// if plugin is not installed, the path will be returned as empty
 		if pluginPath == "" {
-			missingPluginMap[connection.PluginInstance] = append(missingPluginMap[connection.Plugin], *connection)
+			missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
 			continue
 		}
 
@@ -220,19 +220,14 @@ func (m ConnectionStateMap) getFirstSearchPathConnectionMapForPlugins(searchPath
 	return res
 }
 
-func (m ConnectionStateMap) SetReadyConnectionsToPending() {
+func (m ConnectionStateMap) SetConnectionsToPendingOrIncomplete() {
 	for _, state := range m {
 		if state.State == constants.ConnectionStateReady {
 			state.State = constants.ConnectionStatePending
 			state.ConnectionModTime = time.Now()
-		}
-	}
-}
-
-func (m ConnectionStateMap) SetNotReadyConnectionsToIncomplete() {
-	for _, state := range m {
-		if state.State != constants.ConnectionStateReady && state.State != constants.ConnectionStateDisabled {
+		} else if state.State != constants.ConnectionStateDisabled {
 			state.State = constants.ConnectionStatePendingIncomplete
+			state.ConnectionModTime = time.Now()
 		}
 	}
 }

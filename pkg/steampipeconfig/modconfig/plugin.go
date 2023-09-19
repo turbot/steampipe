@@ -9,7 +9,7 @@ import (
 
 type Plugin struct {
 	Instance        string         `hcl:"name,label" db:"plugin_instance"`
-	Source          string         `hcl:"source,optional"`
+	Alias           string         `hcl:"source,optional"`
 	MaxMemoryMb     *int           `hcl:"max_memory_mb,optional" db:"max_memory_mb"`
 	Limiters        []*RateLimiter `hcl:"limiter,block" db:"rate_limiters"`
 	FileName        *string        `db:"file_name"`
@@ -28,7 +28,7 @@ func NewImplicitPlugin(connection *Connection) *Plugin {
 	return &Plugin{
 		// NOTE: set label to image ref
 		Instance: imageRef.DisplayImageRef(),
-		Source:   connection.PluginAlias,
+		Alias:    connection.PluginAlias,
 		Plugin:   imageRef.DisplayImageRef(),
 		imageRef: imageRef,
 	}
@@ -39,7 +39,7 @@ func (l *Plugin) OnDecoded(block *hcl.Block) {
 	l.FileName = &pluginRange.Filename
 	l.StartLineNumber = &pluginRange.Start.Line
 	l.EndLineNumber = &pluginRange.End.Line
-	l.imageRef = ociinstaller.NewSteampipeImageRef(l.Source)
+	l.imageRef = ociinstaller.NewSteampipeImageRef(l.Alias)
 	l.Plugin = l.imageRef.DisplayImageRef()
 }
 
@@ -73,7 +73,7 @@ func (l *Plugin) GetLimiterMap() map[string]*RateLimiter {
 func (l *Plugin) Equals(other *Plugin) bool {
 
 	return l.Instance == other.Instance &&
-		l.Source == other.Source &&
+		l.Alias == other.Alias &&
 		l.GetMaxMemoryBytes() == other.GetMaxMemoryBytes() &&
 		l.Plugin == other.Plugin &&
 		// compare limiters ignoring order

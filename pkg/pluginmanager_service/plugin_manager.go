@@ -456,9 +456,9 @@ func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConf
 	imageRef := pluginConfig.GetImageRef()
 	log.Printf("[INFO] ************ start plugin: %s, label: %s ********************\n", imageRef, pluginConfig.Instance)
 
-	// NOTE: pass pluginConfig.Source as the pluginAlias
+	// NOTE: pass pluginConfig.Alias as the pluginAlias
 	// - this is just used for the error message if we fail to load
-	pluginPath, err := filepaths.GetPluginPath(imageRef, pluginConfig.Source)
+	pluginPath, err := filepaths.GetPluginPath(imageRef, pluginConfig.Alias)
 	if err != nil {
 		return nil, err
 	}
@@ -753,7 +753,7 @@ func (m *PluginManager) setRateLimiters(pluginInstance string, pluginClient *sdk
 // update the schema for the specified connection
 // called from the message server after receiving a PluginMessageType_SCHEMA_UPDATED message from plugin
 func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionName string) {
-	log.Printf("[TRACE] updateConnectionSchema connection %s", connectionName)
+	log.Printf("[INFO] updateConnectionSchema connection %s", connectionName)
 
 	refreshResult := connection.RefreshConnections(ctx, m, connectionName)
 	if refreshResult.Error != nil {

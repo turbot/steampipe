@@ -122,9 +122,8 @@ func decodeConnectionPluginProperty(connectionContent *hcl.BodyContent, connecti
 
 		// so we have resolved a reference to a plugin config
 		// we will validate that this block exists later in initializePlugins
-		// set both alias AND label properties
-		// (the label property being set means that we will raise the correct error if we fail to resolve the plugin block)
-		connection.PluginAlias = pluginInstance
+		// set PluginInstance ONLY
+		// (the PluginInstance property being set means that we will raise the correct error if we fail to resolve the plugin block)
 		connection.PluginInstance = pluginInstance
 		return nil
 	}

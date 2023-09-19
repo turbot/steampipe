@@ -108,7 +108,7 @@ func (l *RateLimiter) Equals(other *RateLimiter) bool {
 
 func (l *RateLimiter) SetPlugin(plugin *Plugin) {
 	l.PluginInstance = plugin.Instance
-	l.setPluginImageRef(plugin.Source)
+	l.setPluginImageRef(plugin.Alias)
 }
 
 func (l *RateLimiter) setPluginImageRef(alias string) {

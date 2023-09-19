@@ -744,26 +744,36 @@ func (c *InteractiveClient) handleConnectionErrorNotification(ctx context.Contex
 
 }
 func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context) {
+	// ignore schema update notifications until initialisation is complete
+	// (we may receive schema update messages from the initial refresh connecitons, but we do not need to reload
+	// the schema as we will have already loaded the correct schema)
+	if !c.initialisationComplete {
+		log.Printf("[INFO] received schema update notification but ignoring it as we are initializing")
+		return
+	}
+
 	// at present, we do not actually use the payload, we just do a brute force reload
 	// as an optimization we could look at the updates and only reload the required schemas
 
-	log.Printf("[TRACE] handleConnectionUpdateNotification")
+	log.Printf("[INFO] handleConnectionUpdateNotification")
 
 	// first load user search path
 	if err := c.client().LoadUserSearchPath(ctx); err != nil {
-		log.Printf("[INFO] Error in handleConnectionUpdateNotification when loading foreign user search path: %s", err.Error())
+		log.Printf("[WARN] Error in handleConnectionUpdateNotification when loading foreign user search path: %s", err.Error())
 		return
 	}
 
 	//  reload schema
 	if err := c.loadSchema(); err != nil {
-		log.Printf("[INFO] Error unmarshalling notification: %s", err)
+		log.Printf("[WARN] Error unmarshalling notification: %s", err)
 		return
 	}
 
 	// reinitialise autocomplete suggestions
-	//nolint:golint,errcheck // worst case is autocomplete isn't reinitialized
-	c.initialiseSuggestions(ctx)
+
+	if err := c.initialiseSuggestions(ctx); err != nil{
+		log.Printf("[WARN] failed to initialise suggestions: %s", err)
+	}
 
 	// refresh the db session inside an execution lock
 	// we do this to avoid the postgres `cached plan must not change result type`` error

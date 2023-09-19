@@ -79,7 +79,6 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	log.Println("[DEBUG] refreshConnectionState.refreshConnections start")
 	defer log.Println("[DEBUG] refreshConnectionState.refreshConnections end")
-
 	// if there was an error (other than a connection error, which will NOT have been assigned to res),
 	// set state of all incomplete connections to error
 	defer func() {
@@ -175,19 +174,22 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 func (s *refreshConnectionState) addMissingPluginWarnings() {
 	log.Printf("[INFO] refreshConnections: identify missing plugins")
 
-	var connectionNames, pluginNames []string
+	var connectionNames []string
 	// add warning if there are connections left over, from missing plugins
 	if len(s.connectionUpdates.MissingPlugins) > 0 {
 		// warning
-		for a, conns := range s.connectionUpdates.MissingPlugins {
+		for _, conns := range s.connectionUpdates.MissingPlugins {
 			for _, con := range conns {
 				connectionNames = append(connectionNames, con.Name)
 			}
-			pluginNames = append(pluginNames, utils.GetPluginName(a))
+
 		}
-		s.res.AddWarning(fmt.Sprintf("%d %s required by %s %s missing. To install, please run %s",
+		pluginNames := maps.Keys(s.connectionUpdates.MissingPlugins)
+
+		s.res.AddWarning(fmt.Sprintf("%d %s required by %d %s %s missing. To install, please run: %s",
 			len(pluginNames),
 			utils.Pluralize("plugin", len(pluginNames)),
+			len(connectionNames),
 			utils.Pluralize("connection", len(connectionNames)),
 			utils.Pluralize("is", len(pluginNames)),
 			constants.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(pluginNames, " ")))))
@@ -292,7 +294,6 @@ func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	if len(errors) > 0 {
 		s.res.Error = error_helpers.CombineErrors(errors...)
 		log.Printf("[WARN] initial updates failed: %s", s.res.Error.Error())
-		// TODO SEND ERROR NOTIFICATION
 		return
 	}
 

@@ -2,16 +2,17 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
@@ -337,7 +338,7 @@ func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
 // NOTE: this returns an error if we alreayd have a config with the same label
 func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin, block *hcl.Block) error {
 	if _, exists := c.PluginsInstances[plugin.Instance]; exists {
-		return sperr.New("duplicate plugin: '%s' in '%s'", plugin.Source, block.TypeRange.Filename)
+		return sperr.New("duplicate plugin: '%s' in '%s'", plugin.Alias, block.TypeRange.Filename)
 	}
 	// get the image ref to key the map
 	imageRef := plugin.GetImageRef()
@@ -355,12 +356,21 @@ func (c *SteampipeConfig) initializePlugins() map[string]error {
 	for _, connection := range c.Connections {
 		plugin, err := c.resolvePluginForConnection(connection)
 		if err != nil {
+			log.Printf("[INFO] cannot resolve plugin for connection '%s': %s", connection.Name, err.Error())
 			failedConnections[connection.Name] = err
 			continue
 		}
-		// set the Plugin property on the connection
-		connection.Plugin = plugin.GetImageRef()
-		connection.PluginInstance = plugin.Instance
+		// set the PluginAlias on the connection
+		connection.PluginAlias = plugin.Alias
+
+		// if the required plugin is installed, set the Plugin property on the connection
+		pluginImageRef := plugin.GetImageRef()
+		if pluginPath, _ := filepaths.GetPluginPath(pluginImageRef, plugin.Alias); pluginPath != "" {
+			connection.Plugin = pluginImageRef
+			connection.PluginInstance = plugin.Instance
+		} else {
+			log.Printf("[INFO] connection '%s' uses plugin instance '%s', which requires plugin '%s' - this is not installed", connection.Name, plugin.Instance, plugin.Alias)
+		}
 
 	}
 	return failedConnections
@@ -390,7 +400,7 @@ func (c *SteampipeConfig) resolvePluginForConnection(connection *modconfig.Conne
 	if connection.PluginInstance != "" {
 		p := c.PluginsInstances[connection.PluginInstance]
 		if p == nil {
-			// TODO should this return diagnostics?? Or at least include range in error
+			// TODO KAI should this return diagnostics?? Or at least include range in error
 			return nil, fmt.Errorf("connection %s refers to plugin.%s but this does not exist", connection.Name, connection.PluginInstance)
 		}
 		return p, nil
@@ -417,7 +427,9 @@ func (c *SteampipeConfig) resolvePluginForConnection(connection *modconfig.Conne
 		// now add to our map
 		// (NOTE: it;s ok to pass an empty HCL block - it is only used for the duplicate config error
 		// and we know we will not get that
-		c.addPlugin(p, &hcl.Block{})
+		if err := c.addPlugin(p, &hcl.Block{}); err != nil{
+			return nil, err
+		}
 		return p, nil
 
 	case 1:
@@ -426,7 +438,7 @@ func (c *SteampipeConfig) resolvePluginForConnection(connection *modconfig.Conne
 	default:
 		// so there is more than one plugin config for the plugin, and the connection DOES NOT specify which one to use
 		// this is an error
-		// TODO LIST ALL CONFLICTING PLUGIN CONFIGS AND THEIR RANGE
+		// TODO KAI LIST ALL CONFLICTING PLUGIN CONFIGS AND THEIR RANGE
 		return nil, sperr.New("connection '%s' specifies plugin '%s' but there are %d plugin configs defined so the correct config cannot be resolved", connection.Name, connection.PluginAlias, len(pluginsForImageRef))
 	}
 }

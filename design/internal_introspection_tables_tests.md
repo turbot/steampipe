@@ -12,7 +12,7 @@ connection "aws" {
 
 #### On interactive startup: 
 ```
-Warning: 1 plugin required by connection is missing. To install, please run steampipe plugin install aws_bar1 (????)
+Warning: 1 plugin required by connection is missing. To install, please run steampipe plugin install aws_bar1
 ```
 
 #### On file watcher event:
@@ -21,14 +21,8 @@ Warning: 1 plugin required by connection is missing. To install, please run stea
 ```
 
 ### Actual
-#### On interactive startup:
 
-No warning
-
-#### On file watcher event:
-```
-Warning: 1 plugin required by connection is missing. To install, please run steampipe plugin install aws_bar1
-```
+As expected
 
 ## 2 Startup with invalid plugin (referring to instance by name) 
 

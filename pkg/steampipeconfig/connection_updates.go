@@ -26,7 +26,8 @@ type ConnectionUpdates struct {
 	Delete          map[string]struct{}
 	Disabled        map[string]struct{}
 	MissingComments ConnectionStateMap
-
+	// map of missing plugins, keyed by plugin ALIAS
+	// NOTE: we key by alias so the error message refers to the string which was used to specify the plugin
 	MissingPlugins map[string][]modconfig.Connection
 	// the connections which will exist after the update
 	FinalConnectionState ConnectionStateMap
