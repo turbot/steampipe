@@ -679,8 +679,7 @@ func handleModDecodeResult(resource modconfig.HclResource, res *DecodeResult, bl
 
 	// if resource supports metadata, save it
 	if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
-		body := block.Body.(*hclsyntax.Body)
-		moreDiags = addResourceMetadata(resourceWithMetadata, body.SrcRange, parseCtx)
+		moreDiags = addResourceMetadata(resourceWithMetadata, resource.GetHclResourceImpl().DeclRange, parseCtx)
 		res.addDiags(moreDiags)
 	}
 }
