@@ -6,10 +6,10 @@ import (
 )
 
 type runningPlugin struct {
-	pluginLabel string
-	client      *plugin.Client
-	reattach    *pb.ReattachConfig
-	initialized chan struct{}
-	failed      chan struct{}
-	error       error
+	pluginInstance string
+	client         *plugin.Client
+	reattach       *pb.ReattachConfig
+	initialized    chan struct{}
+	failed         chan struct{}
+	error          error
 }

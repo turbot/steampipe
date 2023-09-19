@@ -3,6 +3,7 @@ package initialisation
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
@@ -65,6 +66,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 		}
 	}()
 
+	log.Printf("[INFO] Initializing...")
+
 	// code after this depends of i.Workspace being defined. make sure that it is
 	if i.Workspace == nil {
 		i.Result.Error = sperr.WrapWithRootMessage(error_helpers.InvalidStateError, "InitData.Init called before setting up Workspace")
@@ -84,6 +87,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 	// install mod dependencies if needed
 	if viper.GetBool(constants.ArgModInstall) {
 		statushooks.SetStatus(ctx, "Installing workspace dependencies")
+		log.Printf("[INFO] Installing workspace dependencies")
+
 		opts := modinstaller.NewInstallOpts(i.Workspace.Mod)
 		// use force install so that errors are ignored during installation
 		// (we are validating prereqs later)
@@ -106,6 +111,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 	i.Workspace.CloudMetadata = cloudMetadata
 
 	statushooks.SetStatus(ctx, "Checking for required plugins")
+	log.Printf("[INFO] Checking for required plugins")
 	pluginsInstalled, err := plugin.GetInstalledPlugins()
 	if err != nil {
 		i.Result.Error = err
@@ -135,7 +141,8 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 		i.Result.AddMessage(fmt.Sprintf(format, a...))
 	})
 
-	statushooks.SetStatus(ctx, "Connecting to steampipe")
+	statushooks.SetStatus(ctx, "Connecting to steampipe database")
+	log.Printf("[INFO] Connecting to steampipe database")
 	client, errorsAndWarnings := GetDbClient(getClientCtx, invoker, ensureSessionData, opts...)
 	if errorsAndWarnings.Error != nil {
 		i.Result.Error = errorsAndWarnings.Error
@@ -144,6 +151,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 
 	i.Result.AddWarnings(errorsAndWarnings.Warnings...)
 
+	log.Printf("[INFO] ValidateClientCacheSettings")
 	if errorsAndWarnings := db_common.ValidateClientCacheSettings(client); errorsAndWarnings != nil {
 		if errorsAndWarnings.GetError() != nil {
 			i.Result.Error = errorsAndWarnings.GetError()
@@ -187,6 +195,8 @@ func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCal
 	}
 
 	statushooks.SetStatus(ctx, "Starting local Steampipe database")
+	log.Printf("[INFO] Starting local Steampipe database")
+
 	return db_local.GetLocalClient(ctx, invoker, onConnectionCallback, opts...)
 }
 

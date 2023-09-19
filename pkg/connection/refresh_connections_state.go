@@ -88,7 +88,7 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 				s.setIncompleteConnectionStateToError(ctx, sperr.WrapWithMessage(s.res.Error, "refreshConnections failed before connection update was complete"))
 			}
 			if !s.res.ErrorAndWarnings.Empty() {
-				log.Printf("[INFO] refreshConnections completed with errors, sending notificationrt SP_LOG=")
+				log.Printf("[INFO] refreshConnections completed with errors, sending notification")
 				s.sendPostgresErrorNotification(ctx, s.res.ErrorAndWarnings)
 			}
 

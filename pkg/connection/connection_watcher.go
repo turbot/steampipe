@@ -80,7 +80,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	// convert config to format expected by plugin manager
 	// (plugin manager cannot reference steampipe config to avoid circular deps)
 	configMap := NewConnectionConfigMap(config.Connections)
-	w.pluginManager.OnConnectionConfigChanged(configMap, config.PluginsInstances)
+	w.pluginManager.OnConnectionConfigChanged(ctx, configMap, config.PluginsInstances)
 
 	// The only configurations from GlobalConfig which have
 	// impact during Refresh are Database options and the Connections
@@ -98,8 +98,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	log.Printf("[INFO] calling RefreshConnections asyncronously")
 
 	// call RefreshConnections asyncronously
-	// the RefreshConnections implements its own locking to ensure only a singler execution and a single queues execution
-	// TODO send warnings on warning_stream
+	// the RefreshConnections implements its own locking to ensure only a single execution and a single queues execution
 	go RefreshConnections(ctx, w.pluginManager)
 
 	log.Printf("[TRACE] File watch event done")

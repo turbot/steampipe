@@ -82,7 +82,7 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 // respond to changes in the HCL rate limiter config
 // update the stored limiters, refresh the rate limiter table and call `setRateLimiters`
 // for all plugins with changed limiters
-func (m *PluginManager) handleUserLimiterChanges(plugins connection.PluginMap) error {
+func (m *PluginManager) handleUserLimiterChanges(_ context.Context, plugins connection.PluginMap) error {
 	limiterPluginMap := plugins.ToPluginLimiterMap()
 	pluginsWithChangedLimiters := m.getPluginsWithChangedLimiters(limiterPluginMap)
 
@@ -304,7 +304,7 @@ func (m *PluginManager) LoadPluginRateLimiters(pluginConnectionMap map[string]st
 	// ok so now we have all necessary plugin reattach configs - fetch the rate limiter defs
 	var errors []error
 	var res = make(connection.PluginLimiterMap)
-	for pluginLabel, reattach := range resp.ReattachMap {
+	for pluginInstance, reattach := range resp.ReattachMap {
 
 		if !reattach.SupportedOperations.RateLimiters {
 			continue
@@ -326,7 +326,7 @@ func (m *PluginManager) LoadPluginRateLimiters(pluginConnectionMap map[string]st
 
 		limitersForPlugin := make(connection.LimiterMap)
 		for _, l := range rateLimiterResp.Definitions {
-			r, err := modconfig.RateLimiterFromProto(l, reattach.Plugin, pluginLabel)
+			r, err := modconfig.RateLimiterFromProto(l, reattach.Plugin, pluginInstance)
 			if err != nil {
 				errors = append(errors, sperr.WrapWithMessage(err, "failed to create rate limiter %s from plugin definition", err))
 				continue

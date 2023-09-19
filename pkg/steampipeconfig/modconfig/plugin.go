@@ -4,6 +4,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
+	"golang.org/x/exp/maps"
 )
 
 type Plugin struct {
@@ -59,4 +60,23 @@ func (l *Plugin) GetMaxMemoryBytes() int64 {
 
 func (l *Plugin) GetImageRef() string {
 	return l.imageRef.DisplayImageRef()
+}
+
+func (l *Plugin) GetLimiterMap() map[string]*RateLimiter {
+	res := make(map[string]*RateLimiter, len(l.Limiters))
+	for _, l := range l.Limiters {
+		res[l.Name] = l
+	}
+	return res
+}
+
+func (l *Plugin) Equals(other *Plugin) bool {
+
+	return l.Instance == other.Instance &&
+		l.Source == other.Source &&
+		l.GetMaxMemoryBytes() == other.GetMaxMemoryBytes() &&
+		l.Plugin == other.Plugin &&
+		// compare limiters ignoring order
+		maps.EqualFunc(l.GetLimiterMap(), other.GetLimiterMap(), func(l, r *RateLimiter) bool { return l.Equals(r) })
+
 }

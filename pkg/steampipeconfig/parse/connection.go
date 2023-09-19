@@ -112,8 +112,8 @@ func decodeConnectionPluginProperty(connectionContent *hcl.BodyContent, connecti
 	}
 	if len(res.Depends) > 0 {
 		log.Printf("[INFO] decodeConnectionPluginProperty plugin property is HCL reference")
-		// if this is a plugin reference, extract the plugin label
-		pluginLabel, ok := getPluginFromDependency(maps.Values(res.Depends))
+		// if this is a plugin reference, extract the plugin instance
+		pluginInstance, ok := getPluginInstanceFromDependency(maps.Values(res.Depends))
 		if !ok {
 			log.Printf("[INFO] failed to resolve plugin property")
 			// return the original diagnostics
@@ -124,8 +124,8 @@ func decodeConnectionPluginProperty(connectionContent *hcl.BodyContent, connecti
 		// we will validate that this block exists later in initializePlugins
 		// set both alias AND label properties
 		// (the label property being set means that we will raise the correct error if we fail to resolve the plugin block)
-		connection.PluginAlias = pluginLabel
-		connection.PluginInstance = pluginLabel
+		connection.PluginAlias = pluginInstance
+		connection.PluginInstance = pluginInstance
 		return nil
 	}
 
@@ -135,7 +135,7 @@ func decodeConnectionPluginProperty(connectionContent *hcl.BodyContent, connecti
 	return nil
 }
 
-func getPluginFromDependency(dependencies []*modconfig.ResourceDependency) (string, bool) {
+func getPluginInstanceFromDependency(dependencies []*modconfig.ResourceDependency) (string, bool) {
 	if len(dependencies) != 1 {
 		return "", false
 	}

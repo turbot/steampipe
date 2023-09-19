@@ -16,28 +16,6 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-//// dropLegacySchemas drops the legacy 'steampipe_command' schema if it exists
-//// and the 'internal' schema if it contains only the 'glob' function
-//// and maybe the 'connection_state' table
-//func dropLegacySchemas(ctx context.Context, conn *pgx.Conn) error {
-//	utils.LogTime("db_local.dropLegacySchema start")
-//	defer utils.LogTime("db_local.dropLegacySchema end")
-//
-//	return error_helpers.CombineErrors(
-//		dropLegacyInternalSchema(ctx, conn),
-//		dropLegacySteampipeCommandSchema(ctx, conn),
-//	)
-//}
-//
-//// dropLegacySteampipeCommandSchema drops the 'steampipe_command' schema if it exists
-//func dropLegacySteampipeCommandSchema(ctx context.Context, conn *pgx.Conn) error {
-//	utils.LogTime("db_local.dropLegacySteampipeCommand start")
-//	defer utils.LogTime("db_local.dropLegacySteampipeCommand end")
-//
-//	_, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", constants.LegacyCommandSchema))
-//	return err
-//}
-
 // dropLegacyInternalSchema looks for a schema named 'internal'
 // which has a function called 'glob' and maybe a table named 'connection_state'
 // and drops it
@@ -271,7 +249,7 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 	return err
 }
 
-func populatePluginTable(ctx context.Context, conn *pgx.Conn) error {
+func PopulatePluginTable(ctx context.Context, conn *pgx.Conn) error {
 	plugins := steampipeconfig.GlobalConfig.PluginsInstances
 
 	// drop the table and recreate

@@ -26,6 +26,9 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
+	log.Printf("[INFO] GetLocalClient")
+	defer log.Printf("[INFO] GetLocalClient complete")
+
 	listenAddresses := StartListenType(ListenTypeLocal).ToListenAddresses()
 	port := viper.GetInt(constants.ArgDatabasePort)
 	log.Println(fmt.Sprintf("[TRACE] GetLocalClient - listenAddresses=%s, port=%d", listenAddresses, port))
@@ -34,11 +37,13 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
 
+	log.Printf("[INFO] StartServices")
 	startResult := StartServices(ctx, listenAddresses, port, invoker)
 	if startResult.Error != nil {
 		return nil, &startResult.ErrorAndWarnings
 	}
 
+	log.Printf("[INFO] newLocalClient")
 	client, err := newLocalClient(ctx, invoker, onConnectionCallback, opts...)
 	if err != nil {
 		ShutdownService(ctx, invoker)
@@ -65,7 +70,7 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	}
 
 	client := &LocalDbClient{DbClient: *dbClient, invoker: invoker}
-	log.Printf("[TRACE] created local client %p", client)
+	log.Printf("[INFO] created local client %p", client)
 
 	if err := client.initNotificationListener(ctx); err != nil {
 		client.Close(ctx)

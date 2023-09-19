@@ -186,7 +186,7 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	if err := initializeConnectionStateTable(ctx, conn); err != nil {
 		return err
 	}
-	if err := populatePluginTable(ctx, conn); err != nil {
+	if err := PopulatePluginTable(ctx, conn); err != nil {
 		return err
 	}
 
