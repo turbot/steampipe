@@ -21,6 +21,7 @@ import (
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
@@ -149,49 +150,73 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		error_helpers.FailOnError(sperr.New("cannot execute 'all' with other benchmarks/controls"))
 	}
 
-	// create the execution tree
-	executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, initData.ControlFilterWhereClause, args...)
-	error_helpers.FailOnError(err)
+	var trees []*controlexecute.ExecutionTree
 
-	// execute controls synchronously (execute returns the number of alarms and errors)
-	stats, err := executionTree.Execute(ctx)
-	error_helpers.FailOnError(err)
-
-	err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
-	error_helpers.FailOnError(err)
-
-	// append the total number of alarms and errors for multiple runs
-	totalAlarms += stats.Alarm
-	totalErrors += stats.Error
-
-	statushooks.SetStatus(ctx, "Starting export")
-
-	// if the share args are set, create a snapshot and share it
-	if generateSnapshot {
-		statushooks.SetStatus(ctx, "Publishing snapshot")
-		err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
-		if err != nil {
-			exitCode = constants.ExitCodeSnapshotUploadFailed
+	if initData.ExportManager.HasNamedExport(viper.GetStringSlice(constants.ArgExport)) {
+		// create a single merged execution tree
+		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, initData.ControlFilterWhereClause, args...)
+		error_helpers.FailOnError(err)
+		trees = []*controlexecute.ExecutionTree{executionTree}
+	} else {
+		for _, arg := range args {
+			executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, initData.ControlFilterWhereClause, arg)
 			error_helpers.FailOnError(err)
+			trees = append(trees, executionTree)
 		}
 	}
-	exportArgs := viper.GetStringSlice(constants.ArgExport)
-	exportMsg, err := initData.ExportManager.DoExport(ctx, fmt.Sprintf("check.%s", w.Mod.ShortName), executionTree, exportArgs)
-	error_helpers.FailOnError(err)
 
-	if shouldPrintTiming() {
-		printTiming(executionTree)
-	}
+	// execute controls synchronously (execute returns the number of alarms and errors)
+	for _, executionTree := range trees {
+		stats, err := executionTree.Execute(ctx)
+		error_helpers.FailOnError(err)
 
-	// print the location where the file is exported if progress=true
-	if len(exportMsg) > 0 && viper.GetBool(constants.ArgProgress) {
-		fmt.Printf("\n")
-		fmt.Println(exportMsg)
-		fmt.Printf("\n")
+		err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
+		error_helpers.FailOnError(err)
+
+		// append the total number of alarms and errors for multiple runs
+		totalAlarms += stats.Alarm
+		totalErrors += stats.Error
+
+		statushooks.SetStatus(ctx, "Starting export")
+
+		// if the share args are set, create a snapshot and share it
+		if generateSnapshot {
+			statushooks.SetStatus(ctx, "Publishing snapshot")
+			err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
+			if err != nil {
+				exitCode = constants.ExitCodeSnapshotUploadFailed
+				error_helpers.FailOnError(err)
+			}
+		}
+		exportArgs := viper.GetStringSlice(constants.ArgExport)
+		exportMsg, err := initData.ExportManager.DoExport(ctx, fmt.Sprintf("check.%s", w.Mod.ShortName), executionTree, exportArgs)
+		error_helpers.FailOnError(err)
+
+		if shouldPrintTiming() {
+			printTiming(executionTree)
+		}
+
+		// print the location where the file is exported if progress=true
+		if len(exportMsg) > 0 && viper.GetBool(constants.ArgProgress) {
+			fmt.Printf("\n")
+			fmt.Println(exportMsg)
+			fmt.Printf("\n")
+		}
 	}
 
 	// set the defined exit code after successful execution
 	exitCode = getExitCode(totalAlarms, totalErrors)
+}
+
+// getExportName resolves the base name of the target file
+func getExportName(targetName string, modShortName string) (string, error) {
+	parsedName, _ := modconfig.ParseResourceName(targetName)
+	if targetName == "all" {
+		// there will be no block type = manually construct name
+		return fmt.Sprintf("%s.%s", modShortName, parsedName.Name), nil
+	}
+	// default to just converting to valid resource name
+	return parsedName.ToFullNameWithMod(modShortName)
 }
 
 // get the exit code for successful check run

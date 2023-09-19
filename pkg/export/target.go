@@ -7,8 +7,9 @@ import (
 )
 
 type Target struct {
-	exporter Exporter
-	filePath string
+	exporter      Exporter
+	filePath      string
+	isNamedTarget bool
 }
 
 func (t *Target) Export(ctx context.Context, input ExportSourceData) (string, error) {

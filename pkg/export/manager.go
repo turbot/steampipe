@@ -6,10 +6,12 @@ import (
 	"path"
 	"strings"
 
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 type Manager struct {
@@ -124,8 +126,9 @@ func (m *Manager) getExportTarget(export, executionName string) (*Target, error)
 	ext := path.Ext(export)
 	if e, ok := m.registeredExtensions[ext]; ok {
 		t := &Target{
-			exporter: e,
-			filePath: export,
+			exporter:      e,
+			filePath:      export,
+			isNamedTarget: true,
 		}
 		return t, nil
 	}
@@ -159,16 +162,38 @@ func (m *Manager) DoExport(ctx context.Context, targetName string, source Export
 	return expLocation, error_helpers.CombineErrors(errors...)
 }
 
+// HasNamedExport panics if a target is not valid
+func (m *Manager) HasNamedExport(exports []string) bool {
+	for _, export := range exports {
+		target, err := m.getExportTarget(export, "dummy_exec_name")
+		error_helpers.FailOnError(err)
+		if target.isNamedTarget {
+			return true
+		}
+	}
+	return false
+}
+
 func (m *Manager) ValidateExportFormat(exports []string) error {
 	var invalidFormats []string
+	var targets []*Target
 	for _, export := range exports {
-		if _, err := m.getExportTarget(export, "dummy_target_name"); err != nil {
+		target, err := m.getExportTarget(export, "dummy_exec_name")
+		if err != nil {
 			invalidFormats = append(invalidFormats, export)
 		}
+		targets = append(targets, target)
 	}
 	if invalidCount := len(invalidFormats); invalidCount > 0 {
 		return fmt.Errorf("invalid export %s: '%s'", utils.Pluralize("format", invalidCount), strings.Join(invalidFormats, "','"))
 	}
-	return nil
+	// verify all are either named or unnamed but not both
+	hasNamed := slices.ContainsFunc(targets, func(t *Target) bool { return t.isNamedTarget })
+	hasUnnamed := slices.ContainsFunc(targets, func(t *Target) bool { return !t.isNamedTarget })
 
+	if hasNamed && hasUnnamed {
+		return sperr.New("combination of named and unnamed exports is not supported")
+	}
+
+	return nil
 }
