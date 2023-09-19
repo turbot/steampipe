@@ -93,7 +93,7 @@ func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Contr
 	}
 }
 
-func (e *ExecutionTree) Execute(ctx context.Context) (controlstatus.StatusSummary, error) {
+func (e *ExecutionTree) Execute(ctx context.Context) error {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.StartTime = time.Now()
@@ -108,7 +108,7 @@ func (e *ExecutionTree) Execute(ctx context.Context) (controlstatus.StatusSummar
 	// if there is a custom search path, wait until the first connection of each plugin has loaded
 	if customSearchPath := e.client.GetCustomSearchPath(); customSearchPath != nil {
 		if err := connection_sync.WaitForSearchPathSchemas(ctx, e.client, customSearchPath); err != nil {
-			return controlstatus.StatusSummary{}, err
+			return err
 		}
 	}
 
@@ -132,7 +132,7 @@ func (e *ExecutionTree) Execute(ctx context.Context) (controlstatus.StatusSummar
 	e.DimensionColorGenerator, _ = NewDimensionColorGenerator(4, 27)
 	e.DimensionColorGenerator.populate(e)
 
-	return e.Root.Summary.Status, nil
+	return nil
 }
 
 func (e *ExecutionTree) waitForActiveRunsToComplete(ctx context.Context, parallelismLock *semaphore.Weighted, maxParallelGoRoutines int64) error {
