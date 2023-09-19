@@ -132,8 +132,14 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 		}
 	}
 
+	// collect warnings as we parse
+	var res = &error_helpers.ErrorAndWarnings{}
+
 	// add pseudo resources to the mod
-	addPseudoResourcesToMod(pseudoResources, hclResources, mod)
+	errorsAndWarnings := addPseudoResourcesToMod(pseudoResources, hclResources, mod)
+
+	// merge the warnings generated while adding pseudoresources
+	res.Merge(errorsAndWarnings)
 
 	// add the parsed content to the run context
 	parseCtx.SetDecodeContent(content, fileData)
@@ -144,9 +150,6 @@ func ParseMod(fileData map[string][]byte, pseudoResources []modconfig.MappableRe
 	if diags = parseCtx.AddModResources(mod); diags.HasErrors() {
 		return nil, error_helpers.NewErrorsAndWarning(plugin.DiagsToError("Failed to add mod to run context", diags))
 	}
-
-	// collect warnings as we parse
-	var res = &error_helpers.ErrorAndWarnings{}
 
 	// we may need to decode more than once as we gather dependencies as we go
 	// continue decoding as long as the number of unresolved blocks decreases
