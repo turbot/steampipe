@@ -138,8 +138,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	initData.Result.DisplayMessages()
 
 	// pull out useful properties
-	w := initData.Workspace
-	client := initData.Client
 	totalAlarms, totalErrors := 0, 0
 
 	shouldShare := viper.GetBool(constants.ArgShare)
@@ -150,23 +148,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		error_helpers.FailOnError(sperr.New("cannot execute 'all' with other benchmarks/controls"))
 	}
 
-	trees := map[string]*controlexecute.ExecutionTree{}
-
-	if initData.ExportManager.HasNamedExport(viper.GetStringSlice(constants.ArgExport)) {
-		name := fmt.Sprintf("check.%s", w.Mod.ShortName)
-		// create a single merged execution tree
-		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, initData.ControlFilterWhereClause, args...)
-		error_helpers.FailOnError(sperr.WrapWithMessage(err, "could not create execution tree"))
-		trees[name] = executionTree
-	} else {
-		for _, arg := range args {
-			executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, initData.ControlFilterWhereClause, arg)
-			error_helpers.FailOnError(sperr.WrapWithMessage(err, "could not create execution tree"))
-			name, err := getExportName(arg, w.Mod.ShortName)
-			error_helpers.FailOnError(sperr.WrapWithMessage(err, "could not evaluate export name for %s", arg))
-			trees[name] = executionTree
-		}
-	}
+	trees, err := getExecutionTrees(ctx, initData, args...)
+	error_helpers.FailOnError(err)
 
 	// execute controls synchronously (execute returns the number of alarms and errors)
 	for targetName, executionTree := range trees { // create a context with check status hooks
@@ -209,6 +192,32 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// set the defined exit code after successful execution
 	exitCode = getExitCode(totalAlarms, totalErrors)
+}
+
+func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...string) (map[string]*controlexecute.ExecutionTree, error) {
+	trees := map[string]*controlexecute.ExecutionTree{}
+	if initData.ExportManager.HasNamedExport(viper.GetStringSlice(constants.ArgExport)) {
+		// create a single merged execution tree
+		executionTree, err := controlexecute.NewExecutionTree(ctx, initData.Workspace, initData.Client, initData.ControlFilterWhereClause, args...)
+		if err != nil {
+			return nil, sperr.WrapWithMessage(err, "could not create merged execution tree")
+		}
+		name := fmt.Sprintf("check.%s", initData.Workspace.Mod.ShortName)
+		trees[name] = executionTree
+	} else {
+		for _, arg := range args {
+			executionTree, err := controlexecute.NewExecutionTree(ctx, initData.Workspace, initData.Client, initData.ControlFilterWhereClause, arg)
+			if err != nil {
+				return nil, sperr.WrapWithMessage(err, "could not create execution tree for %s", arg)
+			}
+			name, err := getExportName(arg, initData.Workspace.Mod.ShortName)
+			if err != nil {
+				return nil, sperr.WrapWithMessage(err, "could not evaluate export name for %s", arg)
+			}
+			trees[name] = executionTree
+		}
+	}
+	return trees, nil
 }
 
 // getExportName resolves the base name of the target file
