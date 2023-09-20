@@ -7,6 +7,6 @@ dashboard_assets:
 	$(MAKE) -C ui/dashboard
 
 all:
-	$(MAKE) -C pluginmanager
+	$(MAKE) -C pkg/pluginmanager_service
 	$(MAKE) -C ui/dashboard
 	go build -o ${OUTPUT_DIR}/steampipe
