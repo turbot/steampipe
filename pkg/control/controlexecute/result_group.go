@@ -68,6 +68,12 @@ func NewGroupSummary() *GroupSummary {
 
 // NewRootResultGroup creates a ResultGroup to act as the root node of a control execution tree
 func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootItems ...modconfig.ModTreeItem) *ResultGroup {
+	title := ""
+	if len(rootItems) == 1 {
+		// there's only one - use that title
+		title = rootItems[0].GetTitle()
+	}
+
 	root := &ResultGroup{
 		GroupId:    RootResultGroupName,
 		Groups:     []*ResultGroup{},
@@ -76,7 +82,7 @@ func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootI
 		Severity:   make(map[string]controlstatus.StatusSummary),
 		updateLock: new(sync.Mutex),
 		NodeType:   modconfig.BlockTypeBenchmark,
-		Title:      "",
+		Title:      title,
 	}
 
 	for _, rootItem := range rootItems {
