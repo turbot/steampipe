@@ -10,7 +10,7 @@ import (
 type Plugin struct {
 	Instance        string         `hcl:"name,label" db:"plugin_instance"`
 	Alias           string         `hcl:"source,optional"`
-	MaxMemoryMb     *int           `hcl:"max_memory_mb,optional" db:"max_memory_mb"`
+	MaxMemoryMb     *int           `hcl:"memory_max_mb,optional" db:"memory_max_mb"`
 	Limiters        []*RateLimiter `hcl:"limiter,block" db:"rate_limiters"`
 	FileName        *string        `db:"file_name"`
 	StartLineNumber *int           `db:"start_line_number"`
@@ -23,8 +23,7 @@ type Plugin struct {
 // NewImplicitPlugin creates a default plugin config struct for a connection
 // this is called when there is no explicit plugin config defined
 // for a plugin which is used by a connection
-func NewImplicitPlugin(connection *Connection) *Plugin {
-	imageRef := ociinstaller.NewSteampipeImageRef(connection.PluginAlias)
+func NewImplicitPlugin(connection *Connection, imageRef *ociinstaller.SteampipeImageRef) *Plugin {
 	return &Plugin{
 		// NOTE: set label to image ref
 		Instance: imageRef.DisplayImageRef(),

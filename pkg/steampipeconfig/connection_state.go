@@ -24,7 +24,7 @@ type ConnectionState struct {
 	// the fully qualified name of the plugin
 	Plugin string `json:"plugin"  db:"plugin"`
 	// the plugin instance
-	PluginInstance string `json:"plugin_instance" db:"plugin_instance"`
+	PluginInstance *string `json:"plugin_instance" db:"plugin_instance"`
 	// the connection state (pending, updating, deleting, error, ready)
 	State string `json:"state"  db:"state"`
 	// error (if there is one - make a pointer to support null)

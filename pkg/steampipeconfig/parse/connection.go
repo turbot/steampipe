@@ -124,7 +124,7 @@ func decodeConnectionPluginProperty(connectionContent *hcl.BodyContent, connecti
 		// we will validate that this block exists later in initializePlugins
 		// set PluginInstance ONLY
 		// (the PluginInstance property being set means that we will raise the correct error if we fail to resolve the plugin block)
-		connection.PluginInstance = pluginInstance
+		connection.PluginInstance = &pluginInstance
 		return nil
 	}
 

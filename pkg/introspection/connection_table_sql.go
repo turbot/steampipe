@@ -29,7 +29,7 @@ func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
 	import_schema TEXT,
 	error TEXT NULL,
 	plugin TEXT,
-	plugin_instance TEXT,
+	plugin_instance TEXT NULL,
 	schema_mode TEXT,
 	schema_hash TEXT NULL,
 	comments_set BOOL DEFAULT FALSE,

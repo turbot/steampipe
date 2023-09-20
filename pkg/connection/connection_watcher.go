@@ -63,9 +63,14 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 
 	log.Printf("[INFO] ConnectionWatcher handleFileWatcherEvent")
 	config, errorsAndWarnings := steampipeconfig.LoadConnectionConfig()
-	if errorsAndWarnings.GetError() != nil {
-		log.Printf("[WARN] error loading updated connection config: %v", errorsAndWarnings.GetError())
-		return
+	// send notification if there were any errors or warnings
+	if !errorsAndWarnings.Empty() {
+		w.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, errorsAndWarnings)
+		// if there was an error return
+		if errorsAndWarnings.GetError() != nil {
+			log.Printf("[WARN] error loading updated connection config: %v", errorsAndWarnings.GetError())
+			return
+		}
 	}
 
 	log.Printf("[INFO] loaded updated config")

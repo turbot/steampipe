@@ -720,24 +720,24 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 		c.handleConnectionUpdateNotification(ctx)
 	case steampipeconfig.PgNotificationConnectionError:
 		// unmarshal the notification again, into the correct type
-		errorNotification := &steampipeconfig.ConnectionErrorNotification{}
+		errorNotification := &steampipeconfig.ErrorsAndWarningsNotification{}
 		if err := json.Unmarshal([]byte(notification.Payload), errorNotification); err != nil {
 			log.Printf("[WARN] Error unmarshalling notification: %s", err)
 			return
 		}
-		c.handleConnectionErrorNotification(ctx, errorNotification)
+		c.handleErrorsAndWarningsNotification(ctx, errorNotification)
 	}
 }
 
-func (c *InteractiveClient) handleConnectionErrorNotification(ctx context.Context, notification *steampipeconfig.ConnectionErrorNotification) {
-	log.Printf("[TRACE] handleConnectionErrorNotification")
+func (c *InteractiveClient) handleErrorsAndWarningsNotification(ctx context.Context, notification *steampipeconfig.ErrorsAndWarningsNotification) {
+	log.Printf("[TRACE] handleErrorsAndWarningsNotification")
 	output := viper.Get(constants.ArgOutput)
 	if output == constants.OutputFormatJSON || output == constants.OutputFormatCSV {
 		return
 	}
 
 	c.showMessages(ctx, func() {
-		for _, m := range notification.Errors {
+		for _, m := range append(notification.Errors, notification.Warnings...) {
 			error_helpers.ShowWarning(m)
 		}
 	})
@@ -771,7 +771,7 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 
 	// reinitialise autocomplete suggestions
 
-	if err := c.initialiseSuggestions(ctx); err != nil{
+	if err := c.initialiseSuggestions(ctx); err != nil {
 		log.Printf("[WARN] failed to initialise suggestions: %s", err)
 	}
 

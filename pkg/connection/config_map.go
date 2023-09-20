@@ -1,6 +1,7 @@
 package connection
 
 import (
+	typehelpers "github.com/turbot/go-kit/types"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
@@ -16,7 +17,7 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) Conn
 			PluginShortName:  v.PluginAlias,
 			Config:           v.Config,
 			ChildConnections: v.GetResolveConnectionNames(),
-			PluginInstance:   v.PluginInstance,
+			PluginInstance:   typehelpers.SafeString(v.PluginInstance),
 		}
 	}
 

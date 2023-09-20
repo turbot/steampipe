@@ -39,7 +39,7 @@ type Connection struct {
 	// we resolve this after loading all plugin configs
 	Plugin string `json:"plugin"`
 	// the label of the plugin config we are using
-	PluginInstance string `json:"plugin_instance"`
+	PluginInstance *string `json:"plugin_instance"`
 
 	// connection type - supported values: "aggregator"
 	Type string `json:"type,omitempty"`

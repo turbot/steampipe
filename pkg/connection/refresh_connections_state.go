@@ -88,7 +88,7 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 			}
 			if !s.res.ErrorAndWarnings.Empty() {
 				log.Printf("[INFO] refreshConnections completed with errors, sending notification")
-				s.sendPostgresErrorNotification(ctx, s.res.ErrorAndWarnings)
+				s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, &s.res.ErrorAndWarnings)
 			}
 
 		}
@@ -122,7 +122,10 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 		}
 
 		if len(updatedPluginLimiters) > 0 {
-			s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
+			err := s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
+			if err != nil {
+				s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, error_helpers.NewErrorsAndWarning(err))
+			}
 		}
 	}
 
@@ -240,7 +243,7 @@ func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {
 
 		// if there are no updates and there ARE deletes, notify
 		// (is there are updates, deletes will be notified by executeUpdateQueries)
-		if err := s.sendPostgreSchemaNotification(ctx); err != nil {
+		if err := s.pluginManager.SendPostgresSchemaNotification(ctx); err != nil {
 			// just log
 			log.Printf("[WARN] failed to send schema deletion Postgres notification: %s", err.Error())
 		}
@@ -311,7 +314,7 @@ func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	// now that we have updated all exemplar schemars, send postgres notification
 	// this gives any attached interactive clients a chance to update their inspect data and autocomplete
 
-	if err := s.sendPostgreSchemaNotification(ctx); err != nil {
+	if err := s.pluginManager.SendPostgresSchemaNotification(ctx); err != nil {
 		// just log
 		log.Printf("[WARN] failed to send schem update Postgres notification: %s", err.Error())
 	}
@@ -781,27 +784,4 @@ func (s *refreshConnectionState) setIncompleteConnectionStateToError(ctx context
 		log.Printf("[WARN] setAllConnectionStateToError failed to set connection states to error: %s", err.Error())
 		return
 	}
-}
-
-// OnConnectionsChanged is the callback function invoked by the connection watcher when connections are added or removed
-func (s *refreshConnectionState) sendPostgreSchemaNotification(ctx context.Context) error {
-	log.Println("[DEBUG] refreshConnectionState.sendPostgreSchemaNotification start")
-	defer log.Println("[DEBUG] refreshConnectionState.sendPostgreSchemaNotification end")
-
-	return s.sendPostgresNotification(ctx, steampipeconfig.NewSchemaUpdateNotification())
-
-}
-
-func (s *refreshConnectionState) sendPostgresErrorNotification(ctx context.Context, errorAndWarnings error_helpers.ErrorAndWarnings) error {
-	return s.sendPostgresNotification(ctx, steampipeconfig.NewConnectionErrorNotification(errorAndWarnings))
-
-}
-func (s *refreshConnectionState) sendPostgresNotification(ctx context.Context, notification any) error {
-	conn, err := s.pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-
-	return db_local.SendPostgresNotification(ctx, conn.Conn(), notification)
 }

@@ -11,9 +11,9 @@ import (
 func GetPluginTableCreateSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
-				plugin TEXT NOT NULL,
 				plugin_instance TEXT NULL,
-				max_memory_mb INTEGER,
+				plugin TEXT NOT NULL,
+				memory_max_mb INTEGER,
 				rate_limiters JSONB NULL,
 				file_name TEXT, 
 				start_line_number INTEGER, 
@@ -27,7 +27,7 @@ func GetPluginTablePopulateSql(plugin *modconfig.Plugin) db_common.QueryWithArgs
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
 plugin,
 plugin_instance,
-max_memory_mb,
+memory_max_mb,
 rate_limiters,                
 file_name,
 start_line_number,
