@@ -226,6 +226,9 @@ func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...
 		trees = append(trees, newNamedExecutionTree(name, executionTree))
 	} else {
 		for _, arg := range args {
+			if error_helpers.IsContextCanceled(ctx) {
+				return nil, ctx.Err()
+			}
 			executionTree, err := controlexecute.NewExecutionTree(ctx, initData.Workspace, initData.Client, initData.ControlFilterWhereClause, arg)
 			if err != nil {
 				return nil, sperr.WrapWithMessage(err, "could not create execution tree for %s", arg)
@@ -237,7 +240,7 @@ func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...
 			trees = append(trees, newNamedExecutionTree(name, executionTree))
 		}
 	}
-	return trees, nil
+	return trees, ctx.Err()
 }
 
 // getExportName resolves the base name of the target file
