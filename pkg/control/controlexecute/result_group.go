@@ -68,10 +68,12 @@ func NewGroupSummary() *GroupSummary {
 
 // NewRootResultGroup creates a ResultGroup to act as the root node of a control execution tree
 func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootItems ...modconfig.ModTreeItem) *ResultGroup {
-	title := ""
+	var title string
+	var rootGroupItem modconfig.ModTreeItem
 	if len(rootItems) == 1 {
 		// there's only one - use that title
 		title = rootItems[0].GetTitle()
+		rootGroupItem = rootItems[0]
 	}
 
 	root := &ResultGroup{
@@ -83,6 +85,7 @@ func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootI
 		updateLock: new(sync.Mutex),
 		NodeType:   modconfig.BlockTypeBenchmark,
 		Title:      title,
+		GroupItem:  rootGroupItem,
 	}
 
 	for _, rootItem := range rootItems {
