@@ -248,10 +248,12 @@ func (w *Workspace) findModFilePath(folder string) (string, error) {
 func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAndWarnings {
 	// check if your workspace path is home dir and if modfile exists - if yes then warn and ask user to continue or not
 	home, _ := os.UserHomeDir()
-	if w.Path == home && w.ModfileExists() {
-		if confirm := utils.UserConfirmation(fmt.Sprintf("%s: You have a mod.sp file in your home directory. If you have a mod.sp file in your home directory, \nsteampipe will try to load all the files in home and its sub-directories, which can cause steampipe to hang. \nBest practice is to not have mod.sp files in your home directory.\nDo you still want to continue? (y/n)", color.YellowString("Warning"))); !confirm {
+	if w.Path == home && w.ModfileExists() && viper.GetBool("input") {
+		if confirm := utils.UserConfirmation(fmt.Sprintf("%s: You have a mod.sp file in your home directory. This is not recommended.\nAs a result steampipe will try to load all the files in home and its sub-directories, which can cause performance issues.\nBest practice is to put mod.sp files in their own directories.\nDo you still want to continue? (y/n)", color.YellowString("Warning"))); !confirm {
 			return error_helpers.NewErrorsAndWarning(sperr.New("load cancelled"))
 		}
+	} else if w.Path == home && w.ModfileExists() && !viper.GetBool("input") {
+		fmt.Printf("%s: You have a mod.sp file in your home directory. This is not recommended.\nAs a result steampipe will try to load all the files in home and its sub-directories, which can cause performance issues.\nBest practice is to put mod.sp files in their own directories.\nHit Ctrl+C to stop.", color.YellowString("Warning"))
 	}
 	// resolve values of all input variables
 	// we WILL validate missing variables when loading
