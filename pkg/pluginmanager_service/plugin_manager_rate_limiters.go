@@ -35,7 +35,7 @@ func (m *PluginManager) HandlePluginLimiterChanges(newLimiters connection.Plugin
 		m.pluginLimiters[plugin] = limitersForPlugin
 	}
 
-	// update the rate_limiters table
+	// update the steampipe_plugin_limiters table
 	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
 		log.Println("[WARN] could not refresh rate limiter table", err)
 	}
@@ -93,7 +93,7 @@ func (m *PluginManager) handleUserLimiterChanges(_ context.Context, plugins conn
 	// update stored limiters to the new map
 	m.userLimiters = limiterPluginMap
 
-	// update the rate_limiters table
+	// update the steampipe_plugin_limiters table
 	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
 		log.Println("[WARN] could not refresh rate limiter table", err)
 	}

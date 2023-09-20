@@ -195,7 +195,6 @@ func SaveConnectionStateFile(res *RefreshConnectionResult, connectionUpdates *Co
 	}
 	// NOTE: add any connection which failed
 	for c, reason := range res.FailedConnections {
-		connectionState[c].State = constants.ConnectionStateError
 		connectionState[c].SetError(reason)
 	}
 

@@ -10,7 +10,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/go-kit/helpers"
-	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -159,6 +158,8 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 		}
 	}
 
+	// TODO KAI TIDY INTO FUNCTION
+
 	log.Printf("[INFO] Identify connections to delete")
 	// connections to delete - any connection which is in connection state but NOT required connections
 	for name, currentState := range currentConnectionStateMap {
@@ -168,6 +169,10 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 		} else if updates.FinalConnectionState[name].Disabled() && !currentState.Disabled() {
 			// if required connection state is disabled and it is not currently disabled, mark for deletion
 			log.Printf("[TRACE] connection %s is disabled - marking for deletion\n", name)
+			updates.Delete[name] = struct{}{}
+		} else if updates.FinalConnectionState[name].State == constants.ConnectionStateError && currentState.State != constants.ConnectionStateError {
+			// if required connection state is disabled and it is not currently disabled, mark for deletion
+			log.Printf("[TRACE] connection %s is in error - marking for deletion\n", name)
 			updates.Delete[name] = struct{}{}
 		}
 	}
@@ -230,8 +235,8 @@ type connectionRequiresUpdateResult struct {
 
 func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, currentConnectionStateMap ConnectionStateMap, requiredConnectionState *ConnectionState) connectionRequiresUpdateResult {
 	var res = connectionRequiresUpdateResult{}
-	// if the required plugin is not installed, return false
-	if typehelpers.SafeString(requiredConnectionState.ConnectionError) == constants.ConnectionErrorPluginNotInstalled {
+	// if the connection is in error, no update required
+	if requiredConnectionState.State == constants.ConnectionStateError {
 		return res
 	}
 	// check whether this connection exists in the state
@@ -400,8 +405,8 @@ func (u *ConnectionUpdates) setError(connectionName string, error string) {
 // NOTE: this mutates FinalConnectionState to set comment_set (if needed)
 func (u *ConnectionUpdates) IdentifyMissingComments() {
 	for name, state := range u.FinalConnectionState {
-		// if plugin is not installed, skip
-		if typehelpers.SafeString(state.ConnectionError) == constants.ConnectionErrorPluginNotInstalled {
+		// if the state is in error, skip
+		if state.State == constants.ConnectionStateError {
 			continue
 		}
 		if currentState, existsInCurrentState := u.CurrentConnectionState[name]; existsInCurrentState {

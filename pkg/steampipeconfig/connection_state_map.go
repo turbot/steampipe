@@ -23,7 +23,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 	utils.LogTime("steampipeconfig.GetRequiredConnectionStateMap start")
 	defer utils.LogTime("steampipeconfig.GetRequiredConnectionStateMap end")
 
-	res := ConnectionStateMap{}
+	requiredState := ConnectionStateMap{}
 
 	// cache plugin file creation times in a dictionary to avoid reloading the same plugin file multiple times
 	pluginModTimeMap := make(map[string]time.Time)
@@ -34,13 +34,26 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration start")
 	// populate file mod time for each referenced plugin
 	for name, connection := range connectionMap {
-		pluginPath, _ := filepaths.GetPluginPath(connection.Plugin, connection.PluginAlias)
-		// ignore error if plugin is not available
-		// if plugin is not installed, the path will be returned as empty
-		if pluginPath == "" {
-			missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
+		//pluginPath, _ := filepaths.GetPluginPath(connection.Plugin, connection.PluginAlias)
+		//// ignore error if plugin is not available
+		//// if plugin is not installed, the path will be returned as empty
+		//if pluginPath == "" {
+		//	missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
+		//	connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
+		//}
+
+		// if the connection is in error, create an error connection state
+		// this may have been set by the loading code
+		if connection.Error != nil {
+			requiredState[connection.Name] = newErrorConnectionState(connection)
+			if connection.Error.Error() == constants.ConnectionErrorPluginNotInstalled {
+				missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
+			}
 			continue
 		}
+
+		// to get here, PluginPath must be set
+		pluginPath := *connection.PluginPath
 
 		// get the plugin file mod time
 		var pluginModTime time.Time
@@ -53,37 +66,27 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 			}
 		}
 		pluginModTimeMap[pluginPath] = pluginModTime
-		res[name] = NewConnectionState(connection, pluginModTime)
+		requiredState[name] = NewConnectionState(connection, pluginModTime)
 		// the comments _will_ eventually be set
-		res[name].CommentsSet = true
+		requiredState[name].CommentsSet = true
 		// if schema import is disabled, set desired state as disabled
 		if connection.ImportSchema == modconfig.ImportSchemaDisabled {
-			res[name].State = constants.ConnectionStateDisabled
+			requiredState[name].State = constants.ConnectionStateDisabled
 		}
 		// NOTE: if the connection exists in the current state, copy the connection mod time
 		// (this will be updated to 'now' later if we are updating the connection)
 		if currentState, ok := currentConnectionState[name]; ok {
-			res[name].ConnectionModTime = currentState.ConnectionModTime
+			requiredState[name].ConnectionModTime = currentState.ConnectionModTime
 		}
 	}
 
-	// add in state for connections which are missing plugins
-	res = addConnectionsMissingPlugins(res, missingPluginMap)
-
-	return res, missingPluginMap, nil
+	return requiredState, missingPluginMap, nil
 }
 
-func addConnectionsMissingPlugins(connectionStateMap ConnectionStateMap, missingPlugins map[string][]modconfig.Connection) ConnectionStateMap {
-	for _, connections := range missingPlugins {
-		// add in missing connections
-		for _, c := range connections {
-			connectionData := NewConnectionState(&c, time.Now())
-			connectionData.State = constants.ConnectionStateError
-			connectionData.SetError(constants.ConnectionErrorPluginNotInstalled)
-			connectionStateMap[c.Name] = connectionData
-		}
-	}
-	return connectionStateMap
+func newErrorConnectionState(connection *modconfig.Connection) *ConnectionState {
+	res := NewConnectionState(connection, time.Now())
+	res.SetError(connection.Error.Error())
+	return res
 }
 
 func (m ConnectionStateMap) GetSummary() ConnectionStateSummary {

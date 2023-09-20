@@ -11,7 +11,7 @@ type Plugin struct {
 	Instance        string         `hcl:"name,label" db:"plugin_instance"`
 	Alias           string         `hcl:"source,optional"`
 	MaxMemoryMb     *int           `hcl:"memory_max_mb,optional" db:"memory_max_mb"`
-	Limiters        []*RateLimiter `hcl:"limiter,block" db:"rate_limiters"`
+	Limiters        []*RateLimiter `hcl:"limiter,block" db:"limiters"`
 	FileName        *string        `db:"file_name"`
 	StartLineNumber *int           `db:"start_line_number"`
 	EndLineNumber   *int           `db:"end_line_number"`

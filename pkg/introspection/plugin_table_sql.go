@@ -14,7 +14,7 @@ func GetPluginTableCreateSql() db_common.QueryWithArgs {
 				plugin_instance TEXT NULL,
 				plugin TEXT NOT NULL,
 				memory_max_mb INTEGER,
-				rate_limiters JSONB NULL,
+				limiters JSONB NULL,
 				file_name TEXT, 
 				start_line_number INTEGER, 
 				end_line_number INTEGER
@@ -28,7 +28,7 @@ func GetPluginTablePopulateSql(plugin *modconfig.Plugin) db_common.QueryWithArgs
 plugin,
 plugin_instance,
 memory_max_mb,
-rate_limiters,                
+limiters,                
 file_name,
 start_line_number,
 end_line_number

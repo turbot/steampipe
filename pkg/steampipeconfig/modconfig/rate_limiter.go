@@ -31,7 +31,7 @@ type RateLimiter struct {
 	EndLineNumber   *int                            `db:"end_line_number"  json:"-"`
 	Status          string                          `db:"status"`
 	Source          string                          `db:"source_type"`
-	ImageRef        *ociinstaller.SteampipeImageRef `db:"-"`
+	ImageRef        *ociinstaller.SteampipeImageRef `db:"-" json:"-"`
 }
 
 // RateLimiterFromProto converts the proto format RateLimiterDefinition into a Defintion

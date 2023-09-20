@@ -358,14 +358,16 @@ func (c *SteampipeConfig) initializePlugins() map[string]error {
 		plugin, err := c.resolvePluginInstanceForConnection(connection)
 		if err != nil {
 			log.Printf("[WARN] cannot resolve plugin for connection '%s': %s", connection.Name, err.Error())
-			failedConnections[connection.Name] = err
+			//failedConnections[connection.Name] = err
+			connection.Error = err
 			continue
 		}
 		// if plugin is nil, but there is no error, it must be referring to a plugin which has no instance config
-		// and is not installed - this is not a failure
+		// and is not installed - set the plugin error
 		if plugin == nil {
 			// set the connection Plugin property to match the PluginAlias so it is shown in the steampipe_connection table
 			connection.Plugin = connection.PluginAlias
+			connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
 			log.Printf("[INFO] connection '%s' requires plugin '%s' which is not loaded and has no instance config", connection.Name, connection.PluginAlias)
 			continue
 		}
@@ -377,11 +379,14 @@ func (c *SteampipeConfig) initializePlugins() map[string]error {
 		if pluginPath, _ := filepaths.GetPluginPath(pluginImageRef, plugin.Alias); pluginPath != "" {
 			connection.Plugin = pluginImageRef
 			connection.PluginInstance = &plugin.Instance
+			connection.PluginPath = &pluginPath
 		} else {
 			// otherwise set the plugin to the alias
 			connection.Plugin = plugin.Alias
+			// set the plugin error
+			connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
 			// leave instance unset
-			log.Printf("[INFO] connection '%s' uses plugin instance '%s', which requires plugin '%s' - this is not installed", connection.Name, plugin.Instance, plugin.Alias)
+			log.Printf("[INFO] connection '%s' requires plugin '%s' - this is not installed", connection.Name, plugin.Alias)
 		}
 
 	}

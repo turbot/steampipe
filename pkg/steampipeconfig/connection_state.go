@@ -58,6 +58,9 @@ func NewConnectionState(connection *modconfig.Connection, creationTime time.Time
 		Connections:    connection.ConnectionNames,
 	}
 	state.setFilename(connection)
+	if connection.Error != nil {
+		state.SetError(connection.Error.Error())
+	}
 	return state
 }
 
@@ -115,6 +118,7 @@ func (d *ConnectionState) Error() string {
 }
 
 func (d *ConnectionState) SetError(err string) {
+	d.State = constants.ConnectionStateError
 	d.ConnectionError = &err
 }
 

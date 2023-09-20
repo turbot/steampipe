@@ -17,6 +17,7 @@ import (
 )
 
 const (
+	ConnectionTypePlugin     = "plugin"
 	ConnectionTypeAggregator = "aggregator"
 	ImportSchemaEnabled      = "enabled"
 	ImportSchemaDisabled     = "disabled"
@@ -40,7 +41,8 @@ type Connection struct {
 	Plugin string `json:"plugin"`
 	// the label of the plugin config we are using
 	PluginInstance *string `json:"plugin_instance"`
-
+	// Path to the installed plugin (if it exists)
+	PluginPath *string
 	// connection type - supported values: "aggregator"
 	Type string `json:"type,omitempty"`
 	// should a schema be created for this connection - supported values: "enabled", "disabled"
@@ -56,6 +58,8 @@ type Connection struct {
 	ResolvedConnectionNames []string `json:"resolved_connections,omitempty"`
 	// unparsed HCL of plugin specific connection config
 	Config string `json:"config,omitempty"`
+
+	Error error
 
 	// options
 	Options   *options.Connection `json:"options,omitempty"`
@@ -118,6 +122,8 @@ func NewConnection(block *hcl.Block) *Connection {
 		Name:         block.Labels[0],
 		DeclRange:    NewRange(hclhelpers.BlockRange(block)),
 		ImportSchema: ImportSchemaEnabled,
+		// default to plugin
+		Type: ConnectionTypePlugin,
 	}
 }
 
@@ -165,7 +171,7 @@ func (c *Connection) String() string {
 // if this is an aggregator connection, there must be at least one child, and no duplicates
 // if this is NOT an aggregator, there must be no children
 func (c *Connection) Validate(map[string]*Connection) (warnings []string, errors []string) {
-	validConnectionTypes := []string{"", ConnectionTypeAggregator}
+	validConnectionTypes := []string{ConnectionTypePlugin, ConnectionTypeAggregator}
 	if !helpers.StringSliceContains(validConnectionTypes, c.Type) {
 		return nil, []string{fmt.Sprintf("connection '%s' has invalid connection type '%s'", c.Name, c.Type)}
 	}
