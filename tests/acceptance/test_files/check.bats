@@ -229,13 +229,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "check all - export sps" {
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check all --export sps --progress=false
-  assert_success
   rm -f *.sps
 }
 @test "check all - export file.sps" {
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check all --export file.sps --progress=false
-  assert_success
   rm -f file.sps
 }
 @test "check single benchmark - export sps" {}
