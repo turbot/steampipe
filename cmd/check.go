@@ -231,10 +231,11 @@ func publishSnapshot(ctx context.Context, executionTree *controlexecute.Executio
 	return nil
 }
 
+// getExecutionTrees returns a list of execution trees with the names of their export targets
 func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...string) ([]*namedExecutionTree, error) {
 	trees := []*namedExecutionTree{}
 	if initData.ExportManager.HasNamedExport(viper.GetStringSlice(constants.ArgExport)) {
-		// create a single merged execution tree
+		// create a single merged execution tree from all arguments
 		executionTree, err := controlexecute.NewExecutionTree(ctx, initData.Workspace, initData.Client, initData.ControlFilterWhereClause, args...)
 		if err != nil {
 			return nil, sperr.WrapWithMessage(err, "could not create merged execution tree")
