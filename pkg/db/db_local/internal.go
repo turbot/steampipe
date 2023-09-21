@@ -214,7 +214,9 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 		if !db_common.IsRelationNotFoundError(err) {
 			return err
 		}
-		return err
+
+		// create an empty connectionStateMap
+		connectionStateMap = steampipeconfig.ConnectionStateMap{}
 	}
 	// if any connections are in a ready  state, set them to pending - we need to run refresh connections before we know this connection is still valid
 	// if any connections are not in a ready or error state, set them to pending_incomplete

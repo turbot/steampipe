@@ -333,6 +333,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 }
 
 func TestLoadConfig(t *testing.T) {
+	// TODO KAI update these
 	t.Skip("needs updating")
 	// get the current working directory of the test(used to build the DeclRange.Filename property)
 	pwd, err := os.Getwd()
