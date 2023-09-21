@@ -363,24 +363,23 @@ func (c *SteampipeConfig) initializePlugins() {
 		// if plugin is nil, but there is no error, it must be referring to a plugin which has no instance config
 		// and is not installed - set the plugin error
 		if plugin == nil {
-			// set the connection Plugin property to match the PluginAlias so it is shown in the steampipe_connection table
-			connection.Plugin = connection.PluginAlias
+			// set the Plugin to the image ref of the plugin
+			connection.Plugin = ociinstaller.NewSteampipeImageRef(connection.PluginAlias).DisplayImageRef()
 			connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
 			log.Printf("[INFO] connection '%s' requires plugin '%s' which is not loaded and has no instance config", connection.Name, connection.PluginAlias)
 			continue
 		}
 		// set the PluginAlias on the connection
-		connection.PluginAlias = plugin.Alias
 
-		// if the required plugin is installed, set the Plugin property on the connection
+		// set the PluginAlias and Plugin property on the connection
 		pluginImageRef := plugin.GetImageRef()
+		connection.PluginAlias = plugin.Alias
+		connection.Plugin = pluginImageRef
 		if pluginPath, _ := filepaths.GetPluginPath(pluginImageRef, plugin.Alias); pluginPath != "" {
-			connection.Plugin = pluginImageRef
+			// plugin is installed - set the instance and the plugin path
 			connection.PluginInstance = &plugin.Instance
 			connection.PluginPath = &pluginPath
 		} else {
-			// otherwise set the plugin to the alias
-			connection.Plugin = plugin.Alias
 			// set the plugin error
 			connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
 			// leave instance unset
