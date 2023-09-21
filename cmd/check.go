@@ -184,12 +184,15 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	exitCode = getExitCode(totalAlarms, totalErrors)
 }
 
+// exportExecutionTree relies on the fact that the given tree is already executed
 func exportExecutionTree(ctx context.Context, namedTree *namedExecutionTree, initData *control.InitData, exportArgs []string) error {
+	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
+
 	if error_helpers.IsContextCanceled(ctx) {
 		return ctx.Err()
 	}
-	statushooks.Show(ctx)
-	defer statushooks.Done(ctx)
+
 	exportMsg, err := initData.ExportManager.DoExport(ctx, namedTree.name, namedTree.tree, exportArgs)
 	if err != nil {
 		return err
@@ -205,6 +208,7 @@ func exportExecutionTree(ctx context.Context, namedTree *namedExecutionTree, ini
 	return nil
 }
 
+// executeTree executes and displays the (table) results of an execution
 func executeTree(ctx context.Context, tree *controlexecute.ExecutionTree, initData *control.InitData) error {
 	checkCtx := createCheckContext(ctx)
 	err := tree.Execute(checkCtx)
