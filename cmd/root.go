@@ -481,6 +481,8 @@ func createRootContext() context.Context {
 		statusRenderer = statushooks.NewStatusSpinnerHook()
 	}
 
+	statusRenderer = statushooks.NewStatusSpinnerHook()
+
 	ctx := statushooks.AddStatusHooksToContext(context.Background(), statusRenderer)
 	return ctx
 }

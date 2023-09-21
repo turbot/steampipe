@@ -123,15 +123,25 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	// verify that no other benchmarks/controls are given with an all
+	if helpers.StringSliceContains(args, "all") && len(args) > 1 {
+		error_helpers.FailOnError(sperr.New("cannot execute 'all' with other benchmarks/controls"))
+	}
+
+	// show the status spinner
+	statushooks.Show(ctx)
+
 	// initialise
 	statushooks.SetStatus(ctx, "Initializing...")
-	initData := control.NewInitData(ctx)
+	initData := control.NewInitData(statushooks.DisableStatusHooks(ctx))
 	if initData.Result.Error != nil {
 		exitCode = constants.ExitCodeInitializationFailed
 		error_helpers.ShowError(ctx, initData.Result.Error)
 		return
 	}
 	defer initData.Cleanup(ctx)
+
+	// hide the spinner so that warning messages can be shown
 	statushooks.Done(ctx)
 
 	// if there is a usage warning we display it
@@ -140,29 +150,34 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	// pull out useful properties
 	totalAlarms, totalErrors := 0, 0
 
-	if helpers.StringSliceContains(args, "all") && len(args) > 1 {
-		error_helpers.FailOnError(sperr.New("cannot execute 'all' with other benchmarks/controls"))
-	}
-
 	trees, err := getExecutionTrees(ctx, initData, args...)
 	error_helpers.FailOnError(err)
 
 	// execute controls synchronously (execute returns the number of alarms and errors)
 	for _, namedTree := range trees { // create a context with check status hooks
 		err = executeTree(ctx, namedTree.tree, initData)
-		error_helpers.FailOnError(err)
+		if err != nil {
+			error_helpers.ShowError(ctx, err)
+			continue
+		}
 
 		// append the total number of alarms and errors for multiple runs
 		totalAlarms += namedTree.tree.Root.Summary.Status.Alarm
 		totalErrors += namedTree.tree.Root.Summary.Status.Error
 
 		err = publishSnapshot(ctx, namedTree.tree, viper.GetBool(constants.ArgShare), viper.GetBool(constants.ArgSnapshot))
-		error_helpers.FailOnError(err)
+		if err != nil {
+			error_helpers.ShowError(ctx, err)
+			continue
+		}
 
 		printTiming(namedTree.tree)
 
 		err = exportExecutionTree(ctx, namedTree, initData, viper.GetStringSlice(constants.ArgExport))
-		error_helpers.FailOnError(err)
+		if err != nil {
+			error_helpers.ShowError(ctx, err)
+			continue
+		}
 	}
 
 	// set the defined exit code after successful execution
@@ -173,6 +188,8 @@ func exportExecutionTree(ctx context.Context, namedTree *namedExecutionTree, ini
 	if error_helpers.IsContextCanceled(ctx) {
 		return ctx.Err()
 	}
+	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
 	exportMsg, err := initData.ExportManager.DoExport(ctx, namedTree.name, namedTree.tree, exportArgs)
 	if err != nil {
 		return err
