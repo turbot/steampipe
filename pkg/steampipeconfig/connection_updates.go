@@ -87,10 +87,10 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	// build connection data for all required connections
 	// NOTE: this will NOT populate SchemaMode for the connections, as we need to load the schema for that
 	// this will be updated below on the call to updateRequiredStateWithSchemaProperties
-	requiredConnectionStateMap, missingPlugins, err := GetRequiredConnectionStateMap(GlobalConfig.Connections, currentConnectionStateMap)
-	if err != nil {
+	requiredConnectionStateMap, missingPlugins, connectionStateResult := GetRequiredConnectionStateMap(GlobalConfig.Connections, currentConnectionStateMap)
+	if connectionStateResult.Error != nil {
 		log.Printf("[WARN] failed to build required connection state: %s", err.Error())
-		return nil, NewErrorRefreshConnectionResult(err)
+		return nil, NewErrorRefreshConnectionResult(connectionStateResult.Error)
 	}
 	log.Printf("[INFO] built required connection state")
 
@@ -222,8 +222,11 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	// this uses data from the ConnectionPlugins which we have now loaded
 	updates.updateRequiredStateWithSchemaProperties(dynamicSchemaHashMap)
 
-	// for all updates/deletes, if there any aggregators of the same plugin type, update those as well
+	// for all updates/deletes, if there are any aggregators of the same plugin type, update those as well
 	updates.populateAggregators()
+
+	// before we return, merge in connection state warnings
+	res.AddWarning(connectionStateResult.Warnings...)
 
 	return updates, res
 }

@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"encoding/json"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"log"
 	"os"
 	"time"
@@ -19,10 +20,11 @@ type ConnectionStateSummary map[string]int
 type ConnectionStateMap map[string]*ConnectionState
 
 // GetRequiredConnectionStateMap populates a map of connection data for all connections in connectionMap
-func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connection, currentConnectionState ConnectionStateMap) (ConnectionStateMap, map[string][]modconfig.Connection, error) {
+func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connection, currentConnectionState ConnectionStateMap) (ConnectionStateMap, map[string][]modconfig.Connection, *error_helpers.ErrorAndWarnings) {
 	utils.LogTime("steampipeconfig.GetRequiredConnectionStateMap start")
 	defer utils.LogTime("steampipeconfig.GetRequiredConnectionStateMap end")
 
+	var res = &error_helpers.ErrorAndWarnings{}
 	requiredState := ConnectionStateMap{}
 
 	// cache plugin file creation times in a dictionary to avoid reloading the same plugin file multiple times
@@ -45,9 +47,15 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 		// if the connection is in error, create an error connection state
 		// this may have been set by the loading code
 		if connection.Error != nil {
+			// add error conneciton state
 			requiredState[connection.Name] = newErrorConnectionState(connection)
+			// if error is a missing plugin, add to missingPluginMap
+			// this will be used to build missing plugin warnings
 			if connection.Error.Error() == constants.ConnectionErrorPluginNotInstalled {
 				missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
+			} else {
+				// otherwise add error to result as warning, so we display it
+				res.AddWarning(connection.Error.Error())
 			}
 			continue
 		}
@@ -62,7 +70,8 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 			var err error
 			pluginModTime, err = utils.FileModTime(pluginPath)
 			if err != nil {
-				return nil, nil, err
+				res.Error = err
+				return nil, nil, res
 			}
 		}
 		pluginModTimeMap[pluginPath] = pluginModTime
@@ -80,7 +89,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 		}
 	}
 
-	return requiredState, missingPluginMap, nil
+	return requiredState, missingPluginMap, res
 }
 
 func newErrorConnectionState(connection *modconfig.Connection) *ConnectionState {

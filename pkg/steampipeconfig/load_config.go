@@ -319,11 +319,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 
 	// resolve the plugins for each connection and create default plugin config
 	// for all plugins mentioned in connection config which have no explicit config
-	failedConnections := steampipeConfig.initializePlugins()
-	for _, e := range failedConnections {
-		// add warning for failed connections
-		res.AddWarning(e.Error())
-	}
+	steampipeConfig.initializePlugins()
 
 	return res
 }

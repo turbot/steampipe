@@ -352,13 +352,11 @@ func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin, block *hcl.Block) 
 // ensure we have a plugin config struct for all plugins mentioned in connection config,
 // even if there is not an explicit HCL config for it
 // NOTE: this populates the  Plugin ans PluginInstance field of the connections
-func (c *SteampipeConfig) initializePlugins() map[string]error {
-	var failedConnections = make(map[string]error)
+func (c *SteampipeConfig) initializePlugins() {
 	for _, connection := range c.Connections {
 		plugin, err := c.resolvePluginInstanceForConnection(connection)
 		if err != nil {
 			log.Printf("[WARN] cannot resolve plugin for connection '%s': %s", connection.Name, err.Error())
-			//failedConnections[connection.Name] = err
 			connection.Error = err
 			continue
 		}
@@ -390,7 +388,7 @@ func (c *SteampipeConfig) initializePlugins() map[string]error {
 		}
 
 	}
-	return failedConnections
+
 }
 
 /*
