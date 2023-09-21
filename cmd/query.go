@@ -9,14 +9,13 @@ import (
 	"path"
 	"strings"
 
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/connection_sync"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
@@ -114,10 +113,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	if stdinData := getPipedStdinData(); len(stdinData) > 0 {
-		args = append(args, stdinData)
-	}
-
 	// validate args
 	err := validateQueryArgs(ctx, args)
 	error_helpers.FailOnError(err)
@@ -126,6 +121,14 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
 		cmdconfig.DisplayConfig()
 		return
+	}
+
+	if len(args) == 0 {
+		// no positional arguments - check if there's anything on stdin
+		if stdinData := getPipedStdinData(); len(stdinData) > 0 {
+			// we have data - treat this as an argument
+			args = append(args, stdinData)
+		}
 	}
 
 	// enable paging only in interactive mode
