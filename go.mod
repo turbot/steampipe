@@ -46,7 +46,7 @@ require (
 	github.com/turbot/go-kit v0.8.1
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
 	//plugin_label
-	github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-rc.27.0.20230918110034-8e03e5eb493b
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-rc.28
 	github.com/xlab/treeprint v1.2.0
 	github.com/zclconf/go-cty v1.14.0
 	github.com/zclconf/go-cty-yaml v1.0.3
