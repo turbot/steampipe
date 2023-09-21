@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	typehelpers "github.com/turbot/go-kit/types"
 	"log"
 	"strings"
 
@@ -146,7 +147,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 		pluginInstance := *connection.PluginInstance
 		// is this connection provided by a plugin we have already instantiated?
 		if existingConnectionPlugin, ok := connectionPluginMap[pluginInstance]; ok {
-			log.Printf("[TRACE] CreateConnectionPlugins - connection %s is provided by existing connectionPlugin %s - reusing", connection.Name, connection.PluginInstance)
+			log.Printf("[TRACE] CreateConnectionPlugins - connection %s is provided by existing connectionPlugin %s - reusing", connection.Name, typehelpers.SafeString(connection.PluginInstance))
 			// store the existing connection plugin in the result map
 			requestedConnectionPluginMap[connection.Name] = existingConnectionPlugin
 			continue
@@ -154,7 +155,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 
 		// do we have a reattach config for this connection's plugin
 		if _, ok := getResponse.ReattachMap[connection.Name]; !ok {
-			log.Printf("[TRACE] CreateConnectionPlugins skipping connection '%s', plugin '%s' as plugin manager failed to start it", connection.Name, connection.PluginInstance)
+			log.Printf("[TRACE] CreateConnectionPlugins skipping connection '%s', plugin '%s' as plugin manager failed to start it", connection.Name, typehelpers.SafeString(connection.PluginInstance))
 			continue
 		}
 
@@ -162,7 +163,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 		reattach := getResponse.ReattachMap[connection.Name]
 		connectionPlugin, err := createConnectionPlugin(connection, reattach)
 		if err != nil {
-			res.AddWarning(fmt.Sprintf("failed to attach to plugin process for '%s': %s", connection.PluginInstance, err))
+			res.AddWarning(fmt.Sprintf("failed to attach to plugin process for '%s': %s", typehelpers.SafeString(connection.PluginInstance), err))
 			continue
 		}
 		requestedConnectionPluginMap[connection.Name] = connectionPlugin
