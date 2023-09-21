@@ -3,6 +3,7 @@ package proto
 import (
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 )
 
 func NewReattachConfig(pluginName string, src *plugin.ReattachConfig, supportedOperations *SupportedOperations, connections []string) *ReattachConfig {
@@ -45,5 +46,12 @@ func (r *ReattachConfig) RemoveConnection(connection string) {
 		if existingConnections != connection {
 			r.Connections = append(r.Connections, existingConnections)
 		}
+	}
+}
+
+func (r *ReattachConfig) UpdateConnections(configs []*proto.ConnectionConfig) {
+	r.Connections = make([]string, len(configs))
+	for i, c := range configs {
+		r.Connections[i] = c.Connection
 	}
 }

@@ -23,6 +23,7 @@ import (
 type ConnectionUpdates struct {
 	Update          ConnectionStateMap
 	Delete          map[string]struct{}
+	Error           map[string]struct{}
 	Disabled        map[string]struct{}
 	MissingComments ConnectionStateMap
 	// map of missing plugins, keyed by plugin ALIAS
@@ -104,6 +105,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 
 	updates := &ConnectionUpdates{
 		Delete:                     make(map[string]struct{}),
+		Error:                      make(map[string]struct{}),
 		Disabled:                   disabled,
 		Update:                     ConnectionStateMap{},
 		MissingComments:            ConnectionStateMap{},
@@ -149,7 +151,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 			requiredConnectionState.ConnectionModTime = modTime
 
 			// if the plugin mod time has changed, add this to the map of connections
-			// we need to refetch the rate limiters for
+			// we need to refetch the rate limiters for this plugin
 			if res.pluginBinaryChanged {
 				// store map item of plugin name to connection name (so we only have one entry per plugin)
 				pluginShortName := GlobalConfig.Connections[requiredConnectionState.ConnectionName].PluginAlias
@@ -171,9 +173,10 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 			log.Printf("[TRACE] connection %s is disabled - marking for deletion\n", name)
 			updates.Delete[name] = struct{}{}
 		} else if updates.FinalConnectionState[name].State == constants.ConnectionStateError && currentState.State != constants.ConnectionStateError {
-			// if required connection state is disabled and it is not currently disabled, mark for deletion
+			// if required connection state is disabled and it is not currently disabled, add to error map
+			// the schema will be deleted by the connection will remain in the table
 			log.Printf("[TRACE] connection %s is in error - marking for deletion\n", name)
-			updates.Delete[name] = struct{}{}
+			updates.Error[name] = struct{}{}
 		}
 	}
 
@@ -300,6 +303,9 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(dynamicSchem
 		// have we loaded a connection plugin for this connection
 		// - if so us the schema mode from the schema  it has loaded
 		if connectionPlugin, ok := u.ConnectionPlugins[k]; ok {
+			if connectionPlugin.ConnectionMap[k] == nil {
+				panic(fmt.Sprintf("reattach config for connection '%s' does not contain the config for '%s in its connection map", k, k))
+			}
 			v.SchemaMode = connectionPlugin.ConnectionMap[k].Schema.Mode
 			// if the schema mode is dynamic and the hash is not set yet, calculate the value from the connection plugin schema
 			// this will happen the first time we load a plugin - as schemaHashMap will NOT include the hash
@@ -504,6 +510,10 @@ func (u *ConnectionUpdates) getSchemaHashesForDynamicSchemas(requiredConnectionD
 		hashMap[name] = schemaHash
 	}
 	return hashMap, connectionsPluginsWithDynamicSchema, nil
+}
+
+func (u *ConnectionUpdates) GetConnectionsToDelete() []string {
+	return append(maps.Keys(u.Delete), maps.Keys(u.Error)...)
 }
 
 func pluginSchemaHash(s *proto.Schema) string {

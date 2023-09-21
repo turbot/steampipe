@@ -77,8 +77,6 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 // and update the database schema and search path to reflect the required connections
 // return whether any changes have been made
 func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
-	time.Sleep(10 * time.Second)
-
 	log.Println("[DEBUG] refreshConnectionState.refreshConnections start")
 	defer log.Println("[DEBUG] refreshConnectionState.refreshConnections end")
 	// if there was an error (other than a connection error, which will NOT have been assigned to res),
@@ -227,7 +225,7 @@ func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {
 	connectionUpdates := s.tableUpdater.updates
 
 	// execute deletions
-	if err := s.executeDeleteQueries(ctx, maps.Keys(s.connectionUpdates.Delete)); err != nil {
+	if err := s.executeDeleteQueries(ctx, s.connectionUpdates.GetConnectionsToDelete()); err != nil {
 		// just log
 		log.Printf("[WARN] failed to delete all unused schemas: %s", err.Error())
 	}

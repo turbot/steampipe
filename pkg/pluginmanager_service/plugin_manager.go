@@ -171,7 +171,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (_ *pb.GetResponse, err error) {
 // and a lookup of the requested connections
 func (m *PluginManager) buildRequiredPluginMap(req *pb.GetRequest) (map[string][]*sdkproto.ConnectionConfig, map[string]struct{}, error) {
 	var plugins = make(map[string][]*sdkproto.ConnectionConfig)
-	// also make a map of target connections - used when assigning resuts to the response
+	// also make a map of target connections - used when assigning results to the response
 	var requestedConnectionsLookup = make(map[string]struct{}, len(req.Connections))
 	for _, connectionName := range req.Connections {
 		// store connection in requested connection map
@@ -332,6 +332,13 @@ func (m *PluginManager) startPluginIfNeeded(pluginInstance string, connectionCon
 		err := m.waitForPluginLoad(startingPlugin, req)
 		if err == nil {
 			// so plugin has loaded - we are done
+
+			// NOTE: ensure the connections assigned to this plugin are correct
+			// (may be out of sync if a connection is being added)
+			m.mut.Lock()
+			startingPlugin.reattach.UpdateConnections(connectionConfigs)
+			m.mut.Unlock()
+
 			log.Printf("[TRACE] waitForPluginLoad succeeded %s (%p)", pluginInstance, req)
 			return startingPlugin.reattach, nil
 		}
