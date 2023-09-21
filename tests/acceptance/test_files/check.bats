@@ -227,33 +227,61 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "check all - export sps" {
-  cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check all --export sps --progress=false
-  rm -f *.sps
+  skip "not implemented yet"
 }
 @test "check all - export file.sps" {
-  cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check all --export file.sps --progress=false
-  rm -f file.sps
+  skip "not implemented yet"
 }
-@test "check single benchmark - export sps" {}
-@test "check single benchmark - export file.sps" {}
-@test "check multiple benchmark - export sps" {}
-@test "check multiple benchmark - export file.sps" {}
+@test "check single benchmark - export sps" {
+  skip "not implemented yet"
+}
+@test "check single benchmark - export file.sps" {
+  skip "not implemented yet"
+}
+@test "check multiple benchmark - export sps" {
+  skip "not implemented yet"
+}
+@test "check multiple benchmark - export file.sps" {
+  skip "not implemented yet"
+}
 
-@test "check all - export json" {}
-@test "check all - export file.json" {}
-@test "check single benchmark - export json" {}
-@test "check single benchmark - export file.json" {}
-@test "check multiple benchmark - export json" {}
-@test "check multiple benchmark - export file.json" {}
+@test "check all - export json" {
+  skip "not implemented yet"
+}
+@test "check all - export file.json" {
+  skip "not implemented yet"
+}
+@test "check single benchmark - export json" {
+  skip "not implemented yet"
+}
+@test "check single benchmark - export file.json" {
+  skip "not implemented yet"
+}
+@test "check multiple benchmark - export json" {
+  skip "not implemented yet"
+}
+@test "check multiple benchmark - export file.json" {
+  skip "not implemented yet"
+}
 
-@test "check all - export csv" {}
-@test "check all - export file.csv" {}
-@test "check single benchmark - export csv" {}
-@test "check single benchmark - export file.csv" {}
-@test "check multiple benchmark - export csv" {}
-@test "check multiple benchmark - export file.csv" {}
+@test "check all - export csv" {
+  skip "not implemented yet"
+}
+@test "check all - export file.csv" {
+  skip "not implemented yet"
+}
+@test "check single benchmark - export csv" {
+  skip "not implemented yet"
+}
+@test "check single benchmark - export file.csv" {
+  skip "not implemented yet"
+}
+@test "check multiple benchmark - export csv" {
+  skip "not implemented yet"
+}
+@test "check multiple benchmark - export file.csv" {
+  skip "not implemented yet"
+}
 
 ## check search_path tests
 
