@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
@@ -40,6 +41,10 @@ type ExecutionTree struct {
 }
 
 func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, controlFilterWhereClause string, args ...string) (*ExecutionTree, error) {
+	if len(args) < 1 {
+		return nil, sperr.New("need at least one argument to create a check execution tree")
+	}
+
 	searchPath := client.GetRequiredSessionSearchPath()
 
 	// now populate the ExecutionTree
@@ -56,18 +61,27 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 		return nil, err
 	}
 
-	rootItems := []modconfig.ModTreeItem{}
-	for _, arg := range args {
-		// now identify the root item of the control list
-		rootItem, err := executionTree.getExecutionRootFromArg(arg)
+	var resolvedItem modconfig.ModTreeItem
+	if len(args) == 1 {
+		resolvedItem, err = executionTree.getExecutionRootFromArg(args[0])
 		if err != nil {
 			return nil, err
 		}
-		rootItems = append(rootItems, rootItem)
-	}
+	} else {
+		items := []modconfig.ModTreeItem{}
+		for _, arg := range args {
+			item, err := executionTree.getExecutionRootFromArg(arg)
+			if err != nil {
+				return nil, err
+			}
+			items = append(items, item)
+		}
 
+		// create a virtual benchmark with `items` as it's children
+		resolvedItem = modconfig.NewVirtualBenchmarkWithChildren(workspace.Mod, items).(modconfig.ModTreeItem)
+	}
 	// build tree of result groups, starting with a synthetic 'root' node
-	executionTree.Root = NewRootResultGroup(ctx, executionTree, rootItems...)
+	executionTree.Root = NewRootResultGroup(ctx, executionTree, resolvedItem)
 
 	// after tree has built, ControlCount will be set - create progress rendered
 	executionTree.Progress = controlstatus.NewControlProgress(len(executionTree.ControlRuns))

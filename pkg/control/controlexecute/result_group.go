@@ -67,15 +67,7 @@ func NewGroupSummary() *GroupSummary {
 }
 
 // NewRootResultGroup creates a ResultGroup to act as the root node of a control execution tree
-func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootItems ...modconfig.ModTreeItem) *ResultGroup {
-	var title string
-	var rootGroupItem modconfig.ModTreeItem
-	if len(rootItems) == 1 {
-		// there's only one - use that title
-		title = rootItems[0].GetTitle()
-		rootGroupItem = rootItems[0]
-	}
-
+func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootItem modconfig.ModTreeItem) *ResultGroup {
 	root := &ResultGroup{
 		GroupId:    RootResultGroupName,
 		Groups:     []*ResultGroup{},
@@ -84,20 +76,17 @@ func NewRootResultGroup(ctx context.Context, executionTree *ExecutionTree, rootI
 		Severity:   make(map[string]controlstatus.StatusSummary),
 		updateLock: new(sync.Mutex),
 		NodeType:   modconfig.BlockTypeBenchmark,
-		Title:      title,
-		GroupItem:  rootGroupItem,
+		Title:      rootItem.GetTitle(),
 	}
 
-	for _, rootItem := range rootItems {
-		if control, ok := rootItem.(*modconfig.Control); ok {
-			// if root item is a control, add control run
-			executionTree.AddControl(ctx, control, root)
-		} else {
-			// create a result group for this item
-			// if root item is a benchmark, create new result group with root as parent
-			itemGroup := NewResultGroup(ctx, executionTree, rootItem, root)
-			root.addResultGroup(itemGroup)
-		}
+	// if root item is a benchmark, create new result group with root as parent
+	if control, ok := rootItem.(*modconfig.Control); ok {
+		// if root item is a control, add control run
+		executionTree.AddControl(ctx, control, root)
+	} else {
+		// create a result group for this item
+		itemGroup := NewResultGroup(ctx, executionTree, rootItem, root)
+		root.addResultGroup(itemGroup)
 	}
 
 	return root

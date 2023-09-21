@@ -2,15 +2,15 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
-	"github.com/zclconf/go-cty/cty"
 	"sort"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // Benchmark is a struct representing the Benchmark resource
@@ -31,6 +31,23 @@ type Benchmark struct {
 	Width   *int       `cty:"width" hcl:"width" column:"width,text" json:"-"`
 	Type    *string    `cty:"type" hcl:"type" column:"type,text" json:"-"`
 	Display *string    `cty:"display" hcl:"display" json:"-"`
+}
+
+func NewVirtualBenchmarkWithChildren(mod *Mod, children []ModTreeItem) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, "benchmark", "virtual")
+	benchmark := &Benchmark{
+		ModTreeItemImpl: ModTreeItemImpl{
+			HclResourceImpl: HclResourceImpl{
+				ShortName:       "virtual",
+				FullName:        fullName,
+				UnqualifiedName: fmt.Sprintf("%s.%s", "benchmark", "virtual"),
+				blockType:       "benchmark",
+			},
+			Mod: mod,
+		},
+	}
+	benchmark.children = append(benchmark.children, children...)
+	return benchmark
 }
 
 func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) HclResource {
