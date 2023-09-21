@@ -226,6 +226,37 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
+@test "check all - export sps" {
+  cd $CONTROL_RENDERING_TEST_MOD
+  run steampipe check all --export sps --progress=false
+  assert_success
+  rm -f *.sps
+}
+@test "check all - export file.sps" {
+  cd $CONTROL_RENDERING_TEST_MOD
+  run steampipe check all --export file.sps --progress=false
+  assert_success
+  rm -f file.sps
+}
+@test "check single benchmark - export sps" {}
+@test "check single benchmark - export file.sps" {}
+@test "check multiple benchmark - export sps" {}
+@test "check multiple benchmark - export file.sps" {}
+
+@test "check all - export json" {}
+@test "check all - export file.json" {}
+@test "check single benchmark - export json" {}
+@test "check single benchmark - export file.json" {}
+@test "check multiple benchmark - export json" {}
+@test "check multiple benchmark - export file.json" {}
+
+@test "check all - export csv" {}
+@test "check all - export file.csv" {}
+@test "check single benchmark - export csv" {}
+@test "check single benchmark - export file.csv" {}
+@test "check multiple benchmark - export csv" {}
+@test "check multiple benchmark - export file.csv" {}
+
 ## check search_path tests
 
 #@test "steampipe check search_path_prefix when passed through command line" {
