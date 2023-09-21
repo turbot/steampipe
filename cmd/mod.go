@@ -335,7 +335,11 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 
 // helpers
 func createWorkspaceMod(ctx context.Context, cmd *cobra.Command, workspacePath string) (*modconfig.Mod, error) {
-	if !modinstaller.ValidateModLocation(ctx, workspacePath) {
+	cancel, err := modinstaller.ValidateModLocation(ctx, workspacePath)
+	if err != nil {
+		return nil, err
+	}
+	if !cancel {
 		return nil, fmt.Errorf("mod %s cancelled", cmd.Name())
 	}
 
@@ -355,7 +359,7 @@ func createWorkspaceMod(ctx context.Context, cmd *cobra.Command, workspacePath s
 
 	// load up the written mod file so that we get the updated
 	// block ranges
-	mod, err := parse.LoadModfile(workspacePath)
+	mod, err = parse.LoadModfile(workspacePath)
 	if err != nil {
 		return nil, err
 	}
