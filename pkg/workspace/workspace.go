@@ -10,10 +10,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/fatih/color"
 	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/filewatcher"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardevents"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -24,6 +28,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
+	"github.com/turbot/steampipe/pkg/task"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -199,7 +204,7 @@ func (w *Workspace) ModfileExists() bool {
 // check  whether the workspace contains a modfile
 // this will determine whether we load files recursively, and create pseudo resources for sql files
 func (w *Workspace) setModfileExists() {
-	modFile, err := w.findModFilePath(w.Path)
+	modFile, err := FindModFilePath(w.Path)
 	modFileExists := err != ErrorNoModDefinition
 
 	if modFileExists {
@@ -219,7 +224,8 @@ func (w *Workspace) setModfileExists() {
 	}
 }
 
-func (w *Workspace) findModFilePath(folder string) (string, error) {
+// TODO comment
+func FindModFilePath(folder string) (string, error) {
 	folder, err := filepath.Abs(folder)
 	if err != nil {
 		return "", err
@@ -238,12 +244,57 @@ func (w *Workspace) findModFilePath(folder string) (string, error) {
 			// this typically means that we are already in the root directory
 			return "", ErrorNoModDefinition
 		}
-		return w.findModFilePath(filepath.Dir(folder))
+		return FindModFilePath(filepath.Dir(folder))
 	}
 	return modFilePath, nil
 }
 
+func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error {
+	// bypass all the checks if ConfigKeyBypassHomeDirModfileWarning is set - it means home dir modfile check
+	// has already happened before
+	if viper.GetBool(constants.ConfigKeyBypassHomeDirModfileWarning) {
+		return nil
+	}
+	// get the cmd and home dir
+	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+	home, _ := os.UserHomeDir()
+	_, err := os.Stat(filepaths.ModFilePath(workspacePath))
+	modFileExists := !os.IsNotExist(err)
+
+	// check if your workspace path is home dir and if modfile exists
+	if workspacePath == home && modFileExists {
+
+		// for interactive query - ask for confirmation to continue
+		if cmd.Name() == "query" && viper.GetBool(constants.ConfigKeyInteractive) {
+			confirm, err := utils.UserConfirmation(ctx, fmt.Sprintf("%s: You have a mod.sp file in your home directory. This is not recommended.\nAs a result, steampipe will try to load all the files in home and its sub-directories, which can cause performance issues.\nBest practice is to put mod.sp files in their own directories.\nDo you still want to continue? (y/n)", color.YellowString("Warning")))
+			if err != nil {
+				return err
+			}
+			if !confirm {
+				return sperr.New("failed to load workspace: execution cancelled")
+			}
+			return nil
+		}
+
+		// for batch query mode - if output is table, just warn
+		if task.IsBatchQueryCmd(cmd, viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)) && cmdconfig.Viper().GetString(constants.ArgOutput) == constants.OutputFormatTable {
+			error_helpers.ShowWarning("You have a mod.sp file in your home directory. This is not recommended.\nAs a result, steampipe will try to load all the files in home and its sub-directories, which can cause performance issues.\nBest practice is to put mod.sp files in their own directories.\nHit Ctrl+C to stop.\n")
+			return nil
+		}
+
+		// for other cmds - if home dir has modfile, just warn
+		error_helpers.ShowWarning("You have a mod.sp file in your home directory. This is not recommended.\nAs a result, steampipe will try to load all the files in home and its sub-directories, which can cause performance issues.\nBest practice is to put mod.sp files in their own directories.\nHit Ctrl+C to stop.\n")
+	}
+
+	return nil
+}
+
 func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAndWarnings {
+	// check if your workspace path is home dir and if modfile exists - if yes then warn and ask user to continue or not
+	if err := HomeDirectoryModfileCheck(ctx, w.Path); err != nil {
+		return error_helpers.NewErrorsAndWarning(err)
+	}
+
 	// resolve values of all input variables
 	// we WILL validate missing variables when loading
 	validateMissing := true
@@ -270,7 +321,8 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAn
 	parseCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 
 	// load the workspace mod
-	m, otherErrorAndWarning := steampipeconfig.LoadMod(w.Path, parseCtx)
+	log.Println("[INFO] >> 1. ctx:", &ctx)
+	m, otherErrorAndWarning := steampipeconfig.LoadMod(ctx, w.Path, parseCtx)
 	errorsAndWarnings.Merge(otherErrorAndWarning)
 	if errorsAndWarnings.Error != nil {
 		return errorsAndWarnings
@@ -293,6 +345,9 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAn
 }
 
 func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
+	log.Println("[INFO] >> start getInputVariables")
+	defer log.Println("[INFO] >> end getInputVariables")
+
 	// build a run context just to use to load variable definitions
 	variablesParseCtx, err := w.getParseContext(ctx)
 	if err != nil {
@@ -303,8 +358,12 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 }
 
 func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
+	log.Println("[INFO] >> start getVariableValues")
+	defer log.Println("[INFO] >> end getVariableValues")
+
 	// load variable definitions
-	variableMap, err := steampipeconfig.LoadVariableDefinitions(w.Path, variablesParseCtx)
+	log.Println("[INFO] >> 1. ctx:", &ctx)
+	variableMap, err := steampipeconfig.LoadVariableDefinitions(ctx, w.Path, variablesParseCtx)
 	if err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
@@ -315,6 +374,8 @@ func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *pa
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
 func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext, error) {
+	log.Println("[INFO] >> start getParseContext")
+	defer log.Println("[INFO] >> end getParseContext")
 	parseFlag := parse.CreateDefaultMod
 	if w.loadPseudoResources {
 		parseFlag |= parse.CreatePseudoResources
@@ -401,7 +462,7 @@ func (w *Workspace) loadWorkspaceResourceName(ctx context.Context) (*modconfig.W
 		return nil, err
 	}
 
-	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(w.Mod, parseCtx)
+	workspaceResourceNames, err := steampipeconfig.LoadModResourceNames(ctx, w.Mod, parseCtx)
 	if err != nil {
 		return nil, err
 	}

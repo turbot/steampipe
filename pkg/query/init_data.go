@@ -3,11 +3,13 @@ package query
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/statushooks"
@@ -31,6 +33,20 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 	i := &InitData{
 		InitData: *initialisation.NewInitData(),
 		Loaded:   make(chan struct{}),
+	}
+	// for interactive mode - do the home directory modfile check before init
+	if viper.GetBool(constants.ConfigKeyInteractive) {
+		path := viper.GetString(constants.ArgModLocation)
+		modFilePath, _ := workspace.FindModFilePath(path)
+
+		// if the user cancels - no need to continue init
+		if err := workspace.HomeDirectoryModfileCheck(ctx, filepath.Dir(modFilePath)); err != nil {
+			i.Result.Error = err
+			close(i.Loaded)
+			return i
+		}
+		// home dir modfile already done - set the viper config
+		viper.Set(constants.ConfigKeyBypassHomeDirModfileWarning, true)
 	}
 	go i.init(ctx, args)
 
@@ -89,7 +105,7 @@ func (i *InitData) init(ctx context.Context, args []string) {
 	statushooks.SetStatus(ctx, "Loading workspace")
 	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
 	if errAndWarnings.GetError() != nil {
-		i.Result.Error = fmt.Errorf("failed to load workspace: %s", errAndWarnings.GetError().Error())
+		i.Result.Error = fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())
 		return
 	}
 	i.Result.AddWarnings(errAndWarnings.Warnings...)

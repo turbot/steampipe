@@ -1,6 +1,7 @@
 package steampipeconfig
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -21,14 +22,14 @@ import (
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings *error_helpers.ErrorAndWarnings) {
+func LoadMod(ctx context.Context, modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings *error_helpers.ErrorAndWarnings) {
 	defer func() {
 		if r := recover(); r != nil {
 			errorsAndWarnings = error_helpers.NewErrorsAndWarning(helpers.ToError(r))
 		}
 	}()
 
-	mod, loadModResult := loadModDefinition(modPath, parseCtx)
+	mod, loadModResult := loadModDefinition(ctx, modPath, parseCtx)
 	if loadModResult.Error != nil {
 		return nil, loadModResult
 	}
@@ -44,21 +45,21 @@ func LoadMod(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mo
 	}
 
 	// load the mod dependencies
-	if err := loadModDependencies(mod, parseCtx); err != nil {
+	if err := loadModDependencies(ctx, mod, parseCtx); err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
 
 	// populate the resource maps of the current mod using the dependency mods
 	mod.ResourceMaps = parseCtx.GetResourceMaps()
 	// now load the mod resource hcl (
-	mod, errorsAndWarnings = loadModResources(mod, parseCtx)
+	mod, errorsAndWarnings = loadModResources(ctx, mod, parseCtx)
 
 	// add in any warnings from mod load
 	errorsAndWarnings.AddWarning(loadModResult.Warnings...)
 	return mod, errorsAndWarnings
 }
 
-func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings *error_helpers.ErrorAndWarnings) {
+func loadModDefinition(ctx context.Context, modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings *error_helpers.ErrorAndWarnings) {
 	errorsAndWarnings = &error_helpers.ErrorAndWarnings{}
 	// verify the mod folder exists
 	_, err := os.Stat(modPath)
@@ -88,7 +89,7 @@ func loadModDefinition(modPath string, parseCtx *parse.ModParseContext) (mod *mo
 	return mod, errorsAndWarnings
 }
 
-func loadModDependencies(parent *modconfig.Mod, parseCtx *parse.ModParseContext) error {
+func loadModDependencies(ctx context.Context, parent *modconfig.Mod, parseCtx *parse.ModParseContext) error {
 	var errors []error
 	if parent.Require != nil {
 		// now ensure there is a lock file - if we have any mod dependnecies there MUST be a lock file -
@@ -106,7 +107,7 @@ func loadModDependencies(parent *modconfig.Mod, parseCtx *parse.ModParseContext)
 			if lockedVersion == nil {
 				return fmt.Errorf("not all dependencies are installed - run 'steampipe mod install'")
 			}
-			if err := loadModDependency(lockedVersion, parseCtx); err != nil {
+			if err := loadModDependency(ctx, lockedVersion, parseCtx); err != nil {
 				errors = append(errors, err)
 			}
 		}
@@ -115,7 +116,7 @@ func loadModDependencies(parent *modconfig.Mod, parseCtx *parse.ModParseContext)
 	return error_helpers.CombineErrors(errors...)
 }
 
-func loadModDependency(modDependency *versionmap.ResolvedVersionConstraint, parseCtx *parse.ModParseContext) error {
+func loadModDependency(ctx context.Context, modDependency *versionmap.ResolvedVersionConstraint, parseCtx *parse.ModParseContext) error {
 	// dependency mods are installed to <mod path>/<mod nam>@version
 	// for example workspace_folder/.steampipe/mods/github.com/turbot/steampipe-mod-aws-compliance@v1.0
 
@@ -135,7 +136,7 @@ func loadModDependency(modDependency *versionmap.ResolvedVersionConstraint, pars
 
 	childParseCtx := parse.NewChildModParseContext(parseCtx, modDependency, dependencyDir)
 	// NOTE: pass in the version and dependency path of the mod - these must be set before it loads its dependencies
-	dependencyMod, errAndWarnings := LoadMod(dependencyDir, childParseCtx)
+	dependencyMod, errAndWarnings := LoadMod(ctx, dependencyDir, childParseCtx)
 	if errAndWarnings.GetError() != nil {
 		return errAndWarnings.GetError()
 	}
@@ -151,20 +152,20 @@ func loadModDependency(modDependency *versionmap.ResolvedVersionConstraint, pars
 
 }
 
-func loadModResources(mod *modconfig.Mod, parseCtx *parse.ModParseContext) (*modconfig.Mod, *error_helpers.ErrorAndWarnings) {
+func loadModResources(ctx context.Context, mod *modconfig.Mod, parseCtx *parse.ModParseContext) (*modconfig.Mod, *error_helpers.ErrorAndWarnings) {
 	// if flag is set, create pseudo resources by mapping files
 	var pseudoResources []modconfig.MappableResource
 	var err error
 	if parseCtx.CreatePseudoResources() {
 		// now execute any pseudo-resource creations based on file mappings
-		pseudoResources, err = createPseudoResources(mod, parseCtx)
+		pseudoResources, err = createPseudoResources(ctx, mod, parseCtx)
 		if err != nil {
 			return nil, error_helpers.NewErrorsAndWarning(err)
 		}
 	}
 
 	// get the source files
-	sourcePaths, err := getSourcePaths(mod.ModPath, parseCtx.ListOptions)
+	sourcePaths, err := getSourcePaths(ctx, mod.ModPath, parseCtx.ListOptions)
 	if err != nil {
 		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
 		return nil, error_helpers.NewErrorsAndWarning(err)
@@ -177,13 +178,13 @@ func loadModResources(mod *modconfig.Mod, parseCtx *parse.ModParseContext) (*mod
 	}
 
 	// parse all hcl files (NOTE - this reads the CurrentMod out of ParseContext and adds to it)
-	mod, errAndWarnings := parse.ParseMod(fileData, pseudoResources, parseCtx)
+	mod, errAndWarnings := parse.ParseMod(ctx, fileData, pseudoResources, parseCtx)
 
 	return mod, errAndWarnings
 }
 
 // LoadModResourceNames parses all hcl files in modPath and returns the names of all resources
-func LoadModResourceNames(mod *modconfig.Mod, parseCtx *parse.ModParseContext) (resources *modconfig.WorkspaceResources, err error) {
+func LoadModResourceNames(ctx context.Context, mod *modconfig.Mod, parseCtx *parse.ModParseContext) (resources *modconfig.WorkspaceResources, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = helpers.ToError(r)
@@ -200,7 +201,7 @@ func LoadModResourceNames(mod *modconfig.Mod, parseCtx *parse.ModParseContext) (
 	}
 
 	// now execute any pseudo-resource creations based on file mappings
-	pseudoResources, err := createPseudoResources(mod, parseCtx)
+	pseudoResources, err := createPseudoResources(ctx, mod, parseCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +213,7 @@ func LoadModResourceNames(mod *modconfig.Mod, parseCtx *parse.ModParseContext) (
 		}
 	}
 
-	sourcePaths, err := getSourcePaths(mod.ModPath, parseCtx.ListOptions)
+	sourcePaths, err := getSourcePaths(ctx, mod.ModPath, parseCtx.ListOptions)
 	if err != nil {
 		log.Printf("[WARN] LoadModResourceNames: failed to get mod file paths: %v\n", err)
 		return nil, err
@@ -240,8 +241,8 @@ func GetModFileExtensions() []string {
 // this will include hcl files (with .sp extension)
 // as well as any other files with extensions that have been registered for pseudo resource creation
 // (see steampipeconfig/modconfig/resource_type_map.go)
-func getSourcePaths(modPath string, listOpts *filehelpers.ListOptions) ([]string, error) {
-	sourcePaths, err := filehelpers.ListFiles(modPath, listOpts)
+func getSourcePaths(ctx context.Context, modPath string, listOpts *filehelpers.ListOptions) ([]string, error) {
+	sourcePaths, err := filehelpers.ListFilesWithContext(ctx, modPath, listOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +250,7 @@ func getSourcePaths(modPath string, listOpts *filehelpers.ListOptions) ([]string
 }
 
 // create pseudo-resources for any files whose extensions are registered
-func createPseudoResources(mod *modconfig.Mod, parseCtx *parse.ModParseContext) ([]modconfig.MappableResource, error) {
+func createPseudoResources(ctx context.Context, mod *modconfig.Mod, parseCtx *parse.ModParseContext) ([]modconfig.MappableResource, error) {
 	// create list options to find pseudo resources
 	listOpts := &filehelpers.ListOptions{
 		Flags:   parseCtx.ListOptions.Flags,
@@ -257,7 +258,7 @@ func createPseudoResources(mod *modconfig.Mod, parseCtx *parse.ModParseContext) 
 		Exclude: parseCtx.ListOptions.Exclude,
 	}
 	// list all registered files
-	sourcePaths, err := getSourcePaths(mod.ModPath, listOpts)
+	sourcePaths, err := getSourcePaths(ctx, mod.ModPath, listOpts)
 	if err != nil {
 		return nil, err
 	}

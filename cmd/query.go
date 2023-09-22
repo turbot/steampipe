@@ -136,8 +136,11 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// set config to indicate whether we are running an interactive query
 	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
 
+	// initialize the cancel handler - for context cancellation
+	initCtx, cancel := context.WithCancel(ctx)
+	contexthelpers.StartCancelHandler(cancel)
 	// start the initializer
-	initData := query.NewInitData(ctx, args)
+	initData := query.NewInitData(initCtx, args)
 	if initData.Result.Error != nil {
 		exitCode = constants.ExitCodeInitializationFailed
 		error_helpers.ShowError(ctx, initData.Result.Error)

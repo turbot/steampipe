@@ -17,10 +17,10 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-func LoadVariableDefinitions(variablePath string, parseCtx *parse.ModParseContext) (*modconfig.ModVariableMap, error) {
+func LoadVariableDefinitions(ctx context.Context, variablePath string, parseCtx *parse.ModParseContext) (*modconfig.ModVariableMap, error) {
 	// only load mod and variables blocks
 	parseCtx.BlockTypes = []string{modconfig.BlockTypeVariable}
-	mod, errAndWarnings := LoadMod(variablePath, parseCtx)
+	mod, errAndWarnings := LoadMod(ctx, variablePath, parseCtx)
 	if errAndWarnings.GetError() != nil {
 		return nil, errAndWarnings.GetError()
 	}
