@@ -434,21 +434,24 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
   cp $SRC_DATA_DIR/default_cache_ttl_10.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
   
-  touch $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
-  touch $STEAMPIPE_INSTALL_DIR/config/default.spc
+  cat $STEAMPIPE_INSTALL_DIR/config/default.spc
 
   # start the service
   steampipe service start
+  cat $STEAMPIPE_INSTALL_DIR/config/default.spc
 
   # cache functionality check since cache=true in options
   steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out1.json
+  cat $STEAMPIPE_INSTALL_DIR/config/default.spc
   steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out2.json
+  cat $STEAMPIPE_INSTALL_DIR/config/default.spc
   
   # wait for 15 seconds - the value of the TTL in connection options
   sleep 15
   
   # run the query again
   steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out3.json
+  cat $STEAMPIPE_INSTALL_DIR/config/default.spc
 
   # stop the service
   steampipe service stop
