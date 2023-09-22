@@ -100,10 +100,14 @@ func (l *RateLimiter) scopeString() string {
 
 func (l *RateLimiter) Equals(other *RateLimiter) bool {
 	return l.Name == other.Name &&
-		l.BucketSize == other.BucketSize &&
-		l.FillRate == other.FillRate &&
+		pointersHaveSameValue(l.BucketSize, other.BucketSize) &&
+		pointersHaveSameValue(l.FillRate, other.FillRate) &&
+		pointersHaveSameValue(l.MaxConcurrency, other.MaxConcurrency) &&
+		pointersHaveSameValue(l.Where, other.Where) &&
 		l.scopeString() == other.scopeString() &&
-		l.Where == other.Where
+		l.Plugin == other.Plugin &&
+		l.PluginInstance == other.PluginInstance &&
+		l.Source == other.Source
 }
 
 func (l *RateLimiter) SetPlugin(plugin *Plugin) {
@@ -115,4 +119,14 @@ func (l *RateLimiter) setPluginImageRef(alias string) {
 	l.ImageRef = ociinstaller.NewSteampipeImageRef(alias)
 	l.Plugin = l.ImageRef.DisplayImageRef()
 
+}
+
+func pointersHaveSameValue[T comparable](l, r *T) bool {
+	if l == nil {
+		return r == nil
+	}
+	if r == nil {
+		return false
+	}
+	return *l == *r
 }
