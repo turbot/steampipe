@@ -156,8 +156,8 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	// get the execution trees
 	// depending on the set of arguments and the export targets, we may get more than one
 	// example :
-	// * "check benchmark.b1 benchmark.b2 --export check.json" would give one merged tree
-	// * "check benchmark.b1 benchmark.b2 --export json" would give multiple trees
+	// "check benchmark.b1 benchmark.b2 --export check.json" would give one merged tree
+	// "check benchmark.b1 benchmark.b2 --export json" would give multiple trees
 	trees, err := getExecutionTrees(ctx, initData, args...)
 	error_helpers.FailOnError(err)
 
