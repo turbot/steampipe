@@ -10,7 +10,7 @@ import (
 type Plugin struct {
 	Instance        string         `hcl:"name,label" db:"plugin_instance"`
 	Alias           string         `hcl:"source,optional"`
-	MaxMemoryMb     *int           `hcl:"memory_max_mb,optional" db:"memory_max_mb"`
+	MemoryMaxMb     *int           `hcl:"memory_max_mb,optional" db:"memory_max_mb"`
 	Limiters        []*RateLimiter `hcl:"limiter,block" db:"limiters"`
 	FileName        *string        `db:"file_name"`
 	StartLineNumber *int           `db:"start_line_number"`
@@ -50,11 +50,11 @@ func (l *Plugin) IsDefault() bool {
 }
 
 func (l *Plugin) GetMaxMemoryBytes() int64 {
-	maxMemoryMb := 0
-	if l.MaxMemoryMb != nil {
-		maxMemoryMb = *l.MaxMemoryMb
+	memoryMaxMb := 0
+	if l.MemoryMaxMb != nil {
+		memoryMaxMb = *l.MemoryMaxMb
 	}
-	return int64(1024 * 1024 * maxMemoryMb)
+	return int64(1024 * 1024 * memoryMaxMb)
 }
 
 func (l *Plugin) GetImageRef() string {

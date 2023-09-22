@@ -37,7 +37,7 @@ end_line_number
 		Args: []any{
 			plugin.Plugin,
 			plugin.Instance,
-			plugin.MaxMemoryMb,
+			plugin.MemoryMaxMb,
 			plugin.Limiters,
 			plugin.FileName,
 			plugin.StartLineNumber,
