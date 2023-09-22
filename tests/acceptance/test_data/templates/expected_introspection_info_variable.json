@@ -29,7 +29,7 @@
   "title": null,
   "value": "steampipe_var",
   "value_source": "config",
-  "value_source_end_line_number": 1,
+  "value_source_end_line_number": 4,
   "value_source_start_line_number": 1,
   "var_type": "string"
  }
