@@ -445,10 +445,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cat $STEAMPIPE_INSTALL_DIR/config/default.spc
   steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out2.json
   cat $STEAMPIPE_INSTALL_DIR/config/default.spc
-  
+
   # wait for 15 seconds - the value of the TTL in connection options
   sleep 15
-  
+
   # run the query again
   steampipe query "select unique_col from chaos_no_options.chaos_cache_check where id=2" --output json > out3.json
   cat $STEAMPIPE_INSTALL_DIR/config/default.spc
