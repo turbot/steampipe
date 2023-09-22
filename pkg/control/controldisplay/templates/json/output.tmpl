@@ -1,25 +1,6 @@
 {{ define "output" -}}
-	{{- template "root_template" .Data.Root -}}
+	{{- template "result_group_template" .Data.Root -}}
 {{ end }}
-
-{{ define "root_template" }}
-{
-	"group_id": {{ toPrettyJson .GroupId }},
-	"title": {{ toPrettyJson .Title }},
-	"description": {{ toPrettyJson .Description }},
-	"tags": {{ toPrettyJson .Tags }},
-	"summary": {{ toPrettyJson .Summary }},
-	"groups": {{ if .Groups }}[
-		{{- range .Groups -}}
-			{{- template "result_group_template" . -}}
-		{{ end }}
-	], {{ else }} [], {{ end -}}
-	"controls": {{ if .ControlRuns }}[
-		{{- range .ControlRuns -}}
-			{{- template "control_run_template" . -}}
-		{{ end }}
-	] {{ else }} null {{ end -}}
-} {{ end -}}
 
 {{/* sub template for result groups */}}
 {{ define "result_group_template" }}

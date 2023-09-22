@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
@@ -39,7 +40,11 @@ type ExecutionTree struct {
 	controlNameFilterMap map[string]bool
 }
 
-func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, arg, controlFilterWhereClause string) (*ExecutionTree, error) {
+func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, client db_common.Client, controlFilterWhereClause string, args ...string) (*ExecutionTree, error) {
+	if len(args) < 1 {
+		return nil, sperr.New("need at least one argument to create a check execution tree")
+	}
+
 	searchPath := client.GetRequiredSessionSearchPath()
 
 	// now populate the ExecutionTree
@@ -56,14 +61,32 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 		return nil, err
 	}
 
-	// now identify the root item of the control list
-	rootItem, err := executionTree.getExecutionRootFromArg(arg)
-	if err != nil {
-		return nil, err
-	}
+	var resolvedItem modconfig.ModTreeItem
 
+	// if only one argument is provided, add this as execution root
+	if len(args) == 1 {
+		resolvedItem, err = executionTree.getExecutionRootFromArg(args[0])
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// for multiple items, use a root benchmark as the parent of the items
+		// this root benchmark will be converted to a ResultGroup that can be worked with
+		// this is necessary because snapshots only support a single tree item as the child of the root
+		items := []modconfig.ModTreeItem{}
+		for _, arg := range args {
+			item, err := executionTree.getExecutionRootFromArg(arg)
+			if err != nil {
+				return nil, err
+			}
+			items = append(items, item)
+		}
+
+		// create a virtual benchmark with `items` as it's children
+		resolvedItem = modconfig.NewVirtualBenchmarkWithChildren(workspace.Mod, items).(modconfig.ModTreeItem)
+	}
 	// build tree of result groups, starting with a synthetic 'root' node
-	executionTree.Root = NewRootResultGroup(ctx, executionTree, rootItem)
+	executionTree.Root = NewRootResultGroup(ctx, executionTree, resolvedItem)
 
 	// after tree has built, ControlCount will be set - create progress rendered
 	executionTree.Progress = controlstatus.NewControlProgress(len(executionTree.ControlRuns))
@@ -89,7 +112,7 @@ func (e *ExecutionTree) AddControl(ctx context.Context, control *modconfig.Contr
 	}
 }
 
-func (e *ExecutionTree) Execute(ctx context.Context) (controlstatus.StatusSummary, error) {
+func (e *ExecutionTree) Execute(ctx context.Context) error {
 	log.Println("[TRACE]", "begin ExecutionTree.Execute")
 	defer log.Println("[TRACE]", "end ExecutionTree.Execute")
 	e.StartTime = time.Now()
@@ -104,7 +127,7 @@ func (e *ExecutionTree) Execute(ctx context.Context) (controlstatus.StatusSummar
 	// if there is a custom search path, wait until the first connection of each plugin has loaded
 	if customSearchPath := e.client.GetCustomSearchPath(); customSearchPath != nil {
 		if err := connection_sync.WaitForSearchPathSchemas(ctx, e.client, customSearchPath); err != nil {
-			return controlstatus.StatusSummary{}, err
+			return err
 		}
 	}
 
@@ -128,7 +151,7 @@ func (e *ExecutionTree) Execute(ctx context.Context) (controlstatus.StatusSummar
 	e.DimensionColorGenerator, _ = NewDimensionColorGenerator(4, 27)
 	e.DimensionColorGenerator.populate(e)
 
-	return e.Root.Summary.Status, nil
+	return nil
 }
 
 func (e *ExecutionTree) waitForActiveRunsToComplete(ctx context.Context, parallelismLock *semaphore.Weighted, maxParallelGoRoutines int64) error {

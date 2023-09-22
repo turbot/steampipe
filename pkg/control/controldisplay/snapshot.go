@@ -3,12 +3,14 @@ package controldisplay
 import (
 	"context"
 	"fmt"
+
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -53,6 +55,9 @@ func executionTreeToSnapshot(e *controlexecute.ExecutionTree) (*dashboardtypes.S
 }
 
 func PublishSnapshot(ctx context.Context, e *controlexecute.ExecutionTree, shouldShare bool) error {
+	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
+
 	snapshot, err := executionTreeToSnapshot(e)
 	if err != nil {
 		return err
@@ -63,6 +68,7 @@ func PublishSnapshot(ctx context.Context, e *controlexecute.ExecutionTree, shoul
 		return err
 	}
 	if viper.GetBool(constants.ArgProgress) {
+		statushooks.Done(ctx)
 		fmt.Println(message)
 	}
 	return nil

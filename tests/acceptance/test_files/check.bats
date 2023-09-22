@@ -226,6 +226,63 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd -
 }
 
+@test "check all - export sps" {
+  skip "not implemented yet"
+}
+@test "check all - export file.sps" {
+  skip "not implemented yet"
+}
+@test "check single benchmark - export sps" {
+  skip "not implemented yet"
+}
+@test "check single benchmark - export file.sps" {
+  skip "not implemented yet"
+}
+@test "check multiple benchmark - export sps" {
+  skip "not implemented yet"
+}
+@test "check multiple benchmark - export file.sps" {
+  skip "not implemented yet"
+}
+
+@test "check all - export json" {
+  skip "not implemented yet"
+}
+@test "check all - export file.json" {
+  skip "not implemented yet"
+}
+@test "check single benchmark - export json" {
+  skip "not implemented yet"
+}
+@test "check single benchmark - export file.json" {
+  skip "not implemented yet"
+}
+@test "check multiple benchmark - export json" {
+  skip "not implemented yet"
+}
+@test "check multiple benchmark - export file.json" {
+  skip "not implemented yet"
+}
+
+@test "check all - export csv" {
+  skip "not implemented yet"
+}
+@test "check all - export file.csv" {
+  skip "not implemented yet"
+}
+@test "check single benchmark - export csv" {
+  skip "not implemented yet"
+}
+@test "check single benchmark - export file.csv" {
+  skip "not implemented yet"
+}
+@test "check multiple benchmark - export csv" {
+  skip "not implemented yet"
+}
+@test "check multiple benchmark - export file.csv" {
+  skip "not implemented yet"
+}
+
 ## check search_path tests
 
 #@test "steampipe check search_path_prefix when passed through command line" {

@@ -6,11 +6,11 @@ import (
 	"io"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
@@ -20,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
@@ -102,8 +103,6 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	// setup a cancel context and start cancel handler
 	ctx, cancel := context.WithCancel(cmd.Context())
 	contexthelpers.StartCancelHandler(cancel)
-	// create a context with check status hooks
-	ctx = createCheckContext(ctx)
 
 	defer func() {
 		utils.LogTime("runCheckCmd end")
@@ -124,8 +123,20 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	// verify that no other benchmarks/controls are given with an all
+	if helpers.StringSliceContains(args, "all") && len(args) > 1 {
+		error_helpers.FailOnError(sperr.New("cannot execute 'all' with other benchmarks/controls"))
+	}
+
+	// show the status spinner
+	statushooks.Show(ctx)
+
 	// initialise
-	initData := control.NewInitData(ctx)
+	statushooks.SetStatus(ctx, "Initializing...")
+	// disable status hooks in init - otherwise we will end up
+	// getting status updates all the way down from the service layer
+	initCtx := statushooks.DisableStatusHooks(ctx)
+	initData := control.NewInitData(initCtx)
 	if initData.Result.Error != nil {
 		exitCode = constants.ExitCodeInitializationFailed
 		error_helpers.ShowError(ctx, initData.Result.Error)
@@ -133,65 +144,66 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 	defer initData.Cleanup(ctx)
 
+	// hide the spinner so that warning messages can be shown
+	statushooks.Done(ctx)
+
 	// if there is a usage warning we display it
 	initData.Result.DisplayMessages()
 
 	// pull out useful properties
-	w := initData.Workspace
-	client := initData.Client
 	totalAlarms, totalErrors := 0, 0
-	var durations []time.Duration
-	var exportMsg []string
 
-	shouldShare := viper.GetBool(constants.ArgShare)
-	shouldUpload := viper.GetBool(constants.ArgSnapshot)
-	generateSnapshot := shouldShare || shouldUpload
+	// get the execution trees
+	// depending on the set of arguments and the export targets, we may get more than one
+	// example :
+	// "check benchmark.b1 benchmark.b2 --export check.json" would give one merged tree
+	// "check benchmark.b1 benchmark.b2 --export json" would give multiple trees
+	trees, err := getExecutionTrees(ctx, initData, args...)
+	error_helpers.FailOnError(err)
 
-	// treat each arg as a separate execution
-	for _, targetName := range args {
-		if error_helpers.IsContextCanceled(ctx) {
-			durations = append(durations, 0)
-			// skip over this arg, since the execution was cancelled
-			// (do not just quit as we want to populate the durations)
+	// execute controls synchronously (execute returns the number of alarms and errors)
+	for _, namedTree := range trees {
+		err = executeTree(ctx, namedTree.tree, initData)
+		if err != nil {
+			error_helpers.ShowError(ctx, err)
 			continue
 		}
 
-		// create the execution tree
-		executionTree, err := controlexecute.NewExecutionTree(ctx, w, client, targetName, initData.ControlFilterWhereClause)
-		error_helpers.FailOnError(err)
-
-		// get the export name before execution(fail if not a valid export name)
-		exportName, err := getExportName(targetName, w.Mod.ShortName)
-		error_helpers.FailOnError(err)
-
-		// execute controls synchronously (execute returns the number of alarms and errors)
-		stats, err := executionTree.Execute(ctx)
-		error_helpers.FailOnError(err)
-
 		// append the total number of alarms and errors for multiple runs
-		totalAlarms += stats.Alarm
-		totalErrors += stats.Error
-		err = displayControlResults(ctx, executionTree, initData.OutputFormatter)
-		error_helpers.FailOnError(err)
+		totalAlarms += namedTree.tree.Root.Summary.Status.Alarm
+		totalErrors += namedTree.tree.Root.Summary.Status.Error
 
-		exportArgs := viper.GetStringSlice(constants.ArgExport)
-		exportMsg, err = initData.ExportManager.DoExport(ctx, exportName, executionTree, exportArgs)
-		error_helpers.FailOnError(err)
-
-		// if the share args are set, create a snapshot and share it
-		if generateSnapshot {
-			err = controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
-			if err != nil {
-				exitCode = constants.ExitCodeSnapshotUploadFailed
-				error_helpers.FailOnError(err)
-			}
+		err = publishSnapshot(ctx, namedTree.tree, viper.GetBool(constants.ArgShare), viper.GetBool(constants.ArgSnapshot))
+		if err != nil {
+			error_helpers.ShowError(ctx, err)
+			continue
 		}
 
-		durations = append(durations, executionTree.EndTime.Sub(executionTree.StartTime))
+		printTiming(namedTree.tree)
+
+		err = exportExecutionTree(ctx, namedTree, initData, viper.GetStringSlice(constants.ArgExport))
+		if err != nil {
+			error_helpers.ShowError(ctx, err)
+			continue
+		}
 	}
 
-	if shouldPrintTiming() {
-		printTiming(args, durations)
+	// set the defined exit code after successful execution
+	exitCode = getExitCode(totalAlarms, totalErrors)
+}
+
+// exportExecutionTree relies on the fact that the given tree is already executed
+func exportExecutionTree(ctx context.Context, namedTree *namedExecutionTree, initData *control.InitData, exportArgs []string) error {
+	statushooks.Show(ctx)
+	defer statushooks.Done(ctx)
+
+	if error_helpers.IsContextCanceled(ctx) {
+		return ctx.Err()
+	}
+
+	exportMsg, err := initData.ExportManager.DoExport(ctx, namedTree.name, namedTree.tree, exportArgs)
+	if err != nil {
+		return err
 	}
 
 	// print the location where the file is exported if progress=true
@@ -201,8 +213,74 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		fmt.Printf("\n")
 	}
 
-	// set the defined exit code after successful execution
-	exitCode = getExitCode(totalAlarms, totalErrors)
+	return nil
+}
+
+// executeTree executes and displays the (table) results of an execution
+func executeTree(ctx context.Context, tree *controlexecute.ExecutionTree, initData *control.InitData) error {
+	// create a context with check status hooks
+	checkCtx := createCheckContext(ctx)
+	err := tree.Execute(checkCtx)
+	if err != nil {
+		return err
+	}
+
+	err = displayControlResults(checkCtx, tree, initData.OutputFormatter)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func publishSnapshot(ctx context.Context, executionTree *controlexecute.ExecutionTree, shouldShare bool, shouldUpload bool) error {
+	if error_helpers.IsContextCanceled(ctx) {
+		return ctx.Err()
+	}
+	// if the share args are set, create a snapshot and share it
+	if shouldShare || shouldUpload {
+		statushooks.SetStatus(ctx, "Publishing snapshot")
+		return controldisplay.PublishSnapshot(ctx, executionTree, shouldShare)
+	}
+	return nil
+}
+
+// getExecutionTrees returns a list of execution trees with the names of their export targets
+// if the --export flag has the name of a file, a single merged tree is generated from the positional arguments
+// otherwise, one tree is generated for each argument
+//
+// this is necessary, since exporters can only export entire execution trees and when a file name is provided, we want to export the whole tree into one file
+//
+// example :
+// "check benchmark.b1 benchmark.b2 --export check.json" would give one merged tree
+// "check benchmark.b1 benchmark.b2 --export json" would give multiple trees
+func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...string) ([]*namedExecutionTree, error) {
+	var trees []*namedExecutionTree
+
+	if initData.ExportManager.HasNamedExport(viper.GetStringSlice(constants.ArgExport)) {
+		// create a single merged execution tree from all arguments
+		executionTree, err := controlexecute.NewExecutionTree(ctx, initData.Workspace, initData.Client, initData.ControlFilterWhereClause, args...)
+		if err != nil {
+			return nil, sperr.WrapWithMessage(err, "could not create merged execution tree")
+		}
+		name := fmt.Sprintf("check.%s", initData.Workspace.Mod.ShortName)
+		trees = append(trees, newNamedExecutionTree(name, executionTree))
+	} else {
+		for _, arg := range args {
+			if error_helpers.IsContextCanceled(ctx) {
+				return nil, ctx.Err()
+			}
+			executionTree, err := controlexecute.NewExecutionTree(ctx, initData.Workspace, initData.Client, initData.ControlFilterWhereClause, arg)
+			if err != nil {
+				return nil, sperr.WrapWithMessage(err, "could not create execution tree for %s", arg)
+			}
+			name, err := getExportName(arg, initData.Workspace.Mod.ShortName)
+			if err != nil {
+				return nil, sperr.WrapWithMessage(err, "could not evaluate export name for %s", arg)
+			}
+			trees = append(trees, newNamedExecutionTree(name, executionTree))
+		}
+	}
+	return trees, ctx.Err()
 }
 
 // getExportName resolves the base name of the target file
@@ -271,11 +349,15 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 	return true
 }
 
-func printTiming(args []string, durations []time.Duration) {
+func printTiming(tree *controlexecute.ExecutionTree) {
+	if !shouldPrintTiming() {
+		return
+	}
 	headers := []string{"", "Duration"}
 	var rows [][]string
-	for idx, arg := range args {
-		rows = append(rows, []string{arg, durations[idx].String()})
+
+	for _, rg := range tree.Root.Groups {
+		rows = append(rows, []string{rg.Title, rg.Duration.String()})
 	}
 	// blank line after renderer output
 	fmt.Println()
@@ -297,4 +379,16 @@ func displayControlResults(ctx context.Context, executionTree *controlexecute.Ex
 	}
 	_, err = io.Copy(os.Stdout, reader)
 	return err
+}
+
+type namedExecutionTree struct {
+	tree *controlexecute.ExecutionTree
+	name string
+}
+
+func newNamedExecutionTree(name string, tree *controlexecute.ExecutionTree) *namedExecutionTree {
+	return &namedExecutionTree{
+		tree: tree,
+		name: name,
+	}
 }

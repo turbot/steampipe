@@ -5,6 +5,7 @@ import (
 	"log"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/spf13/viper"
@@ -46,9 +47,12 @@ type ResultGroup struct {
 	GroupItem modconfig.ModTreeItem `json:"-"`
 	Parent    *ResultGroup          `json:"-"`
 	Duration  time.Duration         `json:"-"`
+
 	// a list of distinct dimension keys from descendant controls
 	DimensionKeys []string `json:"-"`
 
+	childrenComplete   uint32
+	executionStartTime time.Time
 	// lock to prevent multiple control_runs updating this
 	updateLock *sync.Mutex
 }
@@ -241,13 +245,19 @@ func (r *ResultGroup) addDimensionKeys(keys ...string) {
 	sort.Strings(r.DimensionKeys)
 }
 
-func (r *ResultGroup) addDuration(d time.Duration) {
-	r.updateLock.Lock()
-	defer r.updateLock.Unlock()
+// onChildDone is a callback that gets called from the children of this result group when they are done
+func (r *ResultGroup) onChildDone() {
+	newCount := atomic.AddUint32(&r.childrenComplete, 1)
+	totalCount := uint32(len(r.ControlRuns) + len(r.Groups))
+	if newCount < totalCount {
+		// all children haven't finished execution yet
+		return
+	}
 
-	r.Duration += d.Round(time.Millisecond)
+	// all children are done
+	r.Duration = time.Since(r.executionStartTime)
 	if r.Parent != nil {
-		r.Parent.addDuration(d.Round(time.Millisecond))
+		r.Parent.onChildDone()
 	}
 }
 
@@ -290,6 +300,8 @@ func (r *ResultGroup) execute(ctx context.Context, client db_common.Client, para
 	log.Printf("[TRACE] begin ResultGroup.Execute: %s\n", r.GroupId)
 	defer log.Printf("[TRACE] end ResultGroup.Execute: %s\n", r.GroupId)
 
+	r.executionStartTime = time.Now()
+
 	for _, controlRun := range r.ControlRuns {
 		if error_helpers.IsContextCanceled(ctx) {
 			controlRun.setError(ctx, ctx.Err())
@@ -325,5 +337,4 @@ func executeRun(ctx context.Context, run *ControlRun, parallelismLock *semaphore
 	}()
 
 	run.execute(ctx, client)
-
 }
