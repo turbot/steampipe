@@ -162,7 +162,8 @@ func (m *Manager) DoExport(ctx context.Context, targetName string, source Export
 	return expLocation, error_helpers.CombineErrors(errors...)
 }
 
-// HasNamedExport panics if a target is not valid
+// HasNamedExport returns true if any of the export arguments has a filename (--export=file.json) instead of the format name (--export=json)
+// panics if a target is not valid
 func (m *Manager) HasNamedExport(exports []string) bool {
 	for _, export := range exports {
 		target, err := m.getExportTarget(export, "dummy_exec_name")
