@@ -204,7 +204,7 @@ func (w *Workspace) ModfileExists() bool {
 // check  whether the workspace contains a modfile
 // this will determine whether we load files recursively, and create pseudo resources for sql files
 func (w *Workspace) setModfileExists() {
-	modFile, err := w.findModFilePath(w.Path)
+	modFile, err := FindModFilePath(w.Path)
 	modFileExists := err != ErrorNoModDefinition
 
 	if modFileExists {
@@ -224,7 +224,8 @@ func (w *Workspace) setModfileExists() {
 	}
 }
 
-func (w *Workspace) findModFilePath(folder string) (string, error) {
+// TODO comment
+func FindModFilePath(folder string) (string, error) {
 	folder, err := filepath.Abs(folder)
 	if err != nil {
 		return "", err
@@ -243,27 +244,34 @@ func (w *Workspace) findModFilePath(folder string) (string, error) {
 			// this typically means that we are already in the root directory
 			return "", ErrorNoModDefinition
 		}
-		return w.findModFilePath(filepath.Dir(folder))
+		return FindModFilePath(filepath.Dir(folder))
 	}
 	return modFilePath, nil
 }
 
-func (w *Workspace) homeDirectoryModfileCheck(ctx context.Context) *error_helpers.ErrorAndWarnings {
+func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error {
+	// bypass all the checks if ConfigKeyBypassHomeDirModfileWarning is set - it means home dir modfile check
+	// has already happened before
+	if viper.GetBool(constants.ConfigKeyBypassHomeDirModfileWarning) {
+		return nil
+	}
 	// get the cmd and home dir
 	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	home, _ := os.UserHomeDir()
+	_, err := os.Stat(filepaths.ModFilePath(workspacePath))
+	modFileExists := !os.IsNotExist(err)
 
 	// check if your workspace path is home dir and if modfile exists
-	if w.Path == home && w.ModfileExists() {
+	if workspacePath == home && modFileExists {
 
 		// for interactive query - ask for confirmation to continue
 		if cmd.Name() == "query" && viper.GetBool(constants.ConfigKeyInteractive) {
-			confirm, err := utils.UserConfirmation(ctx, fmt.Sprintf("%s: You have a mod.sp file in your home directory. This is not recommended.\nAs a result, steampipe will try to load all the files in home and its sub-directories, which can cause performance issues.\nBest practice is to put mod.sp files in their own directories.\nDo you still want to continue? (y/n)\n", color.YellowString("Warning")))
+			confirm, err := utils.UserConfirmation(ctx, fmt.Sprintf("%s: You have a mod.sp file in your home directory. This is not recommended.\nAs a result, steampipe will try to load all the files in home and its sub-directories, which can cause performance issues.\nBest practice is to put mod.sp files in their own directories.\nDo you still want to continue? (y/n)", color.YellowString("Warning")))
 			if err != nil {
-				return error_helpers.NewErrorsAndWarning(err)
+				return err
 			}
 			if !confirm {
-				return error_helpers.NewErrorsAndWarning(sperr.New("load canceled"))
+				return sperr.New("failed to load workspace: execution cancelled")
 			}
 			return nil
 		}
@@ -275,10 +283,7 @@ func (w *Workspace) homeDirectoryModfileCheck(ctx context.Context) *error_helper
 		}
 
 		// for other cmds - if home dir has modfile, just warn
-		if w.Path == home && w.ModfileExists() {
-			error_helpers.ShowWarning("You have a mod.sp file in your home directory. This is not recommended.\nAs a result, steampipe will try to load all the files in home and its sub-directories, which can cause performance issues.\nBest practice is to put mod.sp files in their own directories.\nHit Ctrl+C to stop.\n")
-			return nil
-		}
+		error_helpers.ShowWarning("You have a mod.sp file in your home directory. This is not recommended.\nAs a result, steampipe will try to load all the files in home and its sub-directories, which can cause performance issues.\nBest practice is to put mod.sp files in their own directories.\nHit Ctrl+C to stop.\n")
 	}
 
 	return nil
@@ -286,12 +291,8 @@ func (w *Workspace) homeDirectoryModfileCheck(ctx context.Context) *error_helper
 
 func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAndWarnings {
 	// check if your workspace path is home dir and if modfile exists - if yes then warn and ask user to continue or not
-	errorsAndWarnings := w.homeDirectoryModfileCheck(ctx)
-	if error_helpers.IsContextCanceled(ctx) {
-		return error_helpers.NewErrorsAndWarning(ctx.Err())
-	}
-	if errorsAndWarnings != nil {
-		return errorsAndWarnings
+	if err := HomeDirectoryModfileCheck(ctx, w.Path); err != nil {
+		return error_helpers.NewErrorsAndWarning(err)
 	}
 
 	// resolve values of all input variables
