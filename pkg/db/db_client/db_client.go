@@ -123,8 +123,12 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 }
 
 func (c *DbClient) closePools() {
-	c.userPool.Close()
-	c.managementPool.Close()
+	if c.userPool != nil {
+		c.userPool.Close()
+	}
+	if c.managementPool != nil {
+		c.managementPool.Close()
+	}
 }
 
 func (c *DbClient) loadServerSettings(ctx context.Context) error {

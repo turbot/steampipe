@@ -6,6 +6,7 @@ import (
 )
 
 type runningPlugin struct {
+	imageRef       string
 	pluginInstance string
 	client         *plugin.Client
 	reattach       *pb.ReattachConfig

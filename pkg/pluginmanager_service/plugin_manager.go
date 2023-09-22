@@ -438,9 +438,16 @@ func (m *PluginManager) addRunningPlugin(pluginInstance string) (*runningPlugin,
 		return nil, retry.RetryableError(fmt.Errorf("another client has already started the plugin"))
 	}
 
+	// get the config for this instance
+	pluginConfig := m.plugins[pluginInstance]
+	if pluginConfig == nil {
+		// not expected
+		return nil, sperr.New("plugin manager has no config for plkugin instance %s", pluginInstance)
+	}
 	// create the running plugin
 	startingPlugin := &runningPlugin{
 		pluginInstance: pluginInstance,
+		imageRef:       pluginConfig.GetImageRef(),
 		initialized:    make(chan struct{}),
 		failed:         make(chan struct{}),
 	}

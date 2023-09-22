@@ -51,7 +51,7 @@ func (m *PluginManager) sendUpdateConnectionConfigs(requestMap map[string]*sdkpr
 			continue
 		}
 
-		pluginClient, err := sdkgrpc.NewPluginClient(runningPlugin.client, pluginInstance)
+		pluginClient, err := sdkgrpc.NewPluginClient(runningPlugin.client, runningPlugin.imageRef)
 		if err != nil {
 			errors = append(errors, err)
 			continue
