@@ -63,17 +63,16 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 
 	var resolvedItem modconfig.ModTreeItem
 
-	// if only one argument is provided, fall back to the original data structure
-	// tree -> root -> item
+	// if only one argument is provided, add this as execution root
 	if len(args) == 1 {
 		resolvedItem, err = executionTree.getExecutionRootFromArg(args[0])
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		// for multiple items, use a virtual benchmark as the parent of the items
-		// this virtual benchmark can be converted to a ResultGroup that can be worked with
-		// this is necessary because snapshots support a single tree item as the child of the root
+		// for multiple items, use a root benchmark as the parent of the items
+		// this root benchmark will be converted to a ResultGroup that can be worked with
+		// this is necessary because snapshots only support a single tree item as the child of the root
 		items := []modconfig.ModTreeItem{}
 		for _, arg := range args {
 			item, err := executionTree.getExecutionRootFromArg(arg)

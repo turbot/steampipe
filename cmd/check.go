@@ -133,7 +133,10 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 
 	// initialise
 	statushooks.SetStatus(ctx, "Initializing...")
-	initData := control.NewInitData(statushooks.DisableStatusHooks(ctx))
+	// disable status hooks in init - otherwise we will end up
+	// getting status updates all the way down from the service layer
+	initCtx := statushooks.DisableStatusHooks(ctx)
+	initData := control.NewInitData(initCtx)
 	if initData.Result.Error != nil {
 		exitCode = constants.ExitCodeInitializationFailed
 		error_helpers.ShowError(ctx, initData.Result.Error)
@@ -150,11 +153,16 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	// pull out useful properties
 	totalAlarms, totalErrors := 0, 0
 
+	// get the execution trees
+	// depending on the set of arguments and the export targets, we may get more than one
+	// example :
+	// * "check benchmark.b1 benchmark.b2 --export check.json" would give one merged tree
+	// * "check benchmark.b1 benchmark.b2 --export json" would give multiple trees
 	trees, err := getExecutionTrees(ctx, initData, args...)
 	error_helpers.FailOnError(err)
 
 	// execute controls synchronously (execute returns the number of alarms and errors)
-	for _, namedTree := range trees { // create a context with check status hooks
+	for _, namedTree := range trees {
 		err = executeTree(ctx, namedTree.tree, initData)
 		if err != nil {
 			error_helpers.ShowError(ctx, err)
@@ -201,7 +209,7 @@ func exportExecutionTree(ctx context.Context, namedTree *namedExecutionTree, ini
 	// print the location where the file is exported if progress=true
 	if len(exportMsg) > 0 && viper.GetBool(constants.ArgProgress) {
 		fmt.Printf("\n")
-		fmt.Println(exportMsg)
+		fmt.Println(strings.Join(exportMsg, "\n"))
 		fmt.Printf("\n")
 	}
 
@@ -210,6 +218,7 @@ func exportExecutionTree(ctx context.Context, namedTree *namedExecutionTree, ini
 
 // executeTree executes and displays the (table) results of an execution
 func executeTree(ctx context.Context, tree *controlexecute.ExecutionTree, initData *control.InitData) error {
+	// create a context with check status hooks
 	checkCtx := createCheckContext(ctx)
 	err := tree.Execute(checkCtx)
 	if err != nil {
@@ -236,8 +245,17 @@ func publishSnapshot(ctx context.Context, executionTree *controlexecute.Executio
 }
 
 // getExecutionTrees returns a list of execution trees with the names of their export targets
+// if the --export flag has the name of a file, a single merged tree is generated from the positional arguments
+// otherwise, one tree is generated for each argument
+//
+// this is necessary, since exporters can only export entire execution trees and when a file name is provided, we want to export the whole tree into one file
+//
+// example :
+// * "check benchmark.b1 benchmark.b2 --export check.json" would give one merged tree
+// * "check benchmark.b1 benchmark.b2 --export json" would give multiple trees
 func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...string) ([]*namedExecutionTree, error) {
-	trees := []*namedExecutionTree{}
+	var trees []*namedExecutionTree
+
 	if initData.ExportManager.HasNamedExport(viper.GetStringSlice(constants.ArgExport)) {
 		// create a single merged execution tree from all arguments
 		executionTree, err := controlexecute.NewExecutionTree(ctx, initData.Workspace, initData.Client, initData.ControlFilterWhereClause, args...)

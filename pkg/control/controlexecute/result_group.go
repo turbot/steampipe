@@ -247,9 +247,9 @@ func (r *ResultGroup) addDimensionKeys(keys ...string) {
 
 // onChildDone is a callback that gets called from the children of this result group when they are done
 func (r *ResultGroup) onChildDone() {
-	new := atomic.AddUint32(&r.childrenComplete, 1)
-	total := uint32(len(r.ControlRuns) + len(r.Groups))
-	if new < total {
+	newCount := atomic.AddUint32(&r.childrenComplete, 1)
+	totalCount := uint32(len(r.ControlRuns) + len(r.Groups))
+	if newCount < totalCount {
 		// all children haven't finished execution yet
 		return
 	}
