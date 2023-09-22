@@ -433,6 +433,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
   cp $SRC_DATA_DIR/default_cache_ttl_10.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
+  
+  touch $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
+  touch $STEAMPIPE_INSTALL_DIR/config/default.spc
 
   # start the service
   steampipe service start
