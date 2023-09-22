@@ -65,7 +65,8 @@ fi
 
 batversion=$(bats --version)
 echo $batversion
-echo "Running with STEAMPIPE_INSTALL_DIR set to $STEAMPIPE_INSTALL_DIR"
+echo "Running with STEAMPIPE_INSTALL_DIR set to: $STEAMPIPE_INSTALL_DIR"
+echo "Running with binary from: $(which steampipe)"
 
 if [ $# -eq 0 ]; then
   # Run all test files
