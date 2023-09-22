@@ -2,6 +2,9 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "add connection, check search path updated" {
+  #TODO: Remove hack [https://github.com/turbot/steampipe/issues/3885]
+  steampipe query "select 1"
+
   cp $SRC_DATA_DIR/single_chaos.spc $STEAMPIPE_INSTALL_DIR/config/chaos.spc
   run steampipe query "show search_path"
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_1.txt)"
@@ -11,6 +14,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "delete connection, check search path updated" {
+  #TODO: Remove hack [https://github.com/turbot/steampipe/issues/3885]
+  steampipe query "select 1"
+
   run steampipe query "show search_path"
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_2.txt)"
   cp $SRC_DATA_DIR/single_chaos.spc $STEAMPIPE_INSTALL_DIR/config/chaos.spc
@@ -19,6 +25,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "add connection, query with prefix" {
+  #TODO: Remove hack [https://github.com/turbot/steampipe/issues/3885]
+  steampipe query "select 1"
+
   run steampipe query "show search_path"
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_1.txt)"
   cp $SRC_DATA_DIR/two_chaos.spc $STEAMPIPE_INSTALL_DIR/config/chaos.spc
@@ -27,6 +36,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "delete connection, query with prefix" {
+  #TODO: Remove hack [https://github.com/turbot/steampipe/issues/3885]
+  steampipe query "select 1"
+  
   run steampipe query "show search_path"
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_2.txt)"
   cp $SRC_DATA_DIR/single_chaos.spc $STEAMPIPE_INSTALL_DIR/config/chaos.spc
@@ -35,6 +47,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query with prefix, add connection, query with prefix" {
+  #TODO: Remove hack [https://github.com/turbot/steampipe/issues/3885]
+  steampipe query "select 1"
+  
   run steampipe query "show search_path" --search-path-prefix foo
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_5.txt)"
   cp $SRC_DATA_DIR/two_chaos.spc $STEAMPIPE_INSTALL_DIR/config/chaos.spc
@@ -43,6 +58,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "query with prefix, delete connection, query with prefix" {
+  #TODO: Remove hack [https://github.com/turbot/steampipe/issues/3885]
+  steampipe query "select 1"
+  
   run steampipe query "show search_path" --search-path-prefix foo2
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_6.txt)"
   cp $SRC_DATA_DIR/single_chaos.spc $STEAMPIPE_INSTALL_DIR/config/chaos.spc
@@ -51,11 +69,17 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "verify that 'internal' schema is added" {
+  #TODO: Remove hack [https://github.com/turbot/steampipe/issues/3885]
+  steampipe query "select 1"
+  
   run steampipe query "show search_path" --search-path foo
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_internal_schema_once_1.txt)"
 }
 
 @test "verify that 'internal' schema is always suffixed if passed in as custom" {
+  #TODO: Remove hack [https://github.com/turbot/steampipe/issues/3885]
+  steampipe query "select 1"
+  
   run steampipe query "show search_path" --search-path foo1,steampipe_internal,foo2
   assert_output "$(cat $TEST_DATA_DIR/expected_search_path_internal_schema_once_2.txt)"
 }
