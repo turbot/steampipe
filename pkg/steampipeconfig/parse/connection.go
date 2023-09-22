@@ -2,6 +2,9 @@ package parse
 
 import (
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -12,8 +15,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
 	"golang.org/x/exp/maps"
-	"log"
-	"strings"
 )
 
 func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics) {
@@ -71,7 +72,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 				diags = append(diags, moreDiags...)
 			}
 
-			// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
+			// TODO: remove in 0.22 [https://github.com/turbot/steampipe/issues/3251]
 			if connection.Options != nil {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagWarning,
