@@ -45,8 +45,7 @@ require (
 	github.com/stevenle/topsort v0.2.0
 	github.com/turbot/go-kit v0.8.1
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
-	//plugin_label
-	github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-rc.27.0.20230918110034-8e03e5eb493b
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.6.0-rc.30
 	github.com/xlab/treeprint v1.2.0
 	github.com/zclconf/go-cty v1.14.0
 	github.com/zclconf/go-cty-yaml v1.0.3
@@ -239,5 +238,4 @@ replace (
 	github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50
 	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
 	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
-//github.com/turbot/steampipe-plugin-sdk/v5 => /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
 )

@@ -34,7 +34,6 @@ import (
 	"github.com/turbot/steampipe/pkg/task"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
-	"golang.org/x/exp/maps"
 )
 
 var exitCode int
@@ -303,10 +302,10 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	}
 
 	// now validate all config values have appropriate values
-	err = validateConfig()
-	if err != nil {
-		loadConfigErrorsAndWarnings.Error = sperr.WrapWithMessage(err, "failed to validate config")
-	}
+	ew := validateConfig()
+	error_helpers.FailOnErrorWithMessage(ew.Error, "failed to validate config")
+
+	loadConfigErrorsAndWarnings.Merge(ew)
 
 	return loadConfigErrorsAndWarnings
 }
@@ -369,19 +368,19 @@ func getWorkspaceProfileLoader() (*steampipeconfig.WorkspaceProfileLoader, error
 
 // now validate  config values have appropriate values
 // (currently validates telemetry)
-func validateConfig() error {
+func validateConfig() *error_helpers.ErrorAndWarnings {
+	var res = &error_helpers.ErrorAndWarnings{}
 	telemetry := viper.GetString(constants.ArgTelemetry)
 	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
-		return fmt.Errorf(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
+		res.Error = sperr.New(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
+		return res
 	}
-	diagnostics, ok := os.LookupEnv(plugin.EnvDiagnosticsLevel)
-	if ok {
+	if _, legacyDiagnosticsSet := os.LookupEnv(plugin.EnvLegacyDiagnosticsLevel); legacyDiagnosticsSet {
+		res.AddWarning(fmt.Sprintf("Environment variable %s is deprecated - use %s", plugin.EnvLegacyDiagnosticsLevel, plugin.EnvDiagnosticsLevel))
+	}
+	res.Error = plugin.ValidateDiagnosticsEnvVar()
 
-		if _, isValid := plugin.ValidDiagnosticsLevels[strings.ToUpper(diagnostics)]; !isValid {
-			return fmt.Errorf(`invalid value of '%s' (%s), must be one of: %s`, plugin.EnvDiagnosticsLevel, diagnostics, strings.Join(maps.Keys(plugin.ValidDiagnosticsLevels), ", "))
-		}
-	}
-	return nil
+	return res
 }
 
 // create a hclog logger with the level specified by the SP_LOG env var
