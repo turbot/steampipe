@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/zclconf/go-cty/cty"
 	"sort"
 	"strings"
@@ -40,7 +41,7 @@ func NewBenchmark(block *hcl.Block, mod *Mod, shortName string) HclResource {
 				ShortName:       shortName,
 				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-				DeclRange:       block.DefRange,
+				DeclRange:       hclhelpers.BlockRange(block),
 				blockType:       block.Type,
 			},
 			Mod: mod,

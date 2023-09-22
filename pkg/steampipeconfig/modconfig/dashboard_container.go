@@ -2,12 +2,13 @@ package modconfig
 
 import (
 	"fmt"
-	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
+	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // TODO [node_reuse] add DashboardLeafNodeImpl
@@ -38,7 +39,7 @@ func NewDashboardContainer(block *hcl.Block, mod *Mod, shortName string) HclReso
 				ShortName:       shortName,
 				FullName:        fullName,
 				UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-				DeclRange:       block.DefRange,
+				DeclRange:       hclhelpers.BlockRange(block),
 				blockType:       block.Type,
 			},
 			Mod: mod,

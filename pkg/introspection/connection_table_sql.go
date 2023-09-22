@@ -9,9 +9,14 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-// GetConnectionStateTableDropSql returns the sql to create the conneciton state table
+// GetLegacyConnectionStateTableDropSql returns the sql to drop the legacy connection state table
+func GetLegacyConnectionStateTableDropSql() db_common.QueryWithArgs {
+	query := fmt.Sprintf(`DROP TABLE IF EXISTS %s.%s;`, constants.InternalSchema, constants.LegacyConnectionStateTable)
+	return db_common.QueryWithArgs{Query: query}
+}
+
 func GetConnectionStateTableDropSql() db_common.QueryWithArgs {
-	query := fmt.Sprintf(`DROP TABLE IF EXISTS %s.%s;`, constants.InternalSchema, constants.ConnectionStateTable)
+	query := fmt.Sprintf(`DROP TABLE IF EXISTS %s.%s;`, constants.InternalSchema, constants.ConnectionTable)
 	return db_common.QueryWithArgs{Query: query}
 }
 
@@ -24,13 +29,16 @@ func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
 	import_schema TEXT,
 	error TEXT NULL,
 	plugin TEXT,
-	plugin_instance TEXT,
+	plugin_instance TEXT NULL,
 	schema_mode TEXT,
 	schema_hash TEXT NULL,
 	comments_set BOOL DEFAULT FALSE,
 	connection_mod_time TIMESTAMPTZ,
-	plugin_mod_time TIMESTAMPTZ
-);`, constants.InternalSchema, constants.ConnectionStateTable)
+	plugin_mod_time TIMESTAMPTZ,
+	file_name TEXT, 
+	start_line_number INTEGER, 
+	end_line_number INTEGER
+);`, constants.InternalSchema, constants.ConnectionTable)
 	return db_common.QueryWithArgs{Query: query}
 }
 
@@ -39,7 +47,7 @@ func GetConnectionStateTableGrantSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{Query: fmt.Sprintf(
 		`GRANT SELECT ON TABLE %s.%s TO %s;`,
 		constants.InternalSchema,
-		constants.ConnectionStateTable,
+		constants.ConnectionTable,
 		constants.DatabaseUsersRole,
 	)}
 }
@@ -53,7 +61,7 @@ SET state = '%s',
 WHERE
 	name = $2
 	`,
-		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStateError)
+		constants.InternalSchema, constants.ConnectionTable, constants.ConnectionStateError)
 	args := []any{constants.ConnectionStateError, err.Error(), connectionName}
 	return db_common.QueryWithArgs{Query: query, Args: args}
 }
@@ -69,7 +77,7 @@ WHERE
 AND state <> 'disabled' 
 AND state <> 'error' 
 	`,
-		constants.InternalSchema, constants.ConnectionStateTable, constants.ConnectionStateError)
+		constants.InternalSchema, constants.ConnectionTable, constants.ConnectionStateError)
 	args := []any{err.Error()}
 	return db_common.QueryWithArgs{Query: query, Args: args}
 }
@@ -89,8 +97,11 @@ func GetUpsertConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.Q
 		schema_hash,
 		comments_set,
 		connection_mod_time,
-		plugin_mod_time)
-VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),$12) 
+		plugin_mod_time,
+	    file_name,
+	    start_line_number,
+	    end_line_number)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),$12,$13,$14,$15) 
 ON CONFLICT (name) 
 DO 
    UPDATE SET 
@@ -105,9 +116,12 @@ DO
 			  schema_hash = $10,
 			  comments_set = $11,
 			  connection_mod_time = now(),
-			  plugin_mod_time = $12
+			  plugin_mod_time = $12,
+			  file_name = $13,
+	    	  start_line_number = $14,
+	     	  end_line_number = $15
 			  
-`, constants.InternalSchema, constants.ConnectionStateTable)
+`, constants.InternalSchema, constants.ConnectionTable)
 	args := []any{
 		c.ConnectionName,
 		c.State,
@@ -121,6 +135,9 @@ DO
 		c.SchemaHash,
 		c.CommentsSet,
 		c.PluginModTime,
+		c.FileName,
+		c.StartLineNumber,
+		c.EndLineNumber,
 	}
 	return db_common.QueryWithArgs{Query: query, Args: args}
 }
@@ -138,9 +155,12 @@ func GetNewConnectionStateFromConnectionInsertSql(c *modconfig.Connection) db_co
 		schema_hash,
 		comments_set,
 		connection_mod_time,
-		plugin_mod_time)
-VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),now()) 
-`, constants.InternalSchema, constants.ConnectionStateTable)
+		plugin_mod_time,
+		file_name,
+	    start_line_number,
+	    end_line_number)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),now(),$12,$13,$14) 
+`, constants.InternalSchema, constants.ConnectionTable)
 
 	schemaMode := ""
 	commentsSet := false
@@ -157,6 +177,9 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),now())
 		schemaMode,
 		schemaHash,
 		commentsSet,
+		c.DeclRange.Filename,
+		c.DeclRange.Start.Line,
+		c.DeclRange.End.Line,
 	}
 
 	return db_common.QueryWithArgs{
@@ -172,14 +195,14 @@ func GetSetConnectionStateSql(connectionName string, state string) db_common.Que
     WHERE 
         name = $1
 `,
-		constants.InternalSchema, constants.ConnectionStateTable, state,
+		constants.InternalSchema, constants.ConnectionTable, state,
 	)
 	args := []any{connectionName}
 	return db_common.QueryWithArgs{Query: query, Args: args}
 }
 
 func GetDeleteConnectionStateSql(connectionName string) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`DELETE FROM %s.%s WHERE NAME=$1`, constants.InternalSchema, constants.ConnectionStateTable)
+	query := fmt.Sprintf(`DELETE FROM %s.%s WHERE NAME=$1`, constants.InternalSchema, constants.ConnectionTable)
 	args := []any{connectionName}
 	return db_common.QueryWithArgs{Query: query, Args: args}
 }
@@ -187,7 +210,7 @@ func GetDeleteConnectionStateSql(connectionName string) db_common.QueryWithArgs 
 func GetSetConnectionStateCommentLoadedSql(connectionName string, commentsLoaded bool) db_common.QueryWithArgs {
 	query := fmt.Sprintf(`UPDATE  %s.%s
 SET comments_set = $1
-WHERE NAME=$2`, constants.InternalSchema, constants.ConnectionStateTable)
+WHERE NAME=$2`, constants.InternalSchema, constants.ConnectionTable)
 	args := []any{commentsLoaded, connectionName}
 	return db_common.QueryWithArgs{Query: query, Args: args}
 }

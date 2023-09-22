@@ -21,6 +21,7 @@ import (
 	"github.com/turbot/go-kit/logging"
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -82,6 +83,10 @@ var rootCmd = &cobra.Command{
 		// set up the global viper config with default values from
 		// config files and ENV variables
 		ew := initGlobalConfig()
+		// display any warnings
+		ew.ShowWarnings()
+		// check for error
+		error_helpers.FailOnError(ew.Error)
 
 		// if the log level was set in the general config
 		if logLevelNeedsReset() {
@@ -248,7 +253,9 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 
 	// load workspace profile from the configured install dir
 	loader, err := getWorkspaceProfileLoader()
-	error_helpers.FailOnError(err)
+	if err != nil {
+		return error_helpers.NewErrorsAndWarning(err)
+	}
 
 	// set global workspace profile
 	steampipeconfig.GlobalWorkspaceProfile = loader.GetActiveWorkspaceProfile()
@@ -256,14 +263,18 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	// set-up viper with defaults from the env and default workspace profile
 	err = cmdconfig.BootstrapViper(loader, cmd)
-	error_helpers.FailOnError(err)
+	if err != nil {
+		return error_helpers.NewErrorsAndWarning(err)
+	}
 
 	// set global containing the configured install dir (create directory if needed)
 	ensureInstallDir(viper.GetString(constants.ArgInstallDir))
 
 	// load the connection config and HCL options
 	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
-	error_helpers.FailOnError(loadConfigErrorsAndWarnings.GetError())
+	if loadConfigErrorsAndWarnings.Error != nil {
+		return loadConfigErrorsAndWarnings
+	}
 
 	// store global config
 	steampipeconfig.GlobalConfig = config
@@ -286,11 +297,16 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	// - that is because we need the resolved value of ArgCloudHost in order to load any saved token
 	// and we cannot get this until the other config has been resolved
 	err = setCloudTokenDefault(loader)
-	error_helpers.FailOnError(err)
+	if err != nil {
+		loadConfigErrorsAndWarnings.Error = err
+		return loadConfigErrorsAndWarnings
+	}
 
 	// now validate all config values have appropriate values
 	err = validateConfig()
-	error_helpers.FailOnErrorWithMessage(err, "failed to validate config")
+	if err != nil {
+		loadConfigErrorsAndWarnings.Error = sperr.WrapWithMessage(err, "failed to validate config")
+	}
 
 	return loadConfigErrorsAndWarnings
 }

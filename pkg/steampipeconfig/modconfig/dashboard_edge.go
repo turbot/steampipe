@@ -2,9 +2,10 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/zclconf/go-cty/cty"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // DashboardEdge is a struct representing a leaf dashboard node
@@ -29,7 +30,7 @@ func NewDashboardEdge(block *hcl.Block, mod *Mod, shortName string) HclResource 
 					HclResourceImpl: HclResourceImpl{ShortName: shortName,
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-						DeclRange:       block.DefRange,
+						DeclRange:       hclhelpers.BlockRange(block),
 						blockType:       block.Type,
 					},
 					Mod: mod,

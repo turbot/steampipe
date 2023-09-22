@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -41,7 +42,7 @@ func NewControl(block *hcl.Block, mod *Mod, shortName string) HclResource {
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
 						ShortName:       shortName,
-						DeclRange:       block.DefRange,
+						DeclRange:       hclhelpers.BlockRange(block),
 						blockType:       block.Type,
 					},
 					Mod: mod,

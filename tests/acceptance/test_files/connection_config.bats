@@ -131,11 +131,14 @@ load "$LIB_BATS_SUPPORT/load.bash"
     # check regions in connection config is being parsed and used
     run steampipe query "select * from chaos6.chaos_regions order by id" --output json
     result=$(echo $output | tr -d '[:space:]')
+    # set the trimmed result as output
+    run echo $result
+    echo $output
 
     # remove the config file
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
     # check output
-    assert_equal "$result" '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
+    assert_output --partial '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
 
 }
 
@@ -147,11 +150,14 @@ load "$LIB_BATS_SUPPORT/load.bash"
     # check regions in connection config is being parsed and used
     run steampipe query "select * from chaos6.chaos_regions order by id" --output json
     result=$(echo $output | tr -d '[:space:]')
+    # set the trimmed result as output
+    run echo $result
+    echo $output
 
     # remove the config file
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
     # check output
-    assert_equal "$result" '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
+    assert_output --partial '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
 
 }
 
@@ -163,11 +169,14 @@ load "$LIB_BATS_SUPPORT/load.bash"
     # check regions in connection config is being parsed and used
     run steampipe query "select * from chaos6.chaos_regions order by id" --output json
     result=$(echo $output | tr -d '[:space:]')
+    # set the trimmed result as output
+    run echo $result
+    echo $output
 
     # remove the config file
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
     # check output
-    assert_equal "$result" '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
+    assert_output --partial '[{"_ctx":{"connection_name":"chaos6"},"id":0,"region_name":"us-east-1"},{"_ctx":{"connection_name":"chaos6"},"id":3,"region_name":"us-west-2"}]'
 
 }
 

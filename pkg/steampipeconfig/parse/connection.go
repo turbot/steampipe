@@ -2,6 +2,9 @@ package parse
 
 import (
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -12,8 +15,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
 	"golang.org/x/exp/maps"
-	"log"
-	"strings"
 )
 
 func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics) {
@@ -71,12 +72,12 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 				diags = append(diags, moreDiags...)
 			}
 
-			// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
+			// TODO: remove in 0.22 [https://github.com/turbot/steampipe/issues/3251]
 			if connection.Options != nil {
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagWarning,
 					Summary:  fmt.Sprintf("%s in %s have been deprecated and will be removed in subsequent versions of steampipe", constants.Bold("'connection' options"), constants.Bold("'connection' blocks")),
-					Subject:  &connectionBlock.DefRange,
+					Subject:  hclhelpers.BlockRangePointer(connectionBlock),
 				})
 			}
 
@@ -85,7 +86,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  fmt.Sprintf("invalid block type '%s' - only 'options' blocks are supported for Connections", connectionBlock.Type),
-				Subject:  &connectionBlock.DefRange,
+				Subject:  hclhelpers.BlockRangePointer(connectionBlock),
 			})
 		}
 	}
@@ -112,8 +113,8 @@ func decodeConnectionPluginProperty(connectionContent *hcl.BodyContent, connecti
 	}
 	if len(res.Depends) > 0 {
 		log.Printf("[INFO] decodeConnectionPluginProperty plugin property is HCL reference")
-		// if this is a plugin reference, extract the plugin label
-		pluginLabel, ok := getPluginFromDependency(maps.Values(res.Depends))
+		// if this is a plugin reference, extract the plugin instance
+		pluginInstance, ok := getPluginInstanceFromDependency(maps.Values(res.Depends))
 		if !ok {
 			log.Printf("[INFO] failed to resolve plugin property")
 			// return the original diagnostics
@@ -122,10 +123,9 @@ func decodeConnectionPluginProperty(connectionContent *hcl.BodyContent, connecti
 
 		// so we have resolved a reference to a plugin config
 		// we will validate that this block exists later in initializePlugins
-		// set both alias AND label properties
-		// (the label property being set means that we will raise the correct error if we fail to resolve the plugin block)
-		connection.PluginAlias = pluginLabel
-		connection.PluginInstance = pluginLabel
+		// set PluginInstance ONLY
+		// (the PluginInstance property being set means that we will raise the correct error if we fail to resolve the plugin block)
+		connection.PluginInstance = &pluginInstance
 		return nil
 	}
 
@@ -135,7 +135,7 @@ func decodeConnectionPluginProperty(connectionContent *hcl.BodyContent, connecti
 	return nil
 }
 
-func getPluginFromDependency(dependencies []*modconfig.ResourceDependency) (string, bool) {
+func getPluginInstanceFromDependency(dependencies []*modconfig.ResourceDependency) (string, bool) {
 	if len(dependencies) != 1 {
 		return "", false
 	}

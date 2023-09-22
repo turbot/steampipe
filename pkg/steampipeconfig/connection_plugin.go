@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	typehelpers "github.com/turbot/go-kit/types"
 	"log"
 	"strings"
 
@@ -137,9 +138,16 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 	connectionPluginMap := make(map[string]*ConnectionPlugin)
 
 	for _, connection := range connectionsToCreate {
+		// we must have a plugin instance
+		if connection.PluginInstance == nil {
+			// unexpected
+			res.AddWarning(fmt.Sprintf("connection '%s' has no plugin instance", connection.Name))
+			continue
+		}
+		pluginInstance := *connection.PluginInstance
 		// is this connection provided by a plugin we have already instantiated?
-		if existingConnectionPlugin, ok := connectionPluginMap[connection.PluginInstance]; ok {
-			log.Printf("[TRACE] CreateConnectionPlugins - connection %s is provided by existing connectionPlugin %s - reusing", connection.Name, connection.PluginInstance)
+		if existingConnectionPlugin, ok := connectionPluginMap[pluginInstance]; ok {
+			log.Printf("[TRACE] CreateConnectionPlugins - connection %s is provided by existing connectionPlugin %s - reusing", connection.Name, typehelpers.SafeString(connection.PluginInstance))
 			// store the existing connection plugin in the result map
 			requestedConnectionPluginMap[connection.Name] = existingConnectionPlugin
 			continue
@@ -147,7 +155,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 
 		// do we have a reattach config for this connection's plugin
 		if _, ok := getResponse.ReattachMap[connection.Name]; !ok {
-			log.Printf("[TRACE] CreateConnectionPlugins skipping connection '%s', plugin '%s' as plugin manager failed to start it", connection.Name, connection.PluginInstance)
+			log.Printf("[TRACE] CreateConnectionPlugins skipping connection '%s', plugin '%s' as plugin manager failed to start it", connection.Name, typehelpers.SafeString(connection.PluginInstance))
 			continue
 		}
 
@@ -155,12 +163,12 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 		reattach := getResponse.ReattachMap[connection.Name]
 		connectionPlugin, err := createConnectionPlugin(connection, reattach)
 		if err != nil {
-			res.AddWarning(fmt.Sprintf("failed to attach to plugin process for '%s': %s", connection.PluginInstance, err))
+			res.AddWarning(fmt.Sprintf("failed to attach to plugin process for '%s': %s", typehelpers.SafeString(connection.PluginInstance), err))
 			continue
 		}
 		requestedConnectionPluginMap[connection.Name] = connectionPlugin
 		// store in connectionPluginMap too
-		connectionPluginMap[connection.PluginInstance] = connectionPlugin
+		connectionPluginMap[pluginInstance] = connectionPlugin
 	}
 	log.Printf("[TRACE] all connection plugins created, populating schemas")
 
@@ -249,8 +257,14 @@ func fullConnectionPluginMap(sparseConnectionPluginMap map[string]*ConnectionPlu
 
 // createConnectionPlugin attaches to the plugin process
 func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.ReattachConfig) (*ConnectionPlugin, error) {
+	// we must have a plugin instance
+	if connection.PluginInstance == nil {
+		// unexpected
+		return nil, fmt.Errorf(fmt.Sprintf("connection '%s' has no plugin instance", connection.Name))
+	}
+
 	log.Printf("[TRACE] createConnectionPlugin for connection %s", connection.Name)
-	pluginName := connection.PluginInstance
+	pluginInstance := *connection.PluginInstance
 	connectionName := connection.Name
 
 	log.Printf("[TRACE] plugin manager returned reattach config for connection '%s' - pid %d",
@@ -261,17 +275,17 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 	}
 
 	// attach to the plugin process
-	pluginClient, err := attachToPlugin(reattach.Convert(), pluginName)
+	pluginClient, err := attachToPlugin(reattach.Convert(), pluginInstance)
 	if err != nil {
 		log.Printf("[TRACE] failed to attach to plugin for connection '%s' - pid %d: %s",
 			connectionName, reattach.Pid, err)
 		return nil, err
 	}
 
-	log.Printf("[TRACE] plugin client created for %s", pluginName)
+	log.Printf("[TRACE] plugin client created for %s", pluginInstance)
 
 	// now create ConnectionPlugin object return
-	connectionPlugin := NewConnectionPlugin(connection.PluginAlias, pluginName, pluginClient, reattach.SupportedOperations)
+	connectionPlugin := NewConnectionPlugin(connection.PluginAlias, pluginInstance, pluginClient, reattach.SupportedOperations)
 
 	log.Printf("[TRACE] multiple connections ARE supported - adding all connections to ConnectionPlugin: %v", reattach.Connections)
 	// now identify all connections serviced by this plugin
@@ -287,7 +301,7 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 		connectionPlugin.addConnection(c, config.Config, config.Options, config.Type)
 	}
 
-	log.Printf("[TRACE] created connection plugin for connection: '%s', pluginName: '%s'", connectionName, pluginName)
+	log.Printf("[TRACE] created connection plugin for connection: '%s', pluginInstance: '%s'", connectionName, pluginInstance)
 	return connectionPlugin, nil
 }
 

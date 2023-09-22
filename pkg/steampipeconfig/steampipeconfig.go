@@ -2,16 +2,18 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
+	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
@@ -22,7 +24,7 @@ type SteampipeConfig struct {
 	// map of plugin configs, keyed by plugin image ref
 	// (for each image ref we store an array of configs)
 	Plugins map[string][]*modconfig.Plugin
-	// map of plugin configs, keyed by plugin label
+	// map of plugin configs, keyed by plugin instance
 	PluginsInstances map[string]*modconfig.Plugin
 	// map of connection name to partially parsed connection config
 	Connections map[string]*modconfig.Connection
@@ -337,7 +339,7 @@ func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
 // NOTE: this returns an error if we alreayd have a config with the same label
 func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin, block *hcl.Block) error {
 	if _, exists := c.PluginsInstances[plugin.Instance]; exists {
-		return sperr.New("duplicate plugin: '%s' in '%s'", plugin.Source, block.TypeRange.Filename)
+		return sperr.New("duplicate plugin: '%s' in '%s'", plugin.Alias, block.TypeRange.Filename)
 	}
 	// get the image ref to key the map
 	imageRef := plugin.GetImageRef()
@@ -350,23 +352,56 @@ func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin, block *hcl.Block) 
 // ensure we have a plugin config struct for all plugins mentioned in connection config,
 // even if there is not an explicit HCL config for it
 // NOTE: this populates the  Plugin ans PluginInstance field of the connections
-func (c *SteampipeConfig) initializePlugins() map[string]error {
-	var failedConnections = make(map[string]error)
+func (c *SteampipeConfig) initializePlugins() {
 	for _, connection := range c.Connections {
-		plugin, err := c.resolvePluginForConnection(connection)
+		plugin, err := c.resolvePluginInstanceForConnection(connection)
 		if err != nil {
-			failedConnections[connection.Name] = err
+			log.Printf("[WARN] cannot resolve plugin for connection '%s': %s", connection.Name, err.Error())
+			connection.Error = err
 			continue
 		}
-		// set the Plugin property on the connection
-		connection.Plugin = plugin.GetImageRef()
-		connection.PluginInstance = plugin.Instance
+		// if plugin is nil, but there is no error, it must be referring to a plugin which has no instance config
+		// and is not installed - set the plugin error
+		if plugin == nil {
+			// set the Plugin to the image ref of the plugin
+			connection.Plugin = ociinstaller.NewSteampipeImageRef(connection.PluginAlias).DisplayImageRef()
+			connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
+			log.Printf("[INFO] connection '%s' requires plugin '%s' which is not loaded and has no instance config", connection.Name, connection.PluginAlias)
+			continue
+		}
+		// set the PluginAlias on the connection
+
+		// set the PluginAlias and Plugin property on the connection
+		pluginImageRef := plugin.GetImageRef()
+		connection.PluginAlias = plugin.Alias
+		connection.Plugin = pluginImageRef
+		if pluginPath, _ := filepaths.GetPluginPath(pluginImageRef, plugin.Alias); pluginPath != "" {
+			// plugin is installed - set the instance and the plugin path
+			connection.PluginInstance = &plugin.Instance
+			connection.PluginPath = &pluginPath
+		} else {
+			// set the plugin error
+			connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
+			// leave instance unset
+			log.Printf("[INFO] connection '%s' requires plugin '%s' - this is not installed", connection.Name, plugin.Alias)
+		}
 
 	}
-	return failedConnections
+
 }
 
-func (c *SteampipeConfig) resolvePluginForConnection(connection *modconfig.Connection) (*modconfig.Plugin, error) {
+/*
+	 find a plugin instance which satisfies the Plugin field of the connection
+	  resolution steps:
+		1) if PluginInstance is already set, the connection must have a HCL reference to a plugin block
+	 		- just validate the block exists
+		2) handle local???
+		3) have we already created a default plugin config for this plugin
+		4) is there a SINGLE plugin config for the image ref resolved from the connection 'plugin' field
+	       NOTE: if there is more than one config for the plugin this is an error
+		5) create a default config for the plugin (with the label set to the image ref)
+*/
+func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconfig.Connection) (*modconfig.Plugin, error) {
 
 	//if strings.HasPrefix(pluginName, "local/") {
 	//	connection.Plugin = pluginName
@@ -375,58 +410,62 @@ func (c *SteampipeConfig) resolvePluginForConnection(connection *modconfig.Conne
 	// NOTE: at this point, c.Plugin is NOT populated, only either c.PluginAlias or c.PluginInstance
 	// we populate c.Plugin AFTER resolving the plugin
 
-	/* resolution steps:
-		1) if PluginInstance is already set, the connection must have a HCL reference to a plugin block
-	 		- just validate the block exists
-		2) handle local???
-		3) have we already created a default plugin config for this plugin
-		4) is there a SINGLE plugin config for the image ref resolved from the connection 'plugin' field
-	       NOTE: if there is more than one config for the plugin this is an error
-		5) create a default config for the plugin (with the label set to the image ref)
-	*/
-
 	// if PluginInstance is already set, the connection must have a HCL reference to a plugin block
 	// find the block
-	if connection.PluginInstance != "" {
-		p := c.PluginsInstances[connection.PluginInstance]
+	if connection.PluginInstance != nil {
+		p := c.PluginsInstances[*connection.PluginInstance]
 		if p == nil {
-			// TODO should this return diagnostics?? Or at least include range in error
-			return nil, fmt.Errorf("connection %s refers to plugin.%s but this does not exist", connection.Name, connection.PluginInstance)
+			return nil, fmt.Errorf("connection '%s' specifies 'plugin=\"plugin.%s\"' but 'plugin.%s' does not exist. (%s:%d)",
+				connection.Name,
+				typehelpers.SafeString(connection.PluginInstance),
+				typehelpers.SafeString(connection.PluginInstance),
+				connection.DeclRange.Filename,
+				connection.DeclRange.Start.Line,
+			)
 		}
 		return p, nil
 	}
 
-	// TODO handle local???
+	// TODO KAI handle local???
 
-	// does this connection 'plugin' field refer to the label of a plugin config block
-	if p := c.PluginsInstances[connection.PluginAlias]; p != nil {
-		return p, nil
-	}
-
-	// ok so there is no name match - treat the connection PluginAlias as an image ref
+	// ok so there is no plugin block reference - build the plugin image ref from the PluginAlias field
 	imageRef := ociinstaller.NewSteampipeImageRef(connection.PluginAlias).DisplayImageRef()
 
-	//  no default config - check if there is configured config for this plugin
+	//  are there any instances for this plugin
 	pluginsForImageRef := c.Plugins[imageRef]
 
-	// how many plugin configs are there?
+	// how many plugin instances are there?
 	switch len(pluginsForImageRef) {
 	case 0:
-		// there is no plugin config for this connection - add one
-		p := modconfig.NewImplicitPlugin(connection)
+		// there is no plugin instance for this connection
+		// is the plugin is installed?
+		imageRef := ociinstaller.NewSteampipeImageRef(connection.PluginAlias)
+		if pluginPath, _ := filepaths.GetPluginPath(imageRef.DisplayImageRef(), connection.PluginAlias); pluginPath == "" {
+			// not installed - return nil instance
+			return nil, nil
+		}
+
+		// so the plugin IS installed - add an implicit plugin
+		p := modconfig.NewImplicitPlugin(connection, imageRef)
+
 		// now add to our map
-		// (NOTE: it;s ok to pass an empty HCL block - it is only used for the duplicate config error
-		// and we know we will not get that
-		c.addPlugin(p, &hcl.Block{})
+		// (NOTE: its ok to pass an empty HCL block - it is only used for the duplicate config error and we know we will not get that)
+		if err := c.addPlugin(p, &hcl.Block{}); err != nil {
+			return nil, err
+		}
 		return p, nil
 
 	case 1:
+		// ok we can resolve
 		return pluginsForImageRef[0], nil
 
 	default:
 		// so there is more than one plugin config for the plugin, and the connection DOES NOT specify which one to use
 		// this is an error
-		// TODO LIST ALL CONFLICTING PLUGIN CONFIGS AND THEIR RANGE
-		return nil, sperr.New("connection '%s' specifies plugin '%s' but there are %d plugin configs defined so the correct config cannot be resolved", connection.Name, connection.PluginAlias, len(pluginsForImageRef))
+		var strs = make([]string, len(pluginsForImageRef))
+		for i, p := range pluginsForImageRef {
+			strs[i] = fmt.Sprintf("\t%s (%s:%d)", p.Instance, *p.FileName, *p.StartLineNumber)
+		}
+		return nil, sperr.New("connection '%s' specifies 'plugin=\"%s\"' but the correct instance cannot be uniquely resolved. There are %d plugin instances matching that configuration:\n%s", connection.Name, connection.PluginAlias, len(pluginsForImageRef), strings.Join(strs, "\n"))
 	}
 }

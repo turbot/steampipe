@@ -10,12 +10,14 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 )
 
 const (
+	ConnectionTypePlugin     = "plugin"
 	ConnectionTypeAggregator = "aggregator"
 	ImportSchemaEnabled      = "enabled"
 	ImportSchemaDisabled     = "disabled"
@@ -29,22 +31,22 @@ var ValidImportSchemaValues = []string{ImportSchemaEnabled, ImportSchemaDisabled
 // This will be parsed by the plugin)
 // json tags needed as this is stored in the connection state file
 type Connection struct {
-	// TODO KAI verify we can remove omitempty
 	// connection name
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 	// name of plugin as mentioned in config - this may be an alias to a plugin image ref
 	// OR the label of a plugin config
-	PluginAlias string `json:"plugin_short_name,omitempty"`
+	PluginAlias string `json:"plugin_short_name"`
 	// image ref plugin.
 	// we resolve this after loading all plugin configs
-	Plugin string `json:"plugin,omitempty"`
+	Plugin string `json:"plugin"`
 	// the label of the plugin config we are using
-	PluginInstance string `json:"plugin_instance,omitempty"`
-
+	PluginInstance *string `json:"plugin_instance"`
+	// Path to the installed plugin (if it exists)
+	PluginPath *string
 	// connection type - supported values: "aggregator"
 	Type string `json:"type,omitempty"`
 	// should a schema be created for this connection - supported values: "enabled", "disabled"
-	ImportSchema string `json:"import_schema,omitempty"`
+	ImportSchema string `json:"import_schema"`
 	// list of names or wildcards which are resolved to connections
 	// (only valid for "aggregator" type)
 	ConnectionNames []string `json:"connections,omitempty"`
@@ -57,9 +59,11 @@ type Connection struct {
 	// unparsed HCL of plugin specific connection config
 	Config string `json:"config,omitempty"`
 
+	Error error
+
 	// options
 	Options   *options.Connection `json:"options,omitempty"`
-	DeclRange Range               `json:"decl_range,omitempty"`
+	DeclRange Range               `json:"decl_range"`
 }
 
 // Range represents a span of characters between two positions in a source file.
@@ -116,8 +120,10 @@ func NewPos(sourcePos hcl.Pos) Pos {
 func NewConnection(block *hcl.Block) *Connection {
 	return &Connection{
 		Name:         block.Labels[0],
-		DeclRange:    NewRange(block.TypeRange),
+		DeclRange:    NewRange(hclhelpers.BlockRange(block)),
 		ImportSchema: ImportSchemaEnabled,
+		// default to plugin
+		Type: ConnectionTypePlugin,
 	}
 }
 
@@ -151,7 +157,7 @@ func (c *Connection) SetOptions(opts options.Options, block *hcl.Block) hcl.Diag
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("invalid nested option type %s - only 'connection' options blocks are supported for Connections", reflect.TypeOf(o).Name()),
-			Subject:  &block.DefRange,
+			Subject:  hclhelpers.BlockRangePointer(block),
 		})
 	}
 	return diags
@@ -165,7 +171,7 @@ func (c *Connection) String() string {
 // if this is an aggregator connection, there must be at least one child, and no duplicates
 // if this is NOT an aggregator, there must be no children
 func (c *Connection) Validate(map[string]*Connection) (warnings []string, errors []string) {
-	validConnectionTypes := []string{"", ConnectionTypeAggregator}
+	validConnectionTypes := []string{ConnectionTypePlugin, ConnectionTypeAggregator}
 	if !helpers.StringSliceContains(validConnectionTypes, c.Type) {
 		return nil, []string{fmt.Sprintf("connection '%s' has invalid connection type '%s'", c.Name, c.Type)}
 	}

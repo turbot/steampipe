@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 )
 
 const (
@@ -30,8 +30,8 @@ type RateLimiter struct {
 	StartLineNumber *int                            `db:"start_line_number"  json:"-"`
 	EndLineNumber   *int                            `db:"end_line_number"  json:"-"`
 	Status          string                          `db:"status"`
-	Source          string                          `db:"source"`
-	ImageRef        *ociinstaller.SteampipeImageRef `db:"-"`
+	Source          string                          `db:"source_type"`
+	ImageRef        *ociinstaller.SteampipeImageRef `db:"-" json:"-"`
 }
 
 // RateLimiterFromProto converts the proto format RateLimiterDefinition into a Defintion
@@ -81,9 +81,10 @@ func (l *RateLimiter) AsProto() *proto.RateLimiterDefinition {
 }
 
 func (l *RateLimiter) OnDecoded(block *hcl.Block) {
-	l.FileName = &block.DefRange.Filename
-	l.StartLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.Start.Line
-	l.EndLineNumber = &block.Body.(*hclsyntax.Body).SrcRange.End.Line
+	limiterRange := hclhelpers.BlockRange(block)
+	l.FileName = &limiterRange.Filename
+	l.StartLineNumber = &limiterRange.Start.Line
+	l.EndLineNumber = &limiterRange.End.Line
 	if l.Scope == nil {
 		l.Scope = []string{}
 	}
@@ -107,7 +108,7 @@ func (l *RateLimiter) Equals(other *RateLimiter) bool {
 
 func (l *RateLimiter) SetPlugin(plugin *Plugin) {
 	l.PluginInstance = plugin.Instance
-	l.setPluginImageRef(plugin.Source)
+	l.setPluginImageRef(plugin.Alias)
 }
 
 func (l *RateLimiter) setPluginImageRef(alias string) {

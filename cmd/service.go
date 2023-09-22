@@ -23,6 +23,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
+	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -200,12 +201,7 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 	}
 
 	// start db, refreshing connections
-	startResult := db_local.StartServices(ctx, listenAddresses, port, invoker)
-	if startResult.Error != nil {
-		exitCode = constants.ExitCodeServiceSetupFailure
-		error_helpers.FailOnError(startResult.Error)
-	}
-
+	startResult := startServiceAndRefreshConnections(ctx, listenAddresses, port, invoker)
 	if startResult.Status == db_local.ServiceFailedToStart {
 		error_helpers.ShowError(ctx, sperr.New("steampipe service failed to start"))
 		exitCode = constants.ExitCodeServiceStartupFailure
@@ -256,6 +252,24 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 		}
 	}
 	return startResult, dashboardState, dbServiceStarted
+}
+
+func startServiceAndRefreshConnections(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) *db_local.StartResult {
+	startResult := db_local.StartServices(ctx, listenAddresses, port, invoker)
+	if startResult.Error != nil {
+		exitCode = constants.ExitCodeServiceStartupFailure
+		error_helpers.FailOnError(startResult.Error)
+	}
+
+	if startResult.Status == db_local.ServiceStarted {
+		// ask the plugin manager to refresh connections
+		// this is executed asyncronously by the plugin manager
+		// we ignore this error, since RefreshConnections is async and all errors will flow through
+		// the notification system
+		// we do not expect any I/O errors on this since the PluginManager is running in the same box
+		_, _ = startResult.PluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
+	}
+	return startResult
 }
 
 func tryToStopServices(ctx context.Context) {
@@ -434,8 +448,7 @@ to force a restart.
 	viper.Set(constants.ArgServicePassword, currentDbState.Password)
 
 	// start db
-	dbStartResult := db_local.StartServices(ctx, currentDbState.ResolvedListenAddresses, currentDbState.Port, currentDbState.Invoker)
-	error_helpers.FailOnError(dbStartResult.Error)
+	dbStartResult := startServiceAndRefreshConnections(ctx, currentDbState.ResolvedListenAddresses, currentDbState.Port, currentDbState.Invoker)
 	if dbStartResult.Status == db_local.ServiceFailedToStart {
 		exitCode = constants.ExitCodeServiceStartupFailure
 		fmt.Println("Steampipe service was stopped, but failed to restart.")

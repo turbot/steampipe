@@ -79,7 +79,6 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	log.Println("[DEBUG] refreshConnectionState.refreshConnections start")
 	defer log.Println("[DEBUG] refreshConnectionState.refreshConnections end")
-
 	// if there was an error (other than a connection error, which will NOT have been assigned to res),
 	// set state of all incomplete connections to error
 	defer func() {
@@ -88,8 +87,8 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 				s.setIncompleteConnectionStateToError(ctx, sperr.WrapWithMessage(s.res.Error, "refreshConnections failed before connection update was complete"))
 			}
 			if !s.res.ErrorAndWarnings.Empty() {
-				log.Printf("[INFO] refreshConnections completed with errors, sending notificationrt SP_LOG=")
-				s.sendPostgresErrorNotification(ctx, s.res.ErrorAndWarnings)
+				log.Printf("[INFO] refreshConnections completed with errors, sending notification")
+				s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, &s.res.ErrorAndWarnings)
 			}
 
 		}
@@ -123,7 +122,10 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 		}
 
 		if len(updatedPluginLimiters) > 0 {
-			s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
+			err := s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
+			if err != nil {
+				s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, error_helpers.NewErrorsAndWarning(err))
+			}
 		}
 	}
 
@@ -175,19 +177,22 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 func (s *refreshConnectionState) addMissingPluginWarnings() {
 	log.Printf("[INFO] refreshConnections: identify missing plugins")
 
-	var connectionNames, pluginNames []string
+	var connectionNames []string
 	// add warning if there are connections left over, from missing plugins
 	if len(s.connectionUpdates.MissingPlugins) > 0 {
 		// warning
-		for a, conns := range s.connectionUpdates.MissingPlugins {
+		for _, conns := range s.connectionUpdates.MissingPlugins {
 			for _, con := range conns {
 				connectionNames = append(connectionNames, con.Name)
 			}
-			pluginNames = append(pluginNames, utils.GetPluginName(a))
+
 		}
-		s.res.AddWarning(fmt.Sprintf("%d %s required by %s %s missing. To install, please run %s",
+		pluginNames := maps.Keys(s.connectionUpdates.MissingPlugins)
+
+		s.res.AddWarning(fmt.Sprintf("%d %s required by %d %s %s missing. To install, please run: %s",
 			len(pluginNames),
 			utils.Pluralize("plugin", len(pluginNames)),
+			len(connectionNames),
 			utils.Pluralize("connection", len(connectionNames)),
 			utils.Pluralize("is", len(pluginNames)),
 			constants.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(pluginNames, " ")))))
@@ -220,7 +225,7 @@ func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {
 	connectionUpdates := s.tableUpdater.updates
 
 	// execute deletions
-	if err := s.executeDeleteQueries(ctx, maps.Keys(s.connectionUpdates.Delete)); err != nil {
+	if err := s.executeDeleteQueries(ctx, s.connectionUpdates.GetConnectionsToDelete()); err != nil {
 		// just log
 		log.Printf("[WARN] failed to delete all unused schemas: %s", err.Error())
 	}
@@ -238,7 +243,7 @@ func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {
 
 		// if there are no updates and there ARE deletes, notify
 		// (is there are updates, deletes will be notified by executeUpdateQueries)
-		if err := s.sendPostgreSchemaNotification(ctx); err != nil {
+		if err := s.pluginManager.SendPostgresSchemaNotification(ctx); err != nil {
 			// just log
 			log.Printf("[WARN] failed to send schema deletion Postgres notification: %s", err.Error())
 		}
@@ -292,7 +297,6 @@ func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	if len(errors) > 0 {
 		s.res.Error = error_helpers.CombineErrors(errors...)
 		log.Printf("[WARN] initial updates failed: %s", s.res.Error.Error())
-		// TODO SEND ERROR NOTIFICATION
 		return
 	}
 
@@ -310,7 +314,7 @@ func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	// now that we have updated all exemplar schemars, send postgres notification
 	// this gives any attached interactive clients a chance to update their inspect data and autocomplete
 
-	if err := s.sendPostgreSchemaNotification(ctx); err != nil {
+	if err := s.pluginManager.SendPostgresSchemaNotification(ctx); err != nil {
 		// just log
 		log.Printf("[WARN] failed to send schem update Postgres notification: %s", err.Error())
 	}
@@ -780,27 +784,4 @@ func (s *refreshConnectionState) setIncompleteConnectionStateToError(ctx context
 		log.Printf("[WARN] setAllConnectionStateToError failed to set connection states to error: %s", err.Error())
 		return
 	}
-}
-
-// OnConnectionsChanged is the callback function invoked by the connection watcher when connections are added or removed
-func (s *refreshConnectionState) sendPostgreSchemaNotification(ctx context.Context) error {
-	log.Println("[DEBUG] refreshConnectionState.sendPostgreSchemaNotification start")
-	defer log.Println("[DEBUG] refreshConnectionState.sendPostgreSchemaNotification end")
-
-	return s.sendPostgresNotification(ctx, steampipeconfig.NewSchemaUpdateNotification())
-
-}
-
-func (s *refreshConnectionState) sendPostgresErrorNotification(ctx context.Context, errorAndWarnings error_helpers.ErrorAndWarnings) error {
-	return s.sendPostgresNotification(ctx, steampipeconfig.NewConnectionErrorNotification(errorAndWarnings))
-
-}
-func (s *refreshConnectionState) sendPostgresNotification(ctx context.Context, notification any) error {
-	conn, err := s.pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-
-	return db_local.SendPostgresNotification(ctx, conn.Conn(), notification)
 }

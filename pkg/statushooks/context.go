@@ -3,7 +3,6 @@ package statushooks
 import (
 	"context"
 	"fmt"
-
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 )
 

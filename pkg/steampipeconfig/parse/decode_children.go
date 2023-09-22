@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -69,7 +70,7 @@ func checkForDuplicateChildren(names []string, block *hcl.Block) hcl.Diagnostics
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  fmt.Sprintf("'%s.%s' has duplicate child name '%s'", block.Type, block.Labels[0], n),
-				Subject:  &block.DefRange})
+				Subject:  hclhelpers.BlockRangePointer(block)})
 		}
 		nameMap[n] = nameCount + 1
 	}

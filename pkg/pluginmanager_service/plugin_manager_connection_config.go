@@ -1,6 +1,7 @@
 package pluginmanager_service
 
 import (
+	"context"
 	"fmt"
 	"github.com/turbot/steampipe-plugin-sdk/v5/error_helpers"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
@@ -16,10 +17,11 @@ func (m *PluginManager) getConnectionConfig(connectionName string) (*sdkproto.Co
 	return connectionConfig, nil
 }
 
-func (m *PluginManager) handleConnectionConfigChanges(newConfigMap map[string]*sdkproto.ConnectionConfig) error {
+func (m *PluginManager) handleConnectionConfigChanges(ctx context.Context, newConfigMap map[string]*sdkproto.ConnectionConfig) error {
 	// now determine whether there are any new or deleted connections
 	addedConnections, deletedConnections, changedConnections := m.connectionConfigMap.Diff(newConfigMap)
 
+	// build a map of UpdateConnectionConfig requests, keyed by plugin instance
 	requestMap := make(map[string]*sdkproto.UpdateConnectionConfigsRequest)
 
 	// for deleted connections, remove from plugins and pluginConnectionConfigs
@@ -41,15 +43,15 @@ func (m *PluginManager) handleConnectionConfigChanges(newConfigMap map[string]*s
 
 func (m *PluginManager) sendUpdateConnectionConfigs(requestMap map[string]*sdkproto.UpdateConnectionConfigsRequest) error {
 	var errors []error
-	for plugin, req := range requestMap {
-		runningPlugin, pluginAlreadyRunning := m.runningPluginMap[plugin]
+	for pluginInstance, req := range requestMap {
+		runningPlugin, pluginAlreadyRunning := m.runningPluginMap[pluginInstance]
 
-		// if the plugin is not running (or is not multi connection, so is not in this map), return
+		// if the pluginInstance is not running (or is not multi connection, so is not in this map), return
 		if !pluginAlreadyRunning {
 			continue
 		}
 
-		pluginClient, err := sdkgrpc.NewPluginClient(runningPlugin.client, plugin)
+		pluginClient, err := sdkgrpc.NewPluginClient(runningPlugin.client, runningPlugin.imageRef)
 		if err != nil {
 			errors = append(errors, err)
 			continue

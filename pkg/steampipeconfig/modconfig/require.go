@@ -74,7 +74,7 @@ func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
 	}
 
 	// set our Ranges
-	r.DeclRange = requireBlock.DefRange
+	r.DeclRange = hclhelpers.BlockRange(requireBlock)
 	r.BodyRange = requireBlock.Body.(*hclsyntax.Body).SrcRange
 
 	// build maps of plugin and mod blocks

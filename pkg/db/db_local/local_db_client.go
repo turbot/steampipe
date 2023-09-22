@@ -11,6 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -26,6 +27,9 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
+	log.Printf("[INFO] GetLocalClient")
+	defer log.Printf("[INFO] GetLocalClient complete")
+
 	listenAddresses := StartListenType(ListenTypeLocal).ToListenAddresses()
 	port := viper.GetInt(constants.ArgDatabasePort)
 	log.Println(fmt.Sprintf("[TRACE] GetLocalClient - listenAddresses=%s, port=%d", listenAddresses, port))
@@ -34,15 +38,28 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
 
+	log.Printf("[INFO] StartServices")
 	startResult := StartServices(ctx, listenAddresses, port, invoker)
 	if startResult.Error != nil {
 		return nil, &startResult.ErrorAndWarnings
 	}
 
+	log.Printf("[INFO] newLocalClient")
 	client, err := newLocalClient(ctx, invoker, onConnectionCallback, opts...)
 	if err != nil {
 		ShutdownService(ctx, invoker)
 		startResult.Error = err
+	}
+
+	// after creating the client, refresh connections
+	// NOTE: we cannot do this until after creating the client to ensure we do not miss notifications
+	if startResult.Status == ServiceStarted {
+		// ask the plugin manager to refresh connections
+		// this is executed asyncronously by the plugin manager
+		// we ignore this error, since RefreshConnections is async and all errors will flow through
+		// the notification system
+		// we do not expect any I/O errors on this since the PluginManager is running in the same box
+		_, _ = startResult.PluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
 	}
 
 	return client, &startResult.ErrorAndWarnings
@@ -65,7 +82,7 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	}
 
 	client := &LocalDbClient{DbClient: *dbClient, invoker: invoker}
-	log.Printf("[TRACE] created local client %p", client)
+	log.Printf("[INFO] created local client %p", client)
 
 	if err := client.initNotificationListener(ctx); err != nil {
 		client.Close(ctx)

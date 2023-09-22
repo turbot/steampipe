@@ -35,7 +35,7 @@ func (m *PluginManager) HandlePluginLimiterChanges(newLimiters connection.Plugin
 		m.pluginLimiters[plugin] = limitersForPlugin
 	}
 
-	// update the rate_limiters table
+	// update the steampipe_plugin_limiters table
 	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
 		log.Println("[WARN] could not refresh rate limiter table", err)
 	}
@@ -82,7 +82,7 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 // respond to changes in the HCL rate limiter config
 // update the stored limiters, refresh the rate limiter table and call `setRateLimiters`
 // for all plugins with changed limiters
-func (m *PluginManager) handleUserLimiterChanges(plugins connection.PluginMap) error {
+func (m *PluginManager) handleUserLimiterChanges(_ context.Context, plugins connection.PluginMap) error {
 	limiterPluginMap := plugins.ToPluginLimiterMap()
 	pluginsWithChangedLimiters := m.getPluginsWithChangedLimiters(limiterPluginMap)
 
@@ -93,7 +93,7 @@ func (m *PluginManager) handleUserLimiterChanges(plugins connection.PluginMap) e
 	// update stored limiters to the new map
 	m.userLimiters = limiterPluginMap
 
-	// update the rate_limiters table
+	// update the steampipe_plugin_limiters table
 	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
 		log.Println("[WARN] could not refresh rate limiter table", err)
 	}
@@ -211,6 +211,8 @@ func (m *PluginManager) initialiseRateLimiterDefs(ctx context.Context) (e error)
 	if err != nil {
 		return err
 	}
+	// TODO KAI TACTICAL to force recreation
+	rateLimiterTableExists = false
 
 	if !rateLimiterTableExists {
 		return m.bootstrapRateLimiterTable(ctx)
@@ -302,7 +304,7 @@ func (m *PluginManager) LoadPluginRateLimiters(pluginConnectionMap map[string]st
 	// ok so now we have all necessary plugin reattach configs - fetch the rate limiter defs
 	var errors []error
 	var res = make(connection.PluginLimiterMap)
-	for pluginLabel, reattach := range resp.ReattachMap {
+	for pluginInstance, reattach := range resp.ReattachMap {
 
 		if !reattach.SupportedOperations.RateLimiters {
 			continue
@@ -324,7 +326,7 @@ func (m *PluginManager) LoadPluginRateLimiters(pluginConnectionMap map[string]st
 
 		limitersForPlugin := make(connection.LimiterMap)
 		for _, l := range rateLimiterResp.Definitions {
-			r, err := modconfig.RateLimiterFromProto(l, reattach.Plugin, pluginLabel)
+			r, err := modconfig.RateLimiterFromProto(l, reattach.Plugin, pluginInstance)
 			if err != nil {
 				errors = append(errors, sperr.WrapWithMessage(err, "failed to create rate limiter %s from plugin definition", err))
 				continue

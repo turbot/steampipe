@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"encoding/json"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"log"
 	"os"
 	"time"
@@ -19,28 +20,48 @@ type ConnectionStateSummary map[string]int
 type ConnectionStateMap map[string]*ConnectionState
 
 // GetRequiredConnectionStateMap populates a map of connection data for all connections in connectionMap
-func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connection, currentConnectionState ConnectionStateMap) (ConnectionStateMap, map[string][]modconfig.Connection, error) {
+func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connection, currentConnectionState ConnectionStateMap) (ConnectionStateMap, map[string][]modconfig.Connection, *error_helpers.ErrorAndWarnings) {
 	utils.LogTime("steampipeconfig.GetRequiredConnectionStateMap start")
 	defer utils.LogTime("steampipeconfig.GetRequiredConnectionStateMap end")
 
-	res := ConnectionStateMap{}
+	var res = &error_helpers.ErrorAndWarnings{}
+	requiredState := ConnectionStateMap{}
 
 	// cache plugin file creation times in a dictionary to avoid reloading the same plugin file multiple times
 	pluginModTimeMap := make(map[string]time.Time)
 
-	// map of missing plugins, keyed by plugin, value is list of connections using missing plugin
+	// map of missing plugins, keyed by plugin alias, value is list of connections using missing plugin
 	missingPluginMap := make(map[string][]modconfig.Connection)
 
 	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration start")
 	// populate file mod time for each referenced plugin
 	for name, connection := range connectionMap {
-		pluginPath, _ := filepaths.GetPluginPath(connection.Plugin, connection.PluginAlias)
-		// ignore error if plugin is not available
-		// if plugin is not installed, the path will be returned as empty
-		if pluginPath == "" {
-			missingPluginMap[connection.PluginInstance] = append(missingPluginMap[connection.Plugin], *connection)
+		//pluginPath, _ := filepaths.GetPluginPath(connection.Plugin, connection.PluginAlias)
+		//// ignore error if plugin is not available
+		//// if plugin is not installed, the path will be returned as empty
+		//if pluginPath == "" {
+		//	missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
+		//	connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
+		//}
+
+		// if the connection is in error, create an error connection state
+		// this may have been set by the loading code
+		if connection.Error != nil {
+			// add error conneciton state
+			requiredState[connection.Name] = newErrorConnectionState(connection)
+			// if error is a missing plugin, add to missingPluginMap
+			// this will be used to build missing plugin warnings
+			if connection.Error.Error() == constants.ConnectionErrorPluginNotInstalled {
+				missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
+			} else {
+				// otherwise add error to result as warning, so we display it
+				res.AddWarning(connection.Error.Error())
+			}
 			continue
 		}
+
+		// to get here, PluginPath must be set
+		pluginPath := *connection.PluginPath
 
 		// get the plugin file mod time
 		var pluginModTime time.Time
@@ -49,41 +70,32 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 			var err error
 			pluginModTime, err = utils.FileModTime(pluginPath)
 			if err != nil {
-				return nil, nil, err
+				res.Error = err
+				return nil, nil, res
 			}
 		}
 		pluginModTimeMap[pluginPath] = pluginModTime
-		res[name] = NewConnectionState(connection, pluginModTime)
+		requiredState[name] = NewConnectionState(connection, pluginModTime)
 		// the comments _will_ eventually be set
-		res[name].CommentsSet = true
+		requiredState[name].CommentsSet = true
 		// if schema import is disabled, set desired state as disabled
 		if connection.ImportSchema == modconfig.ImportSchemaDisabled {
-			res[name].State = constants.ConnectionStateDisabled
+			requiredState[name].State = constants.ConnectionStateDisabled
 		}
 		// NOTE: if the connection exists in the current state, copy the connection mod time
 		// (this will be updated to 'now' later if we are updating the connection)
 		if currentState, ok := currentConnectionState[name]; ok {
-			res[name].ConnectionModTime = currentState.ConnectionModTime
+			requiredState[name].ConnectionModTime = currentState.ConnectionModTime
 		}
 	}
 
-	// add in state for connections which are missing plugins
-	res = addConnectionsMissingPlugins(res, missingPluginMap)
-
-	return res, missingPluginMap, nil
+	return requiredState, missingPluginMap, res
 }
 
-func addConnectionsMissingPlugins(connectionStateMap ConnectionStateMap, missingPlugins map[string][]modconfig.Connection) ConnectionStateMap {
-	for _, connections := range missingPlugins {
-		// add in missing connections
-		for _, c := range connections {
-			connectionData := NewConnectionState(&c, time.Now())
-			connectionData.State = constants.ConnectionStateError
-			connectionData.SetError(constants.ConnectionErrorPluginNotInstalled)
-			connectionStateMap[c.Name] = connectionData
-		}
-	}
-	return connectionStateMap
+func newErrorConnectionState(connection *modconfig.Connection) *ConnectionState {
+	res := NewConnectionState(connection, time.Now())
+	res.SetError(connection.Error.Error())
+	return res
 }
 
 func (m ConnectionStateMap) GetSummary() ConnectionStateSummary {
@@ -220,19 +232,27 @@ func (m ConnectionStateMap) getFirstSearchPathConnectionMapForPlugins(searchPath
 	return res
 }
 
-func (m ConnectionStateMap) SetReadyConnectionsToPending() {
+func (m ConnectionStateMap) SetConnectionsToPendingOrIncomplete() {
 	for _, state := range m {
 		if state.State == constants.ConnectionStateReady {
 			state.State = constants.ConnectionStatePending
+			state.ConnectionModTime = time.Now()
+		} else if state.State != constants.ConnectionStateDisabled {
+			state.State = constants.ConnectionStatePendingIncomplete
 			state.ConnectionModTime = time.Now()
 		}
 	}
 }
 
-func (m ConnectionStateMap) SetNotReadyConnectionsToIncomplete() {
-	for _, state := range m {
-		if state.State != constants.ConnectionStateReady && state.State != constants.ConnectionStateDisabled {
-			state.State = constants.ConnectionStatePendingIncomplete
+// PopulateFilename sets the Filename, StartLineNumber and EndLineNumber properties
+// this is required as these fields were added to the table after release
+func (m ConnectionStateMap) PopulateFilename() {
+	// get the connection from config
+	connections := GlobalConfig.Connections
+	for name, state := range m {
+		// do we have config for this connection (
+		if connection := connections[name]; connection != nil {
+			state.setFilename(connection)
 		}
 	}
 }

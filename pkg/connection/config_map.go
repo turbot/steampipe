@@ -1,6 +1,7 @@
 package connection
 
 import (
+	typehelpers "github.com/turbot/go-kit/types"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
@@ -16,7 +17,7 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) Conn
 			PluginShortName:  v.PluginAlias,
 			Config:           v.Config,
 			ChildConnections: v.GetResolveConnectionNames(),
-			PluginInstance:   v.PluginInstance,
+			PluginInstance:   typehelpers.SafeString(v.PluginInstance),
 		}
 	}
 
@@ -24,7 +25,7 @@ func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) Conn
 }
 
 func (m ConnectionConfigMap) Diff(otherMap ConnectionConfigMap) (addedConnections, deletedConnections, changedConnections map[string][]*sdkproto.ConnectionConfig) {
-	// results are maps of connections keyed by plugin label
+	// results are maps of connections keyed by plugin instance
 	addedConnections = make(map[string][]*sdkproto.ConnectionConfig)
 	deletedConnections = make(map[string][]*sdkproto.ConnectionConfig)
 	changedConnections = make(map[string][]*sdkproto.ConnectionConfig)
@@ -49,7 +50,7 @@ func (m ConnectionConfigMap) Diff(otherMap ConnectionConfigMap) (addedConnection
 
 	for otherName, otherConnection := range otherMap {
 		if _, ok := m[otherName]; !ok {
-			addedConnections[otherConnection.Plugin] = append(addedConnections[otherConnection.Plugin], otherConnection)
+			addedConnections[otherConnection.PluginInstance] = append(addedConnections[otherConnection.PluginInstance], otherConnection)
 		}
 	}
 

@@ -135,7 +135,7 @@ func setDirectoryDefaultsFromEnv() {
 	}
 }
 
-// set default values from env vars
+// SetDefaultsFromEnv sets default values from env vars
 func SetDefaultsFromEnv() {
 	// NOTE: EnvWorkspaceProfile has already been set as a viper default as we have already loaded workspace profiles
 	// (EnvInstallDir has already been set at same time but we set it again to make sure it has the correct precedence)

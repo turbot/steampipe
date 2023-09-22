@@ -5,7 +5,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
+	hclhelpers "github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
 	"strings"
@@ -55,7 +55,7 @@ func (r *ParseContext) ClearDependencies() {
 func (r *ParseContext) AddDependencies(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) hcl.Diagnostics {
 	var diags hcl.Diagnostics
 	// store unresolved block
-	r.UnresolvedBlocks[name] = &unresolvedBlock{Name: name, Block: block, Dependencies: dependencies}
+	r.UnresolvedBlocks[name] = newUnresolvedBlock(block, name, dependencies)
 
 	// store dependency in tree - d
 	if !r.dependencyGraph.ContainsNode(name) {
@@ -119,10 +119,10 @@ func (r *ParseContext) BlocksToDecode() (hcl.Blocks, error) {
 		// depOrder is all the blocks required to resolve dependencies.
 		// if this one is unparsed, added to list
 		block, ok := r.UnresolvedBlocks[name]
-		if ok && !blocksMap[block.Block.DefRange.String()] {
+		if ok && !blocksMap[block.DeclRange.String()] && ok {
 			blocksToDecode = append(blocksToDecode, block.Block)
 			// add to map
-			blocksMap[block.Block.DefRange.String()] = true
+			blocksMap[block.DeclRange.String()] = true
 		}
 	}
 	return blocksToDecode, nil

@@ -90,7 +90,7 @@ func (m *PluginMessageServer) handleMessage(stream sdkproto.WrapperPlugin_Establ
 
 	switch message.MessageType {
 	case sdkproto.PluginMessageType_SCHEMA_UPDATED:
-		log.Printf("[TRACE] PluginMessageServer.handleMessage: PluginMessageType_SCHEMA_UPDATED for connection: %s", message.Connection)
+		log.Printf("[INFO] PluginMessageServer.handleMessage: PluginMessageType_SCHEMA_UPDATED for connection: %s", message.Connection)
 		m.pluginManager.updateConnectionSchema(ctx, message.Connection)
 	}
 }

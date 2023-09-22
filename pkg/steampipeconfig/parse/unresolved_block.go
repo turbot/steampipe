@@ -4,15 +4,25 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 type unresolvedBlock struct {
 	Name         string
 	Block        *hcl.Block
+	DeclRange    hcl.Range
 	Dependencies map[string]*modconfig.ResourceDependency
+}
+
+func newUnresolvedBlock(block *hcl.Block, name string, dependencies map[string]*modconfig.ResourceDependency) *unresolvedBlock {
+	return &unresolvedBlock{
+		Name:         name,
+		Block:        block,
+		Dependencies: dependencies,
+		DeclRange:    hclhelpers.BlockRange(block),
+	}
 }
 
 func (b unresolvedBlock) String() string {

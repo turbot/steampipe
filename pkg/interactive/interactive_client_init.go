@@ -136,8 +136,8 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 
 	// subscribe to postgres notifications
 	statushooks.SetStatus(ctx, "Subscribe to postgres notifications…")
-	c.listenToPgNotifications(ctx)
 
+	c.listenToPgNotifications(ctx)
 }
 
 func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {

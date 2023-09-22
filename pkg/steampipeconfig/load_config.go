@@ -18,6 +18,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
@@ -301,7 +302,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 					diags = append(diags, &hcl.Diagnostic{
 						Severity: hcl.DiagWarning,
 						Summary:  warning,
-						Subject:  &block.DefRange,
+						Subject:  hclhelpers.BlockRangePointer(block),
 					})
 				}
 			}
@@ -316,14 +317,9 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 
 	log.Printf("[INFO] loadConfig calling initializePlugins")
 
-	// resolve the plugins for each conneciton and create default plugin config
+	// resolve the plugins for each connection and create default plugin config
 	// for all plugins mentioned in connection config which have no explicit config
-	failedConnections := steampipeConfig.initializePlugins()
-	for connectionName, e := range failedConnections {
-		// remove failed connection
-		delete(steampipeConfig.Connections, connectionName)
-		res.AddWarning(e.Error())
-	}
+	steampipeConfig.initializePlugins()
 
 	return res
 }
