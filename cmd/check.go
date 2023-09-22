@@ -251,8 +251,8 @@ func publishSnapshot(ctx context.Context, executionTree *controlexecute.Executio
 // this is necessary, since exporters can only export entire execution trees and when a file name is provided, we want to export the whole tree into one file
 //
 // example :
-// * "check benchmark.b1 benchmark.b2 --export check.json" would give one merged tree
-// * "check benchmark.b1 benchmark.b2 --export json" would give multiple trees
+// "check benchmark.b1 benchmark.b2 --export check.json" would give one merged tree
+// "check benchmark.b1 benchmark.b2 --export json" would give multiple trees
 func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...string) ([]*namedExecutionTree, error) {
 	var trees []*namedExecutionTree
 
