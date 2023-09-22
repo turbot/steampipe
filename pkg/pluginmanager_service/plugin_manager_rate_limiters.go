@@ -211,7 +211,7 @@ func (m *PluginManager) initialiseRateLimiterDefs(ctx context.Context) (e error)
 	if err != nil {
 		return err
 	}
-	// TODO KAI TACTICAL to force recreation
+	// TODO KAI TACTICAL to force recreation - remove in beta.2
 	rateLimiterTableExists = false
 
 	if !rateLimiterTableExists {

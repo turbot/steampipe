@@ -8,9 +8,15 @@ import (
 
 type ConnectionConfigMap map[string]*sdkproto.ConnectionConfig
 
+// NewConnectionConfigMap creates a map of sdkproto.ConnectionConfig keyed by connection name
+// NOTE: connections in error are EXCLUDED
 func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) ConnectionConfigMap {
 	configMap := make(ConnectionConfigMap)
 	for k, v := range connectionMap {
+		if v.Error != nil {
+			continue
+		}
+
 		configMap[k] = &sdkproto.ConnectionConfig{
 			Connection:       v.Name,
 			Plugin:           v.Plugin,

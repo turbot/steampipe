@@ -93,6 +93,7 @@ func createPluginManager(cmd *cobra.Command) (*pluginmanager_service.PluginManag
 		}
 	}()
 
+	// create a map of connections configs, excluding connections in error
 	configMap := connection.NewConnectionConfigMap(steampipeConfig.Connections)
 	log.Printf("[TRACE] loaded config map: %s", strings.Join(steampipeConfig.ConnectionNames(), ","))
 

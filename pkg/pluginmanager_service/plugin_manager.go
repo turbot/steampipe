@@ -442,7 +442,7 @@ func (m *PluginManager) addRunningPlugin(pluginInstance string) (*runningPlugin,
 	pluginConfig := m.plugins[pluginInstance]
 	if pluginConfig == nil {
 		// not expected
-		return nil, sperr.New("plugin manager has no config for plkugin instance %s", pluginInstance)
+		return nil, sperr.New("plugin manager has no config for plugin instance %s", pluginInstance)
 	}
 	// create the running plugin
 	startingPlugin := &runningPlugin{
