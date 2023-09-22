@@ -226,16 +226,13 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 	connectionStateMap.PopulateFilename()
 
 	// drop the table and recreate
-	queries := []db_common.QueryWithArgs{
-		introspection.GetLegacyConnectionStateTableDropSql(),
-		introspection.GetConnectionStateTableDropSql(),
-		introspection.GetConnectionStateTableCreateSql(),
-		introspection.GetConnectionStateTableGrantSql(),
-	}
+	queries := introspection.GetConnectionStateTableDropSql()
+	queries = append(queries, introspection.GetConnectionStateTableCreateSql()...)
+	queries = append(queries, introspection.GetConnectionStateTableGrantSql()...)
 
 	// add insert queries for all connection state
 	for _, s := range connectionStateMap {
-		queries = append(queries, introspection.GetUpsertConnectionStateSql(s))
+		queries = append(queries, introspection.GetUpsertConnectionStateSql(s)...)
 	}
 
 	// for any connection in the connection config but NOT in the connection state table,
@@ -243,7 +240,7 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 	// we wait for connection state before RefreshConnections has added any new connections into the state table
 	for connection, connectionConfig := range steampipeconfig.GlobalConfig.Connections {
 		if _, ok := connectionStateMap[connection]; !ok {
-			queries = append(queries, introspection.GetNewConnectionStateFromConnectionInsertSql(connectionConfig))
+			queries = append(queries, introspection.GetNewConnectionStateFromConnectionInsertSql(connectionConfig)...)
 		}
 	}
 	_, err = ExecuteSqlWithArgsInTransaction(ctx, conn, queries...)

@@ -432,6 +432,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "verify steampipe_connection_state table is getting properly migrated" {
+
   # create a temp directory to install steampipe(0.13.6)
   tmpdir="$(mktemp -d)"
   mkdir -p "${tmpdir}"

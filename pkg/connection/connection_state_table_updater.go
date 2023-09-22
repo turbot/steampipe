@@ -48,7 +48,7 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 			connectionState.ConnectionError = &validationError.Message
 		}
 		// get the sql to update the connection state in the table to match the struct
-		queries = append(queries, introspection.GetUpsertConnectionStateSql(connectionState))
+		queries = append(queries, introspection.GetUpsertConnectionStateSql(connectionState)...)
 	}
 	// set deletions to "deleting"
 	for name := range u.updates.Delete {
@@ -58,13 +58,13 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 			continue
 		}
 
-		queries = append(queries, introspection.GetSetConnectionStateSql(name, constants.ConnectionStateDeleting))
+		queries = append(queries, introspection.GetSetConnectionStateSql(name, constants.ConnectionStateDeleting)...)
 	}
 
 	// set any connections with import_schema=disabled to "disabled"
 	// also build a lookup of disabled connections
 	for name := range u.updates.Disabled {
-		queries = append(queries, introspection.GetSetConnectionStateSql(name, constants.ConnectionStateDisabled))
+		queries = append(queries, introspection.GetSetConnectionStateSql(name, constants.ConnectionStateDisabled)...)
 	}
 	conn, err := u.pool.Acquire(ctx)
 	if err != nil {
@@ -82,12 +82,10 @@ func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, con
 	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionReady end")
 
 	connection := u.updates.FinalConnectionState[name]
-	q := introspection.GetSetConnectionStateSql(connection.ConnectionName, constants.ConnectionStateReady)
-	_, err := conn.Exec(ctx, q.Query, q.Args...)
-	if err != nil {
+	queries := introspection.GetSetConnectionStateSql(connection.ConnectionName, constants.ConnectionStateReady)
+	if _, err := db_local.ExecuteSqlWithArgsInTransaction(ctx, conn, queries...); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -96,12 +94,10 @@ func (u *connectionStateTableUpdater) onConnectionCommentsLoaded(ctx context.Con
 	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionCommentsLoaded end")
 
 	connection := u.updates.FinalConnectionState[name]
-	q := introspection.GetSetConnectionStateCommentLoadedSql(connection.ConnectionName, true)
-	_, err := conn.Exec(ctx, q.Query, q.Args...)
-	if err != nil {
+	queries := introspection.GetSetConnectionStateCommentLoadedSql(connection.ConnectionName, true)
+	if _, err := db_local.ExecuteSqlWithArgsInTransaction(ctx, conn, queries...); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -113,12 +109,10 @@ func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, c
 	if _, connectionDisabled := u.updates.Disabled[name]; connectionDisabled {
 		return nil
 	}
-	q := introspection.GetDeleteConnectionStateSql(name)
-	_, err := conn.Exec(ctx, q.Query, q.Args...)
-	if err != nil {
+	queries := introspection.GetDeleteConnectionStateSql(name)
+	if _, err := db_local.ExecuteSqlWithArgsInTransaction(ctx, conn, queries...); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -126,11 +120,9 @@ func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, con
 	log.Println("[DEBUG] connectionStateTableUpdater.onConnectionError start")
 	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionError end")
 
-	q := introspection.GetConnectionStateErrorSql(connectionName, err)
-	if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {
+	queries := introspection.GetConnectionStateErrorSql(connectionName, err)
+	if _, err := db_local.ExecuteSqlWithArgsInTransaction(ctx, conn, queries...); err != nil {
 		return err
 	}
-
 	return nil
-	// TODO send notification
 }

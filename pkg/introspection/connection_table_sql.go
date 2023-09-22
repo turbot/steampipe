@@ -9,19 +9,13 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-// GetLegacyConnectionStateTableDropSql returns the sql to drop the legacy connection state table
-func GetLegacyConnectionStateTableDropSql() db_common.QueryWithArgs {
-	query := fmt.Sprintf(`DROP TABLE IF EXISTS %s.%s;`, constants.InternalSchema, constants.LegacyConnectionStateTable)
-	return db_common.QueryWithArgs{Query: query}
+func GetConnectionStateTableDropSql() []db_common.QueryWithArgs {
+	queryFormat := `DROP TABLE IF EXISTS %s.%s;`
+	return getConnectionStateQueries(queryFormat)
 }
 
-func GetConnectionStateTableDropSql() db_common.QueryWithArgs {
-	query := fmt.Sprintf(`DROP TABLE IF EXISTS %s.%s;`, constants.InternalSchema, constants.ConnectionTable)
-	return db_common.QueryWithArgs{Query: query}
-}
-
-func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
-	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
+func GetConnectionStateTableCreateSql() []db_common.QueryWithArgs {
+	queryFormat := `CREATE TABLE IF NOT EXISTS %s.%s (
 	name TEXT PRIMARY KEY,
 	state TEXT,
 	type TEXT NULL,
@@ -38,37 +32,36 @@ func GetConnectionStateTableCreateSql() db_common.QueryWithArgs {
 	file_name TEXT, 
 	start_line_number INTEGER, 
 	end_line_number INTEGER
-);`, constants.InternalSchema, constants.ConnectionTable)
-	return db_common.QueryWithArgs{Query: query}
+);`
+	return getConnectionStateQueries(queryFormat)
 }
 
 // GetConnectionStateTableGrantSql returns the sql to setup SELECT permission for the 'steampipe_users' role
-func GetConnectionStateTableGrantSql() db_common.QueryWithArgs {
-	return db_common.QueryWithArgs{Query: fmt.Sprintf(
-		`GRANT SELECT ON TABLE %s.%s TO %s;`,
-		constants.InternalSchema,
-		constants.ConnectionTable,
+func GetConnectionStateTableGrantSql() []db_common.QueryWithArgs {
+	queryFormat := fmt.Sprintf(
+		`GRANT SELECT ON TABLE %%s.%%s TO %s;`,
 		constants.DatabaseUsersRole,
-	)}
+	)
+	return getConnectionStateQueries(queryFormat)
 }
 
 // GetConnectionStateErrorSql returns the sql to set a connection to 'error'
-func GetConnectionStateErrorSql(connectionName string, err error) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`UPDATE %s.%s
+func GetConnectionStateErrorSql(connectionName string, err error) []db_common.QueryWithArgs {
+	queryFormat := `UPDATE %s.%s
 SET state = '%s',
 	error = $1,
 	connection_mod_time = now()
 WHERE
 	name = $2
-	`,
-		constants.InternalSchema, constants.ConnectionTable, constants.ConnectionStateError)
+	`
+
 	args := []any{constants.ConnectionStateError, err.Error(), connectionName}
-	return db_common.QueryWithArgs{Query: query, Args: args}
+	return getConnectionStateQueries(queryFormat, args)
 }
 
 // GetIncompleteConnectionStateErrorSql returns the sql to set all incomplete connections to 'error' (unless they alre already in error)
-func GetIncompleteConnectionStateErrorSql(err error) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`UPDATE %s.%s
+func GetIncompleteConnectionStateErrorSql(err error) []db_common.QueryWithArgs {
+	queryFormat := fmt.Sprintf(`UPDATE %%s.%%s
 SET state = '%s',
 	error = $1,
 	connection_mod_time = now()
@@ -77,15 +70,15 @@ WHERE
 AND state <> 'disabled' 
 AND state <> 'error' 
 	`,
-		constants.InternalSchema, constants.ConnectionTable, constants.ConnectionStateError)
+		constants.ConnectionStateError)
 	args := []any{err.Error()}
-	return db_common.QueryWithArgs{Query: query, Args: args}
+	return getConnectionStateQueries(queryFormat, args)
 }
 
 // GetUpsertConnectionStateSql returns the sql to update the connection state in the able with the current properties
-func GetUpsertConnectionStateSql(c *steampipeconfig.ConnectionState) db_common.QueryWithArgs {
+func GetUpsertConnectionStateSql(c *steampipeconfig.ConnectionState) []db_common.QueryWithArgs {
 	// upsert
-	query := fmt.Sprintf(`INSERT INTO %s.%s (name, 
+	queryFormat := `INSERT INTO %s.%s (name, 
 		state,
 		type,
  		connections,
@@ -121,7 +114,7 @@ DO
 	    	  start_line_number = $14,
 	     	  end_line_number = $15
 			  
-`, constants.InternalSchema, constants.ConnectionTable)
+`
 	args := []any{
 		c.ConnectionName,
 		c.State,
@@ -139,11 +132,11 @@ DO
 		c.StartLineNumber,
 		c.EndLineNumber,
 	}
-	return db_common.QueryWithArgs{Query: query, Args: args}
+	return getConnectionStateQueries(queryFormat, args)
 }
 
-func GetNewConnectionStateFromConnectionInsertSql(c *modconfig.Connection) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`INSERT INTO %s.%s (name, 
+func GetNewConnectionStateFromConnectionInsertSql(c *modconfig.Connection) []db_common.QueryWithArgs {
+	queryFormat := `INSERT INTO %s.%s (name, 
 		state,
 		type,
 	    connections,
@@ -160,8 +153,7 @@ func GetNewConnectionStateFromConnectionInsertSql(c *modconfig.Connection) db_co
 	    start_line_number,
 	    end_line_number)
 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),now(),$12,$13,$14) 
-`, constants.InternalSchema, constants.ConnectionTable)
-
+`
 	schemaMode := ""
 	commentsSet := false
 	schemaHash := ""
@@ -182,35 +174,39 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),now(),$12,$13,$14)
 		c.DeclRange.End.Line,
 	}
 
-	return db_common.QueryWithArgs{
-		Query: query,
-		Args:  args,
-	}
+	return getConnectionStateQueries(queryFormat, args)
 }
 
-func GetSetConnectionStateSql(connectionName string, state string) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`UPDATE %s.%s 
+func GetSetConnectionStateSql(connectionName string, state string) []db_common.QueryWithArgs {
+	queryFormat := `UPDATE %s.%s 
     SET	state = '%s', 
 	 	connection_mod_time = now()
     WHERE 
         name = $1
-`,
-		constants.InternalSchema, constants.ConnectionTable, state,
-	)
+`
 	args := []any{connectionName}
-	return db_common.QueryWithArgs{Query: query, Args: args}
+	return getConnectionStateQueries(queryFormat, args)
 }
 
-func GetDeleteConnectionStateSql(connectionName string) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`DELETE FROM %s.%s WHERE NAME=$1`, constants.InternalSchema, constants.ConnectionTable)
+func GetDeleteConnectionStateSql(connectionName string) []db_common.QueryWithArgs {
+	queryFormat := `DELETE FROM %s.%s WHERE NAME=$1`
 	args := []any{connectionName}
-	return db_common.QueryWithArgs{Query: query, Args: args}
+	return getConnectionStateQueries(queryFormat, args)
 }
 
-func GetSetConnectionStateCommentLoadedSql(connectionName string, commentsLoaded bool) db_common.QueryWithArgs {
-	query := fmt.Sprintf(`UPDATE  %s.%s
+func GetSetConnectionStateCommentLoadedSql(connectionName string, commentsLoaded bool) []db_common.QueryWithArgs {
+	queryFormat := `UPDATE  %s.%s
 SET comments_set = $1
-WHERE NAME=$2`, constants.InternalSchema, constants.ConnectionTable)
+WHERE NAME=$2`
 	args := []any{commentsLoaded, connectionName}
-	return db_common.QueryWithArgs{Query: query, Args: args}
+	return getConnectionStateQueries(queryFormat, args)
+}
+
+func getConnectionStateQueries(queryFormat string, args ...any) []db_common.QueryWithArgs {
+	query := fmt.Sprintf(queryFormat, constants.InternalSchema, constants.ConnectionTable)
+	legacyQuery := fmt.Sprintf(queryFormat, constants.InternalSchema, constants.LegacyConnectionStateTable)
+	return []db_common.QueryWithArgs{
+		{Query: query, Args: args},
+		{Query: legacyQuery, Args: args},
+	}
 }

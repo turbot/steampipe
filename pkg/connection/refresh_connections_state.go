@@ -778,9 +778,9 @@ func (s *refreshConnectionState) setIncompleteConnectionStateToError(ctx context
 	}
 	defer conn.Release()
 
-	query := introspection.GetIncompleteConnectionStateErrorSql(connectionStateError)
+	queries := introspection.GetIncompleteConnectionStateErrorSql(connectionStateError)
 
-	if _, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn.Conn(), query); err != nil {
+	if _, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn.Conn(), queries...); err != nil {
 		log.Printf("[WARN] setAllConnectionStateToError failed to set connection states to error: %s", err.Error())
 		return
 	}
