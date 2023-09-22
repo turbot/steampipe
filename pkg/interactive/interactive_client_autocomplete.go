@@ -52,6 +52,7 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 
 	// add connection state and rate limit
 	unqualifiedTablesToAdd[constants.ConnectionTable] = struct{}{}
+	unqualifiedTablesToAdd[constants.PluginInstanceTable] = struct{}{}
 	unqualifiedTablesToAdd[constants.RateLimiterDefinitionTable] = struct{}{}
 
 	// get the first search path connection for each plugin

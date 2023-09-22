@@ -18,7 +18,7 @@ func GetPluginTableCreateSql() db_common.QueryWithArgs {
 				file_name TEXT, 
 				start_line_number INTEGER, 
 				end_line_number INTEGER
-		);`, constants.InternalSchema, constants.PluginConfigTable),
+		);`, constants.InternalSchema, constants.PluginInstanceTable),
 	}
 }
 
@@ -33,7 +33,7 @@ file_name,
 start_line_number,
 end_line_number
 )
-	VALUES($1,$2,$3,$4,$5,$6,$7)`, constants.InternalSchema, constants.PluginConfigTable),
+	VALUES($1,$2,$3,$4,$5,$6,$7)`, constants.InternalSchema, constants.PluginInstanceTable),
 		Args: []any{
 			plugin.Plugin,
 			plugin.Instance,
@@ -51,7 +51,7 @@ func GetPluginTableDropSql() db_common.QueryWithArgs {
 		Query: fmt.Sprintf(
 			`DROP TABLE IF EXISTS %s.%s;`,
 			constants.InternalSchema,
-			constants.PluginConfigTable,
+			constants.PluginInstanceTable,
 		),
 	}
 }
@@ -61,7 +61,7 @@ func GetPluginTableGrantSql() db_common.QueryWithArgs {
 		Query: fmt.Sprintf(
 			`GRANT SELECT ON TABLE %s.%s to %s;`,
 			constants.InternalSchema,
-			constants.PluginConfigTable,
+			constants.PluginInstanceTable,
 			constants.DatabaseUsersRole,
 		),
 	}
