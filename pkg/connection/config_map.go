@@ -43,8 +43,8 @@ func (m ConnectionConfigMap) Diff(otherMap ConnectionConfigMap) (addedConnection
 			// check for changes
 
 			// special case - if the plugin has changed, treat this as a deletion and a re-add
-			if connection.PluginInstance != otherConnection.Plugin {
-				addedConnections[otherConnection.Plugin] = append(addedConnections[otherConnection.Plugin], otherConnection)
+			if connection.PluginInstance != otherConnection.PluginInstance {
+				addedConnections[otherConnection.PluginInstance] = append(addedConnections[otherConnection.PluginInstance], otherConnection)
 				deletedConnections[connection.PluginInstance] = append(deletedConnections[connection.PluginInstance], connection)
 			} else {
 				if !connection.Equals(otherConnection) {

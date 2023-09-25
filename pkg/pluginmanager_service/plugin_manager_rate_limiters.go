@@ -98,7 +98,7 @@ func (m *PluginManager) handleUserLimiterChanges(_ context.Context, plugins conn
 		log.Println("[WARN] could not refresh rate limiter table", err)
 	}
 
-	// now update the plugins - call setRateLimiters for any plugin witrh updated user limiters
+	// now update the plugins - call setRateLimiters for any plugin with updated user limiters
 	for p := range pluginsWithChangedLimiters {
 		if err := m.setRateLimitersForPlugin(p); err != nil {
 			return err

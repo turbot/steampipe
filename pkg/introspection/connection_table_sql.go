@@ -62,7 +62,7 @@ WHERE
 	name = $2
 	`,
 		constants.InternalSchema, constants.ConnectionTable, constants.ConnectionStateError)
-	args := []any{constants.ConnectionStateError, err.Error(), connectionName}
+	args := []any{err.Error(), connectionName}
 	return db_common.QueryWithArgs{Query: query, Args: args}
 }
 
