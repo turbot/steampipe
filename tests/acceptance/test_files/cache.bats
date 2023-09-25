@@ -429,7 +429,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "verify cache ttl works when set in database options" {
-  skip "re-enable after verifying/fixing the default.spc overwrite issue" # https://github.com/turbot/steampipe/issues/3891
   export STEAMPIPE_LOG=info
 
   cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
