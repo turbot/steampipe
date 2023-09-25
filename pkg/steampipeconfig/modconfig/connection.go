@@ -234,17 +234,27 @@ func (c *Connection) GetEmptyAggregatorError() string {
 		strings.Join(patterns, "','"))
 }
 
-func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {
+func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) []string {
 	log.Printf("[TRACE] Connection.PopulateChildren for aggregator connection %s", c.Name)
 	c.Connections = make(map[string]*Connection)
-	for _, childName := range c.ConnectionNames {
+	var failures []string
+	for _, childPattern := range c.ConnectionNames {
 		// if this resolves as an existing connection, populate it
-		if childConnection, ok := connectionMap[childName]; ok {
-			log.Printf("[TRACE] Connection.PopulateChildren found matching connection %s", childName)
-			c.Connections[childName] = childConnection
+		if childConnection, ok := connectionMap[childPattern]; ok {
+			// verify this child connection has the same plugin instance
+			if childConnection.PluginInstance != c.PluginInstance {
+				msg := fmt.Sprintf("aggregator connection %s specifies child connection %s but it has a different plugin instance",
+					c.Name, childPattern)
+				log.Println("[WARN]", msg)
+				failures = append(failures, msg)
+			} else {
+				log.Printf("[TRACE] Connection.PopulateChildren found matching connection %s", childPattern)
+				c.Connections[childPattern] = childConnection
+			}
 			continue
 		}
-		log.Printf("[TRACE] Connection.PopulateChildren no connection matches %s - treating as a wildcard", childName)
+
+		log.Printf("[TRACE] Connection.PopulateChildren no connection matches %s - treating as a wildcard", childPattern)
 		// otherwise treat the connection name as a wildcard and see what matches
 		for name, connection := range connectionMap {
 			// if this is an aggregator connection, skip (this will also avoid us adding ourselves)
@@ -255,16 +265,17 @@ func (c *Connection) PopulateChildren(connectionMap map[string]*Connection) {
 			if _, ok := c.Connections[name]; ok {
 				continue
 			}
-			if match, _ := path.Match(childName, name); match {
-				// verify that this connection is of a compatible type
-				if connection.Plugin == c.Plugin {
+			if match, _ := path.Match(childPattern, name); match {
+				// verify that this connection is the same plugin instance
+				if connection.PluginInstance == c.PluginInstance {
 					c.Connections[name] = connection
-					log.Printf("[TRACE] connection '%s' matches pattern '%s'", name, childName)
+					log.Printf("[TRACE] connection '%s' matches pattern '%s'", name, childPattern)
 				}
 			}
 		}
 	}
 	c.ResolvedConnectionNames = maps.Keys(c.Connections)
+	return failures
 }
 
 // GetResolveConnectionNames return the names of all child connections
