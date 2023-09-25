@@ -124,7 +124,7 @@ GROUP BY application_name
 
 	counts := &ClientCount{}
 
-	log.Println("[INFO] >> ClientConnectionAppName: ", runtime.ClientConnectionAppName)
+	log.Println("[INFO] ClientConnectionAppName: ", runtime.ClientConnectionAppName)
 	rows, err := rootClient.Query(ctx, query, "client backend", runtime.ClientConnectionAppName)
 	if err != nil {
 		return nil, err
@@ -138,7 +138,7 @@ GROUP BY application_name
 		if err := rows.Scan(&appName, &count); err != nil {
 			return nil, err
 		}
-		log.Printf("[INFO] >> appName: %s, count: %d", appName, count)
+		log.Printf("[INFO] appName: %s, count: %d", appName, count)
 
 		counts.TotalClients += count
 

@@ -321,7 +321,6 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAn
 	parseCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 
 	// load the workspace mod
-	log.Println("[INFO] >> 1. ctx:", &ctx)
 	m, otherErrorAndWarning := steampipeconfig.LoadMod(ctx, w.Path, parseCtx)
 	errorsAndWarnings.Merge(otherErrorAndWarning)
 	if errorsAndWarnings.Error != nil {
@@ -345,8 +344,8 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAn
 }
 
 func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
-	log.Println("[INFO] >> start getInputVariables")
-	defer log.Println("[INFO] >> end getInputVariables")
+	log.Println("[INFO] start getInputVariables")
+	defer log.Println("[INFO] end getInputVariables")
 
 	// build a run context just to use to load variable definitions
 	variablesParseCtx, err := w.getParseContext(ctx)
@@ -358,11 +357,10 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 }
 
 func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
-	log.Println("[INFO] >> start getVariableValues")
-	defer log.Println("[INFO] >> end getVariableValues")
+	log.Println("[INFO] start getVariableValues")
+	defer log.Println("[INFO] end getVariableValues")
 
 	// load variable definitions
-	log.Println("[INFO] >> 1. ctx:", &ctx)
 	variableMap, err := steampipeconfig.LoadVariableDefinitions(ctx, w.Path, variablesParseCtx)
 	if err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(err)
@@ -374,8 +372,8 @@ func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *pa
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
 func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext, error) {
-	log.Println("[INFO] >> start getParseContext")
-	defer log.Println("[INFO] >> end getParseContext")
+	log.Println("[INFO] start getParseContext")
+	defer log.Println("[INFO] end getParseContext")
 	parseFlag := parse.CreateDefaultMod
 	if w.loadPseudoResources {
 		parseFlag |= parse.CreatePseudoResources
