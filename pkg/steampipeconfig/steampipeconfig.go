@@ -58,7 +58,8 @@ func (c *SteampipeConfig) Validate() (validationWarnings, validationErrors []str
 		// if the connection is an aggregator, populate the child connections
 		// this resolves any wildcards in the connection list
 		if connection.Type == modconfig.ConnectionTypeAggregator {
-			connection.PopulateChildren(c.Connections)
+			aggregatorFailures := connection.PopulateChildren(c.Connections)
+			validationWarnings = append(validationWarnings, aggregatorFailures...)
 		}
 		w, e := connection.Validate(c.Connections)
 		validationWarnings = append(validationWarnings, w...)

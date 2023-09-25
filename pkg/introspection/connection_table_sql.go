@@ -7,6 +7,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"golang.org/x/exp/maps"
 )
 
 // GetLegacyConnectionStateTableDropSql returns the sql to drop the legacy connection state table
@@ -165,11 +166,12 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),now(),$12,$13,$14)
 	schemaMode := ""
 	commentsSet := false
 	schemaHash := ""
+
 	args := []any{
 		c.Name,
 		constants.ConnectionStatePendingIncomplete,
 		c.Type,
-		c.Connections,
+		maps.Keys(c.Connections),
 		c.ImportSchema,
 		nil,
 		c.Plugin,

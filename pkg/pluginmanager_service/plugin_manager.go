@@ -149,7 +149,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (_ *pb.GetResponse, err error) {
 		reattach, err := m.ensurePlugin(pluginInstance, connectionConfigs, req)
 		if err != nil {
 			log.Printf("[WARN] PluginManager Get failed for %s: %s (%p)", pluginInstance, err.Error(), resp)
-			resp.FailureMap[pluginInstance] = sperr.WrapWithMessage(err, "failed to start '%s'", pluginInstance).Error()
+			resp.FailureMap[pluginInstance] = sperr.WrapWithMessage(err, "failed to start plugin instance '%s'", pluginInstance).Error()
 		} else {
 			log.Printf("[TRACE] PluginManager Get succeeded for %s, pid %d (%p)", pluginInstance, reattach.Pid, resp)
 
