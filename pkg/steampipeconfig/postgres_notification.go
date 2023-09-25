@@ -42,6 +42,6 @@ func NewErrorsAndWarningsNotification(errorAndWarnings *error_helpers.ErrorAndWa
 	if errorAndWarnings.Error != nil {
 		res.Errors = []string{errorAndWarnings.Error.Error()}
 	}
-	res.Warnings = append(res.Errors, errorAndWarnings.Warnings...)
+	res.Warnings = append(res.Warnings, errorAndWarnings.Warnings...)
 	return res
 }

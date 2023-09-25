@@ -268,9 +268,9 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			if moreDiags.HasErrors() {
 				continue
 			}
-			_, alreadyThere := steampipeConfig.Connections[connection.Name]
-			if alreadyThere {
-				return error_helpers.NewErrorsAndWarning(sperr.New("duplicate connection name: '%s' in '%s'", connection.Name, block.TypeRange.Filename))
+			if existingConnection, alreadyThere := steampipeConfig.Connections[connection.Name]; alreadyThere {
+				err := getDuplicateConnectionError(existingConnection, connection)
+				return error_helpers.NewErrorsAndWarning(err)
 			}
 			if ok, errorMessage := db_common.IsSchemaNameValid(connection.Name); !ok {
 				return error_helpers.NewErrorsAndWarning(sperr.New("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage))
@@ -322,6 +322,12 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 	steampipeConfig.initializePlugins()
 
 	return res
+}
+
+func getDuplicateConnectionError(existingConnection, newConnection *modconfig.Connection) error {
+	return sperr.New("duplicate connection name: '%s'\n\t(%s:%d)\n\t(%s:%d)",
+		existingConnection.Name, existingConnection.DeclRange.Filename, existingConnection.DeclRange.Start.Line,
+		newConnection.DeclRange.Filename, newConnection.DeclRange.Start.Line)
 }
 
 func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loadConfigOptions) error {

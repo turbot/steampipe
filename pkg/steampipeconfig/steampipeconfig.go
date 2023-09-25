@@ -338,8 +338,8 @@ func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
 // add a plugin config to PluginsInstances and Plugins
 // NOTE: this returns an error if we alreayd have a config with the same label
 func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin, block *hcl.Block) error {
-	if _, exists := c.PluginsInstances[plugin.Instance]; exists {
-		return sperr.New("duplicate plugin: '%s' in '%s'", plugin.Alias, block.TypeRange.Filename)
+	if existingPlugin, exists := c.PluginsInstances[plugin.Instance]; exists {
+		return duplicatePluginError(existingPlugin, plugin)
 	}
 	// get the image ref to key the map
 	imageRef := plugin.GetImageRef()
@@ -347,6 +347,12 @@ func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin, block *hcl.Block) 
 	c.Plugins[imageRef] = append(c.Plugins[imageRef], plugin)
 	c.PluginsInstances[plugin.Instance] = plugin
 	return nil
+}
+
+func duplicatePluginError(existingPlugin, newPlugin *modconfig.Plugin) error {
+	return sperr.New("duplicate plugin instance: '%s'\n\t(%s:%d)\n\t(%s:%d)",
+		existingPlugin.Instance, *existingPlugin.FileName, *existingPlugin.StartLineNumber,
+		*newPlugin.FileName, *newPlugin.StartLineNumber)
 }
 
 // ensure we have a plugin config struct for all plugins mentioned in connection config,
