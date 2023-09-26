@@ -2,7 +2,6 @@ package pluginmanager
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"io"
 	"log"
 	"os/exec"
@@ -11,6 +10,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc"

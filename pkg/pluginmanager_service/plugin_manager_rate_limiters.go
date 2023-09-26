@@ -3,6 +3,8 @@ package pluginmanager_service
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/jackc/pgx/v5"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -16,7 +18,6 @@ import (
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
-	"log"
 )
 
 func (m *PluginManager) ShouldFetchRateLimiterDefs() bool {
@@ -211,8 +212,6 @@ func (m *PluginManager) initialiseRateLimiterDefs(ctx context.Context) (e error)
 	if err != nil {
 		return err
 	}
-	// TODO KAI TACTICAL to force recreation - remove in beta.2
-	rateLimiterTableExists = false
 
 	if !rateLimiterTableExists {
 		return m.bootstrapRateLimiterTable(ctx)
