@@ -343,7 +343,7 @@ func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin, block *hcl.Block) 
 		return duplicatePluginError(existingPlugin, plugin)
 	}
 	// get the image ref to key the map
-	imageRef := plugin.GetImageRef()
+	imageRef := plugin.Plugin
 	// add to list of plugin configs for this image ref
 	c.Plugins[imageRef] = append(c.Plugins[imageRef], plugin)
 	c.PluginsInstances[plugin.Instance] = plugin
@@ -379,7 +379,7 @@ func (c *SteampipeConfig) initializePlugins() {
 		// set the PluginAlias on the connection
 
 		// set the PluginAlias and Plugin property on the connection
-		pluginImageRef := plugin.GetImageRef()
+		pluginImageRef := plugin.Plugin
 		connection.PluginAlias = plugin.Alias
 		connection.Plugin = pluginImageRef
 		if pluginPath, _ := filepaths.GetPluginPath(pluginImageRef, plugin.Alias); pluginPath != "" {

@@ -44,7 +44,7 @@ func (l *Plugin) OnDecoded(block *hcl.Block) {
 // i.e. a connection reference this plugin but there was no plugin config
 // in this case the Instance will be the imageRef
 func (l *Plugin) IsDefault() bool {
-	return l.Instance == l.GetImageRef()
+	return l.Instance == l.Plugin
 }
 
 func (l *Plugin) GetMaxMemoryBytes() int64 {
@@ -54,12 +54,6 @@ func (l *Plugin) GetMaxMemoryBytes() int64 {
 	}
 	return int64(1024 * 1024 * memoryMaxMb)
 }
-
-func (l *Plugin) GetImageRef() string {
-	// TODO KJAI do we need this?
-	return l.Plugin
-}
-
 func (l *Plugin) GetLimiterMap() map[string]*RateLimiter {
 	res := make(map[string]*RateLimiter, len(l.Limiters))
 	for _, l := range l.Limiters {

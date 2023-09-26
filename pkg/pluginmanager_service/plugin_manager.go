@@ -447,7 +447,7 @@ func (m *PluginManager) addRunningPlugin(pluginInstance string) (*runningPlugin,
 	// create the running plugin
 	startingPlugin := &runningPlugin{
 		pluginInstance: pluginInstance,
-		imageRef:       pluginConfig.GetImageRef(),
+		imageRef:       pluginConfig.Plugin,
 		initialized:    make(chan struct{}),
 		failed:         make(chan struct{}),
 	}
@@ -467,7 +467,7 @@ func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConf
 		panic(fmt.Sprintf("no plugin config is stored for plugin instance %s", pluginInstance))
 	}
 
-	imageRef := pluginConfig.GetImageRef()
+	imageRef := pluginConfig.Plugin
 	log.Printf("[INFO] ************ start plugin: %s, label: %s ********************\n", imageRef, pluginConfig.Instance)
 
 	// NOTE: pass pluginConfig.Alias as the pluginAlias
