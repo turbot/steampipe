@@ -189,7 +189,7 @@ func (w *Workspace) extractQueryProviderFromQueryString(input string) (modconfig
 	//- is the resource a query provider, and if so does it have a query?
 	queryProvider, ok := resource.(modconfig.QueryProvider)
 	if !ok {
-		return nil, nil, fmt.Errorf("%s cannot be executed as a query", queryProvider.Name())
+		return nil, nil, fmt.Errorf("%s cannot be executed as a query", input)
 	}
 
 	_, args, err := parse.ParseQueryInvocation(input)

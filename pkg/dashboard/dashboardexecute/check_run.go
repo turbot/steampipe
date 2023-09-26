@@ -44,7 +44,8 @@ func NewCheckRun(resource modconfig.DashboardLeafNode, parent dashboardtypes.Das
 // Initialise implements DashboardTreeRun
 func (r *CheckRun) Initialise(ctx context.Context) {
 	// build control execution tree during init, rather than in Execute, so that it is populated when the ExecutionStarted event is sent
-	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, r.resource.Name(), "")
+	controlFilterWhereClause := ""
+	executionTree, err := controlexecute.NewExecutionTree(ctx, r.executionTree.workspace, r.executionTree.client, controlFilterWhereClause, r.resource.Name())
 	if err != nil {
 		// set the error status on the counter - this will raise counter error event
 		r.SetError(ctx, err)
