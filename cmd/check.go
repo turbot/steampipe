@@ -359,6 +359,9 @@ func printTiming(tree *controlexecute.ExecutionTree) {
 	for _, rg := range tree.Root.Groups {
 		rows = append(rows, []string{rg.Title, rg.Duration.String()})
 	}
+	for _, c := range tree.Root.ControlRuns {
+		rows = append(rows, []string{c.Title, c.Duration.String()})
+	}
 	// blank line after renderer output
 	fmt.Println()
 	fmt.Println("Timing:")
