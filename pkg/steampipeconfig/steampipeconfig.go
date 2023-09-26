@@ -447,11 +447,6 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 		// there is no plugin instance for this connection
 		// is the plugin is installed?
 		imageRef := ociinstaller.NewSteampipeImageRef(connection.PluginAlias)
-		if pluginPath, _ := filepaths.GetPluginPath(imageRef.DisplayImageRef(), connection.PluginAlias); pluginPath == "" {
-			// not installed - return nil instance
-			return nil, nil
-		}
-
 		// so the plugin IS installed - add an implicit plugin
 		p := modconfig.NewImplicitPlugin(connection, imageRef)
 

@@ -204,7 +204,7 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetada
 	// (if we are connected to a remote server running an older CLI,
 	// this load may fail, in which case bypass the optimisation)
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, mgmtConn.Conn(), steampipeconfig.WithWaitUntilLoading())
-	// NOTE: if we failed to load conenction state, this may be because we are connected to an older version of the CLI
+	// NOTE: if we failed to load connection state, this may be because we are connected to an older version of the CLI
 	// use legacy (v0.19.x) schema loading code
 	if err != nil {
 		return c.GetSchemaFromDBLegacy(ctx, mgmtConn)
