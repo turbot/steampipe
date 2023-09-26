@@ -3,9 +3,10 @@ package db_common
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"log"
 	"sync"
+
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
