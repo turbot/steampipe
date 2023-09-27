@@ -379,7 +379,7 @@ func printTiming(tree *controlexecute.ExecutionTree) {
 func shouldPrintTiming() bool {
 	outputFormat := viper.GetString(constants.ArgOutput)
 
-	return (viper.GetBool(constants.ArgTiming) /*&& !viper.GetBool(constants.ArgDryRun)*/) &&
+	return (viper.GetBool(constants.ArgTiming) && !viper.GetBool(constants.ArgDryRun)) &&
 		(outputFormat == constants.OutputFormatText || outputFormat == constants.OutputFormatBrief)
 }
 
