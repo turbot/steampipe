@@ -34,6 +34,9 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 	if info == nil {
 		return "", fmt.Errorf("steampipe service is not running")
 	}
+	if info.ResolvedListenAddresses == nil {
+		return "", fmt.Errorf("steampipe service is in unknown state")
+	}
 
 	// if no database name is passed, use constants.DatabaseUser
 	if len(opts.Username) == 0 {

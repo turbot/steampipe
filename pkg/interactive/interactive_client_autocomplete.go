@@ -3,6 +3,7 @@ package interactive
 import (
 	"context"
 	"fmt"
+	"github.com/spf13/viper"
 	"log"
 	"strings"
 
@@ -48,7 +49,7 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 	// unqualified table names
 	// use lookup to avoid dupes from dynamic plugins
 	// (this is needed as GetFirstSearchPathConnectionForPlugins will return ALL dynamic connections)
-	var unqualifiedTablesToAdd = make(map[string]struct{})
+	var unqualifiedTablesToAdd = getIntrospectionTableSuggestions()
 
 	// add connection state and rate limit
 	unqualifiedTablesToAdd[constants.ConnectionTable] = struct{}{}
@@ -101,6 +102,34 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 	for tableName := range unqualifiedTablesToAdd {
 		c.suggestions.unqualifiedTables = append(c.suggestions.unqualifiedTables, prompt.Suggest{Text: tableName, Description: "Table", Output: sanitiseTableName(tableName)})
 	}
+}
+
+func getIntrospectionTableSuggestions() map[string]struct{} {
+	res := make(map[string]struct{})
+	switch strings.ToLower(viper.GetString(constants.ArgIntrospection)) {
+	case constants.IntrospectionInfo:
+		res[constants.IntrospectionTableQuery] = struct{}{}
+		res[constants.IntrospectionTableControl] = struct{}{}
+		res[constants.IntrospectionTableBenchmark] = struct{}{}
+		res[constants.IntrospectionTableMod] = struct{}{}
+		res[constants.IntrospectionTableDashboard] = struct{}{}
+		res[constants.IntrospectionTableDashboardContainer] = struct{}{}
+		res[constants.IntrospectionTableDashboardCard] = struct{}{}
+		res[constants.IntrospectionTableDashboardChart] = struct{}{}
+		res[constants.IntrospectionTableDashboardFlow] = struct{}{}
+		res[constants.IntrospectionTableDashboardGraph] = struct{}{}
+		res[constants.IntrospectionTableDashboardHierarchy] = struct{}{}
+		res[constants.IntrospectionTableDashboardImage] = struct{}{}
+		res[constants.IntrospectionTableDashboardInput] = struct{}{}
+		res[constants.IntrospectionTableDashboardTable] = struct{}{}
+		res[constants.IntrospectionTableDashboardText] = struct{}{}
+		res[constants.IntrospectionTableVariable] = struct{}{}
+		res[constants.IntrospectionTableReference] = struct{}{}
+	case constants.IntrospectionControl:
+		res[constants.IntrospectionTableControl] = struct{}{}
+		res[constants.IntrospectionTableBenchmark] = struct{}{}
+	}
+	return res
 }
 
 func (c *InteractiveClient) initialiseQuerySuggestions() {
