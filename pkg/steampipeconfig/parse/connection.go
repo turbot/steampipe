@@ -58,16 +58,16 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 	}
 
 	// check for nested options
-	for _, connectionBlock := range connectionContent.Blocks {
+	for _, connectionBlock := range rest.(*hclsyntax.Body).Blocks {
 		switch connectionBlock.Type {
 		case "options":
 			// if we already found settings, fail
-			opts, moreDiags := DecodeOptions(connectionBlock)
+			opts, moreDiags := DecodeOptions(connectionBlock.AsHCLBlock())
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				break
 			}
-			moreDiags = connection.SetOptions(opts, connectionBlock)
+			moreDiags = connection.SetOptions(opts, connectionBlock.AsHCLBlock())
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 			}
@@ -77,19 +77,20 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagWarning,
 					Summary:  fmt.Sprintf("%s in %s have been deprecated and will be removed in subsequent versions of steampipe", constants.Bold("'connection' options"), constants.Bold("'connection' blocks")),
-					Subject:  hclhelpers.BlockRangePointer(connectionBlock),
+					Subject:  hclhelpers.BlockRangePointer(connectionBlock.AsHCLBlock()),
 				})
 			}
 
 		default:
-			// this can never happen
+			// raise error for any other blocks
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("invalid block type '%s' - only 'options' blocks are supported for Connections", connectionBlock.Type),
-				Subject:  hclhelpers.BlockRangePointer(connectionBlock),
+				Summary:  fmt.Sprintf("connections do not support '%s' blocks", block.Type),
+				Subject:  hclhelpers.BlockRangePointer(connectionBlock.AsHCLBlock()),
 			})
 		}
 	}
+
 	// convert the remaining config to a hcl string to pass to the plugin
 	config, moreDiags := pluginConnectionConfigToHclString(rest, connectionContent)
 	if moreDiags.HasErrors() {
