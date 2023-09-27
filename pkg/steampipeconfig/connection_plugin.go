@@ -118,18 +118,8 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 		res.Error = err
 		return nil, res
 	}
-
-	// if there were any failures, display them
-	for failedPlugin, failure := range getResponse.FailureMap {
-		// add failures as warnings
-		res.AddWarning(failure)
-		// figure out which connections are provided by any failed plugins
-		for _, c := range connectionsToCreate {
-			if c.Plugin == failedPlugin {
-				res.AddFailedConnection(c.Name, constants.ConnectionErrorPluginFailedToStart)
-			}
-		}
-	}
+	// construct friendly warning messages for any get failures
+	handleGetFailures(getResponse, res, connectionsToCreate)
 
 	// now create or retrieve a connection plugin for each connection
 
@@ -183,13 +173,52 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 	return requestedConnectionPluginMap, res
 }
 
+func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionResult, connectionsToCreate []*modconfig.Connection) {
+	// handle PluginSdkCompatibilityError separately
+	var pluginsWithCompatibilityError = make(map[string]struct{})
+	var compatibilityErrorConnectionCount int
+
+	for failedPluginInstance, failure := range getResponse.FailureMap {
+		// if this is a compatibility error, handle separately
+		if failure == error_helpers.PluginSdkCompatibilityError {
+			failedPluginShortName := GlobalConfig.PluginsInstances[failedPluginInstance].FriendlyName()
+			pluginsWithCompatibilityError[failedPluginShortName] = struct{}{}
+			for _, c := range GlobalConfig.Connections {
+				if typehelpers.SafeString(c.PluginInstance) == failedPluginInstance {
+					compatibilityErrorConnectionCount++
+				}
+			}
+		} else {
+			// add failures as warnings
+			res.AddWarning(fmt.Sprintf("failed to start plugin instance '%s': %s", failedPluginInstance, failure))
+		}
+
+		// figure out which connections are provided by any failed plugins
+		for _, c := range connectionsToCreate {
+			if c.Plugin == failedPluginInstance {
+
+				res.AddFailedConnection(c.Name, constants.ConnectionErrorPluginFailedToStart)
+			}
+		}
+	}
+
+	if pluginCount := len(pluginsWithCompatibilityError); pluginCount > 0 {
+		compatibilityWarning := fmt.Sprintf("failed to start %d %s using an incompatible sdk version, (required by %d %s). To update, please run: %s",
+			pluginCount,
+			utils.Pluralize("plugin", pluginCount),
+			compatibilityErrorConnectionCount,
+			utils.Pluralize("connection", compatibilityErrorConnectionCount),
+			constants.Bold(fmt.Sprintf("steampipe plugin update %s", strings.Join(maps.Keys(pluginsWithCompatibilityError), " "))))
+		res.AddWarning(compatibilityWarning)
+	}
+}
+
 // requestedConnectionPluginMap is a map of connection plugins, keyed by connection name
 // the connection names which are the keys of this map are the connections
 // which were _requested_ in the parent CreateConnectionPlugins call (i.e. not necessarily all connections)
 // NOTE: the connection plugins may provide  _more_ connections that those requested
 // - we need to populate the schema for _all_ of them
 func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*ConnectionPlugin) error {
-
 	// build a map keyed by _all_ connection names provided by the connection plugins
 	connectionPluginMap := fullConnectionPluginMap(requestedConnectionPluginMap)
 
