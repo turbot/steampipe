@@ -82,8 +82,8 @@ func NewExecutionTree(ctx context.Context, workspace *workspace.Workspace, clien
 			items = append(items, item)
 		}
 
-		// create a virtual benchmark with `items` as it's children
-		resolvedItem = modconfig.NewVirtualBenchmarkWithChildren(workspace.Mod, items).(modconfig.ModTreeItem)
+		// create a root benchmark with `items` as it's children
+		resolvedItem = modconfig.NewRootBenchmarkWithChildren(workspace.Mod, items).(modconfig.ModTreeItem)
 	}
 	// build tree of result groups, starting with a synthetic 'root' node
 	executionTree.Root = NewRootResultGroup(ctx, executionTree, resolvedItem)

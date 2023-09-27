@@ -357,7 +357,18 @@ func printTiming(tree *controlexecute.ExecutionTree) {
 	var rows [][]string
 
 	for _, rg := range tree.Root.Groups {
-		rows = append(rows, []string{rg.Title, rg.Duration.String()})
+		if rg.GroupItem.GetUnqualifiedName() == "benchmark.root" {
+			// this is the created root benchmark
+			// adds the children
+			for _, g := range rg.Groups {
+				rows = append(rows, []string{g.GroupItem.GetUnqualifiedName(), rg.Duration.String()})
+			}
+			continue
+		}
+		rows = append(rows, []string{rg.GroupItem.GetUnqualifiedName(), rg.Duration.String()})
+	}
+	for _, c := range tree.Root.ControlRuns {
+		rows = append(rows, []string{c.Control.GetUnqualifiedName(), c.Duration.String()})
 	}
 	// blank line after renderer output
 	fmt.Println()

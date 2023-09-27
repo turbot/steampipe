@@ -33,14 +33,14 @@ type Benchmark struct {
 	Display *string    `cty:"display" hcl:"display" json:"-"`
 }
 
-func NewVirtualBenchmarkWithChildren(mod *Mod, children []ModTreeItem) HclResource {
-	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, "benchmark", "virtual")
+func NewRootBenchmarkWithChildren(mod *Mod, children []ModTreeItem) HclResource {
+	fullName := fmt.Sprintf("%s.%s.%s", mod.ShortName, "benchmark", "root")
 	benchmark := &Benchmark{
 		ModTreeItemImpl: ModTreeItemImpl{
 			HclResourceImpl: HclResourceImpl{
-				ShortName:       "virtual",
+				ShortName:       "root",
 				FullName:        fullName,
-				UnqualifiedName: fmt.Sprintf("%s.%s", "benchmark", "virtual"),
+				UnqualifiedName: fmt.Sprintf("%s.%s", "benchmark", "root"),
 				blockType:       "benchmark",
 			},
 			Mod: mod,
