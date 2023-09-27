@@ -91,15 +91,19 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 		}
 	}
 
+	// tactical - update when support for options blocks is removed
+	// this needs updating to use a single block check
 	// at present we do not support blocks for plugin specific connection config
 	// so any blocks present in 'rest' are an error
 	if hclBody, ok := rest.(*hclsyntax.Body); ok {
 		for _, b := range hclBody.Blocks {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("connections do not support '%s' blocks", b.Type),
-				Subject:  hclhelpers.HclSyntaxBlockRangePointer(b),
-			})
+			if b.Type != "options" {
+				diags = append(diags, &hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  fmt.Sprintf("connections do not support '%s' blocks", b.Type),
+					Subject:  hclhelpers.HclSyntaxBlockRangePointer(b),
+				})
+			}
 		}
 	}
 
