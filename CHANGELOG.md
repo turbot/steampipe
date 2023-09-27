@@ -32,7 +32,6 @@ _Bug fixes_
 * Fix zsh completion instructions
 
 _Deprecations and migrations_
-
 * Remove migration and backward compatibility of data files from v0.13.0. ([#3517](https://github.com/turbot/steampipe/issues/3517))
 * Removes deprecated 'workspace-chdir' flag. ([#3658](https://github.com/turbot/steampipe/issues/3658))
 * Migrate from 'cloud.steampipe.io' to 'pipes.turbot.com'. ([#3724](https://github.com/turbot/steampipe/issues/3724))
@@ -40,7 +39,7 @@ _Deprecations and migrations_
 
 ## v0.20.12 [2023-09-14]
 _Whats new_
-* Updated help outputs for steampipe mod commands. ([#1817](https://github.com/turbot/steampipe/issues/1817))
+* Updated help outputs for steampipe mod commands. ([#1817](https://github.com/turbot/steampipe/issues/1817))   
 
 _Bug fixes_
 * Fixes issue where expired root and server SSL certificates were not getting rotated. ([#3596](https://github.com/turbot/steampipe/issues/3596))
