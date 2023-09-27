@@ -57,37 +57,39 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 		connection.ConnectionNames = connections
 	}
 
-	// check for nested options
-	for _, connectionBlock := range rest.(*hclsyntax.Body).Blocks {
-		switch connectionBlock.Type {
-		case "options":
-			// if we already found settings, fail
-			opts, moreDiags := DecodeOptions(connectionBlock.AsHCLBlock())
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-				break
-			}
-			moreDiags = connection.SetOptions(opts, connectionBlock.AsHCLBlock())
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
+	// if this is hcl config, check for nested blocks
+	if body, ok := rest.(*hclsyntax.Body); ok {
+		for _, connectionBlock := range body.Blocks {
+			switch connectionBlock.Type {
+			case "options":
+				// if we already found settings, fail
+				opts, moreDiags := DecodeOptions(connectionBlock.AsHCLBlock())
+				if moreDiags.HasErrors() {
+					diags = append(diags, moreDiags...)
+					break
+				}
+				moreDiags = connection.SetOptions(opts, connectionBlock.AsHCLBlock())
+				if moreDiags.HasErrors() {
+					diags = append(diags, moreDiags...)
+				}
 
-			// TODO: remove in 0.22 [https://github.com/turbot/steampipe/issues/3251]
-			if connection.Options != nil {
+				// TODO: remove in 0.22 [https://github.com/turbot/steampipe/issues/3251]
+				if connection.Options != nil {
+					diags = append(diags, &hcl.Diagnostic{
+						Severity: hcl.DiagWarning,
+						Summary:  fmt.Sprintf("%s in %s have been deprecated and will be removed in subsequent versions of steampipe", constants.Bold("'connection' options"), constants.Bold("'connection' blocks")),
+						Subject:  hclhelpers.BlockRangePointer(connectionBlock.AsHCLBlock()),
+					})
+				}
+
+			default:
+				// raise error for any other blocks
 				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagWarning,
-					Summary:  fmt.Sprintf("%s in %s have been deprecated and will be removed in subsequent versions of steampipe", constants.Bold("'connection' options"), constants.Bold("'connection' blocks")),
+					Severity: hcl.DiagError,
+					Summary:  fmt.Sprintf("connections do not support '%s' blocks", connectionBlock.Type),
 					Subject:  hclhelpers.BlockRangePointer(connectionBlock.AsHCLBlock()),
 				})
 			}
-
-		default:
-			// raise error for any other blocks
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("connections do not support '%s' blocks", block.Type),
-				Subject:  hclhelpers.BlockRangePointer(connectionBlock.AsHCLBlock()),
-			})
 		}
 	}
 
