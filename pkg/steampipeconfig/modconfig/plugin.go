@@ -47,6 +47,10 @@ func (l *Plugin) IsDefault() bool {
 	return l.Instance == l.Plugin
 }
 
+func (l *Plugin) FriendlyName() string {
+	return ociinstaller.NewSteampipeImageRef(l.Plugin).GetFriendlyName()
+}
+
 func (l *Plugin) GetMaxMemoryBytes() int64 {
 	memoryMaxMb := 0
 	if l.MemoryMaxMb != nil {

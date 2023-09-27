@@ -149,7 +149,7 @@ func (m *PluginManager) Get(req *pb.GetRequest) (_ *pb.GetResponse, err error) {
 		reattach, err := m.ensurePlugin(pluginInstance, connectionConfigs, req)
 		if err != nil {
 			log.Printf("[WARN] PluginManager Get failed for %s: %s (%p)", pluginInstance, err.Error(), resp)
-			resp.FailureMap[pluginInstance] = sperr.WrapWithMessage(err, "failed to start plugin instance '%s'", pluginInstance).Error()
+			resp.FailureMap[pluginInstance] = err.Error()
 		} else {
 			log.Printf("[TRACE] PluginManager Get succeeded for %s, pid %d (%p)", pluginInstance, reattach.Pid, resp)
 
@@ -558,7 +558,6 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	}
 	// if this plugin does not support multiple connections, we no longer support it
 	if !supportedOperations.MultipleConnections {
-		// TODO SEND NOTIFICATION TO CLI
 		return nil, fmt.Errorf("plugins which do not support multiple connections (using SDK version < v4) are no longer supported. Upgrade plugin '%s", pluginName)
 	}
 
