@@ -84,7 +84,7 @@ func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, con
 	connection := u.updates.FinalConnectionState[name]
 	queries := introspection.GetSetConnectionStateSql(connection.ConnectionName, constants.ConnectionStateReady)
 	for _, q := range queries {
-		if _, err := conn.Exec(ctx, q.Query, q.Args); err != nil {
+		if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {
 			return err
 		}
 	}
@@ -98,7 +98,7 @@ func (u *connectionStateTableUpdater) onConnectionCommentsLoaded(ctx context.Con
 	connection := u.updates.FinalConnectionState[name]
 	queries := introspection.GetSetConnectionStateCommentLoadedSql(connection.ConnectionName, true)
 	for _, q := range queries {
-		if _, err := conn.Exec(ctx, q.Query, q.Args); err != nil {
+		if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {
 			return err
 		}
 	}
@@ -115,7 +115,7 @@ func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, c
 	}
 	queries := introspection.GetDeleteConnectionStateSql(name)
 	for _, q := range queries {
-		if _, err := conn.Exec(ctx, q.Query, q.Args); err != nil {
+		if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {
 			return err
 		}
 	}
@@ -128,7 +128,7 @@ func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, con
 
 	queries := introspection.GetConnectionStateErrorSql(connectionName, err)
 	for _, q := range queries {
-		if _, err := conn.Exec(ctx, q.Query, q.Args); err != nil {
+		if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {
 			return err
 		}
 	}

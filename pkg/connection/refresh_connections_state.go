@@ -221,10 +221,6 @@ func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {
 	log.Println("[DEBUG] refreshConnectionState.executeConnectionQueries start")
 	defer log.Println("[DEBUG] refreshConnectionState.executeConnectionQueries end")
 
-	// TODO WHY? WHY NOT FROM ourselves
-	// retrieve updates from the table updater
-	connectionUpdates := s.tableUpdater.updates
-
 	// execute deletions
 	if err := s.executeDeleteQueries(ctx, s.connectionUpdates.GetConnectionsToDelete()); err != nil {
 		// just log
@@ -232,14 +228,18 @@ func (s *refreshConnectionState) executeConnectionQueries(ctx context.Context) {
 	}
 
 	// execute updates
-	numUpdates := len(connectionUpdates.Update)
-	numMissingComments := len(connectionUpdates.MissingComments)
+	numUpdates := len(s.connectionUpdates.Update)
+	numMissingComments := len(s.connectionUpdates.MissingComments)
 	log.Printf("[INFO] executeConnectionQueries: num updates: %d, connections missing comments: %d", numUpdates, numMissingComments)
 
 	if numUpdates+numMissingComments > 0 {
 		// get schema queries - this updates schemas for validated plugins and drops schemas for unvalidated plugins
 		s.executeUpdateQueries(ctx)
-	} else if len(connectionUpdates.Delete) > 0 {
+		// done
+		return
+	}
+
+	if len(s.connectionUpdates.Delete) > 0 {
 		log.Printf("[INFO] deleted all unnecessary schemas - sending notification")
 
 		// if there are no updates and there ARE deletes, notify
@@ -690,7 +690,8 @@ func (s *refreshConnectionState) getInitialAndRemainingUpdates() (initialUpdates
 	for _, connectionName := range searchPathConnections {
 		if connectionState, updateRequired := updates[connectionName]; updateRequired {
 			if connectionState.SchemaMode == plugin.SchemaModeDynamic {
-				dynamicUpdates[connectionState.Plugin] = append(dynamicUpdates[connectionState.Plugin], connectionState)
+				pluginInstance := *connectionState.PluginInstance
+				dynamicUpdates[pluginInstance] = append(dynamicUpdates[pluginInstance], connectionState)
 			} else {
 				initialUpdates[connectionName] = connectionState
 			}
@@ -698,7 +699,8 @@ func (s *refreshConnectionState) getInitialAndRemainingUpdates() (initialUpdates
 	}
 	// now add remaining updates to remainingUpdates
 	for connectionName, connectionState := range updates {
-		if _, isInitialUpdate := initialUpdates[connectionName]; !isInitialUpdate {
+		_, isInitialUpdate := initialUpdates[connectionName]
+		if connectionState.SchemaMode == plugin.SchemaModeStatic && !isInitialUpdate {
 			remainingUpdates[connectionName] = connectionState
 		}
 
