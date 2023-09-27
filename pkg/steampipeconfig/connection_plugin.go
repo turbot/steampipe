@@ -219,7 +219,6 @@ func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionRes
 // NOTE: the connection plugins may provide  _more_ connections that those requested
 // - we need to populate the schema for _all_ of them
 func populateConnectionPluginSchemas(requestedConnectionPluginMap map[string]*ConnectionPlugin) error {
-
 	// build a map keyed by _all_ connection names provided by the connection plugins
 	connectionPluginMap := fullConnectionPluginMap(requestedConnectionPluginMap)
 
