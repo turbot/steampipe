@@ -55,3 +55,7 @@ func BlockRangePointer(block *hcl.Block) *hcl.Range {
 	r := BlockRange(block)
 	return &r
 }
+func HclSyntaxBlockRangePointer(block *hclsyntax.Block) *hcl.Range {
+	r := block.Range()
+	return &r
+}
