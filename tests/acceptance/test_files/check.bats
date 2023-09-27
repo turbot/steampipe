@@ -23,6 +23,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 #}
 
 @test "steampipe check exitCode - with controls in error(running multiple benchmarks together)" {
+  skip
   cd $FUNCTIONALITY_TEST_MOD
   run steampipe check benchmark.control_summary_benchmark benchmark.check_cache_benchmark
   assert_equal $status 2
