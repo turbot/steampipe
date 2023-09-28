@@ -47,6 +47,7 @@ _Bug fixes_
 * Improve error message when steampipe fails to parse a mod definition file if a mod block does not exist. ([#1198](https://github.com/turbot/steampipe/issues/1198))
 * Only `install-dir` and `workspace` flags should be Global Flags as they are used for all commands. ([#3542](https://github.com/turbot/steampipe/issues/3542))
 * Fixes issue where temporary tables are lost in the middle of a long running interactive session. ([#3543](https://github.com/turbot/steampipe/issues/3543))
+* Fixes issue where empty list for list variables were not resolving proeprly. ([#2094](https://github.com/turbot/steampipe/issues/2094))
 
 _Deprecations and migrations_
 
