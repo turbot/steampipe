@@ -53,6 +53,27 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output --partial 'Error: Not authenticated for Turbot Pipes.'
 }
 
+@test "connect to cloud workspace - passing the postgres connection string to workspace-database arg (unsetting ENV - the token should get picked from tptt file)" {
+  # write the pipes.turbot.com.tptt file in internal
+  # write the token to the file
+  file_name="pipes.turbot.com.tptt"
+  echo "$SPIPETOOLS_TOKEN" > "$STEAMPIPE_INSTALL_DIR/internal/$file_name"
+
+  cat $STEAMPIPE_INSTALL_DIR/internal/$file_name
+
+  # unsetting the ENV var should result in steampipe fetching the token from token file
+  unset SPIPETOOLS_TOKEN
+  run steampipe query "select account_aliases from all_aws.aws_account where account_id='632902152528'" --workspace-database $SPIPETOOLS_PG_CONN_STRING --output json
+  echo $output
+
+  # fetch the value of account_alias to compare
+  op=$(echo $output | jq '.[0].account_aliases[0]')
+  echo $op
+
+   # check if values match
+  assert_equal "$op" "\"nagraj-aaa\""
+}
+
 @test "install a large mod, query and check if time taken is less than 20s" {
   # # using bash's built-in time, set the timeformat to seconds
   # TIMEFORMAT=%R
