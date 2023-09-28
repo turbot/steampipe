@@ -49,7 +49,7 @@
       "cloud-host": "fastestpipe.turbot.io",
       "cloud-token": "spt_012faketoken34567890_012faketoken3456789099990",
       "install-dir": "sp_install_dir_default",
-      "mod-location": "sp_install_dir_env",
+      "mod-location": "sp_install_dir_default",
       "snapshot-location": "snaps",
       "workspace": "default",
       "workspace-database": "fk43e9"
@@ -122,7 +122,7 @@
       "cloud-host": "fastestpipe.turbot.io",
       "cloud-token": "spt_012faketoken34567890_012faketoken3456789099990",
       "install-dir": "sp_install_dir_sample",
-      "mod-location": "sp_install_dir_env",
+      "mod-location": "sp_install_dir_sample",
       "snapshot-location": "snaps",
       "workspace": "default",
       "workspace-database": "fk43e9"
@@ -231,7 +231,7 @@
       "cloud-host": "fastestpipe.turbot.io",
       "cloud-token": "spt_012faketoken34567890_012faketoken3456789099990",
       "install-dir": "sp_install_dir_default",
-      "mod-location": "sp_install_dir_env",
+      "mod-location": "sp_install_dir_default",
       "snapshot-location": "snaps",
       "workspace": "default",
       "workspace-database": "fk43e9"
