@@ -26,6 +26,7 @@ import (
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
@@ -558,7 +559,7 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	}
 	// if this plugin does not support multiple connections, we no longer support it
 	if !supportedOperations.MultipleConnections {
-		return nil, fmt.Errorf("plugins which do not support multiple connections (using SDK version < v4) are no longer supported. Upgrade plugin '%s", pluginName)
+		return nil, fmt.Errorf(error_helpers.PluginSdkCompatibilityError)
 	}
 
 	// provide opportunity to avoid setting connection configs if we are shutting down
