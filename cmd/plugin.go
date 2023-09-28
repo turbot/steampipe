@@ -103,8 +103,8 @@ is latest. The name is a required argument.
 
 Examples:
 
-	# Install all missing plugins that are specified in configuration files
-	steampipe plugin install
+  # Install all missing plugins that are specified in configuration files
+  steampipe plugin install
 
   # Install a common plugin (turbot/aws)
   steampipe plugin install aws
