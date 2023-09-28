@@ -19,6 +19,7 @@ _Whats new_
 * When plugin startup experiences panic, report panic message, not `Unrecognized remote plugin message`. ([#3732](https://github.com/turbot/steampipe/issues/3732))
 * Upgrade to oras-go v2 and support OCI registries requiring authentication. ([#2819](https://github.com/turbot/steampipe/issues/2819))
 * Adds feature for the Steampipe CLI to write logs to files instead of console. ([#2916](https://github.com/turbot/steampipe/issues/2916))
+* Warn users to not have mod.sp files in home directory. ([#2321](https://github.com/turbot/steampipe/issues/2321))
 
 _Bug fixes_
 * Delete dynamic schemas before updating to avoid a timing issue showing incorrect schema. ([#3510](https://github.com/turbot/steampipe/issues/3510))
@@ -33,6 +34,7 @@ _Bug fixes_
 * Fix issue where interactive prompt exits/crashes when the code panics. ([#3713](https://github.com/turbot/steampipe/issues/3713))
 * Update BuildFullResourceName to validate for non empty arguments. ([#3601](https://github.com/turbot/steampipe/issues/3601))
 * Fix zsh completion instructions.
+* Steampipe should not create export files for cancelled control runs. ([#3578](https://github.com/turbot/steampipe/issues/3578))
 
 _Deprecations and migrations_
 
