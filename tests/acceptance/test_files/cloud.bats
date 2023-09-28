@@ -59,7 +59,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   file_name=$STEAMPIPE_INSTALL_DIR/internal/pipes.turbot.com.tptt
   echo $SPIPETOOLS_TOKEN > $file_name
 
-  cat $STEAMPIPE_INSTALL_DIR/internal/$file_name>&3
+  cat $file_name>&3
   
   # this step will create snapshots in the workspace - but that's ok
   # workspaces expire snapshots anyway
