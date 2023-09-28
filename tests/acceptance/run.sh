@@ -28,6 +28,7 @@ export CHECK_ALL_MOD=$MY_PATH/test_data/mods/check_all_mod
 export FUNCTIONALITY_TEST_MOD=$MY_PATH/test_data/mods/functionality_test_mod
 export CONTROL_RENDERING_TEST_MOD=$MY_PATH/test_data/mods/control_rendering_test_mod
 export BLANK_DIMENSION_VALUE_TEST_MOD=$MY_PATH/test_data/mods/mod_with_blank_dimension_value
+export STRING_LIST_TEST_MOD=$MY_PATH/test_data/mods/mod_with_list_param
 export STEAMPIPE_CONNECTION_WATCHER=false
 export STEAMPIPE_INTROSPECTION=info
 export DEFAULT_WORKSPACE_PROFILE_LOCATION=$MY_PATH/test_data/source_files/workspace_profile_default
