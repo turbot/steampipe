@@ -219,9 +219,6 @@ func (m VariableParsingMode) Parse(name, value string) (cty.Value, hcl.Diagnosti
 			return cty.DynamicVal, diags
 		}
 		val, valDiags := expr.Value(nil)
-		if tupleExpr, ok := expr.(*hclsyntax.TupleConsExpr); ok && /*is val zero?*/ len(tupleExpr.Exprs) == 0 {
-			val = cty.ListValEmpty(cty.String)
-		}
 		diags = append(diags, valDiags...)
 		return val, diags
 	default:
