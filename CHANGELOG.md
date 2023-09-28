@@ -35,6 +35,9 @@ _Bug fixes_
 * Update BuildFullResourceName to validate for non empty arguments. ([#3601](https://github.com/turbot/steampipe/issues/3601))
 * Fix zsh completion instructions.
 * Steampipe should not create export files for cancelled control runs. ([#3578](https://github.com/turbot/steampipe/issues/3578))
+* Fixes issue where spinner was not showing up when exporting check results. ([#3577](https://github.com/turbot/steampipe/issues/3577))
+* Fixes issue where `stdin` would get consumed even if there are arguments. ([#1985](https://github.com/turbot/steampipe/issues/1985))
+* Merge results when running multiple benchmarks in check. ([#2380](https://github.com/turbot/steampipe/issues/2380))
 
 _Deprecations and migrations_
 
