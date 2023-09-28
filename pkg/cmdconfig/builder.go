@@ -39,6 +39,8 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 		}
 
 		// now that we have done all the flag bindings, run the global pre run
+		// this will load up and populate the global config, init the logger and
+		// also run the daily task runner
 		preRunHook(cmd, args)
 
 		// run the original PreRun
@@ -56,6 +58,7 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 			originalPostRun(cmd, args)
 		}
 
+		// run the post run
 		postRunHook(cmd, args)
 	}
 
