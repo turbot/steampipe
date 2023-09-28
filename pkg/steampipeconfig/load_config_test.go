@@ -1,8 +1,6 @@
 package steampipeconfig
 
 import (
-	utils "github.com/turbot/steampipe/pkg/utils"
-	"golang.org/x/exp/maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -12,6 +10,8 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
+	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 )
 
 // TODO KAI add plugin block tests
@@ -55,7 +55,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					PluginAlias:    "aws",
 					Plugin:         "hub.steampipe.io/plugins/turbot/aws@latest",
 					PluginInstance: utils.ToStringPointer("hub.steampipe.io/plugins/turbot/aws@latest"),
-					Type:           "",
+					Type:           "plugin",
 					ImportSchema:   "enabled",
 					Config:         "access_key = \"aws_dmi_001_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_001_secret_key\"\n",
 					DeclRange: modconfig.Range{
@@ -77,7 +77,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					PluginAlias:    "aws",
 					Plugin:         "hub.steampipe.io/plugins/turbot/aws@latest",
 					PluginInstance: utils.ToStringPointer("hub.steampipe.io/plugins/turbot/aws@latest"),
-					Type:           "",
+					Type:           "plugin",
 					ImportSchema:   "enabled",
 					Config:         "access_key = \"aws_dmi_002_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_002_secret_key\"\n",
 					DeclRange: modconfig.Range{
@@ -101,240 +101,239 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 			},
 		},
 	},
-	//"single_connection": {
-	//	steampipeDir: "testdata/connection_config/single_connection",
-	//	expected: &SteampipeConfig{
-	//		Connections: map[string]*modconfig.Connection{
-	//			"a": {
-	//				Name:           "a",
-	//				PluginAlias:    "test_data/connection-test-1",
-	//				Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
-	//				PluginInstance: utils.ToStringPointer("hub.steampipe.io/plugins/test_data/connection-test-1@latest"),
-	//				Type:           "",
-	//				ImportSchema:   "enabled",
-	//				Config:         "",
-	//				DeclRange: modconfig.Range{
-	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection/config/connection1.spc",
-	//					Start: modconfig.Pos{
-	//						Line:   1,
-	//						Column: 1,
-	//						Byte:   0,
-	//					},
-	//					End: modconfig.Pos{
-	//						Line:   1,
-	//						Column: 11,
-	//						Byte:   10,
-	//					},
-	//				},
-	//			},
-	//		},
-	//		DefaultConnectionOptions: &options.Connection{
-	//			Cache:    &trueVal,
-	//			CacheTTL: &ttlVal,
-	//		},
-	//	},
-	//},
-	//"single_connection_with_default_options": { // fixed
-	//	steampipeDir: "testdata/connection_config/single_connection_with_default_options",
-	//	expected: &SteampipeConfig{
-	//		Connections: map[string]*modconfig.Connection{
-	//			"a": {
-	//				Name:           "a",
-	//				PluginAlias:    "test_data/connection-test-1",
-	//				Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
-	//				PluginInstance: utils.ToStringPointer("hub.steampipe.io/plugins/test_data/connection-test-1@latest"),
-	//				Type:           "",
-	//				ImportSchema:   "enabled",
-	//				Config:         "",
-	//				DeclRange: modconfig.Range{
-	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
-	//					Start: modconfig.Pos{
-	//						Line:   1,
-	//						Column: 1,
-	//						Byte:   0,
-	//					},
-	//					End: modconfig.Pos{
-	//						Line:   1,
-	//						Column: 11,
-	//						Byte:   10,
-	//					},
-	//				},
-	//			},
-	//		},
-	//		DefaultConnectionOptions: &options.Connection{
-	//			Cache:    &trueVal,
-	//			CacheTTL: &ttlVal,
-	//		},
-	//		DatabaseOptions: &options.Database{
-	//			Port:       &databasePort,
-	//			Listen:     &databaseListen,
-	//			SearchPath: &databaseSearchPath,
-	//		},
-	//		GeneralOptions: &options.General{
-	//			UpdateCheck: &generalUpdateCheck,
-	//		},
-	//	},
-	//},
-	//"single_connection_with_default_options_and_workspace_invalid_options_block": { // fixed
-	//	steampipeDir: "testdata/connection_config/single_connection_with_default_options",
-	//	workspaceDir: "testdata/load_config_test/invalid_options_block",
-	//	expected:     "ERROR",
-	//},
-	//"single_connection_with_default_options_and_workspace_search_path_prefix": { // fixed
-	//	steampipeDir: "testdata/connection_config/single_connection_with_default_options",
-	//	workspaceDir: "testdata/load_config_test/search_path_prefix",
-	//	expected: &SteampipeConfig{
-	//		Connections: map[string]*modconfig.Connection{
-	//			"a": {
-	//				Name:           "a",
-	//				PluginAlias:    "test_data/connection-test-1",
-	//				Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
-	//				PluginInstance: utils.ToStringPointer("hub.steampipe.io/plugins/test_data/connection-test-1@latest"),
-	//				Type:           "",
-	//				ImportSchema:   "enabled",
-	//				Config:         "",
-	//				DeclRange: modconfig.Range{
-	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
-	//					Start: modconfig.Pos{
-	//						Line:   1,
-	//						Column: 1,
-	//						Byte:   0,
-	//					},
-	//					End: modconfig.Pos{
-	//						Line:   1,
-	//						Column: 11,
-	//						Byte:   10,
-	//					},
-	//				},
-	//			},
-	//		},
-	//		DefaultConnectionOptions: &options.Connection{
-	//			Cache:    &trueVal,
-	//			CacheTTL: &ttlVal,
-	//		},
-	//		DatabaseOptions: &options.Database{
-	//			Port:       &databasePort,
-	//			Listen:     &databaseListen,
-	//			SearchPath: &databaseSearchPath,
-	//		},
-	//		GeneralOptions: &options.General{
-	//			UpdateCheck: &generalUpdateCheck,
-	//		},
-	//	},
-	//},
-	//"single_connection_with_default_options_and_workspace_override_terminal_config": { // fixed
-	//	steampipeDir: "testdata/connection_config/single_connection_with_default_options",
-	//	workspaceDir: "testdata/load_config_test/override_terminal_config",
-	//	expected: &SteampipeConfig{
-	//		Connections: map[string]*modconfig.Connection{
-	//			"a": {
-	//				Name:           "a",
-	//				PluginAlias:    "test_data/connection-test-1",
-	//				Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
-	//				PluginInstance: utils.ToStringPointer("hub.steampipe.io/plugins/test_data/connection-test-1@latest"),
-	//				Type:           "",
-	//				ImportSchema:   "enabled",
-	//				Config:         "",
-	//				DeclRange: modconfig.Range{
-	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
-	//					Start: modconfig.Pos{
-	//						Line:   1,
-	//						Column: 1,
-	//						Byte:   0,
-	//					},
-	//					End: modconfig.Pos{
-	//						Line:   1,
-	//						Column: 11,
-	//						Byte:   10,
-	//					},
-	//				},
-	//			},
-	//		},
-	//		DefaultConnectionOptions: &options.Connection{
-	//			Cache:    &trueVal,
-	//			CacheTTL: &ttlVal,
-	//		},
-	//		DatabaseOptions: &options.Database{
-	//			Port:       &databasePort,
-	//			Listen:     &databaseListen,
-	//			SearchPath: &databaseSearchPath,
-	//		},
-	//		GeneralOptions: &options.General{
-	//			UpdateCheck: &generalUpdateCheck,
-	//		},
-	//	},
-	//},
-	//"single_connection_with_default_and_connection_options": {
-	//	steampipeDir: "testdata/connection_config/single_connection_with_default_and_connection_options",
-	//	expected: &SteampipeConfig{
-	//		Connections: map[string]*modconfig.Connection{
-	//			"a": {
-	//				Name:           "a",
-	//				ImportSchema:   "enabled",
-	//				PluginAlias:    "test_data/connection-test-1",
-	//				Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
-	//				PluginInstance: utils.ToStringPointer("hub.steampipe.io/plugins/test_data/connection-test-1@latest"),
-	//				Config:         "",
-	//				Options: &options.Connection{
-	//					Cache:    &trueVal,
-	//					CacheTTL: &ttlVal,
-	//				},
-	//				DeclRange: modconfig.Range{
-	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_and_connection_options/config/connection1.spc",
-	//					Start: modconfig.Pos{
-	//						Line:   1,
-	//						Column: 1,
-	//						Byte:   0,
-	//					},
-	//					End: modconfig.Pos{
-	//						Line:   1,
-	//						Column: 11,
-	//						Byte:   10,
-	//					},
-	//				},
-	//			},
-	//		},
-	//		DefaultConnectionOptions: &options.Connection{
-	//			Cache:    &trueVal,
-	//			CacheTTL: &ttlVal,
-	//		},
-	//		DatabaseOptions: &options.Database{
-	//			Port:       &databasePort,
-	//			Listen:     &databaseListen,
-	//			SearchPath: &databaseSearchPath,
-	//		},
-	//		GeneralOptions: &options.General{
-	//			UpdateCheck: &generalUpdateCheck,
-	//		},
-	//	},
-	//},
-	//"options_only": { // fixed
-	//	steampipeDir: "testdata/connection_config/options_only",
-	//	expected: &SteampipeConfig{
-	//		Connections: map[string]*modconfig.Connection{},
-	//		DefaultConnectionOptions: &options.Connection{
-	//			Cache:    &trueVal,
-	//			CacheTTL: &ttlVal,
-	//		},
-	//		DatabaseOptions: &options.Database{
-	//			Port:       &databasePort,
-	//			Listen:     &databaseListen,
-	//			SearchPath: &databaseSearchPath,
-	//		},
-	//		GeneralOptions: &options.General{
-	//			UpdateCheck: &generalUpdateCheck,
-	//		},
-	//	},
-	//},
-	//"options_duplicate_block": {
-	//	steampipeDir: "testdata/connection_config/options_duplicate_block",
-	//	expected:     "ERROR",
-	//},
+	"single_connection": {
+		steampipeDir: "testdata/connection_config/single_connection",
+		expected: &SteampipeConfig{
+			Connections: map[string]*modconfig.Connection{
+				"a": {
+					Name:           "a",
+					PluginAlias:    "test_data/connection-test-1",
+					Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginInstance: utils.ToStringPointer("hub.steampipe.io/plugins/test_data/connection-test-1@latest"),
+					Type:           "plugin",
+					ImportSchema:   "enabled",
+					Config:         "",
+					DeclRange: modconfig.Range{
+						Filename: "$$test_pwd$$/testdata/connection_config/single_connection/config/connection1.spc",
+						Start: modconfig.Pos{
+							Line:   1,
+							Column: 1,
+							Byte:   0,
+						},
+						End: modconfig.Pos{
+							Line:   1,
+							Column: 11,
+							Byte:   10,
+						},
+					},
+				},
+			},
+			DefaultConnectionOptions: &options.Connection{
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
+			},
+		},
+	},
+	"single_connection_with_default_options": { // fixed
+		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
+		expected: &SteampipeConfig{
+			Connections: map[string]*modconfig.Connection{
+				"a": {
+					Name:           "a",
+					PluginAlias:    "test_data/connection-test-1",
+					Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginInstance: utils.ToStringPointer("hub.steampipe.io/plugins/test_data/connection-test-1@latest"),
+					Type:           "plugin",
+					ImportSchema:   "enabled",
+					Config:         "",
+					DeclRange: modconfig.Range{
+						Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
+						Start: modconfig.Pos{
+							Line:   1,
+							Column: 1,
+							Byte:   0,
+						},
+						End: modconfig.Pos{
+							Line:   1,
+							Column: 11,
+							Byte:   10,
+						},
+					},
+				},
+			},
+			DefaultConnectionOptions: &options.Connection{
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
+			},
+			DatabaseOptions: &options.Database{
+				Port:       &databasePort,
+				Listen:     &databaseListen,
+				SearchPath: &databaseSearchPath,
+			},
+			GeneralOptions: &options.General{
+				UpdateCheck: &generalUpdateCheck,
+			},
+		},
+	},
+	"single_connection_with_default_options_and_workspace_invalid_options_block": { // fixed
+		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
+		workspaceDir: "testdata/load_config_test/invalid_options_block",
+		expected:     "ERROR",
+	},
+	"single_connection_with_default_options_and_workspace_search_path_prefix": { // fixed
+		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
+		workspaceDir: "testdata/load_config_test/search_path_prefix",
+		expected: &SteampipeConfig{
+			Connections: map[string]*modconfig.Connection{
+				"a": {
+					Name:           "a",
+					PluginAlias:    "test_data/connection-test-1",
+					Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginInstance: utils.ToStringPointer("hub.steampipe.io/plugins/test_data/connection-test-1@latest"),
+					Type:           "plugin",
+					ImportSchema:   "enabled",
+					Config:         "",
+					DeclRange: modconfig.Range{
+						Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
+						Start: modconfig.Pos{
+							Line:   1,
+							Column: 1,
+							Byte:   0,
+						},
+						End: modconfig.Pos{
+							Line:   1,
+							Column: 11,
+							Byte:   10,
+						},
+					},
+				},
+			},
+			DefaultConnectionOptions: &options.Connection{
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
+			},
+			DatabaseOptions: &options.Database{
+				Port:       &databasePort,
+				Listen:     &databaseListen,
+				SearchPath: &databaseSearchPath,
+			},
+			GeneralOptions: &options.General{
+				UpdateCheck: &generalUpdateCheck,
+			},
+		},
+	},
+	"single_connection_with_default_options_and_workspace_override_terminal_config": { // fixed
+		steampipeDir: "testdata/connection_config/single_connection_with_default_options",
+		workspaceDir: "testdata/load_config_test/override_terminal_config",
+		expected: &SteampipeConfig{
+			Connections: map[string]*modconfig.Connection{
+				"a": {
+					Name:           "a",
+					PluginAlias:    "test_data/connection-test-1",
+					Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					PluginInstance: utils.ToStringPointer("hub.steampipe.io/plugins/test_data/connection-test-1@latest"),
+					Type:           "plugin",
+					ImportSchema:   "enabled",
+					Config:         "",
+					DeclRange: modconfig.Range{
+						Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
+						Start: modconfig.Pos{
+							Line:   1,
+							Column: 1,
+							Byte:   0,
+						},
+						End: modconfig.Pos{
+							Line:   1,
+							Column: 11,
+							Byte:   10,
+						},
+					},
+				},
+			},
+			DefaultConnectionOptions: &options.Connection{
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
+			},
+			DatabaseOptions: &options.Database{
+				Port:       &databasePort,
+				Listen:     &databaseListen,
+				SearchPath: &databaseSearchPath,
+			},
+			GeneralOptions: &options.General{
+				UpdateCheck: &generalUpdateCheck,
+			},
+		},
+	},
+	"single_connection_with_default_and_connection_options": {
+		steampipeDir: "testdata/connection_config/single_connection_with_default_and_connection_options",
+		expected: &SteampipeConfig{
+			Connections: map[string]*modconfig.Connection{
+				"a": {
+					Name:           "a",
+					ImportSchema:   "enabled",
+					PluginAlias:    "test_data/connection-test-1",
+					Plugin:         "hub.steampipe.io/plugins/test_data/connection-test-1@latest",
+					Type:           "plugin",
+					PluginInstance: utils.ToStringPointer("hub.steampipe.io/plugins/test_data/connection-test-1@latest"),
+					Config:         "",
+					Options: &options.Connection{
+						Cache:    &trueVal,
+						CacheTTL: &ttlVal,
+					},
+					DeclRange: modconfig.Range{
+						Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_and_connection_options/config/connection1.spc",
+						Start: modconfig.Pos{
+							Line:   1,
+							Column: 1,
+							Byte:   0,
+						},
+						End: modconfig.Pos{
+							Line:   1,
+							Column: 11,
+							Byte:   10,
+						},
+					},
+				},
+			},
+			DefaultConnectionOptions: &options.Connection{
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
+			},
+			DatabaseOptions: &options.Database{
+				Port:       &databasePort,
+				Listen:     &databaseListen,
+				SearchPath: &databaseSearchPath,
+			},
+			GeneralOptions: &options.General{
+				UpdateCheck: &generalUpdateCheck,
+			},
+		},
+	},
+	"options_only": { // fixed
+		steampipeDir: "testdata/connection_config/options_only",
+		expected: &SteampipeConfig{
+			Connections: map[string]*modconfig.Connection{},
+			DefaultConnectionOptions: &options.Connection{
+				Cache:    &trueVal,
+				CacheTTL: &ttlVal,
+			},
+			DatabaseOptions: &options.Database{
+				Port:       &databasePort,
+				Listen:     &databaseListen,
+				SearchPath: &databaseSearchPath,
+			},
+			GeneralOptions: &options.General{
+				UpdateCheck: &generalUpdateCheck,
+			},
+		},
+	},
+	"options_duplicate_block": {
+		steampipeDir: "testdata/connection_config/options_duplicate_block",
+		expected:     "ERROR",
+	},
 }
 
 func TestLoadConfig(t *testing.T) {
-	// TODO KAI update these
-	t.Skip("needs updating")
 	// get the current working directory of the test(used to build the DeclRange.Filename property)
 	pwd, err := os.Getwd()
 	if err != nil {
