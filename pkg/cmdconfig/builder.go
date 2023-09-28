@@ -89,6 +89,13 @@ func (c *CmdBuilder) AddBoolFlag(name string, defaultValue bool, desc string, op
 	return c
 }
 
+// AddCloudFlags is helper function to add the cloud flags to a command
+func (c *CmdBuilder) AddCloudFlags() *CmdBuilder {
+	return c.
+		AddStringFlag(constants.ArgCloudHost, constants.DefaultCloudHost, "Turbot Pipes host").
+		AddStringFlag(constants.ArgCloudToken, "", "Turbot Pipes authentication token")
+}
+
 // AddWorkspaceDatabaseFlag is helper function to add the workspace-databse flag to a command
 func (c *CmdBuilder) AddWorkspaceDatabaseFlag() *CmdBuilder {
 	return c.
