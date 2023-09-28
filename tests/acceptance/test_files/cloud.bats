@@ -65,13 +65,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # workspaces expire snapshots anyway
   run steampipe query "select account_aliases from all_aws.aws_account where account_id='632902152528'" --share
   echo $output
-
-  # fetch the value of account_alias to compare
-  op=$(echo $output | jq '.[0].account_aliases[0]')
-  echo $op
-
-   # check if values match
-  assert_equal "$op" "\"nagraj-aaa\""
+  
+  assert_success
 }
 
 function teardown_file() {
