@@ -37,10 +37,26 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 			//nolint:golint,errcheck // nil check above
 			viper.GetViper().BindPFlag(flagName, flag)
 		}
+
+		// now that we have done all the flag bindings, run the global pre run
+		preRunHook(cmd, args)
+
 		// run the original PreRun
 		if originalPreRun != nil {
 			originalPreRun(cmd, args)
 		}
+	}
+
+	originalPostRun := cfg.cmd.PostRun
+	cfg.cmd.PostRun = func(cmd *cobra.Command, args []string) {
+		utils.LogTime(fmt.Sprintf("cmd.%s.PostRun start", cmd.CommandPath()))
+		defer utils.LogTime(fmt.Sprintf("cmd.%s.PostRun end", cmd.CommandPath()))
+		// run the original PostRun
+		if originalPostRun != nil {
+			originalPostRun(cmd, args)
+		}
+
+		postRunHook(cmd, args)
 	}
 
 	// wrap over the original Run function

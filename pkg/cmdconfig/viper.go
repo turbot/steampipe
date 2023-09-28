@@ -19,8 +19,8 @@ func Viper() *viper.Viper {
 	return viper.GetViper()
 }
 
-// BootstrapViper sets up viper with the essential path config (workspace-chdir and install-dir)
-func BootstrapViper(loader *steampipeconfig.WorkspaceProfileLoader, cmd *cobra.Command) error {
+// bootstrapViper sets up viper with the essential path config (workspace-chdir and install-dir)
+func bootstrapViper(loader *steampipeconfig.WorkspaceProfileLoader, cmd *cobra.Command) error {
 	// set defaults  for keys which do not have a corresponding command flag
 	setBaseDefaults()
 
@@ -135,8 +135,8 @@ func setDirectoryDefaultsFromEnv() {
 	}
 }
 
-// SetDefaultsFromEnv sets default values from env vars
-func SetDefaultsFromEnv() {
+// setDefaultsFromEnv sets default values from env vars
+func setDefaultsFromEnv() {
 	// NOTE: EnvWorkspaceProfile has already been set as a viper default as we have already loaded workspace profiles
 	// (EnvInstallDir has already been set at same time but we set it again to make sure it has the correct precedence)
 
