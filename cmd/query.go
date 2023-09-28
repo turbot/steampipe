@@ -72,6 +72,7 @@ Examples:
 	// * In the future we may add --csv and --json flags as shortcuts for --output
 	cmdconfig.
 		OnCmd(cmd).
+		AddCloudFlags().
 		AddWorkspaceDatabaseFlag().
 		AddModLocationFlag().
 		AddBoolFlag(constants.ArgHelp, false, "Help for query", cmdconfig.FlagOptions.WithShortHand("h")).

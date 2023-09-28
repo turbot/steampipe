@@ -37,10 +37,29 @@ func OnCmd(cmd *cobra.Command) *CmdBuilder {
 			//nolint:golint,errcheck // nil check above
 			viper.GetViper().BindPFlag(flagName, flag)
 		}
+
+		// now that we have done all the flag bindings, run the global pre run
+		// this will load up and populate the global config, init the logger and
+		// also run the daily task runner
+		preRunHook(cmd, args)
+
 		// run the original PreRun
 		if originalPreRun != nil {
 			originalPreRun(cmd, args)
 		}
+	}
+
+	originalPostRun := cfg.cmd.PostRun
+	cfg.cmd.PostRun = func(cmd *cobra.Command, args []string) {
+		utils.LogTime(fmt.Sprintf("cmd.%s.PostRun start", cmd.CommandPath()))
+		defer utils.LogTime(fmt.Sprintf("cmd.%s.PostRun end", cmd.CommandPath()))
+		// run the original PostRun
+		if originalPostRun != nil {
+			originalPostRun(cmd, args)
+		}
+
+		// run the post run
+		postRunHook(cmd, args)
 	}
 
 	// wrap over the original Run function
@@ -87,6 +106,13 @@ func (c *CmdBuilder) AddBoolFlag(name string, defaultValue bool, desc string, op
 		o(c.cmd, name, name)
 	}
 	return c
+}
+
+// AddCloudFlags is helper function to add the cloud flags to a command
+func (c *CmdBuilder) AddCloudFlags() *CmdBuilder {
+	return c.
+		AddStringFlag(constants.ArgCloudHost, constants.DefaultCloudHost, "Turbot Pipes host").
+		AddStringFlag(constants.ArgCloudToken, "", "Turbot Pipes authentication token")
 }
 
 // AddWorkspaceDatabaseFlag is helper function to add the workspace-databse flag to a command

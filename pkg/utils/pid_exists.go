@@ -17,8 +17,8 @@ import (
 // is a child of the source of the signal - which may be the case then starting
 // implicit services
 func PidExists(targetPid int) (bool, error) {
-	LogTime("PidExists start")
-	defer LogTime("PidExists end")
+	LogTime("utils.PidExists start")
+	defer LogTime("utils.PidExists end")
 
 	process, err := FindProcess(targetPid)
 	found := process != nil
@@ -28,8 +28,8 @@ func PidExists(targetPid int) (bool, error) {
 // FindProcess tries to find the process with the given pid
 // returns nil if the process could not be found
 func FindProcess(targetPid int) (*psutils.Process, error) {
-	LogTime("FindProcess start")
-	defer LogTime("FindProcess end")
+	LogTime("utils.FindProcess start")
+	defer LogTime("utils.FindProcess end")
 
 	pids, err := psutils.Pids()
 	if err != nil {

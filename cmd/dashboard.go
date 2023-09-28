@@ -43,6 +43,7 @@ The current mod is the working directory, or the directory specified by the --mo
 	}
 
 	cmdconfig.OnCmd(cmd).
+		AddCloudFlags().
 		AddWorkspaceDatabaseFlag().
 		AddModLocationFlag().
 		AddBoolFlag(constants.ArgHelp, false, "Help for dashboard", cmdconfig.FlagOptions.WithShortHand("h")).

@@ -53,26 +53,19 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output --partial 'Error: Not authenticated for Turbot Pipes.'
 }
 
-@test "install a large mod, query and check if time taken is less than 20s" {
-  # # using bash's built-in time, set the timeformat to seconds
-  # TIMEFORMAT=%R
+@test "connect to cloud workspace - passing the workspace name to workspace-database arg (unsetting ENV - the token should get picked from tptt file)" {
+  # write the pipes.turbot.com.tptt file in internal
+  # write the token to the file
+  file_name=$STEAMPIPE_INSTALL_DIR/internal/pipes.turbot.com.tptt
+  echo -ne $SPIPETOOLS_TOKEN > $file_name
+  cat $file_name
 
-  # # create a directory to install the mods
-  # target_directory=$(mktemp -d)
-  # cd $target_directory
+  # this step will create snapshots in the workspace - but that's ok
+  # workspaces expire snapshots anyway
+  run steampipe query "select 1" --share
+  echo $output
 
-  # # install steampipe-mod-aws-compliance
-  # steampipe mod install github.com/turbot/steampipe-mod-aws-compliance
-  # # go to the mod directory and run steampipe query
-  # cd .steampipe/mods/github.com/turbot/steampipe-mod-aws-compliance@*
-
-  # # max time to query(we expect it to be less than 20s)
-  # TIME_TO_QUERY=20
-  # # find the query time
-  # QUERY_TIME=$(time (run steampipe query "query.ec2_instance_detailed_monitoring_enabled" --workspace-database $SPIPETOOLS_PG_CONN_STRING --output json >/dev/null 2>&1) 2>&1)
-  # echo $QUERY_TIME
-
-  # assert_equal "$(echo $QUERY_TIME '<' $TIME_TO_QUERY | bc -l)" "1"
+  assert_success
 }
 
 function teardown_file() {
@@ -85,7 +78,6 @@ function teardown_file() {
 }
 
 function setup() {
-  
   if [[ -z "${SPIPETOOLS_PG_CONN_STRING}" ||  -z "${SPIPETOOLS_TOKEN}" ]]; then
     skip
   else
