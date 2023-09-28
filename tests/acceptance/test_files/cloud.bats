@@ -56,8 +56,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "connect to cloud workspace - passing the workspace name to workspace-database arg (unsetting ENV - the token should get picked from tptt file)" {
   # write the pipes.turbot.com.tptt file in internal
   # write the token to the file
-  file_name="pipes.turbot.com.tptt"
-  echo "$SPIPETOOLS_TOKEN" > "$STEAMPIPE_INSTALL_DIR/internal/$file_name"
+  file_name=$STEAMPIPE_INSTALL_DIR/internal/pipes.turbot.com.tptt
+  echo $SPIPETOOLS_TOKEN > $file_name
 
   cat $STEAMPIPE_INSTALL_DIR/internal/$file_name>&3
   
@@ -79,7 +79,6 @@ function teardown_file() {
 }
 
 function setup() {
-  
   if [[ -z "${SPIPETOOLS_PG_CONN_STRING}" ||  -z "${SPIPETOOLS_TOKEN}" ]]; then
     skip
   else
