@@ -9,7 +9,6 @@ import (
 	"os"
 	"runtime/debug"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/fatih/color"
@@ -38,25 +37,21 @@ import (
 var waitForTasksChannel chan struct{}
 var tasksCancelFn context.CancelFunc
 
-var runPrerunOnce sync.Once = sync.Once{}
-var runPostrunOnce sync.Once = sync.Once{}
-
 // postRunHook is a function that is executed after the PostRun of every command handler
 func postRunHook(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmdhook.postRunHook start")
 	defer utils.LogTime("cmdhook.postRunHook end")
-	runPostrunOnce.Do(func() {
-		if waitForTasksChannel != nil {
-			// wait for the async tasks to finish
-			select {
-			case <-time.After(100 * time.Millisecond):
-				tasksCancelFn()
-				return
-			case <-waitForTasksChannel:
-				return
-			}
+
+	if waitForTasksChannel != nil {
+		// wait for the async tasks to finish
+		select {
+		case <-time.After(100 * time.Millisecond):
+			tasksCancelFn()
+			return
+		case <-waitForTasksChannel:
+			return
 		}
-	})
+	}
 }
 
 // postRunHook is a function that is executed before the PreRun of every command handler
@@ -64,62 +59,60 @@ func preRunHook(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmdhook.preRunHook start")
 	defer utils.LogTime("cmdhook.preRunHook end")
 
-	runPrerunOnce.Do(func() {
-		viper.Set(constants.ConfigKeyActiveCommand, cmd)
-		viper.Set(constants.ConfigKeyActiveCommandArgs, args)
-		viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
+	viper.Set(constants.ConfigKeyActiveCommand, cmd)
+	viper.Set(constants.ConfigKeyActiveCommandArgs, args)
+	viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
 
-		// steampipe completion should not create INSTALL DIR or seup/init global config
-		if cmd.Name() == "completion" {
-			return
-		}
+	// steampipe completion should not create INSTALL DIR or seup/init global config
+	if cmd.Name() == "completion" {
+		return
+	}
 
-		// create a buffer which can be used as a sink for log writes
-		// till INSTALL_DIR is setup in initGlobalConfig
-		logBuffer := bytes.NewBuffer([]byte{})
+	// create a buffer which can be used as a sink for log writes
+	// till INSTALL_DIR is setup in initGlobalConfig
+	logBuffer := bytes.NewBuffer([]byte{})
 
-		// create a logger before initGlobalConfig - we may need to reinitialize the logger
-		// depending on the value of the log_level value in global general options
-		createLogger(logBuffer, cmd)
+	// create a logger before initGlobalConfig - we may need to reinitialize the logger
+	// depending on the value of the log_level value in global general options
+	createLogger(logBuffer, cmd)
 
-		// set up the global viper config with default values from
-		// config files and ENV variables
-		ew := initGlobalConfig()
-		// display any warnings
-		ew.ShowWarnings()
-		// check for error
-		error_helpers.FailOnError(ew.Error)
+	// set up the global viper config with default values from
+	// config files and ENV variables
+	ew := initGlobalConfig()
+	// display any warnings
+	ew.ShowWarnings()
+	// check for error
+	error_helpers.FailOnError(ew.Error)
 
-		// if the log level was set in the general config
-		if logLevelNeedsReset() {
-			logLevel := viper.GetString(constants.ArgLogLevel)
-			// set my environment to the desired log level
-			// so that this gets inherited by any other process
-			// started by this process (postgres/plugin-manager)
-			error_helpers.FailOnErrorWithMessage(
-				os.Setenv(sdklogging.EnvLogLevel, logLevel),
-				"Failed to setup logging",
-			)
-		}
+	// if the log level was set in the general config
+	if logLevelNeedsReset() {
+		logLevel := viper.GetString(constants.ArgLogLevel)
+		// set my environment to the desired log level
+		// so that this gets inherited by any other process
+		// started by this process (postgres/plugin-manager)
+		error_helpers.FailOnErrorWithMessage(
+			os.Setenv(sdklogging.EnvLogLevel, logLevel),
+			"Failed to setup logging",
+		)
+	}
 
-		// recreate the logger
-		// this will put the new log level (if any) to effect as well as start streaming to the
-		// log file.
-		createLogger(logBuffer, cmd)
+	// recreate the logger
+	// this will put the new log level (if any) to effect as well as start streaming to the
+	// log file.
+	createLogger(logBuffer, cmd)
 
-		// runScheduledTasks skips running tasks if this instance is the plugin manager
-		waitForTasksChannel = runScheduledTasks(cmd.Context(), cmd, args, ew)
+	// runScheduledTasks skips running tasks if this instance is the plugin manager
+	waitForTasksChannel = runScheduledTasks(cmd.Context(), cmd, args, ew)
 
-		// ensure all plugin installation directories have a version.json file
-		// (this is to handle the case of migrating an existing installation from v0.20.x)
-		// no point doing this for the plugin-manager since that would have been done by the initiating CLI process
-		if !task.IsPluginManagerCmd(cmd) {
-			versionfile.EnsureVersionFilesInPluginDirectories()
-		}
+	// ensure all plugin installation directories have a version.json file
+	// (this is to handle the case of migrating an existing installation from v0.20.x)
+	// no point doing this for the plugin-manager since that would have been done by the initiating CLI process
+	if !task.IsPluginManagerCmd(cmd) {
+		versionfile.EnsureVersionFilesInPluginDirectories()
+	}
 
-		// set the max memory if specified
-		setMemoryLimit()
-	})
+	// set the max memory if specified
+	setMemoryLimit()
 }
 
 func setMemoryLimit() {
