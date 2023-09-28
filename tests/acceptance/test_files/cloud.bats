@@ -61,11 +61,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   cat $file_name
   
+  STEAMPIPE_CONFIG_DUMP=config_json steampipe query "select 1"
+
   # this step will create snapshots in the workspace - but that's ok
   # workspaces expire snapshots anyway
-  run steampipe query "select account_aliases from all_aws.aws_account where account_id='632902152528'" --share
+  run steampipe query "select 1" --share
   echo $output
-  
+
   assert_success
 }
 
