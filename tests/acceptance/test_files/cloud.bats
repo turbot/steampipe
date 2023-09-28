@@ -60,9 +60,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo "$SPIPETOOLS_TOKEN" > "$STEAMPIPE_INSTALL_DIR/internal/$file_name"
 
   cat $STEAMPIPE_INSTALL_DIR/internal/$file_name
-
-  # unsetting the ENV var should result in steampipe fetching the token from token file
-  unset SPIPETOOLS_TOKEN
   
   # this step will create snapshots in the workspace - but that's ok
   # workspaces expire snapshots anyway
