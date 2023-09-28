@@ -57,10 +57,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # write the pipes.turbot.com.tptt file in internal
   # write the token to the file
   file_name=$STEAMPIPE_INSTALL_DIR/internal/pipes.turbot.com.tptt
-  echo $SPIPETOOLS_TOKEN > $file_name
+  echo -ne $SPIPETOOLS_TOKEN > $file_name
 
   cat $file_name
-  
+
   STEAMPIPE_CONFIG_DUMP=config_json steampipe query "select 1"
 
   # this step will create snapshots in the workspace - but that's ok
