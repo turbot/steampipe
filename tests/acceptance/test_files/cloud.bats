@@ -63,7 +63,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # unsetting the ENV var should result in steampipe fetching the token from token file
   unset SPIPETOOLS_TOKEN
-  run steampipe query "select account_aliases from all_aws.aws_account where account_id='632902152528'" --workspace-database spipetools/toolstest --output json
+  
+  # this step will create snapshots in the workspace - but that's ok
+  # workspaces expire snapshots anyway
+  run steampipe query "select account_aliases from all_aws.aws_account where account_id='632902152528'" --share
   echo $output
 
   # fetch the value of account_alias to compare
