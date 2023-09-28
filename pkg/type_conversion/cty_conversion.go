@@ -200,7 +200,7 @@ func ctyTupleToArrayOfPgStrings(val cty.Value) ([]string, error) {
 }
 
 func ctyTupleToArrayOfStrings(val cty.Value) ([]string, error) {
-	var res []string
+	res := []string{}
 	it := val.ElementIterator()
 	for it.Next() {
 		_, v := it.Element()

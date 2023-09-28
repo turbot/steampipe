@@ -320,6 +320,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$content" ""
 }
 
+@test "control referring to query with empty list as param" {
+  cd $STRING_LIST_TEST_MOD
+  run steampipe check all --var 'string_list=[]'
+  assert_success
+}
+
 ## traversal
 
 # This test consists of a mod with nested folders, with mod.sp file within one of them(folder11).

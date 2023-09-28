@@ -3,16 +3,15 @@ package var_config
 // github.com/hashicorp/terraform/configs/parser_config.go
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"unicode"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars/typeexpr"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
-	//"github.com/hashicorp/terraform/internal/typeexpr"
 )
 
 // A consistent detail message for all "not a valid identifier" diagnostics.
