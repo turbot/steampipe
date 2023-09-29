@@ -29,6 +29,9 @@ type RunningDBInstanceInfo struct {
 	User                    string            `json:"user"`
 	Database                string            `json:"database"`
 	StructVersion           int64             `json:"struct_version"`
+
+	// legacy listen to maintain compatibility with 0.20.x clients
+	LegacyListen []string `json:"listen"`
 }
 
 func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int, databaseName string, password string, invoker constants.Invoker) *RunningDBInstanceInfo {
@@ -44,6 +47,9 @@ func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int,
 		Database:                databaseName,
 		Invoker:                 invoker,
 		StructVersion:           RunningDBStructVersion,
+
+		// also add to the legacy "listen" property, so that 0.20.x can still connect
+		LegacyListen: resolvedListenAddresses,
 	}
 
 	return dbState
