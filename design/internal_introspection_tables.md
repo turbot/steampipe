@@ -8,7 +8,7 @@ Lists all connections as defined in the connection config.
 - ``
 Lists all plugin instances as defined in the connection config.
 - `steampipe_plugin_limiter`
-Lists all plugin Limiters as defined either in the plugin binary or the plugin conneciton block
+Lists all plugin Limiters as defined either in the plugin binary or the plugin connection block
 
 
 ## Lifecycle
@@ -20,7 +20,7 @@ Lists all plugin Limiters as defined either in the plugin binary or the plugin c
 - The connection states are set to either `pending` (if currently `ready`) or `incomplete` (if not).
   (These states will be updated by RefreshConnections.)
 - The connections are written back to the table
-- RefreshConnections is triggered - this will apply any necessary conneciton updates and set the states of the connections 
+- RefreshConnections is triggered - this will apply any necessary connection updates and set the states of the connections 
 to either `ready` or `error`
 
 #### steampipe_plugin
@@ -86,6 +86,6 @@ It then builds a set of SetConnectionConfigRequest, one for each plugin instance
 ### Usage
 
 `steampipe_connection` table is used to determine whether a connection has been loaded yet.
-This is used to allow us to execute queries without wasiting for all connecitons to load. Instead, we execute the query,
-and if it fails with a relation not found error, we poll the coneciton state table until the conneciton is ready.
+This is used to allow us to execute queries without wasiting for all connections to load. Instead, we execute the query,
+and if it fails with a relation not found error, we poll the coneciton state table until the connection is ready.
 Then we retry the query. 

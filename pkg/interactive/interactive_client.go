@@ -745,7 +745,7 @@ func (c *InteractiveClient) handleErrorsAndWarningsNotification(ctx context.Cont
 }
 func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context) {
 	// ignore schema update notifications until initialisation is complete
-	// (we may receive schema update messages from the initial refresh connecitons, but we do not need to reload
+	// (we may receive schema update messages from the initial refresh connections, but we do not need to reload
 	// the schema as we will have already loaded the correct schema)
 	if !c.initialisationComplete {
 		log.Printf("[INFO] received schema update notification but ignoring it as we are initializing")

@@ -28,7 +28,7 @@ const (
 // constants for installing db and fdw images
 const (
 	DatabaseVersion = "14.2.0"
-	FdwVersion      = "1.8.0"
+	FdwVersion      = "1.9.0"
 
 	// PostgresImageRef is the OCI Image ref for the database binaries
 	PostgresImageRef    = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
@@ -78,8 +78,9 @@ const (
 	ForeignTableSettingsCacheTtlKey       = "cache_ttl"
 	ForeignTableSettingsCacheClearTimeKey = "cache_clear_time"
 
-	FunctionCacheSet    = "meta_cache"
-	FunctionCacheSetTtl = "meta_cache_ttl"
+	FunctionCacheSet             = "meta_cache"
+	FunctionConnectionCacheClear = "meta_connection_cache_clear"
+	FunctionCacheSetTtl          = "meta_cache_ttl"
 
 	// legacy
 	LegacyCommandSchema = "steampipe_command"
