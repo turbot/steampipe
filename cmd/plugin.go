@@ -648,16 +648,18 @@ func showPluginListOutput(pluginList []plugin.PluginListItem, failedPluginMap, m
 }
 
 func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *error_helpers.ErrorAndWarnings) error {
+	headers := []string{"Installed", "Version", "Connections"}
+	var rows [][]string
 	// List installed plugins in a table
 	if len(pluginList) != 0 {
-		headers := []string{"Installed", "Version", "Connections"}
-		var rows [][]string
 		for _, item := range pluginList {
 			rows = append(rows, []string{item.Name, item.Version.String(), strings.Join(item.Connections, ",")})
 		}
-		display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
-		fmt.Printf("\n")
+	} else {
+		rows = append(rows, []string{"", "", ""})
 	}
+	display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+	fmt.Printf("\n")
 
 	// List failed/missing plugins in a separate table
 	if len(failedPluginMap)+len(missingPluginMap) != 0 {
