@@ -91,7 +91,7 @@ It is started by the steampipe service startup code.
 
 In the plugin manager process, a connection config file-watcher runs. If the connection config or options have changed,
 `RefreshConnectionsAndSearchPaths` is called. As discussed above this has the affect of:
-- setting the user search path on the DB (this search path will be used for any subsequent connecitons from external clients)
+- setting the user search path on the DB (this search path will be used for any subsequent connections from external clients)
 - setting the `requiredSessionSearchPath` on the (local) DbClient. HOWEVER - this just sets the required search path on the DbClient in the plugin manager process, NOT any DbClient used by Steampipe Query or Dashboard processes.
 
 ####Dashboard service search path implementation

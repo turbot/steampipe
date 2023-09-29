@@ -167,7 +167,7 @@ func getPluginInstanceFromDependency(dependencies []*modconfig.ResourceDependenc
 	return split[1], true
 }
 
-// build a hcl string with all attributes in the conneciton config which are NOT specified in the coneciton block schema
+// build a hcl string with all attributes in the connection config which are NOT specified in the coneciton block schema
 // this is passed to the plugin who will validate and parse it
 func pluginConnectionConfigToHclString(body hcl.Body, connectionContent *hcl.BodyContent) (string, hcl.Diagnostics) {
 	var diags hcl.Diagnostics

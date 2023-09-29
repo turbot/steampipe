@@ -78,8 +78,9 @@ const (
 	ForeignTableSettingsCacheTtlKey       = "cache_ttl"
 	ForeignTableSettingsCacheClearTimeKey = "cache_clear_time"
 
-	FunctionCacheSet    = "meta_cache"
-	FunctionCacheSetTtl = "meta_cache_ttl"
+	FunctionCacheSet             = "meta_cache"
+	FunctionConnectionCacheClear = "meta_connection_cache_clear"
+	FunctionCacheSetTtl          = "meta_cache_ttl"
 
 	// legacy
 	LegacyCommandSchema = "steampipe_command"
