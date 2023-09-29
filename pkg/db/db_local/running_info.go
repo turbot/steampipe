@@ -20,8 +20,10 @@ const RunningDBStructVersion = 20220411
 
 // RunningDBInstanceInfo contains data about the running process and it's credentials
 type RunningDBInstanceInfo struct {
-	Pid                     int               `json:"pid"`
-	ResolvedListenAddresses []string          `json:"resolved_listen"`
+	Pid int `json:"pid"`
+	// store both resolved and user input listen addresses
+	// keep the same 'listen' json tag to maintain backward compatibility
+	ResolvedListenAddresses []string          `json:"listen"`
 	GivenListenAddresses    []string          `json:"raw_listen"`
 	Port                    int               `json:"port"`
 	Invoker                 constants.Invoker `json:"invoker"`
