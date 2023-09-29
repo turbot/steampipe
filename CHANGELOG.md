@@ -23,6 +23,7 @@ _Whats new_
 * Validates workspace profile cache settings. ([#3646](https://github.com/turbot/steampipe/issues/3646))
 * Update ociinstaller - simplify `installPluginConfigFiles` to use dir.Readdir instead of os.ReadDir. 
 * Upgrade to oras-go v2 and support OCI registries requiring authentication. ([#2819](https://github.com/turbot/steampipe/issues/2819))
+* Fix plugin list returning nothing if no plugins are installed. ([#3927](https://github.com/turbot/steampipe/issues/3927))
 
 _Bug fixes_
 * Fixes issue where plugin manager shutdown would stall intermittently due to deadlocks. ([#3818](https://github.com/turbot/steampipe/issues/3818))
