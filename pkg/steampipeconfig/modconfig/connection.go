@@ -136,40 +136,41 @@ func (c *Connection) Equals(other *Connection) bool {
 	if c.Options != nil {
 		connectionOptionsEqual = c.Options.Equals(other.Options)
 	}
-	// return c.Name == other.Name &&
-	// 	c.Plugin == other.Plugin &&
-	// 	utils.SafeStringsEqual(c.PluginInstance, other.PluginInstance) &&
-	// 	c.Type == other.Type &&
-	// 	strings.Join(c.ConnectionNames, ",") == strings.Join(other.ConnectionNames, ",") &&
-	// 	connectionOptionsEqual &&
-	// 	c.Config == other.Config &&
-	// 	c.ImportSchema == other.ImportSchema
+	return c.Name == other.Name &&
+		c.Plugin == other.Plugin &&
+		utils.SafeStringsEqual(c.PluginInstance, other.PluginInstance) &&
+		c.Type == other.Type &&
+		strings.Join(c.ConnectionNames, ",") == strings.Join(other.ConnectionNames, ",") &&
+		connectionOptionsEqual &&
+		c.Config == other.Config &&
+		c.ImportSchema == other.ImportSchema
 
-	if c.Name != other.Name {
-		return false
-	}
-	if c.Plugin != other.Plugin {
-		return false
-	}
-	if !utils.SafeStringsEqual(c.PluginInstance, other.PluginInstance) {
-		return false
-	}
-	if c.Type != other.Type {
-		return false
-	}
-	if strings.Join(c.ConnectionNames, ",") != strings.Join(other.ConnectionNames, ",") {
-		return false
-	}
-	if !connectionOptionsEqual {
-		return false
-	}
-	if c.Config != other.Config {
-		return false
-	}
-	if c.ImportSchema != other.ImportSchema {
-		return false
-	}
-	return true
+	// TODO PSKR will remove
+	// if c.Name != other.Name {
+	// 	return false
+	// }
+	// if c.Plugin != other.Plugin {
+	// 	return false
+	// }
+	// if !utils.SafeStringsEqual(c.PluginInstance, other.PluginInstance) {
+	// 	return false
+	// }
+	// if c.Type != other.Type {
+	// 	return false
+	// }
+	// if strings.Join(c.ConnectionNames, ",") != strings.Join(other.ConnectionNames, ",") {
+	// 	return false
+	// }
+	// if !connectionOptionsEqual {
+	// 	return false
+	// }
+	// if c.Config != other.Config {
+	// 	return false
+	// }
+	// if c.ImportSchema != other.ImportSchema {
+	// 	return false
+	// }
+	// return true
 
 }
 
