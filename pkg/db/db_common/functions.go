@@ -39,6 +39,17 @@ end;
 `,
 	},
 	{
+		Name:     constants.FunctionConnectionCacheClear,
+		Params:   map[string]string{"connection": "text"},
+		Returns:  "void",
+		Language: "plpgsql",
+		Body: `
+begin
+		INSERT INTO steampipe_internal.steampipe_settings("name","value") VALUES ('connection_cache_clear',connection);
+end;
+`,
+	},
+	{
 		Name:     constants.FunctionCacheSetTtl,
 		Params:   map[string]string{"duration": "int"},
 		Returns:  "void",

@@ -47,7 +47,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 		// if the connection is in error, create an error connection state
 		// this may have been set by the loading code
 		if connection.Error != nil {
-			// add error conneciton state
+			// add error connection state
 			requiredState[connection.Name] = newErrorConnectionState(connection)
 			// if error is a missing plugin, add to missingPluginMap
 			// this will be used to build missing plugin warnings
@@ -123,7 +123,7 @@ func (m ConnectionStateMap) Loaded(connections ...string) bool {
 	for _, connectionName := range connections {
 		connectionState, ok := m[connectionName]
 		if !ok {
-			// ignore if we have no state loaded for this conneciton name
+			// ignore if we have no state loaded for this connection name
 			continue
 		}
 		log.Println("[TRACE] Checking state for", connectionName)
