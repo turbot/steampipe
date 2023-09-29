@@ -4,10 +4,9 @@ _Whats new_
 * Add support for defining multiple instances of a plugin version using a `plugin` connection config block. ([#3807](https://github.com/turbot/steampipe/issues/3807))
 * Max memory used by plugins and the CLI can now be specified either in `plugin` instance definitions or the new `plugin` options block. ([#3807](https://github.com/turbot/steampipe/issues/3807))
 * Add support for installing all referenced plugins when no arguments are given to `plugin install`. ([#3451](https://github.com/turbot/steampipe/issues/3451))
-* Add `steampipe_plugin` table with containing all configured plugin instances. ([#3462](https://github.com/turbot/steampipe/issues/3462))
-* Add `steampipe_plugin_limiter` table containing all configured limiters. ([#3462](https://github.com/turbot/steampipe/issues/3462))
+* Add `steampipe_plugin` table with containing all configured plugin instances. ([#3746](https://github.com/turbot/steampipe/issues/3746))
+* Add `steampipe_plugin_limiter` table containing all configured limiters. ([#3746](https://github.com/turbot/steampipe/issues/3746))
 * Add `steampipe_server_settings` table populated with server settings data during service startup. ([#3462](https://github.com/turbot/steampipe/issues/3462))
-* Update refresh connections to execute updates serially by default. ([#3498](https://github.com/turbot/steampipe/issues/3498))
 * Adds support for `--output` flag for `plugin list` cmd - supporting for `json` and existing `table` output. ([#3368](https://github.com/turbot/steampipe/issues/3368))
 * Creates `version.json` in each plugin directory and use to recompose the global plugin `versions.json` if it is missing or corrupt. ([#3492](https://github.com/turbot/steampipe/issues/3492))
 * Typing `.cache` in interactive prompt shows the current value of cache. ([#2439](https://github.com/turbot/steampipe/issues/2439))
@@ -18,20 +17,16 @@ _Whats new_
 * When plugin startup experiences panic, report panic message, not `Unrecognized remote plugin message`. ([#3732](https://github.com/turbot/steampipe/issues/3732))
 * Update messaging when service is started on an unavailable port. ([#623](https://github.com/turbot/steampipe/issues/623))
 * Rotate plugin and CLI log files if the process is active across date boundaries. ([#125](https://github.com/turbot/steampipe/issues/125), [#3825](https://github.com/turbot/steampipe/issues/3825))
-* Allow selection of hosts for steampipe service. ([#3670](https://github.com/turbot/steampipe/issues/3505))
+* Allow selection of hosts for steampipe service. ([#3505](https://github.com/turbot/steampipe/issues/3505))
 * Clean up tmp dirs after plugin commands.
-* Improve validation errors for the mod `require` block and improve variable validation to include the value expressions and file locations. ([#3546](https://github.com/turbot/steampipe/issues/3546))
 * Updated sample config file behaviour: always copy the sample config file, but only overwrite the default file with the sample content if the existing file has not been modified.  ([#3431](https://github.com/turbot/steampipe/issues/3431))
 * Validates workspace profile cache settings. ([#3646](https://github.com/turbot/steampipe/issues/3646))
 * Update ociinstaller - simplify `installPluginConfigFiles` to use dir.Readdir instead of os.ReadDir. 
 * Upgrade to oras-go v2 and support OCI registries requiring authentication. ([#2819](https://github.com/turbot/steampipe/issues/2819))
 
 _Bug fixes_
-* Delete dynamic schemas before updating to avoid a timing issue showing incorrect schema. ([#3510](https://github.com/turbot/steampipe/issues/3510))
-* Avoid orphan plugin processes when running short batch queries. ([#3514](https://github.com/turbot/steampipe/issues/3514))
 * Fixes issue where plugin manager shutdown would stall intermittently due to deadlocks. ([#3818](https://github.com/turbot/steampipe/issues/3818))
 * Fixes issue where temporary tables are dropped in interactive prompt when pool connections are recycled. ([#3781](https://github.com/turbot/steampipe/issues/3781),[#3543](https://github.com/turbot/steampipe/issues/3543))
-* Fixes issue where `plugin list` hangs if there are connections with `import_schema = "disabled"`. ([#3431](https://github.com/turbot/steampipe/issues/3561))
 * Fixes issue where `service start` is not listening on `network` by default. ([#3593](https://github.com/turbot/steampipe/issues/3593))
 * Fixes issue where multi line logs from plugins are not coming up in plugin logs. ([#3678](https://github.com/turbot/steampipe/issues/3678))
 * Fixes issue where `.inspect` would panic for long column descriptions. ([#3709](https://github.com/turbot/steampipe/issues/3709))
@@ -55,7 +50,7 @@ _Deprecations and migrations_
 * Remove migration and backward compatibility of data files from v0.13.0. ([#3517](https://github.com/turbot/steampipe/issues/3517))
 * Removes deprecated `workspace-chdir` flag. ([#3925](https://github.com/turbot/steampipe/issues/3925))
 * Migrate from `cloud.steampipe.io` to `pipes.turbot.com`. ([#3724](https://github.com/turbot/steampipe/issues/3724))
-* Refactor Plugin manager:remove support for plugins which do not support multiple connections, simplify startup.
+* Remove support for plugins which do not support multiple connections (i.e. using SDK < v4.0.0).
 * Deprecate `terminal options`.
 
 ## v0.20.12 [2023-09-14]
