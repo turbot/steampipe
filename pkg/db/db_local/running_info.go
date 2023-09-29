@@ -20,8 +20,9 @@ const RunningDBStructVersion = 20220411
 
 // RunningDBInstanceInfo contains data about the running process and it's credentials
 type RunningDBInstanceInfo struct {
-	Pid                     int               `json:"pid"`
-	ResolvedListenAddresses []string          `json:"resolved_listen"`
+	Pid int `json:"pid"`
+	// this has changed in 21.x, but keeping the json tag the same to maintain compatibility with 20.x clients
+	ResolvedListenAddresses []string          `json:"listen"`
 	GivenListenAddresses    []string          `json:"raw_listen"`
 	Port                    int               `json:"port"`
 	Invoker                 constants.Invoker `json:"invoker"`
@@ -29,9 +30,6 @@ type RunningDBInstanceInfo struct {
 	User                    string            `json:"user"`
 	Database                string            `json:"database"`
 	StructVersion           int64             `json:"struct_version"`
-
-	// legacy listen to maintain compatibility with 0.20.x clients
-	LegacyListen []string `json:"listen"`
 }
 
 func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int, databaseName string, password string, invoker constants.Invoker) *RunningDBInstanceInfo {
@@ -47,9 +45,6 @@ func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int,
 		Database:                databaseName,
 		Invoker:                 invoker,
 		StructVersion:           RunningDBStructVersion,
-
-		// also add to the legacy "listen" property, so that 0.20.x can still connect
-		LegacyListen: resolvedListenAddresses,
 	}
 
 	return dbState
