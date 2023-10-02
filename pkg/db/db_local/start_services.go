@@ -8,9 +8,11 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/jackc/pgx/v5"
+	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -611,4 +613,51 @@ func ensureTempTablePermissions(ctx context.Context, databaseName string, rootCl
 		return err
 	}
 	return nil
+}
+
+// kill all postgres processes that were started as part of steampipe (if any)
+func killInstanceIfAny(ctx context.Context) bool {
+	processes, err := FindAllSteampipePostgresInstances(ctx)
+	if err != nil {
+		return false
+	}
+	wg := sync.WaitGroup{}
+	for _, process := range processes {
+		wg.Add(1)
+		go func(p *psutils.Process) {
+			doThreeStepPostgresExit(ctx, p)
+			wg.Done()
+		}(process)
+	}
+	wg.Wait()
+	return len(processes) > 0
+}
+
+func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process, error) {
+	var instances []*psutils.Process
+	allProcesses, err := psutils.ProcessesWithContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range allProcesses {
+		cmdLine, err := p.CmdlineSliceWithContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if isSteampipePostgresProcess(ctx, cmdLine) {
+			instances = append(instances, p)
+		}
+	}
+	return instances, nil
+}
+
+func isSteampipePostgresProcess(ctx context.Context, cmdline []string) bool {
+	if len(cmdline) < 1 {
+		return false
+	}
+	if strings.Contains(cmdline[0], "postgres") {
+		// this is a postgres process - but is it a steampipe service?
+		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", constants.AppName))
+	}
+	return false
 }
