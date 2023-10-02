@@ -1,4 +1,4 @@
-## v0.21.0 [tbd]
+## v0.21.0 [2023-10-02]
 _Whats new_
 * Add support for defining rate limits and max concurrency for plugin execution. ([#3746](https://github.com/turbot/steampipe/issues/3746))
 * Add support for defining multiple instances of a plugin version using a `plugin` connection config block. ([#3807](https://github.com/turbot/steampipe/issues/3807))
