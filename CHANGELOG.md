@@ -1,5 +1,5 @@
 ## v0.21.0 [2023-10-02]
-_Whats new_
+_Whats new?_
 * Define [rate and concurrency limits](https://steampipe.io/docs/guides/limiter#concurrency--rate-limiting) for plugin execution. ([#3746](https://github.com/turbot/steampipe/issues/3746))
 * Define multiple instances of a plugin version using a `plugin` connection config block. ([#3807](https://github.com/turbot/steampipe/issues/3807))
 * The maximum memory used by plugins and the CLI can now be specified either in `plugin` instance definitions or the new `plugin` options block. ([#3807](https://github.com/turbot/steampipe/issues/3807))
@@ -53,7 +53,7 @@ _Deprecations and migrations_
 * Deprecated `terminal options`.
 
 ## v0.20.12 [2023-09-14]
-_Whats new_
+_Whats new?_
 * Updated help outputs for steampipe mod commands. ([#1817](https://github.com/turbot/steampipe/issues/1817))
 
 _Bug fixes_
@@ -120,7 +120,7 @@ _Bug fixes_
 * Ensure `Ready` connections are set to `Pending` state on startup. This makes sure connection changes are reflected in the connection schema if a query is executed soon after startup. ([#3483](https://github.com/turbot/steampipe/issues/3483))
 
 ## v0.20.3 [2023-05-30]
-_Whats new_
+_Whats new?_
 * Update refresh connections to execute updates serially by default.  ([#3498](https://github.com/turbot/steampipe/issues/3498))
 
 _Bug fixes_
@@ -131,7 +131,7 @@ _Bug fixes_
 * Don't use custom theme color `yellow` for severity cards, to avoid clashing with Tailwind's yellow palette. ([#3501](https://github.com/turbot/steampipe/issues/3501))
 
 ## v0.20.2 [2023-05-19]
-_Whats new_
+_Whats new?_
 * Re-add support for legacy command-schema. ([#3457](https://github.com/turbot/steampipe/issues/3457))
 
 _Bug fixes_
