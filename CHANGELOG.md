@@ -1,3 +1,7 @@
+## v0.21.1 [2023-10-03]
+_Bug fixes_
+* Add back support for the `mod-location` flag in the `steampipe variable list` command. ([#3942](https://github.com/turbot/steampipe/issues/3942))
+
 ## v0.21.0 [2023-10-02]
 _Whats new?_
 * Define [rate and concurrency limits](https://steampipe.io/docs/guides/limiter#concurrency--rate-limiting) for plugin execution. ([#3746](https://github.com/turbot/steampipe/issues/3746))

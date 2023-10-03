@@ -55,6 +55,7 @@ Example:
 		OnCmd(cmd).
 		AddBoolFlag("outdated", false, "Check each variable in the list for updates").
 		AddBoolFlag(constants.ArgHelp, false, "Help for variable list", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddModLocationFlag().
 		AddStringFlag(constants.ArgOutput, constants.OutputFormatTable, "Select a console output format: table or json")
 
 	return cmd
