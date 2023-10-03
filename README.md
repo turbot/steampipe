@@ -330,6 +330,8 @@ We thrive on feedback and community involvement!
 
 **Want to work with the team?** → We are [hiring](https://turbot.com/careers?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)!
 
+**Want to follow us for updates?** → Here's our  [LinkedIn](https://www.linkedin.com/company/turbot/)!
+
 ## Turbot Pipes
 
 Want a hosted version of Steampipe? Bring your team to [Turbot Pipes](https://pipes.turbot.com?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).  
