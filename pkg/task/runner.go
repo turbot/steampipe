@@ -162,7 +162,8 @@ func showNotificationsForCommand(cmd *cobra.Command, cmdArgs []string) bool {
 		IsPluginManagerCmd(cmd) ||
 		isServiceStopCmd(cmd) ||
 		IsBatchQueryCmd(cmd, cmdArgs) ||
-		isCompletionCmd(cmd))
+		isCompletionCmd(cmd) ||
+		isPluginListCmd(cmd))
 }
 
 func isServiceStopCmd(cmd *cobra.Command) bool {
@@ -179,4 +180,7 @@ func isPluginUpdateCmd(cmd *cobra.Command) bool {
 }
 func IsBatchQueryCmd(cmd *cobra.Command, cmdArgs []string) bool {
 	return cmd.Name() == "query" && len(cmdArgs) > 0
+}
+func isPluginListCmd(cmd *cobra.Command) bool {
+	return cmd.Name() == "list"
 }

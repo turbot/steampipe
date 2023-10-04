@@ -73,14 +73,17 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # check table output
   run steampipe plugin list --install-dir $MY_TEST_COPY
-  echo $output
+
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_table.txt)"
 
   # check json output
-  run steampipe plugin list --install-dir $MY_TEST_COPY --output json
-  echo $output
+  steampipe plugin list --install-dir $MY_TEST_COPY --output json > output.json
+  run jd -f patch $TEST_DATA_DIR/expected_plugin_list_json.json output.json
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+
   rm -rf $MY_TEST_COPY
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_json.json)"
+  assert_equal "$diff" ""
 }
 
 @test "plugin list - output table and json (with a missing plugin)" {
@@ -95,14 +98,16 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # check table output
   run steampipe plugin list --install-dir $MY_TEST_COPY
-  echo $output
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_table_with_missing_plugins.txt)"
 
   # check json output
-  run steampipe plugin list --install-dir $MY_TEST_COPY --output json
-  echo $output
-  rm -rf $MY_TEST_COPY
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_json_with_missing_plugins.json)"
+  steampipe plugin list --install-dir $MY_TEST_COPY --output json > output.json
+
+  run jd -f patch $TEST_DATA_DIR/expected_plugin_list_json_with_missing_plugins.json output.json
+  diff=$($FILE_PATH/json_patch.sh $output)
+  
+  rm -rf $MY_TEST_COPY   
+  assert_equal "$diff" ""
 }
 
 # # TODO: finds other ways to simulate failed plugins
@@ -123,10 +128,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_table_with_failed_plugins.txt)"
 
   # check json output
-  run steampipe plugin list --install-dir $MY_TEST_COPY --output json
-  echo $output
+  steampipe plugin list --install-dir $MY_TEST_COPY --output json > output.json
+  run jd -f patch $TEST_DATA_DIR/expected_plugin_list_json_with_failed_plugins.json output.json
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+
   rm -rf $MY_TEST_COPY
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_plugin_list_json_with_failed_plugins.json)"
+  assert_equal "$diff" ""
 }
 
 @test "verify that installing plugins creates individual version.json files" {
@@ -167,10 +175,20 @@ load "$LIB_BATS_SUPPORT/load.bash"
   
   [ ! -f $vFile1 ] && fail "could not find $vFile1"
   [ ! -f $vFile2 ] && fail "could not find $vFile2"
-  
-  assert_equal "$(cat $vFile1)" "$file1Content"
-  assert_equal "$(cat $vFile2)" "$file2Content"
-  
+  echo "$file1Content" > $MY_TEST_COPY/f1.json
+  echo "$file2Content" > $MY_TEST_COPY/f2.json
+  cat "$vFile1" > $MY_TEST_COPY/v1.json
+  cat "$vFile2" > $MY_TEST_COPY/v2.json
+
+  # Compare the json file contents
+  run jd -f patch "$MY_TEST_COPY/f1.json" "$MY_TEST_COPY/v1.json"
+  diff=$($FILE_PATH/json_patch.sh $output)
+  assert_equal $diff ""
+
+  run jd -f patch "$MY_TEST_COPY/f2.json" "$MY_TEST_COPY/v2.json"
+  diff=$($FILE_PATH/json_patch.sh $output)
+  assert_equal $diff ""
+
   rm -rf $MY_TEST_COPY
 }
 
@@ -196,8 +214,19 @@ load "$LIB_BATS_SUPPORT/load.bash"
   [ ! -f $vFile1 ] && fail "could not find $vFile1"
   [ ! -f $vFile2 ] && fail "could not find $vFile2"
   
-  assert_equal "$(cat $vFile1)" "$file1Content"
-  assert_equal "$(cat $vFile2)" "$file2Content"
+  echo "$file1Content" > $MY_TEST_COPY/f1.json
+  echo "$file2Content" > $MY_TEST_COPY/f2.json
+  cat "$vFile1" > $MY_TEST_COPY/v1.json
+  cat "$vFile2" > $MY_TEST_COPY/v2.json
+
+  # Compare the json file contents
+  run jd -f patch "$MY_TEST_COPY/f1.json" "$MY_TEST_COPY/v1.json"
+  diff=$($FILE_PATH/json_patch.sh $output)
+  assert_equal $diff ""
+
+  run jd -f patch "$MY_TEST_COPY/f2.json" "$MY_TEST_COPY/v2.json"
+  diff=$($FILE_PATH/json_patch.sh $output)
+  assert_equal $diff ""
   
   rm -rf $MY_TEST_COPY
 }
@@ -223,7 +252,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   
   [ ! -f $vFile ] && fail "could not find $vFile"
   
-  assert_equal "$(cat $vFile)" "$fileContent"
+  echo "$fileContent" > $MY_TEST_COPY/f.json
+  cat "$vFile" > $MY_TEST_COPY/v.json
+
+  # Compare the json file contents
+  run jd -f patch "$MY_TEST_COPY/f.json" "$MY_TEST_COPY/v.json"
+  diff=$($FILE_PATH/json_patch.sh $output)
+  assert_equal $diff ""
   
   rm -rf $MY_TEST_COPY
 }
@@ -246,7 +281,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   
   [ ! -f $vFile ] && fail "could not find $vFile"
   
-  assert_equal "$(cat $vFile)" "$fileContent"
+  echo "$fileContent" > $MY_TEST_COPY/f.json
+  cat "$vFile" > $MY_TEST_COPY/v.json
+
+  # Compare the json file contents
+  run jd -f patch "$MY_TEST_COPY/f.json" "$MY_TEST_COPY/v.json"
+  diff=$($FILE_PATH/json_patch.sh $output)
+  assert_equal $diff ""
   
   rm -rf $MY_TEST_COPY
 }

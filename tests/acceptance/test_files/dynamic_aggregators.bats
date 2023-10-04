@@ -8,11 +8,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   skip "currently does not pass due to bug - https://github.com/turbot/steampipe/issues/3743"
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_same_table_cols.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_same_table_cols.spc
 
-  run steampipe query "select c1,c2 from dyn_agg.t1 order by c1" --output json
-  echo $output
+  steampipe query "select c1,c2 from dyn_agg.t1 order by c1" --output json > output.json
+  run jd -f patch "$TEST_DATA_DIR/dynamic_aggregators_same_tables_cols_result.json" output.json
+  diff=$($FILE_PATH/json_patch.sh $output)
+  assert_equal $diff ""
 
+  rm -f output.json
   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_same_table_cols.spc
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_same_tables_cols_result.json)"
 }
 
 # Aggregating two connections with different tables defined.

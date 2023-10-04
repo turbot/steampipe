@@ -339,12 +339,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe service start
 
   steampipe query "select unique_col, a, b from chaos_cache_check" --output json &> output1.json
-  # store the result from 1st query in `content`
-  content=$(cat output1.json)
 
   steampipe query "select unique_col, a, b from chaos_cache_check" --output json &> output2.json
-  # store the result from 2nd query in `new_content`
-  new_content=$(cat output2.json)
 
   echo $content
   echo $new_content
@@ -353,7 +349,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe service stop
 
   # verify that `content` and `new_content` are the same
-  assert_equal "$new_content" "$content"
+  run jd -f patch output1.json output2.json
+  diff=$($FILE_PATH/json_patch.sh $output)
+  assert_equal $diff ""
 
   rm -f output1.json
   rm -f output2.json
