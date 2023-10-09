@@ -27,7 +27,7 @@ func (d *ResourceDependency) IsRuntimeDependency() bool {
 		return false
 	}
 	// parse the traversal as a property path
-	propertyPath, err := ParseResourcePropertyPath(hclhelpers.TraversalAsString(d.Traversals[0]))
+	propertyPath, err := ParseResourcePropertyPath(hclhelpers.TraversalAsString(d.Traversals[0]), d.Range)
 	if err != nil {
 		return false
 	}

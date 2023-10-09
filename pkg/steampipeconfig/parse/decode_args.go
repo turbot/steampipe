@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -235,7 +236,7 @@ dep_loop:
 		}
 	}
 
-	propertyPath, err := modconfig.ParseResourcePropertyPath(propertyPathStr)
+	propertyPath, err := modconfig.ParseResourcePropertyPath(propertyPathStr, expr.Range())
 	if err != nil {
 		return false, nil, err
 	}

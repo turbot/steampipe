@@ -3,6 +3,8 @@ package modconfig
 import (
 	"fmt"
 	"strings"
+
+	"github.com/hashicorp/hcl/v2"
 )
 
 type ParsedPropertyPath struct {
@@ -35,7 +37,8 @@ func (p *ParsedPropertyPath) String() string {
 	return p.Original
 }
 
-func ParseResourcePropertyPath(propertyPath string) (*ParsedPropertyPath, error) {
+func ParseResourcePropertyPath(propertyPath string, hclRange hcl.Range) (*ParsedPropertyPath, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
 	res := &ParsedPropertyPath{Original: propertyPath}
 
 	// valid property paths:
@@ -45,7 +48,11 @@ func ParseResourcePropertyPath(propertyPath string) (*ParsedPropertyPath, error)
 
 	parts := strings.Split(propertyPath, ".")
 	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid property path '%s' passed to ParseResourcePropertyPath", propertyPath)
+		diags = append(diags, &hcl.Diagnostic{
+			Summary: fmt.Sprintf("invalid property path '%s' passed to ParseResourcePropertyPath", propertyPath),
+			Subject: &hclRange,
+		})
+		return nil, diags
 	}
 
 	// special case handling for runtime dependencies which may have use the "self" qualifier
@@ -60,7 +67,11 @@ func ParseResourcePropertyPath(propertyPath string) (*ParsedPropertyPath, error)
 	}
 	// at this point the length of property path must be at least 3 (i.e.<mod>.<resource>.<name>)
 	if len(parts) < 3 {
-		return nil, fmt.Errorf("invalid property path '%s' passed to ParseResourcePropertyPath", propertyPath)
+		diags = append(diags, &hcl.Diagnostic{
+			Summary: fmt.Sprintf("invalid property path '%s' passed to ParseResourcePropertyPath", propertyPath),
+			Subject: &hclRange,
+		})
+		return nil, diags
 	}
 	switch len(parts) {
 	case 3:
@@ -76,7 +87,11 @@ func ParseResourcePropertyPath(propertyPath string) (*ParsedPropertyPath, error)
 	}
 
 	if !IsValidResourceItemType(res.ItemType) {
-		return nil, fmt.Errorf("invalid property path '%s' passed to ParseResourcePropertyPath", propertyPath)
+		diags = append(diags, &hcl.Diagnostic{
+			Summary: fmt.Sprintf("invalid property path '%s' passed to ParseResourcePropertyPath", propertyPath),
+			Subject: &hclRange,
+		})
+		return nil, diags
 	}
 
 	return res, nil
