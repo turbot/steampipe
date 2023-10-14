@@ -232,7 +232,7 @@ func getTerminalColumnsRequiredForString(str string) int {
 
 func displayJSON(ctx context.Context, result *queryresult.Result) int {
 	rowErrors := 0
-	var jsonOutput []map[string]interface{}
+	jsonOutput := make([]map[string]interface{}, 0)
 
 	// define function to add each row to the JSON output
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
