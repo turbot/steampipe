@@ -2,12 +2,12 @@ package dashboardtypes
 
 import (
 	"fmt"
+	"github.com/turbot/go-kit/type_conversion"
 	"log"
 	"sync"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/type_conversion"
 )
 
 // ResolvedRuntimeDependency is a wrapper for RuntimeDependency which contains the resolved value

@@ -462,7 +462,7 @@ func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context
 
 	for _, connectionState := range connectionStates {
 		connectionName := connectionState.ConnectionName
-		remoteSchema := utils.PluginFQNToSchemaName(connectionState.Plugin)
+		pluginSchemaName := utils.PluginFQNToSchemaName(connectionState.Plugin)
 		var sql string
 
 		s.exemplarSchemaMapMut.Lock()
@@ -473,7 +473,7 @@ func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context
 			sql = getCloneSchemaQuery(exemplarSchemaName, connectionState)
 		} else {
 			// just get sql to execute update query, and update the connection state table, in a transaction
-			sql = db_common.GetUpdateConnectionQuery(connectionName, remoteSchema)
+			sql = db_common.GetUpdateConnectionQuery(connectionName, pluginSchemaName)
 		}
 		s.exemplarSchemaMapMut.Unlock()
 

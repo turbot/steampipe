@@ -2,10 +2,10 @@ package parse
 
 import (
 	"fmt"
+	"github.com/turbot/go-kit/hcl_helpers"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -21,7 +21,7 @@ func newUnresolvedBlock(block *hcl.Block, name string, dependencies map[string]*
 		Name:         name,
 		Block:        block,
 		Dependencies: dependencies,
-		DeclRange:    hclhelpers.BlockRange(block),
+		DeclRange:    hcl_helpers.BlockRange(block),
 	}
 }
 
