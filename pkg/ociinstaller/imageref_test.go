@@ -129,8 +129,8 @@ func TestGetOrgNameAndStream(t *testing.T) {
 		"otherOrg/aws@latest":                          {"otherOrg", "aws", "latest"},
 		"hub.steampipe.io/plugins/otherOrg/aws@1.0.0":  {"otherOrg", "aws", "1.0.0"},
 		"otherOrg/aws@1.0.0":                           {"otherOrg", "aws", "1.0.0"},
-		"differentRegistry.com/otherOrg/aws@latest":    {"differentRegistry.com", "aws", "latest"},
-		"differentRegistry.com/otherOrg/aws@1.0.0":     {"differentRegistry.com", "aws", "1.0.0"},
+		"example.com/otherOrg/aws@latest":              {"example.com/otherOrg", "aws", "latest"},
+		"example.com/otherOrg/aws@1.0.0":               {"example.com/otherOrg", "aws", "1.0.0"},
 	}
 
 	for testCase, want := range cases {
@@ -140,6 +140,32 @@ func TestGetOrgNameAndStream(t *testing.T) {
 			got := [3]string{org, name, stream}
 			if got != want {
 				t.Errorf("TestGetOrgNameAndStream failed for case '%s': expected %s, got %s", testCase, want, got)
+			}
+		})
+	}
+
+}
+
+func TestIsFromSteampipeHub(t *testing.T) {
+	cases := map[string]bool{
+		"hub.steampipe.io/plugins/turbot/aws@latest":   true,
+		"turbot/aws@latest":                            true,
+		"aws@latest":                                   true,
+		"hub.steampipe.io/plugins/turbot/aws@1.0.0":    true,
+		"hub.steampipe.io/plugins/otherOrg/aws@latest": true,
+		"otherOrg/aws@latest":                          true,
+		"hub.steampipe.io/plugins/otherOrg/aws@1.0.0":  true,
+		"otherOrg/aws@1.0.0":                           true,
+		"example.com/otherOrg/aws@latest":              false,
+		"example.com/otherOrg/aws@1.0.0":               false,
+	}
+
+	for testCase, want := range cases {
+		t.Run(testCase, func(t *testing.T) {
+			r := NewSteampipeImageRef(testCase)
+			got := r.IsFromSteampipeHub()
+			if got != want {
+				t.Errorf("TestIsFromSteampipeHub failed for case '%s': expected %t, got %t", testCase, want, got)
 			}
 		})
 	}
