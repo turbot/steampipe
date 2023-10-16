@@ -157,7 +157,7 @@ const CheckGroupingEditorItem = ({
           <span>=</span>
           <div className="grow">
             <input
-              className="flex w-full p-2 bg-dashboard text-foreground border border-divide rounded-md"
+              className="flex w-full p-2 bg-dashboard text-foreground border border-black-scale-2 rounded-md"
               onChange={(e) =>
                 update(index, {
                   ...item,
