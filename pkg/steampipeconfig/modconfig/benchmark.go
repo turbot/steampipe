@@ -2,11 +2,11 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/hcl_helpers"
 	"sort"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/go-kit/hcl_helpers"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/utils"
