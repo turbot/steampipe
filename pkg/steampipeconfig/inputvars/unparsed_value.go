@@ -12,6 +12,7 @@ import (
 	"github.com/turbot/terraform-components/tfdiags"
 )
 
+// TODO replace this with /Users/kai/Dev/github/turbot/terraform-components/backend/unparsed_value.go
 // UnparsedVariableValue represents a variable value provided by the caller
 // whose parsing must be deferred until configuration is available.
 //
@@ -24,7 +25,7 @@ type UnparsedVariableValue interface {
 	//
 	// If error diagnostics are returned, the resulting value may be invalid
 	// or incomplete.
-	ParseVariableValue(mode var_config.VariableParsingMode) (*InputValue, tfdiags.Diagnostics)
+	ParseVariableValue(mode var_config.VariableParsingMode) (*terraform.InputValue, tfdiags.Diagnostics)
 }
 
 // ParseVariableValues processes a map of unparsed variable values by
@@ -40,13 +41,15 @@ type UnparsedVariableValue interface {
 // If this function returns without any errors in the diagnostics, the
 // resulting input values map is guaranteed to be valid and ready to pass
 // to terraform.NewContext. If the diagnostics contains errors, the returned
-//  terraform.InputValue may be incomplete but will include the subset of variables
+//
+//	terraform.InputValue may be incomplete but will include the subset of variables
+//
 // that were successfully processed, allowing for careful analysis of the
 // partial result.
-func ParseVariableValues( terraform.InputValueUnparsed map[string]UnparsedVariableValue, variablesMap *modconfig.ModVariableMap, validate bool) ( terraform.InputValue, tfdiags.Diagnostics) {
+func ParseVariableValues(inputValueUnparsed map[string]UnparsedVariableValue, variablesMap *modconfig.ModVariableMap, validate bool) (terraform.InputValue, tfdiags.Diagnostics) {
 
 	var diags tfdiags.Diagnostics
-	ret := make( terraform.InputValue, len( terraform.InputValueUnparsed))
+	ret := make(terraform.InputValue, len(inputValueUnparsed))
 
 	publicVariables := variablesMap.PublicVariables
 
@@ -56,7 +59,7 @@ func ParseVariableValues( terraform.InputValueUnparsed map[string]UnparsedVariab
 	// the result can therefore be overwhelming.
 	seenUndeclaredInFile := 0
 
-	for name, unparsedVal := range  terraform.InputValueUnparsed {
+	for name, unparsedVal := range inputValueUnparsed {
 		var mode var_config.VariableParsingMode
 		config, declared := publicVariables[name]
 		if declared {
@@ -73,7 +76,7 @@ func ParseVariableValues( terraform.InputValueUnparsed map[string]UnparsedVariab
 
 		if !declared {
 			switch val.SourceType {
-			case ValueFromConfig, ValueFromAutoFile, ValueFromNamedFile:
+			case terraform.ValueFromConfig, terraform.ValueFromAutoFile, terraform.ValueFromNamedFile:
 				// We allow undeclared names for variable values from files and warn in case
 				// users have forgotten a variable {} declaration or have a typo in their var name.
 				// Some users will actively ignore this warning because they use a .tfvars file
@@ -87,12 +90,12 @@ func ParseVariableValues( terraform.InputValueUnparsed map[string]UnparsedVariab
 				}
 				seenUndeclaredInFile++
 
-			case ValueFromEnvVar:
+			case terraform.ValueFromEnvVar:
 				// We allow and ignore undeclared names for environment
 				// variables, because users will often set these globally
 				// when they are used across many (but not necessarily all)
 				// configurations.
-			case ValueFromCLIArg:
+			case terraform.ValueFromCLIArg:
 				diags = diags.Append(tfdiags.Sourceless(
 					tfdiags.Error,
 					"Value for undeclared variable",
@@ -138,9 +141,9 @@ func ParseVariableValues( terraform.InputValueUnparsed map[string]UnparsedVariab
 			// result is complete for any calling code that wants to cautiously
 			// analyze it for diagnostic purposes. Since our diagnostics now
 			// includes an error, normal processing will ignore this result.
-			ret[name] = &InputValue{
+			ret[name] = &terraform.InputValue{
 				Value:       cty.DynamicVal,
-				SourceType:  ValueFromConfig,
+				SourceType:  terraform.ValueFromConfig,
 				SourceRange: tfdiags.SourceRangeFromHCL(vc.DeclRange),
 			}
 
@@ -155,9 +158,9 @@ func ParseVariableValues( terraform.InputValueUnparsed map[string]UnparsedVariab
 			}
 		} else {
 			// not required - use default
-			ret[name] = &InputValue{
+			ret[name] = &terraform.InputValue{
 				Value:       vc.Default,
-				SourceType:  ValueFromConfig,
+				SourceType:  terraform.ValueFromConfig,
 				SourceRange: tfdiags.SourceRangeFromHCL(vc.DeclRange),
 			}
 		}
@@ -195,15 +198,15 @@ type UnparsedInteractiveVariableValue struct {
 
 //var _ UnparsedVariableValue = UnparsedInteractiveVariableValue{}
 
-func (v UnparsedInteractiveVariableValue) ParseVariableValue(mode var_config.VariableParsingMode) (*InputValue, tfdiags.Diagnostics) {
+func (v UnparsedInteractiveVariableValue) ParseVariableValue(mode var_config.VariableParsingMode) (*terraform.InputValue, tfdiags.Diagnostics) {
 	var diags tfdiags.Diagnostics
 	val, valDiags := mode.Parse(v.Name, v.RawValue)
 	diags = diags.Append(valDiags)
 	if diags.HasErrors() {
 		return nil, diags
 	}
-	return &InputValue{
+	return &terraform.InputValue{
 		Value:      val,
-		SourceType: ValueFromInput,
+		SourceType: terraform.ValueFromInput,
 	}, diags
 }
