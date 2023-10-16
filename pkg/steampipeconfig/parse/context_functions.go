@@ -2,14 +2,14 @@ package parse
 
 import (
 	"github.com/hashicorp/hcl/v2/ext/tryfunc"
-	"github.com/hashicorp/terraform/lang/funcs"
+	"github.com/turbot/terraform-components/lang/funcs"
 	ctyyaml "github.com/zclconf/go-cty-yaml"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
 	"github.com/zclconf/go-cty/cty/function/stdlib"
 )
 
-// from `github.com/hashicorp/terraform/lang/functions.go`
+// from `github.com/turbot/terraform-components/lang/functions.go`
 
 // ContextFunctions returns the set of functions that should be used to when evaluating expressions
 func ContextFunctions(workspaceDir string) map[string]function.Function {

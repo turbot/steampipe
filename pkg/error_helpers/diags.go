@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/terraform-components/tfdiags"
 )
 
 // DiagsToError converts tfdiags diags into an error
