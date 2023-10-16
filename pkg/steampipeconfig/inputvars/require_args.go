@@ -8,6 +8,8 @@ import (
 	"github.com/turbot/terraform-components/tfdiags"
 )
 
+const ValueFromModFile terraform.ValueSourceType = 'M'
+
 func CollectVariableValuesFromModRequire(m *modconfig.Mod, lock *versionmap.WorkspaceLock) (terraform.InputValues, error) {
 	res := make(terraform.InputValues)
 	if m.Require != nil {
@@ -37,7 +39,7 @@ func CollectVariableValuesFromModRequire(m *modconfig.Mod, lock *versionmap.Work
 
 					res[varFullName] = &terraform.InputValue{
 						Value:       varVal,
-						SourceType:  terraform.ValueFromModFile,
+						SourceType:  ValueFromModFile,
 						SourceRange: sourceRange,
 					}
 				}
