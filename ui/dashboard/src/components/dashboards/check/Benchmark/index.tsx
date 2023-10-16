@@ -1,11 +1,11 @@
 import Card, { CardProps, CardType } from "../../Card";
 import CheckGrouping from "../CheckGrouping";
-// import CheckGroupingConfig from "../CheckGroupingConfig";
 import ContainerTitle from "../../titles/ContainerTitle";
 import Error from "../../Error";
 import Grid from "../../layout/Grid";
 import Panel from "../../layout/Panel";
 import PanelControls from "../../layout/Panel/PanelControls";
+import useCheckGroupingConfig from "../../../../hooks/useCheckGroupingConfig";
 import usePanelControls from "../../../../hooks/usePanelControls";
 import {
   BenchmarkTreeProps,
@@ -13,17 +13,17 @@ import {
   CheckNode,
   CheckSummary,
 } from "../common";
+import { CheckGroupingEditorModal } from "../CheckGroupingEditorModal";
 import {
   CheckGroupingProvider,
   useCheckGrouping,
 } from "../../../../hooks/useCheckGrouping";
-// import { classNames } from "../../../../utils/styles";
 import { default as BenchmarkType } from "../common/Benchmark";
 import { getComponent, registerComponent } from "../../index";
 import { noop } from "../../../../utils/func";
 import { PanelDefinition } from "../../../../types";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Width } from "../../common";
 
 const Table = getComponent("table");
@@ -63,10 +63,20 @@ const Benchmark = (props: InnerCheckProps) => {
       data: benchmarkDataTable,
     };
   }, [benchmarkDataTable, props.definition]);
-  const { panelControls: benchmarkControls } = usePanelControls(
-    definitionWithData,
-    props.showControls
-  );
+  const { panelControls: benchmarkControls, setCustomControls } =
+    usePanelControls(definitionWithData, props.showControls);
+  const [showGroupingControls, setShowGroupingControls] = useState(false);
+  const groupingConfig = useCheckGroupingConfig();
+
+  useEffect(() => {
+    setCustomControls([
+      {
+        action: async () => setShowGroupingControls(true),
+        icon: "workspaces",
+        title: "Grouping",
+      },
+    ]);
+  }, [setCustomControls]);
 
   const summaryCards = useMemo(() => {
     if (!props.grouping) {
@@ -82,7 +92,7 @@ const Benchmark = (props: InnerCheckProps) => {
         cumulative.skip += current.skip;
         return cumulative;
       },
-      { error: 0, alarm: 0, ok: 0, info: 0, skip: 0 }
+      { error: 0, alarm: 0, ok: 0, info: 0, skip: 0 },
     );
     const summary_cards = [
       {
@@ -164,62 +174,70 @@ const Benchmark = (props: InnerCheckProps) => {
   }
 
   return (
-    <Grid
-      name={props.definition.name}
-      width={props.definition.width}
-      events={{
-        onMouseEnter: props.showControls
-          ? () => setShowBenchmarkControls(true)
-          : noop,
-        onMouseLeave: () => setShowBenchmarkControls(false),
-      }}
-      setRef={setReferenceElement}
-    >
-      {!dashboard?.artificial && (
-        <ContainerTitle title={props.benchmark.title} />
-      )}
-      {showBenchmarkControls && (
-        <PanelControls
-          referenceElement={referenceElement}
-          controls={benchmarkControls}
+    <>
+      <Grid
+        name={props.definition.name}
+        width={props.definition.width}
+        events={{
+          onMouseEnter: props.showControls
+            ? () => setShowBenchmarkControls(true)
+            : noop,
+          onMouseLeave: () => setShowBenchmarkControls(false),
+        }}
+        setRef={setReferenceElement}
+      >
+        {!dashboard?.artificial && (
+          <ContainerTitle title={props.benchmark.title} />
+        )}
+        {showBenchmarkControls && (
+          <PanelControls
+            referenceElement={referenceElement}
+            controls={benchmarkControls}
+          />
+        )}
+        <Grid name={`${props.definition.name}.container.summary`}>
+          {summaryCards.map((summaryCard) => {
+            const cardProps: CardProps = {
+              name: summaryCard.name,
+              dashboard: props.definition.dashboard,
+              display_type: summaryCard.display_type as CardType,
+              panel_type: "card",
+              properties: summaryCard.properties,
+              status: "complete",
+              width: summaryCard.width as Width,
+            };
+            return (
+              <Panel
+                key={summaryCard.name}
+                definition={cardProps}
+                parentType="benchmark"
+                showControls={false}
+              >
+                <Card {...cardProps} />
+              </Panel>
+            );
+          })}
+        </Grid>
+        <Grid name={`${props.definition.name}.container.tree`}>
+          <BenchmarkTree
+            name={`${props.definition.name}.container.tree.results`}
+            dashboard={props.definition.dashboard}
+            panel_type="benchmark_tree"
+            properties={{
+              grouping: props.grouping,
+              first_child_summaries: props.firstChildSummaries,
+            }}
+            status="complete"
+          />
+        </Grid>
+      </Grid>
+      {showGroupingControls && (
+        <CheckGroupingEditorModal
+          config={groupingConfig}
+          setShowEditor={setShowGroupingControls}
         />
       )}
-      <Grid name={`${props.definition.name}.container.summary`}>
-        {summaryCards.map((summaryCard) => {
-          const cardProps: CardProps = {
-            name: summaryCard.name,
-            dashboard: props.definition.dashboard,
-            display_type: summaryCard.display_type as CardType,
-            panel_type: "card",
-            properties: summaryCard.properties,
-            status: "complete",
-            width: summaryCard.width as Width,
-          };
-          return (
-            <Panel
-              key={summaryCard.name}
-              definition={cardProps}
-              parentType="benchmark"
-              showControls={false}
-            >
-              <Card {...cardProps} />
-            </Panel>
-          );
-        })}
-      </Grid>
-      <Grid name={`${props.definition.name}.container.tree`}>
-        <BenchmarkTree
-          name={`${props.definition.name}.container.tree.results`}
-          dashboard={props.definition.dashboard}
-          panel_type="benchmark_tree"
-          properties={{
-            grouping: props.grouping,
-            first_child_summaries: props.firstChildSummaries,
-          }}
-          status="complete"
-        />
-      </Grid>
-    </Grid>
+    </>
   );
 };
 
@@ -237,7 +255,7 @@ const BenchmarkTableView = ({
 }: BenchmarkTableViewProps) => {
   const benchmarkDataTable = useMemo(
     () => benchmark.get_data_table(),
-    [benchmark]
+    [benchmark],
   );
 
   return (
