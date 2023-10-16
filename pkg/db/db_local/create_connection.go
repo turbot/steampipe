@@ -40,8 +40,7 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 
 	// if no database name is passed, use constants.DatabaseUser
 	if len(opts.Username) == 0 {
-		// HACK
-		opts.Username = "root" //constants.DatabaseUser
+		opts.Username = constants.DatabaseUser
 	}
 	// if no username name is passed, deduce it from the db status
 	if len(opts.DatabaseName) == 0 {

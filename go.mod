@@ -2,10 +2,6 @@ module github.com/turbot/steampipe
 
 go 1.21
 
-replace github.com/turbot/steampipe-plugin-sdk/v5 => /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
-
-replace github.com/turbot/go-kit => /Users/kai/Dev/github/turbot/go-kit
-
 require (
 	github.com/Machiel/slugify v1.0.1
 	github.com/Masterminds/semver/v3 v3.2.1
