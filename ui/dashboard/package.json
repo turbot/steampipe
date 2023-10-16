@@ -17,7 +17,7 @@
   "dependencies": {
     "@headlessui/react": "1.7.17",
     "@heroicons/react": "2.0.18",
-    "@material-symbols/svg-300": "0.12.0",
+    "@material-symbols/svg-300": "0.13.0",
     "@popperjs/core": "2.11.8",
     "@supabase/sql-formatter": "4.0.3",
     "color-convert": "2.0.1",
@@ -29,6 +29,7 @@
     "echarts-for-react": "3.0.2",
     "echarts-gl": "2.0.9",
     "file-saver": "2.0.5",
+    "framer-motion": "10.16.4",
     "jq-web": "0.5.1",
     "lodash": "4.17.21",
     "react": "18.2.0",

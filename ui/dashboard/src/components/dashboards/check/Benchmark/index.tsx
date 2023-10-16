@@ -25,6 +25,7 @@ import { PanelDefinition } from "../../../../types";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useEffect, useMemo, useState } from "react";
 import { Width } from "../../common";
+import { Reorder } from "framer-motion";
 
 const Table = getComponent("table");
 

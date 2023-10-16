@@ -3,10 +3,8 @@ import Modal from "../../../Modal";
 import NeutralButton from "../../../forms/NeutralButton";
 import StartCase from "lodash/startCase";
 import { classNames } from "../../../../utils/styles";
-import {
-  CheckDisplayGroup,
-  CheckDisplayGroupType,
-} from "../../../dashboards/check/common";
+import { CheckDisplayGroup, CheckDisplayGroupType } from "../common";
+import { Reorder, useDragControls } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -64,14 +62,11 @@ const CheckGroupingTypeSelect = ({
       }}
       value={type}
     >
-      <option value={""}>Select a grouping type...</option>
+      <option defaultValue={currentType} value={""}>
+        Select a grouping type...
+      </option>
       {types.map((t) => (
-        <option
-          key={t}
-          className="capitalize"
-          selected={currentType === t}
-          value={t}
-        >
+        <option key={t} className="capitalize" value={t}>
           {StartCase(t)}
         </option>
       ))}
@@ -107,6 +102,8 @@ const CheckGroupingEditorItem = ({
   remove,
   update,
 }: CheckGroupingEditorItemProps) => {
+  const dragControls = useDragControls();
+
   useEffect(() => {
     if (item.type !== "dimension" && item.type !== "tag" && item.value) {
       update(index, { ...item, id: item.type, value: undefined });
@@ -119,7 +116,19 @@ const CheckGroupingEditorItem = ({
   }, [item.type, item.value, update]);
 
   return (
-    <div className="flex space-x-3 items-center">
+    <Reorder.Item
+      as="div"
+      id={`${item.type}-${item.value}`}
+      // id={index}
+      className="flex space-x-3 items-center"
+      dragControls={dragControls}
+      dragListener={false}
+      value={item}
+    >
+      {/*<div className="flex space-x-3 items-center">*/}
+      <div className="cursor-grab" onPointerDown={(e) => dragControls.start(e)}>
+        <Icon className="h-5 w-5" icon="drag_handle" />
+      </div>
       <div className="grow">
         <CheckGroupingTypeSelect
           type={item.type}
@@ -162,7 +171,7 @@ const CheckGroupingEditorItem = ({
       >
         <Icon className="h-5 w-5" icon="trash" />
       </span>
-    </div>
+    </Reorder.Item>
   );
 };
 
@@ -190,18 +199,38 @@ const CheckGroupingEditor = ({
     [config, setCurrentConfig],
   );
 
+  // const swap = useCallback(
+  //   (x: number, y: number) => {
+  //     console.log(x, y);
+  //     const newConfig = [...config];
+  //     const temp = newConfig[x];
+  //     newConfig[x] = newConfig[y];
+  //     newConfig[y] = temp;
+  //     setInnerConfig(newConfig);
+  //   },
+  //   [config, setInnerConfig],
+  // );
+
   return (
     <div className="flex flex-col space-y-4">
-      {config.map((c, idx) => (
-        <CheckGroupingEditorItem
-          key={idx}
-          // canRemove={config.length > 1}
-          item={c}
-          index={idx}
-          remove={remove}
-          update={update}
-        />
-      ))}
+      <Reorder.Group
+        axis="y"
+        values={config}
+        onReorder={setCurrentConfig}
+        as="div"
+        className="flex flex-col space-y-4"
+      >
+        {config.map((c, idx) => (
+          <CheckGroupingEditorItem
+            key={`${c.type}-${c.value}`}
+            canRemove={config.length > 1}
+            item={c}
+            index={idx}
+            remove={remove}
+            update={update}
+          />
+        ))}
+      </Reorder.Group>
       <div
         className="flex items-center text-link cursor-pointer space-x-1"
         // @ts-ignore

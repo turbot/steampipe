@@ -66,7 +66,7 @@ const getDataFormat = (data: LeafNodeData): CardDataFormat => {
 const getDefaultState = (
   status: DashboardRunState,
   properties: CardProperties,
-  display_type: CardType | undefined
+  display_type: CardType | undefined,
 ) => {
   return {
     loading: status === "running",
@@ -87,7 +87,7 @@ const useCardState = ({
   status,
 }: CardProps) => {
   const [calculatedProperties, setCalculatedProperties] = useState<CardState>(
-    getDefaultState(status, properties, display_type)
+    getDefaultState(status, properties, display_type),
   );
 
   useEffect(() => {
@@ -99,7 +99,7 @@ const useCardState = ({
       data.rows.length === 0
     ) {
       setCalculatedProperties(
-        getDefaultState(status, properties, display_type)
+        getDefaultState(status, properties, display_type),
       );
       return;
     }
@@ -140,12 +140,12 @@ const useCardState = ({
         type: formalType || display_type || null,
         icon: getIconForType(
           formalType || display_type,
-          formalIcon || properties.icon
+          formalIcon || properties.icon,
         ),
         href: formalHref || properties.href || null,
       });
     }
-  }, [data, display_type, properties, status]);
+  }, [data, display_type, properties, setCalculatedProperties, status]);
 
   return calculatedProperties;
 };
@@ -167,7 +167,7 @@ const Card = (props: CardProps) => {
   const state = useCardState(props);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [renderedHref, setRenderedHref] = useState<string | null>(
-    state.href || null
+    state.href || null,
   );
   const textClasses = getTextClasses(state.type);
   const {
@@ -200,7 +200,7 @@ const Card = (props: CardProps) => {
     const doRender = async () => {
       const renderedResults = await renderTemplates(
         { card: state.href as string },
-        [renderData]
+        [renderData],
       );
       if (
         !renderedResults ||
@@ -224,7 +224,7 @@ const Card = (props: CardProps) => {
     <div
       className={classNames(
         "relative pt-4 px-3 pb-4 sm:px-4 rounded-md overflow-hidden",
-        getWrapperClasses(state.type)
+        getWrapperClasses(state.type),
       )}
     >
       <dt>
@@ -238,7 +238,7 @@ const Card = (props: CardProps) => {
           className={classNames(
             "text-sm font-medium truncate",
             state.icon ? "ml-11" : "ml-2",
-            textClasses
+            textClasses,
           )}
           title={state.label || undefined}
         >
@@ -255,14 +255,14 @@ const Card = (props: CardProps) => {
       <dd
         className={classNames(
           "flex items-baseline",
-          state.icon ? "ml-11" : "ml-2"
+          state.icon ? "ml-11" : "ml-2",
         )}
         title={state.value || undefined}
       >
         <p
           className={classNames(
             "text-4xl mt-1 font-semibold text-left truncate",
-            textClasses
+            textClasses,
           )}
         >
           {state.loading && (
@@ -271,7 +271,7 @@ const Card = (props: CardProps) => {
                 "h-9 w-9 mt-1",
                 theme.name === ThemeNames.STEAMPIPE_DEFAULT
                   ? "text-black-scale-4"
-                  : null
+                  : null,
               )}
             />
           )}
