@@ -3,10 +3,9 @@ package modconfig
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/go-kit/hcl_helpers"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 )
 
 type ParamDef struct {
@@ -26,7 +25,7 @@ func NewParamDef(block *hcl.Block) *ParamDef {
 	return &ParamDef{
 		ShortName:       block.Labels[0],
 		UnqualifiedName: fmt.Sprintf("param.%s", block.Labels[0]),
-		DeclRange:       hclhelpers.BlockRange(block),
+		DeclRange:       hcl_helpers.BlockRange(block),
 	}
 }
 

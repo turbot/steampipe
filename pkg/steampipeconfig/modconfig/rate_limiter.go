@@ -1,13 +1,13 @@
 package modconfig
 
 import (
+	"github.com/turbot/go-kit/hcl_helpers"
 	"sort"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 )
 
 const (
@@ -81,7 +81,7 @@ func (l *RateLimiter) AsProto() *proto.RateLimiterDefinition {
 }
 
 func (l *RateLimiter) OnDecoded(block *hcl.Block) {
-	limiterRange := hclhelpers.BlockRange(block)
+	limiterRange := hcl_helpers.BlockRange(block)
 	l.FileName = &limiterRange.Filename
 	l.StartLineNumber = &limiterRange.Start.Line
 	l.EndLineNumber = &limiterRange.End.Line

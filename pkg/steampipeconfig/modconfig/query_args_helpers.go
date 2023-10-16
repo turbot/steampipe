@@ -2,7 +2,7 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/type_conversion"
+	"github.com/turbot/go-kit/type_conversion"
 	"log"
 	"strings"
 

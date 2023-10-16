@@ -1,11 +1,11 @@
 package modconfig
 
 import (
+	"github.com/turbot/go-kit/hcl_helpers"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 )
 
 type ResourceDependency struct {
@@ -16,7 +16,7 @@ type ResourceDependency struct {
 func (d *ResourceDependency) String() string {
 	traversalStrings := make([]string, len(d.Traversals))
 	for i, t := range d.Traversals {
-		traversalStrings[i] = hclhelpers.TraversalAsString(t)
+		traversalStrings[i] = hcl_helpers.TraversalAsString(t)
 	}
 	return strings.Join(traversalStrings, ",")
 }
@@ -27,7 +27,7 @@ func (d *ResourceDependency) IsRuntimeDependency() bool {
 		return false
 	}
 	// parse the traversal as a property path
-	propertyPath, err := ParseResourcePropertyPath(hclhelpers.TraversalAsString(d.Traversals[0]))
+	propertyPath, err := ParseResourcePropertyPath(hcl_helpers.TraversalAsString(d.Traversals[0]))
 	if err != nil {
 		return false
 	}
@@ -61,10 +61,10 @@ func (d *ResourceDependency) getPropertiesFromContent(content *hcl.BodyContent) 
 		// build map of paths
 		var traversalMap = make(map[string]bool, len(vars))
 		for _, t := range vars {
-			traversalMap[hclhelpers.TraversalAsString(t)] = true
+			traversalMap[hcl_helpers.TraversalAsString(t)] = true
 		}
 		for _, t := range d.Traversals {
-			if !traversalMap[hclhelpers.TraversalAsString(t)] {
+			if !traversalMap[hcl_helpers.TraversalAsString(t)] {
 				return res
 			}
 		}

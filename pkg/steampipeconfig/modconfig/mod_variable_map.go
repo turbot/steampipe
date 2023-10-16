@@ -1,9 +1,9 @@
 package modconfig
 
 import (
+	"github.com/turbot/go-kit/type_conversion"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 

@@ -3,6 +3,7 @@ package steampipeconfig
 import (
 	"bytes"
 	"fmt"
+	"github.com/turbot/go-kit/hcl_helpers"
 	"log"
 	"os"
 	"path/filepath"
@@ -18,7 +19,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
@@ -302,7 +302,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 					diags = append(diags, &hcl.Diagnostic{
 						Severity: hcl.DiagWarning,
 						Summary:  warning,
-						Subject:  hclhelpers.BlockRangePointer(block),
+						Subject:  hcl_helpers.BlockRangePointer(block),
 					})
 				}
 			}

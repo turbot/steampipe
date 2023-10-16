@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/turbot/go-kit/hcl_helpers"
 	"github.com/zclconf/go-cty/cty"
 	"log"
 	"os"
@@ -12,7 +13,6 @@ import (
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -39,7 +39,7 @@ func NewQuery(block *hcl.Block, mod *Mod, shortName string) HclResource {
 						ShortName:       shortName,
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-						DeclRange:       hclhelpers.BlockRange(block),
+						DeclRange:       hcl_helpers.BlockRange(block),
 						blockType:       block.Type,
 					},
 					Mod: mod,

@@ -5,10 +5,10 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/turbot/go-kit/hcl_helpers"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
+	"github.com/turbot/go-kit/type_conversion"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/type_conversion"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )
@@ -206,14 +206,14 @@ dep_loop:
 	for {
 		switch e := expr.(type) {
 		case *hclsyntax.ScopeTraversalExpr:
-			propertyPathStr = hclhelpers.TraversalAsString(e.Traversal)
+			propertyPathStr = hcl_helpers.TraversalAsString(e.Traversal)
 			break dep_loop
 		case *hclsyntax.SplatExpr:
-			root := hclhelpers.TraversalAsString(e.Source.(*hclsyntax.ScopeTraversalExpr).Traversal)
+			root := hcl_helpers.TraversalAsString(e.Source.(*hclsyntax.ScopeTraversalExpr).Traversal)
 			var suffix string
 			// if there is a property path, add it
 			if each, ok := e.Each.(*hclsyntax.RelativeTraversalExpr); ok {
-				suffix = fmt.Sprintf(".%s", hclhelpers.TraversalAsString(each.Traversal))
+				suffix = fmt.Sprintf(".%s", hcl_helpers.TraversalAsString(each.Traversal))
 			}
 			propertyPathStr = fmt.Sprintf("%s.*%s", root, suffix)
 			break dep_loop

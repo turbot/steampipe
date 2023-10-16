@@ -2,10 +2,9 @@ package modconfig
 
 import (
 	"fmt"
-
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/go-kit/hcl_helpers"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -47,7 +46,7 @@ func NewDashboardGraph(block *hcl.Block, mod *Mod, shortName string) HclResource
 						ShortName:       shortName,
 						FullName:        fullName,
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-						DeclRange:       hclhelpers.BlockRange(block),
+						DeclRange:       hcl_helpers.BlockRange(block),
 						blockType:       block.Type,
 					},
 					Mod: mod,
