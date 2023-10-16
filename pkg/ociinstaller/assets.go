@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 // InstallAssets installs the Steampipe report server assets
@@ -34,11 +33,11 @@ func InstallAssets(ctx context.Context, assetsLocation string) error {
 	return nil
 }
 
-func installAssetsFiles(image *SteampipeImage, tempdir string, dest string) error {
+func installAssetsFiles(image *SteampipeImage, tempdir string, destination string) error {
 	fileName := image.Assets.ReportUI
 	sourcePath := filepath.Join(tempdir, fileName)
-	if err := moveFolderWithinPartition(sourcePath, filepaths.EnsureDashboardAssetsDir()); err != nil {
-		return fmt.Errorf("could not install %s to %s", sourcePath, filepaths.EnsureDashboardAssetsDir())
+	if err := moveFolderWithinPartition(sourcePath, destination); err != nil {
+		return fmt.Errorf("could not install %s to %s", sourcePath, destination)
 	}
 	return nil
 }
