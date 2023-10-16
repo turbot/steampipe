@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
+	"github.com/turbot/terraform-components/tfdiags"
 )
 
 // UnparsedVariableValue represents a variable value provided by the caller

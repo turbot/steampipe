@@ -4,7 +4,6 @@ import (
 	"context"
 	"sort"
 
-	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -14,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/terraform-components/tfdiags"
 	"golang.org/x/exp/maps"
 )
 
