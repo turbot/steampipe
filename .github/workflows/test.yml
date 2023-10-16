@@ -96,7 +96,7 @@ jobs:
           - "brew"
           - "installation"
           - "plugin"
-          - "hcl_helpers"
+          - "connection_config"
           - "service"
           - "settings"
           - "ssl"
