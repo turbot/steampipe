@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
+	"github.com/turbot/terraform-components/terraform"
 	"github.com/turbot/terraform-components/tfdiags"
 )
 
-func CollectVariableValuesFromModRequire(m *modconfig.Mod, lock *versionmap.WorkspaceLock) (InputValues, error) {
-	res := make(InputValues)
+func CollectVariableValuesFromModRequire(m *modconfig.Mod, lock *versionmap.WorkspaceLock) (terraform.InputValues, error) {
+	res := make(terraform.InputValues)
 	if m.Require != nil {
 		for _, depModConstraint := range m.Require.Mods {
 			if args := depModConstraint.Args; args != nil {
@@ -34,9 +35,9 @@ func CollectVariableValuesFromModRequire(m *modconfig.Mod, lock *versionmap.Work
 						},
 					}
 
-					res[varFullName] = &InputValue{
+					res[varFullName] = &terraform.InputValue{
 						Value:       varVal,
-						SourceType:  ValueFromModFile,
+						SourceType:  terraform.ValueFromModFile,
 						SourceRange: sourceRange,
 					}
 				}

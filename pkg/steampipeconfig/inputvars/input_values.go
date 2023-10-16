@@ -17,7 +17,26 @@ func SetVariableValues(vv terraform.InputValues, m *modconfig.ModVariableMap) {
 		}
 		variable.SetInputValue(
 			inputValue.Value,
-			inputValue.SourceTypeString(),
+			SourceTypeString(inputValue),
 			inputValue.SourceRange)
+	}
+}
+
+func SourceTypeString(v *terraform.InputValue) string {
+	switch v.SourceType {
+	case terraform.ValueFromConfig:
+		return "config"
+	case terraform.ValueFromAutoFile:
+		return "auto file"
+	case terraform.ValueFromNamedFile:
+		return "name file"
+	case terraform.ValueFromCLIArg:
+		return "CLI arg"
+	case terraform.ValueFromEnvVar:
+		return "env var"
+	case terraform.ValueFromInput:
+		return "user input"
+	default:
+		return "unknown"
 	}
 }
