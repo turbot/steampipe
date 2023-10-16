@@ -46,10 +46,10 @@ type UnparsedVariableValue interface {
 //
 // that were successfully processed, allowing for careful analysis of the
 // partial result.
-func ParseVariableValues(inputValueUnparsed map[string]UnparsedVariableValue, variablesMap *modconfig.ModVariableMap, validate bool) (terraform.InputValue, tfdiags.Diagnostics) {
+func ParseVariableValues(inputValueUnparsed map[string]UnparsedVariableValue, variablesMap *modconfig.ModVariableMap, validate bool) (terraform.InputValues, tfdiags.Diagnostics) {
 
 	var diags tfdiags.Diagnostics
-	ret := make(terraform.InputValue, len(inputValueUnparsed))
+	ret := make(terraform.InputValues, len(inputValueUnparsed))
 
 	publicVariables := variablesMap.PublicVariables
 

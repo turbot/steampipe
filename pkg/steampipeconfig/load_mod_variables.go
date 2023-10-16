@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"context"
+	"github.com/turbot/terraform-components/terraform"
 	"sort"
 
 	"github.com/spf13/viper"
@@ -35,13 +36,13 @@ func GetVariableValues(ctx context.Context, parseCtx *parse.ModParseContext, var
 	inputValues, errorsAndWarnings := getInputVariables(ctx, parseCtx, variableMap, validate)
 	if errorsAndWarnings.Error == nil {
 		// now update the variables map with the input values
-		inputValues.SetVariableValues(variableMap)
+		inputvars.SetVariableValues(inputValues, variableMap)
 	}
 
 	return variableMap, errorsAndWarnings
 }
 
-func getInputVariables(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (inputvars.InputValues, *error_helpers.ErrorAndWarnings) {
+func getInputVariables(ctx context.Context, parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (terraform.InputValues, *error_helpers.ErrorAndWarnings) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
