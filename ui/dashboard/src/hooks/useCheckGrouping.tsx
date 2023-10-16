@@ -29,6 +29,7 @@ import {
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
 import { ElementType, IActions, PanelDefinition } from "../types";
 import { useDashboard } from "./useDashboard";
+import { useDashboardControls } from "../components/dashboards/layout/Dashboard/DashboardControlsProvider";
 
 type CheckGroupingActionType = ElementType<typeof checkGroupingActions>;
 
@@ -50,9 +51,9 @@ type CheckGroupFilterStatusValuesMap = {
 };
 
 export type CheckGroupFilterValues = {
-  statuses: CheckGroupFilterStatusValuesMap;
-  dimensions: { keys: {}; values: {} };
-  tags: { keys: {}; values: {} };
+  status: CheckGroupFilterStatusValuesMap;
+  dimension: { key: {}; value: {} };
+  tag: { key: {}; value: {} };
 };
 
 type ICheckGroupingContext = {
@@ -488,6 +489,7 @@ const CheckGroupingProvider = ({
   definition,
 }: CheckGroupingProviderProps) => {
   const { panelsMap } = useDashboard();
+  const { setContext: setDashboardControlsContext } = useDashboardControls();
   const [nodeStates, dispatch] = useReducer(reducer, { nodes: {} });
   const groupingsConfig = useCheckGroupingConfig();
 
@@ -500,9 +502,9 @@ const CheckGroupingProvider = ({
     filterValues,
   ] = useMemo(() => {
     const filterValues = {
-      statuses: { alarm: 0, empty: 0, error: 0, info: 0, ok: 0, skip: 0 },
-      dimensions: { keys: {}, values: {} },
-      tags: { keys: {}, values: {} },
+      status: { alarm: 0, empty: 0, error: 0, info: 0, ok: 0, skip: 0 },
+      dimension: { key: {}, value: {} },
+      tag: { key: {}, value: {} },
     };
 
     if (!definition) {
@@ -555,32 +557,33 @@ const CheckGroupingProvider = ({
       grouping._.push(node);
 
       // Record the status of this check result to allow assisted filtering later
-      filterValues.statuses[checkResult.status] =
-        filterValues.statuses[checkResult.status] || 0;
-      filterValues.statuses[checkResult.status] += 1;
+      filterValues.status[checkResult.status] =
+        filterValues.status[checkResult.status] || 0;
+      filterValues.status[checkResult.status] += 1;
 
       // Record the dimension keys/values + value/key counts of this check result to allow assisted filtering later
       for (const dimension of checkResult.dimensions) {
-        filterValues.dimensions.keys[dimension.key] = filterValues.dimensions
-          .keys[dimension.key] || { [dimension.value]: 0 };
-        filterValues.dimensions.keys[dimension.key][dimension.value] += 1;
+        filterValues.dimension.key[dimension.key] = filterValues.dimension.key[
+          dimension.key
+        ] || { [dimension.value]: 0 };
+        filterValues.dimension.key[dimension.key][dimension.value] += 1;
 
-        filterValues.dimensions.values[dimension.value] = filterValues
-          .dimensions.values[dimension.value] || { [dimension.key]: 0 };
-        filterValues.dimensions.values[dimension.value][dimension.key] += 1;
+        filterValues.dimension.value[dimension.value] = filterValues.dimension
+          .value[dimension.value] || { [dimension.key]: 0 };
+        filterValues.dimension.value[dimension.value][dimension.key] += 1;
       }
 
       // Record the dimension keys/values + value/key counts of this check result to allow assisted filtering later
       for (const [tagKey, tagValue] of Object.entries(checkResult.tags || {})) {
-        filterValues.tags.keys[tagKey] = filterValues.tags.keys[tagKey] || {
+        filterValues.tag.key[tagKey] = filterValues.tag.key[tagKey] || {
           [tagValue]: 0,
         };
-        filterValues.tags.keys[tagKey][tagValue] += 1;
+        filterValues.tag.key[tagKey][tagValue] += 1;
 
-        filterValues.tags.values[tagValue] = filterValues.tags.values[
-          tagValue
-        ] || { [tagKey]: 0 };
-        filterValues.tags.values[tagValue][tagKey] += 1;
+        filterValues.tag.value[tagValue] = filterValues.tag.value[tagValue] || {
+          [tagKey]: 0,
+        };
+        filterValues.tag.value[tagValue][tagKey] += 1;
       }
     });
 
@@ -616,6 +619,10 @@ const CheckGroupingProvider = ({
       nodes: tempNodeStates,
     });
   }, [previousGroupings, groupingsConfig, tempNodeStates]);
+
+  useEffect(() => {
+    setDashboardControlsContext(filterValues);
+  }, [filterValues, setDashboardControlsContext]);
 
   return (
     <CheckGroupingContext.Provider

@@ -1,5 +1,6 @@
 import Icon from "../../../Icon";
 import Select from "react-select";
+import useDeepCompareEffect from "use-deep-compare-effect";
 import useSelectInputStyles from "../../inputs/common/useSelectInputStyles";
 import { CheckDisplayGroup, CheckDisplayGroupType } from "../common";
 import { classNames } from "../../../../utils/styles";
@@ -11,6 +12,7 @@ import {
 import { Reorder, useDragControls } from "framer-motion";
 import { SelectOption } from "../../inputs/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDashboardControls } from "../../layout/Dashboard/DashboardControlsProvider";
 import { useSearchParams } from "react-router-dom";
 
 type CheckGroupingEditorProps = CheckGroupingEditorContainerProps & {
@@ -32,20 +34,50 @@ type CheckGroupingEditorItemProps = {
 
 type CheckGroupingTypeSelectProps = {
   config: CheckDisplayGroup[];
+  index: number;
+  item: CheckDisplayGroup;
   type: CheckDisplayGroupType;
-  update: (type: CheckDisplayGroupType) => void;
+  update: (
+    index: number,
+    item: CheckDisplayGroup,
+    updates: { id?: string; type?: CheckDisplayGroupType | undefined },
+  ) => void;
+};
+
+type CheckGroupingValueSelectProps = {
+  index: number;
+  item: CheckDisplayGroup;
+  type: CheckDisplayGroupType;
+  update: (
+    index: number,
+    item: CheckDisplayGroup,
+    updates: { value: string },
+  ) => void;
+  value: string | undefined;
 };
 
 const CheckGroupingTypeSelect = ({
   config,
+  index,
+  item,
   type,
   update,
 }: CheckGroupingTypeSelectProps) => {
-  const [currentType, setCurrentType] = useState(type);
+  const [currentType, setCurrentType] = useState<CheckDisplayGroupType>(type);
 
-  useEffect(() => {
-    update(currentType);
-  }, [currentType]);
+  useDeepCompareEffect(() => {
+    console.log("Setting CheckGroupingTypeSelect", {
+      currentType,
+      index,
+      item,
+      update,
+    });
+    update(index, item, {
+      ...item,
+      id: currentType,
+      type: currentType,
+    });
+  }, [currentType, index, item]);
 
   const types = useMemo(() => {
     const existingTypes = config.map((c) => c.type.toString());
@@ -91,46 +123,82 @@ const CheckGroupingTypeSelect = ({
       styles={styles}
       value={types.find((t) => t.value === type)}
     />
-    // <select
-    //   id="grouping-type"
-    //   className="block w-full rounded-md bg-dashboard border-black-scale-2 py-2 pl-3 pr-10 text-foreground focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
-    //   name="grouping-type"
-    //   onChange={(e) => {
-    //     setCurrentType(e.target.value as CheckDisplayGroupType);
-    //   }}
-    //   value={type}
-    // >
-    //   <option defaultValue={currentType} value={""}>
-    //     Select a grouping type...
-    //   </option>
-    //   {types.map((t) => (
-    //     <option key={t} className="capitalize" value={t}>
-    //       {StartCase(t)}
-    //     </option>
-    //   ))}
-    // </select>
   );
-  // return (
-  //   <Listbox value={currentType} onChange={setCurrentType}>
-  //     <Listbox.Button>
-  //       <span className="capitalize">{currentType}</span>{" "}
-  //     </Listbox.Button>
-  //     <Listbox.Options>
-  //       {types.map((t) => (
-  //         <Listbox.Option key={t} value={t}>
-  //           <span className="capitalize">{t}</span>
-  //         </Listbox.Option>
-  //       ))}
-  //     </Listbox.Options>
-  //   </Listbox>
-  // <select>
-  //   {types.map((t) => (
-  //     <option className="capitalize" selected={currentType === t} value={t}>
-  //       <span className="capitalize">{t}</span>{" "}
-  //     </option>
-  //   ))}
-  // </select>
-  // );
+};
+
+const CheckGroupingValueSelect = ({
+  index,
+  item,
+  type,
+  value,
+  update,
+}: CheckGroupingValueSelectProps) => {
+  const [currentValue, setCurrentValue] = useState(type);
+  const { context: filterValues } = useDashboardControls();
+
+  useDeepCompareEffect(() => {
+    console.log("Setting CheckGroupingValueSelect", {
+      currentValue,
+      index,
+      item,
+      update,
+    });
+    update(index, item, {
+      ...item,
+      value: currentValue,
+    });
+  }, [currentValue, index, item]);
+
+  const values = useMemo(() => {
+    return Object.keys(filterValues[type].key || {}).map((k) => ({
+      value: k,
+      label: k,
+    }));
+
+    // const existingTypes = config.map((c) => c.type.toString());
+    // const allTypes: SelectOption[] = [
+    //   { value: "benchmark", label: "Benchmark" },
+    //   { value: "control", label: "Control" },
+    //   { value: "dimension", label: "Dimension" },
+    //   { value: "reason", label: "Reason" },
+    //   { value: "result", label: "Result" },
+    //   { value: "severity", label: "Severity" },
+    //   { value: "status", label: "Status" },
+    //   { value: "tag", label: "Tag" },
+    // ];
+    // return allTypes.filter(
+    //   (t) =>
+    //     t.value === type ||
+    //     t.value === "dimension" ||
+    //     // @ts-ignore
+    //     !existingTypes.includes(t.value),
+    // );
+  }, [filterValues, type]);
+
+  const styles = useSelectInputStyles();
+
+  return (
+    <Select
+      className="basic-single"
+      classNamePrefix="select"
+      components={{
+        // @ts-ignore
+        MultiValueLabel: MultiValueLabelWithTags,
+        // @ts-ignore
+        Option: OptionWithTags,
+        // @ts-ignore
+        SingleValue: SingleValueWithTags,
+      }}
+      // @ts-ignore as this element definitely exists
+      menuPortalTarget={document.getElementById("portals")}
+      onChange={(t) => setCurrentValue((t as SelectOption).value)}
+      options={values}
+      inputId={`${type}.input`}
+      placeholder="Select a grouping…"
+      styles={styles}
+      value={values.find((t) => t.value === value)}
+    />
+  );
 };
 
 const CheckGroupingEditorItem = ({
@@ -142,7 +210,7 @@ const CheckGroupingEditorItem = ({
 }: CheckGroupingEditorItemProps) => {
   const dragControls = useDragControls();
 
-  useEffect(() => {
+  useDeepCompareEffect(() => {
     if (item.type !== "dimension" && item.type !== "tag" && item.value) {
       update(index, { ...item, id: item.type, value: undefined });
     } else if (
@@ -152,6 +220,11 @@ const CheckGroupingEditorItem = ({
       update(index, { ...item, id: `${item.type}-${item.value}` });
     }
   }, [item.type, item.value, update]);
+
+  const doUpdate = useCallback(
+    (index, item, updates) => update(index, { ...item, ...updates }),
+    [update],
+  );
 
   return (
     <Reorder.Item
@@ -168,34 +241,23 @@ const CheckGroupingEditorItem = ({
       </div>
       <div className="grow">
         <CheckGroupingTypeSelect
-          type={item.type}
           config={config}
-          update={(updated) =>
-            update(index, {
-              ...item,
-              id: updated,
-              value: "",
-              type: updated,
-            })
-          }
+          index={index}
+          item={item}
+          type={item.type}
+          update={doUpdate}
         />
       </div>
-      {item.type === "dimension" && (
+      {(item.type === "dimension" || item.type === "tag") && (
         <>
           <span>=</span>
-          <div className="grow">
-            <input
-              className="flex w-full p-2 bg-dashboard text-foreground border border-black-scale-2 rounded-md"
-              onChange={(e) =>
-                update(index, {
-                  ...item,
-                  id: `${item.type}-${e.target.value}`,
-                  value: e.target.value,
-                })
-              }
-              value={item.value || ""}
-            />
-          </div>
+          <CheckGroupingValueSelect
+            index={index}
+            item={item}
+            type={item.type}
+            update={doUpdate}
+            value={item.value}
+          />
         </>
       )}
       <span

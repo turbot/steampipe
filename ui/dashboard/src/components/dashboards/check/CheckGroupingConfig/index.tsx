@@ -1,8 +1,9 @@
-import CheckGroupingEditor from "../CheckGroupinigEditor";
+import CheckGroupingEditor from "../CheckGroupingEditor";
 import Icon from "../../../Icon";
 import useCheckGroupingConfig from "../../../../hooks/useCheckGroupingConfig";
 import { CheckDisplayGroup } from "../common";
 import { ReactNode, useState } from "react";
+import { useDashboardControls } from "../../layout/Dashboard/DashboardControlsProvider";
 
 type CheckGroupingTitleLabelProps = {
   item: CheckDisplayGroup;
@@ -37,7 +38,10 @@ const CheckGroupingConfig = () => {
         <Icon className="h-5 w-5" icon="workspaces" />
         {groupingConfig
           .map<ReactNode>((item) => (
-            <CheckGroupingTitleLabel key={item.id} item={item} />
+            <CheckGroupingTitleLabel
+              key={`${item.type}${!!item.value ? `-${item.value}` : ""}`}
+              item={item}
+            />
           ))
           .reduce((prev, curr, idx) => [
             prev,

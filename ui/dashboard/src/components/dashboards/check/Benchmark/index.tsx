@@ -323,21 +323,6 @@ const BenchmarkWrapper = (props: BenchmarkProps) => {
   );
 };
 
-// const BenchmarkTitle = ({ title, properties: { is_root } }) => {
-//   const className = classNames("col-span-12 grow");
-//   const benchmarkTitle = is_root ? (
-//     <h1 className={className}>{title}</h1>
-//   ) : (
-//     <h2 className={className}>{title}</h2>
-//   );
-//   return (
-//     <div className="col-span-12 flex flex-col sm:flex-row sm:justify-between sm:items-baseline space-y-3 sm:space-y-0">
-//       {benchmarkTitle}
-//       <CheckGroupingConfig />
-//     </div>
-//   );
-// };
-
 registerComponent("benchmark", BenchmarkWrapper);
 
 export default BenchmarkWrapper;

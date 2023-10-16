@@ -5,6 +5,7 @@ import DashboardTitle from "../../titles/DashboardTitle";
 import Grid from "../Grid";
 import PanelDetail from "../PanelDetail";
 import SnapshotRenderComplete from "../../../snapshot/SnapshotRenderComplete";
+import { DashboardControlsProvider } from "./DashboardControlsProvider";
 import { DashboardDataModeLive, DashboardDefinition } from "../../../../types";
 import { registerComponent } from "../../index";
 import { useDashboard } from "../../../../hooks/useDashboard";
@@ -37,11 +38,11 @@ const Dashboard = ({
     </Grid>
   );
   return (
-    <>
+    <DashboardControlsProvider>
       <DashboardControls />
       {isRoot ? <DashboardProgress /> : null}
       {isRoot ? <div className="h-full overflow-y-auto p-4">{grid}</div> : grid}
-    </>
+    </DashboardControlsProvider>
   );
 };
 
