@@ -2,6 +2,7 @@ package inputvars
 
 import (
 	"fmt"
+	"github.com/turbot/terraform-components/terraform"
 	"github.com/zclconf/go-cty/cty"
 	"strings"
 
@@ -39,13 +40,13 @@ type UnparsedVariableValue interface {
 // If this function returns without any errors in the diagnostics, the
 // resulting input values map is guaranteed to be valid and ready to pass
 // to terraform.NewContext. If the diagnostics contains errors, the returned
-// InputValues may be incomplete but will include the subset of variables
+//  terraform.InputValue may be incomplete but will include the subset of variables
 // that were successfully processed, allowing for careful analysis of the
 // partial result.
-func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, variablesMap *modconfig.ModVariableMap, validate bool) (InputValues, tfdiags.Diagnostics) {
+func ParseVariableValues( terraform.InputValueUnparsed map[string]UnparsedVariableValue, variablesMap *modconfig.ModVariableMap, validate bool) ( terraform.InputValue, tfdiags.Diagnostics) {
 
 	var diags tfdiags.Diagnostics
-	ret := make(InputValues, len(inputValuesUnparsed))
+	ret := make( terraform.InputValue, len( terraform.InputValueUnparsed))
 
 	publicVariables := variablesMap.PublicVariables
 
@@ -55,7 +56,7 @@ func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, v
 	// the result can therefore be overwhelming.
 	seenUndeclaredInFile := 0
 
-	for name, unparsedVal := range inputValuesUnparsed {
+	for name, unparsedVal := range  terraform.InputValueUnparsed {
 		var mode var_config.VariableParsingMode
 		config, declared := publicVariables[name]
 		if declared {
