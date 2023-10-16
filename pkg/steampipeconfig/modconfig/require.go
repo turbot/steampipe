@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/turbot/go-kit/hcl_helpers"
 	"sort"
 
 	"github.com/Masterminds/semver/v3"
@@ -9,7 +10,6 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
 	"github.com/turbot/steampipe/pkg/version"
 )
 
@@ -63,10 +63,10 @@ func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
 	diags = append(diags, moreDiags...)
 
 	// find the require block
-	requireBlock := hclhelpers.FindFirstChildBlock(modBlock, BlockTypeRequire)
+	requireBlock := hcl_helpers.FindFirstChildBlock(modBlock, BlockTypeRequire)
 	if requireBlock == nil {
 		// was this the legacy 'requires' block?
-		requireBlock = hclhelpers.FindFirstChildBlock(modBlock, BlockTypeLegacyRequires)
+		requireBlock = hcl_helpers.FindFirstChildBlock(modBlock, BlockTypeLegacyRequires)
 	}
 	if requireBlock == nil {
 		// nothing else to populate
@@ -74,12 +74,12 @@ func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
 	}
 
 	// set our Ranges
-	r.DeclRange = hclhelpers.BlockRange(requireBlock)
+	r.DeclRange = hcl_helpers.BlockRange(requireBlock)
 	r.BodyRange = requireBlock.Body.(*hclsyntax.Body).SrcRange
 
 	// build maps of plugin and mod blocks
-	pluginBlockMap := hclhelpers.BlocksToMap(hclhelpers.FindChildBlocks(requireBlock, BlockTypePlugin))
-	modBlockMap := hclhelpers.BlocksToMap(hclhelpers.FindChildBlocks(requireBlock, BlockTypeMod))
+	pluginBlockMap := hcl_helpers.BlocksToMap(hcl_helpers.FindChildBlocks(requireBlock, BlockTypePlugin))
+	modBlockMap := hcl_helpers.BlocksToMap(hcl_helpers.FindChildBlocks(requireBlock, BlockTypeMod))
 
 	if r.Steampipe != nil {
 		moreDiags := r.Steampipe.initialise(requireBlock)

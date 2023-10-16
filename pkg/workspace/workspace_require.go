@@ -148,7 +148,7 @@ func pluginVersionError(pluginsNotInstalled []requiredPluginVersion) string {
 		}
 	}
 
-	// add blank line (hack - bold the empty string to force it to print blank line as part of error)
+	// add blank line (tactical - bold the empty string to force it to print blank line as part of error)
 	notificationLines = append(notificationLines, fmt.Sprintf("%s", constants.Bold("")))
 
 	return strings.Join(notificationLines, "\n")
