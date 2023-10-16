@@ -1,3 +1,0 @@
-mod "local" {
-  title = "cmod"
-}

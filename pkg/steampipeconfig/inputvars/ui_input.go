@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/turbot/terraform-components/terraform"
 	"io"
 	"log"
 	"os"
@@ -19,6 +18,7 @@ import (
 	"github.com/bgentry/speakeasy"
 	"github.com/mattn/go-isatty"
 	"github.com/mitchellh/colorstring"
+	"github.com/turbot/terraform-components/terraform"
 )
 
 var defaultInputReader io.Reader
