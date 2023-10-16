@@ -2,9 +2,8 @@ package modconfig
 
 import (
 	"fmt"
-
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/hclhelpers"
+	"github.com/turbot/go-kit/hcl_helpers"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -27,7 +26,7 @@ func NewDashboardWith(block *hcl.Block, mod *Mod, shortName string) HclResource 
 						ShortName:       shortName,
 						FullName:        fmt.Sprintf("%s.%s.%s", mod.ShortName, block.Type, shortName),
 						UnqualifiedName: fmt.Sprintf("%s.%s", block.Type, shortName),
-						DeclRange:       hclhelpers.BlockRange(block),
+						DeclRange:       hcl_helpers.BlockRange(block),
 						blockType:       block.Type,
 					},
 					Mod: mod,
