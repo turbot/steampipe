@@ -5,7 +5,7 @@ import StartCase from "lodash/startCase";
 import { classNames } from "../../../../utils/styles";
 import { CheckDisplayGroup, CheckDisplayGroupType } from "../common";
 import { Reorder, useDragControls } from "framer-motion";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 type CheckGroupingEditorModalProps = {
@@ -16,10 +16,11 @@ type CheckGroupingEditorModalProps = {
 type CheckGroupingEditorProps = {
   config: CheckDisplayGroup[];
   setCurrentConfig: (newConfig: CheckDisplayGroup[]) => void;
+  setIsValid: (value: boolean) => void;
 };
 
 type CheckGroupingEditorItemProps = {
-  canRemove?: boolean;
+  config: CheckDisplayGroup[];
   item: CheckDisplayGroup;
   index: number;
   remove: (index: number) => void;
@@ -27,11 +28,13 @@ type CheckGroupingEditorItemProps = {
 };
 
 type CheckGroupingTypeSelectProps = {
+  config: CheckDisplayGroup[];
   type: CheckDisplayGroupType;
   update: (type: CheckDisplayGroupType) => void;
 };
 
 const CheckGroupingTypeSelect = ({
+  config,
   type,
   update,
 }: CheckGroupingTypeSelectProps) => {
@@ -41,17 +44,24 @@ const CheckGroupingTypeSelect = ({
     update(currentType);
   }, [currentType]);
 
-  const types = [
-    "benchmark",
-    "control",
-    "dimension",
-    "reason",
-    "resource",
-    "result",
-    "severity",
-    "status",
-    "tag",
-  ];
+  const types = useMemo(() => {
+    const existingTypes = config.map((c) => c.type);
+    const allTypes: CheckDisplayGroupType[] = [
+      "benchmark",
+      "control",
+      "dimension",
+      "reason",
+      "resource",
+      "result",
+      "severity",
+      "status",
+      "tag",
+    ];
+    return allTypes.filter(
+      (t) => t === type || t === "dimension" || !existingTypes.includes(t),
+    );
+  }, [config, type]);
+
   return (
     <select
       id="grouping-type"
@@ -96,7 +106,7 @@ const CheckGroupingTypeSelect = ({
 };
 
 const CheckGroupingEditorItem = ({
-  canRemove = true,
+  config,
   index,
   item,
   remove,
@@ -119,7 +129,6 @@ const CheckGroupingEditorItem = ({
     <Reorder.Item
       as="div"
       id={`${item.type}-${item.value}`}
-      // id={index}
       className="flex space-x-3 items-center"
       dragControls={dragControls}
       dragListener={false}
@@ -132,6 +141,7 @@ const CheckGroupingEditorItem = ({
       <div className="grow">
         <CheckGroupingTypeSelect
           type={item.type}
+          config={config}
           update={(updated) =>
             update(index, {
               ...item,
@@ -162,11 +172,11 @@ const CheckGroupingEditorItem = ({
       )}
       <span
         className={classNames(
-          canRemove
+          config.length > 1
             ? "text-foreground-light hover:text-steampipe-red cursor-pointer"
             : "text-foreground-lightest",
         )}
-        onClick={canRemove ? () => remove(index) : undefined}
+        onClick={config.length > 1 ? () => remove(index) : undefined}
         title="Remove"
       >
         <Icon className="h-5 w-5" icon="trash" />
@@ -178,7 +188,27 @@ const CheckGroupingEditorItem = ({
 const CheckGroupingEditor = ({
   config,
   setCurrentConfig,
+  setIsValid,
 }: CheckGroupingEditorProps) => {
+  useEffect(() => {
+    const isValid = config.every((c) => {
+      switch (c.type) {
+        case "benchmark":
+        case "control":
+        case "result":
+        case "reason":
+        case "resource":
+        case "severity":
+        case "status":
+          return !c.value;
+        case "dimension":
+        case "tag":
+          return !!c.value;
+      }
+    });
+    setIsValid(isValid);
+  }, [config, setIsValid]);
+
   const remove = useCallback(
     (index: number) => {
       const removed = [...config.slice(0, index), ...config.slice(index + 1)];
@@ -223,7 +253,7 @@ const CheckGroupingEditor = ({
         {config.map((c, idx) => (
           <CheckGroupingEditorItem
             key={`${c.type}-${c.value}`}
-            canRemove={config.length > 1}
+            config={config}
             item={c}
             index={idx}
             remove={remove}
@@ -248,6 +278,7 @@ const CheckGroupingEditorModal = ({
   setShowEditor,
 }: CheckGroupingEditorModalProps) => {
   const [currentConfig, setCurrentConfig] = useState(config);
+  const [isValid, setIsValid] = useState(false);
   const [_, setSearchParams] = useSearchParams();
 
   const saveGroupingConfig = () => {
@@ -270,7 +301,7 @@ const CheckGroupingEditorModal = ({
         </NeutralButton>,
         <NeutralButton
           key="save"
-          disabled={currentConfig.length === 0}
+          disabled={currentConfig.length === 0 || !isValid}
           onClick={() => {
             saveGroupingConfig();
             setShowEditor(false);
@@ -288,6 +319,7 @@ const CheckGroupingEditorModal = ({
       <CheckGroupingEditor
         config={currentConfig}
         setCurrentConfig={setCurrentConfig}
+        setIsValid={setIsValid}
       />
     </Modal>
   );
