@@ -1,4 +1,5 @@
 import Children from "../Children";
+import DashboardControls from "./DashboardControls";
 import DashboardProgress from "./DashboardProgress";
 import DashboardTitle from "../../titles/DashboardTitle";
 import Grid from "../Grid";
@@ -37,6 +38,7 @@ const Dashboard = ({
   );
   return (
     <>
+      <DashboardControls />
       {isRoot ? <DashboardProgress /> : null}
       {isRoot ? <div className="h-full overflow-y-auto p-4">{grid}</div> : grid}
     </>

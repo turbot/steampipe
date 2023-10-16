@@ -5,7 +5,6 @@ import Error from "../../Error";
 import Grid from "../../layout/Grid";
 import Panel from "../../layout/Panel";
 import PanelControls from "../../layout/Panel/PanelControls";
-import useCheckGroupingConfig from "../../../../hooks/useCheckGroupingConfig";
 import usePanelControls from "../../../../hooks/usePanelControls";
 import {
   BenchmarkTreeProps,
@@ -13,7 +12,6 @@ import {
   CheckNode,
   CheckSummary,
 } from "../common";
-import { CheckGroupingEditorModal } from "../CheckGroupingEditorModal";
 import {
   CheckGroupingProvider,
   useCheckGrouping,
@@ -23,9 +21,8 @@ import { getComponent, registerComponent } from "../../index";
 import { noop } from "../../../../utils/func";
 import { PanelDefinition } from "../../../../types";
 import { useDashboard } from "../../../../hooks/useDashboard";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Width } from "../../common";
-import { Reorder } from "framer-motion";
 
 const Table = getComponent("table");
 
@@ -64,20 +61,10 @@ const Benchmark = (props: InnerCheckProps) => {
       data: benchmarkDataTable,
     };
   }, [benchmarkDataTable, props.definition]);
-  const { panelControls: benchmarkControls, setCustomControls } =
-    usePanelControls(definitionWithData, props.showControls);
-  const [showGroupingControls, setShowGroupingControls] = useState(false);
-  const groupingConfig = useCheckGroupingConfig();
-
-  useEffect(() => {
-    setCustomControls([
-      {
-        action: async () => setShowGroupingControls(true),
-        icon: "workspaces",
-        title: "Grouping",
-      },
-    ]);
-  }, [setCustomControls]);
+  const { panelControls: benchmarkControls } = usePanelControls(
+    definitionWithData,
+    props.showControls,
+  );
 
   const summaryCards = useMemo(() => {
     if (!props.grouping) {
@@ -232,12 +219,6 @@ const Benchmark = (props: InnerCheckProps) => {
           />
         </Grid>
       </Grid>
-      {showGroupingControls && (
-        <CheckGroupingEditorModal
-          config={groupingConfig}
-          setShowEditor={setShowGroupingControls}
-        />
-      )}
     </>
   );
 };

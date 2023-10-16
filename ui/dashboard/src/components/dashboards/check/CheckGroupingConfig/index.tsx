@@ -1,8 +1,8 @@
+import CheckGroupingEditor from "../CheckGroupinigEditor";
 import Icon from "../../../Icon";
 import useCheckGroupingConfig from "../../../../hooks/useCheckGroupingConfig";
 import { CheckDisplayGroup } from "../common";
-import { CheckGroupingEditorModal } from "../CheckGroupingEditorModal";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 
 type CheckGroupingTitleLabelProps = {
   item: CheckDisplayGroup;
@@ -14,7 +14,7 @@ const CheckGroupingTitleLabel = ({ item }: CheckGroupingTitleLabelProps) => {
     case "tag":
       return (
         <div className="space-x-1">
-          <span className="capitalize">{item.type}</span>
+          <span className="capitalize font-medium">{item.type}</span>
           <span>=</span>
           <span>{item.value}</span>
         </div>
@@ -22,21 +22,21 @@ const CheckGroupingTitleLabel = ({ item }: CheckGroupingTitleLabelProps) => {
     default:
       return (
         <div>
-          <span className="capitalize">{item.type}</span>
+          <span className="capitalize font-medium">{item.type}</span>
         </div>
       );
   }
 };
 
-const CheckGroupingConfig = ({}) => {
+const CheckGroupingConfig = () => {
   const [showEditor, setShowEditor] = useState(false);
   const groupingConfig = useCheckGroupingConfig();
   return (
     <>
-      <div className="flex items-center space-x-2 shrink-0">
-        <span className="font-medium">Grouping:</span>
+      <div className="flex items-center space-x-3 shrink-0">
+        <Icon className="h-5 w-5" icon="workspaces" />
         {groupingConfig
-          .map<React.ReactNode>((item) => (
+          .map<ReactNode>((item) => (
             <CheckGroupingTitleLabel key={item.id} item={item} />
           ))
           .reduce((prev, curr, idx) => [
@@ -51,12 +51,7 @@ const CheckGroupingConfig = ({}) => {
           title="Edit grouping"
         />
       </div>
-      {showEditor && (
-        <CheckGroupingEditorModal
-          config={groupingConfig}
-          setShowEditor={setShowEditor}
-        />
-      )}
+      {showEditor && <CheckGroupingEditor config={groupingConfig} />}
     </>
   );
 };

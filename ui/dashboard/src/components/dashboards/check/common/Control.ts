@@ -6,6 +6,7 @@ import {
   CheckNodeStatus,
   CheckNodeType,
   CheckResult,
+  CheckResultStatus,
   CheckSeverity,
   CheckSeveritySummary,
   CheckSummary,
@@ -50,7 +51,7 @@ class Control implements CheckNode {
     error: string | undefined,
     panelsMap: PanelsMap,
     benchmark_trunk: Benchmark[],
-    add_control_results: AddControlResultsAction
+    add_control_results: AddControlResultsAction,
   ) {
     this._sortIndex = sortIndex;
     this._group_id = group_id;
@@ -86,7 +87,7 @@ class Control implements CheckNode {
       add_control_results([this._build_control_empty_result(benchmark_trunk)]);
     } else {
       add_control_results(
-        this._build_control_results(benchmark_trunk, this._results)
+        this._build_control_results(benchmark_trunk, this._results),
       );
     }
   }
@@ -193,7 +194,7 @@ class Control implements CheckNode {
   }
 
   private _build_control_loading_node = (
-    benchmark_trunk: Benchmark[]
+    benchmark_trunk: Benchmark[],
   ): CheckResult => {
     return {
       type: "loading",
@@ -202,14 +203,14 @@ class Control implements CheckNode {
       control: this,
       reason: "",
       resource: "",
-      status: "ok",
+      status: CheckResultStatus.ok,
       benchmark_trunk,
     };
   };
 
   private _build_control_error_node = (
     benchmark_trunk: Benchmark[],
-    error: string
+    error: string,
   ): CheckResult => {
     return {
       type: "error",
@@ -219,13 +220,13 @@ class Control implements CheckNode {
       control: this,
       reason: "",
       resource: "",
-      status: "error",
+      status: CheckResultStatus.error,
       benchmark_trunk,
     };
   };
 
   private _build_control_empty_result = (
-    benchmark_trunk: Benchmark[]
+    benchmark_trunk: Benchmark[],
   ): CheckResult => {
     return {
       type: "empty",
@@ -235,14 +236,14 @@ class Control implements CheckNode {
       control: this,
       reason: "",
       resource: "",
-      status: "empty",
+      status: CheckResultStatus.empty,
       benchmark_trunk,
     };
   };
 
   private _build_control_results = (
     benchmark_trunk: Benchmark[],
-    results: CheckResult[]
+    results: CheckResult[],
   ): CheckResult[] => {
     return results.map((r) => ({
       ...r,

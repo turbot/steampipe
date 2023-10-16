@@ -72,13 +72,14 @@ export type CheckResultDimension = {
   value: string;
 };
 
-export type CheckResultStatus =
-  | "alarm"
-  | "ok"
-  | "info"
-  | "skip"
-  | "error"
-  | "empty";
+export enum CheckResultStatus {
+  alarm = 0,
+  ok = 1,
+  info = 2,
+  skip = 3,
+  error = 4,
+  empty = 5,
+}
 
 export type CheckResultType = "loading" | "error" | "empty" | "result";
 
@@ -142,7 +143,7 @@ export type AddControlResultsAction = (results: CheckResult[]) => void;
 
 export const findDimension = (
   dimensions?: CheckResultDimension[],
-  key?: string
+  key?: string,
 ) => {
   if (!dimensions || !key) {
     return undefined;

@@ -10,11 +10,7 @@ const SnapshotBanner = () => {
   }
 
   return (
-    <div
-      className={classNames(
-        "w-full bg-dashboard border-b border-divide p-4 text-sm space-x-1 text-foreground-light"
-      )}
-    >
+    <div className={classNames("text-sm space-x-1 text-foreground-light")}>
       <span>Snapshot:</span>
       <span>{snapshotFileName}</span>
     </div>

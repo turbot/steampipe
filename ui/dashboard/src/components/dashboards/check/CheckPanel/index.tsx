@@ -107,17 +107,17 @@ const CheckResultRowStatusIcon = ({
   status,
 }: CheckResultRowStatusIconProps) => {
   switch (status) {
-    case "alarm":
+    case CheckResultStatus.alarm:
       return <AlarmIcon className="h-5 w-5 text-alert" />;
-    case "error":
+    case CheckResultStatus.error:
       return <ErrorIcon className="h-5 w-5 text-alert" />;
-    case "ok":
+    case CheckResultStatus.ok:
       return <OKIcon className="h-5 w-5 text-ok" />;
-    case "info":
+    case CheckResultStatus.info:
       return <InfoIcon className="h-5 w-5 text-info" />;
-    case "skip":
+    case CheckResultStatus.skip:
       return <SkipIcon className="h-5 w-5 text-skip" />;
-    case "empty":
+    case CheckResultStatus.empty:
       return <EmptyIcon className="h-5 w-5 text-skip" />;
     default:
       return <UnknownIcon className="h-5 w-5 text-skip" />;
@@ -126,17 +126,17 @@ const CheckResultRowStatusIcon = ({
 
 const getCheckResultRowIconTitle = (status: CheckResultStatus) => {
   switch (status) {
-    case "error":
+    case CheckResultStatus.error:
       return "Error";
-    case "alarm":
+    case CheckResultStatus.alarm:
       return "Alarm";
-    case "ok":
+    case CheckResultStatus.ok:
       return "OK";
-    case "info":
+    case CheckResultStatus.info:
       return "Info";
-    case "skip":
+    case CheckResultStatus.skip:
       return "Skipped";
-    case "empty":
+    case CheckResultStatus.empty:
       return "No results";
   }
 };
@@ -171,9 +171,9 @@ const CheckEmptyResultRow = ({ node }: CheckEmptyResultRowProps) => {
     <div className="flex bg-dashboard-panel print:bg-white p-4 last:rounded-b-md space-x-4">
       <div
         className="flex-shrink-0"
-        title={getCheckResultRowIconTitle("empty")}
+        title={getCheckResultRowIconTitle(CheckResultStatus.empty)}
       >
-        <CheckResultRowStatusIcon status="empty" />
+        <CheckResultRowStatusIcon status={CheckResultStatus.empty} />
       </div>
       <div className="leading-4 mt-px">{node.title}</div>
     </div>
@@ -185,9 +185,9 @@ const CheckErrorRow = ({ error }: CheckErrorRowProps) => {
     <div className="flex bg-dashboard-panel print:bg-white p-4 last:rounded-b-md space-x-4">
       <div
         className="flex-shrink-0"
-        title={getCheckResultRowIconTitle("error")}
+        title={getCheckResultRowIconTitle(CheckResultStatus.error)}
       >
-        <CheckResultRowStatusIcon status="error" />
+        <CheckResultRowStatusIcon status={CheckResultStatus.error} />
       </div>
       <div className="leading-4 mt-px">{error}</div>
     </div>
@@ -202,7 +202,7 @@ const CheckResults = ({ empties, errors, results }: CheckResultsProps) => {
   return (
     <div
       className={classNames(
-        "border-t shadow-sm rounded-b-md divide-y divide-table-divide border-divide print:shadow-none print:border print:break-before-avoid-page print:break-after-avoid-page print:break-inside-auto"
+        "border-t shadow-sm rounded-b-md divide-y divide-table-divide border-divide print:shadow-none print:border print:break-before-avoid-page print:break-after-avoid-page print:break-inside-auto",
       )}
     >
       {empties.map((emptyNode) => (
@@ -241,7 +241,7 @@ const CheckPanelSeverityBadge = ({
         count > 0 ? "border-severity" : "border-skip",
         count > 0
           ? "bg-severity text-white divide-white"
-          : "text-skip divide-skip"
+          : "text-skip divide-skip",
       )}
       title={title}
     >
@@ -331,7 +331,7 @@ const CheckPanel = ({ depth, node }: CheckPanelProps) => {
             : null,
           node.type === "benchmark" || node.type === "control"
             ? "print:break-inside-avoid-page"
-            : null
+            : null,
         )}
       >
         <section
@@ -343,7 +343,7 @@ const CheckPanel = ({ depth, node }: CheckPanelProps) => {
                 error_nodes.length > 0 ||
                 result_nodes.length > 0)
               ? "rounded-b-none border-b-0"
-              : null
+              : null,
           )}
           onClick={() =>
             can_be_expanded
