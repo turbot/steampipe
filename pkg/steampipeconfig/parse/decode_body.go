@@ -92,12 +92,8 @@ func getResourceSchema(resource modconfig.HclResource, nestedStructs []any) *hcl
 	// TODO handle duplicates and required/optional
 	// now merge the schemas
 	for _, s := range schemas {
-		for _, b := range s.Blocks {
-			res.Blocks = append(res.Blocks, b)
-		}
-		for _, a := range s.Attributes {
-			res.Attributes = append(res.Attributes, a)
-		}
+		res.Blocks = append(res.Blocks, s.Blocks...)
+		res.Attributes = append(res.Attributes, s.Attributes...)
 	}
 
 	// special cases for manually parsed attributes and blocks
