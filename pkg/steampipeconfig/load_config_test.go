@@ -47,7 +47,7 @@ var workspaceSearchPathPrefix = "foobar"
 
 var testCasesLoadConfig = map[string]loadConfigTest{
 	"multiple_connections": {
-		steampipeDir: "testdata/hcl_helpers/multiple_connections",
+		steampipeDir: "testdata/connection_config/multiple_connections",
 		expected: &SteampipeConfig{
 			Connections: map[string]*modconfig.Connection{
 				"aws_dmi_001": {
@@ -59,7 +59,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					ImportSchema:   "enabled",
 					Config:         "access_key = \"aws_dmi_001_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_001_secret_key\"\n",
 					DeclRange: modconfig.Range{
-						Filename: "$$test_pwd$$/testdata/hcl_helpers/multiple_connections/config/connection1.spc",
+						Filename: "$$test_pwd$$/testdata/connection_config/multiple_connections/config/connection1.spc",
 						Start: modconfig.Pos{
 							Line:   1,
 							Column: 1,
@@ -81,7 +81,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					ImportSchema:   "enabled",
 					Config:         "access_key = \"aws_dmi_002_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_002_secret_key\"\n",
 					DeclRange: modconfig.Range{
-						Filename: "$$test_pwd$$/testdata/hcl_helpers/multiple_connections/config/connection2.spc",
+						Filename: "$$test_pwd$$/testdata/connection_config/multiple_connections/config/connection2.spc",
 						Start: modconfig.Pos{
 							Line:   1,
 							Column: 1,
@@ -102,7 +102,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 		},
 	},
 	//"single_connection": {
-	//	steampipeDir: "testdata/hcl_helpers/single_connection",
+	//	steampipeDir: "testdata/connection_config/single_connection",
 	//	expected: &SteampipeConfig{
 	//		Connections: map[string]*modconfig.Connection{
 	//			"a": {
@@ -114,7 +114,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//				ImportSchema:   "enabled",
 	//				Config:         "",
 	//				DeclRange: modconfig.Range{
-	//					Filename: "$$test_pwd$$/testdata/hcl_helpers/single_connection/config/connection1.spc",
+	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection/config/connection1.spc",
 	//					Start: modconfig.Pos{
 	//						Line:   1,
 	//						Column: 1,
@@ -135,7 +135,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//	},
 	//},
 	//"single_connection_with_default_options": { // fixed
-	//	steampipeDir: "testdata/hcl_helpers/single_connection_with_default_options",
+	//	steampipeDir: "testdata/connection_config/single_connection_with_default_options",
 	//	expected: &SteampipeConfig{
 	//		Connections: map[string]*modconfig.Connection{
 	//			"a": {
@@ -147,7 +147,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//				ImportSchema:   "enabled",
 	//				Config:         "",
 	//				DeclRange: modconfig.Range{
-	//					Filename: "$$test_pwd$$/testdata/hcl_helpers/single_connection_with_default_options/config/connection1.spc",
+	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
 	//					Start: modconfig.Pos{
 	//						Line:   1,
 	//						Column: 1,
@@ -176,12 +176,12 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//	},
 	//},
 	//"single_connection_with_default_options_and_workspace_invalid_options_block": { // fixed
-	//	steampipeDir: "testdata/hcl_helpers/single_connection_with_default_options",
+	//	steampipeDir: "testdata/connection_config/single_connection_with_default_options",
 	//	workspaceDir: "testdata/load_config_test/invalid_options_block",
 	//	expected:     "ERROR",
 	//},
 	//"single_connection_with_default_options_and_workspace_search_path_prefix": { // fixed
-	//	steampipeDir: "testdata/hcl_helpers/single_connection_with_default_options",
+	//	steampipeDir: "testdata/connection_config/single_connection_with_default_options",
 	//	workspaceDir: "testdata/load_config_test/search_path_prefix",
 	//	expected: &SteampipeConfig{
 	//		Connections: map[string]*modconfig.Connection{
@@ -194,7 +194,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//				ImportSchema:   "enabled",
 	//				Config:         "",
 	//				DeclRange: modconfig.Range{
-	//					Filename: "$$test_pwd$$/testdata/hcl_helpers/single_connection_with_default_options/config/connection1.spc",
+	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
 	//					Start: modconfig.Pos{
 	//						Line:   1,
 	//						Column: 1,
@@ -223,7 +223,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//	},
 	//},
 	//"single_connection_with_default_options_and_workspace_override_terminal_config": { // fixed
-	//	steampipeDir: "testdata/hcl_helpers/single_connection_with_default_options",
+	//	steampipeDir: "testdata/connection_config/single_connection_with_default_options",
 	//	workspaceDir: "testdata/load_config_test/override_terminal_config",
 	//	expected: &SteampipeConfig{
 	//		Connections: map[string]*modconfig.Connection{
@@ -236,7 +236,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//				ImportSchema:   "enabled",
 	//				Config:         "",
 	//				DeclRange: modconfig.Range{
-	//					Filename: "$$test_pwd$$/testdata/hcl_helpers/single_connection_with_default_options/config/connection1.spc",
+	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
 	//					Start: modconfig.Pos{
 	//						Line:   1,
 	//						Column: 1,
@@ -265,7 +265,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//	},
 	//},
 	//"single_connection_with_default_and_connection_options": {
-	//	steampipeDir: "testdata/hcl_helpers/single_connection_with_default_and_connection_options",
+	//	steampipeDir: "testdata/connection_config/single_connection_with_default_and_connection_options",
 	//	expected: &SteampipeConfig{
 	//		Connections: map[string]*modconfig.Connection{
 	//			"a": {
@@ -280,7 +280,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//					CacheTTL: &ttlVal,
 	//				},
 	//				DeclRange: modconfig.Range{
-	//					Filename: "$$test_pwd$$/testdata/hcl_helpers/single_connection_with_default_and_connection_options/config/connection1.spc",
+	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_and_connection_options/config/connection1.spc",
 	//					Start: modconfig.Pos{
 	//						Line:   1,
 	//						Column: 1,
@@ -309,7 +309,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//	},
 	//},
 	//"options_only": { // fixed
-	//	steampipeDir: "testdata/hcl_helpers/options_only",
+	//	steampipeDir: "testdata/connection_config/options_only",
 	//	expected: &SteampipeConfig{
 	//		Connections: map[string]*modconfig.Connection{},
 	//		DefaultConnectionOptions: &options.Connection{
@@ -327,7 +327,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//	},
 	//},
 	//"options_duplicate_block": {
-	//	steampipeDir: "testdata/hcl_helpers/options_duplicate_block",
+	//	steampipeDir: "testdata/connection_config/options_duplicate_block",
 	//	expected:     "ERROR",
 	//},
 }
