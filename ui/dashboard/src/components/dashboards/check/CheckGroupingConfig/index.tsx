@@ -2,9 +2,9 @@ import CheckGroupingEditor from "../CheckGroupingEditor";
 import Icon from "../../../Icon";
 import useCheckGroupingConfig from "../../../../hooks/useCheckGroupingConfig";
 import { CheckDisplayGroup } from "../common";
+import { classNames } from "../../../../utils/styles";
 import { ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { classNames } from "../../../../utils/styles";
 
 type CheckGroupingTitleLabelProps = {
   item: CheckDisplayGroup;

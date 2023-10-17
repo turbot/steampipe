@@ -205,8 +205,20 @@ const CheckFilterValueSelect = ({
   }, [currentValue, index, item]);
 
   const values = useMemo(() => {
+    console.log(filterValues);
     if (!type) {
       return [];
+    }
+    if (type === "status") {
+      return (
+        Object.entries(filterValues[type] || {})
+          // @ts-ignore
+          .filter(([k, v]) => v > 0)
+          .map(([k]) => ({
+            value: k,
+            label: k,
+          }))
+      );
     }
     return Object.keys(filterValues[type].value || {}).map((k) => ({
       value: k,

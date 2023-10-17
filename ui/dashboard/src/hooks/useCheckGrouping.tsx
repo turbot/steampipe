@@ -542,9 +542,11 @@ function recordFilterValues(
   }
 
   // Record the status of this check result to allow assisted filtering later
-  filterValues.status[checkResult.status] =
-    filterValues.status[checkResult.status] || 0;
-  filterValues.status[checkResult.status] += 1;
+  if (isNaN(checkResult.status)) {
+    filterValues.status[checkResult.status] =
+      filterValues.status[checkResult.status] || 0;
+    filterValues.status[checkResult.status] += 1;
+  }
 
   // Record the dimension keys/values + value/key counts of this check result to allow assisted filtering later
   for (const dimension of checkResult.dimensions) {
