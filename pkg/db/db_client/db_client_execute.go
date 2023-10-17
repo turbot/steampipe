@@ -305,22 +305,23 @@ Loop:
 }
 
 func (c *DbClient) rowValues(rows *sql.Rows) ([]interface{}, error) {
-	// Create an array of interface{} to store the retrieved values
 	columns, err := rows.Columns()
 	if err != nil {
 		return nil, err
 	}
-	values := make([]interface{}, len(columns)) // 3 is the number of columns
-
-	for rows.Next() {
-		// Use a variadic function to scan values into the array
-		err := rows.Scan(values...)
-		if err != nil {
-			return nil, err
-		}
+	// Create an array of interface{} to store the retrieved values
+	values := make([]interface{}, len(columns))
+	// create an array to store the pointers to the values
+	ptrs := make([]interface{}, len(columns))
+	for i := range values {
+		ptrs[i] = &values[i]
 	}
-
-	return values, nil
+	// Use a variadic to scan values into the array
+	err = rows.Scan(ptrs...)
+	if err != nil {
+		return nil, err
+	}
+	return values, rows.Err()
 }
 
 func (c *DbClient) readRow(rows *sql.Rows, cols []*queryresult.ColumnDef) ([]any, error) {

@@ -17,7 +17,7 @@ const (
 )
 
 func getDriverNameFromConnectionString(connStr string) string {
-	return connStr
+	return "pgx"
 }
 
 type DbConnectionCallback func(context.Context, *sql.Conn) error
@@ -61,6 +61,9 @@ func (c *DbClient) establishManagementConnectionPool(ctx context.Context, overri
 	defer utils.LogTime("db_client.establishManagementConnectionPool end")
 
 	pool, err := establishConnectionPool(ctx, c.connectionString)
+	if err != nil {
+		return err
+	}
 
 	// apply any overrides
 	// this is used to set the pool size and lifetimes of the connections from up top
@@ -75,9 +78,9 @@ func (c *DbClient) establishManagementConnectionPool(ctx context.Context, overri
 	if err != nil {
 		return err
 	}
-	c.userPool = pool
+	c.managementPool = pool
 
-	return c.establishManagementConnectionPool(ctx, overrides)
+	return nil
 }
 
 func establishConnectionPool(ctx context.Context, connectionString string) (*sql.DB, error) {

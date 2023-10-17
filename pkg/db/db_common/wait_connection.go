@@ -41,10 +41,23 @@ func WaitForPool(ctx context.Context, db *sql.DB, waitOptions ...WaitOption) (er
 	utils.LogTime("db.waitForConnection start")
 	defer utils.LogTime("db.waitForConnection end")
 
-	connection, err := db.Conn(ctx)
-	if err != nil {
-		return err
-	}
+	var connection *sql.Conn
+	backoff := retry.WithMaxDuration(
+		constants.DBStartTimeout,
+		retry.NewConstant(constants.DBConnectionRetryBackoff),
+	)
+
+	// if we are here, we are more or less sure that the database is up and running
+	// but we need to wait for it to accept connections
+	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
+		c, err := db.Conn(ctx)
+		if err != nil {
+			return retry.RetryableError(err)
+		}
+		connection = c
+		return nil
+	})
+
 	defer connection.Close()
 	return WaitForConnectionPing(ctx, connection, waitOptions...)
 }

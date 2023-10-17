@@ -15,7 +15,7 @@ func CollectOneToStructByName[T any](rows *sql.Rows) (*T, error) {
 
 func CollectToStructByName[T any](rows *sql.Rows) ([]T, error) {
 	dest := []T{}
-	destType := reflect.TypeOf(dest).Elem().Elem()
+	destType := reflect.TypeOf(dest).Elem()
 	columns, err := rows.Columns()
 	if err != nil {
 		return nil, err

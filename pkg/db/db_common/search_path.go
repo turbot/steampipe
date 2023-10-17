@@ -32,6 +32,9 @@ func AddSearchPathPrefix(searchPathPrefix []string, searchPath []string) []strin
 }
 
 func BuildSearchPathResult(searchPathString string) ([]string, error) {
+	// remove any leading/trailing braces
+	searchPathString = strings.TrimPrefix(searchPathString, "{")
+	searchPathString = strings.TrimSuffix(searchPathString, "}")
 	// if this is called from GetSteampipeUserSearchPath the result will be prefixed by "search_path="
 	searchPathString = strings.TrimPrefix(searchPathString, "search_path=")
 	// split
@@ -47,14 +50,14 @@ func BuildSearchPathResult(searchPathString string) ([]string, error) {
 }
 
 func GetUserSearchPath(ctx context.Context, conn *sql.Conn) ([]string, error) {
-	query := `SELECT rs.setconfig
+	query := `SELECT array_to_string(rs.setconfig, ',')
 	FROM   pg_db_role_setting rs
 	LEFT   JOIN pg_roles      r ON r.oid = rs.setrole
 	LEFT   JOIN pg_database   d ON d.oid = rs.setdatabase
 	WHERE  r.rolname = 'steampipe'`
 
 	rows := conn.QueryRowContext(ctx, query)
-	var configStrings []string
+	var configStrings string
 	if err := rows.Scan(&configStrings); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return []string{}, nil
@@ -62,7 +65,7 @@ func GetUserSearchPath(ctx context.Context, conn *sql.Conn) ([]string, error) {
 		return nil, err
 	}
 	if len(configStrings) > 0 {
-		return BuildSearchPathResult(configStrings[0])
+		return BuildSearchPathResult(configStrings)
 	}
 	// should not get here
 	return nil, nil

@@ -89,7 +89,7 @@ func CreateLocalDbConnectionPool(ctx context.Context, opts *CreateDbOptions) (*s
 	// 	return nil, err
 	// }
 
-	pool, err := sql.Open("postgres", psqlInfo)
+	pool, err := sql.Open("pgx", psqlInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 		return nil, err
 	}
 
-	pool, err := sql.Open("postgres", psqlInfo)
+	pool, err := sql.Open("pgx", psqlInfo)
 	if err != nil {
 		return nil, err
 	}
