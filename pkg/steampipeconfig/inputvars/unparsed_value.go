@@ -2,14 +2,14 @@ package inputvars
 
 import (
 	"fmt"
-	"github.com/turbot/terraform-components/terraform"
-	"github.com/zclconf/go-cty/cty"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
+	"github.com/turbot/terraform-components/terraform"
 	"github.com/turbot/terraform-components/tfdiags"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // TODO replace this with /Users/kai/Dev/github/turbot/terraform-components/backend/unparsed_value.go

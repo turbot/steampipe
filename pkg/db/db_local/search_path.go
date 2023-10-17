@@ -2,12 +2,12 @@ package db_local
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"sort"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -15,7 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
+func SetUserSearchPath(ctx context.Context, pool *sql.DB) ([]string, error) {
 	var searchPath []string
 
 	// is there a user search path in the config?
@@ -37,14 +37,14 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 	log.Println("[TRACE] setting user search path to", searchPath)
 
 	// get all roles which are a member of steampipe_users
-	conn, err := pool.Acquire(ctx)
+	conn, err := pool.Conn(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Release()
+	defer conn.Close()
 
 	query := fmt.Sprintf(`SELECT USENAME FROM pg_user WHERE pg_has_role(usename, '%s', 'member')`, constants.DatabaseUsersRole)
-	rows, err := conn.Query(ctx, query)
+	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 	}
 
 	log.Printf("[TRACE] user search path sql: %v", queries)
-	_, err = ExecuteSqlInTransaction(ctx, conn.Conn(), queries...)
+	_, err = ExecuteSqlInTransaction(ctx, conn, queries...)
 	if err != nil {
 		return nil, err
 	}

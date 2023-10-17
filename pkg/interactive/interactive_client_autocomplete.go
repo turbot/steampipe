@@ -3,11 +3,11 @@ package interactive
 import (
 	"context"
 	"fmt"
-	"github.com/spf13/viper"
 	"log"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
+	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -23,9 +23,9 @@ func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Release()
+	defer conn.Close()
 
-	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
+	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitUntilLoading())
 	if err != nil {
 		c.initialiseSuggestionsLegacy()
 		//nolint:golint,nilerr // valid condition - not an error

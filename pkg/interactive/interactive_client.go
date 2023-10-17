@@ -555,8 +555,8 @@ func (c *InteractiveClient) getConnectionState(ctx context.Context) (steampipeco
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Release()
-	return steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
+	defer conn.Close()
+	return steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitUntilLoading())
 }
 
 func (c *InteractiveClient) restartInteractiveSession() {

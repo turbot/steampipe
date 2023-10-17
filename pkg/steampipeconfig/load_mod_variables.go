@@ -2,7 +2,6 @@ package steampipeconfig
 
 import (
 	"context"
-	"github.com/turbot/terraform-components/terraform"
 	"sort"
 
 	"github.com/spf13/viper"
@@ -14,6 +13,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/terraform-components/terraform"
 	"github.com/turbot/terraform-components/tfdiags"
 	"golang.org/x/exp/maps"
 )

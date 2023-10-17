@@ -2,14 +2,13 @@ package db_client
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgconn"
 	"log"
 	"strings"
 	"sync"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -25,10 +24,10 @@ type DbClient struct {
 	connectionString string
 
 	// connection userPool for user initiated queries
-	userPool *pgxpool.Pool
+	userPool *sql.DB
 
 	// connection used to run system/plumbing queries (connection state, server settings)
-	managementPool *pgxpool.Pool
+	managementPool *sql.DB
 
 	// the settings of the server that this client is connected to
 	serverSettings *db_common.ServerSettings
@@ -58,24 +57,12 @@ type DbClient struct {
 	// (cached to avoid concurrent access error on viper)
 	showTimingFlag bool
 	// disable timing - set whilst in process of querying the timing
-	disableTiming        bool
-	onConnectionCallback DbConnectionCallback
+	disableTiming bool
 }
 
-func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback, opts ...ClientOption) (_ *DbClient, err error) {
+func NewDbClient(ctx context.Context, connectionString string, opts ...ClientOption) (_ *DbClient, err error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
-
-	wg := &sync.WaitGroup{}
-	// wrap onConnectionCallback to use wait group
-	var wrappedOnConnectionCallback DbConnectionCallback
-	if onConnectionCallback != nil {
-		wrappedOnConnectionCallback = func(ctx context.Context, conn *pgx.Conn) error {
-			wg.Add(1)
-			defer wg.Done()
-			return onConnectionCallback(ctx, conn)
-		}
-	}
 
 	client := &DbClient{
 		// a weighted semaphore to control the maximum number parallel
@@ -83,9 +70,7 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
 		sessions:                make(map[uint32]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
-		// store the callback
-		onConnectionCallback: wrappedOnConnectionCallback,
-		connectionString:     connectionString,
+		connectionString:        connectionString,
 	}
 
 	defer func() {
@@ -194,16 +179,16 @@ func (c *DbClient) Close(context.Context) error {
 // connections backed by distinct plugins and then fanning back out.
 func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetadata, error) {
 	log.Printf("[INFO] DbClient GetSchemaFromDB")
-	mgmtConn, err := c.managementPool.Acquire(ctx)
+	mgmtConn, err := c.managementPool.Conn(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer mgmtConn.Release()
+	defer mgmtConn.Close()
 
 	// for optimisation purposes, try to load connection state and build a map of schemas to load
 	// (if we are connected to a remote server running an older CLI,
 	// this load may fail, in which case bypass the optimisation)
-	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, mgmtConn.Conn(), steampipeconfig.WithWaitUntilLoading())
+	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, mgmtConn, steampipeconfig.WithWaitUntilLoading())
 	// NOTE: if we failed to load connection state, this may be because we are connected to an older version of the CLI
 	// use legacy (v0.19.x) schema loading code
 	if err != nil {
@@ -223,7 +208,7 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetada
 	query := c.buildSchemasQuery(schemas...)
 
 	// build schema metadata from query result
-	metadata, err := db_common.LoadSchemaMetadata(ctx, mgmtConn.Conn(), query)
+	metadata, err := db_common.LoadSchemaMetadata(ctx, mgmtConn, query)
 	if err != nil {
 		return nil, err
 	}
@@ -245,21 +230,18 @@ func (c *DbClient) GetSchemaFromDB(ctx context.Context) (*db_common.SchemaMetada
 	return metadata, nil
 }
 
-func (c *DbClient) GetSchemaFromDBLegacy(ctx context.Context, conn *pgxpool.Conn) (*db_common.SchemaMetadata, error) {
+func (c *DbClient) GetSchemaFromDBLegacy(ctx context.Context, conn *sql.Conn) (*db_common.SchemaMetadata, error) {
 	// build a query to retrieve these schemas
 	query := c.buildSchemasQueryLegacy()
 
 	// build schema metadata from query result
-	return db_common.LoadSchemaMetadata(ctx, conn.Conn(), query)
+	return db_common.LoadSchemaMetadata(ctx, conn, query)
 }
 
-// refreshDbClient terminates the current connection and opens up a new connection to the service.
+// Unimplemented (sql.DB does not have a mechanism to reset pools) - refreshDbClient terminates the current connection and opens up a new connection to the service.
 func (c *DbClient) ResetPools(ctx context.Context) {
 	log.Println("[TRACE] db_client.ResetPools start")
 	defer log.Println("[TRACE] db_client.ResetPools end")
-
-	c.userPool.Reset()
-	c.managementPool.Reset()
 }
 
 func (c *DbClient) buildSchemasQuery(schemas ...string) string {

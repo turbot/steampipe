@@ -139,13 +139,17 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 	}()
 
 	// start query
-	var rows pgx.Rows
+	var rows *sql.Rows
 	rows, err = c.startQueryWithRetries(ctxExecute, session, query, args...)
 	if err != nil {
 		return
 	}
 
-	colDefs := fieldDescriptionsToColumns(rows.FieldDescriptions(), session.Connection.Conn())
+	colTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return
+	}
+	colDefs := fieldDescriptionsToColumns(colTypes, session.Connection)
 
 	result := queryresult.NewResult(colDefs)
 
@@ -201,13 +205,13 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 	}()
 
 	var scanRows *ScanMetadataRow
-	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
+	err := db_common.ExecuteSystemClientCall(ctx, session.Connection, func(ctx context.Context, tx *sql.Tx) error {
 		query := fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
-		rows, err := tx.Query(ctx, query)
+		rows, err := tx.QueryContext(ctx, query)
 		if err != nil {
 			return err
 		}
-		scanRows, err = pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[ScanMetadataRow])
+		scanRows, err = db_common.CollectOneToStructByName[ScanMetadataRow](rows)
 		return err
 	})
 
@@ -230,8 +234,8 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 }
 
 func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_common.DatabaseSession) error {
-	return db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
-		row := tx.QueryRow(ctx, fmt.Sprintf("select max(id) from %s.%s", constants.InternalSchema, constants.ForeignTableScanMetadata))
+	return db_common.ExecuteSystemClientCall(ctx, session.Connection, func(ctx context.Context, tx *sql.Tx) error {
+		row := tx.QueryRowContext(ctx, fmt.Sprintf("select max(id) from %s.%s", constants.InternalSchema, constants.ForeignTableScanMetadata))
 		err := row.Scan(&session.ScanMetadataMaxId)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
@@ -242,11 +246,11 @@ func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_comm
 
 // run query in a goroutine, so we can check for cancellation
 // in case the client becomes unresponsive and does not respect context cancellation
-func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string, args ...any) (rows pgx.Rows, err error) {
+func (c *DbClient) startQuery(ctx context.Context, conn *sql.Conn, query string, args ...any) (rows *sql.Rows, err error) {
 	doneChan := make(chan bool)
 	go func() {
 		// start asynchronous query
-		rows, err = conn.Query(ctx, query, args...)
+		rows, err = conn.QueryContext(ctx, query, args...)
 		close(doneChan)
 	}()
 
@@ -258,7 +262,7 @@ func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string,
 	return
 }
 
-func (c *DbClient) readRows(ctx context.Context, rows pgx.Rows, result *queryresult.Result, timingCallback func()) {
+func (c *DbClient) readRows(ctx context.Context, rows *sql.Rows, result *queryresult.Result, timingCallback func()) {
 	// defer this, so that these get cleaned up even if there is an unforeseen error
 	defer func() {
 		// we are done fetching results. time for display. clear the status indication
@@ -305,8 +309,27 @@ Loop:
 	}
 }
 
-func readRow(rows pgx.Rows, cols []*queryresult.ColumnDef) ([]interface{}, error) {
-	columnValues, err := rows.Values()
+func rowValues(rows *sql.Rows) ([]interface{}, error) {
+	// Create an array of interface{} to store the retrieved values
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	values := make([]interface{}, len(columns)) // 3 is the number of columns
+
+	for rows.Next() {
+		// Use a variadic function to scan values into the array
+		err := rows.Scan(values...)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return values, nil
+}
+
+func readRow(rows *sql.Rows, cols []*queryresult.ColumnDef) ([]interface{}, error) {
+	columnValues, err := rowValues(rows)
 	if err != nil {
 		return nil, error_helpers.WrapError(err)
 	}

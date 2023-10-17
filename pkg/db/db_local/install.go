@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -11,7 +12,6 @@ import (
 	"sync"
 
 	"github.com/fatih/color"
-	"github.com/jackc/pgx/v5"
 	psutils "github.com/shirou/gopsutil/process"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
@@ -297,7 +297,7 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	}
 	defer func() {
 		statushooks.SetStatus(ctx, "Completing configuration")
-		client.Close(ctx)
+		client.Close()
 		doThreeStepPostgresExit(ctx, process)
 	}()
 
@@ -445,7 +445,7 @@ func initDatabase() error {
 	return os.WriteFile(filepaths.GetPgHbaConfLocation(), []byte(constants.MinimalPgHbaContent), 0600)
 }
 
-func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *pgx.Conn) error {
+func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *sql.Conn) error {
 	utils.LogTime("db_local.install.installDatabaseWithPermissions start")
 	defer utils.LogTime("db_local.install.installDatabaseWithPermissions end")
 
@@ -506,7 +506,7 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 	for _, statement := range statements {
 		// not logging here, since the password may get logged
 		// we don't want that
-		if _, err := rawClient.Exec(ctx, statement); err != nil {
+		if _, err := rawClient.ExecContext(ctx, statement); err != nil {
 			return err
 		}
 	}
@@ -518,7 +518,7 @@ func writePgHbaContent(databaseName string, username string) error {
 	return os.WriteFile(filepaths.GetPgHbaConfLocation(), []byte(content), 0600)
 }
 
-func installForeignServer(ctx context.Context, rawClient *pgx.Conn) error {
+func installForeignServer(ctx context.Context, rawClient *sql.Conn) error {
 	utils.LogTime("db_local.installForeignServer start")
 	defer utils.LogTime("db_local.installForeignServer end")
 
@@ -534,7 +534,7 @@ func installForeignServer(ctx context.Context, rawClient *pgx.Conn) error {
 		// NOTE: This may print a password to the log file, but it doesn't matter
 		// since the password is stored in a config file anyway.
 		log.Println("[TRACE] Install Foreign Server: ", statement)
-		if _, err := rawClient.Exec(ctx, statement); err != nil {
+		if _, err := rawClient.ExecContext(ctx, statement); err != nil {
 			return err
 		}
 	}

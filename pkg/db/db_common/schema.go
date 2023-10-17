@@ -2,11 +2,11 @@ package db_common
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sort"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -24,11 +24,12 @@ type schemaRecord struct {
 	TableDescription  string
 }
 
-func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, error) {
-	res, err := conn.Query(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables WHERE foreign_server_name='steampipe'")
+func LoadForeignSchemaNames(ctx context.Context, conn *sql.Conn) ([]string, error) {
+	res, err := conn.QueryContext(ctx, "SELECT DISTINCT foreign_table_schema FROM information_schema.foreign_tables WHERE foreign_server_name='steampipe'")
 	if err != nil {
 		return nil, err
 	}
+	defer res.Close()
 
 	var foreignSchemaNames []string
 	var schema string
@@ -45,9 +46,9 @@ func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, erro
 	return foreignSchemaNames, nil
 }
 
-func LoadSchemaMetadata(ctx context.Context, conn *pgx.Conn, query string) (*SchemaMetadata, error) {
+func LoadSchemaMetadata(ctx context.Context, conn *sql.Conn, query string) (*SchemaMetadata, error) {
 	var schemaRecords []schemaRecord
-	rows, err := conn.Query(ctx, query)
+	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +103,7 @@ func buildSchemaMetadata(records []schemaRecord) (_ *SchemaMetadata, err error) 
 	return schemaMetadata, err
 }
 
-func getSchemaRecordsFromRows(rows pgx.Rows) ([]schemaRecord, error) {
+func getSchemaRecordsFromRows(rows *sql.Rows) ([]schemaRecord, error) {
 	utils.LogTime("db.getSchemaRecordsFromRows start")
 	defer utils.LogTime("db.getSchemaRecordsFromRows end")
 

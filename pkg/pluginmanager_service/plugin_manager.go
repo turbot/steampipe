@@ -3,6 +3,7 @@ package pluginmanager_service
 import (
 	"context"
 	"crypto/md5"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sethvargo/go-retry"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -74,7 +74,7 @@ type PluginManager struct {
 	// map of plugin configs (keyed by plugin instance)
 	plugins connection.PluginMap
 
-	pool *pgxpool.Pool
+	pool *sql.DB
 }
 
 func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, pluginConfigs connection.PluginMap, logger hclog.Logger) (*PluginManager, error) {
@@ -193,7 +193,7 @@ func (m *PluginManager) buildRequiredPluginMap(req *pb.GetRequest) (map[string][
 	return plugins, requestedConnectionsLookup, nil
 }
 
-func (m *PluginManager) Pool() *pgxpool.Pool {
+func (m *PluginManager) Pool() *sql.DB {
 	return m.pool
 }
 
@@ -778,13 +778,13 @@ func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionNa
 	// also send a postgres notification
 	notification := steampipeconfig.NewSchemaUpdateNotification()
 
-	conn, err := m.pool.Acquire(ctx)
+	conn, err := m.pool.Conn(ctx)
 	if err != nil {
 		log.Printf("[WARN] failed to send schema update notification: %s", err)
 	}
-	defer conn.Release()
+	defer conn.Close()
 
-	err = db_local.SendPostgresNotification(ctx, conn.Conn(), notification)
+	err = db_local.SendPostgresNotification(ctx, conn, notification)
 	if err != nil {
 		log.Printf("[WARN] failed to send schema update notification: %s", err)
 	}

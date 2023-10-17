@@ -2,12 +2,11 @@ package db_common
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -36,58 +35,23 @@ func WithTimeout(d time.Duration) WaitOption {
 	}
 }
 
-func WaitForConnection(ctx context.Context, connStr string, options ...WaitOption) (conn *pgx.Conn, err error) {
-	utils.LogTime("db_common.waitForConnection start")
-	defer utils.LogTime("db.waitForConnection end")
-
-	config := &waitConfig{
-		retryInterval: constants.DBConnectionRetryBackoff,
-		timeout:       constants.DBStartTimeout,
-	}
-
-	for _, o := range options {
-		o(config)
-	}
-
-	backoff := retry.WithMaxDuration(
-		config.timeout,
-		retry.NewConstant(config.retryInterval),
-	)
-
-	// create a connection to the service.
-	// Retry after a backoff, but only upto a maximum duration.
-	err = retry.Do(ctx, backoff, func(rCtx context.Context) error {
-		log.Println("[TRACE] Trying to create client with: ", connStr)
-		dbConnection, err := pgx.Connect(rCtx, connStr)
-		if err != nil {
-			log.Println("[TRACE] could not connect:", err)
-			return retry.RetryableError(err)
-		}
-		log.Println("[TRACE] connected to database")
-		conn = dbConnection
-		return nil
-	})
-
-	return conn, err
-}
-
 // WaitForPool waits for the db to start accepting connections and returns true
 // returns false if the dbClient does not start within a stipulated time,
-func WaitForPool(ctx context.Context, db *pgxpool.Pool, waitOptions ...WaitOption) (err error) {
+func WaitForPool(ctx context.Context, db *sql.DB, waitOptions ...WaitOption) (err error) {
 	utils.LogTime("db.waitForConnection start")
 	defer utils.LogTime("db.waitForConnection end")
 
-	connection, err := db.Acquire(ctx)
+	connection, err := db.Conn(ctx)
 	if err != nil {
 		return err
 	}
-	defer connection.Release()
-	return WaitForConnectionPing(ctx, connection.Conn(), waitOptions...)
+	defer connection.Close()
+	return WaitForConnectionPing(ctx, connection, waitOptions...)
 }
 
 // WaitForConnectionPing PINGs the DB - retrying after a backoff of constants.ServicePingInterval - but only for constants.DBConnectionTimeout
 // returns the error from the database if the dbClient does not respond successfully after a timeout
-func WaitForConnectionPing(ctx context.Context, connection *pgx.Conn, waitOptions ...WaitOption) (err error) {
+func WaitForConnectionPing(ctx context.Context, connection *sql.Conn, waitOptions ...WaitOption) (err error) {
 	utils.LogTime("db_common.waitForConnection start")
 	defer utils.LogTime("db.waitForConnection end")
 
@@ -107,7 +71,7 @@ func WaitForConnectionPing(ctx context.Context, connection *pgx.Conn, waitOption
 
 	retryErr := retry.Do(ctx, retryBackoff, func(ctx context.Context) error {
 		log.Println("[TRACE] Pinging")
-		pingErr := connection.Ping(ctx)
+		pingErr := connection.PingContext(ctx)
 		if pingErr != nil {
 			log.Println("[TRACE] Pinging failed -> trying again")
 			return retry.RetryableError(pingErr)
@@ -120,7 +84,7 @@ func WaitForConnectionPing(ctx context.Context, connection *pgx.Conn, waitOption
 
 // WaitForRecovery returns an error (ErrRecoveryMode) if the service stays in recovery
 // mode for more than constants.DBRecoveryWaitTimeout
-func WaitForRecovery(ctx context.Context, connection *pgx.Conn, waitOptions ...WaitOption) (err error) {
+func WaitForRecovery(ctx context.Context, connection *sql.Conn, waitOptions ...WaitOption) (err error) {
 	utils.LogTime("db_common.WaitForRecovery start")
 	defer utils.LogTime("db_common.WaitForRecovery end")
 
@@ -150,7 +114,7 @@ func WaitForRecovery(ctx context.Context, connection *pgx.Conn, waitOptions ...W
 
 	retryErr := retry.Do(ctx, retryBackoff, func(ctx context.Context) error {
 		log.Println("[TRACE] checking for recovery mode")
-		row := connection.QueryRow(ctx, "select pg_is_in_recovery();")
+		row := connection.QueryRowContext(ctx, "select pg_is_in_recovery();")
 		var isInRecovery bool
 		if scanErr := row.Scan(&isInRecovery); scanErr != nil {
 			if error_helpers.IsContextCancelledError(scanErr) {

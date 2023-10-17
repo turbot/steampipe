@@ -883,11 +883,11 @@ func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionStateMap
 		res.Error = err
 		return nil, res
 	}
-	defer conn.Release()
+	defer conn.Close()
 
 	// load connection state
 	statushooks.SetStatus(ctx, "Loading connection state")
-	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilReady())
+	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn, steampipeconfig.WithWaitUntilReady())
 	if err != nil {
 		res.Error = err
 		return nil, res

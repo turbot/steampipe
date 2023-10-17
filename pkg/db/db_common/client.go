@@ -2,8 +2,9 @@ package db_common
 
 import (
 	"context"
+	"database/sql"
+
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
 
@@ -16,7 +17,7 @@ type Client interface {
 	GetCustomSearchPath() []string
 
 	// acquire a management database connection - must be closed
-	AcquireManagementConnection(context.Context) (*pgxpool.Conn, error)
+	AcquireManagementConnection(context.Context) (*sql.Conn, error)
 	// acquire a query execution session (which search pathand cache options  set) - must be closed
 	AcquireSession(context.Context) *AcquireSessionResult
 

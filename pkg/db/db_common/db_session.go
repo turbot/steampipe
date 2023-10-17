@@ -1,10 +1,9 @@
 package db_common
 
 import (
+	"database/sql"
 	"log"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // DatabaseSession wraps over the raw database connection
@@ -16,7 +15,7 @@ type DatabaseSession struct {
 	SearchPath []string `json:"-"`
 
 	// this gets rewritten, since the database/sql gives back a new instance everytime
-	Connection *pgxpool.Conn `json:"-"`
+	Connection *sql.Conn `json:"-"`
 
 	// the id of the last scan metadata retrieved
 	ScanMetadataMaxId int64 `json:"-"`
@@ -35,11 +34,11 @@ func (s *DatabaseSession) Close(waitForCleanup bool) {
 			select {
 			case <-time.After(5 * time.Second):
 				log.Printf("[TRACE] DatabaseSession.Close timed out waiting for connection cleanup")
-			case <-s.Connection.Conn().PgConn().CleanupDone():
-				log.Printf("[TRACE] DatabaseSession.Close connection cleanup complete")
+				// case <-s.Connection.Conn().PgConn().CleanupDone():
+				// 	log.Printf("[TRACE] DatabaseSession.Close connection cleanup complete")
 			}
 		}
-		s.Connection.Release()
+		s.Connection.Close()
 	}
 	s.Connection = nil
 

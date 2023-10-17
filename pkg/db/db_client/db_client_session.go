@@ -2,17 +2,17 @@ package db_client
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )
 
-func (c *DbClient) AcquireManagementConnection(ctx context.Context) (*pgxpool.Conn, error) {
-	return c.managementPool.Acquire(ctx)
+func (c *DbClient) AcquireManagementConnection(ctx context.Context) (*sql.Conn, error) {
+	return c.managementPool.Conn(ctx)
 }
 
 func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common.AcquireSessionResult) {
@@ -30,29 +30,31 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	// get a database connection and query its backend pid
 	// note - this will retry if the connection is bad
-	databaseConnection, err := c.userPool.Acquire(ctx)
+	databaseConnection, err := c.userPool.Conn(ctx)
 	if err != nil {
 		sessionResult.Error = err
 		return sessionResult
 	}
-	backendPid := databaseConnection.Conn().PgConn().PID()
 
-	c.sessionsMutex.Lock()
-	session, found := c.sessions[backendPid]
-	if !found {
-		session = db_common.NewDBSession(backendPid)
-		c.sessions[backendPid] = session
-	}
+	// backendPid := databaseConnection.Conn().PgConn().PID()
+	// c.sessionsMutex.Lock()
+	// session, found := c.sessions[backendPid]
+	// if !found {
+	// 	session = db_common.NewDBSession(backendPid)
+	// 	c.sessions[backendPid] = session
+	// }
+	// c.sessionsMutex.Unlock()
+
 	// we get a new *sql.Conn everytime. USE IT!
+	session := db_common.NewDBSession(0)
 	session.Connection = databaseConnection
 	sessionResult.Session = session
-	c.sessionsMutex.Unlock()
 
 	// make sure that we close the acquired session, in case of error
 	defer func() {
 		if sessionResult.Error != nil && databaseConnection != nil {
 			sessionResult.Session = nil
-			databaseConnection.Release()
+			databaseConnection.Close()
 		}
 	}()
 
@@ -62,13 +64,13 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	// this is a temporary workaround to make sure
 	// that we turn off caching for plugins compiled with SDK pre-V5
 	if c.isLocalService && !viper.GetBool(constants.ArgServiceCacheEnabled) {
-		if err := db_common.SetCacheEnabled(ctx, false, databaseConnection.Conn()); err != nil {
+		if err := db_common.SetCacheEnabled(ctx, false, databaseConnection); err != nil {
 			sessionResult.Error = err
 			return sessionResult
 		}
 	} else {
 		if viper.IsSet(constants.ArgClientCacheEnabled) {
-			if err := db_common.SetCacheEnabled(ctx, viper.GetBool(constants.ArgClientCacheEnabled), databaseConnection.Conn()); err != nil {
+			if err := db_common.SetCacheEnabled(ctx, viper.GetBool(constants.ArgClientCacheEnabled), databaseConnection); err != nil {
 				sessionResult.Error = err
 				return sessionResult
 			}
@@ -77,7 +79,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 
 	if viper.IsSet(constants.ArgCacheTtl) {
 		ttl := time.Duration(viper.GetInt(constants.ArgCacheTtl)) * time.Second
-		if err := db_common.SetCacheTtl(ctx, ttl, databaseConnection.Conn()); err != nil {
+		if err := db_common.SetCacheTtl(ctx, ttl, databaseConnection); err != nil {
 			sessionResult.Error = err
 			return sessionResult
 		}

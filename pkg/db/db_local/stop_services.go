@@ -101,11 +101,11 @@ func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	utils.LogTime("db_local.GetClientCount start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetClientCount end"))
 
-	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	rootClient, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}
-	defer rootClient.Close(ctx)
+	defer rootClient.Close()
 
 	query := `
 SELECT 
@@ -128,7 +128,7 @@ GROUP BY application_name
 	counts := &ClientCount{}
 
 	log.Println("[INFO] ClientConnectionAppName: ", runtime.ClientConnectionAppName)
-	rows, err := rootClient.Query(ctx, query, "client backend", runtime.ClientConnectionAppName)
+	rows, err := rootClient.QueryContext(ctx, query, "client backend", runtime.ClientConnectionAppName)
 	if err != nil {
 		return nil, err
 	}

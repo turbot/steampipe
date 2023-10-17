@@ -2,13 +2,13 @@ package steampipeconfig
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
 	"regexp"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -20,7 +20,7 @@ import (
 
 // LoadConnectionState populates a ConnectionStateMap from the connection_state table
 // it verifies the table has been initialised by calling RefreshConnections after db startup
-func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnectionStateOption) (ConnectionStateMap, error) {
+func LoadConnectionState(ctx context.Context, conn *sql.Conn, opts ...LoadConnectionStateOption) (ConnectionStateMap, error) {
 	log.Println("[DEBUG] LoadConnectionState start")
 	defer log.Println("[DEBUG] LoadConnectionState end")
 
@@ -92,7 +92,7 @@ func LoadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...LoadConnec
 	return connectionStateMap, err
 }
 
-func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnectionStateOption) (ConnectionStateMap, error) {
+func loadConnectionState(ctx context.Context, conn *sql.Conn, opts ...loadConnectionStateOption) (ConnectionStateMap, error) {
 	config := &loadConnectionStateConfig{}
 	for _, configOption := range opts {
 		configOption(config)
@@ -112,13 +112,13 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnec
 		constants.LegacyConnectionStateTable,
 	)
 
-	rows, err := conn.Query(ctx, query)
+	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
 		if !db_common.IsRelationNotFoundError(err) {
 			return nil, err
 		}
 		// so it was a relation not found - try with legacy table
-		rows, err = conn.Query(ctx, legacyQuery)
+		rows, err = conn.QueryContext(ctx, legacyQuery)
 		if err != nil {
 			return nil, err
 		}
@@ -126,7 +126,7 @@ func loadConnectionState(ctx context.Context, conn *pgx.Conn, opts ...loadConnec
 
 	defer rows.Close()
 
-	connectionStateList, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[ConnectionState])
+	connectionStateList, err := db_common.CollectToStructByName[ConnectionState](rows)
 	if err != nil {
 		return nil, err
 	}

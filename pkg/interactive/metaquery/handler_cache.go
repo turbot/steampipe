@@ -34,7 +34,7 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 		sessionResult.Session.Close(false)
 	}()
 
-	conn := sessionResult.Session.Connection.Conn()
+	conn := sessionResult.Session.Connection
 	command := strings.ToLower(input.args()[0])
 	switch command {
 	case constants.ArgOn:
@@ -79,7 +79,7 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 		sessionResult.Session.Close(false)
 		viper.Set(constants.ArgCacheTtl, seconds)
 	}()
-	return db_common.SetCacheTtl(ctx, time.Duration(seconds)*time.Second, sessionResult.Session.Connection.Conn())
+	return db_common.SetCacheTtl(ctx, time.Duration(seconds)*time.Second, sessionResult.Session.Connection)
 }
 
 func showCache(_ context.Context, input *HandlerInput) error {

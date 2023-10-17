@@ -3,6 +3,7 @@ package db_local
 import (
 	"bufio"
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/jackc/pgx/v5"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
@@ -163,11 +163,18 @@ func ensurePluginManager() (*pluginmanager.PluginManagerClient, *pluginmanager.S
 }
 
 func postServiceStart(ctx context.Context, res *StartResult) error {
-	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
+	pool, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
-	defer conn.Close(ctx)
+	defer pool.Close()
+
+	// get a connection from the created pool
+	conn, err := pool.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
 
 	// setup internal schema
 	if err := setupInternal(ctx, conn); err != nil {
@@ -316,27 +323,34 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 }
 
 func ensureService(ctx context.Context, databaseName string) error {
-	connection, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
+	pool, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
-	defer connection.Close(ctx)
+	defer pool.Close()
+
+	// get a connection from the pool
+	conn, err := pool.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
 
 	// ensure the foreign server exists in the database
-	err = ensureSteampipeServer(ctx, connection)
+	err = ensureSteampipeServer(ctx, conn)
 	if err != nil {
 		return err
 	}
 
 	// ensure that the necessary extensions are installed in the database
-	err = ensurePgExtensions(ctx, connection)
+	err = ensurePgExtensions(ctx, conn)
 	if err != nil {
 		// there was a problem with the installation
 		return err
 	}
 
 	// ensure permissions for writing to temp tables
-	err = ensureTempTablePermissions(ctx, databaseName, connection)
+	err = ensureTempTablePermissions(ctx, databaseName, conn)
 	if err != nil {
 		return err
 	}
@@ -398,9 +412,9 @@ func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, err
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to the database: %v - please try again or reset your steampipe database", err)
 	}
-	defer connection.Close(ctx)
+	defer connection.Close()
 
-	out := connection.QueryRow(ctx, "select datname from pg_database where datistemplate=false AND datname <> 'postgres';")
+	out := connection.QueryRowContext(ctx, "select datname from pg_database where datistemplate=false AND datname <> 'postgres';")
 
 	var databaseName string
 	err = out.Scan(&databaseName)
@@ -508,16 +522,24 @@ func traceoutServiceLogs(logChannel chan string, stopLogStreamFn func()) {
 }
 
 func setServicePassword(ctx context.Context, password string) error {
-	connection, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: "postgres", Username: constants.DatabaseSuperUser})
+	pool, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{DatabaseName: "postgres", Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
-	defer connection.Close(ctx)
+	defer pool.Close()
+
+	// get a connection from the pool
+	conn, err := pool.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
 	statements := []string{
 		"LOCK TABLE pg_user IN SHARE ROW EXCLUSIVE MODE;",
 		fmt.Sprintf(`ALTER USER steampipe WITH PASSWORD '%s';`, password),
 	}
-	_, err = ExecuteSqlInTransaction(ctx, connection, statements...)
+	_, err = ExecuteSqlInTransaction(ctx, conn, statements...)
 	return err
 }
 
@@ -571,7 +593,7 @@ func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
 }
 
 // ensures that the necessary extensions are installed on the database
-func ensurePgExtensions(ctx context.Context, rootClient *pgx.Conn) error {
+func ensurePgExtensions(ctx context.Context, rootClient *sql.Conn) error {
 	extensions := []string{
 		"tablefunc",
 		"ltree",
@@ -579,7 +601,7 @@ func ensurePgExtensions(ctx context.Context, rootClient *pgx.Conn) error {
 
 	var errors []error
 	for _, extn := range extensions {
-		_, err := rootClient.Exec(ctx, fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
+		_, err := rootClient.ExecContext(ctx, fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -590,8 +612,8 @@ func ensurePgExtensions(ctx context.Context, rootClient *pgx.Conn) error {
 // ensures that the 'steampipe' foreign server exists
 //
 //	(re)install FDW and creates server if it doesn't
-func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
-	res := rootClient.QueryRow(ctx, "select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
+func ensureSteampipeServer(ctx context.Context, rootClient *sql.Conn) error {
+	res := rootClient.QueryRowContext(ctx, "select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
 
 	var serverName string
 	err := res.Scan(&serverName)
@@ -604,7 +626,7 @@ func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
 
 // ensures that the 'steampipe_users' role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
-func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *pgx.Conn) error {
+func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *sql.Conn) error {
 	statements := []string{
 		"lock table pg_namespace;",
 		fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser),

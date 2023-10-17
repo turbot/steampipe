@@ -2,6 +2,7 @@ package db_common
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"strings"
 
@@ -46,14 +47,14 @@ func BuildSearchPathResult(searchPathString string) ([]string, error) {
 	return searchPath, nil
 }
 
-func GetUserSearchPath(ctx context.Context, conn *pgx.Conn) ([]string, error) {
+func GetUserSearchPath(ctx context.Context, conn *sql.Conn) ([]string, error) {
 	query := `SELECT rs.setconfig
 	FROM   pg_db_role_setting rs
 	LEFT   JOIN pg_roles      r ON r.oid = rs.setrole
 	LEFT   JOIN pg_database   d ON d.oid = rs.setdatabase
 	WHERE  r.rolname = 'steampipe'`
 
-	rows := conn.QueryRow(ctx, query)
+	rows := conn.QueryRowContext(ctx, query)
 	var configStrings []string
 	if err := rows.Scan(&configStrings); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

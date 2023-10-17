@@ -2,11 +2,11 @@ package db_client
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -54,15 +54,15 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 }
 
 func (c *DbClient) LoadUserSearchPath(ctx context.Context) error {
-	conn, err := c.managementPool.Acquire(ctx)
+	conn, err := c.managementPool.Conn(ctx)
 	if err != nil {
 		return err
 	}
-	defer conn.Release()
-	return c.loadUserSearchPath(ctx, conn.Conn())
+	defer conn.Close()
+	return c.loadUserSearchPath(ctx, conn)
 }
 
-func (c *DbClient) loadUserSearchPath(ctx context.Context, connection *pgx.Conn) error {
+func (c *DbClient) loadUserSearchPath(ctx context.Context, connection *sql.Conn) error {
 	// load the user search path
 	userSearchPath, err := db_common.GetUserSearchPath(ctx, connection)
 	if err != nil {
@@ -92,7 +92,7 @@ func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_comm
 
 	// update the stored value of user search path
 	// this might have changed if a connection has been added/removed
-	if err := c.loadUserSearchPath(ctx, session.Connection.Conn()); err != nil {
+	if err := c.loadUserSearchPath(ctx, session.Connection); err != nil {
 		return err
 	}
 
@@ -109,8 +109,8 @@ func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_comm
 	// so we need to set the search path
 	log.Printf("[TRACE] session search path will be updated to  %s", strings.Join(c.customSearchPath, ","))
 
-	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, fmt.Sprintf("set search_path to %s", strings.Join(db_common.PgEscapeSearchPath(requiredSearchPath), ",")))
+	err := db_common.ExecuteSystemClientCall(ctx, session.Connection, func(ctx context.Context, tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, fmt.Sprintf("set search_path to %s", strings.Join(db_common.PgEscapeSearchPath(requiredSearchPath), ",")))
 		return err
 	})
 

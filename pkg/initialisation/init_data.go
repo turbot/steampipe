@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -127,12 +126,15 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 	}
 
 	// if introspection tables are enabled, setup the session data callback
-	var ensureSessionData db_client.DbConnectionCallback
-	if viper.GetString(constants.ArgIntrospection) != constants.IntrospectionNone {
-		ensureSessionData = func(ctx context.Context, conn *pgx.Conn) error {
-			return workspace.EnsureSessionData(ctx, i.Workspace.GetResourceMaps(), conn)
-		}
-	}
+	// TODO - this is not required - this is used to setup the session data for the introspection tables
+	// but we are not using introspection tables anymore
+	//
+	// var ensureSessionData db_client.DbConnectionCallback
+	// if viper.GetString(constants.ArgIntrospection) != constants.IntrospectionNone {
+	// 	ensureSessionData = func(ctx context.Context, conn *sql.Conn) error {
+	// 		return workspace.EnsureSessionData(ctx, i.Workspace.GetResourceMaps(), conn)
+	// 	}
+	// }
 
 	// get a client
 	// add a message rendering function to the context - this is used for the fdw update message and
@@ -143,7 +145,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 
 	statushooks.SetStatus(ctx, "Connecting to steampipe database")
 	log.Printf("[INFO] Connecting to steampipe database")
-	client, errorsAndWarnings := GetDbClient(getClientCtx, invoker, ensureSessionData, opts...)
+	client, errorsAndWarnings := GetDbClient(getClientCtx, invoker, opts...)
 	if errorsAndWarnings.Error != nil {
 		i.Result.Error = errorsAndWarnings.Error
 		return
@@ -187,17 +189,17 @@ func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap map
 }
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
-func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (db_common.Client, *error_helpers.ErrorAndWarnings) {
+func GetDbClient(ctx context.Context, invoker constants.Invoker, opts ...db_client.ClientOption) (db_common.Client, *error_helpers.ErrorAndWarnings) {
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		statushooks.SetStatus(ctx, "Connecting to remote Steampipe database")
-		client, err := db_client.NewDbClient(ctx, connectionString, onConnectionCallback, opts...)
+		client, err := db_client.NewDbClient(ctx, connectionString, opts...)
 		return client, error_helpers.NewErrorsAndWarning(err)
 	}
 
 	statushooks.SetStatus(ctx, "Starting local Steampipe database")
 	log.Printf("[INFO] Starting local Steampipe database")
 
-	return db_local.GetLocalClient(ctx, invoker, onConnectionCallback, opts...)
+	return db_local.GetLocalClient(ctx, invoker, opts...)
 }
 
 func (i *InitData) Cleanup(ctx context.Context) {

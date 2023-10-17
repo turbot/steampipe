@@ -1,19 +1,18 @@
-package db_local
+package db_common
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/go-kit/type_conversion"
 	"reflect"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/go-kit/type_conversion"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
@@ -22,7 +21,7 @@ import (
 // TagColumn is the tag used to specify the column name and type in the introspection tables
 const TagColumn = "column"
 
-func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx pgx.Tx) error {
+func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx *sql.Tx) error {
 	// get the sql for columns which every table has
 	commonColumnSql := getColumnDefinitions(modconfig.ResourceMetadata{})
 
@@ -37,7 +36,7 @@ func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfi
 	}
 }
 
-func populateAllIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx pgx.Tx, commonColumnSql []string) error {
+func populateAllIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx *sql.Tx, commonColumnSql []string) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
@@ -48,7 +47,7 @@ func populateAllIntrospectionTables(ctx context.Context, workspaceResources *mod
 	insertSql := getTableInsertSql(workspaceResources)
 	sql := []string{createSql, insertSql}
 
-	_, err := tx.Exec(ctx, strings.Join(sql, "\n"))
+	_, err := tx.ExecContext(ctx, strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create introspection tables: %v", err)
 	}
@@ -56,7 +55,7 @@ func populateAllIntrospectionTables(ctx context.Context, workspaceResources *mod
 	return ctx.Err()
 }
 
-func populateControlIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx pgx.Tx, commonColumnSql []string) error {
+func populateControlIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx *sql.Tx, commonColumnSql []string) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
@@ -66,7 +65,7 @@ func populateControlIntrospectionTables(ctx context.Context, workspaceResources 
 	insertSql := getControlTableInsertSql(workspaceResources)
 	sql := []string{createSql, insertSql}
 
-	_, err := tx.Exec(ctx, strings.Join(sql, "\n"))
+	_, err := tx.ExecContext(ctx, strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create introspection tables: %v", err)
 	}
@@ -328,13 +327,13 @@ func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (stri
 		if err != nil {
 			return "", err
 		}
-		return db_common.PgEscapeString(str), nil
+		return PgEscapeString(str), nil
 	case cty.Type:
 		// if the item is a cty value, we always represent it as json
 		if columnTag.ColumnType != "text" {
 			return "nil", fmt.Errorf("data for column %s is of type cty.Type so column type should be 'text' but is actually %s", columnTag.Column, columnTag.ColumnType)
 		}
-		return db_common.PgEscapeString(t.FriendlyName()), nil
+		return PgEscapeString(t.FriendlyName()), nil
 	}
 
 	switch columnTag.ColumnType {
@@ -344,12 +343,12 @@ func formatIntrospectionTableValue(item interface{}, columnTag *ColumnTag) (stri
 			return "", err
 		}
 
-		res := db_common.PgEscapeString(string(jsonBytes))
+		res := PgEscapeString(string(jsonBytes))
 		return res, nil
 	case "integer", "numeric", "decimal", "boolean":
 		return typeHelpers.ToString(item), nil
 	default:
 		// for string column, escape the data
-		return db_common.PgEscapeString(typeHelpers.ToString(item)), nil
+		return PgEscapeString(typeHelpers.ToString(item)), nil
 	}
 }

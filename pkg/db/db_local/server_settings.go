@@ -2,10 +2,10 @@ package db_local
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -17,7 +17,7 @@ import (
 // settings the service has been started with.
 //
 // The table also includes the CLI and FDW versions for reference
-func setupServerSettingsTable(ctx context.Context, conn *pgx.Conn) error {
+func setupServerSettingsTable(ctx context.Context, conn *sql.Conn) error {
 	settings := db_common.ServerSettings{
 		StartTime:        time.Now(),
 		SteampipeVersion: version.VersionString,

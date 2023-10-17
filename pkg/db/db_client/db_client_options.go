@@ -1,9 +1,8 @@
 package db_client
 
 import (
+	"database/sql"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PoolOverrides struct {
@@ -13,15 +12,15 @@ type PoolOverrides struct {
 }
 
 // applies the values in the given config if they are non-zero in PoolOverrides
-func (c PoolOverrides) apply(config *pgxpool.Config) {
+func (c PoolOverrides) apply(db *sql.DB) {
 	if c.Size > 0 {
-		config.MaxConns = int32(c.Size)
+		db.SetMaxOpenConns(c.Size)
 	}
 	if c.MaxLifeTime > 0 {
-		config.MaxConnLifetime = c.MaxLifeTime
+		db.SetConnMaxLifetime(c.MaxLifeTime)
 	}
 	if c.MaxIdleTime > 0 {
-		config.MaxConnIdleTime = c.MaxIdleTime
+		db.SetConnMaxIdleTime(c.MaxIdleTime)
 	}
 }
 
