@@ -17,10 +17,10 @@ const useCheckFilterConfig = () => {
         return parsedFilters;
       } catch (error) {
         console.error("Error parsing where filters", error);
-        return { emptyAnd } as CheckFilter;
+        return { ...emptyAnd } as CheckFilter;
       }
     } else {
-      return { emptyAnd } as CheckFilter;
+      return { ...emptyAnd } as CheckFilter;
     }
   }, [searchParams]);
 };

@@ -1,8 +1,9 @@
+import CreatableSelect from "react-select/creatable";
 import Icon from "../../../Icon";
 import Select from "react-select";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import useSelectInputStyles from "../../inputs/common/useSelectInputStyles";
-import { AndFilter, CheckFilter, CheckFilterType, Filter } from "../common";
+import { CheckFilter, CheckFilterType, Filter } from "../common";
 import { classNames } from "../../../../utils/styles";
 import {
   MultiValueLabelWithTags,
@@ -33,6 +34,14 @@ type CheckFilterTypeSelectProps = {
   item: Filter;
   type: CheckFilterType;
   update: (index: number, updatedItem: Filter) => void;
+};
+
+type CheckFilterKeySelectProps = {
+  index: number;
+  item: Filter;
+  type: CheckFilterType;
+  update: (index: number, updatedItem: Filter) => void;
+  key: string | undefined;
 };
 
 type CheckFilterValueSelectProps = {
@@ -76,7 +85,6 @@ const CheckFilterTypeSelect = ({
       { value: "dimension", label: "Dimension" },
       { value: "reason", label: "Reason" },
       { value: "resource", label: "Resource" },
-      { value: "result", label: "Result" },
       { value: "severity", label: "Severity" },
       { value: "status", label: "Status" },
       { value: "tag", label: "Tag" },
@@ -85,6 +93,7 @@ const CheckFilterTypeSelect = ({
       (t) =>
         t.value === type ||
         t.value === "dimension" ||
+        t.value === "tag" ||
         // @ts-ignore
         !existingTypes.includes(t.value),
     );
@@ -116,6 +125,62 @@ const CheckFilterTypeSelect = ({
   );
 };
 
+const CheckFilterKeySelect = ({
+  index,
+  item,
+  type,
+  key,
+  update,
+}: CheckFilterKeySelectProps) => {
+  const [currentKey, setCurrentKey] = useState(key);
+  const { context: filterValues } = useDashboardControls();
+
+  useDeepCompareEffect(() => {
+    console.log("Setting CheckFilterKeySelect", {
+      currentKey,
+      index,
+      item,
+      update,
+    });
+    update(index, {
+      ...item,
+      key: currentKey,
+    });
+  }, [currentKey, index, item]);
+
+  const keys = useMemo(() => {
+    return Object.keys(filterValues[type].key || {}).map((k) => ({
+      value: k,
+      label: k,
+    }));
+  }, [filterValues, type]);
+
+  const styles = useSelectInputStyles();
+
+  return (
+    <Select
+      className="basic-single"
+      classNamePrefix="select"
+      components={{
+        // @ts-ignore
+        MultiValueLabel: MultiValueLabelWithTags,
+        // @ts-ignore
+        Option: OptionWithTags,
+        // @ts-ignore
+        SingleValue: SingleValueWithTags,
+      }}
+      // @ts-ignore as this element definitely exists
+      menuPortalTarget={document.getElementById("portals")}
+      onChange={(t) => setCurrentKey((t as SelectOption).value)}
+      options={keys}
+      inputId={`${type}.input`}
+      placeholder="Enter a filter…"
+      styles={styles}
+      value={keys.find((t) => t.value === key)}
+    />
+  );
+};
+
 const CheckFilterValueSelect = ({
   index,
   item,
@@ -140,35 +205,19 @@ const CheckFilterValueSelect = ({
   }, [currentValue, index, item]);
 
   const values = useMemo(() => {
-    return Object.keys(filterValues[type].key || {}).map((k) => ({
+    if (!type) {
+      return [];
+    }
+    return Object.keys(filterValues[type].value || {}).map((k) => ({
       value: k,
       label: k,
     }));
-
-    // const existingTypes = config.map((c) => c.type.toString());
-    // const allTypes: SelectOption[] = [
-    //   { value: "benchmark", label: "Benchmark" },
-    //   { value: "control", label: "Control" },
-    //   { value: "dimension", label: "Dimension" },
-    //   { value: "reason", label: "Reason" },
-    //   { value: "result", label: "Result" },
-    //   { value: "severity", label: "Severity" },
-    //   { value: "status", label: "Status" },
-    //   { value: "tag", label: "Tag" },
-    // ];
-    // return allTypes.filter(
-    //   (t) =>
-    //     t.value === type ||
-    //     t.value === "dimension" ||
-    //     // @ts-ignore
-    //     !existingTypes.includes(t.value),
-    // );
   }, [filterValues, type]);
 
   const styles = useSelectInputStyles();
 
   return (
-    <Select
+    <CreatableSelect
       className="basic-single"
       classNamePrefix="select"
       components={{
@@ -179,6 +228,8 @@ const CheckFilterValueSelect = ({
         // @ts-ignore
         SingleValue: SingleValueWithTags,
       }}
+      createOptionPosition="first"
+      formatCreateLabel={(inputValue) => `Use "${inputValue}"`}
       // @ts-ignore as this element definitely exists
       menuPortalTarget={document.getElementById("portals")}
       onChange={(t) => setCurrentValue((t as SelectOption).value)}
@@ -199,17 +250,6 @@ const CheckFilterEditorItem = ({
   update,
 }: CheckFilterEditorItemProps) => {
   const dragControls = useDragControls();
-
-  // useEffect(() => {
-  //   if (item.type !== "dimension" && item.type !== "tag" && item.value) {
-  //     update(index, { ...item, id: item.type, value: undefined });
-  //   } else if (
-  //     (item.type === "dimension" || item.type === "tag") &&
-  //     item.value
-  //   ) {
-  //     update(index, { ...item, id: `${item.type}-${item.value}` });
-  //   }
-  // }, [index, item.type, item.value, update]);
 
   return (
     <Reorder.Item
@@ -237,16 +277,26 @@ const CheckFilterEditorItem = ({
         <>
           <span>=</span>
           <div className="grow">
-            <CheckFilterValueSelect
+            <CheckFilterKeySelect
               index={index}
               item={item}
+              key={item.key}
               type={item.type}
               update={update}
-              value={item.value}
             />
           </div>
         </>
       )}
+      <span>=</span>
+      <div className="grow">
+        <CheckFilterValueSelect
+          index={index}
+          item={item}
+          type={item.type}
+          update={update}
+          value={item.value}
+        />
+      </div>
       <span
         className={classNames(
           // @ts-ignore
@@ -290,6 +340,8 @@ const CheckFilterEditor = ({ config, setConfig }: CheckFilterEditorProps) => {
     },
     [config, setConfig],
   );
+
+  console.log(config);
 
   return (
     <div className="flex flex-col space-y-4">

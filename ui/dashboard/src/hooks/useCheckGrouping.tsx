@@ -482,6 +482,92 @@ type CheckGroupingProviderProps = {
   definition: PanelDefinition;
 };
 
+function recordFilterValues(
+  filterValues: {
+    severity: { value: {} };
+    reason: { value: {} };
+    resource: { value: {} };
+    control: { value: {} };
+    tag: { value: {}; key: {} };
+    dimension: { value: {}; key: {} };
+    benchmark: { value: {} };
+    status: {
+      alarm: number;
+      skip: number;
+      error: number;
+      ok: number;
+      empty: number;
+      info: number;
+    };
+  },
+  checkResult: CheckResult,
+) {
+  // Record the benchmark of this check result to allow assisted filtering later
+  if (!!checkResult.benchmark_trunk && checkResult.benchmark_trunk.length > 0) {
+    for (const benchmark of checkResult.benchmark_trunk) {
+      filterValues.benchmark.value[benchmark.name] =
+        filterValues.benchmark.value[benchmark.name] || 0;
+      filterValues.benchmark.value[benchmark.name] += 1;
+    }
+  }
+
+  // Record the control of this check result to allow assisted filtering later
+  filterValues.control.value[checkResult.control.name] =
+    filterValues.control.value[checkResult.control.name] || 0;
+  filterValues.control.value[checkResult.control.name] += 1;
+
+  // Record the reason of this check result to allow assisted filtering later
+  if (checkResult.reason) {
+    filterValues.reason.value[checkResult.reason] =
+      filterValues.reason.value[checkResult.reason] || 0;
+    filterValues.reason.value[checkResult.reason] += 1;
+  }
+
+  // Record the resource of this check result to allow assisted filtering later
+  if (checkResult.resource) {
+    filterValues.resource.value[checkResult.resource] =
+      filterValues.resource.value[checkResult.resource] || 0;
+    filterValues.resource.value[checkResult.resource] += 1;
+  }
+
+  // Record the severity of this check result to allow assisted filtering later
+  if (checkResult.severity) {
+    filterValues.severity.value[checkResult.severity.toString()] =
+      filterValues.severity.value[checkResult.severity.toString()] || 0;
+    filterValues.severity.value[checkResult.severity.toString()] += 1;
+  }
+
+  // Record the status of this check result to allow assisted filtering later
+  filterValues.status[checkResult.status] =
+    filterValues.status[checkResult.status] || 0;
+  filterValues.status[checkResult.status] += 1;
+
+  // Record the dimension keys/values + value/key counts of this check result to allow assisted filtering later
+  for (const dimension of checkResult.dimensions) {
+    filterValues.dimension.key[dimension.key] = filterValues.dimension.key[
+      dimension.key
+    ] || { [dimension.value]: 0 };
+    filterValues.dimension.key[dimension.key][dimension.value] += 1;
+
+    filterValues.dimension.value[dimension.value] = filterValues.dimension
+      .value[dimension.value] || { [dimension.key]: 0 };
+    filterValues.dimension.value[dimension.value][dimension.key] += 1;
+  }
+
+  // Record the dimension keys/values + value/key counts of this check result to allow assisted filtering later
+  for (const [tagKey, tagValue] of Object.entries(checkResult.tags || {})) {
+    filterValues.tag.key[tagKey] = filterValues.tag.key[tagKey] || {
+      [tagValue]: 0,
+    };
+    filterValues.tag.key[tagKey][tagValue] += 1;
+
+    filterValues.tag.value[tagValue] = filterValues.tag.value[tagValue] || {
+      [tagKey]: 0,
+    };
+    filterValues.tag.value[tagValue][tagKey] += 1;
+  }
+}
+
 const CheckGroupingProvider = ({
   children,
   definition,
@@ -500,8 +586,13 @@ const CheckGroupingProvider = ({
     filterValues,
   ] = useMemo(() => {
     const filterValues = {
-      status: { alarm: 0, empty: 0, error: 0, info: 0, ok: 0, skip: 0 },
+      benchmark: { value: {} },
+      control: { value: {} },
       dimension: { key: {}, value: {} },
+      reason: { value: {} },
+      resource: { value: {} },
+      severity: { value: {} },
+      status: { alarm: 0, empty: 0, error: 0, info: 0, ok: 0, skip: 0 },
       tag: { key: {}, value: {} },
     };
 
@@ -554,35 +645,7 @@ const CheckGroupingProvider = ({
       const node = getCheckResultNode(checkResult);
       grouping._.push(node);
 
-      // Record the status of this check result to allow assisted filtering later
-      filterValues.status[checkResult.status] =
-        filterValues.status[checkResult.status] || 0;
-      filterValues.status[checkResult.status] += 1;
-
-      // Record the dimension keys/values + value/key counts of this check result to allow assisted filtering later
-      for (const dimension of checkResult.dimensions) {
-        filterValues.dimension.key[dimension.key] = filterValues.dimension.key[
-          dimension.key
-        ] || { [dimension.value]: 0 };
-        filterValues.dimension.key[dimension.key][dimension.value] += 1;
-
-        filterValues.dimension.value[dimension.value] = filterValues.dimension
-          .value[dimension.value] || { [dimension.key]: 0 };
-        filterValues.dimension.value[dimension.value][dimension.key] += 1;
-      }
-
-      // Record the dimension keys/values + value/key counts of this check result to allow assisted filtering later
-      for (const [tagKey, tagValue] of Object.entries(checkResult.tags || {})) {
-        filterValues.tag.key[tagKey] = filterValues.tag.key[tagKey] || {
-          [tagValue]: 0,
-        };
-        filterValues.tag.key[tagKey][tagValue] += 1;
-
-        filterValues.tag.value[tagValue] = filterValues.tag.value[tagValue] || {
-          [tagKey]: 0,
-        };
-        filterValues.tag.value[tagValue][tagKey] += 1;
-      }
+      recordFilterValues(filterValues, checkResult);
     });
 
     const results = new RootNode(result);

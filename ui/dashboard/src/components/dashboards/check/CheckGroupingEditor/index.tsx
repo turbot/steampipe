@@ -183,17 +183,6 @@ const CheckGroupingEditorItem = ({
 }: CheckGroupingEditorItemProps) => {
   const dragControls = useDragControls();
 
-  // useEffect(() => {
-  //   if (item.type !== "dimension" && item.type !== "tag" && item.value) {
-  //     update(index, { ...item, id: item.type, value: undefined });
-  //   } else if (
-  //     (item.type === "dimension" || item.type === "tag") &&
-  //     item.value
-  //   ) {
-  //     update(index, { ...item, id: `${item.type}-${item.value}` });
-  //   }
-  // }, [index, item.type, item.value, update]);
-
   return (
     <Reorder.Item
       as="div"

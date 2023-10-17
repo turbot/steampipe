@@ -14,9 +14,9 @@ const filtersToText = (filter) => {
     if (filter.key) {
       textParts.push(<span>{filter.key}</span>);
     } else {
-      textParts.push(<span className="capitalize">`${filter.type}`</span>);
+      textParts.push(<span className="capitalize">{filter.type}</span>);
     }
-    textParts.push(`${filter.value}`);
+    textParts.push(<span>{filter.value}</span>);
 
     return (
       <span className="space-x-1">
@@ -32,16 +32,15 @@ const filtersToText = (filter) => {
     // Or filter group
     return filter.or.map((item, index) => (
       <Fragment key={index}>
-        {!!index && <span className="text-foreground-lighter">OR</span>}
+        {!!index && <span className="text-foreground-lighter">or</span>}
         {filtersToText(item)}
       </Fragment>
     ));
-    // return `(${filter.or.map(filtersToText).join(" OR ")})`;
   } else if ("and" in filter) {
     // And filter group
     return filter.and.map((item, index) => (
       <Fragment key={index}>
-        {!!index && <span className="text-foreground-lighter">AND</span>}
+        {!!index && <span className="text-foreground-lighter">and</span>}
         {filtersToText(item)}
       </Fragment>
     ));
@@ -106,16 +105,11 @@ const CheckFilterConfig = () => {
     setIsValid(false);
   }, [modifiedConfig, setIsValid]);
 
-  const saveFilterConfig = (toSave) => {
+  const saveFilterConfig = (toSave: CheckFilter) => {
+    const asJson = JSON.stringify(toSave);
     setSearchParams((previous) => ({
       ...previous,
-      filter: toSave
-        .map((c) =>
-          c.type === "dimension" || c.type === "tag"
-            ? `${c.type}|${c.value}`
-            : c.type,
-        )
-        .join(","),
+      where: asJson,
     }));
   };
 
@@ -126,10 +120,10 @@ const CheckFilterConfig = () => {
         {get(filterConfig, "and", []).length > 0 && (
           <div className="space-x-2">{filtersToText(filterConfig)}</div>
         )}
-        {(get(filterConfig, "and", []).length === 0 ||
-          get(filterConfig, "or", []).length === 0) && (
-          <span className="text-foreground-lighter">No filters</span>
-        )}
+        {get(filterConfig, "and", []).length === 0 &&
+          get(filterConfig, "or", []).length === 0 && (
+            <span className="text-foreground-lighter">No filters</span>
+          )}
         {!showEditor && (
           <Icon
             className="h-5 w-5 cursor-pointer"
