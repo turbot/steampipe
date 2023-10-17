@@ -131,6 +131,13 @@ export type CheckDisplayGroup = {
   value?: string | undefined;
 };
 
+export type CheckFilterType = CheckDisplayGroupType;
+
+export type CheckFilter = Omit<CheckDisplayGroup, "type", "value"> & {
+  type: CheckFilterType;
+  value: string;
+};
+
 export type BenchmarkTreeProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {
     properties: {

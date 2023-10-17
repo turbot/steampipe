@@ -1,16 +1,16 @@
-import CheckGroupingEditor from "../CheckGroupingEditor";
+import CheckFilterEditor from "../CheckFilterEditor";
 import Icon from "../../../Icon";
-import useCheckGroupingConfig from "../../../../hooks/useCheckGroupingConfig";
-import { CheckDisplayGroup } from "../common";
+import useCheckFilterConfig from "../../../../hooks/useCheckFilterConfig";
+import { CheckFilter } from "../common";
 import { ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { classNames } from "../../../../utils/styles";
 
-type CheckGroupingTitleLabelProps = {
-  item: CheckDisplayGroup;
+type CheckFilterTitleLabelProps = {
+  item: CheckFilter;
 };
 
-const CheckGroupingTitleLabel = ({ item }: CheckGroupingTitleLabelProps) => {
+const CheckFilterTitleLabel = ({ item }: CheckFilterTitleLabelProps) => {
   switch (item.type) {
     case "dimension":
     case "tag":
@@ -30,13 +30,13 @@ const CheckGroupingTitleLabel = ({ item }: CheckGroupingTitleLabelProps) => {
   }
 };
 
-const CheckGroupingConfig = () => {
+const CheckFilterConfig = () => {
   const [showEditor, setShowEditor] = useState(false);
   const [isValid, setIsValid] = useState(false);
   const [_, setSearchParams] = useSearchParams();
-  const groupingConfig = useCheckGroupingConfig();
+  const filterConfig = useCheckFilterConfig();
   const [modifiedConfig, setModifiedConfig] =
-    useState<CheckDisplayGroup[]>(groupingConfig);
+    useState<CheckFilter[]>(filterConfig);
 
   useEffect(() => {
     const isValid = modifiedConfig.every((c) => {
@@ -57,10 +57,10 @@ const CheckGroupingConfig = () => {
     setIsValid(isValid);
   }, [modifiedConfig, setIsValid]);
 
-  const saveGroupingConfig = (toSave) => {
+  const saveFilterConfig = (toSave) => {
     setSearchParams((previous) => ({
       ...previous,
-      grouping: toSave
+      filter: toSave
         .map((c) =>
           c.type === "dimension" || c.type === "tag"
             ? `${c.type}|${c.value}`
@@ -73,10 +73,10 @@ const CheckGroupingConfig = () => {
   return (
     <>
       <div className="flex items-center space-x-3 shrink-0">
-        <Icon className="h-5 w-5" icon="workspaces" />
-        {groupingConfig
+        <Icon className="h-5 w-5" icon="filter_list" />
+        {filterConfig
           .map<ReactNode>((item) => (
-            <CheckGroupingTitleLabel
+            <CheckFilterTitleLabel
               key={`${item.type}${!!item.value ? `-${item.value}` : ""}`}
               item={item}
             />
@@ -91,7 +91,7 @@ const CheckGroupingConfig = () => {
             className="h-5 w-5 cursor-pointer"
             icon="edit_square"
             onClick={() => setShowEditor(true)}
-            title="Edit grouping"
+            title="Edit filter"
           />
         )}
         {showEditor && (
@@ -112,15 +112,15 @@ const CheckGroupingConfig = () => {
               icon="done"
               onClick={() => {
                 setShowEditor(false);
-                saveGroupingConfig(modifiedConfig);
+                saveFilterConfig(modifiedConfig);
               }}
-              title={isValid ? "Save changes" : "Invalid grouping config"}
+              title={isValid ? "Save changes" : "Invalid filter config"}
             />
           </>
         )}
       </div>
       {showEditor && (
-        <CheckGroupingEditor
+        <CheckFilterEditor
           config={modifiedConfig}
           setConfig={setModifiedConfig}
         />
@@ -129,4 +129,4 @@ const CheckGroupingConfig = () => {
   );
 };
 
-export default CheckGroupingConfig;
+export default CheckFilterConfig;

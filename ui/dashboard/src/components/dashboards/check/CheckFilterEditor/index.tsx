@@ -2,7 +2,7 @@ import Icon from "../../../Icon";
 import Select from "react-select";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import useSelectInputStyles from "../../inputs/common/useSelectInputStyles";
-import { CheckDisplayGroup, CheckDisplayGroupType } from "../common";
+import { CheckFilter, CheckFilterType } from "../common";
 import { classNames } from "../../../../utils/styles";
 import {
   MultiValueLabelWithTags,
@@ -14,46 +14,46 @@ import { SelectOption } from "../../inputs/types";
 import { useCallback, useMemo, useState } from "react";
 import { useDashboardControls } from "../../layout/Dashboard/DashboardControlsProvider";
 
-type CheckGroupingEditorProps = {
-  config: CheckDisplayGroup[];
-  setConfig: (newValue: CheckDisplayGroup[]) => void;
+type CheckFilterEditorProps = {
+  config: CheckFilter[];
+  setConfig: (newValue: CheckFilter[]) => void;
 };
 
-type CheckGroupingEditorItemProps = {
-  config: CheckDisplayGroup[];
-  item: CheckDisplayGroup;
+type CheckFilterEditorItemProps = {
+  config: CheckFilter[];
+  item: CheckFilter;
   index: number;
   remove: (index: number) => void;
-  update: (index: number, item: CheckDisplayGroup) => void;
+  update: (index: number, item: CheckFilter) => void;
 };
 
-type CheckGroupingTypeSelectProps = {
-  config: CheckDisplayGroup[];
+type CheckFilterTypeSelectProps = {
+  config: CheckFilter[];
   index: number;
-  item: CheckDisplayGroup;
-  type: CheckDisplayGroupType;
-  update: (index: number, updatedItem: CheckDisplayGroup) => void;
+  item: CheckFilter;
+  type: CheckFilterType;
+  update: (index: number, updatedItem: CheckFilter) => void;
 };
 
-type CheckGroupingValueSelectProps = {
+type CheckFilterValueSelectProps = {
   index: number;
-  item: CheckDisplayGroup;
-  type: CheckDisplayGroupType;
-  update: (index: number, updatedItem: CheckDisplayGroup) => void;
+  item: CheckFilter;
+  type: CheckFilterType;
+  update: (index: number, updatedItem: CheckFilter) => void;
   value: string | undefined;
 };
 
-const CheckGroupingTypeSelect = ({
+const CheckFilterTypeSelect = ({
   config,
   index,
   item,
   type,
   update,
-}: CheckGroupingTypeSelectProps) => {
-  const [currentType, setCurrentType] = useState<CheckDisplayGroupType>(type);
+}: CheckFilterTypeSelectProps) => {
+  const [currentType, setCurrentType] = useState<CheckFilterType>(type);
 
   useDeepCompareEffect(() => {
-    console.log("Setting CheckGroupingTypeSelect", {
+    console.log("Setting CheckFilterTypeSelect", {
       currentType,
       index,
       item,
@@ -85,7 +85,6 @@ const CheckGroupingTypeSelect = ({
       (t) =>
         t.value === type ||
         t.value === "dimension" ||
-        t.value === "tag" ||
         // @ts-ignore
         !existingTypes.includes(t.value),
     );
@@ -110,25 +109,25 @@ const CheckGroupingTypeSelect = ({
       onChange={(t) => setCurrentType((t as SelectOption).value)}
       options={types}
       inputId={`${type}.input`}
-      placeholder="Select a grouping…"
+      placeholder="Select a filter…"
       styles={styles}
       value={types.find((t) => t.value === type)}
     />
   );
 };
 
-const CheckGroupingValueSelect = ({
+const CheckFilterValueSelect = ({
   index,
   item,
   type,
   value,
   update,
-}: CheckGroupingValueSelectProps) => {
+}: CheckFilterValueSelectProps) => {
   const [currentValue, setCurrentValue] = useState(value);
   const { context: filterValues } = useDashboardControls();
 
   useDeepCompareEffect(() => {
-    console.log("Setting CheckGroupingValueSelect", {
+    console.log("Setting CheckFilterValueSelect", {
       currentValue,
       index,
       item,
@@ -146,6 +145,25 @@ const CheckGroupingValueSelect = ({
       value: k,
       label: k,
     }));
+
+    // const existingTypes = config.map((c) => c.type.toString());
+    // const allTypes: SelectOption[] = [
+    //   { value: "benchmark", label: "Benchmark" },
+    //   { value: "control", label: "Control" },
+    //   { value: "dimension", label: "Dimension" },
+    //   { value: "reason", label: "Reason" },
+    //   { value: "result", label: "Result" },
+    //   { value: "severity", label: "Severity" },
+    //   { value: "status", label: "Status" },
+    //   { value: "tag", label: "Tag" },
+    // ];
+    // return allTypes.filter(
+    //   (t) =>
+    //     t.value === type ||
+    //     t.value === "dimension" ||
+    //     // @ts-ignore
+    //     !existingTypes.includes(t.value),
+    // );
   }, [filterValues, type]);
 
   const styles = useSelectInputStyles();
@@ -174,13 +192,13 @@ const CheckGroupingValueSelect = ({
   );
 };
 
-const CheckGroupingEditorItem = ({
+const CheckFilterEditorItem = ({
   config,
   index,
   item,
   remove,
   update,
-}: CheckGroupingEditorItemProps) => {
+}: CheckFilterEditorItemProps) => {
   const dragControls = useDragControls();
 
   // useEffect(() => {
@@ -208,7 +226,7 @@ const CheckGroupingEditorItem = ({
         <Icon className="h-5 w-5" icon="drag_indicator" />
       </div>
       <div className="grow">
-        <CheckGroupingTypeSelect
+        <CheckFilterTypeSelect
           config={config}
           index={index}
           item={item}
@@ -220,7 +238,7 @@ const CheckGroupingEditorItem = ({
         <>
           <span>=</span>
           <div className="grow">
-            <CheckGroupingValueSelect
+            <CheckFilterValueSelect
               index={index}
               item={item}
               type={item.type}
@@ -237,11 +255,7 @@ const CheckGroupingEditorItem = ({
             : "text-foreground-lightest",
         )}
         onClick={config.length > 1 ? () => remove(index) : undefined}
-        title={
-          config.length > 1
-            ? "Remove"
-            : "Grouping must contain at least one level"
-        }
+        title="Remove"
       >
         <Icon className="h-5 w-5" icon="trash" />
       </span>
@@ -249,10 +263,7 @@ const CheckGroupingEditorItem = ({
   );
 };
 
-const CheckGroupingEditor = ({
-  config,
-  setConfig,
-}: CheckGroupingEditorProps) => {
+const CheckFilterEditor = ({ config, setConfig }: CheckFilterEditorProps) => {
   const remove = useCallback(
     (index: number) => {
       const removed = [...config.slice(0, index), ...config.slice(index + 1)];
@@ -262,7 +273,7 @@ const CheckGroupingEditor = ({
   );
 
   const update = useCallback(
-    (index: number, updatedItem: CheckDisplayGroup) => {
+    (index: number, updatedItem: CheckFilter) => {
       const updated = [
         ...config.slice(0, index),
         updatedItem,
@@ -283,7 +294,7 @@ const CheckGroupingEditor = ({
         className="flex flex-col space-y-4"
       >
         {config.map((c, idx) => (
-          <CheckGroupingEditorItem
+          <CheckFilterEditorItem
             key={`${c.type}-${c.value}`}
             config={config}
             item={c}
@@ -305,4 +316,4 @@ const CheckGroupingEditor = ({
   );
 };
 
-export default CheckGroupingEditor;
+export default CheckFilterEditor;
