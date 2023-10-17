@@ -131,12 +131,23 @@ export type CheckDisplayGroup = {
   value?: string | undefined;
 };
 
-export type CheckFilterType = CheckDisplayGroupType;
-
-export type CheckFilter = Omit<CheckDisplayGroup, "type", "value"> & {
+export interface Filter {
   type: CheckFilterType;
-  value: string;
-};
+  key?: string;
+  value?: string;
+}
+
+export interface OrFilter {
+  or?: Filter[];
+}
+
+export interface AndFilter {
+  and?: (Filter | OrFilter)[];
+}
+
+export type CheckFilter = AndFilter & OrFilter;
+
+export type CheckFilterType = CheckDisplayGroupType;
 
 export type BenchmarkTreeProps = BasePrimitiveProps &
   ExecutablePrimitiveProps & {

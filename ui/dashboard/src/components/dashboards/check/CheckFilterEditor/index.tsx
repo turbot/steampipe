@@ -2,7 +2,7 @@ import Icon from "../../../Icon";
 import Select from "react-select";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import useSelectInputStyles from "../../inputs/common/useSelectInputStyles";
-import { CheckFilter, CheckFilterType } from "../common";
+import { AndFilter, CheckFilter, CheckFilterType, Filter } from "../common";
 import { classNames } from "../../../../utils/styles";
 import {
   MultiValueLabelWithTags,
@@ -15,31 +15,31 @@ import { useCallback, useMemo, useState } from "react";
 import { useDashboardControls } from "../../layout/Dashboard/DashboardControlsProvider";
 
 type CheckFilterEditorProps = {
-  config: CheckFilter[];
-  setConfig: (newValue: CheckFilter[]) => void;
+  config: CheckFilter;
+  setConfig: (newValue: CheckFilter) => void;
 };
 
 type CheckFilterEditorItemProps = {
-  config: CheckFilter[];
-  item: CheckFilter;
+  config: CheckFilter;
+  item: Filter;
   index: number;
   remove: (index: number) => void;
-  update: (index: number, item: CheckFilter) => void;
+  update: (index: number, item: Filter) => void;
 };
 
 type CheckFilterTypeSelectProps = {
-  config: CheckFilter[];
+  config: CheckFilter;
   index: number;
-  item: CheckFilter;
+  item: Filter;
   type: CheckFilterType;
-  update: (index: number, updatedItem: CheckFilter) => void;
+  update: (index: number, updatedItem: Filter) => void;
 };
 
 type CheckFilterValueSelectProps = {
   index: number;
-  item: CheckFilter;
+  item: Filter;
   type: CheckFilterType;
-  update: (index: number, updatedItem: CheckFilter) => void;
+  update: (index: number, updatedItem: Filter) => void;
   value: string | undefined;
 };
 
@@ -62,14 +62,14 @@ const CheckFilterTypeSelect = ({
 
     update(index, {
       ...item,
-      id: currentType,
       type: currentType,
       value: "",
     });
   }, [currentType, index, item]);
 
   const types = useMemo(() => {
-    const existingTypes = config.map((c) => c.type.toString());
+    // @ts-ignore
+    const existingTypes = config.and.map((c) => c.type.toString());
     const allTypes: SelectOption[] = [
       { value: "benchmark", label: "Benchmark" },
       { value: "control", label: "Control" },
@@ -135,7 +135,6 @@ const CheckFilterValueSelect = ({
     });
     update(index, {
       ...item,
-      id: `${item.type}-${currentValue}`,
       value: currentValue,
     });
   }, [currentValue, index, item]);
@@ -185,7 +184,7 @@ const CheckFilterValueSelect = ({
       onChange={(t) => setCurrentValue((t as SelectOption).value)}
       options={values}
       inputId={`${type}.input`}
-      placeholder="Select a grouping…"
+      placeholder="Enter a filter…"
       styles={styles}
       value={values.find((t) => t.value === value)}
     />
@@ -250,11 +249,13 @@ const CheckFilterEditorItem = ({
       )}
       <span
         className={classNames(
-          config.length > 1
+          // @ts-ignore
+          config.and.length > 1
             ? "text-foreground-light hover:text-steampipe-red cursor-pointer"
             : "text-foreground-lightest",
         )}
-        onClick={config.length > 1 ? () => remove(index) : undefined}
+        // @ts-ignore
+        onClick={config.and.length > 1 ? () => remove(index) : undefined}
         title="Remove"
       >
         <Icon className="h-5 w-5" icon="trash" />
@@ -266,20 +267,26 @@ const CheckFilterEditorItem = ({
 const CheckFilterEditor = ({ config, setConfig }: CheckFilterEditorProps) => {
   const remove = useCallback(
     (index: number) => {
-      const removed = [...config.slice(0, index), ...config.slice(index + 1)];
-      setConfig(removed);
+      const newConfig: CheckFilter = {
+        and: config?.and || [],
+      };
+      if (newConfig.and) {
+        delete newConfig.and[index];
+      }
+      setConfig(newConfig);
     },
     [config, setConfig],
   );
 
   const update = useCallback(
-    (index: number, updatedItem: CheckFilter) => {
-      const updated = [
-        ...config.slice(0, index),
-        updatedItem,
-        ...config.slice(index + 1),
-      ];
-      setConfig(updated);
+    (index: number, updatedItem: Filter) => {
+      const newConfig: CheckFilter = {
+        and: config?.and || [],
+      };
+      if (newConfig.and) {
+        newConfig.and[index] = updatedItem;
+      }
+      setConfig(newConfig);
     },
     [config, setConfig],
   );
@@ -288,12 +295,21 @@ const CheckFilterEditor = ({ config, setConfig }: CheckFilterEditorProps) => {
     <div className="flex flex-col space-y-4">
       <Reorder.Group
         axis="y"
-        values={config}
-        onReorder={setConfig}
+        values={config?.and || []}
+        onReorder={(a) => {
+          if (!!config) {
+            const newConfig = {
+              ...config,
+              and: a,
+            };
+            setConfig(newConfig);
+          }
+        }}
         as="div"
         className="flex flex-col space-y-4"
       >
-        {config.map((c, idx) => (
+        {/*@ts-ignore*/}
+        {(config?.and || []).map((c: Filter, idx: number) => (
           <CheckFilterEditorItem
             key={`${c.type}-${c.value}`}
             config={config}
@@ -307,10 +323,10 @@ const CheckFilterEditor = ({ config, setConfig }: CheckFilterEditorProps) => {
       <div
         className="flex items-center text-link cursor-pointer space-x-3"
         // @ts-ignore
-        onClick={() => setConfig([...config, { id: "", type: "" }])}
+        onClick={() => setConfig({ and: [...config.and, { type: "" }] })}
       >
         <Icon className="inline-block h-4 w-4" icon="plus" />
-        <span className="inline-block">Add grouping</span>
+        <span className="inline-block">Add filter</span>
       </div>
     </div>
   );
