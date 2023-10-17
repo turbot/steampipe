@@ -198,6 +198,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output --partial "Hydrate calls"
 }
 
+@test "verify empty json result is empty list and not null" {
+  run steampipe query "select * from steampipe_connection where plugin = 'random'" --output json
+  assert_output "$output" "$(cat $TEST_DATA_DIR/expected_query_empty_json.json)"
+}
+
 #@test "sql glob" {
 #  cd $FILE_PATH/test_files
 #  run steampipe query *.sql
