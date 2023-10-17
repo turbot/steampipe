@@ -41,7 +41,7 @@ type CheckFilterKeySelectProps = {
   item: Filter;
   type: CheckFilterType;
   update: (index: number, updatedItem: Filter) => void;
-  key: string | undefined;
+  filterKey: string | undefined;
 };
 
 type CheckFilterValueSelectProps = {
@@ -129,10 +129,10 @@ const CheckFilterKeySelect = ({
   index,
   item,
   type,
-  key,
+  filterKey,
   update,
 }: CheckFilterKeySelectProps) => {
-  const [currentKey, setCurrentKey] = useState(key);
+  const [currentKey, setCurrentKey] = useState(filterKey);
   const { context: filterValues } = useDashboardControls();
 
   useDeepCompareEffect(() => {
@@ -176,7 +176,7 @@ const CheckFilterKeySelect = ({
       inputId={`${type}.input`}
       placeholder="Enter a filter…"
       styles={styles}
-      value={keys.find((t) => t.value === key)}
+      value={keys.find((t) => t.value === filterKey)}
     />
   );
 };
@@ -280,7 +280,7 @@ const CheckFilterEditorItem = ({
             <CheckFilterKeySelect
               index={index}
               item={item}
-              key={item.key}
+              filterKey={item.key}
               type={item.type}
               update={update}
             />
@@ -343,8 +343,6 @@ const CheckFilterEditor = ({ config, setConfig }: CheckFilterEditorProps) => {
     },
     [config, setConfig],
   );
-
-  console.log(config);
 
   return (
     <div className="flex flex-col space-y-4">

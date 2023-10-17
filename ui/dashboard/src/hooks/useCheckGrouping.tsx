@@ -678,7 +678,6 @@ const CheckGroupingProvider = ({
   const [nodeStates, dispatch] = useReducer(reducer, { nodes: {} });
   const groupingsConfig = useCheckGroupingConfig();
   const checkFilterConfig = useCheckFilterConfig();
-  console.log(checkFilterConfig);
 
   const [
     benchmark,
