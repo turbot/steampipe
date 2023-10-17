@@ -27,8 +27,12 @@ func (c *DbClient) establishConnectionPool(ctx context.Context, overrides client
 	defer utils.LogTime("db_client.establishConnectionPool end")
 
 	pool, err := establishConnectionPool(ctx, c.connectionString)
+	if err != nil {
+		return err
+	}
 
 	// TODO - how do we apply the AfterConnect hook here?
+	// the after connect hook used to create and populate the introspection tables
 
 	// apply any overrides
 	// this is used to set the pool size and lifetimes of the connections from up top

@@ -58,6 +58,9 @@ type DbClient struct {
 	showTimingFlag bool
 	// disable timing - set whilst in process of querying the timing
 	disableTiming bool
+
+	// a reader which can be used to read rows from a pgx.Rows object
+	rowReader db_common.RowReader
 }
 
 func NewDbClient(ctx context.Context, connectionString string, opts ...ClientOption) (_ *DbClient, err error) {
@@ -71,6 +74,7 @@ func NewDbClient(ctx context.Context, connectionString string, opts ...ClientOpt
 		sessions:                make(map[uint32]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
 		connectionString:        connectionString,
+		rowReader:               &db_common.PgxRowReader{},
 	}
 
 	defer func() {
