@@ -11,17 +11,12 @@ import {
 } from "../../inputs/common/Common";
 import { Reorder, useDragControls } from "framer-motion";
 import { SelectOption } from "../../inputs/types";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useDashboardControls } from "../../layout/Dashboard/DashboardControlsProvider";
-import { useSearchParams } from "react-router-dom";
 
-type CheckGroupingEditorProps = CheckGroupingEditorContainerProps & {
-  save: () => void;
-  setCurrentConfig: (newConfig: CheckDisplayGroup[]) => void;
-};
-
-type CheckGroupingEditorContainerProps = {
+type CheckGroupingEditorProps = {
   config: CheckDisplayGroup[];
+  setConfig: (newValue: CheckDisplayGroup[]) => void;
 };
 
 type CheckGroupingEditorItemProps = {
@@ -37,22 +32,14 @@ type CheckGroupingTypeSelectProps = {
   index: number;
   item: CheckDisplayGroup;
   type: CheckDisplayGroupType;
-  update: (
-    index: number,
-    item: CheckDisplayGroup,
-    updates: { id?: string; type?: CheckDisplayGroupType | undefined },
-  ) => void;
+  update: (index: number, updatedItem: CheckDisplayGroup) => void;
 };
 
 type CheckGroupingValueSelectProps = {
   index: number;
   item: CheckDisplayGroup;
   type: CheckDisplayGroupType;
-  update: (
-    index: number,
-    item: CheckDisplayGroup,
-    updates: { value: string },
-  ) => void;
+  update: (index: number, updatedItem: CheckDisplayGroup) => void;
   value: string | undefined;
 };
 
@@ -72,10 +59,12 @@ const CheckGroupingTypeSelect = ({
       item,
       update,
     });
-    update(index, item, {
+
+    update(index, {
       ...item,
       id: currentType,
       type: currentType,
+      value: "",
     });
   }, [currentType, index, item]);
 
@@ -86,6 +75,7 @@ const CheckGroupingTypeSelect = ({
       { value: "control", label: "Control" },
       { value: "dimension", label: "Dimension" },
       { value: "reason", label: "Reason" },
+      { value: "resource", label: "Resource" },
       { value: "result", label: "Result" },
       { value: "severity", label: "Severity" },
       { value: "status", label: "Status" },
@@ -133,7 +123,7 @@ const CheckGroupingValueSelect = ({
   value,
   update,
 }: CheckGroupingValueSelectProps) => {
-  const [currentValue, setCurrentValue] = useState(type);
+  const [currentValue, setCurrentValue] = useState(value);
   const { context: filterValues } = useDashboardControls();
 
   useDeepCompareEffect(() => {
@@ -143,8 +133,9 @@ const CheckGroupingValueSelect = ({
       item,
       update,
     });
-    update(index, item, {
+    update(index, {
       ...item,
+      id: `${item.type}-${currentValue}`,
       value: currentValue,
     });
   }, [currentValue, index, item]);
@@ -210,21 +201,16 @@ const CheckGroupingEditorItem = ({
 }: CheckGroupingEditorItemProps) => {
   const dragControls = useDragControls();
 
-  useDeepCompareEffect(() => {
-    if (item.type !== "dimension" && item.type !== "tag" && item.value) {
-      update(index, { ...item, id: item.type, value: undefined });
-    } else if (
-      (item.type === "dimension" || item.type === "tag") &&
-      item.value
-    ) {
-      update(index, { ...item, id: `${item.type}-${item.value}` });
-    }
-  }, [item.type, item.value, update]);
-
-  const doUpdate = useCallback(
-    (index, item, updates) => update(index, { ...item, ...updates }),
-    [update],
-  );
+  // useEffect(() => {
+  //   if (item.type !== "dimension" && item.type !== "tag" && item.value) {
+  //     update(index, { ...item, id: item.type, value: undefined });
+  //   } else if (
+  //     (item.type === "dimension" || item.type === "tag") &&
+  //     item.value
+  //   ) {
+  //     update(index, { ...item, id: `${item.type}-${item.value}` });
+  //   }
+  // }, [index, item.type, item.value, update]);
 
   return (
     <Reorder.Item
@@ -245,19 +231,21 @@ const CheckGroupingEditorItem = ({
           index={index}
           item={item}
           type={item.type}
-          update={doUpdate}
+          update={update}
         />
       </div>
       {(item.type === "dimension" || item.type === "tag") && (
         <>
           <span>=</span>
-          <CheckGroupingValueSelect
-            index={index}
-            item={item}
-            type={item.type}
-            update={doUpdate}
-            value={item.value}
-          />
+          <div className="grow">
+            <CheckGroupingValueSelect
+              index={index}
+              item={item}
+              type={item.type}
+              update={update}
+              value={item.value}
+            />
+          </div>
         </>
       )}
       <span
@@ -277,48 +265,26 @@ const CheckGroupingEditorItem = ({
 
 const CheckGroupingEditor = ({
   config,
-  save,
-  setCurrentConfig,
+  setConfig,
 }: CheckGroupingEditorProps) => {
-  const [isValid, setIsValid] = useState(false);
-
-  useEffect(() => {
-    const isValid = config.every((c) => {
-      switch (c.type) {
-        case "benchmark":
-        case "control":
-        case "result":
-        case "reason":
-        case "resource":
-        case "severity":
-        case "status":
-          return !c.value;
-        case "dimension":
-        case "tag":
-          return !!c.value;
-      }
-    });
-    setIsValid(isValid);
-  }, [config, setIsValid]);
-
   const remove = useCallback(
     (index: number) => {
       const removed = [...config.slice(0, index), ...config.slice(index + 1)];
-      setCurrentConfig(removed);
+      setConfig(removed);
     },
-    [config, setCurrentConfig],
+    [config, setConfig],
   );
 
   const update = useCallback(
-    (index: number, item: CheckDisplayGroup) => {
+    (index: number, updatedItem: CheckDisplayGroup) => {
       const updated = [
         ...config.slice(0, index),
-        item,
+        updatedItem,
         ...config.slice(index + 1),
       ];
-      setCurrentConfig(updated);
+      setConfig(updated);
     },
-    [config, setCurrentConfig],
+    [config, setConfig],
   );
 
   // const swap = useCallback(
@@ -338,7 +304,7 @@ const CheckGroupingEditor = ({
       <Reorder.Group
         axis="y"
         values={config}
-        onReorder={setCurrentConfig}
+        onReorder={setConfig}
         as="div"
         className="flex flex-col space-y-4"
       >
@@ -361,38 +327,8 @@ const CheckGroupingEditor = ({
         <Icon className="inline-block h-4 w-4" icon="plus" />
         <span className="inline-block">Add grouping</span>
       </div>
-      {/*<div>*/}
-      {/*  <SubmitButton />*/}
-      {/*</div>*/}
     </div>
   );
 };
 
-const CheckGroupingEditorContainer = ({
-  config,
-}: CheckGroupingEditorContainerProps) => {
-  const [currentConfig, setCurrentConfig] = useState(config);
-  const [_, setSearchParams] = useSearchParams();
-
-  const saveGroupingConfig = () => {
-    setSearchParams({
-      grouping: currentConfig
-        .map((c) =>
-          c.type === "dimension" || c.type === "tag"
-            ? `${c.type}|${c.value}`
-            : c.type,
-        )
-        .join(","),
-    });
-  };
-
-  return (
-    <CheckGroupingEditor
-      config={currentConfig}
-      save={saveGroupingConfig}
-      setCurrentConfig={setCurrentConfig}
-    />
-  );
-};
-
-export default CheckGroupingEditorContainer;
+export default CheckGroupingEditor;

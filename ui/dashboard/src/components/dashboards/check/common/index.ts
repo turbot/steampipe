@@ -128,7 +128,7 @@ export type CheckDisplayGroupType =
 export type CheckDisplayGroup = {
   id: string;
   type: CheckDisplayGroupType;
-  value?: string;
+  value?: string | undefined;
 };
 
 export type BenchmarkTreeProps = BasePrimitiveProps &

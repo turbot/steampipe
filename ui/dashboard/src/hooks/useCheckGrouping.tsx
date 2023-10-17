@@ -200,16 +200,14 @@ const getCheckDimensionGroupingKey = (
     return "Dimension key not set";
   }
   const foundDimension = findDimension(dimensions, dimensionKey);
-  return foundDimension
-    ? foundDimension.value
-    : `Dimension ${dimensionKey} not set`;
+  return foundDimension ? foundDimension.value : `<not set>`;
 };
 
 function getCheckTagGroupingKey(tagKey: string | undefined, tags: CheckTags) {
   if (!tagKey) {
     return "Tag key not set";
   }
-  return tags[tagKey] || `Tag ${tagKey} not set`;
+  return tags[tagKey] || `<not set>`;
 }
 
 const getCheckReasonGroupingKey = (reason: string | undefined): string => {
