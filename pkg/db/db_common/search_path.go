@@ -57,7 +57,7 @@ func GetUserSearchPath(ctx context.Context, conn *sql.Conn) ([]string, error) {
 	rows := conn.QueryRowContext(ctx, query)
 	var configStrings []string
 	if err := rows.Scan(&configStrings); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return []string{}, nil
 		}
 		return nil, err

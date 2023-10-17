@@ -237,7 +237,7 @@ func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_comm
 	return db_common.ExecuteSystemClientCall(ctx, session.Connection, func(ctx context.Context, tx *sql.Tx) error {
 		row := tx.QueryRowContext(ctx, fmt.Sprintf("select max(id) from %s.%s", constants.InternalSchema, constants.ForeignTableScanMetadata))
 		err := row.Scan(&session.ScanMetadataMaxId)
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil
 		}
 		return err
