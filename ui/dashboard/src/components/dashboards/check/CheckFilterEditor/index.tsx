@@ -305,7 +305,7 @@ const CheckFilterEditorItem = ({
             : "text-foreground-lightest",
         )}
         // @ts-ignore
-        onClick={config.and.length > 1 ? () => remove(index) : undefined}
+        onClick={() => remove(index)}
         title="Remove"
       >
         <Icon className="h-5 w-5" icon="trash" />
@@ -321,7 +321,10 @@ const CheckFilterEditor = ({ config, setConfig }: CheckFilterEditorProps) => {
         and: config?.and || [],
       };
       if (newConfig.and) {
-        delete newConfig.and[index];
+        newConfig.and = [
+          ...newConfig.and.slice(0, index),
+          ...newConfig.and.slice(index + 1),
+        ];
       }
       setConfig(newConfig);
     },

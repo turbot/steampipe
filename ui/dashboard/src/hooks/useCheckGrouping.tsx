@@ -6,9 +6,11 @@ import ControlResultNode from "../components/dashboards/check/common/node/Contro
 import ControlRunningNode from "../components/dashboards/check/common/node/ControlRunningNode";
 import KeyValuePairNode from "../components/dashboards/check/common/node/KeyValuePairNode";
 import RootNode from "../components/dashboards/check/common/node/RootNode";
+import useCheckFilterConfig from "./useCheckFilterConfig";
 import useCheckGroupingConfig from "./useCheckGroupingConfig";
 import usePrevious from "./usePrevious";
 import {
+  AndFilter,
   CheckDisplayGroup,
   CheckNode,
   CheckResult,
@@ -17,7 +19,9 @@ import {
   CheckSeverity,
   CheckSummary,
   CheckTags,
+  Filter,
   findDimension,
+  OrFilter,
 } from "../components/dashboards/check/common";
 import {
   createContext,
@@ -568,6 +572,103 @@ function recordFilterValues(
   }
 }
 
+const escapeRegex = (string) => {
+  if (!string) {
+    return string;
+  }
+  return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+};
+
+const wildcardToRegex = (wildcard: string) => {
+  const escaped = escapeRegex(wildcard);
+  return escaped.replaceAll("\\*", ".*");
+};
+
+const includeResult = (
+  checkResult: CheckResult,
+  checkFilterConfig: AndFilter & OrFilter,
+): boolean => {
+  const andFilter = checkFilterConfig as AndFilter;
+  if (!andFilter || !andFilter.and || andFilter.and.length === 0) {
+    return true;
+  }
+  let matches: boolean[] = [];
+  for (const filter of andFilter.and) {
+    const f = filter as Filter;
+    // @ts-ignore
+    const valueRegex = new RegExp(`^${wildcardToRegex(f.value)}$`);
+
+    switch (f.type) {
+      case "benchmark": {
+        let matchesTrunk = false;
+        for (const benchmark of checkResult.benchmark_trunk || []) {
+          const match = valueRegex.test(benchmark.name);
+          if (match) {
+            matchesTrunk = true;
+            break;
+          }
+        }
+        matches.push(matchesTrunk);
+        break;
+      }
+      case "control": {
+        matches.push(valueRegex.test(checkResult.control.name));
+        break;
+      }
+      case "reason": {
+        matches.push(valueRegex.test(checkResult.reason));
+        break;
+      }
+      case "resource": {
+        matches.push(valueRegex.test(checkResult.resource));
+        break;
+      }
+      case "severity": {
+        matches.push(valueRegex.test(checkResult.severity || ""));
+        break;
+      }
+      case "status": {
+        matches.push(valueRegex.test(CheckResultStatus[checkResult.status]));
+        break;
+      }
+      case "dimension": {
+        // @ts-ignore
+        const keyRegex = new RegExp(`^${wildcardToRegex(f.key)}$`);
+        let matchesDimensions = false;
+        for (const dimension of checkResult.dimensions || []) {
+          if (
+            keyRegex.test(dimension.key) &&
+            valueRegex.test(dimension.value)
+          ) {
+            matchesDimensions = true;
+            break;
+          }
+        }
+        matches.push(matchesDimensions);
+        break;
+      }
+      case "tag": {
+        // @ts-ignore
+        const keyRegex = new RegExp(`^${wildcardToRegex(f.key)}$`);
+        let matchesTags = false;
+        for (const [tagKey, tagValue] of Object.entries(
+          checkResult.tags || {},
+        )) {
+          if (keyRegex.test(tagKey) && valueRegex.test(tagValue)) {
+            matchesTags = true;
+            break;
+          }
+        }
+        matches.push(matchesTags);
+        break;
+      }
+      default:
+        matches.push(true);
+    }
+  }
+  return matches.every((m) => m);
+};
+
 const CheckGroupingProvider = ({
   children,
   definition,
@@ -576,6 +677,8 @@ const CheckGroupingProvider = ({
   const { setContext: setDashboardControlsContext } = useDashboardControls();
   const [nodeStates, dispatch] = useReducer(reducer, { nodes: {} });
   const groupingsConfig = useCheckGroupingConfig();
+  const checkFilterConfig = useCheckFilterConfig();
+  console.log(checkFilterConfig);
 
   const [
     benchmark,
@@ -631,6 +734,10 @@ const CheckGroupingProvider = ({
 
     // We'll loop over each control result and build up the grouped nodes from there
     b.all_control_results.forEach((checkResult) => {
+      // See if the result needs to be filtered
+      if (!includeResult(checkResult, checkFilterConfig)) {
+        return;
+      }
       // Build a grouping node - this will be the leaf node down from the root group
       // e.g. benchmark -> control (where control is the leaf)
       const grouping = groupCheckItems(
@@ -663,7 +770,7 @@ const CheckGroupingProvider = ({
       checkNodeStates,
       filterValues,
     ] as const;
-  }, [definition, groupingsConfig, panelsMap]);
+  }, [checkFilterConfig, definition, groupingsConfig, panelsMap]);
 
   const previousGroupings = usePrevious({ groupingsConfig });
 

@@ -106,11 +106,21 @@ const CheckFilterConfig = () => {
   }, [modifiedConfig, setIsValid]);
 
   const saveFilterConfig = (toSave: CheckFilter) => {
-    const asJson = JSON.stringify(toSave);
-    setSearchParams((previous) => ({
-      ...previous,
-      where: asJson,
-    }));
+    setSearchParams((previous) => {
+      if (toSave.and && toSave.and.length === 0) {
+        const newConfig = {
+          ...previous,
+        };
+        delete newConfig["where"];
+        return newConfig;
+      } else {
+        const asJson = JSON.stringify(toSave);
+        return {
+          ...previous,
+          where: asJson,
+        };
+      }
+    });
   };
 
   return (
