@@ -9,7 +9,6 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -304,7 +303,7 @@ Loop:
 	}
 }
 
-func (c *DbClient) rowValues(rows *sql.Rows) ([]interface{}, error) {
+func (c *DbClient) rowValues(rows *sql.Rows) ([]any, error) {
 	columns, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -325,9 +324,6 @@ func (c *DbClient) rowValues(rows *sql.Rows) ([]interface{}, error) {
 }
 
 func (c *DbClient) readRow(rows *sql.Rows, cols []*queryresult.ColumnDef) ([]any, error) {
-	if c.rowReader == nil {
-		return nil, sperr.New("cannot read row without a row reader")
-	}
 	columnValues, err := c.rowValues(rows)
 	if err != nil {
 		return nil, error_helpers.WrapError(err)

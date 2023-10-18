@@ -17,7 +17,13 @@ const (
 )
 
 func getDriverNameFromConnectionString(connStr string) string {
-	return "pgx"
+	if isPostgresConnectionString(connStr) {
+		return "pgx"
+	} else if isSqliteConnectionString(connStr) {
+		return "sqlite3"
+	} else {
+		return ""
+	}
 }
 
 type DbConnectionCallback func(context.Context, *sql.Conn) error
@@ -84,7 +90,10 @@ func (c *DbClient) establishManagementConnectionPool(ctx context.Context, overri
 }
 
 func establishConnectionPool(ctx context.Context, connectionString string) (*sql.DB, error) {
-	pool, err := sql.Open(getDriverNameFromConnectionString(connectionString), connectionString)
+	driverName := getDriverNameFromConnectionString(connectionString)
+	connectionString = getUseableConnectionString(driverName, connectionString)
+
+	pool, err := sql.Open(driverName, connectionString)
 	if err != nil {
 		return nil, err
 	}

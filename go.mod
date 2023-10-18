@@ -60,6 +60,8 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
+require github.com/mattn/go-sqlite3 v1.14.17
+
 require (
 	cloud.google.com/go v0.110.4 // indirect
 	cloud.google.com/go/compute v1.21.0 // indirect

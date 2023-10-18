@@ -3,7 +3,6 @@ package db_common
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
@@ -49,24 +48,28 @@ func BuildSearchPathResult(searchPathString string) ([]string, error) {
 	return searchPath, nil
 }
 
+// TODO:: BINAEK :: we need to fix this
+// this is going to be referred to from steampipe code in the future
+// and
 func GetUserSearchPath(ctx context.Context, conn *sql.Conn) ([]string, error) {
-	query := `SELECT array_to_string(rs.setconfig, ',')
-	FROM   pg_db_role_setting rs
-	LEFT   JOIN pg_roles      r ON r.oid = rs.setrole
-	LEFT   JOIN pg_database   d ON d.oid = rs.setdatabase
-	WHERE  r.rolname = 'steampipe'`
+	return []string{}, nil
+	// query := `SELECT array_to_string(rs.setconfig, ',')
+	// FROM   pg_db_role_setting rs
+	// LEFT   JOIN pg_roles      r ON r.oid = rs.setrole
+	// LEFT   JOIN pg_database   d ON d.oid = rs.setdatabase
+	// WHERE  r.rolname = 'steampipe'`
 
-	rows := conn.QueryRowContext(ctx, query)
-	var configStrings string
-	if err := rows.Scan(&configStrings); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return []string{}, nil
-		}
-		return nil, err
-	}
-	if len(configStrings) > 0 {
-		return BuildSearchPathResult(configStrings)
-	}
-	// should not get here
-	return nil, nil
+	// rows := conn.QueryRowContext(ctx, query)
+	// var configStrings string
+	// if err := rows.Scan(&configStrings); err != nil {
+	// 	if errors.Is(err, sql.ErrNoRows) {
+	// 		return []string{}, nil
+	// 	}
+	// 	return nil, err
+	// }
+	// if len(configStrings) > 0 {
+	// 	return BuildSearchPathResult(configStrings)
+	// }
+	// // should not get here
+	// return nil, nil
 }

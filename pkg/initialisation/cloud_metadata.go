@@ -2,11 +2,11 @@ package initialisation
 
 import (
 	"context"
-	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
@@ -22,7 +22,7 @@ func getCloudMetadata(ctx context.Context) (*steampipeconfig.CloudMetadata, erro
 	var cloudMetadata *steampipeconfig.CloudMetadata
 
 	// so a backend was set - is it a connection string or a database name
-	workspaceDatabaseIsConnectionString := strings.HasPrefix(workspaceDatabase, "postgresql://") || strings.HasPrefix(workspaceDatabase, "postgres://")
+	workspaceDatabaseIsConnectionString := db_client.IsConnectionString(workspaceDatabase)
 	if !workspaceDatabaseIsConnectionString {
 		// it must be a database name - verify the cloud token was provided
 		cloudToken := viper.GetString(constants.ArgCloudToken)

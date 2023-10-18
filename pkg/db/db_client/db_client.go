@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/db/db_client/backend"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/serversettings"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -59,13 +60,21 @@ type DbClient struct {
 	// disable timing - set whilst in process of querying the timing
 	disableTiming bool
 
+	// the backend type of the dbclient backend
+	backend backend.DBClientBackendType
+
 	// a reader which can be used to read rows from a pgx.Rows object
-	rowReader db_common.RowReader
+	rowReader backend.RowReader
 }
 
 func NewDbClient(ctx context.Context, connectionString string, opts ...ClientOption) (_ *DbClient, err error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
+
+	backendType, err := backend.GetBackendFromConnectionString(ctx, connectionString)
+	if err != nil {
+		return nil, err
+	}
 
 	client := &DbClient{
 		// a weighted semaphore to control the maximum number parallel
@@ -74,7 +83,8 @@ func NewDbClient(ctx context.Context, connectionString string, opts ...ClientOpt
 		sessions:                make(map[uint32]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
 		connectionString:        connectionString,
-		rowReader:               &db_common.PgxRowReader{},
+		backend:                 backendType,
+		rowReader:               backend.RowReaderFactory(backendType),
 	}
 
 	defer func() {
@@ -94,19 +104,19 @@ func NewDbClient(ctx context.Context, connectionString string, opts ...ClientOpt
 	}
 
 	// load up the server settings
-	if err := client.loadServerSettings(ctx); err != nil {
-		return nil, err
-	}
+	// if err := client.loadServerSettings(ctx); err != nil {
+	// 	return nil, err
+	// }
 
-	// set user search path
-	if err := client.LoadUserSearchPath(ctx); err != nil {
-		return nil, err
-	}
+	// // set user search path
+	// if err := client.LoadUserSearchPath(ctx); err != nil {
+	// 	return nil, err
+	// }
 
-	// populate customSearchPath
-	if err := client.SetRequiredSessionSearchPath(ctx); err != nil {
-		return nil, err
-	}
+	// // populate customSearchPath
+	// if err := client.SetRequiredSessionSearchPath(ctx); err != nil {
+	// 	return nil, err
+	// }
 
 	return client, nil
 }

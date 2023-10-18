@@ -1,4 +1,4 @@
-package db_common
+package backend
 
 import (
 	"fmt"
@@ -12,14 +12,10 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-type RowReader interface {
-	Read(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]any, error)
-}
+// SqliteRowReader is a RowReader implementation for the sqlite database/sql driver
+type SqliteRowReader struct{}
 
-// PgxRowReader is a RowReader implementation for the pgx database/sql driver
-type PgxRowReader struct{}
-
-func (r *PgxRowReader) Read(columnValues []any, cols []*queryresult.ColumnDef) ([]any, error) {
+func (r *SqliteRowReader) Read(columnValues []any, cols []*queryresult.ColumnDef) ([]any, error) {
 	result := make([]any, len(columnValues))
 	for i, columnValue := range columnValues {
 		if columnValue != nil {

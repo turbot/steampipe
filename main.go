@@ -10,12 +10,15 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-version"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/cmd"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
+
+	// database connection drivers
+	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var exitCode int = constants.ExitCodeSuccessful
