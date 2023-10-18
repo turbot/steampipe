@@ -13,7 +13,7 @@ import {
   CardType,
 } from "../data/CardDataProcessor";
 import { classNames } from "../../../utils/styles";
-import { PanelProperties } from "../../../types";
+import { PanelDefinition, PanelProperties } from "../../../types";
 import { getComponent, registerComponent } from "../index";
 import {
   getIconClasses,
@@ -39,6 +39,8 @@ export type CardProps = PanelProperties &
   ExecutablePrimitiveProps & {
     display_type?: CardType;
     properties: CardProperties;
+  } & {
+    diff_panel: PanelDefinition;
   };
 
 type CardState = {
@@ -68,6 +70,7 @@ interface CardDiffDisplayProps {
 
 const useCardState = ({
   data,
+  diff_panel,
   display_type,
   properties,
   status,
@@ -84,9 +87,9 @@ const useCardState = ({
   useEffect(() => {
     const diff = new CardDataProcessor();
     setCalculatedProperties(
-      diff.buildCardState(data, display_type, properties, status),
+      diff.buildCardState(data, diff_panel, display_type, properties, status),
     );
-  }, [data, display_type, properties, setCalculatedProperties, status]);
+  }, [data, diff_panel, display_type, properties, setCalculatedProperties, status]);
 
   return calculatedProperties;
 };
@@ -104,16 +107,20 @@ const Label = ({ value }) => {
 };
 
 const CardDiffDisplay = ({ diff, type }: CardDiffDisplayProps) => {
-  if (!diff) {
+  console.log({ diff, type });
+  if (!diff || diff.direction === "none") {
     return null;
   }
   return (
     <div
       className={classNames(
+        "inline-flex rounded-lg px-2 py-0.5 text-sm font-medium md:mt-2 lg:mt-0",
         type === "ok" ? "bg-green-200 text-green-800" : null,
         type === "alert" ? "bg-red-100 text-red-800" : null,
         type === "info" ? "bg-blue-100 text-blue-800" : null,
-        "inline-flex rounded-lg px-2 py-0.5 text-sm font-medium md:mt-2 lg:mt-0",
+        type !== "ok" && type !== "alert" && type !== "info"
+          ? "bg-black-scale-1"
+          : null,
       )}
     >
       <DashboardIcon
@@ -129,7 +136,7 @@ const CardDiffDisplay = ({ diff, type }: CardDiffDisplayProps) => {
             ? "arrow_upward"
             : diff.direction === "down"
             ? "arrow_downward"
-            : "horizontal_rule"
+            : null
         }
       />
       <span className="sr-only">
@@ -142,7 +149,6 @@ const CardDiffDisplay = ({ diff, type }: CardDiffDisplayProps) => {
           <IntegerDisplay num={diff.value_percent || null} />%
         </>
       )}
-      {diff.direction === "none" && <>No change</>}
     </div>
   );
 };
@@ -293,7 +299,6 @@ const CardWrapper = (props: CardProps) => {
     // @ts-ignore
     return <Table {...props} />;
   }
-
   return <Card {...props} />;
 };
 

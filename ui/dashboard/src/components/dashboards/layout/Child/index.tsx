@@ -6,6 +6,7 @@ import {
 import { getComponent } from "../../index";
 import { getNodeAndEdgeDataFormat } from "../../common/useNodeAndEdgeData";
 import { NodeAndEdgeProperties } from "../../common/types";
+import { useDashboard } from "../../../../hooks/useDashboard";
 
 type ChildProps = {
   layoutDefinition: DashboardLayoutNode;
@@ -20,6 +21,7 @@ const Child = ({
   parentType,
   showPanelControls = true,
 }: ChildProps) => {
+  const { diff } = useDashboard();
   const Panel = getComponent("panel");
   switch (layoutDefinition.panel_type) {
     case "benchmark":
@@ -40,7 +42,10 @@ const Child = ({
           showControls={showPanelControls}
           showPanelStatus={false}
         >
-          <Card {...panelDefinition} />
+          <Card
+            {...panelDefinition}
+            diff_panel={diff ? diff.panelsMap[panelDefinition.name] : null}
+          />
         </Panel>
       );
     case "chart":
@@ -74,7 +79,7 @@ const Child = ({
     case "flow": {
       const Flow = getComponent("flow");
       const format = getNodeAndEdgeDataFormat(
-        panelDefinition.properties as NodeAndEdgeProperties
+        panelDefinition.properties as NodeAndEdgeProperties,
       );
       return (
         <Panel
@@ -95,7 +100,7 @@ const Child = ({
     case "graph": {
       const Graph = getComponent("graph");
       const format = getNodeAndEdgeDataFormat(
-        panelDefinition.properties as NodeAndEdgeProperties
+        panelDefinition.properties as NodeAndEdgeProperties,
       );
       return (
         <Panel
@@ -117,7 +122,7 @@ const Child = ({
     case "hierarchy": {
       const Hierarchy = getComponent("hierarchy");
       const format = getNodeAndEdgeDataFormat(
-        panelDefinition.properties as NodeAndEdgeProperties
+        panelDefinition.properties as NodeAndEdgeProperties,
       );
       return (
         <Panel

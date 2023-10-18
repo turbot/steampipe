@@ -46,11 +46,11 @@ const reducer = (state: IDashboardContext, action) => {
       const { dashboards, dashboardsMap } = buildDashboards(
         action.dashboards,
         action.benchmarks,
-        action.snapshots
+        action.snapshots,
       );
       const selectedDashboard = updateSelectedDashboard(
         state.selectedDashboard,
-        dashboards
+        dashboards,
       );
       return {
         ...state,
@@ -83,7 +83,7 @@ const reducer = (state: IDashboardContext, action) => {
       if (rootPanel.panel_type !== "dashboard") {
         dashboard = wrapDefinitionInArtificialDashboard(
           rootPanel,
-          action.layout
+          action.layout,
         );
       } else {
         dashboard = {
@@ -100,15 +100,35 @@ const reducer = (state: IDashboardContext, action) => {
         error: null,
         panelsLog: buildPanelsLog(
           migratedEvent.panels,
-          migratedEvent.start_time
+          migratedEvent.start_time,
         ),
         panelsMap: migratedEvent.panels,
+        diff: null,
         dashboard,
         execution_id: migratedEvent.execution_id,
         refetchDashboard: false,
         progress: 0,
         snapshot: null,
         state: "running",
+      };
+    }
+    case DashboardActions.DIFF_SNAPSHOT: {
+      // If we're in live mode, do nothing
+      if (state.dataMode === DashboardDataModeLive) {
+        return state;
+      }
+
+      const eventMigrator = new ExecutionCompleteSchemaMigrator();
+      const migratedEvent = eventMigrator.toLatest(action);
+      const panels = migratedEvent.snapshot.panels;
+      const panelsMap = migratePanelStatuses(panels, action.schema_version);
+
+      return {
+        ...state,
+        diff: {
+          panelsMap,
+          snapshotFileName: action.snapshotFileName,
+        },
       };
     }
     case DashboardActions.EXECUTION_COMPLETE: {
@@ -146,8 +166,9 @@ const reducer = (state: IDashboardContext, action) => {
         panelsLog: updatePanelsLogFromCompletedPanels(
           state.panelsLog,
           panels,
-          action.snapshot.end_time
+          action.snapshot.end_time,
         ),
+        diff: null,
         panelsMap,
         dashboard,
         progress: 100,
@@ -163,13 +184,13 @@ const reducer = (state: IDashboardContext, action) => {
       return leafNodesUpdatedEventHandler(
         action,
         EXECUTION_SCHEMA_VERSION_20220929,
-        state
+        state,
       );
     case DashboardActions.LEAF_NODES_UPDATED:
       return leafNodesUpdatedEventHandler(
         action,
         EXECUTION_SCHEMA_VERSION_20221222,
-        state
+        state,
       );
     case DashboardActions.SELECT_PANEL:
       return { ...state, selectedPanel: action.panel };
@@ -279,7 +300,7 @@ const reducer = (state: IDashboardContext, action) => {
       for (const input of action.cleared_inputs || []) {
         delete newSelectedDashboardInputs[input];
         const matchingPanelKey = panelsMapKeys.find((key) =>
-          key.endsWith(input)
+          key.endsWith(input),
         );
         if (!matchingPanelKey) {
           continue;
@@ -400,7 +421,7 @@ const useDashboardState = ({
       ...dataOptions,
       ...renderOptions,
       versionMismatchCheck,
-    })
+    }),
   );
   useDashboardVersionCheck(state);
   const dispatch = useCallback((action) => {

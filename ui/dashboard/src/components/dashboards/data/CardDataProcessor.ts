@@ -1,7 +1,11 @@
 import get from "lodash/get";
 import isNumber from "lodash/isNumber";
 import { CardProperties } from "../Card";
-import { DashboardPanelType, DashboardRunState } from "../../../types";
+import {
+  DashboardPanelType,
+  DashboardRunState,
+  PanelDefinition,
+} from "../../../types";
 import { getColumn, hasData } from "../../../utils/data";
 import { getIconForType } from "../../../utils/card";
 import { IDiffProperties, IPanelDiff } from "./types";
@@ -53,6 +57,7 @@ export class CardDataProcessor {
 
   buildCardState(
     data: LeafNodeData | undefined,
+    diff_panel: PanelDefinition | undefined,
     display_type: CardType | undefined,
     properties: CardProperties,
     status: DashboardRunState,
@@ -63,14 +68,13 @@ export class CardDataProcessor {
 
     const state = this.parseData(data, display_type, properties);
 
-    console.log({ state, properties });
-
-    if (properties.data_mode === "diff" && !!properties.diff_data) {
+    if (!!diff_panel && !!diff_panel.data) {
       const previousState = this.parseData(
-        properties.diff_data,
+        diff_panel.data,
         display_type,
         properties,
       );
+      console.log({ state, properties, diff_panel, previousState });
       state.diff = this.diff(properties, state, previousState) as CardDiffState;
     }
 

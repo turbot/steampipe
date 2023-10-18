@@ -49,6 +49,11 @@ export type IDashboardContext = {
 
   snapshot: DashboardSnapshot | null;
   snapshotFileName: string | null;
+
+  diff?: {
+    panelsMap: PanelsMap;
+    snapshotFileName: string;
+  };
 };
 
 export type IBreakpointContext = {
@@ -121,6 +126,7 @@ export const DashboardActions: IActions = {
   CONTROLS_UPDATED: "controls_updated",
   DASHBOARD_METADATA: "dashboard_metadata",
   DELETE_DASHBOARD_INPUT: "delete_dashboard_input",
+  DIFF_SNAPSHOT: "diff_snapshot",
   EXECUTION_COMPLETE: "execution_complete",
   EXECUTION_ERROR: "execution_error",
   EXECUTION_STARTED: "execution_started",
