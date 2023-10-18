@@ -1,4 +1,4 @@
-import Card, { CardProps, CardType } from "../../Card";
+import Card, { CardProps } from "../../Card";
 import CheckGrouping from "../CheckGrouping";
 import ContainerTitle from "../../titles/ContainerTitle";
 import Error from "../../Error";
@@ -19,7 +19,7 @@ import {
 import { default as BenchmarkType } from "../common/Benchmark";
 import { getComponent, registerComponent } from "../../index";
 import { noop } from "../../../../utils/func";
-import { PanelDefinition } from "../../../../types";
+import { PanelDefinition, PanelsMap } from "../../../../types";
 import { useDashboard } from "../../../../hooks/useDashboard";
 import { useMemo, useState } from "react";
 import { Width } from "../../common";
@@ -34,15 +34,19 @@ type BenchmarkTableViewProps = {
 type InnerCheckProps = {
   benchmark: BenchmarkType;
   definition: PanelDefinition;
+  diff_panels?: PanelsMap;
   grouping: CheckNode;
   groupingConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
+  diffFirstChildSummaries: CheckSummary[] | undefined;
+  diffGrouping: CheckNode | null;
   showControls: boolean;
   withTitle: boolean;
 };
 
 const Benchmark = (props: InnerCheckProps) => {
-  const { dashboard } = useDashboard();
+  console.log(props);
+  const { dashboard, diff } = useDashboard();
   const benchmarkDataTable = useMemo(() => {
     if (
       !props.benchmark ||
@@ -82,6 +86,22 @@ const Benchmark = (props: InnerCheckProps) => {
       },
       { error: 0, alarm: 0, ok: 0, info: 0, skip: 0 },
     );
+
+    let diffTotalSummary;
+    if (!!props.diffFirstChildSummaries) {
+      diffTotalSummary = props.diffFirstChildSummaries.reduce(
+        (cumulative, current) => {
+          cumulative.error += current.error;
+          cumulative.alarm += current.alarm;
+          cumulative.ok += current.ok;
+          cumulative.info += current.info;
+          cumulative.skip += current.skip;
+          return cumulative;
+        },
+        { error: 0, alarm: 0, ok: 0, info: 0, skip: 0 },
+      );
+    }
+
     const summary_cards = [
       {
         name: `${props.definition.name}.container.summary.ok`,
@@ -92,6 +112,18 @@ const Benchmark = (props: InnerCheckProps) => {
           value: totalSummary.ok,
           icon: "materialsymbols-solid:check_circle",
         },
+        diff_panel: diffTotalSummary
+          ? {
+              name: `${props.definition.name}.container.summary.ok.diff`,
+              width: 2,
+              display_type: diffTotalSummary.ok > 0 ? "ok" : null,
+              properties: {
+                label: "OK",
+                value: diffTotalSummary.ok,
+                icon: "materialsymbols-solid:check_circle",
+              },
+            }
+          : null,
       },
       {
         name: `${props.definition.name}.container.summary.alarm`,
@@ -102,6 +134,18 @@ const Benchmark = (props: InnerCheckProps) => {
           value: totalSummary.alarm,
           icon: "materialsymbols-solid:notifications",
         },
+        diff_panel: diffTotalSummary
+          ? {
+              name: `${props.definition.name}.container.summary.alarm.diff`,
+              width: 2,
+              display_type: diffTotalSummary.alarm > 0 ? "alert" : null,
+              properties: {
+                label: "Alarm",
+                value: diffTotalSummary.alarm,
+                icon: "materialsymbols-solid:notifications",
+              },
+            }
+          : null,
       },
       {
         name: `${props.definition.name}.container.summary.error`,
@@ -112,6 +156,18 @@ const Benchmark = (props: InnerCheckProps) => {
           value: totalSummary.error,
           icon: "materialsymbols-solid:error",
         },
+        diff_panel: diffTotalSummary
+          ? {
+              name: `${props.definition.name}.container.summary.error.diff`,
+              width: 2,
+              display_type: diffTotalSummary.error > 0 ? "alert" : null,
+              properties: {
+                label: "Error",
+                value: diffTotalSummary.error,
+                icon: "materialsymbols-solid:error",
+              },
+            }
+          : null,
       },
       {
         name: `${props.definition.name}.container.summary.info`,
@@ -122,6 +178,18 @@ const Benchmark = (props: InnerCheckProps) => {
           value: totalSummary.info,
           icon: "materialsymbols-solid:info",
         },
+        diff_panel: diffTotalSummary
+          ? {
+              name: `${props.definition.name}.container.summary.info.diff`,
+              width: 2,
+              display_type: diffTotalSummary.info > 0 ? "info" : null,
+              properties: {
+                label: "Info",
+                value: diffTotalSummary.info,
+                icon: "materialsymbols-solid:info",
+              },
+            }
+          : null,
       },
       {
         name: `${props.definition.name}.container.summary.skip`,
@@ -131,6 +199,17 @@ const Benchmark = (props: InnerCheckProps) => {
           value: totalSummary.skip,
           icon: "materialsymbols-solid:arrow_circle_right",
         },
+        diff_panel: diffTotalSummary
+          ? {
+              name: `${props.definition.name}.container.summary.skip.diff`,
+              width: 2,
+              properties: {
+                label: "Skipped",
+                value: diffTotalSummary.skip,
+                icon: "materialsymbols-solid:arrow_circle_right",
+              },
+            }
+          : null,
       },
     ];
 
@@ -140,9 +219,20 @@ const Benchmark = (props: InnerCheckProps) => {
     const critical = criticalRaw || 0;
     const high = highRaw || 0;
 
+    // Calc diff vs previous
+    const diff_severity_summary = props.diffGrouping?.severity_summary;
+    let diffCriticalRaw, diffHighRaw, diffCritical, diffHigh;
+    if (diff_severity_summary) {
+      diffCriticalRaw = diff_severity_summary["critical"];
+      diffHighRaw = diff_severity_summary["high"];
+      diffCritical = diffCriticalRaw || 0;
+      diffHigh = diffHighRaw || 0;
+    }
+
     // If we have at least 1 critical or undefined control defined in this run
     if (criticalRaw !== undefined || highRaw !== undefined) {
       const total = critical + high;
+      const diffTotal = diffCritical + diffHigh;
       summary_cards.push({
         name: `${props.definition.name}.container.summary.severity`,
         width: 2,
@@ -152,10 +242,25 @@ const Benchmark = (props: InnerCheckProps) => {
           value: total,
           icon: "materialsymbols-solid:warning",
         },
+        diff_panel: {
+          name: `${props.definition.name}.container.summary.severity.diff`,
+          width: 2,
+          display_type: diffTotal > 0 ? "severity" : "",
+          properties: {
+            label: "Critical / High",
+            value: diffTotal,
+            icon: "materialsymbols-solid:warning",
+          },
+        },
       });
     }
     return summary_cards;
-  }, [props.firstChildSummaries, props.grouping, props.definition.name]);
+  }, [
+    props.firstChildSummaries,
+    props.diffFirstChildSummaries,
+    props.grouping,
+    props.definition.name,
+  ]);
 
   if (!props.grouping) {
     return null;
@@ -269,6 +374,8 @@ const Inner = ({ showControls, withTitle }) => {
     grouping,
     groupingsConfig,
     firstChildSummaries,
+    diffFirstChildSummaries,
+    diffGrouping,
   } = useCheckGrouping();
 
   if (!definition || !benchmark || !grouping) {
@@ -285,6 +392,8 @@ const Inner = ({ showControls, withTitle }) => {
         firstChildSummaries={firstChildSummaries}
         showControls={showControls}
         withTitle={withTitle}
+        diffFirstChildSummaries={diffFirstChildSummaries}
+        diffGrouping={diffGrouping}
       />
     );
     // @ts-ignore
@@ -311,13 +420,14 @@ const Inner = ({ showControls, withTitle }) => {
 };
 
 type BenchmarkProps = PanelDefinition & {
+  diff_panels?: PanelsMap;
   showControls: boolean;
   withTitle: boolean;
 };
 
 const BenchmarkWrapper = (props: BenchmarkProps) => {
   return (
-    <CheckGroupingProvider definition={props}>
+    <CheckGroupingProvider definition={props} diff_panels={props.diff_panels}>
       <Inner showControls={props.showControls} withTitle={props.withTitle} />
     </CheckGroupingProvider>
   );

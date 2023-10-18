@@ -1,16 +1,16 @@
 import { classNames } from "./styles";
 
 const getIconClasses = (type) => {
-  const coloredClasses = "text-3xl text-white opacity-40 print:opacity-100";
+  const coloredClasses = "text-3xl";
   switch (type) {
     case "alert":
-      return classNames(coloredClasses, "print:text-alert");
+      return classNames(coloredClasses, "text-alert");
     case "info":
-      return classNames(coloredClasses, "print:text-info");
+      return classNames(coloredClasses, "text-info");
     case "ok":
-      return classNames(coloredClasses, "print:text-ok");
+      return classNames(coloredClasses, "text-ok");
     case "severity":
-      return classNames(coloredClasses, "print:text-severity");
+      return classNames(coloredClasses, "text-severity");
     default:
       return "text-black-scale-4 text-3xl";
   }
@@ -42,13 +42,13 @@ const getIconForType = (type, icon) => {
 const getTextClasses = (type) => {
   switch (type) {
     case "alert":
-      return "text-alert-inverse print:text-foreground";
+      return "text-alert";
     case "info":
-      return "text-info-inverse print:text-foreground";
+      return "text-info";
     case "ok":
-      return "text-ok-inverse print:text-foreground";
+      return "text-ok";
     case "severity":
-      return "text-white print:text-foreground";
+      return "text-severity";
     default:
       return null;
   }
@@ -57,15 +57,15 @@ const getTextClasses = (type) => {
 const getWrapperClasses = (type) => {
   switch (type) {
     case "alert":
-      return "bg-alert border-alert print:border-2 print:bg-white";
+      return "bg-dashboard-panel border border-alert";
     case "info":
-      return "bg-info border-info print:border-2 print:bg-white";
+      return "bg-dashboard-panel border border-info";
     case "ok":
-      return "bg-ok border-ok print:border-2 print:bg-white";
+      return "bg-dashboard-panel border border-ok ";
     case "severity":
-      return "bg-severity border-severity print:border-2 print:bg-white";
+      return "bg-dashboard-panel border border-severity";
     default:
-      return "bg-dashboard-panel shadow-sm border-gray-400 print:border-2 print:shadow-none print:bg-white";
+      return "bg-dashboard-panel shadow-sm border border-gray-400";
   }
 };
 

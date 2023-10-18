@@ -31,9 +31,10 @@ import {
   useReducer,
 } from "react";
 import { default as BenchmarkType } from "../components/dashboards/check/common/Benchmark";
-import { ElementType, IActions, PanelDefinition } from "../types";
+import { ElementType, IActions, PanelDefinition, PanelsMap } from "../types";
 import { useDashboard } from "./useDashboard";
 import { useDashboardControls } from "../components/dashboards/layout/Dashboard/DashboardControlsProvider";
+import { useSearchParams } from "react-router-dom";
 
 type CheckGroupingActionType = ElementType<typeof checkGroupingActions>;
 
@@ -66,6 +67,8 @@ type ICheckGroupingContext = {
   grouping: CheckNode | null;
   groupingsConfig: CheckDisplayGroup[];
   firstChildSummaries: CheckSummary[];
+  diffFirstChildSummaries?: CheckSummary[];
+  diffGrouping: CheckNode | null;
   nodeStates: CheckGroupNodeStates;
   filterValues: CheckGroupFilterValues;
   dispatch(action: CheckGroupingAction): void;
@@ -484,6 +487,7 @@ const reducer = (state: CheckGroupNodeStates, action) => {
 type CheckGroupingProviderProps = {
   children: null | JSX.Element | JSX.Element[];
   definition: PanelDefinition;
+  diff_panels: PanelsMap | undefined;
 };
 
 function recordFilterValues(
@@ -552,7 +556,7 @@ function recordFilterValues(
   for (const dimension of checkResult.dimensions) {
     filterValues.dimension.key[dimension.key] = filterValues.dimension.key[
       dimension.key
-    ] || { [dimension.value]: 0 };
+      ] || { [dimension.value]: 0 };
     filterValues.dimension.key[dimension.key][dimension.value] += 1;
 
     filterValues.dimension.value[dimension.value] = filterValues.dimension
@@ -671,24 +675,15 @@ const includeResult = (
   return matches.every((m) => m);
 };
 
-const CheckGroupingProvider = ({
-  children,
-  definition,
-}: CheckGroupingProviderProps) => {
-  const { panelsMap } = useDashboard();
-  const { setContext: setDashboardControlsContext } = useDashboardControls();
-  const [nodeStates, dispatch] = useReducer(reducer, { nodes: {} });
-  const groupingsConfig = useCheckGroupingConfig();
+const useGrouping = (
+  definition: PanelDefinition | null,
+  panelsMap: PanelsMap | undefined,
+  groupingsConfig: CheckDisplayGroup[],
+  skip = false,
+) => {
   const checkFilterConfig = useCheckFilterConfig();
 
-  const [
-    benchmark,
-    panelDefinition,
-    grouping,
-    firstChildSummaries,
-    tempNodeStates,
-    filterValues,
-  ] = useMemo(() => {
+  return useMemo(() => {
     const filterValues = {
       benchmark: { value: {} },
       control: { value: {} },
@@ -700,7 +695,7 @@ const CheckGroupingProvider = ({
       tag: { key: {}, value: {} },
     };
 
-    if (!definition) {
+    if (!definition || skip || !panelsMap) {
       return [null, null, null, [], {}, filterValues];
     }
 
@@ -712,9 +707,9 @@ const CheckGroupingProvider = ({
       definition.panel_type === "control"
         ? [definition]
         : // @ts-ignore
-          definition.children?.filter(
-            (child) => child.panel_type === "control",
-          );
+        definition.children?.filter(
+          (child) => child.panel_type === "control",
+        );
 
     const rootBenchmarkPanel = panelsMap[definition.name];
     const b = new BenchmarkType(
@@ -739,6 +734,7 @@ const CheckGroupingProvider = ({
       if (!includeResult(checkResult, checkFilterConfig)) {
         return;
       }
+
       // Build a grouping node - this will be the leaf node down from the root group
       // e.g. benchmark -> control (where control is the leaf)
       const grouping = groupCheckItems(
@@ -772,6 +768,34 @@ const CheckGroupingProvider = ({
       filterValues,
     ] as const;
   }, [checkFilterConfig, definition, groupingsConfig, panelsMap]);
+};
+
+const CheckGroupingProvider = ({
+  children,
+  definition,
+                                 diff_panels,
+}: CheckGroupingProviderProps) => {
+  const { panelsMap } = useDashboard();
+  const { setContext: setDashboardControlsContext } = useDashboardControls();
+  const [nodeStates, dispatch] = useReducer(reducer, { nodes: {} });
+  const [searchParams] = useSearchParams();
+  const groupingsConfig = useCheckGroupingConfig();
+
+  const [
+    benchmark,
+    panelDefinition,
+    grouping,
+    firstChildSummaries,
+    tempNodeStates,
+    filterValues
+  ] = useGrouping(definition, panelsMap, groupingsConfig);
+
+  const [, , diffGrouping, diffFirstChildSummaries] = useGrouping(
+    definition,
+    diff_panels,
+    groupingsConfig,
+    !diff_panels,
+  );
 
   const previousGroupings = usePrevious({ groupingsConfig });
 
@@ -801,6 +825,8 @@ const CheckGroupingProvider = ({
         definition: panelDefinition,
         dispatch,
         firstChildSummaries,
+        diffFirstChildSummaries,
+        diffGrouping,
         grouping,
         groupingsConfig,
         nodeStates,

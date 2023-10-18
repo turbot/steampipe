@@ -107,7 +107,6 @@ const Label = ({ value }) => {
 };
 
 const CardDiffDisplay = ({ diff, type }: CardDiffDisplayProps) => {
-  console.log({ diff, type });
   if (!diff || diff.direction === "none") {
     return null;
   }
@@ -227,9 +226,8 @@ const Card = (props: CardProps) => {
         </div>
         <p
           className={classNames(
-            "text-sm font-medium truncate",
+            "text-sm font-semibold truncate text-foreground",
             state.icon ? "ml-11" : "ml-2",
-            textClasses,
           )}
           title={state.label || undefined}
         >

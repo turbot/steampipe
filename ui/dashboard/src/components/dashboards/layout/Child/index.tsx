@@ -22,6 +22,7 @@ const Child = ({
   showPanelControls = true,
 }: ChildProps) => {
   const { diff } = useDashboard();
+  const diff_panel = diff ? diff.panelsMap[panelDefinition.name] : null;
   const Panel = getComponent("panel");
   switch (layoutDefinition.panel_type) {
     case "benchmark":
@@ -30,6 +31,7 @@ const Child = ({
       return (
         <Benchmark
           {...(layoutDefinition as PanelDefinition)}
+          diff_panels={diff ? diff.panelsMap : null}
           showControls={showPanelControls}
         />
       );
@@ -42,10 +44,7 @@ const Child = ({
           showControls={showPanelControls}
           showPanelStatus={false}
         >
-          <Card
-            {...panelDefinition}
-            diff_panel={diff ? diff.panelsMap[panelDefinition.name] : null}
-          />
+          <Card {...panelDefinition} diff_panel={diff_panel} />
         </Panel>
       );
     case "chart":
