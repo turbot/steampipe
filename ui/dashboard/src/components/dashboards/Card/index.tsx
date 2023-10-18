@@ -14,7 +14,11 @@ import {
   LeafNodeData,
 } from "../common";
 import { classNames } from "../../../utils/styles";
-import { DashboardRunState, PanelProperties } from "../../../types";
+import {
+  DashboardRunState,
+  PanelDataMode,
+  PanelProperties,
+} from "../../../types";
 import { getColumn } from "../../../utils/data";
 import { getComponent, registerComponent } from "../index";
 import {
@@ -36,6 +40,8 @@ export type CardProperties = {
   value?: any;
   icon?: string;
   href?: string;
+  data_mode?: PanelDataMode;
+  diff_data?: LeafNodeData;
 };
 
 export type CardProps = PanelProperties &
@@ -47,6 +53,13 @@ export type CardProps = PanelProperties &
 
 type CardDataFormat = "simple" | "formal";
 
+type CardDiffState = {
+  value?: number;
+  value_percent?: number;
+  direction: "none" | "up" | "down";
+  status?: "ok" | "alert" | "info";
+};
+
 type CardState = {
   loading: boolean;
   label: string | null;
@@ -54,7 +67,12 @@ type CardState = {
   type: CardType;
   icon: string | null;
   href: string | null;
+  diff?: CardDiffState;
 };
+
+interface CardDiffDisplayProps {
+  diff: CardDiffState | undefined;
+}
 
 const getDataFormat = (data: LeafNodeData): CardDataFormat => {
   if (data.columns.length > 1) {
@@ -79,6 +97,37 @@ const getDefaultState = (
     href: properties.href || null,
   };
 };
+
+const getCardDiffState = (
+  data_mode: PanelDataMode | undefined,
+  data: LeafNodeData,
+  diff_data: LeafNodeData | undefined,
+): CardDiffState => {
+  console.log({ data_mode, data, diff_data });
+  if (data_mode !== "diff" || !diff_data) {
+    return {
+      direction: "none",
+    };
+  }
+  // TODO work out actual diff and return it
+  // TODO extract diffing logic into diffing library with tests
+  return {
+    value: 4,
+    value_percent: 400,
+    direction: "up",
+    status: "ok",
+  };
+};
+
+// TODO diffing
+// Need to know we're in diff mode
+// Need data to diff against
+// Need to be able to diff said data against current data
+// Need to try to infer state of the change as best as possible
+// e.g. a card going from alarm 10 to alarm 5 is good, so it's down 100% / green
+//      a card going from alarm 10 to alarm 20 is bad, so it's up 100% / red
+//      a card going from alarm 10 to alarm 10 is neutral, so it's no change
+//      a card going from alarm 10 to ok 10 is good, so it's no change in value, but change in state
 
 const useCardState = ({
   data,
@@ -105,6 +154,11 @@ const useCardState = ({
     }
 
     const dataFormat = getDataFormat(data);
+    const diffState = getCardDiffState(
+      properties?.data_mode,
+      data,
+      properties?.diff_data,
+    );
 
     if (dataFormat === "simple") {
       const firstCol = data.columns[0];
@@ -121,6 +175,7 @@ const useCardState = ({
         type: display_type || null,
         icon: getIconForType(display_type, properties.icon),
         href: properties.href || null,
+        diff: diffState,
       });
     } else {
       const formalLabel = get(data, "rows[0].label", null);
@@ -143,6 +198,7 @@ const useCardState = ({
           formalIcon || properties.icon,
         ),
         href: formalHref || properties.href || null,
+        diff: diffState,
       });
     }
   }, [data, display_type, properties, setCalculatedProperties, status]);
@@ -162,8 +218,45 @@ const Label = ({ value }) => {
   return value;
 };
 
+const CardDiffDisplay = ({ diff }: CardDiffDisplayProps) => {
+  if (!diff) {
+    return null;
+  }
+  console.log(diff);
+  return (
+    <div
+      className={classNames(
+        diff.status === "ok" ? "bg-green-200 text-green-800" : null,
+        diff.status === "alert" ? "bg-red-100 text-red-800" : null,
+        diff.status === "info" ? "bg-blue-100 text-blue-800" : null,
+        "inline-flex rounded-full px-2.5 py-0.5 text-sm font-medium md:mt-2 lg:mt-0",
+      )}
+    >
+      {diff.direction === "up" ? (
+        <DashboardIcon
+          aria-hidden="true"
+          className="-ml-1 mr-0.5 h-5 w-5 flex-shrink-0 self-center text-green-800"
+          icon="arrow_upward"
+        />
+      ) : (
+        <DashboardIcon
+          className="-ml-1 mr-0.5 h-5 w-5 flex-shrink-0 self-center text-red-500"
+          aria-hidden="true"
+          icon="arrow_downward"
+        />
+      )}
+      <span className="sr-only">
+        {" "}
+        {diff.direction === "up" ? "Increased" : "Decreased"} by{" "}
+      </span>
+      <IntegerDisplay num={diff.value_percent || null} />%
+    </div>
+  );
+};
+
 const Card = (props: CardProps) => {
   const ExternalLink = getComponent("external_link");
+  console.log({ props });
   const state = useCardState(props);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [renderedHref, setRenderedHref] = useState<string | null>(
@@ -254,7 +347,7 @@ const Card = (props: CardProps) => {
       </dt>
       <dd
         className={classNames(
-          "flex items-baseline",
+          "flex items-baseline space-x-4",
           state.icon ? "ml-11" : "ml-2",
         )}
         title={state.value || undefined}
@@ -291,6 +384,7 @@ const Card = (props: CardProps) => {
             </>
           )}
         </p>
+        <CardDiffDisplay diff={state.diff} />
       </dd>
     </div>
   );
@@ -308,6 +402,7 @@ const CardWrapper = (props: CardProps) => {
     return <Table {...props} />;
   }
 
+  console.log(props);
   return <Card {...props} />;
 };
 

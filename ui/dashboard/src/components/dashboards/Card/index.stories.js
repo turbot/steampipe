@@ -381,3 +381,75 @@ FormalDataFormatAsTable.args = {
     type: "table",
   },
 };
+
+export const SimpleDiffUp = Template.bind({});
+SimpleDiffUp.args = {
+  data: {
+    columns: [
+      { name: "label", data_type: "TEXT" },
+      { name: "value", data_type: "INT8" },
+      { name: "type", data_type: "TEXT" },
+    ],
+    rows: [
+      {
+        label: "Encrypted EC2 Instances",
+        value: 5,
+        type: "ok",
+      },
+    ],
+  },
+  properties: {
+    type: "table",
+    data_mode: "diff",
+    diff_data: {
+      columns: [
+        { name: "label", data_type: "TEXT" },
+        { name: "value", data_type: "INT8" },
+        { name: "type", data_type: "TEXT" },
+      ],
+      rows: [
+        {
+          label: "Encrypted EC2 Instances",
+          value: 1,
+          type: "ok",
+        },
+      ],
+    },
+  },
+};
+
+export const SimpleDiffDown = Template.bind({});
+SimpleDiffDown.args = {
+  data: {
+    columns: [
+      { name: "label", data_type: "TEXT" },
+      { name: "value", data_type: "INT8" },
+      { name: "type", data_type: "TEXT" },
+    ],
+    rows: [
+      {
+        label: "Encrypted EC2 Instances",
+        value: 1,
+        type: "ok",
+      },
+    ],
+  },
+  properties: {
+    type: "table",
+    data_mode: "diff",
+    diff_data: {
+      columns: [
+        { name: "label", data_type: "TEXT" },
+        { name: "value", data_type: "INT8" },
+        { name: "type", data_type: "TEXT" },
+      ],
+      rows: [
+        {
+          label: "Encrypted EC2 Instances",
+          value: 5,
+          type: "ok",
+        },
+      ],
+    },
+  },
+};

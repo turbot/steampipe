@@ -70,6 +70,8 @@ export const DashboardDataModeCloudSnapshot = "cloud_snapshot";
 
 export type DashboardDataMode = "live" | "cli_snapshot" | "cloud_snapshot";
 
+export type PanelDataMode = "diff";
+
 export type SocketURLFactory = () => Promise<string>;
 
 export type IActions = {
