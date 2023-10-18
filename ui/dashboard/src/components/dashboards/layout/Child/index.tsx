@@ -56,10 +56,7 @@ const Child = ({
           parentType={parentType}
           showControls={showPanelControls}
         >
-          <Chart
-            {...panelDefinition}
-            diff_panel={diff ? diff.panelsMap[panelDefinition.name] : null}
-          />
+          <Chart {...panelDefinition} />
         </Panel>
       );
     case "container":
