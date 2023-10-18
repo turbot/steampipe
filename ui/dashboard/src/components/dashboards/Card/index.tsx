@@ -114,7 +114,7 @@ const CardDiffDisplay = ({ diff, type }: CardDiffDisplayProps) => {
   return (
     <div
       className={classNames(
-        "inline-flex rounded-lg px-2 py-0.5 text-sm font-medium md:mt-2 lg:mt-0",
+        "inline-flex rounded-lg px-2 py-0.5 text-sm font-medium md:mt-2 lg:mt-0 space-x-1",
         type === "ok" ? "bg-green-200 text-green-800" : null,
         type === "alert" ? "bg-red-100 text-red-800" : null,
         type === "info" ? "bg-blue-100 text-blue-800" : null,
@@ -126,7 +126,7 @@ const CardDiffDisplay = ({ diff, type }: CardDiffDisplayProps) => {
       <DashboardIcon
         aria-hidden="true"
         className={classNames(
-          "-ml-1 mr-0.5 h-5 w-5 flex-shrink-0 self-center",
+          "h-5 w-5 self-center",
           type === "ok" ? "text-green-800" : null,
           type === "alert" ? "text-red-500" : null,
           type === "info" ? "text-blue-800" : null,
@@ -146,7 +146,7 @@ const CardDiffDisplay = ({ diff, type }: CardDiffDisplayProps) => {
       {(diff.direction === "up" || diff.direction === "down") && (
         <>
           {/*@ts-ignore*/}
-          <IntegerDisplay num={diff.value_percent || null} />%
+          <IntegerDisplay num={diff.value || null} />
         </>
       )}
     </div>
