@@ -1,5 +1,4 @@
 import DashboardIcon from "../common/DashboardIcon";
-import get from "lodash/get";
 import has from "lodash/has";
 import IntegerDisplay from "../../IntegerDisplay";
 import isNumber from "lodash/isNumber";
@@ -7,42 +6,33 @@ import isObject from "lodash/isObject";
 import LoadingIndicator from "../LoadingIndicator";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import useTemplateRender from "../../../hooks/useTemplateRender";
+import { BasePrimitiveProps, ExecutablePrimitiveProps } from "../common";
 import {
-  BasePrimitiveProps,
-  ExecutablePrimitiveProps,
-  isNumericCol,
-  LeafNodeData,
-} from "../common";
+  CardDataProcessor,
+  CardDiffState,
+  CardType,
+} from "../data/CardDataProcessor";
 import { classNames } from "../../../utils/styles";
-import {
-  DashboardRunState,
-  PanelDataMode,
-  PanelProperties,
-} from "../../../types";
-import { getColumn } from "../../../utils/data";
+import { PanelProperties } from "../../../types";
 import { getComponent, registerComponent } from "../index";
 import {
   getIconClasses,
-  getIconForType,
   getTextClasses,
   getWrapperClasses,
 } from "../../../utils/card";
+import { IDiffProperties } from "../data/types";
 import { ThemeNames } from "../../../hooks/useTheme";
 import { useDashboard } from "../../../hooks/useDashboard";
 import { useEffect, useState } from "react";
 
 const Table = getComponent("table");
 
-export type CardType = "alert" | "info" | "ok" | "table" | null;
-
-export type CardProperties = {
+export interface CardProperties extends IDiffProperties {
   label?: string;
   value?: any;
   icon?: string;
   href?: string;
-  data_mode?: PanelDataMode;
-  diff_data?: LeafNodeData;
-};
+}
 
 export type CardProps = PanelProperties &
   Omit<BasePrimitiveProps, "display_type"> &
@@ -50,15 +40,6 @@ export type CardProps = PanelProperties &
     display_type?: CardType;
     properties: CardProperties;
   };
-
-type CardDataFormat = "simple" | "formal";
-
-type CardDiffState = {
-  value?: number;
-  value_percent?: number;
-  direction: "none" | "up" | "down";
-  status?: "ok" | "alert" | "info";
-};
 
 type CardState = {
   loading: boolean;
@@ -72,52 +53,8 @@ type CardState = {
 
 interface CardDiffDisplayProps {
   diff: CardDiffState | undefined;
+  type: CardType;
 }
-
-const getDataFormat = (data: LeafNodeData): CardDataFormat => {
-  if (data.columns.length > 1) {
-    return "formal";
-  }
-  return "simple";
-};
-
-const getDefaultState = (
-  status: DashboardRunState,
-  properties: CardProperties,
-  display_type: CardType | undefined,
-) => {
-  return {
-    loading: status === "running",
-    label: properties.label || null,
-    value: isNumber(properties.value)
-      ? properties.value
-      : properties.value || null,
-    type: display_type || null,
-    icon: getIconForType(display_type, properties.icon),
-    href: properties.href || null,
-  };
-};
-
-const getCardDiffState = (
-  data_mode: PanelDataMode | undefined,
-  data: LeafNodeData,
-  diff_data: LeafNodeData | undefined,
-): CardDiffState => {
-  console.log({ data_mode, data, diff_data });
-  if (data_mode !== "diff" || !diff_data) {
-    return {
-      direction: "none",
-    };
-  }
-  // TODO work out actual diff and return it
-  // TODO extract diffing logic into diffing library with tests
-  return {
-    value: 4,
-    value_percent: 400,
-    direction: "up",
-    status: "ok",
-  };
-};
 
 // TODO diffing
 // Need to know we're in diff mode
@@ -136,71 +73,19 @@ const useCardState = ({
   status,
 }: CardProps) => {
   const [calculatedProperties, setCalculatedProperties] = useState<CardState>(
-    getDefaultState(status, properties, display_type),
+    new CardDataProcessor().getDefaultState(
+      status,
+      properties,
+      display_type,
+      null,
+    ),
   );
 
   useEffect(() => {
-    if (
-      !data ||
-      !data.columns ||
-      !data.rows ||
-      data.columns.length === 0 ||
-      data.rows.length === 0
-    ) {
-      setCalculatedProperties(
-        getDefaultState(status, properties, display_type),
-      );
-      return;
-    }
-
-    const dataFormat = getDataFormat(data);
-    const diffState = getCardDiffState(
-      properties?.data_mode,
-      data,
-      properties?.diff_data,
+    const diff = new CardDataProcessor();
+    setCalculatedProperties(
+      diff.buildCardState(data, display_type, properties, status),
     );
-
-    if (dataFormat === "simple") {
-      const firstCol = data.columns[0];
-      const isNumericValue = isNumericCol(firstCol.data_type);
-      const row = data.rows[0];
-      const value = row[firstCol.name];
-      setCalculatedProperties({
-        loading: false,
-        label: firstCol.name,
-        value:
-          value !== null && value !== undefined && isNumericValue
-            ? value.toLocaleString()
-            : value,
-        type: display_type || null,
-        icon: getIconForType(display_type, properties.icon),
-        href: properties.href || null,
-        diff: diffState,
-      });
-    } else {
-      const formalLabel = get(data, "rows[0].label", null);
-      const formalValue = get(data, `rows[0].value`, null);
-      const formalType = get(data, `rows[0].type`, null);
-      const formalIcon = get(data, `rows[0].icon`, null);
-      const formalHref = get(data, `rows[0].href`, null);
-      const valueCol = getColumn(data.columns, "value");
-      const isNumericValue = !!valueCol && isNumericCol(valueCol.data_type);
-      setCalculatedProperties({
-        loading: false,
-        label: formalLabel,
-        value:
-          formalValue !== null && formalValue !== undefined && isNumericValue
-            ? formalValue.toLocaleString()
-            : formalValue,
-        type: formalType || display_type || null,
-        icon: getIconForType(
-          formalType || display_type,
-          formalIcon || properties.icon,
-        ),
-        href: formalHref || properties.href || null,
-        diff: diffState,
-      });
-    }
   }, [data, display_type, properties, setCalculatedProperties, status]);
 
   return calculatedProperties;
@@ -218,45 +103,52 @@ const Label = ({ value }) => {
   return value;
 };
 
-const CardDiffDisplay = ({ diff }: CardDiffDisplayProps) => {
+const CardDiffDisplay = ({ diff, type }: CardDiffDisplayProps) => {
   if (!diff) {
     return null;
   }
-  console.log(diff);
   return (
     <div
       className={classNames(
-        diff.status === "ok" ? "bg-green-200 text-green-800" : null,
-        diff.status === "alert" ? "bg-red-100 text-red-800" : null,
-        diff.status === "info" ? "bg-blue-100 text-blue-800" : null,
-        "inline-flex rounded-full px-2.5 py-0.5 text-sm font-medium md:mt-2 lg:mt-0",
+        type === "ok" ? "bg-green-200 text-green-800" : null,
+        type === "alert" ? "bg-red-100 text-red-800" : null,
+        type === "info" ? "bg-blue-100 text-blue-800" : null,
+        "inline-flex rounded-lg px-2 py-0.5 text-sm font-medium md:mt-2 lg:mt-0",
       )}
     >
-      {diff.direction === "up" ? (
-        <DashboardIcon
-          aria-hidden="true"
-          className="-ml-1 mr-0.5 h-5 w-5 flex-shrink-0 self-center text-green-800"
-          icon="arrow_upward"
-        />
-      ) : (
-        <DashboardIcon
-          className="-ml-1 mr-0.5 h-5 w-5 flex-shrink-0 self-center text-red-500"
-          aria-hidden="true"
-          icon="arrow_downward"
-        />
-      )}
+      <DashboardIcon
+        aria-hidden="true"
+        className={classNames(
+          "-ml-1 mr-0.5 h-5 w-5 flex-shrink-0 self-center",
+          type === "ok" ? "text-green-800" : null,
+          type === "alert" ? "text-red-500" : null,
+          type === "info" ? "text-blue-800" : null,
+        )}
+        icon={
+          diff.direction === "up"
+            ? "arrow_upward"
+            : diff.direction === "down"
+            ? "arrow_downward"
+            : "horizontal_rule"
+        }
+      />
       <span className="sr-only">
         {" "}
         {diff.direction === "up" ? "Increased" : "Decreased"} by{" "}
       </span>
-      <IntegerDisplay num={diff.value_percent || null} />%
+      {(diff.direction === "up" || diff.direction === "down") && (
+        <>
+          {/*@ts-ignore*/}
+          <IntegerDisplay num={diff.value_percent || null} />%
+        </>
+      )}
+      {diff.direction === "none" && <>No change</>}
     </div>
   );
 };
 
 const Card = (props: CardProps) => {
   const ExternalLink = getComponent("external_link");
-  console.log({ props });
   const state = useCardState(props);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [renderedHref, setRenderedHref] = useState<string | null>(
@@ -384,7 +276,7 @@ const Card = (props: CardProps) => {
             </>
           )}
         </p>
-        <CardDiffDisplay diff={state.diff} />
+        <CardDiffDisplay diff={state.diff} type={state.type} />
       </dd>
     </div>
   );
@@ -402,7 +294,6 @@ const CardWrapper = (props: CardProps) => {
     return <Table {...props} />;
   }
 
-  console.log(props);
   return <Card {...props} />;
 };
 
