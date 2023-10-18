@@ -15,6 +15,7 @@ export interface CardDiffState extends IPanelDiff {
   value?: number;
   value_percent?: "infinity" | number;
   direction: "none" | "up" | "down";
+  status?: "ok" | "alert" | "severity" | null;
 }
 
 export interface CardState {
@@ -30,7 +31,7 @@ export interface CardState {
 
 export type CardDataFormat = "simple" | "formal";
 
-export type CardType = "alert" | "info" | "ok" | "table" | null;
+export type CardType = "alert" | "info" | "ok" | "severity" | "table" | null;
 
 export class CardDataProcessor {
   constructor() {}
@@ -39,8 +40,7 @@ export class CardDataProcessor {
     status: DashboardRunState,
     properties: CardProperties,
     display_type: CardType | undefined,
-    diff_state: CardDiffState | null,
-  ) => {
+  ): CardState => {
     return {
       loading: status === "running",
       label: properties.label || null,
@@ -51,7 +51,6 @@ export class CardDataProcessor {
       type: display_type || null,
       icon: getIconForType(display_type, properties.icon),
       href: properties.href || null,
-      diff_state: diff_state,
     };
   };
 
@@ -63,19 +62,27 @@ export class CardDataProcessor {
     status: DashboardRunState,
   ): CardState {
     if (!data || !hasData(data)) {
-      return this.getDefaultState(status, properties, display_type, null);
+      const state = this.getDefaultState(status, properties, display_type);
+      if (!!diff_panel && !!diff_panel.properties) {
+        const diffState = this.getDefaultState(
+          status,
+          diff_panel.properties,
+          display_type,
+        );
+        state.diff = this.diff(properties, state, diffState) as CardDiffState;
+      }
+      return state;
     }
 
     const state = this.parseData(data, display_type, properties);
 
     if (!!diff_panel && !!diff_panel.data) {
-      const previousState = this.parseData(
+      const diffState = this.parseData(
         diff_panel.data,
         display_type,
         properties,
       );
-      console.log({ state, properties, diff_panel, previousState });
-      state.diff = this.diff(properties, state, previousState) as CardDiffState;
+      state.diff = this.diff(properties, state, diffState) as CardDiffState;
     }
 
     return state;
@@ -154,10 +161,27 @@ export class CardDataProcessor {
 
     let value: number;
     let value_percent: "infinity" | number;
+    let status: "ok" | "alert" | "severity" | null = null;
     if (direction === "up") {
       value = state.value_number - previous_state.value_number;
+      status =
+        state.type === "alert"
+          ? "alert"
+          : state.type === "ok"
+          ? "ok"
+          : state.type === "severity"
+          ? "severity"
+          : null;
     } else if (direction === "down") {
       value = previous_state.value_number - state.value_number;
+      status =
+        state.type === "alert"
+          ? "ok"
+          : state.type === "ok"
+          ? "alert"
+          : state.type === "severity"
+          ? "ok"
+          : null;
     } else {
       value = 0;
     }
@@ -174,6 +198,7 @@ export class CardDataProcessor {
       value,
       value_percent,
       direction,
+      status,
     };
   }
 

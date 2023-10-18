@@ -12,6 +12,7 @@ import {
   CheckNode,
   CheckSummary,
 } from "../common";
+import { CardType } from "../../data/CardDataProcessor";
 import {
   CheckGroupingProvider,
   useCheckGrouping,
@@ -45,7 +46,6 @@ type InnerCheckProps = {
 };
 
 const Benchmark = (props: InnerCheckProps) => {
-  console.log(props);
   const { dashboard, diff } = useDashboard();
   const benchmarkDataTable = useMemo(() => {
     if (
@@ -87,8 +87,11 @@ const Benchmark = (props: InnerCheckProps) => {
       { error: 0, alarm: 0, ok: 0, info: 0, skip: 0 },
     );
 
-    let diffTotalSummary;
-    if (!!props.diffFirstChildSummaries) {
+    let diffTotalSummary: CheckSummary | null = null;
+    if (
+      props.diffFirstChildSummaries &&
+      props.diffFirstChildSummaries?.length > 0
+    ) {
       diffTotalSummary = props.diffFirstChildSummaries.reduce(
         (cumulative, current) => {
           cumulative.error += current.error;
@@ -112,7 +115,7 @@ const Benchmark = (props: InnerCheckProps) => {
           value: totalSummary.ok,
           icon: "materialsymbols-solid:check_circle",
         },
-        diff_panel: diffTotalSummary
+        diff_panel: !!diffTotalSummary
           ? {
               name: `${props.definition.name}.container.summary.ok.diff`,
               width: 2,
@@ -134,7 +137,7 @@ const Benchmark = (props: InnerCheckProps) => {
           value: totalSummary.alarm,
           icon: "materialsymbols-solid:notifications",
         },
-        diff_panel: diffTotalSummary
+        diff_panel: !!diffTotalSummary
           ? {
               name: `${props.definition.name}.container.summary.alarm.diff`,
               width: 2,
@@ -156,7 +159,7 @@ const Benchmark = (props: InnerCheckProps) => {
           value: totalSummary.error,
           icon: "materialsymbols-solid:error",
         },
-        diff_panel: diffTotalSummary
+        diff_panel: !!diffTotalSummary
           ? {
               name: `${props.definition.name}.container.summary.error.diff`,
               width: 2,
@@ -178,7 +181,7 @@ const Benchmark = (props: InnerCheckProps) => {
           value: totalSummary.info,
           icon: "materialsymbols-solid:info",
         },
-        diff_panel: diffTotalSummary
+        diff_panel: !!diffTotalSummary
           ? {
               name: `${props.definition.name}.container.summary.info.diff`,
               width: 2,
@@ -199,7 +202,7 @@ const Benchmark = (props: InnerCheckProps) => {
           value: totalSummary.skip,
           icon: "materialsymbols-solid:arrow_circle_right",
         },
-        diff_panel: diffTotalSummary
+        diff_panel: !!diffTotalSummary
           ? {
               name: `${props.definition.name}.container.summary.skip.diff`,
               width: 2,
@@ -242,16 +245,18 @@ const Benchmark = (props: InnerCheckProps) => {
           value: total,
           icon: "materialsymbols-solid:warning",
         },
-        diff_panel: {
-          name: `${props.definition.name}.container.summary.severity.diff`,
-          width: 2,
-          display_type: diffTotal > 0 ? "severity" : "",
-          properties: {
-            label: "Critical / High",
-            value: diffTotal,
-            icon: "materialsymbols-solid:warning",
-          },
-        },
+        diff_panel: diff_severity_summary
+          ? {
+              name: `${props.definition.name}.container.summary.severity.diff`,
+              width: 2,
+              display_type: diffTotal > 0 ? "severity" : "",
+              properties: {
+                label: "Critical / High",
+                value: diffTotal,
+                icon: "materialsymbols-solid:warning",
+              },
+            }
+          : null,
       });
     }
     return summary_cards;
@@ -259,6 +264,7 @@ const Benchmark = (props: InnerCheckProps) => {
     props.firstChildSummaries,
     props.diffFirstChildSummaries,
     props.grouping,
+    props.diffGrouping,
     props.definition.name,
   ]);
 
@@ -267,64 +273,62 @@ const Benchmark = (props: InnerCheckProps) => {
   }
 
   return (
-    <>
-      <Grid
-        name={props.definition.name}
-        width={props.definition.width}
-        events={{
-          onMouseEnter: props.showControls
-            ? () => setShowBenchmarkControls(true)
-            : noop,
-          onMouseLeave: () => setShowBenchmarkControls(false),
-        }}
-        setRef={setReferenceElement}
-      >
-        {!dashboard?.artificial && (
-          <ContainerTitle title={props.benchmark.title} />
-        )}
-        {showBenchmarkControls && (
-          <PanelControls
-            referenceElement={referenceElement}
-            controls={benchmarkControls}
-          />
-        )}
-        <Grid name={`${props.definition.name}.container.summary`}>
-          {summaryCards.map((summaryCard) => {
-            const cardProps: CardProps = {
-              name: summaryCard.name,
-              dashboard: props.definition.dashboard,
-              display_type: summaryCard.display_type as CardType,
-              panel_type: "card",
-              properties: summaryCard.properties,
-              status: "complete",
-              width: summaryCard.width as Width,
-            };
-            return (
-              <Panel
-                key={summaryCard.name}
-                definition={cardProps}
-                parentType="benchmark"
-                showControls={false}
-              >
-                <Card {...cardProps} />
-              </Panel>
-            );
-          })}
-        </Grid>
-        <Grid name={`${props.definition.name}.container.tree`}>
-          <BenchmarkTree
-            name={`${props.definition.name}.container.tree.results`}
-            dashboard={props.definition.dashboard}
-            panel_type="benchmark_tree"
-            properties={{
-              grouping: props.grouping,
-              first_child_summaries: props.firstChildSummaries,
-            }}
-            status="complete"
-          />
-        </Grid>
+    <Grid
+      name={props.definition.name}
+      width={props.definition.width}
+      events={{
+        onMouseEnter: props.showControls
+          ? () => setShowBenchmarkControls(true)
+          : noop,
+        onMouseLeave: () => setShowBenchmarkControls(false),
+      }}
+      setRef={setReferenceElement}
+    >
+      {!dashboard?.artificial && (
+        <ContainerTitle title={props.benchmark.title} />
+      )}
+      {showBenchmarkControls && (
+        <PanelControls
+          referenceElement={referenceElement}
+          controls={benchmarkControls}
+        />
+      )}
+      <Grid name={`${props.definition.name}.container.summary`}>
+        {summaryCards.map((summaryCard) => {
+          const cardProps: CardProps = {
+            name: summaryCard.name,
+            dashboard: props.definition.dashboard,
+            display_type: summaryCard.display_type as CardType,
+            panel_type: "card",
+            properties: summaryCard.properties,
+            status: "complete",
+            width: summaryCard.width as Width,
+          };
+          return (
+            <Panel
+              key={summaryCard.name}
+              definition={cardProps}
+              parentType="benchmark"
+              showControls={false}
+            >
+              <Card {...cardProps} diff_panel={summaryCard.diff_panel} />
+            </Panel>
+          );
+        })}
       </Grid>
-    </>
+      <Grid name={`${props.definition.name}.container.tree`}>
+        <BenchmarkTree
+          name={`${props.definition.name}.container.tree.results`}
+          dashboard={props.definition.dashboard}
+          panel_type="benchmark_tree"
+          properties={{
+            grouping: props.grouping,
+            first_child_summaries: props.firstChildSummaries,
+          }}
+          status="complete"
+        />
+      </Grid>
+    </Grid>
   );
 };
 

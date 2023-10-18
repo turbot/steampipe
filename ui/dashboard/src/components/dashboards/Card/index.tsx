@@ -76,12 +76,7 @@ const useCardState = ({
   status,
 }: CardProps) => {
   const [calculatedProperties, setCalculatedProperties] = useState<CardState>(
-    new CardDataProcessor().getDefaultState(
-      status,
-      properties,
-      display_type,
-      null,
-    ),
+    new CardDataProcessor().getDefaultState(status, properties, display_type),
   );
 
   useEffect(() => {
@@ -113,31 +108,15 @@ const CardDiffDisplay = ({ diff, type }: CardDiffDisplayProps) => {
   return (
     <div
       className={classNames(
-        "inline-flex rounded-lg px-2 py-0.5 text-sm font-medium md:mt-2 lg:mt-0 space-x-1",
-        type === "ok" ? "bg-green-200 text-green-800" : null,
-        type === "alert" ? "bg-red-100 text-red-800" : null,
-        type === "info" ? "bg-blue-100 text-blue-800" : null,
-        type !== "ok" && type !== "alert" && type !== "info"
-          ? "bg-black-scale-1"
-          : null,
+        "inline-flex rounded-lg px-2 font-medium md:mt-2 lg:mt-0 space-x-1 text-lg",
+        diff.status === "ok" ? "text-ok" : null,
+        diff.status === "alert" ? "text-alert" : null,
+        diff.status === "alert" ? "text-severity" : null,
       )}
     >
-      <DashboardIcon
-        aria-hidden="true"
-        className={classNames(
-          "h-5 w-5 self-center",
-          type === "ok" ? "text-green-800" : null,
-          type === "alert" ? "text-red-500" : null,
-          type === "info" ? "text-blue-800" : null,
-        )}
-        icon={
-          diff.direction === "up"
-            ? "arrow_upward"
-            : diff.direction === "down"
-            ? "arrow_downward"
-            : null
-        }
-      />
+      <span aria-hidden="true" className={classNames("self-end")}>
+        {diff.direction === "up" ? "↑" : diff.direction === "down" ? "↓" : null}
+      </span>
       <span className="sr-only">
         {" "}
         {diff.direction === "up" ? "Increased" : "Decreased"} by{" "}
