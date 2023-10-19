@@ -4,7 +4,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/go-kit/hcl_helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/modconfig"
 )
 
 // AddReferences populates the 'References' resource field, used for the introspection tables

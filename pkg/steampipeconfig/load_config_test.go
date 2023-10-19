@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/options"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
 
 // TODO KAI add plugin block tests
@@ -48,7 +48,7 @@ var workspaceSearchPathPrefix = "foobar"
 var testCasesLoadConfig = map[string]loadConfigTest{
 	"multiple_connections": {
 		steampipeDir: "testdata/connection_config/multiple_connections",
-		expected: &SteampipeConfig{
+		expected: &steampipe_config_local{
 			Connections: map[string]*modconfig.Connection{
 				"aws_dmi_001": {
 					Name:           "aws_dmi_001",
@@ -361,7 +361,7 @@ func TestLoadConfig(t *testing.T) {
 		filepaths.SteampipeDir = steampipeDir
 
 		// now load config
-		config, errorsAndWarnings := loadSteampipeConfig(workspaceDir, "")
+		config, errorsAndWarnings := steampipe_config_local.loadSteampipeConfig(workspaceDir, "")
 		if errorsAndWarnings.GetError() != nil {
 			if test.expected != "ERROR" {
 				t.Errorf("Test: '%s'' FAILED with unexpected error: %v", name, errorsAndWarnings.GetError())
@@ -374,7 +374,7 @@ func TestLoadConfig(t *testing.T) {
 			continue
 		}
 
-		expectedConfig := test.expected.(*SteampipeConfig)
+		expectedConfig := test.expected.(*steampipe_config_local)
 		for _, c := range expectedConfig.Connections {
 			c.DeclRange.Filename = strings.Replace(c.DeclRange.Filename, "$$test_pwd$$", pwd, 1)
 		}
@@ -385,7 +385,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 // helpers
-func SteampipeConfigEquals(left, right *SteampipeConfig) bool {
+func SteampipeConfigEquals(left, right *steampipe_config_local) bool {
 	if left == nil || right == nil {
 		return left == nil && right == nil
 	}

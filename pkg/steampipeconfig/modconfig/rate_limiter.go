@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
 )
 
 const (

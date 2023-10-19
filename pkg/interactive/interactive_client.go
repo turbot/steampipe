@@ -19,6 +19,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -29,8 +31,6 @@ import (
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/queryhistory"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
@@ -556,7 +556,7 @@ func (c *InteractiveClient) getConnectionState(ctx context.Context) (steampipeco
 		return nil, err
 	}
 	defer conn.Release()
-	return steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
+	return steampipe_config_local.LoadConnectionState(ctx, conn.Conn(), steampipe_config_local.WithWaitUntilLoading())
 }
 
 func (c *InteractiveClient) restartInteractiveSession() {

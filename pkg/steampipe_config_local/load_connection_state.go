@@ -1,8 +1,9 @@
-package steampipeconfig
+package steampipe_config_local
 
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"os"
 	"regexp"
@@ -187,7 +188,7 @@ func GetLoadingConnectionStatusMessage(connectionStateMap ConnectionStateMap, re
 	return loadedMessage
 }
 
-func SaveConnectionStateFile(res *RefreshConnectionResult, connectionUpdates *ConnectionUpdates) {
+func SaveConnectionStateFile(res *steampipeconfig.RefreshConnectionResult, connectionUpdates *ConnectionUpdates) {
 	// now serialise the connection state
 	connectionState := make(ConnectionStateMap, len(connectionUpdates.FinalConnectionState))
 	for k, v := range connectionUpdates.FinalConnectionState {

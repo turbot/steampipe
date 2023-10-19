@@ -1,4 +1,4 @@
-package steampipeconfig
+package steampipe_config_local
 
 type connectionUpdatesConfig struct {
 	ForceUpdateConnectionNames []string

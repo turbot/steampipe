@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	versionfile "github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/constants"
-	versionfile "github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 )
 
 // InstallDB :: Install Postgres files fom OCI image

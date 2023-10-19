@@ -2,7 +2,7 @@ package dashboardtypes
 
 import (
 	"context"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/modconfig"
 )
 
 // DashboardTreeRun is an interface implemented by all dashboard run nodes

@@ -5,8 +5,8 @@ import (
 	"log"
 	"strings"
 
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 type GroupRenderer struct {

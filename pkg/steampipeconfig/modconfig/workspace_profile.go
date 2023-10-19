@@ -8,8 +8,8 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/cobra"
+	"github.com/turbot/pipe-fittings/options"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/zclconf/go-cty/cty"
 )
 

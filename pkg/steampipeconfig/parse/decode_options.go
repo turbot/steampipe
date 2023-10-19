@@ -5,7 +5,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/turbot/go-kit/hcl_helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
+	"github.com/turbot/pipe-fittings/options"
 )
 
 // DecodeOptions decodes an options block

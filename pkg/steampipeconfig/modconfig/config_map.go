@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
+	"github.com/turbot/pipe-fittings/options"
 )
 
 type ConfigMap map[string]interface{}

@@ -4,7 +4,7 @@ import (
 	"sort"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/xlab/treeprint"
 	"golang.org/x/exp/maps"
 )

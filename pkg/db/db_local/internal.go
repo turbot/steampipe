@@ -7,12 +7,12 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/introspection"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -208,7 +208,7 @@ func validateFunction(f db_common.SQLFunction) error {
 */
 func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 	// load the state (if the table is there)
-	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn)
+	connectionStateMap, err := steampipe_config_local.LoadConnectionState(ctx, conn)
 	if err != nil {
 		// ignore relation not found error
 		if !db_common.IsRelationNotFoundError(err) {
@@ -238,7 +238,7 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 	// for any connection in the connection config but NOT in the connection state table,
 	// add an entry with `pending_incomplete` state this is to work around the race condition where
 	// we wait for connection state before RefreshConnections has added any new connections into the state table
-	for connection, connectionConfig := range steampipeconfig.GlobalConfig.Connections {
+	for connection, connectionConfig := range steampipe_config_local.GlobalConfig.Connections {
 		if _, ok := connectionStateMap[connection]; !ok {
 			queries = append(queries, introspection.GetNewConnectionStateFromConnectionInsertSql(connectionConfig)...)
 		}
@@ -248,7 +248,7 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 }
 
 func PopulatePluginTable(ctx context.Context, conn *pgx.Conn) error {
-	plugins := steampipeconfig.GlobalConfig.PluginsInstances
+	plugins := steampipe_config_local.GlobalConfig.PluginsInstances
 
 	// drop the table and recreate
 	queries := []db_common.QueryWithArgs{

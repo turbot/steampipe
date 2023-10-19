@@ -2,7 +2,7 @@ package parse
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
 )
 

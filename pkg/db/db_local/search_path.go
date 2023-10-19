@@ -9,10 +9,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
@@ -81,7 +80,7 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 func getDefaultSearchPath() []string {
 	// add all connections to the seatrch path (UNLESS ImportSchema is disabled)
 	var searchPath []string
-	for connectionName, connection := range steampipeconfig.GlobalConfig.Connections {
+	for connectionName, connection := range steampipe_config_local.GlobalConfig.Connections {
 		if connection.ImportSchema == modconfig.ImportSchemaEnabled {
 			searchPath = append(searchPath, connectionName)
 		}

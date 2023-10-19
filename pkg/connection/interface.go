@@ -3,9 +3,9 @@ package connection
 import (
 	"context"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 type pluginManager interface {

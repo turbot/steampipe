@@ -1,8 +1,8 @@
 package dashboardexecute
 
 import (
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 type RuntimeDependencyPublisher interface {

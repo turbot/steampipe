@@ -2,9 +2,9 @@ package dashboardserver
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"gopkg.in/olahol/melody.v1"
 	"time"
 )

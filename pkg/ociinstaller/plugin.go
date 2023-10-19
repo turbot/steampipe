@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
+	versionfile "github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	versionfile "github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 

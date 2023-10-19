@@ -2,6 +2,8 @@ package connection
 
 import (
 	"context"
+	"log"
+
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/filewatcher"
@@ -9,8 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"log"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 )
 
 type ConnectionWatcher struct {
@@ -62,7 +63,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	ctx := context.Background()
 
 	log.Printf("[INFO] ConnectionWatcher handleFileWatcherEvent")
-	config, errorsAndWarnings := steampipeconfig.LoadConnectionConfig()
+	config, errorsAndWarnings := steampipe_config_local.LoadConnectionConfig()
 	// send notification if there were any errors or warnings
 	if !errorsAndWarnings.Empty() {
 		w.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, errorsAndWarnings)
@@ -79,7 +80,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	// as these are both used by RefreshConnectionAndSearchPathsWithLocalClient
 
 	// set the global steampipe config
-	steampipeconfig.GlobalConfig = config
+	steampipe_config_local.GlobalConfig = config
 
 	// call on changed callback - we must call this BEFORE calling refresh connections
 	// convert config to format expected by plugin manager
@@ -98,7 +99,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	// Workspace Profile does not have any setting which can alter
 	// behavior in service mode (namely search path). Therefore, it is safe
 	// to use the GlobalConfig here and ignore Workspace Profile in general
-	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
+	cmdconfig.SetDefaultsFromConfig(steampipe_config_local.GlobalConfig.ConfigMap())
 
 	log.Printf("[INFO] calling RefreshConnections asyncronously")
 

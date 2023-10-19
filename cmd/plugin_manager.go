@@ -21,7 +21,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
 func pluginManagerCmd() *cobra.Command {
@@ -77,7 +76,7 @@ func createPluginManager(cmd *cobra.Command) (*pluginmanager_service.PluginManag
 
 	log.Printf("[INFO] starting plugin manager")
 	// build config map
-	steampipeConfig, errorsAndWarnings := steampipeconfig.LoadConnectionConfig()
+	steampipeConfig, errorsAndWarnings := steampipe_config_local.LoadConnectionConfig()
 	if errorsAndWarnings.GetError() != nil {
 		log.Printf("[WARN] failed to load connection config: %v", errorsAndWarnings.GetError())
 		return nil, errorsAndWarnings.Error

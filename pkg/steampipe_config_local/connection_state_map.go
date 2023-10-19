@@ -1,4 +1,4 @@
-package steampipeconfig
+package steampipe_config_local
 
 import (
 	"encoding/json"
@@ -7,10 +7,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/turbot/pipe-fittings/modconfig"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 )
@@ -248,7 +248,7 @@ func (m ConnectionStateMap) SetConnectionsToPendingOrIncomplete() {
 // this is required as these fields were added to the table after release
 func (m ConnectionStateMap) PopulateFilename() {
 	// get the connection from config
-	connections := GlobalConfig.Connections
+	connections := steampipe_config_local.GlobalConfig.Connections
 	for name, state := range m {
 		// do we have config for this connection (
 		if connection := connections[name]; connection != nil {

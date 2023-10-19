@@ -1,7 +1,8 @@
-package steampipeconfig
+package steampipe_config_local
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"strings"
 
@@ -69,9 +70,9 @@ func (u *ConnectionUpdates) validateUpdates() {
 	u.MissingComments = validatedCommentUpdates
 }
 
-func validateConnectionName(connectionName string, p *ConnectionPlugin) *ValidationFailure {
-	if err := ValidateConnectionName(connectionName); err != nil {
-		return &ValidationFailure{
+func validateConnectionName(connectionName string, p *ConnectionPlugin) *steampipeconfig.ValidationFailure {
+	if err := steampipeconfig.ValidateConnectionName(connectionName); err != nil {
+		return &steampipeconfig.ValidationFailure{
 			Plugin:         p.PluginName,
 			ConnectionName: connectionName,
 			Message:        err.Error(),
@@ -83,7 +84,7 @@ func validateConnectionName(connectionName string, p *ConnectionPlugin) *Validat
 	return nil
 }
 
-func validateProtocolVersion(connectionName string, p *ConnectionPlugin) *ValidationFailure {
+func validateProtocolVersion(connectionName string, p *ConnectionPlugin) *steampipeconfig.ValidationFailure {
 	pluginProtocolVersion := p.ConnectionMap[connectionName].Schema.GetProtocolVersion()
 	// if this is 0, the plugin does not define a protocol version
 	// - so we know the plugin sdk version is older that the one we are using
@@ -94,7 +95,7 @@ func validateProtocolVersion(connectionName string, p *ConnectionPlugin) *Valida
 
 	steampipeProtocolVersion := sdkversion.ProtocolVersion
 	if steampipeProtocolVersion < pluginProtocolVersion {
-		return &ValidationFailure{
+		return &steampipeconfig.ValidationFailure{
 			Plugin:         p.PluginName,
 			ConnectionName: connectionName,
 			Message:        "Incompatible steampipe-plugin-sdk version. Please upgrade Steampipe to use this plugin.",
@@ -105,7 +106,7 @@ func validateProtocolVersion(connectionName string, p *ConnectionPlugin) *Valida
 	return nil
 }
 
-func BuildValidationWarningString(failures []*ValidationFailure) string {
+func BuildValidationWarningString(failures []*steampipeconfig.ValidationFailure) string {
 	if len(failures) == 0 {
 		return ""
 	}

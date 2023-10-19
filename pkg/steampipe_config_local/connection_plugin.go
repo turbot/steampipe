@@ -1,12 +1,15 @@
-package steampipeconfig
+package steampipe_config_local
 
 import (
 	"fmt"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"strings"
 
 	"github.com/hashicorp/go-plugin"
+	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/options"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -14,8 +17,6 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 )
@@ -89,11 +90,11 @@ func NewConnectionPlugin(pluginShortName, pluginName string, pluginClient *sdkgr
 }
 
 // CreateConnectionPlugins instantiates plugins for specified connections, and fetches schemas
-func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectionNamesToCreate []string) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
+func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectionNamesToCreate []string) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *steampipeconfig.RefreshConnectionResult) {
 	log.Println("[DEBUG] CreateConnectionPlugins start")
 	defer log.Println("[DEBUG] CreateConnectionPlugins end")
 
-	res = &RefreshConnectionResult{}
+	res = &steampipeconfig.RefreshConnectionResult{}
 	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin)
 	if len(connectionNamesToCreate) == 0 {
 		return
@@ -102,7 +103,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 
 	var connectionsToCreate = make([]*modconfig.Connection, len(connectionNamesToCreate))
 	for i, name := range connectionNamesToCreate {
-		connectionsToCreate[i] = GlobalConfig.Connections[name]
+		connectionsToCreate[i] = steampipe_config_local.GlobalConfig.Connections[name]
 	}
 	// build result map, keyed by connection name
 	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin, len(connectionsToCreate))
@@ -173,7 +174,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 	return requestedConnectionPluginMap, res
 }
 
-func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionResult, connectionsToCreate []*modconfig.Connection) {
+func handleGetFailures(getResponse *proto.GetResponse, res *steampipeconfig.RefreshConnectionResult, connectionsToCreate []*modconfig.Connection) {
 	// handle PluginSdkCompatibilityError separately
 	var pluginsWithCompatibilityError = make(map[string]struct{})
 	var compatibilityErrorConnectionCount int
@@ -181,9 +182,9 @@ func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionRes
 	for failedPluginInstance, failure := range getResponse.FailureMap {
 		// if this is a compatibility error, handle separately
 		if failure == error_helpers.PluginSdkCompatibilityError {
-			failedPluginShortName := GlobalConfig.PluginsInstances[failedPluginInstance].FriendlyName()
+			failedPluginShortName := steampipe_config_local.GlobalConfig.PluginsInstances[failedPluginInstance].FriendlyName()
 			pluginsWithCompatibilityError[failedPluginShortName] = struct{}{}
-			for _, c := range GlobalConfig.Connections {
+			for _, c := range steampipe_config_local.GlobalConfig.Connections {
 				if typehelpers.SafeString(c.PluginInstance) == failedPluginInstance {
 					compatibilityErrorConnectionCount++
 				}
@@ -323,7 +324,7 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 
 		// NOTE: use GlobalConfig to access connection config
 		// we assume this has been populated either by the hub (if this is being invoked from the fdw) or the CLI
-		config, ok := GlobalConfig.Connections[c]
+		config, ok := steampipe_config_local.GlobalConfig.Connections[c]
 		if !ok {
 			return nil, fmt.Errorf("no connection config loaded for '%s'", c)
 		}

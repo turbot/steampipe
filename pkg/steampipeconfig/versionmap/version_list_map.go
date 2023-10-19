@@ -4,7 +4,7 @@ import (
 	"sort"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/modconfig"
 )
 
 // VersionListMap is a map keyed by dependency name storing a list of versions for each dependency

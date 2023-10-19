@@ -1,7 +1,7 @@
 package controlexecute
 
 import (
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/modconfig"
 )
 
 // DirectChildrenModDecorator is a struct used to wrap a Mod but modify the results of GetChildren to only return

@@ -19,6 +19,8 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/logging"
+	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -27,8 +29,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"github.com/turbot/steampipe/pkg/task"
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
@@ -159,7 +160,7 @@ func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, e
 //	the GlobalConfig has a loglevel set
 func logLevelNeedsReset() bool {
 	envLogLevelIsSet := envLogLevelSet()
-	generalOptionsSet := (steampipeconfig.GlobalConfig.GeneralOptions != nil && steampipeconfig.GlobalConfig.GeneralOptions.LogLevel != nil)
+	generalOptionsSet := (steampipe_config_local.GlobalConfig.GeneralOptions != nil && steampipe_config_local.GlobalConfig.GeneralOptions.LogLevel != nil)
 
 	return !envLogLevelIsSet && generalOptionsSet
 }
@@ -205,16 +206,16 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	ensureInstallDir(viper.GetString(constants.ArgInstallDir))
 
 	// load the connection config and HCL options
-	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
+	config, loadConfigErrorsAndWarnings := steampipe_config_local.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
 	if loadConfigErrorsAndWarnings.Error != nil {
 		return loadConfigErrorsAndWarnings
 	}
 
 	// store global config
-	steampipeconfig.GlobalConfig = config
+	steampipe_config_local.GlobalConfig = config
 
 	// set viper defaults from this config
-	SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
+	SetDefaultsFromConfig(steampipe_config_local.GlobalConfig.ConfigMap())
 
 	// set the rest of the defaults from ENV
 	// ENV takes precedence over any default configuration

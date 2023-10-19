@@ -7,7 +7,7 @@ import (
 	"github.com/turbot/terraform-components/tfdiags"
 	"github.com/zclconf/go-cty/cty/convert"
 
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/modconfig"
 )
 
 // SetVariableValues determines whether the given variable is a public variable and if so sets its value

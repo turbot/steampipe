@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/modconfig"
 )
 
 func GetMetadataForParsedResource(resourceName string, srcRange hcl.Range, fileData map[string][]byte, mod *modconfig.Mod) (*modconfig.ResourceMetadata, error) {

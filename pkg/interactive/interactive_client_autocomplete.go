@@ -9,10 +9,10 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -25,7 +25,7 @@ func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
 	}
 	defer conn.Release()
 
-	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
+	connectionStateMap, err := steampipe_config_local.LoadConnectionState(ctx, conn.Conn(), steampipe_config_local.WithWaitUntilLoading())
 	if err != nil {
 		c.initialiseSuggestionsLegacy()
 		//nolint:golint,nilerr // valid condition - not an error

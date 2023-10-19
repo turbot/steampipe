@@ -3,7 +3,7 @@ package modconfig
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/hcl_helpers"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
+	"github.com/turbot/pipe-fittings/ociinstaller"
 	"golang.org/x/exp/maps"
 	"strings"
 )

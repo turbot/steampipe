@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 // DashboardRun is a struct representing a container run

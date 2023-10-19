@@ -1,7 +1,7 @@
 package dashboardevents
 
 import (
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/modconfig"
 )
 
 type DashboardChanged struct {

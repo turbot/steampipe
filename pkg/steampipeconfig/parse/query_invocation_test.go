@@ -6,7 +6,7 @@ import (
 
 	"github.com/turbot/steampipe/pkg/utils"
 
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/modconfig"
 )
 
 // NOTE: all query arg values must be JSON representations

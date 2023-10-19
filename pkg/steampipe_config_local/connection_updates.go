@@ -1,8 +1,9 @@
-package steampipeconfig
+package steampipe_config_local
 
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"sort"
 	"strings"
@@ -10,12 +11,12 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 )
@@ -35,7 +36,7 @@ type ConnectionUpdates struct {
 	ConnectionPlugins map[string]*ConnectionPlugin
 
 	CurrentConnectionState ConnectionStateMap
-	InvalidConnections     map[string]*ValidationFailure
+	InvalidConnections     map[string]*steampipeconfig.ValidationFailure
 	// map of plugin to connection for which we must refetch the rate limiter definitions
 	PluginsWithUpdatedBinary map[string]string
 
@@ -44,7 +45,7 @@ type ConnectionUpdates struct {
 }
 
 // NewConnectionUpdates returns updates to be made to the database to sync with connection config
-func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginManager pluginshared.PluginManager, opts ...ConnectionUpdatesOption) (*ConnectionUpdates, *RefreshConnectionResult) {
+func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginManager pluginshared.PluginManager, opts ...ConnectionUpdatesOption) (*ConnectionUpdates, *steampipeconfig.RefreshConnectionResult) {
 	log.Println("[DEBUG] NewConnectionUpdates start")
 	defer log.Println("[DEBUG] NewConnectionUpdates end")
 
@@ -60,7 +61,7 @@ func NewConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginManager
 	return updates, res
 }
 
-func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginManager pluginshared.PluginManager, opts ...ConnectionUpdatesOption) (*ConnectionUpdates, *RefreshConnectionResult) {
+func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginManager pluginshared.PluginManager, opts ...ConnectionUpdatesOption) (*ConnectionUpdates, *steampipeconfig.RefreshConnectionResult) {
 	log.Println("[DEBUG] populateConnectionUpdates start")
 	defer log.Println("[DEBUG] populateConnectionUpdates end")
 
@@ -72,7 +73,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
 		log.Printf("[WARN] failed to acquire connection from pool: %s", err.Error())
-		return nil, NewErrorRefreshConnectionResult(err)
+		return nil, steampipeconfig.NewErrorRefreshConnectionResult(err)
 	}
 	defer conn.Release()
 
@@ -82,7 +83,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	currentConnectionStateMap, err := LoadConnectionState(ctx, conn.Conn())
 	if err != nil {
 		log.Printf("[WARN] failed to load connection state: %s", err.Error())
-		return nil, NewErrorRefreshConnectionResult(err)
+		return nil, steampipeconfig.NewErrorRefreshConnectionResult(err)
 	}
 
 	// build connection data for all required connections
@@ -91,7 +92,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	requiredConnectionStateMap, missingPlugins, connectionStateResult := GetRequiredConnectionStateMap(GlobalConfig.Connections, currentConnectionStateMap)
 	if connectionStateResult.Error != nil {
 		log.Printf("[WARN] failed to build required connection state: %s", err.Error())
-		return nil, NewErrorRefreshConnectionResult(connectionStateResult.Error)
+		return nil, steampipeconfig.NewErrorRefreshConnectionResult(connectionStateResult.Error)
 	}
 	log.Printf("[INFO] built required connection state")
 
@@ -111,7 +112,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 		MissingComments:            ConnectionStateMap{},
 		MissingPlugins:             missingPlugins,
 		FinalConnectionState:       requiredConnectionStateMap,
-		InvalidConnections:         make(map[string]*ValidationFailure),
+		InvalidConnections:         make(map[string]*steampipeconfig.ValidationFailure),
 		PluginsWithUpdatedBinary:   make(map[string]string),
 		forceUpdateConnectionNames: config.ForceUpdateConnectionNames,
 		pluginManager:              pluginManager,
@@ -127,7 +128,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	dynamicSchemaHashMap, connectionsPluginsWithDynamicSchema, err := updates.getSchemaHashesForDynamicSchemas(requiredConnectionStateMap, currentConnectionStateMap)
 	if err != nil {
 		log.Printf("[WARN] getSchemaHashesForDynamicSchemas failed: %s", err.Error())
-		return nil, NewErrorRefreshConnectionResult(err)
+		return nil, steampipeconfig.NewErrorRefreshConnectionResult(err)
 	}
 	log.Printf("[INFO] connectionsPluginsWithDynamicSchema: %s", strings.Join(maps.Keys(connectionsPluginsWithDynamicSchema), "'"))
 
@@ -187,7 +188,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 	foreignSchemaNames, err := db_common.LoadForeignSchemaNames(ctx, conn.Conn())
 	if err != nil {
 		log.Printf("[WARN] failed to load foreign schema names: %s", err.Error())
-		return nil, NewErrorRefreshConnectionResult(err)
+		return nil, steampipeconfig.NewErrorRefreshConnectionResult(err)
 	}
 	for _, name := range foreignSchemaNames {
 		_, existsInCurrentState := currentConnectionStateMap[name]
@@ -318,7 +319,7 @@ func (u *ConnectionUpdates) updateRequiredStateWithSchemaProperties(dynamicSchem
 	}
 }
 
-func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) *RefreshConnectionResult {
+func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPlugins map[string]*ConnectionPlugin) *steampipeconfig.RefreshConnectionResult {
 	log.Println("[DEBUG] populateConnectionPlugins start")
 	defer log.Println("[DEBUG] populateConnectionPlugins end")
 

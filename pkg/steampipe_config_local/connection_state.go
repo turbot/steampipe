@@ -1,4 +1,4 @@
-package steampipeconfig
+package steampipe_config_local
 
 import (
 	"sort"
@@ -6,9 +6,9 @@ import (
 	"time"
 
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 // ConnectionState is a struct containing all details for a connection

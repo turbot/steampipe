@@ -2,9 +2,9 @@ package connection_sync
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
 // WaitForSearchPathSchemas identifies the first connection in the search path for each plugin,
@@ -18,7 +18,7 @@ func WaitForSearchPathSchemas(ctx context.Context, client db_common.Client, sear
 	}
 	defer conn.Release()
 
-	_, err = steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitForSearchPath(searchPath))
+	_, err = steampipe_config_local.LoadConnectionState(ctx, conn.Conn(), steampipe_config_local.WithWaitForSearchPath(searchPath))
 
 	// NOTE: if we failed to load conection state, this must be because we are connected to an older version of the CLI
 	// just return nil error

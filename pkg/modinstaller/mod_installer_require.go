@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/hashicorp/hcl/v2/hclwrite"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
 )
 

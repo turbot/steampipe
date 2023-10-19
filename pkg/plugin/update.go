@@ -3,8 +3,8 @@ package plugin
 import (
 	"runtime"
 
+	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
 )
 
 // SkipUpdate determines if the latest version in a "stream"

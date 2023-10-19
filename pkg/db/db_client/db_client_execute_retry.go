@@ -3,16 +3,17 @@ package db_client
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/sethvargo/go-retry"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
 // execute query - if it fails with a "relation not found" error, determine whether this is because the required schema
@@ -61,7 +62,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		// load the connection state and connection config to see if the missing schema is in there at all
 		// if there was a schema not found with an unqualified query, we keep trying until
 		// the first search path schema for each plugin has loaded
-		connectionStateMap, stateErr := steampipeconfig.LoadConnectionState(ctx, sysConn.Conn(), steampipeconfig.WithWaitUntilLoading())
+		connectionStateMap, stateErr := steampipe_config_local.LoadConnectionState(ctx, sysConn.Conn(), steampipe_config_local.WithWaitUntilLoading())
 		if stateErr != nil {
 			log.Println("[TRACE] could not load connection state map:", stateErr)
 			// just return the query error
@@ -91,7 +92,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 			}
 
 			// otherwise we need to wait for the first schema of everything plugin to load
-			if _, err := steampipeconfig.LoadConnectionState(ctx, sysConn.Conn(), steampipeconfig.WithWaitForSearchPath(searchPath)); err != nil {
+			if _, err := steampipe_config_local.LoadConnectionState(ctx, sysConn.Conn(), steampipeconfig.WithWaitForSearchPath(searchPath)); err != nil {
 				return err
 			}
 

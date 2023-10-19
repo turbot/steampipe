@@ -13,6 +13,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -21,12 +25,9 @@ import (
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/installationstate"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -248,14 +249,14 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	installReports := make(display.PluginInstallReports, 0, len(plugins))
 
 	if len(plugins) == 0 {
-		if len(steampipeconfig.GlobalConfig.Plugins) == 0 {
+		if len(steampipe_config_local.GlobalConfig.Plugins) == 0 {
 			error_helpers.ShowError(ctx, sperr.New("No connections or plugins configured"))
 			exitCode = constants.ExitCodeInsufficientOrWrongInputs
 			return
 		}
 
 		// get the list of plugins to install
-		for imageRef := range steampipeconfig.GlobalConfig.Plugins {
+		for imageRef := range steampipe_config_local.GlobalConfig.Plugins {
 			ref := ociinstaller.NewSteampipeImageRef(imageRef)
 			plugins = append(plugins, ref.GetFriendlyName())
 		}
@@ -301,7 +302,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		if errorsAndWarnings.GetError() != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to reload config - install report may be incomplete (%s)", errorsAndWarnings.GetError()))
 		} else {
-			steampipeconfig.GlobalConfig = config
+			steampipe_config_local.GlobalConfig = config
 		}
 
 		statushooks.Done(ctx)
@@ -849,7 +850,7 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 	pluginConnectionMap = make(map[string][]*modconfig.Connection)
 
 	for _, state := range connectionStateMap {
-		connection, ok := steampipeconfig.GlobalConfig.Connections[state.ConnectionName]
+		connection, ok := steampipe_config_local.GlobalConfig.Connections[state.ConnectionName]
 		if !ok {
 			continue
 		}
@@ -887,7 +888,7 @@ func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionStateMap
 
 	// load connection state
 	statushooks.SetStatus(ctx, "Loading connection state")
-	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilReady())
+	connectionStateMap, err := steampipe_config_local.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilReady())
 	if err != nil {
 		res.Error = err
 		return nil, res

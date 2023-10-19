@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/modconfig"
 )
 
 // ResolvedRuntimeDependency is a wrapper for RuntimeDependency which contains the resolved value

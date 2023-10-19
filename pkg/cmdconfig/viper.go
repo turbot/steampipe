@@ -6,7 +6,7 @@ import (
 	"os"
 
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

@@ -3,7 +3,7 @@ package modinstaller
 import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe/pkg/versionhelpers"
 )
 

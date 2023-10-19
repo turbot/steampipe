@@ -6,7 +6,7 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"golang.org/x/exp/maps"
 )
 
