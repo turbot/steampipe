@@ -182,5 +182,5 @@ func IsBatchQueryCmd(cmd *cobra.Command, cmdArgs []string) bool {
 	return cmd.Name() == "query" && len(cmdArgs) > 0
 }
 func isPluginListCmd(cmd *cobra.Command) bool {
-	return cmd.Name() == "list"
+	return cmd.Name() == "list" && cmd.Parent() != nil && cmd.Parent().Name() == "plugin"
 }
