@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -23,6 +24,8 @@ type ModVersionConstraint struct {
 	Args map[string]cty.Value `cty:"args"  hcl:"args,optional"`
 	// only one of Constraint, Branch and FilePath will be set
 	Constraint *versionhelpers.Constraints
+	// the branch to use for the mod
+	Branch string
 	// the local file location to use
 	FilePath string
 	// contains the range of the definition of the mod block
@@ -51,9 +54,22 @@ func NewModVersionConstraint(modFullName string) (*ModVersionConstraint, error) 
 		m.Name = segments[0]
 		if len(segments) == 2 {
 			m.VersionString = segments[1]
+		} else {
+			gitUrl, err := url.Parse(segments[0])
+			if err != nil {
+				return nil, fmt.Errorf("invalid mod url %s", modFullName)
+			}
+			// a git url with branch reference has been parsed
+			branchRef := strings.Split(gitUrl.Path, "/tree/")
+			// TODO: add check for commit reference
+			// commitRef := strings.Split(gitUrl.Path, "/commit/")
+			if len(branchRef) == 2 {
+				m.Name = branchRef[0]
+				// set the branch name
+				m.Branch = branchRef[1]
+			}
 		}
 	}
-
 	// try to convert version into a semver constraint
 	if err := m.Initialise(nil); err != nil {
 		return nil, err
@@ -82,7 +98,9 @@ func (m *ModVersionConstraint) Initialise(block *hcl.Block) hcl.Diagnostics {
 	if m.VersionString == "" || m.VersionString == "latest" {
 		m.VersionString = "*"
 	}
-
+	if m.VersionString == "" && m.Branch != "" {
+		return nil
+	}
 	// does the version parse as a semver version
 	if c, err := versionhelpers.NewConstraint(m.VersionString); err == nil {
 		// no error

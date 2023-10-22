@@ -32,6 +32,10 @@ func NewResolvedModRef(requiredModVersion *modconfig.ModVersionConstraint, versi
 	if res.FilePath == "" {
 		res.setGitReference()
 	}
+	// set the git reference to the provided branch name
+	if requiredModVersion.Branch != "" {
+		res.GitReference = plumbing.ReferenceName(requiredModVersion.Branch)
+	}
 
 	return res, nil
 }

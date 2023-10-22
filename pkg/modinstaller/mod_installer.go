@@ -342,10 +342,14 @@ func (i *ModInstaller) installModDependencesRecursively(ctx context.Context, req
 		// short circuit if the execution context has been cancelled
 		return ctx.Err()
 	}
-	// get available versions for this mod
-	includePrerelease := requiredModVersion.Constraint.IsPrerelease()
-	availableVersions, err := i.installData.getAvailableModVersions(requiredModVersion.Name, includePrerelease)
-
+	// leave the availableVersions as empty map if branch is parsed for the mod
+	availableVersions := make([]*semver.Version, 0)
+	var err error
+	if requiredModVersion.Branch == "" {
+		// get available versions for this mod
+		includePrerelease := requiredModVersion.Constraint.IsPrerelease()
+		availableVersions, err = i.installData.getAvailableModVersions(requiredModVersion.Name, includePrerelease)
+	}
 	if err != nil {
 		return err
 	}
@@ -496,9 +500,14 @@ func (i *ModInstaller) updateAvailable(requiredVersion *modconfig.ModVersionCons
 // get the most recent available mod version which satisfies the version constraint
 func (i *ModInstaller) getModRefSatisfyingConstraints(modVersion *modconfig.ModVersionConstraint, availableVersions []*semver.Version) (*ResolvedModRef, error) {
 	// find a version which satisfies the version constraint
-	var version = getVersionSatisfyingConstraint(modVersion.Constraint, availableVersions)
-	if version == nil {
-		return nil, fmt.Errorf("no version of %s found satisfying version constraint: %s", modVersion.Name, modVersion.Constraint.Original)
+	var version *semver.Version
+	if modVersion.Branch == "" {
+		version = getVersionSatisfyingConstraint(modVersion.Constraint, availableVersions)
+		if version == nil {
+			return nil, fmt.Errorf("no version of %s found satisfying version constraint: %s", modVersion.Name, modVersion.Constraint.Original)
+		}
+	} else{
+		version = &semver.Version{}
 	}
 
 	return NewResolvedModRef(modVersion, version)

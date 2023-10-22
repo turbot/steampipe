@@ -2,8 +2,10 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/hcl_helpers"
+	"net/http"
 	"sort"
+
+	"github.com/turbot/go-kit/hcl_helpers"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
@@ -160,6 +162,14 @@ func (r *Require) searchInstalledPluginForRequirement(modName string, requiremen
 		}
 		// if org and name matches but the plugin is built locally, return without any validation error
 		if installed.IsLocal() {
+			return nil
+		}
+		// if branch is specified, check if the branch exists
+		if requirement.Branch != "" {
+			res, err := http.Get(requirement.Name)
+			if err != nil || res.StatusCode != 200{
+				return err
+			}
 			return nil
 		}
 		// if org and name matches, check whether the version constraint is satisfied

@@ -18,6 +18,8 @@ type PluginVersion struct {
 	// the minumum version which satisfies the requirement
 	MinVersionString string `cty:"min_version" hcl:"min_version,optional"`
 	Constraint       *semver.Constraints
+	// the branch of mod git repo to install
+	Branch string
 	// the org and name which are parsed from the raw name
 	Org       string
 	Name      string
