@@ -2,8 +2,8 @@ package metaquery
 
 import (
 	"github.com/c-bata/go-prompt"
+	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 )
 
 // HandlerInput defines input data for the metaquery handler

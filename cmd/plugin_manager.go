@@ -21,6 +21,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 )
 
 func pluginManagerCmd() *cobra.Command {

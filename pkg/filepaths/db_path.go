@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/turbot/pipe-fittings/platform"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/platform"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 

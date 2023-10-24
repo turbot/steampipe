@@ -7,9 +7,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/db_client"
+	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_client"
-	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_client"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -17,13 +18,13 @@ import (
 
 // LocalDbClient wraps over DbClient
 type LocalDbClient struct {
-	db_client.DbClient
+	steampipe_db_client.SteampipeDbClient
 	notificationListener *db_common.NotificationListener
 	invoker              constants.Invoker
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
-func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (*LocalDbClient, *error_helpers.ErrorAndWarnings) {
+func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback steampipe_db_client.DbConnectionCallback, opts ...db_client.ClientOption) (*LocalDbClient, *error_helpers.ErrorAndWarnings) {
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
@@ -67,7 +68,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 
 // newLocalClient verifies that the local database instance is running and returns a LocalDbClient to interact with it
 // (This FAILS if local service is not running - use GetLocalClient to start service first)
-func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (*LocalDbClient, error) {
+func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback steampipe_db_client.DbConnectionCallback, opts ...db_client.ClientOption) (*LocalDbClient, error) {
 	utils.LogTime("db.newLocalClient start")
 	defer utils.LogTime("db.newLocalClient end")
 
@@ -75,13 +76,13 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	if err != nil {
 		return nil, err
 	}
-	dbClient, err := db_client.NewDbClient(ctx, connString, onConnectionCallback, opts...)
+	dbClient, err := steampipe_db_client.NewSteampipeDbClient(ctx, connString, onConnectionCallback, opts...)
 	if err != nil {
 		log.Printf("[TRACE] error getting local client %s", err.Error())
 		return nil, err
 	}
 
-	client := &LocalDbClient{DbClient: *dbClient, invoker: invoker}
+	client := &LocalDbClient{SteampipeDbClient: *dbClient, invoker: invoker}
 	log.Printf("[INFO] created local client %p", client)
 
 	if err := client.initNotificationListener(ctx); err != nil {

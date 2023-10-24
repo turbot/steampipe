@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/serversettings"
 	"github.com/turbot/steampipe/pkg/version"
 )

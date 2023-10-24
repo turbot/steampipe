@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 
-	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/pipe-fittings/db_common"
 )
 
 // WaitForSearchPathSchemas identifies the first connection in the search path for each plugin,

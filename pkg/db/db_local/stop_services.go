@@ -10,9 +10,9 @@ import (
 	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
+	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"

@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
@@ -13,7 +14,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/introspection"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"

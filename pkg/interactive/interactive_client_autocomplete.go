@@ -9,10 +9,10 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 

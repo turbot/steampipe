@@ -2,20 +2,21 @@ package db_common
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
-func ValidateClientCacheSettings(c Client) *error_helpers.ErrorAndWarnings {
+func ValidateClientCacheSettings(c steampipe_db_common.Client) *error_helpers.ErrorAndWarnings {
 	cacheEnabledResult := ValidateClientCacheEnabled(c)
 	cacheTtlResult := ValidateClientCacheTtl(c)
 
 	return error_helpers.EmptyErrorsAndWarning().Merge(cacheEnabledResult).Merge(cacheTtlResult)
 }
 
-func ValidateClientCacheEnabled(c Client) *error_helpers.ErrorAndWarnings {
+func ValidateClientCacheEnabled(c steampipe_db_common.Client) *error_helpers.ErrorAndWarnings {
 	errorsAndWarnings := error_helpers.EmptyErrorsAndWarning()
 	if c.ServerSettings() == nil || !viper.IsSet(constants.ArgClientCacheEnabled) {
 		// if there's no serverSettings, then this is a pre-21 server
@@ -29,7 +30,7 @@ func ValidateClientCacheEnabled(c Client) *error_helpers.ErrorAndWarnings {
 	return errorsAndWarnings
 }
 
-func ValidateClientCacheTtl(c Client) *error_helpers.ErrorAndWarnings {
+func ValidateClientCacheTtl(c steampipe_db_common.Client) *error_helpers.ErrorAndWarnings {
 	errorsAndWarnings := error_helpers.EmptyErrorsAndWarning()
 
 	if c.ServerSettings() == nil || !viper.IsSet(constants.ArgCacheTtl) {

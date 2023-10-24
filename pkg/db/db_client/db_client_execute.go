@@ -14,8 +14,8 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/statushooks"
@@ -45,7 +45,7 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, args ...any) (
 	return c.ExecuteSyncInSession(ctx, sessionResult.Session, query, args...)
 }
 
-// ExecuteSyncInSession implements Client
+// executeSyncInSession implements Client
 // execute a query against this client and wait for the result
 func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string, args ...any) (*queryresult.SyncQueryResult, error) {
 	if query == "" {
@@ -98,9 +98,9 @@ func (c *DbClient) Execute(ctx context.Context, query string, args ...any) (*que
 	return c.ExecuteInSession(ctx, sessionResult.Session, closeSessionCallback, query, args...)
 }
 
-// ExecuteInSession implements Client
+// executeOnConnection implements Client
 // execute the query in the given Context using the provided DatabaseSession
-// ExecuteInSession assumes no responsibility over the lifecycle of the DatabaseSession - that is the responsibility of the caller
+// executeOnConnection assumes no responsibility over the lifecycle of the DatabaseSession - that is the responsibility of the caller
 // NOTE: The returned Result MUST be fully read - otherwise the connection will block and will prevent further communication
 func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.DatabaseSession, onComplete func(), query string, args ...any) (res *queryresult.Result, err error) {
 	if query == "" {

@@ -3,15 +3,16 @@ package queryexecute
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/db_client"
 	"time"
 
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
-	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/interactive"
@@ -105,7 +106,7 @@ func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *m
 	defer utils.LogTime("query.execute.executeQuery end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db_common.ExecuteQuery(ctx, client, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
+	resultsStreamer, err := db_client.ExecuteQuery(ctx, client, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
 	if err != nil {
 		return err, 0
 	}

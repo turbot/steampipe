@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
+
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
@@ -27,7 +29,6 @@ import (
 	"github.com/turbot/steampipe/pkg/installationstate"
 	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -298,7 +299,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 		// reload the config, since an installation should have created a new config file
 		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-		config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
+		config, errorsAndWarnings := steampipe_config_local.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
 		if errorsAndWarnings.GetError() != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to reload config - install report may be incomplete (%s)", errorsAndWarnings.GetError()))
 		} else {
@@ -868,7 +869,7 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 }
 
 // load the connection state, waiting until all connections are loaded
-func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionStateMap, *error_helpers.ErrorAndWarnings) {
+func getConnectionState(ctx context.Context) (steampipe_config_local.ConnectionStateMap, *error_helpers.ErrorAndWarnings) {
 	utils.LogTime("cmd.getConnectionState start")
 	defer utils.LogTime("cmd.getConnectionState end")
 

@@ -2,13 +2,14 @@ package db_common
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
 
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // ExecuteQuery executes a single query. If shutdownAfterCompletion is true, shutdown the client after completion
-func ExecuteQuery(ctx context.Context, client Client, queryString string, args ...any) (*queryresult.ResultStreamer, error) {
+func ExecuteQuery(ctx context.Context, client steampipe_db_common.Client, queryString string, args ...any) (*queryresult.ResultStreamer, error) {
 	utils.LogTime("db.ExecuteQuery start")
 	defer utils.LogTime("db.ExecuteQuery end")
 
