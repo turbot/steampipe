@@ -248,7 +248,7 @@ func (m ConnectionStateMap) SetConnectionsToPendingOrIncomplete() {
 // this is required as these fields were added to the table after release
 func (m ConnectionStateMap) PopulateFilename() {
 	// get the connection from config
-	connections := steampipe_config_local.GlobalConfig.Connections
+	connections := GlobalConfig.Connections
 	for name, state := range m {
 		// do we have config for this connection (
 		if connection := connections[name]; connection != nil {

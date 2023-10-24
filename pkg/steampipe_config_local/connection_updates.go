@@ -3,7 +3,6 @@ package steampipe_config_local
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"sort"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"

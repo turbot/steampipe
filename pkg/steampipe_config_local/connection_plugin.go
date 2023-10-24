@@ -3,7 +3,7 @@ package steampipe_config_local
 import (
 	"fmt"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"log"
 	"strings"
 
@@ -103,7 +103,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 
 	var connectionsToCreate = make([]*modconfig.Connection, len(connectionNamesToCreate))
 	for i, name := range connectionNamesToCreate {
-		connectionsToCreate[i] = steampipe_config_local.GlobalConfig.Connections[name]
+		connectionsToCreate[i] = GlobalConfig.Connections[name]
 	}
 	// build result map, keyed by connection name
 	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin, len(connectionsToCreate))
@@ -182,9 +182,9 @@ func handleGetFailures(getResponse *proto.GetResponse, res *steampipeconfig.Refr
 	for failedPluginInstance, failure := range getResponse.FailureMap {
 		// if this is a compatibility error, handle separately
 		if failure == error_helpers.PluginSdkCompatibilityError {
-			failedPluginShortName := steampipe_config_local.GlobalConfig.PluginsInstances[failedPluginInstance].FriendlyName()
+			failedPluginShortName := GlobalConfig.PluginsInstances[failedPluginInstance].FriendlyName()
 			pluginsWithCompatibilityError[failedPluginShortName] = struct{}{}
-			for _, c := range steampipe_config_local.GlobalConfig.Connections {
+			for _, c := range GlobalConfig.Connections {
 				if typehelpers.SafeString(c.PluginInstance) == failedPluginInstance {
 					compatibilityErrorConnectionCount++
 				}
@@ -324,7 +324,7 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 
 		// NOTE: use GlobalConfig to access connection config
 		// we assume this has been populated either by the hub (if this is being invoked from the fdw) or the CLI
-		config, ok := steampipe_config_local.GlobalConfig.Connections[c]
+		config, ok := GlobalConfig.Connections[c]
 		if !ok {
 			return nil, fmt.Errorf("no connection config loaded for '%s'", c)
 		}

@@ -18,7 +18,7 @@ import (
 //
 // The table also includes the CLI and FDW versions for reference
 func setupServerSettingsTable(ctx context.Context, conn *pgx.Conn) error {
-	settings := db_common.ServerSettings{
+	settings := ServerSettings{
 		StartTime:        time.Now(),
 		SteampipeVersion: version.VersionString,
 		FdwVersion:       constants.FdwVersion,

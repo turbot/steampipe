@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
+// / TODO REMOVE or put in debug location
 // test used for debug purposes to replicate `tuple concurrently updated` DB error
 func TestConcurrentPerms(t *testing.T) {
 	t.Skip()

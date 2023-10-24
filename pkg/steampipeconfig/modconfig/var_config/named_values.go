@@ -1,4 +1,4 @@
-package var_config
+`package var_config
 
 // github.com/turbot/terraform-components/configs/parser_config.go
 import (
