@@ -3,21 +3,19 @@ package connection
 import (
 	"context"
 	"github.com/fsnotify/fsnotify"
-	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/go-kit/filewatcher"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
+	"time"
 )
 
 type ConnectionWatcher struct {
 	fileWatcherErrorHandler func(error)
-	watcher                 *filewatcher.FileWatcher
+	//watcher                 *filewatcher.FileWatcher
 	// interface exposing the plugin manager functions we need
 	pluginManager pluginManager
+	quit          chan struct{}
 }
 
 func NewConnectionWatcher(pluginManager pluginManager) (*ConnectionWatcher, error) {
@@ -25,31 +23,51 @@ func NewConnectionWatcher(pluginManager pluginManager) (*ConnectionWatcher, erro
 		pluginManager: pluginManager,
 	}
 
-	watcherOptions := &filewatcher.WatcherOptions{
-		Directories: []string{filepaths.EnsureConfigDir()},
-		Include:     filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
-		ListFlag:    filehelpers.FilesRecursive,
-		EventMask:   fsnotify.Create | fsnotify.Remove | fsnotify.Rename | fsnotify.Write | fsnotify.Chmod,
-		OnChange: func(events []fsnotify.Event) {
-			w.handleFileWatcherEvent(events)
-		},
-	}
-	watcher, err := filewatcher.NewWatcher(watcherOptions)
-	if err != nil {
-		return nil, err
-	}
-	w.watcher = watcher
+	// TODO tactical - disable file watcher
+	//watcherOptions := &filewatcher.WatcherOptions{
+	//	Directories: []string{filepaths.EnsureConfigDir()},
+	//	Include:     filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
+	//	ListFlag:    filehelpers.FilesRecursive,
+	//	EventMask:   fsnotify.Create | fsnotify.Remove | fsnotify.Rename | fsnotify.Write | fsnotify.Chmod,
+	//	OnChange: func(events []fsnotify.Event) {
+	//		w.handleFileWatcherEvent(events)
+	//	},
+	//}
+	//watcher, err := filewatcher.NewWatcher(watcherOptions)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//w.watcher = watcher
+	//
+	//// set the file watcher error handler, which will get called when there are parsing errors
+	//// after a file watcher event
+	//w.fileWatcherErrorHandler = func(err error) {
+	//	log.Printf("[WARN] failed to reload connection config: %s", err.Error())
+	//}
+	//
+	//watcher.Start()
 
-	// set the file watcher error handler, which will get called when there are parsing errors
-	// after a file watcher event
-	w.fileWatcherErrorHandler = func(err error) {
-		log.Printf("[WARN] failed to reload connection config: %s", err.Error())
-	}
-
-	watcher.Start()
+	// TODO TACTICAL - instead of file watcher events, raise events on a timer
+	w.startedTimedFileEvents()
 
 	log.Printf("[INFO] created ConnectionWatcher")
 	return w, nil
+}
+
+func (w *ConnectionWatcher) startedTimedFileEvents() {
+	ticker := time.NewTicker(15 * time.Minute)
+	w.quit = make(chan struct{})
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				w.handleFileWatcherEvent(nil)
+			case <-w.quit:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
 }
 
 func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
@@ -110,5 +128,8 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 }
 
 func (w *ConnectionWatcher) Close() {
-	w.watcher.Close()
+	//w.watcher.Close()
+	if w.quit != nil {
+		close(w.quit)
+	}
 }
