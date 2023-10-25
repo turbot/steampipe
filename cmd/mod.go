@@ -3,19 +3,19 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/modinstaller"
+	"github.com/turbot/pipe-fittings/parse"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/modinstaller"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // mod management commands
@@ -108,7 +108,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.runModInstallCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -122,7 +122,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 	if workspaceMod == nil {
 		workspaceMod, err = createWorkspaceMod(ctx, cmd, workspacePath)
 		if err != nil {
-			exitCode = constants_steampipe.ExitCodeModInstallFailed
+			exitCode = constants.ExitCodeModInstallFailed
 			error_helpers.FailOnError(err)
 		}
 	}
@@ -132,7 +132,7 @@ func runModInstallCmd(cmd *cobra.Command, args []string) {
 	trimGitUrls(opts)
 	installData, err := modinstaller.InstallWorkspaceDependencies(ctx, opts)
 	if err != nil {
-		exitCode = constants_steampipe.ExitCodeModInstallFailed
+		exitCode = constants.ExitCodeModInstallFailed
 		error_helpers.FailOnError(err)
 	}
 
@@ -169,7 +169,7 @@ func runModUninstallCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.runModInstallCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -223,7 +223,7 @@ func runModUpdateCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.runModUpdateCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -271,7 +271,7 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 		utils.LogTime("cmd.runModListCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -323,23 +323,20 @@ func runModInitCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("cmd.runModInitCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 	workspacePath := viper.GetString(constants.ArgModLocation)
 	if _, err := createWorkspaceMod(ctx, cmd, workspacePath); err != nil {
-		exitCode = constants_steampipe.ExitCodeModInitFailed
+		exitCode = constants.ExitCodeModInitFailed
 		error_helpers.FailOnError(err)
 	}
 }
 
 // helpers
 func createWorkspaceMod(ctx context.Context, cmd *cobra.Command, workspacePath string) (*modconfig.Mod, error) {
-	cancel, err := modinstaller.ValidateModLocation(ctx, workspacePath)
-	if err != nil {
-		return nil, err
-	}
-	if !cancel {
+	shouldCreate := modinstaller.ValidateModLocation(ctx, workspacePath)
+	if !shouldCreate {
 		return nil, fmt.Errorf("mod %s cancelled", cmd.Name())
 	}
 
@@ -359,7 +356,7 @@ func createWorkspaceMod(ctx context.Context, cmd *cobra.Command, workspacePath s
 
 	// load up the written mod file so that we get the updated
 	// block ranges
-	mod, err = parse.LoadModfile(workspacePath)
+	mod, err := parse.LoadModfile(workspacePath)
 	if err != nil {
 		return nil, err
 	}

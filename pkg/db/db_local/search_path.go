@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/constants"
 	"log"
 	"sort"
 	"strings"
@@ -20,9 +20,9 @@ func SetUserSearchPath(ctx context.Context, pool *sql.DB) ([]string, error) {
 
 	// is there a user search path in the config?
 	// check ConfigKeyDatabaseSearchPath config (this is the value specified in the database config)
-	if viper.IsSet(constants_steampipe.ConfigKeyServerSearchPath) {
+	if viper.IsSet(constants.ConfigKeyServerSearchPath) {
 
-		searchPath = viper.GetStringSlice(constants_steampipe.ConfigKeyServerSearchPath)
+		searchPath = viper.GetStringSlice(constants.ConfigKeyServerSearchPath)
 		// the Internal Schema should always go at the end
 		searchPath = db_common.EnsureInternalSchemaSuffix(searchPath)
 	} else {
@@ -43,7 +43,7 @@ func SetUserSearchPath(ctx context.Context, pool *sql.DB) ([]string, error) {
 	}
 	defer conn.Close()
 
-	query := fmt.Sprintf(`SELECT USENAME FROM pg_user WHERE pg_has_role(usename, '%s', 'member')`, constants_steampipe.DatabaseUsersRole)
+	query := fmt.Sprintf(`SELECT USENAME FROM pg_user WHERE pg_has_role(usename, '%s', 'member')`, constants.DatabaseUsersRole)
 	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func getDefaultSearchPath() []string {
 	// empty, doesn't make using steampipe tables any more difficult.
 	searchPath = append([]string{"public"}, searchPath...)
 	// add 'internal' schema as last schema in the search path
-	searchPath = append(searchPath, constants_steampipe.InternalSchema)
+	searchPath = append(searchPath, constants.InternalSchema)
 
 	return searchPath
 }

@@ -11,8 +11,8 @@ import (
 
 	"github.com/karrick/gows"
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
 )
 
 // ShowPaged displays the `content` in a system dependent pager
@@ -26,7 +26,7 @@ func ShowPaged(ctx context.Context, content string) {
 
 func isPagerNeeded(content string) bool {
 	// only show pager in interactive mode
-	if !viper.GetBool(constants_steampipe.ConfigKeyInteractive) {
+	if !viper.GetBool(constants.ConfigKeyInteractive) {
 		return false
 	}
 

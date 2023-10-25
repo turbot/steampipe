@@ -7,17 +7,17 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/options"
+	"github.com/turbot/pipe-fittings/utils"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 )
 
@@ -209,7 +209,7 @@ func handleGetFailures(getResponse *proto.GetResponse, res *steampipe_config_loc
 			utils.Pluralize("plugin", pluginCount),
 			compatibilityErrorConnectionCount,
 			utils.Pluralize("connection", compatibilityErrorConnectionCount),
-			constants_steampipe.Bold(fmt.Sprintf("steampipe plugin update %s", strings.Join(maps.Keys(pluginsWithCompatibilityError), " "))))
+			constants.Bold(fmt.Sprintf("steampipe plugin update %s", strings.Join(maps.Keys(pluginsWithCompatibilityError), " "))))
 		res.AddWarning(compatibilityWarning)
 	}
 }

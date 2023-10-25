@@ -16,10 +16,10 @@ import (
 	"github.com/turbot/go-kit/files"
 
 	"github.com/shirou/gopsutil/process"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 var (
@@ -136,7 +136,7 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 		// connection parameters
 		"--host=127.0.0.1",
 		fmt.Sprintf("--port=%d", config.port),
-		fmt.Sprintf("--username=%s", constants_steampipe.DatabaseSuperUser),
+		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)
 	log.Println("[TRACE] starting pg_dump command:", cmd.String())
 
@@ -166,8 +166,8 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		// NOTE: If quoted, the application name includes the quotes. Worried about
 		// having spaces in the APPNAME, but leaving it unquoted since currently
 		// the APPNAME is hardcoded to be steampipe.
-		"-c", fmt.Sprintf("application_name=%s", constants_steampipe.AppName),
-		"-c", fmt.Sprintf("cluster_name=%s", constants_steampipe.AppName),
+		"-c", fmt.Sprintf("application_name=%s", constants.AppName),
+		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
 
 		// Data Directory
 		"-D", dataLocation,
@@ -216,7 +216,7 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 			)
 
 			// if not the target DB version
-			if de.Name() != constants_steampipe.DatabaseVersion && isDBInstallationDirectory {
+			if de.Name() != constants.DatabaseVersion && isDBInstallationDirectory {
 				// this is an unknown directory.
 				// this MUST be some other installation
 				return true, filepath.Join(dbBaseDirectory, de.Name()), nil
@@ -491,7 +491,7 @@ func trimBackups() {
 	// just sorting should work, since these names are suffixed by date of the format yyyy-MM-dd-hh-mm-ss
 	sort.Strings(names)
 
-	for len(names) > constants_steampipe.MaxBackups {
+	for len(names) > constants.MaxBackups {
 		// shift the first element
 		trim := names[0]
 

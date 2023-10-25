@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
 	versionfile "github.com/turbot/pipe-fittings/ociinstaller/versionfile"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 var versionFileUpdateLock = &sync.Mutex{}

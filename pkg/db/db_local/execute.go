@@ -5,15 +5,15 @@ import (
 	"database/sql"
 	"log"
 
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 func executeSqlAsRoot(ctx context.Context, statements ...string) ([]sql.Result, error) {
 	log.Println("[DEBUG] executeSqlAsRoot start")
 	defer log.Println("[DEBUG] executeSqlAsRoot end")
 
-	rootClient, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{Username: constants_steampipe.DatabaseSuperUser})
+	rootClient, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}

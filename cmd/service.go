@@ -15,18 +15,17 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/dashboardserver"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func serviceCmd() *cobra.Command {
@@ -65,7 +64,7 @@ connection from any Postgres compatible database client.`,
 		OnCmd(cmd).
 		AddModLocationFlag().
 		AddBoolFlag(constants.ArgHelp, false, "Help for service start", cmdconfig.FlagOptions.WithShortHand("h")).
-		AddIntFlag(constants.ArgDatabasePort, constants_steampipe.DatabaseDefaultPort, "Database service port").
+		AddIntFlag(constants.ArgDatabasePort, constants.DatabaseDefaultPort, "Database service port").
 		AddStringFlag(constants.ArgDatabaseListenAddresses, string(db_local.ListenTypeNetwork), "Accept connections from: `local` (an alias for `localhost` only), `network` (an alias for `*`), or a comma separated list of hosts and/or IP addresses").
 		AddStringFlag(constants.ArgServicePassword, "", "Set the database password for this session").
 		// default is false and hides the database user password from service start prompt
@@ -73,7 +72,7 @@ connection from any Postgres compatible database client.`,
 		// dashboard server
 		AddBoolFlag(constants.ArgDashboard, false, "Run the dashboard webserver with the service").
 		AddStringFlag(constants.ArgDashboardListen, string(dashboardserver.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (dashboard)").
-		AddIntFlag(constants.ArgDashboardPort, constants_steampipe.DashboardServerDefaultPort, "Report server port").
+		AddIntFlag(constants.ArgDashboardPort, constants.DashboardServerDefaultPort, "Report server port").
 		// foreground enables the service to run in the foreground - till exit
 		AddBoolFlag(constants.ArgForeground, false, "Run the service in the foreground").
 
@@ -85,7 +84,7 @@ connection from any Postgres compatible database client.`,
 		AddStringArrayFlag(constants.ArgVariable, nil, "Specify the value of a variable (only applies if '--dashboard' flag is also set)").
 
 		// hidden flags for internal use
-		AddStringFlag(constants.ArgInvoker, string(constants_steampipe.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
+		AddStringFlag(constants.ArgInvoker, string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
 }
@@ -154,11 +153,11 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 		utils.LogTime("runServiceStartCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			if exitCode == constants_steampipe.ExitCodeSuccessful {
+			if exitCode == constants.ExitCodeSuccessful {
 				// there was an error and the exitcode
 				// was not set to a non-zero value.
 				// set it
-				exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
+				exitCode = constants.ExitCodeUnknownErrorPanic
 			}
 		}
 	}()
@@ -170,13 +169,13 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 
 	port := viper.GetInt(constants.ArgDatabasePort)
 	if port < 1 || port > 65535 {
-		exitCode = constants_steampipe.ExitCodeInsufficientOrWrongInputs
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		panic("Invalid port - must be within range (1:65535)")
 	}
 
-	invoker := constants_steampipe.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
+	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
 	if invoker.IsValid() != nil {
-		exitCode = constants_steampipe.ExitCodeInsufficientOrWrongInputs
+		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		error_helpers.FailOnError(invoker.IsValid())
 	}
 
@@ -190,14 +189,14 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 	}
 }
 
-func startService(ctx context.Context, listenAddresses []string, port int, invoker constants_steampipe.Invoker) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState, dbServiceStarted bool) {
+func startService(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState, dbServiceStarted bool) {
 	statushooks.Show(ctx)
 	defer statushooks.Done(ctx)
 	log.Printf("[TRACE] startService - listenAddresses=%q", listenAddresses)
 
 	err := db_local.EnsureDBInstalled(ctx)
 	if err != nil {
-		exitCode = constants_steampipe.ExitCodeServiceStartupFailure
+		exitCode = constants.ExitCodeServiceStartupFailure
 		error_helpers.FailOnError(err)
 	}
 
@@ -205,7 +204,7 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 	startResult := startServiceAndRefreshConnections(ctx, listenAddresses, port, invoker)
 	if startResult.Status == db_local.ServiceFailedToStart {
 		error_helpers.ShowError(ctx, sperr.New("steampipe service failed to start"))
-		exitCode = constants_steampipe.ExitCodeServiceStartupFailure
+		exitCode = constants.ExitCodeServiceStartupFailure
 		return
 	}
 
@@ -213,21 +212,21 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 	if startResult.Status == db_local.ServiceAlreadyRunning {
 		// check that we have the same port and listen parameters
 		if port != startResult.DbState.Port {
-			exitCode = constants_steampipe.ExitCodeInsufficientOrWrongInputs
+			exitCode = constants.ExitCodeInsufficientOrWrongInputs
 			error_helpers.FailOnError(sperr.New("service is already running on port %d - cannot change port while it's running", startResult.DbState.Port))
 		}
 		if !startResult.DbState.MatchWithGivenListenAddresses(listenAddresses) {
-			exitCode = constants_steampipe.ExitCodeInsufficientOrWrongInputs
+			exitCode = constants.ExitCodeInsufficientOrWrongInputs
 			// this messaging assumes that the resolved addresses from the given addresses have not changed while the service is running
 			// although this is an edge case, ideally, we should check for the resolved addresses and give the relevant message
 			error_helpers.FailOnError(sperr.New("service is already running and listening on %s - cannot change listen address while it's running", strings.Join(startResult.DbState.ResolvedListenAddresses, ", ")))
 		}
 
 		// convert to being invoked by service
-		startResult.DbState.Invoker = constants_steampipe.InvokerService
+		startResult.DbState.Invoker = constants.InvokerService
 		err = startResult.DbState.Save()
 		if err != nil {
-			exitCode = constants_steampipe.ExitCodeFileSystemAccessFailure
+			exitCode = constants.ExitCodeFileSystemAccessFailure
 			error_helpers.FailOnErrorWithMessage(err, "service was already running, but could not make it persistent")
 		}
 	}
@@ -239,14 +238,14 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 		dashboardState, err = dashboardserver.GetDashboardServiceState()
 		if err != nil {
 			tryToStopServices(ctx)
-			exitCode = constants_steampipe.ExitCodeServiceStartupFailure
+			exitCode = constants.ExitCodeServiceStartupFailure
 			error_helpers.FailOnError(err)
 		}
 		if dashboardState == nil {
 			dashboardState, err = startDashboardServer(ctx)
 			if err != nil {
 				tryToStopServices(ctx)
-				exitCode = constants_steampipe.ExitCodeServiceStartupFailure
+				exitCode = constants.ExitCodeServiceStartupFailure
 				error_helpers.FailOnError(err)
 			}
 			dbServiceStarted = true
@@ -255,10 +254,10 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 	return startResult, dashboardState, dbServiceStarted
 }
 
-func startServiceAndRefreshConnections(ctx context.Context, listenAddresses []string, port int, invoker constants_steampipe.Invoker) *db_local.StartResult {
+func startServiceAndRefreshConnections(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) *db_local.StartResult {
 	startResult := db_local.StartServices(ctx, listenAddresses, port, invoker)
 	if startResult.Error != nil {
-		exitCode = constants_steampipe.ExitCodeServiceStartupFailure
+		exitCode = constants.ExitCodeServiceStartupFailure
 		error_helpers.FailOnError(startResult.Error)
 	}
 
@@ -275,7 +274,7 @@ func startServiceAndRefreshConnections(ctx context.Context, listenAddresses []st
 
 func tryToStopServices(ctx context.Context) {
 	// stop db service
-	if _, err := db_local.StopServices(ctx, false, constants_steampipe.InvokerService); err != nil {
+	if _, err := db_local.StopServices(ctx, false, constants.InvokerService); err != nil {
 		error_helpers.ShowError(ctx, err)
 	}
 	// stop the dashboard service
@@ -362,7 +361,7 @@ func runServiceInForeground(ctx context.Context) {
 				}
 			}
 			fmt.Println("Stopping Steampipe service.")
-			if _, err := db_local.StopServices(ctx, false, constants_steampipe.InvokerService); err != nil {
+			if _, err := db_local.StopServices(ctx, false, constants.InvokerService); err != nil {
 				error_helpers.ShowError(ctx, err)
 			} else {
 				fmt.Println("Steampipe service stopped.")
@@ -379,11 +378,11 @@ func runServiceRestartCmd(cmd *cobra.Command, _ []string) {
 		utils.LogTime("runServiceRestartCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			if exitCode == constants_steampipe.ExitCodeSuccessful {
+			if exitCode == constants.ExitCodeSuccessful {
 				// there was an error and the exitcode
 				// was not set to a non-zero value.
 				// set it
-				exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
+				exitCode = constants.ExitCodeUnknownErrorPanic
 			}
 		}
 	}()
@@ -412,9 +411,9 @@ func restartService(ctx context.Context) (_ *db_local.StartResult, _ *dashboards
 	error_helpers.FailOnError(err)
 
 	// stop db
-	stopStatus, err := db_local.StopServices(ctx, viper.GetBool(constants.ArgForce), constants_steampipe.InvokerService)
+	stopStatus, err := db_local.StopServices(ctx, viper.GetBool(constants.ArgForce), constants.InvokerService)
 	if err != nil {
-		exitCode = constants_steampipe.ExitCodeServiceStopFailure
+		exitCode = constants.ExitCodeServiceStopFailure
 		error_helpers.FailOnErrorWithMessage(err, "could not stop current instance")
 	}
 
@@ -433,7 +432,7 @@ to force a restart.
 	// stop the running dashboard server
 	err = dashboardserver.StopDashboardService(ctx)
 	if err != nil {
-		exitCode = constants_steampipe.ExitCodeServiceStopFailure
+		exitCode = constants.ExitCodeServiceStopFailure
 		error_helpers.FailOnErrorWithMessage(err, "could not stop dashboard service")
 	}
 
@@ -441,7 +440,7 @@ to force a restart.
 	// and EnsureDBInstalled also checks and installs the latest FDW
 	err = db_local.EnsureDBInstalled(ctx)
 	if err != nil {
-		exitCode = constants_steampipe.ExitCodeServiceStartupFailure
+		exitCode = constants.ExitCodeServiceStartupFailure
 		error_helpers.FailOnError(err)
 	}
 
@@ -451,7 +450,7 @@ to force a restart.
 	// start db
 	dbStartResult := startServiceAndRefreshConnections(ctx, currentDbState.ResolvedListenAddresses, currentDbState.Port, currentDbState.Invoker)
 	if dbStartResult.Status == db_local.ServiceFailedToStart {
-		exitCode = constants_steampipe.ExitCodeServiceStartupFailure
+		exitCode = constants.ExitCodeServiceStartupFailure
 		fmt.Println("Steampipe service was stopped, but failed to restart.")
 		return
 	}
@@ -530,11 +529,11 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 		utils.LogTime("runServiceStopCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			if exitCode == constants_steampipe.ExitCodeSuccessful {
+			if exitCode == constants.ExitCodeSuccessful {
 				// there was an error and the exitcode
 				// was not set to a non-zero value.
 				// set it
-				exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
+				exitCode = constants.ExitCodeUnknownErrorPanic
 			}
 		}
 	}()
@@ -542,22 +541,22 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 	force := cmdconfig.Viper().GetBool(constants.ArgForce)
 	if force {
 		dashboardStopError := dashboardserver.StopDashboardService(ctx)
-		status, dbStopError = db_local.StopServices(ctx, force, constants_steampipe.InvokerService)
+		status, dbStopError = db_local.StopServices(ctx, force, constants.InvokerService)
 		dbStopError = error_helpers.CombineErrors(dbStopError, dashboardStopError)
 		if dbStopError != nil {
-			exitCode = constants_steampipe.ExitCodeServiceStopFailure
+			exitCode = constants.ExitCodeServiceStopFailure
 			error_helpers.FailOnError(dbStopError)
 		}
 	} else {
 		dbState, dbStopError = db_local.GetState()
 		if dbStopError != nil {
-			exitCode = constants_steampipe.ExitCodeServiceStopFailure
+			exitCode = constants.ExitCodeServiceStopFailure
 			error_helpers.FailOnErrorWithMessage(dbStopError, "could not stop Steampipe service")
 		}
 
 		dashboardState, err := dashboardserver.GetDashboardServiceState()
 		if err != nil {
-			exitCode = constants_steampipe.ExitCodeServiceStopFailure
+			exitCode = constants.ExitCodeServiceStopFailure
 			error_helpers.FailOnErrorWithMessage(err, "could not stop Steampipe service")
 		}
 
@@ -565,7 +564,7 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 			fmt.Println("Steampipe service is not running.")
 			return
 		}
-		if dbState.Invoker != constants_steampipe.InvokerService {
+		if dbState.Invoker != constants.InvokerService {
 			printRunningImplicit(dbState.Invoker)
 			return
 		}
@@ -573,7 +572,7 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 		if dashboardState != nil {
 			err = dashboardserver.StopDashboardService(ctx)
 			if err != nil {
-				exitCode = constants_steampipe.ExitCodeServiceStopFailure
+				exitCode = constants.ExitCodeServiceStopFailure
 				error_helpers.FailOnErrorWithMessage(err, "could not stop dashboard server")
 			}
 		}
@@ -581,7 +580,7 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 		// check if there are any connected clients to the service
 		connectedClients, err := db_local.GetClientCount(cmd.Context())
 		if err != nil {
-			exitCode = constants_steampipe.ExitCodeServiceStopFailure
+			exitCode = constants.ExitCodeServiceStopFailure
 			error_helpers.FailOnErrorWithMessage(err, "service stop failed")
 		}
 
@@ -591,9 +590,9 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 			return
 		}
 
-		status, err = db_local.StopServices(ctx, false, constants_steampipe.InvokerService)
+		status, err = db_local.StopServices(ctx, false, constants.InvokerService)
 		if err != nil {
-			exitCode = constants_steampipe.ExitCodeServiceStopFailure
+			exitCode = constants.ExitCodeServiceStopFailure
 			error_helpers.FailOnErrorWithMessage(err, "service stop failed")
 		}
 	}
@@ -753,7 +752,7 @@ Dashboard:
 `, strings.Join(dashboardState.Listen, ", "), dashboardState.Port, browserUrl)
 	}
 
-	if dbState.Invoker == constants_steampipe.InvokerService {
+	if dbState.Invoker == constants.InvokerService {
 		statusMessage = fmt.Sprintf(
 			"%s%s%s%s",
 			prefix,
@@ -772,7 +771,7 @@ To keep the service running after the %s session completes, use %s.
 			msg,
 			fmt.Sprintf("steampipe %s", dbState.Invoker),
 			dbState.Invoker,
-			constants_steampipe.Bold("steampipe service start"),
+			constants.Bold("steampipe service start"),
 		)
 	}
 
@@ -786,12 +785,12 @@ To keep the service running after the %s session completes, use %s.
 Service is running, but the Plugin Manager cannot be recovered.
 Please use %s to recover the service
 `,
-			constants_steampipe.Bold("steampipe service restart"),
+			constants.Bold("steampipe service restart"),
 		))
 	}
 }
 
-func printRunningImplicit(invoker constants_steampipe.Invoker) {
+func printRunningImplicit(invoker constants.Invoker) {
 	fmt.Printf(`
 Steampipe service is running exclusively for an active %s session.
 
@@ -799,7 +798,7 @@ To force stop the service, use %s
 
 `,
 		fmt.Sprintf("steampipe %s", invoker),
-		constants_steampipe.Bold("steampipe service stop --force"),
+		constants.Bold("steampipe service stop --force"),
 	)
 }
 
@@ -811,7 +810,7 @@ Cannot stop service since there are clients connected to the service.
 To force stop the service, use %s
 
 `,
-		constants_steampipe.Bold("steampipe service stop --force"),
+		constants.Bold("steampipe service stop --force"),
 	)
 }
 

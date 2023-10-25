@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"log"
 	"os"
@@ -132,7 +132,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 	statushooks.Message(
 		ctx,
 		fmt.Sprintf("Welcome to Steampipe v%s", version.SteampipeVersion.String()),
-		fmt.Sprintf("For more information, type %s", constants_steampipe.Bold(".help")),
+		fmt.Sprintf("For more information, type %s", constants.Bold(".help")),
 	)
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors
@@ -288,22 +288,22 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) {
 		}),
 		// Opt+LeftArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants_steampipe.OptLeftArrowASCIICode,
+			ASCIICode: constants.OptLeftArrowASCIICode,
 			Fn:        prompt.GoLeftWord,
 		}),
 		// Opt+RightArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants_steampipe.OptRightArrowASCIICode,
+			ASCIICode: constants.OptRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
 		// Alt+LeftArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants_steampipe.AltLeftArrowASCIICode,
+			ASCIICode: constants.AltLeftArrowASCIICode,
 			Fn:        prompt.GoLeftWord,
 		}),
 		// Alt+RightArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants_steampipe.AltRightArrowASCIICode,
+			ASCIICode: constants.AltRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
 		prompt.OptionBufferPreHook(func(input string) (modifiedInput string, ignore bool) {
@@ -546,7 +546,7 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 }
 
 // helper function to acquire db connection and retrieve connection state
-func (c *InteractiveClient) getConnectionState(ctx context.Context) (steampipeconfig.ConnectionStateMap, error) {
+func (c *InteractiveClient) getConnectionState(ctx context.Context) (steampipe_config_local.ConnectionStateMap, error) {
 	statushooks.Show(ctx)
 	defer statushooks.Done(ctx)
 
@@ -556,8 +556,8 @@ func (c *InteractiveClient) getConnectionState(ctx context.Context) (steampipeco
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Release()
-	return steampipe_config_local.LoadConnectionState(ctx, conn.Conn(), steampipe_config_local.WithWaitUntilLoading())
+	defer conn.Close()
+	return steampipe_config_local.LoadConnectionState(ctx, conn, steampipe_config_local.WithWaitUntilLoading())
 }
 
 func (c *InteractiveClient) restartInteractiveSession() {
@@ -733,7 +733,7 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 func (c *InteractiveClient) handleErrorsAndWarningsNotification(ctx context.Context, notification *steampipeconfig.ErrorsAndWarningsNotification) {
 	log.Printf("[TRACE] handleErrorsAndWarningsNotification")
 	output := viper.Get(constants.ArgOutput)
-	if output == constants_steampipe.OutputFormatJSON || output == constants_steampipe.OutputFormatCSV {
+	if output == constants.OutputFormatJSON || output == constants.OutputFormatCSV {
 		return
 	}
 

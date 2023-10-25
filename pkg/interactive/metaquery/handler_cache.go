@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 // controls the cache in the connected FDW
@@ -98,9 +98,9 @@ func showCache(_ context.Context, input *HandlerInput) error {
 
 	fmt.Printf(
 		`Caching is %s. To turn it %s, type %s`,
-		constants_steampipe.Bold(currentStatusString),
-		constants_steampipe.Bold(action),
-		constants_steampipe.Bold(fmt.Sprintf(".cache %s", action)),
+		constants.Bold(currentStatusString),
+		constants.Bold(action),
+		constants.Bold(fmt.Sprintf(".cache %s", action)),
 	)
 
 	// add an empty line here so that the rendering buffer can start from the next line

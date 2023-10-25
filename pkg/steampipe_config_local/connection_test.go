@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/otiai10/copy"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 type getConnectionsToUpdateTest struct {
@@ -505,7 +505,7 @@ func resetConfig(test getConnectionsToUpdateTest) {
 }
 
 func connectionConfigPath(i int) string {
-	fileName := fmt.Sprintf("test%d%s", i, constants_steampipe.ConfigExtension)
+	fileName := fmt.Sprintf("test%d%s", i, constants.ConfigExtension)
 	path := filepath.Join(filepaths_steampipe.EnsureConfigDir(), fileName)
 	return path
 }

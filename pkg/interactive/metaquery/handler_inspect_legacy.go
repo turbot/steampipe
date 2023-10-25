@@ -3,7 +3,7 @@ package metaquery
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/display"
 	"sort"
 	"strings"
@@ -80,7 +80,7 @@ func inspectLegacy(ctx context.Context, input *HandlerInput) error {
 		fmt.Printf(`
 To get information about the columns in a table, run %s
 	
-`, constants_steampipe.Bold(".inspect {connection}.{table}"))
+`, constants.Bold(".inspect {connection}.{table}"))
 		return nil
 	}
 
@@ -111,7 +111,7 @@ func listConnectionsLegacy(ctx context.Context, input *HandlerInput) error {
 To get information about the tables in a connection, run %s
 To get information about the columns in a table, run %s
 
-`, constants_steampipe.Bold(".inspect {connection}"), constants_steampipe.Bold(".inspect {connection}.{table}"))
+`, constants.Bold(".inspect {connection}"), constants.Bold(".inspect {connection}.{table}"))
 
 	return nil
 }

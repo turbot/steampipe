@@ -9,11 +9,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/error_helpers"
-	"github.com/turbot/pipe-fittings/statushooks"
-	"github.com/turbot/pipe-fittings/utils"
-	"github.com/turbot/pipe-fittings/version"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
+
+"github.com/turbot/pipe-fittings/error_helpers"
+"github.com/turbot/pipe-fittings/statushooks"
+"github.com/turbot/pipe-fittings/utils"
+"github.com/turbot/pipe-fittings/version"
+"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 
 var exitCode int

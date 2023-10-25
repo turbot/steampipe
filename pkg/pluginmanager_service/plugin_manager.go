@@ -18,22 +18,22 @@ import (
 	"github.com/sethvargo/go-retry"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
+	"github.com/turbot/pipe-fittings/utils"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkshared "github.com/turbot/steampipe-plugin-sdk/v5/grpc/shared"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/connection"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // PluginManager is the implementation of grpc.PluginManager
@@ -97,7 +97,7 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 	// create a connection pool to connection refresh
 	// in testing, a size of 20 seemed optimal
 	poolsize := 20
-	pool, err := db_local.CreateConnectionPool(ctx, &db_local.CreateDbOptions{Username: constants_steampipe.DatabaseSuperUser}, poolsize)
+	pool, err := db_local.CreateConnectionPool(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
 	if err != nil {
 		return nil, err
 	}
@@ -628,7 +628,7 @@ func (m *PluginManager) setPluginCacheSizeMap() {
 	m.pluginCacheSizeMap = make(map[string]int64, len(m.pluginConnectionConfigMap))
 
 	// read the env var setting cache size
-	maxCacheSizeMb, _ := strconv.Atoi(os.Getenv(constants_steampipe.EnvCacheMaxSize))
+	maxCacheSizeMb, _ := strconv.Atoi(os.Getenv(constants.EnvCacheMaxSize))
 
 	// get total connection count for this pluginInstance (excluding aggregators)
 	numConnections := m.nonAggregatorConnectionCount()

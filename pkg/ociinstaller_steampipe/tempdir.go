@@ -7,9 +7,8 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+"github.com/turbot/pipe-fittings/error_helpers"
 )
-
 type tempDir struct {
 	Path string
 }

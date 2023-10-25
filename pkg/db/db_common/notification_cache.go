@@ -10,8 +10,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
 )
 
 type NotificationListener struct {
@@ -31,7 +31,7 @@ func NewNotificationListener(ctx context.Context, conn *pgx.Conn) (*Notification
 	listener := &NotificationListener{conn: conn}
 
 	// tell the connection to listen to notifications
-	listenSql := fmt.Sprintf("listen %s", constants_steampipe.PostgresNotificationChannel)
+	listenSql := fmt.Sprintf("listen %s", constants.PostgresNotificationChannel)
 	_, err := conn.Exec(ctx, listenSql)
 	if err != nil {
 		log.Printf("[INFO] Error listening to notification channel: %s", err)

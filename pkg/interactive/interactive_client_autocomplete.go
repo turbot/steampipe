@@ -9,11 +9,11 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
@@ -52,9 +52,9 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 	var unqualifiedTablesToAdd = getIntrospectionTableSuggestions()
 
 	// add connection state and rate limit
-	unqualifiedTablesToAdd[constants_steampipe.ConnectionTable] = struct{}{}
-	unqualifiedTablesToAdd[constants_steampipe.PluginInstanceTable] = struct{}{}
-	unqualifiedTablesToAdd[constants_steampipe.RateLimiterDefinitionTable] = struct{}{}
+	unqualifiedTablesToAdd[constants.ConnectionTable] = struct{}{}
+	unqualifiedTablesToAdd[constants.PluginInstanceTable] = struct{}{}
+	unqualifiedTablesToAdd[constants.RateLimiterDefinitionTable] = struct{}{}
 
 	// get the first search path connection for each plugin
 	firstConnectionPerPlugin := connectionStateMap.GetFirstSearchPathConnectionForPlugins(c.client().GetRequiredSessionSearchPath())
@@ -64,7 +64,7 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 	firstConnectionPerPluginLookup[c.schemaMetadata.TemporarySchemaName] = struct{}{}
 
 	for schemaName, schemaDetails := range c.schemaMetadata.Schemas {
-		if connectionState, found := connectionStateMap[schemaName]; found && connectionState.State != constants_steampipe.ConnectionStateReady {
+		if connectionState, found := connectionStateMap[schemaName]; found && connectionState.State != constants.ConnectionStateReady {
 			log.Println("[TRACE] could not find schema in state map or connection is not Ready", schemaName)
 			continue
 		}
@@ -107,27 +107,27 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 func getIntrospectionTableSuggestions() map[string]struct{} {
 	res := make(map[string]struct{})
 	switch strings.ToLower(viper.GetString(constants.ArgIntrospection)) {
-	case constants_steampipe.IntrospectionInfo:
-		res[constants_steampipe.IntrospectionTableQuery] = struct{}{}
-		res[constants_steampipe.IntrospectionTableControl] = struct{}{}
-		res[constants_steampipe.IntrospectionTableBenchmark] = struct{}{}
-		res[constants_steampipe.IntrospectionTableMod] = struct{}{}
-		res[constants_steampipe.IntrospectionTableDashboard] = struct{}{}
-		res[constants_steampipe.IntrospectionTableDashboardContainer] = struct{}{}
-		res[constants_steampipe.IntrospectionTableDashboardCard] = struct{}{}
-		res[constants_steampipe.IntrospectionTableDashboardChart] = struct{}{}
-		res[constants_steampipe.IntrospectionTableDashboardFlow] = struct{}{}
-		res[constants_steampipe.IntrospectionTableDashboardGraph] = struct{}{}
-		res[constants_steampipe.IntrospectionTableDashboardHierarchy] = struct{}{}
-		res[constants_steampipe.IntrospectionTableDashboardImage] = struct{}{}
-		res[constants_steampipe.IntrospectionTableDashboardInput] = struct{}{}
-		res[constants_steampipe.IntrospectionTableDashboardTable] = struct{}{}
-		res[constants_steampipe.IntrospectionTableDashboardText] = struct{}{}
-		res[constants_steampipe.IntrospectionTableVariable] = struct{}{}
-		res[constants_steampipe.IntrospectionTableReference] = struct{}{}
-	case constants_steampipe.IntrospectionControl:
-		res[constants_steampipe.IntrospectionTableControl] = struct{}{}
-		res[constants_steampipe.IntrospectionTableBenchmark] = struct{}{}
+	case constants.IntrospectionInfo:
+		res[constants.IntrospectionTableQuery] = struct{}{}
+		res[constants.IntrospectionTableControl] = struct{}{}
+		res[constants.IntrospectionTableBenchmark] = struct{}{}
+		res[constants.IntrospectionTableMod] = struct{}{}
+		res[constants.IntrospectionTableDashboard] = struct{}{}
+		res[constants.IntrospectionTableDashboardContainer] = struct{}{}
+		res[constants.IntrospectionTableDashboardCard] = struct{}{}
+		res[constants.IntrospectionTableDashboardChart] = struct{}{}
+		res[constants.IntrospectionTableDashboardFlow] = struct{}{}
+		res[constants.IntrospectionTableDashboardGraph] = struct{}{}
+		res[constants.IntrospectionTableDashboardHierarchy] = struct{}{}
+		res[constants.IntrospectionTableDashboardImage] = struct{}{}
+		res[constants.IntrospectionTableDashboardInput] = struct{}{}
+		res[constants.IntrospectionTableDashboardTable] = struct{}{}
+		res[constants.IntrospectionTableDashboardText] = struct{}{}
+		res[constants.IntrospectionTableVariable] = struct{}{}
+		res[constants.IntrospectionTableReference] = struct{}{}
+	case constants.IntrospectionControl:
+		res[constants.IntrospectionTableControl] = struct{}{}
+		res[constants.IntrospectionTableBenchmark] = struct{}{}
 	}
 	return res
 }

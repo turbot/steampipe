@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
 )
 
 type InitResult struct {
@@ -44,7 +44,7 @@ func (r *InitResult) DisplayMessages() {
 	}
 	// do not display message in json or csv output mode
 	output := viper.Get(constants.ArgOutput)
-	if output == constants_steampipe.OutputFormatJSON || output == constants_steampipe.OutputFormatCSV {
+	if output == constants.OutputFormatJSON || output == constants.OutputFormatCSV {
 		return
 	}
 	for _, w := range r.Warnings {

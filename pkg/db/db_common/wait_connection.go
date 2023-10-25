@@ -10,10 +10,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 var ErrServiceInRecoveryMode = errors.New("service is in recovery mode")
@@ -41,8 +40,8 @@ func WaitForConnection(ctx context.Context, connStr string, options ...WaitOptio
 	defer utils.LogTime("db.waitForConnection end")
 
 	config := &waitConfig{
-		retryInterval: constants_steampipe.DBConnectionRetryBackoff,
-		timeout:       constants_steampipe.DBStartTimeout,
+		retryInterval: constants.DBConnectionRetryBackoff,
+		timeout:       constants.DBStartTimeout,
 	}
 
 	for _, o := range options {
@@ -92,8 +91,8 @@ func WaitForConnectionPing(ctx context.Context, connection *pgx.Conn, waitOption
 	defer utils.LogTime("db.waitForConnection end")
 
 	config := &waitConfig{
-		retryInterval: constants_steampipe.ServicePingInterval,
-		timeout:       constants_steampipe.DBStartTimeout,
+		retryInterval: constants.ServicePingInterval,
+		timeout:       constants.DBStartTimeout,
 	}
 
 	for _, o := range waitOptions {
@@ -125,7 +124,7 @@ func WaitForRecovery(ctx context.Context, connection *pgx.Conn, waitOptions ...W
 	defer utils.LogTime("db_common.WaitForRecovery end")
 
 	config := &waitConfig{
-		retryInterval: constants_steampipe.ServicePingInterval,
+		retryInterval: constants.ServicePingInterval,
 		timeout:       time.Duration(0),
 	}
 

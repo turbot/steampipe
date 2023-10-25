@@ -20,9 +20,9 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/controldisplay"
+
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/queryresult"
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -36,13 +36,13 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 	}
 
 	switch cmdconfig.Viper().GetString(constants.ArgOutput) {
-	case constants_steampipe.OutputFormatJSON:
+	case constants.OutputFormatJSON:
 		rowErrors = displayJSON(ctx, result)
-	case constants_steampipe.OutputFormatCSV:
+	case constants.OutputFormatCSV:
 		rowErrors = displayCSV(ctx, result)
-	case constants_steampipe.OutputFormatLine:
+	case constants.OutputFormatLine:
 		rowErrors = displayLine(ctx, result)
-	case constants_steampipe.OutputFormatTable:
+	case constants.OutputFormatTable:
 		rowErrors = displayTable(ctx, result)
 	}
 
@@ -302,7 +302,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) int {
 		colConfigs = append(colConfigs, table.ColumnConfig{
 			Name:     column.Name,
 			Number:   idx + 1,
-			WidthMax: constants_steampipe.MaxColumnWidth,
+			WidthMax: constants.MaxColumnWidth,
 		})
 	}
 

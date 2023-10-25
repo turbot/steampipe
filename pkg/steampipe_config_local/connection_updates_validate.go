@@ -2,13 +2,13 @@ package steampipe_config_local
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"log"
 	"strings"
 
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 	sdkversion "github.com/turbot/steampipe-plugin-sdk/v5/version"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func (u *ConnectionUpdates) validate() {
@@ -129,7 +129,7 @@ func BuildValidationWarningString(failures []*ValidationFailure) string {
 
 %d %s not imported.
 `,
-		constants_steampipe.Red(fmt.Sprintf("%d Connection Validation %s", failureCount, utils.Pluralize("Error", failureCount))),
+		constants.Red(fmt.Sprintf("%d Connection Validation %s", failureCount, utils.Pluralize("Error", failureCount))),
 		strings.Join(warningsStrings, "\n\n"),
 		failureCount,
 		utils.Pluralize("connection", failureCount))

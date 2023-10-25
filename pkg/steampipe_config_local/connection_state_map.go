@@ -2,16 +2,15 @@ package steampipe_config_local
 
 import (
 	"encoding/json"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"log"
 	"os"
 	"time"
 
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/utils"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 )
 
@@ -41,7 +40,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 		//// if plugin is not installed, the path will be returned as empty
 		//if pluginPath == "" {
 		//	missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
-		//	connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
+		//	connection.Error = fmt.Errorf(constants_steampipe.ConnectionErrorPluginNotInstalled)
 		//}
 
 		// if the connection is in error, create an error connection state
@@ -80,7 +79,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 		requiredState[name].CommentsSet = true
 		// if schema import is disabled, set desired state as disabled
 		if connection.ImportSchema == modconfig.ImportSchemaDisabled {
-			requiredState[name].State = constants_steampipe.ConnectionStateDisabled
+			requiredState[name].State = constants.ConnectionStateDisabled
 		}
 		// NOTE: if the connection exists in the current state, copy the connection mod time
 		// (this will be updated to 'now' later if we are updating the connection)
@@ -109,7 +108,7 @@ func (m ConnectionStateMap) GetSummary() ConnectionStateSummary {
 // Pending returns whether there are any connections in the map which are pending
 // this indicates that the db has just started and RefreshConnections has not been called yet
 func (m ConnectionStateMap) Pending() bool {
-	return m.ConnectionsInState(constants_steampipe.ConnectionStatePending, constants_steampipe.ConnectionStatePendingIncomplete)
+	return m.ConnectionsInState(constants.ConnectionStatePending, constants.ConnectionStatePendingIncomplete)
 }
 
 // Loaded returns whether loading is complete, i.e.  all connections are either ready or error
@@ -234,11 +233,11 @@ func (m ConnectionStateMap) getFirstSearchPathConnectionMapForPlugins(searchPath
 
 func (m ConnectionStateMap) SetConnectionsToPendingOrIncomplete() {
 	for _, state := range m {
-		if state.State == constants_steampipe.ConnectionStateReady {
-			state.State = constants_steampipe.ConnectionStatePending
+		if state.State == constants.ConnectionStateReady {
+			state.State = constants.ConnectionStatePending
 			state.ConnectionModTime = time.Now()
-		} else if state.State != constants_steampipe.ConnectionStateDisabled {
-			state.State = constants_steampipe.ConnectionStatePendingIncomplete
+		} else if state.State != constants.ConnectionStateDisabled {
+			state.State = constants.ConnectionStatePendingIncomplete
 			state.ConnectionModTime = time.Now()
 		}
 	}

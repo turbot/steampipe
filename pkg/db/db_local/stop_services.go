@@ -13,11 +13,12 @@ import (
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/constants/runtime"
 	"github.com/turbot/pipe-fittings/db_common"
-	"github.com/turbot/pipe-fittings/error_helpers"
-	"github.com/turbot/pipe-fittings/filepaths"
-	"github.com/turbot/pipe-fittings/statushooks"
-	"github.com/turbot/pipe-fittings/utils"
-	"github.com/turbot/steampipe/pkg/pluginmanager"
+
+"github.com/turbot/pipe-fittings/error_helpers"
+"github.com/turbot/pipe-fittings/filepaths"
+"github.com/turbot/pipe-fittings/statushooks"
+"github.com/turbot/pipe-fittings/utils"
+"github.com/turbot/steampipe/pkg/pluginmanager"
 )
 
 // StopStatus is a pseudoEnum for service stop result

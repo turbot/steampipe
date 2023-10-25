@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"log"
+"github.com/turbot/pipe-fittings/error_helpers"
+"log"
 )
 
 func (m *PluginManager) SendPostgresSchemaNotification(ctx context.Context) error {

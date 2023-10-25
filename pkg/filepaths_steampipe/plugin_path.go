@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 func GetPluginPath(pluginImageRef, pluginAlias string) (string, error) {
@@ -33,7 +33,7 @@ func GetPluginPath(pluginImageRef, pluginAlias string) (string, error) {
 	}
 	var matches []string
 	for _, entry := range entries {
-		if filepath.Ext(entry.Name()) == constants_steampipe.PluginExtension {
+		if filepath.Ext(entry.Name()) == constants.PluginExtension {
 			matches = append(matches, entry.Name())
 		}
 	}

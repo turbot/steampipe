@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/display"
 )
 
@@ -14,7 +14,7 @@ func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
 	if len(input.args()) == 0 {
 		sessionSearchPath := input.Client.GetRequiredSessionSearchPath()
 
-		sessionSearchPath = helpers.RemoveFromStringSlice(sessionSearchPath, constants_steampipe.InternalSchema)
+		sessionSearchPath = helpers.RemoveFromStringSlice(sessionSearchPath, constants.InternalSchema)
 
 		display.ShowWrappedTable(
 			[]string{"search_path"},

@@ -3,10 +3,10 @@ package introspection
 import (
 	"fmt"
 
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/constants"
 	"golang.org/x/exp/maps"
 )
 
@@ -41,7 +41,7 @@ func GetConnectionStateTableCreateSql() []db_common.QueryWithArgs {
 func GetConnectionStateTableGrantSql() []db_common.QueryWithArgs {
 	queryFormat := fmt.Sprintf(
 		`GRANT SELECT ON TABLE %%s.%%s TO %s;`,
-		constants_steampipe.DatabaseUsersRole,
+		constants.DatabaseUsersRole,
 	)
 	return getConnectionStateQueries(queryFormat, nil)
 }
@@ -54,7 +54,7 @@ SET state = '%s',
 	connection_mod_time = now()
 WHERE
 	name = $2
-	`, constants_steampipe.ConnectionStateError)
+	`, constants.ConnectionStateError)
 
 	args := []any{err.Error(), connectionName}
 	return getConnectionStateQueries(queryFormat, args)
@@ -71,7 +71,7 @@ WHERE
 AND state <> 'disabled' 
 AND state <> 'error' 
 	`,
-		constants_steampipe.ConnectionStateError)
+		constants.ConnectionStateError)
 	args := []any{err.Error()}
 	return getConnectionStateQueries(queryFormat, args)
 }
@@ -161,7 +161,7 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),now(),$12,$13,$14)
 
 	args := []any{
 		c.Name,
-		constants_steampipe.ConnectionStatePendingIncomplete,
+		constants.ConnectionStatePendingIncomplete,
 		c.Type,
 		maps.Keys(c.Connections),
 		c.ImportSchema,
@@ -206,8 +206,8 @@ WHERE NAME=$2`
 }
 
 func getConnectionStateQueries(queryFormat string, args []any) []db_common.QueryWithArgs {
-	query := fmt.Sprintf(queryFormat, constants_steampipe.InternalSchema, constants_steampipe.ConnectionTable)
-	legacyQuery := fmt.Sprintf(queryFormat, constants_steampipe.InternalSchema, constants_steampipe.LegacyConnectionStateTable)
+	query := fmt.Sprintf(queryFormat, constants.InternalSchema, constants.ConnectionTable)
+	legacyQuery := fmt.Sprintf(queryFormat, constants.InternalSchema, constants.LegacyConnectionStateTable)
 	return []db_common.QueryWithArgs{
 		{Query: query, Args: args},
 		{Query: legacyQuery, Args: args},

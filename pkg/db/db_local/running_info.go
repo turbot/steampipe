@@ -14,7 +14,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/filepaths"
-	utils "github.com/turbot/steampipe/pkg/utils"
+	utils "github.com/turbot/pipe-fittings/utils"
 )
 
 const RunningDBStructVersion = 20220411

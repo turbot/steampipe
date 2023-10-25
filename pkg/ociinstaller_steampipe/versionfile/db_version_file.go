@@ -7,7 +7,7 @@ import (
 	"time"
 
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/pipe-fittings/filepaths"
 )
 
 const DatabaseStructVersion = 20220411

@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 // GetState checks that the database instance is running and returns its details
@@ -85,7 +85,7 @@ func errorIfUnknownService() error {
 	}
 	if exists {
 		// if it does, then somehow we don't know about it. Error out
-		return fmt.Errorf("service is running in an unknown state [PID: %d] - try killing it with %s", pid, constants_steampipe.Bold("steampipe service stop --force"))
+		return fmt.Errorf("service is running in an unknown state [PID: %d] - try killing it with %s", pid, constants.Bold("steampipe service stop --force"))
 	}
 
 	// the pid does not exist

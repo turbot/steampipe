@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/filepaths"
 	versionfile "github.com/turbot/pipe-fittings/ociinstaller/versionfile"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 // InstallFdw installs the Steampipe Postgres foreign data wrapper from an OCI image
@@ -25,7 +25,7 @@ func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
 	imageDownloader := NewOciDownloader()
 
 	// download the blobs.
-	image, err := imageDownloader.Download(ctx, NewSteampipeImageRef(constants_steampipe.FdwImageRef), ImageTypeFdw, tempDir.Path)
+	image, err := imageDownloader.Download(ctx, NewSteampipeImageRef(constants.FdwImageRef), ImageTypeFdw, tempDir.Path)
 	if err != nil {
 		return "", err
 	}
@@ -60,7 +60,7 @@ func updateVersionFileFdw(image *SteampipeImage) error {
 func installFdwFiles(image *SteampipeImage, tempdir string) error {
 	fdwBinDir := filepaths_steampipe.GetFDWBinaryDir()
 	fdwBinFileSourcePath := filepath.Join(tempdir, image.Fdw.BinaryFile)
-	fdwBinFileDestPath := filepath.Join(fdwBinDir, constants_steampipe.FdwBinaryFileName)
+	fdwBinFileDestPath := filepath.Join(fdwBinDir, constants.FdwBinaryFileName)
 
 	// NOTE: for Mac M1 machines, if the fdw binary is updated in place without deleting the existing file,
 	// the updated fdw may crash on execution - for an undetermined reason

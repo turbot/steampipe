@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/ociinstaller"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 type PluginInstallReports []*PluginInstallReport
@@ -38,7 +38,7 @@ func (i *PluginInstallReport) installString() string {
 	if i.IsUpdateReport {
 		thisReport = append(
 			thisReport,
-			fmt.Sprintf("Updated plugin: %s%s", constants_steampipe.Bold(i.Plugin), i.Version),
+			fmt.Sprintf("Updated plugin: %s%s", constants.Bold(i.Plugin), i.Version),
 		)
 		if len(i.DocURL) > 0 {
 			thisReport = append(
@@ -49,7 +49,7 @@ func (i *PluginInstallReport) installString() string {
 	} else {
 		thisReport = append(
 			thisReport,
-			fmt.Sprintf("Installed plugin: %s%s", constants_steampipe.Bold(i.Plugin), i.Version),
+			fmt.Sprintf("Installed plugin: %s%s", constants.Bold(i.Plugin), i.Version),
 		)
 		if len(i.DocURL) > 0 {
 			thisReport = append(
@@ -138,7 +138,7 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 				"To install %s which %s not installed, please run %s\n",
 				utils.Pluralize("plugin", len(canBeInstalled)),
 				utils.Pluralize("is", len(canBeInstalled)),
-				constants_steampipe.Bold(fmt.Sprintf(
+				constants.Bold(fmt.Sprintf(
 					"steampipe plugin install %s",
 					strings.Join(pluginList, " "),
 				)),
@@ -155,8 +155,8 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 				"To update %s %s: %s\nTo update all plugins: %s",
 				utils.Pluralize("this", len(pluginList)),
 				utils.Pluralize("plugin", len(pluginList)),
-				constants_steampipe.Bold(fmt.Sprintf("steampipe plugin update %s", strings.Join(pluginList, " "))),
-				constants_steampipe.Bold(fmt.Sprintln("steampipe plugin update --all")),
+				constants.Bold(fmt.Sprintf("steampipe plugin update %s", strings.Join(pluginList, " "))),
+				constants.Bold(fmt.Sprintln("steampipe plugin update --all")),
 			)
 		}
 	}

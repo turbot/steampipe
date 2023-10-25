@@ -11,9 +11,8 @@ import (
 	"github.com/sethvargo/go-retry"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/pipe-fittings/db_common"
+	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/statushooks"
 )
 
 // execute query - if it fails with a "relation not found" error, determine whether this is because the required schema
@@ -116,13 +115,13 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		}
 
 		// if the connection is ready (and has been for more than the backoff interval) , just return the relation not found error
-		if connectionState.State == constants_steampipe.ConnectionStateReady && time.Since(connectionState.ConnectionModTime) > backoffInterval {
+		if connectionState.State == constants.ConnectionStateReady && time.Since(connectionState.ConnectionModTime) > backoffInterval {
 			log.Println("[TRACE] schema", missingSchema, "has been ready for a long time")
 			return queryError
 		}
 
 		// if connection is in error,return the connection error
-		if connectionState.State == constants_steampipe.ConnectionStateError {
+		if connectionState.State == constants.ConnectionStateError {
 			log.Println("[TRACE] schema", missingSchema, "is in error")
 			return fmt.Errorf("connection %s failed to load: %s", missingSchema, typehelpers.SafeString(connectionState.ConnectionError))
 		}

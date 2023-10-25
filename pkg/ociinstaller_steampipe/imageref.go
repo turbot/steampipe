@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/constants"
 )
 
 const (
@@ -89,7 +89,7 @@ func (r *SteampipeImageRef) GetOrgNameAndStream() (string, string, string) {
 	// plugin.Name looks like `hub.steampipe.io/plugins/turbot/aws@latest`
 	split := strings.Split(r.DisplayImageRef(), "/")
 	pluginNameAndStream := strings.Split(split[len(split)-1], "@")
-	if strings.HasPrefix(r.DisplayImageRef(), constants_steampipe.SteampipeHubOCIBase) {
+	if strings.HasPrefix(r.DisplayImageRef(), constants.SteampipeHubOCIBase) {
 		return split[len(split)-2], pluginNameAndStream[0], pluginNameAndStream[1]
 	}
 	return strings.Join(split[0:len(split)-2], "/"), pluginNameAndStream[0], pluginNameAndStream[1]

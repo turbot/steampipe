@@ -1,5 +1,6 @@
 package constants_steampipe
 
+// TODO kai is this needed
 // DefaultConnectionConfigContent is the content of the sample connection config file(default.spc.sample),
 // that is created if it does not exist
 const DefaultConnectionConfigContent = `

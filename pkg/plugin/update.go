@@ -1,10 +1,11 @@
 package plugin
 
 import (
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"runtime"
 
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/ociinstaller"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 // SkipUpdate determines if the latest version in a "stream"
@@ -17,7 +18,7 @@ func SkipUpdate(report VersionCheckReport) (bool, string) {
 	}
 
 	// 2) If we are M1, current installed version is AMD, and ARM is available - update
-	if isRunningAsMacM1() && manifestHasM1Binary(report.CheckResponse.Manifest) && report.Plugin.BinaryArchitecture != constants_steampipe.ArchARM64 {
+	if isRunningAsMacM1() && manifestHasM1Binary(report.CheckResponse.Manifest) && report.Plugin.BinaryArchitecture != constants.ArchARM64 {
 		return false, ""
 	}
 
@@ -30,7 +31,7 @@ func SkipUpdate(report VersionCheckReport) (bool, string) {
 // problem, since they will be running under 'rosetta'
 // TODO: Find a way to determine the underlying architecture, rather than depending on Go runtime
 func isRunningAsMacM1() bool {
-	return runtime.GOOS == constants_steampipe.OSDarwin && runtime.GOARCH == constants_steampipe.ArchARM64
+	return runtime.GOOS == constants.OSDarwin && runtime.GOARCH == constants.ArchARM64
 }
 
 func manifestHasM1Binary(manifest responseManifest) bool {

@@ -4,18 +4,18 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/constants"
 	// TODO move to pipe-fittings?
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/steampipe/pkg/db/platform"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 func ServiceExecutableRelativeLocation() string {
-	return filepath.Join("db", constants_steampipe.DatabaseVersion, "postgres", "bin", "postgres")
+	return filepath.Join("db", constants.DatabaseVersion, "postgres", "bin", "postgres")
 }
 
 func DatabaseInstanceDir() string {
-	loc := filepath.Join(EnsureDatabaseDir(), constants_steampipe.DatabaseVersion)
+	loc := filepath.Join(EnsureDatabaseDir(), constants.DatabaseVersion)
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
 		error_helpers.FailOnErrorWithMessage(err, "could not create db version directory")
@@ -48,19 +48,19 @@ func DatabaseBackupFilePath() string {
 }
 
 func GetRootCertLocation() string {
-	return filepath.Join(GetDataLocation(), constants_steampipe.RootCert)
+	return filepath.Join(GetDataLocation(), constants.RootCert)
 }
 
 func GetRootCertKeyLocation() string {
-	return filepath.Join(GetDataLocation(), constants_steampipe.RootCertKey)
+	return filepath.Join(GetDataLocation(), constants.RootCertKey)
 }
 
 func GetServerCertLocation() string {
-	return filepath.Join(GetDataLocation(), constants_steampipe.ServerCert)
+	return filepath.Join(GetDataLocation(), constants.ServerCert)
 }
 
 func GetServerCertKeyLocation() string {
-	return filepath.Join(GetDataLocation(), constants_steampipe.ServerCertKey)
+	return filepath.Join(GetDataLocation(), constants.ServerCertKey)
 }
 
 func GetInitDbBinaryExecutablePath() string {

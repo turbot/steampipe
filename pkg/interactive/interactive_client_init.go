@@ -3,13 +3,13 @@ package interactive
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
-	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/pipe-fittings/db_common"
 	"log"
 	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/workspace"
@@ -181,6 +181,7 @@ func (c *InteractiveClient) workspace() *workspace.Workspace {
 
 // return the client, or nil if not yet initialised
 func (c *InteractiveClient) client() steampipe_db_common.Client {
+	// TODO KAI wrap initdata client with steampipe client
 	if c.initData == nil {
 		return nil
 	}

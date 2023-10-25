@@ -7,14 +7,14 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_client"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/export"
+	"github.com/turbot/pipe-fittings/initialisation"
 	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/export"
-	"github.com/turbot/steampipe/pkg/initialisation"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/workspace"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/workspace"
 )
 
 type InitData struct {
@@ -35,7 +35,7 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 		Loaded:   make(chan struct{}),
 	}
 	// for interactive mode - do the home directory modfile check before init
-	if viper.GetBool(constants_steampipe.ConfigKeyInteractive) {
+	if viper.GetBool(constants.ConfigKeyInteractive) {
 		path := viper.GetString(constants.ArgModLocation)
 		modFilePath, _ := workspace.FindModFilePath(path)
 
@@ -46,7 +46,7 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 			return i
 		}
 		// home dir modfile already done - set the viper config
-		viper.Set(constants_steampipe.ConfigKeyBypassHomeDirModfileWarning, true)
+		viper.Set(constants.ConfigKeyBypassHomeDirModfileWarning, true)
 	}
 	go i.init(ctx, args)
 
@@ -131,7 +131,7 @@ func (i *InitData) init(ctx context.Context, args []string) {
 	// and call base init
 	i.InitData.Init(
 		ctx,
-		constants_steampipe.InvokerQuery,
+		constants.InvokerQuery,
 		db_client.WithUserPoolOverride(db_client.PoolOverrides{
 			Size:        1,
 			MaxLifeTime: 24 * time.Hour,

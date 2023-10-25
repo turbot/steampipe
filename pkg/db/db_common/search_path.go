@@ -7,14 +7,14 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/constants"
 )
 
 func EnsureInternalSchemaSuffix(searchPath []string) []string {
 	// remove the InternalSchema
-	searchPath = helpers.RemoveFromStringSlice(searchPath, constants_steampipe.InternalSchema)
+	searchPath = helpers.RemoveFromStringSlice(searchPath, constants.InternalSchema)
 	// append the InternalSchema
-	searchPath = append(searchPath, constants_steampipe.InternalSchema)
+	searchPath = append(searchPath, constants.InternalSchema)
 	return searchPath
 }
 

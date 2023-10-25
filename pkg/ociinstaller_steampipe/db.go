@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/turbot/pipe-fittings/constants"
 	versionfile "github.com/turbot/pipe-fittings/ociinstaller/versionfile"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 // InstallDB :: Install Postgres files fom OCI image
@@ -22,7 +22,7 @@ func InstallDB(ctx context.Context, dblocation string) (string, error) {
 	imageDownloader := NewOciDownloader()
 
 	// Download the blobs
-	image, err := imageDownloader.Download(ctx, NewSteampipeImageRef(constants_steampipe.PostgresImageRef), ImageTypeDatabase, tempDir.Path)
+	image, err := imageDownloader.Download(ctx, NewSteampipeImageRef(constants.PostgresImageRef), ImageTypeDatabase, tempDir.Path)
 	if err != nil {
 		return "", err
 	}

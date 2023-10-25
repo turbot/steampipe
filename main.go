@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/constants"
 	"os"
 	"os/exec"
 	"runtime"
@@ -12,13 +13,12 @@ import (
 	"github.com/hashicorp/go-version"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/cmd"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
-var exitCode int = constants_steampipe.ExitCodeSuccessful
+var exitCode int = constants.ExitCodeSuccessful
 
 func main() {
 	ctx := context.Background()
@@ -27,7 +27,7 @@ func main() {
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
 			if exitCode == 0 {
-				exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
+				exitCode = constants.ExitCodeUnknownErrorPanic
 			}
 		}
 		utils.LogTime("main end")
@@ -54,7 +54,7 @@ func main() {
 // postgresql engine.
 func checkRoot(ctx context.Context) {
 	if os.Geteuid() == 0 {
-		exitCode = constants_steampipe.ExitCodeInvalidExecutionEnvironment
+		exitCode = constants.ExitCodeInvalidExecutionEnvironment
 		error_helpers.ShowError(ctx, fmt.Errorf(`Steampipe cannot be run as the "root" user.
 To reduce security risk, use an unprivileged user account instead.`))
 		os.Exit(exitCode)
@@ -70,7 +70,7 @@ To reduce security risk, use an unprivileged user account instead.`))
 	 */
 
 	if os.Geteuid() != os.Getuid() {
-		exitCode = constants_steampipe.ExitCodeInvalidExecutionEnvironment
+		exitCode = constants.ExitCodeInvalidExecutionEnvironment
 		error_helpers.ShowError(ctx, fmt.Errorf("real and effective user IDs must match."))
 		os.Exit(exitCode)
 	}
@@ -111,7 +111,7 @@ func checkWsl1(ctx context.Context) {
 			return
 		} else {
 			error_helpers.ShowError(ctx, fmt.Errorf("Steampipe requires WSL2, please upgrade and try again."))
-			os.Exit(constants_steampipe.ExitCodeInvalidExecutionEnvironment)
+			os.Exit(constants.ExitCodeInvalidExecutionEnvironment)
 		}
 	}
 }
@@ -144,6 +144,6 @@ func checkOSXVersion(ctx context.Context) {
 	// check if Darwin version is not less than Catalina(Darwin version 19.0.0)
 	if version.Compare(catalina) == -1 {
 		error_helpers.ShowError(ctx, fmt.Errorf("Steampipe requires MacOS 10.15 (Catalina) and above, please upgrade and try again."))
-		os.Exit(constants_steampipe.ExitCodeInvalidExecutionEnvironment)
+		os.Exit(constants.ExitCodeInvalidExecutionEnvironment)
 	}
 }

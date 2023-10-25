@@ -19,19 +19,18 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/logging"
+	"github.com/turbot/pipe-fittings/cloud"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/constants/runtime"
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
+	"github.com/turbot/pipe-fittings/utils"
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/cloud"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"github.com/turbot/steampipe/pkg/task"
-	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
 
@@ -60,9 +59,9 @@ func preRunHook(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmdhook.preRunHook start")
 	defer utils.LogTime("cmdhook.preRunHook end")
 
-	viper.Set(constants_steampipe.ConfigKeyActiveCommand, cmd)
-	viper.Set(constants_steampipe.ConfigKeyActiveCommandArgs, args)
-	viper.Set(constants_steampipe.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
+	viper.Set(constants.ConfigKeyActiveCommand, cmd)
+	viper.Set(constants.ConfigKeyActiveCommandArgs, args)
+	viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
 
 	// steampipe completion should not create INSTALL DIR or seup/init global config
 	if cmd.Name() == "completion" {
@@ -195,7 +194,7 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	// set global workspace profile
 	steampipeconfig.GlobalWorkspaceProfile = loader.GetActiveWorkspaceProfile()
 
-	var cmd = viper.Get(constants_steampipe.ConfigKeyActiveCommand).(*cobra.Command)
+	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	// set-up viper with defaults from the env and default workspace profile
 	err = bootstrapViper(loader, cmd)
 	if err != nil {
@@ -267,7 +266,7 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 		viper.SetDefault(constants.ArgCloudToken, *loader.DefaultProfile.CloudToken)
 	}
 	// 3) env var (STEAMIPE_CLOUD_TOKEN )
-	SetDefaultFromEnv(constants_steampipe.EnvCloudToken, constants.ArgCloudToken, String)
+	SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgCloudToken, String)
 
 	// 4) explicit workspace profile
 	if p := loader.ConfiguredProfile; p != nil && p.CloudToken != nil {
@@ -278,9 +277,9 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 
 func getWorkspaceProfileLoader() (*steampipeconfig.WorkspaceProfileLoader, error) {
 	// set viper default for workspace profile, using STEAMPIPE_WORKSPACE env var
-	SetDefaultFromEnv(constants_steampipe.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, String)
+	SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, String)
 	// set viper default for install dir, using STEAMPIPE_INSTALL_DIR env var
-	SetDefaultFromEnv(constants_steampipe.EnvInstallDir, constants.ArgInstallDir, String)
+	SetDefaultFromEnv(constants.EnvInstallDir, constants.ArgInstallDir, String)
 
 	// resolve the workspace profile dir
 	installDir, err := filehelpers.Tildefy(viper.GetString(constants.ArgInstallDir))
@@ -307,8 +306,8 @@ func getWorkspaceProfileLoader() (*steampipeconfig.WorkspaceProfileLoader, error
 func validateConfig() *error_helpers.ErrorAndWarnings {
 	var res = &error_helpers.ErrorAndWarnings{}
 	telemetry := viper.GetString(constants.ArgTelemetry)
-	if !helpers.StringSliceContains(constants_steampipe.TelemetryLevels, telemetry) {
-		res.Error = sperr.New(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants_steampipe.TelemetryLevels, ", "))
+	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
+		res.Error = sperr.New(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
 		return res
 	}
 	if _, legacyDiagnosticsSet := os.LookupEnv(plugin.EnvLegacyDiagnosticsLevel); legacyDiagnosticsSet {

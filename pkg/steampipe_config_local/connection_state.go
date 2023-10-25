@@ -6,9 +6,9 @@ import (
 	"time"
 
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 // ConnectionState is a struct containing all details for a connection
@@ -52,7 +52,7 @@ func NewConnectionState(connection *modconfig.Connection, creationTime time.Time
 		PluginInstance: connection.PluginInstance,
 		ConnectionName: connection.Name,
 		PluginModTime:  creationTime,
-		State:          constants_steampipe.ConnectionStateReady,
+		State:          constants.ConnectionStateReady,
 		Type:           &connection.Type,
 		ImportSchema:   connection.ImportSchema,
 		Connections:    connection.ConnectionNames,
@@ -118,18 +118,18 @@ func (d *ConnectionState) Error() string {
 }
 
 func (d *ConnectionState) SetError(err string) {
-	d.State = constants_steampipe.ConnectionStateError
+	d.State = constants.ConnectionStateError
 	d.ConnectionError = &err
 }
 
 // Loaded returns true if the connection state is 'ready' or 'error'
 // Disabled connections are considered as 'loaded'
 func (d *ConnectionState) Loaded() bool {
-	return d.Disabled() || d.State == constants_steampipe.ConnectionStateReady || d.State == constants_steampipe.ConnectionStateError
+	return d.Disabled() || d.State == constants.ConnectionStateReady || d.State == constants.ConnectionStateError
 }
 
 func (d *ConnectionState) Disabled() bool {
-	return d.State == constants_steampipe.ConnectionStateDisabled
+	return d.State == constants.ConnectionStateDisabled
 }
 
 func (d *ConnectionState) GetType() string {

@@ -3,11 +3,10 @@ package interactive
 import (
 	"context"
 
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/queryresult"
 	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query"
-	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
 
 type RunInteractivePromptResult struct {
@@ -25,7 +24,7 @@ func RunInteractivePrompt(ctx context.Context, initData *query.InitData) *RunInt
 	if err != nil {
 		error_helpers.ShowErrorWithMessage(ctx, err, "interactive client failed to initialize")
 		// do not bind shutdown to any cancellable context
-		db_local.ShutdownService(ctx, constants_steampipe.InvokerQuery)
+		db_local.ShutdownService(ctx, constants.InvokerQuery)
 		res.PromptErr = err
 		return res
 	}

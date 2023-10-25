@@ -12,10 +12,10 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -28,9 +28,9 @@ func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfi
 
 	// convert to lowercase to avoid case sensitivity
 	switch strings.ToLower(viper.GetString(constants.ArgIntrospection)) {
-	case constants_steampipe.IntrospectionInfo:
+	case constants.IntrospectionInfo:
 		return populateAllIntrospectionTables(ctx, workspaceResources, tx, commonColumnSql)
-	case constants_steampipe.IntrospectionControl:
+	case constants.IntrospectionControl:
 		return populateControlIntrospectionTables(ctx, workspaceResources, tx, commonColumnSql)
 	default:
 		return nil
@@ -77,23 +77,23 @@ func populateControlIntrospectionTables(ctx context.Context, workspaceResources 
 
 func getCreateTablesSql(commonColumnSql []string) string {
 	var createSql []string
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Control{}, constants_steampipe.IntrospectionTableControl, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Query{}, constants_steampipe.IntrospectionTableQuery, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Benchmark{}, constants_steampipe.IntrospectionTableBenchmark, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Mod{}, constants_steampipe.IntrospectionTableMod, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Variable{}, constants_steampipe.IntrospectionTableVariable, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Dashboard{}, constants_steampipe.IntrospectionTableDashboard, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardContainer{}, constants_steampipe.IntrospectionTableDashboardContainer, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardCard{}, constants_steampipe.IntrospectionTableDashboardCard, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardChart{}, constants_steampipe.IntrospectionTableDashboardChart, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardFlow{}, constants_steampipe.IntrospectionTableDashboardFlow, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardGraph{}, constants_steampipe.IntrospectionTableDashboardGraph, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardHierarchy{}, constants_steampipe.IntrospectionTableDashboardHierarchy, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardImage{}, constants_steampipe.IntrospectionTableDashboardImage, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardInput{}, constants_steampipe.IntrospectionTableDashboardInput, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardTable{}, constants_steampipe.IntrospectionTableDashboardTable, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardText{}, constants_steampipe.IntrospectionTableDashboardText, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.ResourceReference{}, constants_steampipe.IntrospectionTableReference, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Control{}, constants.IntrospectionTableControl, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Query{}, constants.IntrospectionTableQuery, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Mod{}, constants.IntrospectionTableMod, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Variable{}, constants.IntrospectionTableVariable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Dashboard{}, constants.IntrospectionTableDashboard, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardContainer{}, constants.IntrospectionTableDashboardContainer, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardCard{}, constants.IntrospectionTableDashboardCard, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardChart{}, constants.IntrospectionTableDashboardChart, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardFlow{}, constants.IntrospectionTableDashboardFlow, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardGraph{}, constants.IntrospectionTableDashboardGraph, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardHierarchy{}, constants.IntrospectionTableDashboardHierarchy, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardImage{}, constants.IntrospectionTableDashboardImage, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardInput{}, constants.IntrospectionTableDashboardInput, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardTable{}, constants.IntrospectionTableDashboardTable, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.DashboardText{}, constants.IntrospectionTableDashboardText, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.ResourceReference{}, constants.IntrospectionTableReference, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
 
@@ -101,62 +101,62 @@ func getTableInsertSql(workspaceResources *modconfig.ResourceMaps) string {
 	var insertSql []string
 
 	for _, control := range workspaceResources.Controls {
-		insertSql = append(insertSql, getTableInsertSqlForResource(control, constants_steampipe.IntrospectionTableControl))
+		insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.IntrospectionTableControl))
 	}
 	for _, query := range workspaceResources.Queries {
-		insertSql = append(insertSql, getTableInsertSqlForResource(query, constants_steampipe.IntrospectionTableQuery))
+		insertSql = append(insertSql, getTableInsertSqlForResource(query, constants.IntrospectionTableQuery))
 	}
 	for _, benchmark := range workspaceResources.Benchmarks {
-		insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants_steampipe.IntrospectionTableBenchmark))
+		insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.IntrospectionTableBenchmark))
 	}
 	for _, mod := range workspaceResources.Mods {
 		if !mod.IsDefaultMod() {
-			insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants_steampipe.IntrospectionTableMod))
+			insertSql = append(insertSql, getTableInsertSqlForResource(mod, constants.IntrospectionTableMod))
 		}
 	}
 	for _, variable := range workspaceResources.Variables {
-		insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants_steampipe.IntrospectionTableVariable))
+		insertSql = append(insertSql, getTableInsertSqlForResource(variable, constants.IntrospectionTableVariable))
 	}
 	for _, dashboard := range workspaceResources.Dashboards {
-		insertSql = append(insertSql, getTableInsertSqlForResource(dashboard, constants_steampipe.IntrospectionTableDashboard))
+		insertSql = append(insertSql, getTableInsertSqlForResource(dashboard, constants.IntrospectionTableDashboard))
 	}
 	for _, container := range workspaceResources.DashboardContainers {
-		insertSql = append(insertSql, getTableInsertSqlForResource(container, constants_steampipe.IntrospectionTableDashboardContainer))
+		insertSql = append(insertSql, getTableInsertSqlForResource(container, constants.IntrospectionTableDashboardContainer))
 	}
 	for _, card := range workspaceResources.DashboardCards {
-		insertSql = append(insertSql, getTableInsertSqlForResource(card, constants_steampipe.IntrospectionTableDashboardCard))
+		insertSql = append(insertSql, getTableInsertSqlForResource(card, constants.IntrospectionTableDashboardCard))
 	}
 	for _, chart := range workspaceResources.DashboardCharts {
-		insertSql = append(insertSql, getTableInsertSqlForResource(chart, constants_steampipe.IntrospectionTableDashboardChart))
+		insertSql = append(insertSql, getTableInsertSqlForResource(chart, constants.IntrospectionTableDashboardChart))
 	}
 	for _, flow := range workspaceResources.DashboardFlows {
-		insertSql = append(insertSql, getTableInsertSqlForResource(flow, constants_steampipe.IntrospectionTableDashboardFlow))
+		insertSql = append(insertSql, getTableInsertSqlForResource(flow, constants.IntrospectionTableDashboardFlow))
 	}
 	for _, graph := range workspaceResources.DashboardGraphs {
-		insertSql = append(insertSql, getTableInsertSqlForResource(graph, constants_steampipe.IntrospectionTableDashboardGraph))
+		insertSql = append(insertSql, getTableInsertSqlForResource(graph, constants.IntrospectionTableDashboardGraph))
 	}
 	for _, hierarchy := range workspaceResources.DashboardHierarchies {
-		insertSql = append(insertSql, getTableInsertSqlForResource(hierarchy, constants_steampipe.IntrospectionTableDashboardHierarchy))
+		insertSql = append(insertSql, getTableInsertSqlForResource(hierarchy, constants.IntrospectionTableDashboardHierarchy))
 	}
 	for _, image := range workspaceResources.DashboardImages {
-		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants_steampipe.IntrospectionTableDashboardImage))
+		insertSql = append(insertSql, getTableInsertSqlForResource(image, constants.IntrospectionTableDashboardImage))
 	}
 	for _, dashboardInputs := range workspaceResources.DashboardInputs {
 		for _, input := range dashboardInputs {
-			insertSql = append(insertSql, getTableInsertSqlForResource(input, constants_steampipe.IntrospectionTableDashboardInput))
+			insertSql = append(insertSql, getTableInsertSqlForResource(input, constants.IntrospectionTableDashboardInput))
 		}
 	}
 	for _, input := range workspaceResources.GlobalDashboardInputs {
-		insertSql = append(insertSql, getTableInsertSqlForResource(input, constants_steampipe.IntrospectionTableDashboardInput))
+		insertSql = append(insertSql, getTableInsertSqlForResource(input, constants.IntrospectionTableDashboardInput))
 	}
 	for _, table := range workspaceResources.DashboardTables {
-		insertSql = append(insertSql, getTableInsertSqlForResource(table, constants_steampipe.IntrospectionTableDashboardTable))
+		insertSql = append(insertSql, getTableInsertSqlForResource(table, constants.IntrospectionTableDashboardTable))
 	}
 	for _, text := range workspaceResources.DashboardTexts {
-		insertSql = append(insertSql, getTableInsertSqlForResource(text, constants_steampipe.IntrospectionTableDashboardText))
+		insertSql = append(insertSql, getTableInsertSqlForResource(text, constants.IntrospectionTableDashboardText))
 	}
 	for _, reference := range workspaceResources.References {
-		insertSql = append(insertSql, getTableInsertSqlForResource(reference, constants_steampipe.IntrospectionTableReference))
+		insertSql = append(insertSql, getTableInsertSqlForResource(reference, constants.IntrospectionTableReference))
 	}
 
 	return strings.Join(insertSql, "\n")
@@ -200,8 +200,8 @@ func getTableCreateSqlForResource(s interface{}, tableName string, commonColumnS
 
 func getCreateControlTablesSql(commonColumnSql []string) string {
 	var createSql []string
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Control{}, constants_steampipe.IntrospectionTableControl, commonColumnSql))
-	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Benchmark{}, constants_steampipe.IntrospectionTableBenchmark, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Control{}, constants.IntrospectionTableControl, commonColumnSql))
+	createSql = append(createSql, getTableCreateSqlForResource(&modconfig.Benchmark{}, constants.IntrospectionTableBenchmark, commonColumnSql))
 	return strings.Join(createSql, "\n")
 }
 
@@ -209,10 +209,10 @@ func getControlTableInsertSql(workspaceResources *modconfig.ResourceMaps) string
 	var insertSql []string
 
 	for _, control := range workspaceResources.Controls {
-		insertSql = append(insertSql, getTableInsertSqlForResource(control, constants_steampipe.IntrospectionTableControl))
+		insertSql = append(insertSql, getTableInsertSqlForResource(control, constants.IntrospectionTableControl))
 	}
 	for _, benchmark := range workspaceResources.Benchmarks {
-		insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants_steampipe.IntrospectionTableBenchmark))
+		insertSql = append(insertSql, getTableInsertSqlForResource(benchmark, constants.IntrospectionTableBenchmark))
 	}
 
 	return strings.Join(insertSql, "\n")

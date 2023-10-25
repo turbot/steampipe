@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/cloud"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/cloud"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"strings"
+"github.com/turbot/pipe-fittings/error_helpers"
+"strings"
 )
 
 func ValidateSnapshotArgs(ctx context.Context) error {

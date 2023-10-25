@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -61,18 +61,18 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 			newStatus := !currentStatus
 
 			// convert current and new status to on/off
-			currentStatusString := constants_steampipe.BoolToOnOff(currentStatus)
-			newStatusString := constants_steampipe.BoolToOnOff(newStatus)
+			currentStatusString := constants.BoolToOnOff(currentStatus)
+			newStatusString := constants.BoolToOnOff(newStatus)
 
 			// what is the action to get to the new status
-			actionString := constants_steampipe.BoolToEnableDisable(newStatus)
+			actionString := constants.BoolToEnableDisable(newStatus)
 
 			return ValidationResult{
 				Message: fmt.Sprintf(`%s mode is %s. You can %s it with: %s.`,
 					title,
-					constants_steampipe.Bold(currentStatusString),
+					constants.Bold(currentStatusString),
 					actionString,
-					constants_steampipe.Bold(fmt.Sprintf("%s %s", metaquery, newStatusString))),
+					constants.Bold(fmt.Sprintf("%s %s", metaquery, newStatusString))),
 			}
 		}
 		if numArgs > 1 {

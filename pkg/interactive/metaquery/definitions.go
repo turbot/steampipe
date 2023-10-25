@@ -1,7 +1,7 @@
 package metaquery
 
 import (
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/constants"
 )
 
 type metaQueryArg struct {
@@ -22,102 +22,102 @@ var metaQueryDefinitions map[string]metaQueryDefinition
 
 func init() {
 	metaQueryDefinitions = map[string]metaQueryDefinition{
-		constants_steampipe.CmdHelp: {
-			title:       constants_steampipe.CmdHelp,
+		constants.CmdHelp: {
+			title:       constants.CmdHelp,
 			handler:     doHelp,
 			validator:   noArgs,
 			description: "Show steampipe help",
 		},
-		constants_steampipe.CmdExit: {
-			title:       constants_steampipe.CmdExit,
+		constants.CmdExit: {
+			title:       constants.CmdExit,
 			handler:     doExit,
 			validator:   noArgs,
 			description: "Exit from steampipe terminal",
 		},
-		constants_steampipe.CmdQuit: {
-			title:       constants_steampipe.CmdQuit,
+		constants.CmdQuit: {
+			title:       constants.CmdQuit,
 			handler:     doExit,
 			validator:   noArgs,
 			description: "Exit from steampipe terminal",
 		},
-		constants_steampipe.CmdTableList: {
-			title:       constants_steampipe.CmdTableList,
+		constants.CmdTableList: {
+			title:       constants.CmdTableList,
 			handler:     listTables,
 			validator:   atMostNArgs(1),
 			description: "List or describe tables",
 		},
-		constants_steampipe.CmdSeparator: {
-			title:       constants_steampipe.CmdSeparator,
+		constants.CmdSeparator: {
+			title:       constants.CmdSeparator,
 			handler:     setViperConfigFromArg(constants.ArgSeparator),
 			validator:   exactlyNArgs(1),
 			description: "Set csv output separator",
 		},
-		constants_steampipe.CmdHeaders: {
+		constants.CmdHeaders: {
 			title:       "headers",
 			handler:     setHeader,
-			validator:   booleanValidator(constants_steampipe.CmdHeaders, validatorFromArgsOf(constants_steampipe.CmdHeaders)),
+			validator:   booleanValidator(constants.CmdHeaders, validatorFromArgsOf(constants.CmdHeaders)),
 			description: "Enable or disable column headers",
 			args: []metaQueryArg{
 				{value: constants.ArgOn, description: "Turn on headers in output"},
 				{value: constants.ArgOff, description: "Turn off headers in output"},
 			},
-			completer: completerFromArgsOf(constants_steampipe.CmdHeaders),
+			completer: completerFromArgsOf(constants.CmdHeaders),
 		},
-		constants_steampipe.CmdMulti: {
+		constants.CmdMulti: {
 			title:       "multi-line",
 			handler:     setMultiLine,
-			validator:   booleanValidator(constants_steampipe.CmdMulti, validatorFromArgsOf(constants_steampipe.CmdMulti)),
+			validator:   booleanValidator(constants.CmdMulti, validatorFromArgsOf(constants.CmdMulti)),
 			description: "Enable or disable multiline mode",
 			args: []metaQueryArg{
 				{value: constants.ArgOn, description: "Turn on multiline mode"},
 				{value: constants.ArgOff, description: "Turn off multiline mode"},
 			},
-			completer: completerFromArgsOf(constants_steampipe.CmdMulti),
+			completer: completerFromArgsOf(constants.CmdMulti),
 		},
-		constants_steampipe.CmdTiming: {
+		constants.CmdTiming: {
 			title:       "timing",
 			handler:     setTiming,
-			validator:   booleanValidator(constants_steampipe.CmdTiming, validatorFromArgsOf(constants_steampipe.CmdTiming)),
+			validator:   booleanValidator(constants.CmdTiming, validatorFromArgsOf(constants.CmdTiming)),
 			description: "Enable or disable query execution timing",
 			args: []metaQueryArg{
 				{value: constants.ArgOn, description: "Display time elapsed after every query"},
 				{value: constants.ArgOff, description: "Turn off query timer"},
 			},
-			completer: completerFromArgsOf(constants_steampipe.CmdTiming),
+			completer: completerFromArgsOf(constants.CmdTiming),
 		},
-		constants_steampipe.CmdOutput: {
-			title:       constants_steampipe.CmdOutput,
+		constants.CmdOutput: {
+			title:       constants.CmdOutput,
 			handler:     setViperConfigFromArg(constants.ArgOutput),
-			validator:   composeValidator(exactlyNArgs(1), validatorFromArgsOf(constants_steampipe.CmdOutput)),
+			validator:   composeValidator(exactlyNArgs(1), validatorFromArgsOf(constants.CmdOutput)),
 			description: "Set output format: csv, json, table or line",
 			args: []metaQueryArg{
-				{value: constants_steampipe.OutputFormatJSON, description: "Set output to JSON"},
-				{value: constants_steampipe.OutputFormatCSV, description: "Set output to CSV"},
-				{value: constants_steampipe.OutputFormatTable, description: "Set output to Table"},
-				{value: constants_steampipe.OutputFormatLine, description: "Set output to Line"},
+				{value: constants.OutputFormatJSON, description: "Set output to JSON"},
+				{value: constants.OutputFormatCSV, description: "Set output to CSV"},
+				{value: constants.OutputFormatTable, description: "Set output to Table"},
+				{value: constants.OutputFormatLine, description: "Set output to Line"},
 			},
-			completer: completerFromArgsOf(constants_steampipe.CmdOutput),
+			completer: completerFromArgsOf(constants.CmdOutput),
 		},
-		constants_steampipe.CmdCache: {
-			title:       constants_steampipe.CmdCache,
+		constants.CmdCache: {
+			title:       constants.CmdCache,
 			handler:     cacheControl,
-			validator:   validatorFromArgsOf(constants_steampipe.CmdCache),
+			validator:   validatorFromArgsOf(constants.CmdCache),
 			description: "Enable, disable or clear the query cache",
 			args: []metaQueryArg{
 				{value: constants.ArgOn, description: "Turn on caching"},
 				{value: constants.ArgOff, description: "Turn off caching"},
 				{value: constants.ArgClear, description: "Clear the cache"},
 			},
-			completer: completerFromArgsOf(constants_steampipe.CmdCache),
+			completer: completerFromArgsOf(constants.CmdCache),
 		},
-		constants_steampipe.CmdCacheTtl: {
-			title:       constants_steampipe.CmdCacheTtl,
+		constants.CmdCacheTtl: {
+			title:       constants.CmdCacheTtl,
 			handler:     cacheTTL,
 			validator:   atMostNArgs(1),
 			description: "Set the cache ttl (time-to-live)",
 		},
-		constants_steampipe.CmdInspect: {
-			title:   constants_steampipe.CmdInspect,
+		constants.CmdInspect: {
+			title:   constants.CmdInspect,
 			handler: inspect,
 			// .inspect only supports a single arg, however the arg validation code cannot understand escaped arguments
 			// e.g. it will treat csv."my table" as 2 args
@@ -126,40 +126,40 @@ func init() {
 			description: "View connections, tables & column information",
 			completer:   inspectCompleter,
 		},
-		constants_steampipe.CmdConnections: {
-			title:       constants_steampipe.CmdConnections,
+		constants.CmdConnections: {
+			title:       constants.CmdConnections,
 			handler:     listConnections,
 			validator:   noArgs,
 			description: "List active connections",
 		},
-		constants_steampipe.CmdClear: {
-			title:       constants_steampipe.CmdClear,
+		constants.CmdClear: {
+			title:       constants.CmdClear,
 			handler:     clearScreen,
 			validator:   noArgs,
 			description: "Clear the console",
 		},
-		constants_steampipe.CmdSearchPath: {
-			title:       constants_steampipe.CmdSearchPath,
+		constants.CmdSearchPath: {
+			title:       constants.CmdSearchPath,
 			handler:     setOrGetSearchPath,
 			validator:   atMostNArgs(1),
 			description: "Display the current search path, or set the search-path by passing in a comma-separated list",
 		},
-		constants_steampipe.CmdSearchPathPrefix: {
-			title:       constants_steampipe.CmdSearchPathPrefix,
+		constants.CmdSearchPathPrefix: {
+			title:       constants.CmdSearchPathPrefix,
 			handler:     setSearchPathPrefix,
 			validator:   exactlyNArgs(1),
 			description: "Set a prefix to the current search-path",
 		},
-		constants_steampipe.CmdAutoComplete: {
+		constants.CmdAutoComplete: {
 			title:       "auto-complete",
 			handler:     setAutoComplete,
-			validator:   booleanValidator(constants_steampipe.CmdAutoComplete, validatorFromArgsOf(constants_steampipe.CmdAutoComplete)),
+			validator:   booleanValidator(constants.CmdAutoComplete, validatorFromArgsOf(constants.CmdAutoComplete)),
 			description: "Enable or disable auto-completion",
 			args: []metaQueryArg{
 				{value: constants.ArgOn, description: "Turn on auto-completion"},
 				{value: constants.ArgOff, description: "Turn off auto-completion"},
 			},
-			completer: completerFromArgsOf(constants_steampipe.CmdAutoComplete),
+			completer: completerFromArgsOf(constants.CmdAutoComplete),
 		},
 	}
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/constants"
 )
 
 // Viper fetches the global viper instance
@@ -91,21 +91,21 @@ func SetDefaultsFromConfig(configMap map[string]interface{}) {
 func setBaseDefaults() {
 	defaults := map[string]interface{}{
 		// global general options
-		constants.ArgTelemetry:   constants_steampipe.TelemetryInfo,
+		constants.ArgTelemetry:   constants.TelemetryInfo,
 		constants.ArgUpdateCheck: true,
 
 		// workspace profile
 		constants.ArgAutoComplete:  true,
-		constants.ArgIntrospection: constants_steampipe.IntrospectionNone,
+		constants.ArgIntrospection: constants.IntrospectionNone,
 
 		// from global database options
-		constants.ArgDatabasePort:         constants_steampipe.DatabaseDefaultPort,
-		constants.ArgDatabaseStartTimeout: constants_steampipe.DBStartTimeout.Seconds(),
+		constants.ArgDatabasePort:         constants.DatabaseDefaultPort,
+		constants.ArgDatabaseStartTimeout: constants.DBStartTimeout.Seconds(),
 		constants.ArgServiceCacheEnabled:  true,
 		constants.ArgCacheMaxTtl:          300,
 
 		// dashboard
-		constants.ArgDashboardStartTimeout: constants_steampipe.DashboardStartTimeout.Seconds(),
+		constants.ArgDashboardStartTimeout: constants.DashboardStartTimeout.Seconds(),
 
 		// memory
 		constants.ArgMemoryMaxMbPlugin: 1024,
@@ -125,9 +125,9 @@ type envMapping struct {
 // set default values of INSTALL_DIR and ModLocation from env vars
 func setDirectoryDefaultsFromEnv() {
 	envMappings := map[string]envMapping{
-		constants_steampipe.EnvInstallDir:     {[]string{constants.ArgInstallDir}, String},
-		constants_steampipe.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, String},
-		constants_steampipe.EnvModLocation:    {[]string{constants.ArgModLocation}, String},
+		constants.EnvInstallDir:     {[]string{constants.ArgInstallDir}, String},
+		constants.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, String},
+		constants.EnvModLocation:    {[]string{constants.ArgModLocation}, String},
 	}
 
 	for envVar, mapping := range envMappings {
@@ -142,36 +142,36 @@ func setDefaultsFromEnv() {
 
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
-		constants_steampipe.EnvInstallDir:     {[]string{constants.ArgInstallDir}, String},
-		constants_steampipe.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, String},
-		constants_steampipe.EnvModLocation:    {[]string{constants.ArgModLocation}, String},
-		constants_steampipe.EnvIntrospection:  {[]string{constants.ArgIntrospection}, String},
-		constants_steampipe.EnvTelemetry:      {[]string{constants.ArgTelemetry}, String},
-		constants_steampipe.EnvUpdateCheck:    {[]string{constants.ArgUpdateCheck}, Bool},
+		constants.EnvInstallDir:     {[]string{constants.ArgInstallDir}, String},
+		constants.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, String},
+		constants.EnvModLocation:    {[]string{constants.ArgModLocation}, String},
+		constants.EnvIntrospection:  {[]string{constants.ArgIntrospection}, String},
+		constants.EnvTelemetry:      {[]string{constants.ArgTelemetry}, String},
+		constants.EnvUpdateCheck:    {[]string{constants.ArgUpdateCheck}, Bool},
 		// PIPES_HOST needs to be defined before STEAMPIPE_CLOUD_HOST,
 		// so that if STEAMPIPE_CLOUD_HOST is defined, it can override PIPES_HOST
-		constants_steampipe.EnvPipesHost: {[]string{constants.ArgCloudHost}, String},
-		constants_steampipe.EnvCloudHost: {[]string{constants.ArgCloudHost}, String},
+		constants.EnvPipesHost: {[]string{constants.ArgCloudHost}, String},
+		constants.EnvCloudHost: {[]string{constants.ArgCloudHost}, String},
 		// PIPES_TOKEN needs to be defined before STEAMPIPE_CLOUD_TOKEN,
 		// so that if STEAMPIPE_CLOUD_TOKEN is defined, it can override PIPES_TOKEN
-		constants_steampipe.EnvPipesToken: {[]string{constants.ArgCloudToken}, String},
-		constants_steampipe.EnvCloudToken: {[]string{constants.ArgCloudToken}, String},
+		constants.EnvPipesToken: {[]string{constants.ArgCloudToken}, String},
+		constants.EnvCloudToken: {[]string{constants.ArgCloudToken}, String},
 		//
-		constants_steampipe.EnvSnapshotLocation:      {[]string{constants.ArgSnapshotLocation}, String},
-		constants_steampipe.EnvWorkspaceDatabase:     {[]string{constants.ArgWorkspaceDatabase}, String},
-		constants_steampipe.EnvServicePassword:       {[]string{constants.ArgServicePassword}, String},
-		constants_steampipe.EnvDisplayWidth:          {[]string{constants.ArgDisplayWidth}, Int},
-		constants_steampipe.EnvMaxParallel:           {[]string{constants.ArgMaxParallel}, Int},
-		constants_steampipe.EnvQueryTimeout:          {[]string{constants.ArgDatabaseQueryTimeout}, Int},
-		constants_steampipe.EnvDatabaseStartTimeout:  {[]string{constants.ArgDatabaseStartTimeout}, Int},
-		constants_steampipe.EnvDashboardStartTimeout: {[]string{constants.ArgDashboardStartTimeout}, Int},
-		constants_steampipe.EnvCacheTTL:              {[]string{constants.ArgCacheTtl}, Int},
-		constants_steampipe.EnvCacheMaxTTL:           {[]string{constants.ArgCacheMaxTtl}, Int},
-		constants_steampipe.EnvMemoryMaxMb:           {[]string{constants.ArgMemoryMaxMb}, Int},
-		constants_steampipe.EnvMemoryMaxMbPlugin:     {[]string{constants.ArgMemoryMaxMbPlugin}, Int},
+		constants.EnvSnapshotLocation:      {[]string{constants.ArgSnapshotLocation}, String},
+		constants.EnvWorkspaceDatabase:     {[]string{constants.ArgWorkspaceDatabase}, String},
+		constants.EnvServicePassword:       {[]string{constants.ArgServicePassword}, String},
+		constants.EnvDisplayWidth:          {[]string{constants.ArgDisplayWidth}, Int},
+		constants.EnvMaxParallel:           {[]string{constants.ArgMaxParallel}, Int},
+		constants.EnvQueryTimeout:          {[]string{constants.ArgDatabaseQueryTimeout}, Int},
+		constants.EnvDatabaseStartTimeout:  {[]string{constants.ArgDatabaseStartTimeout}, Int},
+		constants.EnvDashboardStartTimeout: {[]string{constants.ArgDashboardStartTimeout}, Int},
+		constants.EnvCacheTTL:              {[]string{constants.ArgCacheTtl}, Int},
+		constants.EnvCacheMaxTTL:           {[]string{constants.ArgCacheMaxTtl}, Int},
+		constants.EnvMemoryMaxMb:           {[]string{constants.ArgMemoryMaxMb}, Int},
+		constants.EnvMemoryMaxMbPlugin:     {[]string{constants.ArgMemoryMaxMbPlugin}, Int},
 
 		// we need this value to go into different locations
-		constants_steampipe.EnvCacheEnabled: {[]string{
+		constants.EnvCacheEnabled: {[]string{
 			constants.ArgClientCacheEnabled,
 			constants.ArgServiceCacheEnabled,
 		}, Bool},

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	utils2 "github.com/turbot/pipe-fittings/utils"
 	"log"
 	"os"
 	"strings"
@@ -12,23 +11,23 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/cloud"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/contexthelpers"
+	"github.com/turbot/pipe-fittings/controlstatus"
+	"github.com/turbot/pipe-fittings/dashboardassets"
+	"github.com/turbot/pipe-fittings/dashboardexecute"
+	"github.com/turbot/pipe-fittings/dashboardserver"
+	"github.com/turbot/pipe-fittings/dashboardtypes"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/export"
+	"github.com/turbot/pipe-fittings/initialisation"
 	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/workspace"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
-	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/contexthelpers"
-	"github.com/turbot/steampipe/pkg/control/controlstatus"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardassets"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/export"
-	"github.com/turbot/steampipe/pkg/initialisation"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/pkg/workspace"
 )
 
 func dashboardCmd() *cobra.Command {
@@ -50,18 +49,18 @@ The current mod is the working directory, or the directory specified by the --mo
 		AddBoolFlag(constants.ArgHelp, false, "Help for dashboard", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddBoolFlag(constants.ArgModInstall, true, "Specify whether to install mod dependencies before running the dashboard").
 		AddStringFlag(constants.ArgDashboardListen, string(dashboardserver.ListenTypeLocal), "Accept connections from: local (localhost only) or network (open)").
-		AddIntFlag(constants.ArgDashboardPort, constants_steampipe.DashboardServerDefaultPort, "Dashboard server port").
+		AddIntFlag(constants.ArgDashboardPort, constants.DashboardServerDefaultPort, "Dashboard server port").
 		AddBoolFlag(constants.ArgBrowser, true, "Specify whether to launch the browser after starting the dashboard server").
 		AddStringSliceFlag(constants.ArgSearchPath, nil, "Set a custom search_path for the steampipe user for a dashboard session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, nil, "Set a prefix to the current search path for a dashboard session (comma-separated)").
-		AddIntFlag(constants.ArgMaxParallel, constants_steampipe.DefaultMaxConnections, "The maximum number of concurrent database connections to open").
+		AddIntFlag(constants.ArgMaxParallel, constants.DefaultMaxConnections, "The maximum number of concurrent database connections to open").
 		AddStringSliceFlag(constants.ArgVarFile, nil, "Specify an .spvar file containing variable values").
 		AddBoolFlag(constants.ArgProgress, true, "Display dashboard execution progress respected when a dashboard name argument is passed").
 		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV, where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, nil, "Specify the value of a variable").
 		AddBoolFlag(constants.ArgInput, true, "Enable interactive prompts").
-		AddStringFlag(constants.ArgOutput, constants_steampipe.OutputFormatNone, "Select a console output format: none, snapshot").
+		AddStringFlag(constants.ArgOutput, constants.OutputFormatNone, "Select a console output format: none, snapshot").
 		AddBoolFlag(constants.ArgSnapshot, false, "Create snapshot in Turbot Pipes with the default (workspace) visibility").
 		AddBoolFlag(constants.ArgShare, false, "Create snapshot in Turbot Pipes with 'anyone_with_link' visibility").
 		AddStringFlag(constants.ArgSnapshotLocation, "", "The location to write snapshots - either a local file path or a Turbot Pipes workspace").
@@ -101,7 +100,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	error_helpers.FailOnError(err)
 
 	// if diagnostic mode is set, print out config and return
-	if _, ok := os.LookupEnv(constants_steampipe.EnvConfigDump); ok {
+	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
 		cmdconfig.DisplayConfig()
 		return
 	}
@@ -129,8 +128,8 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	if serverListen == dashboardserver.ListenTypeLocal {
 		serverHost = "127.0.0.1"
 	}
-	if err := utils2.IsPortBindable(serverHost, int(serverPort)); err != nil {
-		exitCode = constants_steampipe.ExitCodeBindPortUnavailable
+	if err := utils.IsPortBindable(serverHost, int(serverPort)); err != nil {
+		exitCode = constants.ExitCodeBindPortUnavailable
 		error_helpers.FailOnError(err)
 	}
 
@@ -149,7 +148,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	initData := initDashboard(dashboardCtx)
 	defer initData.Cleanup(dashboardCtx)
 	if initData.Result.Error != nil {
-		exitCode = constants_steampipe.ExitCodeInitializationFailed
+		exitCode = constants.ExitCodeInitializationFailed
 		error_helpers.FailOnError(initData.Result.Error)
 	}
 
@@ -203,7 +202,7 @@ func validateDashboardArgs(ctx context.Context, args []string) (string, error) {
 		}
 	}
 
-	validOutputFormats := []string{constants_steampipe.OutputFormatSnapshot, constants_steampipe.OutputFormatSnapshotShort, constants_steampipe.OutputFormatNone}
+	validOutputFormats := []string{constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort, constants.OutputFormatNone}
 	output := viper.GetString(constants.ArgOutput)
 	if !helpers.StringSliceContains(validOutputFormats, output) {
 		return "", fmt.Errorf("invalid output format: '%s', must be one of [%s]", output, strings.Join(validOutputFormats, ", "))
@@ -214,14 +213,14 @@ func validateDashboardArgs(ctx context.Context, args []string) (string, error) {
 
 func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
 	switch viper.GetString(constants.ArgOutput) {
-	case constants_steampipe.OutputFormatNone:
+	case constants.OutputFormatNone:
 		if viper.GetBool(constants.ArgProgress) &&
 			!viper.IsSet(constants.ArgOutput) &&
 			!viper.GetBool(constants.ArgShare) &&
 			!viper.GetBool(constants.ArgSnapshot) {
 			fmt.Println("Output format defaulted to 'none'. Supported formats: none, snapshot.")
 		}
-	case constants_steampipe.OutputFormatSnapshot, constants_steampipe.OutputFormatSnapshotShort:
+	case constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort:
 		// just display result
 		snapshotText, err := json.MarshalIndent(snapshot, "", "  ")
 		error_helpers.FailOnError(err)
@@ -255,7 +254,7 @@ func getInitData(ctx context.Context) *initialisation.InitData {
 	i := initialisation.NewInitData()
 	i.Workspace = w
 	i.Result.Warnings = errAndWarnings.Warnings
-	i.Init(ctx, constants_steampipe.InvokerDashboard)
+	i.Init(ctx, constants.InvokerDashboard)
 
 	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
 		i.RegisterExporters(dashboardExporters()...)
@@ -302,7 +301,7 @@ func runSingleDashboard(ctx context.Context, targetName string, inputs map[strin
 	// so a dashboard name was specified - just call GenerateSnapshot
 	snap, err := dashboardexecute.GenerateSnapshot(ctx, targetName, initData, inputs)
 	if err != nil {
-		exitCode = constants_steampipe.ExitCodeSnapshotCreationFailed
+		exitCode = constants.ExitCodeSnapshotCreationFailed
 		return err
 	}
 	// display the snapshot result (if needed)
@@ -311,7 +310,7 @@ func runSingleDashboard(ctx context.Context, targetName string, inputs map[strin
 	// upload the snapshot (if needed)
 	err = publishSnapshotIfNeeded(ctx, snap)
 	if err != nil {
-		exitCode = constants_steampipe.ExitCodeSnapshotUploadFailed
+		exitCode = constants.ExitCodeSnapshotUploadFailed
 		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
 	}
 
@@ -378,9 +377,9 @@ func setExitCodeForDashboardError(err error) {
 	}
 
 	if err == workspace.ErrorNoModDefinition {
-		exitCode = constants_steampipe.ExitCodeNoModFile
+		exitCode = constants.ExitCodeNoModFile
 	} else {
-		exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
+		exitCode = constants.ExitCodeUnknownErrorPanic
 	}
 }
 
@@ -439,11 +438,11 @@ func saveDashboardState(serverPort dashboardserver.ListenPort, serverListen dash
 		Pid:        os.Getpid(),
 		Port:       int(serverPort),
 		ListenType: string(serverListen),
-		Listen:     constants_steampipe.DashboardListenAddresses,
+		Listen:     constants.DashboardListenAddresses,
 	}
 
 	if serverListen == dashboardserver.ListenTypeNetwork {
-		addrs, _ := utils2.LocalPublicAddresses()
+		addrs, _ := utils.LocalPublicAddresses()
 		state.Listen = append(state.Listen, addrs...)
 	}
 	error_helpers.FailOnError(dashboardserver.WriteServiceStateFile(state))

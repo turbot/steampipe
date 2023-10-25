@@ -5,9 +5,8 @@ import (
 	"fmt"
 
 	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+"github.com/turbot/pipe-fittings/error_helpers"
 )
-
 type variableInfo struct {
 	Name        string `json:"name"`
 	Type        string `json:"type"`

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
 )
 
 // Constants for Config
@@ -82,7 +82,7 @@ func BackupsDir() string {
 // this is because of the slightly complex bootstrapping process required because the
 // install-dir may be set in the workspace profile
 func WorkspaceProfileDir(installDir string) (string, error) {
-	if workspaceProfileLocation, ok := os.LookupEnv(constants_steampipe.EnvWorkspaceProfileLocation); ok {
+	if workspaceProfileLocation, ok := os.LookupEnv(constants.EnvWorkspaceProfileLocation); ok {
 		return filehelpers.Tildefy(workspaceProfileLocation)
 	}
 	return filepath.Join(installDir, "config"), nil

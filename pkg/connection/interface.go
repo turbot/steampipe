@@ -4,10 +4,9 @@ import (
 	"context"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
+"github.com/turbot/pipe-fittings/error_helpers"
+"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 )
-
 type pluginManager interface {
 	shared.PluginManager
 	OnConnectionConfigChanged(context.Context, ConnectionConfigMap, map[string]*modconfig.Plugin)

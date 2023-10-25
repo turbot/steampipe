@@ -3,11 +3,11 @@ package steampipe_db_client
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/pipe-fittings/db_common"
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/constants"
 )
 
 // SetCacheTtl set the cache ttl on the client
@@ -36,8 +36,8 @@ func executeCacheSetFunction(ctx context.Context, settingValue string, connectio
 	return db_common.ExecuteSystemClientCall(ctx, connection, func(ctx context.Context, tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, fmt.Sprintf(
 			"select %s.%s('%s')",
-			constants_steampipe.InternalSchema,
-			constants_steampipe.FunctionCacheSet,
+			constants.InternalSchema,
+			constants.FunctionCacheSet,
 			settingValue,
 		))
 		return err
@@ -48,8 +48,8 @@ func executeCacheTtlSetFunction(ctx context.Context, seconds string, connection 
 	return db_common.ExecuteSystemClientCall(ctx, connection, func(ctx context.Context, tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, fmt.Sprintf(
 			"select %s.%s('%s')",
-			constants_steampipe.InternalSchema,
-			constants_steampipe.FunctionCacheSetTtl,
+			constants.InternalSchema,
+			constants.FunctionCacheSetTtl,
 			seconds,
 		))
 		return err

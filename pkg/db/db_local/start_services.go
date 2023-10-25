@@ -5,7 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
+	"github.com/turbot/pipe-fittings/constants"
 	"log"
 	"os"
 	"os/exec"
@@ -16,8 +16,8 @@ import (
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
+
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/statushooks"
@@ -429,11 +429,11 @@ func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, err
 
 func writePGConf(ctx context.Context) error {
 	// Apply default settings in conf files
-	err := os.WriteFile(filepaths_steampipe.GetPostgresqlConfLocation(), []byte(constants_steampipe.PostgresqlConfContent), 0600)
+	err := os.WriteFile(filepaths_steampipe.GetPostgresqlConfLocation(), []byte(constants.PostgresqlConfContent), 0600)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filepaths_steampipe.GetSteampipeConfLocation(), []byte(constants_steampipe.SteampipeConfContent), 0600)
+	err = os.WriteFile(filepaths_steampipe.GetSteampipeConfLocation(), []byte(constants.SteampipeConfContent), 0600)
 	if err != nil {
 		return err
 	}
@@ -479,7 +479,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths_steampipe.SteampipeDir))
 
 	//  Check if the /etc/ssl directory exist in os
-	dirExist, _ := os.Stat(constants_steampipe.SslConfDir)
+	dirExist, _ := os.Stat(constants.SslConfDir)
 	_, envVariableExist := os.LookupEnv("OPENSSL_CONF")
 
 	// This is particularly required for debian:buster
@@ -489,7 +489,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 	// this in env variable
 	// Tested in amazonlinux, debian:buster, ubuntu, mac
 	if dirExist != nil && !envVariableExist {
-		postgresCmd.Env = append(os.Environ(), fmt.Sprintf("OPENSSL_CONF=%s", constants_steampipe.SslConfDir))
+		postgresCmd.Env = append(os.Environ(), fmt.Sprintf("OPENSSL_CONF=%s", constants.SslConfDir))
 	}
 
 	// set group pgid attributes on the command to ensure the process is not shutdown when its parent terminates

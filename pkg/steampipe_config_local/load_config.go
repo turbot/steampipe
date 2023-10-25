@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/turbot/go-kit/hcl_helpers"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,15 +15,15 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/options"
+	"github.com/turbot/pipe-fittings/parse"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 )
 
 var GlobalConfig *SteampipeConfig
@@ -131,7 +132,7 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 	steampipeConfig = NewSteampipeConfig(commandName)
 
 	// load config from the installation folder -  load all spc files from config directory
-	include := filehelpers.InclusionsFromExtensions(constants_steampipe.ConnectionConfigExtensions)
+	include := filehelpers.InclusionsFromExtensions(constants.ConnectionConfigExtensions)
 	loadOptions := &loadConfigOptions{include: include}
 	if ew := loadConfig(filepaths_steampipe.EnsureConfigDir(), steampipeConfig, loadOptions); ew != nil {
 		if ew.GetError() != nil {

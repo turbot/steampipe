@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/ociinstaller"
@@ -13,7 +14,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/connection"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/introspection"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
@@ -187,7 +187,7 @@ func (m *PluginManager) rateLimiterTableExists(ctx context.Context) (bool, error
     WHERE 
         schemaname = '%s' AND 
         tablename  = '%s'
-    );`, constants_steampipe.InternalSchema, constants_steampipe.RateLimiterDefinitionTable)
+    );`, constants.InternalSchema, constants.RateLimiterDefinitionTable)
 
 	row := m.pool.QueryRow(ctx, query)
 	var exists bool
@@ -246,7 +246,7 @@ func (m *PluginManager) bootstrapRateLimiterTable(ctx context.Context) error {
 }
 
 func (m *PluginManager) loadRateLimitersFromTable(ctx context.Context) ([]*modconfig.RateLimiter, error) {
-	rows, err := m.pool.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants_steampipe.InternalSchema, constants_steampipe.RateLimiterDefinitionTable))
+	rows, err := m.pool.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.RateLimiterDefinitionTable))
 	if err != nil {
 		return nil, err
 	}

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 func GetPopulateServerSettingsSql(ctx context.Context, settings db_common.ServerSettings) db_common.QueryWithArgs {
@@ -17,7 +17,7 @@ fdw_version,
 cache_max_ttl,
 cache_max_size_mb,
 cache_enabled)
-	VALUES($1,$2,$3,$4,$5,$6)`, constants_steampipe.InternalSchema, constants_steampipe.ServerSettingsTable),
+	VALUES($1,$2,$3,$4,$5,$6)`, constants.InternalSchema, constants.ServerSettingsTable),
 		Args: []any{
 			settings.StartTime,
 			settings.SteampipeVersion,
@@ -38,7 +38,7 @@ fdw_version TEXT NOT NULL,
 cache_max_ttl INTEGER NOT NULL,
 cache_max_size_mb INTEGER NOT NULL,
 cache_enabled BOOLEAN NOT NULL
-		);`, constants_steampipe.InternalSchema, constants_steampipe.ServerSettingsTable),
+		);`, constants.InternalSchema, constants.ServerSettingsTable),
 	}
 }
 
@@ -46,9 +46,9 @@ func GrantsOnServerSettingsTable(ctx context.Context) db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`GRANT SELECT ON TABLE %s.%s to %s;`,
-			constants_steampipe.InternalSchema,
-			constants_steampipe.ServerSettingsTable,
-			constants_steampipe.DatabaseUsersRole,
+			constants.InternalSchema,
+			constants.ServerSettingsTable,
+			constants.DatabaseUsersRole,
 		),
 	}
 }
@@ -57,8 +57,8 @@ func DropServerSettingsTable(ctx context.Context) db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`DROP TABLE IF EXISTS %s.%s;`,
-			constants_steampipe.InternalSchema,
-			constants_steampipe.ServerSettingsTable,
+			constants.InternalSchema,
+			constants.ServerSettingsTable,
 		),
 	}
 }

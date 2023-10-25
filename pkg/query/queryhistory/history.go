@@ -2,12 +2,12 @@ package queryhistory
 
 import (
 	"encoding/json"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 

@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
@@ -38,7 +38,7 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 
 	// if no database name is passed, use constants.DatabaseUser
 	if len(opts.Username) == 0 {
-		opts.Username = constants_steampipe.DatabaseUser
+		opts.Username = constants.DatabaseUser
 	}
 	// if no username name is passed, deduce it from the db status
 	if len(opts.DatabaseName) == 0 {
@@ -134,7 +134,7 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 	err = db_common.WaitForPool(
 		ctx,
 		pool,
-		db_common.WithRetryInterval(constants_steampipe.DBConnectionRetryBackoff),
+		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
 		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second),
 	)
 	if err != nil {
@@ -160,7 +160,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*sql.Conn, error) {
 
 	statushooks.SetStatus(ctx, "Waiting for connection")
 	tempPool, err := CreateConnectionPool(ctx, &CreateDbOptions{
-		Username: constants_steampipe.DatabaseSuperUser,
+		Username: constants.DatabaseSuperUser,
 	}, 1)
 	if err != nil {
 		log.Println("[TRACE] could not connect to service")
@@ -196,7 +196,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*sql.Conn, error) {
 	err = db_common.WaitForRecovery(
 		ctx,
 		conn,
-		db_common.WithRetryInterval(constants_steampipe.DBRecoveryRetryBackoff),
+		db_common.WithRetryInterval(constants.DBRecoveryRetryBackoff),
 	)
 	if err != nil {
 		conn.Close()

@@ -6,8 +6,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/filepaths"
 )
 
 // / TODO REMOVE or put in debug location
@@ -17,7 +17,7 @@ func TestConcurrentPerms(t *testing.T) {
 	filepaths_steampipe.SteampipeDir = "/users/kai/.steampipe"
 
 	ctx := context.Background()
-	res := StartServices(ctx, []string{"localhost"}, constants_steampipe.DatabaseDefaultPort, "query")
+	res := StartServices(ctx, []string{"localhost"}, constants.DatabaseDefaultPort, "query")
 	if res.Error != nil {
 		t.Fatal(res.Error)
 	}

@@ -6,11 +6,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/workspace"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/display"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/workspace"
 )
 
 // Variable management commands
@@ -56,7 +56,7 @@ Example:
 		AddBoolFlag("outdated", false, "Check each variable in the list for updates").
 		AddBoolFlag(constants.ArgHelp, false, "Help for variable list", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddModLocationFlag().
-		AddStringFlag(constants.ArgOutput, constants_steampipe.OutputFormatTable, "Select a console output format: table or json")
+		AddStringFlag(constants.ArgOutput, constants.OutputFormatTable, "Select a console output format: table or json")
 
 	return cmd
 }
@@ -66,13 +66,13 @@ func runVariableListCmd(cmd *cobra.Command, _ []string) {
 	defer func() {
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
+			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
 
 	// validate output arg
 	output := viper.GetString(constants.ArgOutput)
-	if !helpers.StringSliceContains([]string{constants_steampipe.OutputFormatTable, constants_steampipe.OutputFormatJSON}, output) {
+	if !helpers.StringSliceContains([]string{constants.OutputFormatTable, constants.OutputFormatJSON}, output) {
 		error_helpers.ShowError(ctx, fmt.Errorf("output flag must be either 'json' or 'table'"))
 		return
 	}
@@ -83,7 +83,7 @@ func runVariableListCmd(cmd *cobra.Command, _ []string) {
 	// load the workspace
 	error_helpers.FailOnErrorWithMessage(errorsAndWarnings.Error, "failed to load workspace")
 
-	if viper.GetString(constants.ArgOutput) == constants_steampipe.OutputFormatJSON {
+	if viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON {
 		display.ShowVarsListJson(vars)
 	} else {
 

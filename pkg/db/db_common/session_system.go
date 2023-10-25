@@ -6,9 +6,9 @@ import (
 	"log"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/constants/runtime"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
 )
 
 // SystemClientExecutor is the executor function that is called within a transaction
@@ -19,9 +19,9 @@ type SystemClientExecutor func(context.Context, pgx.Tx) error
 // ExecuteSystemClientCall creates a transaction and sets the application_name to the
 // one used by the system client, executes the callback and sets the application name back to the client app name
 func ExecuteSystemClientCall(ctx context.Context, conn *pgx.Conn, executor SystemClientExecutor) error {
-	if !IsClientAppName(conn.Config().RuntimeParams[constants_steampipe.RuntimeParamsKeyApplicationName]) {
+	if !IsClientAppName(conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName]) {
 		// this should NEVER happen
-		return sperr.New("ExecuteSystemClientCall called with appname other than client: %s", conn.Config().RuntimeParams[constants_steampipe.RuntimeParamsKeyApplicationName])
+		return sperr.New("ExecuteSystemClientCall called with appname other than client: %s", conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName])
 	}
 
 	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) (e error) {
@@ -33,7 +33,7 @@ func ExecuteSystemClientCall(ctx context.Context, conn *pgx.Conn, executor Syste
 		}
 		defer func() {
 			// set back the original application name
-			_, e = tx.Exec(ctx, fmt.Sprintf("SET application_name TO '%s'", conn.Config().RuntimeParams[constants_steampipe.RuntimeParamsKeyApplicationName]))
+			_, e = tx.Exec(ctx, fmt.Sprintf("SET application_name TO '%s'", conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName]))
 			if e != nil {
 				log.Println("[TRACE] could not reset application_name", e)
 			}

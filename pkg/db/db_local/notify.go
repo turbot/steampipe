@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 // SendPostgresNotification send a postgres notification that the schema has chganged
@@ -20,7 +20,7 @@ func SendPostgresNotification(ctx context.Context, conn *sql.Conn, notification 
 
 	log.Printf("[TRACE] Send update notification")
 
-	sql := fmt.Sprintf("select pg_notify('%s', $1)", constants_steampipe.PostgresNotificationChannel)
+	sql := fmt.Sprintf("select pg_notify('%s', $1)", constants.PostgresNotificationChannel)
 	_, err = conn.ExecContext(ctx, sql, notificationBytes)
 	if err != nil {
 		return sperr.WrapWithMessage(err, "error sending Postgres notification")

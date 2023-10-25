@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/initialisation"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/workspace"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/initialisation"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/workspace"
 )
 
 type InitData struct {
@@ -45,7 +45,7 @@ func NewInitData(ctx context.Context) *InitData {
 		i.Result.Error = workspace.ErrorNoModDefinition
 	}
 
-	if viper.GetString(constants.ArgOutput) == constants_steampipe.OutputFormatNone {
+	if viper.GetString(constants.ArgOutput) == constants.OutputFormatNone {
 		// set progress to false
 		viper.Set(constants.ArgProgress, false)
 	}
@@ -85,7 +85,7 @@ func NewInitData(ctx context.Context) *InitData {
 	i.setControlFilterClause()
 
 	// initialize
-	i.InitData.Init(ctx, constants_steampipe.InvokerCheck)
+	i.InitData.Init(ctx, constants.InvokerCheck)
 
 	return i
 }
@@ -104,7 +104,7 @@ func (i *InitData) setControlFilterClause() {
 	// if we derived or were passed a where clause, run the filter
 	if len(i.ControlFilterWhereClause) > 0 {
 		// if we have a control filter where clause, we must create the control introspection tables
-		viper.Set(constants.ArgIntrospection, constants_steampipe.IntrospectionControl)
+		viper.Set(constants.ArgIntrospection, constants.IntrospectionControl)
 	}
 }
 
@@ -158,7 +158,7 @@ func parseOutputArg(arg string) (formatter controldisplay2.Formatter, err error)
 
 func initialiseCheckColorScheme() error {
 	theme := viper.GetString(constants.ArgTheme)
-	if !viper.GetBool(constants_steampipe.ConfigKeyIsTerminalTTY) {
+	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
 		// enforce plain output for non-terminals
 		theme = "plain"
 	}

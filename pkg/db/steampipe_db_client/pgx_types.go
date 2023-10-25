@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/pipe-fittings/queryresult"
 )
 
 // ColumnTypeDatabaseTypeName returns the database system type name. If the name is unknown the OID is returned.

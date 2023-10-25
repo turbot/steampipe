@@ -10,9 +10,10 @@ import (
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_client"
 	"github.com/turbot/pipe-fittings/db_common"
-	"github.com/turbot/pipe-fittings/error_helpers"
-	"github.com/turbot/pipe-fittings/utils"
-	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
+
+"github.com/turbot/pipe-fittings/error_helpers"
+"github.com/turbot/pipe-fittings/utils"
+pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 )
 
 // LocalDbClient wraps over DbClient

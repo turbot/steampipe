@@ -8,8 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	typeHelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 type schemaRecord struct {
@@ -37,7 +37,7 @@ func LoadForeignSchemaNames(ctx context.Context, conn *pgx.Conn) ([]string, erro
 			return nil, err
 		}
 		// ignore internal schema and legacy command schema
-		if schema != constants_steampipe.InternalSchema && schema != constants_steampipe.LegacyCommandSchema {
+		if schema != constants.InternalSchema && schema != constants.LegacyCommandSchema {
 			foreignSchemaNames = append(foreignSchemaNames, schema)
 		}
 	}

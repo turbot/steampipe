@@ -10,13 +10,12 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/options"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
@@ -133,7 +132,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 		// this is a short term workaround to handle the clashing 'output' argument
 		// this will be refactored
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
-		if c.commandName != constants_steampipe.CmdNameQuery {
+		if c.commandName != constants.CmdNameQuery {
 			break
 		}
 		if c.TerminalOptions == nil {
@@ -149,7 +148,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 		}
 		// TODO: remove in 0.22 [https://github.com/turbot/steampipe/issues/3251]
 		if c.GeneralOptions.MaxParallel != nil {
-			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants_steampipe.Bold("max_parallel"), constants_steampipe.Bold("general options"))))
+			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants.Bold("max_parallel"), constants.Bold("general options"))))
 		}
 	case *options.Plugin:
 		if c.PluginOptions == nil {
@@ -160,7 +159,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
 		if c.GeneralOptions.MaxParallel != nil {
-			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants_steampipe.Bold("max_parallel"), constants_steampipe.Bold("general options"))))
+			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants.Bold("max_parallel"), constants.Bold("general options"))))
 		}
 	}
 	return errorsAndWarnings
@@ -168,9 +167,9 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 
 func deprecationWarning(subject string) string {
 	if subject == "terminal options" {
-		return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThese can now be set in a steampipe %s.", constants_steampipe.Bold(subject), constants_steampipe.Bold("workspace"))
+		return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThese can now be set in a steampipe %s.", constants.Bold(subject), constants.Bold("workspace"))
 	}
-	return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThis can now be set in a steampipe %s.", subject, constants_steampipe.Bold("workspace"))
+	return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThis can now be set in a steampipe %s.", subject, constants.Bold("workspace"))
 }
 
 var defaultCacheEnabled = true
@@ -191,7 +190,7 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 	// we must manually apply env var defaulting
 
 	// if CacheEnabledEnvVar is set, overwrite the value in DefaultConnectionOptions
-	if envStr, ok := os.LookupEnv(constants_steampipe.EnvCacheEnabled); ok {
+	if envStr, ok := os.LookupEnv(constants.EnvCacheEnabled); ok {
 		if parsedEnv, err := types.ToBool(envStr); err == nil {
 			c.DefaultConnectionOptions.Cache = &parsedEnv
 		}
@@ -202,7 +201,7 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 	}
 
 	// if CacheTTLEnvVar is set, overwrite the value in DefaultConnectionOptions
-	if ttlString, ok := os.LookupEnv(constants_steampipe.EnvCacheTTL); ok {
+	if ttlString, ok := os.LookupEnv(constants.EnvCacheTTL); ok {
 		if parsed, err := types.ToInt64(ttlString); err == nil {
 			ttl := int(parsed)
 			c.DefaultConnectionOptions.CacheTTL = &ttl

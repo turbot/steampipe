@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 type handler func(ctx context.Context, input *HandlerInput) error

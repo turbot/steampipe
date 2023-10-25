@@ -3,9 +3,9 @@ package introspection
 import (
 	"fmt"
 
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 func GetPluginTableCreateSql() db_common.QueryWithArgs {
@@ -18,7 +18,7 @@ func GetPluginTableCreateSql() db_common.QueryWithArgs {
 				file_name TEXT, 
 				start_line_number INTEGER, 
 				end_line_number INTEGER
-		);`, constants_steampipe.InternalSchema, constants_steampipe.PluginInstanceTable),
+		);`, constants.InternalSchema, constants.PluginInstanceTable),
 	}
 }
 
@@ -33,7 +33,7 @@ file_name,
 start_line_number,
 end_line_number
 )
-	VALUES($1,$2,$3,$4,$5,$6,$7)`, constants_steampipe.InternalSchema, constants_steampipe.PluginInstanceTable),
+	VALUES($1,$2,$3,$4,$5,$6,$7)`, constants.InternalSchema, constants.PluginInstanceTable),
 		Args: []any{
 			plugin.Plugin,
 			plugin.Instance,
@@ -50,8 +50,8 @@ func GetPluginTableDropSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`DROP TABLE IF EXISTS %s.%s;`,
-			constants_steampipe.InternalSchema,
-			constants_steampipe.PluginInstanceTable,
+			constants.InternalSchema,
+			constants.PluginInstanceTable,
 		),
 	}
 }
@@ -60,9 +60,9 @@ func GetPluginTableGrantSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`GRANT SELECT ON TABLE %s.%s to %s;`,
-			constants_steampipe.InternalSchema,
-			constants_steampipe.PluginInstanceTable,
-			constants_steampipe.DatabaseUsersRole,
+			constants.InternalSchema,
+			constants.PluginInstanceTable,
+			constants.DatabaseUsersRole,
 		),
 	}
 }

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 // Steampipe Media Types
@@ -70,10 +70,10 @@ func MediaTypeForPlatform(imageType ImageType) ([]string, error) {
 		return []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}, nil
 	case ImageTypePlugin:
 		pluginMediaTypes := []string{fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, arch)}
-		if runtime.GOOS == constants_steampipe.OSDarwin && arch == constants_steampipe.ArchARM64 {
+		if runtime.GOOS == constants.OSDarwin && arch == constants.ArchARM64 {
 			// add the amd64 layer as well, so that we can fall back to it
 			// this is required for plugins which don't have an arm64 build yet
-			pluginMediaTypes = append(pluginMediaTypes, fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, constants_steampipe.ArchAMD64))
+			pluginMediaTypes = append(pluginMediaTypes, fmt.Sprintf(layerFmtGzip, imageType, runtime.GOOS, constants.ArchAMD64))
 		}
 		return pluginMediaTypes, nil
 	}

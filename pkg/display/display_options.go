@@ -1,8 +1,8 @@
 package display
 
 import (
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 type displayConfiguration struct {
@@ -13,8 +13,8 @@ type displayConfiguration struct {
 // true if both --timing is true and --output is table
 func NewDisplayConfiguration() *displayConfiguration {
 	timingFlag := cmdconfig.Viper().GetBool(constants.ArgTiming)
-	isInteractive := cmdconfig.Viper().GetBool(constants_steampipe.ConfigKeyInteractive)
-	outputTable := cmdconfig.Viper().GetString(constants.ArgOutput) == constants_steampipe.OutputFormatTable
+	isInteractive := cmdconfig.Viper().GetBool(constants.ConfigKeyInteractive)
+	outputTable := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.OutputFormatTable
 
 	timing := timingFlag && (outputTable || isInteractive)
 

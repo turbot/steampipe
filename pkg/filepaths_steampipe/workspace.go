@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/constants/runtime"
+	"github.com/turbot/pipe-fittings/constants/runtime"
 )
 
 // mod related constants
