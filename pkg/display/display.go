@@ -7,22 +7,22 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"os"
 	"strings"
 	"time"
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/karrick/gows"
-	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/pipe-fittings/controldisplay"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/queryresult"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -36,13 +36,13 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 	}
 
 	switch cmdconfig.Viper().GetString(constants.ArgOutput) {
-	case constants.OutputFormatJSON:
+	case constants_steampipe.OutputFormatJSON:
 		rowErrors = displayJSON(ctx, result)
-	case constants.OutputFormatCSV:
+	case constants_steampipe.OutputFormatCSV:
 		rowErrors = displayCSV(ctx, result)
-	case constants.OutputFormatLine:
+	case constants_steampipe.OutputFormatLine:
 		rowErrors = displayLine(ctx, result)
-	case constants.OutputFormatTable:
+	case constants_steampipe.OutputFormatTable:
 		rowErrors = displayTable(ctx, result)
 	}
 
@@ -83,15 +83,6 @@ func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableO
 		t.AppendRow(rowObj, rowConfig)
 	}
 	t.Render()
-}
-
-func GetMaxCols() int {
-	colsAvailable, _, _ := gows.GetWinSize()
-	// check if STEAMPIPE_DISPLAY_WIDTH env variable is set
-	if viper.IsSet(constants.ArgDisplayWidth) {
-		colsAvailable = viper.GetInt(constants.ArgDisplayWidth)
-	}
-	return colsAvailable
 }
 
 // calculate and returns column configuration based on header and row content
@@ -141,7 +132,8 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 	// set the last one to occupy as much as is available - no more - no less
 	sumOfRest := sumOfAllCols - colConfigs[len(colConfigs)-1].WidthMax
 	// get the max cols width
-	maxCols := GetMaxCols()
+	// TODO KAI move to a more generic location???
+	maxCols := controldisplay.GetMaxCols()
 	if sumOfAllCols > maxCols {
 		colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
 		colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
@@ -310,7 +302,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) int {
 		colConfigs = append(colConfigs, table.ColumnConfig{
 			Name:     column.Name,
 			Number:   idx + 1,
-			WidthMax: constants.MaxColumnWidth,
+			WidthMax: constants_steampipe.MaxColumnWidth,
 		})
 	}
 

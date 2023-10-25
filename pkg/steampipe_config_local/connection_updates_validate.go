@@ -70,9 +70,9 @@ func (u *ConnectionUpdates) validateUpdates() {
 	u.MissingComments = validatedCommentUpdates
 }
 
-func validateConnectionName(connectionName string, p *ConnectionPlugin) *steampipeconfig.ValidationFailure {
+func validateConnectionName(connectionName string, p *ConnectionPlugin) *ValidationFailure {
 	if err := steampipeconfig.ValidateConnectionName(connectionName); err != nil {
-		return &steampipeconfig.ValidationFailure{
+		return &ValidationFailure{
 			Plugin:         p.PluginName,
 			ConnectionName: connectionName,
 			Message:        err.Error(),
@@ -84,7 +84,7 @@ func validateConnectionName(connectionName string, p *ConnectionPlugin) *steampi
 	return nil
 }
 
-func validateProtocolVersion(connectionName string, p *ConnectionPlugin) *steampipeconfig.ValidationFailure {
+func validateProtocolVersion(connectionName string, p *ConnectionPlugin) *ValidationFailure {
 	pluginProtocolVersion := p.ConnectionMap[connectionName].Schema.GetProtocolVersion()
 	// if this is 0, the plugin does not define a protocol version
 	// - so we know the plugin sdk version is older that the one we are using
@@ -95,7 +95,7 @@ func validateProtocolVersion(connectionName string, p *ConnectionPlugin) *steamp
 
 	steampipeProtocolVersion := sdkversion.ProtocolVersion
 	if steampipeProtocolVersion < pluginProtocolVersion {
-		return &steampipeconfig.ValidationFailure{
+		return &ValidationFailure{
 			Plugin:         p.PluginName,
 			ConnectionName: connectionName,
 			Message:        "Incompatible steampipe-plugin-sdk version. Please upgrade Steampipe to use this plugin.",
@@ -106,7 +106,7 @@ func validateProtocolVersion(connectionName string, p *ConnectionPlugin) *steamp
 	return nil
 }
 
-func BuildValidationWarningString(failures []*steampipeconfig.ValidationFailure) string {
+func BuildValidationWarningString(failures []*ValidationFailure) string {
 	if len(failures) == 0 {
 		return ""
 	}
@@ -129,7 +129,7 @@ func BuildValidationWarningString(failures []*steampipeconfig.ValidationFailure)
 
 %d %s not imported.
 `,
-		constants.Red(fmt.Sprintf("%d Connection Validation %s", failureCount, utils.Pluralize("Error", failureCount))),
+		constants_steampipe.Red(fmt.Sprintf("%d Connection Validation %s", failureCount, utils.Pluralize("Error", failureCount))),
 		strings.Join(warningsStrings, "\n\n"),
 		failureCount,
 		utils.Pluralize("connection", failureCount))

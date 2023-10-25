@@ -99,7 +99,7 @@ func (w *Workspace) handleFileWatcherEvent(ctx context.Context, client db_common
 }
 
 func (w *Workspace) onNewIntrospectionData(ctx context.Context, client db_common.Client) {
-	if viper.GetString(constants.ArgIntrospection) == constants.IntrospectionNone {
+	if viper.GetString(constants.ArgIntrospection) == constants_steampipe.IntrospectionNone {
 		// nothing to do here
 		return
 	}

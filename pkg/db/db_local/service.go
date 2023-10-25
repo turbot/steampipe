@@ -36,7 +36,7 @@ func GetState() (*RunningDBInstanceInfo, error) {
 	if !pidExists {
 		log.Printf("[TRACE] GetState - pid %v does not exist\n", info.Pid)
 		// nothing to do here
-		os.Remove(filepaths.RunningInfoFilePath())
+		os.Remove(filepaths_steampipe.RunningInfoFilePath())
 		return nil, nil
 	}
 
@@ -52,12 +52,12 @@ func GetState() (*RunningDBInstanceInfo, error) {
 // is running without us knowing about it, then it's an irrecoverable state
 func errorIfUnknownService() error {
 	// no postmaster.pid, we are good
-	if !filehelpers.FileExists(filepaths.GetPostmasterPidLocation()) {
+	if !filehelpers.FileExists(filepaths_steampipe.GetPostmasterPidLocation()) {
 		return nil
 	}
 
 	// read the content of the postmaster.pid file
-	fileContent, err := os.ReadFile(filepaths.GetPostmasterPidLocation())
+	fileContent, err := os.ReadFile(filepaths_steampipe.GetPostmasterPidLocation())
 	if err != nil {
 		return err
 	}
@@ -85,13 +85,13 @@ func errorIfUnknownService() error {
 	}
 	if exists {
 		// if it does, then somehow we don't know about it. Error out
-		return fmt.Errorf("service is running in an unknown state [PID: %d] - try killing it with %s", pid, constants.Bold("steampipe service stop --force"))
+		return fmt.Errorf("service is running in an unknown state [PID: %d] - try killing it with %s", pid, constants_steampipe.Bold("steampipe service stop --force"))
 	}
 
 	// the pid does not exist
 	// this can confuse postgres as per https://postgresapp.com/documentation/troubleshooting.html
 	// delete it
-	os.Remove(filepaths.GetPostmasterPidLocation())
+	os.Remove(filepaths_steampipe.GetPostmasterPidLocation())
 
 	// this must be a stale file left over by PG. Ignore
 	return nil

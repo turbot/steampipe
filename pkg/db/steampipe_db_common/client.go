@@ -9,7 +9,15 @@ import (
 )
 
 type Client interface {
-	//db_common.Client
+	Close(context.Context) error
+	LoadUserSearchPath(context.Context) error
+
+	SetRequiredSessionSearchPath(context.Context) error
+	GetRequiredSessionSearchPath() []string
+	GetCustomSearchPath() []string
+
+	ExecuteSync(context.Context, string, ...any) (*queryresult.SyncQueryResult, error)
+	Execute(context.Context, string, ...any) (*queryresult.Result, error)
 
 	//acquire a management database connection - must be closed
 	AcquireManagementConnection(context.Context) (*sql.Conn, error)

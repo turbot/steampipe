@@ -35,7 +35,7 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 		Loaded:   make(chan struct{}),
 	}
 	// for interactive mode - do the home directory modfile check before init
-	if viper.GetBool(constants.ConfigKeyInteractive) {
+	if viper.GetBool(constants_steampipe.ConfigKeyInteractive) {
 		path := viper.GetString(constants.ArgModLocation)
 		modFilePath, _ := workspace.FindModFilePath(path)
 
@@ -46,7 +46,7 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 			return i
 		}
 		// home dir modfile already done - set the viper config
-		viper.Set(constants.ConfigKeyBypassHomeDirModfileWarning, true)
+		viper.Set(constants_steampipe.ConfigKeyBypassHomeDirModfileWarning, true)
 	}
 	go i.init(ctx, args)
 
@@ -131,7 +131,7 @@ func (i *InitData) init(ctx context.Context, args []string) {
 	// and call base init
 	i.InitData.Init(
 		ctx,
-		constants.InvokerQuery,
+		constants_steampipe.InvokerQuery,
 		db_client.WithUserPoolOverride(db_client.PoolOverrides{
 			Size:        1,
 			MaxLifeTime: 24 * time.Hour,

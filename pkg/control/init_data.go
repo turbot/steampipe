@@ -3,12 +3,12 @@ package control
 import (
 	"context"
 	"fmt"
+	controldisplay2 "github.com/turbot/pipe-fittings/controldisplay"
 	"net/url"
 	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/control/controldisplay"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/statushooks"
@@ -17,7 +17,7 @@ import (
 
 type InitData struct {
 	initialisation.InitData
-	OutputFormatter          controldisplay.Formatter
+	OutputFormatter          controldisplay2.Formatter
 	ControlFilterWhereClause string
 }
 
@@ -45,7 +45,7 @@ func NewInitData(ctx context.Context) *InitData {
 		i.Result.Error = workspace.ErrorNoModDefinition
 	}
 
-	if viper.GetString(constants.ArgOutput) == constants.OutputFormatNone {
+	if viper.GetString(constants.ArgOutput) == constants_steampipe.OutputFormatNone {
 		// set progress to false
 		viper.Set(constants.ArgProgress, false)
 	}
@@ -60,7 +60,7 @@ func NewInitData(ctx context.Context) *InitData {
 		i.Result.AddWarnings("no controls or benchmarks found in current workspace")
 	}
 
-	if err := controldisplay.EnsureTemplates(); err != nil {
+	if err := controldisplay2.EnsureTemplates(); err != nil {
 		i.Result.Error = err
 		return i
 	}
@@ -85,7 +85,7 @@ func NewInitData(ctx context.Context) *InitData {
 	i.setControlFilterClause()
 
 	// initialize
-	i.InitData.Init(ctx, constants.InvokerCheck)
+	i.InitData.Init(ctx, constants_steampipe.InvokerCheck)
 
 	return i
 }
@@ -104,7 +104,7 @@ func (i *InitData) setControlFilterClause() {
 	// if we derived or were passed a where clause, run the filter
 	if len(i.ControlFilterWhereClause) > 0 {
 		// if we have a control filter where clause, we must create the control introspection tables
-		viper.Set(constants.ArgIntrospection, constants.IntrospectionControl)
+		viper.Set(constants.ArgIntrospection, constants_steampipe.IntrospectionControl)
 	}
 }
 
@@ -139,7 +139,7 @@ func generateWhereClauseFromTags(tags []string) string {
 
 // register exporters for each of the supported check formats
 func (i *InitData) registerCheckExporters() {
-	exporters, err := controldisplay.GetExporters()
+	exporters, err := controldisplay2.GetExporters()
 	error_helpers.FailOnErrorWithMessage(err, "failed to load exporters")
 
 	// register all exporters
@@ -147,8 +147,8 @@ func (i *InitData) registerCheckExporters() {
 }
 
 // parseOutputArg parses the --output flag value and returns the Formatter that can format the data
-func parseOutputArg(arg string) (formatter controldisplay.Formatter, err error) {
-	formatResolver, err := controldisplay.NewFormatResolver()
+func parseOutputArg(arg string) (formatter controldisplay2.Formatter, err error) {
+	formatResolver, err := controldisplay2.NewFormatResolver()
 	if err != nil {
 		return nil, err
 	}
@@ -158,18 +158,18 @@ func parseOutputArg(arg string) (formatter controldisplay.Formatter, err error) 
 
 func initialiseCheckColorScheme() error {
 	theme := viper.GetString(constants.ArgTheme)
-	if !viper.GetBool(constants.ConfigKeyIsTerminalTTY) {
+	if !viper.GetBool(constants_steampipe.ConfigKeyIsTerminalTTY) {
 		// enforce plain output for non-terminals
 		theme = "plain"
 	}
-	themeDef, ok := controldisplay.ColorSchemes[theme]
+	themeDef, ok := controldisplay2.ColorSchemes[theme]
 	if !ok {
 		return fmt.Errorf("invalid theme '%s'", theme)
 	}
-	scheme, err := controldisplay.NewControlColorScheme(themeDef)
+	scheme, err := controldisplay2.NewControlColorScheme(themeDef)
 	if err != nil {
 		return err
 	}
-	controldisplay.ControlColors = scheme
+	controldisplay2.ControlColors = scheme
 	return nil
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func MaxDbConnections() int {
-	maxParallel := constants.DefaultMaxConnections
+	maxParallel := constants_steampipe.DefaultMaxConnections
 	if viper.IsSet(constants.ArgMaxParallel) {
 		maxParallel = viper.GetInt(constants.ArgMaxParallel)
 	}

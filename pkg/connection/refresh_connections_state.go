@@ -196,12 +196,12 @@ func (s *refreshConnectionState) addMissingPluginWarnings() {
 			len(connectionNames),
 			utils.Pluralize("connection", len(connectionNames)),
 			utils.Pluralize("is", len(pluginNames)),
-			constants.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(pluginNames, " ")))))
+			constants_steampipe.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(pluginNames, " ")))))
 	}
 }
 
 func (s *refreshConnectionState) logRefreshConnectionResults() {
-	var cmdName = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name()
+	var cmdName = viper.Get(constants_steampipe.ConfigKeyActiveCommand).(*cobra.Command).Name()
 	if cmdName != "plugin-manager" {
 		return
 	}

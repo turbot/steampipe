@@ -6,11 +6,11 @@ import (
 	"time"
 
 	typeHelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/pipe-fittings/queryresult"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 )
 
-// ColumnNames :: extract names from columns
+// ColumnNames extract names from columns
 func ColumnNames(columns []*queryresult.ColumnDef) []string {
 	var colNames = make([]string, len(columns))
 	for i, c := range columns {
@@ -45,7 +45,7 @@ func ColumnValuesAsString(values []interface{}, columns []*queryresult.ColumnDef
 
 // ColumnValueAsString converts column value to string
 func ColumnValueAsString(val interface{}, col *queryresult.ColumnDef, opts ...ColumnValueOption) (result string, err error) {
-	opt := &columnValueSettings{nullString: constants.NullString}
+	opt := &columnValueSettings{nullString: constants_steampipe.NullString}
 	for _, o := range opts {
 		o(opt)
 	}

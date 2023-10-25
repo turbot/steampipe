@@ -14,10 +14,10 @@ import (
 // test used for debug purposes to replicate `tuple concurrently updated` DB error
 func TestConcurrentPerms(t *testing.T) {
 	t.Skip()
-	filepaths.SteampipeDir = "/users/kai/.steampipe"
+	filepaths_steampipe.SteampipeDir = "/users/kai/.steampipe"
 
 	ctx := context.Background()
-	res := StartServices(ctx, []string{"localhost"}, constants.DatabaseDefaultPort, "query")
+	res := StartServices(ctx, []string{"localhost"}, constants_steampipe.DatabaseDefaultPort, "query")
 	if res.Error != nil {
 		t.Fatal(res.Error)
 	}

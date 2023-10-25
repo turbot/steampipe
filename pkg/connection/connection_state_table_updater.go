@@ -40,11 +40,11 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 	for name, connectionState := range u.updates.FinalConnectionState {
 		// set the connection data state based on whether this connection is being created or deleted
 		if _, updatingConnection := u.updates.Update[name]; updatingConnection {
-			connectionState.State = constants.ConnectionStateUpdating
+			connectionState.State = constants_steampipe.ConnectionStateUpdating
 			connectionState.CommentsSet = false
 		} else if validationError, connectionIsInvalid := u.updates.InvalidConnections[name]; connectionIsInvalid {
 			// if this connection has an error, set to error
-			connectionState.State = constants.ConnectionStateError
+			connectionState.State = constants_steampipe.ConnectionStateError
 			connectionState.ConnectionError = &validationError.Message
 		}
 		// get the sql to update the connection state in the table to match the struct
@@ -58,13 +58,13 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 			continue
 		}
 
-		queries = append(queries, introspection.GetSetConnectionStateSql(name, constants.ConnectionStateDeleting)...)
+		queries = append(queries, introspection.GetSetConnectionStateSql(name, constants_steampipe.ConnectionStateDeleting)...)
 	}
 
 	// set any connections with import_schema=disabled to "disabled"
 	// also build a lookup of disabled connections
 	for name := range u.updates.Disabled {
-		queries = append(queries, introspection.GetSetConnectionStateSql(name, constants.ConnectionStateDisabled)...)
+		queries = append(queries, introspection.GetSetConnectionStateSql(name, constants_steampipe.ConnectionStateDisabled)...)
 	}
 	conn, err := u.pool.Acquire(ctx)
 	if err != nil {
@@ -82,7 +82,7 @@ func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, con
 	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionReady end")
 
 	connection := u.updates.FinalConnectionState[name]
-	queries := introspection.GetSetConnectionStateSql(connection.ConnectionName, constants.ConnectionStateReady)
+	queries := introspection.GetSetConnectionStateSql(connection.ConnectionName, constants_steampipe.ConnectionStateReady)
 	for _, q := range queries {
 		if _, err := conn.Exec(ctx, q.Query, q.Args...); err != nil {
 			return err

@@ -52,13 +52,13 @@ func (i *ModInstaller) updateModFile() error {
 	contents.ApplyChanges(changes)
 	contents.Apply(hclwrite.Format)
 
-	return os.WriteFile(filepaths.ModFilePath(i.workspaceMod.ModPath), contents.Bytes(), 0644)
+	return os.WriteFile(filepaths_steampipe.ModFilePath(i.workspaceMod.ModPath), contents.Bytes(), 0644)
 }
 
 // loads the contents of the mod.sp file and wraps it with a thin wrapper
 // to assist in byte sequence manipulation
 func (i *ModInstaller) loadModFileBytes() (*ByteSequence, error) {
-	modFileBytes, err := os.ReadFile(filepaths.ModFilePath(i.workspaceMod.ModPath))
+	modFileBytes, err := os.ReadFile(filepaths_steampipe.ModFilePath(i.workspaceMod.ModPath))
 	if err != nil {
 		return nil, err
 	}

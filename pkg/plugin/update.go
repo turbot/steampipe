@@ -17,12 +17,12 @@ func SkipUpdate(report VersionCheckReport) (bool, string) {
 	}
 
 	// 2) If we are M1, current installed version is AMD, and ARM is available - update
-	if isRunningAsMacM1() && manifestHasM1Binary(report.CheckResponse.Manifest) && report.Plugin.BinaryArchitecture != constants.ArchARM64 {
+	if isRunningAsMacM1() && manifestHasM1Binary(report.CheckResponse.Manifest) && report.Plugin.BinaryArchitecture != constants_steampipe.ArchARM64 {
 		return false, ""
 	}
 
 	// 3) Otherwise skip
-	return true, constants.InstallMessagePluginLatestAlreadyInstalled
+	return true, constants_steampipe.InstallMessagePluginLatestAlreadyInstalled
 }
 
 // check to see if steampipe is running as a Mac/M1 build
@@ -30,7 +30,7 @@ func SkipUpdate(report VersionCheckReport) (bool, string) {
 // problem, since they will be running under 'rosetta'
 // TODO: Find a way to determine the underlying architecture, rather than depending on Go runtime
 func isRunningAsMacM1() bool {
-	return runtime.GOOS == constants.OSDarwin && runtime.GOARCH == constants.ArchARM64
+	return runtime.GOOS == constants_steampipe.OSDarwin && runtime.GOARCH == constants_steampipe.ArchARM64
 }
 
 func manifestHasM1Binary(manifest responseManifest) bool {

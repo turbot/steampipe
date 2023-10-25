@@ -14,11 +14,11 @@ import (
 )
 
 func TestTrimBackups(t *testing.T) {
-	filepaths.SteampipeDir, _ = filehelpers.Tildefy("~/.steampipe")
+	filepaths_steampipe.SteampipeDir, _ = filehelpers.Tildefy("~/.steampipe")
 	// create backups more than MaxBackups
-	backupDir := filepaths.EnsureBackupsDir()
+	backupDir := filepaths_steampipe.EnsureBackupsDir()
 	filesCreated := []string{}
-	for i := 0; i < constants.MaxBackups; i++ {
+	for i := 0; i < constants_steampipe.MaxBackups; i++ {
 		// make sure the files that get created end up to really old
 		// this way we won't end up deleting any actual backup files
 		timeLastYear := time.Now().Add(12 * 30 * 24 * time.Hour)

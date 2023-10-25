@@ -42,14 +42,14 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 	var id, err = cloud.WebLogin(ctx)
 	if err != nil {
 		error_helpers.ShowError(ctx, err)
-		exitCode = constants.ExitCodeLoginCloudConnectionFailed
+		exitCode = constants_steampipe.ExitCodeLoginCloudConnectionFailed
 		return
 	}
 
 	token, err := getToken(ctx, id)
 	if err != nil {
 		error_helpers.ShowError(ctx, err)
-		exitCode = constants.ExitCodeLoginCloudConnectionFailed
+		exitCode = constants_steampipe.ExitCodeLoginCloudConnectionFailed
 		return
 	}
 
@@ -57,7 +57,7 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 	err = cloud.SaveToken(token)
 	if err != nil {
 		error_helpers.ShowError(ctx, err)
-		exitCode = constants.ExitCodeLoginCloudConnectionFailed
+		exitCode = constants_steampipe.ExitCodeLoginCloudConnectionFailed
 		return
 	}
 
@@ -104,7 +104,7 @@ func displayLoginMessage(ctx context.Context, token string) {
 	error_helpers.FailOnError(sperr.WrapWithMessage(err, "failed to read user name"))
 
 	fmt.Println()
-	fmt.Printf("Logged in as: %s\n", constants.Bold(userName))
+	fmt.Printf("Logged in as: %s\n", constants_steampipe.Bold(userName))
 	fmt.Println()
 }
 

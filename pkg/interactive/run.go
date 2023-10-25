@@ -25,7 +25,7 @@ func RunInteractivePrompt(ctx context.Context, initData *query.InitData) *RunInt
 	if err != nil {
 		error_helpers.ShowErrorWithMessage(ctx, err, "interactive client failed to initialize")
 		// do not bind shutdown to any cancellable context
-		db_local.ShutdownService(ctx, constants.InvokerQuery)
+		db_local.ShutdownService(ctx, constants_steampipe.InvokerQuery)
 		res.PromptErr = err
 		return res
 	}

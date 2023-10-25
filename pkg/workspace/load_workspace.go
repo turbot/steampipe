@@ -82,7 +82,7 @@ func promptForVariable(ctx context.Context, name, description string) (string, e
 }
 
 func addInteractiveVariableToViper(name string, rawValue string) {
-	varMap := viper.GetStringMap(constants.ConfigInteractiveVariables)
+	varMap := viper.GetStringMap(constants_steampipe.ConfigInteractiveVariables)
 	varMap[name] = rawValue
-	viper.Set(constants.ConfigInteractiveVariables, varMap)
+	viper.Set(constants_steampipe.ConfigInteractiveVariables, varMap)
 }

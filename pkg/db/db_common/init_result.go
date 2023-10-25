@@ -44,7 +44,7 @@ func (r *InitResult) DisplayMessages() {
 	}
 	// do not display message in json or csv output mode
 	output := viper.Get(constants.ArgOutput)
-	if output == constants.OutputFormatJSON || output == constants.OutputFormatCSV {
+	if output == constants_steampipe.OutputFormatJSON || output == constants_steampipe.OutputFormatCSV {
 		return
 	}
 	for _, w := range r.Warnings {

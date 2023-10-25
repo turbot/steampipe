@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 
 // QueryHistory :: struct for working with history in the interactive mode
@@ -40,8 +40,8 @@ func (q *QueryHistory) Push(query string) {
 
 	// limit the history length to HistorySize
 	historyLength := len(q.history)
-	if historyLength >= constants.HistorySize {
-		q.history = q.history[historyLength-constants.HistorySize+1:]
+	if historyLength >= constants_steampipe.HistorySize {
+		q.history = q.history[historyLength-constants_steampipe.HistorySize+1:]
 	}
 
 	// append the new entry
@@ -64,7 +64,7 @@ func (q *QueryHistory) Persist() error {
 	defer func() {
 		file.Close()
 	}()
-	path := filepath.Join(filepaths.EnsureInternalDir(), constants.HistoryFile)
+	path := filepath.Join(filepaths_steampipe.EnsureInternalDir(), constants_steampipe.HistoryFile)
 	file, err = os.Create(path)
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func (q *QueryHistory) Get() []string {
 
 // loads up the history from the file where it is persisted
 func (q *QueryHistory) load() error {
-	path := filepath.Join(filepaths.EnsureInternalDir(), constants.HistoryFile)
+	path := filepath.Join(filepaths_steampipe.EnsureInternalDir(), constants_steampipe.HistoryFile)
 	file, err := os.Open(path)
 	if err != nil {
 		// ignore not exists errors

@@ -118,7 +118,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	error_helpers.FailOnError(err)
 
 	// if diagnostic mode is set, print out config and return
-	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
+	if _, ok := os.LookupEnv(constants_steampipe.EnvConfigDump); ok {
 		cmdconfig.DisplayConfig()
 		return
 	}
@@ -134,7 +134,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// enable paging only in interactive mode
 	interactiveMode := len(args) == 0
 	// set config to indicate whether we are running an interactive query
-	viper.Set(constants.ConfigKeyInteractive, interactiveMode)
+	viper.Set(constants_steampipe.ConfigKeyInteractive, interactiveMode)
 
 	// initialize the cancel handler - for context cancellation
 	initCtx, cancel := context.WithCancel(ctx)
@@ -142,7 +142,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// start the initializer
 	initData := query.NewInitData(initCtx, args)
 	if initData.Result.Error != nil {
-		exitCode = constants.ExitCodeInitializationFailed
+		exitCode = constants_steampipe.ExitCodeInitializationFailed
 		error_helpers.ShowError(ctx, initData.Result.Error)
 		return
 	}
@@ -166,34 +166,34 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// check for err and set the exit code else set the exit code if some queries failed or some rows returned an error
 	if err != nil {
-		exitCode = constants.ExitCodeInitializationFailed
+		exitCode = constants_steampipe.ExitCodeInitializationFailed
 		error_helpers.ShowError(ctx, err)
 	} else if failures > 0 {
-		exitCode = constants.ExitCodeQueryExecutionFailed
+		exitCode = constants_steampipe.ExitCodeQueryExecutionFailed
 	}
 }
 
 func validateQueryArgs(ctx context.Context, args []string) error {
 	interactiveMode := len(args) == 0
 	if interactiveMode && (viper.IsSet(constants.ArgSnapshot) || viper.IsSet(constants.ArgShare)) {
-		exitCode = constants.ExitCodeInsufficientOrWrongInputs
+		exitCode = constants_steampipe.ExitCodeInsufficientOrWrongInputs
 		return sperr.New("cannot share snapshots in interactive mode")
 	}
 	if interactiveMode && len(viper.GetStringSlice(constants.ArgExport)) > 0 {
-		exitCode = constants.ExitCodeInsufficientOrWrongInputs
+		exitCode = constants_steampipe.ExitCodeInsufficientOrWrongInputs
 		return sperr.New("cannot export query results in interactive mode")
 	}
 	// if share or snapshot args are set, there must be a query specified
 	err := cmdconfig.ValidateSnapshotArgs(ctx)
 	if err != nil {
-		exitCode = constants.ExitCodeInsufficientOrWrongInputs
+		exitCode = constants_steampipe.ExitCodeInsufficientOrWrongInputs
 		return err
 	}
 
-	validOutputFormats := []string{constants.OutputFormatLine, constants.OutputFormatCSV, constants.OutputFormatTable, constants.OutputFormatJSON, constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort, constants.OutputFormatNone}
+	validOutputFormats := []string{constants_steampipe.OutputFormatLine, constants_steampipe.OutputFormatCSV, constants_steampipe.OutputFormatTable, constants_steampipe.OutputFormatJSON, constants_steampipe.OutputFormatSnapshot, constants_steampipe.OutputFormatSnapshotShort, constants_steampipe.OutputFormatNone}
 	output := viper.GetString(constants.ArgOutput)
 	if !helpers.StringSliceContains(validOutputFormats, output) {
-		exitCode = constants.ExitCodeInsufficientOrWrongInputs
+		exitCode = constants_steampipe.ExitCodeInsufficientOrWrongInputs
 		return sperr.New("invalid output format: '%s', must be one of [%s]", output, strings.Join(validOutputFormats, ", "))
 	}
 
@@ -208,14 +208,14 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 	// wait for init
 	<-initData.Loaded
 	if err := initData.Result.Error; err != nil {
-		exitCode = constants.ExitCodeInitializationFailed
+		exitCode = constants_steampipe.ExitCodeInitializationFailed
 		error_helpers.FailOnError(err)
 	}
 
 	// if there is a custom search path, wait until the first connection of each plugin has loaded
 	if customSearchPath := initData.Client.GetCustomSearchPath(); customSearchPath != nil {
 		if err := connection_sync.WaitForSearchPathSchemas(ctx, initData.Client, customSearchPath); err != nil {
-			exitCode = constants.ExitCodeInitializationFailed
+			exitCode = constants_steampipe.ExitCodeInitializationFailed
 			error_helpers.FailOnError(err)
 		}
 	}
@@ -237,7 +237,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 			// so a dashboard name was specified - just call GenerateSnapshot
 			snap, err := dashboardexecute.GenerateSnapshot(ctx, queryProvider.Name(), baseInitData, nil)
 			if err != nil {
-				exitCode = constants.ExitCodeSnapshotCreationFailed
+				exitCode = constants_steampipe.ExitCodeSnapshotCreationFailed
 				error_helpers.FailOnError(err)
 			}
 
@@ -248,9 +248,9 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 
 			// display the result
 			switch viper.GetString(constants.ArgOutput) {
-			case constants.OutputFormatNone:
+			case constants_steampipe.OutputFormatNone:
 				// do nothing
-			case constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort:
+			case constants_steampipe.OutputFormatSnapshot, constants_steampipe.OutputFormatSnapshotShort:
 				// if the format is snapshot, just dump it out
 				jsonOutput, err := json.MarshalIndent(snap, "", "  ")
 				if err != nil {
@@ -267,7 +267,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 			// share the snapshot if necessary
 			err = publishSnapshotIfNeeded(ctx, snap)
 			if err != nil {
-				exitCode = constants.ExitCodeSnapshotUploadFailed
+				exitCode = constants_steampipe.ExitCodeSnapshotUploadFailed
 				error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
 			}
 
@@ -349,10 +349,10 @@ func ensureSnapshotQueryResource(name string, resolvedQuery *modconfig.ResolvedQ
 }
 
 func snapshotRequired() bool {
-	SnapshotFormatNames := []string{constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort}
+	SnapshotFormatNames := []string{constants_steampipe.OutputFormatSnapshot, constants_steampipe.OutputFormatSnapshotShort}
 	// if a snapshot exporter is specified return true
 	for _, e := range viper.GetStringSlice(constants.ArgExport) {
-		if helpers.StringSliceContains(SnapshotFormatNames, e) || path.Ext(e) == constants.SnapshotExtension {
+		if helpers.StringSliceContains(SnapshotFormatNames, e) || path.Ext(e) == constants_steampipe.SnapshotExtension {
 			return true
 		}
 	}

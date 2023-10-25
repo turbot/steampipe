@@ -105,7 +105,7 @@ func listTables(_ context.Context, input *HandlerInput) error {
 		fmt.Printf(`
 To get information about the columns in a table, run %s
 	
-`, constants.Bold(".inspect {connection}.{table}"))
+`, constants_steampipe.Bold(".inspect {connection}.{table}"))
 	} else {
 		// could be one of connectionName and {string}*
 		arg := input.args()[0]
@@ -150,9 +150,9 @@ func listConnections(ctx context.Context, input *HandlerInput) error {
 
 	header := []string{"connection", "plugin", "state"}
 	showStateSummary := input.ConnectionState.ConnectionsInState(
-		constants.ConnectionStateUpdating,
-		constants.ConnectionStateDeleting,
-		constants.ConnectionStateError)
+		constants_steampipe.ConnectionStateUpdating,
+		constants_steampipe.ConnectionStateDeleting,
+		constants_steampipe.ConnectionStateError)
 
 	var rows [][]string
 
@@ -180,7 +180,7 @@ func listConnections(ctx context.Context, input *HandlerInput) error {
 To get information about the tables in a connection, run %s
 To get information about the columns in a table, run %s
 
-`, constants.Bold(".inspect {connection}"), constants.Bold(".inspect {connection}.{table}"))
+`, constants_steampipe.Bold(".inspect {connection}"), constants_steampipe.Bold(".inspect {connection}.{table}"))
 
 	return nil
 }
@@ -190,7 +190,7 @@ func showStateSummaryTable(connectionState steampipeconfig.ConnectionStateMap) {
 	var rows [][]string
 	stateSummary := connectionState.GetSummary()
 
-	for _, state := range constants.ConnectionStates {
+	for _, state := range constants_steampipe.ConnectionStates {
 		if connectionsInState := stateSummary[state]; connectionsInState > 0 {
 			rows = append(rows, []string{state, fmt.Sprintf("%d", connectionsInState)})
 		}

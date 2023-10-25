@@ -29,11 +29,11 @@ func (e *SnapshotExporter) Export(_ context.Context, input ExportSourceData, fil
 }
 
 func (e *SnapshotExporter) FileExtension() string {
-	return constants.SnapshotExtension
+	return constants_steampipe.SnapshotExtension
 }
 
 func (e *SnapshotExporter) Name() string {
-	return constants.OutputFormatSnapshot
+	return constants_steampipe.OutputFormatSnapshot
 }
 
 func (*SnapshotExporter) Alias() string {

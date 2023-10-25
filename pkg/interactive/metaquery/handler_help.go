@@ -12,7 +12,7 @@ import (
 
 // .help
 func doHelp(_ context.Context, _ *HandlerInput) error {
-	var commonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.CmdExit}
+	var commonCmds = []string{constants_steampipe.CmdHelp, constants_steampipe.CmdInspect, constants_steampipe.CmdExit}
 
 	commonCmdRows := getMetaQueryHelpRows(commonCmds, false)
 	var advanceCmds []string
@@ -26,7 +26,7 @@ func doHelp(_ context.Context, _ *HandlerInput) error {
 	fmt.Printf("Welcome to Steampipe shell.\n\nTo start, simply enter your SQL query at the prompt:\n\n  select * from aws_iam_user\n\nCommon commands:\n\n%s\n\nAdvanced commands:\n\n%s\n\nDocumentation available at %s\n",
 		buildTable(commonCmdRows, true),
 		buildTable(advanceCmdRows, true),
-		constants.Bold("https://steampipe.io/docs"))
+		constants_steampipe.Bold("https://steampipe.io/docs"))
 	fmt.Println()
 	return nil
 }

@@ -132,7 +132,7 @@ func (e *ExecutionTree) Execute(ctx context.Context) error {
 	}
 
 	// the number of goroutines parallel to start
-	var maxParallelGoRoutines int64 = constants.DefaultMaxConnections
+	var maxParallelGoRoutines int64 = constants_steampipe.DefaultMaxConnections
 	if viper.IsSet(constants.ArgMaxParallel) {
 		maxParallelGoRoutines = viper.GetInt64(constants.ArgMaxParallel)
 	}
@@ -160,7 +160,7 @@ func (e *ExecutionTree) waitForActiveRunsToComplete(ctx context.Context, paralle
 	if ctx.Err() != nil {
 		// use a Background context - since the original context has been cancelled
 		// this lets us wait for the active control queries to cancel
-		c, cancel := context.WithTimeout(context.Background(), constants.ControlQueryCancellationTimeoutSecs*time.Second)
+		c, cancel := context.WithTimeout(context.Background(), constants_steampipe.ControlQueryCancellationTimeoutSecs*time.Second)
 		waitCtx = c
 		defer cancel()
 	}
@@ -246,7 +246,7 @@ func (e *ExecutionTree) getControlMapFromWhereClause(ctx context.Context, whereC
 
 	// if the query is NOT a named query, we need to construct a full query by adding a select
 	if !isNamedQuery {
-		resolvedQuery.ExecuteSQL = fmt.Sprintf("select resource_name from %s where %s", constants.IntrospectionTableControl, whereClause)
+		resolvedQuery.ExecuteSQL = fmt.Sprintf("select resource_name from %s where %s", constants_steampipe.IntrospectionTableControl, whereClause)
 	}
 
 	res, err := e.client.ExecuteSync(ctx, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)

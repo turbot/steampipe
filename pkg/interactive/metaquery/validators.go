@@ -61,18 +61,18 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 			newStatus := !currentStatus
 
 			// convert current and new status to on/off
-			currentStatusString := constants.BoolToOnOff(currentStatus)
-			newStatusString := constants.BoolToOnOff(newStatus)
+			currentStatusString := constants_steampipe.BoolToOnOff(currentStatus)
+			newStatusString := constants_steampipe.BoolToOnOff(newStatus)
 
 			// what is the action to get to the new status
-			actionString := constants.BoolToEnableDisable(newStatus)
+			actionString := constants_steampipe.BoolToEnableDisable(newStatus)
 
 			return ValidationResult{
 				Message: fmt.Sprintf(`%s mode is %s. You can %s it with: %s.`,
 					title,
-					constants.Bold(currentStatusString),
+					constants_steampipe.Bold(currentStatusString),
 					actionString,
-					constants.Bold(fmt.Sprintf("%s %s", metaquery, newStatusString))),
+					constants_steampipe.Bold(fmt.Sprintf("%s %s", metaquery, newStatusString))),
 			}
 		}
 		if numArgs > 1 {

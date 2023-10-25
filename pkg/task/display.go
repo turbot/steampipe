@@ -33,7 +33,7 @@ func (r *Runner) saveAvailableVersions(cli *CLIVersionCheckResponse, plugin map[
 		PluginCache:   plugin,
 	}
 	// create the file - if it exists, it will be truncated by os.Create
-	f, err := os.Create(filepaths.AvailableVersionsFilePath())
+	f, err := os.Create(filepaths_steampipe.AvailableVersionsFilePath())
 	if err != nil {
 		return err
 	}
@@ -45,13 +45,13 @@ func (r *Runner) saveAvailableVersions(cli *CLIVersionCheckResponse, plugin map[
 func (r *Runner) hasAvailableVersion() bool {
 	utils.LogTime("Runner.hasNotifications start")
 	defer utils.LogTime("Runner.hasNotifications end")
-	return files.FileExists(filepaths.AvailableVersionsFilePath())
+	return files.FileExists(filepaths_steampipe.AvailableVersionsFilePath())
 }
 
 func (r *Runner) loadCachedVersions() (*AvailableVersionCache, error) {
 	utils.LogTime("Runner.getNotifications start")
 	defer utils.LogTime("Runner.getNotifications end")
-	f, err := os.Open(filepaths.AvailableVersionsFilePath())
+	f, err := os.Open(filepaths_steampipe.AvailableVersionsFilePath())
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (r *Runner) loadCachedVersions() (*AvailableVersionCache, error) {
 	if err := decoder.Decode(notifications); err != nil {
 		return nil, err
 	}
-	if err := error_helpers.CombineErrors(f.Close(), os.Remove(filepaths.AvailableVersionsFilePath())); err != nil {
+	if err := error_helpers.CombineErrors(f.Close(), os.Remove(filepaths_steampipe.AvailableVersionsFilePath())); err != nil {
 		// if Go couldn't close the file handle, no matter - this was just good practise
 		// if Go couldn't remove the notification file, it'll get truncated next time we try to write to it
 		// worst case is that the notification gets shown more than once

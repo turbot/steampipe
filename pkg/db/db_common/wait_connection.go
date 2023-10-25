@@ -41,8 +41,8 @@ func WaitForConnection(ctx context.Context, connStr string, options ...WaitOptio
 	defer utils.LogTime("db.waitForConnection end")
 
 	config := &waitConfig{
-		retryInterval: constants.DBConnectionRetryBackoff,
-		timeout:       constants.DBStartTimeout,
+		retryInterval: constants_steampipe.DBConnectionRetryBackoff,
+		timeout:       constants_steampipe.DBStartTimeout,
 	}
 
 	for _, o := range options {
@@ -92,8 +92,8 @@ func WaitForConnectionPing(ctx context.Context, connection *pgx.Conn, waitOption
 	defer utils.LogTime("db.waitForConnection end")
 
 	config := &waitConfig{
-		retryInterval: constants.ServicePingInterval,
-		timeout:       constants.DBStartTimeout,
+		retryInterval: constants_steampipe.ServicePingInterval,
+		timeout:       constants_steampipe.DBStartTimeout,
 	}
 
 	for _, o := range waitOptions {
@@ -125,7 +125,7 @@ func WaitForRecovery(ctx context.Context, connection *pgx.Conn, waitOptions ...W
 	defer utils.LogTime("db_common.WaitForRecovery end")
 
 	config := &waitConfig{
-		retryInterval: constants.ServicePingInterval,
+		retryInterval: constants_steampipe.ServicePingInterval,
 		timeout:       time.Duration(0),
 	}
 

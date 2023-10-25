@@ -3,6 +3,8 @@ package initialisation
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"log"
 
 	"github.com/jackc/pgx/v5"
@@ -10,22 +12,22 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/db_client"
 	"github.com/turbot/pipe-fittings/db_common"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/export"
 	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/modinstaller"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/workspace"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe-plugin-sdk/v5/telemetry"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/export"
-	"github.com/turbot/steampipe/pkg/modinstaller"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
 	"github.com/turbot/steampipe/pkg/plugin"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/workspace"
 )
 
 type InitData struct {
 	Workspace *workspace.Workspace
-	Client    db_common.Client
+	Client    steampipe_db_common.Client
 	Result    *db_common.InitResult
 
 	ShutdownTelemetry func()
@@ -33,8 +35,9 @@ type InitData struct {
 }
 
 func NewErrorInitData(err error) *InitData {
+	// TOOD KAI NewInitResult
 	return &InitData{
-		Result: &db_common.InitResult{Error: err},
+		Result: &db_common.InitResult{ErrorAndWarnings: *error_helpers.NewErrorsAndWarning(err)},
 	}
 }
 
@@ -55,7 +58,7 @@ func (i *InitData) RegisterExporters(exporters ...export.Exporter) *InitData {
 	return i
 }
 
-func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...db_client.ClientOption) {
+func (i *InitData) Init(ctx context.Context, invoker constants_steampipe.Invoker, opts ...db_client.ClientOption) {
 	defer func() {
 		if r := recover(); r != nil {
 			i.Result.Error = helpers.ToError(r)
@@ -77,7 +80,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 	statushooks.SetStatus(ctx, "Initializing")
 
 	// initialise telemetry
-	shutdownTelemetry, err := telemetry.Init(constants.AppName)
+	shutdownTelemetry, err := telemetry.Init(constants_steampipe.AppName)
 	if err != nil {
 		i.Result.AddWarnings(err.Error())
 	} else {
@@ -128,7 +131,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 
 	// if introspection tables are enabled, setup the session data callback
 	var ensureSessionData db_client.DbConnectionCallback
-	if viper.GetString(constants.ArgIntrospection) != constants.IntrospectionNone {
+	if viper.GetString(constants.ArgIntrospection) != constants_steampipe.IntrospectionNone {
 		ensureSessionData = func(ctx context.Context, conn *pgx.Conn) error {
 			return workspace.EnsureSessionData(ctx, i.Workspace.GetResourceMaps(), conn)
 		}
@@ -187,7 +190,7 @@ func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap map
 }
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
-func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (db_common.Client, *error_helpers.ErrorAndWarnings) {
+func GetDbClient(ctx context.Context, invoker constants_steampipe.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (db_common.Client, *error_helpers.ErrorAndWarnings) {
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		statushooks.SetStatus(ctx, "Connecting to remote Steampipe database")
 		client, err := db_client.NewDbClient(ctx, connectionString, onConnectionCallback, opts...)

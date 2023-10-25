@@ -42,7 +42,7 @@ func ParseModDefinition(modPath string, evalCtx *hcl.EvalContext) (*modconfig.Mo
 	res := newDecodeResult()
 
 	// if there is no mod at this location, return error
-	modFilePath := filepaths.ModFilePath(modPath)
+	modFilePath := filepaths_steampipe.ModFilePath(modPath)
 	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
 		res.Diags = append(res.Diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,

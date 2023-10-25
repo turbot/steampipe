@@ -36,8 +36,8 @@ func executeCacheSetFunction(ctx context.Context, settingValue string, connectio
 	return db_common.ExecuteSystemClientCall(ctx, connection, func(ctx context.Context, tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, fmt.Sprintf(
 			"select %s.%s('%s')",
-			constants.InternalSchema,
-			constants.FunctionCacheSet,
+			constants_steampipe.InternalSchema,
+			constants_steampipe.FunctionCacheSet,
 			settingValue,
 		))
 		return err
@@ -48,8 +48,8 @@ func executeCacheTtlSetFunction(ctx context.Context, seconds string, connection 
 	return db_common.ExecuteSystemClientCall(ctx, connection, func(ctx context.Context, tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, fmt.Sprintf(
 			"select %s.%s('%s')",
-			constants.InternalSchema,
-			constants.FunctionCacheSetTtl,
+			constants_steampipe.InternalSchema,
+			constants_steampipe.FunctionCacheSetTtl,
 			seconds,
 		))
 		return err

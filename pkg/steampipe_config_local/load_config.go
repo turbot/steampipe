@@ -36,7 +36,7 @@ func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConf
 
 	log.Printf("[INFO] ensureDefaultConfigFile")
 
-	if err := ensureDefaultConfigFile(filepaths.EnsureConfigDir()); err != nil {
+	if err := ensureDefaultConfigFile(filepaths_steampipe.EnsureConfigDir()); err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(
 			sperr.WrapWithMessage(
 				err,
@@ -97,11 +97,11 @@ func ensureDefaultConfigFile(configFolder string) error {
 
 	// has the DefaultConnectionConfigContent been updated since the sample file was last writtne
 	sampleModified := sampleModTime.IsZero() ||
-		!bytes.Equal([]byte(constants.DefaultConnectionConfigContent), sampleContent)
+		!bytes.Equal([]byte(constants_steampipe.DefaultConnectionConfigContent), sampleContent)
 
 	// case: if sample is modified - always write new sample file content
 	if sampleModified {
-		err := os.WriteFile(defaultConfigSampleFile, []byte(constants.DefaultConnectionConfigContent), 0755)
+		err := os.WriteFile(defaultConfigSampleFile, []byte(constants_steampipe.DefaultConnectionConfigContent), 0755)
 		if err != nil {
 			return err
 		}
@@ -109,7 +109,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 
 	// case: if sample is modified but default is not modified - write the new default file content
 	if sampleModified && !userModifiedDefault {
-		err := os.WriteFile(defaultConfigFile, []byte(constants.DefaultConnectionConfigContent), 0755)
+		err := os.WriteFile(defaultConfigFile, []byte(constants_steampipe.DefaultConnectionConfigContent), 0755)
 		if err != nil {
 			return err
 		}
@@ -131,9 +131,9 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 	steampipeConfig = NewSteampipeConfig(commandName)
 
 	// load config from the installation folder -  load all spc files from config directory
-	include := filehelpers.InclusionsFromExtensions(constants.ConnectionConfigExtensions)
+	include := filehelpers.InclusionsFromExtensions(constants_steampipe.ConnectionConfigExtensions)
 	loadOptions := &loadConfigOptions{include: include}
-	if ew := loadConfig(filepaths.EnsureConfigDir(), steampipeConfig, loadOptions); ew != nil {
+	if ew := loadConfig(filepaths_steampipe.EnsureConfigDir(), steampipeConfig, loadOptions); ew != nil {
 		if ew.GetError() != nil {
 			return nil, ew
 		}
@@ -150,7 +150,7 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 		}
 
 		// only include workspace.spc from workspace directory
-		include = filehelpers.InclusionsFromFiles([]string{filepaths.WorkspaceConfigFileName})
+		include = filehelpers.InclusionsFromFiles([]string{filepaths_steampipe.WorkspaceConfigFileName})
 		// update load options to ONLY allow terminal options
 		loadOptions = &loadConfigOptions{include: include, allowedOptions: []string{options.TerminalBlock}}
 		if ew := loadConfig(modLocation, steampipeConfig, loadOptions); ew != nil {

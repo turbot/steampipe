@@ -125,7 +125,7 @@ func pluginVersionError(pluginsNotInstalled []requiredPluginVersion) string {
 		notificationLines = append(notificationLines, fmt.Sprintf(
 			format,
 			notInstalledStrings[i],
-			constants.Bold(req.requiredVersion),
+			constants_steampipe.Bold(req.requiredVersion),
 		))
 	}
 
@@ -149,7 +149,7 @@ func pluginVersionError(pluginsNotInstalled []requiredPluginVersion) string {
 	}
 
 	// add blank line (tactical - bold the empty string to force it to print blank line as part of error)
-	notificationLines = append(notificationLines, fmt.Sprintf("%s", constants.Bold("")))
+	notificationLines = append(notificationLines, fmt.Sprintf("%s", constants_steampipe.Bold("")))
 
 	return strings.Join(notificationLines, "\n")
 }

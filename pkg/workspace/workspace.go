@@ -230,7 +230,7 @@ func FindModFilePath(folder string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	modFilePath := filepaths.ModFilePath(folder)
+	modFilePath := filepaths_steampipe.ModFilePath(folder)
 	_, err = os.Stat(modFilePath)
 	if err == nil {
 		// found the modfile
@@ -252,20 +252,20 @@ func FindModFilePath(folder string) (string, error) {
 func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error {
 	// bypass all the checks if ConfigKeyBypassHomeDirModfileWarning is set - it means home dir modfile check
 	// has already happened before
-	if viper.GetBool(constants.ConfigKeyBypassHomeDirModfileWarning) {
+	if viper.GetBool(constants_steampipe.ConfigKeyBypassHomeDirModfileWarning) {
 		return nil
 	}
 	// get the cmd and home dir
-	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+	cmd := viper.Get(constants_steampipe.ConfigKeyActiveCommand).(*cobra.Command)
 	home, _ := os.UserHomeDir()
-	_, err := os.Stat(filepaths.ModFilePath(workspacePath))
+	_, err := os.Stat(filepaths_steampipe.ModFilePath(workspacePath))
 	modFileExists := !os.IsNotExist(err)
 
 	// check if your workspace path is home dir and if modfile exists
 	if workspacePath == home && modFileExists {
 
 		// for interactive query - ask for confirmation to continue
-		if cmd.Name() == "query" && viper.GetBool(constants.ConfigKeyInteractive) {
+		if cmd.Name() == "query" && viper.GetBool(constants_steampipe.ConfigKeyInteractive) {
 			confirm, err := utils.UserConfirmation(ctx, fmt.Sprintf("%s: You have a mod.sp file in your home directory. This is not recommended.\nAs a result, steampipe will try to load all the files in home and its sub-directories, which can cause performance issues.\nBest practice is to put mod.sp files in their own directories.\nDo you still want to continue? (y/n)", color.YellowString("Warning")))
 			if err != nil {
 				return err
@@ -277,7 +277,7 @@ func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error 
 		}
 
 		// for batch query mode - if output is table, just warn
-		if task.IsBatchQueryCmd(cmd, viper.GetStringSlice(constants.ConfigKeyActiveCommandArgs)) && cmdconfig.Viper().GetString(constants.ArgOutput) == constants.OutputFormatTable {
+		if task.IsBatchQueryCmd(cmd, viper.GetStringSlice(constants_steampipe.ConfigKeyActiveCommandArgs)) && cmdconfig.Viper().GetString(constants.ArgOutput) == constants_steampipe.OutputFormatTable {
 			error_helpers.ShowWarning("You have a mod.sp file in your home directory. This is not recommended.\nAs a result, steampipe will try to load all the files in home and its sub-directories, which can cause performance issues.\nBest practice is to put mod.sp files in their own directories.\nHit Ctrl+C to stop.\n")
 			return nil
 		}
@@ -383,7 +383,7 @@ func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext
 			Flags:   w.listFlag,
 			Exclude: w.exclusions,
 			// only load .sp files
-			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
+			Include: filehelpers.InclusionsFromExtensions([]string{constants_steampipe.ModDataExtension}),
 		})
 
 	return parseCtx, nil
@@ -417,7 +417,7 @@ func (w *Workspace) loadExclusions() error {
 		fmt.Sprintf("%s/.*/**", w.Path),
 	}
 
-	ignorePath := filepath.Join(w.Path, filepaths.WorkspaceIgnoreFile)
+	ignorePath := filepath.Join(w.Path, filepaths_steampipe.WorkspaceIgnoreFile)
 	file, err := os.Open(ignorePath)
 	if err != nil {
 		// if file does not exist, just return

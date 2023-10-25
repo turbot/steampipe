@@ -38,7 +38,7 @@ func (i *PluginInstallReport) installString() string {
 	if i.IsUpdateReport {
 		thisReport = append(
 			thisReport,
-			fmt.Sprintf("Updated plugin: %s%s", constants.Bold(i.Plugin), i.Version),
+			fmt.Sprintf("Updated plugin: %s%s", constants_steampipe.Bold(i.Plugin), i.Version),
 		)
 		if len(i.DocURL) > 0 {
 			thisReport = append(
@@ -49,7 +49,7 @@ func (i *PluginInstallReport) installString() string {
 	} else {
 		thisReport = append(
 			thisReport,
-			fmt.Sprintf("Installed plugin: %s%s", constants.Bold(i.Plugin), i.Version),
+			fmt.Sprintf("Installed plugin: %s%s", constants_steampipe.Bold(i.Plugin), i.Version),
 		)
 		if len(i.DocURL) > 0 {
 			thisReport = append(
@@ -81,11 +81,11 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 		report.IsUpdateReport = isUpdateReport
 		if !report.Skipped {
 			installedOrUpdated = append(installedOrUpdated, report)
-		} else if report.SkipReason == constants.InstallMessagePluginNotInstalled {
+		} else if report.SkipReason == constants_steampipe.InstallMessagePluginNotInstalled {
 			canBeInstalled = append(canBeInstalled, report)
-		} else if report.SkipReason == constants.InstallMessagePluginAlreadyInstalled {
+		} else if report.SkipReason == constants_steampipe.InstallMessagePluginAlreadyInstalled {
 			canBeUpdated = append(canBeUpdated, report)
-		} else if report.SkipReason == constants.InstallMessagePluginNotFound {
+		} else if report.SkipReason == constants_steampipe.InstallMessagePluginNotFound {
 			notFound = append(notFound, report)
 		}
 	}
@@ -111,7 +111,7 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 		installSkipReports := []string{}
 		for _, report := range reports {
 			showReport := true
-			if report.SkipReason == constants.InstallMessagePluginAlreadyInstalled || report.SkipReason == constants.InstallMessagePluginLatestAlreadyInstalled {
+			if report.SkipReason == constants_steampipe.InstallMessagePluginAlreadyInstalled || report.SkipReason == constants_steampipe.InstallMessagePluginLatestAlreadyInstalled {
 				showReport = false
 			}
 			if report.Skipped && showReport {
@@ -138,7 +138,7 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 				"To install %s which %s not installed, please run %s\n",
 				utils.Pluralize("plugin", len(canBeInstalled)),
 				utils.Pluralize("is", len(canBeInstalled)),
-				constants.Bold(fmt.Sprintf(
+				constants_steampipe.Bold(fmt.Sprintf(
 					"steampipe plugin install %s",
 					strings.Join(pluginList, " "),
 				)),
@@ -155,8 +155,8 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 				"To update %s %s: %s\nTo update all plugins: %s",
 				utils.Pluralize("this", len(pluginList)),
 				utils.Pluralize("plugin", len(pluginList)),
-				constants.Bold(fmt.Sprintf("steampipe plugin update %s", strings.Join(pluginList, " "))),
-				constants.Bold(fmt.Sprintln("steampipe plugin update --all")),
+				constants_steampipe.Bold(fmt.Sprintf("steampipe plugin update %s", strings.Join(pluginList, " "))),
+				constants_steampipe.Bold(fmt.Sprintln("steampipe plugin update --all")),
 			)
 		}
 	}

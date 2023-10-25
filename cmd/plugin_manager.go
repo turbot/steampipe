@@ -108,7 +108,7 @@ func createPluginManager(cmd *cobra.Command) (*pluginmanager_service.PluginManag
 
 func shouldRunConnectionWatcher() bool {
 	// if EnvConnectionWatcher is set, overwrite the value in DefaultConnectionOptions
-	if envStr, ok := os.LookupEnv(constants.EnvConnectionWatcher); ok {
+	if envStr, ok := os.LookupEnv(constants_steampipe.EnvConnectionWatcher); ok {
 		if parsedEnv, err := types.ToBool(envStr); err == nil {
 			return parsedEnv
 		}
@@ -122,7 +122,7 @@ func createPluginManagerLog() hclog.Logger {
 	// this is to allow the plugin to send multiline log messages as a single log line.
 	//
 	// here we apply the reverse mapping to get back the original message
-	writer := sdklogging.NewUnescapeNewlineWriter(logging.NewRotatingLogWriter(filepaths.EnsureLogDir(), "plugin"))
+	writer := sdklogging.NewUnescapeNewlineWriter(logging.NewRotatingLogWriter(filepaths_steampipe.EnsureLogDir(), "plugin"))
 
 	logger := sdklogging.NewLogger(&hclog.LoggerOptions{
 		Output:     writer,

@@ -32,7 +32,7 @@ func LoadWorkspaceProfiles(workspaceProfilePath string) (profileMap map[string]*
 
 	configPaths, err := filehelpers.ListFiles(workspaceProfilePath, &filehelpers.ListOptions{
 		Flags:   filehelpers.FilesFlat,
-		Include: filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
+		Include: filehelpers.InclusionsFromExtensions([]string{constants_steampipe.ConfigExtension}),
 	})
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func decodeWorkspaceProfiles(parseCtx *WorkspaceProfileParseContext) (map[string
 // setting the necessary overrides for special handling of the "dashboard" option which is different
 // from the global "dashboard" option
 func decodeWorkspaceProfileOption(block *hcl.Block) (options.Options, hcl.Diagnostics) {
-	return DecodeOptions(block, WithOverride(constants.CmdNameDashboard, &options.WorkspaceProfileDashboard{}))
+	return DecodeOptions(block, WithOverride(constants_steampipe.CmdNameDashboard, &options.WorkspaceProfileDashboard{}))
 }
 
 func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseContext) (*modconfig.WorkspaceProfile, *DecodeResult) {

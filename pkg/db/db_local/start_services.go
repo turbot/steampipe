@@ -3,7 +3,9 @@ package db_local
 import (
 	"bufio"
 	"context"
+	"database/sql"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"log"
 	"os"
 	"os/exec"
@@ -11,18 +13,18 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/jackc/pgx/v5"
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
@@ -163,11 +165,18 @@ func ensurePluginManager() (*pluginmanager.PluginManagerClient, *pluginmanager.S
 }
 
 func postServiceStart(ctx context.Context, res *StartResult) error {
-	conn, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
+	pool, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
-	defer conn.Close(ctx)
+	defer pool.Close()
+
+	// get a connection from the created pool
+	conn, err := pool.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
 
 	// setup internal schema
 	if err := setupInternal(ctx, conn); err != nil {
@@ -243,8 +252,8 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 	// remove the stale info file, ignoring errors - will overwrite anyway
 	_ = removeRunningInstanceInfo()
 
-	if err := utils.EnsureDirectoryPermission(filepaths.GetDataLocation()); err != nil {
-		return res.SetError(fmt.Errorf("%s does not have the necessary permissions to start the service", filepaths.GetDataLocation()))
+	if err := utils.EnsureDirectoryPermission(filepaths_steampipe.GetDataLocation()); err != nil {
+		return res.SetError(fmt.Errorf("%s does not have the necessary permissions to start the service", filepaths_steampipe.GetDataLocation()))
 	}
 
 	// Remove any old and expiring certificates
@@ -316,27 +325,34 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 }
 
 func ensureService(ctx context.Context, databaseName string) error {
-	connection, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
+	pool, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
-	defer connection.Close(ctx)
+	defer pool.Close()
+
+	// get a connection from the pool
+	conn, err := pool.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
 
 	// ensure the foreign server exists in the database
-	err = ensureSteampipeServer(ctx, connection)
+	err = ensureSteampipeServer(ctx, conn)
 	if err != nil {
 		return err
 	}
 
 	// ensure that the necessary extensions are installed in the database
-	err = ensurePgExtensions(ctx, connection)
+	err = ensurePgExtensions(ctx, conn)
 	if err != nil {
 		// there was a problem with the installation
 		return err
 	}
 
 	// ensure permissions for writing to temp tables
-	err = ensureTempTablePermissions(ctx, databaseName, connection)
+	err = ensureTempTablePermissions(ctx, databaseName, conn)
 	if err != nil {
 		return err
 	}
@@ -398,9 +414,9 @@ func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, err
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to the database: %v - please try again or reset your steampipe database", err)
 	}
-	defer connection.Close(ctx)
+	defer connection.Close()
 
-	out := connection.QueryRow(ctx, "select datname from pg_database where datistemplate=false AND datname <> 'postgres';")
+	out := connection.QueryRowContext(ctx, "select datname from pg_database where datistemplate=false AND datname <> 'postgres';")
 
 	var databaseName string
 	err = out.Scan(&databaseName)
@@ -413,17 +429,17 @@ func retrieveDatabaseNameFromService(ctx context.Context, port int) (string, err
 
 func writePGConf(ctx context.Context) error {
 	// Apply default settings in conf files
-	err := os.WriteFile(filepaths.GetPostgresqlConfLocation(), []byte(constants.PostgresqlConfContent), 0600)
+	err := os.WriteFile(filepaths_steampipe.GetPostgresqlConfLocation(), []byte(constants_steampipe.PostgresqlConfContent), 0600)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filepaths.GetSteampipeConfLocation(), []byte(constants.SteampipeConfContent), 0600)
+	err = os.WriteFile(filepaths_steampipe.GetSteampipeConfLocation(), []byte(constants_steampipe.SteampipeConfContent), 0600)
 	if err != nil {
 		return err
 	}
 
 	// create the postgresql.conf.d location, don't fail if it errors
-	err = os.MkdirAll(filepaths.GetPostgresqlConfDLocation(), 0700)
+	err = os.MkdirAll(filepaths_steampipe.GetPostgresqlConfDLocation(), 0700)
 	if err != nil {
 		return err
 	}
@@ -441,7 +457,7 @@ func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) (
 
 func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cmd {
 	postgresCmd := exec.Command(
-		filepaths.GetPostgresBinaryExecutablePath(),
+		filepaths_steampipe.GetPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port is free to listen to
 		"-p", fmt.Sprint(port),
 		"-c", fmt.Sprintf("listen_addresses=%s", strings.Join(listenAddresses, ",")),
@@ -454,16 +470,16 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		// If ssl is off  it doesnot matter what we pass in the ssl_cert_file and ssl_key_file
 		// SSL will only get validated if ssl is on
 		"-c", fmt.Sprintf("ssl=%s", sslStatus()),
-		"-c", fmt.Sprintf("ssl_cert_file=%s", filepaths.GetServerCertLocation()),
-		"-c", fmt.Sprintf("ssl_key_file=%s", filepaths.GetServerCertKeyLocation()),
+		"-c", fmt.Sprintf("ssl_cert_file=%s", filepaths_steampipe.GetServerCertLocation()),
+		"-c", fmt.Sprintf("ssl_key_file=%s", filepaths_steampipe.GetServerCertKeyLocation()),
 
 		// Data Directory
-		"-D", filepaths.GetDataLocation())
+		"-D", filepaths_steampipe.GetDataLocation())
 
-	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths.SteampipeDir))
+	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths_steampipe.SteampipeDir))
 
 	//  Check if the /etc/ssl directory exist in os
-	dirExist, _ := os.Stat(constants.SslConfDir)
+	dirExist, _ := os.Stat(constants_steampipe.SslConfDir)
 	_, envVariableExist := os.LookupEnv("OPENSSL_CONF")
 
 	// This is particularly required for debian:buster
@@ -473,7 +489,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 	// this in env variable
 	// Tested in amazonlinux, debian:buster, ubuntu, mac
 	if dirExist != nil && !envVariableExist {
-		postgresCmd.Env = append(os.Environ(), fmt.Sprintf("OPENSSL_CONF=%s", constants.SslConfDir))
+		postgresCmd.Env = append(os.Environ(), fmt.Sprintf("OPENSSL_CONF=%s", constants_steampipe.SslConfDir))
 	}
 
 	// set group pgid attributes on the command to ensure the process is not shutdown when its parent terminates
@@ -508,16 +524,24 @@ func traceoutServiceLogs(logChannel chan string, stopLogStreamFn func()) {
 }
 
 func setServicePassword(ctx context.Context, password string) error {
-	connection, err := CreateLocalDbConnection(ctx, &CreateDbOptions{DatabaseName: "postgres", Username: constants.DatabaseSuperUser})
+	pool, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{DatabaseName: "postgres", Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
-	defer connection.Close(ctx)
+	defer pool.Close()
+
+	// get a connection from the pool
+	conn, err := pool.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
 	statements := []string{
 		"LOCK TABLE pg_user IN SHARE ROW EXCLUSIVE MODE;",
 		fmt.Sprintf(`ALTER USER steampipe WITH PASSWORD '%s';`, password),
 	}
-	_, err = ExecuteSqlInTransaction(ctx, connection, statements...)
+	_, err = ExecuteSqlInTransaction(ctx, conn, statements...)
 	return err
 }
 
@@ -571,7 +595,7 @@ func setupLogCollector(postgresCmd *exec.Cmd) (chan string, func(), error) {
 }
 
 // ensures that the necessary extensions are installed on the database
-func ensurePgExtensions(ctx context.Context, rootClient *pgx.Conn) error {
+func ensurePgExtensions(ctx context.Context, rootClient *sql.Conn) error {
 	extensions := []string{
 		"tablefunc",
 		"ltree",
@@ -579,7 +603,7 @@ func ensurePgExtensions(ctx context.Context, rootClient *pgx.Conn) error {
 
 	var errors []error
 	for _, extn := range extensions {
-		_, err := rootClient.Exec(ctx, fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
+		_, err := rootClient.ExecContext(ctx, fmt.Sprintf("create extension if not exists %s", db_common.PgEscapeName(extn)))
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -590,8 +614,8 @@ func ensurePgExtensions(ctx context.Context, rootClient *pgx.Conn) error {
 // ensures that the 'steampipe' foreign server exists
 //
 //	(re)install FDW and creates server if it doesn't
-func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
-	res := rootClient.QueryRow(ctx, "select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
+func ensureSteampipeServer(ctx context.Context, rootClient *sql.Conn) error {
+	res := rootClient.QueryRowContext(ctx, "select srvname from pg_catalog.pg_foreign_server where srvname='steampipe'")
 
 	var serverName string
 	err := res.Scan(&serverName)
@@ -604,7 +628,7 @@ func ensureSteampipeServer(ctx context.Context, rootClient *pgx.Conn) error {
 
 // ensures that the 'steampipe_users' role has permissions to work with temporary tables
 // this is done during database installation, but we need to migrate current installations
-func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *pgx.Conn) error {
+func ensureTempTablePermissions(ctx context.Context, databaseName string, rootClient *sql.Conn) error {
 	statements := []string{
 		"lock table pg_namespace;",
 		fmt.Sprintf("grant temporary on database %s to %s", databaseName, constants.DatabaseUser),

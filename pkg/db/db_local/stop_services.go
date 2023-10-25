@@ -10,14 +10,14 @@ import (
 	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/constants/runtime"
 	"github.com/turbot/pipe-fittings/db_common"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // StopStatus is a pseudoEnum for service stop result
@@ -101,11 +101,11 @@ func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	utils.LogTime("db_local.GetClientCount start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetClientCount end"))
 
-	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	rootClient, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}
-	defer rootClient.Close(ctx)
+	defer rootClient.Close()
 
 	query := `
 SELECT 
@@ -128,7 +128,7 @@ GROUP BY application_name
 	counts := &ClientCount{}
 
 	log.Println("[INFO] ClientConnectionAppName: ", runtime.ClientConnectionAppName)
-	rows, err := rootClient.Query(ctx, query, "client backend", runtime.ClientConnectionAppName)
+	rows, err := rootClient.QueryContext(ctx, query, "client backend", runtime.ClientConnectionAppName)
 	if err != nil {
 		return nil, err
 	}

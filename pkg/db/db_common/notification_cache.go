@@ -31,7 +31,7 @@ func NewNotificationListener(ctx context.Context, conn *pgx.Conn) (*Notification
 	listener := &NotificationListener{conn: conn}
 
 	// tell the connection to listen to notifications
-	listenSql := fmt.Sprintf("listen %s", constants.PostgresNotificationChannel)
+	listenSql := fmt.Sprintf("listen %s", constants_steampipe.PostgresNotificationChannel)
 	_, err := conn.Exec(ctx, listenSql)
 	if err != nil {
 		log.Printf("[INFO] Error listening to notification channel: %s", err)

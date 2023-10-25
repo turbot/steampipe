@@ -112,7 +112,7 @@ func killRunningDbInstance(ctx context.Context) error {
 
 		// check if the name of the process is prefixed with the $STEAMPIPE_INSTALL_DIR
 		// that means this is a steampipe service from this installation directory
-		if strings.HasPrefix(cmdLine, filepaths.SteampipeDir) {
+		if strings.HasPrefix(cmdLine, filepaths_steampipe.SteampipeDir) {
 			log.Println("[TRACE] Terminating running postgres process")
 			if err := p.Kill(); err != nil {
 				error_helpers.ShowWarning(fmt.Sprintf("Failed to kill orphan postgres process PID %d", p.Pid))
@@ -127,7 +127,7 @@ func killRunningDbInstance(ctx context.Context) error {
 func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 	cmd := pgDumpCmd(
 		ctx,
-		fmt.Sprintf("--file=%s", filepaths.DatabaseBackupFilePath()),
+		fmt.Sprintf("--file=%s", filepaths_steampipe.DatabaseBackupFilePath()),
 		fmt.Sprintf("--format=%s", backupFormat),
 		// of the public schema only
 		"--schema=public",
@@ -136,7 +136,7 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 		// connection parameters
 		"--host=127.0.0.1",
 		fmt.Sprintf("--port=%d", config.port),
-		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
+		fmt.Sprintf("--username=%s", constants_steampipe.DatabaseSuperUser),
 	)
 	log.Println("[TRACE] starting pg_dump command:", cmd.String())
 
@@ -166,8 +166,8 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		// NOTE: If quoted, the application name includes the quotes. Worried about
 		// having spaces in the APPNAME, but leaving it unquoted since currently
 		// the APPNAME is hardcoded to be steampipe.
-		"-c", fmt.Sprintf("application_name=%s", constants.AppName),
-		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
+		"-c", fmt.Sprintf("application_name=%s", constants_steampipe.AppName),
+		"-c", fmt.Sprintf("cluster_name=%s", constants_steampipe.AppName),
 
 		// Data Directory
 		"-D", dataLocation,
@@ -197,7 +197,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 // it's called as part of `prepareBackup` to decide whether `pg_dump` needs to run
 // it's also called as part of `restoreDBBackup` for removal of the installation once restoration successfully completes
 func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
-	dbBaseDirectory := filepaths.EnsureDatabaseDir()
+	dbBaseDirectory := filepaths_steampipe.EnsureDatabaseDir()
 	entries, err := os.ReadDir(dbBaseDirectory)
 	if err != nil {
 		return false, "", err
@@ -216,7 +216,7 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 			)
 
 			// if not the target DB version
-			if de.Name() != constants.DatabaseVersion && isDBInstallationDirectory {
+			if de.Name() != constants_steampipe.DatabaseVersion && isDBInstallationDirectory {
 				// this is an unknown directory.
 				// this MUST be some other installation
 				return true, filepath.Join(dbBaseDirectory, de.Name()), nil
@@ -229,7 +229,7 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 
 // restoreDBBackup loads the back up file into the database
 func restoreDBBackup(ctx context.Context) error {
-	backupFilePath := filepaths.DatabaseBackupFilePath()
+	backupFilePath := filepaths_steampipe.DatabaseBackupFilePath()
 	if !files.FileExists(backupFilePath) {
 		// nothing to do here
 		return nil
@@ -314,7 +314,7 @@ func restoreDBBackup(ctx context.Context) error {
 func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listFile string) error {
 	cmd := pgRestoreCmd(
 		ctx,
-		filepaths.DatabaseBackupFilePath(),
+		filepaths_steampipe.DatabaseBackupFilePath(),
 		fmt.Sprintf("--format=%s", backupFormat),
 		// only the public schema is backed up
 		"--schema=public",
@@ -353,8 +353,8 @@ func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []str
 		return strings.Contains(strings.ToUpper(v), "MATERIALIZED VIEW DATA")
 	})
 
-	withoutFile := filepath.Join(filepaths.EnsureDatabaseDir(), noMatViewRefreshListFileName)
-	onlyFile := filepath.Join(filepaths.EnsureDatabaseDir(), onlyMatViewRefreshListFileName)
+	withoutFile := filepath.Join(filepaths_steampipe.EnsureDatabaseDir(), noMatViewRefreshListFileName)
+	onlyFile := filepath.Join(filepaths_steampipe.EnsureDatabaseDir(), onlyMatViewRefreshListFileName)
 
 	err := error_helpers.CombineErrors(
 		os.WriteFile(withoutFile, []byte(strings.Join(withoutRefresh, "\n")), 0644),
@@ -369,7 +369,7 @@ func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []str
 func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 	cmd := pgRestoreCmd(
 		ctx,
-		filepaths.DatabaseBackupFilePath(),
+		filepaths_steampipe.DatabaseBackupFilePath(),
 		fmt.Sprintf("--format=%s", backupFormat),
 		// only the public schema is backed up
 		"--schema=public",
@@ -415,12 +415,12 @@ func retainBackup(ctx context.Context) error {
 	binaryBackupRetentionFileName := fmt.Sprintf("%s.%s", backupBaseFileName, backupDumpFileExtension)
 	textBackupRetentionFileName := fmt.Sprintf("%s.%s", backupBaseFileName, backupTextFileExtension)
 
-	backupDir := filepaths.EnsureBackupsDir()
+	backupDir := filepaths_steampipe.EnsureBackupsDir()
 	binaryBackupFilePath := filepath.Join(backupDir, binaryBackupRetentionFileName)
 	textBackupFilePath := filepath.Join(backupDir, textBackupRetentionFileName)
 
 	log.Println("[TRACE] moving database back up to", binaryBackupFilePath)
-	if err := utils.MoveFile(filepaths.DatabaseBackupFilePath(), binaryBackupFilePath); err != nil {
+	if err := utils.MoveFile(filepaths_steampipe.DatabaseBackupFilePath(), binaryBackupFilePath); err != nil {
 		return err
 	}
 	log.Println("[TRACE] converting database back up to", textBackupFilePath)
@@ -444,7 +444,7 @@ func retainBackup(ctx context.Context) error {
 func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(
 		ctx,
-		filepaths.PgDumpBinaryExecutablePath(),
+		filepaths_steampipe.PgDumpBinaryExecutablePath(),
 		args...,
 	)
 	cmd.Env = append(os.Environ(), "PGSSLMODE=disable")
@@ -456,7 +456,7 @@ func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
 func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(
 		ctx,
-		filepaths.PgRestoreBinaryExecutablePath(),
+		filepaths_steampipe.PgRestoreBinaryExecutablePath(),
 		args...,
 	)
 	cmd.Env = append(os.Environ(), "PGSSLMODE=disable")
@@ -467,7 +467,7 @@ func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 
 // trimBackups trims the number of backups to the most recent constants.MaxBackups
 func trimBackups() {
-	backupDir := filepaths.BackupsDir()
+	backupDir := filepaths_steampipe.BackupsDir()
 	files, err := os.ReadDir(backupDir)
 	if err != nil {
 		error_helpers.ShowWarning(fmt.Sprintf("Failed to trim backups folder: %s", err.Error()))
@@ -491,7 +491,7 @@ func trimBackups() {
 	// just sorting should work, since these names are suffixed by date of the format yyyy-MM-dd-hh-mm-ss
 	sort.Strings(names)
 
-	for len(names) > constants.MaxBackups {
+	for len(names) > constants_steampipe.MaxBackups {
 		// shift the first element
 		trim := names[0]
 

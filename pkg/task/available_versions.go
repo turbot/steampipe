@@ -79,7 +79,7 @@ func (av *AvailableVersionCache) cliNotificationMessage() ([]string, error) {
 		var downloadURLColor = color.New(color.FgYellow)
 		var notificationLines = []string{
 			"",
-			fmt.Sprintf("A new version of Steampipe is available! %s → %s", constants.Bold(currentVersion), constants.Bold(newVersion)),
+			fmt.Sprintf("A new version of Steampipe is available! %s → %s", constants_steampipe.Bold(currentVersion), constants_steampipe.Bold(newVersion)),
 			fmt.Sprintf("You can update by downloading from %s", downloadURLColor.Sprint("https://steampipe.io/downloads")),
 			"",
 		}
@@ -137,7 +137,7 @@ func (av *AvailableVersionCache) getPluginNotificationLines(reports []plugin.Ver
 				format,
 				thisName,
 				report.CheckResponse.Stream,
-				constants.Bold(report.CheckResponse.Version),
+				constants_steampipe.Bold(report.CheckResponse.Version),
 			)
 		} else {
 			version := report.CheckResponse.Version
@@ -150,14 +150,14 @@ func (av *AvailableVersionCache) getPluginNotificationLines(reports []plugin.Ver
 				format,
 				thisName,
 				report.CheckResponse.Stream,
-				constants.Bold(report.Plugin.Version),
-				constants.Bold(version),
+				constants_steampipe.Bold(report.Plugin.Version),
+				constants_steampipe.Bold(version),
 			)
 		}
 		notificationLines = append(notificationLines, line)
 	}
 	notificationLines = append(notificationLines, "")
-	notificationLines = append(notificationLines, fmt.Sprintf("You can update by running %s", constants.Bold("steampipe plugin update --all")))
+	notificationLines = append(notificationLines, fmt.Sprintf("You can update by running %s", constants_steampipe.Bold("steampipe plugin update --all")))
 	notificationLines = append(notificationLines, "")
 
 	return notificationLines

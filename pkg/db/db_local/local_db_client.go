@@ -7,24 +7,23 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_client"
 	"github.com/turbot/pipe-fittings/db_common"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/steampipe_db_client"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/utils"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // LocalDbClient wraps over DbClient
 type LocalDbClient struct {
-	steampipe_db_client.SteampipeDbClient
+	db_client.DbClient
 	notificationListener *db_common.NotificationListener
 	invoker              constants.Invoker
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
-func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback steampipe_db_client.DbConnectionCallback, opts ...db_client.ClientOption) (*LocalDbClient, *error_helpers.ErrorAndWarnings) {
+func GetLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_client.ClientOption) (*LocalDbClient, *error_helpers.ErrorAndWarnings) {
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
@@ -46,7 +45,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	}
 
 	log.Printf("[INFO] newLocalClient")
-	client, err := newLocalClient(ctx, invoker, onConnectionCallback, opts...)
+	client, err := newLocalClient(ctx, invoker, opts...)
 	if err != nil {
 		ShutdownService(ctx, invoker)
 		startResult.Error = err
@@ -68,7 +67,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 
 // newLocalClient verifies that the local database instance is running and returns a LocalDbClient to interact with it
 // (This FAILS if local service is not running - use GetLocalClient to start service first)
-func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback steampipe_db_client.DbConnectionCallback, opts ...db_client.ClientOption) (*LocalDbClient, error) {
+func newLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_client.ClientOption) (*LocalDbClient, error) {
 	utils.LogTime("db.newLocalClient start")
 	defer utils.LogTime("db.newLocalClient end")
 
@@ -76,13 +75,13 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	if err != nil {
 		return nil, err
 	}
-	dbClient, err := steampipe_db_client.NewSteampipeDbClient(ctx, connString, onConnectionCallback, opts...)
+	dbClient, err := db_client.NewDbClient(ctx, connString, opts...)
 	if err != nil {
 		log.Printf("[TRACE] error getting local client %s", err.Error())
 		return nil, err
 	}
 
-	client := &LocalDbClient{SteampipeDbClient: *dbClient, invoker: invoker}
+	client := &LocalDbClient{DbClient: *dbClient, invoker: invoker}
 	log.Printf("[INFO] created local client %p", client)
 
 	if err := client.initNotificationListener(ctx); err != nil {
@@ -93,21 +92,22 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	return client, nil
 }
 
+// TODO :: disabled this for now for inegrated
 func (c *LocalDbClient) initNotificationListener(ctx context.Context) error {
 	// get a connection for the notification cache
-	conn, err := c.AcquireManagementConnection(ctx)
-	if err != nil {
-		c.Close(ctx)
-		return err
-	}
-	// hijack from the pool  as we will be keeping open for the lifetime of this run
-	// notification cache will manage the lifecycle of the connection
-	notificationConnection := conn.Hijack()
-	listener, err := db_common.NewNotificationListener(ctx, notificationConnection)
-	if err != nil {
-		return err
-	}
-	c.notificationListener = listener
+	// conn, err := c.AcquireManagementConnection(ctx)
+	// if err != nil {
+	// 	c.Close(ctx)
+	// 	return err
+	// }
+	// // hijack from the pool as we will be keeping open for the lifetime of this run
+	// // notification cache will manage the lifecycle of the connection
+	// notificationConnection := conn.Hijack()
+	// listener, err := db_common.NewNotificationListener(ctx, notificationConnection)
+	// if err != nil {
+	// 	return err
+	// }
+	// c.notificationListener = listener
 
 	return nil
 }

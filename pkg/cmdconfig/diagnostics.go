@@ -15,7 +15,7 @@ import (
 
 // DisplayConfig prints all config set via WorkspaceProfile or HCL options
 func DisplayConfig() {
-	diagnostics, ok := os.LookupEnv(constants.EnvConfigDump)
+	diagnostics, ok := os.LookupEnv(constants_steampipe.EnvConfigDump)
 	if !ok {
 		// shouldn't happen
 		return

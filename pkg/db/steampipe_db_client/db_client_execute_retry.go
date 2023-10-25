@@ -116,13 +116,13 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		}
 
 		// if the connection is ready (and has been for more than the backoff interval) , just return the relation not found error
-		if connectionState.State == constants.ConnectionStateReady && time.Since(connectionState.ConnectionModTime) > backoffInterval {
+		if connectionState.State == constants_steampipe.ConnectionStateReady && time.Since(connectionState.ConnectionModTime) > backoffInterval {
 			log.Println("[TRACE] schema", missingSchema, "has been ready for a long time")
 			return queryError
 		}
 
 		// if connection is in error,return the connection error
-		if connectionState.State == constants.ConnectionStateError {
+		if connectionState.State == constants_steampipe.ConnectionStateError {
 			log.Println("[TRACE] schema", missingSchema, "is in error")
 			return fmt.Errorf("connection %s failed to load: %s", missingSchema, typehelpers.SafeString(connectionState.ConnectionError))
 		}

@@ -29,11 +29,11 @@ func newInstallationState() InstallationState {
 
 func Load() (InstallationState, error) {
 	currentState := newInstallationState()
-	if !files.FileExists(filepaths.StateFilePath()) {
+	if !files.FileExists(filepaths_steampipe.StateFilePath()) {
 		return currentState, nil
 	}
 
-	stateFileContent, err := os.ReadFile(filepaths.StateFilePath())
+	stateFileContent, err := os.ReadFile(filepaths_steampipe.StateFilePath())
 	if err != nil {
 		log.Println("[INFO] Could not read update state file")
 		return currentState, err
@@ -56,8 +56,8 @@ func (s *InstallationState) Save() error {
 
 	s.LastCheck = nowTimeString()
 	// ensure internal dirs exists
-	_ = os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
-	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), filepaths.StateFileName())
+	_ = os.MkdirAll(filepaths_steampipe.EnsureInternalDir(), os.ModePerm)
+	stateFilePath := filepath.Join(filepaths_steampipe.EnsureInternalDir(), filepaths_steampipe.StateFileName())
 	// if there is an existing file it must be bad/corrupt, so delete it
 	_ = os.Remove(stateFilePath)
 	// save state file

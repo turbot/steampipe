@@ -19,9 +19,9 @@ type SystemClientExecutor func(context.Context, pgx.Tx) error
 // ExecuteSystemClientCall creates a transaction and sets the application_name to the
 // one used by the system client, executes the callback and sets the application name back to the client app name
 func ExecuteSystemClientCall(ctx context.Context, conn *pgx.Conn, executor SystemClientExecutor) error {
-	if !IsClientAppName(conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName]) {
+	if !IsClientAppName(conn.Config().RuntimeParams[constants_steampipe.RuntimeParamsKeyApplicationName]) {
 		// this should NEVER happen
-		return sperr.New("ExecuteSystemClientCall called with appname other than client: %s", conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName])
+		return sperr.New("ExecuteSystemClientCall called with appname other than client: %s", conn.Config().RuntimeParams[constants_steampipe.RuntimeParamsKeyApplicationName])
 	}
 
 	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) (e error) {
@@ -33,7 +33,7 @@ func ExecuteSystemClientCall(ctx context.Context, conn *pgx.Conn, executor Syste
 		}
 		defer func() {
 			// set back the original application name
-			_, e = tx.Exec(ctx, fmt.Sprintf("SET application_name TO '%s'", conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName]))
+			_, e = tx.Exec(ctx, fmt.Sprintf("SET application_name TO '%s'", conn.Config().RuntimeParams[constants_steampipe.RuntimeParamsKeyApplicationName]))
 			if e != nil {
 				log.Println("[TRACE] could not reset application_name", e)
 			}

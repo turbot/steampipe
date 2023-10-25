@@ -18,7 +18,7 @@ func GetPluginTableCreateSql() db_common.QueryWithArgs {
 				file_name TEXT, 
 				start_line_number INTEGER, 
 				end_line_number INTEGER
-		);`, constants.InternalSchema, constants.PluginInstanceTable),
+		);`, constants_steampipe.InternalSchema, constants_steampipe.PluginInstanceTable),
 	}
 }
 
@@ -33,7 +33,7 @@ file_name,
 start_line_number,
 end_line_number
 )
-	VALUES($1,$2,$3,$4,$5,$6,$7)`, constants.InternalSchema, constants.PluginInstanceTable),
+	VALUES($1,$2,$3,$4,$5,$6,$7)`, constants_steampipe.InternalSchema, constants_steampipe.PluginInstanceTable),
 		Args: []any{
 			plugin.Plugin,
 			plugin.Instance,
@@ -50,8 +50,8 @@ func GetPluginTableDropSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`DROP TABLE IF EXISTS %s.%s;`,
-			constants.InternalSchema,
-			constants.PluginInstanceTable,
+			constants_steampipe.InternalSchema,
+			constants_steampipe.PluginInstanceTable,
 		),
 	}
 }
@@ -60,9 +60,9 @@ func GetPluginTableGrantSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`GRANT SELECT ON TABLE %s.%s to %s;`,
-			constants.InternalSchema,
-			constants.PluginInstanceTable,
-			constants.DatabaseUsersRole,
+			constants_steampipe.InternalSchema,
+			constants_steampipe.PluginInstanceTable,
+			constants_steampipe.DatabaseUsersRole,
 		),
 	}
 }

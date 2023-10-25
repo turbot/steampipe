@@ -133,7 +133,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 		// this is a short term workaround to handle the clashing 'output' argument
 		// this will be refactored
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
-		if c.commandName != constants.CmdNameQuery {
+		if c.commandName != constants_steampipe.CmdNameQuery {
 			break
 		}
 		if c.TerminalOptions == nil {
@@ -149,7 +149,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 		}
 		// TODO: remove in 0.22 [https://github.com/turbot/steampipe/issues/3251]
 		if c.GeneralOptions.MaxParallel != nil {
-			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants.Bold("max_parallel"), constants.Bold("general options"))))
+			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants_steampipe.Bold("max_parallel"), constants_steampipe.Bold("general options"))))
 		}
 	case *options.Plugin:
 		if c.PluginOptions == nil {
@@ -160,7 +160,7 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 
 		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
 		if c.GeneralOptions.MaxParallel != nil {
-			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants.Bold("max_parallel"), constants.Bold("general options"))))
+			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants_steampipe.Bold("max_parallel"), constants_steampipe.Bold("general options"))))
 		}
 	}
 	return errorsAndWarnings
@@ -168,9 +168,9 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 
 func deprecationWarning(subject string) string {
 	if subject == "terminal options" {
-		return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThese can now be set in a steampipe %s.", constants.Bold(subject), constants.Bold("workspace"))
+		return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThese can now be set in a steampipe %s.", constants_steampipe.Bold(subject), constants_steampipe.Bold("workspace"))
 	}
-	return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThis can now be set in a steampipe %s.", subject, constants.Bold("workspace"))
+	return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThis can now be set in a steampipe %s.", subject, constants_steampipe.Bold("workspace"))
 }
 
 var defaultCacheEnabled = true
@@ -191,7 +191,7 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 	// we must manually apply env var defaulting
 
 	// if CacheEnabledEnvVar is set, overwrite the value in DefaultConnectionOptions
-	if envStr, ok := os.LookupEnv(constants.EnvCacheEnabled); ok {
+	if envStr, ok := os.LookupEnv(constants_steampipe.EnvCacheEnabled); ok {
 		if parsedEnv, err := types.ToBool(envStr); err == nil {
 			c.DefaultConnectionOptions.Cache = &parsedEnv
 		}
@@ -202,7 +202,7 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 	}
 
 	// if CacheTTLEnvVar is set, overwrite the value in DefaultConnectionOptions
-	if ttlString, ok := os.LookupEnv(constants.EnvCacheTTL); ok {
+	if ttlString, ok := os.LookupEnv(constants_steampipe.EnvCacheTTL); ok {
 		if parsed, err := types.ToInt64(ttlString); err == nil {
 			ttl := int(parsed)
 			c.DefaultConnectionOptions.CacheTTL = &ttl
@@ -372,7 +372,7 @@ func (c *SteampipeConfig) initializePlugins() {
 		if plugin == nil {
 			// set the Plugin to the image ref of the plugin
 			connection.Plugin = ociinstaller.NewSteampipeImageRef(connection.PluginAlias).DisplayImageRef()
-			connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
+			connection.Error = fmt.Errorf(constants_steampipe.ConnectionErrorPluginNotInstalled)
 			log.Printf("[INFO] connection '%s' requires plugin '%s' which is not loaded and has no instance config", connection.Name, connection.PluginAlias)
 			continue
 		}
@@ -382,13 +382,13 @@ func (c *SteampipeConfig) initializePlugins() {
 		pluginImageRef := plugin.Plugin
 		connection.PluginAlias = plugin.Alias
 		connection.Plugin = pluginImageRef
-		if pluginPath, _ := filepaths.GetPluginPath(pluginImageRef, plugin.Alias); pluginPath != "" {
+		if pluginPath, _ := filepaths_steampipe.GetPluginPath(pluginImageRef, plugin.Alias); pluginPath != "" {
 			// plugin is installed - set the instance and the plugin path
 			connection.PluginInstance = &plugin.Instance
 			connection.PluginPath = &pluginPath
 		} else {
 			// set the plugin error
-			connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
+			connection.Error = fmt.Errorf(constants_steampipe.ConnectionErrorPluginNotInstalled)
 			// leave instance unset
 			log.Printf("[INFO] connection '%s' requires plugin '%s' - this is not installed", connection.Name, plugin.Alias)
 		}

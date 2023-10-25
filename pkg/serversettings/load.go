@@ -24,7 +24,7 @@ func Load(ctx context.Context, pool *pgxpool.Pool) (serverSettings *db_common.Se
 			e = sperr.ToError(r, sperr.WithMessage("error loading server settings"))
 		}
 	}()
-	rows, err := conn.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.ServerSettingsTable))
+	rows, err := conn.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants_steampipe.InternalSchema, constants_steampipe.ServerSettingsTable))
 	if err != nil {
 		return nil, err
 	}

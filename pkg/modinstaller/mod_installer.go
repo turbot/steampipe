@@ -108,7 +108,7 @@ func (i *ModInstaller) removeOldShadowDirectories() error {
 		return err
 	}
 	for _, dir := range entries {
-		if dir.IsDir() && filepaths.IsModInstallShadowPath(dir.Name()) {
+		if dir.IsDir() && filepaths_steampipe.IsModInstallShadowPath(dir.Name()) {
 			err := os.RemoveAll(filepath.Join(parent, dir.Name()))
 			if err != nil {
 				removeErrors = append(removeErrors, err)
@@ -119,9 +119,9 @@ func (i *ModInstaller) removeOldShadowDirectories() error {
 }
 
 func (i *ModInstaller) setModsPath() error {
-	i.modsPath = filepaths.WorkspaceModPath(i.workspacePath)
+	i.modsPath = filepaths_steampipe.WorkspaceModPath(i.workspacePath)
 	_ = i.removeOldShadowDirectories()
-	i.shadowDirPath = filepaths.WorkspaceModShadowPath(i.workspacePath)
+	i.shadowDirPath = filepaths_steampipe.WorkspaceModShadowPath(i.workspacePath)
 	return nil
 }
 

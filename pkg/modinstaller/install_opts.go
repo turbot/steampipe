@@ -16,7 +16,7 @@ type InstallOpts struct {
 }
 
 func NewInstallOpts(workspaceMod *modconfig.Mod, modsToInstall ...string) *InstallOpts {
-	cmdName := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name()
+	cmdName := viper.Get(constants_steampipe.ConfigKeyActiveCommand).(*cobra.Command).Name()
 	opts := &InstallOpts{
 		WorkspaceMod: workspaceMod,
 		DryRun:       viper.GetBool(constants.ArgDryRun),

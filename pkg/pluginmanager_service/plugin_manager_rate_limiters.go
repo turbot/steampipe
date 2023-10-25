@@ -187,7 +187,7 @@ func (m *PluginManager) rateLimiterTableExists(ctx context.Context) (bool, error
     WHERE 
         schemaname = '%s' AND 
         tablename  = '%s'
-    );`, constants.InternalSchema, constants.RateLimiterDefinitionTable)
+    );`, constants_steampipe.InternalSchema, constants_steampipe.RateLimiterDefinitionTable)
 
 	row := m.pool.QueryRow(ctx, query)
 	var exists bool
@@ -246,7 +246,7 @@ func (m *PluginManager) bootstrapRateLimiterTable(ctx context.Context) error {
 }
 
 func (m *PluginManager) loadRateLimitersFromTable(ctx context.Context) ([]*modconfig.RateLimiter, error) {
-	rows, err := m.pool.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.RateLimiterDefinitionTable))
+	rows, err := m.pool.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants_steampipe.InternalSchema, constants_steampipe.RateLimiterDefinitionTable))
 	if err != nil {
 		return nil, err
 	}

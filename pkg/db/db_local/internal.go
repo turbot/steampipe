@@ -2,24 +2,24 @@ package db_local
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
-	"github.com/turbot/pipe-fittings/steampipeconfig"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/introspection"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 )
 
 // dropLegacyInternalSchema looks for a schema named 'internal'
 // which has a function called 'glob' and maybe a table named 'connection_state'
 // and drops it
-func dropLegacyInternalSchema(ctx context.Context, conn *pgx.Conn) error {
+func dropLegacyInternalSchema(ctx context.Context, conn *sql.Conn) error {
 	utils.LogTime("db_local.dropLegacyInternal start")
 	defer utils.LogTime("db_local.dropLegacyInternal end")
 
@@ -29,7 +29,7 @@ func dropLegacyInternalSchema(ctx context.Context, conn *pgx.Conn) error {
 	}
 
 	log.Println("[TRACE] dropping legacy 'internal' schema")
-	if _, err := conn.Exec(ctx, fmt.Sprintf("DROP SCHEMA %s CASCADE", constants.LegacyInternalSchema)); err != nil {
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("DROP SCHEMA %s CASCADE", constants.LegacyInternalSchema)); err != nil {
 		return sperr.WrapWithMessage(err, "could not drop legacy schema: '%s'", constants.LegacyInternalSchema)
 	}
 	log.Println("[TRACE] dropped legacy 'internal' schema")
@@ -39,7 +39,7 @@ func dropLegacyInternalSchema(ctx context.Context, conn *pgx.Conn) error {
 
 // legacyInternalExists looks for a schema named 'internal'
 // which has a function called 'glob' and maybe a table named 'connection_state'
-func legacyInternalExists(ctx context.Context, conn *pgx.Conn) (bool, error) {
+func legacyInternalExists(ctx context.Context, conn *sql.Conn) (bool, error) {
 	utils.LogTime("db_local.isLegacyInternalExists start")
 	defer utils.LogTime("db_local.isLegacyInternalExists end")
 
@@ -74,7 +74,7 @@ INNER JOIN
 		ON true;
 	`
 
-	row := conn.QueryRow(ctx, legacySchemaCountQuery, constants.LegacyInternalSchema)
+	row := conn.QueryRowContext(ctx, legacySchemaCountQuery, constants.LegacyInternalSchema)
 
 	var functionNames string
 	var tableNames string
@@ -119,7 +119,7 @@ INNER JOIN
 	return true, nil
 }
 
-func setupInternal(ctx context.Context, conn *pgx.Conn) error {
+func setupInternal(ctx context.Context, conn *sql.Conn) error {
 	statushooks.SetStatus(ctx, "Dropping legacy schema")
 	if err := dropLegacyInternalSchema(ctx, conn); err != nil {
 		// do not fail
@@ -206,7 +206,7 @@ func validateFunction(f db_common.SQLFunction) error {
 - update status of existing connection state to pending or imncomplete as appropriate
 - write back connection state
 */
-func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
+func initializeConnectionStateTable(ctx context.Context, conn *sql.Conn) error {
 	// load the state (if the table is there)
 	connectionStateMap, err := steampipe_config_local.LoadConnectionState(ctx, conn)
 	if err != nil {
@@ -216,7 +216,7 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 		}
 
 		// create an empty connectionStateMap
-		connectionStateMap = steampipeconfig.ConnectionStateMap{}
+		connectionStateMap = steampipe_config_local.ConnectionStateMap{}
 	}
 	// if any connections are in a ready  state, set them to pending - we need to run refresh connections before we know this connection is still valid
 	// if any connections are not in a ready or error state, set them to pending_incomplete
@@ -247,7 +247,7 @@ func initializeConnectionStateTable(ctx context.Context, conn *pgx.Conn) error {
 	return err
 }
 
-func PopulatePluginTable(ctx context.Context, conn *pgx.Conn) error {
+func PopulatePluginTable(ctx context.Context, conn *sql.Conn) error {
 	plugins := steampipe_config_local.GlobalConfig.PluginsInstances
 
 	// drop the table and recreate

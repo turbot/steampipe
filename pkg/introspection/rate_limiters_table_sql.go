@@ -24,7 +24,7 @@ func GetRateLimiterTableCreateSql() db_common.QueryWithArgs {
 				file_name TEXT, 
 				start_line_number INTEGER, 
 				end_line_number INTEGER 
-		);`, constants.InternalSchema, constants.RateLimiterDefinitionTable),
+		);`, constants_steampipe.InternalSchema, constants_steampipe.RateLimiterDefinitionTable),
 	}
 }
 
@@ -32,8 +32,8 @@ func GetRateLimiterTableDropSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`DROP TABLE IF EXISTS %s.%s;`,
-			constants.InternalSchema,
-			constants.RateLimiterDefinitionTable,
+			constants_steampipe.InternalSchema,
+			constants_steampipe.RateLimiterDefinitionTable,
 		),
 	}
 }
@@ -55,7 +55,7 @@ file_name,
 start_line_number,
 end_line_number
 )
-	VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, constants.InternalSchema, constants.RateLimiterDefinitionTable),
+	VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, constants_steampipe.InternalSchema, constants_steampipe.RateLimiterDefinitionTable),
 		Args: []any{
 			settings.Name,
 			settings.Plugin,
@@ -78,9 +78,9 @@ func GetRateLimiterTableGrantSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`GRANT SELECT ON TABLE %s.%s to %s;`,
-			constants.InternalSchema,
-			constants.RateLimiterDefinitionTable,
-			constants.DatabaseUsersRole,
+			constants_steampipe.InternalSchema,
+			constants_steampipe.RateLimiterDefinitionTable,
+			constants_steampipe.DatabaseUsersRole,
 		),
 	}
 }

@@ -27,8 +27,8 @@ func NewConnectionWatcher(pluginManager pluginManager) (*ConnectionWatcher, erro
 	}
 
 	watcherOptions := &filewatcher.WatcherOptions{
-		Directories: []string{filepaths.EnsureConfigDir()},
-		Include:     filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
+		Directories: []string{filepaths_steampipe.EnsureConfigDir()},
+		Include:     filehelpers.InclusionsFromExtensions([]string{constants_steampipe.ConfigExtension}),
 		ListFlag:    filehelpers.FilesRecursive,
 		EventMask:   fsnotify.Create | fsnotify.Remove | fsnotify.Rename | fsnotify.Write | fsnotify.Chmod,
 		OnChange: func(events []fsnotify.Event) {

@@ -60,9 +60,9 @@ func preRunHook(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmdhook.preRunHook start")
 	defer utils.LogTime("cmdhook.preRunHook end")
 
-	viper.Set(constants.ConfigKeyActiveCommand, cmd)
-	viper.Set(constants.ConfigKeyActiveCommandArgs, args)
-	viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
+	viper.Set(constants_steampipe.ConfigKeyActiveCommand, cmd)
+	viper.Set(constants_steampipe.ConfigKeyActiveCommandArgs, args)
+	viper.Set(constants_steampipe.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
 
 	// steampipe completion should not create INSTALL DIR or seup/init global config
 	if cmd.Name() == "completion" {
@@ -195,7 +195,7 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	// set global workspace profile
 	steampipeconfig.GlobalWorkspaceProfile = loader.GetActiveWorkspaceProfile()
 
-	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+	var cmd = viper.Get(constants_steampipe.ConfigKeyActiveCommand).(*cobra.Command)
 	// set-up viper with defaults from the env and default workspace profile
 	err = bootstrapViper(loader, cmd)
 	if err != nil {
@@ -267,7 +267,7 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 		viper.SetDefault(constants.ArgCloudToken, *loader.DefaultProfile.CloudToken)
 	}
 	// 3) env var (STEAMIPE_CLOUD_TOKEN )
-	SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgCloudToken, String)
+	SetDefaultFromEnv(constants_steampipe.EnvCloudToken, constants.ArgCloudToken, String)
 
 	// 4) explicit workspace profile
 	if p := loader.ConfiguredProfile; p != nil && p.CloudToken != nil {
@@ -278,9 +278,9 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 
 func getWorkspaceProfileLoader() (*steampipeconfig.WorkspaceProfileLoader, error) {
 	// set viper default for workspace profile, using STEAMPIPE_WORKSPACE env var
-	SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, String)
+	SetDefaultFromEnv(constants_steampipe.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, String)
 	// set viper default for install dir, using STEAMPIPE_INSTALL_DIR env var
-	SetDefaultFromEnv(constants.EnvInstallDir, constants.ArgInstallDir, String)
+	SetDefaultFromEnv(constants_steampipe.EnvInstallDir, constants.ArgInstallDir, String)
 
 	// resolve the workspace profile dir
 	installDir, err := filehelpers.Tildefy(viper.GetString(constants.ArgInstallDir))
@@ -288,7 +288,7 @@ func getWorkspaceProfileLoader() (*steampipeconfig.WorkspaceProfileLoader, error
 		return nil, err
 	}
 
-	workspaceProfileDir, err := filepaths.WorkspaceProfileDir(installDir)
+	workspaceProfileDir, err := filepaths_steampipe.WorkspaceProfileDir(installDir)
 	if err != nil {
 		return nil, err
 	}
@@ -307,8 +307,8 @@ func getWorkspaceProfileLoader() (*steampipeconfig.WorkspaceProfileLoader, error
 func validateConfig() *error_helpers.ErrorAndWarnings {
 	var res = &error_helpers.ErrorAndWarnings{}
 	telemetry := viper.GetString(constants.ArgTelemetry)
-	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
-		res.Error = sperr.New(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
+	if !helpers.StringSliceContains(constants_steampipe.TelemetryLevels, telemetry) {
+		res.Error = sperr.New(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants_steampipe.TelemetryLevels, ", "))
 		return res
 	}
 	if _, legacyDiagnosticsSet := os.LookupEnv(plugin.EnvLegacyDiagnosticsLevel); legacyDiagnosticsSet {
@@ -329,12 +329,12 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 
 	level := sdklogging.LogLevel()
 	var logDestination io.Writer
-	if len(filepaths.SteampipeDir) == 0 {
+	if len(filepaths_steampipe.SteampipeDir) == 0 {
 		// write to the buffer - this is to make sure that we don't lose logs
 		// till the time we get the log directory
 		logDestination = logBuffer
 	} else {
-		logDestination = logging.NewRotatingLogWriter(filepaths.EnsureLogDir(), "steampipe")
+		logDestination = logging.NewRotatingLogWriter(filepaths_steampipe.EnsureLogDir(), "steampipe")
 
 		// write out the buffered contents
 		_, _ = logDestination.Write(logBuffer.Bytes())
@@ -380,7 +380,7 @@ func ensureInstallDir(installDir string) {
 	}
 
 	// store as SteampipeDir
-	filepaths.SteampipeDir = installDir
+	filepaths_steampipe.SteampipeDir = installDir
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way

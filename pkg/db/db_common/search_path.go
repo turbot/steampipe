@@ -12,9 +12,9 @@ import (
 
 func EnsureInternalSchemaSuffix(searchPath []string) []string {
 	// remove the InternalSchema
-	searchPath = helpers.RemoveFromStringSlice(searchPath, constants.InternalSchema)
+	searchPath = helpers.RemoveFromStringSlice(searchPath, constants_steampipe.InternalSchema)
 	// append the InternalSchema
-	searchPath = append(searchPath, constants.InternalSchema)
+	searchPath = append(searchPath, constants_steampipe.InternalSchema)
 	return searchPath
 }
 

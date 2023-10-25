@@ -24,7 +24,7 @@ var dummyCSVExporter = testExporter{alias: "", extension: ".csv", name: "csv"}
 var dummyJSONExporter = testExporter{alias: "", extension: ".json", name: "json"}
 var dummyASFFExporter = testExporter{alias: "asff.json", extension: ".json", name: "asff"}
 var dummyNUNITExporter = testExporter{alias: "nunit3.xml", extension: ".xml", name: "nunit3"}
-var dummySPSExporter = testExporter{alias: "sps", extension: constants.SnapshotExtension, name: constants.OutputFormatSnapshot}
+var dummySPSExporter = testExporter{alias: "sps", extension: constants_steampipe.SnapshotExtension, name: constants_steampipe.OutputFormatSnapshot}
 
 type exporterTestCase struct {
 	name   string

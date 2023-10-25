@@ -3,6 +3,7 @@ package db_local
 import (
 	"bytes"
 	"encoding/json"
+	utils2 "github.com/turbot/pipe-fittings/utils"
 	"log"
 	"os"
 	"os/exec"
@@ -11,9 +12,9 @@ import (
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/filepaths"
+	utils "github.com/turbot/steampipe/pkg/utils"
 )
 
 const RunningDBStructVersion = 20220411
@@ -52,10 +53,10 @@ func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int,
 }
 
 func getListenAddresses(listenAddresses []string) []string {
-	addresses := []string{}
+	var addresses []string
 
 	if helpers.StringSliceContains(listenAddresses, "localhost") {
-		loopAddrs, err := utils.LocalLoopbackAddresses()
+		loopAddrs, err := utils2.LocalLoopbackAddresses()
 		if err != nil {
 			return nil
 		}
@@ -65,11 +66,11 @@ func getListenAddresses(listenAddresses []string) []string {
 	if helpers.StringSliceContains(listenAddresses, "*") {
 		// remove the * wildcard, we want to replace that with the actual addresses
 		listenAddresses = helpers.RemoveFromStringSlice(listenAddresses, "*")
-		loopAddrs, err := utils.LocalLoopbackAddresses()
+		loopAddrs, err := utils2.LocalLoopbackAddresses()
 		if err != nil {
 			return nil
 		}
-		publicAddrs, err := utils.LocalPublicAddresses()
+		publicAddrs, err := utils2.LocalPublicAddresses()
 		if err != nil {
 			return nil
 		}

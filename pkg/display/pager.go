@@ -26,7 +26,7 @@ func ShowPaged(ctx context.Context, content string) {
 
 func isPagerNeeded(content string) bool {
 	// only show pager in interactive mode
-	if !viper.GetBool(constants.ConfigKeyInteractive) {
+	if !viper.GetBool(constants_steampipe.ConfigKeyInteractive) {
 		return false
 	}
 

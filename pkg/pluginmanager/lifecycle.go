@@ -47,7 +47,7 @@ func start(steampipeExecutablePath string) (*State, error) {
 	// - this is done both by the FDW and Steampipe
 	pluginManagerCmd := exec.Command(steampipeExecutablePath,
 		"plugin-manager",
-		"--"+constants.ArgInstallDir, filepaths.SteampipeDir)
+		"--"+constants.ArgInstallDir, filepaths_steampipe.SteampipeDir)
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,

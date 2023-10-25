@@ -87,7 +87,7 @@ func (s *StatusSpinner) Warn(msg string) {
 		s.spinner.Stop()
 		defer s.spinner.Start()
 	}
-	fmt.Fprintf(color.Output, "%s: %v\n", constants.ColoredWarn, msg)
+	fmt.Fprintf(color.Output, "%s: %v\n", constants_steampipe.ColoredWarn, msg)
 }
 
 // Hide implements StatusHooks

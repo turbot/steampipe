@@ -51,7 +51,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 			requiredState[connection.Name] = newErrorConnectionState(connection)
 			// if error is a missing plugin, add to missingPluginMap
 			// this will be used to build missing plugin warnings
-			if connection.Error.Error() == constants.ConnectionErrorPluginNotInstalled {
+			if connection.Error.Error() == constants_steampipe.ConnectionErrorPluginNotInstalled {
 				missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
 			} else {
 				// otherwise add error to result as warning, so we display it
@@ -80,7 +80,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 		requiredState[name].CommentsSet = true
 		// if schema import is disabled, set desired state as disabled
 		if connection.ImportSchema == modconfig.ImportSchemaDisabled {
-			requiredState[name].State = constants.ConnectionStateDisabled
+			requiredState[name].State = constants_steampipe.ConnectionStateDisabled
 		}
 		// NOTE: if the connection exists in the current state, copy the connection mod time
 		// (this will be updated to 'now' later if we are updating the connection)
@@ -109,7 +109,7 @@ func (m ConnectionStateMap) GetSummary() ConnectionStateSummary {
 // Pending returns whether there are any connections in the map which are pending
 // this indicates that the db has just started and RefreshConnections has not been called yet
 func (m ConnectionStateMap) Pending() bool {
-	return m.ConnectionsInState(constants.ConnectionStatePending, constants.ConnectionStatePendingIncomplete)
+	return m.ConnectionsInState(constants_steampipe.ConnectionStatePending, constants_steampipe.ConnectionStatePendingIncomplete)
 }
 
 // Loaded returns whether loading is complete, i.e.  all connections are either ready or error
@@ -147,7 +147,7 @@ func (m ConnectionStateMap) ConnectionsInState(states ...string) bool {
 }
 
 func (m ConnectionStateMap) Save() error {
-	connFilePath := filepaths.ConnectionStatePath()
+	connFilePath := filepaths_steampipe.ConnectionStatePath()
 	connFileJSON, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		log.Println("[ERROR]", "Error while writing state file", err)
@@ -234,11 +234,11 @@ func (m ConnectionStateMap) getFirstSearchPathConnectionMapForPlugins(searchPath
 
 func (m ConnectionStateMap) SetConnectionsToPendingOrIncomplete() {
 	for _, state := range m {
-		if state.State == constants.ConnectionStateReady {
-			state.State = constants.ConnectionStatePending
+		if state.State == constants_steampipe.ConnectionStateReady {
+			state.State = constants_steampipe.ConnectionStatePending
 			state.ConnectionModTime = time.Now()
-		} else if state.State != constants.ConnectionStateDisabled {
-			state.State = constants.ConnectionStatePendingIncomplete
+		} else if state.State != constants_steampipe.ConnectionStateDisabled {
+			state.State = constants_steampipe.ConnectionStatePendingIncomplete
 			state.ConnectionModTime = time.Now()
 		}
 	}

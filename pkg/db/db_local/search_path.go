@@ -2,26 +2,27 @@ package db_local
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/constants"
 	"log"
 	"sort"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 )
 
-func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
+func SetUserSearchPath(ctx context.Context, pool *sql.DB) ([]string, error) {
 	var searchPath []string
 
 	// is there a user search path in the config?
 	// check ConfigKeyDatabaseSearchPath config (this is the value specified in the database config)
-	if viper.IsSet(constants.ConfigKeyServerSearchPath) {
+	if viper.IsSet(constants_steampipe.ConfigKeyServerSearchPath) {
 
-		searchPath = viper.GetStringSlice(constants.ConfigKeyServerSearchPath)
+		searchPath = viper.GetStringSlice(constants_steampipe.ConfigKeyServerSearchPath)
 		// the Internal Schema should always go at the end
 		searchPath = db_common.EnsureInternalSchemaSuffix(searchPath)
 	} else {
@@ -36,14 +37,14 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 	log.Println("[TRACE] setting user search path to", searchPath)
 
 	// get all roles which are a member of steampipe_users
-	conn, err := pool.Acquire(ctx)
+	conn, err := pool.Conn(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Release()
+	defer conn.Close()
 
-	query := fmt.Sprintf(`SELECT USENAME FROM pg_user WHERE pg_has_role(usename, '%s', 'member')`, constants.DatabaseUsersRole)
-	rows, err := conn.Query(ctx, query)
+	query := fmt.Sprintf(`SELECT USENAME FROM pg_user WHERE pg_has_role(usename, '%s', 'member')`, constants_steampipe.DatabaseUsersRole)
+	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +70,7 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 	}
 
 	log.Printf("[TRACE] user search path sql: %v", queries)
-	_, err = ExecuteSqlInTransaction(ctx, conn.Conn(), queries...)
+	_, err = ExecuteSqlInTransaction(ctx, conn, queries...)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +93,7 @@ func getDefaultSearchPath() []string {
 	// empty, doesn't make using steampipe tables any more difficult.
 	searchPath = append([]string{"public"}, searchPath...)
 	// add 'internal' schema as last schema in the search path
-	searchPath = append(searchPath, constants.InternalSchema)
+	searchPath = append(searchPath, constants_steampipe.InternalSchema)
 
 	return searchPath
 }

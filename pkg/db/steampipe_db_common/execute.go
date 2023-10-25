@@ -2,8 +2,8 @@ package steampipe_db_common
 
 import (
 	"context"
-	"github.com/turbot/steampipe/pkg/query/queryresult"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/queryresult"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 // ExecuteQuery executes a single query. If shutdownAfterCompletion is true, shutdown the client after completion

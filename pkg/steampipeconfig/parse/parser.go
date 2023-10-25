@@ -51,9 +51,9 @@ func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 		var file *hcl.File
 		var moreDiags hcl.Diagnostics
 		ext := filepath.Ext(filePath)
-		if ext == constants.JsonExtension {
+		if ext == constants_steampipe.JsonExtension {
 			file, moreDiags = json.ParseFile(filePath)
-		} else if constants.IsYamlExtension(ext) {
+		} else if constants_steampipe.IsYamlExtension(ext) {
 			file, moreDiags = parseYamlFile(filePath)
 		} else {
 			data := fileData[filePath]

@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"log"
 	"os"
 	"os/signal"
@@ -20,18 +22,17 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/db_common"
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection_sync"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/display"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/interactive/metaquery"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/queryhistory"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
 
@@ -131,7 +132,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 	statushooks.Message(
 		ctx,
 		fmt.Sprintf("Welcome to Steampipe v%s", version.SteampipeVersion.String()),
-		fmt.Sprintf("For more information, type %s", constants.Bold(".help")),
+		fmt.Sprintf("For more information, type %s", constants_steampipe.Bold(".help")),
 	)
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors
@@ -287,22 +288,22 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) {
 		}),
 		// Opt+LeftArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants.OptLeftArrowASCIICode,
+			ASCIICode: constants_steampipe.OptLeftArrowASCIICode,
 			Fn:        prompt.GoLeftWord,
 		}),
 		// Opt+RightArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants.OptRightArrowASCIICode,
+			ASCIICode: constants_steampipe.OptRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
 		// Alt+LeftArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants.AltLeftArrowASCIICode,
+			ASCIICode: constants_steampipe.AltLeftArrowASCIICode,
 			Fn:        prompt.GoLeftWord,
 		}),
 		// Alt+RightArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants.AltRightArrowASCIICode,
+			ASCIICode: constants_steampipe.AltRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
 		prompt.OptionBufferPreHook(func(input string) (modifiedInput string, ignore bool) {
@@ -732,7 +733,7 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 func (c *InteractiveClient) handleErrorsAndWarningsNotification(ctx context.Context, notification *steampipeconfig.ErrorsAndWarningsNotification) {
 	log.Printf("[TRACE] handleErrorsAndWarningsNotification")
 	output := viper.Get(constants.ArgOutput)
-	if output == constants.OutputFormatJSON || output == constants.OutputFormatCSV {
+	if output == constants_steampipe.OutputFormatJSON || output == constants_steampipe.OutputFormatCSV {
 		return
 	}
 

@@ -238,7 +238,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runPluginInstallCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			exitCode = constants.ExitCodeUnknownErrorPanic
+			exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -252,7 +252,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	if len(plugins) == 0 {
 		if len(steampipe_config_local.GlobalConfig.Plugins) == 0 {
 			error_helpers.ShowError(ctx, sperr.New("No connections or plugins configured"))
-			exitCode = constants.ExitCodeInsufficientOrWrongInputs
+			exitCode = constants_steampipe.ExitCodeInsufficientOrWrongInputs
 			return
 		}
 
@@ -287,7 +287,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		if !report.Skipped {
 			installCount++
 		} else if !(report.Skipped && report.SkipReason == "Already installed") {
-			exitCode = constants.ExitCodePluginInstallFailure
+			exitCode = constants_steampipe.ExitCodePluginInstallFailure
 		}
 	}
 	if showProgress {
@@ -298,7 +298,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		// TODO do we need to refresh connections here
 
 		// reload the config, since an installation should have created a new config file
-		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+		var cmd = viper.Get(constants_steampipe.ConfigKeyActiveCommand).(*cobra.Command)
 		config, errorsAndWarnings := steampipe_config_local.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
 		if errorsAndWarnings.GetError() != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to reload config - install report may be incomplete (%s)", errorsAndWarnings.GetError()))
@@ -324,19 +324,19 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 		bar.Set(len(pluginInstallSteps))
 		// let the bar append itself with "Already Installed"
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			return helpers.Resize(constants.InstallMessagePluginAlreadyInstalled, 20)
+			return helpers.Resize(constants_steampipe.InstallMessagePluginAlreadyInstalled, 20)
 		})
 		report = &display.PluginInstallReport{
 			Plugin:         pluginName,
 			Skipped:        true,
-			SkipReason:     constants.InstallMessagePluginAlreadyInstalled,
+			SkipReason:     constants_steampipe.InstallMessagePluginAlreadyInstalled,
 			IsUpdateReport: false,
 		}
 	} else {
 		// let the bar append itself with the current installation step
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			if report != nil && report.SkipReason == constants.InstallMessagePluginNotFound {
-				return helpers.Resize(constants.InstallMessagePluginNotFound, 20)
+			if report != nil && report.SkipReason == constants_steampipe.InstallMessagePluginNotFound {
+				return helpers.Resize(constants_steampipe.InstallMessagePluginNotFound, 20)
 			} else {
 				if b.Current() == 0 {
 					// no install step to display yet
@@ -358,7 +358,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runPluginUpdateCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			exitCode = constants.ExitCodeUnknownErrorPanic
+			exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -374,15 +374,15 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = constants.ExitCodeInsufficientOrWrongInputs
+		exitCode = constants_steampipe.ExitCodeInsufficientOrWrongInputs
 		return
 	}
 
 	if len(plugins) > 0 && !(cmdconfig.Viper().GetBool("all")) && plugins[0] == "all" {
 		// improve the response to wrong argument "steampipe plugin update all"
 		fmt.Println()
-		exitCode = constants.ExitCodeInsufficientOrWrongInputs
-		error_helpers.ShowError(ctx, fmt.Errorf("Did you mean %s?", constants.Bold("--all")))
+		exitCode = constants_steampipe.ExitCodeInsufficientOrWrongInputs
+		error_helpers.ShowError(ctx, fmt.Errorf("Did you mean %s?", constants_steampipe.Bold("--all")))
 		fmt.Println()
 		return
 	}
@@ -390,7 +390,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	state, err := installationstate.Load()
 	if err != nil {
 		error_helpers.ShowError(ctx, fmt.Errorf("could not load state"))
-		exitCode = constants.ExitCodePluginLoadingError
+		exitCode = constants_steampipe.ExitCodePluginLoadingError
 		return
 	}
 
@@ -398,7 +398,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	versionData, err := versionfile.LoadPluginVersionFile()
 	if err != nil {
 		error_helpers.ShowError(ctx, fmt.Errorf("error loading current plugin data"))
-		exitCode = constants.ExitCodePluginLoadingError
+		exitCode = constants_steampipe.ExitCodePluginLoadingError
 		return
 	}
 
@@ -423,19 +423,19 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			ref := ociinstaller.NewSteampipeImageRef(p)
 			isExists, _ := plugin.Exists(p)
 			if isExists {
-				if strings.HasPrefix(ref.DisplayImageRef(), constants.SteampipeHubOCIBase) {
+				if strings.HasPrefix(ref.DisplayImageRef(), constants_steampipe.SteampipeHubOCIBase) {
 					runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
 				} else {
 					error_helpers.ShowError(ctx, fmt.Errorf("cannot check updates for plugins not distributed via hub.steampipe.io, you should uninstall then reinstall the plugin to get the latest version"))
-					exitCode = constants.ExitCodePluginLoadingError
+					exitCode = constants_steampipe.ExitCodePluginLoadingError
 					return
 				}
 			} else {
-				exitCode = constants.ExitCodePluginNotFound
+				exitCode = constants_steampipe.ExitCodePluginNotFound
 				updateResults = append(updateResults, &display.PluginInstallReport{
 					Skipped:        true,
 					Plugin:         p,
-					SkipReason:     constants.InstallMessagePluginNotInstalled,
+					SkipReason:     constants_steampipe.InstallMessagePluginNotInstalled,
 					IsUpdateReport: true,
 				})
 			}
@@ -461,7 +461,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		// this happens if for some reason the update server could not be contacted,
 		// in which case we get back an empty map
 		error_helpers.ShowError(ctx, fmt.Errorf("there was an issue contacting the update server, please try later"))
-		exitCode = constants.ExitCodePluginLoadingError
+		exitCode = constants_steampipe.ExitCodePluginLoadingError
 		return
 	}
 
@@ -561,8 +561,8 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		msg := ""
 		_, name, stream := ociinstaller.NewSteampipeImageRef(pluginName).GetOrgNameAndStream()
 		if isPluginNotFoundErr(err) {
-			exitCode = constants.ExitCodePluginNotFound
-			msg = constants.InstallMessagePluginNotFound
+			exitCode = constants_steampipe.ExitCodePluginNotFound
+			msg = constants_steampipe.InstallMessagePluginNotFound
 		} else {
 			msg = err.Error()
 		}
@@ -598,12 +598,12 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 
 	if len(plugins) == 0 && !(cmdconfig.Viper().GetBool("all")) {
 		// either plugin name(s) or "all" must be provided
-		return nil, fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all"))
+		return nil, fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants_steampipe.Bold("--all"))
 	}
 
 	if len(plugins) > 0 && cmdconfig.Viper().GetBool(constants.ArgAll) {
 		// we can't allow update and install at the same time
-		return nil, fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`"))
+		return nil, fmt.Errorf("%s cannot be used when updating specific plugins", constants_steampipe.Bold("`--all`"))
 	}
 
 	return plugins, nil
@@ -620,14 +620,14 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 		utils.LogTime("runPluginListCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			exitCode = constants.ExitCodeUnknownErrorPanic
+			exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
 		}
 	}()
 
 	pluginList, failedPluginMap, missingPluginMap, res := getPluginList(ctx)
 	if res.Error != nil {
 		error_helpers.ShowErrorWithMessage(ctx, res.Error, "plugin listing failed")
-		exitCode = constants.ExitCodePluginListFailure
+		exitCode = constants_steampipe.ExitCodePluginListFailure
 		return
 	}
 
@@ -674,7 +674,7 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.ConnectionErrorPluginFailedToStart})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants_steampipe.ConnectionErrorPluginFailedToStart})
 			conns = []string{}
 		}
 
@@ -683,7 +683,7 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.InstallMessagePluginNotInstalled})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants_steampipe.InstallMessagePluginNotInstalled})
 			conns = []string{}
 		}
 
@@ -719,7 +719,7 @@ func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, m
 		failed := failedPlugin{
 			Name:        p,
 			Connections: connections,
-			Reason:      constants.ConnectionErrorPluginFailedToStart,
+			Reason:      constants_steampipe.ConnectionErrorPluginFailedToStart,
 		}
 		output.Failed = append(output.Failed, failed)
 	}
@@ -732,7 +732,7 @@ func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, m
 		missing := failedPlugin{
 			Name:        p,
 			Connections: connections,
-			Reason:      constants.InstallMessagePluginNotInstalled,
+			Reason:      constants_steampipe.InstallMessagePluginNotInstalled,
 		}
 		output.Failed = append(output.Failed, missing)
 	}
@@ -761,7 +761,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runPluginUninstallCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			exitCode = constants.ExitCodeUnknownErrorPanic
+			exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
 		}
 	}()
 
@@ -771,14 +771,14 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		cmd.Help()
 		fmt.Println()
-		exitCode = constants.ExitCodeInsufficientOrWrongInputs
+		exitCode = constants_steampipe.ExitCodeInsufficientOrWrongInputs
 		return
 	}
 
 	connectionMap, _, _, res := getPluginConnectionMap(ctx)
 	if res.Error != nil {
 		error_helpers.ShowError(ctx, res.Error)
-		exitCode = constants.ExitCodePluginListFailure
+		exitCode = constants_steampipe.ExitCodePluginListFailure
 		return
 	}
 
@@ -788,7 +788,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		statushooks.SetStatus(ctx, fmt.Sprintf("Uninstalling %s", p))
 		if report, err := plugin.Remove(ctx, p, connectionMap); err != nil {
 			if strings.Contains(err.Error(), "not found") {
-				exitCode = constants.ExitCodePluginNotFound
+				exitCode = constants_steampipe.ExitCodePluginNotFound
 			}
 			error_helpers.ShowErrorWithMessage(ctx, err, fmt.Sprintf("Failed to uninstall plugin '%s'", p))
 		} else {
@@ -856,9 +856,9 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 			continue
 		}
 
-		if state.State == constants.ConnectionStateError && state.Error() == constants.ConnectionErrorPluginFailedToStart {
+		if state.State == constants_steampipe.ConnectionStateError && state.Error() == constants_steampipe.ConnectionErrorPluginFailedToStart {
 			failedPluginMap[state.Plugin] = append(failedPluginMap[state.Plugin], connection)
-		} else if state.State == constants.ConnectionStateError && state.Error() == constants.ConnectionErrorPluginNotInstalled {
+		} else if state.State == constants_steampipe.ConnectionStateError && state.Error() == constants_steampipe.ConnectionErrorPluginNotInstalled {
 			missingPluginMap[state.Plugin] = append(missingPluginMap[state.Plugin], connection)
 		}
 
@@ -874,7 +874,7 @@ func getConnectionState(ctx context.Context) (steampipe_config_local.ConnectionS
 	defer utils.LogTime("cmd.getConnectionState end")
 
 	// start service
-	client, res := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
+	client, res := db_local.GetLocalClient(ctx, constants_steampipe.InvokerPlugin, nil)
 	if res.Error != nil {
 		return nil, res
 	}

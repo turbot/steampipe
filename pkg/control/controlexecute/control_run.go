@@ -256,7 +256,7 @@ func (r *ControlRun) execute(ctx context.Context, client db_common.Client) {
 
 		// is this an rpc EOF error - meaning that the plugin somehow crashed
 		if grpc.IsGRPCConnectivityError(err) {
-			if r.attempts < constants.MaxControlRunAttempts {
+			if r.attempts < constants_steampipe.MaxControlRunAttempts {
 				log.Printf("[TRACE] control %s query failed with plugin connectivity error %s - retrying…", r.Control.Name(), err)
 				// recurse into this function to retry using the original context - which Execute will use to create it's own timeout context
 				r.execute(ctx, client)
@@ -376,22 +376,22 @@ func (r *ControlRun) addResultRow(row *ResultRow) {
 
 	// update summary
 	switch row.Status {
-	case constants.ControlOk:
+	case constants_steampipe.ControlOk:
 		r.Summary.Ok++
-	case constants.ControlAlarm:
+	case constants_steampipe.ControlAlarm:
 		r.Summary.Alarm++
-	case constants.ControlSkip:
+	case constants_steampipe.ControlSkip:
 		r.Summary.Skip++
-	case constants.ControlInfo:
+	case constants_steampipe.ControlInfo:
 		r.Summary.Info++
-	case constants.ControlError:
+	case constants_steampipe.ControlError:
 		r.Summary.Error++
 	}
 }
 
 // populate ordered list of rows
 func (r *ControlRun) createdOrderedResultRows() {
-	statusOrder := []string{constants.ControlError, constants.ControlAlarm, constants.ControlInfo, constants.ControlOk, constants.ControlSkip}
+	statusOrder := []string{constants_steampipe.ControlError, constants_steampipe.ControlAlarm, constants_steampipe.ControlInfo, constants_steampipe.ControlOk, constants_steampipe.ControlSkip}
 	for _, status := range statusOrder {
 		r.Rows = append(r.Rows, r.rowMap[status]...)
 	}

@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/display"
 	"io"
 	"os"
 	"strings"
@@ -10,20 +11,22 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/contexthelpers"
+	"github.com/turbot/pipe-fittings/controldisplay"
+	"github.com/turbot/pipe-fittings/controlexecute"
+	"github.com/turbot/pipe-fittings/controlstatus"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/contexthelpers"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"github.com/turbot/steampipe/pkg/control"
-	"github.com/turbot/steampipe/pkg/control/controldisplay"
-	"github.com/turbot/steampipe/pkg/control/controlexecute"
-	"github.com/turbot/steampipe/pkg/control/controlstatus"
-	"github.com/turbot/steampipe/pkg/display"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
-	"github.com/turbot/steampipe/pkg/workspace"
+
+	//"github.com/turbot/pipe-fittings/display"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/workspace"
 )
 
 func checkCmd() *cobra.Command {
@@ -63,7 +66,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgHeader, true, "Include column headers for csv and table output").
 		AddBoolFlag(constants.ArgHelp, false, "Help for check", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddStringFlag(constants.ArgSeparator, ",", "Separator string for csv output").
-		AddStringFlag(constants.ArgOutput, constants.OutputFormatText, "Output format: brief, csv, html, json, md, text, snapshot or none").
+		AddStringFlag(constants.ArgOutput, constants_steampipe.OutputFormatText, "Output format: brief, csv, html, json, md, text, snapshot or none").
 		AddBoolFlag(constants.ArgTiming, false, "Turn on the timer which reports check time").
 		AddStringSliceFlag(constants.ArgSearchPath, nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, nil, "Set a prefix to the current search path for a check session (comma-separated)").
@@ -78,8 +81,8 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		// where args passed to StringArrayFlag are not parsed and used raw
 		AddStringArrayFlag(constants.ArgVariable, nil, "Specify the value of a variable").
 		AddStringFlag(constants.ArgWhere, "", "SQL 'where' clause, or named query, used to filter controls (cannot be used with '--tag')").
-		AddIntFlag(constants.ArgDatabaseQueryTimeout, constants.DatabaseDefaultCheckQueryTimeout, "The query timeout").
-		AddIntFlag(constants.ArgMaxParallel, constants.DefaultMaxConnections, "The maximum number of concurrent database connections to open").
+		AddIntFlag(constants.ArgDatabaseQueryTimeout, constants_steampipe.DatabaseDefaultCheckQueryTimeout, "The query timeout").
+		AddIntFlag(constants.ArgMaxParallel, constants_steampipe.DefaultMaxConnections, "The maximum number of concurrent database connections to open").
 		AddBoolFlag(constants.ArgModInstall, true, "Specify whether to install mod dependencies before running the check").
 		AddBoolFlag(constants.ArgInput, true, "Enable interactive prompts").
 		AddBoolFlag(constants.ArgSnapshot, false, "Create snapshot in Turbot Pipes with the default (workspace) visibility").
@@ -108,17 +111,17 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		utils.LogTime("runCheckCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
-			exitCode = constants.ExitCodeUnknownErrorPanic
+			exitCode = constants_steampipe.ExitCodeUnknownErrorPanic
 		}
 	}()
 
 	// verify we have an argument
 	if !validateCheckArgs(ctx, cmd, args) {
-		exitCode = constants.ExitCodeInsufficientOrWrongInputs
+		exitCode = constants_steampipe.ExitCodeInsufficientOrWrongInputs
 		return
 	}
 	// if diagnostic mode is set, print out config and return
-	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
+	if _, ok := os.LookupEnv(constants_steampipe.EnvConfigDump); ok {
 		cmdconfig.DisplayConfig()
 		return
 	}
@@ -138,7 +141,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	initCtx := statushooks.DisableStatusHooks(ctx)
 	initData := control.NewInitData(initCtx)
 	if initData.Result.Error != nil {
-		exitCode = constants.ExitCodeInitializationFailed
+		exitCode = constants_steampipe.ExitCodeInitializationFailed
 		error_helpers.ShowError(ctx, initData.Result.Error)
 		return
 	}
@@ -298,14 +301,14 @@ func getExportName(targetName string, modShortName string) (string, error) {
 func getExitCode(alarms int, errors int) int {
 	// 1 or more control errors, return exitCode=2
 	if errors > 0 {
-		return constants.ExitCodeControlsError
+		return constants_steampipe.ExitCodeControlsError
 	}
 	// 1 or more controls in alarm, return exitCode=1
 	if alarms > 0 {
-		return constants.ExitCodeControlsAlarm
+		return constants_steampipe.ExitCodeControlsAlarm
 	}
 	// no controls in alarm/error
-	return constants.ExitCodeSuccessful
+	return constants_steampipe.ExitCodeSuccessful
 }
 
 // create the context for the check run - add a control status renderer
@@ -380,7 +383,7 @@ func shouldPrintTiming() bool {
 	outputFormat := viper.GetString(constants.ArgOutput)
 
 	return (viper.GetBool(constants.ArgTiming) && !viper.GetBool(constants.ArgDryRun)) &&
-		(outputFormat == constants.OutputFormatText || outputFormat == constants.OutputFormatBrief)
+		(outputFormat == constants_steampipe.OutputFormatText || outputFormat == constants_steampipe.OutputFormatBrief)
 }
 
 func displayControlResults(ctx context.Context, executionTree *controlexecute.ExecutionTree, formatter controldisplay.Formatter) error {

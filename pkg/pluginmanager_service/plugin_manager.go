@@ -97,7 +97,7 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 	// create a connection pool to connection refresh
 	// in testing, a size of 20 seemed optimal
 	poolsize := 20
-	pool, err := db_local.CreateConnectionPool(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
+	pool, err := db_local.CreateConnectionPool(ctx, &db_local.CreateDbOptions{Username: constants_steampipe.DatabaseSuperUser}, poolsize)
 	if err != nil {
 		return nil, err
 	}
@@ -473,7 +473,7 @@ func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConf
 
 	// NOTE: pass pluginConfig.Alias as the pluginAlias
 	// - this is just used for the error message if we fail to load
-	pluginPath, err := filepaths.GetPluginPath(imageRef, pluginConfig.Alias)
+	pluginPath, err := filepaths_steampipe.GetPluginPath(imageRef, pluginConfig.Alias)
 	if err != nil {
 		return nil, err
 	}
@@ -628,7 +628,7 @@ func (m *PluginManager) setPluginCacheSizeMap() {
 	m.pluginCacheSizeMap = make(map[string]int64, len(m.pluginConnectionConfigMap))
 
 	// read the env var setting cache size
-	maxCacheSizeMb, _ := strconv.Atoi(os.Getenv(constants.EnvCacheMaxSize))
+	maxCacheSizeMb, _ := strconv.Atoi(os.Getenv(constants_steampipe.EnvCacheMaxSize))
 
 	// get total connection count for this pluginInstance (excluding aggregators)
 	numConnections := m.nonAggregatorConnectionCount()

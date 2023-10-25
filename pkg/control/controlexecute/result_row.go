@@ -117,7 +117,7 @@ func NewResultRow(run *ControlRun, row *queryresult.RowResult, cols []*queryresu
 }
 
 func IsValidControlStatus(status string) bool {
-	return helpers.StringSliceContains([]string{constants.ControlOk, constants.ControlAlarm, constants.ControlInfo, constants.ControlError, constants.ControlSkip}, status)
+	return helpers.StringSliceContains([]string{constants_steampipe.ControlOk, constants_steampipe.ControlAlarm, constants_steampipe.ControlInfo, constants_steampipe.ControlError, constants_steampipe.ControlSkip}, status)
 }
 
 func validateColumns(cols []*queryresult.ColumnDef) error {

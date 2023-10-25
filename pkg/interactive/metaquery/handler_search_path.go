@@ -14,7 +14,7 @@ func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
 	if len(input.args()) == 0 {
 		sessionSearchPath := input.Client.GetRequiredSessionSearchPath()
 
-		sessionSearchPath = helpers.RemoveFromStringSlice(sessionSearchPath, constants.InternalSchema)
+		sessionSearchPath = helpers.RemoveFromStringSlice(sessionSearchPath, constants_steampipe.InternalSchema)
 
 		display.ShowWrappedTable(
 			[]string{"search_path"},

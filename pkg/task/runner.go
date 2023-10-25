@@ -48,11 +48,11 @@ func RunTasks(ctx context.Context, cmd *cobra.Command, args []string, options ..
 	go func(c context.Context) {
 		defer close(doneChannel)
 		// check if a legacy notifications file exists
-		exists := files.FileExists(filepaths.LegacyNotificationsFilePath())
+		exists := files.FileExists(filepaths_steampipe.LegacyNotificationsFilePath())
 		if exists {
 			log.Println("[TRACE] found legacy notification file. removing")
 			// if the legacy file exists, remove it
-			os.Remove(filepaths.LegacyNotificationsFilePath())
+			os.Remove(filepaths_steampipe.LegacyNotificationsFilePath())
 		}
 
 		// if the legacy file existed, then we should enforce a run, since we need
