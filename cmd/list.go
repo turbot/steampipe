@@ -11,7 +11,7 @@ import (
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/workspace"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
 	"github.com/turbot/steampipe/pkg/display"
 )
 
@@ -29,8 +29,7 @@ func getListSubCmd(opts listSubCmdOptions) *cobra.Command {
 		Long:             fmt.Sprintf("List all resources that can be executed with the '%s' command", opts.parentCmd.Name()),
 	}
 
-	cmdconfig.
-		OnCmd(cmd)
+	cmdconfig_steampipe.OnCmd(cmd)
 
 	return cmd
 }

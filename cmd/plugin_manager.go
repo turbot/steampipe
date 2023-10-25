@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
 	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"os"
@@ -19,7 +20,6 @@ import (
 
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
@@ -31,7 +31,7 @@ func pluginManagerCmd() *cobra.Command {
 		Run:    runPluginManagerCmd,
 		Hidden: true,
 	}
-	cmdconfig.OnCmd(cmd)
+	cmdconfig_steampipe.OnCmd(cmd)
 	return cmd
 }
 

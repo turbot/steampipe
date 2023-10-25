@@ -1,6 +1,7 @@
 package filepaths_steampipe
 
 import (
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"os"
 	"path/filepath"
 
@@ -48,19 +49,19 @@ func DatabaseBackupFilePath() string {
 }
 
 func GetRootCertLocation() string {
-	return filepath.Join(GetDataLocation(), constants.RootCert)
+	return filepath.Join(GetDataLocation(), constants_steampipe.RootCert)
 }
 
 func GetRootCertKeyLocation() string {
-	return filepath.Join(GetDataLocation(), constants.RootCertKey)
+	return filepath.Join(GetDataLocation(), constants_steampipe.RootCertKey)
 }
 
 func GetServerCertLocation() string {
-	return filepath.Join(GetDataLocation(), constants.ServerCert)
+	return filepath.Join(GetDataLocation(), constants_steampipe.ServerCert)
 }
 
 func GetServerCertKeyLocation() string {
-	return filepath.Join(GetDataLocation(), constants.ServerCertKey)
+	return filepath.Join(GetDataLocation(), constants_steampipe.ServerCertKey)
 }
 
 func GetInitDbBinaryExecutablePath() string {

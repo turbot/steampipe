@@ -8,8 +8,8 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 )
 

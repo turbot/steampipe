@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
 	"github.com/turbot/steampipe/pkg/query/queryexecute"
 	"os"
 	"path"
@@ -14,19 +15,18 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/contexthelpers"
 	"github.com/turbot/pipe-fittings/dashboardexecute"
 	"github.com/turbot/pipe-fittings/dashboardtypes"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/modconfig"
-
 	"github.com/turbot/pipe-fittings/queryresult"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/pipe-fittings/workspace"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/query"
 )
@@ -70,7 +70,7 @@ Examples:
 
 	// Notes:
 	// * In the future we may add --csv and --json flags as shortcuts for --output
-	cmdconfig.
+	cmdconfig_steampipe.
 		OnCmd(cmd).
 		AddCloudFlags().
 		AddWorkspaceDatabaseFlag().
@@ -119,7 +119,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// if diagnostic mode is set, print out config and return
 	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
-		cmdconfig.DisplayConfig()
+		cmdconfig_steampipe.DisplayConfig()
 		return
 	}
 
@@ -184,7 +184,7 @@ func validateQueryArgs(ctx context.Context, args []string) error {
 		return sperr.New("cannot export query results in interactive mode")
 	}
 	// if share or snapshot args are set, there must be a query specified
-	err := cmdconfig.ValidateSnapshotArgs(ctx)
+	err := cmdconfig_steampipe.ValidateSnapshotArgs(ctx)
 	if err != nil {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return err

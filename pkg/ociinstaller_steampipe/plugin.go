@@ -5,6 +5,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,7 +17,6 @@ import (
 	"time"
 
 	"github.com/turbot/pipe-fittings/error_helpers"
-	"github.com/turbot/pipe-fittings/filepaths"
 	versionfile "github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/pipe-fittings/utils"
 )
@@ -22,12 +24,12 @@ import (
 var versionFileUpdateLock = &sync.Mutex{}
 
 // InstallPlugin installs a plugin from an OCI Image
-func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, opts ...PluginInstallOption) (*SteampipeImage, error) {
+func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, opts ...pluginInstallOption) (*ociinstaller.SteampipeImage, error) {
 	config := &pluginInstallConfig{}
 	for _, opt := range opts {
 		opt(config)
 	}
-	tempDir := NewTempDir(filepaths_steampipe.EnsurePluginDir())
+	tempDir := ociinstaller.NewTempDir(filepaths_steampipe.EnsurePluginDir())
 	defer func() {
 		// send a last beacon to signal completion
 		sub <- struct{}{}
@@ -36,11 +38,11 @@ func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, opts
 		}
 	}()
 
-	ref := NewSteampipeImageRef(imageRef)
-	imageDownloader := NewOciDownloader()
+	ref := ociinstaller.NewSteampipeImageRef(imageRef)
+	imageDownloader := ociinstaller.NewOciDownloader()
 
 	sub <- struct{}{}
-	image, err := imageDownloader.Download(ctx, ref, ImageTypePlugin, tempDir.Path)
+	image, err := imageDownloader.Download(ctx, ref, ociinstaller.ImageTypePlugin, tempDir.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +69,7 @@ func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, opts
 
 // updatePluginVersionFiles updates the global versions.json to add installation of the plugin
 // also adds a version file in the plugin installation directory with the information
-func updatePluginVersionFiles(image *SteampipeImage) error {
+func updatePluginVersionFiles(image *ociinstaller.SteampipeImage) error {
 	versionFileUpdateLock.Lock()
 	defer versionFileUpdateLock.Unlock()
 
@@ -107,7 +109,7 @@ func updatePluginVersionFiles(image *SteampipeImage) error {
 	return v.Save()
 }
 
-func installPluginBinary(image *SteampipeImage, tempdir string) error {
+func installPluginBinary(image *ociinstaller.SteampipeImage, tempdir string) error {
 	sourcePath := filepath.Join(tempdir, image.Plugin.BinaryFile)
 	destDir := pluginInstallDir(image.ImageRef)
 
@@ -129,13 +131,13 @@ func installPluginBinary(image *SteampipeImage, tempdir string) error {
 	}
 
 	// unzip the file into the plugin folder
-	if _, err := ungzip(sourcePath, destDir); err != nil {
+	if _, err := ociinstaller.Ungzip(sourcePath, destDir); err != nil {
 		return fmt.Errorf("could not unzip %s to %s", sourcePath, destDir)
 	}
 	return nil
 }
 
-func installPluginDocs(image *SteampipeImage, tempdir string) error {
+func installPluginDocs(image *ociinstaller.SteampipeImage, tempdir string) error {
 	installTo := pluginInstallDir(image.ImageRef)
 
 	// if DocsDir is not set, then there are no docs.
@@ -146,16 +148,16 @@ func installPluginDocs(image *SteampipeImage, tempdir string) error {
 	// install the docs
 	sourcePath := filepath.Join(tempdir, image.Plugin.DocsDir)
 	destPath := filepath.Join(installTo, "docs")
-	if fileExists(destPath) {
+	if filehelpers.FileExists(destPath) {
 		os.RemoveAll(destPath)
 	}
-	if err := moveFolderWithinPartition(sourcePath, destPath); err != nil {
+	if err := ociinstaller.MoveFolderWithinPartition(sourcePath, destPath); err != nil {
 		return fmt.Errorf("could not copy %s to %s", sourcePath, destPath)
 	}
 	return nil
 }
 
-func installPluginConfigFiles(image *SteampipeImage, tempdir string) error {
+func installPluginConfigFiles(image *ociinstaller.SteampipeImage, tempdir string) error {
 	installTo := filepaths_steampipe.EnsureConfigDir()
 
 	// if ConfigFileDir is not set, then there are no config files.
@@ -181,8 +183,8 @@ func installPluginConfigFiles(image *SteampipeImage, tempdir string) error {
 	return nil
 }
 
-func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *SteampipeImageRef) error {
-	if fileExists(destFile) {
+func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *ociinstaller.SteampipeImageRef) error {
+	if filehelpers.FileExists(destFile) {
 		return nil
 	}
 	inputData, err := os.ReadFile(sourceFile)
@@ -205,7 +207,7 @@ func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *Steampi
 // When installing non-latest plugins, that property needs to be adjusted to the stream actually getting installed.
 // Otherwise, during plugin resolution, it will resolve to an incorrect plugin instance
 // (or none at at all, if  'latest' versions isn't installed)
-func addPluginStreamToConfig(src []byte, ref *SteampipeImageRef) []byte {
+func addPluginStreamToConfig(src []byte, ref *ociinstaller.SteampipeImageRef) []byte {
 	_, _, stream := ref.GetOrgNameAndStream()
 	if stream == "latest" {
 		return src
@@ -230,7 +232,7 @@ func addPluginStreamToConfig(src []byte, ref *SteampipeImageRef) []byte {
 	return destBuffer.Bytes()
 }
 
-func pluginInstallDir(ref *SteampipeImageRef) string {
+func pluginInstallDir(ref *ociinstaller.SteampipeImageRef) string {
 	osSafePath := filepath.FromSlash(ref.DisplayImageRef())
 
 	fullPath := filepath.Join(filepaths_steampipe.EnsurePluginDir(), osSafePath)

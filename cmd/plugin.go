@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/turbot/pipe-fittings/cmdconfig"
+	"github.com/turbot/steampipe/pkg/ociinstaller_steampipe"
 	"strings"
 	"sync"
 	"time"
@@ -13,8 +15,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
-
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/contexthelpers"
 	"github.com/turbot/pipe-fittings/error_helpers"
@@ -26,7 +26,8 @@ import (
 	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/plugin"
@@ -122,7 +123,7 @@ Examples:
   steampipe plugin install --skip-config aws`,
 	}
 
-	cmdconfig.
+	cmdconfig_steampipe.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgProgress, true, "Display installation progress").
 		AddBoolFlag(constants.ArgSkipConfig, false, "Skip creating the default config file for plugin").
@@ -156,7 +157,7 @@ Examples:
   steampipe plugin update --progress=false aws`,
 	}
 
-	cmdconfig.
+	cmdconfig_steampipe.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgAll, false, "Update all plugins to its latest available version").
 		AddBoolFlag(constants.ArgProgress, true, "Display installation progress").
@@ -188,7 +189,7 @@ Examples:
   steampipe plugin list --output json`,
 	}
 
-	cmdconfig.
+	cmdconfig_steampipe.
 		OnCmd(cmd).
 		AddBoolFlag("outdated", false, "Check each plugin in the list for updates").
 		AddStringFlag(constants.ArgOutput, "table", "Output format: table or json").
@@ -217,7 +218,7 @@ Example:
 `,
 	}
 
-	cmdconfig.OnCmd(cmd).
+	cmdconfig_steampipe.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, false, "Help for plugin uninstall", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
@@ -557,7 +558,7 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		}
 	}()
 
-	image, err := plugin.Install(ctx, pluginName, progress, ociinstaller.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
+	image, err := plugin.Install(ctx, pluginName, progress, ociinstaller_steampipe.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
 	if err != nil {
 		msg := ""
 		_, name, stream := ociinstaller.NewSteampipeImageRef(pluginName).GetOrgNameAndStream()
@@ -880,21 +881,24 @@ func getConnectionState(ctx context.Context) (steampipe_config_local.ConnectionS
 		return nil, res
 	}
 	defer client.Close(ctx)
+	// TODO KAI FIX ME
+	////
+	////conn, err := client.AcquireManagementConnection(ctx)
+	////if err != nil {
+	////	res.Error = err
+	////	return nil, res
+	////}
+	////defer conn.Release()
+	////
+	////// load connection state
+	////statushooks.SetStatus(ctx, "Loading connection state")
+	////connectionStateMap, err := steampipe_config_local.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilReady())
+	////if err != nil {
+	////	res.Error = err
+	////	return nil, res
+	////}
+	//
+	//return connectionStateMap, res
 
-	conn, err := client.AcquireManagementConnection(ctx)
-	if err != nil {
-		res.Error = err
-		return nil, res
-	}
-	defer conn.Release()
-
-	// load connection state
-	statushooks.SetStatus(ctx, "Loading connection state")
-	connectionStateMap, err := steampipe_config_local.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilReady())
-	if err != nil {
-		res.Error = err
-		return nil, res
-	}
-
-	return connectionStateMap, res
+	return nil, nil
 }

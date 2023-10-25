@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"net"
 	"os"
@@ -16,10 +17,10 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/ociinstaller_steampipe"
-	"github.com/turbot/steampipe/pkg/ociinstaller_steampipe/versionfile"
 )
 
 var ensureMux sync.Mutex

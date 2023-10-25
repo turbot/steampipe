@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/cmdconfig"
+	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
 	"github.com/turbot/steampipe/pkg/display"
 	"io"
 	"os"
@@ -22,7 +24,6 @@ import (
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/pipe-fittings/workspace"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/control"
 )
 
@@ -55,7 +56,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		},
 	}
 
-	cmdconfig.
+	cmdconfig_steampipe.
 		OnCmd(cmd).
 		AddCloudFlags().
 		AddWorkspaceDatabaseFlag().
@@ -119,7 +120,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 	// if diagnostic mode is set, print out config and return
 	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
-		cmdconfig.DisplayConfig()
+		cmdconfig_steampipe.DisplayConfig()
 		return
 	}
 
@@ -323,7 +324,7 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		return false
 	}
 
-	if err := cmdconfig.ValidateSnapshotArgs(ctx); err != nil {
+	if err := cmdconfig_steampipe.ValidateSnapshotArgs(ctx); err != nil {
 		error_helpers.ShowError(ctx, err)
 		return false
 	}

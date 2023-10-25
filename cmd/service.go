@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	utils2 "github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"log"
 	"os"
 	"os/signal"
@@ -21,9 +21,10 @@ import (
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 )
@@ -60,7 +61,7 @@ Run Steampipe as a local service, exposing it as a database endpoint for
 connection from any Postgres compatible database client.`,
 	}
 
-	cmdconfig.
+	cmdconfig_steampipe.
 		OnCmd(cmd).
 		AddModLocationFlag().
 		AddBoolFlag(constants.ArgHelp, false, "Help for service start", cmdconfig.FlagOptions.WithShortHand("h")).
@@ -101,7 +102,7 @@ func serviceStatusCmd() *cobra.Command {
 Report current status of the Steampipe database service.`,
 	}
 
-	cmdconfig.OnCmd(cmd).
+	cmdconfig_steampipe.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, false, "Help for service status", cmdconfig.FlagOptions.WithShortHand("h")).
 		// default is false and hides the database user password from service start prompt
 		AddBoolFlag(constants.ArgServiceShowPassword, false, "View database password for connecting from another machine").
@@ -120,7 +121,7 @@ func serviceStopCmd() *cobra.Command {
 		Long:  `Stop the Steampipe service.`,
 	}
 
-	cmdconfig.
+	cmdconfig_steampipe.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, false, "Help for service stop", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddBoolFlag(constants.ArgForce, false, "Forces all services to shutdown, releasing all open connections and ports")
@@ -138,7 +139,7 @@ func serviceRestartCmd() *cobra.Command {
 		Long:  `Restart the Steampipe service.`,
 	}
 
-	cmdconfig.
+	cmdconfig_steampipe.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, false, "Help for service restart", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddBoolFlag(constants.ArgForce, false, "Forces the service to restart, releasing all open connections and ports")
@@ -703,7 +704,7 @@ Managing the Steampipe service:
 			"postgres://%v:%v@%v:%v/%v",
 			dbState.User,
 			dbState.Password,
-			utils2.GetFirstListenAddress(dbState.ResolvedListenAddresses),
+			utils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
 			dbState.Port,
 			dbState.Database,
 		)
@@ -712,7 +713,7 @@ Managing the Steampipe service:
 		connectionStr = fmt.Sprintf(
 			"postgres://%v@%v:%v/%v",
 			dbState.User,
-			utils2.GetFirstListenAddress(dbState.ResolvedListenAddresses),
+			utils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
 			dbState.Port,
 			dbState.Database,
 		)

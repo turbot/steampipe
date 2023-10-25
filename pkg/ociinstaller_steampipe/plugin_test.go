@@ -2,38 +2,39 @@ package ociinstaller_steampipe
 
 import (
 	"bytes"
+	"github.com/turbot/pipe-fittings/ociinstaller"
 	"testing"
 )
 
 type transformTest struct {
-	ref                                  *SteampipeImageRef
+	ref                                  *ociinstaller.SteampipeImageRef
 	pluginLineContent                    []byte
 	expectedTransformedPluginLineContent []byte
 }
 
 var transformTests = map[string]transformTest{
 	"empty": {
-		ref:                                  NewSteampipeImageRef("chaos"),
+		ref:                                  ociinstaller.NewSteampipeImageRef("chaos"),
 		pluginLineContent:                    []byte(`plugin = "chaos"`),
 		expectedTransformedPluginLineContent: []byte(`plugin = "chaos"`),
 	},
 	"latest": {
-		ref:                                  NewSteampipeImageRef("chaos@latest"),
+		ref:                                  ociinstaller.NewSteampipeImageRef("chaos@latest"),
 		pluginLineContent:                    []byte(`plugin = "chaos"`),
 		expectedTransformedPluginLineContent: []byte(`plugin = "chaos"`),
 	},
 	"0": {
-		ref:                                  NewSteampipeImageRef("chaos@0"),
+		ref:                                  ociinstaller.NewSteampipeImageRef("chaos@0"),
 		pluginLineContent:                    []byte(`plugin = "chaos"`),
 		expectedTransformedPluginLineContent: []byte(`plugin = "chaos@0"`),
 	},
 	"0.2": {
-		ref:                                  NewSteampipeImageRef("chaos@0.2"),
+		ref:                                  ociinstaller.NewSteampipeImageRef("chaos@0.2"),
 		pluginLineContent:                    []byte(`plugin = "chaos"`),
 		expectedTransformedPluginLineContent: []byte(`plugin = "chaos@0.2"`),
 	},
 	"0.2.0": {
-		ref:                                  NewSteampipeImageRef("chaos@0.2.0"),
+		ref:                                  ociinstaller.NewSteampipeImageRef("chaos@0.2.0"),
 		pluginLineContent:                    []byte(`plugin = "chaos"`),
 		expectedTransformedPluginLineContent: []byte(`plugin = "chaos@0.2.0"`),
 	},

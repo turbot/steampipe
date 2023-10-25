@@ -1,4 +1,4 @@
-package cmdconfig
+package cmdconfig_steampipe
 
 import (
 	"context"
@@ -7,9 +7,9 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/cloud"
 	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
-"github.com/turbot/pipe-fittings/error_helpers"
-"strings"
+	"strings"
 )
 
 func ValidateSnapshotArgs(ctx context.Context) error {

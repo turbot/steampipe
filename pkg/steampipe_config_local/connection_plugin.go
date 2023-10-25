@@ -2,6 +2,7 @@ package steampipe_config_local
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"log"
 	"strings"
 
@@ -17,7 +18,6 @@ import (
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
-	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"golang.org/x/exp/maps"
 )
 
@@ -90,11 +90,11 @@ func NewConnectionPlugin(pluginShortName, pluginName string, pluginClient *sdkgr
 }
 
 // CreateConnectionPlugins instantiates plugins for specified connections, and fetches schemas
-func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectionNamesToCreate []string) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *steampipe_config_local.RefreshConnectionResult) {
+func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectionNamesToCreate []string) (requestedConnectionPluginMap map[string]*ConnectionPlugin, res *RefreshConnectionResult) {
 	log.Println("[DEBUG] CreateConnectionPlugins start")
 	defer log.Println("[DEBUG] CreateConnectionPlugins end")
 
-	res = &steampipe_config_local.RefreshConnectionResult{}
+	res = &RefreshConnectionResult{}
 	requestedConnectionPluginMap = make(map[string]*ConnectionPlugin)
 	if len(connectionNamesToCreate) == 0 {
 		return
@@ -174,7 +174,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 	return requestedConnectionPluginMap, res
 }
 
-func handleGetFailures(getResponse *proto.GetResponse, res *steampipe_config_local.RefreshConnectionResult, connectionsToCreate []*modconfig.Connection) {
+func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionResult, connectionsToCreate []*modconfig.Connection) {
 	// handle PluginSdkCompatibilityError separately
 	var pluginsWithCompatibilityError = make(map[string]struct{})
 	var compatibilityErrorConnectionCount int

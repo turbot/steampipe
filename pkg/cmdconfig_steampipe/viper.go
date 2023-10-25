@@ -1,24 +1,15 @@
-package cmdconfig
+package cmdconfig_steampipe
 
 import (
-	"fmt"
-	"log"
-	"os"
-
-	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/steampipeconfig"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
+	"log"
 )
 
-// Viper fetches the global viper instance
-func Viper() *viper.Viper {
-	return viper.GetViper()
-}
-
+// TODO kai this also exists in pipe-fittings - sort out
 // bootstrapViper sets up viper with the essential path config (workspace-chdir and install-dir)
 func bootstrapViper(loader *steampipeconfig.WorkspaceProfileLoader, cmd *cobra.Command) error {
 	// set defaults  for keys which do not have a corresponding command flag
@@ -48,31 +39,7 @@ func bootstrapViper(loader *steampipeconfig.WorkspaceProfileLoader, cmd *cobra.C
 	}
 
 	// tildefy all paths in viper
-	return tildefyPaths()
-}
-
-// tildefyPaths cleans all path config values and replaces '~' with the home directory
-func tildefyPaths() error {
-	pathArgs := []string{
-		constants.ArgModLocation,
-		constants.ArgInstallDir,
-	}
-	var err error
-	for _, argName := range pathArgs {
-		if argVal := viper.GetString(argName); argVal != "" {
-			if argVal, err = filehelpers.Tildefy(argVal); err != nil {
-				return err
-			}
-			if viper.IsSet(argName) {
-				// if the value was already set re-set
-				viper.Set(argName, argVal)
-			} else {
-				// otherwise just update the default
-				viper.SetDefault(argName, argVal)
-			}
-		}
-	}
-	return nil
+	return cmdconfig.TildefyPaths()
 }
 
 // SetDefaultsFromConfig overrides viper default values from hcl config values
@@ -105,7 +72,7 @@ func setBaseDefaults() {
 		constants.ArgCacheMaxTtl:          300,
 
 		// dashboard
-		constants.ArgDashboardStartTimeout: constants.DashboardStartTimeout.Seconds(),
+		constants.ArgDashboardStartTimeout: constants.DashboardServiceStartTimeout.Seconds(),
 
 		// memory
 		constants.ArgMemoryMaxMbPlugin: 1024,
@@ -119,19 +86,19 @@ func setBaseDefaults() {
 
 type envMapping struct {
 	configVar []string
-	varType   EnvVarType
+	varType   cmdconfig.EnvVarType
 }
 
 // set default values of INSTALL_DIR and ModLocation from env vars
 func setDirectoryDefaultsFromEnv() {
 	envMappings := map[string]envMapping{
-		constants.EnvInstallDir:     {[]string{constants.ArgInstallDir}, String},
-		constants.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, String},
-		constants.EnvModLocation:    {[]string{constants.ArgModLocation}, String},
+		constants.EnvInstallDir:     {[]string{constants.ArgInstallDir}, cmdconfig.EnvVarTypeString},
+		constants.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, cmdconfig.EnvVarTypeString},
+		constants.EnvModLocation:    {[]string{constants.ArgModLocation}, cmdconfig.EnvVarTypeString},
 	}
 
 	for envVar, mapping := range envMappings {
-		setConfigFromEnv(envVar, mapping.configVar, mapping.varType)
+		cmdconfig.SetConfigFromEnv(envVar, mapping.configVar, mapping.varType)
 	}
 }
 
@@ -142,68 +109,42 @@ func setDefaultsFromEnv() {
 
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
-		constants.EnvInstallDir:     {[]string{constants.ArgInstallDir}, String},
-		constants.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, String},
-		constants.EnvModLocation:    {[]string{constants.ArgModLocation}, String},
-		constants.EnvIntrospection:  {[]string{constants.ArgIntrospection}, String},
-		constants.EnvTelemetry:      {[]string{constants.ArgTelemetry}, String},
-		constants.EnvUpdateCheck:    {[]string{constants.ArgUpdateCheck}, Bool},
+		constants.EnvInstallDir:     {[]string{constants.ArgInstallDir}, cmdconfig.EnvVarTypeString},
+		constants.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, cmdconfig.EnvVarTypeString},
+		constants.EnvModLocation:    {[]string{constants.ArgModLocation}, cmdconfig.EnvVarTypeString},
+		constants.EnvIntrospection:  {[]string{constants.ArgIntrospection}, cmdconfig.EnvVarTypeString},
+		constants.EnvTelemetry:      {[]string{constants.ArgTelemetry}, cmdconfig.EnvVarTypeString},
+		constants.EnvUpdateCheck:    {[]string{constants.ArgUpdateCheck}, cmdconfig.EnvVarTypeBool},
 		// PIPES_HOST needs to be defined before STEAMPIPE_CLOUD_HOST,
 		// so that if STEAMPIPE_CLOUD_HOST is defined, it can override PIPES_HOST
-		constants.EnvPipesHost: {[]string{constants.ArgCloudHost}, String},
-		constants.EnvCloudHost: {[]string{constants.ArgCloudHost}, String},
+		constants.EnvPipesHost: {[]string{constants.ArgCloudHost}, cmdconfig.EnvVarTypeString},
+		constants.EnvCloudHost: {[]string{constants.ArgCloudHost}, cmdconfig.EnvVarTypeString},
 		// PIPES_TOKEN needs to be defined before STEAMPIPE_CLOUD_TOKEN,
 		// so that if STEAMPIPE_CLOUD_TOKEN is defined, it can override PIPES_TOKEN
-		constants.EnvPipesToken: {[]string{constants.ArgCloudToken}, String},
-		constants.EnvCloudToken: {[]string{constants.ArgCloudToken}, String},
+		constants.EnvPipesToken: {[]string{constants.ArgCloudToken}, cmdconfig.EnvVarTypeString},
+		constants.EnvCloudToken: {[]string{constants.ArgCloudToken}, cmdconfig.EnvVarTypeString},
 		//
-		constants.EnvSnapshotLocation:      {[]string{constants.ArgSnapshotLocation}, String},
-		constants.EnvWorkspaceDatabase:     {[]string{constants.ArgWorkspaceDatabase}, String},
-		constants.EnvServicePassword:       {[]string{constants.ArgServicePassword}, String},
-		constants.EnvDisplayWidth:          {[]string{constants.ArgDisplayWidth}, Int},
-		constants.EnvMaxParallel:           {[]string{constants.ArgMaxParallel}, Int},
-		constants.EnvQueryTimeout:          {[]string{constants.ArgDatabaseQueryTimeout}, Int},
-		constants.EnvDatabaseStartTimeout:  {[]string{constants.ArgDatabaseStartTimeout}, Int},
-		constants.EnvDashboardStartTimeout: {[]string{constants.ArgDashboardStartTimeout}, Int},
-		constants.EnvCacheTTL:              {[]string{constants.ArgCacheTtl}, Int},
-		constants.EnvCacheMaxTTL:           {[]string{constants.ArgCacheMaxTtl}, Int},
-		constants.EnvMemoryMaxMb:           {[]string{constants.ArgMemoryMaxMb}, Int},
-		constants.EnvMemoryMaxMbPlugin:     {[]string{constants.ArgMemoryMaxMbPlugin}, Int},
+		constants.EnvSnapshotLocation:      {[]string{constants.ArgSnapshotLocation}, cmdconfig.EnvVarTypeString},
+		constants.EnvWorkspaceDatabase:     {[]string{constants.ArgWorkspaceDatabase}, cmdconfig.EnvVarTypeString},
+		constants.EnvServicePassword:       {[]string{constants.ArgServicePassword}, cmdconfig.EnvVarTypeString},
+		constants.EnvDisplayWidth:          {[]string{constants.ArgDisplayWidth}, cmdconfig.EnvVarTypeInt},
+		constants.EnvMaxParallel:           {[]string{constants.ArgMaxParallel}, cmdconfig.EnvVarTypeInt},
+		constants.EnvQueryTimeout:          {[]string{constants.ArgDatabaseQueryTimeout}, cmdconfig.EnvVarTypeInt},
+		constants.EnvDatabaseStartTimeout:  {[]string{constants.ArgDatabaseStartTimeout}, cmdconfig.EnvVarTypeInt},
+		constants.EnvDashboardStartTimeout: {[]string{constants.ArgDashboardStartTimeout}, cmdconfig.EnvVarTypeInt},
+		constants.EnvCacheTTL:              {[]string{constants.ArgCacheTtl}, cmdconfig.EnvVarTypeInt},
+		constants.EnvCacheMaxTTL:           {[]string{constants.ArgCacheMaxTtl}, cmdconfig.EnvVarTypeInt},
+		constants.EnvMemoryMaxMb:           {[]string{constants.ArgMemoryMaxMb}, cmdconfig.EnvVarTypeInt},
+		constants.EnvMemoryMaxMbPlugin:     {[]string{constants.ArgMemoryMaxMbPlugin}, cmdconfig.EnvVarTypeInt},
 
 		// we need this value to go into different locations
 		constants.EnvCacheEnabled: {[]string{
 			constants.ArgClientCacheEnabled,
 			constants.ArgServiceCacheEnabled,
-		}, Bool},
+		}, cmdconfig.EnvVarTypeBool},
 	}
 
 	for envVar, v := range envMappings {
-		setConfigFromEnv(envVar, v.configVar, v.varType)
-	}
-}
-
-func setConfigFromEnv(envVar string, configs []string, varType EnvVarType) {
-	for _, configVar := range configs {
-		SetDefaultFromEnv(envVar, configVar, varType)
-	}
-}
-
-func SetDefaultFromEnv(k string, configVar string, varType EnvVarType) {
-	if val, ok := os.LookupEnv(k); ok {
-		switch varType {
-		case String:
-			viper.SetDefault(configVar, val)
-		case Bool:
-			if boolVal, err := types.ToBool(val); err == nil {
-				viper.SetDefault(configVar, boolVal)
-			}
-		case Int:
-			if intVal, err := types.ToInt64(val); err == nil {
-				viper.SetDefault(configVar, intVal)
-			}
-		default:
-			// must be an invalid value in the map above
-			panic(fmt.Sprintf("invalid env var mapping type: %s", varType))
-		}
+		cmdconfig.SetConfigFromEnv(envVar, v.configVar, v.varType)
 	}
 }

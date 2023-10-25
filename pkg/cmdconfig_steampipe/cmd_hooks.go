@@ -1,9 +1,11 @@
-package cmdconfig
+package cmdconfig_steampipe
 
 import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/cmdconfig"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"io"
 	"log"
 	"os"
@@ -25,12 +27,12 @@ import (
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
+	"github.com/turbot/pipe-fittings/task"
 	"github.com/turbot/pipe-fittings/utils"
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
-	"github.com/turbot/steampipe/pkg/task"
 	"github.com/turbot/steampipe/pkg/version"
 )
 
@@ -266,7 +268,7 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 		viper.SetDefault(constants.ArgCloudToken, *loader.DefaultProfile.CloudToken)
 	}
 	// 3) env var (STEAMIPE_CLOUD_TOKEN )
-	SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgCloudToken, String)
+	SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgCloudToken, cmdconfig.EnvVarTypeString)
 
 	// 4) explicit workspace profile
 	if p := loader.ConfiguredProfile; p != nil && p.CloudToken != nil {
@@ -277,9 +279,9 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 
 func getWorkspaceProfileLoader() (*steampipeconfig.WorkspaceProfileLoader, error) {
 	// set viper default for workspace profile, using STEAMPIPE_WORKSPACE env var
-	SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, String)
+	SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, cmdconfig.EnvVarTypeString)
 	// set viper default for install dir, using STEAMPIPE_INSTALL_DIR env var
-	SetDefaultFromEnv(constants.EnvInstallDir, constants.ArgInstallDir, String)
+	SetDefaultFromEnv(constants.EnvInstallDir, constants.ArgInstallDir, cmdconfig.EnvVarTypeString)
 
 	// resolve the workspace profile dir
 	installDir, err := filehelpers.Tildefy(viper.GetString(constants.ArgInstallDir))

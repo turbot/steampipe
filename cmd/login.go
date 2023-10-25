@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"log"
 	"os"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
 )
 
 func loginCmd() *cobra.Command {
@@ -26,7 +27,7 @@ func loginCmd() *cobra.Command {
 		Long:             `Login to Turbot Pipes.`,
 	}
 
-	cmdconfig.OnCmd(cmd).
+	cmdconfig_steampipe.OnCmd(cmd).
 		AddCloudFlags().
 		AddBoolFlag(constants.ArgHelp, false, "Help for dashboard", cmdconfig.FlagOptions.WithShortHand("h"))
 

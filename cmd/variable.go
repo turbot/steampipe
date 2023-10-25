@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -9,7 +10,7 @@ import (
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/workspace"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
 	"github.com/turbot/steampipe/pkg/display"
 )
 
@@ -25,7 +26,7 @@ func variableCmd() *cobra.Command {
 	cmd.AddCommand(variableListCmd())
 	cmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for variable")
 
-	cmdconfig.
+	cmdconfig_steampipe.
 		OnCmd(cmd).
 		AddModLocationFlag()
 
@@ -51,7 +52,7 @@ Example:
 `,
 	}
 
-	cmdconfig.
+	cmdconfig_steampipe.
 		OnCmd(cmd).
 		AddBoolFlag("outdated", false, "Check each variable in the list for updates").
 		AddBoolFlag(constants.ArgHelp, false, "Help for variable list", cmdconfig.FlagOptions.WithShortHand("h")).

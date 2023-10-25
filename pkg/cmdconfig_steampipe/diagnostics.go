@@ -1,4 +1,4 @@
-package cmdconfig
+package cmdconfig_steampipe
 
 import (
 	"encoding/json"

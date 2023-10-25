@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"log"
 	"os"
 	"strings"
@@ -27,7 +28,7 @@ import (
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/pipe-fittings/workspace"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
 )
 
 func dashboardCmd() *cobra.Command {
@@ -42,7 +43,7 @@ func dashboardCmd() *cobra.Command {
 The current mod is the working directory, or the directory specified by the --mod-location flag.`,
 	}
 
-	cmdconfig.OnCmd(cmd).
+	cmdconfig_steampipe.OnCmd(cmd).
 		AddCloudFlags().
 		AddWorkspaceDatabaseFlag().
 		AddModLocationFlag().
@@ -101,7 +102,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 
 	// if diagnostic mode is set, print out config and return
 	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
-		cmdconfig.DisplayConfig()
+		cmdconfig_steampipe.DisplayConfig()
 		return
 	}
 
@@ -186,7 +187,7 @@ func validateDashboardArgs(ctx context.Context, args []string) (string, error) {
 		dashboardName = args[0]
 	}
 
-	err := cmdconfig.ValidateSnapshotArgs(ctx)
+	err := cmdconfig_steampipe.ValidateSnapshotArgs(ctx)
 	if err != nil {
 		return "", err
 	}

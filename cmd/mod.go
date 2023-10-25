@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -15,7 +15,8 @@ import (
 	"github.com/turbot/pipe-fittings/modinstaller"
 	"github.com/turbot/pipe-fittings/parse"
 	"github.com/turbot/pipe-fittings/utils"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 
 // mod management commands
@@ -56,7 +57,7 @@ Examples:
 	cmd.AddCommand(modInitCmd())
 	cmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for mod")
 
-	cmdconfig.OnCmd(cmd).
+	cmdconfig_steampipe.OnCmd(cmd).
 		AddModLocationFlag()
 
 	return cmd
@@ -91,7 +92,7 @@ Examples:
   steampipe mod install --dry-run`,
 	}
 
-	cmdconfig.OnCmd(cmd).
+	cmdconfig_steampipe.OnCmd(cmd).
 		AddBoolFlag(constants.ArgPrune, true, "Remove unused dependencies after installation is complete").
 		AddBoolFlag(constants.ArgDryRun, false, "Show which mods would be installed/updated/uninstalled without modifying them").
 		AddBoolFlag(constants.ArgForce, false, "Install mods even if plugin/cli version requirements are not met (cannot be used with --dry-run)").
@@ -153,7 +154,7 @@ Example:
   steampipe mod uninstall github.com/turbot/steampipe-mod-azure-compliance`,
 	}
 
-	cmdconfig.OnCmd(cmd).
+	cmdconfig_steampipe.OnCmd(cmd).
 		AddBoolFlag(constants.ArgPrune, true, "Remove unused dependencies after uninstallation is complete").
 		AddBoolFlag(constants.ArgDryRun, false, "Show which mods would be uninstalled without modifying them").
 		AddBoolFlag(constants.ArgHelp, false, "Help for uninstall", cmdconfig.FlagOptions.WithShortHand("h")).
@@ -206,7 +207,7 @@ Example:
   steampipe mod update`,
 	}
 
-	cmdconfig.OnCmd(cmd).
+	cmdconfig_steampipe.OnCmd(cmd).
 		AddBoolFlag(constants.ArgPrune, true, "Remove unused dependencies after update is complete").
 		AddBoolFlag(constants.ArgForce, false, "Update mods even if plugin/cli version requirements are not met (cannot be used with --dry-run)").
 		AddBoolFlag(constants.ArgDryRun, false, "Show which mods would be updated without modifying them").
@@ -258,7 +259,7 @@ Example:
   steampipe mod list`,
 	}
 
-	cmdconfig.OnCmd(cmd).
+	cmdconfig_steampipe.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, false, "Help for list", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddModLocationFlag()
 	return cmd
@@ -309,7 +310,7 @@ Example:
   steampipe mod init`,
 	}
 
-	cmdconfig.OnCmd(cmd).
+	cmdconfig_steampipe.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, false, "Help for init", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddModLocationFlag()
 	return cmd

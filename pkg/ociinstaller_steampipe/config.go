@@ -4,9 +4,9 @@ type pluginInstallConfig struct {
 	skipConfigFile bool
 }
 
-type PluginInstallOption = func(config *pluginInstallConfig)
+type pluginInstallOption = func(config *pluginInstallConfig)
 
-func WithSkipConfig(skipConfigFile bool) PluginInstallOption {
+func WithSkipConfig(skipConfigFile bool) pluginInstallOption {
 	return func(o *pluginInstallConfig) {
 		o.skipConfigFile = skipConfigFile
 	}

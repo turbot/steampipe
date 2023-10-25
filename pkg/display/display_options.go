@@ -1,8 +1,8 @@
 package display
 
 import (
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
 )
 
 type displayConfiguration struct {
