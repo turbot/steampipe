@@ -5,6 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
+	"github.com/turbot/steampipe/pkg/serversettings"
+	"log"
+	"strings"
 
 	"sync"
 	"time"
@@ -34,19 +38,21 @@ type SteampipeDbClient struct {
 	// used to update session search path where necessary
 	// TODO: there's no code which cleans up this map when connections get dropped by pgx
 	// https://github.com/turbot/steampipe/issues/3737
-	sessions map[uint32]*db_common.DatabaseSession
+	sessions map[uint32]*steampipe_db_common.DatabaseSession
 
 	// allows locked access to the 'sessions' map
 	sessionsMutex *sync.Mutex
 
-	// if a custom search path or a prefix is used, store it here
-	customSearchPath []string
-	searchPathPrefix []string
-	// the default user search path
-	userSearchPath []string
+	ServerSettings *steampipe_db_common.ServerSettings
+
+	// TODO KAI POPULATE THIS
+	// this flag is set if the service that this client
+	// is connected to is running in the same physical system
+	isLocalService bool
 }
 
-func NewSteampipeDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback, opts ...db_client.ClientOption) (steampipeClient *SteampipeDbClient, err error) {
+func NewSteampipeDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback, opts ...db_client.ClientOption) (*SteampipeDbClient, error) {
+
 	dbClient, err := db_client.NewDbClient(ctx, connectionString)
 	if err != nil {
 		return nil, err
@@ -55,13 +61,14 @@ func NewSteampipeDbClient(ctx context.Context, connectionString string, onConnec
 	steampipeClient := &SteampipeDbClient{
 		DbClient:             *dbClient,
 		onConnectionCallback: onConnectionCallback,
-		sessions:             make(map[uint32]*db_common.DatabaseSession),
+		sessions:             make(map[uint32]*steampipe_db_common.DatabaseSession),
 		sessionsMutex:        &sync.Mutex{},
 	}
 
+	// TODO KAI FIGURE THIS OUT
 	// set pre execute hook to re-read ArgTiming from viper (in case the .timing command has been run)
 	// (this will refetch ScanMetadataMaxId if timing has just been enabled)
-	dbClient.BeforeExecuteHook = steampipeClient.setShouldShowTiming
+	//dbClient.BeforeExecuteHook = steampipeClient.setShouldShowTiming
 
 	// wrap onConnectionCallback to use wait group
 	var wrappedOnConnectionCallback DbConnectionCallback
@@ -85,13 +92,18 @@ func NewSteampipeDbClient(ctx context.Context, connectionString string, onConnec
 		return nil, err
 	}
 
+	//	load up the server settings
+	if err := steampipeClient.loadServerSettings(ctx); err != nil {
+		return nil, err
+	}
+
 	return steampipeClient, nil
 }
 
-// TODO session keying mechanism - re-add session map
+// TODO KAI session keying mechanism - re-add session map
 // ScanMetadataMaxId broken
 
-// TODO isLocalService
+// TODO KAI isLocalService
 //
 //config, err := pgxpool.ParseConfig(c.connectionString)
 //if err != nil {
@@ -117,7 +129,7 @@ func NewSteampipeDbClient(ctx context.Context, connectionString string, onConnec
 //c.isLocalService = true
 //}
 
-func (c *SteampipeDbClient) setShouldShowTiming(ctx context.Context, session *db_common.DatabaseSession) error {
+func (c *SteampipeDbClient) setShouldShowTiming(ctx context.Context, session *steampipe_db_common.DatabaseSession) error {
 	currentShowTimingFlag := viper.GetBool(constants.ArgTiming)
 
 	// if we are turning timing ON, fetch the ScanMetadataMaxId
@@ -134,7 +146,7 @@ func (c *SteampipeDbClient) shouldShowTiming() bool {
 	return c.showTimingFlag && !c.disableTiming
 }
 
-func (c *SteampipeDbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {
+func (c *SteampipeDbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *steampipe_db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {
 	if !c.shouldShowTiming() {
 		return
 	}
@@ -180,7 +192,7 @@ func (c *SteampipeDbClient) getQueryTiming(ctx context.Context, startTime time.T
 	session.ScanMetadataMaxId = scanRows.Id
 }
 
-func (c *SteampipeDbClient) updateScanMetadataMaxId(ctx context.Context, session *db_common.DatabaseSession) error {
+func (c *SteampipeDbClient) updateScanMetadataMaxId(ctx context.Context, session *steampipe_db_common.DatabaseSession) error {
 	return db_common.ExecuteSystemClientCall(ctx, session.Connection, func(ctx context.Context, tx *sql.Tx) error {
 		row := tx.QueryRowContext(ctx, fmt.Sprintf("select max(id) from %s.%s", constants.InternalSchema, constants.ForeignTableScanMetadata))
 		err := row.Scan(&session.ScanMetadataMaxId)
@@ -192,9 +204,60 @@ func (c *SteampipeDbClient) updateScanMetadataMaxId(ctx context.Context, session
 }
 
 func (c *SteampipeDbClient) Close(ctx context.Context) error {
-	// nullify active sessions, since with the closing of the pools
-	// none of the sessions will be valid anymore
+	// clear active sessions
 	c.sessions = nil
 
-	c.DbClient.Close(ctx)
+	return c.DbClient.Close(ctx)
+}
+
+func (c *SteampipeDbClient) loadServerSettings(ctx context.Context) error {
+	serverSettings, err := serversettings.Load(ctx, c.ManagementPool)
+	if err != nil {
+		if notFound := db_common.IsRelationNotFoundError(err); notFound {
+			// when connecting to pre-0.21.0 services, the steampipe_server_settings table will not be available.
+			// this is expected and not an error
+			// code which uses steampipe_server_settings should handle this
+			log.Printf("[TRACE] could not find %s.%s table. skipping\n", constants.InternalSchema, constants.ServerSettingsTable)
+			return nil
+		}
+		return err
+	}
+	c.ServerSettings = serverSettings
+	log.Println("[TRACE] loaded server settings:", serverSettings)
+	return nil
+}
+
+// ensure the search path for the database session is as required
+func (c *SteampipeDbClient) ensureSessionSearchPath(ctx context.Context, session *steampipe_db_common.DatabaseSession) error {
+	log.Printf("[TRACE] ensureSessionSearchPath")
+
+	// update the stored value of user search path
+	// this might have changed if a connection has been added/removed
+	if err := c.LoadUserSearchPathForConnection(ctx, session.Connection); err != nil {
+		return err
+	}
+
+	// get the required search path which is either a custom search path (if present) or the user search path
+	requiredSearchPath := c.GetRequiredSessionSearchPath()
+
+	// now determine whether the session search path is the same as the required search path
+	// if so, return
+	if strings.Join(session.SearchPath, ",") == strings.Join(requiredSearchPath, ",") {
+		log.Printf("[TRACE] session search path is already correct - nothing to do")
+		return nil
+	}
+
+	// so we need to set the search path
+	log.Printf("[TRACE] session search path will be updated to  %s", strings.Join(c.CustomSearchPath, ","))
+
+	err := db_common.ExecuteSystemClientCall(ctx, session.Connection, func(ctx context.Context, tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, fmt.Sprintf("set search_path to %s", strings.Join(db_common.PgEscapeSearchPath(requiredSearchPath), ",")))
+		return err
+	})
+
+	if err == nil {
+		// update the session search path property
+		session.SearchPath = requiredSearchPath
+	}
+	return err
 }

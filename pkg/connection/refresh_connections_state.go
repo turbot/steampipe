@@ -3,6 +3,7 @@ package connection
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"log"
 	"os"
 	"strconv"
@@ -36,9 +37,9 @@ type refreshConnectionState struct {
 	// a connection pool to the DB service which uses the server appname
 	pool                       *pgxpool.Pool
 	searchPath                 []string
-	connectionUpdates          *steampipeconfig.ConnectionUpdates
+	connectionUpdates          *steampipe_config_local.ConnectionUpdates
 	tableUpdater               *connectionStateTableUpdater
-	res                        *steampipeconfig.RefreshConnectionResult
+	res                        *steampipe_config_local.RefreshConnectionResult
 	forceUpdateConnectionNames []string
 	// properties for schema/comment cloning
 	exemplarSchemaMapMut sync.Mutex

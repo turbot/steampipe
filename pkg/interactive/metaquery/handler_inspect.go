@@ -3,6 +3,7 @@ package metaquery
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"log"
 	"regexp"
 	"sort"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
-	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/display"
 )
 
@@ -185,7 +185,7 @@ To get information about the columns in a table, run %s
 	return nil
 }
 
-func showStateSummaryTable(connectionState steampipeconfig.ConnectionStateMap) {
+func showStateSummaryTable(connectionState steampipe_config_local.ConnectionStateMap) {
 	header := []string{"Connection state", "Count"}
 	var rows [][]string
 	stateSummary := connectionState.GetSummary()

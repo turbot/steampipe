@@ -8,6 +8,7 @@ import (
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 )
 
 type PluginInstallReports []*PluginInstallReport

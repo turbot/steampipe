@@ -16,6 +16,8 @@ import (
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/options"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 
 func CleanupOldTmpDirs() {

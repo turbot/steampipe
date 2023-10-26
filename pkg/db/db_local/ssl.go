@@ -7,6 +7,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"math/big"
 	"os"
@@ -15,7 +16,6 @@ import (
 	"time"
 
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/sslio"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"

@@ -24,7 +24,7 @@ import (
 var versionFileUpdateLock = &sync.Mutex{}
 
 // InstallPlugin installs a plugin from an OCI Image
-func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, opts ...pluginInstallOption) (*ociinstaller.SteampipeImage, error) {
+func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, opts ...PluginInstallOption) (*ociinstaller.SteampipeImage, error) {
 	config := &pluginInstallConfig{}
 	for _, opt := range opts {
 		opt(config)

@@ -2,22 +2,23 @@ package steampipe_db_client
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"log"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/sethvargo/go-retry"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/statushooks"
-	"github.com/turbot/pipe-fittings/steampipeconfig"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 )
 
 // execute query - if it fails with a "relation not found" error, determine whether this is because the required schema
 // has not yet loaded and if so, wait for it to load and retry
-func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common.DatabaseSession, query string, args ...any) (pgx.Rows, error) {
+func (c *SteampipeDbClient) startQueryWithRetries(ctx context.Context, session *steampipe_db_common.DatabaseSession, query string, args ...any) (*sql.Rows, error) {
 	log.Println("[TRACE] DbClient.startQueryWithRetries start")
 	defer log.Println("[TRACE] DbClient.startQueryWithRetries end")
 
@@ -26,14 +27,13 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 	backoffInterval := 250 * time.Millisecond
 	backoff := retry.NewConstant(backoffInterval)
 
-	conn := session.Connection.Conn()
+	var res *sql.Rows
 
-	var res pgx.Rows
 	count := 0
 	err := retry.Do(ctx, retry.WithMaxDuration(maxDuration, backoff), func(ctx context.Context) error {
 		count++
 		log.Println("[TRACE] starting", count)
-		rows, queryError := c.startQuery(ctx, conn, query, args...)
+		rows, queryError := c.StartQuery(ctx, session.Connection, query, args...)
 		// if there is no error, just return
 		if queryError == nil {
 			log.Println("[TRACE] no queryError")
@@ -52,16 +52,16 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 		}
 
 		// get a connection from the system pool to query the connection state table
-		sysConn, err := c.managementPool.Acquire(ctx)
+		sysConn, err := c.ManagementPool.Conn(ctx)
 		if err != nil {
 			return retry.RetryableError(err)
 		}
-		defer sysConn.Release()
+		defer sysConn.Close()
 		// so this _was_ a "relation not found" error
 		// load the connection state and connection config to see if the missing schema is in there at all
 		// if there was a schema not found with an unqualified query, we keep trying until
 		// the first search path schema for each plugin has loaded
-		connectionStateMap, stateErr := steampipe_config_local.LoadConnectionState(ctx, sysConn.Conn(), steampipe_config_local.WithWaitUntilLoading())
+		connectionStateMap, stateErr := steampipe_config_local.LoadConnectionState(ctx, sysConn, steampipe_config_local.WithWaitUntilLoading())
 		if stateErr != nil {
 			log.Println("[TRACE] could not load connection state map:", stateErr)
 			// just return the query error
@@ -91,7 +91,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 			}
 
 			// otherwise we need to wait for the first schema of everything plugin to load
-			if _, err := steampipe_config_local.LoadConnectionState(ctx, sysConn.Conn(), steampipeconfig.WithWaitForSearchPath(searchPath)); err != nil {
+			if _, err := steampipe_config_local.LoadConnectionState(ctx, sysConn, steampipe_config_local.WithWaitForSearchPath(searchPath)); err != nil {
 				return err
 			}
 
@@ -128,7 +128,7 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 
 		// ok so we will retry
 		// build the status message to display with a spinner, if needed
-		statusMessage := steampipeconfig.GetLoadingConnectionStatusMessage(connectionStateMap, missingSchema)
+		statusMessage := steampipe_config_local.GetLoadingConnectionStatusMessage(connectionStateMap, missingSchema)
 		statushooks.SetStatus(ctx, statusMessage)
 		return retry.RetryableError(queryError)
 	})

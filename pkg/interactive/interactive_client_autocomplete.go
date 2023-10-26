@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"log"
 	"strings"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/pipe-fittings/utils"
 )
 
@@ -23,9 +23,9 @@ func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Release()
+	defer conn.Close()
 
-	connectionStateMap, err := steampipe_config_local.LoadConnectionState(ctx, conn.Conn(), steampipe_config_local.WithWaitUntilLoading())
+	connectionStateMap, err := steampipe_config_local.LoadConnectionState(ctx, conn, steampipe_config_local.WithWaitUntilLoading())
 	if err != nil {
 		c.initialiseSuggestionsLegacy()
 		//nolint:golint,nilerr // valid condition - not an error
@@ -41,7 +41,7 @@ func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
 }
 
 // initialiseSchemaAndTableSuggestions build a list of schema and table querySuggestions
-func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateMap steampipeconfig.ConnectionStateMap) {
+func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateMap steampipe_config_local.ConnectionStateMap) {
 	if c.schemaMetadata == nil {
 		return
 	}

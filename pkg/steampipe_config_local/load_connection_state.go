@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"

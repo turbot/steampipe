@@ -3,6 +3,7 @@ package steampipe_config_local
 import (
 	"encoding/json"
 	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"os"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/utils"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"golang.org/x/exp/maps"
 )
 

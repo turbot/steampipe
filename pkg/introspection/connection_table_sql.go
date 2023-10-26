@@ -2,11 +2,11 @@ package introspection
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"golang.org/x/exp/maps"
 )
 
@@ -77,7 +77,7 @@ AND state <> 'error'
 }
 
 // GetUpsertConnectionStateSql returns the sql to update the connection state in the able with the current properties
-func GetUpsertConnectionStateSql(c *steampipeconfig.ConnectionState) []db_common.QueryWithArgs {
+func GetUpsertConnectionStateSql(c *steampipe_config_local.ConnectionState) []db_common.QueryWithArgs {
 	// upsert
 	queryFormat := `INSERT INTO %s.%s (name, 
 		state,

@@ -3,6 +3,8 @@ package metaquery
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_client"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
 	"math"
 	"strconv"
 	"strings"
@@ -10,7 +12,6 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 )
 
@@ -34,21 +35,21 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 		sessionResult.Session.Close(false)
 	}()
 
-	conn := sessionResult.Session.Connection.Conn()
+	conn := sessionResult.Session.Connection
 	command := strings.ToLower(input.args()[0])
 	switch command {
 	case constants.ArgOn:
-		serverSettings := input.Client.ServerSettings()
+		serverSettings := input.Client.ServerSettings
 		if serverSettings != nil && !serverSettings.CacheEnabled {
 			fmt.Println("Caching is disabled on the server.")
 		}
 		viper.Set(constants.ArgClientCacheEnabled, true)
-		return db_common.SetCacheEnabled(ctx, true, conn)
+		return steampipe_db_common.SetCacheEnabled(ctx, true, conn)
 	case constants.ArgOff:
 		viper.Set(constants.ArgClientCacheEnabled, false)
-		return db_common.SetCacheEnabled(ctx, false, conn)
+		return steampipe_db_common.SetCacheEnabled(ctx, false, conn)
 	case constants.ArgClear:
-		return db_common.CacheClear(ctx, conn)
+		return steampipe_db_common.CacheClear(ctx, conn)
 	}
 
 	return fmt.Errorf("invalid command")
@@ -66,7 +67,7 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 	if seconds <= 0 {
 		return sperr.New("TTL must be greater than 0")
 	}
-	if can, whyCannotSet := db_common.CanSetCacheTtl(input.Client.ServerSettings(), seconds); !can {
+	if can, whyCannotSet := steampipe_db_client.CanSetCacheTtl(input.Client.ServerSettings, seconds); !can {
 		fmt.Println(whyCannotSet)
 	}
 	sessionResult := input.Client.AcquireSession(ctx)
@@ -79,11 +80,11 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 		sessionResult.Session.Close(false)
 		viper.Set(constants.ArgCacheTtl, seconds)
 	}()
-	return db_common.SetCacheTtl(ctx, time.Duration(seconds)*time.Second, sessionResult.Session.Connection.Conn())
+	return steampipe_db_common.SetCacheTtl(ctx, time.Duration(seconds)*time.Second, sessionResult.Session.Connection)
 }
 
 func showCache(_ context.Context, input *HandlerInput) error {
-	if input.Client.ServerSettings() != nil && !input.Client.ServerSettings().CacheEnabled {
+	if input.Client.ServerSettings != nil && !input.Client.ServerSettings.CacheEnabled {
 		fmt.Println("Caching is disabled on the server.")
 		return nil
 	}
@@ -111,13 +112,13 @@ func showCache(_ context.Context, input *HandlerInput) error {
 
 func showCacheTtl(ctx context.Context, input *HandlerInput) error {
 	if viper.IsSet(constants.ArgCacheTtl) {
-		ttl := getEffectiveCacheTtl(input.Client.ServerSettings(), viper.GetInt(constants.ArgCacheTtl))
+		ttl := getEffectiveCacheTtl(input.Client.ServerSettings, viper.GetInt(constants.ArgCacheTtl))
 		fmt.Println("Cache TTL is", ttl, "seconds.")
-	} else if input.Client.ServerSettings() != nil {
-		serverTtl := input.Client.ServerSettings().CacheMaxTtl
+	} else if input.Client.ServerSettings != nil {
+		serverTtl := input.Client.ServerSettings.CacheMaxTtl
 		fmt.Println("Cache TTL is", serverTtl, "seconds.")
 	}
-	errorsAndWarnings := db_common.ValidateClientCacheTtl(input.Client)
+	errorsAndWarnings := steampipe_db_client.ValidateClientCacheTtl(input.Client)
 	if errorsAndWarnings != nil {
 		errorsAndWarnings.ShowWarnings()
 	}
@@ -126,7 +127,7 @@ func showCacheTtl(ctx context.Context, input *HandlerInput) error {
 }
 
 // getEffectiveCacheTtl returns the lower of the server TTL and the clientTtl
-func getEffectiveCacheTtl(serverSettings *db_common.ServerSettings, clientTtl int) int {
+func getEffectiveCacheTtl(serverSettings *steampipe_db_common.ServerSettings, clientTtl int) int {
 	if serverSettings != nil {
 		return int(math.Min(float64(serverSettings.CacheMaxTtl), float64(clientTtl)))
 	}

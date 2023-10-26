@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"os"
 	"strconv"
@@ -9,7 +10,6 @@ import (
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/utils"
 )
 

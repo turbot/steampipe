@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
+	"github.com/turbot/steampipe/pkg/ociinstaller_steampipe"
 	"log"
 	"os"
 	"path/filepath"
@@ -71,8 +72,8 @@ func Exists(plugin string) (bool, error) {
 }
 
 // Install installs a plugin in the local file system
-func Install(ctx context.Context, plugin string, sub chan struct{}, opts ...ociinstaller.PluginInstallOption) (*ociinstaller.SteampipeImage, error) {
-	image, err := ociinstaller.InstallPlugin(ctx, plugin, sub, opts...)
+func Install(ctx context.Context, plugin string, sub chan struct{}, opts ...ociinstaller_steampipe.PluginInstallOption) (*ociinstaller.SteampipeImage, error) {
+	image, err := ociinstaller_steampipe.InstallPlugin(ctx, plugin, sub, opts...)
 	return image, err
 }
 

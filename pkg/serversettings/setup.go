@@ -6,9 +6,10 @@ import (
 
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
 )
 
-func GetPopulateServerSettingsSql(ctx context.Context, settings db_common.ServerSettings) db_common.QueryWithArgs {
+func GetPopulateServerSettingsSql(ctx context.Context, settings steampipe_db_common.ServerSettings) db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
 start_time,

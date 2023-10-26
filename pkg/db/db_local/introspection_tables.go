@@ -2,18 +2,18 @@ package db_local
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/go-kit/type_conversion"
+	"github.com/turbot/pipe-fittings/db_common"
 	"reflect"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/go-kit/type_conversion"
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/zclconf/go-cty/cty"
@@ -22,7 +22,7 @@ import (
 // TagColumn is the tag used to specify the column name and type in the introspection tables
 const TagColumn = "column"
 
-func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx pgx.Tx) error {
+func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx *sql.Tx) error {
 	// get the sql for columns which every table has
 	commonColumnSql := getColumnDefinitions(modconfig.ResourceMetadata{})
 
@@ -37,7 +37,7 @@ func CreateIntrospectionTables(ctx context.Context, workspaceResources *modconfi
 	}
 }
 
-func populateAllIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx pgx.Tx, commonColumnSql []string) error {
+func populateAllIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx *sql.Tx, commonColumnSql []string) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
@@ -48,7 +48,7 @@ func populateAllIntrospectionTables(ctx context.Context, workspaceResources *mod
 	insertSql := getTableInsertSql(workspaceResources)
 	sql := []string{createSql, insertSql}
 
-	_, err := tx.Exec(ctx, strings.Join(sql, "\n"))
+	_, err := tx.ExecContext(ctx, strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create introspection tables: %v", err)
 	}
@@ -56,7 +56,7 @@ func populateAllIntrospectionTables(ctx context.Context, workspaceResources *mod
 	return ctx.Err()
 }
 
-func populateControlIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx pgx.Tx, commonColumnSql []string) error {
+func populateControlIntrospectionTables(ctx context.Context, workspaceResources *modconfig.ResourceMaps, tx *sql.Tx, commonColumnSql []string) error {
 	utils.LogTime("db.CreateIntrospectionTables start")
 	defer utils.LogTime("db.CreateIntrospectionTables end")
 
@@ -66,7 +66,7 @@ func populateControlIntrospectionTables(ctx context.Context, workspaceResources 
 	insertSql := getControlTableInsertSql(workspaceResources)
 	sql := []string{createSql, insertSql}
 
-	_, err := tx.Exec(ctx, strings.Join(sql, "\n"))
+	_, err := tx.ExecContext(ctx, strings.Join(sql, "\n"))
 	if err != nil {
 		return fmt.Errorf("failed to create introspection tables: %v", err)
 	}

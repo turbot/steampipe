@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"net"
@@ -442,7 +443,7 @@ func initDatabase() error {
 
 	// intentionally overwriting existing pg_hba.conf with a minimal config which only allows root
 	// so that we can setup the database and permissions
-	return os.WriteFile(filepaths_steampipe.GetPgHbaConfLocation(), []byte(constants.MinimalPgHbaContent), 0600)
+	return os.WriteFile(filepaths_steampipe.GetPgHbaConfLocation(), []byte(constants_steampipe.MinimalPgHbaContent), 0600)
 }
 
 func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *sql.Conn) error {
@@ -514,7 +515,7 @@ func installDatabaseWithPermissions(ctx context.Context, databaseName string, ra
 }
 
 func writePgHbaContent(databaseName string, username string) error {
-	content := fmt.Sprintf(constants.PgHbaTemplate, databaseName, username)
+	content := fmt.Sprintf(constants_steampipe.PgHbaTemplate, databaseName, username)
 	return os.WriteFile(filepaths_steampipe.GetPgHbaConfLocation(), []byte(content), 0600)
 }
 
