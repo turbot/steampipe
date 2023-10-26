@@ -3,13 +3,13 @@ package ociinstaller_steampipe
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/pipe-fittings/ociinstaller"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )

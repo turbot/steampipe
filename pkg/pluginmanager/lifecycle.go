@@ -10,9 +10,9 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
@@ -47,7 +47,7 @@ func start(steampipeExecutablePath string) (*State, error) {
 	// - this is done both by the FDW and Steampipe
 	pluginManagerCmd := exec.Command(steampipeExecutablePath,
 		"plugin-manager",
-		"--"+constants.ArgInstallDir, filepaths_steampipe.SteampipeDir)
+		"--"+constants.ArgInstallDir, filepaths.InstallDir)
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,

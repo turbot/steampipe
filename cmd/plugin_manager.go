@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"os"
 	"os/signal"
@@ -17,9 +15,10 @@ import (
 	"github.com/turbot/go-kit/logging"
 	"github.com/turbot/go-kit/types"
 	"github.com/turbot/pipe-fittings/constants"
-
+	"github.com/turbot/pipe-fittings/filepaths"
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
@@ -123,7 +122,7 @@ func createPluginManagerLog() hclog.Logger {
 	// this is to allow the plugin to send multiline log messages as a single log line.
 	//
 	// here we apply the reverse mapping to get back the original message
-	writer := sdklogging.NewUnescapeNewlineWriter(logging.NewRotatingLogWriter(filepaths_steampipe.EnsureLogDir(), "plugin"))
+	writer := sdklogging.NewUnescapeNewlineWriter(logging.NewRotatingLogWriter(filepaths.EnsureLogDir(), "plugin"))
 
 	logger := sdklogging.NewLogger(&hclog.LoggerOptions{
 		Output:     writer,

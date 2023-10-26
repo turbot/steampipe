@@ -2,13 +2,13 @@ package db_local
 
 import (
 	"encoding/json"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"os"
 	"strings"
 
 	"github.com/google/uuid"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 
 // Passwords :: structure for working with DB passwords

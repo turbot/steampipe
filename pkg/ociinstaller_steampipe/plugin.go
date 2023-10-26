@@ -5,9 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/ociinstaller"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,7 +13,10 @@ import (
 	"sync"
 	"time"
 
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/ociinstaller"
 	versionfile "github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/pipe-fittings/utils"
 )
@@ -29,7 +29,7 @@ func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, opts
 	for _, opt := range opts {
 		opt(config)
 	}
-	tempDir := ociinstaller.NewTempDir(filepaths_steampipe.EnsurePluginDir())
+	tempDir := ociinstaller.NewTempDir(filepaths.EnsurePluginDir())
 	defer func() {
 		// send a last beacon to signal completion
 		sub <- struct{}{}
@@ -158,7 +158,7 @@ func installPluginDocs(image *ociinstaller.SteampipeImage, tempdir string) error
 }
 
 func installPluginConfigFiles(image *ociinstaller.SteampipeImage, tempdir string) error {
-	installTo := filepaths_steampipe.EnsureConfigDir()
+	installTo := filepaths.EnsureConfigDir()
 
 	// if ConfigFileDir is not set, then there are no config files.
 	if image.Plugin.ConfigFileDir == "" {
@@ -235,7 +235,7 @@ func addPluginStreamToConfig(src []byte, ref *ociinstaller.SteampipeImageRef) []
 func pluginInstallDir(ref *ociinstaller.SteampipeImageRef) string {
 	osSafePath := filepath.FromSlash(ref.DisplayImageRef())
 
-	fullPath := filepath.Join(filepaths_steampipe.EnsurePluginDir(), osSafePath)
+	fullPath := filepath.Join(filepaths.EnsurePluginDir(), osSafePath)
 
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 		err = os.MkdirAll(fullPath, 0755)

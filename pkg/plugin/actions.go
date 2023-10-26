@@ -3,20 +3,20 @@ package plugin
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
-	"github.com/turbot/steampipe/pkg/ociinstaller_steampipe"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe/pkg/ociinstaller_steampipe"
 )
 
 const (
@@ -35,7 +35,7 @@ func Remove(ctx context.Context, image string, pluginConnections map[string][]*m
 	// are any connections using this plugin???
 	conns := pluginConnections[fullPluginName]
 
-	installedTo := filepath.Join(filepaths_steampipe.EnsurePluginDir(), filepath.FromSlash(fullPluginName))
+	installedTo := filepath.Join(filepaths.EnsurePluginDir(), filepath.FromSlash(fullPluginName))
 	_, err := os.Stat(installedTo)
 	if os.IsNotExist(err) {
 		return nil, fmt.Errorf("plugin '%s' not found", image)
@@ -95,7 +95,7 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 
 	pluginVersions := v.Plugins
 
-	pluginBinaries, err := files.ListFiles(filepaths_steampipe.EnsurePluginDir(), &files.ListOptions{
+	pluginBinaries, err := files.ListFiles(filepaths.EnsurePluginDir(), &files.ListOptions{
 		Include: []string{"**/*.plugin"},
 		Flags:   files.AllRecursive,
 	})
@@ -106,7 +106,7 @@ func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListI
 	// we have the plugin binary paths
 	for _, pluginBinary := range pluginBinaries {
 		parent := filepath.Dir(pluginBinary)
-		fullPluginName, err := filepath.Rel(filepaths_steampipe.EnsurePluginDir(), parent)
+		fullPluginName, err := filepath.Rel(filepaths.EnsurePluginDir(), parent)
 		if err != nil {
 			return nil, err
 		}

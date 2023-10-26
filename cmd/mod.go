@@ -11,12 +11,12 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/modinstaller"
 	"github.com/turbot/pipe-fittings/parse"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 
 // mod management commands
@@ -352,7 +352,7 @@ func createWorkspaceMod(ctx context.Context, cmd *cobra.Command, workspacePath s
 	}
 	// only print message for mod init (not for mod install)
 	if cmd.Name() == "init" {
-		fmt.Printf("Created mod definition file '%s'\n", filepaths_steampipe.ModFilePath(workspacePath))
+		fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
 	}
 
 	// load up the written mod file so that we get the updated

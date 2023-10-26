@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"io/fs"
 	"log"
 	"os"
@@ -14,12 +13,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/go-kit/files"
-
 	"github.com/shirou/gopsutil/process"
+	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 
 var (
@@ -112,7 +112,7 @@ func killRunningDbInstance(ctx context.Context) error {
 
 		// check if the name of the process is prefixed with the $STEAMPIPE_INSTALL_DIR
 		// that means this is a steampipe service from this installation directory
-		if strings.HasPrefix(cmdLine, filepaths_steampipe.SteampipeDir) {
+		if strings.HasPrefix(cmdLine, filepaths.InstallDir) {
 			log.Println("[TRACE] Terminating running postgres process")
 			if err := p.Kill(); err != nil {
 				error_helpers.ShowWarning(fmt.Sprintf("Failed to kill orphan postgres process PID %d", p.Pid))
@@ -197,7 +197,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 // it's called as part of `prepareBackup` to decide whether `pg_dump` needs to run
 // it's also called as part of `restoreDBBackup` for removal of the installation once restoration successfully completes
 func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
-	dbBaseDirectory := filepaths_steampipe.EnsureDatabaseDir()
+	dbBaseDirectory := filepaths.EnsureDatabaseDir()
 	entries, err := os.ReadDir(dbBaseDirectory)
 	if err != nil {
 		return false, "", err
@@ -353,8 +353,8 @@ func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []str
 		return strings.Contains(strings.ToUpper(v), "MATERIALIZED VIEW DATA")
 	})
 
-	withoutFile := filepath.Join(filepaths_steampipe.EnsureDatabaseDir(), noMatViewRefreshListFileName)
-	onlyFile := filepath.Join(filepaths_steampipe.EnsureDatabaseDir(), onlyMatViewRefreshListFileName)
+	withoutFile := filepath.Join(filepaths.EnsureDatabaseDir(), noMatViewRefreshListFileName)
+	onlyFile := filepath.Join(filepaths.EnsureDatabaseDir(), onlyMatViewRefreshListFileName)
 
 	err := error_helpers.CombineErrors(
 		os.WriteFile(withoutFile, []byte(strings.Join(withoutRefresh, "\n")), 0644),
@@ -415,7 +415,7 @@ func retainBackup(ctx context.Context) error {
 	binaryBackupRetentionFileName := fmt.Sprintf("%s.%s", backupBaseFileName, backupDumpFileExtension)
 	textBackupRetentionFileName := fmt.Sprintf("%s.%s", backupBaseFileName, backupTextFileExtension)
 
-	backupDir := filepaths_steampipe.EnsureBackupsDir()
+	backupDir := filepaths.EnsureBackupsDir()
 	binaryBackupFilePath := filepath.Join(backupDir, binaryBackupRetentionFileName)
 	textBackupFilePath := filepath.Join(backupDir, textBackupRetentionFileName)
 
@@ -467,7 +467,7 @@ func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 
 // trimBackups trims the number of backups to the most recent constants.MaxBackups
 func trimBackups() {
-	backupDir := filepaths_steampipe.BackupsDir()
+	backupDir := filepaths.BackupsDir()
 	files, err := os.ReadDir(backupDir)
 	if err != nil {
 		error_helpers.ShowWarning(fmt.Sprintf("Failed to trim backups folder: %s", err.Error()))

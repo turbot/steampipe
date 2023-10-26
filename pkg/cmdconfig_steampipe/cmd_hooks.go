@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/turbot/pipe-fittings/cmdconfig"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"io"
 	"log"
 	"os"
@@ -289,7 +289,7 @@ func getWorkspaceProfileLoader() (*steampipeconfig.WorkspaceProfileLoader, error
 		return nil, err
 	}
 
-	workspaceProfileDir, err := filepaths_steampipe.WorkspaceProfileDir(installDir)
+	workspaceProfileDir, err := filepaths.WorkspaceProfileDir(installDir)
 	if err != nil {
 		return nil, err
 	}
@@ -330,12 +330,12 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 
 	level := sdklogging.LogLevel()
 	var logDestination io.Writer
-	if len(filepaths_steampipe.SteampipeDir) == 0 {
+	if len(filepaths.InstallDir) == 0 {
 		// write to the buffer - this is to make sure that we don't lose logs
 		// till the time we get the log directory
 		logDestination = logBuffer
 	} else {
-		logDestination = logging.NewRotatingLogWriter(filepaths_steampipe.EnsureLogDir(), "steampipe")
+		logDestination = logging.NewRotatingLogWriter(filepaths.EnsureLogDir(), "steampipe")
 
 		// write out the buffered contents
 		_, _ = logDestination.Write(logBuffer.Bytes())
@@ -381,7 +381,7 @@ func ensureInstallDir(installDir string) {
 	}
 
 	// store as SteampipeDir
-	filepaths_steampipe.SteampipeDir = installDir
+	filepaths.InstallDir = installDir
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way

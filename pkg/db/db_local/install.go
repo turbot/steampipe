@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"net"
 	"os"
@@ -18,9 +16,12 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"github.com/turbot/steampipe/pkg/ociinstaller_steampipe"
 )
 
@@ -361,7 +362,7 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
 
 		// log directory
-		"-c", fmt.Sprintf("log_directory=%s", filepaths_steampipe.EnsureLogDir()),
+		"-c", fmt.Sprintf("log_directory=%s", filepaths.EnsureLogDir()),
 
 		// Data Directory
 		"-D", filepaths_steampipe.GetDataLocation())

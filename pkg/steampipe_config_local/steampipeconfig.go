@@ -12,12 +12,12 @@ import (
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/options"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants_steampipe"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
@@ -383,7 +383,7 @@ func (c *SteampipeConfig) initializePlugins() {
 		pluginImageRef := plugin.Plugin
 		connection.PluginAlias = plugin.Alias
 		connection.Plugin = pluginImageRef
-		if pluginPath, _ := filepaths_steampipe.GetPluginPath(pluginImageRef, plugin.Alias); pluginPath != "" {
+		if pluginPath, _ := filepaths.GetPluginPath(pluginImageRef, plugin.Alias); pluginPath != "" {
 			// plugin is installed - set the instance and the plugin path
 			connection.PluginInstance = &plugin.Instance
 			connection.PluginPath = &pluginPath

@@ -2,13 +2,13 @@ package steampipe_config_local
 
 import (
 	"encoding/json"
-	"github.com/turbot/pipe-fittings/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"os"
 	"time"
 
 	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/utils"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -148,7 +148,7 @@ func (m ConnectionStateMap) ConnectionsInState(states ...string) bool {
 }
 
 func (m ConnectionStateMap) Save() error {
-	connFilePath := filepaths_steampipe.ConnectionStatePath()
+	connFilePath := filepaths.ConnectionStatePath()
 	connFileJSON, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		log.Println("[ERROR]", "Error while writing state file", err)

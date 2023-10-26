@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/constants_steampipe"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"os"
 	"os/exec"
@@ -24,7 +25,6 @@ import (
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
 )
 
@@ -477,7 +477,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		// Data Directory
 		"-D", filepaths_steampipe.GetDataLocation())
 
-	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths_steampipe.SteampipeDir))
+	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths.InstallDir))
 
 	//  Check if the /etc/ssl directory exist in os
 	dirExist, _ := os.Stat(constants_steampipe.SslConfDir)

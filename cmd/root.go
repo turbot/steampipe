@@ -9,12 +9,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/constants"
-
-"github.com/turbot/pipe-fittings/error_helpers"
-"github.com/turbot/pipe-fittings/statushooks"
-"github.com/turbot/pipe-fittings/utils"
-"github.com/turbot/pipe-fittings/version"
-"github.com/turbot/steampipe/pkg/filepaths_steampipe"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/version"
 )
 
 var exitCode int
@@ -58,7 +57,7 @@ func InitCmd() {
 
 	// global flags
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceProfile, "default", "The workspace profile to use") // workspace profile profile is a global flag since install-dir(global) can be set through the workspace profile
-	rootCmd.PersistentFlags().String(constants.ArgInstallDir, filepaths_steampipe.DefaultInstallDir, "Path to the Config Directory")
+	rootCmd.PersistentFlags().String(constants.ArgInstallDir, filepaths.DefaultInstallDir, "Path to the Config Directory")
 	rootCmd.PersistentFlags().Bool(constants.ArgSchemaComments, true, "Include schema comments when importing connection schemas")
 
 	error_helpers.FailOnError(viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir)))

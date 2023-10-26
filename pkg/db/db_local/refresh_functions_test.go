@@ -14,7 +14,7 @@ import (
 // test used for debug purposes to replicate `tuple concurrently updated` DB error
 func TestConcurrentPerms(t *testing.T) {
 	t.Skip()
-	filepaths_steampipe.SteampipeDir = "/users/kai/.steampipe"
+	filepaths.InstallDir = "/users/kai/.steampipe"
 
 	ctx := context.Background()
 	res := StartServices(ctx, []string{"localhost"}, constants.DatabaseDefaultPort, "query")

@@ -1,13 +1,13 @@
 package filepaths_steampipe
 
 import (
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"os"
 	"path/filepath"
 
 	"github.com/turbot/pipe-fittings/constants"
-	// TODO move to pipe-fittings?
 	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/steampipe/pkg/constants_steampipe"
 	"github.com/turbot/steampipe/pkg/db/platform"
 )
 
@@ -16,7 +16,7 @@ func ServiceExecutableRelativeLocation() string {
 }
 
 func DatabaseInstanceDir() string {
-	loc := filepath.Join(EnsureDatabaseDir(), constants.DatabaseVersion)
+	loc := filepath.Join(filepaths.EnsureDatabaseDir(), constants.DatabaseVersion)
 	if _, err := os.Stat(loc); os.IsNotExist(err) {
 		err = os.MkdirAll(loc, 0755)
 		error_helpers.FailOnErrorWithMessage(err, "could not create db version directory")
@@ -45,7 +45,7 @@ func GetDataLocation() string {
 // tar file where the dump file will be stored, so that it can be later restored after connections
 // refresh in a new installation
 func DatabaseBackupFilePath() string {
-	return filepath.Join(EnsureDatabaseDir(), "backup.bk")
+	return filepath.Join(filepaths.EnsureDatabaseDir(), "backup.bk")
 }
 
 func GetRootCertLocation() string {
@@ -133,5 +133,5 @@ func GetLegacyPasswordFileLocation() string {
 }
 
 func GetPasswordFileLocation() string {
-	return filepath.Join(EnsureInternalDir(), ".passwd")
+	return filepath.Join(filepaths.EnsureInternalDir(), ".passwd")
 }

@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"os"
 	"os/exec"
@@ -21,6 +20,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/pipe-fittings/utils"
@@ -473,7 +473,7 @@ func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConf
 
 	// NOTE: pass pluginConfig.Alias as the pluginAlias
 	// - this is just used for the error message if we fail to load
-	pluginPath, err := filepaths_steampipe.GetPluginPath(imageRef, pluginConfig.Alias)
+	pluginPath, err := filepaths.GetPluginPath(imageRef, pluginConfig.Alias)
 	if err != nil {
 		return nil, err
 	}

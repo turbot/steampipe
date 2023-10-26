@@ -3,8 +3,6 @@ package steampipe_config_local
 import (
 	"bytes"
 	"fmt"
-	"github.com/turbot/go-kit/hcl_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,10 +12,12 @@ import (
 	"github.com/gertd/go-pluralize"
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/go-kit/hcl_helpers"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/options"
 	"github.com/turbot/pipe-fittings/parse"
@@ -37,7 +37,7 @@ func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConf
 
 	log.Printf("[INFO] ensureDefaultConfigFile")
 
-	if err := ensureDefaultConfigFile(filepaths_steampipe.EnsureConfigDir()); err != nil {
+	if err := ensureDefaultConfigFile(filepaths.EnsureConfigDir()); err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(
 			sperr.WrapWithMessage(
 				err,
@@ -134,7 +134,7 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 	// load config from the installation folder -  load all spc files from config directory
 	include := filehelpers.InclusionsFromExtensions(constants.ConnectionConfigExtensions)
 	loadOptions := &loadConfigOptions{include: include}
-	if ew := loadConfig(filepaths_steampipe.EnsureConfigDir(), steampipeConfig, loadOptions); ew != nil {
+	if ew := loadConfig(filepaths.EnsureConfigDir(), steampipeConfig, loadOptions); ew != nil {
 		if ew.GetError() != nil {
 			return nil, ew
 		}
@@ -151,7 +151,7 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 		}
 
 		// only include workspace.spc from workspace directory
-		include = filehelpers.InclusionsFromFiles([]string{filepaths_steampipe.WorkspaceConfigFileName})
+		include = filehelpers.InclusionsFromFiles([]string{filepaths.WorkspaceConfigFileName})
 		// update load options to ONLY allow terminal options
 		loadOptions = &loadConfigOptions{include: include, allowedOptions: []string{options.TerminalBlock}}
 		if ew := loadConfig(modLocation, steampipeConfig, loadOptions); ew != nil {

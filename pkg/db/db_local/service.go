@@ -2,7 +2,6 @@ package db_local
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 	"log"
 	"os"
 	"strconv"
@@ -10,7 +9,9 @@ import (
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 
 // GetState checks that the database instance is running and returns its details
@@ -36,7 +37,7 @@ func GetState() (*RunningDBInstanceInfo, error) {
 	if !pidExists {
 		log.Printf("[TRACE] GetState - pid %v does not exist\n", info.Pid)
 		// nothing to do here
-		os.Remove(filepaths_steampipe.RunningInfoFilePath())
+		os.Remove(filepaths.RunningInfoFilePath())
 		return nil, nil
 	}
 

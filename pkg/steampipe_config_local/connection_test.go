@@ -377,7 +377,7 @@ connection "b" {
 // 	// set steampipe dir
 // 	os.Chdir("./test_data/connections_to_update")
 // 	wd, _ := os.Getwd()
-// 	filepaths.SteampipeDir = wd
+// 	filepaths.InstallDir = wd
 
 // 	for name, test := range testCasesGetConnectionsToUpdate {
 // 		// setup connection config
@@ -449,19 +449,19 @@ func TestConnectionsUpdateEqual(t *testing.T) {
 
 func setup(test getConnectionsToUpdateTest) {
 
-	os.RemoveAll(filepaths_steampipe.EnsurePluginDir())
-	os.RemoveAll(filepaths_steampipe.EnsureConfigDir())
-	os.RemoveAll(filepaths_steampipe.EnsureInternalDir())
+	os.RemoveAll(filepaths.EnsurePluginDir())
+	os.RemoveAll(filepaths.EnsureConfigDir())
+	os.RemoveAll(filepaths.EnsureInternalDir())
 
-	err := os.MkdirAll(filepaths_steampipe.EnsurePluginDir(), os.ModePerm)
+	err := os.MkdirAll(filepaths.EnsurePluginDir(), os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = os.MkdirAll(filepaths_steampipe.EnsureConfigDir(), os.ModePerm)
+	err = os.MkdirAll(filepaths.EnsureConfigDir(), os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = os.MkdirAll(filepaths_steampipe.EnsureInternalDir(), os.ModePerm)
+	err = os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -472,9 +472,9 @@ func setup(test getConnectionsToUpdateTest) {
 	setupTestConfig(test)
 }
 func teardown(test getConnectionsToUpdateTest) {
-	os.RemoveAll(filepaths_steampipe.EnsurePluginDir())
-	os.RemoveAll(filepaths_steampipe.EnsureConfigDir())
-	os.RemoveAll(filepaths_steampipe.EnsureInternalDir())
+	os.RemoveAll(filepaths.EnsurePluginDir())
+	os.RemoveAll(filepaths.EnsureConfigDir())
+	os.RemoveAll(filepaths.EnsureInternalDir())
 
 	for _, plugin := range test.current {
 		deletePlugin(plugin.Plugin)
@@ -488,7 +488,7 @@ func setupTestConfig(test getConnectionsToUpdateTest) {
 			log.Fatal(err)
 		}
 	}
-	err := os.MkdirAll(filepaths_steampipe.EnsureInternalDir(), os.ModePerm)
+	err := os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -496,7 +496,7 @@ func setupTestConfig(test getConnectionsToUpdateTest) {
 }
 
 func resetConfig(test getConnectionsToUpdateTest) {
-	connectionStatePath := filepaths_steampipe.ConnectionStatePath()
+	connectionStatePath := filepaths.ConnectionStatePath()
 
 	os.Remove(connectionStatePath)
 	for i := range test.required {
@@ -506,7 +506,7 @@ func resetConfig(test getConnectionsToUpdateTest) {
 
 func connectionConfigPath(i int) string {
 	fileName := fmt.Sprintf("test%d%s", i, constants.ConfigExtension)
-	path := filepath.Join(filepaths_steampipe.EnsureConfigDir(), fileName)
+	path := filepath.Join(filepaths.EnsureConfigDir(), fileName)
 	return path
 }
 
@@ -516,7 +516,7 @@ func copyPlugin(plugin string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	dest, err := filepath.Abs(filepath.Join(filepaths_steampipe.EnsurePluginDir(), plugin))
+	dest, err := filepath.Abs(filepath.Join(filepaths.EnsurePluginDir(), plugin))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -527,7 +527,7 @@ func copyPlugin(plugin string) {
 	}
 }
 func deletePlugin(plugin string) {
-	dest, err := filepath.Abs(filepath.Join(filepaths_steampipe.EnsurePluginDir(), plugin))
+	dest, err := filepath.Abs(filepath.Join(filepaths.EnsurePluginDir(), plugin))
 	if err != nil {
 		log.Fatal(err)
 	}

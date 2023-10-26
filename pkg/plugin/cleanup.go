@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
+	"github.com/turbot/pipe-fittings/filepaths"
 )
 
 func CleanupOldTmpDirs() {
 	const tmpDirAgeThreshold = 24 * time.Hour
-	tmpDirs, err := files.ListFiles(filepaths_steampipe.EnsurePluginDir(), &files.ListOptions{
+	tmpDirs, err := files.ListFiles(filepaths.EnsurePluginDir(), &files.ListOptions{
 		Include: []string{"tmp-*"},
 		Flags:   files.DirectoriesRecursive,
 	})
