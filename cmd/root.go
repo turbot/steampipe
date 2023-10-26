@@ -53,6 +53,9 @@ func InitCmd() {
 	utils.LogTime("cmd.root.InitCmd start")
 	defer utils.LogTime("cmd.root.InitCmd end")
 
+	// set the default install dir
+	filepaths.DefaultInstallDir = "~/.steampipe"
+
 	rootCmd.SetVersionTemplate(fmt.Sprintf("Steampipe v%s\n", version.SteampipeVersion.String()))
 
 	// global flags

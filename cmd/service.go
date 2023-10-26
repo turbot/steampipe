@@ -635,7 +635,7 @@ func showAllStatus(ctx context.Context) {
 		return
 	}
 	headers := []string{"PID", "Install Directory", "Port", "Listen"}
-	rows := [][]string{}
+	var rows [][]string
 
 	for _, process := range processes {
 		pid, installDir, port, listen := getServiceProcessDetails(process)
