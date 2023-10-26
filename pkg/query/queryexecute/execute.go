@@ -3,14 +3,13 @@ package queryexecute
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/pipe-fittings/db_client"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_client"
 	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/contexthelpers"
-	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/utils"
@@ -101,12 +100,12 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 	return failures
 }
 
-func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *modconfig.ResolvedQuery) (error, int) {
+func executeQuery(ctx context.Context, client *steampipe_db_client.SteampipeDbClient, resolvedQuery *modconfig.ResolvedQuery) (error, int) {
 	utils.LogTime("query.execute.executeQuery start")
 	defer utils.LogTime("query.execute.executeQuery end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db_client.ExecuteQuery(ctx, client, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
+	resultsStreamer, err := steampipe_db_client.ExecuteQuery(ctx, client, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
 	if err != nil {
 		return err, 0
 	}

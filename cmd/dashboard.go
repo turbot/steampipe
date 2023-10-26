@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/pipe-fittings/cmdconfig"
 	"log"
 	"os"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/cloud"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/contexthelpers"
 	"github.com/turbot/pipe-fittings/controlstatus"
@@ -29,6 +29,7 @@ import (
 	"github.com/turbot/pipe-fittings/workspace"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
+	"gopkg.in/olahol/melody.v1"
 )
 
 func dashboardCmd() *cobra.Command {
@@ -159,7 +160,10 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	initData.Result.DisplayMessages()
 
 	// create the server
-	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.Workspace)
+	// setup a new webSocket service
+	webSocket := melody.New()
+	// setup a new dashboard server
+	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.Workspace, webSocket)
 	error_helpers.FailOnError(err)
 
 	// start the server asynchronously - this returns a chan which is signalled when the internal API server terminates

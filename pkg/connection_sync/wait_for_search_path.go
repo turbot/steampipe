@@ -12,7 +12,7 @@ import (
 // and wait for these connections to be ready
 // if any of the connections are in error state, return an error
 // this is used to ensure unqualified queries and tables are resolved to the correct connection
-func WaitForSearchPathSchemas(ctx context.Context, client steampipe_db_client.SteampipeDbClient, searchPath []string) error {
+func WaitForSearchPathSchemas(ctx context.Context, client *steampipe_db_client.SteampipeDbClient, searchPath []string) error {
 	conn, err := client.AcquireManagementConnection(ctx)
 	if err != nil {
 		return err

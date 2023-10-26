@@ -2,6 +2,7 @@ package pluginmanager_service
 
 import (
 	"context"
+
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/db/db_local"
@@ -27,11 +28,11 @@ func (m *PluginManager) handlePluginInstanceChanges(ctx context.Context, newPlug
 	m.plugins = newPlugins
 
 	// repopulate the plugin table
-	conn, err := m.pool.Acquire(ctx)
+	conn, err := m.pool.Conn(ctx)
 	if err != nil {
 		return err
 	}
-	defer conn.Release()
-	return db_local.PopulatePluginTable(ctx, conn.Conn())
+	defer conn.Close()
+	return db_local.PopulatePluginTable(ctx, conn)
 
 }

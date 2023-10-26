@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_client"
 	"path/filepath"
 	"time"
 
@@ -24,6 +25,7 @@ type InitData struct {
 	Loaded               chan struct{}
 	// map of query name to resolved query (key is the query text for command line queries)
 	Queries map[string]*modconfig.ResolvedQuery
+	Client  *steampipe_db_client.SteampipeDbClient
 }
 
 // NewInitData returns a new InitData object
@@ -72,10 +74,10 @@ func (i *InitData) Cleanup(ctx context.Context) {
 
 	// ensure that the initialisation was completed
 	// and that we are not in a race condition where
-	// the client is set after the cancel hits
+	// the Client is set after the cancel hits
 	<-i.Loaded
 
-	// if a client was initialised, close it
+	// if a Client was initialised, close it
 	if i.Client != nil {
 		i.Client.Close(ctx)
 	}
@@ -143,4 +145,8 @@ func (i *InitData) init(ctx context.Context, args []string) {
 			Size: 2,
 		}),
 	)
+
+	// TODO KAI OnConnectionCallback
+	// now wrap the Client
+	i.Client, err = steampipe_db_client.NewSteampipeDbClient(ctx, i.InitData.Client, nil)
 }

@@ -2,12 +2,12 @@ package connection
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/steampipeconfig"
 )
 
 // only allow one execution of refresh connections
@@ -16,14 +16,14 @@ var executeLock sync.Mutex
 // only allow one queued execution
 var queueLock sync.Mutex
 
-func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceUpdateConnectionNames ...string) (res *steampipeconfig.RefreshConnectionResult) {
+func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceUpdateConnectionNames ...string) (res *steampipe_config_local.RefreshConnectionResult) {
 	log.Println("[INFO] RefreshConnections start")
 	defer log.Println("[INFO] RefreshConnections end")
 
 	// TODO KAI if we, for example, access a nil map, this does not seem to catch it and startup hangs
 	defer func() {
 		if r := recover(); r != nil {
-			res = steampipeconfig.NewErrorRefreshConnectionResult(helpers.ToError(r))
+			res = steampipe_config_local.NewErrorRefreshConnectionResult(helpers.ToError(r))
 		}
 	}()
 
@@ -34,7 +34,7 @@ func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceU
 	if !queueLock.TryLock() {
 		// someone has it - they will execute so we have nothing to do
 		log.Printf("[INFO] another execution is already queued - returning")
-		return &steampipeconfig.RefreshConnectionResult{}
+		return &steampipe_config_local.RefreshConnectionResult{}
 	}
 
 	log.Printf("[INFO] acquired refreshQueueLock, try to acquire refreshExecuteLock")
@@ -55,7 +55,7 @@ func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceU
 	// package up all necessary data into a state object
 	state, err := newRefreshConnectionState(ctx, pluginManager, forceUpdateConnectionNames)
 	if err != nil {
-		return steampipeconfig.NewErrorRefreshConnectionResult(err)
+		return steampipe_config_local.NewErrorRefreshConnectionResult(err)
 	}
 
 	// now do the refresh

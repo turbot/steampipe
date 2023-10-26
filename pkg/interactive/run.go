@@ -2,6 +2,7 @@ package interactive
 
 import (
 	"context"
+	"github.com/turbot/pipe-fittings/constants"
 
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/queryresult"

@@ -9,14 +9,14 @@ import (
 	"github.com/turbot/pipe-fittings/error_helpers"
 )
 
-func ValidateClientCacheSettings(c SteampipeDbClient) *error_helpers.ErrorAndWarnings {
+func ValidateClientCacheSettings(c *SteampipeDbClient) *error_helpers.ErrorAndWarnings {
 	cacheEnabledResult := ValidateClientCacheEnabled(c)
 	cacheTtlResult := ValidateClientCacheTtl(c)
 
 	return error_helpers.EmptyErrorsAndWarning().Merge(cacheEnabledResult).Merge(cacheTtlResult)
 }
 
-func ValidateClientCacheEnabled(c SteampipeDbClient) *error_helpers.ErrorAndWarnings {
+func ValidateClientCacheEnabled(c *SteampipeDbClient) *error_helpers.ErrorAndWarnings {
 	errorsAndWarnings := error_helpers.EmptyErrorsAndWarning()
 	if c.ServerSettings == nil || !viper.IsSet(constants.ArgClientCacheEnabled) {
 		// if there's no ServerSettings, then this is a pre-21 server
@@ -30,7 +30,7 @@ func ValidateClientCacheEnabled(c SteampipeDbClient) *error_helpers.ErrorAndWarn
 	return errorsAndWarnings
 }
 
-func ValidateClientCacheTtl(c SteampipeDbClient) *error_helpers.ErrorAndWarnings {
+func ValidateClientCacheTtl(c *SteampipeDbClient) *error_helpers.ErrorAndWarnings {
 	errorsAndWarnings := error_helpers.EmptyErrorsAndWarning()
 
 	if c.ServerSettings == nil || !viper.IsSet(constants.ArgCacheTtl) {

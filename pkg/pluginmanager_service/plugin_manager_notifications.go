@@ -2,10 +2,12 @@ package pluginmanager_service
 
 import (
 	"context"
+	"log"
+
 	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 "github.com/turbot/pipe-fittings/error_helpers"
-"log"
+
 )
 
 func (m *PluginManager) SendPostgresSchemaNotification(ctx context.Context) error {
@@ -24,11 +26,11 @@ func (m *PluginManager) SendPostgresErrorsAndWarningsNotification(ctx context.Co
 
 }
 func (m *PluginManager) sendPostgresNotification(ctx context.Context, notification any) error {
-	conn, err := m.pool.Acquire(ctx)
+	conn, err := m.pool.Conn(ctx)
 	if err != nil {
 		return err
 	}
-	defer conn.Release()
+	defer conn.Close()
 
-	return db_local.SendPostgresNotification(ctx, conn.Conn(), notification)
+	return db_local.SendPostgresNotification(ctx, conn, notification)
 }

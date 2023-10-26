@@ -51,12 +51,7 @@ type SteampipeDbClient struct {
 	isLocalService bool
 }
 
-func NewSteampipeDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback, opts ...db_client.ClientOption) (*SteampipeDbClient, error) {
-
-	dbClient, err := db_client.NewDbClient(ctx, connectionString)
-	if err != nil {
-		return nil, err
-	}
+func NewSteampipeDbClient(ctx context.Context, dbClient *db_client.DbClient, onConnectionCallback DbConnectionCallback) (*SteampipeDbClient, error) {
 
 	steampipeClient := &SteampipeDbClient{
 		DbClient:             *dbClient,

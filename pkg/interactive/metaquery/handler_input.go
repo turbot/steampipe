@@ -9,7 +9,7 @@ import (
 
 // HandlerInput defines input data for the metaquery handler
 type HandlerInput struct {
-	Client steampipe_db_client.SteampipeDbClient
+	Client *steampipe_db_client.SteampipeDbClient
 	Schema *db_common.SchemaMetadata
 
 	Prompt          *prompt.Prompt

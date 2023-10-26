@@ -3,17 +3,17 @@ package interactive
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/pipe-fittings/db_common"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_client"
 	"log"
 	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-
+	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/workspace"
-	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
 )
 
 // init data has arrived, handle any errors/warnings/messages
@@ -127,7 +127,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
 		// provide an explicit error handler which re-renders the prompt after displaying the error
-		if err := c.initData.Workspace.SetupWatcher(ctx, c.initData.Client, c.workspaceWatcherErrorHandler); err != nil {
+		if err := c.initData.Workspace.SetupWatcher(ctx, &c.initData.Client.DbClient, c.workspaceWatcherErrorHandler); err != nil {
 			c.initData.Result.Error = err
 		}
 	}
@@ -180,8 +180,7 @@ func (c *InteractiveClient) workspace() *workspace.Workspace {
 }
 
 // return the client, or nil if not yet initialised
-func (c *InteractiveClient) client() steampipe_db_common.Client {
-	// TODO KAI wrap initdata client with steampipe client
+func (c *InteractiveClient) client() *steampipe_db_client.SteampipeDbClient {
 	if c.initData == nil {
 		return nil
 	}

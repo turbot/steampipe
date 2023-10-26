@@ -3,13 +3,12 @@ package pluginmanager_service
 import (
 	"context"
 	"fmt"
-	"log"
-
-	"github.com/jackc/pgx/v5"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/ociinstaller"
+	"log"
+
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -70,13 +69,13 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 		}
 	}
 
-	conn, err := m.pool.Acquire(ctx)
+	conn, err := m.pool.Conn(ctx)
 	if err != nil {
 		return err
 	}
-	defer conn.Release()
+	defer conn.Close()
 
-	_, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn.Conn(), queries...)
+	_, err = db_local.ExecuteSqlWithArgsInTransaction(ctx, conn, queries...)
 	return err
 }
 
@@ -189,7 +188,7 @@ func (m *PluginManager) rateLimiterTableExists(ctx context.Context) (bool, error
         tablename  = '%s'
     );`, constants.InternalSchema, constants.RateLimiterDefinitionTable)
 
-	row := m.pool.QueryRow(ctx, query)
+	row := m.pool.QueryRowContext(ctx, query)
 	var exists bool
 	err := row.Scan(&exists)
 
@@ -246,13 +245,15 @@ func (m *PluginManager) bootstrapRateLimiterTable(ctx context.Context) error {
 }
 
 func (m *PluginManager) loadRateLimitersFromTable(ctx context.Context) ([]*modconfig.RateLimiter, error) {
-	rows, err := m.pool.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.RateLimiterDefinitionTable))
+	rows, err := m.pool.QueryContext(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.RateLimiterDefinitionTable))
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	rateLimiters, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[modconfig.RateLimiter])
+	// this was using , pgx.RowToStructByNameLax[modconfig.RateLimiter] - which is a bit liberal
+	// it is a bit liberal and accepts rows
+	rateLimiters, err := db_common.CollectToStructByName[modconfig.RateLimiter](rows)
 	if err != nil {
 		return nil, err
 	}
