@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/version"
 	"os"
 
 	"github.com/mattn/go-isatty"
@@ -10,10 +11,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
-	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/utils"
-	"github.com/turbot/pipe-fittings/version"
 )
 
 var exitCode int
@@ -53,14 +52,11 @@ func InitCmd() {
 	utils.LogTime("cmd.root.InitCmd start")
 	defer utils.LogTime("cmd.root.InitCmd end")
 
-	// set the default install dir
-	filepaths.DefaultInstallDir = "~/.steampipe"
-
 	rootCmd.SetVersionTemplate(fmt.Sprintf("Steampipe v%s\n", version.SteampipeVersion.String()))
 
 	// global flags
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceProfile, "default", "The workspace profile to use") // workspace profile profile is a global flag since install-dir(global) can be set through the workspace profile
-	rootCmd.PersistentFlags().String(constants.ArgInstallDir, filepaths.DefaultInstallDir, "Path to the Config Directory")
+	rootCmd.PersistentFlags().String(constants.ArgInstallDir, constants.DefaultInstallDir, "Path to the Config Directory")
 	rootCmd.PersistentFlags().Bool(constants.ArgSchemaComments, true, "Include schema comments when importing connection schemas")
 
 	error_helpers.FailOnError(viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir)))
@@ -73,7 +69,7 @@ func InitCmd() {
 	// powershell yet - and there's no way to disable powershell in the default generator
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for steampipe")
-	rootCmd.Flags().BoolP(constants.ArgVersion, "v", false, "Version for steampipe")
+	rootCmd.Flags().BoolP(constants.ArgVersion, "v", false, "AppVersion for steampipe")
 
 	hideRootFlags(constants.ArgSchemaComments)
 

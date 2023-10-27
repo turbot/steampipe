@@ -3,6 +3,7 @@ package steampipe_config_local
 import (
 	"bytes"
 	"fmt"
+	"github.com/turbot/pipe-fittings/schema"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,18 +13,18 @@ import (
 	"github.com/gertd/go-pluralize"
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/go-kit/hcl_helpers"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/options"
 	"github.com/turbot/pipe-fittings/parse"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
+	localconstants "github.com/turbot/steampipe/pkg/constants"
 )
 
 var GlobalConfig *SteampipeConfig
@@ -98,11 +99,11 @@ func ensureDefaultConfigFile(configFolder string) error {
 
 	// has the DefaultConnectionConfigContent been updated since the sample file was last writtne
 	sampleModified := sampleModTime.IsZero() ||
-		!bytes.Equal([]byte(constants_steampipe.DefaultConnectionConfigContent), sampleContent)
+		!bytes.Equal([]byte(localconstants.DefaultConnectionConfigContent), sampleContent)
 
 	// case: if sample is modified - always write new sample file content
 	if sampleModified {
-		err := os.WriteFile(defaultConfigSampleFile, []byte(constants_steampipe.DefaultConnectionConfigContent), 0755)
+		err := os.WriteFile(defaultConfigSampleFile, []byte(localconstants.DefaultConnectionConfigContent), 0755)
 		if err != nil {
 			return err
 		}
@@ -110,7 +111,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 
 	// case: if sample is modified but default is not modified - write the new default file content
 	if sampleModified && !userModifiedDefault {
-		err := os.WriteFile(defaultConfigFile, []byte(constants_steampipe.DefaultConnectionConfigContent), 0755)
+		err := os.WriteFile(defaultConfigFile, []byte(localconstants.DefaultConnectionConfigContent), 0755)
 		if err != nil {
 			return err
 		}
@@ -251,7 +252,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 	for _, block := range content.Blocks {
 		switch block.Type {
 
-		case modconfig.BlockTypePlugin:
+		case schema.BlockTypePlugin:
 			plugin, moreDiags := parse.DecodePlugin(block)
 			diags = append(diags, moreDiags...)
 			if moreDiags.HasErrors() {
@@ -263,7 +264,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 				return error_helpers.NewErrorsAndWarning(err)
 			}
 
-		case modconfig.BlockTypeConnection:
+		case schema.BlockTypeConnection:
 			connection, moreDiags := parse.DecodeConnection(block)
 			diags = append(diags, moreDiags...)
 			if moreDiags.HasErrors() {
@@ -278,7 +279,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			}
 			steampipeConfig.Connections[connection.Name] = connection
 
-		case modconfig.BlockTypeOptions:
+		case schema.BlockTypeOptions:
 			// check this options type is permitted based on the options passed in
 			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
 				return error_helpers.NewErrorsAndWarning(err)
@@ -303,7 +304,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 					diags = append(diags, &hcl.Diagnostic{
 						Severity: hcl.DiagWarning,
 						Summary:  warning,
-						Subject:  hcl_helpers.BlockRangePointer(block),
+						Subject:  hclhelpers.BlockRangePointer(block),
 					})
 				}
 			}

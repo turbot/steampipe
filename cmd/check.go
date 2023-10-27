@@ -3,9 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/pipe-fittings/cmdconfig"
-	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
-	"github.com/turbot/steampipe/pkg/display"
 	"io"
 	"os"
 	"strings"
@@ -13,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/contexthelpers"
 	"github.com/turbot/pipe-fittings/controldisplay"
@@ -24,7 +22,9 @@ import (
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/pipe-fittings/workspace"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/control"
+	"github.com/turbot/steampipe/pkg/display"
 )
 
 func checkCmd() *cobra.Command {
@@ -44,7 +44,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 				return []string{}, cobra.ShellCompDirectiveError
 			}
 
-			completions := []string{}
+			var completions []string
 
 			for _, item := range workspaceResources.GetSortedBenchmarksAndControlNames() {
 				if strings.HasPrefix(item, toComplete) {
@@ -56,7 +56,7 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		},
 	}
 
-	cmdconfig_steampipe.
+	cmdconfig.
 		OnCmd(cmd).
 		AddCloudFlags().
 		AddWorkspaceDatabaseFlag().
@@ -120,7 +120,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 	}
 	// if diagnostic mode is set, print out config and return
 	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
-		cmdconfig_steampipe.DisplayConfig()
+		localcmdconfig.DisplayConfig()
 		return
 	}
 
@@ -324,7 +324,7 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		return false
 	}
 
-	if err := cmdconfig_steampipe.ValidateSnapshotArgs(ctx); err != nil {
+	if err := localcmdconfig.ValidateSnapshotArgs(ctx); err != nil {
 		error_helpers.ShowError(ctx, err)
 		return false
 	}

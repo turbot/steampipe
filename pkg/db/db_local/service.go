@@ -2,6 +2,7 @@ package db_local
 
 import (
 	"fmt"
+	localfilepaths "github.com/turbot/steampipe/pkg/filepaths"
 	"log"
 	"os"
 	"strconv"
@@ -11,7 +12,6 @@ import (
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/utils"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 
 // GetState checks that the database instance is running and returns its details
@@ -53,12 +53,12 @@ func GetState() (*RunningDBInstanceInfo, error) {
 // is running without us knowing about it, then it's an irrecoverable state
 func errorIfUnknownService() error {
 	// no postmaster.pid, we are good
-	if !filehelpers.FileExists(filepaths_steampipe.GetPostmasterPidLocation()) {
+	if !filehelpers.FileExists(localfilepaths.GetPostmasterPidLocation()) {
 		return nil
 	}
 
 	// read the content of the postmaster.pid file
-	fileContent, err := os.ReadFile(filepaths_steampipe.GetPostmasterPidLocation())
+	fileContent, err := os.ReadFile(localfilepaths.GetPostmasterPidLocation())
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func errorIfUnknownService() error {
 	// the pid does not exist
 	// this can confuse postgres as per https://postgresapp.com/documentation/troubleshooting.html
 	// delete it
-	os.Remove(filepaths_steampipe.GetPostmasterPidLocation())
+	os.Remove(localfilepaths.GetPostmasterPidLocation())
 
 	// this must be a stale file left over by PG. Ignore
 	return nil

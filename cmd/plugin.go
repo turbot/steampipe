@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/turbot/pipe-fittings/cmdconfig"
-	"github.com/turbot/steampipe/pkg/ociinstaller_steampipe"
+	"github.com/turbot/steampipe/pkg/install"
 	"strings"
 	"sync"
 	"time"
@@ -26,8 +26,7 @@ import (
 	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
+	localconstants "github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/plugin"
@@ -123,7 +122,7 @@ Examples:
   steampipe plugin install --skip-config aws`,
 	}
 
-	cmdconfig_steampipe.
+	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgProgress, true, "Display installation progress").
 		AddBoolFlag(constants.ArgSkipConfig, false, "Skip creating the default config file for plugin").
@@ -157,7 +156,7 @@ Examples:
   steampipe plugin update --progress=false aws`,
 	}
 
-	cmdconfig_steampipe.
+	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgAll, false, "Update all plugins to its latest available version").
 		AddBoolFlag(constants.ArgProgress, true, "Display installation progress").
@@ -189,7 +188,7 @@ Examples:
   steampipe plugin list --output json`,
 	}
 
-	cmdconfig_steampipe.
+	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag("outdated", false, "Check each plugin in the list for updates").
 		AddStringFlag(constants.ArgOutput, "table", "Output format: table or json").
@@ -207,7 +206,7 @@ func pluginUninstallCmd() *cobra.Command {
 		Long: `Uninstall a plugin.
 
 Uninstall a Steampipe plugin, removing it from use. The plugin name format is
-[registry/org/]name. (Version is not relevant in uninstall, since only one
+[registry/org/]name. (AppVersion is not relevant in uninstall, since only one
 version of a plugin can be installed at a time.)
 
 Example:
@@ -218,7 +217,7 @@ Example:
 `,
 	}
 
-	cmdconfig_steampipe.OnCmd(cmd).
+	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, false, "Help for plugin uninstall", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
@@ -326,19 +325,19 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 		bar.Set(len(pluginInstallSteps))
 		// let the bar append itself with "Already Installed"
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			return helpers.Resize(constants_steampipe.InstallMessagePluginAlreadyInstalled, 20)
+			return helpers.Resize(localconstants.InstallMessagePluginAlreadyInstalled, 20)
 		})
 		report = &display.PluginInstallReport{
 			Plugin:         pluginName,
 			Skipped:        true,
-			SkipReason:     constants_steampipe.InstallMessagePluginAlreadyInstalled,
+			SkipReason:     localconstants.InstallMessagePluginAlreadyInstalled,
 			IsUpdateReport: false,
 		}
 	} else {
 		// let the bar append itself with the current installation step
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			if report != nil && report.SkipReason == constants_steampipe.InstallMessagePluginNotFound {
-				return helpers.Resize(constants_steampipe.InstallMessagePluginNotFound, 20)
+			if report != nil && report.SkipReason == localconstants.InstallMessagePluginNotFound {
+				return helpers.Resize(localconstants.InstallMessagePluginNotFound, 20)
 			} else {
 				if b.Current() == 0 {
 					// no install step to display yet
@@ -425,7 +424,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			ref := ociinstaller.NewSteampipeImageRef(p)
 			isExists, _ := plugin.Exists(p)
 			if isExists {
-				if strings.HasPrefix(ref.DisplayImageRef(), constants_steampipe.SteampipeHubOCIBase) {
+				if strings.HasPrefix(ref.DisplayImageRef(), localconstants.SteampipeHubOCIBase) {
 					runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
 				} else {
 					error_helpers.ShowError(ctx, fmt.Errorf("cannot check updates for plugins not distributed via hub.steampipe.io, you should uninstall then reinstall the plugin to get the latest version"))
@@ -437,7 +436,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 				updateResults = append(updateResults, &display.PluginInstallReport{
 					Skipped:        true,
 					Plugin:         p,
-					SkipReason:     constants_steampipe.InstallMessagePluginNotInstalled,
+					SkipReason:     localconstants.InstallMessagePluginNotInstalled,
 					IsUpdateReport: true,
 				})
 			}
@@ -558,13 +557,13 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		}
 	}()
 
-	image, err := plugin.Install(ctx, pluginName, progress, ociinstaller_steampipe.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
+	image, err := plugin.Install(ctx, pluginName, progress, install.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
 	if err != nil {
 		msg := ""
 		_, name, stream := ociinstaller.NewSteampipeImageRef(pluginName).GetOrgNameAndStream()
 		if isPluginNotFoundErr(err) {
 			exitCode = constants.ExitCodePluginNotFound
-			msg = constants_steampipe.InstallMessagePluginNotFound
+			msg = localconstants.InstallMessagePluginNotFound
 		} else {
 			msg = err.Error()
 		}
@@ -652,7 +651,7 @@ func showPluginListOutput(pluginList []plugin.PluginListItem, failedPluginMap, m
 }
 
 func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res *error_helpers.ErrorAndWarnings) error {
-	headers := []string{"Installed", "Version", "Connections"}
+	headers := []string{"Installed", "AppVersion", "Connections"}
 	var rows [][]string
 	// List installed plugins in a table
 	if len(pluginList) != 0 {
@@ -676,7 +675,7 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants_steampipe.ConnectionErrorPluginFailedToStart})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), localconstants.ConnectionErrorPluginFailedToStart})
 			conns = []string{}
 		}
 
@@ -685,7 +684,7 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 			for _, conn := range item {
 				conns = append(conns, conn.Name)
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants_steampipe.InstallMessagePluginNotInstalled})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), localconstants.InstallMessagePluginNotInstalled})
 			conns = []string{}
 		}
 
@@ -721,7 +720,7 @@ func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, m
 		failed := failedPlugin{
 			Name:        p,
 			Connections: connections,
-			Reason:      constants_steampipe.ConnectionErrorPluginFailedToStart,
+			Reason:      localconstants.ConnectionErrorPluginFailedToStart,
 		}
 		output.Failed = append(output.Failed, failed)
 	}
@@ -734,7 +733,7 @@ func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, m
 		missing := failedPlugin{
 			Name:        p,
 			Connections: connections,
-			Reason:      constants_steampipe.InstallMessagePluginNotInstalled,
+			Reason:      localconstants.InstallMessagePluginNotInstalled,
 		}
 		output.Failed = append(output.Failed, missing)
 	}
@@ -858,9 +857,9 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 			continue
 		}
 
-		if state.State == constants.ConnectionStateError && state.Error() == constants_steampipe.ConnectionErrorPluginFailedToStart {
+		if state.State == constants.ConnectionStateError && state.Error() == localconstants.ConnectionErrorPluginFailedToStart {
 			failedPluginMap[state.Plugin] = append(failedPluginMap[state.Plugin], connection)
-		} else if state.State == constants.ConnectionStateError && state.Error() == constants_steampipe.ConnectionErrorPluginNotInstalled {
+		} else if state.State == constants.ConnectionStateError && state.Error() == localconstants.ConnectionErrorPluginNotInstalled {
 			missingPluginMap[state.Plugin] = append(missingPluginMap[state.Plugin], connection)
 		}
 
@@ -881,24 +880,23 @@ func getConnectionState(ctx context.Context) (steampipe_config_local.ConnectionS
 		return nil, res
 	}
 	defer client.Close(ctx)
-	// TODO KAI FIX ME
-	////
-	////conn, err := client.AcquireManagementConnection(ctx)
-	////if err != nil {
-	////	res.Error = err
-	////	return nil, res
-	////}
-	////defer conn.Release()
-	////
-	////// load connection state
-	////statushooks.SetStatus(ctx, "Loading connection state")
-	////connectionStateMap, err := steampipe_config_local.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilReady())
-	////if err != nil {
-	////	res.Error = err
-	////	return nil, res
-	////}
-	//
-	//return connectionStateMap, res
+
+	conn, err := client.AcquireManagementConnection(ctx)
+	if err != nil {
+		res.Error = err
+		return nil, res
+	}
+	defer conn.Close()
+
+	// load connection state
+	statushooks.SetStatus(ctx, "Loading connection state")
+	connectionStateMap, err := steampipe_config_local.LoadConnectionState(ctx, conn, steampipe_config_local.WithWaitUntilReady())
+	if err != nil {
+		res.Error = err
+		return nil, res
+	}
+
+	return connectionStateMap, res
 
 	return nil, nil
 }

@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
-	"github.com/turbot/steampipe/pkg/query/queryexecute"
 	"os"
 	"path"
 	"strings"
@@ -23,12 +21,15 @@ import (
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/queryresult"
+	"github.com/turbot/pipe-fittings/schema"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/pipe-fittings/workspace"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/query"
+	"github.com/turbot/steampipe/pkg/query/queryexecute"
 )
 
 func queryCmd() *cobra.Command {
@@ -70,7 +71,7 @@ Examples:
 
 	// Notes:
 	// * In the future we may add --csv and --json flags as shortcuts for --output
-	cmdconfig_steampipe.
+	cmdconfig.
 		OnCmd(cmd).
 		AddCloudFlags().
 		AddWorkspaceDatabaseFlag().
@@ -119,7 +120,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 	// if diagnostic mode is set, print out config and return
 	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
-		cmdconfig_steampipe.DisplayConfig()
+		localcmdconfig.DisplayConfig()
 		return
 	}
 
@@ -184,7 +185,7 @@ func validateQueryArgs(ctx context.Context, args []string) error {
 		return sperr.New("cannot export query results in interactive mode")
 	}
 	// if share or snapshot args are set, there must be a query specified
-	err := cmdconfig_steampipe.ValidateSnapshotArgs(ctx)
+	err := localcmdconfig.ValidateSnapshotArgs(ctx)
 	if err != nil {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return err
@@ -337,7 +338,7 @@ func ensureSnapshotQueryResource(name string, resolvedQuery *modconfig.ResolvedQ
 	shortName := "command_line_query"
 
 	// this is NOT a named query - create the query using RawSql
-	q := modconfig.NewQuery(&hcl.Block{Type: modconfig.BlockTypeQuery}, w.Mod, shortName).(*modconfig.Query)
+	q := modconfig.NewQuery(&hcl.Block{Type: schema.BlockTypeQuery}, w.Mod, shortName).(*modconfig.Query)
 	q.SQL = utils.ToStringPointer(resolvedQuery.RawSQL)
 	q.SetArgs(resolvedQuery.QueryArgs())
 	// add empty metadata

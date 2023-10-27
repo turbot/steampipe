@@ -17,7 +17,7 @@ import (
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/options"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
+	localconstants "github.com/turbot/steampipe/pkg/constants"
 )
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
@@ -373,7 +373,7 @@ func (c *SteampipeConfig) initializePlugins() {
 		if plugin == nil {
 			// set the Plugin to the image ref of the plugin
 			connection.Plugin = ociinstaller.NewSteampipeImageRef(connection.PluginAlias).DisplayImageRef()
-			connection.Error = fmt.Errorf(constants_steampipe.ConnectionErrorPluginNotInstalled)
+			connection.Error = fmt.Errorf(localconstants.ConnectionErrorPluginNotInstalled)
 			log.Printf("[INFO] connection '%s' requires plugin '%s' which is not loaded and has no instance config", connection.Name, connection.PluginAlias)
 			continue
 		}
@@ -389,7 +389,7 @@ func (c *SteampipeConfig) initializePlugins() {
 			connection.PluginPath = &pluginPath
 		} else {
 			// set the plugin error
-			connection.Error = fmt.Errorf(constants_steampipe.ConnectionErrorPluginNotInstalled)
+			connection.Error = fmt.Errorf(localconstants.ConnectionErrorPluginNotInstalled)
 			// leave instance unset
 			log.Printf("[INFO] connection '%s' requires plugin '%s' - this is not installed", connection.Name, plugin.Alias)
 		}

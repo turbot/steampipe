@@ -85,7 +85,7 @@ func CreateLocalDbConnectionPool(ctx context.Context, opts *CreateDbOptions) (*s
 	if err != nil {
 		return nil, err
 	}
-	// err = db_common.AddRootCertToConfig(&connConfig.Config, filepaths_steampipe.GetRootCertLocation())
+	// err = db_common.AddRootCertToConfig(&connConfig.Config, localfilepaths.GetRootCertLocation())
 	// if err != nil {
 	// 	return nil, err
 	// }

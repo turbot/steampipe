@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	localfilepaths "github.com/turbot/steampipe/pkg/filepaths"
 	"io/fs"
 	"log"
 	"os"
@@ -19,7 +20,6 @@ import (
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/utils"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 
 var (
@@ -63,7 +63,7 @@ const (
 func prepareBackup(ctx context.Context) (*string, error) {
 	found, location, err := findDifferentPgInstallation(ctx)
 	if err != nil {
-		log.Println("[TRACE] Error while finding different PG Version:", err)
+		log.Println("[TRACE] Error while finding different PG AppVersion:", err)
 		return nil, err
 	}
 	// nothing found - nothing to do
@@ -127,7 +127,7 @@ func killRunningDbInstance(ctx context.Context) error {
 func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 	cmd := pgDumpCmd(
 		ctx,
-		fmt.Sprintf("--file=%s", filepaths_steampipe.DatabaseBackupFilePath()),
+		fmt.Sprintf("--file=%s", localfilepaths.DatabaseBackupFilePath()),
 		fmt.Sprintf("--format=%s", backupFormat),
 		// of the public schema only
 		"--schema=public",
@@ -229,7 +229,7 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 
 // restoreDBBackup loads the back up file into the database
 func restoreDBBackup(ctx context.Context) error {
-	backupFilePath := filepaths_steampipe.DatabaseBackupFilePath()
+	backupFilePath := localfilepaths.DatabaseBackupFilePath()
 	if !files.FileExists(backupFilePath) {
 		// nothing to do here
 		return nil
@@ -314,7 +314,7 @@ func restoreDBBackup(ctx context.Context) error {
 func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listFile string) error {
 	cmd := pgRestoreCmd(
 		ctx,
-		filepaths_steampipe.DatabaseBackupFilePath(),
+		localfilepaths.DatabaseBackupFilePath(),
 		fmt.Sprintf("--format=%s", backupFormat),
 		// only the public schema is backed up
 		"--schema=public",
@@ -369,7 +369,7 @@ func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []str
 func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
 	cmd := pgRestoreCmd(
 		ctx,
-		filepaths_steampipe.DatabaseBackupFilePath(),
+		localfilepaths.DatabaseBackupFilePath(),
 		fmt.Sprintf("--format=%s", backupFormat),
 		// only the public schema is backed up
 		"--schema=public",
@@ -420,7 +420,7 @@ func retainBackup(ctx context.Context) error {
 	textBackupFilePath := filepath.Join(backupDir, textBackupRetentionFileName)
 
 	log.Println("[TRACE] moving database back up to", binaryBackupFilePath)
-	if err := utils.MoveFile(filepaths_steampipe.DatabaseBackupFilePath(), binaryBackupFilePath); err != nil {
+	if err := utils.MoveFile(localfilepaths.DatabaseBackupFilePath(), binaryBackupFilePath); err != nil {
 		return err
 	}
 	log.Println("[TRACE] converting database back up to", textBackupFilePath)
@@ -444,7 +444,7 @@ func retainBackup(ctx context.Context) error {
 func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(
 		ctx,
-		filepaths_steampipe.PgDumpBinaryExecutablePath(),
+		localfilepaths.PgDumpBinaryExecutablePath(),
 		args...,
 	)
 	cmd.Env = append(os.Environ(), "PGSSLMODE=disable")
@@ -456,7 +456,7 @@ func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
 func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(
 		ctx,
-		filepaths_steampipe.PgRestoreBinaryExecutablePath(),
+		localfilepaths.PgRestoreBinaryExecutablePath(),
 		args...,
 	)
 	cmd.Env = append(os.Environ(), "PGSSLMODE=disable")

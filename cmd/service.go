@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
+	localfilepaths "github.com/turbot/steampipe/pkg/filepaths"
 	"log"
 	"os"
 	"os/signal"
@@ -22,7 +22,6 @@ import (
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
@@ -61,7 +60,7 @@ Run Steampipe as a local service, exposing it as a database endpoint for
 connection from any Postgres compatible database client.`,
 	}
 
-	cmdconfig_steampipe.
+	cmdconfig.
 		OnCmd(cmd).
 		AddModLocationFlag().
 		AddBoolFlag(constants.ArgHelp, false, "Help for service start", cmdconfig.FlagOptions.WithShortHand("h")).
@@ -102,7 +101,7 @@ func serviceStatusCmd() *cobra.Command {
 Report current status of the Steampipe database service.`,
 	}
 
-	cmdconfig_steampipe.OnCmd(cmd).
+	cmdconfig.OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, false, "Help for service status", cmdconfig.FlagOptions.WithShortHand("h")).
 		// default is false and hides the database user password from service start prompt
 		AddBoolFlag(constants.ArgServiceShowPassword, false, "View database password for connecting from another machine").
@@ -121,7 +120,7 @@ func serviceStopCmd() *cobra.Command {
 		Long:  `Stop the Steampipe service.`,
 	}
 
-	cmdconfig_steampipe.
+	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, false, "Help for service stop", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddBoolFlag(constants.ArgForce, false, "Forces all services to shutdown, releasing all open connections and ports")
@@ -139,7 +138,7 @@ func serviceRestartCmd() *cobra.Command {
 		Long:  `Restart the Steampipe service.`,
 	}
 
-	cmdconfig_steampipe.
+	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag(constants.ArgHelp, false, "Help for service restart", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddBoolFlag(constants.ArgForce, false, "Forces the service to restart, releasing all open connections and ports")
@@ -647,7 +646,7 @@ func showAllStatus(ctx context.Context) {
 
 func getServiceProcessDetails(process *psutils.Process) (string, string, string, db_local.StartListenType) {
 	cmdLine, _ := process.CmdlineSlice()
-	installDir := strings.TrimSuffix(cmdLine[0], filepaths_steampipe.ServiceExecutableRelativeLocation())
+	installDir := strings.TrimSuffix(cmdLine[0], localfilepaths.ServiceExecutableRelativeLocation())
 	var port string
 	var listenType db_local.StartListenType
 

@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
+	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	"os"
 	"os/exec"
 	"runtime"
@@ -16,6 +19,7 @@ import (
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/cmd"
+	steampipe_version "github.com/turbot/steampipe/pkg/version"
 )
 
 var exitCode int = constants.ExitCodeSuccessful
@@ -34,6 +38,9 @@ func main() {
 		utils.DisplayProfileData()
 		os.Exit(exitCode)
 	}()
+
+	// set app specific constants defined in pipe-fittings
+	appInit()
 
 	// ensure steampipe is not being run as root
 	checkRoot(ctx)
@@ -100,7 +107,7 @@ func checkWsl1(ctx context.Context) {
 			error_helpers.ShowErrorWithMessage(ctx, err, "failed to check system kernel version")
 			return
 		}
-		// if the kernel version >= 4.19, it's WSL Version 2.
+		// if the kernel version >= 4.19, it's WSL AppVersion 2.
 		kernel_ver, err := version.NewVersion("4.19")
 		if err != nil {
 			error_helpers.ShowErrorWithMessage(ctx, err, "checking system kernel version")
@@ -146,4 +153,24 @@ func checkOSXVersion(ctx context.Context) {
 		error_helpers.ShowError(ctx, fmt.Errorf("Steampipe requires MacOS 10.15 (Catalina) and above, please upgrade and try again."))
 		os.Exit(constants.ExitCodeInvalidExecutionEnvironment)
 	}
+}
+
+// set app specific constants defined in pipe-fittings
+func appInit() {
+	// set the default install dir
+	// set the default install dir
+	installDir, err := files.Tildefy("~/.steampipe")
+	if err != nil {
+		panic(err)
+	}
+	constants.DefaultInstallDir = installDir
+	constants.AppName = "steampipe"
+	constants.ClientConnectionAppNamePrefix = "steampipe_client"
+	constants.ServiceConnectionAppNamePrefix = "steampipe_service"
+	constants.ClientSystemConnectionAppNamePrefix = "steampipe_client_system"
+	constants.AppVersion = steampipe_version.SteampipeVersion
+
+	// set the command pre and post hooks
+	cmdconfig.CustomPreRunHook = localcmdconfig.PreRunHook
+	cmdconfig.CustomPostRunHook = localcmdconfig.PostRunHook
 }

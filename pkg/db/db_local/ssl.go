@@ -7,7 +7,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
+	localfilepaths "github.com/turbot/steampipe/pkg/filepaths"
 	"log"
 	"math/big"
 	"os"
@@ -61,7 +61,7 @@ func removeExpiringSelfIssuedCertificates() error {
 }
 
 func isRootCertificateSelfIssued() bool {
-	rootCertificate, err := sslio.ParseCertificateInLocation(filepaths_steampipe.GetRootCertLocation())
+	rootCertificate, err := sslio.ParseCertificateInLocation(localfilepaths.GetRootCertLocation())
 	if err != nil {
 		return false
 	}
@@ -69,7 +69,7 @@ func isRootCertificateSelfIssued() bool {
 }
 
 func isServerCertificateSelfIssued() bool {
-	serverCertificate, err := sslio.ParseCertificateInLocation(filepaths_steampipe.GetServerCertLocation())
+	serverCertificate, err := sslio.ParseCertificateInLocation(localfilepaths.GetServerCertLocation())
 	if err != nil {
 		return false
 	}
@@ -78,7 +78,7 @@ func isServerCertificateSelfIssued() bool {
 
 // certificatesExist checks if the root and server certificate and key files exist
 func certificatesExist() bool {
-	return filehelpers.FileExists(filepaths_steampipe.GetRootCertLocation()) && filehelpers.FileExists(filepaths_steampipe.GetServerCertLocation())
+	return filehelpers.FileExists(localfilepaths.GetRootCertLocation()) && filehelpers.FileExists(localfilepaths.GetServerCertLocation())
 }
 
 // removeServerCertificate removes the server certificate certificates so it will be regenerated
@@ -86,10 +86,10 @@ func removeServerCertificate() error {
 	utils.LogTime("db_local.RemoveServerCertificate start")
 	defer utils.LogTime("db_local.RemoveServerCertificate end")
 
-	if err := os.Remove(filepaths_steampipe.GetServerCertLocation()); err != nil {
+	if err := os.Remove(localfilepaths.GetServerCertLocation()); err != nil {
 		return err
 	}
-	return os.Remove(filepaths_steampipe.GetServerCertKeyLocation())
+	return os.Remove(localfilepaths.GetServerCertKeyLocation())
 }
 
 // removeAllCertificates removes root and server certificates so that they can be regenerated
@@ -98,7 +98,7 @@ func removeAllCertificates() error {
 	defer utils.LogTime("db_local.RemoveAllCertificates end")
 
 	// remove the root cert (but not key)
-	if err := os.Remove(filepaths_steampipe.GetRootCertLocation()); err != nil {
+	if err := os.Remove(localfilepaths.GetRootCertLocation()); err != nil {
 		return err
 	}
 	// remove the server cert and key
@@ -109,7 +109,7 @@ func removeAllCertificates() error {
 func isRootCertificateExpiring() bool {
 	utils.LogTime("db_local.isRootCertificateExpiring start")
 	defer utils.LogTime("db_local.isRootCertificateExpiring end")
-	rootCertificate, err := sslio.ParseCertificateInLocation(filepaths_steampipe.GetRootCertLocation())
+	rootCertificate, err := sslio.ParseCertificateInLocation(localfilepaths.GetRootCertLocation())
 	if err != nil {
 		return false
 	}
@@ -120,7 +120,7 @@ func isRootCertificateExpiring() bool {
 func isServerCertificateExpiring() bool {
 	utils.LogTime("db_local.ValidateServerCertificates start")
 	defer utils.LogTime("db_local.ValidateServerCertificates end")
-	serverCertificate, err := sslio.ParseCertificateInLocation(filepaths_steampipe.GetServerCertLocation())
+	serverCertificate, err := sslio.ParseCertificateInLocation(localfilepaths.GetServerCertLocation())
 	if err != nil {
 		return false
 	}
@@ -143,7 +143,7 @@ func ensureCertificates() (err error) {
 		if err != nil {
 			return err
 		}
-		rootCertificate, err = sslio.ParseCertificateInLocation(filepaths_steampipe.GetRootCertLocation())
+		rootCertificate, err = sslio.ParseCertificateInLocation(localfilepaths.GetRootCertLocation())
 	} else {
 		// otherwise generate them
 		rootCertificate, rootPrivateKey, err = generateRootCertificate()
@@ -158,12 +158,12 @@ func ensureCertificates() (err error) {
 
 // rootCertificateAndKeyExists checks if the root certificate ands private key files exist
 func rootCertificateAndKeyExists() bool {
-	return filehelpers.FileExists(filepaths_steampipe.GetRootCertLocation()) && filehelpers.FileExists(filepaths_steampipe.GetRootCertKeyLocation())
+	return filehelpers.FileExists(localfilepaths.GetRootCertLocation()) && filehelpers.FileExists(localfilepaths.GetRootCertKeyLocation())
 }
 
 // serverCertificateAndKeyExist checks if the server certificate ands private key files exist
 func serverCertificateAndKeyExist() bool {
-	return filehelpers.FileExists(filepaths_steampipe.GetServerCertLocation()) && filehelpers.FileExists(filepaths_steampipe.GetServerCertKeyLocation())
+	return filehelpers.FileExists(localfilepaths.GetServerCertLocation()) && filehelpers.FileExists(localfilepaths.GetServerCertKeyLocation())
 }
 
 // isCerticateExpiring checks whether the certificate expires within a predefined CertExpiryTolerance period (defined above)
@@ -206,7 +206,7 @@ func generateRootCertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 		return nil, nil, err
 	}
 
-	if err := sslio.WriteCertificate(filepaths_steampipe.GetRootCertLocation(), caCertificate); err != nil {
+	if err := sslio.WriteCertificate(localfilepaths.GetRootCertLocation(), caCertificate); err != nil {
 		log.Println("[WARN] failed to save the certificate")
 		return nil, nil, err
 	}
@@ -243,11 +243,11 @@ func generateServerCertificate(caCertificateData *x509.Certificate, caPrivateKey
 		return err
 	}
 
-	if err := sslio.WriteCertificate(filepaths_steampipe.GetServerCertLocation(), serverCertBytes); err != nil {
+	if err := sslio.WriteCertificate(localfilepaths.GetServerCertLocation(), serverCertBytes); err != nil {
 		log.Println("[INFO] Failed to save server certificate")
 		return err
 	}
-	if err := sslio.WritePrivateKey(filepaths_steampipe.GetServerCertKeyLocation(), serverPrivKey); err != nil {
+	if err := sslio.WritePrivateKey(localfilepaths.GetServerCertKeyLocation(), serverPrivKey); err != nil {
 		log.Println("[INFO] Failed to save server private key")
 		return err
 	}
@@ -286,9 +286,9 @@ func dsnSSLParams() map[string]string {
 		// Since we are using the Root Certificate, 'require' is overridden with 'verify-ca' anyway
 		return map[string]string{
 			"sslmode":     "verify-ca",
-			"sslrootcert": filepaths_steampipe.GetRootCertLocation(),
-			"sslcert":     filepaths_steampipe.GetServerCertLocation(),
-			"sslkey":      filepaths_steampipe.GetServerCertKeyLocation(),
+			"sslrootcert": localfilepaths.GetRootCertLocation(),
+			"sslcert":     localfilepaths.GetServerCertLocation(),
+			"sslkey":      localfilepaths.GetServerCertKeyLocation(),
 		}
 	}
 	return map[string]string{"sslmode": "disable"}
@@ -309,7 +309,7 @@ func ensureRootPrivateKey() (*rsa.PrivateKey, error) {
 		log.Println("[WARN] private key creation failed for ca failed")
 		return nil, err
 	}
-	if err := sslio.WritePrivateKey(filepaths_steampipe.GetRootCertKeyLocation(), caPrivateKey); err != nil {
+	if err := sslio.WritePrivateKey(localfilepaths.GetRootCertKeyLocation(), caPrivateKey); err != nil {
 		log.Println("[WARN] failed to save root private key")
 		return nil, err
 	}
@@ -317,7 +317,7 @@ func ensureRootPrivateKey() (*rsa.PrivateKey, error) {
 }
 
 func loadRootPrivateKey() (*rsa.PrivateKey, error) {
-	location := filepaths_steampipe.GetRootCertKeyLocation()
+	location := localfilepaths.GetRootCertKeyLocation()
 
 	priv, err := os.ReadFile(location)
 	if err != nil {

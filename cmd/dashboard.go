@@ -24,11 +24,12 @@ import (
 	"github.com/turbot/pipe-fittings/export"
 	"github.com/turbot/pipe-fittings/initialisation"
 	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/schema"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/pipe-fittings/workspace"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
-	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
+	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	"gopkg.in/olahol/melody.v1"
 )
 
@@ -44,7 +45,7 @@ func dashboardCmd() *cobra.Command {
 The current mod is the working directory, or the directory specified by the --mod-location flag.`,
 	}
 
-	cmdconfig_steampipe.OnCmd(cmd).
+	cmdconfig.OnCmd(cmd).
 		AddCloudFlags().
 		AddWorkspaceDatabaseFlag().
 		AddModLocationFlag().
@@ -103,7 +104,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 
 	// if diagnostic mode is set, print out config and return
 	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
-		cmdconfig_steampipe.DisplayConfig()
+		localcmdconfig.DisplayConfig()
 		return
 	}
 
@@ -191,7 +192,7 @@ func validateDashboardArgs(ctx context.Context, args []string) (string, error) {
 		dashboardName = args[0]
 	}
 
-	err := cmdconfig_steampipe.ValidateSnapshotArgs(ctx)
+	err := localcmdconfig.ValidateSnapshotArgs(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -469,7 +470,7 @@ func collectInputs() (map[string]interface{}, error) {
 			return nil, fmt.Errorf("the dashboard-input option '%s' is provided more than once", name)
 		}
 		// add `input. to start of name
-		key := modconfig.BuildModResourceName(modconfig.BlockTypeInput, name)
+		key := modconfig.BuildModResourceName(schema.BlockTypeInput, name)
 		res[key] = rawVal
 	}
 

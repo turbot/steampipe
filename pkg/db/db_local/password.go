@@ -2,13 +2,13 @@ package db_local
 
 import (
 	"encoding/json"
+	localfilepaths "github.com/turbot/steampipe/pkg/filepaths"
 	"os"
 	"strings"
 
 	"github.com/google/uuid"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/utils"
-	"github.com/turbot/steampipe/pkg/filepaths_steampipe"
 )
 
 // Passwords :: structure for working with DB passwords
@@ -18,21 +18,21 @@ type Passwords struct {
 }
 
 func writePasswordFile(password string) error {
-	return os.WriteFile(filepaths_steampipe.GetPasswordFileLocation(), []byte(password), 0600)
+	return os.WriteFile(localfilepaths.GetPasswordFileLocation(), []byte(password), 0600)
 }
 
 // readPasswordFile reads the password file and returns it contents.
 // the the password file could not be found, then it generates a new
 // password and writes it to the password file, before returning it
 func readPasswordFile() (string, error) {
-	if !filehelpers.FileExists(filepaths_steampipe.GetPasswordFileLocation()) {
+	if !filehelpers.FileExists(localfilepaths.GetPasswordFileLocation()) {
 		p := generatePassword()
 		if err := writePasswordFile(p); err != nil {
 			return "", err
 		}
 		return p, nil
 	}
-	contentBytes, err := os.ReadFile(filepaths_steampipe.GetPasswordFileLocation())
+	contentBytes, err := os.ReadFile(localfilepaths.GetPasswordFileLocation())
 	if err != nil {
 		return "", err
 	}
@@ -55,19 +55,19 @@ func generatePassword() string {
 func migrateLegacyPasswordFile() error {
 	utils.LogTime("db_local.migrateLegacyPasswordFile start")
 	defer utils.LogTime("db_local.migrateLegacyPasswordFile end")
-	if filehelpers.FileExists(filepaths_steampipe.GetLegacyPasswordFileLocation()) {
+	if filehelpers.FileExists(localfilepaths.GetLegacyPasswordFileLocation()) {
 		p, err := getLegacyPasswords()
 		if err != nil {
 			return err
 		}
-		os.Remove(filepaths_steampipe.GetLegacyPasswordFileLocation())
+		os.Remove(localfilepaths.GetLegacyPasswordFileLocation())
 		return writePasswordFile(p.Steampipe)
 	}
 	return nil
 }
 
 func getLegacyPasswords() (*Passwords, error) {
-	contentBytes, err := os.ReadFile(filepaths_steampipe.GetLegacyPasswordFileLocation())
+	contentBytes, err := os.ReadFile(localfilepaths.GetLegacyPasswordFileLocation())
 	if err != nil {
 		return nil, err
 	}

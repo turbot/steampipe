@@ -1,7 +1,7 @@
 package plugin
 
 import (
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
+	localconstants "github.com/turbot/steampipe/pkg/constants"
 	"runtime"
 
 	"github.com/turbot/pipe-fittings/constants"
@@ -23,7 +23,7 @@ func SkipUpdate(report VersionCheckReport) (bool, string) {
 	}
 
 	// 3) Otherwise skip
-	return true, constants_steampipe.InstallMessagePluginLatestAlreadyInstalled
+	return true, localconstants.InstallMessagePluginLatestAlreadyInstalled
 }
 
 // check to see if steampipe is running as a Mac/M1 build

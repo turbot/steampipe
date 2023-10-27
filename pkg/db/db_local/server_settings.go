@@ -9,9 +9,9 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
-	"github.com/turbot/pipe-fittings/version"
 	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
 	"github.com/turbot/steampipe/pkg/serversettings"
+	"github.com/turbot/steampipe/pkg/version"
 )
 
 // setupServerSettingsTable creates a new read-only table with information in the current

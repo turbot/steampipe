@@ -12,7 +12,7 @@ import (
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/utils"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
+	localconstants "github.com/turbot/steampipe/pkg/constants"
 	"golang.org/x/exp/maps"
 )
 
@@ -42,7 +42,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 		//// if plugin is not installed, the path will be returned as empty
 		//if pluginPath == "" {
 		//	missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
-		//	connection.Error = fmt.Errorf(constants_steampipe.ConnectionErrorPluginNotInstalled)
+		//	connection.Error = fmt.Errorf(localconstants.ConnectionErrorPluginNotInstalled)
 		//}
 
 		// if the connection is in error, create an error connection state
@@ -52,7 +52,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 			requiredState[connection.Name] = newErrorConnectionState(connection)
 			// if error is a missing plugin, add to missingPluginMap
 			// this will be used to build missing plugin warnings
-			if connection.Error.Error() == constants_steampipe.ConnectionErrorPluginNotInstalled {
+			if connection.Error.Error() == localconstants.ConnectionErrorPluginNotInstalled {
 				missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
 			} else {
 				// otherwise add error to result as warning, so we display it

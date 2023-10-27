@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/schema"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"log"
 	"strings"
@@ -154,13 +155,13 @@ func (c *InteractiveClient) initialiseQuerySuggestions() {
 		itemType := item.BlockType()
 
 		// only include global inputs
-		if itemType == modconfig.BlockTypeInput {
+		if itemType == schema.BlockTypeInput {
 			if _, ok := c.initData.Workspace.Mod.ResourceMaps.GlobalDashboardInputs[item.Name()]; !ok {
 				return
 			}
 		}
 		// special case for query
-		if itemType == modconfig.BlockTypeQuery {
+		if itemType == schema.BlockTypeQuery {
 			itemType = "named query"
 		}
 		if isLocal {

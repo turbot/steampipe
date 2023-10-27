@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_client"
 	"log"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -11,14 +12,14 @@ import (
 	"github.com/turbot/pipe-fittings/db_client"
 	"github.com/turbot/pipe-fittings/db_common"
 
-"github.com/turbot/pipe-fittings/error_helpers"
-"github.com/turbot/pipe-fittings/utils"
-pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/utils"
+	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 )
 
 // LocalDbClient wraps over DbClient
 type LocalDbClient struct {
-	db_client.DbClient
+	steampipe_db_client.SteampipeDbClient
 	notificationListener *db_common.NotificationListener
 	invoker              constants.Invoker
 }
@@ -82,7 +83,9 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_c
 		return nil, err
 	}
 
-	client := &LocalDbClient{DbClient: *dbClient, invoker: invoker}
+	// TODO kai onconnectioncallback
+	steampipeClient, err := steampipe_db_client.NewSteampipeDbClient(ctx, dbClient, nil)
+	client := &LocalDbClient{SteampipeDbClient: *steampipeClient, invoker: invoker}
 	log.Printf("[INFO] created local client %p", client)
 
 	if err := client.initNotificationListener(ctx); err != nil {

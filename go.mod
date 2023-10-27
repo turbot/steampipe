@@ -4,66 +4,67 @@ go 1.21.0
 
 toolchain go1.21.3
 
-replace github.com/turbot/pipe-fittings => /Users/kai/Dev/github/turbot/pipe-fittings
+//replace github.com/turbot/pipe-fittings => /Users/kai/Dev/github/turbot/pipe-fittings
+//replace github.com/turbot/go-kit => /Users/kai/Dev/github/turbot/go-kit
 
 require (
-	github.com/Machiel/slugify v1.0.1
+	github.com/Machiel/slugify v1.0.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/alecthomas/chroma v0.10.0
-	github.com/bgentry/speakeasy v0.1.0
-	github.com/briandowns/spinner v1.23.0
+	github.com/bgentry/speakeasy v0.1.0 // indirect
+	github.com/briandowns/spinner v1.23.0 // indirect
 	github.com/c-bata/go-prompt v0.2.6
-	github.com/containerd/containerd v1.7.7
+	github.com/containerd/containerd v1.7.7 // indirect
 	github.com/fatih/color v1.15.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gertd/go-pluralize v0.2.1
-	github.com/gin-contrib/static v0.0.1
-	github.com/gin-gonic/gin v1.9.1
-	github.com/go-git/go-git/v5 v5.9.0
+	github.com/gin-contrib/static v0.0.1 // indirect
+	github.com/gin-gonic/gin v1.9.1 // indirect
+	github.com/go-git/go-git/v5 v5.9.0 // indirect
 	github.com/google/uuid v1.3.1
-	github.com/hashicorp/go-cleanhttp v0.5.2
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.5.0
 	github.com/hashicorp/go-plugin v1.5.2
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hcl/v2 v2.18.1
-	github.com/jackc/pgconn v1.14.1
+	github.com/jackc/pgconn v1.14.1 // indirect
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/jedib0t/go-pretty/v6 v6.4.8
 	github.com/karrick/gows v0.3.0
-	github.com/logrusorgru/aurora v2.0.3+incompatible
+	github.com/logrusorgru/aurora v2.0.3+incompatible // indirect
 	github.com/mattn/go-isatty v0.0.19
-	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
-	github.com/olekukonko/tablewriter v0.0.5
-	github.com/opencontainers/image-spec v1.1.0-rc5
-	github.com/oras-project/oras-credentials-go v0.3.0
+	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
+	github.com/olekukonko/tablewriter v0.0.5 // indirect
+	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
+	github.com/oras-project/oras-credentials-go v0.3.0 // indirect
 	github.com/otiai10/copy v1.14.0
-	github.com/pkg/errors v0.9.1
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sethvargo/go-retry v0.2.4
-	github.com/shiena/ansicolor v0.0.0-20230509054315-a9deabde6e02
+	github.com/shiena/ansicolor v0.0.0-20230509054315-a9deabde6e02 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cobra v1.7.0
-	github.com/spf13/pflag v1.0.5
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.17.0
-	github.com/stevenle/topsort v0.2.0
-	github.com/turbot/go-kit v0.9.0-rc.1
-	// pp
-	github.com/turbot/pipe-fittings v0.0.0-20231018113136-54009a2ffc95
-	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
+	github.com/stevenle/topsort v0.2.0 // indirect
+	github.com/turbot/go-kit v0.9.0-rc.2
+	// pp-rebuilt
+	github.com/turbot/pipe-fittings v0.0.0-20231027162921-19aad2af5fe4
+	github.com/turbot/steampipe-cloud-sdk-go v0.6.0 // indirect
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.6.2
 	// pp
-	github.com/turbot/terraform-components v0.0.0-20231017100940-c8df9a3a9aab
-	github.com/xlab/treeprint v1.2.0
+	github.com/turbot/terraform-components v0.0.0-20231017100940-c8df9a3a9aab // indirect
+	github.com/xlab/treeprint v1.2.0 // indirect
 	github.com/zclconf/go-cty v1.14.1
-	github.com/zclconf/go-cty-yaml v1.0.3
+	github.com/zclconf/go-cty-yaml v1.0.3 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/sync v0.4.0
 	golang.org/x/text v0.13.0
 	google.golang.org/grpc v1.58.2
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
-	oras.land/oras-go/v2 v2.3.0
-	sigs.k8s.io/yaml v1.3.0
+	oras.land/oras-go/v2 v2.3.0 // indirect
+	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
 require (
@@ -142,7 +143,6 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.2 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -225,7 +225,7 @@ require (
 )
 
 require (
-	github.com/Masterminds/sprig/v3 v3.2.3
+	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect

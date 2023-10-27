@@ -2,7 +2,7 @@ package steampipe_config_local
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/constants_steampipe"
+	localconstants "github.com/turbot/steampipe/pkg/constants"
 	"log"
 	"strings"
 
@@ -198,7 +198,7 @@ func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionRes
 		for _, c := range connectionsToCreate {
 			if c.Plugin == failedPluginInstance {
 
-				res.AddFailedConnection(c.Name, constants_steampipe.ConnectionErrorPluginFailedToStart)
+				res.AddFailedConnection(c.Name, localconstants.ConnectionErrorPluginFailedToStart)
 			}
 		}
 	}

@@ -2,6 +2,7 @@ package connection
 
 import (
 	"context"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"log"
 
 	"github.com/fsnotify/fsnotify"
@@ -10,7 +11,6 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/filepaths"
-	"github.com/turbot/steampipe/pkg/cmdconfig_steampipe"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 )
 
@@ -99,7 +99,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	// Workspace Profile does not have any setting which can alter
 	// behavior in service mode (namely search path). Therefore, it is safe
 	// to use the GlobalConfig here and ignore Workspace Profile in general
-	cmdconfig_steampipe.SetDefaultsFromConfig(steampipe_config_local.GlobalConfig.ConfigMap())
+	cmdconfig.SetDefaultsFromConfig(steampipe_config_local.GlobalConfig.ConfigMap())
 
 	log.Printf("[INFO] calling RefreshConnections asyncronously")
 
