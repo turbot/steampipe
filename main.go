@@ -169,8 +169,10 @@ func appInit() {
 	constants.ServiceConnectionAppNamePrefix = "steampipe_service"
 	constants.ClientSystemConnectionAppNamePrefix = "steampipe_client_system"
 	constants.AppVersion = steampipe_version.SteampipeVersion
+	constants.DefaultWorkspaceDatabase = "local"
 
 	// set the command pre and post hooks
 	cmdconfig.CustomPreRunHook = localcmdconfig.PreRunHook
 	cmdconfig.CustomPostRunHook = localcmdconfig.PostRunHook
+
 }

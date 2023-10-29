@@ -4,7 +4,7 @@ go 1.21.0
 
 toolchain go1.21.3
 
-//replace github.com/turbot/pipe-fittings => /Users/kai/Dev/github/turbot/pipe-fittings
+replace github.com/turbot/pipe-fittings => /Users/kai/Dev/github/turbot/pipe-fittings
 //replace github.com/turbot/go-kit => /Users/kai/Dev/github/turbot/go-kit
 
 require (
