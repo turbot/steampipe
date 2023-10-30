@@ -8,7 +8,7 @@ ARG TARGETARCH
 RUN adduser --system --disabled-login --ingroup 0 --gecos "steampipe user" --shell /bin/false --uid 9193 steampipe
 
 # updates and installs - 'wget' for downloading steampipe, 'less' for paging in 'steampipe query' interactive mode
-RUN apt-get update -y && apt-get install -y wget less
+RUN apt-get update -y && apt-get install -y wget less && rm -rf /var/lib/apt/lists/*
 
 # download the release as given in TARGETVERSION and TARGETARCH
 RUN echo \
