@@ -32,17 +32,8 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_c
 	log.Printf("[INFO] GetLocalClient")
 	defer log.Printf("[INFO] GetLocalClient complete")
 
-	listenAddresses := StartListenType(ListenTypeLocal).ToListenAddresses()
-	port := viper.GetInt(constants.ArgDatabasePort)
-	log.Println(fmt.Sprintf("[TRACE] GetLocalClient - listenAddresses=%s, port=%d", listenAddresses, port))
-	// start db if necessary
-	if err := EnsureDBInstalled(ctx); err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
-	}
-
-	log.Printf("[INFO] StartServices")
-	startResult := StartServices(ctx, listenAddresses, port, invoker)
-	if startResult.Error != nil {
+	startResult := EnsureService(ctx, invoker)
+	if startResult.ErrorAndWarnings.Error != nil {
 		return nil, &startResult.ErrorAndWarnings
 	}
 
@@ -65,6 +56,19 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_c
 	}
 
 	return client, &startResult.ErrorAndWarnings
+}
+
+func EnsureService(ctx context.Context, invoker constants.Invoker) *StartResult {
+	listenAddresses := StartListenType(ListenTypeLocal).ToListenAddresses()
+	port := viper.GetInt(constants.ArgDatabasePort)
+	log.Println(fmt.Sprintf("[TRACE] GetLocalClient - listenAddresses=%s, port=%d", listenAddresses, port))
+	// start db if necessary
+	if err := EnsureDBInstalled(ctx); err != nil {
+		return newErrorStartResult(err)
+	}
+
+	log.Printf("[INFO] StartServices")
+	return StartServices(ctx, listenAddresses, port, invoker)
 }
 
 // newLocalClient verifies that the local database instance is running and returns a LocalDbClient to interact with it

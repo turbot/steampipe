@@ -260,7 +260,15 @@ func getInitData(ctx context.Context) *initialisation.InitData {
 	i := initialisation.NewInitData()
 	i.Workspace = w
 	i.Result.Warnings = errAndWarnings.Warnings
-	i.Init(ctx, constants.InvokerDashboard)
+
+	// start service if needed
+	ew := localcmdconfig.EnsureService(ctx, constants.InvokerDashboard)
+	if ew.GetError() != nil {
+		i.Result.Error = ew.Error
+	}
+	i.Result.AddWarnings(ew.Warnings...)
+
+	i.Init(ctx)
 
 	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
 		i.RegisterExporters(dashboardExporters()...)

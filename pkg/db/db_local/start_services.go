@@ -37,10 +37,29 @@ type StartResult struct {
 	PluginManager      *pluginmanager.PluginManagerClient
 }
 
+func newErrorStartResult(err error) *StartResult {
+	return &StartResult{
+		ErrorAndWarnings: *error_helpers.NewErrorsAndWarning(err),
+		Status:           ServiceFailedToStart,
+	}
+}
+
 func (r *StartResult) SetError(err error) *StartResult {
 	r.Error = err
 	r.Status = ServiceFailedToStart
 	return r
+}
+
+func (r *StartResult) ConnectionString() string {
+	dbState := r.DbState
+	return fmt.Sprintf(
+		"postgres://%v:%v@%v:%v/%v",
+		dbState.User,
+		dbState.Password,
+		utils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
+		dbState.Port,
+		dbState.Database,
+	)
 }
 
 // StartDbStatus is a pseudoEnum for outcomes of starting the db
@@ -309,7 +328,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 		return res.SetError(err)
 	}
 
-	err = ensureService(ctx, databaseName)
+	err = ensureDbSetup(ctx, databaseName)
 	if err != nil {
 		return res.SetError(err)
 	}
@@ -325,7 +344,8 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 	return res
 }
 
-func ensureService(ctx context.Context, databaseName string) error {
+// ensure the fdw foreign server and required postgres extensions are installed
+func ensureDbSetup(ctx context.Context, databaseName string) error {
 	pool, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err

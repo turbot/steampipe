@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 	"fmt"
+	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/db/steampipe_db_client"
 	"path/filepath"
 	"time"
@@ -130,10 +131,15 @@ func (i *InitData) init(ctx context.Context, args []string) {
 	i.cancelInitialisation = cancel
 	i.Queries = resolvedQueries
 
+	ew := localcmdconfig.EnsureService(ctx, constants.InvokerQuery)
+	if ew.GetError() != nil {
+		i.Result.Error = ew.Error
+	}
+	i.Result.AddWarnings(ew.Warnings...)
+
+	// TODO KAI DO POOL OVERRIDES STILL WORK?
 	// and call base init
-	i.InitData.Init(
-		ctx,
-		constants.InvokerQuery,
+	i.InitData.Init(ctx,
 		db_client.WithUserPoolOverride(db_client.PoolOverrides{
 			Size:        1,
 			MaxLifeTime: 24 * time.Hour,
@@ -143,10 +149,11 @@ func (i *InitData) init(ctx context.Context, args []string) {
 			// we need two connections here, since one of them will be reserved
 			// by the notification listener in the interactive prompt
 			Size: 2,
-		}),
-	)
+		}))
 
 	// TODO KAI OnConnectionCallback
 	// now wrap the Client
-	i.Client, err = steampipe_db_client.NewSteampipeDbClient(ctx, i.InitData.Client, nil)
+	if i.Result.Error == nil {
+		i.Client, i.Result.Error = steampipe_db_client.NewSteampipeDbClient(ctx, i.InitData.Client, nil)
+	}
 }

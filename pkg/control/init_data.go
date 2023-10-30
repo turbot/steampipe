@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	controldisplay2 "github.com/turbot/pipe-fittings/controldisplay"
+	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	"net/url"
 	"strings"
 
@@ -84,8 +85,14 @@ func NewInitData(ctx context.Context) *InitData {
 
 	i.setControlFilterClause()
 
+	ew := localcmdconfig.EnsureService(ctx, constants.InvokerCheck)
+	if ew.GetError() != nil {
+		i.Result.Error = ew.Error
+	}
+	i.Result.AddWarnings(ew.Warnings...)
+
 	// initialize
-	i.InitData.Init(ctx, constants.InvokerCheck)
+	i.InitData.Init(ctx)
 
 	return i
 }
