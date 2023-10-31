@@ -4,22 +4,22 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	utils2 "github.com/turbot/pipe-fittings/utils"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/constants/runtime"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 )
 
-func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
+func getLocalSteampipeConnectionString(opts *DbOptions) (string, error) {
 	if opts == nil {
-		opts = &CreateDbOptions{}
+		opts = &DbOptions{}
 	}
 	utils.LogTime("db.createDbClient start")
 	defer utils.LogTime("db.createDbClient end")
@@ -50,7 +50,7 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 	}
 
 	psqlInfoMap := map[string]string{
-		"host":   utils2.GetFirstListenAddress(info.ResolvedListenAddresses),
+		"host":   utils.GetFirstListenAddress(info.ResolvedListenAddresses),
 		"port":   fmt.Sprintf("%d", info.Port),
 		"user":   opts.Username,
 		"dbname": opts.DatabaseName,
@@ -68,8 +68,10 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 	return strings.Join(psqlInfo, " "), nil
 }
 
-type CreateDbOptions struct {
-	DatabaseName, Username string
+type DbOptions struct {
+	DatabaseName   string
+	Username       string
+	MaxConnections int
 }
 
 // CreateLocalDbConnectionPool connects and returns a connection to the given database using
@@ -77,7 +79,7 @@ type CreateDbOptions struct {
 // if the database is not provided (empty), it connects to the default database in the service
 // that was created during installation.
 // NOTE: no session data callback is used - no session data will be present
-func CreateLocalDbConnectionPool(ctx context.Context, opts *CreateDbOptions) (*sql.DB, error) {
+func CreateLocalDbConnectionPool(ctx context.Context, opts *DbOptions) (*sql.DB, error) {
 	utils.LogTime("db.CreateLocalDbConnection start")
 	defer utils.LogTime("db.CreateLocalDbConnection end")
 
@@ -85,49 +87,31 @@ func CreateLocalDbConnectionPool(ctx context.Context, opts *CreateDbOptions) (*s
 	if err != nil {
 		return nil, err
 	}
+	return CreateDbConnectionPool(ctx, psqlInfo, opts)
+}
+
+// CreateDbConnectionPool connects and returns a connection to the database using the given connection string
+func CreateDbConnectionPool(ctx context.Context, connectionString string, opts *DbOptions) (*sql.DB, error) {
+	utils.LogTime("db.CreateDbConnectionPool start")
+	defer utils.LogTime("db.CreateDbConnectionPool end")
+
+	// TODO KAI is this needed
+
 	// err = db_common.AddRootCertToConfig(&connConfig.Config, localfilepaths.GetRootCertLocation())
 	// if err != nil {
 	// 	return nil, err
 	// }
 
-	pool, err := sql.Open("pgx", psqlInfo)
+	pool, err := sql.Open("pgx", connectionString)
 	if err != nil {
 		return nil, err
 	}
 
-	conn, err := pool.Conn(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-
-	// wait for db to start accepting queries on this connection
-	if err := db_common.WaitForConnectionPing(ctx, conn); err != nil {
-		return nil, err
-	}
-	return pool, nil
-}
-
-// CreateConnectionPool
-func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnections int) (*sql.DB, error) {
-	utils.LogTime("db_client.establishConnectionPool start")
-	defer utils.LogTime("db_client.establishConnectionPool end")
-
-	psqlInfo, err := getLocalSteampipeConnectionString(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	pool, err := sql.Open("pgx", psqlInfo)
-	if err != nil {
-		return nil, err
-	}
 	const (
 		connMaxIdleTime = 1 * time.Minute
 		connMaxLifetime = 10 * time.Minute
 	)
-
-	pool.SetMaxOpenConns(maxConnections)
+	pool.SetMaxOpenConns(opts.MaxConnections)
 	pool.SetConnMaxLifetime(connMaxLifetime)
 	pool.SetConnMaxIdleTime(connMaxIdleTime)
 
@@ -159,9 +143,16 @@ func createMaintenanceClient(ctx context.Context, port int) (*sql.Conn, error) {
 	defer cancel()
 
 	statushooks.SetStatus(ctx, "Waiting for connection")
-	tempPool, err := CreateConnectionPool(ctx, &CreateDbOptions{
-		Username: constants.DatabaseSuperUser,
-	}, 1)
+	// TODO kai move connection string logic somewhere central
+	connStr := fmt.Sprintf("host=127.0.0.1 port=%d user=%s dbname=postgres sslmode=disable application_name=%s",
+		port,
+		constants.DatabaseSuperUser,
+		runtime.ServiceConnectionAppName)
+	opts := &DbOptions{
+		Username:       constants.DatabaseSuperUser,
+		MaxConnections: 1,
+	}
+	tempPool, err := CreateDbConnectionPool(ctx, connStr, opts)
 	if err != nil {
 		log.Println("[TRACE] could not connect to service")
 		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
@@ -171,20 +162,6 @@ func createMaintenanceClient(ctx context.Context, port int) (*sql.Conn, error) {
 		log.Println("[TRACE] could not connect to service")
 		return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
 	}
-
-	// wait for db to start accepting queries on this connection
-	// TODO - connection pinging for maintenance client needs to be reworked
-	// err = db_common.WaitForConnectionPing(
-	// 	timeoutCtx,
-	// 	conn,
-	// 	db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
-	// 	db_common.WithTimeout(viper.GetDuration(constants.ArgDatabaseStartTimeout)*time.Second),
-	// )
-	// if err != nil {
-	// 	conn.Close(ctx)
-	// 	log.Println("[TRACE] Ping timed out")
-	// 	return nil, sperr.Wrap(err, sperr.WithMessage("connection setup failed"))
-	// }
 
 	// wait for recovery to complete
 	// the database may enter recovery mode if it detects that

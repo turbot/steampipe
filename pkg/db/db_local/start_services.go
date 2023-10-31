@@ -185,7 +185,7 @@ func ensurePluginManager() (*pluginmanager.PluginManagerClient, *pluginmanager.S
 }
 
 func postServiceStart(ctx context.Context, res *StartResult) error {
-	pool, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
+	pool, err := CreateLocalDbConnectionPool(ctx, &DbOptions{DatabaseName: res.DbState.Database, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
@@ -346,7 +346,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 
 // ensure the fdw foreign server and required postgres extensions are installed
 func ensureDbSetup(ctx context.Context, databaseName string) error {
-	pool, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
+	pool, err := CreateLocalDbConnectionPool(ctx, &DbOptions{DatabaseName: databaseName, Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}
@@ -545,7 +545,7 @@ func traceoutServiceLogs(logChannel chan string, stopLogStreamFn func()) {
 }
 
 func setServicePassword(ctx context.Context, password string) error {
-	pool, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{DatabaseName: "postgres", Username: constants.DatabaseSuperUser})
+	pool, err := CreateLocalDbConnectionPool(ctx, &DbOptions{DatabaseName: "postgres", Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return err
 	}

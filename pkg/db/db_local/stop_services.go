@@ -13,12 +13,11 @@ import (
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/constants/runtime"
 	"github.com/turbot/pipe-fittings/db_common"
-
-"github.com/turbot/pipe-fittings/error_helpers"
-"github.com/turbot/pipe-fittings/filepaths"
-"github.com/turbot/pipe-fittings/statushooks"
-"github.com/turbot/pipe-fittings/utils"
-"github.com/turbot/steampipe/pkg/pluginmanager"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/steampipe/pkg/pluginmanager"
 )
 
 // StopStatus is a pseudoEnum for service stop result
@@ -102,7 +101,7 @@ func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	utils.LogTime("db_local.GetClientCount start")
 	defer utils.LogTime(fmt.Sprintf("db_local.GetClientCount end"))
 
-	rootClient, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	rootClient, err := CreateLocalDbConnectionPool(ctx, &DbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}

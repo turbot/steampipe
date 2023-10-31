@@ -13,7 +13,7 @@ func executeSqlAsRoot(ctx context.Context, statements ...string) ([]sql.Result, 
 	log.Println("[DEBUG] executeSqlAsRoot start")
 	defer log.Println("[DEBUG] executeSqlAsRoot end")
 
-	rootClient, err := CreateLocalDbConnectionPool(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
+	rootClient, err := CreateLocalDbConnectionPool(ctx, &DbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
 		return nil, err
 	}

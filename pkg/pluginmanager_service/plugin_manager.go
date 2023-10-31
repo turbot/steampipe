@@ -96,8 +96,8 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 
 	// create a connection pool to connection refresh
 	// in testing, a size of 20 seemed optimal
-	poolsize := 20
-	pool, err := db_local.CreateConnectionPool(ctx, &db_local.CreateDbOptions{Username: constants.DatabaseSuperUser}, poolsize)
+	opts := &db_local.DbOptions{Username: constants.DatabaseSuperUser, MaxConnections: 20}
+	pool, err := db_local.CreateLocalDbConnectionPool(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
