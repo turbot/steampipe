@@ -2,6 +2,7 @@ package metaquery
 
 import (
 	"github.com/turbot/pipe-fittings/constants"
+	localconstants "github.com/turbot/steampipe/pkg/constants"
 )
 
 type metaQueryArg struct {
@@ -22,73 +23,73 @@ var metaQueryDefinitions map[string]metaQueryDefinition
 
 func init() {
 	metaQueryDefinitions = map[string]metaQueryDefinition{
-		constants.CmdHelp: {
-			title:       constants.CmdHelp,
+		localconstants.CmdHelp: {
+			title:       localconstants.CmdHelp,
 			handler:     doHelp,
 			validator:   noArgs,
 			description: "Show steampipe help",
 		},
-		constants.CmdExit: {
-			title:       constants.CmdExit,
+		localconstants.CmdExit: {
+			title:       localconstants.CmdExit,
 			handler:     doExit,
 			validator:   noArgs,
 			description: "Exit from steampipe terminal",
 		},
-		constants.CmdQuit: {
-			title:       constants.CmdQuit,
+		localconstants.CmdQuit: {
+			title:       localconstants.CmdQuit,
 			handler:     doExit,
 			validator:   noArgs,
 			description: "Exit from steampipe terminal",
 		},
-		constants.CmdTableList: {
-			title:       constants.CmdTableList,
+		localconstants.CmdTableList: {
+			title:       localconstants.CmdTableList,
 			handler:     listTables,
 			validator:   atMostNArgs(1),
 			description: "List or describe tables",
 		},
-		constants.CmdSeparator: {
-			title:       constants.CmdSeparator,
+		localconstants.CmdSeparator: {
+			title:       localconstants.CmdSeparator,
 			handler:     setViperConfigFromArg(constants.ArgSeparator),
 			validator:   exactlyNArgs(1),
 			description: "Set csv output separator",
 		},
-		constants.CmdHeaders: {
+		localconstants.CmdHeaders: {
 			title:       "headers",
 			handler:     setHeader,
-			validator:   booleanValidator(constants.CmdHeaders, validatorFromArgsOf(constants.CmdHeaders)),
+			validator:   booleanValidator(localconstants.CmdHeaders, validatorFromArgsOf(localconstants.CmdHeaders)),
 			description: "Enable or disable column headers",
 			args: []metaQueryArg{
 				{value: constants.ArgOn, description: "Turn on headers in output"},
 				{value: constants.ArgOff, description: "Turn off headers in output"},
 			},
-			completer: completerFromArgsOf(constants.CmdHeaders),
+			completer: completerFromArgsOf(localconstants.CmdHeaders),
 		},
-		constants.CmdMulti: {
+		localconstants.CmdMulti: {
 			title:       "multi-line",
 			handler:     setMultiLine,
-			validator:   booleanValidator(constants.CmdMulti, validatorFromArgsOf(constants.CmdMulti)),
+			validator:   booleanValidator(localconstants.CmdMulti, validatorFromArgsOf(localconstants.CmdMulti)),
 			description: "Enable or disable multiline mode",
 			args: []metaQueryArg{
 				{value: constants.ArgOn, description: "Turn on multiline mode"},
 				{value: constants.ArgOff, description: "Turn off multiline mode"},
 			},
-			completer: completerFromArgsOf(constants.CmdMulti),
+			completer: completerFromArgsOf(localconstants.CmdMulti),
 		},
-		constants.CmdTiming: {
+		localconstants.CmdTiming: {
 			title:       "timing",
 			handler:     setTiming,
-			validator:   booleanValidator(constants.CmdTiming, validatorFromArgsOf(constants.CmdTiming)),
+			validator:   booleanValidator(localconstants.CmdTiming, validatorFromArgsOf(localconstants.CmdTiming)),
 			description: "Enable or disable query execution timing",
 			args: []metaQueryArg{
 				{value: constants.ArgOn, description: "Display time elapsed after every query"},
 				{value: constants.ArgOff, description: "Turn off query timer"},
 			},
-			completer: completerFromArgsOf(constants.CmdTiming),
+			completer: completerFromArgsOf(localconstants.CmdTiming),
 		},
-		constants.CmdOutput: {
-			title:       constants.CmdOutput,
+		localconstants.CmdOutput: {
+			title:       localconstants.CmdOutput,
 			handler:     setViperConfigFromArg(constants.ArgOutput),
-			validator:   composeValidator(exactlyNArgs(1), validatorFromArgsOf(constants.CmdOutput)),
+			validator:   composeValidator(exactlyNArgs(1), validatorFromArgsOf(localconstants.CmdOutput)),
 			description: "Set output format: csv, json, table or line",
 			args: []metaQueryArg{
 				{value: constants.OutputFormatJSON, description: "Set output to JSON"},
@@ -96,28 +97,28 @@ func init() {
 				{value: constants.OutputFormatTable, description: "Set output to Table"},
 				{value: constants.OutputFormatLine, description: "Set output to Line"},
 			},
-			completer: completerFromArgsOf(constants.CmdOutput),
+			completer: completerFromArgsOf(localconstants.CmdOutput),
 		},
-		constants.CmdCache: {
-			title:       constants.CmdCache,
+		localconstants.CmdCache: {
+			title:       localconstants.CmdCache,
 			handler:     cacheControl,
-			validator:   validatorFromArgsOf(constants.CmdCache),
+			validator:   validatorFromArgsOf(localconstants.CmdCache),
 			description: "Enable, disable or clear the query cache",
 			args: []metaQueryArg{
 				{value: constants.ArgOn, description: "Turn on caching"},
 				{value: constants.ArgOff, description: "Turn off caching"},
 				{value: constants.ArgClear, description: "Clear the cache"},
 			},
-			completer: completerFromArgsOf(constants.CmdCache),
+			completer: completerFromArgsOf(localconstants.CmdCache),
 		},
-		constants.CmdCacheTtl: {
-			title:       constants.CmdCacheTtl,
+		localconstants.CmdCacheTtl: {
+			title:       localconstants.CmdCacheTtl,
 			handler:     cacheTTL,
 			validator:   atMostNArgs(1),
 			description: "Set the cache ttl (time-to-live)",
 		},
-		constants.CmdInspect: {
-			title:   constants.CmdInspect,
+		localconstants.CmdInspect: {
+			title:   localconstants.CmdInspect,
 			handler: inspect,
 			// .inspect only supports a single arg, however the arg validation code cannot understand escaped arguments
 			// e.g. it will treat csv."my table" as 2 args
@@ -126,40 +127,40 @@ func init() {
 			description: "View connections, tables & column information",
 			completer:   inspectCompleter,
 		},
-		constants.CmdConnections: {
-			title:       constants.CmdConnections,
+		localconstants.CmdConnections: {
+			title:       localconstants.CmdConnections,
 			handler:     listConnections,
 			validator:   noArgs,
 			description: "List active connections",
 		},
-		constants.CmdClear: {
-			title:       constants.CmdClear,
+		localconstants.CmdClear: {
+			title:       localconstants.CmdClear,
 			handler:     clearScreen,
 			validator:   noArgs,
 			description: "Clear the console",
 		},
-		constants.CmdSearchPath: {
-			title:       constants.CmdSearchPath,
+		localconstants.CmdSearchPath: {
+			title:       localconstants.CmdSearchPath,
 			handler:     setOrGetSearchPath,
 			validator:   atMostNArgs(1),
 			description: "Display the current search path, or set the search-path by passing in a comma-separated list",
 		},
-		constants.CmdSearchPathPrefix: {
-			title:       constants.CmdSearchPathPrefix,
+		localconstants.CmdSearchPathPrefix: {
+			title:       localconstants.CmdSearchPathPrefix,
 			handler:     setSearchPathPrefix,
 			validator:   exactlyNArgs(1),
 			description: "Set a prefix to the current search-path",
 		},
-		constants.CmdAutoComplete: {
+		localconstants.CmdAutoComplete: {
 			title:       "auto-complete",
 			handler:     setAutoComplete,
-			validator:   booleanValidator(constants.CmdAutoComplete, validatorFromArgsOf(constants.CmdAutoComplete)),
+			validator:   booleanValidator(localconstants.CmdAutoComplete, validatorFromArgsOf(localconstants.CmdAutoComplete)),
 			description: "Enable or disable auto-completion",
 			args: []metaQueryArg{
 				{value: constants.ArgOn, description: "Turn on auto-completion"},
 				{value: constants.ArgOff, description: "Turn off auto-completion"},
 			},
-			completer: completerFromArgsOf(constants.CmdAutoComplete),
+			completer: completerFromArgsOf(localconstants.CmdAutoComplete),
 		},
 	}
 }

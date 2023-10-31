@@ -8,6 +8,7 @@ import (
 	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/utils"
+	localconstants "github.com/turbot/steampipe/pkg/constants"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -56,7 +57,7 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 		if numArgs == 0 {
 			// get the current status of this mode (convert metaquery name into arg name)
 			// NOTE - request second arg from cast even though we donl;t use it - to avoid panic
-			currentStatus := cmdconfig.Viper().GetBool(constants.ArgFromMetaquery(metaquery))
+			currentStatus := cmdconfig.Viper().GetBool(localconstants.ArgFromMetaquery(metaquery))
 			// what is the new status (the opposite)
 			newStatus := !currentStatus
 

@@ -8,11 +8,12 @@ import (
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/constants"
+	localconstants "github.com/turbot/steampipe/pkg/constants"
 )
 
 // .help
 func doHelp(_ context.Context, _ *HandlerInput) error {
-	var commonCmds = []string{constants.CmdHelp, constants.CmdInspect, constants.CmdExit}
+	var commonCmds = []string{localconstants.CmdHelp, localconstants.CmdInspect, localconstants.CmdExit}
 
 	commonCmdRows := getMetaQueryHelpRows(commonCmds, false)
 	var advanceCmds []string
