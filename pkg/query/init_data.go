@@ -134,6 +134,7 @@ func (i *InitData) init(ctx context.Context, args []string) {
 	ew := localcmdconfig.EnsureService(ctx, constants.InvokerQuery)
 	if ew.GetError() != nil {
 		i.Result.Error = ew.Error
+		return
 	}
 	i.Result.AddWarnings(ew.Warnings...)
 

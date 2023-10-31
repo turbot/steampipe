@@ -262,11 +262,11 @@ func getInitData(ctx context.Context) *initialisation.InitData {
 	i.Result.Warnings = errAndWarnings.Warnings
 
 	// start service if needed
-	ew := localcmdconfig.EnsureService(ctx, constants.InvokerDashboard)
-	if ew.GetError() != nil {
-		i.Result.Error = ew.Error
+	serviceResult := localcmdconfig.EnsureService(ctx, constants.InvokerDashboard)
+	i.Result.Merge(serviceResult)
+	if i.Result.Error != nil {
+		return i
 	}
-	i.Result.AddWarnings(ew.Warnings...)
 
 	i.Init(ctx)
 
