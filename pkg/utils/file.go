@@ -54,6 +54,28 @@ func MoveFile(source string, destination string) error {
 	return os.Remove(source)
 }
 
+// CopyFile copies a file from source to destiantion.
+func CopyFile(source, destination string) error {
+	srcFile, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	destFile, err := os.Create(destination)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, srcFile)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func FilenameNoExtension(fileName string) string {
 	fileName = path.Base(fileName)
 	return fileName[:len(fileName)-len(filepath.Ext(fileName))]

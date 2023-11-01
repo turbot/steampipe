@@ -76,7 +76,7 @@ func installFdwFiles(image *SteampipeImage, tempdir string) error {
 	controlFileSourcePath := filepath.Join(tempdir, controlFileName)
 	controlFileDestPath := filepath.Join(fdwControlDir, image.Fdw.ControlFile)
 
-	if err := moveFileWithinPartition(controlFileSourcePath, controlFileDestPath); err != nil {
+	if err := MoveFileWithinPartition(controlFileSourcePath, controlFileDestPath); err != nil {
 		return fmt.Errorf("could not install %s to %s", controlFileSourcePath, fdwControlDir)
 	}
 
@@ -84,7 +84,7 @@ func installFdwFiles(image *SteampipeImage, tempdir string) error {
 	sqlFileName := image.Fdw.SqlFile
 	sqlFileSourcePath := filepath.Join(tempdir, sqlFileName)
 	sqlFileDestPath := filepath.Join(fdwSQLDir, sqlFileName)
-	if err := moveFileWithinPartition(sqlFileSourcePath, sqlFileDestPath); err != nil {
+	if err := MoveFileWithinPartition(sqlFileSourcePath, sqlFileDestPath); err != nil {
 		return fmt.Errorf("could not install %s to %s", sqlFileSourcePath, fdwSQLDir)
 	}
 	return nil

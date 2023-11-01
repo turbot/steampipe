@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 
 	"github.com/fatih/color"
@@ -198,7 +199,27 @@ func prepareDb(ctx context.Context) error {
 		}
 	}
 
-	// if the FDW is not installed, or needs an update
+	// if the FDW is not installed, or needs an update, install it
+	err = ensureFDW(ctx, versionInfo)
+	if err != nil {
+		return err
+	}
+
+	if needsInit() {
+		statushooks.SetStatus(ctx, "Cleanup any Steampipe processes…")
+		killInstanceIfAny(ctx)
+		if err := runInstall(ctx, nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ensureFDW(ctx context.Context, versionInfo *versionfile.DatabaseVersionFile) error {
+	if fdwLocation, ok := os.LookupEnv(constants.EnvLocalFDWLocation); ok {
+		return installFDWFromLocation(fdwLocation)
+	}
+
 	if !IsFDWInstalled() || fdwNeedsUpdate(versionInfo) {
 		// install fdw
 		if _, err := installFDW(ctx, false); err != nil {
@@ -211,13 +232,35 @@ func prepareDb(ctx context.Context) error {
 		messageRenderer := statushooks.MessageRendererFromContext(ctx)
 		messageRenderer("%s updated to %s.", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
 	}
+	return nil
+}
 
-	if needsInit() {
-		statushooks.SetStatus(ctx, "Cleanup any Steampipe processes…")
-		killInstanceIfAny(ctx)
-		if err := runInstall(ctx, nil); err != nil {
-			return err
-		}
+func installFDWFromLocation(fdwLocation string) error {
+	fdwBinDir := filepaths.GetFDWBinaryDir()
+	fdwBinFileSourcePath := filepath.Join(fdwLocation, constants.FdwBinaryFileName)
+	fdwBinFileDestPath := filepath.Join(fdwBinDir, constants.FdwBinaryFileName)
+
+	// NOTE: for Mac M1 machines, if the fdw binary is updated in place without deleting the existing file,
+	// the updated fdw may crash on execution - for an undetermined reason
+	// to avoid this, first remove the existing .so file
+	os.Remove(fdwBinFileDestPath)
+
+	if err := utils.CopyFile(fdwBinFileSourcePath, fdwBinFileDestPath); err != nil {
+		return fmt.Errorf("could not install %s to %s", fdwBinFileSourcePath, fdwBinDir)
+	}
+
+	fdwControlDir := filepaths.GetFDWSQLAndControlDir()
+	controlFileSourcePath := filepath.Join(fdwLocation, constants.FdwBinaryControlFileName)
+	controlFileDestPath := filepath.Join(fdwControlDir, constants.FdwBinaryControlFileName)
+	if err := utils.CopyFile(controlFileSourcePath, controlFileDestPath); err != nil {
+		return fmt.Errorf("could not install %s to %s", controlFileSourcePath, fdwControlDir)
+	}
+
+	fdwSQLDir := filepaths.GetFDWSQLAndControlDir()
+	sqlFileSourcePath := filepath.Join(fdwLocation, constants.FdwBinarySqlFileName)
+	sqlFileDestPath := filepath.Join(fdwSQLDir, constants.FdwBinarySqlFileName)
+	if err := utils.CopyFile(sqlFileSourcePath, sqlFileDestPath); err != nil {
+		return fmt.Errorf("could not install %s to %s", sqlFileSourcePath, fdwSQLDir)
 	}
 	return nil
 }

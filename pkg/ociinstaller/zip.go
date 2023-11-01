@@ -44,9 +44,9 @@ func fileExists(filePath string) bool {
 	return true
 }
 
-// moves a file within an fs partition. panics if movement is attempted between partitions
+// MoveFileWithinPartition moves a file within an fs partition. panics if movement is attempted between partitions
 // this is done separately to achieve performance benefits of os.Rename over reading and writing content
-func moveFileWithinPartition(sourcePath, destPath string) error {
+func MoveFileWithinPartition(sourcePath, destPath string) error {
 	if err := os.Rename(sourcePath, destPath); err != nil {
 		return fmt.Errorf("error moving file: %s", err)
 	}
@@ -81,6 +81,6 @@ func moveFolderWithinPartition(sourcePath, destPath string) error {
 		if info.IsDir() {
 			return os.MkdirAll(filepath.Join(destPath, relPath), info.Mode())
 		}
-		return moveFileWithinPartition(filepath.Join(sourcePath, relPath), filepath.Join(destPath, relPath))
+		return MoveFileWithinPartition(filepath.Join(sourcePath, relPath), filepath.Join(destPath, relPath))
 	})
 }

@@ -34,8 +34,10 @@ const (
 	PostgresImageRef    = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
 	PostgresImageDigest = "sha256:a75637209f1bc2fa9885216f7972dfa0d82010a25d3cbfc07baceba8d16f4a93"
 
-	FdwImageRef       = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
-	FdwBinaryFileName = "steampipe_postgres_fdw.so"
+	FdwImageRef              = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
+	FdwBinaryFileName        = "steampipe_postgres_fdw.so"
+	FdwBinaryControlFileName = "steampipe_postgres_fdw.control"
+	FdwBinarySqlFileName     = "steampipe_postgres_fdw--1.0.sql"
 )
 
 // schema names
