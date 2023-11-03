@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/mattn/go-isatty"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
@@ -332,7 +333,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 
 	level := sdklogging.LogLevel()
 	var logDestination io.Writer
-	if len(filepaths.InstallDir) == 0 {
+	if len(app_specific.InstallDir) == 0 {
 		// write to the buffer - this is to make sure that we don't lose logs
 		// till the time we get the log directory
 		logDestination = logBuffer
@@ -383,7 +384,7 @@ func ensureInstallDir(installDir string) {
 	}
 
 	// store as SteampipeDir
-	filepaths.InstallDir = installDir
+	app_specific.InstallDir = installDir
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way
