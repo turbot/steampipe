@@ -3,11 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/app_specific"
-	"github.com/turbot/pipe-fittings/cmdconfig"
-	"github.com/turbot/pipe-fittings/constants"
-	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	"os"
 	"os/exec"
 	"runtime"
@@ -16,11 +11,17 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-version"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/app_specific"
+	"github.com/turbot/pipe-fittings/cmdconfig"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/cmd"
-	steampipe_version "github.com/turbot/steampipe/pkg/version"
+	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
+	localconstants "github.com/turbot/steampipe/pkg/constants"
+	steampipeversion "github.com/turbot/steampipe/pkg/version"
 )
 
 var exitCode int = constants.ExitCodeSuccessful
@@ -41,7 +42,7 @@ func main() {
 	}()
 
 	// set app specific constants defined in pipe-fittings
-	appInit()
+	localconstants.SetAppSpecificConstants()
 
 	// ensure steampipe is not being run as root
 	checkRoot(ctx)
@@ -169,7 +170,7 @@ func appInit() {
 	app_specific.ClientConnectionAppNamePrefix = "steampipe_client"
 	app_specific.ServiceConnectionAppNamePrefix = "steampipe_service"
 	app_specific.ClientSystemConnectionAppNamePrefix = "steampipe_client_system"
-	app_specific.AppVersion = steampipe_version.SteampipeVersion
+	app_specific.AppVersion = steampipeversion.SteampipeVersion
 	app_specific.DefaultWorkspaceDatabase = "local"
 	app_specific.ModDataExtension = ".sp"
 	app_specific.VariablesExtension = ".spvars"

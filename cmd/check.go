@@ -274,10 +274,8 @@ func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...
 			if err != nil {
 				return nil, sperr.WrapWithMessage(err, "could not create execution tree for %s", arg)
 			}
-			name, err := getExportName(arg, initData.Workspace.Mod.ShortName)
-			if err != nil {
-				return nil, sperr.WrapWithMessage(err, "could not evaluate export name for %s", arg)
-			}
+			name := getExportName(arg, initData.Workspace.Mod.ShortName)
+
 			trees = append(trees, newNamedExecutionTree(name, executionTree))
 		}
 	}
@@ -285,11 +283,11 @@ func getExecutionTrees(ctx context.Context, initData *control.InitData, args ...
 }
 
 // getExportName resolves the base name of the target file
-func getExportName(targetName string, modShortName string) (string, error) {
+func getExportName(targetName string, modShortName string) string {
 	parsedName, _ := modconfig.ParseResourceName(targetName)
 	if targetName == "all" {
 		// there will be no block type = manually construct name
-		return fmt.Sprintf("%s.%s", modShortName, parsedName.Name), nil
+		return fmt.Sprintf("%s.%s", modShortName, parsedName.Name)
 	}
 	// default to just converting to valid resource name
 	return parsedName.ToFullNameWithMod(modShortName)

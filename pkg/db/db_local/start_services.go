@@ -498,7 +498,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		// Data Directory
 		"-D", localfilepaths.GetDataLocation())
 
-	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths.InstallDir))
+	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", app_specific.InstallDir))
 
 	//  Check if the /etc/ssl directory exist in os
 	dirExist, _ := os.Stat(localconstants.SslConfDir)

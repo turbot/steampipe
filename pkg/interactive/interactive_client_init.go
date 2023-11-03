@@ -127,7 +127,8 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	// start the workspace file watcher
 	if viper.GetBool(constants.ArgWatch) {
 		// provide an explicit error handler which re-renders the prompt after displaying the error
-		if err := c.initData.Workspace.SetupWatcher(ctx, &c.initData.Client.DbClient, c.workspaceWatcherErrorHandler); err != nil {
+		// TODO KAI client?
+		if err := c.initData.Workspace.SetupWatcher(ctx, c.workspaceWatcherErrorHandler); err != nil {
 			c.initData.Result.Error = err
 		}
 	}

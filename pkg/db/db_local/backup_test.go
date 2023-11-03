@@ -2,6 +2,9 @@ package db_local
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/app_specific"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,10 +14,10 @@ import (
 )
 
 func TestTrimBackups(t *testing.T) {
-	filepaths.InstallDir, _ = filehelpers.Tildefy("~/.steampipe")
+	app_specific.InstallDir, _ = filehelpers.Tildefy("~/.steampipe")
 	// create backups more than MaxBackups
 	backupDir := filepaths.EnsureBackupsDir()
-	filesCreated := []string{}
+	var filesCreated []string
 	for i := 0; i < constants.MaxBackups; i++ {
 		// make sure the files that get created end up to really old
 		// this way we won't end up deleting any actual backup files
