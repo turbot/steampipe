@@ -11,17 +11,12 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/go-version"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/app_specific"
-	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/cmd"
-	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	localconstants "github.com/turbot/steampipe/pkg/constants"
-	steampipeversion "github.com/turbot/steampipe/pkg/version"
 )
 
 var exitCode int = constants.ExitCodeSuccessful
@@ -155,35 +150,4 @@ func checkOSXVersion(ctx context.Context) {
 		error_helpers.ShowError(ctx, fmt.Errorf("Steampipe requires MacOS 10.15 (Catalina) and above, please upgrade and try again."))
 		os.Exit(constants.ExitCodeInvalidExecutionEnvironment)
 	}
-}
-
-// set app specific constants defined in pipe-fittings
-func appInit() {
-
-	// set the default install dir
-	installDir, err := files.Tildefy("~/.steampipe")
-	if err != nil {
-		panic(err)
-	}
-	app_specific.DefaultInstallDir = installDir
-	app_specific.AppName = "steampipe"
-	app_specific.ClientConnectionAppNamePrefix = "steampipe_client"
-	app_specific.ServiceConnectionAppNamePrefix = "steampipe_service"
-	app_specific.ClientSystemConnectionAppNamePrefix = "steampipe_client_system"
-	app_specific.AppVersion = steampipeversion.SteampipeVersion
-	app_specific.DefaultWorkspaceDatabase = "local"
-	app_specific.ModDataExtension = ".sp"
-	app_specific.VariablesExtension = ".spvars"
-	app_specific.AutoVariablesExtension = ".auto.spvars"
-	app_specific.DefaultVarsFileName = "steampipe.spvars"
-	app_specific.ModFileName = "mod.sp"
-	app_specific.WorkspaceIgnoreFile = ".steampipeignore"
-	app_specific.WorkspaceDataDir = ".steampipe"
-
-	app_specific.EnvAppPrefix = "STEAMPIPE_"
-	// EnvInputVarPrefix is the prefix for environment variables that represent values for input variables.
-	app_specific.EnvInputVarPrefix = "SP_VAR_"
-	// set the command pre and post hooks
-	cmdconfig.CustomPreRunHook = localcmdconfig.PreRunHook
-	cmdconfig.CustomPostRunHook = localcmdconfig.PostRunHook
 }
