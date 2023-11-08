@@ -1,10 +1,9 @@
-package constants
+package localcmdconfig
 
 import (
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/cmdconfig"
-	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	steampipeversion "github.com/turbot/steampipe/pkg/version"
 )
 
@@ -33,6 +32,6 @@ func SetAppSpecificConstants() {
 	// EnvInputVarPrefix is the prefix for environment variables that represent values for input variables.
 	app_specific.EnvInputVarPrefix = "SP_VAR_"
 	// set the command pre and post hooks
-	cmdconfig.CustomPreRunHook = localcmdconfig.PreRunHook
-	cmdconfig.CustomPostRunHook = localcmdconfig.PostRunHook
+	cmdconfig.CustomPreRunHook = PreRunHook
+	cmdconfig.CustomPostRunHook = PostRunHook
 }

@@ -16,7 +16,7 @@ import (
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/cmd"
-	localconstants "github.com/turbot/steampipe/pkg/constants"
+	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 )
 
 var exitCode int = constants.ExitCodeSuccessful
@@ -37,7 +37,7 @@ func main() {
 	}()
 
 	// set app specific constants defined in pipe-fittings
-	localconstants.SetAppSpecificConstants()
+	localcmdconfig.SetAppSpecificConstants()
 
 	// ensure steampipe is not being run as root
 	checkRoot(ctx)

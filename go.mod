@@ -4,9 +4,6 @@ go 1.21.0
 
 toolchain go1.21.3
 
-replace github.com/turbot/pipe-fittings => /Users/kai/Dev/github/turbot/pipe-fittings
-//replace github.com/turbot/go-kit => /Users/kai/Dev/github/turbot/go-kit
-
 require (
 	github.com/Machiel/slugify v1.0.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1
@@ -48,19 +45,17 @@ require (
 	github.com/spf13/viper v1.17.0
 	github.com/stevenle/topsort v0.2.0 // indirect
 	github.com/turbot/go-kit v0.9.0-rc.2
-	// pp-rebuilt
-	github.com/turbot/pipe-fittings v0.0.0-20231027162921-19aad2af5fe4
+	github.com/turbot/pipe-fittings v0.0.0-20231108032203-68c61a233e62
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0 // indirect
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.6.2
-	// pp
-	github.com/turbot/terraform-components v0.0.0-20231017100940-c8df9a3a9aab // indirect
+	github.com/turbot/terraform-components v0.0.0-20231108031935-358f803c1a8b // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	github.com/zclconf/go-cty v1.14.1
 	github.com/zclconf/go-cty-yaml v1.0.3 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/sync v0.4.0
 	golang.org/x/text v0.13.0
-	google.golang.org/grpc v1.58.2
+	google.golang.org/grpc v1.58.3
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
 	oras.land/oras-go/v2 v2.3.0 // indirect

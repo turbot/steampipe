@@ -201,9 +201,10 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 
 	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	// set-up viper with defaults from the env and default workspace profile
-	err = cmdconfig.BootstrapViper(loader, cmd,
+	err = cmdconfig.BootstrapViper(cmd,
 		cmdconfig.WithConfigDefaults(configDefaults),
-		cmdconfig.WithDirectoryEnvMappings(dirEnvMappings))
+		cmdconfig.WithDirectoryEnvMappings(dirEnvMappings),
+		cmdconfig.WithWorkspaceProfileLoader(loader))
 	if err != nil {
 		return error_helpers.NewErrorsAndWarning(err)
 	}
