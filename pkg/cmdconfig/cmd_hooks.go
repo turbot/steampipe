@@ -20,7 +20,6 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/logging"
 	"github.com/turbot/pipe-fittings/cloud"
@@ -191,7 +190,7 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	defer utils.LogTime("cmdconfig.initGlobalConfig end")
 
 	// load workspace profile from the configured install dir
-	loader, err := getWorkspaceProfileLoader()
+	loader, err := cmdconfig.GetWorkspaceProfileLoader()
 	if err != nil {
 		return error_helpers.NewErrorsAndWarning(err)
 	}
@@ -199,12 +198,13 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	// set global workspace profile
 	steampipeconfig.GlobalWorkspaceProfile = loader.GetActiveWorkspaceProfile()
 
+	// get command out of viper - this will have been set by the root command pre-run
 	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+
 	// set-up viper with defaults from the env and default workspace profile
-	err = cmdconfig.BootstrapViper(cmd,
+	err = cmdconfig.BootstrapViper(loader, cmd,
 		cmdconfig.WithConfigDefaults(configDefaults),
-		cmdconfig.WithDirectoryEnvMappings(dirEnvMappings),
-		cmdconfig.WithWorkspaceProfileLoader(loader))
+		cmdconfig.WithDirectoryEnvMappings(dirEnvMappings))
 	if err != nil {
 		return error_helpers.NewErrorsAndWarning(err)
 	}
@@ -281,32 +281,6 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 		viper.SetDefault(constants.ArgCloudToken, *p.CloudToken)
 	}
 	return nil
-}
-
-func getWorkspaceProfileLoader() (*steampipeconfig.WorkspaceProfileLoader, error) {
-	// set viper default for workspace profile, using STEAMPIPE_WORKSPACE env var
-	cmdconfig.SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, cmdconfig.EnvVarTypeString)
-	// set viper default for install dir, using STEAMPIPE_INSTALL_DIR env var
-	cmdconfig.SetDefaultFromEnv(constants.EnvInstallDir, constants.ArgInstallDir, cmdconfig.EnvVarTypeString)
-
-	// resolve the workspace profile dir
-	installDir, err := filehelpers.Tildefy(viper.GetString(constants.ArgInstallDir))
-	if err != nil {
-		return nil, err
-	}
-
-	workspaceProfileDir, err := filepaths.WorkspaceProfileDir(installDir)
-	if err != nil {
-		return nil, err
-	}
-
-	// create loader
-	loader, err := steampipeconfig.NewWorkspaceProfileLoader(workspaceProfileDir)
-	if err != nil {
-		return nil, err
-	}
-
-	return loader, nil
 }
 
 // now validate  config values have appropriate values
