@@ -1,14 +1,10 @@
-package localcmdconfig
+package cmdconfig
 
 import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/mattn/go-isatty"
-	"github.com/turbot/pipe-fittings/app_specific"
-	"github.com/turbot/pipe-fittings/cmdconfig"
-	"github.com/turbot/pipe-fittings/filepaths"
-	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"io"
 	"log"
 	"os"
@@ -18,14 +14,19 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/hashicorp/go-hclog"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/logging"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/cloud"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/constants/runtime"
 	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/pipe-fittings/task"
 	"github.com/turbot/pipe-fittings/utils"
@@ -36,12 +37,10 @@ import (
 	"github.com/turbot/steampipe/pkg/version"
 )
 
-// TODO KAI rename this package
-
 var waitForTasksChannel chan struct{}
 var tasksCancelFn context.CancelFunc
 
-// preRunHook is a function that is executed before the PreRun of every command handler
+// PreRunHook is a function that is executed before the PreRun of every command handler
 func PreRunHook(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmdhook.preRunHook start")
 	defer utils.LogTime("cmdhook.preRunHook end")
@@ -190,13 +189,10 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	defer utils.LogTime("cmdconfig.initGlobalConfig end")
 
 	// load workspace profile from the configured install dir
-	loader, err := cmdconfig.GetWorkspaceProfileLoader()
+	loader, err := cmdconfig.GetWorkspaceProfileLoader[*modconfig.SteampipeWorkspaceProfile]()
 	if err != nil {
 		return error_helpers.NewErrorsAndWarning(err)
 	}
-
-	// set global workspace profile
-	steampipeconfig.GlobalWorkspaceProfile = loader.GetActiveWorkspaceProfile()
 
 	// get command out of viper - this will have been set by the root command pre-run
 	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
@@ -253,7 +249,7 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	return loadConfigErrorsAndWarnings
 }
 
-func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error {
+func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader[*modconfig.SteampipeWorkspaceProfile]) error {
 	/*
 	   saved cloud token
 	   cloud_token in default workspace

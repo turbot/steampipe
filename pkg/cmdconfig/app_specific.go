@@ -1,4 +1,4 @@
-package localcmdconfig
+package cmdconfig
 
 import (
 	"github.com/turbot/go-kit/files"

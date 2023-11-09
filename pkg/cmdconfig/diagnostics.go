@@ -1,4 +1,4 @@
-package localcmdconfig
+package cmdconfig
 
 import (
 	"encoding/json"
