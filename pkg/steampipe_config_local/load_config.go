@@ -284,7 +284,7 @@ func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loa
 			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
 				return error_helpers.NewErrorsAndWarning(err)
 			}
-			opts, moreDiags := parse.DecodeOptions(block, parse.SteampipeOptionsBlockMapping)
+			opts, moreDiags := parse.DecodeOptions(block, modconfig.SteampipeOptionsBlockMapping)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				continue
