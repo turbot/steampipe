@@ -106,7 +106,9 @@ func (i *InitData) init(ctx context.Context, args []string) {
 	}
 
 	statushooks.SetStatus(ctx, "Loading workspace")
-	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
+	modLocation := viper.GetString(constants.ArgModLocation)
+
+	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx, modLocation)
 	if errAndWarnings.GetError() != nil {
 		i.Result.Error = fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())
 		return

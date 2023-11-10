@@ -34,7 +34,8 @@ func NewInitData(ctx context.Context) *InitData {
 	statushooks.SetStatus(ctx, "Loading workspace")
 
 	// load the workspace
-	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
+	modLocation := viper.GetString(constants.ArgModLocation)
+	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx, modLocation)
 	if errAndWarnings.GetError() != nil {
 		return &InitData{
 			InitData: *initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())),

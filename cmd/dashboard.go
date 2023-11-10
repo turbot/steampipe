@@ -252,7 +252,8 @@ func initDashboard(ctx context.Context) *initialisation.InitData {
 }
 
 func getInitData(ctx context.Context) *initialisation.InitData {
-	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
+	modLocation := viper.GetString(constants.ArgModLocation)
+	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx, modLocation)
 	if errAndWarnings.GetError() != nil {
 		return initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error()))
 	}
