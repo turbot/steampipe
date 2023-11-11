@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	initex "github.com/turbot/pipe-ex/initialisation"
 	"os"
 	"path"
 	"strings"
@@ -13,10 +14,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-ex/dashboardexecute"
 	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/contexthelpers"
-	"github.com/turbot/pipe-fittings/dashboardexecute"
 	"github.com/turbot/pipe-fittings/dashboardtypes"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/modconfig"
@@ -233,8 +234,8 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 			// this is to allow us to use existing dashboard execution code
 			queryProvider, existingResource := ensureSnapshotQueryResource(name, resolvedQuery, initData.Workspace)
 
-			// we need to pass the embedded initData to  GenerateSnapshot
-			baseInitData := &initData.InitData
+			// we need to pass a dashboard initData to  GenerateSnapshot
+			baseInitData := initex.NewDashboardInitData(&initData.InitData)
 
 			// so a dashboard name was specified - just call GenerateSnapshot
 			snap, err := dashboardexecute.GenerateSnapshot(ctx, queryProvider.Name(), baseInitData, nil)

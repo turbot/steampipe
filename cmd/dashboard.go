@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	"log"
 	"os"
 	"strings"
@@ -11,14 +12,15 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-ex/controlstatus"
+	"github.com/turbot/pipe-ex/dashboardassets"
+	"github.com/turbot/pipe-ex/dashboardexecute"
+	"github.com/turbot/pipe-ex/dashboardserver"
+	initex "github.com/turbot/pipe-ex/initialisation"
 	"github.com/turbot/pipe-fittings/cloud"
 	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/contexthelpers"
-	"github.com/turbot/pipe-fittings/controlstatus"
-	"github.com/turbot/pipe-fittings/dashboardassets"
-	"github.com/turbot/pipe-fittings/dashboardexecute"
-	"github.com/turbot/pipe-fittings/dashboardserver"
 	"github.com/turbot/pipe-fittings/dashboardtypes"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/export"
@@ -29,7 +31,7 @@ import (
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/pipe-fittings/workspace"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
-	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
+
 	"gopkg.in/olahol/melody.v1"
 )
 
@@ -164,7 +166,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	// setup a new webSocket service
 	webSocket := melody.New()
 	// setup a new dashboard server
-	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.Workspace, webSocket)
+	server, err := dashboardserver.NewServer(dashboardCtx, initData.Client, initData.DashboardWorkspace, webSocket)
 	error_helpers.FailOnError(err)
 
 	// start the server asynchronously - this returns a chan which is signalled when the internal API server terminates
@@ -234,7 +236,7 @@ func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
 	}
 }
 
-func initDashboard(ctx context.Context) *initialisation.InitData {
+func initDashboard(ctx context.Context) *initex.DashboardInitData {
 	dashboardserver.OutputWait(ctx, "Loading Workspace")
 
 	// initialise
@@ -251,36 +253,39 @@ func initDashboard(ctx context.Context) *initialisation.InitData {
 	return initData
 }
 
-func getInitData(ctx context.Context) *initialisation.InitData {
+func getInitData(ctx context.Context) *initex.DashboardInitData {
 	modLocation := viper.GetString(constants.ArgModLocation)
 	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx, modLocation)
 	if errAndWarnings.GetError() != nil {
-		return initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error()))
+		return initex.NewDashboardInitData(initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())))
 	}
 
 	i := initialisation.NewInitData()
 	i.Workspace = w
 	i.Result.Warnings = errAndWarnings.Warnings
 
+	// TODO KAI tidy
+	res := initex.NewDashboardInitData(i)
+
 	// start service if needed
 	serviceResult := localcmdconfig.EnsureService(ctx, constants.InvokerDashboard)
-	i.Result.Merge(serviceResult)
-	if i.Result.Error != nil {
-		return i
+	res.Result.Merge(serviceResult)
+	if res.Result.Error != nil {
+		return res
 	}
 
-	i.Init(ctx)
+	res.Init(ctx)
 
 	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
-		i.RegisterExporters(dashboardExporters()...)
+		res.RegisterExporters(dashboardExporters()...)
 		// validate required export formats
 		if err := i.ExportManager.ValidateExportFormat(viper.GetStringSlice(constants.ArgExport)); err != nil {
-			i.Result.Error = err
-			return i
+			res.Result.Error = err
+			return res
 		}
 	}
 
-	return i
+	return res
 }
 
 func dashboardExporters() []export.Exporter {

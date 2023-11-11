@@ -3,7 +3,7 @@ package control
 import (
 	"context"
 	"fmt"
-	controldisplay2 "github.com/turbot/pipe-fittings/controldisplay"
+	controldisplay2 "github.com/turbot/pipe-ex/controldisplay"
 	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	"net/url"
 	"strings"
