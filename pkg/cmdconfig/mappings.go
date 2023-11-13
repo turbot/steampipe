@@ -24,9 +24,8 @@ var configDefaults = map[string]any{
 
 // environment variable mappings for directory paths which must be set as part of the viper bootstrap process
 var dirEnvMappings = map[string]cmdconfig.EnvMapping{
-	constants.EnvInstallDir:     {[]string{constants.ArgInstallDir}, cmdconfig.EnvVarTypeString},
-	constants.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, cmdconfig.EnvVarTypeString},
-	constants.EnvModLocation:    {[]string{constants.ArgModLocation}, cmdconfig.EnvVarTypeString},
+	constants.EnvInstallDir:  {ConfigVar: []string{constants.ArgInstallDir}, VarType: cmdconfig.EnvVarTypeString},
+	constants.EnvModLocation: {ConfigVar: []string{constants.ArgModLocation}, VarType: cmdconfig.EnvVarTypeString},
 }
 
 // NOTE: EnvWorkspaceProfile has already been set as a viper default as we have already loaded workspace profiles
@@ -34,37 +33,36 @@ var dirEnvMappings = map[string]cmdconfig.EnvMapping{
 
 // a map of known environment variables to map to viper keys - these are set as part of LoadGlobalConfig
 var envMappings = map[string]cmdconfig.EnvMapping{
-	constants.EnvInstallDir:     {[]string{constants.ArgInstallDir}, cmdconfig.EnvVarTypeString},
-	constants.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, cmdconfig.EnvVarTypeString},
-	constants.EnvModLocation:    {[]string{constants.ArgModLocation}, cmdconfig.EnvVarTypeString},
-	constants.EnvIntrospection:  {[]string{constants.ArgIntrospection}, cmdconfig.EnvVarTypeString},
-	constants.EnvTelemetry:      {[]string{constants.ArgTelemetry}, cmdconfig.EnvVarTypeString},
-	constants.EnvUpdateCheck:    {[]string{constants.ArgUpdateCheck}, cmdconfig.EnvVarTypeBool},
+	constants.EnvInstallDir:    {ConfigVar: []string{constants.ArgInstallDir}, VarType: cmdconfig.EnvVarTypeString},
+	constants.EnvModLocation:   {ConfigVar: []string{constants.ArgModLocation}, VarType: cmdconfig.EnvVarTypeString},
+	constants.EnvIntrospection: {ConfigVar: []string{constants.ArgIntrospection}, VarType: cmdconfig.EnvVarTypeString},
+	constants.EnvTelemetry:     {ConfigVar: []string{constants.ArgTelemetry}, VarType: cmdconfig.EnvVarTypeString},
+	constants.EnvUpdateCheck:   {ConfigVar: []string{constants.ArgUpdateCheck}, VarType: cmdconfig.EnvVarTypeBool},
 	// EnvPipesHost needs to be defined before EnvCloudHost,
 	// so that if EnvCloudHost is defined, it can override EnvPipesHost
-	constants.EnvPipesHost: {[]string{constants.ArgCloudHost}, cmdconfig.EnvVarTypeString},
-	constants.EnvCloudHost: {[]string{constants.ArgCloudHost}, cmdconfig.EnvVarTypeString},
+	constants.EnvPipesHost: {ConfigVar: []string{constants.ArgCloudHost}, VarType: cmdconfig.EnvVarTypeString},
+	constants.EnvCloudHost: {ConfigVar: []string{constants.ArgCloudHost}, VarType: cmdconfig.EnvVarTypeString},
 	// EnvPipesToken needs to be defined before EnvCloudToken,
 	// so that if EnvCloudToken is defined, it can override EnvPipesToken
-	constants.EnvPipesToken: {[]string{constants.ArgCloudToken}, cmdconfig.EnvVarTypeString},
-	constants.EnvCloudToken: {[]string{constants.ArgCloudToken}, cmdconfig.EnvVarTypeString},
+	constants.EnvPipesToken: {ConfigVar: []string{constants.ArgCloudToken}, VarType: cmdconfig.EnvVarTypeString},
+	constants.EnvCloudToken: {ConfigVar: []string{constants.ArgCloudToken}, VarType: cmdconfig.EnvVarTypeString},
 	//
-	constants.EnvSnapshotLocation:      {[]string{constants.ArgSnapshotLocation}, cmdconfig.EnvVarTypeString},
-	constants.EnvWorkspaceDatabase:     {[]string{constants.ArgWorkspaceDatabase}, cmdconfig.EnvVarTypeString},
-	constants.EnvServicePassword:       {[]string{constants.ArgServicePassword}, cmdconfig.EnvVarTypeString},
-	constants.EnvDisplayWidth:          {[]string{constants.ArgDisplayWidth}, cmdconfig.EnvVarTypeInt},
-	constants.EnvMaxParallel:           {[]string{constants.ArgMaxParallel}, cmdconfig.EnvVarTypeInt},
-	constants.EnvQueryTimeout:          {[]string{constants.ArgDatabaseQueryTimeout}, cmdconfig.EnvVarTypeInt},
-	constants.EnvDatabaseStartTimeout:  {[]string{constants.ArgDatabaseStartTimeout}, cmdconfig.EnvVarTypeInt},
-	constants.EnvDashboardStartTimeout: {[]string{constants.ArgDashboardStartTimeout}, cmdconfig.EnvVarTypeInt},
-	constants.EnvCacheTTL:              {[]string{constants.ArgCacheTtl}, cmdconfig.EnvVarTypeInt},
-	constants.EnvCacheMaxTTL:           {[]string{constants.ArgCacheMaxTtl}, cmdconfig.EnvVarTypeInt},
-	constants.EnvMemoryMaxMb:           {[]string{constants.ArgMemoryMaxMb}, cmdconfig.EnvVarTypeInt},
-	constants.EnvMemoryMaxMbPlugin:     {[]string{constants.ArgMemoryMaxMbPlugin}, cmdconfig.EnvVarTypeInt},
+	constants.EnvSnapshotLocation:      {ConfigVar: []string{constants.ArgSnapshotLocation}, VarType: cmdconfig.EnvVarTypeString},
+	constants.EnvWorkspaceDatabase:     {ConfigVar: []string{constants.ArgWorkspaceDatabase}, VarType: cmdconfig.EnvVarTypeString},
+	constants.EnvServicePassword:       {ConfigVar: []string{constants.ArgServicePassword}, VarType: cmdconfig.EnvVarTypeString},
+	constants.EnvDisplayWidth:          {ConfigVar: []string{constants.ArgDisplayWidth}, VarType: cmdconfig.EnvVarTypeInt},
+	constants.EnvMaxParallel:           {ConfigVar: []string{constants.ArgMaxParallel}, VarType: cmdconfig.EnvVarTypeInt},
+	constants.EnvQueryTimeout:          {ConfigVar: []string{constants.ArgDatabaseQueryTimeout}, VarType: cmdconfig.EnvVarTypeInt},
+	constants.EnvDatabaseStartTimeout:  {ConfigVar: []string{constants.ArgDatabaseStartTimeout}, VarType: cmdconfig.EnvVarTypeInt},
+	constants.EnvDashboardStartTimeout: {ConfigVar: []string{constants.ArgDashboardStartTimeout}, VarType: cmdconfig.EnvVarTypeInt},
+	constants.EnvCacheTTL:              {ConfigVar: []string{constants.ArgCacheTtl}, VarType: cmdconfig.EnvVarTypeInt},
+	constants.EnvCacheMaxTTL:           {ConfigVar: []string{constants.ArgCacheMaxTtl}, VarType: cmdconfig.EnvVarTypeInt},
+	constants.EnvMemoryMaxMb:           {ConfigVar: []string{constants.ArgMemoryMaxMb}, VarType: cmdconfig.EnvVarTypeInt},
+	constants.EnvMemoryMaxMbPlugin:     {ConfigVar: []string{constants.ArgMemoryMaxMbPlugin}, VarType: cmdconfig.EnvVarTypeInt},
 
 	// we need this value to go into different locations
-	constants.EnvCacheEnabled: {[]string{
+	constants.EnvCacheEnabled: {ConfigVar: []string{
 		constants.ArgClientCacheEnabled,
 		constants.ArgServiceCacheEnabled,
-	}, cmdconfig.EnvVarTypeBool},
+	}, VarType: cmdconfig.EnvVarTypeBool},
 }

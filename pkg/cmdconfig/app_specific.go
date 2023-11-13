@@ -32,6 +32,6 @@ func SetAppSpecificConstants() {
 	// EnvInputVarPrefix is the prefix for environment variables that represent values for input variables.
 	app_specific.EnvInputVarPrefix = "SP_VAR_"
 	// set the command pre and post hooks
-	cmdconfig.CustomPreRunHook = PreRunHook
-	cmdconfig.CustomPostRunHook = PostRunHook
+	cmdconfig.CustomPreRunHook = preRunHook
+	cmdconfig.CustomPostRunHook = postRunHook
 }
