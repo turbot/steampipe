@@ -4,6 +4,7 @@ import (
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/cmdconfig"
+	"github.com/turbot/pipe-fittings/constants"
 	steampipeversion "github.com/turbot/steampipe/pkg/version"
 )
 
@@ -34,4 +35,13 @@ func SetAppSpecificConstants() {
 	// set the command pre and post hooks
 	cmdconfig.CustomPreRunHook = PreRunHook
 	cmdconfig.CustomPostRunHook = PostRunHook
+
+	// set path arguments
+	app_specific.FilePathKeys = []string{
+		constants.ArgSnapshotLocation,
+		constants.ArgModLocation,
+		constants.ArgInstallDir,
+		constants.ArgOutputDir,
+		constants.ArgLogDir,
+	}
 }
