@@ -97,7 +97,7 @@ Examples:
 		AddStringFlag(constants.ArgSnapshotTitle, "", "The title to give a snapshot").
 		AddIntFlag(constants.ArgDatabaseQueryTimeout, 0, "The query timeout").
 		AddStringSliceFlag(constants.ArgExport, nil, "Export output to file, supported format: sps (snapshot)").
-		AddStringFlag(constants.ArgSnapshotLocation, "", "The location to write snapshots - either a local file path or a Turbot Pipes workspace").
+		AddFilepathFlag(constants.ArgSnapshotLocation, "", "The location to write snapshots - either a local file path or a Turbot Pipes workspace").
 		AddBoolFlag(constants.ArgProgress, true, "Display snapshot upload status")
 
 	cmd.AddCommand(getListSubCmd(listSubCmdOptions{parentCmd: cmd}))

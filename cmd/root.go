@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/turbot/pipe-fittings/app_specific"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/steampipe/pkg/version"
 	"os"
 
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/utils"
 )
@@ -56,13 +55,11 @@ func InitCmd() {
 	rootCmd.SetVersionTemplate(fmt.Sprintf("Steampipe v%s\n", version.SteampipeVersion.String()))
 
 	// global flags
-	rootCmd.PersistentFlags().String(constants.ArgWorkspaceProfile, "default", "The workspace profile to use") // workspace profile profile is a global flag since install-dir(global) can be set through the workspace profile
-	rootCmd.PersistentFlags().String(constants.ArgInstallDir, app_specific.DefaultInstallDir, "Path to the Config Directory")
-	rootCmd.PersistentFlags().Bool(constants.ArgSchemaComments, true, "Include schema comments when importing connection schemas")
-
-	error_helpers.FailOnError(viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir)))
-	error_helpers.FailOnError(viper.BindPFlag(constants.ArgWorkspaceProfile, rootCmd.PersistentFlags().Lookup(constants.ArgWorkspaceProfile)))
-	error_helpers.FailOnError(viper.BindPFlag(constants.ArgSchemaComments, rootCmd.PersistentFlags().Lookup(constants.ArgSchemaComments)))
+	cmdconfig.OnCmd(rootCmd).
+		// workspace profile profile is a global flag since install-dir(global) can be set through the workspace profile
+		AddPersistentStringFlag(constants.ArgWorkspaceProfile, "default", "The workspace profile to use").
+		AddPersistentFilepathFlag(constants.ArgInstallDir, app_specific.DefaultInstallDir, "Path to the Config Directory").
+		AddPersistentBoolFlag(constants.ArgSchemaComments, true, "Include schema comments when importing connection schemas")
 
 	AddCommands()
 
