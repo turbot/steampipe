@@ -578,6 +578,9 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		versionString = " v" + image.Config.Plugin.Version
 	}
 	docURL := fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
+	if !image.ImageRef.IsFromSteampipeHub() {
+		docURL = fmt.Sprintf("https://%s/%s", org, name)
+	}
 	return &display.PluginInstallReport{
 		Plugin:         fmt.Sprintf("%s@%s", name, stream),
 		Skipped:        false,
