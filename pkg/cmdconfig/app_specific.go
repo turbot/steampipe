@@ -25,6 +25,7 @@ func SetAppSpecificConstants() {
 	app_specific.ModDataExtension = ".sp"
 	app_specific.ModFileName = "mod.sp"
 	app_specific.ServiceConnectionAppNamePrefix = "steampipe_service"
+	app_specific.ConfigExtension = ".spc"
 	app_specific.VariablesExtension = ".spvars"
 	app_specific.WorkspaceIgnoreFile = ".steampipeignore"
 	app_specific.WorkspaceDataDir = ".steampipe"

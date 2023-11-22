@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/otiai10/copy"
-	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/utils"
 )
@@ -505,7 +504,7 @@ func resetConfig(test getConnectionsToUpdateTest) {
 }
 
 func connectionConfigPath(i int) string {
-	fileName := fmt.Sprintf("test%d%s", i, constants.ConfigExtension)
+	fileName := fmt.Sprintf("test%d%s", i, app_specific.ConfigExtension)
 	path := filepath.Join(filepaths.EnsureConfigDir(), fileName)
 	return path
 }

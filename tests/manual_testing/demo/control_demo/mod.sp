@@ -10,7 +10,7 @@ mod "m1" {
 
   opengraph {
     title = "Steampipe Mod for AWS CIS"
-    description = "CIS reports, queries, and actions for AWS. Open source CLI. No DB required."
+    description = "CIS reports, queries, and actions for AWS. Open source CLI. No DB required."`
   }
 //
 //  require {

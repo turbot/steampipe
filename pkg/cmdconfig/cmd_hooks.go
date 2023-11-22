@@ -33,7 +33,7 @@ var waitForTasksChannel chan struct{}
 var tasksCancelFn context.CancelFunc
 
 // preRunHook is a function that is executed before the PreRun of every command handler
-func preRunHook(cmd *cobra.Command, args []string) {
+func preRunHook(cmd *cobra.Command, args []string) error {
 	utils.LogTime("cmdhook.preRunHook start")
 	defer utils.LogTime("cmdhook.preRunHook end")
 
@@ -43,7 +43,7 @@ func preRunHook(cmd *cobra.Command, args []string) {
 
 	// steampipe completion should not create INSTALL DIR or seup/init global config
 	if cmd.Name() == "completion" {
-		return
+		return nil
 	}
 
 	// create a buffer which can be used as a sink for log writes
@@ -91,10 +91,11 @@ func preRunHook(cmd *cobra.Command, args []string) {
 
 	// set the max memory if specified
 	setMemoryLimit()
+	return nil
 }
 
 // postRunHook is a function that is executed after the PostRun of every command handler
-func postRunHook(cmd *cobra.Command, args []string) {
+func postRunHook(cmd *cobra.Command, args []string) error {
 	utils.LogTime("cmdhook.postRunHook start")
 	defer utils.LogTime("cmdhook.postRunHook end")
 
@@ -103,11 +104,12 @@ func postRunHook(cmd *cobra.Command, args []string) {
 		select {
 		case <-time.After(100 * time.Millisecond):
 			tasksCancelFn()
-			return
+			return nil
 		case <-waitForTasksChannel:
-			return
+			return nil
 		}
 	}
+	return nil
 }
 
 func setMemoryLimit() {

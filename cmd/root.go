@@ -57,7 +57,7 @@ func InitCmd() {
 	// global flags
 	cmdconfig.OnCmd(rootCmd).
 		// workspace profile profile is a global flag since install-dir(global) can be set through the workspace profile
-		AddPersistentStringFlag(constants.ArgWorkspaceProfile, "default", "The workspace profile to use").
+		AddPersistentStringFlag(constants.ArgWorkspaceProfile, "default", "The workspace to use").
 		AddPersistentFilepathFlag(constants.ArgInstallDir, app_specific.DefaultInstallDir, "Path to the Config Directory").
 		AddPersistentBoolFlag(constants.ArgSchemaComments, true, "Include schema comments when importing connection schemas")
 

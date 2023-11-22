@@ -2,6 +2,7 @@ package connection
 
 import (
 	"context"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/cmdconfig"
 	"log"
 
@@ -9,7 +10,6 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/filewatcher"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 )
@@ -28,7 +28,7 @@ func NewConnectionWatcher(pluginManager pluginManager) (*ConnectionWatcher, erro
 
 	watcherOptions := &filewatcher.WatcherOptions{
 		Directories: []string{filepaths.EnsureConfigDir()},
-		Include:     filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
+		Include:     filehelpers.InclusionsFromExtensions([]string{app_specific.ConfigExtension}),
 		ListFlag:    filehelpers.FilesRecursive,
 		EventMask:   fsnotify.Create | fsnotify.Remove | fsnotify.Rename | fsnotify.Write | fsnotify.Chmod,
 		OnChange: func(events []fsnotify.Event) {
