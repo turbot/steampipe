@@ -2,6 +2,7 @@ package steampipe_config_local
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"log"
 	"os"
 	"path/filepath"
