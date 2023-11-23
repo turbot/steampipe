@@ -2,6 +2,13 @@ module github.com/turbot/steampipe
 
 go 1.21
 
+replace (
+	github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50
+	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
+	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
+	github.com/turbot/steampipe-plugin-sdk/v5 => /Users/kai/Dev/github/turbot/steampipe-plugin-sdk
+)
+
 require (
 	github.com/Machiel/slugify v1.0.1
 	github.com/Masterminds/semver/v3 v3.2.1
@@ -70,7 +77,6 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Microsoft/hcsshim v0.11.1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371 // indirect
-	github.com/XiaoMi/pegasus-go-client v0.0.0-20210427083443-f3b6b08bc4c2 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/allegro/bigcache/v3 v3.1.0 // indirect
@@ -80,7 +86,6 @@ require (
 	github.com/aws/aws-sdk-go v1.44.183 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
-	github.com/bradfitz/gomemcache v0.0.0-20221031212613-62deef7fc822 // indirect
 	github.com/btubbs/datetime v0.1.1 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
@@ -91,10 +96,11 @@ require (
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/danwakefield/fnmatch v0.0.0-20160403171240-cbb64ac3d964 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/eko/gocache/v3 v3.1.2 // indirect
+	github.com/eko/gocache/lib/v4 v4.1.5 // indirect
+	github.com/eko/gocache/store/bigcache/v4 v4.2.1 // indirect
+	github.com/eko/gocache/store/ristretto/v4 v4.2.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
@@ -107,10 +113,10 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.14.0 // indirect
-	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/glog v1.1.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
@@ -159,7 +165,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/pegasus-kv/thrift v0.13.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/term v1.1.0 // indirect
@@ -210,12 +215,9 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20230913181813-007df8e322eb // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230920204549-e6e6cdab5c13 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
-	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apimachinery v0.26.2 // indirect
 )
 
 require (
@@ -236,10 +238,4 @@ require (
 require (
 	github.com/gosuri/uilive v0.0.4 // indirect
 	github.com/gosuri/uiprogress v0.0.1
-)
-
-replace (
-	github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50
-	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
-	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
 )
