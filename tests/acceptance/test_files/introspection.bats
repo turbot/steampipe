@@ -22,10 +22,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "8d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_query.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_query.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "resource=control | steampipe_introspection=info" {
@@ -41,10 +41,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "11d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_control.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_control.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "resource=variable | steampipe_introspection=info" {
@@ -62,10 +62,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "33d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_variable.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_variable.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "resource=benchmark | steampipe_introspection=info" {
@@ -81,10 +81,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "10d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_benchmark.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_benchmark.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "resource=dashboard | steampipe_introspection=info" {
@@ -100,10 +100,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "11d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "resource=dashboard_card | steampipe_introspection=info" {
@@ -119,10 +119,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "8d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_card.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_card.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "resource=dashboard_image | steampipe_introspection=info" {
@@ -138,10 +138,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "9d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_image.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_image.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "resource=dashboard_text | steampipe_introspection=info" {
@@ -157,10 +157,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "7d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_text.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_text.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "resource=dashboard_chart | steampipe_introspection=info" {
@@ -176,10 +176,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "9d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_chart.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_chart.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "resource=dashboard_flow | steampipe_introspection=info" {
@@ -195,10 +195,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "13d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_flow.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_flow.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "resource=dashboard_graph | steampipe_introspection=info" {
@@ -214,10 +214,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "14d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_graph.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_graph.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "resource=dashboard_hierarchy | steampipe_introspection=info" {
@@ -233,10 +233,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "13d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_hierarchy.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_hierarchy.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "resource=dashboard_input | steampipe_introspection=info" {
@@ -252,10 +252,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "9d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_input.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_input.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "resource=dashboard_table | steampipe_introspection=info" {
@@ -271,10 +271,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "9d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_table.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_table.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "ensure mod name in introspection table is <mod_name> not mod.<mod_name>" {
@@ -347,10 +347,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
     run sed -i "11d" output.json
   fi
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_control.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_info_control.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "steampipe check --where | steampipe_introspection=control" {
@@ -358,10 +358,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   export STEAMPIPE_INTROSPECTION=control
   steampipe check control.sample_control_1 --where "severity in ('high')" --export output.json
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_check_where.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_check_where.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 @test "steampipe check --tag | steampipe_introspection=control" {
@@ -369,10 +369,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   export STEAMPIPE_INTROSPECTION=control
   steampipe check control.sample_control_1 --tag foo=bar --export output.json
 
-  run jd -f patch "$TEST_DATA_DIR/expected_introspection_check_where.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f output.json*
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_introspection_check_where.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
 }
 
 function teardown_file() {
