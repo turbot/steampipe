@@ -106,6 +106,10 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 	if err := pluginManager.initialiseRateLimiterDefs(ctx); err != nil {
 		return nil, err
 	}
+
+	if err := pluginManager.initialisePluginColumns(ctx); err != nil {
+		return nil, err
+	}
 	return pluginManager, nil
 }
 
@@ -798,13 +802,32 @@ func (m *PluginManager) nonAggregatorConnectionCount() int {
 	return res
 }
 
-// getPluginExemplarConnections returns a map of keyed by plugin short name with the value an exemplar connection
+// getPluginExemplarConnections returns a map of keyed by plugin full name with the value an exemplar connection
 func (m *PluginManager) getPluginExemplarConnections() map[string]string {
 	res := make(map[string]string)
 	for _, c := range m.connectionConfigMap {
-		res[c.PluginShortName] = c.Connection
+		res[c.Plugin] = c.Connection
 	}
 	return res
+}
+
+func (m *PluginManager) tableExists(ctx context.Context, schema, table string) (bool, error) {
+	query := fmt.Sprintf(`SELECT EXISTS (
+    SELECT FROM 
+        pg_tables
+    WHERE 
+        schemaname = '%s' AND 
+        tablename  = '%s'
+    );`, schema, table)
+
+	row := m.pool.QueryRow(ctx, query)
+	var exists bool
+	err := row.Scan(&exists)
+
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 func nonAggregatorConnectionCount(connections []*sdkproto.ConnectionConfig) int {

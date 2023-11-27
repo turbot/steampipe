@@ -2,7 +2,6 @@ package introspection
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 
 	"github.com/turbot/steampipe/pkg/constants"
@@ -19,15 +18,15 @@ func GetPluginColumnTableCreateSql() db_common.QueryWithArgs {
 				description TEXT NULL,
 				list_config jsonb NULL,
 				get_config jsonb NULL,
-				hydrate_name string NULL,
-				default_value jsonb NULL,
+				hydrate_name TEXT NULL,
+				default_value jsonb NULL
 		);`, constants.InternalSchema, constants.PluginColumnTable),
 	}
 }
 
-func GetPluginColumnTablePopulateSqlForPlugin(pluginName string, schema *grpc.PluginSchema) ([]db_common.QueryWithArgs, error) {
+func GetPluginColumnTablePopulateSqlForPlugin(pluginName string, schema map[string]*proto.TableSchema) ([]db_common.QueryWithArgs, error) {
 	var res []db_common.QueryWithArgs
-	for tableName, tableSchema := range schema.Schema {
+	for tableName, tableSchema := range schema {
 		getKeyColumns := tableSchema.GetKeyColumnMap()
 		listKeyColumns := tableSchema.GetKeyColumnMap()
 		for _, columnSchema := range tableSchema.Columns {
@@ -54,7 +53,7 @@ func GetPluginColumnTablePopulateSql(
 	}
 	if columnSchema.Default != nil {
 		var err error
-		defaultValue, err = proto.ColumnValueToInterface(columnSchema.Default)
+		defaultValue, err = columnSchema.Default.ValueToInterface()
 		if err != nil {
 			return db_common.QueryWithArgs{}, err
 		}
@@ -83,17 +82,17 @@ func GetPluginColumnTablePopulateSql(
 
 	q := db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
-plugin_name,
+				plugin_name,
 				table_name ,
-				name ,
-				type ,
+				name,
+				type,
 				description,
 				list_config,
 				get_config,
 				hydrate_name,
-				default_value,
+				default_value
 )
-	VALUES($1,$2,$3,$4,$5,$6,$7,$9)`, constants.InternalSchema, constants.PluginColumnTable),
+	VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, constants.InternalSchema, constants.PluginColumnTable),
 		Args: []any{
 			pluginName,
 			tableName,
@@ -102,6 +101,7 @@ plugin_name,
 			description,
 			listConfig,
 			getConfig,
+			columnSchema.Hydrate,
 			defaultValue,
 		},
 	}
@@ -116,6 +116,17 @@ func GetPluginColumnTableDropSql() db_common.QueryWithArgs {
 			constants.InternalSchema,
 			constants.PluginColumnTable,
 		),
+	}
+}
+func GetPluginColumnTableDeletePluginSql(plugin string) db_common.QueryWithArgs {
+	return db_common.QueryWithArgs{
+		Query: fmt.Sprintf(
+			`DELETE FROM %s.%s
+WHERE plugin_name = $1;`,
+			constants.InternalSchema,
+			constants.PluginColumnTable,
+		),
+		Args: []any{plugin},
 	}
 }
 
