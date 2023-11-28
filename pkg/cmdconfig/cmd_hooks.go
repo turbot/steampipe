@@ -276,9 +276,9 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 }
 
 func getWorkspaceProfileLoader() (*steampipeconfig.WorkspaceProfileLoader, error) {
-	// set viper default for workspace profile, using STEAMPIPE_WORKSPACE env var
+	// set viper default for workspace profile, using EnvWorkspaceProfile env var
 	SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, String)
-	// set viper default for install dir, using STEAMPIPE_INSTALL_DIR env var
+	// set viper default for install dir, using EnvInstallDir env var
 	SetDefaultFromEnv(constants.EnvInstallDir, constants.ArgInstallDir, String)
 
 	// resolve the workspace profile dir
