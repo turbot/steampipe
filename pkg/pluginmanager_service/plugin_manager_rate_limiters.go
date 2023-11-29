@@ -24,7 +24,7 @@ func (m *PluginManager) ShouldFetchRateLimiterDefs() bool {
 	return m.pluginLimiters == nil
 }
 
-// HandlePluginLimiterChanges responds to changes in the plugin rate limiter defintions
+// HandlePluginLimiterChanges responds to changes in the plugin rate limiter definitions
 // update the stored limiters, refrresh the rate limiter table and call `setRateLimiters`
 // for all plugins with changed limiters
 func (m *PluginManager) HandlePluginLimiterChanges(newLimiters connection.PluginLimiterMap) error {
@@ -180,25 +180,6 @@ func (m *PluginManager) getUserDefinedLimitersForPlugin(plugin string) connectio
 	return userDefinedLimiters
 }
 
-func (m *PluginManager) rateLimiterTableExists(ctx context.Context) (bool, error) {
-	query := fmt.Sprintf(`SELECT EXISTS (
-    SELECT FROM 
-        pg_tables
-    WHERE 
-        schemaname = '%s' AND 
-        tablename  = '%s'
-    );`, constants.InternalSchema, constants.RateLimiterDefinitionTable)
-
-	row := m.pool.QueryRow(ctx, query)
-	var exists bool
-	err := row.Scan(&exists)
-
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
-}
-
 func (m *PluginManager) initialiseRateLimiterDefs(ctx context.Context) (e error) {
 	defer func() {
 		// this function uses reflection to extract and convert values
@@ -208,7 +189,7 @@ func (m *PluginManager) initialiseRateLimiterDefs(ctx context.Context) (e error)
 		}
 	}()
 
-	rateLimiterTableExists, err := m.rateLimiterTableExists(ctx)
+	rateLimiterTableExists, err := m.tableExists(ctx, constants.InternalSchema, constants.RateLimiterDefinitionTable)
 	if err != nil {
 		return err
 	}

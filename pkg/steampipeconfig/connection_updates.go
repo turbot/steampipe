@@ -160,7 +160,7 @@ func populateConnectionUpdates(ctx context.Context, pool *pgxpool.Pool, pluginMa
 		}
 	}
 
-	// TODO KAI TIDY INTO FUNCTION
+	// TODO TIDY INTO FUNCTION
 
 	log.Printf("[INFO] Identify connections to delete")
 	// connections to delete - any connection which is in connection state but NOT required connections
