@@ -10,7 +10,7 @@ require (
 	github.com/briandowns/spinner v1.23.0
 	github.com/c-bata/go-prompt v0.2.6
 	github.com/containerd/containerd v1.7.7
-	github.com/fatih/color v1.15.0
+	github.com/fatih/color v1.16.0
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gertd/go-pluralize v0.2.1
 	github.com/gin-contrib/static v0.0.1
@@ -28,7 +28,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.4.9
 	github.com/karrick/gows v0.3.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/mattn/go-isatty v0.0.19
+	github.com/mattn/go-isatty v0.0.20
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/opencontainers/image-spec v1.1.0-rc5
