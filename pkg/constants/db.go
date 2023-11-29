@@ -57,6 +57,7 @@ const (
 	RateLimiterDefinitionTable = "steampipe_plugin_limiter"
 	// PluginInstanceTable is the table used to store plugin configs
 	PluginInstanceTable = "steampipe_plugin"
+	PluginColumnTable   = "steampipe_plugin_column"
 
 	// LegacyConnectionStateTable is the table used to store steampipe connection state
 	LegacyConnectionStateTable       = "steampipe_connection_state"

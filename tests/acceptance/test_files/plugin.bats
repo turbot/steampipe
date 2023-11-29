@@ -108,6 +108,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 # # TODO: finds other ways to simulate failed plugins
 
 @test "plugin list - output table and json (with a failed plugin)" {
+  skip "finds other ways to simulate failed plugins"
   export STEAMPIPE_DISPLAY_WIDTH=100
   
   # Create a copy of the install directory

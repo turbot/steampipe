@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -26,7 +27,9 @@ func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *error
 	if errAndWarnings.GetError() == nil {
 		return w, errAndWarnings
 	}
-	missingVariablesError, ok := errAndWarnings.GetError().(*steampipeconfig.MissingVariableError)
+
+	var missingVariablesError steampipeconfig.MissingVariableError
+	ok := errors.As(errAndWarnings.GetError(), &missingVariablesError)
 	// if there was an error which is NOT a MissingVariableError, return it
 	if !ok {
 		return nil, errAndWarnings

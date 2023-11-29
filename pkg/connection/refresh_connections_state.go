@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -44,9 +45,9 @@ type refreshConnectionState struct {
 	exemplarSchemaMapMut sync.Mutex
 
 	// maps keyed by plugin which gives an exemplar connection name,
-	// if a plugin has an entry in this map, all connections schemas can be cloned from teh exemplar schema
+	// if a plugin has an entry in this map, all connections schemas can be cloned from the exemplar schema
 	exemplarSchemaMap map[string]string
-	// if a plugin has an entry in this map, all connections schemas can be cloned from teh exemplar schema
+	// if a plugin has an entry in this map, all connections schemas can be cloned from the exemplar schema
 	exemplarCommentsMap map[string]string
 	pluginManager       pluginManager
 }
@@ -113,20 +114,16 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	log.Printf("[INFO] created connectionUpdates")
 
 	//  reload plugin rate limiter definitions for all plugins which are updated - the plugin will already be loaded
-	if len(s.connectionUpdates.PluginsWithUpdatedBinary) > 0 {
-		updatedPluginLimiters, err := s.pluginManager.LoadPluginRateLimiters(s.connectionUpdates.PluginsWithUpdatedBinary)
+	// also repopulate the plugin column table
+	if err := s.updateRateLimiterDefinitions(ctx); err != nil {
+		s.res.Error = err
+		return
+	}
 
-		if err != nil {
-			s.res.Error = err
-			return
-		}
-
-		if len(updatedPluginLimiters) > 0 {
-			err := s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
-			if err != nil {
-				s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, error_helpers.NewErrorsAndWarning(err))
-			}
-		}
+	// update the plugin column table, based on connection updates and plugins with updated binaries
+	if err := s.updatePluginColumnTable(ctx); err != nil {
+		s.res.Error = err
+		return
 	}
 
 	// delete the connection state file - it will be rewritten when we are complete
@@ -147,8 +144,10 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 
 	// NOTE: delete any DYNAMIC plugin connections which will be updated
 	// to avoid them being accessed before they are updated
-	// TODO sure we can remove this
-	s.executeDeleteQueries(ctx, s.connectionUpdates.DynamicUpdates())
+	if err := s.executeDeleteQueries(ctx, s.connectionUpdates.DynamicUpdates()); err != nil {
+		s.res.Error = err
+		return
+	}
 
 	// update connectionState table to reflect the updates (i.e. set connections to updating/deleting/ready as appropriate)
 	// also this will update the schema hashes of plugins
@@ -173,6 +172,71 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	}
 
 	s.res.UpdatedConnections = true
+}
+
+// if any plugin binaries have changed update the rate limiter definitions
+func (s *refreshConnectionState) updateRateLimiterDefinitions(ctx context.Context) error {
+	if len(s.connectionUpdates.PluginsWithUpdatedBinary) == 0 {
+		return nil
+	}
+
+	updatedPluginLimiters, err := s.pluginManager.LoadPluginRateLimiters(s.connectionUpdates.PluginsWithUpdatedBinary)
+
+	if err != nil {
+		return err
+	}
+
+	if len(updatedPluginLimiters) > 0 {
+		err := s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
+		if err != nil {
+			s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, error_helpers.NewErrorsAndWarning(err))
+		}
+	}
+	return nil
+}
+
+// if any plugin binaries have changed update the plugin column table
+func (s *refreshConnectionState) updatePluginColumnTable(ctx context.Context) error {
+	var deletedPlugins []string
+	var updatedPlugins = map[string]*proto.Schema{}
+
+	currentPluginConnectionMap := s.connectionUpdates.CurrentConnectionState.GetPluginToConnectionMap()
+	finalPluginConnectionMap := s.connectionUpdates.FinalConnectionState.GetPluginToConnectionMap()
+
+	// add into plugin column table any plugins which have connections for the first time
+	for _, connectionState := range s.connectionUpdates.Update {
+		connectionName := connectionState.ConnectionName
+		if connectionState.SchemaMode == plugin.SchemaModeDynamic {
+			// plugin column table only supports static for now
+			continue
+		}
+		p := connectionState.Plugin
+		if _, ok := currentPluginConnectionMap[p]; !ok {
+			updatedPlugins[p] = s.connectionUpdates.ConnectionPlugins[connectionName].ConnectionMap[connectionName].Schema
+		}
+	}
+
+	// remove from plugin column table any plugins which have no connections
+	for connectionName := range s.connectionUpdates.Delete {
+		// get plugin for this connection
+		connectionState, ok := s.connectionUpdates.CurrentConnectionState[connectionName]
+		if !ok {
+			continue
+		}
+
+		p := connectionState.Plugin
+		if _, ok := finalPluginConnectionMap[p]; !ok {
+			deletedPlugins = append(deletedPlugins, p)
+		}
+	}
+
+	// update plugin column table for any plugins which have updated binaries
+	for p, connectionName := range s.connectionUpdates.PluginsWithUpdatedBinary {
+		updatedPlugins[p] = s.connectionUpdates.ConnectionPlugins[connectionName].ConnectionMap[connectionName].Schema
+	}
+
+	return s.pluginManager.UpdatePluginColumnsTable(ctx, updatedPlugins, deletedPlugins)
+
 }
 
 func (s *refreshConnectionState) addMissingPluginWarnings() {
@@ -736,9 +800,9 @@ func (s *refreshConnectionState) executeDeleteQuery(ctx context.Context, connect
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback(ctx)
+			_ = tx.Rollback(ctx)
 		} else {
-			tx.Commit(ctx)
+			err = tx.Commit(ctx)
 		}
 	}()
 
