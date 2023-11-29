@@ -2,8 +2,8 @@ package introspection
 
 import (
 	"fmt"
+	
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )
