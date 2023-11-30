@@ -28,7 +28,7 @@ func GetPluginColumnTablePopulateSqlForPlugin(pluginName string, schema map[stri
 	var res []db_common.QueryWithArgs
 	for tableName, tableSchema := range schema {
 		getKeyColumns := tableSchema.GetKeyColumnMap()
-		listKeyColumns := tableSchema.GetKeyColumnMap()
+		listKeyColumns := tableSchema.ListKeyColumnMap()
 		for _, columnSchema := range tableSchema.Columns {
 			getKeyColumn := getKeyColumns[columnSchema.Name]
 			listKeyColumn := listKeyColumns[columnSchema.Name]
