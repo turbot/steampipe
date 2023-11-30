@@ -2,7 +2,7 @@ package introspection
 
 import (
 	"fmt"
-	
+
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -80,6 +80,10 @@ func GetPluginColumnTablePopulateSql(
 		}
 	}
 
+	// special handling for strings
+	if s, ok := defaultValue.(string); ok {
+		defaultValue = fmt.Sprintf(`"%s"`, s)
+	}
 	q := db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
 				plugin_name,
