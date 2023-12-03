@@ -110,11 +110,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --output json --progress=false --export output.json
   output=""
-  run jd -f patch "$TEST_DATA_DIR/expected_check_json.json" output.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm output.json
-
-  assert_equal "$diff" ""
+  run jd "$TEST_DATA_DIR/expected_check_json.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
   cd -
 }
 
@@ -146,11 +145,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --export test.json --progress=false
   output=""
-  run jd -f patch "$TEST_DATA_DIR/expected_check_json.json" test.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-
-  assert_equal "$diff" ""
-  rm -f test.json
+  run jd "$TEST_DATA_DIR/expected_check_json.json" test.json
+  echo $output
+  assert_success
+  rm -f output.json
   cd -
 }
 
@@ -231,11 +229,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cd $CHECK_ALL_MOD
   run steampipe check all --export test.json --progress=false
   output=""
-  run jd -f patch "$TEST_DATA_DIR/expected_check_all.json" test.json
-  diff=$($FILE_PATH/json_patch.sh $output)
-  rm -f test.json
-
-  assert_equal $diff ""
+  run jd "$TEST_DATA_DIR/expected_check_all.json" test.json
+  echo $output
+  assert_success
+  rm -f output.json
   cd -
 }
 
