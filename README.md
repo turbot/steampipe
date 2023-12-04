@@ -345,4 +345,11 @@ This repository is published under the [AGPL 3.0](https://www.gnu.org/licenses/a
 Want to help but don't know where to start? Pick up one of the `help wanted` issues:
 * [Steampipe](https://github.com/turbot/steampipe/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
 
+## Turbot Pipes
+
+Want a hosted version of Steampipe? Bring your team to [Turbot Pipes](https://pipes.turbot.com?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
+
+## License
+
+Steampipe is distributed under [AGPL 3.0](https://github.com/turbot/steampipe/blob/main/LICENSE)
 
