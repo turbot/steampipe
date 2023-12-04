@@ -351,5 +351,5 @@ Want a hosted version of Steampipe? Bring your team to [Turbot Pipes](https://pi
 
 ## License
 
-Steampipe is distributed under [AGPL 3.0](https://github.com/turbot/steampipe/blob/main/LICENSE)
+Steampipe is distributed under [AGPL-3.0](https://github.com/turbot/steampipe/blob/main/LICENSE)
 
