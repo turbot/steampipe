@@ -25,4 +25,4 @@ https://steampipe.io/docs/develop/coding-standards
 
 ## Contributor license agreement
 
-To safeguard the legal integrity of our projects and facilitate their sustainable growth, we require all contributors to sign our [Contributor License Agreement (CLA)](https://turbot.com/legal/cla-faq). 
+To safeguard the legal integrity of our projects and facilitate their sustainable growth, we require a [Contributor License Agreement (CLA)](https://turbot.com/legal/cla-faq) for contributions to `turbot/steampipe`, `turbot/steampipe-docs`, and `turbot/pipe-fittings`. The `turbot/steampipe-plugin-*`, `turbot/steampipe-mod-*`, `turbot/steampipe-plugin-sdk`, `steampipe-postgres-fdw`, `steampipe-sqlite`, and `steampipe-export` repos do not require a CLA.
