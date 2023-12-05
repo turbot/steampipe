@@ -1,8 +1,10 @@
 package introspection
 
 import (
+	"encoding/json"
 	"fmt"
-	
+	"strings"
+
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -28,7 +30,7 @@ func GetPluginColumnTablePopulateSqlForPlugin(pluginName string, schema map[stri
 	var res []db_common.QueryWithArgs
 	for tableName, tableSchema := range schema {
 		getKeyColumns := tableSchema.GetKeyColumnMap()
-		listKeyColumns := tableSchema.GetKeyColumnMap()
+		listKeyColumns := tableSchema.ListKeyColumnMap()
 		for _, columnSchema := range tableSchema.Columns {
 			getKeyColumn := getKeyColumns[columnSchema.Name]
 			listKeyColumn := listKeyColumns[columnSchema.Name]
@@ -59,27 +61,19 @@ func GetPluginColumnTablePopulateSql(
 		}
 	}
 
-	type keyColumn struct {
-		Operators  []string `json:"operators,omitempty"`
-		Required   string   `json:"required"`
-		CacheMatch string   `json:"cache_match,omitempty"`
-	}
-	var listConfig, getConfig *keyColumn
+	var listConfig, getConfig keyColumn
+
 	if getKeyColumn != nil {
-		getConfig = &keyColumn{
-			Operators:  getKeyColumn.Operators,
-			Required:   getKeyColumn.Require,
-			CacheMatch: getKeyColumn.CacheMatch,
-		}
+		getConfig = newKeyColumn(getKeyColumn.Operators, getConfig.Required, getKeyColumn.CacheMatch)
 	}
 	if listKeyColumn != nil {
-		listConfig = &keyColumn{
-			Operators:  listKeyColumn.Operators,
-			Required:   listKeyColumn.Require,
-			CacheMatch: listKeyColumn.CacheMatch,
-		}
+		listConfig = newKeyColumn(listKeyColumn.Operators, listKeyColumn.Require, listKeyColumn.CacheMatch)
 	}
 
+	// special handling for strings
+	if s, ok := defaultValue.(string); ok {
+		defaultValue = fmt.Sprintf(`"%s"`, s)
+	}
 	q := db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
 				plugin_name,
@@ -118,6 +112,7 @@ func GetPluginColumnTableDropSql() db_common.QueryWithArgs {
 		),
 	}
 }
+
 func GetPluginColumnTableDeletePluginSql(plugin string) db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
@@ -139,4 +134,52 @@ func GetPluginColumnTableGrantSql() db_common.QueryWithArgs {
 			constants.DatabaseUsersRole,
 		),
 	}
+}
+
+type keyColumn struct {
+	Operators  []string `json:"operators,omitempty"`
+	Required   string   `json:"required,omitempty"`
+	CacheMatch string   `json:"cache_match,omitempty"`
+}
+
+func newKeyColumn(operators []string, required string, cacheMatch string) keyColumn {
+	return keyColumn{
+		Operators:  cleanOperators(operators),
+		Required:   required,
+		CacheMatch: cacheMatch,
+	}
+}
+
+// tactical - avoid html encoding operators
+func cleanOperators(operators []string) []string {
+	var res = make([]string, len(operators))
+	for i, operator := range operators {
+
+		switch operator {
+		case "<>":
+			operator = "!="
+		case ">":
+			operator = "GT"
+		case "<":
+			operator = "LT"
+		case ">=":
+			operator = "GE"
+		case "<=":
+			operator = "LE"
+		}
+		res[i] = operator
+	}
+	return res
+}
+
+// MarshalJSON implements the json.Marshaler interface
+// This method is responsible for providing the custom JSON encoding
+func (s keyColumn) MarshalJSON() ([]byte, error) {
+	type Alias keyColumn
+
+	b := new(strings.Builder)
+	encoder := json.NewEncoder(b)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(Alias(s))
+	return []byte(b.String()), err
 }
