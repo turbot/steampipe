@@ -61,17 +61,18 @@ func GetPluginColumnTablePopulateSql(
 		}
 	}
 
-	var listConfig, getConfig *keyColumn
+	var listConfig, getConfig keyColumn
+
 	if getKeyColumn != nil {
-		getConfig = &keyColumn{
-			Operators:  getKeyColumn.Operators,
+		getConfig = keyColumn{
+			Operators:  cleanOperators(getKeyColumn.Operators),
 			Required:   getKeyColumn.Require,
 			CacheMatch: getKeyColumn.CacheMatch,
 		}
 	}
 	if listKeyColumn != nil {
-		listConfig = &keyColumn{
-			Operators:  listKeyColumn.Operators,
+		listConfig = keyColumn{
+			Operators:  cleanOperators(listKeyColumn.Operators),
 			Required:   listKeyColumn.Require,
 			CacheMatch: listKeyColumn.CacheMatch,
 		}
@@ -148,21 +149,36 @@ type keyColumn struct {
 	CacheMatch string   `json:"cache_match,omitempty"`
 }
 
-// Custom MarshalJSON method
-func (kc keyColumn) MarshalJSON() ([]byte, error) {
-	type Alias keyColumn
-	return json.Marshal(&struct {
-		*Alias
-	}{
-		Alias: (*Alias)(&kc),
-	})
+// tactical - avoid html encoding operators
+func cleanOperators(operators []string) []string {
+	var res = make([]string, len(operators))
+	for i, operator := range operators {
+
+		switch operator {
+		case "<>":
+			operator = "!="
+		case ">":
+			operator = "GT"
+		case "<":
+			operator = "LT"
+		case ">=":
+			operator = "GE"
+		case "<=":
+			operator = "LE"
+		}
+		res[i] = operator
+	}
+	return res
 }
 
-// Custom Encoder that doesn't escape <, >, &
-func encodeJSONWithoutEscaping(v interface{}) (string, error) {
+// MarshalJSON implements the json.Marshaler interface
+// This method is responsible for providing the custom JSON encoding
+func (s keyColumn) MarshalJSON() ([]byte, error) {
+	type Alias keyColumn
+
 	b := new(strings.Builder)
 	encoder := json.NewEncoder(b)
 	encoder.SetEscapeHTML(false)
-	err := encoder.Encode(v)
-	return b.String(), err
+	err := encoder.Encode(Alias(s))
+	return []byte(b.String()), err
 }
