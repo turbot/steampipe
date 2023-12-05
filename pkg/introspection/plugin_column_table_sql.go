@@ -1,7 +1,9 @@
 package introspection
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -59,11 +61,6 @@ func GetPluginColumnTablePopulateSql(
 		}
 	}
 
-	type keyColumn struct {
-		Operators  []string `json:"operators,omitempty"`
-		Required   string   `json:"required"`
-		CacheMatch string   `json:"cache_match,omitempty"`
-	}
 	var listConfig, getConfig *keyColumn
 	if getKeyColumn != nil {
 		getConfig = &keyColumn{
@@ -143,4 +140,29 @@ func GetPluginColumnTableGrantSql() db_common.QueryWithArgs {
 			constants.DatabaseUsersRole,
 		),
 	}
+}
+
+type keyColumn struct {
+	Operators  []string `json:"operators,omitempty"`
+	Required   string   `json:"required"`
+	CacheMatch string   `json:"cache_match,omitempty"`
+}
+
+// Custom MarshalJSON method
+func (kc keyColumn) MarshalJSON() ([]byte, error) {
+	type Alias keyColumn
+	return json.Marshal(&struct {
+		*Alias
+	}{
+		Alias: (*Alias)(&kc),
+	})
+}
+
+// Custom Encoder that doesn't escape <, >, &
+func encodeJSONWithoutEscaping(v interface{}) (string, error) {
+	b := new(strings.Builder)
+	encoder := json.NewEncoder(b)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(v)
+	return b.String(), err
 }
