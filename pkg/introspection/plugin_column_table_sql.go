@@ -64,18 +64,10 @@ func GetPluginColumnTablePopulateSql(
 	var listConfig, getConfig keyColumn
 
 	if getKeyColumn != nil {
-		getConfig = keyColumn{
-			Operators:  cleanOperators(getKeyColumn.Operators),
-			Required:   getKeyColumn.Require,
-			CacheMatch: getKeyColumn.CacheMatch,
-		}
+		getConfig = newKeyColumn(getKeyColumn.Operators, getConfig.Required, getKeyColumn.CacheMatch)
 	}
 	if listKeyColumn != nil {
-		listConfig = keyColumn{
-			Operators:  cleanOperators(listKeyColumn.Operators),
-			Required:   listKeyColumn.Require,
-			CacheMatch: listKeyColumn.CacheMatch,
-		}
+		listConfig = newKeyColumn(listKeyColumn.Operators, listKeyColumn.Require, listKeyColumn.CacheMatch)
 	}
 
 	// special handling for strings
@@ -120,6 +112,7 @@ func GetPluginColumnTableDropSql() db_common.QueryWithArgs {
 		),
 	}
 }
+
 func GetPluginColumnTableDeletePluginSql(plugin string) db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
@@ -145,8 +138,16 @@ func GetPluginColumnTableGrantSql() db_common.QueryWithArgs {
 
 type keyColumn struct {
 	Operators  []string `json:"operators,omitempty"`
-	Required   string   `json:"required"`
+	Required   string   `json:"required,omitempty"`
 	CacheMatch string   `json:"cache_match,omitempty"`
+}
+
+func newKeyColumn(operators []string, required string, cacheMatch string) keyColumn {
+	return keyColumn{
+		Operators:  cleanOperators(operators),
+		Required:   required,
+		CacheMatch: cacheMatch,
+	}
 }
 
 // tactical - avoid html encoding operators
