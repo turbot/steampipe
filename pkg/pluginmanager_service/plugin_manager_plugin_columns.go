@@ -2,16 +2,18 @@ package pluginmanager_service
 
 import (
 	"context"
+	"github.com/turbot/steampipe/pkg/constants"
+	"golang.org/x/exp/maps"
+	"log"
+	"strings"
+
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/introspection"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
-	"golang.org/x/exp/maps"
-	"log"
 )
 
 func (m *PluginManager) initialisePluginColumns(ctx context.Context) error {
@@ -29,13 +31,17 @@ func (m *PluginManager) initialisePluginColumns(ctx context.Context) error {
 func (m *PluginManager) bootstrapPluginColumnTable(ctx context.Context) error {
 	schemas, err := m.loadPluginSchemas(m.getPluginExemplarConnections())
 	if err != nil {
+		log.Printf("[WARN] loadPluginSchemas error: %s", err.Error())
 		return err
 	}
 
 	if err := m.createPluginColumnsTable(ctx); err != nil {
+		log.Printf("[WARN] createPluginColumnsTable error: %s", err.Error())
 		return err
 	}
 	// now populate the table
+	log.Printf("[INFO] bootstrapPluginColumnTable loaded schema for plugins:  %s", strings.Join(maps.Keys(schemas), ","))
+
 	return m.populatePluginColumnsTable(ctx, schemas)
 }
 
@@ -57,6 +63,11 @@ func (m *PluginManager) createPluginColumnsTable(ctx context.Context) error {
 }
 
 func (m *PluginManager) populatePluginColumnsTable(ctx context.Context, schemas map[string]*proto.Schema) error {
+	if len(schemas) == 0 {
+		log.Printf("[INFO] populatePluginColumnsTable : no updates to plugin_columns table")
+		return nil
+	}
+	log.Printf("[INFO] populating plugin_columns table for plugins %s", strings.Join(maps.Keys(schemas), ","))
 	var queries []db_common.QueryWithArgs
 	for plugin, schema := range schemas {
 		// drop entries for this plugin
