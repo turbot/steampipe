@@ -2,30 +2,62 @@ package pluginmanager_service
 
 import (
 	"context"
-	"github.com/turbot/steampipe/pkg/constants"
-	"golang.org/x/exp/maps"
-	"log"
-	"strings"
-
+	"fmt"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/introspection"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
+	"golang.org/x/exp/maps"
+	"log"
+	"slices"
+	"strings"
 )
 
 func (m *PluginManager) initialisePluginColumns(ctx context.Context) error {
-	pluginColumnTableExists, err := m.tableExists(ctx, constants.InternalSchema, constants.PluginColumnTable)
-	if err != nil {
-		return err
-	}
-
-	if !pluginColumnTableExists {
+	if m.shouldBootstrapPluginColumnTable(ctx) {
 		return m.bootstrapPluginColumnTable(ctx)
 	}
 	return nil
+}
+
+func (m *PluginManager) shouldBootstrapPluginColumnTable(ctx context.Context) bool {
+	pluginColumnTableExists, err := m.tableExists(ctx, constants.InternalSchema, constants.PluginColumnTable)
+	if err != nil || !pluginColumnTableExists {
+		return true
+	}
+	// check columns match
+	query := fmt.Sprintf(`SELECT column_name
+  FROM information_schema.columns
+ WHERE table_schema = '%s'
+   AND table_name   = '%s'`, constants.InternalSchema, constants.PluginColumnTable)
+
+	rows, err := m.pool.Query(ctx, query)
+	if err != nil {
+		return true
+	}
+	defer rows.Close()
+	var columns []string
+	// Iterate through the rows
+	for rows.Next() {
+		var s string
+		err := rows.Scan(&s)
+		if err != nil {
+			return true
+		}
+		columns = append(columns, s)
+	}
+
+	// Check for errors from iterating over rows
+	if err = rows.Err(); err != nil {
+		return true
+	}
+
+	expectedColumns := []string{"plugin_", "table_name", "name", "type", " description", "list_config", "get_config", "hydrate_name", "default_value"}
+	return !slices.Equal(columns, expectedColumns)
 }
 
 func (m *PluginManager) bootstrapPluginColumnTable(ctx context.Context) error {
