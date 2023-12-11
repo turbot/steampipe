@@ -164,13 +164,13 @@ func cleanOperators(operators []string) []string {
 		case "<>":
 			operator = "!="
 		case ">":
-			operator = "GT"
+			operator = "gt"
 		case "<":
-			operator = "LT"
+			operator = "lt"
 		case ">=":
-			operator = "GE"
+			operator = "ge"
 		case "<=":
-			operator = "LE"
+			operator = "le"
 		}
 		res[i] = operator
 	}
