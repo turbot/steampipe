@@ -1,3 +1,12 @@
+## v0.21.2 [2023-12-12]
+_Whats new_
+* Add `steampipe_plugin_column` introspection table to the `steampipe_internal` schema. ([#4003](https://github.com/turbot/steampipe/issues/4003))
+
+_Bug fixes_
+* Fixes issue where a query would return 'null' for an empty result set when output is set to json. ([#3955](https://github.com/turbot/steampipe/issues/3955))
+* Fix custom registries bugs 
+* Clean up apt temporary files in Dockerfile 
+
 ## v0.21.1 [2023-10-03]
 _Bug fixes_
 * Added support for the missing `mod-location` flag to the `steampipe variable list` command. ([#3942](https://github.com/turbot/steampipe/issues/3942))
