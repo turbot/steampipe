@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/goccy/go-yaml"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/json"
@@ -15,11 +16,11 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"sigs.k8s.io/yaml"
 )
 
 // LoadFileData builds a map of filepath to file data
 func LoadFileData(paths ...string) (map[string][]byte, hcl.Diagnostics) {
+	``
 	var diags hcl.Diagnostics
 	var fileData = map[string][]byte{}
 

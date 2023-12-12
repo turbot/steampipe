@@ -2,18 +2,18 @@ package inputvars
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"os"
 	"regexp"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
+	"github.com/turbot/terraform-components/tfdiags"
 )
 
 // CollectVariableValues inspects the various places that configuration input variable

@@ -15,11 +15,10 @@ import (
 	"sync/atomic"
 	"unicode"
 
-	"github.com/hashicorp/terraform/terraform"
-
 	"github.com/bgentry/speakeasy"
 	"github.com/mattn/go-isatty"
 	"github.com/mitchellh/colorstring"
+	"github.com/turbot/terraform-components/terraform"
 )
 
 var defaultInputReader io.Reader

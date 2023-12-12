@@ -2,9 +2,9 @@ package inputvars
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
+	"github.com/turbot/terraform-components/tfdiags"
 )
 
 func CollectVariableValuesFromModRequire(m *modconfig.Mod, lock *versionmap.WorkspaceLock) (InputValues, error) {
