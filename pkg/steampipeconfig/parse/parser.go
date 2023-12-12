@@ -20,7 +20,6 @@ import (
 
 // LoadFileData builds a map of filepath to file data
 func LoadFileData(paths ...string) (map[string][]byte, hcl.Diagnostics) {
-	``
 	var diags hcl.Diagnostics
 	var fileData = map[string][]byte{}
 
