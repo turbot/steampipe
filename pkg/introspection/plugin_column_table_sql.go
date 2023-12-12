@@ -13,7 +13,7 @@ import (
 func GetPluginColumnTableCreateSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
-				plugin_name TEXT NOT NULL,
+				plugin TEXT NOT NULL,
 				table_name TEXT NOT NULL,
 				name TEXT NOT NULL,
 				type TEXT NOT NULL,
@@ -61,10 +61,10 @@ func GetPluginColumnTablePopulateSql(
 		}
 	}
 
-	var listConfig, getConfig keyColumn
+	var listConfig, getConfig *keyColumn
 
 	if getKeyColumn != nil {
-		getConfig = newKeyColumn(getKeyColumn.Operators, getConfig.Required, getKeyColumn.CacheMatch)
+		getConfig = newKeyColumn(getKeyColumn.Operators, getKeyColumn.Require, getKeyColumn.CacheMatch)
 	}
 	if listKeyColumn != nil {
 		listConfig = newKeyColumn(listKeyColumn.Operators, listKeyColumn.Require, listKeyColumn.CacheMatch)
@@ -74,9 +74,14 @@ func GetPluginColumnTablePopulateSql(
 	if s, ok := defaultValue.(string); ok {
 		defaultValue = fmt.Sprintf(`"%s"`, s)
 	}
+	var hydrate any = nil
+	if columnSchema.Hydrate != "" {
+		hydrate = columnSchema.Hydrate
+	}
+
 	q := db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
-				plugin_name,
+				plugin,
 				table_name ,
 				name,
 				type,
@@ -95,7 +100,7 @@ func GetPluginColumnTablePopulateSql(
 			description,
 			listConfig,
 			getConfig,
-			columnSchema.Hydrate,
+			hydrate,
 			defaultValue,
 		},
 	}
@@ -117,7 +122,7 @@ func GetPluginColumnTableDeletePluginSql(plugin string) db_common.QueryWithArgs 
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(
 			`DELETE FROM %s.%s
-WHERE plugin_name = $1;`,
+WHERE plugin = $1;`,
 			constants.InternalSchema,
 			constants.PluginColumnTable,
 		),
@@ -138,14 +143,14 @@ func GetPluginColumnTableGrantSql() db_common.QueryWithArgs {
 
 type keyColumn struct {
 	Operators  []string `json:"operators,omitempty"`
-	Required   string   `json:"required,omitempty"`
+	Require    string   `json:"require,omitempty"`
 	CacheMatch string   `json:"cache_match,omitempty"`
 }
 
-func newKeyColumn(operators []string, required string, cacheMatch string) keyColumn {
-	return keyColumn{
+func newKeyColumn(operators []string, require string, cacheMatch string) *keyColumn {
+	return &keyColumn{
 		Operators:  cleanOperators(operators),
-		Required:   required,
+		Require:    require,
 		CacheMatch: cacheMatch,
 	}
 }
@@ -159,13 +164,13 @@ func cleanOperators(operators []string) []string {
 		case "<>":
 			operator = "!="
 		case ">":
-			operator = "GT"
+			operator = "gt"
 		case "<":
-			operator = "LT"
+			operator = "lt"
 		case ">=":
-			operator = "GE"
+			operator = "ge"
 		case "<=":
-			operator = "LE"
+			operator = "le"
 		}
 		res[i] = operator
 	}

@@ -56,7 +56,6 @@ func (m *PluginManager) sendUpdateConnectionConfigs(requestMap map[string]*sdkpr
 			errors = append(errors, err)
 			continue
 		}
-
 		err = pluginClient.UpdateConnectionConfigs(req)
 		if err != nil {
 			errors = append(errors, err)
