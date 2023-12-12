@@ -338,11 +338,11 @@ This repository is published under the [AGPL 3.0](https://opensource.org/license
 
 [Steampipe](https://steampipe.io) is a product produced from this open source software, exclusively by [Turbot HQ, Inc](https://turbot.com). It is distributed under our commercial terms. Others are allowed to make their own distribution of the software, but they cannot use any of the Turbot trademarks, cloud services, etc. You can learn more in our [Open Source FAQ](https://turbot.com/open-source).
 
-## Get involved
+## Get Involved
 
-We thrive on feedback and community involvement!
+**[Join #steampipe on Slack →](https://turbot.com/community/join)**
 
-**Have a question?** → Join our [Slack community](https://turbot.com/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) or open a [GitHub issue](https://github.com/turbot/steampipe/issues/new/choose).
-
-**Want to work with the team?** → We are [hiring](https://turbot.com/careers?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)!
+Want to help but don't know where to start? Pick up one of the `help wanted` issues:
+* [Steampipe](https://github.com/turbot/steampipe/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
+* [Steampipe Plugin SDK](https://github.com/turbot/steampipe-plugin-sdk/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
 
