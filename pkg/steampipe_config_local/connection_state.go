@@ -102,10 +102,7 @@ func (d *ConnectionState) Equals(other *ConnectionState) bool {
 
 // allow for sub ms rounding errors when converting from PG
 func (d *ConnectionState) pluginModTimeChanged(other *ConnectionState) bool {
-	if d.PluginModTime.Sub(other.PluginModTime).Abs() > 1*time.Millisecond {
-		return true
-	}
-	return false
+	return d.PluginModTime.Sub(other.PluginModTime).Abs() > 1*time.Millisecond
 }
 
 func (d *ConnectionState) CanCloneSchema() bool {

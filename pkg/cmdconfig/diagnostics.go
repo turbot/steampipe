@@ -9,13 +9,13 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/error_helpers"
 )
 
 // DisplayConfig prints all config set via WorkspaceProfile or HCL options
 func DisplayConfig() {
-	diagnostics, ok := os.LookupEnv(constants.EnvConfigDump)
+	diagnostics, ok := os.LookupEnv(app_specific.EnvConfigDump)
 	if !ok {
 		// shouldn't happen
 		return

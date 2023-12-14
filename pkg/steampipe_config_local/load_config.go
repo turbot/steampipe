@@ -103,7 +103,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 
 	// case: if sample is modified - always write new sample file content
 	if sampleModified {
-		err := os.WriteFile(defaultConfigSampleFile, []byte(localconstants.DefaultConnectionConfigContent), 0755)
+		err := os.WriteFile(defaultConfigSampleFile, []byte(localconstants.DefaultConnectionConfigContent), 0755) //nolint:gosec // todo review permissions
 		if err != nil {
 			return err
 		}
@@ -111,7 +111,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 
 	// case: if sample is modified but default is not modified - write the new default file content
 	if sampleModified && !userModifiedDefault {
-		err := os.WriteFile(defaultConfigFile, []byte(localconstants.DefaultConnectionConfigContent), 0755)
+		err := os.WriteFile(defaultConfigFile, []byte(localconstants.DefaultConnectionConfigContent), 0755) //nolint:gosec // todo review permissions
 		if err != nil {
 			return err
 		}

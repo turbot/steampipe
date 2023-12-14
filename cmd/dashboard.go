@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	"log"
 	"os"
 	"strings"
@@ -17,6 +16,7 @@ import (
 	"github.com/turbot/pipe-ex/dashboardexecute"
 	"github.com/turbot/pipe-ex/dashboardserver"
 	initex "github.com/turbot/pipe-ex/initialisation"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/cloud"
 	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
@@ -31,7 +31,7 @@ import (
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/pipe-fittings/workspace"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
-
+	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	"gopkg.in/olahol/melody.v1"
 )
 
@@ -105,7 +105,7 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	error_helpers.FailOnError(err)
 
 	// if diagnostic mode is set, print out config and return
-	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
+	if _, ok := os.LookupEnv(app_specific.EnvConfigDump); ok {
 		localcmdconfig.DisplayConfig()
 		return
 	}
@@ -408,14 +408,15 @@ func onServerStarted(ctx context.Context, serverPort dashboardserver.ListenPort,
 	if isRunningAsService() {
 		// for service mode only, save the state
 		saveDashboardState(serverPort, serverListen)
-	} else {
-		// start browser if required
-		if viper.GetBool(constants.ArgBrowser) {
-			url := buildDashboardURL(serverPort, w)
-			if err := utils.OpenBrowser(url); err != nil {
-				dashboardserver.OutputWarning(ctx, "Could not start web browser.")
-				log.Println("[TRACE] dashboard server started but failed to start client", err)
-			}
+		return
+	}
+
+	// start browser if required
+	if viper.GetBool(constants.ArgBrowser) {
+		url := buildDashboardURL(serverPort, w)
+		if err := utils.OpenBrowser(url); err != nil {
+			dashboardserver.OutputWarning(ctx, "Could not start web browser.")
+			log.Println("[TRACE] dashboard server started but failed to start client", err)
 		}
 	}
 }

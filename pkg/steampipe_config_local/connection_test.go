@@ -1,374 +1,368 @@
 package steampipe_config_local
 
 import (
-	"fmt"
-	"github.com/turbot/pipe-fittings/app_specific"
-	"log"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/otiai10/copy"
-	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/utils"
 )
 
-type getConnectionsToUpdateTest struct {
-	// hcl connection config(s)
-	required []string
-	// current connection state
-	current  ConnectionStateMap
-	expected interface{}
-}
+// todo lint look at commented code
+//type getConnectionsToUpdateTest struct {
+//	// hcl connection config(s)
+//	required []string
+//	// current connection state
+//	current  ConnectionStateMap
+//	expected interface{}
+//}
+//
+//var connectionTest1ModTime = getTestFileModTime("test_data/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-1@latest/connection-test-1.plugin")
+//var connectionTest2ModTime = getTestFileModTime("test_data/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-2@latest/connection-test-2.plugin")
 
-var connectionTest1ModTime = getTestFileModTime("test_data/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-1@latest/connection-test-1.plugin")
-var connectionTest2ModTime = getTestFileModTime("test_data/connections_to_update/plugins_src/hub.steampipe.io/plugins/turbot/connection-test-2@latest/connection-test-2.plugin")
-
-var testCasesGetConnectionsToUpdate = map[string]getConnectionsToUpdateTest{
-	"no changes": {
-		required: []string{
-			`connection "a" {
-  plugin = "connection-test-1"
-}
-`},
-		current: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-		},
-		expected: &ConnectionUpdates{Update: ConnectionStateMap{}, Delete: nil, FinalConnectionState: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-		}},
-	},
-	"no changes multiple in same file same plugin": {
-		required: []string{
-			`connection "a" {
-  plugin = "connection-test-1"
-}
-
-connection "b" {
-  plugin = "connection-test-1"
-}
-`},
-		current: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-		},
-		expected: &ConnectionUpdates{Update: ConnectionStateMap{}, Delete: nil, FinalConnectionState: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-		}},
-	},
-	"no changes multiple in same file": {
-		required: []string{
-			`connection "a" {
-	 plugin = "connection-test-1"
-	}—
-	
-	connection "b" {
-	 plugin = "connection-test-2"
-	}
-	`},
-		current: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				PluginModTime: connectionTest2ModTime,
-			},
-		},
-		expected: &ConnectionUpdates{Update: ConnectionStateMap{}, Delete: nil, FinalConnectionState: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				PluginModTime: connectionTest2ModTime,
-			},
-		}},
-	},
-	"no changes multiple in different files same plugin": {
-		required: []string{
-			`connection "a" {
-	 plugin = "connection-test-1"
-	}`,
-			`connection "b" {
-	 plugin = "connection-test-1"
-	}
-	`},
-		current: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-		},
-		expected: &ConnectionUpdates{Update: ConnectionStateMap{}, Delete: nil, FinalConnectionState: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-		}},
-	},
-	"no changes multiple in different files": {
-		required: []string{
-			`connection "a" {
-	 plugin = "connection-test-1"
-	}`,
-			`connection "b" {
-	 plugin = "connection-test-2"
-	}
-	`},
-		current: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				PluginModTime: connectionTest2ModTime,
-			},
-		},
-		expected: &ConnectionUpdates{Update: ConnectionStateMap{}, Delete: nil, FinalConnectionState: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				PluginModTime: connectionTest2ModTime,
-			},
-		}},
-	},
-	"update": {
-		required: []string{
-			`connection "a" {
-	 plugin = "connection-test-1"
-	}
-	`},
-		current: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: time.Now(),
-			},
-		},
-		expected: &ConnectionUpdates{Update: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-		}, Delete: nil, FinalConnectionState: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-		}},
-	},
-
-	"update multiple in same file same plugin": {
-		required: []string{
-			`connection "a" {
-	 plugin = "connection-test-1"
-	}
-	
-	connection "b" {
-	 plugin = "connection-test-1"
-	}
-	`},
-		current: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: time.Now(),
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: time.Now(),
-			},
-		},
-		expected: &ConnectionUpdates{Update: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-		},
-			Delete: nil,
-			FinalConnectionState: ConnectionStateMap{
-				"a": {
-					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					PluginModTime: connectionTest1ModTime,
-				},
-				"b": {
-					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					PluginModTime: connectionTest1ModTime,
-				},
-			}},
-	},
-	"update multiple in same file": {
-		required: []string{
-			`connection "a" {
-	 plugin = "connection-test-1"
-	}
-	
-	connection "b" {
-	 plugin = "connection-test-2"
-	}
-	`},
-		current: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: time.Now(),
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				PluginModTime: time.Now(),
-			},
-		},
-		expected: &ConnectionUpdates{Update: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				PluginModTime: connectionTest2ModTime,
-			},
-		}, Delete: nil,
-			FinalConnectionState: ConnectionStateMap{
-				"a": {
-					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					PluginModTime: connectionTest1ModTime,
-				},
-				"b": {
-					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-					PluginModTime: connectionTest2ModTime,
-				},
-			}},
-	},
-	"update multiple in different files same plugin": {
-		required: []string{
-			`connection "a" {
-	 plugin = "connection-test-1"
-	}`,
-			`connection "b" {
-	 plugin = "connection-test-1"
-	}
-	`},
-		current: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: time.Now(),
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: time.Now(),
-			},
-		},
-		expected: &ConnectionUpdates{Update: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: connectionTest1ModTime,
-			},
-		},
-			Delete: nil,
-			FinalConnectionState: ConnectionStateMap{
-				"a": {
-					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					PluginModTime: connectionTest1ModTime,
-				},
-				"b": {
-					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					PluginModTime: connectionTest1ModTime,
-				},
-			}},
-	},
-	"update multiple in different files": {
-		required: []string{
-			`connection "a" {
-	 plugin = "connection-test-1"
-	}`,
-			`connection "b" {
-	 plugin = "connection-test-2"
-	}
-	`},
-		current: ConnectionStateMap{
-			"a": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-				PluginModTime: time.Now(),
-			},
-			"b": {
-				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-				PluginModTime: time.Now(),
-			},
-		},
-		expected: &ConnectionUpdates{
-			Update: ConnectionStateMap{
-				"a": {
-					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					PluginModTime: connectionTest1ModTime,
-				},
-				"b": {
-					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-					PluginModTime: connectionTest2ModTime,
-				},
-			},
-			Delete: nil,
-			FinalConnectionState: ConnectionStateMap{
-				"a": {
-					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
-					PluginModTime: connectionTest1ModTime,
-				},
-				"b": {
-					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
-					PluginModTime: connectionTest2ModTime,
-				},
-			}},
-	},
-
-	"not installed": {
-		required: []string{
-			`connection "a" {
-	 plugin = "not-installed"
-	}
-	`},
-		current:  ConnectionStateMap{},
-		expected: "SHOULD NOT BE ERROR?",
-	},
-}
+//var testCasesGetConnectionsToUpdate = map[string]getConnectionsToUpdateTest{
+//	"no changes": {
+//		required: []string{
+//			`connection "a" {
+//  plugin = "connection-test-1"
+//}
+//`},
+//		current: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//		},
+//		expected: &ConnectionUpdates{Update: ConnectionStateMap{}, Delete: nil, FinalConnectionState: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//		}},
+//	},
+//	"no changes multiple in same file same plugin": {
+//		required: []string{
+//			`connection "a" {
+//  plugin = "connection-test-1"
+//}
+//
+//connection "b" {
+//  plugin = "connection-test-1"
+//}
+//`},
+//		current: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//		},
+//		expected: &ConnectionUpdates{Update: ConnectionStateMap{}, Delete: nil, FinalConnectionState: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//		}},
+//	},
+//	"no changes multiple in same file": {
+//		required: []string{
+//			`connection "a" {
+//	 plugin = "connection-test-1"
+//	}—
+//
+//	connection "b" {
+//	 plugin = "connection-test-2"
+//	}
+//	`},
+//		current: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+//				PluginModTime: connectionTest2ModTime,
+//			},
+//		},
+//		expected: &ConnectionUpdates{Update: ConnectionStateMap{}, Delete: nil, FinalConnectionState: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+//				PluginModTime: connectionTest2ModTime,
+//			},
+//		}},
+//	},
+//	"no changes multiple in different files same plugin": {
+//		required: []string{
+//			`connection "a" {
+//	 plugin = "connection-test-1"
+//	}`,
+//			`connection "b" {
+//	 plugin = "connection-test-1"
+//	}
+//	`},
+//		current: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//		},
+//		expected: &ConnectionUpdates{Update: ConnectionStateMap{}, Delete: nil, FinalConnectionState: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//		}},
+//	},
+//	"no changes multiple in different files": {
+//		required: []string{
+//			`connection "a" {
+//	 plugin = "connection-test-1"
+//	}`,
+//			`connection "b" {
+//	 plugin = "connection-test-2"
+//	}
+//	`},
+//		current: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+//				PluginModTime: connectionTest2ModTime,
+//			},
+//		},
+//		expected: &ConnectionUpdates{Update: ConnectionStateMap{}, Delete: nil, FinalConnectionState: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+//				PluginModTime: connectionTest2ModTime,
+//			},
+//		}},
+//	},
+//	"update": {
+//		required: []string{
+//			`connection "a" {
+//	 plugin = "connection-test-1"
+//	}
+//	`},
+//		current: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: time.Now(),
+//			},
+//		},
+//		expected: &ConnectionUpdates{Update: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//		}, Delete: nil, FinalConnectionState: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//		}},
+//	},
+//
+//	"update multiple in same file same plugin": {
+//		required: []string{
+//			`connection "a" {
+//	 plugin = "connection-test-1"
+//	}
+//
+//	connection "b" {
+//	 plugin = "connection-test-1"
+//	}
+//	`},
+//		current: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: time.Now(),
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: time.Now(),
+//			},
+//		},
+//		expected: &ConnectionUpdates{Update: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//		},
+//			Delete: nil,
+//			FinalConnectionState: ConnectionStateMap{
+//				"a": {
+//					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//					PluginModTime: connectionTest1ModTime,
+//				},
+//				"b": {
+//					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//					PluginModTime: connectionTest1ModTime,
+//				},
+//			}},
+//	},
+//	"update multiple in same file": {
+//		required: []string{
+//			`connection "a" {
+//	 plugin = "connection-test-1"
+//	}
+//
+//	connection "b" {
+//	 plugin = "connection-test-2"
+//	}
+//	`},
+//		current: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: time.Now(),
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+//				PluginModTime: time.Now(),
+//			},
+//		},
+//		expected: &ConnectionUpdates{Update: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+//				PluginModTime: connectionTest2ModTime,
+//			},
+//		}, Delete: nil,
+//			FinalConnectionState: ConnectionStateMap{
+//				"a": {
+//					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//					PluginModTime: connectionTest1ModTime,
+//				},
+//				"b": {
+//					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+//					PluginModTime: connectionTest2ModTime,
+//				},
+//			}},
+//	},
+//	"update multiple in different files same plugin": {
+//		required: []string{
+//			`connection "a" {
+//	 plugin = "connection-test-1"
+//	}`,
+//			`connection "b" {
+//	 plugin = "connection-test-1"
+//	}
+//	`},
+//		current: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: time.Now(),
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: time.Now(),
+//			},
+//		},
+//		expected: &ConnectionUpdates{Update: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: connectionTest1ModTime,
+//			},
+//		},
+//			Delete: nil,
+//			FinalConnectionState: ConnectionStateMap{
+//				"a": {
+//					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//					PluginModTime: connectionTest1ModTime,
+//				},
+//				"b": {
+//					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//					PluginModTime: connectionTest1ModTime,
+//				},
+//			}},
+//	},
+//	"update multiple in different files": {
+//		required: []string{
+//			`connection "a" {
+//	 plugin = "connection-test-1"
+//	}`,
+//			`connection "b" {
+//	 plugin = "connection-test-2"
+//	}
+//	`},
+//		current: ConnectionStateMap{
+//			"a": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//				PluginModTime: time.Now(),
+//			},
+//			"b": {
+//				Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+//				PluginModTime: time.Now(),
+//			},
+//		},
+//		expected: &ConnectionUpdates{
+//			Update: ConnectionStateMap{
+//				"a": {
+//					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//					PluginModTime: connectionTest1ModTime,
+//				},
+//				"b": {
+//					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+//					PluginModTime: connectionTest2ModTime,
+//				},
+//			},
+//			Delete: nil,
+//			FinalConnectionState: ConnectionStateMap{
+//				"a": {
+//					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-1@latest",
+//					PluginModTime: connectionTest1ModTime,
+//				},
+//				"b": {
+//					Plugin:        "hub.steampipe.io/plugins/turbot/connection-test-2@latest",
+//					PluginModTime: connectionTest2ModTime,
+//				},
+//			}},
+//	},
+//
+//	"not installed": {
+//		required: []string{
+//			`connection "a" {
+//	 plugin = "not-installed"
+//	}
+//	`},
+//		current:  ConnectionStateMap{},
+//		expected: "SHOULD NOT BE ERROR?",
+//	},
+//}
 
 // This test is disabled since the code this one tests also starts up the plugin manager
 // process. We need to find a lower denominator to test the functionalities that this one covers
@@ -377,7 +371,7 @@ connection "b" {
 // 	// set steampipe dir
 // 	os.Chdir("./test_data/connections_to_update")
 // 	wd, _ := os.Getwd()
-// 	filepaths.InstallDir = wd
+// 	app_specific.InstallDir = wd
 
 // 	for name, test := range testCasesGetConnectionsToUpdate {
 // 		// setup connection config
@@ -424,7 +418,7 @@ var data1 = ConnectionState{
 	Plugin:        "plugin",
 	PluginModTime: time.Now().Round(time.Second),
 }
-var data1_duplicate = ConnectionState{
+var data1Duplicate = ConnectionState{
 	Plugin:        "plugin",
 	PluginModTime: time.Now().Round(time.Second),
 }
@@ -434,7 +428,7 @@ var data2 = ConnectionState{
 }
 
 var connectionDataEqualCases map[string]connectionDataEqual = map[string]connectionDataEqual{
-	"expected_equal":     {data1: &data1, data2: &data1_duplicate, expectation: true},
+	"expected_equal":     {data1: &data1, data2: &data1Duplicate, expectation: true},
 	"not_expected_equal": {data1: &data1, data2: &data2, expectation: false},
 }
 
@@ -447,92 +441,93 @@ func TestConnectionsUpdateEqual(t *testing.T) {
 	}
 }
 
-func setup(test getConnectionsToUpdateTest) {
-
-	os.RemoveAll(filepaths.EnsurePluginDir())
-	os.RemoveAll(filepaths.EnsureConfigDir())
-	os.RemoveAll(filepaths.EnsureInternalDir())
-
-	err := os.MkdirAll(filepaths.EnsurePluginDir(), os.ModePerm)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = os.MkdirAll(filepaths.EnsureConfigDir(), os.ModePerm)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, plugin := range test.current {
-		copyPlugin(plugin.Plugin)
-	}
-	setupTestConfig(test)
-}
-func teardown(test getConnectionsToUpdateTest) {
-	os.RemoveAll(filepaths.EnsurePluginDir())
-	os.RemoveAll(filepaths.EnsureConfigDir())
-	os.RemoveAll(filepaths.EnsureInternalDir())
-
-	for _, plugin := range test.current {
-		deletePlugin(plugin.Plugin)
-	}
-	resetConfig(test)
-}
-
-func setupTestConfig(test getConnectionsToUpdateTest) {
-	for i, config := range test.required {
-		if err := os.WriteFile(connectionConfigPath(i), []byte(config), 0644); err != nil {
-			log.Fatal(err)
-		}
-	}
-	err := os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
-	if err != nil {
-		log.Fatal(err)
-	}
-	test.current.Save()
-}
-
-func resetConfig(test getConnectionsToUpdateTest) {
-	connectionStatePath := filepaths.ConnectionStatePath()
-
-	os.Remove(connectionStatePath)
-	for i := range test.required {
-		os.Remove(connectionConfigPath(i))
-	}
-}
-
-func connectionConfigPath(i int) string {
-	fileName := fmt.Sprintf("test%d%s", i, app_specific.ConfigExtension)
-	path := filepath.Join(filepaths.EnsureConfigDir(), fileName)
-	return path
-}
-
-func copyPlugin(plugin string) {
-	source, err := filepath.Abs(filepath.Join("testdata", "connections_to_update", "plugins_src", plugin))
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	dest, err := filepath.Abs(filepath.Join(filepaths.EnsurePluginDir(), plugin))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = copy.Copy(source, dest)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-func deletePlugin(plugin string) {
-	dest, err := filepath.Abs(filepath.Join(filepaths.EnsurePluginDir(), plugin))
-	if err != nil {
-		log.Fatal(err)
-	}
-	os.RemoveAll(dest)
-}
+//
+//func setup(test getConnectionsToUpdateTest) {
+//
+//	os.RemoveAll(filepaths.EnsurePluginDir())
+//	os.RemoveAll(filepaths.EnsureConfigDir())
+//	os.RemoveAll(filepaths.EnsureInternalDir())
+//
+//	err := os.MkdirAll(filepaths.EnsurePluginDir(), os.ModePerm)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	err = os.MkdirAll(filepaths.EnsureConfigDir(), os.ModePerm)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	err = os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//
+//	for _, plugin := range test.current {
+//		copyPlugin(plugin.Plugin)
+//	}
+//	setupTestConfig(test)
+//}
+//func teardown(test getConnectionsToUpdateTest) {
+//	_ = os.RemoveAll(filepaths.EnsurePluginDir())
+//	_ = os.RemoveAll(filepaths.EnsureConfigDir())
+//	_ = os.RemoveAll(filepaths.EnsureInternalDir())
+//
+//	for _, plugin := range test.current {
+//		deletePlugin(plugin.Plugin)
+//	}
+//	resetConfig(test)
+//}
+//
+//func setupTestConfig(test getConnectionsToUpdateTest) {
+//	for i, config := range test.required {
+//		if err := os.WriteFile(connectionConfigPath(i), []byte(config), 0644); err != nil {
+//			log.Fatal(err)
+//		}
+//	}
+//	err := os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	_ = test.current.Save()
+//}
+//
+//func resetConfig(test getConnectionsToUpdateTest) {
+//	connectionStatePath := filepaths.ConnectionStatePath()
+//
+//	_ = os.Remove(connectionStatePath)
+//	for i := range test.required {
+//		_ = os.Remove(connectionConfigPath(i))
+//	}
+//}
+//
+//func connectionConfigPath(i int) string {
+//	fileName := fmt.Sprintf("test%d%s", i, app_specific.ConfigExtension)
+//	path := filepath.Join(filepaths.EnsureConfigDir(), fileName)
+//	return path
+//}
+//
+//func copyPlugin(plugin string) {
+//	source, err := filepath.Abs(filepath.Join("testdata", "connections_to_update", "plugins_src", plugin))
+//
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	dest, err := filepath.Abs(filepath.Join(filepaths.EnsurePluginDir(), plugin))
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//
+//	err = copy.Copy(source, dest)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//}
+//func deletePlugin(plugin string) {
+//	dest, err := filepath.Abs(filepath.Join(filepaths.EnsurePluginDir(), plugin))
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	_ = os.RemoveAll(dest)
+//}
 
 func getTestFileModTime(file string) time.Time {
 	modTime, _ := utils.FileModTime(file)

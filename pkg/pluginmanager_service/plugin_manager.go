@@ -18,6 +18,7 @@ import (
 	"github.com/sethvargo/go-retry"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/filepaths"
@@ -628,7 +629,7 @@ func (m *PluginManager) setPluginCacheSizeMap() {
 	m.pluginCacheSizeMap = make(map[string]int64, len(m.pluginConnectionConfigMap))
 
 	// read the env var setting cache size
-	maxCacheSizeMb, _ := strconv.Atoi(os.Getenv(constants.EnvCacheMaxSize))
+	maxCacheSizeMb, _ := strconv.Atoi(os.Getenv(app_specific.EnvCacheMaxSize))
 
 	// get total connection count for this pluginInstance (excluding aggregators)
 	numConnections := m.nonAggregatorConnectionCount()

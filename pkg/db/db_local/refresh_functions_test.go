@@ -6,15 +6,15 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/filepaths"
 )
 
 // / TODO REMOVE or put in debug location
 // test used for debug purposes to replicate `tuple concurrently updated` DB error
 func TestConcurrentPerms(t *testing.T) {
 	t.Skip()
-	filepaths.InstallDir = "/users/kai/.steampipe"
+	app_specific.InstallDir = "/users/kai/.steampipe"
 
 	ctx := context.Background()
 	res := StartServices(ctx, []string{"localhost"}, constants.DatabaseDefaultPort, "query")

@@ -82,11 +82,13 @@ func preRunHook(cmd *cobra.Command, args []string) error {
 	// runScheduledTasks skips running tasks if this instance is the plugin manager
 	waitForTasksChannel = runScheduledTasks(cmd.Context(), cmd, args, ew)
 
+	// todo kai when can we remove this
 	// ensure all plugin installation directories have a version.json file
 	// (this is to handle the case of migrating an existing installation from v0.20.x)
 	// no point doing this for the plugin-manager since that would have been done by the initiating CLI process
 	if !task.IsPluginManagerCmd(cmd) {
-		versionfile.EnsureVersionFilesInPluginDirectories()
+		// ignore errors - we don't want to fail the CLI startup because of this
+		_ = versionfile.EnsureVersionFilesInPluginDirectories()
 	}
 
 	// set the max memory if specified
@@ -246,6 +248,7 @@ func ensureInstallDir(installDir string) {
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way
 func displayDeprecationWarnings(errorsAndWarnings *error_helpers.ErrorAndWarnings) {
 	if len(errorsAndWarnings.Warnings) > 0 {
+		//nolint:forbidigo // we want to print to console here
 		fmt.Println(color.YellowString(fmt.Sprintf("\nDeprecation %s:", utils.Pluralize("warning", len(errorsAndWarnings.Warnings)))))
 		for _, warning := range errorsAndWarnings.Warnings {
 			fmt.Printf("%s\n\n", warning)

@@ -2,9 +2,13 @@ package cmdconfig
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/cloud"
 	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
@@ -15,8 +19,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
-	"os"
-	"strings"
 )
 
 // initConfig reads in config file and ENV variables if set.
@@ -103,7 +105,7 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader[*modcon
 		viper.SetDefault(constants.ArgCloudToken, *loader.DefaultProfile.CloudToken)
 	}
 	// 3) env var (STEAMIPE_CLOUD_TOKEN )
-	cmdconfig.SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgCloudToken, cmdconfig.EnvVarTypeString)
+	cmdconfig.SetDefaultFromEnv(app_specific.EnvCloudToken, constants.ArgCloudToken, cmdconfig.EnvVarTypeString)
 
 	// 4) explicit workspace profile
 	if p := loader.ConfiguredProfile; p != nil && p.CloudToken != nil {

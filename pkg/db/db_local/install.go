@@ -343,7 +343,7 @@ func resolveDatabaseName(oldDbName *string) string {
 		return *oldDbName
 	}
 	databaseName := constants.DatabaseName
-	if envValue, exists := os.LookupEnv(constants.EnvInstallDatabase); exists && len(envValue) > 0 {
+	if envValue, exists := os.LookupEnv(app_specific.EnvInstallDatabase); exists && len(envValue) > 0 {
 		// use whatever is supplied, if available
 		databaseName = envValue
 	}

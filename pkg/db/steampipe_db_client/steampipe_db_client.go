@@ -132,7 +132,9 @@ func (c *SteampipeDbClient) setShouldShowTiming(ctx context.Context, session *st
 	// if we are turning timing ON, fetch the ScanMetadataMaxId
 	// to ensure we only select the relevant scan metadata table entries
 	if currentShowTimingFlag && !c.showTimingFlag {
-		c.updateScanMetadataMaxId(ctx, session)
+		if err := c.updateScanMetadataMaxId(ctx, session); err != nil {
+			return err
+		}
 	}
 
 	c.showTimingFlag = currentShowTimingFlag
@@ -162,8 +164,8 @@ func (c *SteampipeDbClient) getQueryTiming(ctx context.Context, startTime time.T
 
 	var scanRows *ScanMetadataRow
 	err := db_common.ExecuteSystemClientCall(ctx, session.Connection, func(ctx context.Context, tx *sql.Tx) error {
-		query := fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
-		rows, err := tx.QueryContext(ctx, query)
+		query := fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > $1", constants.InternalSchema, constants.ForeignTableScanMetadata)
+		rows, err := tx.QueryContext(ctx, query, session.ScanMetadataMaxId)
 		if err != nil {
 			return err
 		}

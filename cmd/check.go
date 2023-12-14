@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/pipe-ex/controldisplay"
 	"github.com/turbot/pipe-ex/controlexecute"
 	"github.com/turbot/pipe-ex/controlstatus"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/contexthelpers"
@@ -119,7 +120,7 @@ func runCheckCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 	// if diagnostic mode is set, print out config and return
-	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
+	if _, ok := os.LookupEnv(app_specific.EnvConfigDump); ok {
 		localcmdconfig.DisplayConfig()
 		return
 	}

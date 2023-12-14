@@ -131,7 +131,11 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 
 	// delete the connection state file - it will be rewritten when we are complete
 	log.Printf("[INFO] deleting connections state file")
-	steampipe_config_local.DeleteConnectionStateFile()
+	if err := steampipe_config_local.DeleteConnectionStateFile(); err != nil {
+		s.res.Error = err
+		return
+	}
+
 	defer func() {
 		if s.res.Error == nil {
 			log.Printf("[INFO] saving connections state file")
@@ -148,7 +152,10 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	// NOTE: delete any DYNAMIC plugin connections which will be updated
 	// to avoid them being accessed before they are updated
 	// TODO sure we can remove this
-	s.executeDeleteQueries(ctx, s.connectionUpdates.DynamicUpdates())
+	if err := s.executeDeleteQueries(ctx, s.connectionUpdates.DynamicUpdates()); err != nil {
+		s.res.Error = err
+		return
+	}
 
 	// update connectionState table to reflect the updates (i.e. set connections to updating/deleting/ready as appropriate)
 	// also this will update the schema hashes of plugins

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	initex "github.com/turbot/pipe-ex/initialisation"
 	"os"
 	"path"
 	"strings"
@@ -15,6 +14,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-ex/dashboardexecute"
+	initex "github.com/turbot/pipe-ex/initialisation"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/contexthelpers"
@@ -120,7 +121,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	error_helpers.FailOnError(err)
 
 	// if diagnostic mode is set, print out config and return
-	if _, ok := os.LookupEnv(constants.EnvConfigDump); ok {
+	if _, ok := os.LookupEnv(app_specific.DefaultConfigPath); ok {
 		localcmdconfig.DisplayConfig()
 		return
 	}

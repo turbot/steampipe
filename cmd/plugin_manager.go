@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/cmdconfig"
 	"log"
 	"os"
 	"os/signal"
@@ -15,7 +14,8 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/logging"
 	"github.com/turbot/go-kit/types"
-	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/app_specific"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/filepaths"
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -108,7 +108,7 @@ func createPluginManager(cmd *cobra.Command) (*pluginmanager_service.PluginManag
 
 func shouldRunConnectionWatcher() bool {
 	// if EnvConnectionWatcher is set, overwrite the value in DefaultConnectionOptions
-	if envStr, ok := os.LookupEnv(constants.EnvConnectionWatcher); ok {
+	if envStr, ok := os.LookupEnv(app_specific.EnvConnectionWatcher); ok {
 		if parsedEnv, err := types.ToBool(envStr); err == nil {
 			return parsedEnv
 		}

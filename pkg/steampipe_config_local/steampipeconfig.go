@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/filepaths"
@@ -192,7 +193,7 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 	// we must manually apply env var defaulting
 
 	// if CacheEnabledEnvVar is set, overwrite the value in DefaultConnectionOptions
-	if envStr, ok := os.LookupEnv(constants.EnvCacheEnabled); ok {
+	if envStr, ok := os.LookupEnv(app_specific.EnvCacheEnabled); ok {
 		if parsedEnv, err := types.ToBool(envStr); err == nil {
 			c.DefaultConnectionOptions.Cache = &parsedEnv
 		}
@@ -203,7 +204,7 @@ func (c *SteampipeConfig) setDefaultConnectionOptions() {
 	}
 
 	// if CacheTTLEnvVar is set, overwrite the value in DefaultConnectionOptions
-	if ttlString, ok := os.LookupEnv(constants.EnvCacheTTL); ok {
+	if ttlString, ok := os.LookupEnv(app_specific.EnvCacheTTL); ok {
 		if parsed, err := types.ToInt64(ttlString); err == nil {
 			ttl := int(parsed)
 			c.DefaultConnectionOptions.CacheTTL = &ttl
