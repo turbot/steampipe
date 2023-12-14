@@ -8,11 +8,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   skip "currently does not pass due to bug - https://github.com/turbot/steampipe/issues/3743"
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_same_table_cols.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_same_table_cols.spc
 
-  run steampipe query "select c1,c2 from dyn_agg.t1 order by c1" --output json
+  steampipe query "select c1,c2 from dyn_agg.t1 order by c1" --output json > output.json
+  run jd "$TEST_DATA_DIR/dynamic_aggregators_same_tables_cols_result.json" output.json
   echo $output
-
+  assert_success
+  rm -f output.json
   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_same_table_cols.spc
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_same_tables_cols_result.json)"
 }
 
 # Aggregating two connections with different tables defined.
@@ -21,14 +22,17 @@ load "$LIB_BATS_SUPPORT/load.bash"
   skip "currently does not pass due to bug - https://github.com/turbot/steampipe/issues/3743"
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_table_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_table_mismatch.spc
 
-  run steampipe query "select c1,c2 from dyn_agg.t1 order by c1" --output json
+  steampipe query "select c1,c2 from dyn_agg.t1 order by c1" --output json > output.json
+  run jd "$TEST_DATA_DIR/dynamic_aggregators_table_mismatch_t1.json" output.json
   echo $output
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_table_mismatch_t1.json)"
+  assert_success
+  rm -f output.json
 
-  run steampipe query "select c1,c2 from dyn_agg.t2 order by c1" --output json
+  steampipe query "select c1,c2 from dyn_agg.t2 order by c1" --output json > output.json
+  run jd "$TEST_DATA_DIR/dynamic_aggregators_table_mismatch_t2.json" output.json
   echo $output
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_table_mismatch_t2.json)"
-
+  assert_success
+  rm -f output.json
   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_table_mismatch.spc
 }
 
@@ -39,11 +43,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   skip "currently does not pass due to bug - https://github.com/turbot/steampipe/issues/3743"
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_mismatch.spc
 
-  run steampipe query "select c1,c2,c3 from dyn_agg.t1 order by c1,c2,c3" --output json
+  steampipe query "select c1,c2,c3 from dyn_agg.t1 order by c1,c2,c3" --output json > output.json
+  run jd "$TEST_DATA_DIR/dynamic_aggregators_col_mismatch.json" output.json
   echo $output
-
+  assert_success
+  rm -f output.json
   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_mismatch.spc
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_mismatch.json)"
 }
 
 # Aggregating two connections with same tables defined, but mismatching type of columns.
@@ -53,11 +58,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   skip "currently does not pass due to bug - https://github.com/turbot/steampipe/issues/3743"
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch.spc
 
-  run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
+  steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json > output.json
+  run jd "$TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch.json" output.json
   echo $output
-
+  assert_success
+  rm -f output.json
   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch.spc
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch.json)"
 }
 
 # Aggregating two connections with same tables defined, but mismatching type of columns.
@@ -67,11 +73,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   skip "currently does not pass due to bug - https://github.com/turbot/steampipe/issues/3743"
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_2.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_2.spc
 
-  run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
+  steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json > output.json
+  run jd "$TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_2.json" output.json
   echo $output
-
+  assert_success
+  rm -f output.json
   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_2.spc
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_2.json)"
 }
 
 # Aggregating two connections with same tables defined, but mismatching type of columns.
@@ -81,11 +88,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
   skip "currently does not pass due to bug - https://github.com/turbot/steampipe/issues/3743"
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_3.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_3.spc
 
-  run steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json
+  steampipe query "select c1, c2 from dyn_agg.t1 order by c2" --output json > output.json
+  run jd "$TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_3.json" output.json
   echo $output
-
+  assert_success
+  rm -f output.json
   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_3.spc
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_3.json)"
 }
 
 # Aggregating two connections with same tables defined, but mismatching type of columns.
@@ -96,10 +104,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
   cp $SRC_DATA_DIR/dynamic_aggregator_tests/dynamic_aggregator_col_type_mismatch_4.spc $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_4.spc
 
   run steampipe query "select c1, c2 from dyn_agg.t1 order by c1,c2" --output json
+  run jd "$TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_4.json" output.json
   echo $output
-
+  assert_success
+  rm -f output.json
   rm -f $STEAMPIPE_INSTALL_DIR/config/dynamic_aggregator_col_type_mismatch_4.spc
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/dynamic_aggregators_col_type_mismatch_4.json)"
 }
 
 function setup_file() {

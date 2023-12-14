@@ -108,8 +108,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe check - output json" {
   cd $CONTROL_RENDERING_TEST_MOD
-  run steampipe check control.sample_control_mixed_results_1 --output=json --progress=false
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_check_json.json)"
+  run steampipe check control.sample_control_mixed_results_1 --output json --progress=false --export output.json
+  output=""
+  run jd "$TEST_DATA_DIR/expected_check_json.json" output.json
+  echo $output
+  assert_success
+  rm -f output.json
   cd -
 }
 
@@ -140,8 +144,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe check - export json" {
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --export test.json --progress=false
-  assert_equal "$(cat test.json)" "$(cat $TEST_DATA_DIR/expected_check_json.json)"
-  rm -f test.json
+  output=""
+  run jd "$TEST_DATA_DIR/expected_check_json.json" test.json
+  echo $output
+  assert_success
+  rm -f output.json
   cd -
 }
 
@@ -221,8 +228,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "steampipe check all" {
   cd $CHECK_ALL_MOD
   run steampipe check all --export test.json --progress=false
-  assert_equal "$(cat test.json)" "$(cat $TEST_DATA_DIR/expected_check_all.json)"
-  rm -f test.json
+  output=""
+  run jd "$TEST_DATA_DIR/expected_check_all.json" test.json
+  echo $output
+  assert_success
+  rm -f output.json
   cd -
 }
 
