@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-ex/dashboardexecute"
-	initex "github.com/turbot/pipe-ex/initialisation"
+	"github.com/turbot/pipe-ex/dashboardinit"
 	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
@@ -236,7 +236,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 			queryProvider, existingResource := ensureSnapshotQueryResource(name, resolvedQuery, initData.Workspace)
 
 			// we need to pass a dashboard initData to  GenerateSnapshot
-			baseInitData := initex.NewDashboardInitData(&initData.InitData)
+			baseInitData := dashboardinit.NewInitData(&initData.InitData)
 
 			// so a dashboard name was specified - just call GenerateSnapshot
 			snap, err := dashboardexecute.GenerateSnapshot(ctx, queryProvider.Name(), baseInitData, nil)

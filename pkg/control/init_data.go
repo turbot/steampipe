@@ -3,22 +3,22 @@ package control
 import (
 	"context"
 	"fmt"
-	controldisplay2 "github.com/turbot/pipe-ex/controldisplay"
-	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 	"net/url"
 	"strings"
 
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-ex/controldisplay"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/initialisation"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/workspace"
+	localcmdconfig "github.com/turbot/steampipe/pkg/cmdconfig"
 )
 
 type InitData struct {
 	initialisation.InitData
-	OutputFormatter          controldisplay2.Formatter
+	OutputFormatter          controldisplay.Formatter
 	ControlFilterWhereClause string
 }
 
@@ -62,7 +62,7 @@ func NewInitData(ctx context.Context) *InitData {
 		i.Result.AddWarnings("no controls or benchmarks found in current workspace")
 	}
 
-	if err := controldisplay2.EnsureTemplates(); err != nil {
+	if err := controldisplay.EnsureTemplates(); err != nil {
 		i.Result.Error = err
 		return i
 	}
@@ -147,7 +147,7 @@ func generateWhereClauseFromTags(tags []string) string {
 
 // register exporters for each of the supported check formats
 func (i *InitData) registerCheckExporters() {
-	exporters, err := controldisplay2.GetExporters()
+	exporters, err := controldisplay.GetExporters()
 	error_helpers.FailOnErrorWithMessage(err, "failed to load exporters")
 
 	// register all exporters
@@ -155,8 +155,8 @@ func (i *InitData) registerCheckExporters() {
 }
 
 // parseOutputArg parses the --output flag value and returns the Formatter that can format the data
-func parseOutputArg(arg string) (formatter controldisplay2.Formatter, err error) {
-	formatResolver, err := controldisplay2.NewFormatResolver()
+func parseOutputArg(arg string) (formatter controldisplay.Formatter, err error) {
+	formatResolver, err := controldisplay.NewFormatResolver()
 	if err != nil {
 		return nil, err
 	}
@@ -170,14 +170,14 @@ func initialiseCheckColorScheme() error {
 		// enforce plain output for non-terminals
 		theme = "plain"
 	}
-	themeDef, ok := controldisplay2.ColorSchemes[theme]
+	themeDef, ok := controldisplay.ColorSchemes[theme]
 	if !ok {
 		return fmt.Errorf("invalid theme '%s'", theme)
 	}
-	scheme, err := controldisplay2.NewControlColorScheme(themeDef)
+	scheme, err := controldisplay.NewControlColorScheme(themeDef)
 	if err != nil {
 		return err
 	}
-	controldisplay2.ControlColors = scheme
+	controldisplay.ControlColors = scheme
 	return nil
 }

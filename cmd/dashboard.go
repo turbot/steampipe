@@ -14,8 +14,8 @@ import (
 	"github.com/turbot/pipe-ex/controlstatus"
 	"github.com/turbot/pipe-ex/dashboardassets"
 	"github.com/turbot/pipe-ex/dashboardexecute"
+	"github.com/turbot/pipe-ex/dashboardinit"
 	"github.com/turbot/pipe-ex/dashboardserver"
-	initex "github.com/turbot/pipe-ex/initialisation"
 	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/cloud"
 	"github.com/turbot/pipe-fittings/cmdconfig"
@@ -129,17 +129,15 @@ func runDashboardCmd(cmd *cobra.Command, args []string) {
 	serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardListen))
 	error_helpers.FailOnError(serverListen.IsValid())
 
-	//serverHost := ""
-	//if serverListen == dashboardserver.ListenTypeLocal {
-	//	serverHost = "127.0.0.1"
-	//}
-	//
-	// TODO KAI this seem broken - check
+	serverHost := ""
+	if serverListen == dashboardserver.ListenTypeLocal {
+		serverHost = "127.0.0.1"
+	}
 
-	//if err := utils.IsPortBindable(serverHost, int(serverPort)); err != nil {
-	//	exitCode = constants.ExitCodeBindPortUnavailable
-	//	error_helpers.FailOnError(err)
-	//}
+	if err := utils.IsPortBindable(serverHost, int(serverPort)); err != nil {
+		exitCode = constants.ExitCodeBindPortUnavailable
+		error_helpers.FailOnError(err)
+	}
 
 	// create context for the dashboard execution
 	dashboardCtx, cancel := context.WithCancel(dashboardCtx)
@@ -239,7 +237,7 @@ func displaySnapshot(snapshot *dashboardtypes.SteampipeSnapshot) {
 	}
 }
 
-func initDashboard(ctx context.Context) *initex.DashboardInitData {
+func initDashboard(ctx context.Context) *dashboardinit.InitData {
 	dashboardserver.OutputWait(ctx, "Loading Workspace")
 
 	// initialise
@@ -256,19 +254,18 @@ func initDashboard(ctx context.Context) *initex.DashboardInitData {
 	return initData
 }
 
-func getInitData(ctx context.Context) *initex.DashboardInitData {
+func getInitData(ctx context.Context) *dashboardinit.InitData {
 	modLocation := viper.GetString(constants.ArgModLocation)
 	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx, modLocation)
 	if errAndWarnings.GetError() != nil {
-		return initex.NewDashboardInitData(initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())))
+		return dashboardinit.NewErrorDashboardInitData(fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error()))
 	}
 
 	i := initialisation.NewInitData()
 	i.Workspace = w
 	i.Result.Warnings = errAndWarnings.Warnings
 
-	// TODO KAI tidy
-	res := initex.NewDashboardInitData(i)
+	res := dashboardinit.NewInitData(i)
 
 	// start service if needed
 	serviceResult := localcmdconfig.EnsureService(ctx, constants.InvokerDashboard)
@@ -282,7 +279,7 @@ func getInitData(ctx context.Context) *initex.DashboardInitData {
 	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
 		res.RegisterExporters(dashboardExporters()...)
 		// validate required export formats
-		if err := i.ExportManager.ValidateExportFormat(viper.GetStringSlice(constants.ArgExport)); err != nil {
+		if err := res.ExportManager.ValidateExportFormat(viper.GetStringSlice(constants.ArgExport)); err != nil {
 			res.Result.Error = err
 			return res
 		}

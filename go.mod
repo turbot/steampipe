@@ -6,9 +6,9 @@ replace (
 	github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50
 	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
 	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
+	github.com/turbot/go-kit => ../go-kit
 	github.com/turbot/pipe-ex => ../pipe-ex
 	github.com/turbot/pipe-fittings => ../pipe-fittings
-	github.com/turbot/go-kit => ../go-kit
 )
 
 require (
@@ -41,7 +41,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
 	github.com/oras-project/oras-credentials-go v0.3.0 // indirect
-	github.com/otiai10/copy v1.14.0
+	github.com/otiai10/copy v1.14.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sethvargo/go-retry v0.2.4
 	github.com/shiena/ansicolor v0.0.0-20230509054315-a9deabde6e02 // indirect
@@ -238,12 +238,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.25.4 // indirect
 	github.com/aws/smithy-go v1.17.0 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
-	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
-	github.com/imdario/mergo v0.3.15 // indirect
+	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
-	github.com/mitchellh/reflectwalk v1.0.1 // indirect
+	github.com/mitchellh/reflectwalk v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect

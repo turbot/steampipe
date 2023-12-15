@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/pipe-fittings/cmdconfig"
 	"log"
 	"os"
 	"os/signal"
@@ -20,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/error_helpers"
@@ -744,6 +744,7 @@ func (c *InteractiveClient) handleErrorsAndWarningsNotification(ctx context.Cont
 	})
 
 }
+
 func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Context) {
 	// ignore schema update notifications until initialisation is complete
 	// (we may receive schema update messages from the initial refresh connections, but we do not need to reload
@@ -782,5 +783,7 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	defer c.executionLock.Unlock()
 
 	// refresh all connections in the pool - since the search path may have changed
-	c.client().ResetPools(ctx)
+	// TODO KAI find a different way to do this
+	// TODO kai is this needed - test and do a different way if needed
+	//c.client().ResetPools(ctx)
 }
