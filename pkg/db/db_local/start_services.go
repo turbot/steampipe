@@ -288,9 +288,10 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 		error_helpers.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
 	}
 
-	if err := utils.IsPortBindable(utils.GetFirstListenAddress(listenAddresses), port); err != nil {
-		return res.SetError(fmt.Errorf("cannot listen on port %d and %s %s. To check if there's any other steampipe services running, use %s", constants.Bold(port), utils.Pluralize("address", len(listenAddresses)), constants.Bold(strings.Join(listenAddresses, ",")), constants.Bold("steampipe service status --all")))
-	}
+	// TODO KAI this seem broken - check
+	//if err := utils.IsPortBindable(utils.GetFirstListenAddress(listenAddresses), port); err != nil {
+	//	return res.SetError(fmt.Errorf("cannot listen on port %d and %s %s. To check if there's any other steampipe services running, use %s", constants.Bold(port), utils.Pluralize("address", len(listenAddresses)), constants.Bold(strings.Join(listenAddresses, ",")), constants.Bold("steampipe service status --all")))
+	//}
 
 	if err := migrateLegacyPasswordFile(); err != nil {
 		return res.SetError(err)
@@ -308,6 +309,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 
 	// create a RunningInfo with empty database name
 	// we need this to connect to the service using 'root', required retrieve the name of the installed database
+
 	res.DbState = newRunningDBInstanceInfo(postgresCmd, listenAddresses, port, "", password, invoker)
 	err = res.DbState.Save()
 	if err != nil {
