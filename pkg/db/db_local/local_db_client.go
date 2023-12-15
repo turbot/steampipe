@@ -2,7 +2,6 @@ package db_local
 
 import (
 	"context"
-	"fmt"
 	"github.com/turbot/steampipe/pkg/db/steampipe_db_client"
 	"log"
 
@@ -61,7 +60,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_c
 func EnsureService(ctx context.Context, invoker constants.Invoker) *StartResult {
 	listenAddresses := StartListenType(ListenTypeLocal).ToListenAddresses()
 	port := viper.GetInt(constants.ArgDatabasePort)
-	log.Println(fmt.Sprintf("[TRACE] GetLocalClient - listenAddresses=%s, port=%d", listenAddresses, port))
+	log.Printf("[TRACE] GetLocalClient - listenAddresses=%s, port=%d", listenAddresses, port)
 	// start db if necessary
 	if err := EnsureDBInstalled(ctx); err != nil {
 		return newErrorStartResult(err)

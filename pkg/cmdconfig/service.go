@@ -20,6 +20,7 @@ func EnsureService(ctx context.Context, invoker constants.Invoker) db_common.Ini
 	})
 
 	// start a service if necessary
+	// TODO kai check this and use a const if correct
 	wd := viper.GetString(constants.ArgWorkspaceDatabase)
 	if wd != "local" {
 		return res
