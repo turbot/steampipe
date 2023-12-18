@@ -20,7 +20,7 @@ func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceU
 	log.Println("[INFO] RefreshConnections start")
 	defer log.Println("[INFO] RefreshConnections end")
 
-	// TODO KAI if we, for example, access a nil map, this does not seem to catch it and startup hangs
+	// TODO KAI if we, for example, access a nil map, this does not seem to catch it and startup hangs https://github.com/turbot/steampipe/issues/4033
 	defer func() {
 		if r := recover(); r != nil {
 			res = steampipe_config_local.NewErrorRefreshConnectionResult(helpers.ToError(r))
