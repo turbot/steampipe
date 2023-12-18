@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
 	"log"
 	"strings"
 
@@ -211,7 +212,7 @@ func initializeConnectionStateTable(ctx context.Context, conn *sql.Conn) error {
 	connectionStateMap, err := steampipe_config_local.LoadConnectionState(ctx, conn)
 	if err != nil {
 		// ignore relation not found error
-		if !db_common.IsRelationNotFoundError(err) {
+		if !steampipe_db_common.IsRelationNotFoundError(err) {
 			return err
 		}
 

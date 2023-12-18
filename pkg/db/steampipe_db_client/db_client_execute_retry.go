@@ -10,7 +10,6 @@ import (
 	"github.com/sethvargo/go-retry"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/db_common"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
@@ -44,7 +43,7 @@ func (c *SteampipeDbClient) startQueryWithRetries(ctx context.Context, session *
 
 		log.Println("[TRACE] queryError:", queryError)
 		// so there is an error - is it "relation not found"?
-		missingSchema, _, relationNotFound := db_common.GetMissingSchemaFromIsRelationNotFoundError(queryError)
+		missingSchema, _, relationNotFound := steampipe_db_common.GetMissingSchemaFromIsRelationNotFoundError(queryError)
 		if !relationNotFound {
 			log.Println("[TRACE] queryError not relation not found")
 			// just return it

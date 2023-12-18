@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/statushooks"
 	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
 )
 
 // LoadConnectionState populates a ConnectionStateMap from the connection_state table
@@ -112,7 +113,7 @@ func loadConnectionState(ctx context.Context, conn *sql.Conn, opts ...loadConnec
 
 	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
-		if !db_common.IsRelationNotFoundError(err) {
+		if !steampipe_db_common.IsRelationNotFoundError(err) {
 			return nil, err
 		}
 		// so it was a relation not found - try with legacy table

@@ -3,6 +3,7 @@ package connection
 import (
 	"context"
 	"database/sql"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
 	"log"
 
@@ -76,7 +77,7 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, conn db_common.ExecContext, name string) error {
+func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, conn steampipe_db_common.ExecContext, name string) error {
 	log.Println("[DEBUG] connectionStateTableUpdater.onConnectionReady start")
 	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionReady end")
 
@@ -90,7 +91,7 @@ func (u *connectionStateTableUpdater) onConnectionReady(ctx context.Context, con
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionCommentsLoaded(ctx context.Context, conn db_common.ExecContext, name string) error {
+func (u *connectionStateTableUpdater) onConnectionCommentsLoaded(ctx context.Context, conn steampipe_db_common.ExecContext, name string) error {
 	log.Println("[DEBUG] connectionStateTableUpdater.onConnectionCommentsLoaded start")
 	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionCommentsLoaded end")
 
@@ -104,7 +105,7 @@ func (u *connectionStateTableUpdater) onConnectionCommentsLoaded(ctx context.Con
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, conn db_common.ExecContext, name string) error {
+func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, conn steampipe_db_common.ExecContext, name string) error {
 	log.Println("[DEBUG] connectionStateTableUpdater.onConnectionDeleted start")
 	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionDeleted end")
 
@@ -121,7 +122,7 @@ func (u *connectionStateTableUpdater) onConnectionDeleted(ctx context.Context, c
 	return nil
 }
 
-func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, conn db_common.ExecContext, connectionName string, err error) error {
+func (u *connectionStateTableUpdater) onConnectionError(ctx context.Context, conn steampipe_db_common.ExecContext, connectionName string, err error) error {
 	log.Println("[DEBUG] connectionStateTableUpdater.onConnectionError start")
 	defer log.Println("[DEBUG] connectionStateTableUpdater.onConnectionError end")
 

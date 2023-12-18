@@ -212,7 +212,7 @@ func (c *SteampipeDbClient) Close(ctx context.Context) error {
 func (c *SteampipeDbClient) loadServerSettings(ctx context.Context) error {
 	serverSettings, err := serversettings.Load(ctx, c.ManagementPool)
 	if err != nil {
-		if notFound := db_common.IsRelationNotFoundError(err); notFound {
+		if notFound := steampipe_db_common.IsRelationNotFoundError(err); notFound {
 			// when connecting to pre-0.21.0 services, the steampipe_server_settings table will not be available.
 			// this is expected and not an error
 			// code which uses steampipe_server_settings should handle this

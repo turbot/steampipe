@@ -3,9 +3,8 @@ package connection_sync
 import (
 	"context"
 	"github.com/turbot/steampipe/pkg/db/steampipe_db_client"
+	"github.com/turbot/steampipe/pkg/db/steampipe_db_common"
 	"github.com/turbot/steampipe/pkg/steampipe_config_local"
-
-	"github.com/turbot/pipe-fittings/db_common"
 )
 
 // WaitForSearchPathSchemas identifies the first connection in the search path for each plugin,
@@ -23,7 +22,7 @@ func WaitForSearchPathSchemas(ctx context.Context, client *steampipe_db_client.S
 
 	// NOTE: if we failed to load conection state, this must be because we are connected to an older version of the CLI
 	// just return nil error
-	if db_common.IsRelationNotFoundError(err) {
+	if steampipe_db_common.IsRelationNotFoundError(err) {
 		return nil
 	}
 
