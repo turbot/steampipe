@@ -72,7 +72,7 @@ jobs:
           credentials_json: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS_CREDENTIAL_JSON }}
 
       - name: Get GCloud CLI
-        uses: google-github-actions/setup-gcloud@v1.1.1
+        uses: google-github-actions/setup-gcloud@v2.0.0
         with:
           project_id: ${{ env.PROJECT_ID }}
 
