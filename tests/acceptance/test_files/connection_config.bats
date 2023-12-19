@@ -129,7 +129,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     steampipe query "select 1"
 
     # check regions in connection config is being parsed and used
-    run steampipe query "select * from chaos6.chaos_regions order by id" --output json
+    run steampipe query "select id,region_name from chaos6.chaos_regions order by id" --output json
     result=$(echo $output | tr -d '[:space:]')
     # set the trimmed result as output
     run echo $result
@@ -148,7 +148,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     steampipe query "select 1"
 
     # check regions in connection config is being parsed and used
-    run steampipe query "select * from chaos6.chaos_regions order by id" --output json
+    run steampipe query "select id,region_name from chaos6.chaos_regions order by id" --output json
     result=$(echo $output | tr -d '[:space:]')
     # set the trimmed result as output
     run echo $result
@@ -167,7 +167,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     steampipe query "select 1"
 
     # check regions in connection config is being parsed and used
-    run steampipe query "select * from chaos6.chaos_regions order by id" --output json
+    run steampipe query "select id,region_name from chaos6.chaos_regions order by id" --output json
     result=$(echo $output | tr -d '[:space:]')
     # set the trimmed result as output
     run echo $result
