@@ -4,7 +4,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "select * from chaos.chaos_high_row_count order by column_0" {
   run steampipe query --output json  "select column_0,column_1,column_2,column_3,column_4,column_5,column_6,column_7,column_8,column_9,id from chaos.chaos_high_row_count order by column_0 limit 10"
   echo $output > $TEST_DATA_DIR/actual_4.json
-  run jd -f patch $TEST_DATA_DIR/actual_4.json $TEST_DATA_DIR/expected_1.json
+  run jd $TEST_DATA_DIR/actual_4.json $TEST_DATA_DIR/expected_1.json
   rm -f $TEST_DATA_DIR/actual_4.json
   assert_success
 }
@@ -19,8 +19,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_3.json)"
 }
 
-@test "select * from chaos.chaos_hydrate_columns_dependency where id='0'" {
-  run steampipe query --output json "select * from chaos.chaos_hydrate_columns_dependency where id='0'"
+@test "select * from chaos.chaos_hydrate_columns_dependency where id='0'" {  
+  run steampipe query --output json "select hydrate_column_1,hydrate_column_2,hydrate_column_3,hydrate_column_4,hydrate_column_5,id from chaos.chaos_hydrate_columns_dependency where id='0'"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_5.json)"
 }
 
