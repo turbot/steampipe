@@ -138,7 +138,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     # remove the config file
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
     # check output
-    assert_output --partial '["id":0,"region_name":"us-east-1"},"id":3,"region_name":"us-west-2"}]'
+    assert_output --partial '[{"id":0,"region_name":"us-east-1"},{"id":3,"region_name":"us-west-2"}]'
 
 }
 
@@ -157,7 +157,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     # remove the config file
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.yml
     # check output
-    assert_output --partial '["id":0,"region_name":"us-east-1"},"id":3,"region_name":"us-west-2"}]'
+    assert_output --partial '[{"id":0,"region_name":"us-east-1"},{"id":3,"region_name":"us-west-2"}]'
 
 }
 
@@ -176,7 +176,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     # remove the config file
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.json
     # check output
-    assert_output --partial '["id":0,"region_name":"us-east-1"},"id":3,"region_name":"us-west-2"}]'
+    assert_output --partial '[{"id":0,"region_name":"us-east-1"},{"id":3,"region_name":"us-west-2"}]'
 
 }
 
