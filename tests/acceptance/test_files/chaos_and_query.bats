@@ -3,7 +3,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "select * from chaos.chaos_high_row_count order by column_0" {
   run steampipe query --output json  "select column_0,column_1,column_2,column_3,column_4,column_5,column_6,column_7,column_8,column_9,id from chaos.chaos_high_row_count order by column_0 limit 10"
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_1.json)"
+  echo $output > $TEST_DATA_DIR/actual_4.json
+  run jd -f patch $TEST_DATA_DIR/actual_4.json $TEST_DATA_DIR/expected_1.json
+  rm -f $TEST_DATA_DIR/actual_4.json
+  assert_success
 }
 
 @test "select id, string_column, json_column, boolean_column from chaos.chaos_all_column_types where id='0'" {
