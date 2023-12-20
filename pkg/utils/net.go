@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"net"
 	"strings"
-	"time"
+
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 )
 
 func GetFirstListenAddress(listenAddresses []string) string {
@@ -80,14 +81,15 @@ func LocalLoopbackAddresses() ([]string, error) {
 }
 
 func IsPortBindable(host string, port int) error {
-	timeout := 5 * time.Millisecond
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, fmt.Sprintf("%d", port)), timeout)
+	addr := net.JoinHostPort(host, fmt.Sprintf("%d", port))
+	ln, err := net.Listen("tcp", addr)
+
 	if err != nil {
-		return nil
+		// Port is likely in use or unavailable.
+		sperr.WrapWithMessage(err, "port %s:%d is already in use", host, port)
 	}
-	if conn != nil {
-		defer conn.Close()
-		return fmt.Errorf("port %d is already in use", port)
-	}
+
+	// Close the listener and return the port as available.
+	ln.Close()
 	return nil
 }
