@@ -86,7 +86,7 @@ func IsPortBindable(host string, port int) error {
 
 	if err != nil {
 		// Port is likely in use or unavailable.
-		sperr.WrapWithMessage(err, "port %s:%d is already in use", host, port)
+		return sperr.WrapWithMessage(err, "port %s:%d is already in use", host, port)
 	}
 
 	// Close the listener and return the port as available.
