@@ -1,9 +1,12 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
-@test "select * from chaos.chaos_high_row_count order by column_0" {
-  run steampipe query --output json  "select * from chaos.chaos_high_row_count order by column_0 limit 10"
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_1.json)"
+@test "select from chaos.chaos_high_row_count order by column_0" {
+  run steampipe query --output json  "select column_0,column_1,column_2,column_3,column_4,column_5,column_6,column_7,column_8,column_9,id from chaos.chaos_high_row_count order by column_0 limit 10"
+  echo $output > $TEST_DATA_DIR/actual_1.json
+  run jd $TEST_DATA_DIR/actual_1.json $TEST_DATA_DIR/expected_1.json
+  rm -f $TEST_DATA_DIR/actual_1.json
+  assert_success
 }
 
 @test "select id, string_column, json_column, boolean_column from chaos.chaos_all_column_types where id='0'" {
@@ -11,17 +14,17 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_2.json)"
 }
 
-@test "select * from chaos.chaos_high_column_count order by column_0" {
+@test "select from chaos.chaos_high_column_count order by column_0" {
   run steampipe query --output json  "select * from chaos.chaos_high_column_count order by column_0 limit 10"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_3.json)"
 }
 
-@test "select * from chaos.chaos_hydrate_columns_dependency where id='0'" {
-  run steampipe query --output json "select * from chaos.chaos_hydrate_columns_dependency where id='0'"
+@test "select from chaos.chaos_hydrate_columns_dependency where id='0'" {  
+  run steampipe query --output json "select hydrate_column_1,hydrate_column_2,hydrate_column_3,hydrate_column_4,hydrate_column_5,id from chaos.chaos_hydrate_columns_dependency where id='0'"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_5.json)"
 }
 
-@test "select * from chaos.chaos_list_error" {
+@test "select from chaos.chaos_list_error" {
   run steampipe query "select fatal_error from chaos.chaos_list_errors"
   assert_output --partial 'fatalError'
 }
@@ -37,13 +40,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output --partial 'TRANSFORM ERROR'
 }
 
-@test "select * from chaos.chaos_hydrate_delay" {
+@test "select from chaos.chaos_hydrate_delay" {
   run steampipe query --output json "select delay from chaos.chaos_hydrate_errors order by id"
   assert_success
 }
 
-@test "select * from chaos.chaos_parallel_hydrate_columns  where id='0'" {
-  run steampipe query --output json "select * from chaos.chaos_parallel_hydrate_columns  where id='0'"
+@test "select from chaos.chaos_parallel_hydrate_columns  where id='0'" {  
+  run steampipe query --output json "select column_1,column_10,column_11,column_12,column_13,column_14,column_15,column_16,column_17,column_18,column_19,column_2,column_20,column_3,column_4,column_5,column_6,column_7,column_8,column_9,id from chaos.chaos_parallel_hydrate_columns  where id='0'"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_11.json)"
 }
 
