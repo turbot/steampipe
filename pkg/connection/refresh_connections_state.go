@@ -111,6 +111,13 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 		return
 	}
 
+	// if any connections in the final state are in error, that may mean we failed to start them
+	// - update the connection state table
+	if err := s.setFailedConnectionsToError(ctx); err != nil {
+		s.res.Error = err
+		return
+	}
+
 	log.Printf("[INFO] created connectionUpdates")
 
 	//  reload plugin rate limiter definitions for all plugins which are updated - the plugin will already be loaded
@@ -174,6 +181,23 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 	s.res.UpdatedConnections = true
 }
 
+func (s *refreshConnectionState) setFailedConnectionsToError(ctx context.Context) error {
+	conn, err := s.pool.Acquire(ctx)
+	if err != nil {
+		return sperr.WrapWithMessage(err, "failed to update connection state table")
+	}
+	defer conn.Release()
+
+	for _, c := range s.connectionUpdates.FinalConnectionState {
+		if c.State == constants.ConnectionStateError {
+			if err := s.tableUpdater.onConnectionError(ctx, conn.Conn(), c.ConnectionName, fmt.Errorf(c.Error())); err != nil {
+				return sperr.WrapWithMessage(err, "failed to update connection state table")
+			}
+		}
+	}
+	return nil
+}
+
 // if any plugin binaries have changed update the rate limiter definitions
 func (s *refreshConnectionState) updateRateLimiterDefinitions(ctx context.Context) error {
 	if len(s.connectionUpdates.PluginsWithUpdatedBinary) == 0 {
@@ -232,7 +256,10 @@ func (s *refreshConnectionState) updatePluginColumnTable(ctx context.Context) er
 
 	// update plugin column table for any plugins which have updated binaries
 	for p, connectionName := range s.connectionUpdates.PluginsWithUpdatedBinary {
-		updatedPlugins[p] = s.connectionUpdates.ConnectionPlugins[connectionName].ConnectionMap[connectionName].Schema
+		// do we actually have a connection plugin for this plugin?
+		if connectionPlugin, ok := s.connectionUpdates.ConnectionPlugins[connectionName]; ok {
+			updatedPlugins[p] = connectionPlugin.ConnectionMap[connectionName].Schema
+		}
 	}
 
 	return s.pluginManager.UpdatePluginColumnsTable(ctx, updatedPlugins, deletedPlugins)
@@ -272,7 +299,7 @@ func (s *refreshConnectionState) logRefreshConnectionResults() {
 
 	var op strings.Builder
 	if s.connectionUpdates != nil {
-		op.WriteString(fmt.Sprintf("%s", s.connectionUpdates.String()))
+		op.WriteString(s.connectionUpdates.String())
 	}
 	if s.res != nil {
 		op.WriteString(fmt.Sprintf("%s\n", s.res.String()))
@@ -479,7 +506,9 @@ func (s *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Context
 				errors = append(errors, connectionError.err)
 				conn, poolErr := s.pool.Acquire(ctx)
 				if poolErr == nil {
-					s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionError.name, connectionError.err)
+					if err := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionError.name, connectionError.err); err != nil {
+						log.Println("[WARN] failed to update connection state table", err.Error())
+					}
 					conn.Release()
 				}
 			}
