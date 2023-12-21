@@ -1,39 +1,30 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
-@test "select * from chaos.chaos_high_row_count order by column_0" {
-  steampipe query --output json  "select * from chaos.chaos_high_row_count order by column_0 limit 10" > output.json
-  run jd "$TEST_DATA_DIR/expected_1.json" output.json
-  echo $output
+@test "select from chaos.chaos_high_row_count order by column_0" {
+  run steampipe query --output json  "select column_0,column_1,column_2,column_3,column_4,column_5,column_6,column_7,column_8,column_9,id from chaos.chaos_high_row_count order by column_0 limit 10"
+  echo $output > $TEST_DATA_DIR/actual_1.json
+  run jd $TEST_DATA_DIR/actual_1.json $TEST_DATA_DIR/expected_1.json
+  rm -f $TEST_DATA_DIR/actual_1.json
   assert_success
-  rm -f output.json
 }
 
 @test "select id, string_column, json_column, boolean_column from chaos.chaos_all_column_types where id='0'" {
-  steampipe query --output json  "select id, string_column, json_column, boolean_column from chaos.chaos_all_column_types where id='0'" > output.json
-  run jd "$TEST_DATA_DIR/expected_2.json" output.json
-  echo $output
-  assert_success
-  rm -f output.json
+  run steampipe query --output json  "select id, string_column, json_column, boolean_column from chaos.chaos_all_column_types where id='0'"
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_2.json)"
 }
 
-@test "select * from chaos.chaos_high_column_count order by column_0" {
-  steampipe query --output json  "select * from chaos.chaos_high_column_count order by column_0 limit 10" > output.json
-  run jd "$TEST_DATA_DIR/expected_3.json" output.json
-  echo $output
-  assert_success
-  rm -f output.json
+@test "select from chaos.chaos_high_column_count order by column_0" {
+  run steampipe query --output json  "select * from chaos.chaos_high_column_count order by column_0 limit 10"
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_3.json)"
 }
 
-@test "select * from chaos.chaos_hydrate_columns_dependency where id='0'" {
-  steampipe query --output json "select * from chaos.chaos_hydrate_columns_dependency where id='0'" > output.json
-  run jd "$TEST_DATA_DIR/expected_5.json" output.json
-  echo $output
-  assert_success
-  rm -f output.json
+@test "select from chaos.chaos_hydrate_columns_dependency where id='0'" {  
+  run steampipe query --output json "select hydrate_column_1,hydrate_column_2,hydrate_column_3,hydrate_column_4,hydrate_column_5,id from chaos.chaos_hydrate_columns_dependency where id='0'"
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_5.json)"
 }
 
-@test "select * from chaos.chaos_list_error" {
+@test "select from chaos.chaos_list_error" {
   run steampipe query "select fatal_error from chaos.chaos_list_errors"
   assert_output --partial 'fatalError'
 }
@@ -49,33 +40,24 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output --partial 'TRANSFORM ERROR'
 }
 
-@test "select * from chaos.chaos_hydrate_delay" {
+@test "select from chaos.chaos_hydrate_delay" {
   run steampipe query --output json "select delay from chaos.chaos_hydrate_errors order by id"
   assert_success
 }
 
-@test "select * from chaos.chaos_parallel_hydrate_columns  where id='0'" {
-  steampipe query --output json "select * from chaos.chaos_parallel_hydrate_columns  where id='0'" > output.json
-  run jd "$TEST_DATA_DIR/expected_11.json" output.json
-  echo $output
-  assert_success
-  rm -f output.json
+@test "select from chaos.chaos_parallel_hydrate_columns  where id='0'" {  
+  run steampipe query --output json "select column_1,column_10,column_11,column_12,column_13,column_14,column_15,column_16,column_17,column_18,column_19,column_2,column_20,column_3,column_4,column_5,column_6,column_7,column_8,column_9,id from chaos.chaos_parallel_hydrate_columns  where id='0'"
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_11.json)"
 }
 
 @test "select float32_data, id, int64_data, uint16_data from chaos.chaos_all_numeric_column  where id='31'" {
-  steampipe query --output json "select float32_data, id, int64_data, uint16_data from chaos.chaos_all_numeric_column  where id='31'" > output.json
-  run jd "$TEST_DATA_DIR/expected_12.json" output.json
-  echo $output
-  assert_success
-  rm -f output.json
+  run steampipe query --output json "select float32_data, id, int64_data, uint16_data from chaos.chaos_all_numeric_column  where id='31'"
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_12.json)"
 }
 
 @test "select transform_method_column from chaos_transforms order by id" {
-  steampipe query --output json "select transform_method_column from chaos_transforms order by id" > output.json
-  run jd "$TEST_DATA_DIR/expected_14.json" output.json
-  echo $output
-  assert_success
-  rm -f output.json
+  run steampipe query --output json "select transform_method_column from chaos_transforms order by id"
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_14.json)"
 }
 
 @test "select parent_should_ignore_error from chaos.chaos_list_parent_child" {
@@ -84,31 +66,22 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "select from_qual_column from chaos_transforms where id=2" {
-  steampipe query --output json "select from_qual_column from chaos_transforms where id=2" > output.json
-  run jd "$TEST_DATA_DIR/expected_13.json" output.json
-  echo $output
-  assert_success
-  rm -f output.json
+  run steampipe query --output json "select from_qual_column from chaos_transforms where id=2"
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_13.json)"
 }
 
 @test "public schema insert select all types" {
   steampipe query "drop table if exists all_columns"
   steampipe query "create table all_columns (nullcolumn CHAR(2), booleancolumn boolean, textcolumn1 CHAR(20), textcolumn2 VARCHAR(20),  textcolumn3 text, integercolumn1 smallint, integercolumn2 int, integercolumn3 SERIAL, integercolumn4 bigint,  integercolumn5 bigserial, numericColumn numeric(6,4), realColumn real, floatcolumn float,  date1 DATE,  time1 TIME,  timestamp1 TIMESTAMP, timestamp2 TIMESTAMPTZ, interval1 INTERVAL, array1 text[], jsondata jsonb, jsondata2 json, uuidcolumn UUID, ipAddress inet, macAddress macaddr, cidrRange cidr, xmlData xml, currency money)"
   steampipe query "INSERT INTO all_columns (nullcolumn, booleancolumn, textcolumn1, textcolumn2, textcolumn3, integercolumn1, integercolumn2, integercolumn3, integercolumn4, integercolumn5, numericColumn, realColumn, floatcolumn, date1, time1, timestamp1, timestamp2, interval1, array1, jsondata, jsondata2, uuidcolumn, ipAddress, macAddress, cidrRange, xmlData, currency) VALUES (NULL, TRUE, 'Yes', 'test for varchar', 'This is a very long text for the PostgreSQL text column', 3278, 21445454, 2147483645, 92233720368547758, 922337203685477580, 23.5141543, 4660.33777, 4.6816421254887534, '1978-02-05', '08:00:00', '2016-06-22 19:10:25-07', '2016-06-22 19:10:25-07', '1 year 2 months 3 days', '{\"(408)-589-5841\"}','{ \"customer\": \"John Doe\", \"items\": {\"product\": \"Beer\",\"qty\": 6}}', '{ \"customer\": \"John Doe\", \"items\": {\"product\": \"Beer\",\"qty\": 6}}', '6948DF80-14BD-4E04-8842-7668D9C001F5', '192.168.0.0', '08:00:2b:01:02:03', '10.1.2.3/32', '<book><title>Manual</title><chapter>...</chapter></book>', 922337203685477.57)"
-  steampipe query "select * from all_columns" --output json > output.json
-  run jd "$TEST_DATA_DIR/expected_6.json" output.json
-  echo $output
-  assert_success
-  rm -f output.json
+  run steampipe query "select * from all_columns" --output json
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_6.json)"
   run steampipe query "drop table all_columns"
 }
 
 @test "query json" {
-  steampipe query "select 1 as val, 2 as col" --output json > output.json
-  run jd "$TEST_DATA_DIR/expected_query_json.json" output.json
-  echo $output
-  assert_success
-  rm -f output.json
+  run steampipe query "select 1 as val, 2 as col" --output json
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_query_json.json)"
 }
 
 @test "query csv" {
@@ -181,11 +154,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "json" {
-  steampipe query --output json "select id, string_column, json_column from chaos.chaos_all_column_types where id='0'" > output.json
-  run jd "$TEST_DATA_DIR/expected_json.json" output.json
-  echo $output
-  assert_success
-  rm -f output.json
+  run steampipe query --output json "select id, string_column, json_column from chaos.chaos_all_column_types where id='0'"
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_json.json)"
 }
 
 @test "line" {
@@ -254,11 +224,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe mod install
   # run steampipe query twice - the bug we are testing for caused the workspace lock to be deleted after the first query
   steampipe query "select 1 as a" --output json
-  steampipe query "select 1 as a" --output json > output.json
-  run jd "$TEST_DATA_DIR/expected_15.json" output.json
-  echo $output
-  assert_success
-  rm -f output.json
+  run steampipe query "select 1 as a" --output json
+  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_15.json)"
 }
 
 function teardown_file() {
