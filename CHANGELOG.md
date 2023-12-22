@@ -1,4 +1,10 @@
 ## v0.21.2 [2023-12-12]
+
+_Bug fixes_
+* Set connection state to error if plugin load fails. ([#4043](https://github.com/turbot/steampipe/issues/4043))
+* Fixes incorrect row count in timing output for aggregator connections. ([#402](https://github.com/turbot/steampipe-postgres-fdw/issues/402))
+
+## v0.21.2 [2023-12-12]
 _Whats new_
 * Add `steampipe_plugin_column` introspection table to the `steampipe_internal` schema. ([#4003](https://github.com/turbot/steampipe/issues/4003))
 
