@@ -1,8 +1,11 @@
-## v0.21.2 [2023-12-12]
+## v0.21.3 [2023-12-22]
+_Whats new_
+* Allow using pprof on FDW when STEAMPIPE_FDW_PPROF environment variable is set. ([#368](https://github.com/turbot/steampipe-postgres-fdw/issues/368))
 
 _Bug fixes_
 * Set connection state to error if plugin load fails. ([#4043](https://github.com/turbot/steampipe/issues/4043))
 * Fixes incorrect row count in timing output for aggregator connections. ([#402](https://github.com/turbot/steampipe-postgres-fdw/issues/402))
+* OpenTelemetry metric names must only contain [A-Za-z0-9_.-]. ([#369](https://github.com/turbot/steampipe-postgres-fdw/issues/369))
 
 ## v0.21.2 [2023-12-12]
 _Whats new_
