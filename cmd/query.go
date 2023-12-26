@@ -223,7 +223,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 	for _, resolvedQuery := range initData.Queries {
 		// if a manual query is being run (i.e. not a named query), convert into a query and add to workspace
 		// this is to allow us to use existing dashboard execution code
-		queryProvider, existingResource := ensureSnapshotQueryResource(resolvedQuery.QueryName, resolvedQuery, initData.Workspace)
+		queryProvider, existingResource := ensureSnapshotQueryResource(resolvedQuery.Name, resolvedQuery, initData.Workspace)
 
 		// we need to pass the embedded initData to  GenerateSnapshot
 		baseInitData := &initData.InitData

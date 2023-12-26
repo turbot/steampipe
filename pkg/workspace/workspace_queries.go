@@ -30,9 +30,9 @@ func (w *Workspace) GetQueriesFromArgs(args []string) ([]*modconfig.ResolvedQuer
 		}
 		if len(resolvedQuery.ExecuteSQL) > 0 {
 			// default name to the query text
-			resolvedQuery.QueryName = resolvedQuery.ExecuteSQL
+			resolvedQuery.Name = resolvedQuery.ExecuteSQL
 			if queryProvider != nil {
-				resolvedQuery.QueryName = queryProvider.Name()
+				resolvedQuery.Name = queryProvider.Name()
 			}
 			queries[idx] = resolvedQuery
 		}
