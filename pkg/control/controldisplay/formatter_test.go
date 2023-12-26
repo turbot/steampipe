@@ -88,7 +88,7 @@ func TestFormatResolver(t *testing.T) {
 	if err := EnsureTemplates(); err != nil {
 		t.Fatal(err)
 	}
-	resolver, err := NewFormatResolver()
+	resolver, err := NewFormatResolver(context.TODO())
 	if err != nil {
 		t.Fatal(err)
 	}
