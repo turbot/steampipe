@@ -6,6 +6,7 @@ import (
 
 // ResolvedQuery contains the execute SQL, raw SQL and args string used to execute a query
 type ResolvedQuery struct {
+	QueryName   string
 	ExecuteSQL  string
 	RawSQL      string
 	Args        []any
