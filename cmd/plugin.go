@@ -72,10 +72,10 @@ Examples:
 
   # Uninstall a plugin
   steampipe plugin uninstall aws`,
-		PersistentPostRun: func(_ *cobra.Command, args []string) {
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			utils.LogTime("cmd.plugin.PersistentPostRun start")
 			defer utils.LogTime("cmd.plugin.PersistentPostRun end")
-			plugin.CleanupOldTmpDirs()
+			plugin.CleanupOldTmpDirs(cmd.Context())
 		},
 	}
 	cmd.AddCommand(pluginInstallCmd())
@@ -297,7 +297,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 		// reload the config, since an installation should have created a new config file
 		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-		config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
+		config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(cmd.Context(), viper.GetString(constants.ArgModLocation), cmd.Name())
 		if errorsAndWarnings.GetError() != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to reload config - install report may be incomplete (%s)", errorsAndWarnings.GetError()))
 		} else {
@@ -315,7 +315,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
-	pluginAlreadyInstalled, _ := plugin.Exists(pluginName)
+	pluginAlreadyInstalled, _ := plugin.Exists(ctx, pluginName)
 	if pluginAlreadyInstalled {
 		// set the bar to MAX
 		//nolint:golint,errcheck // the error happens if we set this over the max value
@@ -393,7 +393,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// load up the version file data
-	versionData, err := versionfile.LoadPluginVersionFile()
+	versionData, err := versionfile.LoadPluginVersionFile(cmd.Context())
 	if err != nil {
 		error_helpers.ShowError(ctx, fmt.Errorf("error loading current plugin data"))
 		exitCode = constants.ExitCodePluginLoadingError
@@ -419,7 +419,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		// get the args and retrieve the installed versions
 		for _, p := range plugins {
 			ref := ociinstaller.NewSteampipeImageRef(p)
-			isExists, _ := plugin.Exists(p)
+			isExists, _ := plugin.Exists(cmd.Context(), p)
 			if isExists {
 				if strings.HasPrefix(ref.DisplayImageRef(), constants.SteampipeHubOCIBase) {
 					runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
@@ -814,7 +814,7 @@ func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, fai
 	// TODO do we really need to look at installed plugins - can't we just use the plugin connection map
 	// get a list of the installed plugins by inspecting the install location
 	// pass pluginConnectionMap so we can populate the connections for each plugin
-	pluginList, err := plugin.List(pluginConnectionMap)
+	pluginList, err := plugin.List(ctx, pluginConnectionMap)
 	if err != nil {
 		res.Error = err
 		return nil, nil, nil, res

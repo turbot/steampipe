@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -12,9 +13,9 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
-func (w *Workspace) CheckRequiredPluginsInstalled() error {
+func (w *Workspace) CheckRequiredPluginsInstalled(ctx context.Context) error {
 	// get the list of all installed plugins
-	installedPlugins, err := plugin.GetInstalledPlugins()
+	installedPlugins, err := plugin.GetInstalledPlugins(ctx)
 	if err != nil {
 		return err
 	}

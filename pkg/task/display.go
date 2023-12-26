@@ -91,7 +91,7 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 		return err
 	}
 
-	table, err := cachedVersions.asTable()
+	table, err := cachedVersions.asTable(cmd.Context())
 	if err != nil {
 		return err
 	}

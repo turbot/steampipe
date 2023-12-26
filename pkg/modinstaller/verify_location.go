@@ -29,7 +29,7 @@ func ValidateModLocation(ctx context.Context, workspacePath string) (bool, error
 		return cont, nil
 	}
 	// else check if running in a directory containing lot of sql and sp files
-	fileList, _ := filehelpers.ListFiles(workspacePath, &filehelpers.ListOptions{
+	fileList, _ := filehelpers.ListFilesWithContext(ctx, workspacePath, &filehelpers.ListOptions{
 		Flags:      filehelpers.FilesRecursive,
 		Exclude:    filehelpers.InclusionsFromExtensions([]string{".sql", ".sp"}),
 		MaxResults: MaxResults,
