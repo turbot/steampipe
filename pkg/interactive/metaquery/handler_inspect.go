@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -18,7 +19,11 @@ import (
 // inspect
 func inspect(ctx context.Context, input *HandlerInput) error {
 	// if there is no connection state in the input, call legacy inspect
-	if input.ConnectionState == nil {
+	connStateMap, err := input.GetConnectionStateMap(ctx)
+	if err != nil {
+		return err
+	}
+	if connStateMap == nil {
 		log.Printf("[TRACE] failed to load connection state - are we connected to a server running a previous steampipe version?")
 		// call legacy inspect
 		return inspectLegacy(ctx, input)
@@ -51,16 +56,16 @@ func inspect(ctx context.Context, input *HandlerInput) error {
 
 	if len(tokens) == 1 {
 		// only a connection name (or maybe unqualified table name)
-		return inspectSchemaOrUnqualifiedTable(tableOrConnection, input)
+		return inspectSchemaOrUnqualifiedTable(ctx, tableOrConnection, input)
 	}
 
 	// this is a fully qualified table name
-	return inspectQualifiedTable(tokens[0], tokens[1], input)
+	return inspectQualifiedTable(ctx, tokens[0], tokens[1], input)
 }
 
-func inspectSchemaOrUnqualifiedTable(tableOrConnection string, input *HandlerInput) error {
+func inspectSchemaOrUnqualifiedTable(ctx context.Context, tableOrConnection string, input *HandlerInput) error {
 	// only a connection name (or maybe unqualified table name)
-	if inspectConnection(tableOrConnection, input) {
+	if inspectConnection(ctx, tableOrConnection, input) {
 		return nil
 	}
 
@@ -75,13 +80,13 @@ func inspectSchemaOrUnqualifiedTable(tableOrConnection string, input *HandlerInp
 		tablesInThisSchema := input.Schema.GetTablesInSchema(schema)
 		// we have a table by this name here
 		if _, gotTable := tablesInThisSchema[tableOrConnection]; gotTable {
-			return inspectQualifiedTable(schema, tableOrConnection, input)
+			return inspectQualifiedTable(ctx, schema, tableOrConnection, input)
 		}
 
 		// check against the fully qualified name of the table
 		for _, table := range input.Schema.Schemas[schema] {
 			if tableOrConnection == table.FullName {
-				return inspectQualifiedTable(schema, table.Name, input)
+				return inspectQualifiedTable(ctx, schema, table.Name, input)
 			}
 		}
 	}
@@ -90,7 +95,7 @@ func inspectSchemaOrUnqualifiedTable(tableOrConnection string, input *HandlerInp
 }
 
 // list all the tables in the schema
-func listTables(_ context.Context, input *HandlerInput) error {
+func listTables(ctx context.Context, input *HandlerInput) error {
 
 	if len(input.args()) == 0 {
 		schemas := input.Schema.GetSchemas()
@@ -99,7 +104,7 @@ func listTables(_ context.Context, input *HandlerInput) error {
 				continue
 			}
 			fmt.Printf(" ==> %s\n", schema)
-			inspectConnection(schema, input)
+			inspectConnection(ctx, schema, input)
 		}
 
 		fmt.Printf(`
@@ -110,7 +115,7 @@ To get information about the columns in a table, run %s
 		// could be one of connectionName and {string}*
 		arg := input.args()[0]
 		if !strings.HasSuffix(arg, "*") {
-			inspectConnection(arg, input)
+			inspectConnection(ctx, arg, input)
 			fmt.Println()
 			return nil
 		}
@@ -141,22 +146,31 @@ To get information about the columns in a table, run %s
 }
 
 func listConnections(ctx context.Context, input *HandlerInput) error {
+	connStateMap, err := input.GetConnectionStateMap(ctx)
+	if err != nil {
+		return err
+	}
 	// if there is no connection state in the input, call listConnectionsLegacy
-	if input.ConnectionState == nil {
+	if connStateMap == nil {
 		log.Printf("[TRACE] failed to load connection state - are we connected to a server running a previous steampipe version?")
 		// call legacy inspect
 		return listConnectionsLegacy(ctx, input)
 	}
 
 	header := []string{"connection", "plugin", "state"}
-	showStateSummary := input.ConnectionState.ConnectionsInState(
+
+	connectionState, err := input.GetConnectionStateMap(ctx)
+	if err != nil {
+		return err
+	}
+	showStateSummary := connectionState.ConnectionsInState(
 		constants.ConnectionStateUpdating,
 		constants.ConnectionStateDeleting,
 		constants.ConnectionStateError)
 
 	var rows [][]string
 
-	for connectionName, state := range input.ConnectionState {
+	for connectionName, state := range connectionState {
 		// skip disabled connections
 		if state.Disabled() {
 			continue
@@ -173,7 +187,7 @@ func listConnections(ctx context.Context, input *HandlerInput) error {
 	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 
 	if showStateSummary {
-		showStateSummaryTable(input.ConnectionState)
+		showStateSummaryTable(connectionState)
 	}
 
 	fmt.Printf(`
@@ -198,12 +212,16 @@ func showStateSummaryTable(connectionState steampipeconfig.ConnectionStateMap) {
 	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
 }
 
-func inspectQualifiedTable(connectionName string, tableName string, input *HandlerInput) error {
+func inspectQualifiedTable(ctx context.Context, connectionName string, tableName string, input *HandlerInput) error {
 	header := []string{"column", "type", "description"}
 	var rows [][]string
 
+	connectionStateMap, err := input.GetConnectionStateMap(context.TODO())
+	if err != nil {
+		return err
+	}
 	// do we have connection state for this schema and if so is it disabled?
-	if connectionState := input.ConnectionState[connectionName]; connectionState != nil && connectionState.Disabled() {
+	if connectionState := connectionStateMap[connectionName]; connectionState != nil && connectionState.Disabled() {
 		error_helpers.ShowWarning(fmt.Sprintf("connection '%s' has schema import disabled", connectionName))
 		return nil
 	}
@@ -233,8 +251,14 @@ func inspectQualifiedTable(connectionName string, tableName string, input *Handl
 
 // inspect the connection with the given name
 // return whether connectionName was identified as an existing connection
-func inspectConnection(connectionName string, input *HandlerInput) bool {
-	connectionState, connectionFoundInState := input.ConnectionState[connectionName]
+func inspectConnection(ctx context.Context, connectionName string, input *HandlerInput) bool {
+	connectionStateMap, err := input.GetConnectionStateMap(ctx)
+	if err != nil {
+		error_helpers.ShowError(ctx, sperr.WrapWithMessage(err, "connection '%s' has schema import disabled", connectionName))
+		return true
+	}
+
+	connectionState, connectionFoundInState := connectionStateMap[connectionName]
 	if !connectionFoundInState {
 		return false
 	}
