@@ -524,7 +524,6 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 		return nil
 	}
 	client := c.client()
-	getter := c.getConnectionState
 
 	// validation passed, now we will run
 	return metaquery.Handle(ctx, &metaquery.HandlerInput{
@@ -534,7 +533,7 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 		SearchPath:            client.GetRequiredSessionSearchPath(),
 		Prompt:                c.interactivePrompt,
 		ClosePrompt:           func() { c.afterClose = AfterPromptCloseExit },
-		GetConnectionStateMap: getter,
+		GetConnectionStateMap: c.getConnectionState,
 	})
 }
 

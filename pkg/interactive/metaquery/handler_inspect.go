@@ -18,14 +18,13 @@ import (
 
 // inspect
 func inspect(ctx context.Context, input *HandlerInput) error {
-	// if there is no connection state in the input, call legacy inspect
 	connStateMap, err := input.GetConnectionStateMap(ctx)
 	if err != nil {
 		return err
 	}
 	if connStateMap == nil {
 		log.Printf("[TRACE] failed to load connection state - are we connected to a server running a previous steampipe version?")
-		// call legacy inspect
+		// if there is no connection state, call legacy inspect
 		return inspectLegacy(ctx, input)
 	}
 
@@ -216,7 +215,7 @@ func inspectQualifiedTable(ctx context.Context, connectionName string, tableName
 	header := []string{"column", "type", "description"}
 	var rows [][]string
 
-	connectionStateMap, err := input.GetConnectionStateMap(context.TODO())
+	connectionStateMap, err := input.GetConnectionStateMap(ctx)
 	if err != nil {
 		return err
 	}
