@@ -1,13 +1,15 @@
 package steampipeconfig
 
 import (
-	utils "github.com/turbot/steampipe/pkg/utils"
-	"golang.org/x/exp/maps"
+	"context"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	utils "github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -361,7 +363,7 @@ func TestLoadConfig(t *testing.T) {
 		filepaths.SteampipeDir = steampipeDir
 
 		// now load config
-		config, errorsAndWarnings := loadSteampipeConfig(workspaceDir, "")
+		config, errorsAndWarnings := loadSteampipeConfig(context.TODO(), workspaceDir, "")
 		if errorsAndWarnings.GetError() != nil {
 			if test.expected != "ERROR" {
 				t.Errorf("Test: '%s'' FAILED with unexpected error: %v", name, errorsAndWarnings.GetError())
