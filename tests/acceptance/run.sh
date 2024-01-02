@@ -13,8 +13,9 @@ fi
 
 # set this to the source file for development
 export BATS_PATH=$MY_PATH/lib/bats-core/bin/bats
-export LIB_BATS_ASSERT=$MY_PATH/lib/bats-assert
-export LIB_BATS_SUPPORT=$MY_PATH/lib/bats-support
+export LIB=$MY_PATH/lib
+export LIB_BATS_ASSERT=$LIB/bats-assert
+export LIB_BATS_SUPPORT=$LIB/bats-support
 export TEST_DATA_DIR=$MY_PATH/test_data/templates
 export SNAPSHOTS_DIR=$MY_PATH/test_data/snapshots
 export SRC_DATA_DIR=$MY_PATH/test_data/source_files
