@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"log"
 	"strconv"
 	"sync"
+
+	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type runtimeDependencyPublisherImpl struct {
@@ -234,7 +235,6 @@ func (p *runtimeDependencyPublisherImpl) setWithValue(w *LeafRun) {
 		populateData(w.Data, result)
 	}
 	p.PublishRuntimeDependencyValue(name, result)
-	return
 }
 
 func populateData(withData *dashboardtypes.LeafData, result *dashboardtypes.ResolvedRuntimeDependencyValue) {

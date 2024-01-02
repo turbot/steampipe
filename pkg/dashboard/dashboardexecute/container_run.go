@@ -46,7 +46,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 	r.childCompleteChan = make(chan dashboardtypes.DashboardTreeRun, len(children))
 	for _, child := range children {
 		var childRun dashboardtypes.DashboardTreeRun
-		//nolint:golint,typecheck // using a global var here to maintain parity with definition of childRun
+		//nolint:golint // using a global var here to maintain parity with definition of childRun
 		var err error
 		switch i := child.(type) {
 		case *modconfig.DashboardContainer:

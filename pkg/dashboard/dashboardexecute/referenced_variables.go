@@ -2,10 +2,11 @@ package dashboardexecute
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/workspace"
-	"strings"
 )
 
 // GetReferencedVariables builds map of variables values containing only those mod variables which are referenced
@@ -35,6 +36,7 @@ func GetReferencedVariables(root dashboardtypes.DashboardTreeRun, w *workspace.W
 
 	switch r := root.(type) {
 	case *DashboardRun:
+		//nolint:errcheck // we don't care about errors here, since the callback does not return an error
 		r.dashboard.WalkResources(
 			func(resource modconfig.HclResource) (bool, error) {
 				if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
@@ -46,6 +48,7 @@ func GetReferencedVariables(root dashboardtypes.DashboardTreeRun, w *workspace.W
 	case *CheckRun:
 		switch n := r.resource.(type) {
 		case *modconfig.Benchmark:
+			//nolint:errcheck // we don't care about errors here, since the callback does not return an error
 			n.WalkResources(
 				func(resource modconfig.ModTreeItem) (bool, error) {
 					if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
