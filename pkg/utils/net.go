@@ -93,3 +93,18 @@ func IsPortBindable(host string, port int) error {
 	ln.Close()
 	return nil
 }
+
+func GetNextFreePort() (int, error) {
+	LogTime("utils.GetNextFreePort start")
+	defer LogTime("utils.GetNextFreePort end")
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return -1, err
+	}
+	defer listener.Close()
+	addr, ok := listener.Addr().(*net.TCPAddr)
+	if !ok {
+		return -1, fmt.Errorf("count not retrieve port")
+	}
+	return addr.Port, nil
+}
