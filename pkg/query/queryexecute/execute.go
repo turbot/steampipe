@@ -74,17 +74,14 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 	// returned errors
 	failures := 0
 	t := time.Now()
-	// build ordered list of queries
-	// (ordered for testing repeatability)
-	var queryNames = utils.SortedMapKeys(initData.Queries)
+
 	var err error
 
-	for i, name := range queryNames {
-		q := initData.Queries[name]
+	for i, q := range initData.Queries {
 		// if executeQuery fails it returns err, else it returns the number of rows that returned errors while execution
 		if err, failures = executeQuery(ctx, initData.Client, q); err != nil {
 			failures++
-			error_helpers.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(queryNames), error_helpers.DecodePgError(err)))
+			error_helpers.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(initData.Queries), error_helpers.DecodePgError(err)))
 			// if timing flag is enabled, show the time taken for the query to fail
 			if cmdconfig.Viper().GetBool(constants.ArgTiming) {
 				display.DisplayErrorTiming(t)
@@ -92,7 +89,7 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 		}
 		// TODO move into display layer
 		// Only show the blank line between queries, not after the last one
-		if (i < len(queryNames)-1) && showBlankLineBetweenResults() {
+		if (i < len(initData.Queries)-1) && showBlankLineBetweenResults() {
 			fmt.Println()
 		}
 	}

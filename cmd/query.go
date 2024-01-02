@@ -220,67 +220,60 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 		}
 	}
 
-	// build ordered list of queries
-	// (ordered for testing repeatability)
-	var queryNames = utils.SortedMapKeys(initData.Queries)
+	for _, resolvedQuery := range initData.Queries {
+		// if a manual query is being run (i.e. not a named query), convert into a query and add to workspace
+		// this is to allow us to use existing dashboard execution code
+		queryProvider, existingResource := ensureSnapshotQueryResource(resolvedQuery.Name, resolvedQuery, initData.Workspace)
 
-	if len(queryNames) > 0 {
-		for _, name := range queryNames {
-			resolvedQuery := initData.Queries[name]
-			// if a manual query is being run (i.e. not a named query), convert into a query and add to workspace
-			// this is to allow us to use existing dashboard execution code
-			queryProvider, existingResource := ensureSnapshotQueryResource(name, resolvedQuery, initData.Workspace)
+		// we need to pass the embedded initData to  GenerateSnapshot
+		baseInitData := &initData.InitData
 
-			// we need to pass the embedded initData to  GenerateSnapshot
-			baseInitData := &initData.InitData
+		// so a dashboard name was specified - just call GenerateSnapshot
+		snap, err := dashboardexecute.GenerateSnapshot(ctx, queryProvider.Name(), baseInitData, nil)
+		if err != nil {
+			exitCode = constants.ExitCodeSnapshotCreationFailed
+			error_helpers.FailOnError(err)
+		}
 
-			// so a dashboard name was specified - just call GenerateSnapshot
-			snap, err := dashboardexecute.GenerateSnapshot(ctx, queryProvider.Name(), baseInitData, nil)
+		// set the filename root for the snapshot (in case needed)
+		if !existingResource {
+			snap.FileNameRoot = "query"
+		}
+
+		// display the result
+		switch viper.GetString(constants.ArgOutput) {
+		case constants.OutputFormatNone:
+			// do nothing
+		case constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort:
+			// if the format is snapshot, just dump it out
+			jsonOutput, err := json.MarshalIndent(snap, "", "  ")
 			if err != nil {
-				exitCode = constants.ExitCodeSnapshotCreationFailed
-				error_helpers.FailOnError(err)
-			}
-
-			// set the filename root for the snapshot (in case needed)
-			if !existingResource {
-				snap.FileNameRoot = "query"
-			}
-
-			// display the result
-			switch viper.GetString(constants.ArgOutput) {
-			case constants.OutputFormatNone:
-				// do nothing
-			case constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort:
-				// if the format is snapshot, just dump it out
-				jsonOutput, err := json.MarshalIndent(snap, "", "  ")
-				if err != nil {
-					error_helpers.FailOnErrorWithMessage(err, "failed to display result as snapshot")
-				}
-				fmt.Println(string(jsonOutput))
-			default:
-				// otherwise convert the snapshot into a query result
-				result, err := snapshotToQueryResult(snap)
 				error_helpers.FailOnErrorWithMessage(err, "failed to display result as snapshot")
-				display.ShowOutput(ctx, result, display.WithTimingDisabled())
 			}
+			fmt.Println(string(jsonOutput))
+		default:
+			// otherwise convert the snapshot into a query result
+			result, err := snapshotToQueryResult(snap)
+			error_helpers.FailOnErrorWithMessage(err, "failed to display result as snapshot")
+			display.ShowOutput(ctx, result, display.WithTimingDisabled())
+		}
 
-			// share the snapshot if necessary
-			err = publishSnapshotIfNeeded(ctx, snap)
-			if err != nil {
-				exitCode = constants.ExitCodeSnapshotUploadFailed
-				error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
-			}
+		// share the snapshot if necessary
+		err = publishSnapshotIfNeeded(ctx, snap)
+		if err != nil {
+			exitCode = constants.ExitCodeSnapshotUploadFailed
+			error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
+		}
 
-			// export the result if necessary
-			exportArgs := viper.GetStringSlice(constants.ArgExport)
-			exportMsg, err := initData.ExportManager.DoExport(ctx, snap.FileNameRoot, snap, exportArgs)
-			error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
-			// print the location where the file is exported
-			if len(exportMsg) > 0 && viper.GetBool(constants.ArgProgress) {
-				fmt.Printf("\n")
-				fmt.Println(strings.Join(exportMsg, "\n"))
-				fmt.Printf("\n")
-			}
+		// export the result if necessary
+		exportArgs := viper.GetStringSlice(constants.ArgExport)
+		exportMsg, err := initData.ExportManager.DoExport(ctx, snap.FileNameRoot, snap, exportArgs)
+		error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
+		// print the location where the file is exported
+		if len(exportMsg) > 0 && viper.GetBool(constants.ArgProgress) {
+			fmt.Printf("\n")
+			fmt.Println(strings.Join(exportMsg, "\n"))
+			fmt.Printf("\n")
 		}
 	}
 	return 0
