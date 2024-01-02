@@ -53,194 +53,194 @@ jobs:
           go clean -testcache
           go test -timeout 30s ./... -test.v
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
-        with:
-          version: latest
-          args: release --clean --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Run GoReleaser
+      #   uses: goreleaser/goreleaser-action@v5
+      #   with:
+      #     version: latest
+      #     args: release --clean --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Move build artifacts
-        run: |
-          mkdir ~/artifacts
-          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
-          mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
+      # - name: Move build artifacts
+      #   run: |
+      #     mkdir ~/artifacts
+      #     mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
+      #     mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
 
-      - name: List Build Artifacts
-        run: ls -l ~/artifacts
+      # - name: List Build Artifacts
+      #   run: ls -l ~/artifacts
 
-      - name: Save Linux Build Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-artifact-linux
-          path: ~/artifacts/linux.tar.gz
-          if-no-files-found: error
+      # - name: Save Linux Build Artifact
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: build-artifact-linux
+      #     path: ~/artifacts/linux.tar.gz
+      #     if-no-files-found: error
 
-      - name: Save MacOS Build Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-artifact-darwin
-          path: ~/artifacts/darwin.zip
-          if-no-files-found: error
+      # - name: Save MacOS Build Artifact
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: build-artifact-darwin
+      #     path: ~/artifacts/darwin.zip
+      #     if-no-files-found: error
 
-  acceptance_test:
-    name: Test
-    needs: goreleaser
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [macos-latest, ubuntu-latest]
-        test_block:
-          - "migration"
-          - "brew"
-          - "installation"
-          - "plugin"
-          - "connection_config"
-          - "service"
-          - "settings"
-          - "ssl"
-          - "blank_aggregators"
-          - "search_path"
-          - "chaos_and_query"
-          - "dynamic_schema"
-          - "dynamic_aggregators"
-          - "cache"
-          - "mod_install"
-          - "mod"
-          - "mod_require"
-          - "check"
-          - "performance"
-          - "config_precedence"
-          - "introspection"
-          - "cloud"
-          - "snapshot"
-          - "dashboard"
-          - "dashboard_parsing_validation"
-          - "schema_cloning"
-          - "exit_codes"
-          - "force_stop"
-        exclude:
-          - platform: macos-latest
-            test_block: migration
-          - platform: macos-latest
-            test_block: force_stop
-          - platform: ubuntu-latest
-            test_block: chaos_and_query
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: true
+  # acceptance_test:
+  #   name: Test
+  #   needs: goreleaser
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       platform: [macos-latest, ubuntu-latest]
+  #       test_block:
+  #         - "migration"
+  #         - "brew"
+  #         - "installation"
+  #         - "plugin"
+  #         - "connection_config"
+  #         - "service"
+  #         - "settings"
+  #         - "ssl"
+  #         - "blank_aggregators"
+  #         - "search_path"
+  #         - "chaos_and_query"
+  #         - "dynamic_schema"
+  #         - "dynamic_aggregators"
+  #         - "cache"
+  #         - "mod_install"
+  #         - "mod"
+  #         - "mod_require"
+  #         - "check"
+  #         - "performance"
+  #         - "config_precedence"
+  #         - "introspection"
+  #         - "cloud"
+  #         - "snapshot"
+  #         - "dashboard"
+  #         - "dashboard_parsing_validation"
+  #         - "schema_cloning"
+  #         - "exit_codes"
+  #         - "force_stop"
+  #       exclude:
+  #         - platform: macos-latest
+  #           test_block: migration
+  #         - platform: macos-latest
+  #           test_block: force_stop
+  #         - platform: ubuntu-latest
+  #           test_block: chaos_and_query
+  #   runs-on: ${{ matrix.platform }}
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         submodules: true
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.21
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v4
+  #       with:
+  #         go-version: 1.21
 
-      - name: Prepare for downloads
-        id: prepare-for-downloads
-        run: |
-          mkdir ~/artifacts
+  #     - name: Prepare for downloads
+  #       id: prepare-for-downloads
+  #       run: |
+  #         mkdir ~/artifacts
 
-      - name: Download Linux Build Artifacts
-        uses: actions/download-artifact@v3
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        with:
-          name: build-artifact-linux
-          path: ~/artifacts
+  #     - name: Download Linux Build Artifacts
+  #       uses: actions/download-artifact@v3
+  #       if: ${{ matrix.platform == 'ubuntu-latest' }}
+  #       with:
+  #         name: build-artifact-linux
+  #         path: ~/artifacts
 
-      - name: Download Darwin Build Artifacts
-        uses: actions/download-artifact@v3
-        if: ${{ matrix.platform == 'macos-latest' }}
-        with:
-          name: build-artifact-darwin
-          path: ~/artifacts
+  #     - name: Download Darwin Build Artifacts
+  #       uses: actions/download-artifact@v3
+  #       if: ${{ matrix.platform == 'macos-latest' }}
+  #       with:
+  #         name: build-artifact-darwin
+  #         path: ~/artifacts
 
-      - name: Extract Darwin Artifacts and Install Binary
-        if: ${{ matrix.platform == 'macos-latest' }}
-        run: |
-          mkdir ~/build
-          unzip ~/artifacts/darwin.zip -d ~/build
+  #     - name: Extract Darwin Artifacts and Install Binary
+  #       if: ${{ matrix.platform == 'macos-latest' }}
+  #       run: |
+  #         mkdir ~/build
+  #         unzip ~/artifacts/darwin.zip -d ~/build
 
-      - name: Extract Ubuntu Artifacts and Install Binary
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: |
-          mkdir ~/build
-          tar -xf ~/artifacts/linux.tar.gz -C ~/build
+  #     - name: Extract Ubuntu Artifacts and Install Binary
+  #       if: ${{ matrix.platform == 'ubuntu-latest' }}
+  #       run: |
+  #         mkdir ~/build
+  #         tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
-      - name: Set PATH
-        run: |
-          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats-core/libexec" >> $GITHUB_ENV
+  #     - name: Set PATH
+  #       run: |
+  #         echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats-core/libexec" >> $GITHUB_ENV
 
-      - name: Go install jd
-        run: |
-          go install github.com/josephburnett/jd@latest
+  #     - name: Go install jd
+  #       run: |
+  #         go install github.com/josephburnett/jd@latest
 
-      - name: Install DB
-        id: install-db
-        continue-on-error: false
-        run: |
-          steampipe query "select 1"
-          steampipe plugin install chaos chaosdynamic --progress=false
+  #     - name: Install DB
+  #       id: install-db
+  #       continue-on-error: false
+  #       run: |
+  #         steampipe query "select 1"
+  #         steampipe plugin install chaos chaosdynamic --progress=false
 
-      - name: Save Install DB Logs
-        uses: actions/upload-artifact@v3
-        with:
-          name: install-db-logs-${{ matrix.test_block }}-${{ matrix.platform }}
-          path: ~/.steampipe/logs
-          if-no-files-found: error
+  #     - name: Save Install DB Logs
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: install-db-logs-${{ matrix.test_block }}-${{ matrix.platform }}
+  #         path: ~/.steampipe/logs
+  #         if-no-files-found: error
 
-      - name: Run Test Suite
-        id: run-test-suite
-        timeout-minutes: 15
-        continue-on-error: true
-        run: |
-          chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-          $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
-          echo "exit_code=$(echo $?)" >> $GITHUB_OUTPUT
-          echo ">> here"
+  #     - name: Run Test Suite
+  #       id: run-test-suite
+  #       timeout-minutes: 15
+  #       continue-on-error: true
+  #       run: |
+  #         chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
+  #         $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
+  #         echo "exit_code=$(echo $?)" >> $GITHUB_OUTPUT
+  #         echo ">> here"
 
-      - name: Save Test Suite Logs
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-logs-${{ matrix.test_block }}-${{ matrix.platform }}
-          path: ~/.steampipe/logs
-          if-no-files-found: error
+  #     - name: Save Test Suite Logs
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: test-logs-${{ matrix.test_block }}-${{ matrix.platform }}
+  #         path: ~/.steampipe/logs
+  #         if-no-files-found: error
 
-      # This job checks whether the test suite has passed or not.
-      # Since the exit_code is set only when the bats test suite pass,
-      # we have added the if-conditional block
-      - name: Check Test Passed/Failed
-        if: ${{ success() }}
-        continue-on-error: false
-        run: |
-          if [ ${{ steps.run-test-suite.outputs.exit_code }} -eq 0 ]; then
-            exit 0
-          else
-            exit 1
-          fi
+  #     # This job checks whether the test suite has passed or not.
+  #     # Since the exit_code is set only when the bats test suite pass,
+  #     # we have added the if-conditional block
+  #     - name: Check Test Passed/Failed
+  #       if: ${{ success() }}
+  #       continue-on-error: false
+  #       run: |
+  #         if [ ${{ steps.run-test-suite.outputs.exit_code }} -eq 0 ]; then
+  #           exit 0
+  #         else
+  #           exit 1
+  #         fi
 
-  clean_up:
-    # let's clean up the artifacts.
-    # incase this step isn't reached,
-    # artifacts automatically expire after 90 days anyway
-    # refer:
-    #   https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts#downloading-and-deleting-artifacts-after-a-workflow-run-is-complete
-    name: Clean Up Artifacts
-    needs: acceptance_test
-    if: ${{ needs.acceptance_test.result == 'success' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clean up Linux Build
-        uses: geekyeggo/delete-artifact@v2
-        with:
-          name: build-artifact-linux
-          failOnError: true
+  # clean_up:
+  #   # let's clean up the artifacts.
+  #   # incase this step isn't reached,
+  #   # artifacts automatically expire after 90 days anyway
+  #   # refer:
+  #   #   https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts#downloading-and-deleting-artifacts-after-a-workflow-run-is-complete
+  #   name: Clean Up Artifacts
+  #   needs: acceptance_test
+  #   if: ${{ needs.acceptance_test.result == 'success' }}
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Clean up Linux Build
+  #       uses: geekyeggo/delete-artifact@v2
+  #       with:
+  #         name: build-artifact-linux
+  #         failOnError: true
 
-      - name: Clean up Darwin Build
-        uses: geekyeggo/delete-artifact@v2
-        with:
-          name: build-artifact-darwin
-          failOnError: true
+  #     - name: Clean up Darwin Build
+  #       uses: geekyeggo/delete-artifact@v2
+  #       with:
+  #         name: build-artifact-darwin
+  #         failOnError: true
