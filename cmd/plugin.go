@@ -297,7 +297,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 		// reload the config, since an installation should have created a new config file
 		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-		config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(cmd.Context(), viper.GetString(constants.ArgModLocation), cmd.Name())
+		config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(ctx, viper.GetString(constants.ArgModLocation), cmd.Name())
 		if errorsAndWarnings.GetError() != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to reload config - install report may be incomplete (%s)", errorsAndWarnings.GetError()))
 		} else {
@@ -393,7 +393,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// load up the version file data
-	versionData, err := versionfile.LoadPluginVersionFile(cmd.Context())
+	versionData, err := versionfile.LoadPluginVersionFile(ctx)
 	if err != nil {
 		error_helpers.ShowError(ctx, fmt.Errorf("error loading current plugin data"))
 		exitCode = constants.ExitCodePluginLoadingError
@@ -419,7 +419,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		// get the args and retrieve the installed versions
 		for _, p := range plugins {
 			ref := ociinstaller.NewSteampipeImageRef(p)
-			isExists, _ := plugin.Exists(cmd.Context(), p)
+			isExists, _ := plugin.Exists(ctx, p)
 			if isExists {
 				if strings.HasPrefix(ref.DisplayImageRef(), constants.SteampipeHubOCIBase) {
 					runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
@@ -634,7 +634,7 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 
 	err := showPluginListOutput(pluginList, failedPluginMap, missingPluginMap, res, outputFormat)
 	if err != nil {
-		error_helpers.ShowError(cmd.Context(), err)
+		error_helpers.ShowError(ctx, err)
 	}
 
 }
