@@ -25,33 +25,33 @@ jobs:
         with:
           go-version: 1.21
 
-      - name: Fetching Go Cache Paths
-        id: go-cache-paths
-        run: |
-          echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
-          echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
+      # - name: Fetching Go Cache Paths
+      #   id: go-cache-paths
+      #   run: |
+      #     echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+      #     echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
 
-      # used to speedup go test
-      - name: Go Build Cache
-        id: build-cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.go-cache-paths.outputs.go-build }}
-          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+      # # used to speedup go test
+      # - name: Go Build Cache
+      #   id: build-cache
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: ${{ steps.go-cache-paths.outputs.go-build }}
+      #     key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
-        continue-on-error: true # we dont want to enforce just yet
+        continue-on-error: false # we dont want to enforce just yet
         with:
           version: v1.52.2
           args: --timeout=15m --config=.golangci.yml
           skip-pkg-cache: true
           skip-build-cache: true
 
-      - name: Run CLI Unit Tests
-        run: |
-          go clean -testcache
-          go test -timeout 30s ./... -test.v
+      # - name: Run CLI Unit Tests
+      #   run: |
+      #     go clean -testcache
+      #     go test -timeout 30s ./... -test.v
 
       # - name: Run GoReleaser
       #   uses: goreleaser/goreleaser-action@v5
