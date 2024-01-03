@@ -7,6 +7,7 @@ import (
 	"testing"
 )
 
+// TestIsPortBindable tests the IsPortBindable function - assumes that the 8080 port is not in use
 func TestIsPortBindable(t *testing.T) {
 	// Test case 1: Port is bindable
 	err := IsPortBindable("localhost", 8080)
