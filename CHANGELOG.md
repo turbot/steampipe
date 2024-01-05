@@ -6,6 +6,7 @@ _Bug fixes_
 * Set connection state to error if plugin load fails. ([#4043](https://github.com/turbot/steampipe/issues/4043))
 * Fixes incorrect row count in timing output for aggregator connections. ([#402](https://github.com/turbot/steampipe-postgres-fdw/issues/402))
 * OpenTelemetry metric names must only contain [A-Za-z0-9_.-]. ([#369](https://github.com/turbot/steampipe-postgres-fdw/issues/369))
+* Maintain the order of execution when running multiple queries in batch mode. ([#3728](https://github.com/turbot/steampipe/issues/3728))
 
 ## v0.21.2 [2023-12-12]
 _Whats new_
