@@ -391,7 +391,7 @@ func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext
 
 // load the workspace lock, migrating it if necessary
 func (w *Workspace) loadWorkspaceLock(ctx context.Context) (*versionmap.WorkspaceLock, error) {
-	workspaceLock, err := versionmap.LoadWorkspaceLock(w.Path)
+	workspaceLock, err := versionmap.LoadWorkspaceLock(ctx, w.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load installation cache from %s: %s", w.Path, err)
 	}

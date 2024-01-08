@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"context"
 	"fmt"
 	"github.com/turbot/go-kit/hcl_helpers"
 	"log"
@@ -15,7 +16,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
 
-func LoadWorkspaceProfiles(workspaceProfilePath string) (profileMap map[string]*modconfig.WorkspaceProfile, err error) {
+func LoadWorkspaceProfiles(ctx context.Context, workspaceProfilePath string) (profileMap map[string]*modconfig.WorkspaceProfile, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -30,7 +31,7 @@ func LoadWorkspaceProfiles(workspaceProfilePath string) (profileMap map[string]*
 	// create profile map to populate
 	profileMap = map[string]*modconfig.WorkspaceProfile{}
 
-	configPaths, err := filehelpers.ListFiles(workspaceProfilePath, &filehelpers.ListOptions{
+	configPaths, err := filehelpers.ListFilesWithContext(ctx, workspaceProfilePath, &filehelpers.ListOptions{
 		Flags:   filehelpers.FilesFlat,
 		Include: filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
 	})

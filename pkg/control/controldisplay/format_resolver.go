@@ -1,6 +1,7 @@
 package controldisplay
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/turbot/go-kit/files"
@@ -15,8 +16,8 @@ type FormatResolver struct {
 	exportFormatters []Formatter
 }
 
-func NewFormatResolver() (*FormatResolver, error) {
-	templates, err := loadAvailableTemplates()
+func NewFormatResolver(ctx context.Context) (*FormatResolver, error) {
+	templates, err := loadAvailableTemplates(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +89,8 @@ func (r *FormatResolver) controlExporters() []export.Exporter {
 	return res
 }
 
-func loadAvailableTemplates() ([]*OutputTemplate, error) {
-	templateDirectories, err := files.ListFiles(filepaths.EnsureTemplateDir(), &files.ListOptions{
+func loadAvailableTemplates(ctx context.Context) ([]*OutputTemplate, error) {
+	templateDirectories, err := files.ListFilesWithContext(ctx, filepaths.EnsureTemplateDir(), &files.ListOptions{
 		Flags:   files.DirectoriesFlat | files.NotEmpty,
 		Exclude: []string{"./.*"},
 	})

@@ -162,7 +162,7 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
-	ctx, cancel := signal.NotifyContext(cmd.Context(), os.Interrupt, os.Kill)
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 	defer cancel()
 
 	listenAddresses := db_local.StartListenType(viper.GetString(constants.ArgDatabaseListenAddresses)).ToListenAddresses()
@@ -484,7 +484,7 @@ func runServiceStatusCmd(cmd *cobra.Command, _ []string) {
 	}
 
 	if viper.GetBool(constants.ArgAll) {
-		showAllStatus(cmd.Context())
+		showAllStatus(ctx)
 	} else {
 		dbState, dbStateErr := db_local.GetState()
 		pmState, pmStateErr := pluginmanager.LoadState()
@@ -578,7 +578,7 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 		}
 
 		// check if there are any connected clients to the service
-		connectedClients, err := db_local.GetClientCount(cmd.Context())
+		connectedClients, err := db_local.GetClientCount(ctx)
 		if err != nil {
 			exitCode = constants.ExitCodeServiceStopFailure
 			error_helpers.FailOnErrorWithMessage(err, "service stop failed")

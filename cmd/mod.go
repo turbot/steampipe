@@ -285,7 +285,7 @@ func runModListCmd(cmd *cobra.Command, _ []string) {
 	}
 
 	opts := modinstaller.NewInstallOpts(workspaceMod)
-	installer, err := modinstaller.NewModInstaller(opts)
+	installer, err := modinstaller.NewModInstaller(ctx, opts)
 	error_helpers.FailOnError(err)
 
 	treeString := installer.GetModList()

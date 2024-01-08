@@ -1,6 +1,7 @@
 package task
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sort"
@@ -20,8 +21,8 @@ type AvailableVersionCache struct {
 	PluginCache   map[string]plugin.VersionCheckReport `json:"plugin_version"`
 }
 
-func (av *AvailableVersionCache) asTable() (*tablewriter.Table, error) {
-	notificationLines, err := av.buildNotification()
+func (av *AvailableVersionCache) asTable(ctx context.Context) (*tablewriter.Table, error) {
+	notificationLines, err := av.buildNotification(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -43,12 +44,12 @@ func (av *AvailableVersionCache) asTable() (*tablewriter.Table, error) {
 	return table, nil
 }
 
-func (av *AvailableVersionCache) buildNotification() ([]string, error) {
+func (av *AvailableVersionCache) buildNotification(ctx context.Context) ([]string, error) {
 	cliLines, err := av.cliNotificationMessage()
 	if err != nil {
 		return nil, err
 	}
-	pluginLines := av.pluginNotificationMessage()
+	pluginLines := av.pluginNotificationMessage(ctx)
 	// convert notificationLines into an array of arrays
 	// since that's what our table renderer expects
 	return append(cliLines, pluginLines...), nil
@@ -88,11 +89,11 @@ func (av *AvailableVersionCache) cliNotificationMessage() ([]string, error) {
 	return nil, nil
 }
 
-func (av *AvailableVersionCache) pluginNotificationMessage() []string {
+func (av *AvailableVersionCache) pluginNotificationMessage(ctx context.Context) []string {
 	var pluginsToUpdate []plugin.VersionCheckReport
 
 	for _, r := range av.PluginCache {
-		v, err := versionfile.LoadPluginVersionFile()
+		v, err := versionfile.LoadPluginVersionFile(ctx)
 		if err != nil {
 			continue
 		}

@@ -2,6 +2,8 @@ package connection
 
 import (
 	"context"
+	"log"
+
 	"github.com/fsnotify/fsnotify"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/filewatcher"
@@ -10,7 +12,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"log"
 )
 
 type ConnectionWatcher struct {
@@ -62,7 +63,7 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	ctx := context.Background()
 
 	log.Printf("[INFO] ConnectionWatcher handleFileWatcherEvent")
-	config, errorsAndWarnings := steampipeconfig.LoadConnectionConfig()
+	config, errorsAndWarnings := steampipeconfig.LoadConnectionConfig(context.Background())
 	// send notification if there were any errors or warnings
 	if !errorsAndWarnings.Empty() {
 		w.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, errorsAndWarnings)

@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/turbot/go-kit/hcl_helpers"
 	"log"
@@ -30,7 +31,7 @@ var defaultConfigFileName = "default.spc"
 var defaultConfigSampleFileName = "default.spc.sample"
 
 // LoadSteampipeConfig loads the HCL connection config and workspace options
-func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConfig, *error_helpers.ErrorAndWarnings) {
+func LoadSteampipeConfig(ctx context.Context, modLocation string, commandName string) (*SteampipeConfig, *error_helpers.ErrorAndWarnings) {
 	utils.LogTime("steampipeconfig.LoadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
 
@@ -44,13 +45,13 @@ func LoadSteampipeConfig(modLocation string, commandName string) (*SteampipeConf
 			),
 		)
 	}
-	return loadSteampipeConfig(modLocation, commandName)
+	return loadSteampipeConfig(ctx, modLocation, commandName)
 }
 
 // LoadConnectionConfig loads the connection config but not the workspace options
 // this is called by the fdw
-func LoadConnectionConfig() (*SteampipeConfig, *error_helpers.ErrorAndWarnings) {
-	return LoadSteampipeConfig("", "")
+func LoadConnectionConfig(ctx context.Context) (*SteampipeConfig, *error_helpers.ErrorAndWarnings) {
+	return LoadSteampipeConfig(ctx, "", "")
 }
 
 func ensureDefaultConfigFile(configFolder string) error {
@@ -117,7 +118,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 	return nil
 }
 
-func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfig *SteampipeConfig, errorsAndWarnings *error_helpers.ErrorAndWarnings) {
+func loadSteampipeConfig(ctx context.Context, modLocation string, commandName string) (steampipeConfig *SteampipeConfig, errorsAndWarnings *error_helpers.ErrorAndWarnings) {
 	utils.LogTime("steampipeconfig.loadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.loadSteampipeConfig end")
 
@@ -133,7 +134,7 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 	// load config from the installation folder -  load all spc files from config directory
 	include := filehelpers.InclusionsFromExtensions(constants.ConnectionConfigExtensions)
 	loadOptions := &loadConfigOptions{include: include}
-	if ew := loadConfig(filepaths.EnsureConfigDir(), steampipeConfig, loadOptions); ew != nil {
+	if ew := loadConfig(ctx, filepaths.EnsureConfigDir(), steampipeConfig, loadOptions); ew != nil {
 		if ew.GetError() != nil {
 			return nil, ew
 		}
@@ -153,7 +154,7 @@ func loadSteampipeConfig(modLocation string, commandName string) (steampipeConfi
 		include = filehelpers.InclusionsFromFiles([]string{filepaths.WorkspaceConfigFileName})
 		// update load options to ONLY allow terminal options
 		loadOptions = &loadConfigOptions{include: include, allowedOptions: []string{options.TerminalBlock}}
-		if ew := loadConfig(modLocation, steampipeConfig, loadOptions); ew != nil {
+		if ew := loadConfig(ctx, modLocation, steampipeConfig, loadOptions); ew != nil {
 			if ew.GetError() != nil {
 				return nil, ew.WrapErrorWithMessage("failed to load workspace config")
 			}
@@ -208,10 +209,10 @@ type loadConfigOptions struct {
 	allowedOptions []string
 }
 
-func loadConfig(configFolder string, steampipeConfig *SteampipeConfig, opts *loadConfigOptions) *error_helpers.ErrorAndWarnings {
+func loadConfig(ctx context.Context, configFolder string, steampipeConfig *SteampipeConfig, opts *loadConfigOptions) *error_helpers.ErrorAndWarnings {
 	log.Printf("[INFO] loadConfig is loading connection config")
 	// get all the config files in the directory
-	configPaths, err := filehelpers.ListFiles(configFolder, &filehelpers.ListOptions{
+	configPaths, err := filehelpers.ListFilesWithContext(ctx, configFolder, &filehelpers.ListOptions{
 		Flags:   filehelpers.FilesFlat,
 		Include: opts.include,
 	})

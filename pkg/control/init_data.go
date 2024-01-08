@@ -66,7 +66,7 @@ func NewInitData(ctx context.Context) *InitData {
 	}
 
 	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
-		i.registerCheckExporters()
+		i.registerCheckExporters(ctx)
 		// validate required export formats
 		if err := i.ExportManager.ValidateExportFormat(viper.GetStringSlice(constants.ArgExport)); err != nil {
 			i.Result.Error = err
@@ -75,7 +75,7 @@ func NewInitData(ctx context.Context) *InitData {
 	}
 
 	output := viper.GetString(constants.ArgOutput)
-	formatter, err := parseOutputArg(output)
+	formatter, err := parseOutputArg(ctx, output)
 	if err != nil {
 		i.Result.Error = err
 		return i
@@ -138,8 +138,8 @@ func generateWhereClauseFromTags(tags []string) string {
 }
 
 // register exporters for each of the supported check formats
-func (i *InitData) registerCheckExporters() {
-	exporters, err := controldisplay.GetExporters()
+func (i *InitData) registerCheckExporters(ctx context.Context) {
+	exporters, err := controldisplay.GetExporters(ctx)
 	error_helpers.FailOnErrorWithMessage(err, "failed to load exporters")
 
 	// register all exporters
@@ -147,8 +147,8 @@ func (i *InitData) registerCheckExporters() {
 }
 
 // parseOutputArg parses the --output flag value and returns the Formatter that can format the data
-func parseOutputArg(arg string) (formatter controldisplay.Formatter, err error) {
-	formatResolver, err := controldisplay.NewFormatResolver()
+func parseOutputArg(ctx context.Context, arg string) (formatter controldisplay.Formatter, err error) {
+	formatResolver, err := controldisplay.NewFormatResolver(ctx)
 	if err != nil {
 		return nil, err
 	}

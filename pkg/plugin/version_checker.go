@@ -60,7 +60,7 @@ func GetAllUpdateReport(ctx context.Context, installationID string) map[string]V
 	versionChecker.signature = installationID
 	versionChecker.pluginsToCheck = []*versionfile.InstalledVersion{}
 
-	versionFileData, err := versionfile.LoadPluginVersionFile()
+	versionFileData, err := versionfile.LoadPluginVersionFile(ctx)
 	if err != nil {
 		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not load versionfile")
 		return nil
@@ -76,7 +76,7 @@ func GetAllUpdateReport(ctx context.Context, installationID string) map[string]V
 }
 
 func (v *VersionChecker) reportPluginUpdates(ctx context.Context) map[string]VersionCheckReport {
-	versionFileData, err := versionfile.LoadPluginVersionFile()
+	versionFileData, err := versionfile.LoadPluginVersionFile(ctx)
 	if err != nil {
 		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not load versionfile")
 		return nil

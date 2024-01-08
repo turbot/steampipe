@@ -1,6 +1,7 @@
 package versionmap
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -41,7 +42,7 @@ func EmptyWorkspaceLock(existingLock *WorkspaceLock) *WorkspaceLock {
 	}
 }
 
-func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
+func LoadWorkspaceLock(ctx context.Context, workspacePath string) (*WorkspaceLock, error) {
 	var installCache = make(DependencyVersionMap)
 	lockPath := filepaths.WorkspaceLockPath(workspacePath)
 	if filehelpers.FileExists(lockPath) {
@@ -63,7 +64,7 @@ func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 		MissingVersions:     make(DependencyVersionMap),
 	}
 
-	if err := res.getInstalledMods(); err != nil {
+	if err := res.getInstalledMods(ctx); err != nil {
 		return nil, err
 	}
 
@@ -75,9 +76,9 @@ func LoadWorkspaceLock(workspacePath string) (*WorkspaceLock, error) {
 }
 
 // getInstalledMods returns a map installed mods, and the versions installed for each
-func (l *WorkspaceLock) getInstalledMods() error {
+func (l *WorkspaceLock) getInstalledMods(ctx context.Context) error {
 	// recursively search for all the mod.sp files under the .steampipe/mods folder, then build the mod name from the file path
-	modFiles, err := filehelpers.ListFiles(l.ModInstallationPath, &filehelpers.ListOptions{
+	modFiles, err := filehelpers.ListFilesWithContext(ctx, l.ModInstallationPath, &filehelpers.ListOptions{
 		Flags:   filehelpers.FilesRecursive,
 		Include: []string{"**/mod.sp"},
 	})
@@ -91,6 +92,9 @@ func (l *WorkspaceLock) getInstalledMods() error {
 	var errors []error
 
 	for _, modfilePath := range modFiles {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		// try to parse the mon name and version form the parent folder of the modfile
 		modDependencyName, version, err := l.parseModPath(modfilePath)
 		if err != nil {

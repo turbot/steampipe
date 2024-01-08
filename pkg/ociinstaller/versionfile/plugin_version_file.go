@@ -1,6 +1,7 @@
 package versionfile
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -103,7 +104,7 @@ func (f *PluginVersionFile) ensureVersionFilesInPluginDirectories() error {
 var pluginLoadLock = sync.Mutex{}
 
 // LoadPluginVersionFile migrates from the old version file format if necessary and loads the plugin version data
-func LoadPluginVersionFile() (*PluginVersionFile, error) {
+func LoadPluginVersionFile(ctx context.Context) (*PluginVersionFile, error) {
 	// we need a lock here so that we don't hit a race condition where
 	// the plugin file needs to be composed
 	// if recomposition is not required, this has (almost) zero penalty
@@ -135,7 +136,7 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 	// we don't have a global plugin/versions.json or it is not parseable
 	// generate the version file from the individual version files by walking the plugin directories
 	// this will return an Empty Version file if there are no version files in the plugin directories
-	pluginVersions := recomposePluginVersionFile()
+	pluginVersions := recomposePluginVersionFile(ctx)
 
 	// save the recomposed file
 	err := pluginVersions.Save()
@@ -147,8 +148,8 @@ func LoadPluginVersionFile() (*PluginVersionFile, error) {
 
 // EnsureVersionFilesInPluginDirectories attempts a backfill of the individual version.json for plugins
 // this is required only once when upgrading from 0.20.x
-func EnsureVersionFilesInPluginDirectories() error {
-	versions, err := LoadPluginVersionFile()
+func EnsureVersionFilesInPluginDirectories(ctx context.Context) error {
+	versions, err := LoadPluginVersionFile(ctx)
 	if err != nil {
 		return err
 	}
@@ -158,10 +159,10 @@ func EnsureVersionFilesInPluginDirectories() error {
 // recomposePluginVersionFile recursively traverses down the plugin direcory and tries to
 // recompose the global version file from the plugin version files
 // if there are no plugin version files, this returns a ready to use empty global version file
-func recomposePluginVersionFile() *PluginVersionFile {
+func recomposePluginVersionFile(ctx context.Context) *PluginVersionFile {
 	pvf := newPluginVersionFile()
 
-	versionFiles, err := filehelpers.ListFiles(filepaths.EnsurePluginDir(), &filehelpers.ListOptions{
+	versionFiles, err := filehelpers.ListFilesWithContext(ctx, filepaths.EnsurePluginDir(), &filehelpers.ListOptions{
 		Include: []string{fmt.Sprintf("**/%s", pluginVersionFileName)},
 		Flags:   filehelpers.FilesRecursive,
 	})

@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"context"
 	"log"
 	"os"
 	"time"
@@ -9,9 +10,9 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
-func CleanupOldTmpDirs() {
+func CleanupOldTmpDirs(ctx context.Context) {
 	const tmpDirAgeThreshold = 24 * time.Hour
-	tmpDirs, err := files.ListFiles(filepaths.EnsurePluginDir(), &files.ListOptions{
+	tmpDirs, err := files.ListFilesWithContext(ctx, filepaths.EnsurePluginDir(), &files.ListOptions{
 		Include: []string{"tmp-*"},
 		Flags:   files.DirectoriesRecursive,
 	})
