@@ -1,4 +1,4 @@
-## v0.21.3 [2023-12-22]
+## v0.21.3 [2024-01-05]
 _Whats new_
 * Allow using pprof on FDW when STEAMPIPE_FDW_PPROF environment variable is set. ([#368](https://github.com/turbot/steampipe-postgres-fdw/issues/368))
 
