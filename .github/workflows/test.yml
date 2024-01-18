@@ -34,7 +34,7 @@ jobs:
       # used to speedup go test
       - name: Go Build Cache
         id: build-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.go-cache-paths.outputs.go-build }}
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
