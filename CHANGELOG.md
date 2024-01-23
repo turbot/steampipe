@@ -1,3 +1,12 @@
+## v0.21.4 [2024-01-23]
+_Bug fixes_
+* Fixed schema clone function failing if table has an LTREE column. ([#4079](https://github.com/turbot/steampipe/issues/4079))
+* Maintain the order of execution when running multiple queries in batch mode. ([#3728](https://github.com/turbot/steampipe/issues/3728))
+* Fixes issue where using any meta-command would load connection state even if not required. ([#3614](https://github.com/turbot/steampipe/issues/3614))
+* Fixes issue where plugin version backfilling would write versions.json to cwd if the plugin folder is not found. ([#4073](https://github.com/turbot/steampipe/issues/4073))
+* Simplifies and fix available port check. ([#4030](https://github.com/turbot/steampipe/issues/4030))
+
+
 ## v0.21.3 [2023-12-22]
 _Whats new_
 * Allow using pprof on FDW when STEAMPIPE_FDW_PPROF environment variable is set. ([#368](https://github.com/turbot/steampipe-postgres-fdw/issues/368))
