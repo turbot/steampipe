@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -53,10 +54,19 @@ func FindPluginFolder(remoteSchema string) (string, error) {
 	matches, err := filepath.Glob(globPattern)
 	if err != nil {
 		return "", err
-	} else if len(matches) == 1 {
+	}
+	// there was no match
+	if len(matches) == 0 {
+		return "", sperr.WrapWithMessage(os.ErrNotExist, "no plugin installed matching %s", remoteSchema)
+	}
+
+	// we found a match
+	if len(matches) == 1 {
 		return matches[0], nil
 	}
 
+	// when there are multiple matches,
+	// find the first match which has the same hashed name as the schema
 	for _, match := range matches {
 		// get the relative path to this match from the plugin folder
 		folderRelativePath, err := filepath.Rel(pluginDir, match)

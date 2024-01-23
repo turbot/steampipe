@@ -92,10 +92,23 @@ func (f *PluginVersionFile) write(path string) error {
 }
 
 func (f *PluginVersionFile) ensureVersionFilesInPluginDirectories() error {
+	removals := []*InstalledVersion{}
 	for _, installation := range f.Plugins {
 		if err := f.EnsurePluginVersionFile(installation); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				removals = append(removals, installation)
+				continue
+			}
 			return err
 		}
+	}
+
+	// if we found any plugins that do not have installations, remove them from the map
+	if len(removals) > 0 {
+		for _, removal := range removals {
+			delete(f.Plugins, removal.Name)
+		}
+		return f.Save()
 	}
 	return nil
 }
