@@ -18,7 +18,7 @@ func UninstallWorkspaceDependencies(ctx context.Context, opts *InstallOpts) (*In
 	}()
 
 	// uninstall workspace dependencies
-	installer, err := NewModInstaller(opts)
+	installer, err := NewModInstaller(ctx, opts)
 	if err != nil {
 		return nil, err
 	}

@@ -43,12 +43,13 @@ func getRunListSubCmd(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 	}
 
 	return func(cmd *cobra.Command, _ []string) {
+		ctx := cmd.Context()
 		workspacePath := viper.GetString(constants.ArgModLocation)
 
-		w, errAndWarnings := workspace.Load(cmd.Context(), workspacePath)
+		w, errAndWarnings := workspace.Load(ctx, workspacePath)
 		error_helpers.FailOnError(errAndWarnings.GetError())
 
-		modResources, depResources, err := listResourcesInMod(cmd.Context(), w.Mod, cmd)
+		modResources, depResources, err := listResourcesInMod(ctx, w.Mod, cmd)
 		error_helpers.FailOnErrorWithMessage(err, "could not list resources")
 		if len(modResources)+len(depResources) == 0 {
 			fmt.Println("No resources available to execute.")

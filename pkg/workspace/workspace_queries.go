@@ -18,23 +18,23 @@ import (
 // GetQueriesFromArgs retrieves queries from args
 //
 // For each arg check if it is a named query or a file, before falling back to treating it as sql
-func (w *Workspace) GetQueriesFromArgs(args []string) (map[string]*modconfig.ResolvedQuery, error) {
+func (w *Workspace) GetQueriesFromArgs(args []string) ([]*modconfig.ResolvedQuery, error) {
 	utils.LogTime("execute.GetQueriesFromArgs start")
 	defer utils.LogTime("execute.GetQueriesFromArgs end")
 
-	var queries = make(map[string]*modconfig.ResolvedQuery)
-	for _, arg := range args {
+	var queries = make([]*modconfig.ResolvedQuery, len(args))
+	for idx, arg := range args {
 		resolvedQuery, queryProvider, err := w.ResolveQueryAndArgsFromSQLString(arg)
 		if err != nil {
 			return nil, err
 		}
 		if len(resolvedQuery.ExecuteSQL) > 0 {
 			// default name to the query text
-			queryName := resolvedQuery.ExecuteSQL
+			resolvedQuery.Name = resolvedQuery.ExecuteSQL
 			if queryProvider != nil {
-				queryName = queryProvider.Name()
+				resolvedQuery.Name = queryProvider.Name()
 			}
-			queries[queryName] = resolvedQuery
+			queries[idx] = resolvedQuery
 		}
 	}
 	return queries, nil

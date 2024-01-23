@@ -59,7 +59,7 @@ func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, opts
 		}
 	}
 	sub <- struct{}{}
-	if err := updatePluginVersionFiles(image); err != nil {
+	if err := updatePluginVersionFiles(ctx, image); err != nil {
 		return nil, err
 	}
 	return image, nil
@@ -67,12 +67,12 @@ func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, opts
 
 // updatePluginVersionFiles updates the global versions.json to add installation of the plugin
 // also adds a version file in the plugin installation directory with the information
-func updatePluginVersionFiles(image *SteampipeImage) error {
+func updatePluginVersionFiles(ctx context.Context, image *SteampipeImage) error {
 	versionFileUpdateLock.Lock()
 	defer versionFileUpdateLock.Unlock()
 
 	timeNow := versionfile.FormatTime(time.Now())
-	v, err := versionfile.LoadPluginVersionFile()
+	v, err := versionfile.LoadPluginVersionFile(ctx)
 	if err != nil {
 		return err
 	}

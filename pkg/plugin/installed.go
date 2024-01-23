@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/turbot/steampipe/pkg/ociinstaller"
@@ -9,9 +10,9 @@ import (
 
 // GetInstalledPlugins returns the list of plugins keyed by the shortname (org/name) and its specific version
 // Does not validate/check of available connections
-func GetInstalledPlugins() (map[string]*modconfig.PluginVersionString, error) {
+func GetInstalledPlugins(ctx context.Context) (map[string]*modconfig.PluginVersionString, error) {
 	installedPlugins := make(map[string]*modconfig.PluginVersionString)
-	installedPluginsData, _ := List(nil)
+	installedPluginsData, _ := List(ctx, nil)
 	for _, plugin := range installedPluginsData {
 		org, name, _ := ociinstaller.NewSteampipeImageRef(plugin.Name).GetOrgNameAndStream()
 		pluginShortName := fmt.Sprintf("%s/%s", org, name)

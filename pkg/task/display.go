@@ -76,6 +76,8 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 	utils.LogTime("Runner.displayNotifications start")
 	defer utils.LogTime("Runner.displayNotifications end")
 
+	ctx := cmd.Context()
+
 	if !showNotificationsForCommand(cmd, cmdArgs) {
 		// do not do anything - just return
 		return nil
@@ -91,7 +93,7 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 		return err
 	}
 
-	table, err := cachedVersions.asTable()
+	table, err := cachedVersions.asTable(ctx)
 	if err != nil {
 		return err
 	}

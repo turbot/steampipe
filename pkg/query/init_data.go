@@ -23,7 +23,7 @@ type InitData struct {
 	cancelInitialisation context.CancelFunc
 	Loaded               chan struct{}
 	// map of query name to resolved query (key is the query text for command line queries)
-	Queries map[string]*modconfig.ResolvedQuery
+	Queries []*modconfig.ResolvedQuery
 }
 
 // NewInitData returns a new InitData object

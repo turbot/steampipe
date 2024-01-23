@@ -1,6 +1,7 @@
 package steampipeconfig
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -38,7 +39,7 @@ func ensureDefaultWorkspaceFile(configFolder string) error {
 	return nil
 }
 
-func NewWorkspaceProfileLoader(workspaceProfilePath string) (*WorkspaceProfileLoader, error) {
+func NewWorkspaceProfileLoader(ctx context.Context, workspaceProfilePath string) (*WorkspaceProfileLoader, error) {
 	// write the workspaces.spc.sample file
 	if err := ensureDefaultWorkspaceFile(workspaceProfilePath); err != nil {
 		return nil,
@@ -48,7 +49,7 @@ func NewWorkspaceProfileLoader(workspaceProfilePath string) (*WorkspaceProfileLo
 			)
 	}
 	loader := &WorkspaceProfileLoader{workspaceProfilePath: workspaceProfilePath}
-	workspaceProfiles, err := loader.load()
+	workspaceProfiles, err := loader.load(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -92,9 +93,9 @@ func (l *WorkspaceProfileLoader) get(name string) (*modconfig.WorkspaceProfile, 
 	return nil, fmt.Errorf("workspace profile %s does not exist", name)
 }
 
-func (l *WorkspaceProfileLoader) load() (map[string]*modconfig.WorkspaceProfile, error) {
+func (l *WorkspaceProfileLoader) load(ctx context.Context) (map[string]*modconfig.WorkspaceProfile, error) {
 	// get all the config files in the directory
-	return parse.LoadWorkspaceProfiles(l.workspaceProfilePath)
+	return parse.LoadWorkspaceProfiles(ctx, l.workspaceProfilePath)
 }
 
 /*

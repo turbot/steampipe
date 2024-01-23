@@ -54,7 +54,7 @@ type ModInstaller struct {
 	force bool
 }
 
-func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
+func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, error) {
 	if opts.WorkspaceMod == nil {
 		return nil, sperr.New("no workspace mod passed to mod installer")
 	}
@@ -74,14 +74,14 @@ func NewModInstaller(opts *InstallOpts) (*ModInstaller, error) {
 		return nil, err
 	}
 
-	installedPlugins, err := plugin.GetInstalledPlugins()
+	installedPlugins, err := plugin.GetInstalledPlugins(ctx)
 	if err != nil {
 		return nil, err
 	}
 	i.installedPlugins = installedPlugins
 
 	// load lock file
-	workspaceLock, err := versionmap.LoadWorkspaceLock(i.workspacePath)
+	workspaceLock, err := versionmap.LoadWorkspaceLock(ctx, i.workspacePath)
 	if err != nil {
 		return nil, err
 	}

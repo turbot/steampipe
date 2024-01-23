@@ -46,7 +46,7 @@ func Remove(ctx context.Context, image string, pluginConnections map[string][]*m
 	}
 
 	// update the version file
-	v, err := versionfile.LoadPluginVersionFile()
+	v, err := versionfile.LoadPluginVersionFile(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +57,8 @@ func Remove(ctx context.Context, image string, pluginConnections map[string][]*m
 }
 
 // Exists looks up the version file and reports whether a plugin is already installed
-func Exists(plugin string) (bool, error) {
-	versionData, err := versionfile.LoadPluginVersionFile()
+func Exists(ctx context.Context, plugin string) (bool, error) {
+	versionData, err := versionfile.LoadPluginVersionFile(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -84,17 +84,17 @@ type PluginListItem struct {
 }
 
 // List returns all installed plugins
-func List(pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListItem, error) {
+func List(ctx context.Context, pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListItem, error) {
 	var items []PluginListItem
 
-	v, err := versionfile.LoadPluginVersionFile()
+	v, err := versionfile.LoadPluginVersionFile(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	pluginVersions := v.Plugins
 
-	pluginBinaries, err := files.ListFiles(filepaths.EnsurePluginDir(), &files.ListOptions{
+	pluginBinaries, err := files.ListFilesWithContext(ctx, filepaths.EnsurePluginDir(), &files.ListOptions{
 		Include: []string{"**/*.plugin"},
 		Flags:   files.AllRecursive,
 	})

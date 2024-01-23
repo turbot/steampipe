@@ -59,6 +59,8 @@ func preRunHook(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmdhook.preRunHook start")
 	defer utils.LogTime("cmdhook.preRunHook end")
 
+	ctx := cmd.Context()
+
 	viper.Set(constants.ConfigKeyActiveCommand, cmd)
 	viper.Set(constants.ConfigKeyActiveCommandArgs, args)
 	viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
@@ -102,13 +104,14 @@ func preRunHook(cmd *cobra.Command, args []string) {
 	createLogger(logBuffer, cmd)
 
 	// runScheduledTasks skips running tasks if this instance is the plugin manager
-	waitForTasksChannel = runScheduledTasks(cmd.Context(), cmd, args, ew)
+	waitForTasksChannel = runScheduledTasks(ctx, cmd, args, ew)
 
 	// ensure all plugin installation directories have a version.json file
 	// (this is to handle the case of migrating an existing installation from v0.20.x)
 	// no point doing this for the plugin-manager since that would have been done by the initiating CLI process
 	if !task.IsPluginManagerCmd(cmd) {
-		versionfile.EnsureVersionFilesInPluginDirectories()
+		err := versionfile.EnsureVersionFilesInPluginDirectories(ctx)
+		error_helpers.FailOnError(sperr.WrapWithMessage(err, "failed to ensure version files in plugin directories"))
 	}
 
 	// set the max memory if specified
@@ -185,8 +188,11 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	utils.LogTime("cmdconfig.initGlobalConfig start")
 	defer utils.LogTime("cmdconfig.initGlobalConfig end")
 
+	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
+	ctx := cmd.Context()
+
 	// load workspace profile from the configured install dir
-	loader, err := getWorkspaceProfileLoader()
+	loader, err := getWorkspaceProfileLoader(ctx)
 	if err != nil {
 		return error_helpers.NewErrorsAndWarning(err)
 	}
@@ -194,7 +200,6 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	// set global workspace profile
 	steampipeconfig.GlobalWorkspaceProfile = loader.GetActiveWorkspaceProfile()
 
-	var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	// set-up viper with defaults from the env and default workspace profile
 	err = bootstrapViper(loader, cmd)
 	if err != nil {
@@ -205,7 +210,7 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	ensureInstallDir(viper.GetString(constants.ArgInstallDir))
 
 	// load the connection config and HCL options
-	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(viper.GetString(constants.ArgModLocation), cmd.Name())
+	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(ctx, viper.GetString(constants.ArgModLocation), cmd.Name())
 	if loadConfigErrorsAndWarnings.Error != nil {
 		return loadConfigErrorsAndWarnings
 	}
@@ -275,7 +280,7 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 	return nil
 }
 
-func getWorkspaceProfileLoader() (*steampipeconfig.WorkspaceProfileLoader, error) {
+func getWorkspaceProfileLoader(ctx context.Context) (*steampipeconfig.WorkspaceProfileLoader, error) {
 	// set viper default for workspace profile, using EnvWorkspaceProfile env var
 	SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, String)
 	// set viper default for install dir, using EnvInstallDir env var
@@ -293,7 +298,7 @@ func getWorkspaceProfileLoader() (*steampipeconfig.WorkspaceProfileLoader, error
 	}
 
 	// create loader
-	loader, err := steampipeconfig.NewWorkspaceProfileLoader(workspaceProfileDir)
+	loader, err := steampipeconfig.NewWorkspaceProfileLoader(ctx, workspaceProfileDir)
 	if err != nil {
 		return nil, err
 	}

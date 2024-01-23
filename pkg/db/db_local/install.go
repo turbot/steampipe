@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"os/exec"
 	"sync"
@@ -278,7 +277,7 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	}
 
 	statushooks.SetStatus(ctx, "Starting database…")
-	port, err := getNextFreePort()
+	port, err := utils.GetNextFreePort()
 	if err != nil {
 		log.Printf("[TRACE] getNextFreePort failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")
@@ -377,21 +376,6 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 
 func isValidDatabaseName(databaseName string) bool {
 	return databaseName[0] == '_' || (databaseName[0] >= 'a' && databaseName[0] <= 'z')
-}
-
-func getNextFreePort() (int, error) {
-	utils.LogTime("db_local.install.getNextFreePort start")
-	defer utils.LogTime("db_local.install.getNextFreePort end")
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return -1, err
-	}
-	defer listener.Close()
-	addr, ok := listener.Addr().(*net.TCPAddr)
-	if !ok {
-		return -1, fmt.Errorf("count not retrieve port")
-	}
-	return addr.Port, nil
 }
 
 func initDatabase() error {

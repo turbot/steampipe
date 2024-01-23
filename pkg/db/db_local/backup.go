@@ -153,7 +153,7 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningInfo, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")
-	port, err := getNextFreePort()
+	port, err := utils.GetNextFreePort()
 	if err != nil {
 		return nil, err
 	}
