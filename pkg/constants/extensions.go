@@ -2,16 +2,15 @@ package constants
 
 import "github.com/turbot/go-kit/helpers"
 
+var ModDataExtensions = []string{".sp", "*.pp"}
+
 const (
 	PluginExtension        = ".plugin"
 	ConfigExtension        = ".spc"
 	SqlExtension           = ".sql"
-	MarkdownExtension      = ".md"
-	ModDataExtension       = ".sp"
 	VariablesExtension     = ".spvars"
 	AutoVariablesExtension = ".auto.spvars"
 	JsonExtension          = ".json"
-	CsvExtension           = ".csv"
 	TextExtension          = ".txt"
 	SnapshotExtension      = ".sps"
 	TokenExtension         = ".tptt"
