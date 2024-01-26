@@ -383,7 +383,7 @@ func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext
 			Flags:   w.listFlag,
 			Exclude: w.exclusions,
 			// only load .sp files
-			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
+			Include: filehelpers.InclusionsFromExtensions(constants.ModDataExtensions),
 		})
 
 	return parseCtx, nil
