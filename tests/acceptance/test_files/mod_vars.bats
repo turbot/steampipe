@@ -49,7 +49,6 @@ v8.0.0,v8.0.0,ok'
 }
 
 @test "test variable resolution in workspace mod set from ENV" {
-  skip
   cd $FILE_PATH/test_data/mods/test_vars_workspace_mod
   export SP_VAR_version=v9.0.0
   run steampipe query query.version --output csv
@@ -70,7 +69,7 @@ v9.0.0,v9.0.0,ok'
   cd $FILE_PATH/test_data/mods/test_vars_dependency_mod
   steampipe mod install
 
-  run steampipe query dependency_vars_1.query.version --output csv --var version="v5.0.0"
+  run steampipe query dependency_vars_1.query.version --output csv --var dependency_vars_1.version="v5.0.0"
   # check the output - query should use the value of variable set from the command line
   # --var flag ("v5.0.0") which will give the output:
 # +--------+----------+--------+
