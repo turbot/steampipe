@@ -11,7 +11,7 @@ import (
 type ModVariableMap struct {
 	// which mod have these variables been loaded for?
 	Mod *Mod
-	// top level variables
+	// top level variables, keyed by short name
 	RootVariables map[string]*Variable
 	// map of dependency variable maps, keyed by dependency NAME
 	DependencyVariables map[string]*ModVariableMap
@@ -43,7 +43,7 @@ func NewModVariableMap(mod *Mod) *ModVariableMap {
 		}
 	}
 
-	// build map of all publicy settable variables
+	// build map of all publicly settable variables
 	m.PopulatePublicVariables()
 
 	return m

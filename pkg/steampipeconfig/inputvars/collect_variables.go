@@ -3,17 +3,18 @@ package inputvars
 import (
 	"fmt"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"os"
 	"regexp"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/hashicorp/terraform/tfdiags"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig/var_config"
+	"github.com/turbot/terraform-components/tfdiags"
 )
 
 // CollectVariableValues inspects the various places that configuration input variable
@@ -23,7 +24,13 @@ import (
 // This method returns diagnostics relating to the collection of the values,
 // but the values themselves may produce additional diagnostics when finally
 // parsed.
-func CollectVariableValues(workspacePath string, variableFileArgs []string, variablesArgs []string, workspaceModName string) (map[string]UnparsedVariableValue, error) {
+func CollectVariableValues(workspacePath string, variableFileArgs []string, variablesArgs []string, workspaceMod *modconfig.Mod) (map[string]UnparsedVariableValue, error) {
+	workspaceModName := workspaceMod.ShortName
+	var modNames = make(map[string]struct{})
+	for _, m := range workspaceMod.ResourceMaps.Mods {
+		modNames[m.ShortName] = struct{}{}
+	}
+
 	ret := map[string]UnparsedVariableValue{}
 
 	// First we'll deal with environment variables
@@ -134,23 +141,31 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	}
 
 	// now map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
-	// also if any var value is qualified with the workspace mod, remove the qualification
-	ret = transformVarNames(ret, workspaceModName)
+	// - if any var value is qualified with the workspace mod, remove the qualification
+	// - remove any variables which are not in the root mod or first level dependencies
+	ret = transformVarNames(ret, workspaceModName, modNames)
+
 	return ret, nil
 }
 
 // map any variable names of form <modname>.<variablename> to <modname>.var.<varname>
-func transformVarNames(rawValues map[string]UnparsedVariableValue, workspaceModName string) map[string]UnparsedVariableValue {
-
+func transformVarNames(rawValues map[string]UnparsedVariableValue, workspaceModName string, modNames map[string]struct{}) map[string]UnparsedVariableValue {
 	ret := make(map[string]UnparsedVariableValue, len(rawValues))
 	for k, v := range rawValues {
-		if parts := strings.Split(k, "."); len(parts) == 2 {
+
+		parts := strings.Split(k, ".")
+		if len(parts) > 1 {
+			if _, ok := modNames[parts[0]]; !ok {
+				// NOTE: skip any variables which are not in the root mod or first level dependencies
+				continue
+			}
 			if parts[0] == workspaceModName {
 				k = parts[1]
 			} else {
 				k = fmt.Sprintf("%s.var.%s", parts[0], parts[1])
 			}
 		}
+
 		ret[k] = v
 	}
 	return ret
