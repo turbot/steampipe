@@ -24,6 +24,25 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 }
 
+# This test looks for a bug in the schema cloning code where the schema clone function 
+# used to fail if table had an LTREE column
+@test "schema cloning - function fails if table has an LTREE column" {
+  # remove existing connections
+  rm -f $STEAMPIPE_INSTALL_DIR/config/chaos.spc
+
+  # remove db, to trigger a clean installation with no connections
+  rm -rf $STEAMPIPE_INSTALL_DIR/db
+
+  # run steampipe(installs db)
+  steampipe query "select 1"
+
+  # add connections(more than 1) to trigger schema cloning
+  cp $SRC_DATA_DIR/two_chaos.spc $STEAMPIPE_INSTALL_DIR/config/chaos.spc
+
+  run steampipe query "select ltree_column from chaos2.chaos_all_column_types"
+  assert_success
+}
+
 @test "schema cloning - quoting issue" {
   # remove existing connections
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos.spc
