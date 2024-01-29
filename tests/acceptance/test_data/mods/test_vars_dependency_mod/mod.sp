@@ -6,7 +6,3 @@ mod "test_vars_dependency_mod" {
     }
   }
 }
-
-variable "version" {
-  default = "v5.0.0"
-}
