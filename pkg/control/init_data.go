@@ -39,6 +39,12 @@ func NewInitData(ctx context.Context) *InitData {
 			InitData: *initialisation.NewErrorInitData(fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())),
 		}
 	}
+
+	statushooks.SetStatus(ctx, "Initialising...")
+
+	// disable status hooks for any subsequent initialisation
+	ctx = statushooks.DisableStatusHooks(ctx)
+
 	i.Workspace = w
 	i.Result.AddWarnings(errAndWarnings.Warnings...)
 	if !w.ModfileExists() {
