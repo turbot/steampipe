@@ -107,6 +107,7 @@ jobs:
           - "dynamic_aggregators"
           - "cache"
           - "mod_install"
+          - "mod_vars"
           - "mod"
           - "mod_require"
           - "check"
