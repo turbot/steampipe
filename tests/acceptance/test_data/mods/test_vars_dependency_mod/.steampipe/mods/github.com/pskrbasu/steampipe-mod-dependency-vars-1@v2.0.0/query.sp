@@ -8,5 +8,4 @@ query "version" {
 
 variable "version"{
 	type = string
-	default = "v2.0.0"
 }

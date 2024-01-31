@@ -64,6 +64,10 @@ v9.0.0,v9.0.0,ok'
 }
 
 ### dependency mod tests ###
+# The following set of tests use a dependency mod(the mod is committed) that has a variable dependency but the
+# variable does not have a default. This means that the variable must be set from the command
+# line, an auto spvars file, an explicit spvars file, or an ENV var. The tests below check that
+# the variable is resolved correctly in each of these cases.
 
 @test "test variable resolution in dependency mod set from command line(--var)" {
   cd $FILE_PATH/test_data/mods/test_vars_dependency_mod
