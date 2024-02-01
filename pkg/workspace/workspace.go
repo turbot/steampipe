@@ -360,7 +360,7 @@ func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *pa
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
 	// get the values
-	return steampipeconfig.GetVariableValues(ctx, variablesParseCtx, variableMap, validateMissing)
+	return steampipeconfig.GetVariableValues(variablesParseCtx, variableMap, validateMissing)
 }
 
 // build options used to load workspace

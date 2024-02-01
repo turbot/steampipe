@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -15,11 +14,10 @@ import (
 	"sync/atomic"
 	"unicode"
 
-	"github.com/hashicorp/terraform/terraform"
-
 	"github.com/bgentry/speakeasy"
 	"github.com/mattn/go-isatty"
 	"github.com/mitchellh/colorstring"
+	"github.com/turbot/terraform-components/terraform"
 )
 
 var defaultInputReader io.Reader
@@ -94,8 +92,6 @@ func (i *UIInput) Input(ctx context.Context, opts *terraform.InputOpts) (string,
 		return v, nil
 	}
 
-	log.Printf("[DEBUG] command: asking for input: %q", opts.Query)
-
 	// Listen for interrupts so we can cancel the input ask
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
@@ -120,7 +116,7 @@ func (i *UIInput) Input(ctx context.Context, opts *terraform.InputOpts) (string,
 	buf.WriteString("  [bold]Enter a value:[reset] ")
 
 	// Ask the user for their input
-	if _, err := fmt.Fprint(w, i.Colorize.Color(buf.String())); err != nil {
+	if _, err := fmt.Fprint(w, i.Colorize.Color(buf.String())); err != nil { //nolint:forbidigo // acceptable
 		return "", err
 	}
 
@@ -141,7 +137,7 @@ func (i *UIInput) Input(ctx context.Context, opts *terraform.InputOpts) (string,
 			line, err = buf.ReadString('\n')
 		}
 		if err != nil {
-			i.err <- string(err.Error())
+			i.err <- err.Error()
 		} else {
 			i.result <- strings.TrimRightFunc(line, unicode.IsSpace)
 		}
@@ -152,7 +148,7 @@ func (i *UIInput) Input(ctx context.Context, opts *terraform.InputOpts) (string,
 		return "", errors.New(err)
 
 	case line := <-i.result:
-		fmt.Fprint(w, "\n")
+		fmt.Fprint(w, "\n") //nolint:forbidigo // acceptable
 
 		if line == "" {
 			line = opts.Default
@@ -160,17 +156,17 @@ func (i *UIInput) Input(ctx context.Context, opts *terraform.InputOpts) (string,
 
 		return line, nil
 	case <-ctx.Done():
-		fmt.Printf("ctx.Done()\n")
+		fmt.Printf("ctx.Done()\n") //nolint:forbidigo // acceptable
 		// Print a newline so that any further output starts properly
 		// on a new line.
-		fmt.Fprintln(w)
+		fmt.Fprintln(w) //nolint:forbidigo // acceptable
 
 		return "", ctx.Err()
 	case <-sigCh:
-		fmt.Printf("SIG\n")
+		fmt.Printf("SIG\n") //nolint:forbidigo // acceptable
 		// Print a newline so that any further output starts properly
 		// on a new line.
-		fmt.Fprintln(w)
+		fmt.Fprintln(w) //nolint:forbidigo // acceptable
 
 		// Mark that we were interrupted so future Ask calls fail.
 		i.interrupted = true

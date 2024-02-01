@@ -139,6 +139,7 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	// initialize the cancel handler - for context cancellation
 	initCtx, cancel := context.WithCancel(ctx)
 	contexthelpers.StartCancelHandler(cancel)
+
 	// start the initializer
 	initData := query.NewInitData(initCtx, args)
 	if initData.Result.Error != nil {

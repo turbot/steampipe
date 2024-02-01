@@ -5,8 +5,8 @@ import (
 	"reflect"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
-	"github.com/hashicorp/terraform/configs/configschema"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/terraform-components/configs/configschema"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
 )

@@ -1,0 +1,11 @@
+{
+  "test_vars_dependency_mod": {
+    "github.com/pskrbasu/steampipe-mod-dependency-vars-1": {
+      "name": "github.com/pskrbasu/steampipe-mod-dependency-vars-1",
+      "alias": "dependency_vars_1",
+      "version": "2.0.0",
+      "constraint": "*",
+      "struct_version": 20220411
+    }
+  }
+}
