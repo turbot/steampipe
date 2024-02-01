@@ -1,14 +1,15 @@
 package parse
 
 import (
+	"reflect"
+	"strings"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/turbot/go-kit/hcl_helpers"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"reflect"
-	"strings"
 )
 
 func decodeHclBody(body hcl.Body, evalCtx *hcl.EvalContext, resourceProvider modconfig.ResourceMapsProvider, resource modconfig.HclResource) (diags hcl.Diagnostics) {
@@ -209,7 +210,7 @@ func resolveReferences(body hcl.Body, resourceMapsProvider modconfig.ResourceMap
 			if _, ok := v.(modconfig.HclResource); ok {
 				if hclVal, ok := attributes[hclAttribute]; ok {
 					if scopeTraversal, ok := hclVal.Expr.(*hclsyntax.ScopeTraversalExpr); ok {
-						path := hcl_helpers.TraversalAsString(scopeTraversal.Traversal)
+						path := hclhelpers.TraversalAsString(scopeTraversal.Traversal)
 						if parsedName, err := modconfig.ParseResourceName(path); err == nil {
 							if r, ok := resourceMapsProvider.GetResource(parsedName); ok {
 								f := rv.FieldByName(field.Name)

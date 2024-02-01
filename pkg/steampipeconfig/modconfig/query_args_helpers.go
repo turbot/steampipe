@@ -2,7 +2,7 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/type_conversion"
+	"github.com/turbot/go-kit/helpers"
 	"log"
 	"strings"
 
@@ -76,7 +76,7 @@ func ResolveArgs(qp QueryProvider, runtimeArgs *QueryArgs) ([]any, error) {
 
 	// convert any array args into a strongly typed array
 	for i, v := range argVals {
-		argVals[i] = type_conversion.AnySliceToTypedSlice(v)
+		argVals[i] = helpers.AnySliceToTypedSlice(v)
 	}
 
 	// success!
