@@ -360,7 +360,7 @@ func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *pa
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
 	// get the values
-	return steampipeconfig.GetVariableValues(ctx, variablesParseCtx, variableMap, validateMissing)
+	return steampipeconfig.GetVariableValues(variablesParseCtx, variableMap, validateMissing)
 }
 
 // build options used to load workspace
@@ -383,7 +383,7 @@ func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext
 			Flags:   w.listFlag,
 			Exclude: w.exclusions,
 			// only load .sp files
-			Include: filehelpers.InclusionsFromExtensions([]string{constants.ModDataExtension}),
+			Include: filehelpers.InclusionsFromExtensions(constants.ModDataExtensions),
 		})
 
 	return parseCtx, nil

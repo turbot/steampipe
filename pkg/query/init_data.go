@@ -48,6 +48,19 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 		// home dir modfile already done - set the viper config
 		viper.Set(constants.ConfigKeyBypassHomeDirModfileWarning, true)
 	}
+
+	statushooks.SetStatus(ctx, "Loading workspace")
+
+	// load workspace syncronously
+	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
+	if errAndWarnings.GetError() != nil {
+		i.Result.Error = fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())
+		return i
+	}
+
+	i.Result.AddWarnings(errAndWarnings.Warnings...)
+	i.Workspace = w
+
 	go i.init(ctx, args)
 
 	return i
@@ -102,22 +115,13 @@ func (i *InitData) init(ctx context.Context, args []string) {
 		}
 	}
 
-	statushooks.SetStatus(ctx, "Loading workspace")
-	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
-	if errAndWarnings.GetError() != nil {
-		i.Result.Error = fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())
-		return
-	}
-	i.Result.AddWarnings(errAndWarnings.Warnings...)
-	i.Workspace = w
-
 	// set max DB connections to 1
 	viper.Set(constants.ArgMaxParallel, 1)
 
 	statushooks.SetStatus(ctx, "Resolving arguments")
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-	resolvedQueries, err := w.GetQueriesFromArgs(args)
+	resolvedQueries, err := i.Workspace.GetQueriesFromArgs(args)
 	if err != nil {
 		i.Result.Error = err
 		return

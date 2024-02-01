@@ -7,7 +7,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform/terraform"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -15,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/terraform-components/terraform"
 )
 
 func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *error_helpers.ErrorAndWarnings) {
@@ -54,8 +54,8 @@ func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *error
 }
 
 func promptForMissingVariables(ctx context.Context, missingVariables []*modconfig.Variable, workspacePath string) error {
-	fmt.Println()
-	fmt.Println("Variables defined with no value set.")
+	fmt.Println()                                       //nolint:forbidigo // UI formatting
+	fmt.Println("Variables defined with no value set.") //nolint:forbidigo // UI formatting
 	for _, v := range missingVariables {
 		variableName := v.ShortName
 		variableDisplayName := fmt.Sprintf("var.%s", v.ShortName)
