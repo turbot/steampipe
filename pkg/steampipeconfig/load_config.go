@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/turbot/go-kit/hcl_helpers"
 	"log"
 	"os"
 	"path/filepath"
@@ -15,6 +14,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -303,7 +303,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 					diags = append(diags, &hcl.Diagnostic{
 						Severity: hcl.DiagWarning,
 						Summary:  warning,
-						Subject:  hcl_helpers.BlockRangePointer(block),
+						Subject:  hclhelpers.BlockRangePointer(block),
 					})
 				}
 			}

@@ -2,12 +2,12 @@ package parse
 
 import (
 	"fmt"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/turbot/go-kit/hcl_helpers"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/go-kit/type_conversion"
+	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/gocty"
@@ -83,7 +83,7 @@ func ctyTupleToArgArray(attr *hcl.Attribute, val cty.Value) ([]any, []*modconfig
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
 			// decode the value into a go type
-			val, err := type_conversion.CtyToGo(v)
+			val, err := hclhelpers.CtyToGo(v)
 			if err != nil {
 				err := fmt.Errorf("invalid value provided for arg #%d: %v", idx, err)
 				return nil, nil, err
@@ -123,7 +123,7 @@ func ctyObjectToArgMap(attr *hcl.Attribute, val cty.Value, evalCtx *hcl.EvalCont
 			runtimeDependencies = append(runtimeDependencies, runtimeDependency)
 		} else {
 			// decode the value into a go type
-			val, err := type_conversion.CtyToGo(v)
+			val, err := hclhelpers.CtyToGo(v)
 			if err != nil {
 				err := fmt.Errorf("invalid value provided for param '%s': %v", key, err)
 				return nil, nil, err
@@ -206,14 +206,14 @@ dep_loop:
 	for {
 		switch e := expr.(type) {
 		case *hclsyntax.ScopeTraversalExpr:
-			propertyPathStr = hcl_helpers.TraversalAsString(e.Traversal)
+			propertyPathStr = hclhelpers.TraversalAsString(e.Traversal)
 			break dep_loop
 		case *hclsyntax.SplatExpr:
-			root := hcl_helpers.TraversalAsString(e.Source.(*hclsyntax.ScopeTraversalExpr).Traversal)
+			root := hclhelpers.TraversalAsString(e.Source.(*hclsyntax.ScopeTraversalExpr).Traversal)
 			var suffix string
 			// if there is a property path, add it
 			if each, ok := e.Each.(*hclsyntax.RelativeTraversalExpr); ok {
-				suffix = fmt.Sprintf(".%s", hcl_helpers.TraversalAsString(each.Traversal))
+				suffix = fmt.Sprintf(".%s", hclhelpers.TraversalAsString(each.Traversal))
 			}
 			propertyPathStr = fmt.Sprintf("%s.*%s", root, suffix)
 			break dep_loop
@@ -308,7 +308,7 @@ func decodeParamDefault(attr *hcl.Attribute, parseCtx *ModParseContext, paramNam
 
 	if v.IsKnown() {
 		// convert the raw default into a string representation
-		val, err := type_conversion.CtyToGo(v)
+		val, err := hclhelpers.CtyToGo(v)
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,

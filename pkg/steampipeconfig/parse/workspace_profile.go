@@ -3,13 +3,13 @@ package parse
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/go-kit/hcl_helpers"
 	"log"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -160,7 +160,7 @@ func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseCon
 				// fail
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
-					Subject:  hcl_helpers.BlockRangePointer(block),
+					Subject:  hclhelpers.BlockRangePointer(block),
 					Summary:  fmt.Sprintf("Duplicate options type '%s'", optionsBlockType),
 				})
 			}
@@ -179,7 +179,7 @@ func decodeWorkspaceProfile(block *hcl.Block, parseCtx *WorkspaceProfileParseCon
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  fmt.Sprintf("invalid block type '%s' - only 'options' blocks are supported for workspace profiles", block.Type),
-				Subject:  hcl_helpers.BlockRangePointer(block),
+				Subject:  hclhelpers.BlockRangePointer(block),
 			})
 		}
 	}

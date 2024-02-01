@@ -2,13 +2,14 @@ package parse
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/hashicorp/hcl/v2"
 	"github.com/stevenle/topsort"
-	"github.com/turbot/go-kit/hcl_helpers"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
-	"strings"
 )
 
 type ParseContext struct {
@@ -72,7 +73,7 @@ func (r *ParseContext) AddDependencies(block *hcl.Block, name string, dependenci
 	for _, dep := range dependencies {
 		// each dependency object may have multiple traversals
 		for _, t := range dep.Traversals {
-			parsedPropertyPath, err := modconfig.ParseResourcePropertyPath(hcl_helpers.TraversalAsString(t))
+			parsedPropertyPath, err := modconfig.ParseResourcePropertyPath(hclhelpers.TraversalAsString(t))
 
 			if err != nil {
 				diags = append(diags, &hcl.Diagnostic{
