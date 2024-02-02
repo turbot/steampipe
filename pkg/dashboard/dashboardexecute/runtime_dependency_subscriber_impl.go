@@ -361,6 +361,7 @@ func (s *RuntimeDependencySubscriberImpl) populateParamDefaults(provider modconf
 		if dep := s.findRuntimeDependencyForParentProperty(paramDef.UnqualifiedName); dep != nil {
 			// assuming the default property is the target, set the default
 			if typehelpers.SafeString(dep.Dependency.TargetPropertyName) == "default" {
+				//nolint:errcheck // the only reason where SetDefault could fail is if `dep.Value` cannot be marshalled as a JSON string
 				paramDef.SetDefault(dep.Value)
 			}
 		}

@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -10,47 +9,24 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/terraform-components/terraform"
 )
 
 func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *error_helpers.ErrorAndWarnings) {
-	workspacePath := viper.GetString(constants.ArgModLocation)
 	t := time.Now()
 	defer func() {
 		log.Printf("[TRACE] Workspace load took %dms\n", time.Since(t).Milliseconds())
 	}()
-	w, errAndWarnings := Load(ctx, workspacePath)
-	if errAndWarnings.GetError() == nil {
+	w, errAndWarnings := LoadWorkspaceVars(ctx)
+	if errAndWarnings.GetError() != nil {
 		return w, errAndWarnings
 	}
 
-	var missingVariablesError steampipeconfig.MissingVariableError
-	ok := errors.As(errAndWarnings.GetError(), &missingVariablesError)
-	// if there was an error which is NOT a MissingVariableError, return it
-	if !ok {
-		return nil, errAndWarnings
-	}
-	// if there are missing transitive dependency variables, fail as we do not prompt for these
-	if len(missingVariablesError.MissingTransitiveVariables) > 0 {
-		return nil, errAndWarnings
-	}
-	// if interactive input is disabled, return the missing variables error
-	if !viper.GetBool(constants.ArgInput) {
-		return nil, error_helpers.NewErrorsAndWarning(missingVariablesError)
-	}
-	// so we have missing variables - prompt for them
-	// first hide spinner if it is there
-	statushooks.Done(ctx)
-	if err := promptForMissingVariables(ctx, missingVariablesError.MissingVariables, workspacePath); err != nil {
-		log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
-		return nil, error_helpers.NewErrorsAndWarning(err)
-	}
-	// ok we should have all variables now - reload workspace
-	return Load(ctx, workspacePath)
+	// load the workspace mod
+	errAndWarnings = w.LoadWorkspaceMod(ctx)
+	return w, errAndWarnings
 }
 
 func promptForMissingVariables(ctx context.Context, missingVariables []*modconfig.Variable, workspacePath string) error {

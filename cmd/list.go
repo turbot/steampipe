@@ -6,9 +6,7 @@ import (
 	"sort"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -44,9 +42,10 @@ func getRunListSubCmd(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 
 	return func(cmd *cobra.Command, _ []string) {
 		ctx := cmd.Context()
-		workspacePath := viper.GetString(constants.ArgModLocation)
 
-		w, errAndWarnings := workspace.Load(ctx, workspacePath)
+		w, errAndWarnings := workspace.LoadWorkspaceVars(ctx)
+		error_helpers.FailOnError(errAndWarnings.GetError())
+		errAndWarnings = w.LoadWorkspaceMod(ctx)
 		error_helpers.FailOnError(errAndWarnings.GetError())
 
 		modResources, depResources, err := listResourcesInMod(ctx, w.Mod, cmd)

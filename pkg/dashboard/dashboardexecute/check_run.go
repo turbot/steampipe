@@ -2,6 +2,7 @@ package dashboardexecute
 
 import (
 	"context"
+
 	"github.com/turbot/steampipe/pkg/control/controlexecute"
 	"github.com/turbot/steampipe/pkg/control/controlstatus"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
@@ -65,7 +66,10 @@ func (r *CheckRun) Execute(ctx context.Context) {
 
 	// create a context with a DashboardEventControlHooks to report control execution progress
 	ctx = controlstatus.AddControlHooksToContext(ctx, NewDashboardEventControlHooks(r))
-	r.controlExecutionTree.Execute(ctx)
+	if err := r.controlExecutionTree.Execute(ctx); err != nil {
+		r.SetError(ctx, err)
+		return
+	}
 
 	// set the summary on the CheckRun
 	r.Summary = r.controlExecutionTree.Root.Summary

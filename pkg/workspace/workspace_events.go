@@ -128,7 +128,7 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Resource
 	}
 
 	// now reload the workspace
-	errAndWarnings := w.loadWorkspaceMod(ctx)
+	errAndWarnings := w.LoadWorkspaceMod(ctx)
 	if errAndWarnings.GetError() != nil {
 		// check the existing watcher error - if we are already in an error state, do not show error
 		if w.watcherError == nil {

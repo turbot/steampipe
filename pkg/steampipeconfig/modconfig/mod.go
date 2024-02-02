@@ -410,3 +410,12 @@ func (m *Mod) RequireHasUnresolvedArgs() bool {
 	}
 	return false
 }
+
+func (m *Mod) hasChild(item ModTreeItem) bool {
+	for _, c := range m.children {
+		if c == item {
+			return true
+		}
+	}
+	return false
+}
