@@ -3,7 +3,9 @@ package workspace
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 	"os"
 	"path/filepath"
@@ -62,6 +64,7 @@ type Workspace struct {
 	loadPseudoResources        bool
 	// channel used to send dashboard events to the handleDashboardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
+	allVariables       *modconfig.ModVariableMap
 }
 
 // Load creates a Workspace and loads the workspace mod
@@ -74,6 +77,10 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, *error_helpers
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
 
+	// check if your workspace path is home dir and if modfile exists - if yes then warn and ask user to continue or not
+	if err := HomeDirectoryModfileCheck(ctx, workspacePath); err != nil {
+		return nil, error_helpers.NewErrorsAndWarning(err)
+	}
 	// load the workspace mod
 	errAndWarnings := workspace.loadWorkspaceMod(ctx)
 	return workspace, errAndWarnings
@@ -290,20 +297,8 @@ func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error 
 }
 
 func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAndWarnings {
-	// check if your workspace path is home dir and if modfile exists - if yes then warn and ask user to continue or not
-	if err := HomeDirectoryModfileCheck(ctx, w.Path); err != nil {
-		return error_helpers.NewErrorsAndWarning(err)
-	}
 
-	// resolve values of all input variables
-	// we WILL validate missing variables when loading
-	validateMissing := true
-	inputVariables, errorsAndWarnings := w.getInputVariables(ctx, validateMissing)
-	if errorsAndWarnings.Error != nil {
-		return errorsAndWarnings
-	}
-	// populate the parsed variable values
-	w.VariableValues, errorsAndWarnings.Error = inputVariables.GetPublicVariableValues()
+	errorsAndWarnings := w.populateVariables(ctx)
 	if errorsAndWarnings.Error != nil {
 		return errorsAndWarnings
 	}
@@ -315,8 +310,6 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAn
 		return errorsAndWarnings
 	}
 
-	// add evaluated variables to the context
-	parseCtx.AddInputVariableValues(inputVariables)
 	// do not reload variables as we already have them
 	parseCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 
@@ -339,6 +332,49 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAn
 
 	// verify all runtime dependencies can be resolved
 	errorsAndWarnings.Error = w.verifyResourceRuntimeDependencies()
+
+	return errorsAndWarnings
+}
+
+func (w *Workspace) populateVariables(ctx context.Context) *error_helpers.ErrorAndWarnings {
+	// resolve values of all input variables
+	// we WILL validate missing variables when loading
+	validateMissing := true
+	inputVariables, errorsAndWarnings := w.getInputVariables(ctx, validateMissing)
+	if errorsAndWarnings.Error != nil {
+
+		// so there was an error - was it missing variables error
+		var missingVariablesError steampipeconfig.MissingVariableError
+		ok := errors.As(errorsAndWarnings.GetError(), &missingVariablesError)
+		// if there was an error which is NOT a MissingVariableError, return it
+		if !ok {
+			return errorsAndWarnings
+		}
+		// if there are missing transitive dependency variables, fail as we do not prompt for these
+		if len(missingVariablesError.MissingTransitiveVariables) > 0 {
+			return errorsAndWarnings
+		}
+		// if interactive input is disabled, return the missing variables error
+		if !viper.GetBool(constants.ArgInput) {
+			return error_helpers.NewErrorsAndWarning(missingVariablesError)
+		}
+		// so we have missing variables - prompt for them
+		// first hide spinner if it is there
+		statushooks.Done(ctx)
+		if err := promptForMissingVariables(ctx, missingVariablesError.MissingVariables, w.Path); err != nil {
+			log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
+			return error_helpers.NewErrorsAndWarning(err)
+		}
+
+	}
+
+	w.allVariables = inputVariables
+	// populate the parsed variable values
+
+	w.VariableValues, errorsAndWarnings.Error = inputVariables.GetPublicVariableValues()
+	if errorsAndWarnings.Error == nil {
+		return errorsAndWarnings
+	}
 
 	return errorsAndWarnings
 }
@@ -385,6 +421,11 @@ func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext
 			// only load .sp files
 			Include: filehelpers.InclusionsFromExtensions(constants.ModDataExtensions),
 		})
+
+	// add any evaluated variables to the context
+	if w.allVariables != nil {
+		parseCtx.AddInputVariableValues(w.allVariables)
+	}
 
 	return parseCtx, nil
 }
