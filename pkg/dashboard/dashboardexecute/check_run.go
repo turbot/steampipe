@@ -68,6 +68,7 @@ func (r *CheckRun) Execute(ctx context.Context) {
 	ctx = controlstatus.AddControlHooksToContext(ctx, NewDashboardEventControlHooks(r))
 	if err := r.controlExecutionTree.Execute(ctx); err != nil {
 		r.SetError(ctx, err)
+		return
 	}
 
 	// set the summary on the CheckRun

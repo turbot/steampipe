@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/statushooks"
 	"log"
 	"os"
 	"path/filepath"
@@ -26,6 +25,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/modinstaller"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
@@ -373,10 +373,9 @@ func (w *Workspace) populateVariables(ctx context.Context) *error_helpers.ErrorA
 		}
 
 	}
-
+	// store the full variable map
 	w.allVariables = inputVariables
 	// populate the parsed variable values
-
 	w.VariableValues, errorsAndWarnings.Error = inputVariables.GetPublicVariableValues()
 	if errorsAndWarnings.Error == nil {
 		return errorsAndWarnings

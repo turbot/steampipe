@@ -115,7 +115,7 @@ func (i *InitData) init(ctx context.Context, args []string) {
 		}
 	}
 
-	// load the workspace mod
+	// load the workspace mod (this load is asynchronous as it is within the async init function)
 	errAndWarnings := i.Workspace.LoadWorkspaceMod(ctx)
 	i.Result.AddWarnings(errAndWarnings.Warnings...)
 	if errAndWarnings.GetError() != nil {

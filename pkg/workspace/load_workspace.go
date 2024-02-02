@@ -20,7 +20,7 @@ func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *error
 		log.Printf("[TRACE] Workspace load took %dms\n", time.Since(t).Milliseconds())
 	}()
 	w, errAndWarnings := LoadWorkspaceVars(ctx)
-	if errAndWarnings.GetError() == nil {
+	if errAndWarnings.GetError() != nil {
 		return w, errAndWarnings
 	}
 
