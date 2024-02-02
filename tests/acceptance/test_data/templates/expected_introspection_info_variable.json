@@ -5,7 +5,6 @@
   "description": "",
   "documentation": null,
   "end_line_number": 4,
-  "file_name": "/Users/kai/Dev/github/turbot/steampipe/tests/acceptance/test_data/mods/introspection_table_mod/resources.sp",
   "is_anonymous": false,
   "mod_name": "introspection_table_mod",
   "path": [
@@ -31,7 +30,6 @@
   "value": "steampipe_var",
   "value_source": "config",
   "value_source_end_line_number": 4,
-  "value_source_file_name": "/Users/kai/Dev/github/turbot/steampipe/tests/acceptance/test_data/mods/introspection_table_mod/resources.sp",
   "value_source_start_line_number": 1,
   "var_type": "string"
  }
