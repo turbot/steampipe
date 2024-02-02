@@ -1,3 +1,8 @@
+## v0.21.5 [2024-02-02]
+_Bug fixes_
+* Fix dependency variable validation - was failing if dependency variable value was set in the vars file. ([#4110](https://github.com/turbot/steampipe/issues/4110))
+* Fix UI freeze when prompting for workspace variables. ([#4105](https://github.com/turbot/steampipe/issues/4105))
+
 ## v0.21.4 [2024-01-23]
 _Bug fixes_
 * Fixed schema clone function failing if table has an LTREE column. ([#4079](https://github.com/turbot/steampipe/issues/4079))
