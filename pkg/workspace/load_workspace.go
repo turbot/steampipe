@@ -15,18 +15,18 @@ import (
 )
 
 func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *error_helpers.ErrorAndWarnings) {
-	workspacePath := viper.GetString(constants.ArgModLocation)
 	t := time.Now()
 	defer func() {
 		log.Printf("[TRACE] Workspace load took %dms\n", time.Since(t).Milliseconds())
 	}()
-	w, errAndWarnings := Load(ctx, workspacePath)
+	w, errAndWarnings := LoadWorkspaceVars(ctx)
 	if errAndWarnings.GetError() == nil {
 		return w, errAndWarnings
 	}
 
-	// ok we should have all variables now - reload workspace
-	return Load(ctx, workspacePath)
+	// load the workspace mod
+	errAndWarnings = w.LoadWorkspaceMod(ctx)
+	return w, errAndWarnings
 }
 
 func promptForMissingVariables(ctx context.Context, missingVariables []*modconfig.Variable, workspacePath string) error {

@@ -67,8 +67,10 @@ type Workspace struct {
 	allVariables       *modconfig.ModVariableMap
 }
 
-// Load creates a Workspace and loads the workspace mod
-func Load(ctx context.Context, workspacePath string) (*Workspace, *error_helpers.ErrorAndWarnings) {
+// LoadWorkspaceVars creates a Workspace and loads the variables
+func LoadWorkspaceVars(ctx context.Context) (*Workspace, *error_helpers.ErrorAndWarnings) {
+	workspacePath := viper.GetString(constants.ArgModLocation)
+
 	utils.LogTime("workspace.Load start")
 	defer utils.LogTime("workspace.Load end")
 
@@ -81,9 +83,11 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, *error_helpers
 	if err := HomeDirectoryModfileCheck(ctx, workspacePath); err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
-	// load the workspace mod
-	errAndWarnings := workspace.loadWorkspaceMod(ctx)
-	return workspace, errAndWarnings
+	errorsAndWarnings := workspace.populateVariables(ctx)
+	if errorsAndWarnings.Error != nil {
+		return nil, errorsAndWarnings
+	}
+	return workspace, errorsAndWarnings
 }
 
 // LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
@@ -296,12 +300,8 @@ func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error 
 	return nil
 }
 
-func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAndWarnings {
-
-	errorsAndWarnings := w.populateVariables(ctx)
-	if errorsAndWarnings.Error != nil {
-		return errorsAndWarnings
-	}
+func (w *Workspace) LoadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAndWarnings {
+	var errorsAndWarnings = &error_helpers.ErrorAndWarnings{}
 
 	// build run context which we use to load the workspace
 	parseCtx, err := w.getParseContext(ctx)
@@ -364,6 +364,12 @@ func (w *Workspace) populateVariables(ctx context.Context) *error_helpers.ErrorA
 		if err := promptForMissingVariables(ctx, missingVariablesError.MissingVariables, w.Path); err != nil {
 			log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
 			return error_helpers.NewErrorsAndWarning(err)
+		}
+
+		// now try to load vars again
+		inputVariables, errorsAndWarnings = w.getInputVariables(ctx, validateMissing)
+		if errorsAndWarnings.Error != nil {
+			return errorsAndWarnings
 		}
 
 	}
