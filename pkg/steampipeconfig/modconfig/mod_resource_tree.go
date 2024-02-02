@@ -47,6 +47,13 @@ func (m *Mod) addResourcesIntoTree(sourceMod *Mod) error {
 
 	resourceFunc := func(item HclResource) (bool, error) {
 		if treeItem, ok := item.(ModTreeItem); ok {
+			// TACTICAL: addResourcesIntoTree getc called severasl times, as we parse the mod in stages
+			// - first the variables then the rest of the resources
+			// if we have already added this into the tree, skip
+			if m.hasChild(treeItem) {
+				return true, nil
+			}
+
 			// NOTE: add resource into _our_ resource tree, i.e. mod 'm'
 			if err = m.addItemIntoResourceTree(treeItem); err != nil {
 				// stop walking

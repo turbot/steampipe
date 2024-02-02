@@ -52,7 +52,7 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 	statushooks.SetStatus(ctx, "Loading workspace")
 
 	// load workspace variables syncronously
-	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
+	w, errAndWarnings := workspace.LoadWorkspaceVars(ctx)
 	if errAndWarnings.GetError() != nil {
 		i.Result.Error = fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())
 		return i
