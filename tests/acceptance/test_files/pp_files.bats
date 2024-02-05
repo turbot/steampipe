@@ -97,7 +97,6 @@ v5.0.0,v5.0.0,ok'
 ### test basic check and query working for mod.pp files ###
 
 @test "query with default params and no params passed through CLI" {
-  skip
   cd $FILE_PATH/test_data/mods/functionality_test_mod_pp
   run steampipe query query.query_params_with_all_defaults --output json
 
@@ -108,7 +107,6 @@ v5.0.0,v5.0.0,ok'
 }
 
 @test "control with default params and no args passed in control" {
-  skip
   cd $FILE_PATH/test_data/mods/functionality_test_mod_pp
   run steampipe check control.query_params_with_defaults_and_no_args --export test.json
   echo $output
@@ -121,11 +119,19 @@ v5.0.0,v5.0.0,ok'
   rm -f test.json
 }
 
+@test "control with no default params and no args passed in control" {
+  cd $FILE_PATH/test_data/mods/functionality_test_mod_pp
+  run steampipe check control.query_params_with_no_defaults_and_no_args --output json
+
+  # should return an error `failed to resolve value for 3 parameters`
+  echo $output
+  [ $(echo $output | grep "failed to resolve value for 3 parameters" | wc -l | tr -d ' ') -eq 0 ]
+}
+
 
 ### traversal tests ###
 
 @test "load a mod from an arbitrarily nested sub folder - PASS" {
-  skip
   # go to the nested sub directory within the mod
   cd $FILE_PATH/test_data/mods/nested_mod_pp/folder1/folder11/folder111
 
