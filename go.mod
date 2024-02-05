@@ -51,7 +51,7 @@ require (
 	github.com/spf13/viper v1.18.2
 	github.com/stevenle/topsort v0.2.0
 	github.com/turbot/go-kit v0.9.0
-	github.com/turbot/pipe-fittings v0.2.0
+	github.com/turbot/pipe-fittings v0.2.2
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.8.0
 	github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7
@@ -150,7 +150,6 @@ require (
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
-	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
