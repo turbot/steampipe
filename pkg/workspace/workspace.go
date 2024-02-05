@@ -241,7 +241,7 @@ func FindModFilePath(folder string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	modFilePath := filepaths.ModFilePath(folder)
+	modFilePath := filepaths.DefaultModFilePath(folder)
 	_, err = os.Stat(modFilePath)
 	if err == nil {
 		// found the modfile
@@ -269,7 +269,7 @@ func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error 
 	// get the cmd and home dir
 	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	home, _ := os.UserHomeDir()
-	_, err := os.Stat(filepaths.ModFilePath(workspacePath))
+	_, err := os.Stat(filepaths.DefaultModFilePath(workspacePath))
 	modFileExists := !os.IsNotExist(err)
 
 	// check if your workspace path is home dir and if modfile exists

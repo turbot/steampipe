@@ -141,6 +141,10 @@ func (m *Mod) IsDefaultMod() bool {
 	return m.modFilePath == ""
 }
 
+func (m *Mod) FilePath() string {
+	return m.modFilePath
+}
+
 // GetPaths implements ModTreeItem (override base functionality)
 func (m *Mod) GetPaths() []NodePath {
 	return []NodePath{{m.Name()}}
@@ -292,7 +296,7 @@ func (m *Mod) Save() error {
 		return err
 	}
 	modData := append(f.Bytes(), nonModData...)
-	return os.WriteFile(filepaths.ModFilePath(m.ModPath), modData, 0644)
+	return os.WriteFile(filepaths.DefaultModFilePath(m.ModPath), modData, 0644)
 }
 
 func (m *Mod) HasDependentMods() bool {
@@ -307,7 +311,7 @@ func (m *Mod) GetModDependency(modName string) *ModVersionConstraint {
 }
 
 func (m *Mod) loadNonModDataInModFile() ([]byte, error) {
-	modFilePath := filepaths.ModFilePath(m.ModPath)
+	modFilePath := filepaths.DefaultModFilePath(m.ModPath)
 	if !filehelpers.FileExists(modFilePath) {
 		return nil, nil
 	}

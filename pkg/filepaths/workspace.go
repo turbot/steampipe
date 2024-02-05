@@ -9,6 +9,8 @@ import (
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 )
 
+var ModFileNames = []string{"mod.sp", "mod.pp"}
+
 // mod related constants
 const (
 	WorkspaceDataDir            = ".steampipe"
@@ -16,7 +18,6 @@ const (
 	WorkspaceModShadowDirPrefix = ".mods."
 	WorkspaceConfigFileName     = "workspace.spc"
 	WorkspaceIgnoreFile         = ".steampipeignore"
-	ModFileName                 = "mod.sp"
 	DefaultVarsFileName         = "steampipe.spvars"
 	WorkspaceLockFileName       = ".mod.cache.json"
 )
@@ -41,7 +42,16 @@ func DefaultVarsFilePath(workspacePath string) string {
 	return path.Join(workspacePath, DefaultVarsFileName)
 }
 
-func ModFilePath(modFolder string) string {
-	modFilePath := filepath.Join(modFolder, ModFileName)
-	return modFilePath
+func DefaultModFilePath(modFolder string) string {
+	return filepath.Join(modFolder, ModFileNames[0])
+}
+
+func ModFilePaths(modFolder string) []string {
+	var modFilePaths []string
+
+	for _, modFileName := range ModFileNames {
+		modFilePaths = append(modFilePaths, filepath.Join(modFolder, modFileName))
+
+	}
+	return modFilePaths
 }
