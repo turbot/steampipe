@@ -235,29 +235,28 @@ func (w *Workspace) setModfileExists() {
 	}
 }
 
-// TODO comment
+// FindModFilePath looks in the current folder for mod.sp or mod.pp
+// if not found it looks in the parent folder - right up to the root
 func FindModFilePath(folder string) (string, error) {
 	folder, err := filepath.Abs(folder)
 	if err != nil {
 		return "", err
 	}
-	modFilePath := filepaths.DefaultModFilePath(folder)
-	_, err = os.Stat(modFilePath)
-	if err == nil {
-		// found the modfile
-		return modFilePath, nil
+	for _, modFilePath := range filepaths.ModFilePaths(folder) {
+		_, err = os.Stat(modFilePath)
+		if err == nil {
+			// found the modfile
+			return modFilePath, nil
+		}
 	}
 
-	if os.IsNotExist(err) {
-		// if the file wasn't found, search in the parent directory
-		parent := filepath.Dir(folder)
-		if folder == parent {
-			// this typically means that we are already in the root directory
-			return "", ErrorNoModDefinition
-		}
-		return FindModFilePath(filepath.Dir(folder))
+	// if the file wasn't found, search in the parent directory
+	parent := filepath.Dir(folder)
+	if folder == parent {
+		// this typically means that we are already in the root directory
+		return "", ErrorNoModDefinition
 	}
-	return modFilePath, nil
+	return FindModFilePath(filepath.Dir(folder))
 }
 
 func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error {
@@ -269,8 +268,13 @@ func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error 
 	// get the cmd and home dir
 	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	home, _ := os.UserHomeDir()
-	_, err := os.Stat(filepaths.DefaultModFilePath(workspacePath))
-	modFileExists := !os.IsNotExist(err)
+
+	var modFileExists bool
+	for _, modFilePath := range filepaths.ModFilePaths(workspacePath) {
+		if _, err := os.Stat(modFilePath); err != nil {
+			modFileExists = true
+		}
+	}
 
 	// check if your workspace path is home dir and if modfile exists
 	if workspacePath == home && modFileExists {
