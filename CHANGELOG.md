@@ -1,4 +1,4 @@
-## v0.21.5 [tbd]
+## v0.21.5 [2024-02-05]
 _Bug fixes_
 * Fix dependency variable validation - was failing if dependency variable value was set in the vars file. ([#4110](https://github.com/turbot/steampipe/issues/4110))
 * Fix UI freeze when prompting for workspace variables. ([#4105](https://github.com/turbot/steampipe/issues/4105))
