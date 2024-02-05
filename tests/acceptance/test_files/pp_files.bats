@@ -80,3 +80,16 @@ v7.0.0,v7.0.0,ok'
 v5.0.0,v5.0.0,ok'
 }
 
+### mod.pp file tests ###
+
+@test "test that mod.pp is not renamed after uninstalling mod" {
+  cd $FILE_PATH/test_data/mods/local_mod_with_mod.pp_file
+
+  run steampipe mod install
+  assert_success
+
+  run steampipe mod uninstall
+  # check mod.pp file still exists and is not renamed
+  run ls mod.pp
+  assert_success
+}
