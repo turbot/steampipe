@@ -343,7 +343,7 @@ func createWorkspaceMod(ctx context.Context, cmd *cobra.Command, workspacePath s
 		return nil, fmt.Errorf("mod %s cancelled", cmd.Name())
 	}
 
-	if parse.ModfileExists(workspacePath) {
+	if _, exists := parse.ModfileExists(workspacePath); exists {
 		fmt.Println("Working folder already contains a mod definition file")
 		return nil, nil
 	}
@@ -354,7 +354,7 @@ func createWorkspaceMod(ctx context.Context, cmd *cobra.Command, workspacePath s
 	}
 	// only print message for mod init (not for mod install)
 	if cmd.Name() == "init" {
-		fmt.Printf("Created mod definition file '%s'\n", filepaths.ModFilePath(workspacePath))
+		fmt.Printf("Created mod definition file '%s'\n", filepaths.DefaultModFilePath(workspacePath))
 	}
 
 	// load up the written mod file so that we get the updated

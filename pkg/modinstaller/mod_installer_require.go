@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -52,13 +51,13 @@ func (i *ModInstaller) updateModFile() error {
 	contents.ApplyChanges(changes)
 	contents.Apply(hclwrite.Format)
 
-	return os.WriteFile(filepaths.ModFilePath(i.workspaceMod.ModPath), contents.Bytes(), 0644)
+	return os.WriteFile(i.workspaceMod.FilePath(), contents.Bytes(), 0644)
 }
 
 // loads the contents of the mod.sp file and wraps it with a thin wrapper
 // to assist in byte sequence manipulation
 func (i *ModInstaller) loadModFileBytes() (*ByteSequence, error) {
-	modFileBytes, err := os.ReadFile(filepaths.ModFilePath(i.workspaceMod.ModPath))
+	modFileBytes, err := os.ReadFile(i.workspaceMod.FilePath())
 	if err != nil {
 		return nil, err
 	}

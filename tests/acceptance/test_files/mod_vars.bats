@@ -21,8 +21,23 @@ load "$LIB_BATS_SUPPORT/load.bash"
 v5.0.0,v5.0.0,ok'
 }
 
-@test "test variable resolution in workspace mod set from auto spvars file" {
-  cd $FILE_PATH/test_data/mods/test_workspace_mod_var_set_from_auto_spvars
+@test "test variable resolution in workspace mod set from steampipe.spvars file" {
+  cd $FILE_PATH/test_data/mods/test_workspace_mod_var_set_from_steampipe.spvars
+
+  run steampipe query query.version --output csv
+  # check the output - query should use the value of variable set from the steampipe spvars
+  # file ("v7.0.0") which will give the output:
+# +--------+----------+--------+
+# | reason | resource | status |
+# +--------+----------+--------+
+# | v7.0.0 | v7.0.0   | ok     |
+# +--------+----------+--------+
+  assert_output 'reason,resource,status
+v7.0.0,v7.0.0,ok'
+}
+
+@test "test variable resolution in workspace mod set from *.auto.spvars file" {
+  cd $FILE_PATH/test_data/mods/test_workspace_mod_var_set_from_auto.spvars
 
   run steampipe query query.version --output csv
   # check the output - query should use the value of variable set from the auto spvars
@@ -88,7 +103,7 @@ v5.0.0,v5.0.0,ok'
 }
 
 @test "test variable resolution in dependency mod set from steampipe.spvars file" {
-  cd $FILE_PATH/test_data/mods/test_dependency_mod_var_set_from_auto_spvars
+  cd $FILE_PATH/test_data/mods/test_dependency_mod_var_set_from_steampipe.spvars
 
   run steampipe query dependency_vars_1.query.version --output csv
   # check the output - query should use the value of variable set from the steampipe.spvars
@@ -103,7 +118,7 @@ v7.0.0,v7.0.0,ok'
 }
 
 @test "test variable resolution in dependency mod set from *.auto.spvars spvars file" {
-  cd $FILE_PATH/test_data/mods/test_dependency_mod_var_set_from_explicit_spvars
+  cd $FILE_PATH/test_data/mods/test_dependency_mod_var_set_from_auto.spvars
 
   run steampipe query dependency_vars_1.query.version --output csv
   # check the output - query should use the value of variable set from the *.auto.spvars 
@@ -135,7 +150,7 @@ v8.0.0,v8.0.0,ok'
 }
 
 @test "test variable resolution precedence in workspace mod set from steampipe.spvars and ENV" {
-  cd $FILE_PATH/test_data/mods/test_workspace_mod_var_set_from_auto_spvars
+  cd $FILE_PATH/test_data/mods/test_workspace_mod_var_set_from_steampipe.spvars
   export SP_VAR_version=v9.0.0
   run steampipe query query.version --output csv
   # check the output - query should use the value of variable set from the steampipe.spvars("v7.0.0") file over 
