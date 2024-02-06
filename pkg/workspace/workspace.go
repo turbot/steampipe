@@ -271,7 +271,7 @@ func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error 
 
 	var modFileExists bool
 	for _, modFilePath := range filepaths.ModFilePaths(workspacePath) {
-		if _, err := os.Stat(modFilePath); err != nil {
+		if _, err := os.Stat(modFilePath); err == nil {
 			modFileExists = true
 		}
 	}
