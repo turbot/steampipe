@@ -1,3 +1,7 @@
+## v0.21.6 [2024-02-06]
+_Bug fixes_
+* Fix `HomeDirectoryModfileCheck` returning false positive, causing errors when executing steampipe out of the home directory. ([#4118](https://github.com/turbot/steampipe/issues/4118))
+
 ## v0.21.5 [2024-02-05]
 _Bug fixes_
 * Fix dependency variable validation - was failing if dependency variable value was set in the vars file. ([#4110](https://github.com/turbot/steampipe/issues/4110))
