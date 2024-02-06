@@ -67,10 +67,11 @@ func loadModDefinition(ctx context.Context, modPath string, parseCtx *parse.ModP
 		return nil, error_helpers.NewErrorsAndWarning(fmt.Errorf("mod folder %s does not exist", modPath))
 	}
 
-	if parse.ModfileExists(modPath) {
+	modFilePath, exists := parse.ModfileExists(modPath)
+	if exists {
 		// load the mod definition to get the dependencies
 		var res *parse.DecodeResult
-		mod, res = parse.ParseModDefinition(modPath, parseCtx.EvalCtx)
+		mod, res = parse.ParseModDefinition(modFilePath, parseCtx.EvalCtx)
 		errorsAndWarnings = error_helpers.DiagsToErrorsAndWarnings("mod load failed", res.Diags)
 		if res.Diags.HasErrors() {
 			return nil, errorsAndWarnings
@@ -235,7 +236,7 @@ func LoadModResourceNames(ctx context.Context, mod *modconfig.Mod, parseCtx *par
 // this will be the mod data extension, plus any registered extensions registered in fileToResourceMap
 func GetModFileExtensions() []string {
 	res := append(modconfig.RegisteredFileExtensions(), constants.ModDataExtensions...)
-	return append(res, constants.VariablesExtension)
+	return append(res, constants.VariablesExtensions...)
 }
 
 // build list of all filepaths we need to parse/load the mod

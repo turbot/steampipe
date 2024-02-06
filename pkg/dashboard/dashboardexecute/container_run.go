@@ -3,9 +3,10 @@ package dashboardexecute
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"log"
 )
 
 // DashboardContainerRun is a struct representing a container run
@@ -45,6 +46,7 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 	r.childCompleteChan = make(chan dashboardtypes.DashboardTreeRun, len(children))
 	for _, child := range children {
 		var childRun dashboardtypes.DashboardTreeRun
+		//nolint:golint // using a global var here to maintain parity with definition of childRun
 		var err error
 		switch i := child.(type) {
 		case *modconfig.DashboardContainer:

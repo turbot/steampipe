@@ -3,6 +3,7 @@ package workspace
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/modinstaller"
+	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
@@ -62,10 +64,13 @@ type Workspace struct {
 	loadPseudoResources        bool
 	// channel used to send dashboard events to the handleDashboardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
+	allVariables       *modconfig.ModVariableMap
 }
 
-// Load creates a Workspace and loads the workspace mod
-func Load(ctx context.Context, workspacePath string) (*Workspace, *error_helpers.ErrorAndWarnings) {
+// LoadWorkspaceVars creates a Workspace and loads the variables
+func LoadWorkspaceVars(ctx context.Context) (*Workspace, *error_helpers.ErrorAndWarnings) {
+	workspacePath := viper.GetString(constants.ArgModLocation)
+
 	utils.LogTime("workspace.Load start")
 	defer utils.LogTime("workspace.Load end")
 
@@ -74,9 +79,15 @@ func Load(ctx context.Context, workspacePath string) (*Workspace, *error_helpers
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
 
-	// load the workspace mod
-	errAndWarnings := workspace.loadWorkspaceMod(ctx)
-	return workspace, errAndWarnings
+	// check if your workspace path is home dir and if modfile exists - if yes then warn and ask user to continue or not
+	if err := HomeDirectoryModfileCheck(ctx, workspacePath); err != nil {
+		return nil, error_helpers.NewErrorsAndWarning(err)
+	}
+	errorsAndWarnings := workspace.populateVariables(ctx)
+	if errorsAndWarnings.Error != nil {
+		return nil, errorsAndWarnings
+	}
+	return workspace, errorsAndWarnings
 }
 
 // LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
@@ -224,29 +235,28 @@ func (w *Workspace) setModfileExists() {
 	}
 }
 
-// TODO comment
+// FindModFilePath looks in the current folder for mod.sp or mod.pp
+// if not found it looks in the parent folder - right up to the root
 func FindModFilePath(folder string) (string, error) {
 	folder, err := filepath.Abs(folder)
 	if err != nil {
 		return "", err
 	}
-	modFilePath := filepaths.ModFilePath(folder)
-	_, err = os.Stat(modFilePath)
-	if err == nil {
-		// found the modfile
-		return modFilePath, nil
+	for _, modFilePath := range filepaths.ModFilePaths(folder) {
+		_, err = os.Stat(modFilePath)
+		if err == nil {
+			// found the modfile
+			return modFilePath, nil
+		}
 	}
 
-	if os.IsNotExist(err) {
-		// if the file wasn't found, search in the parent directory
-		parent := filepath.Dir(folder)
-		if folder == parent {
-			// this typically means that we are already in the root directory
-			return "", ErrorNoModDefinition
-		}
-		return FindModFilePath(filepath.Dir(folder))
+	// if the file wasn't found, search in the parent directory
+	parent := filepath.Dir(folder)
+	if folder == parent {
+		// this typically means that we are already in the root directory
+		return "", ErrorNoModDefinition
 	}
-	return modFilePath, nil
+	return FindModFilePath(filepath.Dir(folder))
 }
 
 func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error {
@@ -258,8 +268,13 @@ func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error 
 	// get the cmd and home dir
 	cmd := viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
 	home, _ := os.UserHomeDir()
-	_, err := os.Stat(filepaths.ModFilePath(workspacePath))
-	modFileExists := !os.IsNotExist(err)
+
+	var modFileExists bool
+	for _, modFilePath := range filepaths.ModFilePaths(workspacePath) {
+		if _, err := os.Stat(modFilePath); err == nil {
+			modFileExists = true
+		}
+	}
 
 	// check if your workspace path is home dir and if modfile exists
 	if workspacePath == home && modFileExists {
@@ -289,24 +304,8 @@ func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error 
 	return nil
 }
 
-func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAndWarnings {
-	// check if your workspace path is home dir and if modfile exists - if yes then warn and ask user to continue or not
-	if err := HomeDirectoryModfileCheck(ctx, w.Path); err != nil {
-		return error_helpers.NewErrorsAndWarning(err)
-	}
-
-	// resolve values of all input variables
-	// we WILL validate missing variables when loading
-	validateMissing := true
-	inputVariables, errorsAndWarnings := w.getInputVariables(ctx, validateMissing)
-	if errorsAndWarnings.Error != nil {
-		return errorsAndWarnings
-	}
-	// populate the parsed variable values
-	w.VariableValues, errorsAndWarnings.Error = inputVariables.GetPublicVariableValues()
-	if errorsAndWarnings.Error != nil {
-		return errorsAndWarnings
-	}
+func (w *Workspace) LoadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAndWarnings {
+	var errorsAndWarnings = &error_helpers.ErrorAndWarnings{}
 
 	// build run context which we use to load the workspace
 	parseCtx, err := w.getParseContext(ctx)
@@ -315,8 +314,6 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAn
 		return errorsAndWarnings
 	}
 
-	// add evaluated variables to the context
-	parseCtx.AddInputVariableValues(inputVariables)
 	// do not reload variables as we already have them
 	parseCtx.BlockTypeExclusions = []string{modconfig.BlockTypeVariable}
 
@@ -339,6 +336,54 @@ func (w *Workspace) loadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAn
 
 	// verify all runtime dependencies can be resolved
 	errorsAndWarnings.Error = w.verifyResourceRuntimeDependencies()
+
+	return errorsAndWarnings
+}
+
+func (w *Workspace) populateVariables(ctx context.Context) *error_helpers.ErrorAndWarnings {
+	// resolve values of all input variables
+	// we WILL validate missing variables when loading
+	validateMissing := true
+	inputVariables, errorsAndWarnings := w.getInputVariables(ctx, validateMissing)
+	if errorsAndWarnings.Error != nil {
+
+		// so there was an error - was it missing variables error
+		var missingVariablesError steampipeconfig.MissingVariableError
+		ok := errors.As(errorsAndWarnings.GetError(), &missingVariablesError)
+		// if there was an error which is NOT a MissingVariableError, return it
+		if !ok {
+			return errorsAndWarnings
+		}
+		// if there are missing transitive dependency variables, fail as we do not prompt for these
+		if len(missingVariablesError.MissingTransitiveVariables) > 0 {
+			return errorsAndWarnings
+		}
+		// if interactive input is disabled, return the missing variables error
+		if !viper.GetBool(constants.ArgInput) {
+			return error_helpers.NewErrorsAndWarning(missingVariablesError)
+		}
+		// so we have missing variables - prompt for them
+		// first hide spinner if it is there
+		statushooks.Done(ctx)
+		if err := promptForMissingVariables(ctx, missingVariablesError.MissingVariables, w.Path); err != nil {
+			log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
+			return error_helpers.NewErrorsAndWarning(err)
+		}
+
+		// now try to load vars again
+		inputVariables, errorsAndWarnings = w.getInputVariables(ctx, validateMissing)
+		if errorsAndWarnings.Error != nil {
+			return errorsAndWarnings
+		}
+
+	}
+	// store the full variable map
+	w.allVariables = inputVariables
+	// populate the parsed variable values
+	w.VariableValues, errorsAndWarnings.Error = inputVariables.GetPublicVariableValues()
+	if errorsAndWarnings.Error == nil {
+		return errorsAndWarnings
+	}
 
 	return errorsAndWarnings
 }
@@ -385,6 +430,11 @@ func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext
 			// only load .sp files
 			Include: filehelpers.InclusionsFromExtensions(constants.ModDataExtensions),
 		})
+
+	// add any evaluated variables to the context
+	if w.allVariables != nil {
+		parseCtx.AddInputVariableValues(w.allVariables)
+	}
 
 	return parseCtx, nil
 }

@@ -11,13 +11,13 @@ import (
 	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
 )
 
 func LoadModfile(modPath string) (*modconfig.Mod, error) {
-	if !ModfileExists(modPath) {
+	modFilePath, exists := ModfileExists(modPath)
+	if !exists {
 		return nil, nil
 	}
 
@@ -27,7 +27,7 @@ func LoadModfile(modPath string) (*modconfig.Mod, error) {
 		Variables: make(map[string]cty.Value),
 	}
 
-	mod, res := ParseModDefinition(modPath, evalCtx)
+	mod, res := ParseModDefinition(modFilePath, evalCtx)
 	if res.Diags.HasErrors() {
 		return nil, plugin.DiagsToError("Failed to load mod", res.Diags)
 	}
@@ -38,15 +38,14 @@ func LoadModfile(modPath string) (*modconfig.Mod, error) {
 // ParseModDefinition parses the modfile only
 // it is expected the calling code will have verified the existence of the modfile by calling ModfileExists
 // this is called before parsing the workspace to, for example, identify dependency mods
-func ParseModDefinition(modPath string, evalCtx *hcl.EvalContext) (*modconfig.Mod, *DecodeResult) {
+func ParseModDefinition(modFilePath string, evalCtx *hcl.EvalContext) (*modconfig.Mod, *DecodeResult) {
 	res := newDecodeResult()
 
 	// if there is no mod at this location, return error
-	modFilePath := filepaths.ModFilePath(modPath)
 	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
 		res.Diags = append(res.Diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("no mod file found in %s", modPath),
+			Summary:  fmt.Sprintf("modfile %s does not exist", modFilePath),
 		})
 		return nil, res
 	}
@@ -73,7 +72,7 @@ func ParseModDefinition(modPath string, evalCtx *hcl.EvalContext) (*modconfig.Mo
 	if block == nil {
 		res.Diags = append(res.Diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("failed to parse mod definition file: no mod definition found in %s", fmt.Sprintf("%s/mod.sp", modPath)),
+			Summary:  fmt.Sprintf("failed to parse mod definition file: no mod definition found in %s", modFilePath),
 		})
 		return nil, res
 	}

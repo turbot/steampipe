@@ -51,8 +51,8 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 
 	statushooks.SetStatus(ctx, "Loading workspace")
 
-	// load workspace syncronously
-	w, errAndWarnings := workspace.LoadWorkspacePromptingForVariables(ctx)
+	// load workspace variables syncronously
+	w, errAndWarnings := workspace.LoadWorkspaceVars(ctx)
 	if errAndWarnings.GetError() != nil {
 		i.Result.Error = fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())
 		return i
@@ -113,6 +113,14 @@ func (i *InitData) init(ctx context.Context, args []string) {
 			i.Result.Error = err
 			return
 		}
+	}
+
+	// load the workspace mod (this load is asynchronous as it is within the async init function)
+	errAndWarnings := i.Workspace.LoadWorkspaceMod(ctx)
+	i.Result.AddWarnings(errAndWarnings.Warnings...)
+	if errAndWarnings.GetError() != nil {
+		i.Result.Error = fmt.Errorf("failed to load workspace mod: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())
+		return
 	}
 
 	// set max DB connections to 1

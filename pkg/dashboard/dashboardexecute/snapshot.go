@@ -31,7 +31,9 @@ func GenerateSnapshot(ctx context.Context, target string, initData *initialisati
 
 	// all runtime dependencies must be resolved before execution (i.e. inputs must be passed in)
 	Executor.interactive = false
-	Executor.ExecuteDashboard(ctx, sessionId, target, inputs, w, initData.Client)
+	if err := Executor.ExecuteDashboard(ctx, sessionId, target, inputs, w, initData.Client); err != nil {
+		return nil, err
+	}
 
 	select {
 	case err = <-errorChannel:

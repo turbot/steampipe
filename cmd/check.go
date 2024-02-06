@@ -317,6 +317,7 @@ func validateCheckArgs(ctx context.Context, cmd *cobra.Command, args []string) b
 		fmt.Println()
 		error_helpers.ShowError(ctx, fmt.Errorf("you must provide at least one argument"))
 		fmt.Println()
+		//nolint:errcheck // cmd.Help always returns a nil error
 		cmd.Help()
 		fmt.Println()
 		return false

@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"io"
 	"log"
 	"os"
@@ -81,13 +82,14 @@ func buildOrderedFileNameList(fileData map[string][]byte) []string {
 	return filePaths
 }
 
-// ModfileExists returns whether a mod file exists at the specified path
-func ModfileExists(modPath string) bool {
-	modFilePath := filepath.Join(modPath, "mod.sp")
-	if _, err := os.Stat(modFilePath); os.IsNotExist(err) {
-		return false
+// ModfileExists returns whether a mod file exists at the specified path and if so returns the filepath
+func ModfileExists(modPath string) (string, bool) {
+	for _, modFilePath := range filepaths.ModFilePaths(modPath) {
+		if _, err := os.Stat(modFilePath); err == nil {
+			return modFilePath, true
+		}
 	}
-	return true
+	return "", false
 }
 
 // parse a yaml file into a hcl.File object
