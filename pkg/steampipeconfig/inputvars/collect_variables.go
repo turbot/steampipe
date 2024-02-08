@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -58,6 +59,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 				name:       name,
 				sourceType: ValueFromEnvVar,
 			}
+			log.Printf("[INFO] adding value for variable '%s' from environment", name)
 		}
 	}
 
@@ -67,6 +69,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	// ending in .auto.spvars.
 	defaultVarsPath := filepaths.DefaultVarsFilePath(workspacePath)
 	if _, err := os.Stat(defaultVarsPath); err == nil {
+		log.Printf("[INFO] adding values from %s", defaultVarsPath)
 		diags := addVarsFromFile(defaultVarsPath, ValueFromAutoFile, ret)
 		if diags.HasErrors() {
 			return nil, error_helpers.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", defaultVarsPath), diags)
@@ -81,6 +84,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 			if !isAutoVarFile(name) {
 				continue
 			}
+			log.Printf("[INFO] adding values from %s", name)
 			diags := addVarsFromFile(name, ValueFromAutoFile, ret)
 			if diags.HasErrors() {
 				return nil, error_helpers.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", name), diags)
@@ -92,6 +96,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 	// Finally we process values given explicitly on the command line, either
 	// as individual literal settings or as additional files to read.
 	for _, fileArg := range variableFileArgs {
+		log.Printf("[INFO] adding values from %s", fileArg)
 		diags := addVarsFromFile(fileArg, ValueFromNamedFile, ret)
 		if diags.HasErrors() {
 			return nil, error_helpers.DiagsToError(fmt.Sprintf("failed to load variables from '%s'", fileArg), diags)
@@ -121,10 +126,11 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 			name:       name,
 			sourceType: ValueFromCLIArg,
 		}
+		log.Printf("[INFO] adding value for variable '%s' from command line arg", name)
 	}
 
 	if diags.HasErrors() {
-		return nil, error_helpers.DiagsToError(fmt.Sprintf("failed to evaluate var args:"), diags)
+		return nil, error_helpers.DiagsToError("failed to evaluate var args:", diags)
 	}
 
 	// check viper for any interactively added variables
@@ -137,6 +143,7 @@ func CollectVariableValues(workspacePath string, variableFileArgs []string, vari
 				Name:     name,
 				RawValue: rawVal.(string),
 			}
+			log.Printf("[INFO] adding value for variable '%s' specified on interactive prompt", name)
 		}
 	}
 
@@ -248,6 +255,7 @@ func addVarsFromFile(filename string, sourceType ValueSourceType, to map[string]
 			expr:       attr.Expr,
 			sourceType: sourceType,
 		}
+		log.Printf("[INFO] adding value for variable '%s' from var file", name)
 	}
 	return diags
 }

@@ -3,6 +3,7 @@ package inputvars
 import (
 	"fmt"
 	"github.com/zclconf/go-cty/cty"
+	"log"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -159,6 +160,7 @@ func ParseVariableValues(inputValuesUnparsed map[string]UnparsedVariableValue, v
 				SourceType:  ValueFromConfig,
 				SourceRange: tfdiags.SourceRangeFromHCL(vc.DeclRange),
 			}
+			log.Printf("[INFO] adding value for variable '%s' from var default", name)
 		}
 	}
 
