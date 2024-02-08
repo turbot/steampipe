@@ -89,7 +89,7 @@ func LoadWorkspaceVars(ctx context.Context) (*Workspace, *error_helpers.ErrorAnd
 	}
 	errorsAndWarnings := workspace.populateVariables(ctx)
 	if errorsAndWarnings.Error != nil {
-		log.Printf("[INFO] populateVariables failed %s", err.Error())
+		log.Printf("[WARN] populateVariables failed %s", errorsAndWarnings.Error.Error())
 		return nil, errorsAndWarnings
 	}
 
