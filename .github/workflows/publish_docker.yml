@@ -13,6 +13,7 @@ env:
 
 jobs:
   check_pre_release:
+    name: Check if pre-release
     runs-on: ubuntu-latest
     outputs:
       is_pre_release: ${{ steps.pre_release_check.outputs.is_pre_release }}
@@ -20,7 +21,7 @@ jobs:
       - name: Check if pre-release
         id: pre_release_check
         run: |
-          if [[ "${{ github.event.inputs.release }}" == *"-alpha"* || "${{ github.event.inputs.release }}" == *"-beta"* || "${{ github.event.inputs.release }}" == *"-rc"* || "${{ github.event.inputs.release }}" == *"-dev"*]]; then
+          if [[ "${{ github.event.inputs.release }}" =~ -alpha|-beta|-rc|-dev ]]; then
             echo "is_pre_release=true" >> $GITHUB_OUTPUT
           else
             echo "is_pre_release=false" >> $GITHUB_OUTPUT
