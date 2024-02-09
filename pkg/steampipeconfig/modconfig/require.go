@@ -23,8 +23,8 @@ type Require struct {
 	modMap map[string]*ModVersionConstraint
 	// range of the definition of the require block
 	DeclRange hcl.Range
-	// range of the body of the require block
-	BodyRange hcl.Range
+	// range of the require block type
+	TypeRange hcl.Range
 }
 
 func NewRequire() *Require {
@@ -38,7 +38,7 @@ func (r *Require) Clone() *Require {
 	require.Plugins = r.Plugins
 	require.Mods = r.Mods
 	require.DeclRange = r.DeclRange
-	require.BodyRange = r.BodyRange
+	require.TypeRange = r.TypeRange
 
 	// we need to shallow copy the map
 	// if we don't, when the other one gets
@@ -75,7 +75,7 @@ func (r *Require) initialise(modBlock *hcl.Block) hcl.Diagnostics {
 
 	// set our Ranges
 	r.DeclRange = hclhelpers.BlockRange(requireBlock)
-	r.BodyRange = requireBlock.Body.(*hclsyntax.Body).SrcRange
+	r.TypeRange = requireBlock.TypeRange
 
 	// build maps of plugin and mod blocks
 	pluginBlockMap := hclhelpers.BlocksToMap(hclhelpers.FindChildBlocks(requireBlock, BlockTypePlugin))

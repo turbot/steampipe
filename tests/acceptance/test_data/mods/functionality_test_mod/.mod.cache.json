@@ -1,0 +1,11 @@
+{
+  "functionality_test_mod": {
+    "github.com/turbot/steampipe-mod-aws-compliance": {
+      "name": "github.com/turbot/steampipe-mod-aws-compliance",
+      "alias": "aws_compliance",
+      "version": "0.85.0",
+      "constraint": "*",
+      "struct_version": 20220411
+    }
+  }
+}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe/pkg/utils"
+	"golang.org/x/exp/maps"
 )
 
 // ModVariableMap is a struct containins maps of variable definitions
@@ -105,4 +106,24 @@ func (m *ModVariableMap) GetPublicVariableValues() (map[string]string, error) {
 		res[k] = valueString
 	}
 	return res, nil
+}
+
+func (m *ModVariableMap) String() string {
+	var str strings.Builder
+	if len(m.RootVariables) > 0 {
+		str.WriteString("Root Variables: ")
+		str.WriteString(strings.Join(maps.Keys(m.RootVariables), ","))
+		str.WriteString(" ")
+	}
+	if len(m.DependencyVariables) > 0 {
+		str.WriteString("Dependency Variables: ")
+		str.WriteString(strings.Join(maps.Keys(m.DependencyVariables), ","))
+		str.WriteString(" ")
+	}
+	if len(m.PublicVariables) > 0 {
+		str.WriteString("Public Variables: ")
+		str.WriteString(strings.Join(maps.Keys(m.PublicVariables), ","))
+		str.WriteString(" ")
+	}
+	return str.String()
 }

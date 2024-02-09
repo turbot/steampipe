@@ -366,12 +366,11 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 		// this will also write out the Execution ID - enabling easy filtering of logs for a single execution
 		// we need to do this since all instances will log to a single file and logs will be interleaved
 		log.Printf("[INFO] ********************************************************\n")
-		log.Printf("[INFO] **%16s%20s%16s**\n", " ", fmt.Sprintf("Steampipe [%s]", runtime.ExecutionID), " ")
-		log.Printf("[INFO] ********************************************************\n")
+		log.Printf("[INFO] steampipe %s [%s]", cmd.Name(), runtime.ExecutionID)
 		log.Printf("[INFO] Version:   v%s\n", version.VersionString)
 		log.Printf("[INFO] Log level: %s\n", sdklogging.LogLevel())
-		log.Printf("[INFO] Log date: %s\n", time.Now().Format("2006-01-02"))
-		//
+		log.Printf("[INFO] Log date:  %s\n", time.Now().Format("2006-01-02"))
+		log.Printf("[INFO] ********************************************************\n")
 	}
 }
 
