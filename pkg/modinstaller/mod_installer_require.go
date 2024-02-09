@@ -75,8 +75,8 @@ func (i *ModInstaller) shouldCreateRequireBlock(oldRequire *modconfig.Require, n
 func (i *ModInstaller) buildChangeSetForRequireDelete(oldRequire *modconfig.Require, newRequire *modconfig.Require) ChangeSet {
 	return NewChangeSet(&Change{
 		Operation:   Delete,
-		OffsetStart: oldRequire.DeclRange.Start.Byte,
-		OffsetEnd:   oldRequire.BodyRange.End.Byte,
+		OffsetStart: oldRequire.TypeRange.Start.Byte,
+		OffsetEnd:   oldRequire.DeclRange.End.Byte,
 	})
 }
 
@@ -89,11 +89,11 @@ func (i *ModInstaller) buildChangeSetForRequireCreate(oldRequire *modconfig.Requ
 	var body *hclwrite.Body
 	var insertOffset int
 
-	if oldRequire.BodyRange.Start.Byte != 0 {
+	if oldRequire.TypeRange.Start.Byte != 0 {
 		// this means that there is a require block
 		// but is probably empty
 		body = f.Body()
-		insertOffset = oldRequire.BodyRange.End.Byte - 1
+		insertOffset = oldRequire.TypeRange.End.Byte - 1
 	} else {
 		// we don't have a require block at all
 		// let's create one to append to
@@ -186,7 +186,7 @@ func (i *ModInstaller) calcChangesForInstall(oldRequire *modconfig.Require, newR
 	return ChangeSet{
 		&Change{
 			Operation:   Insert,
-			OffsetStart: oldRequire.BodyRange.End.Byte - 1,
+			OffsetStart: oldRequire.DeclRange.End.Byte - 1,
 			Content:     f.Bytes(),
 		},
 	}
