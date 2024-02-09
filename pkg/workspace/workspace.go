@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"log"
 	"os"
 	"path/filepath"
@@ -69,6 +70,7 @@ type Workspace struct {
 
 // LoadWorkspaceVars creates a Workspace and loads the variables
 func LoadWorkspaceVars(ctx context.Context) (*Workspace, *error_helpers.ErrorAndWarnings) {
+	log.Printf("[INFO] LoadWorkspaceVars: creating workspace, loading variable and resolving variable values")
 	workspacePath := viper.GetString(constants.ArgModLocation)
 
 	utils.LogTime("workspace.Load start")
@@ -76,17 +78,23 @@ func LoadWorkspaceVars(ctx context.Context) (*Workspace, *error_helpers.ErrorAnd
 
 	workspace, err := createShellWorkspace(workspacePath)
 	if err != nil {
+		log.Printf("[INFO] createShellWorkspace failed %s", err.Error())
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
 
 	// check if your workspace path is home dir and if modfile exists - if yes then warn and ask user to continue or not
 	if err := HomeDirectoryModfileCheck(ctx, workspacePath); err != nil {
+		log.Printf("[INFO] HomeDirectoryModfileCheck failed %s", err.Error())
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
-	errorsAndWarnings := workspace.populateVariables(ctx)
+	errorsAndWarnings := workspace.PopulateVariables(ctx)
 	if errorsAndWarnings.Error != nil {
+		log.Printf("[WARN] PopulateVariables failed %s", errorsAndWarnings.Error.Error())
 		return nil, errorsAndWarnings
 	}
+
+	log.Printf("[INFO] LoadWorkspaceVars succededed - got values for vars: %s", strings.Join(maps.Keys(workspace.VariableValues), ", "))
+
 	return workspace, errorsAndWarnings
 }
 
@@ -340,13 +348,13 @@ func (w *Workspace) LoadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAn
 	return errorsAndWarnings
 }
 
-func (w *Workspace) populateVariables(ctx context.Context) *error_helpers.ErrorAndWarnings {
+func (w *Workspace) PopulateVariables(ctx context.Context) *error_helpers.ErrorAndWarnings {
+	log.Printf("[TRACE] Workspace.PopulateVariables")
 	// resolve values of all input variables
 	// we WILL validate missing variables when loading
 	validateMissing := true
 	inputVariables, errorsAndWarnings := w.getInputVariables(ctx, validateMissing)
 	if errorsAndWarnings.Error != nil {
-
 		// so there was an error - was it missing variables error
 		var missingVariablesError steampipeconfig.MissingVariableError
 		ok := errors.As(errorsAndWarnings.GetError(), &missingVariablesError)
@@ -389,21 +397,21 @@ func (w *Workspace) populateVariables(ctx context.Context) *error_helpers.ErrorA
 }
 
 func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
+	log.Printf("[TRACE] Workspace.getInputVariables")
 	// build a run context just to use to load variable definitions
 	variablesParseCtx, err := w.getParseContext(ctx)
 	if err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
 
-	return w.getVariableValues(ctx, variablesParseCtx, validateMissing)
-}
-
-func (w *Workspace) getVariableValues(ctx context.Context, variablesParseCtx *parse.ModParseContext, validateMissing bool) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
 	// load variable definitions
 	variableMap, err := steampipeconfig.LoadVariableDefinitions(ctx, w.Path, variablesParseCtx)
 	if err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
+
+	log.Printf("[INFO] loaded variable definitions: %s", variableMap)
+
 	// get the values
 	return steampipeconfig.GetVariableValues(variablesParseCtx, variableMap, validateMissing)
 }

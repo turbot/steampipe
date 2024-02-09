@@ -3,7 +3,9 @@ package steampipeconfig
 import (
 	"context"
 	"golang.org/x/exp/maps"
+	"log"
 	"sort"
+	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -31,6 +33,7 @@ func LoadVariableDefinitions(ctx context.Context, variablePath string, parseCtx 
 }
 
 func GetVariableValues(parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
+	log.Printf("[INFO] GetVariableValues")
 	// now resolve all input variables
 	inputValues, errorsAndWarnings := getInputVariables(parseCtx, variableMap, validate)
 	if errorsAndWarnings.Error == nil {
@@ -49,18 +52,32 @@ func getInputVariables(parseCtx *parse.ModParseContext, variableMap *modconfig.M
 	mod := parseCtx.CurrentMod
 	path := mod.ModPath
 
+	log.Printf("[INFO] getInputVariables, variableFileArgs: %s, variableArgs: %s", variableFileArgs, variableArgs)
+
 	var inputValuesUnparsed, err = inputvars.CollectVariableValues(path, variableFileArgs, variableArgs, parseCtx.CurrentMod)
 	if err != nil {
+		log.Printf("[WARN] CollectVariableValues failed: %s", err.Error())
+
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
 
+	log.Printf("[INFO] collected unparsed input values for vars: %s", strings.Join(maps.Keys(inputValuesUnparsed), ","))
+
 	if validate {
 		if err := identifyAllMissingVariables(parseCtx, variableMap, inputValuesUnparsed); err != nil {
+			log.Printf("[INFO] identifyAllMissingVariables returned a validation error: %s", err.Error())
+
 			return nil, error_helpers.NewErrorsAndWarning(err)
 		}
 	}
+
 	// only parse values for public variables
 	parsedValues, diags := inputvars.ParseVariableValues(inputValuesUnparsed, variableMap, validate)
+	if diags.HasErrors() {
+		log.Printf("[INFO] ParseVariableValues returned error: %s", diags.Err())
+	} else {
+		log.Printf("[INFO] parsed values for public variables: %s", strings.Join(maps.Keys(parsedValues), ","))
+	}
 
 	if validate {
 		moreDiags := inputvars.CheckInputVariables(variableMap.PublicVariables, parsedValues)
