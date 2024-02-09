@@ -25,6 +25,7 @@ jobs:
             echo "is_pre_release=true" >> $GITHUB_OUTPUT
           else
             echo "is_pre_release=false" >> $GITHUB_OUTPUT
+            echo "This is not a pre-release. Skipping Docker image publish. Run the 'Publish Docker Release and Update Brew' workflow instead."
           fi
 
   publish_docker:
