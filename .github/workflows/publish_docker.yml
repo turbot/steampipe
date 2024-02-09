@@ -1,4 +1,4 @@
-name: Publish Docker Release
+name: Publish Docker Release (Pre-release)
 on:
   workflow_dispatch:
     inputs:
@@ -12,9 +12,24 @@ env:
   GH_PUBLISH_ACCESS_TOKEN: ${{ secrets.GH_PUBLISH_ACCESS_TOKEN }}
 
 jobs:
+  check_pre_release:
+    runs-on: ubuntu-latest
+    outputs:
+      is_pre_release: ${{ steps.pre_release_check.outputs.is_pre_release }}
+    steps:
+      - name: Check if pre-release
+        id: pre_release_check
+        run: |
+          if [[ "${{ github.event.inputs.release }}" == *"-alpha"* || "${{ github.event.inputs.release }}" == *"-beta"* || "${{ github.event.inputs.release }}" == *"-rc"* || "${{ github.event.inputs.release }}" == *"-dev"*]]; then
+            echo "is_pre_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_pre_release=false" >> $GITHUB_OUTPUT
+          fi
+
   publish_docker:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
+    if: needs.check_pre_release.outputs.is_pre_release == 'true'
     steps:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -53,9 +68,7 @@ jobs:
             TARGETVERSION=${{ env.STEAMPIPE_VERSION }}
           tags: |
             turbot/steampipe:${{ steps.generate_docker_tag.outputs.docker_tag }}
-            turbot/steampipe:latest
             ghcr.io/turbot/steampipe:${{ steps.generate_docker_tag.outputs.docker_tag }}
-            ghcr.io/turbot/steampipe:latest
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
