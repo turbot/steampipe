@@ -87,9 +87,9 @@ func LoadWorkspaceVars(ctx context.Context) (*Workspace, *error_helpers.ErrorAnd
 		log.Printf("[INFO] HomeDirectoryModfileCheck failed %s", err.Error())
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
-	errorsAndWarnings := workspace.populateVariables(ctx)
+	errorsAndWarnings := workspace.PopulateVariables(ctx)
 	if errorsAndWarnings.Error != nil {
-		log.Printf("[WARN] populateVariables failed %s", errorsAndWarnings.Error.Error())
+		log.Printf("[WARN] PopulateVariables failed %s", errorsAndWarnings.Error.Error())
 		return nil, errorsAndWarnings
 	}
 
@@ -348,8 +348,8 @@ func (w *Workspace) LoadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAn
 	return errorsAndWarnings
 }
 
-func (w *Workspace) populateVariables(ctx context.Context) *error_helpers.ErrorAndWarnings {
-	log.Printf("[TRACE] Workspace.populateVariables")
+func (w *Workspace) PopulateVariables(ctx context.Context) *error_helpers.ErrorAndWarnings {
+	log.Printf("[TRACE] Workspace.PopulateVariables")
 	// resolve values of all input variables
 	// we WILL validate missing variables when loading
 	validateMissing := true

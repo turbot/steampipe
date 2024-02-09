@@ -115,9 +115,20 @@ func (w *Workspace) onNewIntrospectionData(ctx context.Context, client db_common
 	}
 }
 
-func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.ResourceMaps, *modconfig.ResourceMaps, *error_helpers.ErrorAndWarnings) {
+func (w *Workspace) reloadResourceMaps(ctx context.Context) (_ *modconfig.ResourceMaps, _ *modconfig.ResourceMaps, errAndWarnings *error_helpers.ErrorAndWarnings) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
+
+	defer func() {
+		if errAndWarnings.GetError() != nil {
+			// check the existing watcher error - if we are already in an error state, do not show error
+			if w.watcherError == nil {
+				w.fileWatcherErrorHandler(ctx, error_helpers.PrefixError(errAndWarnings.GetError(), "failed to reload workspace"))
+			}
+			// now set watcher error to new error
+			w.watcherError = errAndWarnings.GetError()
+		}
+	}()
 
 	// get the pre-load resource maps
 	// NOTE: do not call GetResourceMaps - we DO NOT want to lock loadLock
@@ -128,14 +139,12 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (*modconfig.Resource
 	}
 
 	// now reload the workspace
-	errAndWarnings := w.LoadWorkspaceMod(ctx)
+	errAndWarnings = w.PopulateVariables(ctx)
 	if errAndWarnings.GetError() != nil {
-		// check the existing watcher error - if we are already in an error state, do not show error
-		if w.watcherError == nil {
-			w.fileWatcherErrorHandler(ctx, error_helpers.PrefixError(errAndWarnings.GetError(), "failed to reload workspace"))
-		}
-		// now set watcher error to new error
-		w.watcherError = errAndWarnings.GetError()
+		return nil, nil, errAndWarnings
+	}
+	errAndWarnings = w.LoadWorkspaceMod(ctx)
+	if errAndWarnings.GetError() != nil {
 		return nil, nil, errAndWarnings
 	}
 	// clear watcher error
