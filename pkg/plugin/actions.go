@@ -87,12 +87,8 @@ type PluginListItem struct {
 func List(ctx context.Context, pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListItem, error) {
 	var items []PluginListItem
 
-	v, err := versionfile.LoadPluginVersionFile(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	pluginVersions := v.Plugins
+	// retrieve the plugin version data from steampipe config
+	pluginVersions := steampipeconfig.GlobalConfig.PluginVersions
 
 	pluginBinaries, err := files.ListFilesWithContext(ctx, filepaths.EnsurePluginDir(), &files.ListOptions{
 		Include: []string{"**/*.plugin"},

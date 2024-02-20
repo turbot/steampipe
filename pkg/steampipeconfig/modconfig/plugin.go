@@ -19,6 +19,8 @@ type Plugin struct {
 	EndLineNumber   *int           `db:"end_line_number"`
 	// the image ref as a string
 	Plugin string `db:"plugin"`
+	// the actual plugin version, as a string
+	Version string `db:"version"`
 }
 
 // NewImplicitPlugin creates a default plugin config struct for a connection

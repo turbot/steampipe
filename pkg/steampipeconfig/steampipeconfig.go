@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
+	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
@@ -36,7 +37,10 @@ type SteampipeConfig struct {
 	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
 	PluginOptions            *options.Plugin
-	// TODO remove this  in 0.22
+	// map of installed plugin versions, keyed by plugin image ref
+	PluginVersions map[string]*versionfile.InstalledVersion
+
+	// TODO remove this in 0.22
 	// it is only needed due to conflicts with output name in terminal options
 	// https://github.com/turbot/steampipe/issues/2534
 	commandName string
@@ -342,8 +346,17 @@ func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin, block *hcl.Block) 
 	if existingPlugin, exists := c.PluginsInstances[plugin.Instance]; exists {
 		return duplicatePluginError(existingPlugin, plugin)
 	}
+
 	// get the image ref to key the map
 	imageRef := plugin.Plugin
+
+	// NOTE: populate the version from the plugin version file data
+	if pluginVersion, ok := c.PluginVersions[imageRef]; ok {
+		plugin.Version = pluginVersion.Version
+	} else {
+		log.Printf("[WARN] no version found for plugin %s", imageRef)
+	}
+
 	// add to list of plugin configs for this image ref
 	c.Plugins[imageRef] = append(c.Plugins[imageRef], plugin)
 	c.PluginsInstances[plugin.Instance] = plugin

@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"os"
 	"sort"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/utils"
 )
@@ -91,13 +91,11 @@ func (av *AvailableVersionCache) cliNotificationMessage() ([]string, error) {
 
 func (av *AvailableVersionCache) pluginNotificationMessage(ctx context.Context) []string {
 	var pluginsToUpdate []plugin.VersionCheckReport
+	// retrieve the plugin version data from steampipe config
+	pluginVersions := steampipeconfig.GlobalConfig.PluginVersions
 
 	for _, r := range av.PluginCache {
-		v, err := versionfile.LoadPluginVersionFile(ctx)
-		if err != nil {
-			continue
-		}
-		installedVersion := v.Plugins[r.Plugin.Name]
+		installedVersion := pluginVersions[r.Plugin.Name]
 		skip, _ := plugin.SkipUpdate(r)
 		if !skip && installedVersion.ImageDigest != r.CheckResponse.Digest {
 			pluginsToUpdate = append(pluginsToUpdate, r)
