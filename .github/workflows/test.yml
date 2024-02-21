@@ -71,14 +71,14 @@ jobs:
         run: ls -l ~/artifacts
 
       - name: Save Linux Build Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifact-linux
           path: ~/artifacts/linux.tar.gz
           if-no-files-found: error
 
       - name: Save MacOS Build Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifact-darwin
           path: ~/artifacts/darwin.zip
@@ -188,7 +188,7 @@ jobs:
           steampipe plugin install chaos chaosdynamic --progress=false
 
       - name: Save Install DB Logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: install-db-logs-${{ matrix.test_block }}-${{ matrix.platform }}
           path: ~/.steampipe/logs
@@ -205,7 +205,7 @@ jobs:
           echo ">> here"
 
       - name: Save Test Suite Logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-logs-${{ matrix.test_block }}-${{ matrix.platform }}
           path: ~/.steampipe/logs

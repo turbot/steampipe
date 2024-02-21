@@ -290,14 +290,14 @@ jobs:
       run: ls -l ~/artifacts
 
     - name: Save Linux Build Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-artifact-linux
         path: ~/artifacts/linux.tar.gz
         if-no-files-found: error
 
     - name: Save MacOS Build Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-artifact-darwin
         path: ~/artifacts/darwin.zip
