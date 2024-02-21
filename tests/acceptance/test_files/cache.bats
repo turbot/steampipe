@@ -178,6 +178,58 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_not_equal "$unique1" "$unique3"
 }
 
+@test "test caching with cache=true in workspace profile" {
+    cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+    cp $SRC_DATA_DIR/workspace_cache_enabled.spc $STEAMPIPE_INSTALL_DIR/config/workspace_cache_enabled.spc
+
+    # cache functionality check since cache=true in workspace profile
+    cd $CONFIG_PARSING_TEST_MOD
+    run steampipe check benchmark.config_parsing_benchmark --export test.json --max-parallel 1
+
+    # store the unique number from 1st control in `content`
+    content=$(cat test.json | jq '.groups[].controls[0].results[0].resource')
+    # store the unique number from 2nd control in `new_content`
+    new_content=$(cat test.json | jq '.groups[].controls[1].results[0].resource')
+    echo $content
+    echo $new_content
+    # remove the output and the config files
+    rm -f test.json
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+    rm -f $STEAMPIPE_INSTALL_DIR/config/workspace_cache_enabled.spc
+
+    # verify that `content` and `new_content` are the same
+    assert_equal "$new_content" "$content"
+}
+
+@test "test caching with cache=false in workspace profile" {
+    cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+    cp $SRC_DATA_DIR/workspace_cache_disabled.spc $STEAMPIPE_INSTALL_DIR/config/workspace_cache_disabled.spc
+
+    # cache functionality check since cache=false in workspace profile
+    cd $CONFIG_PARSING_TEST_MOD
+    run steampipe check benchmark.config_parsing_benchmark --export test.json --max-parallel 1
+
+    # store the unique number from 1st control in `content`
+    content=$(cat test.json | jq '.groups[].controls[0].results[0].resource')
+    # store the unique number from 2nd control in `new_content`
+    new_content=$(cat test.json | jq '.groups[].controls[1].results[0].resource')
+    echo $content
+    echo $new_content
+
+    # verify that `content` and `new_content` are not the same
+    if [[ "$content" == "$new_content" ]]; then
+        flag=1
+    else
+        flag=0
+    fi
+    # remove the output and the config files
+    rm -f test.json
+    rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
+    rm -f $STEAMPIPE_INSTALL_DIR/config/workspace_cache_disabled.spc
+
+    assert_equal "$flag" "0"
+}
+
 @test "verify cache ttl works when set in workspace profile" {
   cp $FILE_PATH/test_data/source_files/workspace_cache_ttl.spc $STEAMPIPE_INSTALL_DIR/config/workspace.spc
   cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
