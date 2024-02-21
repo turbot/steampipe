@@ -392,13 +392,8 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// load up the version file data
-	versionData, err := versionfile.LoadPluginVersionFile(ctx)
-	if err != nil {
-		error_helpers.ShowError(ctx, fmt.Errorf("error loading current plugin data"))
-		exitCode = constants.ExitCodePluginLoadingError
-		return
-	}
+	// retrieve the plugin version data from steampipe config
+	pluginVersions := steampipeconfig.GlobalConfig.PluginVersions
 
 	var runUpdatesFor []*versionfile.InstalledVersion
 	updateResults := make(display.PluginInstallReports, 0, len(plugins))
@@ -407,7 +402,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 
 	if cmdconfig.Viper().GetBool(constants.ArgAll) {
-		for k, v := range versionData.Plugins {
+		for k, v := range pluginVersions {
 			ref := ociinstaller.NewSteampipeImageRef(k)
 			org, name, stream := ref.GetOrgNameAndStream()
 			key := fmt.Sprintf("%s/%s@%s", org, name, stream)
@@ -422,7 +417,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			isExists, _ := plugin.Exists(ctx, p)
 			if isExists {
 				if strings.HasPrefix(ref.DisplayImageRef(), constants.SteampipeHubOCIBase) {
-					runUpdatesFor = append(runUpdatesFor, versionData.Plugins[ref.DisplayImageRef()])
+					runUpdatesFor = append(runUpdatesFor, pluginVersions[ref.DisplayImageRef()])
 				} else {
 					error_helpers.ShowError(ctx, fmt.Errorf("cannot check updates for plugins not distributed via hub.steampipe.io, you should uninstall then reinstall the plugin to get the latest version"))
 					exitCode = constants.ExitCodePluginLoadingError

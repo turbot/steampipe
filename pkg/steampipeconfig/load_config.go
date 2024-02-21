@@ -20,6 +20,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
@@ -130,6 +131,14 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 	}()
 
 	steampipeConfig = NewSteampipeConfig(commandName)
+
+	// load plugin versions
+	v, err := versionfile.LoadPluginVersionFile(ctx)
+	if err != nil {
+		return nil, error_helpers.NewErrorsAndWarning(err)
+	}
+	steampipeConfig.PluginVersions = v.Plugins
+	log.Println(v)
 
 	// load config from the installation folder -  load all spc files from config directory
 	include := filehelpers.InclusionsFromExtensions(constants.ConnectionConfigExtensions)
@@ -259,7 +268,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 			}
 			// add plugin to steampipeConfig
 			// NOTE: this errors if there is a plugin block with a duplicate label
-			if err := steampipeConfig.addPlugin(plugin, block); err != nil {
+			if err := steampipeConfig.addPlugin(plugin); err != nil {
 				return error_helpers.NewErrorsAndWarning(err)
 			}
 

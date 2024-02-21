@@ -12,6 +12,7 @@ import (
 
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -60,13 +61,10 @@ func GetAllUpdateReport(ctx context.Context, installationID string) map[string]V
 	versionChecker.signature = installationID
 	versionChecker.pluginsToCheck = []*versionfile.InstalledVersion{}
 
-	versionFileData, err := versionfile.LoadPluginVersionFile(ctx)
-	if err != nil {
-		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not load versionfile")
-		return nil
-	}
+	// retrieve the plugin version data from steampipe config
+	pluginVersions := steampipeconfig.GlobalConfig.PluginVersions
 
-	for _, p := range versionFileData.Plugins {
+	for _, p := range pluginVersions {
 		if strings.HasPrefix(p.Name, ociinstaller.DefaultImageRepoDisplayURL) {
 			versionChecker.pluginsToCheck = append(versionChecker.pluginsToCheck, p)
 		}
@@ -76,6 +74,7 @@ func GetAllUpdateReport(ctx context.Context, installationID string) map[string]V
 }
 
 func (v *VersionChecker) reportPluginUpdates(ctx context.Context) map[string]VersionCheckReport {
+	// retrieve the plugin version data from steampipe config
 	versionFileData, err := versionfile.LoadPluginVersionFile(ctx)
 	if err != nil {
 		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not load versionfile")

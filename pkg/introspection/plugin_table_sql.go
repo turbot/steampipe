@@ -11,13 +11,14 @@ import (
 func GetPluginTableCreateSql() db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s.%s (
-				plugin_instance TEXT NULL,
+				plugin_instance TEXT,
 				plugin TEXT NOT NULL,
+				version TEXT ,
 				memory_max_mb INTEGER,
-				limiters JSONB NULL,
+				limiters JSONB,
 				file_name TEXT, 
 				start_line_number INTEGER, 
-				end_line_number INTEGER
+				end_line_number INTEGER				
 		);`, constants.InternalSchema, constants.PluginInstanceTable),
 	}
 }
@@ -26,6 +27,7 @@ func GetPluginTablePopulateSql(plugin *modconfig.Plugin) db_common.QueryWithArgs
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
 plugin,
+version,
 plugin_instance,
 memory_max_mb,
 limiters,                
@@ -33,9 +35,10 @@ file_name,
 start_line_number,
 end_line_number
 )
-	VALUES($1,$2,$3,$4,$5,$6,$7)`, constants.InternalSchema, constants.PluginInstanceTable),
+	VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, constants.InternalSchema, constants.PluginInstanceTable),
 		Args: []any{
 			plugin.Plugin,
+			plugin.Version,
 			plugin.Instance,
 			plugin.MemoryMaxMb,
 			plugin.Limiters,

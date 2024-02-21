@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -15,6 +14,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
+	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
@@ -36,7 +36,10 @@ type SteampipeConfig struct {
 	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
 	PluginOptions            *options.Plugin
-	// TODO remove this  in 0.22
+	// map of installed plugin versions, keyed by plugin image ref
+	PluginVersions map[string]*versionfile.InstalledVersion
+
+	// TODO remove this in 0.22
 	// it is only needed due to conflicts with output name in terminal options
 	// https://github.com/turbot/steampipe/issues/2534
 	commandName string
@@ -337,16 +340,28 @@ func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
 }
 
 // add a plugin config to PluginsInstances and Plugins
-// NOTE: this returns an error if we alreayd have a config with the same label
-func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin, block *hcl.Block) error {
+// NOTE: this returns an error if we already have a config with the same label
+func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin) error {
 	if existingPlugin, exists := c.PluginsInstances[plugin.Instance]; exists {
 		return duplicatePluginError(existingPlugin, plugin)
 	}
+
 	// get the image ref to key the map
 	imageRef := plugin.Plugin
+
+	pluginVersion, ok := c.PluginVersions[imageRef]
+	if !ok {
+		// just log it
+		log.Printf("[WARN] addPlugin called for plugin '%s' which is not installed", imageRef)
+		return nil
+	}
+	// NOTE: populate the version from the plugin version file data
+
+	plugin.Version = pluginVersion.Version
 	// add to list of plugin configs for this image ref
 	c.Plugins[imageRef] = append(c.Plugins[imageRef], plugin)
 	c.PluginsInstances[plugin.Instance] = plugin
+
 	return nil
 }
 
@@ -358,7 +373,7 @@ func duplicatePluginError(existingPlugin, newPlugin *modconfig.Plugin) error {
 
 // ensure we have a plugin config struct for all plugins mentioned in connection config,
 // even if there is not an explicit HCL config for it
-// NOTE: this populates the  Plugin ans PluginInstance field of the connections
+// NOTE: this populates the  Plugin and PluginInstance field of the connections
 func (c *SteampipeConfig) initializePlugins() {
 	for _, connection := range c.Connections {
 		plugin, err := c.resolvePluginInstanceForConnection(connection)
@@ -430,17 +445,24 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 
 	// resolve the image ref (this handles the special case of locally developed plugins in the plugins/local folder)
 	imageRef := modconfig.ResolvePluginImageRef(connection.PluginAlias)
+
+	// verify the plugin is installed - if not return nil
+	if _, ok := c.PluginVersions[imageRef]; !ok {
+		log.Printf("[INFO] plugin '%s' is not installed", imageRef)
+		return nil, nil
+	}
+
+	// how many plugin instances are there for this image ref?
 	pluginsForImageRef := c.Plugins[imageRef]
 
-	// how many plugin instances are there?
 	switch len(pluginsForImageRef) {
 	case 0:
 		// there is no plugin instance for this connection - add an implicit plugin instance
 		p := modconfig.NewImplicitPlugin(connection, imageRef)
 
 		// now add to our map
-		// (NOTE: its ok to pass an empty HCL block - it is only used for the duplicate config error and we know we will not get that)
-		if err := c.addPlugin(p, &hcl.Block{}); err != nil {
+		if err := c.addPlugin(p); err != nil {
+			// log the error but do not return it - we
 			return nil, err
 		}
 		return p, nil

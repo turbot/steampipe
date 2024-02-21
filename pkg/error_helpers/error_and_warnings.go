@@ -36,10 +36,17 @@ func (r *ErrorAndWarnings) WrapErrorWithMessage(msg string) *ErrorAndWarnings {
 }
 
 func (r *ErrorAndWarnings) AddWarning(warnings ...string) {
-	r.Warnings = append(r.Warnings, warnings...)
+	// avoid duplicates
+	for _, w := range warnings {
+		if !r.hasWarning(w) {
+			r.Warnings = append(r.Warnings, w)
+		}
+	}
+
 }
 
 func (r *ErrorAndWarnings) ShowWarnings() {
+
 	for _, w := range r.Warnings {
 		ShowWarning(w)
 	}
@@ -70,4 +77,13 @@ func (r *ErrorAndWarnings) Merge(other *ErrorAndWarnings) *ErrorAndWarnings {
 
 func (r *ErrorAndWarnings) Empty() bool {
 	return r.Error == nil && len(r.Warnings) == 0
+}
+
+func (r *ErrorAndWarnings) hasWarning(w string) bool {
+	for _, warning := range r.Warnings {
+		if warning == w {
+			return true
+		}
+	}
+	return false
 }
