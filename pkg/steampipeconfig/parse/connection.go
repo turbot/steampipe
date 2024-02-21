@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/pipe-fittings/hclhelpers"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
 	"golang.org/x/exp/maps"
@@ -68,15 +67,6 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 			moreDiags = connection.SetOptions(opts, connectionBlock)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
-			}
-
-			// TODO: remove in 0.22 [https://github.com/turbot/steampipe/issues/3251]
-			if connection.Options != nil {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagWarning,
-					Summary:  fmt.Sprintf("%s in %s have been deprecated and will be removed in subsequent versions of steampipe", constants.Bold("'connection' options"), constants.Bold("'connection' blocks")),
-					Subject:  hclhelpers.BlockRangePointer(connectionBlock),
-				})
 			}
 
 		default:
