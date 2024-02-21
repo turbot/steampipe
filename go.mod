@@ -61,7 +61,7 @@ require (
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/sync v0.6.0
 	golang.org/x/text v0.14.0
-	google.golang.org/grpc v1.61.0
+	google.golang.org/grpc v1.61.1
 	google.golang.org/protobuf v1.32.0
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
 	oras.land/oras-go/v2 v2.4.0
