@@ -268,7 +268,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 			}
 			// add plugin to steampipeConfig
 			// NOTE: this errors if there is a plugin block with a duplicate label
-			if err := steampipeConfig.addPlugin(plugin, block); err != nil {
+			if err := steampipeConfig.addPlugin(plugin); err != nil {
 				return error_helpers.NewErrorsAndWarning(err)
 			}
 

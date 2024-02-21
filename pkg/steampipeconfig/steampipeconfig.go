@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -342,7 +341,7 @@ func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
 
 // add a plugin config to PluginsInstances and Plugins
 // NOTE: this returns an error if we alreayd have a config with the same label
-func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin, block *hcl.Block) error {
+func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin) error {
 	if existingPlugin, exists := c.PluginsInstances[plugin.Instance]; exists {
 		return duplicatePluginError(existingPlugin, plugin)
 	}
@@ -354,7 +353,7 @@ func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin, block *hcl.Block) 
 	if pluginVersion, ok := c.PluginVersions[imageRef]; ok {
 		plugin.Version = pluginVersion.Version
 	} else {
-		log.Printf("[WARN] no version found for plugin %s", imageRef)
+		return sperr.New("plugin '%s' is not installed", imageRef)
 	}
 
 	// add to list of plugin configs for this image ref
@@ -371,7 +370,7 @@ func duplicatePluginError(existingPlugin, newPlugin *modconfig.Plugin) error {
 
 // ensure we have a plugin config struct for all plugins mentioned in connection config,
 // even if there is not an explicit HCL config for it
-// NOTE: this populates the  Plugin ans PluginInstance field of the connections
+// NOTE: this populates the  Plugin and PluginInstance field of the connections
 func (c *SteampipeConfig) initializePlugins() {
 	for _, connection := range c.Connections {
 		plugin, err := c.resolvePluginInstanceForConnection(connection)
@@ -453,7 +452,7 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 
 		// now add to our map
 		// (NOTE: its ok to pass an empty HCL block - it is only used for the duplicate config error and we know we will not get that)
-		if err := c.addPlugin(p, &hcl.Block{}); err != nil {
+		if err := c.addPlugin(p); err != nil {
 			return nil, err
 		}
 		return p, nil
