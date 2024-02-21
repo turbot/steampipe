@@ -2,11 +2,11 @@ package parse
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/type_conversion"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
@@ -147,7 +147,7 @@ func parseArg(v string) (any, error) {
 	if diags.HasErrors() {
 		return "", plugin.DiagsToError("bad arg syntax", diags)
 	}
-	return type_conversion.CtyToGo(val)
+	return hclhelpers.CtyToGo(val)
 }
 
 func parseNamedArgs(argsList []string) (map[string]any, error) {

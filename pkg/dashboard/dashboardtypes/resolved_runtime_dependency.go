@@ -2,7 +2,6 @@ package dashboardtypes
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/type_conversion"
 	"log"
 	"sync"
 
@@ -60,7 +59,7 @@ func (d *ResolvedRuntimeDependency) Resolve() error {
 
 	// TACTICAL if the desired value is an array, wrap in an array
 	if d.Dependency.IsArray {
-		d.Value = type_conversion.AnySliceToTypedSlice([]any{d.Value})
+		d.Value = helpers.AnySliceToTypedSlice([]any{d.Value})
 	}
 
 	if val.Error != nil {

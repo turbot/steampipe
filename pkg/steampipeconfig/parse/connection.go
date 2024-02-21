@@ -2,13 +2,13 @@ package parse
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/hcl_helpers"
 	"log"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
@@ -75,7 +75,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagWarning,
 					Summary:  fmt.Sprintf("%s in %s have been deprecated and will be removed in subsequent versions of steampipe", constants.Bold("'connection' options"), constants.Bold("'connection' blocks")),
-					Subject:  hcl_helpers.BlockRangePointer(connectionBlock),
+					Subject:  hclhelpers.BlockRangePointer(connectionBlock),
 				})
 			}
 
@@ -84,7 +84,7 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
 				Summary:  fmt.Sprintf("connections do not support '%s' blocks", block.Type),
-				Subject:  hcl_helpers.BlockRangePointer(connectionBlock),
+				Subject:  hclhelpers.BlockRangePointer(connectionBlock),
 			})
 		}
 	}
@@ -99,14 +99,14 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 				diags = append(diags, &hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  fmt.Sprintf("connections do not support '%s' blocks", b.Type),
-					Subject:  hcl_helpers.HclSyntaxBlockRangePointer(b),
+					Subject:  hclhelpers.HclSyntaxBlockRangePointer(b),
 				})
 			}
 		}
 	}
 
 	// convert the remaining config to a hcl string to pass to the plugin
-	config, moreDiags := hcl_helpers.HclBodyToHclString(rest, connectionContent)
+	config, moreDiags := hclhelpers.HclBodyToHclString(rest, connectionContent)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 	} else {
@@ -157,7 +157,7 @@ func getPluginInstanceFromDependency(dependencies []*modconfig.ResourceDependenc
 	if len(dependencies[0].Traversals) != 1 {
 		return "", false
 	}
-	traversalString := hcl_helpers.TraversalAsString(dependencies[0].Traversals[0])
+	traversalString := hclhelpers.TraversalAsString(dependencies[0].Traversals[0])
 	split := strings.Split(traversalString, ".")
 	if len(split) != 2 || split[0] != "plugin" {
 		return "", false

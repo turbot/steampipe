@@ -2,16 +2,17 @@ package modconfig
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/turbot/go-kit/hcl_helpers"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/zclconf/go-cty/cty"
-	"os"
-	"path/filepath"
 )
 
 // mod name used if a default mod is created for a workspace which does not define one explicitly
@@ -160,7 +161,7 @@ func (m *Mod) OnDecoded(block *hcl.Block, _ ResourceMapsProvider) hcl.Diagnostic
 				return hcl.Diagnostics{&hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "Both 'require' and legacy 'requires' blocks are defined",
-					Subject:  hcl_helpers.BlockRangePointer(block),
+					Subject:  hclhelpers.BlockRangePointer(block),
 				}}
 			}
 		}

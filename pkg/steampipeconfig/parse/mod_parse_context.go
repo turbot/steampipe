@@ -2,13 +2,13 @@ package parse
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/hcl_helpers"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/inputvars"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
@@ -645,7 +645,7 @@ func (m *ModParseContext) getErrorStringForUnresolvedArg(parsedVarName *modconfi
 				return "", fmt.Errorf("failed to get args details for %s", parsedVarName.ToResourceName())
 			}
 			// ok we have the expression - build the error string
-			exprString := hcl_helpers.TraversalAsString(expr.Traversal)
+			exprString := hclhelpers.TraversalAsString(expr.Traversal)
 			r := expr.Range()
 			sourceRange := fmt.Sprintf("%s:%d", r.Filename, r.Start.Line)
 			res := fmt.Sprintf("\"%s = %s\" (%s %s)",
