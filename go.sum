@@ -723,8 +723,8 @@ github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.0 h1:8SG7/vwALn54lVB/0yZ/MMwhFrPYtpEHQb2IpWsCzug=
 github.com/opencontainers/image-spec v1.1.0/go.mod h1:W4s4sFTMaBeK1BQLXbG4AdM2szdn85PY75RI83NrTrM=
-github.com/oras-project/oras-credentials-go v0.3.1 h1:sfGqZ8sjPifEaOtjHOQTPr8D+Tql4bpw58Dd9wjmm9w=
-github.com/oras-project/oras-credentials-go v0.3.1/go.mod h1:fFCebDQo0Do+gnM96uV9YUnRay0pwuRQupypvofsp4s=
+github.com/oras-project/oras-credentials-go v0.4.0 h1:bgFNcJXmUAK2G2QQBFO/ibQQsg2Fmm/2Do0b7AZNmvU=
+github.com/oras-project/oras-credentials-go v0.4.0/go.mod h1:LKP4jEA7/Nn1lgcI7rYWmOeKsKRzrxvS26a8h1l3UEY=
 github.com/otiai10/copy v1.14.0 h1:dCI/t1iTdYGtkvCuBG2BgR6KZa83PTclw4U5n2wAllU=
 github.com/otiai10/copy v1.14.0/go.mod h1:ECfuL02W+/FkTWZWgQqXPWZgW9oeKCSQ5qVfSc4qc4w=
 github.com/otiai10/mint v1.5.1 h1:XaPLeE+9vGbuyEHem1JNk3bYc7KKqyI/na0/mLd/Kks=
