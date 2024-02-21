@@ -38,11 +38,6 @@ type SteampipeConfig struct {
 	PluginOptions            *options.Plugin
 	// map of installed plugin versions, keyed by plugin image ref
 	PluginVersions map[string]*versionfile.InstalledVersion
-
-	// TODO remove this in 0.22
-	// it is only needed due to conflicts with output name in terminal options
-	// https://github.com/turbot/steampipe/issues/2534
-	commandName string
 }
 
 func NewSteampipeConfig(commandName string) *SteampipeConfig {
@@ -50,7 +45,6 @@ func NewSteampipeConfig(commandName string) *SteampipeConfig {
 		Connections:      make(map[string]*modconfig.Connection),
 		Plugins:          make(map[string][]*modconfig.Plugin),
 		PluginsInstances: make(map[string]*modconfig.Plugin),
-		commandName:      commandName,
 	}
 }
 
@@ -94,9 +88,6 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	if c.DashboardOptions != nil {
 		res.PopulateConfigMapForOptions(c.DashboardOptions)
 	}
-	if c.TerminalOptions != nil {
-		res.PopulateConfigMapForOptions(c.TerminalOptions)
-	}
 	if c.PluginOptions != nil {
 		res.PopulateConfigMapForOptions(c.PluginOptions)
 	}
@@ -108,14 +99,6 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 	errorsAndWarnings = error_helpers.NewErrorsAndWarning(nil)
 
 	switch o := opts.(type) {
-	case *options.Connection:
-		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
-		errorsAndWarnings.AddWarning(deprecationWarning("connection options"))
-		if c.DefaultConnectionOptions == nil {
-			c.DefaultConnectionOptions = o
-		} else {
-			c.DefaultConnectionOptions.Merge(o)
-		}
 	case *options.Database:
 		if c.DatabaseOptions == nil {
 			c.DatabaseOptions = o
@@ -128,31 +111,11 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 		} else {
 			c.DashboardOptions.Merge(o)
 		}
-	case *options.Terminal:
-		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
-		errorsAndWarnings.AddWarning(deprecationWarning("terminal options"))
-
-		// NOTE: ignore terminal options if current command is not query
-		// this is a short term workaround to handle the clashing 'output' argument
-		// this will be refactored
-		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
-		if c.commandName != constants.CmdNameQuery {
-			break
-		}
-		if c.TerminalOptions == nil {
-			c.TerminalOptions = o
-		} else {
-			c.TerminalOptions.Merge(o)
-		}
 	case *options.General:
 		if c.GeneralOptions == nil {
 			c.GeneralOptions = o
 		} else {
 			c.GeneralOptions.Merge(o)
-		}
-		// TODO: remove in 0.22 [https://github.com/turbot/steampipe/issues/3251]
-		if c.GeneralOptions.MaxParallel != nil {
-			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants.Bold("max_parallel"), constants.Bold("general options"))))
 		}
 	case *options.Plugin:
 		if c.PluginOptions == nil {
@@ -160,20 +123,8 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *e
 		} else {
 			c.PluginOptions.Merge(o)
 		}
-
-		// TODO: remove in 0.21 [https://github.com/turbot/steampipe/issues/3251]
-		if c.GeneralOptions.MaxParallel != nil {
-			errorsAndWarnings.AddWarning(deprecationWarning(fmt.Sprintf("'%s' in %s", constants.Bold("max_parallel"), constants.Bold("general options"))))
-		}
 	}
 	return errorsAndWarnings
-}
-
-func deprecationWarning(subject string) string {
-	if subject == "terminal options" {
-		return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThese can now be set in a steampipe %s.", constants.Bold(subject), constants.Bold("workspace"))
-	}
-	return fmt.Sprintf("%s has been deprecated and will be removed in a future version of Steampipe.\nThis can now be set in a steampipe %s.", subject, constants.Bold("workspace"))
 }
 
 var defaultCacheEnabled = true
