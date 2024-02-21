@@ -162,8 +162,8 @@ func showNotificationsForCommand(cmd *cobra.Command, cmdArgs []string) bool {
 		IsPluginManagerCmd(cmd) ||
 		isServiceStopCmd(cmd) ||
 		IsBatchQueryCmd(cmd, cmdArgs) ||
-		isCompletionCmd(cmd)) ||
-		isPluginListCmd(cmd)
+		isCompletionCmd(cmd) ||
+		isPluginListCmd(cmd))
 }
 
 func isServiceStopCmd(cmd *cobra.Command) bool {

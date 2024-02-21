@@ -37,15 +37,15 @@ _Whats new_
 
 _Bug fixes_
 * Fixes issue where a query would return 'null' for an empty result set when output is set to json. ([#3955](https://github.com/turbot/steampipe/issues/3955))
-* Fix custom registries bugs 
-* Clean up apt temporary files in Dockerfile 
+* Fix custom registries bugs
+* Clean up apt temporary files in Dockerfile
 
 ## v0.21.1 [2023-10-03]
 _Bug fixes_
 * Added support for the missing `mod-location` flag to the `steampipe variable list` command. ([#3942](https://github.com/turbot/steampipe/issues/3942))
 
 ## v0.21.0 [2023-10-02]
-_Whats new_
+_Whats new?_
 * Define [rate and concurrency limits](https://steampipe.io/docs/guides/limiter#concurrency--rate-limiting) for plugin execution. ([#3746](https://github.com/turbot/steampipe/issues/3746))
 * Define multiple instances of a plugin version using a `plugin` connection config block. ([#3807](https://github.com/turbot/steampipe/issues/3807))
 * The maximum memory used by plugins and the CLI can now be specified either in `plugin` instance definitions or the new `plugin` options block. ([#3807](https://github.com/turbot/steampipe/issues/3807))
@@ -99,7 +99,7 @@ _Deprecations and migrations_
 * Deprecated `terminal options`.
 
 ## v0.20.12 [2023-09-14]
-_Whats new_
+_Whats new?_
 * Updated help outputs for steampipe mod commands. ([#1817](https://github.com/turbot/steampipe/issues/1817))
 
 _Bug fixes_
@@ -117,7 +117,7 @@ _Bug fixes_
 _Bug fixes_
 * Fixes issue where CAPITAL arguments to '.cache' meta command were not getting recognised.  ([#3670](https://github.com/turbot/steampipe/issues/3670))
 * Fixes issue where `port` property in dashboard options was not respected.  ([#3664](https://github.com/turbot/steampipe/issues/3685))
-* Fixes issue where using a bad workspace-database with a valid token gives invalid token as the error.  ([#3610](https://github.com/turbot/steampipe/issues/3610)) 
+* Fixes issue where using a bad workspace-database with a valid token gives invalid token as the error.  ([#3610](https://github.com/turbot/steampipe/issues/3610))
 * Fixes timing issue where refresh connections was sometimes not run when starting service.  ([#3734](https://github.com/turbot/steampipe/issues/3734))
 * Fixes issue where db connections are not closed after sending postgres notification.  ([#3744](https://github.com/turbot/steampipe/issues/3744))
 
@@ -140,8 +140,8 @@ _Bug fixes_
 ## v0.20.6 [2023-06-14]
 _Bug fixes_
 * Fix variable validation ([#3546](https://github.com/turbot/steampipe/issues/3546)):
-  * Raise warning or error when setting a value for a variable which is not found or inaccessible (e.g. because it is in a transitive dependency). 
-  * Validate that mod require `args` properties can be resolved. 
+  * Raise warning or error when setting a value for a variable which is not found or inaccessible (e.g. because it is in a transitive dependency).
+  * Validate that mod require `args` properties can be resolved.
 * Support resolution of variables for transitive dependencies using parent mod `require` block `args` property. ([#3549](https://github.com/turbot/steampipe/issues/3549))
 * `steampipe mod update` now updates transitive mods. ([#3547](https://github.com/turbot/steampipe/issues/3547))
 * It is now be possible to set values for variables in the current mod using fully qualified variable names. ([#3551](https://github.com/turbot/steampipe/issues/3551))
@@ -166,7 +166,7 @@ _Bug fixes_
 * Ensure `Ready` connections are set to `Pending` state on startup. This makes sure connection changes are reflected in the connection schema if a query is executed soon after startup. ([#3483](https://github.com/turbot/steampipe/issues/3483))
 
 ## v0.20.3 [2023-05-30]
-_Whats new_
+_Whats new?_
 * Update refresh connections to execute updates serially by default.  ([#3498](https://github.com/turbot/steampipe/issues/3498))
 
 _Bug fixes_
@@ -177,7 +177,7 @@ _Bug fixes_
 * Don't use custom theme color `yellow` for severity cards, to avoid clashing with Tailwind's yellow palette. ([#3501](https://github.com/turbot/steampipe/issues/3501))
 
 ## v0.20.2 [2023-05-19]
-_Whats new_
+_Whats new?_
 * Re-add support for legacy command-schema. ([#3457](https://github.com/turbot/steampipe/issues/3457))
 
 _Bug fixes_
@@ -189,7 +189,7 @@ _Bug fixes_
 
 ## v0.20.0 [2023-05-18]
 
-#### Connection Management 
+#### Connection Management
 - Optimise connection initialisation for high connection count ([#3394](https://github.com/turbot/steampipe/issues/3394),[#3267](https://github.com/turbot/steampipe/issues/3267),[#3236](https://github.com/turbot/steampipe/issues/3236),[#3229](https://github.com/turbot/steampipe/issues/3229),[#3413](https://github.com/turbot/steampipe/issues/3413))
   - Execute RefreshConnections asyncronously in service startup
   - Start executing queries without waiting for connections to load, add smart error handling to wait for required connection
@@ -199,11 +199,11 @@ _Bug fixes_
   - Add support for `import_schema` property in connection config, controlling whether to create a postgres schema for a steampipe connection. Closes #3407
   - Optimise schema creation by cloning connection schemas
   - Add locking to ensure only a single instance of RefreshConnections runs
-  - Update refresh connections to write comments for exemplar schemas first, followed by remaining schemas.  
+  - Update refresh connections to write comments for exemplar schemas first, followed by remaining schemas.
 
 - Update connection and plugin validation during refreshConnections. ([#3432](https://github.com/turbot/steampipe/issues/3432),[#3402](https://github.com/turbot/steampipe/issues/3402))
-  - ensure failed connections are set to 'error' in connection state.  
-  - Schema names starting with steampipe_ are to be reserved for steampipe. 
+  - ensure failed connections are set to 'error' in connection state.
+  - Schema names starting with steampipe_ are to be reserved for steampipe.
 
 #### Mod Dependency Management
 - Support mods requiring different versions of the same depdency mod. ([#3302](https://github.com/turbot/steampipe/issues/3302))
@@ -224,7 +224,7 @@ _Bug fixes_
 - Updates in cache configuration to allow disabling of all caching on server. ([#3258](https://github.com/turbot/steampipe/issues/3258))
   - STEAMPIPE_CACHE environment variable controls both *service* cache-enabled and  *client* cache-enabled
   - *service* cache enabled is used by the plugin manager to enable/disable caching on the plugins during startup.
-  - *client* cache enabled is used to enable/disable the cache on the database session. 
+  - *client* cache enabled is used to enable/disable the cache on the database session.
 - Introduce SQL functions to easily manipulate caching functionality - `meta_cache()` and `meta_cache_ttl()`. ([#3442](https://github.com/turbot/steampipe/issues/3442))
 
 _What's new?_
@@ -283,7 +283,7 @@ _Bug fixes_
 ## v0.19.1 [2023-03-09]
 _Bug fixes_
 * Fix `service stop` failing if invoked directly after a schema change notification. ([#3206](https://github.com/turbot/steampipe/issues/3206))
- 
+
 ## v0.19.0 [2023-03-09]
 _What's new?_
 * Add support for aggregator connections with dynamic tables. ([#2886](https://github.com/turbot/steampipe/issues/2886))
@@ -369,8 +369,8 @@ _What's new?_
 * Update dashboard UI version mismatch logic to redirect to a version-enabled URL to get past localhost cached index.html. ([#2940](https://github.com/turbot/steampipe/issues/2940))
 * Upgrades 'pgx' to v5. ([#2776](https://github.com/turbot/steampipe/issues/2776))
 * Add a `--max-parallel` flag to `dashboard` command and set default to 10. ([#2754](https://github.com/turbot/steampipe/issues/2754))
-* When parsing query args, ensure jsonb args are passed to query as string not map.([#2802](https://github.com/turbot/steampipe/issues/2802)) 
-* Update Makefile to allow overriding build output directory path 
+* When parsing query args, ensure jsonb args are passed to query as string not map.([#2802](https://github.com/turbot/steampipe/issues/2802))
+* Update Makefile to allow overriding build output directory path
 
 _Bug fixes_
 * Fixes issue where interactive prompt was not showing timing data for 'json', 'csv' and 'line' outputs. ([#2699](https://github.com/turbot/steampipe/issues/2699))
@@ -444,7 +444,7 @@ _What's new?_
 * Add `autocomplete` meta command and terminal option. ([#2560](https://github.com/turbot/steampipe/issues/2560), [#1692](https://github.com/turbot/steampipe/issues/1692))
 * Add ability to save and open snapshots from the dashboard UI. ([#2577](https://github.com/turbot/steampipe/issues/2577))
 * Add support for viewing control snapshots in the dashboard UI. ([#2688](https://github.com/turbot/steampipe/issues/2688))
-* Add a configurable query timeout. ([#666](https://github.com/turbot/steampipe/issues/666), [#2593](https://github.com/turbot/steampipe/issues/2593)) 
+* Add a configurable query timeout. ([#666](https://github.com/turbot/steampipe/issues/666), [#2593](https://github.com/turbot/steampipe/issues/2593))
 * Update database code to use `pgx` interface so we can leverage the connection pool hook functions to pre-warm connections. ([#2422](https://github.com/turbot/steampipe/issues/2422))
 * Rationalise and simplify postgres configuration. ([#2471](https://github.com/turbot/steampipe/issues/2471))
 * Support executing any query-provider resources using the steampipe query command. ([#2558](https://github.com/turbot/steampipe/issues/2558))
@@ -452,7 +452,7 @@ _What's new?_
 * Add better help messages for mod plugin requirements not satisfied error. ([#2361](https://github.com/turbot/steampipe/issues/2361))
 * Reduce the max frequency of connection config changed events to every 4 second. ([#2535](https://github.com/turbot/steampipe/issues/2535))
 * Add `Variables` and `Inputs` to dashboard `ExecutionStarted` event. ([#2606](https://github.com/turbot/steampipe/issues/2606))
-* Validate check output and export formats _before_ execution. ([#2619](https://github.com/turbot/steampipe/issues/2619)) 
+* Validate check output and export formats _before_ execution. ([#2619](https://github.com/turbot/steampipe/issues/2619))
 * When starting a plugin process, pass a SecureConfig, to silence the `nil SecureConfig` error. ([#2567](https://github.com/turbot/steampipe/issues/2567))
 * Optimise autocomplete by only loading completions on startup or when connection config changes, rather than every time a query is entered . ([#2561](https://github.com/turbot/steampipe/issues/2561))
 * Remove explicit setting of open-file limit, now that Go 1.19 does it automatically. ([#2630](https://github.com/turbot/steampipe/issues/2630))
@@ -558,8 +558,8 @@ _What's new?_
 * Update `.timing` output to return additional query metadata such as the number of hydrate functions called andd the cache status. ([#2192](https://github.com/turbot/steampipe/issues/2192))
 * Add `steampipe_command.scan_metadata` table to support returning additional data from `.timing` command.  ([#203](https://github.com/turbot/steampipe-postgres-fdw/issues/203))
 * Update postgres config to enable auto-vacuum. ([#2083](https://github.com/turbot/steampipe/issues/2083))
-* Add `--show-password` CLI arg to reveal the db user password. Disables password visibility by default. ([#2033](https://github.com/turbot/steampipe/issues/2033)) 
-* Update dashboard snapshot format, making control/benchmark output consistent with dashboards. ([#2154](https://github.com/turbot/steampipe/issues/2154)) 
+* Add `--show-password` CLI arg to reveal the db user password. Disables password visibility by default. ([#2033](https://github.com/turbot/steampipe/issues/2033))
+* Update dashboard snapshot format, making control/benchmark output consistent with dashboards. ([#2154](https://github.com/turbot/steampipe/issues/2154))
 * Support optional names for dashboard child blocks. ([#2161](https://github.com/turbot/steampipe/issues/2161))
 * Improve the response to `steampipe plugin update all` to make it more helpful. ([#2125](https://github.com/turbot/steampipe/issues/2125))
 * Add better help message when invalid locale settings caused db init failure. ([#1673](https://github.com/turbot/steampipe/issues/1673))
@@ -627,7 +627,7 @@ _What's new?_
 * Add `variable list` command. ([#1868](https://github.com/turbot/steampipe/issues/1868))
 * Allow dependent mods to have the same variable name as the parent mod. ([#1922](https://github.com/turbot/steampipe/issues/1922))
 * Update Dockerfile for postgres 14, and to disable telemetry. ([#1941](https://github.com/turbot/steampipe/issues/1941))
-* Update the output and performance of plugin operations. ([#1780](https://github.com/turbot/steampipe/issues/1780), [#1778](https://github.com/turbot/steampipe/issues/1778), [#1777](https://github.com/turbot/steampipe/issues/1777), [#1776](https://github.com/turbot/steampipe/issues/1776)) 
+* Update the output and performance of plugin operations. ([#1780](https://github.com/turbot/steampipe/issues/1780), [#1778](https://github.com/turbot/steampipe/issues/1778), [#1777](https://github.com/turbot/steampipe/issues/1777), [#1776](https://github.com/turbot/steampipe/issues/1776))
 * Rename folder .steampipe/report/assets to .steampipe/dashboard/assets. ([#1751](https://github.com/turbot/steampipe/issues/1751))
 * Add `Alias` property to the dependencies listed in .mod.cache.json. ([#1731](https://github.com/turbot/steampipe/issues/1731))
 
@@ -746,9 +746,9 @@ _Bug fixes_
 ## v0.11.0 [2021-12-21]
 _What's new?_
 * Add support for mod management commands: `mod install`, `mod update`, `mod uninstall`, `mod list`, `mod init`. ([#442](https://github.com/turbot/steampipe/issues/442), [#443](https://github.com/turbot/steampipe/issues/443))
-* Startup optimizations.   
+* Startup optimizations.
   * When retrieving plugin schema, identify the minimum set of schemas we need to fetch - to allow for multiple connections with the same schema. ([#1183](https://github.com/turbot/steampipe/issues/1183))
-  * Avoid retrieving schema from database for check and non-interactive query execution. 
+  * Avoid retrieving schema from database for check and non-interactive query execution.
   * Update plugin manager to instantiate plugins in parallel.
   * Only create prepared statements if the query has parameters.  ([#1231](https://github.com/turbot/steampipe/issues/1231))
   * Update Postgres driver to `pgx`. (This removes the need to query the database for the db connection Pid every time we execute a query.)  ([#1179](https://github.com/turbot/steampipe/issues/1179))
@@ -774,8 +774,8 @@ _Bug fixes_
 ## v0.10.0 [2021-11-24]
 _What's new?_
 * Add support for parallel control execution. ([#1001](https://github.com/turbot/steampipe/issues/1001))
-  * Only spawn a single plugin per steampipe connection, no matter how many db connections use it. 
-  * Share a single query result cache between multiple database connections. 
+  * Only spawn a single plugin per steampipe connection, no matter how many db connections use it.
+  * Share a single query result cache between multiple database connections.
 * Add support for connecting to a remote database, including a Steampipe Cloud workspace database.  ([#1175](https://github.com/turbot/steampipe/issues/1175))
 * When cli displays error messages from plugins, they are now be prefixed with plugin name. ([#1071](https://github.com/turbot/steampipe/issues/1071))
 * Do not show plugin error messages in JSON/CSV output. ([#1110](https://github.com/turbot/steampipe/issues/1110))
@@ -852,8 +852,8 @@ _Bug fixes_
 
 ## v0.8.1 [2021-09-12]
 _Bug fixes_
-* Disable database log polling, which was causing high CPU usage. 
-* Fix null reference exception for certain `is null` queries. ([#97](https://github.com/turbot/steampipe-postgres-fdw/issues/97)) 
+* Disable database log polling, which was causing high CPU usage.
+* Fix null reference exception for certain `is null` queries. ([#97](https://github.com/turbot/steampipe-postgres-fdw/issues/97))
 * Add support for CIDROID type when converting Postgres datums to qual values. ([#54](https://github.com/turbot/steampipe-postgres-fdw/issues/54))
 * Fix autocomplete casing for .cache metacommands. ([#875](https://github.com/turbot/steampipe/issues/875))
 
@@ -895,7 +895,7 @@ _Bug fixes_
 ## v0.7.1 [2021-07-29]
 _What's new?_
 * Add `open_graph` property to `steampipe_mod` reflection table. ([#692](https://github.com/turbot/steampipe/issues/692))
-  
+
 _Bug fixes_
 * When an aggregator connection is evaluating a wildcard, only include connections with compatible plugin type. ([#687](https://github.com/turbot/steampipe/issues/687))
 * Fix search path not being honored by `steampipe check`. ([#708](https://github.com/turbot/steampipe/issues/708))
@@ -904,8 +904,8 @@ _Bug fixes_
 
 ## v0.7.0 [2021-07-22]
 _What's new?_
-* Add support for aggregator connections. ([#610](https://github.com/turbot/steampipe/issues/610)) 
-* Service management improvements: 
+* Add support for aggregator connections. ([#610](https://github.com/turbot/steampipe/issues/610))
+* Service management improvements:
   * Remove locking from service code to allow multiple `query` and `check` sessions in parallel without requiring a service start.([#579](https://github.com/turbot/steampipe/issues/579))
   * Update service start to 'claim' a service started by query or check session, instead of failing. ([#580](https://github.com/turbot/steampipe/issues/580))
   * Update `service status` - add `--all` flag to list status for all running services.([#580](https://github.com/turbot/steampipe/issues/580))
@@ -917,7 +917,7 @@ _What's new?_
   * Steampipe service startup now validates that the `data-dir` is writable. ([#659](https://github.com/turbot/steampipe/issues/659))
 * Optimise interactive startup by initializing asynchronously. ([#627](https://github.com/turbot/steampipe/issues/627))
 * Optimise query caching - construct key based on the columns returned by the plugin, not the columns requested.([#82](https://github.com/turbot/steampipe-postgres-fdw/issues/82))
-* Update Steampipe service to support SSL. ([#602](https://github.com/turbot/steampipe/issues/602)) 
+* Update Steampipe service to support SSL. ([#602](https://github.com/turbot/steampipe/issues/602))
 * Show timer result before query output, so it is visible even if results require paging. ([#655](https://github.com/turbot/steampipe/issues/655))
 * Increase length of history file to 500 entries. ([#664](https://github.com/turbot/steampipe/issues/664))
 
@@ -932,7 +932,7 @@ _Bug fixes_
 
 ## v0.6.2 [2021-07-08]
 _Bug fixes_
-* Revert prototype code inadvertently included in 0.6.1 
+* Revert prototype code inadvertently included in 0.6.1
 
 ## v0.6.1 [2021-07-08]
 _What's new?_
@@ -946,7 +946,7 @@ _Bug fixes_
 * Fix problem where milliseconds of timestamps were not being displayed ([#76](https://github.com/turbot/steampipe-postgres-fdw/issues/76))
 * Fix  freezing issues with 'limit' and cancellation. ([#74](https://github.com/turbot/steampipe-postgres-fdw/issues/74))
 * Fix incorrect caching of 'get' query results for plugins build with sdk >= 0.3.0. ([#60](https://github.com/turbot/steampipe-postgres-fdw/issues/60))
-  
+
 ## v0.6.0 [2021-06-17]
 _What's new?_
 * Add `csv` output format to `check` command. ([#479](https://github.com/turbot/steampipe/issues/479))
@@ -986,7 +986,7 @@ _What's new?_
 * Add resource reflection tables `steampipe_mod`, `steampipe_query`, `steampipe_control` and `steampipe_benchmark`.  ([#406](https://github.com/turbot/steampipe/issues/406))
 * Parsing of variable references, functions and locals. ([#405](https://github.com/turbot/steampipe/issues/405))
 * Support for cancellation of queries and control runs.  ([#475](https://github.com/turbot/steampipe/issues/475))
-  
+
 ## v0.4.3 [2021-05-13]
 
 _Bug fixes_
@@ -1008,11 +1008,11 @@ _Bug fixes_
 
 ## v0.4.0 [2021-04-15]
 _What's new?_
-* Named query support - all SQL file in current folder (or the folder specified by the `workspace` argument) will be loaded and available to run as `named queries`. ([#369](https://github.com/turbot/steampipe/issues/369)) 
-* When running in interactive mode, a file watcher is enabled for the current workspace (can be disabled using the `watch` argument or `terminal` config property). When enabled, any new or updated SQL files in the workspace will be reflected in the available named queries. ([#380](https://github.com/turbot/steampipe/issues/380)) 
-* The `query` command now accepts multiple unnamed arguments, each of which may be either a filepath to a SQL file, a named query or the raw SQL of the query. ([#388](https://github.com/turbot/steampipe/issues/388)) 
+* Named query support - all SQL file in current folder (or the folder specified by the `workspace` argument) will be loaded and available to run as `named queries`. ([#369](https://github.com/turbot/steampipe/issues/369))
+* When running in interactive mode, a file watcher is enabled for the current workspace (can be disabled using the `watch` argument or `terminal` config property). When enabled, any new or updated SQL files in the workspace will be reflected in the available named queries. ([#380](https://github.com/turbot/steampipe/issues/380))
+* The `query` command now accepts multiple unnamed arguments, each of which may be either a filepath to a SQL file, a named query or the raw SQL of the query. ([#388](https://github.com/turbot/steampipe/issues/388))
 * The search path for the steampipe database service may be specified using the `database` config. ([#353](https://github.com/turbot/steampipe/issues/353))
-* The search path and search path prefix terminal sessions may be specified using `terminal` config, command line argument or meta-commands. ([#353](https://github.com/turbot/steampipe/issues/353),  [#357](https://github.com/turbot/steampipe/issues/358), [#358](https://github.com/turbot/steampipe/issues/358)) 
+* The search path and search path prefix terminal sessions may be specified using `terminal` config, command line argument or meta-commands. ([#353](https://github.com/turbot/steampipe/issues/353),  [#357](https://github.com/turbot/steampipe/issues/358), [#358](https://github.com/turbot/steampipe/issues/358))
 
 ## v0.3.6 [2021-04-08]
 _Bug fixes_
@@ -1049,11 +1049,11 @@ _Bug fixes_
 _What's new?_
 * Support setting Steampipe options using a config file. ([#230](https://github.com/turbot/steampipe/issues/230))
 * Add `install-dir` argument to specify location of the installation folder. ([#241](https://github.com/turbot/steampipe/issues/241))
-* Improve the handling of database quals. Query restrictions are now passed the plugin for a much wider ranger of queries including joins and nested queries. ([#3](https://github.com/turbot/steampipe-postgres-fdw/issues/3))  
+* Improve the handling of database quals. Query restrictions are now passed the plugin for a much wider ranger of queries including joins and nested queries. ([#3](https://github.com/turbot/steampipe-postgres-fdw/issues/3))
 * Improve handling and reporting of config parsing failures. ([#307](https://github.com/turbot/steampipe/issues/307))
 * Move the log location to `~/.steampipe/logs` ([#278](https://github.com/turbot/steampipe/issues/278))
 * Change postgres log prefix to `database-` ([#310](https://github.com/turbot/steampipe/issues/310))
-* Deprecate `db-port` and `listener` arguments, replace with `database-port` and `database-listener`. ([#302](https://github.com/turbot/steampipe/issues/302)) 
+* Deprecate `db-port` and `listener` arguments, replace with `database-port` and `database-listener`. ([#302](https://github.com/turbot/steampipe/issues/302))
 
 ## v0.2.5 [2021-03-15]
 _Bug fixes_
@@ -1069,7 +1069,7 @@ _What's new?_
 
 _Bug fixes_
 * Remove invalid update notifications for plugins which cannot be found in the registry.  ([#265](https://github.com/turbot/steampipe/issues/265))
-* Fix typo in install.sh. 
+* Fix typo in install.sh.
 
 ## v0.2.3 [2021-03-03]
 _What's new?_
@@ -1111,7 +1111,7 @@ _What's new?_
 * Add `plugin update` command. ([#176](https://github.com/turbot/steampipe/issues/176))
 * Add automatic checking of plugin versions. ([#164](https://github.com/turbot/steampipe/issues/164))
 * Add caching of query results. This is disabled by default but may be enabled by setting `STEAMPIPE_CACHE=true`
-  NOTE: It is expected this will be updated to default to true in the next patch release. ([#11](https://github.com/turbot/steampipe-postgres-fdw/issues/11)) 
+  NOTE: It is expected this will be updated to default to true in the next patch release. ([#11](https://github.com/turbot/steampipe-postgres-fdw/issues/11))
 * Log whether Steampipe is running in Windows subsystem for Linux. ([#171](https://github.com/turbot/steampipe/issues/171))
 * All env vars should have STEAMPIPE_ prefix. ([#172](https://github.com/turbot/steampipe/issues/172))
 * Display null column values as <null> instead of an empty string. ([#186](https://github.com/turbot/steampipe/issues/186))

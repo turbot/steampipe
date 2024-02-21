@@ -1,25 +1,27 @@
 [<picture><source media="(prefers-color-scheme: dark)" srcset="https://steampipe.io/images/steampipe-color-logo-and-wordmark-with-white-bubble.svg"><source media="(prefers-color-scheme: light)" srcset="https://steampipe.io/images/steampipe-color-logo-and-wordmark-with-white-bubble.svg"><img width="67%" alt="Steampipe Logo" src="https://steampipe.io/images/steampipe-color-logo-and-wordmark-with-white-bubble.svg"></picture>](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
-[![plugins](https://img.shields.io/badge/apis_supported-137-blue)](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp; 
-[![benchmarks](https://img.shields.io/badge/controls-4733-blue)](https://hub.steampipe.io/mods?objectives=compliance?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
-[![dashboards](https://img.shields.io/badge/dashboards-708-blue)](https://hub.steampipe.io/mods?objectives=dashboard?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
-[![slack](https://img.shields.io/badge/slack-1959-blue)](https://turbot.com/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
+[![plugins](https://img.shields.io/badge/apis_supported-140-blue)](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
+[![benchmarks](https://img.shields.io/badge/controls-5873-blue)](https://hub.steampipe.io/mods?objectives=compliance?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
+[![dashboards](https://img.shields.io/badge/dashboards-736-blue)](https://hub.steampipe.io/mods?objectives=dashboard?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
+[![slack](https://img.shields.io/badge/slack-2263-blue)](https://turbot.com/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
 [![maintained by](https://img.shields.io/badge/maintained%20by-Turbot-blue)](https://turbot.com?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
-Steampipe is the universal interface to APIs. Use SQL to query cloud infrastructure, SaaS, code, logs, and more. 
 
-With [Steampipe](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) you can:
+Steampipe is the zero-ETL solution for getting data directly from APIs and services. We offer these Steampipe engines:
 
-- **Query** → Use SQL to [query](https://steampipe.io/docs/query/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) (and join across!) [APIs](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
+- [Steampipe CLI](#steampipe-cli). Query APIs, check compliance, visualize on dashboards.
 
-- **Check** → Ensure that cloud resources comply with [security benchmarks](https://steampipe.io/docs/check/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) such as CIS, NIST, and SOC2.
+- [Steampipe Postgres FDWs](https://steampipe.io/docs/steampipe_postgres/index). Use native Postgres Foreign Data Wrappers that translate APIs to foreign tables.
 
-- **Visualize** → View [prebuilt dashboards](https://steampipe.io/docs/dashboard/overview?objectives=dashboard&utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) or [build your own](https://steampipe.io/docs/mods/writing-dashboards?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
- 
+- [Steampipe SQLite extensions](https://steampipe.io/docs/steampipe_sqlite/index). Use SQLite extensions that translate APIS to SQLite virtual tables.
 
-## Steampipe CLI: The SQL console for API queries
+- [Steampipe export tools](https://steampipe.io/docs/steampipe_export/index). Use standalone binaries that export data from APIs, no database required.
 
-The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that map APIs to tables. 
+- [Turbot Pipes](https://turbot.com/pipes). Query, check, and visualize with your team using the only intelligence, automation & security platform built specifically for DevOps.
+
+## A common suite of API plugins
+
+The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that map APIs to tables. They work with all Steampipe engines.
 
 <table>
   <tr>
@@ -63,10 +65,21 @@ The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/
    <td>Build your own <a href="https://steampipe.io/docs/develop/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom plugins</a></td>
   </tr>
 </table>
-  
 
 
-The [interactive query shell](https://steampipe.io/docs/query/query-shell?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) is one way you can query those tables. 
+## Steampipe CLI
+
+With [Steampipe CLI](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) you can:
+
+- **Query** → Use SQL to [query](https://steampipe.io/docs/query/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) (and join across!) [APIs](https://hub.steampipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
+
+- **Check** → Ensure that cloud resources comply with [security benchmarks](https://steampipe.io/docs/check/overview?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) such as CIS, NIST, and SOC2.
+
+- **Visualize** → View [prebuilt dashboards](https://steampipe.io/docs/dashboard/overview?objectives=dashboard&utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) or [build your own](https://steampipe.io/docs/mods/writing-dashboards?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
+
+
+
+The [interactive query shell](https://steampipe.io/docs/query/query-shell?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) is one way you can query those tables.
 
 <img width="524" src="https://steampipe.io/images/steampipe-sql-demo.gif" />
 
@@ -79,8 +92,8 @@ You can also use psql, pgcli, Metabase, Tableau, or [any client](https://steampi
  <summary>Install Steampipe</summary>
  <br/>
 
- The <a href="https://steampipe.io/downloads?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">downloads</a> page shows you how but tl;dr:
- 
+The <a href="https://steampipe.io/downloads?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">downloads</a> page shows you how but tl;dr:
+
 Linux or WSL
 
 ```sh
@@ -99,16 +112,16 @@ brew install steampipe
 <details>
  <summary>Add a plugin</summary>
  <br>
- 
- Choose a plugin from the [hub](https://hub.steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme), for example: [Net](https://hub.steampipe.io/plugins/turbot/net?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
 
- Run the `steampipe plugin` command to install it.
+Choose a plugin from the [hub](https://hub.steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme), for example: [Net](https://hub.steampipe.io/plugins/turbot/net?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
+
+Run the `steampipe plugin` command to install it.
 
 ```sh
 steampipe plugin install net
 ```
  </details>
- 
+
  <details>
  <summary>Run <tt>steampipe query</tt></summary>
 <br/>
@@ -144,7 +157,7 @@ where
 - Queries can run in [batch mode](https://steampipe.io/docs/query/batch-query?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
 
 - You can bundle connections (e.g. for many AWS accounts) using an [aggregator](https://steampipe.io/docs/managing/connections?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#using-aggregators).
- 
+
  </details>
 
  <details>
@@ -195,8 +208,8 @@ steampipe query
 > select * from steampipe_registry_plugin;
 ```
 </details>
-  
-## Steampipe Mods: Dashboards and benchmarks
+
+### Steampipe Mods: Dashboards and benchmarks
 
 The Steampipe community has also grown a suite of [mods](https://hub.steampipe.io/mods?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) which are sets of **dashboards** that visualize your resources and **benchmarks** that check your cloud resources for compliance.
 
@@ -259,8 +272,8 @@ The Steampipe community has also grown a suite of [mods](https://hub.steampipe.i
 ### Running dashboards and benchmarks
 
 ![benchmarks-and-dashboards](https://user-images.githubusercontent.com/46509/193875366-7d10ca8b-601a-4d93-a333-5c62ea86374b.gif)
- 
-Dashboards and benchmarks use SQL to gather data and HCL to flow the data into [dashboard widgets](https://steampipe.io/blog/dashboards-as-code?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) and [benchmark controls](https://steampipe.io/blog/release-0-11-0?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#composable-mods). You can use the existing suites of benchmarks and dashboards, or build derivative versions, or create your own. 
+
+Dashboards and benchmarks use SQL to gather data and HCL to flow the data into [dashboard widgets](https://steampipe.io/blog/dashboards-as-code?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) and [benchmark controls](https://steampipe.io/blog/release-0-11-0?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#composable-mods). You can use the existing suites of benchmarks and dashboards, or build derivative versions, or create your own.
 
 ### Get started with dashboards and benchmarks
 
@@ -296,8 +309,8 @@ A single control:
 ```sh
 steampipe check control.dns_ns_name_valid
 ```
- 
-Available <a href="https://steampipe.io/docs/reference/cli/check?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#output-formats">formats</a> include JSON, CSV, HTML, and ASFF. 
+
+Available <a href="https://steampipe.io/docs/reference/cli/check?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#output-formats">formats</a> include JSON, CSV, HTML, and ASFF.
 You can use <a href="https://steampipe.io/docs/develop/writing-control-output-templates?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">custom output templates</a> to create new output formats.
 </details>
 
@@ -319,18 +332,24 @@ Dashboards use charts, tables, and interactive <a href="https://steampipe.io/doc
 The <a href="https://hub.steampipe.io/mods/turbot/aws_insights?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">AWS Insights</a> mod, for example, provides dozens of dashboards that exercise the full set of widgets. To use these dashboards, first install the <a href="https://hub.steampipe.io/plugins/turbot/aws?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme">AWS plugin</a> and <a href="https://hub.steampipe.io/plugins/turbot/aws?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme#configuration">authenticate</a>. Then clone `AWS Insights`, change to its directory, launch `steampipe dashboard`, and open `localhost:9194`.
 </details>
 
+## Open Source & Contributing
 
-## Community
+This repository is published under the [AGPL 3.0](https://www.gnu.org/licenses/agpl-3.0.html) license. Please see our [code of conduct](https://github.com/turbot/.github/blob/main/CODE_OF_CONDUCT.md). Contributors must sign our [Contributor License Agreement](https://turbot.com/open-source#cla) as part of their first pull request. We look forward to collaborating with you!
 
-We thrive on feedback and community involvement!
+[Steampipe](https://steampipe.io) is a product produced from this open source software, exclusively by [Turbot HQ, Inc](https://turbot.com). It is distributed under our commercial terms. Others are allowed to make their own distribution of the software, but cannot use any of the Turbot trademarks, cloud services, etc. You can learn more in our [Open Source FAQ](https://turbot.com/open-source).
 
-**Have a question?** → Join our [Slack community](https://turbot.com/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) or open a [GitHub issue](https://github.com/turbot/steampipe/issues/new/choose).
+## Get Involved
 
-**Want to get involved?** → Learn how to [contribute](https://github.com/turbot/steampipe/blob/main/CONTRIBUTING.md).
+**[Join #steampipe on Slack →](https://turbot.com/community/join)**
 
-**Want to work with the team?** → We are [hiring](https://turbot.com/careers?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)!
+Want to help but don't know where to start? Pick up one of the `help wanted` issues:
+* [Steampipe](https://github.com/turbot/steampipe/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
 
 ## Turbot Pipes
 
-Want a hosted version of Steampipe? Bring your team to [Turbot Pipes](https://pipes.turbot.com?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).  
+Want a hosted version of Steampipe? Bring your team to [Turbot Pipes](https://pipes.turbot.com?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
+
+## License
+
+Steampipe is distributed under [AGPL-3.0](https://github.com/turbot/steampipe/blob/main/LICENSE).
 
