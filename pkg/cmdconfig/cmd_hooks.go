@@ -137,6 +137,16 @@ func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, e
 		return nil
 	}
 
+	// display deprecation warning for check and dashboard commands
+	if task.IsCheckCmd(cmd) || task.IsDashboardCmd(cmd) {
+		displayPpDeprecationWarning3(cmd)
+	}
+	// display deprecation warning for mod command and its subcommands
+	if task.IsModCmd(cmd) {
+		parent := cmd.Parent()
+		displayPpDeprecationWarning1(parent)
+	}
+
 	taskUpdateCtx, cancelFn := context.WithCancel(ctx)
 	tasksCancelFn = cancelFn
 
@@ -463,4 +473,50 @@ func displayDeprecationWarnings(errorsAndWarnings *error_helpers.ErrorAndWarning
 		fmt.Println("For more details, see https://steampipe.io/docs/reference/config-files/workspace")
 		fmt.Println()
 	}
+}
+
+func displayPpDeprecationWarning1(cmd *cobra.Command) {
+	fmt.Println(fmt.Sprintf("\n%s:\n\nThe %s command has been deprecated and will be removed in a future version of Steampipe.\nPlease transition to using %s for equivalent functionality.\n\nTo install Powerpipe, visit: https://powerpipe.io/downloads.\nFor more information on using Powerpipe, please refer to https://powerpipe.io/docs.\n", color.YellowString("Deprecation warning"), constants.Bold(fmt.Sprintf("steampipe %s", cmd.Name())), constants.Bold("Powerpipe")))
+}
+
+func displayPpDeprecationWarning2(cmd *cobra.Command) {
+	fmt.Println()
+	fmt.Println(fmt.Sprintf(`********************************************************************************
+                             DEPRECATION WARNING
+********************************************************************************
+
+The %s command has been deprecated and will be removed in a 
+future version of Steampipe. 
+
+Please transition to using %s for equivalent functionality.
+
+To install Powerpipe, visit: https://powerpipe.io/downloads.
+For more information on using Powerpipe, 
+please refer to : https://powerpipe.io/docs.
+
+********************************************************************************`, constants.Bold(fmt.Sprintf("steampipe %s", cmd.Name())), constants.Bold("Powerpipe")))
+	fmt.Println()
+}
+
+func displayPpDeprecationWarning3(cmd *cobra.Command) {
+	fmt.Println()
+	fmt.Printf(fmt.Sprintf(`********************************************************************************
+                             DEPRECATION WARNING
+********************************************************************************
+
+The following commands have been DEPRECATED and will be removed in a future 
+version:
+
+  - %s
+  - %s
+  - %s
+
+Please transition to using %s for equivalent functionality.
+
+To install Powerpipe, visit: https://powerpipe.io/downloads.
+For more information on using Powerpipe, 
+please refer to : https://powerpipe.io/docs.
+
+********************************************************************************`, constants.Bold("steampipe check"), constants.Bold("steampipe dashboard"), constants.Bold("steampipe mod"), constants.Bold("Powerpipe")))
+	fmt.Println()
 }
