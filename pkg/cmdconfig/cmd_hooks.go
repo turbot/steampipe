@@ -322,6 +322,8 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 		viper.SetDefault(constants.ArgPipesToken, *loader.DefaultProfile.CloudToken)
 	}
 	// 3) env var (STEAMIPE_CLOUD_TOKEN )
+	SetDefaultFromEnv(constants.EnvPipesToken, constants.ArgPipesToken, String)
+	// deprecated env var
 	SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgPipesToken, String)
 
 	// 4) explicit workspace profile
