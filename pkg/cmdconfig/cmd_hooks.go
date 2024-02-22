@@ -207,7 +207,7 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	}
 
 	// set global containing the configured install dir (create directory if needed)
-	ensureInstallDir(viper.GetString(constants.ArgInstallDir))
+	ensureInstallDir()
 
 	// load the connection config and HCL options
 	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(ctx, viper.GetString(constants.ArgModLocation), cmd.Name())
@@ -233,7 +233,7 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	}
 
 	// NOTE: we need to resolve the token separately
-	// - that is because we need the resolved value of ArgCloudHost in order to load any saved token
+	// - that is because we need the resolved value of ArgPipesHost in order to load any saved token
 	// and we cannot get this until the other config has been resolved
 	err = setCloudTokenDefault(loader)
 	if err != nil {
@@ -264,18 +264,18 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 		return err
 	}
 	if savedToken != "" {
-		viper.SetDefault(constants.ArgCloudToken, savedToken)
+		viper.SetDefault(constants.ArgPipesToken, savedToken)
 	}
 	// 2) default profile cloud token
 	if loader.DefaultProfile.CloudToken != nil {
-		viper.SetDefault(constants.ArgCloudToken, *loader.DefaultProfile.CloudToken)
+		viper.SetDefault(constants.ArgPipesToken, *loader.DefaultProfile.CloudToken)
 	}
 	// 3) env var (STEAMIPE_CLOUD_TOKEN )
-	SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgCloudToken, String)
+	SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgPipesToken, String)
 
 	// 4) explicit workspace profile
 	if p := loader.ConfiguredProfile; p != nil && p.CloudToken != nil {
-		viper.SetDefault(constants.ArgCloudToken, *p.CloudToken)
+		viper.SetDefault(constants.ArgPipesToken, *p.CloudToken)
 	}
 	return nil
 }
@@ -374,7 +374,10 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 	}
 }
 
-func ensureInstallDir(installDir string) {
+func ensureInstallDir() {
+	pipesInstallDir := viper.GetString(constants.ArgPipesInstallDir)
+	installDir := viper.GetString(constants.ArgInstallDir)
+
 	log.Printf("[TRACE] ensureInstallDir %s", installDir)
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
 		log.Printf("[TRACE] creating install dir")
@@ -382,8 +385,15 @@ func ensureInstallDir(installDir string) {
 		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
 	}
 
-	// store as SteampipeDir
+	if _, err := os.Stat(pipesInstallDir); os.IsNotExist(err) {
+		log.Printf("[TRACE] creating install dir")
+		err = os.MkdirAll(pipesInstallDir, 0755)
+		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create pipes installation directory: %s", pipesInstallDir))
+	}
+
+	// store as SteampipeDir and PipesInstallDir
 	filepaths.SteampipeDir = installDir
+	filepaths.PipesInstallDir = installDir
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way

@@ -8,6 +8,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -53,11 +54,13 @@ func InitCmd() {
 	utils.LogTime("cmd.root.InitCmd start")
 	defer utils.LogTime("cmd.root.InitCmd end")
 
+	defaultInstallDir, err := filehelpers.Tildefy(filepaths.DefaultInstallDir)
+	error_helpers.FailOnError(err)
 	rootCmd.SetVersionTemplate(fmt.Sprintf("Steampipe v%s\n", version.SteampipeVersion.String()))
 
 	// global flags
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceProfile, "default", "The workspace profile to use") // workspace profile profile is a global flag since install-dir(global) can be set through the workspace profile
-	rootCmd.PersistentFlags().String(constants.ArgInstallDir, filepaths.DefaultInstallDir, "Path to the Config Directory")
+	rootCmd.PersistentFlags().String(constants.ArgInstallDir, defaultInstallDir, "Path to the Config Directory")
 	rootCmd.PersistentFlags().Bool(constants.ArgSchemaComments, true, "Include schema comments when importing connection schemas")
 
 	error_helpers.FailOnError(viper.BindPFlag(constants.ArgInstallDir, rootCmd.PersistentFlags().Lookup(constants.ArgInstallDir)))

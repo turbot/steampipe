@@ -3,6 +3,7 @@ package cloud
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -22,7 +23,7 @@ var UnconfirmedError = "Not confirmed"
 // WebLogin POSTs to ${envBaseUrl}/api/latest/login/token to retrieve a login is
 // it then opens the login webpage and returns th eid
 func WebLogin(ctx context.Context) (string, error) {
-	client := newSteampipeCloudClient(viper.GetString(constants.ArgCloudToken))
+	client := newSteampipeCloudClient(viper.GetString(constants.ArgPipesToken))
 
 	tempTokenReq, _, err := client.Auth.LoginTokenCreate(ctx).Execute()
 	if err != nil {
@@ -32,8 +33,7 @@ func WebLogin(ctx context.Context) (string, error) {
 	// add in id query string
 	browserUrl := fmt.Sprintf("%s?r=%s", getLoginTokenConfirmUIUrl(), id)
 
-	fmt.Println()
-	fmt.Printf("Verify login at %s\n", browserUrl)
+	fmt.Printf("\nVerify login at %s\n", browserUrl)
 
 	if err = utils.OpenBrowser(browserUrl); err != nil {
 		log.Println("[INFO] failed to open login web page")
@@ -47,7 +47,8 @@ func GetLoginToken(ctx context.Context, id, code string) (string, error) {
 	client := newSteampipeCloudClient("")
 	tokenResp, _, err := client.Auth.LoginTokenGet(ctx, id).Code(code).Execute()
 	if err != nil {
-		if apiErr, ok := err.(steampipecloud.GenericOpenAPIError); ok {
+		var apiErr steampipecloud.GenericOpenAPIError
+		if errors.As(err, &apiErr) {
 			var body = map[string]any{}
 			if err := json.Unmarshal(apiErr.Body(), &body); err == nil {
 				return "", sperr.New("%s", body["detail"])
@@ -63,7 +64,7 @@ func GetLoginToken(ctx context.Context, id, code string) (string, error) {
 
 // SaveToken writes the token to  ~/.steampipe/internal/{cloud-host}.tptt
 func SaveToken(token string) error {
-	tokenPath := tokenFilePath(viper.GetString(constants.ArgCloudHost))
+	tokenPath := tokenFilePath(viper.GetString(constants.ArgPipesHost))
 	return sperr.Wrap(os.WriteFile(tokenPath, []byte(token), 0600))
 }
 
@@ -71,7 +72,7 @@ func LoadToken() (string, error) {
 	if err := migrateDefaultTokenFile(); err != nil {
 		log.Println("[TRACE] ERROR during migrating token file", err)
 	}
-	tokenPath := tokenFilePath(viper.GetString(constants.ArgCloudHost))
+	tokenPath := tokenFilePath(viper.GetString(constants.ArgPipesHost))
 	if !filehelpers.FileExists(tokenPath) {
 		return "", nil
 	}
@@ -84,25 +85,26 @@ func LoadToken() (string, error) {
 
 // migrateDefaultTokenFile migrates the cloud.steampipe.io.sptt token file
 // to the pipes.turbot.com.tptt token file
+// it also migrates the token file from the	~/.steampipe/internal directory to the ~/.pipes/internal directory
 func migrateDefaultTokenFile() error {
-	defaultTokenPath := tokenFilePath(constants.DefaultCloudHost)
-	defaultLegacyTokenPath := legacyTokenFilePath(constants.LegacyDefaultCloudHost)
+	defaultTokenPath := tokenFilePath(constants.DefaultPipesHost)
+	defaultLegacyTokenPaths := legacyTokenFilePaths(constants.LegacyDefaultPipesHost)
 
-	if filehelpers.FileExists(defaultTokenPath) {
-		// try removing the old legacy file - no worries if os.Remove fails
-		os.Remove(defaultLegacyTokenPath)
-		// we have the new token file
-		return nil
+	tokenExists := filehelpers.FileExists(defaultTokenPath)
+
+	for _, legacyPath := range defaultLegacyTokenPaths {
+		if tokenExists {
+			// try removing the old legacy file - no worries if os.Remove fails
+			_ = os.Remove(legacyPath)
+		} else {
+			if err := utils.MoveFile(legacyPath, defaultTokenPath); err != nil {
+				return err
+			}
+			// set token exists flag so any other legacy files are removed (we do not expect any more)
+			tokenExists = true
+		}
 	}
 
-	// the default file does not exist
-	// check if the legacy one exists
-	if filehelpers.FileExists(defaultLegacyTokenPath) {
-		// move the legacy to the new
-		return utils.MoveFile(defaultLegacyTokenPath, defaultTokenPath)
-	}
-
-	// none exists - nothing to do
 	return nil
 }
 
@@ -122,12 +124,12 @@ func getActorName(actor steampipecloud.User) string {
 	return actor.Handle
 }
 
-func tokenFilePath(cloudHost string) string {
-	tokenPath := path.Join(filepaths.EnsureInternalDir(), fmt.Sprintf("%s%s", cloudHost, constants.TokenExtension))
+func tokenFilePath(pipesHost string) string {
+	tokenPath := path.Join(filepaths.EnsurePipesInternalDir(), fmt.Sprintf("%s%s", pipesHost, constants.TokenExtension))
 	return tokenPath
 }
 
-func legacyTokenFilePath(cloudHost string) string {
-	tokenPath := path.Join(filepaths.EnsureInternalDir(), fmt.Sprintf("%s%s", cloudHost, constants.LegacyTokenExtension))
-	return tokenPath
+func legacyTokenFilePaths(pipesHost string) []string {
+	return []string{path.Join(filepaths.EnsureInternalDir(), fmt.Sprintf("%s%s", pipesHost, constants.LegacyTokenExtension)),
+		path.Join(filepaths.EnsureInternalDir(), fmt.Sprintf("%s%s", pipesHost, constants.TokenExtension))}
 }

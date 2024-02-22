@@ -12,7 +12,7 @@ import (
 func newSteampipeCloudClient(token string) *steampipecloud.APIClient {
 	// Create a default configuration
 	configuration := steampipecloud.NewConfiguration()
-	configuration.Host = viper.GetString(constants.ArgCloudHost)
+	configuration.Host = viper.GetString(constants.ArgPipesHost)
 
 	// Add your Turbot Pipes user token as an auth header
 	if token != "" {
@@ -24,10 +24,10 @@ func newSteampipeCloudClient(token string) *steampipecloud.APIClient {
 }
 
 func getLoginTokenConfirmUIUrl() string {
-	url := url.URL{
+	confirmUrl := url.URL{
 		Scheme: "https",
-		Host:   viper.GetString(constants.ArgCloudHost),
+		Host:   viper.GetString(constants.ArgPipesHost),
 		Path:   "/login/token",
 	}
-	return url.String()
+	return confirmUrl.String()
 }
