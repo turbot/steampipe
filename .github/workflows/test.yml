@@ -40,7 +40,7 @@ jobs:
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v4
         continue-on-error: true # we dont want to enforce just yet
         with:
           version: v1.52.2
