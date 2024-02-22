@@ -230,6 +230,8 @@ func (p *WorkspaceProfile) ConfigMap(cmd *cobra.Command) map[string]interface{} 
 
 	res.SetStringItem(p.CloudHost, constants.ArgPipesHost)
 	res.SetStringItem(p.CloudToken, constants.ArgPipesToken)
+	res.SetStringItem(p.PipesHost, constants.ArgPipesHost)
+	res.SetStringItem(p.PipesToken, constants.ArgPipesToken)
 	res.SetStringItem(p.InstallDir, constants.ArgInstallDir)
 	res.SetStringItem(p.ModLocation, constants.ArgModLocation)
 	res.SetStringItem(p.SnapshotLocation, constants.ArgSnapshotLocation)
