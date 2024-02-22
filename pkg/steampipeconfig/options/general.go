@@ -9,7 +9,6 @@ import (
 
 type General struct {
 	UpdateCheck *string `hcl:"update_check"`
-	MaxParallel *int    `hcl:"max_parallel"`
 	Telemetry   *string `hcl:"telemetry"`
 	LogLevel    *string `hcl:"log_level"`
 	MemoryMaxMb *int    `hcl:"memory_max_mb"`
@@ -24,9 +23,6 @@ func (g *General) ConfigMap() map[string]interface{} {
 	}
 	if g.Telemetry != nil {
 		res[constants.ArgTelemetry] = g.Telemetry
-	}
-	if g.MaxParallel != nil {
-		res[constants.ArgMaxParallel] = g.MaxParallel
 	}
 	if g.LogLevel != nil {
 		res[constants.ArgLogLevel] = g.LogLevel
@@ -59,13 +55,6 @@ func (g *General) String() string {
 	} else {
 		str = append(str, fmt.Sprintf("  UpdateCheck: %s", *g.UpdateCheck))
 	}
-
-	if g.MaxParallel == nil {
-		str = append(str, "  MaxParallel: nil")
-	} else {
-		str = append(str, fmt.Sprintf("  MaxParallel: %d", *g.MaxParallel))
-	}
-
 	if g.Telemetry == nil {
 		str = append(str, "  Telemetry: nil")
 	} else {
