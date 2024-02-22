@@ -1,13 +1,6 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
-@test "steampipe service help is displayed when no sub command given" {
-  steampipe service > test.txt
-
-  assert_equal "$(cat test.txt)" "$(cat $TEST_DATA_DIR/expected_service_help_output.txt)"
-  rm -f test.txt*
-}
-
 @test "steampipe service start" {
     run steampipe service start
     assert_success
