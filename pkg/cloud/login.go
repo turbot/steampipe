@@ -88,20 +88,22 @@ func LoadToken() (string, error) {
 // it also migrates the token file from the	~/.steampipe/internal directory to the ~/.pipes/internal directory
 func migrateDefaultTokenFile() error {
 	defaultTokenPath := tokenFilePath(constants.DefaultPipesHost)
-	defaultLegacyTokenPaths := legacyTokenFilePaths(constants.LegacyDefaultPipesHost)
+	defaultLegacyTokenPaths := legacyTokenFilePaths()
 
 	tokenExists := filehelpers.FileExists(defaultTokenPath)
 
 	for _, legacyPath := range defaultLegacyTokenPaths {
-		if tokenExists {
-			// try removing the old legacy file - no worries if os.Remove fails
-			_ = os.Remove(legacyPath)
-		} else {
-			if err := utils.MoveFile(legacyPath, defaultTokenPath); err != nil {
-				return err
+		if filehelpers.FileExists(legacyPath) {
+			if tokenExists {
+				// try removing the old legacy file - no worries if os.Remove fails
+				_ = os.Remove(legacyPath)
+			} else {
+				if err := utils.MoveFile(legacyPath, defaultTokenPath); err != nil {
+					return err
+				}
+				// set token exists flag so any other legacy files are removed (we do not expect any more)
+				tokenExists = true
 			}
-			// set token exists flag so any other legacy files are removed (we do not expect any more)
-			tokenExists = true
 		}
 	}
 
@@ -129,7 +131,7 @@ func tokenFilePath(pipesHost string) string {
 	return tokenPath
 }
 
-func legacyTokenFilePaths(pipesHost string) []string {
-	return []string{path.Join(filepaths.EnsureInternalDir(), fmt.Sprintf("%s%s", pipesHost, constants.LegacyTokenExtension)),
-		path.Join(filepaths.EnsureInternalDir(), fmt.Sprintf("%s%s", pipesHost, constants.TokenExtension))}
+func legacyTokenFilePaths() []string {
+	return []string{path.Join(filepaths.EnsureInternalDir(), fmt.Sprintf("%s%s", constants.LegacyDefaultPipesHost, constants.LegacyTokenExtension)),
+		path.Join(filepaths.EnsureInternalDir(), fmt.Sprintf("%s%s", constants.DefaultPipesHost, constants.TokenExtension))}
 }
