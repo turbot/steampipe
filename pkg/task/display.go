@@ -97,13 +97,19 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 	if err != nil {
 		return err
 	}
+
+	ppTable, err := ppNoptificationAsTable()
+	if err != nil {
+		return err
+	}
 	// table can be nil if there are no notifications to display
-	if table == nil {
+	if table == nil && ppTable == nil {
 		return nil
 	}
 
 	fmt.Println()
 	table.Render()
+	ppTable.Render()
 	fmt.Println()
 
 	return nil

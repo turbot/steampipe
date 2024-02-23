@@ -89,6 +89,17 @@ func (av *AvailableVersionCache) cliNotificationMessage() ([]string, error) {
 	return nil, nil
 }
 
+func ppNotificationLines() []string {
+	var notificationLines = []string{
+		"",
+		fmt.Sprintf("%s Steampipe mods and dashboards are now separately available in Powerpipe (%s), a new open-source project (%s).", constants.Bold("Introducing Powerpipe:"), color.YellowString("https://powerpipe.io"), color.YellowString("https://github.com/turbot/powerpipe")),
+		"",
+		fmt.Sprintf("The steampipe mod, check and dashboard commands will be removed in a future version. Please download Powerpipe for equivalent (and more!) features. Migration guide - %s", color.YellowString("https://steampipe.io/docs/guides/working-with-powerpipe")),
+		"",
+	}
+	return notificationLines
+}
+
 func (av *AvailableVersionCache) pluginNotificationMessage(ctx context.Context) []string {
 	var pluginsToUpdate []plugin.VersionCheckReport
 	// retrieve the plugin version data from steampipe config
@@ -160,4 +171,26 @@ func (av *AvailableVersionCache) getPluginNotificationLines(reports []plugin.Ver
 	notificationLines = append(notificationLines, "")
 
 	return notificationLines
+}
+
+func ppNoptificationAsTable() (*tablewriter.Table, error) {
+	notificationLines := ppNotificationLines()
+
+	notificationTable := utils.Map(notificationLines, func(line string) []string {
+		return []string{line}
+	})
+
+	if len(notificationLines) == 0 {
+		return nil, nil
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{})                // no headers please
+	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
+	table.SetAutoWrapText(true)                // let's wrap the text
+	table.SetBorder(true)                      // there needs to be a border to provide the dialog feel
+	table.SetColWidth(67)                      // set a column width close to the existing table
+	table.AppendBulk(notificationTable)        // Add Bulk Data
+
+	return table, nil
 }
