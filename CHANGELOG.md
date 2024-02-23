@@ -1,3 +1,7 @@
+## v0.21.8 [2024-02-23]
+_Bug fixes_
+* Fix growing memory usage following file watching events when running dashboard server. ([#4150](https://github.com/turbot/steampipe/issues/4150))
+
 ## v0.21.7 [2024-02-09]
 _Bug fixes_
 * Fix variables not being reloaded after file watch event. ([#4123](https://github.com/turbot/steampipe/issues/4123))
