@@ -65,11 +65,10 @@ type Workspace struct {
 	loadPseudoResources        bool
 	// channel used to send dashboard events to the handleDashboardEvent goroutine
 	dashboardEventChan chan dashboardevents.DashboardEvent
-	allVariables       *modconfig.ModVariableMap
 }
 
 // LoadWorkspaceVars creates a Workspace and loads the variables
-func LoadWorkspaceVars(ctx context.Context) (*Workspace, *error_helpers.ErrorAndWarnings) {
+func LoadWorkspaceVars(ctx context.Context) (*Workspace, *modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
 	log.Printf("[INFO] LoadWorkspaceVars: creating workspace, loading variable and resolving variable values")
 	workspacePath := viper.GetString(constants.ArgModLocation)
 
@@ -79,23 +78,23 @@ func LoadWorkspaceVars(ctx context.Context) (*Workspace, *error_helpers.ErrorAnd
 	workspace, err := createShellWorkspace(workspacePath)
 	if err != nil {
 		log.Printf("[INFO] createShellWorkspace failed %s", err.Error())
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, nil, error_helpers.NewErrorsAndWarning(err)
 	}
 
 	// check if your workspace path is home dir and if modfile exists - if yes then warn and ask user to continue or not
 	if err := HomeDirectoryModfileCheck(ctx, workspacePath); err != nil {
 		log.Printf("[INFO] HomeDirectoryModfileCheck failed %s", err.Error())
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, nil, error_helpers.NewErrorsAndWarning(err)
 	}
-	errorsAndWarnings := workspace.PopulateVariables(ctx)
+	inputVariables, errorsAndWarnings := workspace.PopulateVariables(ctx)
 	if errorsAndWarnings.Error != nil {
 		log.Printf("[WARN] PopulateVariables failed %s", errorsAndWarnings.Error.Error())
-		return nil, errorsAndWarnings
+		return nil, nil, errorsAndWarnings
 	}
 
 	log.Printf("[INFO] LoadWorkspaceVars succededed - got values for vars: %s", strings.Join(maps.Keys(workspace.VariableValues), ", "))
 
-	return workspace, errorsAndWarnings
+	return workspace, inputVariables, errorsAndWarnings
 }
 
 // LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
@@ -312,11 +311,11 @@ func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error 
 	return nil
 }
 
-func (w *Workspace) LoadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAndWarnings {
+func (w *Workspace) LoadWorkspaceMod(ctx context.Context, inputVariables *modconfig.ModVariableMap) *error_helpers.ErrorAndWarnings {
 	var errorsAndWarnings = &error_helpers.ErrorAndWarnings{}
 
 	// build run context which we use to load the workspace
-	parseCtx, err := w.getParseContext(ctx)
+	parseCtx, err := w.getParseContext(ctx, inputVariables)
 	if err != nil {
 		errorsAndWarnings.Error = err
 		return errorsAndWarnings
@@ -344,11 +343,10 @@ func (w *Workspace) LoadWorkspaceMod(ctx context.Context) *error_helpers.ErrorAn
 
 	// verify all runtime dependencies can be resolved
 	errorsAndWarnings.Error = w.verifyResourceRuntimeDependencies()
-
 	return errorsAndWarnings
 }
 
-func (w *Workspace) PopulateVariables(ctx context.Context) *error_helpers.ErrorAndWarnings {
+func (w *Workspace) PopulateVariables(ctx context.Context) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
 	log.Printf("[TRACE] Workspace.PopulateVariables")
 	// resolve values of all input variables
 	// we WILL validate missing variables when loading
@@ -360,46 +358,41 @@ func (w *Workspace) PopulateVariables(ctx context.Context) *error_helpers.ErrorA
 		ok := errors.As(errorsAndWarnings.GetError(), &missingVariablesError)
 		// if there was an error which is NOT a MissingVariableError, return it
 		if !ok {
-			return errorsAndWarnings
+			return nil, errorsAndWarnings
 		}
 		// if there are missing transitive dependency variables, fail as we do not prompt for these
 		if len(missingVariablesError.MissingTransitiveVariables) > 0 {
-			return errorsAndWarnings
+			return nil, errorsAndWarnings
 		}
 		// if interactive input is disabled, return the missing variables error
 		if !viper.GetBool(constants.ArgInput) {
-			return error_helpers.NewErrorsAndWarning(missingVariablesError)
+			return nil, error_helpers.NewErrorsAndWarning(missingVariablesError)
 		}
 		// so we have missing variables - prompt for them
 		// first hide spinner if it is there
 		statushooks.Done(ctx)
 		if err := promptForMissingVariables(ctx, missingVariablesError.MissingVariables, w.Path); err != nil {
 			log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
-			return error_helpers.NewErrorsAndWarning(err)
+			return nil, error_helpers.NewErrorsAndWarning(err)
 		}
 
 		// now try to load vars again
 		inputVariables, errorsAndWarnings = w.getInputVariables(ctx, validateMissing)
 		if errorsAndWarnings.Error != nil {
-			return errorsAndWarnings
+			return nil, errorsAndWarnings
 		}
 
 	}
-	// store the full variable map
-	w.allVariables = inputVariables
 	// populate the parsed variable values
 	w.VariableValues, errorsAndWarnings.Error = inputVariables.GetPublicVariableValues()
-	if errorsAndWarnings.Error == nil {
-		return errorsAndWarnings
-	}
 
-	return errorsAndWarnings
+	return inputVariables, errorsAndWarnings
 }
 
 func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
 	log.Printf("[TRACE] Workspace.getInputVariables")
 	// build a run context just to use to load variable definitions
-	variablesParseCtx, err := w.getParseContext(ctx)
+	variablesParseCtx, err := w.getParseContext(ctx, nil)
 	if err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
@@ -418,7 +411,7 @@ func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool)
 
 // build options used to load workspace
 // set flags to create pseudo resources and a default mod if needed
-func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext, error) {
+func (w *Workspace) getParseContext(ctx context.Context, variables *modconfig.ModVariableMap) (*parse.ModParseContext, error) {
 	parseFlag := parse.CreateDefaultMod
 	if w.loadPseudoResources {
 		parseFlag |= parse.CreatePseudoResources
@@ -440,8 +433,8 @@ func (w *Workspace) getParseContext(ctx context.Context) (*parse.ModParseContext
 		})
 
 	// add any evaluated variables to the context
-	if w.allVariables != nil {
-		parseCtx.AddInputVariableValues(w.allVariables)
+	if variables != nil {
+		parseCtx.AddInputVariableValues(variables)
 	}
 
 	return parseCtx, nil
@@ -505,7 +498,7 @@ func (w *Workspace) loadExclusions() error {
 
 func (w *Workspace) loadWorkspaceResourceName(ctx context.Context) (*modconfig.WorkspaceResources, error) {
 	// build options used to load workspace
-	parseCtx, err := w.getParseContext(ctx)
+	parseCtx, err := w.getParseContext(ctx, nil)
 	if err != nil {
 		return nil, err
 	}

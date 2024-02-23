@@ -52,7 +52,7 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 	statushooks.SetStatus(ctx, "Loading workspace")
 
 	// load workspace variables syncronously
-	w, errAndWarnings := workspace.LoadWorkspaceVars(ctx)
+	w, inputVariables, errAndWarnings := workspace.LoadWorkspaceVars(ctx)
 	if errAndWarnings.GetError() != nil {
 		i.Result.Error = fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())
 		return i
@@ -61,7 +61,7 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 	i.Result.AddWarnings(errAndWarnings.Warnings...)
 	i.Workspace = w
 
-	go i.init(ctx, args)
+	go i.init(ctx, inputVariables, args)
 
 	return i
 }
@@ -97,7 +97,7 @@ func (i *InitData) Cleanup(ctx context.Context) {
 	}
 }
 
-func (i *InitData) init(ctx context.Context, args []string) {
+func (i *InitData) init(ctx context.Context, inputVariables *modconfig.ModVariableMap, args []string) {
 	defer func() {
 		close(i.Loaded)
 		// clear the cancelInitialisation function
@@ -116,7 +116,7 @@ func (i *InitData) init(ctx context.Context, args []string) {
 	}
 
 	// load the workspace mod (this load is asynchronous as it is within the async init function)
-	errAndWarnings := i.Workspace.LoadWorkspaceMod(ctx)
+	errAndWarnings := i.Workspace.LoadWorkspaceMod(ctx, inputVariables)
 	i.Result.AddWarnings(errAndWarnings.Warnings...)
 	if errAndWarnings.GetError() != nil {
 		i.Result.Error = fmt.Errorf("failed to load workspace mod: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())

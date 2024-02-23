@@ -19,13 +19,13 @@ func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *error
 	defer func() {
 		log.Printf("[TRACE] Workspace load took %dms\n", time.Since(t).Milliseconds())
 	}()
-	w, errAndWarnings := LoadWorkspaceVars(ctx)
+	w, inputVariables, errAndWarnings := LoadWorkspaceVars(ctx)
 	if errAndWarnings.GetError() != nil {
 		return w, errAndWarnings
 	}
 
 	// load the workspace mod
-	errAndWarnings = w.LoadWorkspaceMod(ctx)
+	errAndWarnings = w.LoadWorkspaceMod(ctx, inputVariables)
 	return w, errAndWarnings
 }
 

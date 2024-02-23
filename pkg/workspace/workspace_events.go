@@ -139,11 +139,11 @@ func (w *Workspace) reloadResourceMaps(ctx context.Context) (_ *modconfig.Resour
 	}
 
 	// now reload the workspace
-	errAndWarnings = w.PopulateVariables(ctx)
+	inputVariables, errAndWarnings := w.PopulateVariables(ctx)
 	if errAndWarnings.GetError() != nil {
 		return nil, nil, errAndWarnings
 	}
-	errAndWarnings = w.LoadWorkspaceMod(ctx)
+	errAndWarnings = w.LoadWorkspaceMod(ctx, inputVariables)
 	if errAndWarnings.GetError() != nil {
 		return nil, nil, errAndWarnings
 	}

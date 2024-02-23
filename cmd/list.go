@@ -43,9 +43,9 @@ func getRunListSubCmd(opts listSubCmdOptions) func(cmd *cobra.Command, args []st
 	return func(cmd *cobra.Command, _ []string) {
 		ctx := cmd.Context()
 
-		w, errAndWarnings := workspace.LoadWorkspaceVars(ctx)
+		w, inputVariables, errAndWarnings := workspace.LoadWorkspaceVars(ctx)
 		error_helpers.FailOnError(errAndWarnings.GetError())
-		errAndWarnings = w.LoadWorkspaceMod(ctx)
+		errAndWarnings = w.LoadWorkspaceMod(ctx, inputVariables)
 		error_helpers.FailOnError(errAndWarnings.GetError())
 
 		modResources, depResources, err := listResourcesInMod(ctx, w.Mod, cmd)
