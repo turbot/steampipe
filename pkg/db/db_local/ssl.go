@@ -14,8 +14,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/sslio"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -284,12 +286,19 @@ func dsnSSLParams() map[string]string {
 		// applications that need certificate validation should always use verify-ca or verify-full.
 		//
 		// Since we are using the Root Certificate, 'require' is overridden with 'verify-ca' anyway
-		return map[string]string{
+
+		dsnSSLParams := map[string]string{
 			"sslmode":     "verify-ca",
 			"sslrootcert": filepaths.GetRootCertLocation(),
 			"sslcert":     filepaths.GetServerCertLocation(),
 			"sslkey":      filepaths.GetServerCertKeyLocation(),
 		}
+
+		if sslpassword := viper.GetString(constants.ArgDatabaseSSLPassword); sslpassword != "" {
+			dsnSSLParams["sslpassword"] = sslpassword
+		}
+
+		return dsnSSLParams
 	}
 	return map[string]string{"sslmode": "disable"}
 }

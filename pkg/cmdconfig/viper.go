@@ -164,6 +164,7 @@ func setDefaultsFromEnv() {
 		constants.EnvMaxParallel:           {[]string{constants.ArgMaxParallel}, Int},
 		constants.EnvQueryTimeout:          {[]string{constants.ArgDatabaseQueryTimeout}, Int},
 		constants.EnvDatabaseStartTimeout:  {[]string{constants.ArgDatabaseStartTimeout}, Int},
+		constants.EnvDatabaseSSLPassword:   {[]string{constants.ArgDatabaseSSLPassword}, String},
 		constants.EnvDashboardStartTimeout: {[]string{constants.ArgDashboardStartTimeout}, Int},
 		constants.EnvCacheTTL:              {[]string{constants.ArgCacheTtl}, Int},
 		constants.EnvCacheMaxTTL:           {[]string{constants.ArgCacheMaxTtl}, Int},

@@ -460,6 +460,14 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		// Data Directory
 		"-D", filepaths.GetDataLocation())
 
+	if sslpassword := viper.GetString(constants.ArgDatabaseSSLPassword); sslpassword != "" {
+		postgresCmd.Args = append(
+			postgresCmd.Args,
+			"-c", fmt.Sprintf("ssl_passphrase_command_supports_reload=%s", "true"),
+			"-c", fmt.Sprintf("ssl_passphrase_command=%s", "echo "+sslpassword),
+		)
+	}
+
 	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths.SteampipeDir))
 
 	//  Check if the /etc/ssl directory exist in os
