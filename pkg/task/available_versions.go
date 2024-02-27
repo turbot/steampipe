@@ -1,6 +1,7 @@
 package task
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -21,7 +22,7 @@ type AvailableVersionCache struct {
 	PluginCache   map[string]plugin.VersionCheckReport `json:"plugin_version"`
 }
 
-func (av *AvailableVersionCache) asTable(ctx context.Context) (*tablewriter.Table, error) {
+func (av *AvailableVersionCache) asTable(ctx context.Context) (*bytes.Buffer, error) {
 	notificationLines, err := av.buildNotification(ctx)
 	if err != nil {
 		return nil, err
@@ -34,14 +35,20 @@ func (av *AvailableVersionCache) asTable(ctx context.Context) (*tablewriter.Tabl
 		return nil, nil
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
+	// create a buffer writer to pass to the tablewriter
+	// so that we can capture the output
+	var buffer bytes.Buffer // c
+
+	table := tablewriter.NewWriter(&buffer)
 	table.SetHeader([]string{})                // no headers please
 	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
 	table.SetAutoWrapText(false)               // let's not wrap the text
 	table.SetBorder(true)                      // there needs to be a border to provide the dialog feel
 	table.AppendBulk(notificationTable)        // Add Bulk Data
 
-	return table, nil
+	// render the table into the buffer
+	table.Render()
+	return &buffer, nil
 }
 
 func (av *AvailableVersionCache) buildNotification(ctx context.Context) ([]string, error) {
@@ -173,7 +180,7 @@ func (av *AvailableVersionCache) getPluginNotificationLines(reports []plugin.Ver
 	return notificationLines
 }
 
-func ppNoptificationAsTable() (*tablewriter.Table, error) {
+func ppNoptificationAsTable(colWidth int) (*tablewriter.Table, error) {
 	notificationLines := ppNotificationLines()
 
 	notificationTable := utils.Map(notificationLines, func(line string) []string {
@@ -189,7 +196,7 @@ func ppNoptificationAsTable() (*tablewriter.Table, error) {
 	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
 	table.SetAutoWrapText(true)                // let's wrap the text
 	table.SetBorder(true)                      // there needs to be a border to provide the dialog feel
-	table.SetColWidth(67)                      // set a column width close to the existing table
+	table.SetColWidth(colWidth - 4)            // set the column width which matches the steampipe notification table width
 	table.AppendBulk(notificationTable)        // Add Bulk Data
 
 	return table, nil
