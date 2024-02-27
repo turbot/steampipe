@@ -4,7 +4,7 @@ mod "bad_mod_with_require_not_met" {
 
   require {
     plugin "gcp" {
-      version = "99.21.0"
+      min_version = "99.21.0"
     }
   }
 }

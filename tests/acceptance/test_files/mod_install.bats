@@ -80,13 +80,13 @@ local
 }
 
 @test "install a mod with protocol in url" {
-  run steampipe mod install https://github.com/turbot/steampipe-mod-hackernews-insights@0.3.0 --force
+  run steampipe mod install https://github.com/turbot/steampipe-mod-hackernews-insights@0.4.0 --force
   # should install with the protocol in the url prefix
   assert_output '
 Installed 1 mod:
 
 local
-└── github.com/turbot/steampipe-mod-hackernews-insights@v0.3.0'
+└── github.com/turbot/steampipe-mod-hackernews-insights@v0.4.0'
 }
 
 # Installed 4 mods:
