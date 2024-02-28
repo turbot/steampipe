@@ -12,7 +12,8 @@ import (
 
 // Constants for Config
 const (
-	DefaultInstallDir = "~/.steampipe"
+	DefaultInstallDir      = "~/.steampipe"
+	DefaultPipesInstallDir = "~/.pipes"
 
 	connectionsStateFileName     = "connection.json"
 	versionFileName              = "versions.json"

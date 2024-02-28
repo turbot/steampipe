@@ -2,6 +2,7 @@ package cmdconfig
 
 import (
 	"fmt"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"log"
 	"os"
 
@@ -22,7 +23,9 @@ func Viper() *viper.Viper {
 // bootstrapViper sets up viper with the essential path config (workspace-chdir and install-dir)
 func bootstrapViper(loader *steampipeconfig.WorkspaceProfileLoader, cmd *cobra.Command) error {
 	// set defaults  for keys which do not have a corresponding command flag
-	setBaseDefaults()
+	if err := setBaseDefaults(); err != nil {
+		return err
+	}
 
 	// set defaults from defaultWorkspaceProfile
 	SetDefaultsFromConfig(loader.DefaultProfile.ConfigMap(cmd))
@@ -88,11 +91,16 @@ func SetDefaultsFromConfig(configMap map[string]interface{}) {
 //
 // Do not add keys here which have command line defaults - the way this is setup, this value takes
 // precedence over command line default
-func setBaseDefaults() {
+func setBaseDefaults() error {
+	pipesInstallDir, err := filehelpers.Tildefy(filepaths.DefaultPipesInstallDir)
+	if err != nil {
+		return err
+	}
 	defaults := map[string]interface{}{
 		// global general options
-		constants.ArgTelemetry:   constants.TelemetryInfo,
-		constants.ArgUpdateCheck: true,
+		constants.ArgTelemetry:       constants.TelemetryInfo,
+		constants.ArgUpdateCheck:     true,
+		constants.ArgPipesInstallDir: pipesInstallDir,
 
 		// workspace profile
 		constants.ArgAutoComplete:  true,
@@ -115,6 +123,7 @@ func setBaseDefaults() {
 	for k, v := range defaults {
 		viper.SetDefault(k, v)
 	}
+	return nil
 }
 
 type envMapping struct {
@@ -148,15 +157,11 @@ func setDefaultsFromEnv() {
 		constants.EnvIntrospection:  {[]string{constants.ArgIntrospection}, String},
 		constants.EnvTelemetry:      {[]string{constants.ArgTelemetry}, String},
 		constants.EnvUpdateCheck:    {[]string{constants.ArgUpdateCheck}, Bool},
-		// PIPES_HOST needs to be defined before STEAMPIPE_CLOUD_HOST,
-		// so that if STEAMPIPE_CLOUD_HOST is defined, it can override PIPES_HOST
-		constants.EnvPipesHost: {[]string{constants.ArgCloudHost}, String},
-		constants.EnvCloudHost: {[]string{constants.ArgCloudHost}, String},
-		// PIPES_TOKEN needs to be defined before STEAMPIPE_CLOUD_TOKEN,
-		// so that if STEAMPIPE_CLOUD_TOKEN is defined, it can override PIPES_TOKEN
-		constants.EnvPipesToken: {[]string{constants.ArgCloudToken}, String},
-		constants.EnvCloudToken: {[]string{constants.ArgCloudToken}, String},
-		//
+		// deprecated
+		constants.EnvCloudHost:             {[]string{constants.ArgPipesHost}, String},
+		constants.EnvCloudToken:            {[]string{constants.ArgPipesToken}, String},
+		constants.EnvPipesHost:             {[]string{constants.ArgPipesHost}, String},
+		constants.EnvPipesToken:            {[]string{constants.ArgPipesToken}, String},
 		constants.EnvSnapshotLocation:      {[]string{constants.ArgSnapshotLocation}, String},
 		constants.EnvWorkspaceDatabase:     {[]string{constants.ArgWorkspaceDatabase}, String},
 		constants.EnvServicePassword:       {[]string{constants.ArgServicePassword}, String},

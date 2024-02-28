@@ -207,7 +207,7 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	}
 
 	// set global containing the configured install dir (create directory if needed)
-	ensureInstallDir(viper.GetString(constants.ArgInstallDir))
+	ensureInstallDir()
 
 	// load the connection config and HCL options
 	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(ctx, viper.GetString(constants.ArgModLocation), cmd.Name())
@@ -232,8 +232,14 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 		SetDefaultsFromConfig(loader.ConfiguredProfile.ConfigMap(cmd))
 	}
 
+	// handle deprecated cloud-host and cloud-token args and env vars
+	ew := handleDeprecations()
+	if ew.Error != nil {
+		return ew
+	}
+
 	// NOTE: we need to resolve the token separately
-	// - that is because we need the resolved value of ArgCloudHost in order to load any saved token
+	// - that is because we need the resolved value of ArgPipesHost in order to load any saved token
 	// and we cannot get this until the other config has been resolved
 	err = setCloudTokenDefault(loader)
 	if err != nil {
@@ -241,13 +247,54 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 		return loadConfigErrorsAndWarnings
 	}
 
+	loadConfigErrorsAndWarnings.Merge(ew)
 	// now validate all config values have appropriate values
-	ew := validateConfig()
-	error_helpers.FailOnErrorWithMessage(ew.Error, "failed to validate config")
-
+	ew = validateConfig()
+	if ew.Error != nil {
+		return ew
+	}
 	loadConfigErrorsAndWarnings.Merge(ew)
 
 	return loadConfigErrorsAndWarnings
+}
+
+func handleDeprecations() *error_helpers.ErrorAndWarnings {
+	var ew = &error_helpers.ErrorAndWarnings{}
+	// if deprecated cloud-token or cloud-host is set, show a warning and copy the value to the new arg
+	if viper.IsSet(constants.ArgCloudToken) {
+		if viper.IsSet(constants.ArgPipesToken) {
+			ew.Error = sperr.New("Only one of flags --%s and --%s may be set", constants.ArgCloudToken, constants.ArgPipesToken)
+			return ew
+		}
+		viper.Set(constants.ArgPipesToken, viper.GetString(constants.ArgCloudToken))
+	}
+	if viper.IsSet(constants.ArgCloudHost) {
+		if viper.IsSet(constants.ArgPipesHost) {
+			ew.Error = sperr.New("Only one of flags --%s and --%s may be set", constants.ArgCloudHost, constants.ArgPipesHost)
+			return ew
+		}
+		viper.Set(constants.ArgPipesHost, viper.GetString(constants.ArgCloudHost))
+	}
+
+	// is deprecated STEAMPIPE_CLOUD_TOKEN env var set?
+	if _, isCloudTokenSet := os.LookupEnv(constants.EnvCloudToken); isCloudTokenSet {
+		// is PIPES_TOKEN also set? This is an error
+		if _, isPipesTokenSet := os.LookupEnv(constants.EnvPipesToken); isPipesTokenSet {
+			ew.Error = sperr.New("Only one of env vars %s and %s may be set", constants.EnvCloudToken, constants.EnvPipesToken)
+			return ew
+		}
+		// otherwise, show a warning
+		ew.AddWarning(fmt.Sprintf("The %s env var is deprecated - use %s", constants.EnvCloudToken, constants.EnvPipesToken))
+	}
+	// the same for STEAMPIPE_CLOUD_HOST
+	if _, isCloudTokenSet := os.LookupEnv(constants.EnvCloudHost); isCloudTokenSet {
+		if _, isPipesTokenSet := os.LookupEnv(constants.EnvPipesHost); isPipesTokenSet {
+			ew.Error = sperr.New("Only one of env vars %s and %s may be set", constants.EnvCloudHost, constants.EnvPipesHost)
+			return ew
+		}
+		ew.AddWarning(fmt.Sprintf("The %s env var is deprecated - use %s", constants.EnvCloudHost, constants.EnvPipesHost))
+	}
+	return ew
 }
 
 func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error {
@@ -264,18 +311,28 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 		return err
 	}
 	if savedToken != "" {
-		viper.SetDefault(constants.ArgCloudToken, savedToken)
+		viper.SetDefault(constants.ArgPipesToken, savedToken)
 	}
-	// 2) default profile cloud token
+	// 2) default profile pipes token
+	if loader.DefaultProfile.PipesToken != nil {
+		viper.SetDefault(constants.ArgPipesToken, *loader.DefaultProfile.PipesToken)
+	}
+	// deprecated - cloud token
 	if loader.DefaultProfile.CloudToken != nil {
-		viper.SetDefault(constants.ArgCloudToken, *loader.DefaultProfile.CloudToken)
+		viper.SetDefault(constants.ArgPipesToken, *loader.DefaultProfile.CloudToken)
 	}
 	// 3) env var (STEAMIPE_CLOUD_TOKEN )
-	SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgCloudToken, String)
+	SetDefaultFromEnv(constants.EnvPipesToken, constants.ArgPipesToken, String)
+	// deprecated env var
+	SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgPipesToken, String)
 
 	// 4) explicit workspace profile
+	if p := loader.ConfiguredProfile; p != nil && p.PipesToken != nil {
+		viper.SetDefault(constants.ArgPipesToken, *p.PipesToken)
+	}
+	// deprecated - cloud token
 	if p := loader.ConfiguredProfile; p != nil && p.CloudToken != nil {
-		viper.SetDefault(constants.ArgCloudToken, *p.CloudToken)
+		viper.SetDefault(constants.ArgPipesToken, *p.CloudToken)
 	}
 	return nil
 }
@@ -374,7 +431,10 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 	}
 }
 
-func ensureInstallDir(installDir string) {
+func ensureInstallDir() {
+	pipesInstallDir := viper.GetString(constants.ArgPipesInstallDir)
+	installDir := viper.GetString(constants.ArgInstallDir)
+
 	log.Printf("[TRACE] ensureInstallDir %s", installDir)
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
 		log.Printf("[TRACE] creating install dir")
@@ -382,8 +442,15 @@ func ensureInstallDir(installDir string) {
 		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
 	}
 
-	// store as SteampipeDir
+	if _, err := os.Stat(pipesInstallDir); os.IsNotExist(err) {
+		log.Printf("[TRACE] creating install dir")
+		err = os.MkdirAll(pipesInstallDir, 0755)
+		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create pipes installation directory: %s", pipesInstallDir))
+	}
+
+	// store as SteampipeDir and PipesInstallDir
 	filepaths.SteampipeDir = installDir
+	filepaths.PipesInstallDir = pipesInstallDir
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way

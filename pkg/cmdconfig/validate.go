@@ -25,7 +25,7 @@ func ValidateSnapshotArgs(ctx context.Context) error {
 		return nil
 	}
 
-	token := viper.GetString(constants.ArgCloudToken)
+	token := viper.GetString(constants.ArgPipesToken)
 
 	// determine whether snapshot location is a cloud workspace or a file location
 	// if a file location, check it exists
@@ -43,7 +43,7 @@ func ValidateSnapshotArgs(ctx context.Context) error {
 	}
 
 	// should never happen as there is a default set
-	if viper.GetString(constants.ArgCloudHost) == "" {
+	if viper.GetString(constants.ArgPipesHost) == "" {
 		return fmt.Errorf("to share snapshots, cloud host must be set")
 	}
 

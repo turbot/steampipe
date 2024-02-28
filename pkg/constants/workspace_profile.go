@@ -1,7 +1,7 @@
 package constants
 
 const (
-	DefaultCloudHost         = "pipes.turbot.com"
-	LegacyDefaultCloudHost   = "cloud.steampipe.io"
+	DefaultPipesHost         = "pipes.turbot.com"
+	LegacyDefaultPipesHost   = "cloud.steampipe.io"
 	DefaultWorkspaceDatabase = "local"
 )

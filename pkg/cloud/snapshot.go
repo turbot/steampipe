@@ -55,7 +55,7 @@ func exportSnapshot(snapshot *dashboardtypes.SteampipeSnapshot) (string, error) 
 }
 
 func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnapshot, share bool) (string, error) {
-	client := newSteampipeCloudClient(viper.GetString(constants.ArgCloudToken))
+	client := newSteampipeCloudClient(viper.GetString(constants.ArgPipesToken))
 
 	cloudWorkspace := viper.GetString(constants.ArgSnapshotLocation)
 	parts := strings.Split(cloudWorkspace, "/")
@@ -109,7 +109,7 @@ func uploadSnapshot(ctx context.Context, snapshot *dashboardtypes.SteampipeSnaps
 
 	snapshotId := uploadedSnapshot.Id
 	snapshotUrl := fmt.Sprintf("https://%s/%s/%s/workspace/%s/snapshot/%s",
-		viper.GetString(constants.ArgCloudHost),
+		viper.GetString(constants.ArgPipesHost),
 		workspaceType,
 		identityHandle,
 		workspaceHandle,

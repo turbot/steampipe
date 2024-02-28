@@ -25,7 +25,7 @@ func getCloudMetadata(ctx context.Context) (*steampipeconfig.CloudMetadata, erro
 	workspaceDatabaseIsConnectionString := strings.HasPrefix(workspaceDatabase, "postgresql://") || strings.HasPrefix(workspaceDatabase, "postgres://")
 	if !workspaceDatabaseIsConnectionString {
 		// it must be a database name - verify the cloud token was provided
-		cloudToken := viper.GetString(constants.ArgCloudToken)
+		cloudToken := viper.GetString(constants.ArgPipesToken)
 		if cloudToken == "" {
 			return nil, error_helpers.MissingCloudTokenError
 		}

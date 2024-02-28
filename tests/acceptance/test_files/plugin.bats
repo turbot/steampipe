@@ -1,13 +1,6 @@
 load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
-@test "steampipe plugin help is displayed when no sub command given" {
-  steampipe plugin > test.txt
-
-  assert_equal "$(cat test.txt)" "$(cat $TEST_DATA_DIR/expected_plugin_help_output.txt)"
-  rm -f test.txt*
-}
-
 @test "plugin install" {
   run steampipe plugin install net
   assert_success

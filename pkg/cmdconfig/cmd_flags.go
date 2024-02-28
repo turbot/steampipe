@@ -13,7 +13,7 @@ var requiredColor = color.New(color.Bold).SprintfFunc()
 
 type flagOpt func(c *cobra.Command, name string, key string)
 
-// FlagOptions :: shortcut for common flag options
+// FlagOptions - shortcut for common flag options
 var FlagOptions = struct {
 	Required      func() flagOpt
 	Hidden        func() flagOpt

@@ -14,9 +14,13 @@ import (
 )
 
 type WorkspaceProfile struct {
-	ProfileName       string            `hcl:"name,label" cty:"name"`
-	CloudHost         *string           `hcl:"cloud_host,optional" cty:"cloud_host"`
+	ProfileName string `hcl:"name,label" cty:"name"`
+	// deprecated
+	CloudHost *string `hcl:"cloud_host,optional" cty:"cloud_host"`
+	PipesHost *string `hcl:"pipes_host,optional" cty:"pipes_host"`
+	// deprecated
 	CloudToken        *string           `hcl:"cloud_token,optional" cty:"cloud_token"`
+	PipesToken        *string           `hcl:"pipes_token,optional" cty:"pipes_token"`
 	InstallDir        *string           `hcl:"install_dir,optional" cty:"install_dir"`
 	ModLocation       *string           `hcl:"mod_location,optional" cty:"mod_location"`
 	QueryTimeout      *int              `hcl:"query_timeout,optional" cty:"query_timeout"`
@@ -39,12 +43,14 @@ type WorkspaceProfile struct {
 	CheckOptions     *options.Check                     `cty:"check-options"`
 	DashboardOptions *options.WorkspaceProfileDashboard `cty:"dashboard-options"`
 	DeclRange        hcl.Range
+	block            *hcl.Block
 }
 
 func NewWorkspaceProfile(block *hcl.Block) *WorkspaceProfile {
 	return &WorkspaceProfile{
 		ProfileName: block.Labels[0],
-		DeclRange:   block.TypeRange,
+		DeclRange:   hclhelpers.BlockRange(block),
+		block:       block,
 	}
 }
 
@@ -96,7 +102,43 @@ func (p *WorkspaceProfile) CtyValue() (cty.Value, error) {
 
 func (p *WorkspaceProfile) OnDecoded() hcl.Diagnostics {
 	p.setBaseProperties()
-	return nil
+
+	return p.validate()
+}
+
+func (p *WorkspaceProfile) validate() hcl.Diagnostics {
+	var diags hcl.Diagnostics
+	// validate that both deprecated and new versions of propertied have not been set
+	if p.CloudHost != nil && p.PipesHost != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "both cloud_host and pipes_host cannot be set",
+			Subject:  hclhelpers.BlockRangePointer(p.block),
+		})
+	}
+	if p.CloudToken != nil && p.PipesToken != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  "both cloud_token and pipes_token cannot be set",
+			Subject:  hclhelpers.BlockRangePointer(p.block),
+		})
+	}
+	// return warnings if deprecated properties are set
+	if p.CloudHost != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagWarning,
+			Summary:  "cloud_host is deprecated, use pipes_host",
+			Subject:  hclhelpers.BlockRangePointer(p.block),
+		})
+	}
+	if p.CloudToken != nil {
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagWarning,
+			Summary:  "cloud_token is deprecated, use pipes_token",
+			Subject:  hclhelpers.BlockRangePointer(p.block),
+		})
+	}
+	return diags
 }
 
 func (p *WorkspaceProfile) setBaseProperties() {
@@ -186,8 +228,10 @@ func (p *WorkspaceProfile) ConfigMap(cmd *cobra.Command) map[string]interface{} 
 	res := ConfigMap{}
 	// add non-empty properties to config map
 
-	res.SetStringItem(p.CloudHost, constants.ArgCloudHost)
-	res.SetStringItem(p.CloudToken, constants.ArgCloudToken)
+	res.SetStringItem(p.CloudHost, constants.ArgPipesHost)
+	res.SetStringItem(p.CloudToken, constants.ArgPipesToken)
+	res.SetStringItem(p.PipesHost, constants.ArgPipesHost)
+	res.SetStringItem(p.PipesToken, constants.ArgPipesToken)
 	res.SetStringItem(p.InstallDir, constants.ArgInstallDir)
 	res.SetStringItem(p.ModLocation, constants.ArgModLocation)
 	res.SetStringItem(p.SnapshotLocation, constants.ArgSnapshotLocation)
