@@ -9,7 +9,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 )
 
-var ModFileNames = []string{"mod.sp", "mod.pp"}
+var ModFileNames = []string{"mod.sp"}
 
 // mod related constants
 const (

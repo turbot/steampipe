@@ -242,7 +242,7 @@ func (w *Workspace) setModfileExists() {
 	}
 }
 
-// FindModFilePath looks in the current folder for mod.sp or mod.pp
+// FindModFilePath looks in the current folder for mod.sp
 // if not found it looks in the parent folder - right up to the root
 func FindModFilePath(folder string) (string, error) {
 	folder, err := filepath.Abs(folder)
@@ -285,7 +285,6 @@ func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error 
 
 	// check if your workspace path is home dir and if modfile exists
 	if workspacePath == home && modFileExists {
-
 		// for interactive query - ask for confirmation to continue
 		if cmd.Name() == "query" && viper.GetBool(constants.ConfigKeyInteractive) {
 			confirm, err := utils.UserConfirmation(ctx, fmt.Sprintf("%s: You have a mod.sp file in your home directory. This is not recommended.\nAs a result, steampipe will try to load all the files in home and its sub-directories, which can cause performance issues.\nBest practice is to put mod.sp files in their own directories.\nDo you still want to continue? (y/n)", color.YellowString("Warning")))

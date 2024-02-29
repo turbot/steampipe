@@ -556,8 +556,11 @@ func (i *ModInstaller) installFromGit(dependency *ResolvedModRef, installPath st
 			Depth:         1,
 			SingleBranch:  true,
 		})
-
-	return err
+	if err != nil {
+		return sperr.WrapWithMessage(err, "failed to clone mod '%s' from git", dependency.Name)
+	}
+	// verify the cloned repo contains a valid modfile
+	return i.verifyModFile(dependency, installPath)
 }
 
 // build the path of the temp location to copy this depednency to
@@ -581,4 +584,15 @@ func (i *ModInstaller) updating() bool {
 
 func (i *ModInstaller) uninstalling() bool {
 	return i.command == "uninstall"
+}
+
+func (i *ModInstaller) verifyModFile(dependency *ResolvedModRef, installPath string) error {
+	for _, modFilePath := range filepaths.ModFilePaths(installPath) {
+		_, err := os.Stat(modFilePath)
+		if err == nil {
+			// found the modfile
+			return nil
+		}
+	}
+	return sperr.New("mod '%s' does not contain a valid mod file", dependency.Name)
 }
