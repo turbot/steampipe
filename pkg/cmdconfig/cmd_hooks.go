@@ -476,5 +476,5 @@ func displayDeprecationWarnings(errorsAndWarnings *error_helpers.ErrorAndWarning
 }
 
 func displayPpDeprecationWarning(cmd *cobra.Command) {
-	fmt.Println(fmt.Sprintf("\n%s\nSteampipe mods and dashboards have been moved to %s (https://powerpipe.io). The %s command will be removed in a future version. Please migrate to %s for equivalent (and more!) features.\n", color.YellowString("Deprecation warning:"), constants.Bold("Powerpipe"), constants.Bold(fmt.Sprintf("steampipe %s", cmd.Name())), constants.Bold("Powerpipe")))
+	fmt.Fprintf(color.Error, "\n%s\nSteampipe mods and dashboards have been moved to %s (https://powerpipe.io). The %s command will be removed in a future version. Please migrate to %s for equivalent (and more!) features.\n", color.YellowString("Deprecation warning:"), constants.Bold("Powerpipe"), constants.Bold(fmt.Sprintf("steampipe %s", cmd.Name())), constants.Bold("Powerpipe"))
 }
