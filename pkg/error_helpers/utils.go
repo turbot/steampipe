@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"os"
 	"strings"
+
+	"golang.org/x/exp/maps"
 
 	"github.com/fatih/color"
 	"github.com/shiena/ansicolor"
@@ -46,7 +47,7 @@ func ShowError(ctx context.Context, err error) {
 	}
 	err = HandleCancelError(err)
 	statushooks.Done(ctx)
-	fmt.Fprintf(color.Output, "%s: %v\n", constants.ColoredErr, TransformErrorToSteampipe(err))
+	fmt.Fprintf(color.Error, "%s: %v\n", constants.ColoredErr, TransformErrorToSteampipe(err))
 }
 
 // ShowErrorWithMessage displays the given error nicely with the given message
@@ -56,7 +57,7 @@ func ShowErrorWithMessage(ctx context.Context, err error, message string) {
 	}
 	err = HandleCancelError(err)
 	statushooks.Done(ctx)
-	fmt.Fprintf(color.Output, "%s: %s - %v\n", constants.ColoredErr, message, TransformErrorToSteampipe(err))
+	fmt.Fprintf(color.Error, "%s: %s - %v\n", constants.ColoredErr, message, TransformErrorToSteampipe(err))
 }
 
 // TransformErrorToSteampipe removes the pq: and rpc error prefixes along
@@ -109,7 +110,7 @@ func ShowWarning(warning string) {
 	if len(warning) == 0 {
 		return
 	}
-	fmt.Fprintf(color.Output, "%s: %v\n", constants.ColoredWarn, warning)
+	fmt.Fprintf(color.Error, "%s: %v\n", constants.ColoredWarn, warning)
 }
 
 func CombineErrorsWithPrefix(prefix string, errors ...error) error {
