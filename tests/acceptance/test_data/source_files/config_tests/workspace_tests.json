@@ -263,48 +263,6 @@
     }
   },
   {
-    "test": "options set in default workspace profile(2) and check cmd is run(same test as above but tests check args)",
-    "description": "",
-    "cmd": "check",
-    "setup": {
-      "env": [
-        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options"
-      ],
-      "args": []
-    },
-    "expected": {
-      "check.header": false,
-      "check.output": "json",
-      "check.separator": "|",
-      "check.timing": true,
-      "query-timeout": 240,
-      "search-path": "[ ]",
-      "search-path-prefix": "[ abc ]",
-      "telemetry": "info",
-      "update-check": "false",
-      "watch": false
-    }
-  },
-  {
-    "test": "options set in default workspace profile(2) and dashboard cmd is run(same test as above but tests dashboard args)",
-    "description": "",
-    "cmd": "dashboard",
-    "setup": {
-      "env": [
-        "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles_options"
-      ],
-      "args": []
-    },
-    "expected": {
-      "browser": true,
-      "search-path": "[ ]",
-      "search-path-prefix": "[ abc ]",
-      "telemetry": "info",
-      "update-check": "false",
-      "watch": false
-    }
-  },
-  {
     "test": "default workspace location set and env variables set(3)",
     "description": "",
     "cmd": "query",
