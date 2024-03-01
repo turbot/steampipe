@@ -21,14 +21,14 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 	// is there a user search path in the config?
 	// check ConfigKeyDatabaseSearchPath config (this is the value specified in the database config)
 	if viper.IsSet(constants.ConfigKeyServerSearchPath) {
-
 		searchPath = viper.GetStringSlice(constants.ConfigKeyServerSearchPath)
 		// the Internal Schema should always go at the end
 		searchPath = db_common.EnsureInternalSchemaSuffix(searchPath)
 	} else {
+		prefix := viper.GetStringSlice(constants.ConfigKeyServerSearchPathPrefix)
 		// no config set - set user search path to default
 		// - which is all the connection names, book-ended with public and internal
-		searchPath = getDefaultSearchPath()
+		searchPath = append(prefix, getDefaultSearchPath()...)
 	}
 
 	// escape the schema names
