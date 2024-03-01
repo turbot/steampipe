@@ -328,7 +328,6 @@ jobs:
           - "mod_vars"
           - "mod"
           - "mod_require"
-          - "pp_files"
           - "check"
           - "performance"
           - "config_precedence"

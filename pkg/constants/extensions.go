@@ -2,9 +2,9 @@ package constants
 
 import "github.com/turbot/go-kit/helpers"
 
-var ModDataExtensions = []string{".sp", ".pp"}
-var VariablesExtensions = []string{".spvars", ".ppvars"}
-var AutoVariablesExtensions = []string{".auto.spvars", ".auto.ppvars"}
+var ModDataExtensions = []string{".sp"}
+var VariablesExtensions = []string{".spvars"}
+var AutoVariablesExtensions = []string{".auto.spvars"}
 
 const (
 	PluginExtension      = ".plugin"
