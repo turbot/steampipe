@@ -326,7 +326,6 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	err = installForeignServer(ctx, client)
 	if err != nil {
 		log.Printf("[TRACE] installForeignServer failed: %v", err)
-		fmt.Errorf("Error: %s", err.Error())
 		return fmt.Errorf("Configuring Steampipe... FAILED!")
 	}
 

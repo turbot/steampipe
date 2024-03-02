@@ -64,6 +64,7 @@ jobs:
       - name: Build and Push to DockerHub and Container Registry
         id: docker_build
         uses: docker/build-push-action@v5
+        continue-on-error: true
         with:
           push: true
           platforms: linux/amd64,linux/arm64
