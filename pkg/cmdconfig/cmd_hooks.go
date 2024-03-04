@@ -137,14 +137,9 @@ func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, e
 		return nil
 	}
 
-	// display deprecation warning for check and dashboard commands
-	if task.IsCheckCmd(cmd) || task.IsDashboardCmd(cmd) {
-		displayPpDeprecationWarning(cmd)
-	}
-	// display deprecation warning for mod command and its subcommands
-	if task.IsModCmd(cmd) {
-		parent := cmd.Parent()
-		displayPpDeprecationWarning(parent)
+	// display deprecation warning for check, mod and dashboard commands
+	if task.IsCheckCmd(cmd) || task.IsDashboardCmd(cmd) || task.IsModCmd(cmd) {
+		displayPpDeprecationWarning()
 	}
 
 	taskUpdateCtx, cancelFn := context.WithCancel(ctx)
@@ -475,6 +470,6 @@ func displayDeprecationWarnings(errorsAndWarnings *error_helpers.ErrorAndWarning
 	}
 }
 
-func displayPpDeprecationWarning(cmd *cobra.Command) {
-	fmt.Fprintf(color.Error, "\n%s\nSteampipe mods and dashboards have been moved to %s (https://powerpipe.io). The %s command will be removed in a future version. Please migrate to %s for equivalent (and more!) features.\n", color.YellowString("Deprecation warning:"), constants.Bold("Powerpipe"), constants.Bold(fmt.Sprintf("steampipe %s", cmd.Name())), constants.Bold("Powerpipe"))
+func displayPpDeprecationWarning() {
+	fmt.Fprintf(color.Error, "\n%s Steampipe mods and dashboards have been moved to %s. This command %s in a future version. Migration guide - https://powerpipe.io/blog/migrating-from-steampipe \n", color.YellowString("Deprecation warning:"), constants.Bold("Powerpipe"), constants.Bold("will be removed"))
 }

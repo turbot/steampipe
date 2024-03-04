@@ -101,7 +101,7 @@ func ppNotificationLines() []string {
 		"",
 		fmt.Sprintf("%s Steampipe mods and dashboards are now separately available in Powerpipe (%s), a new open-source project (%s).", constants.Bold("Introducing Powerpipe:"), color.YellowString("https://powerpipe.io"), color.YellowString("https://github.com/turbot/powerpipe")),
 		"",
-		fmt.Sprintf("The steampipe mod, check and dashboard commands will be removed in a future version. Please download Powerpipe for equivalent (and more!) features. Migration guide - %s", color.YellowString("https://steampipe.io/docs/guides/working-with-powerpipe")),
+		fmt.Sprintf("The steampipe mod, check and dashboard commands %s in a future version. Migration guide - %s", constants.Bold("will be removed"), color.YellowString("https://powerpipe.io/blog/migrating-from-steampipe")),
 		"",
 	}
 	return notificationLines
