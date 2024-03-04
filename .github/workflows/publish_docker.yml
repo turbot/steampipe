@@ -74,12 +74,5 @@ jobs:
             turbot/steampipe:${{ steps.generate_docker_tag.outputs.docker_tag }}
             ghcr.io/turbot/steampipe:${{ steps.generate_docker_tag.outputs.docker_tag }}
 
-      - name: Save Test Suite Logs
-        uses: actions/upload-artifact@v3
-        with:
-          name: logs
-          path: ~/.steampipe/logs
-          if-no-files-found: error
-
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
