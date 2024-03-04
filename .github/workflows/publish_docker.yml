@@ -31,7 +31,7 @@ jobs:
   publish_docker:
     name: Push Docker image to Docker Hub
     needs: check_pre_release
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     if: needs.check_pre_release.outputs.is_pre_release == 'true'
     steps:
       - name: Set up QEMU
