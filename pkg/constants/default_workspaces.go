@@ -9,8 +9,8 @@ const DefaultWorkspaceContent = `
 #
 
 # workspace "all_options" {
-#   cloud_host         = "pipes.turbot.com"
-#   cloud_token        = "spt_999faketoken99999999_111faketoken1111111111111"
+#   pipes_host         = "pipes.turbot.com"
+#   pipes_token        = "spt_999faketoken99999999_111faketoken1111111111111"
 #   install_dir        = "~/steampipe2"
 #   mod_location       = "~/src/steampipe-mod-aws-insights"  
 #   query_timeout      = 300

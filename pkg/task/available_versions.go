@@ -1,6 +1,7 @@
 package task
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -21,7 +22,7 @@ type AvailableVersionCache struct {
 	PluginCache   map[string]plugin.VersionCheckReport `json:"plugin_version"`
 }
 
-func (av *AvailableVersionCache) asTable(ctx context.Context) (*tablewriter.Table, error) {
+func (av *AvailableVersionCache) asTable(ctx context.Context) (*bytes.Buffer, error) {
 	notificationLines, err := av.buildNotification(ctx)
 	if err != nil {
 		return nil, err
@@ -34,14 +35,20 @@ func (av *AvailableVersionCache) asTable(ctx context.Context) (*tablewriter.Tabl
 		return nil, nil
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
+	// create a buffer writer to pass to the tablewriter
+	// so that we can capture the output
+	var buffer bytes.Buffer // c
+
+	table := tablewriter.NewWriter(&buffer)
 	table.SetHeader([]string{})                // no headers please
 	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
 	table.SetAutoWrapText(false)               // let's not wrap the text
 	table.SetBorder(true)                      // there needs to be a border to provide the dialog feel
 	table.AppendBulk(notificationTable)        // Add Bulk Data
 
-	return table, nil
+	// render the table into the buffer
+	table.Render()
+	return &buffer, nil
 }
 
 func (av *AvailableVersionCache) buildNotification(ctx context.Context) ([]string, error) {
@@ -87,6 +94,17 @@ func (av *AvailableVersionCache) cliNotificationMessage() ([]string, error) {
 		return notificationLines, nil
 	}
 	return nil, nil
+}
+
+func ppNotificationLines() []string {
+	var notificationLines = []string{
+		"",
+		fmt.Sprintf("%s Steampipe mods and dashboards are now separately available in Powerpipe (%s), a new open-source project (%s).", constants.Bold("Introducing Powerpipe:"), color.YellowString("https://powerpipe.io"), color.YellowString("https://github.com/turbot/powerpipe")),
+		"",
+		fmt.Sprintf("The steampipe mod, check and dashboard commands %s in a future version. Migration guide - %s", constants.Bold("will be removed"), color.YellowString("https://powerpipe.io/blog/migrating-from-steampipe")),
+		"",
+	}
+	return notificationLines
 }
 
 func (av *AvailableVersionCache) pluginNotificationMessage(ctx context.Context) []string {
@@ -160,4 +178,26 @@ func (av *AvailableVersionCache) getPluginNotificationLines(reports []plugin.Ver
 	notificationLines = append(notificationLines, "")
 
 	return notificationLines
+}
+
+func ppNoptificationAsTable(colWidth int) (*tablewriter.Table, error) {
+	notificationLines := ppNotificationLines()
+
+	notificationTable := utils.Map(notificationLines, func(line string) []string {
+		return []string{line}
+	})
+
+	if len(notificationLines) == 0 {
+		return nil, nil
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{})                // no headers please
+	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
+	table.SetAutoWrapText(true)                // let's wrap the text
+	table.SetBorder(true)                      // there needs to be a border to provide the dialog feel
+	table.SetColWidth(colWidth - 4)            // set the column width which matches the steampipe notification table width
+	table.AppendBulk(notificationTable)        // Add Bulk Data
+
+	return table, nil
 }

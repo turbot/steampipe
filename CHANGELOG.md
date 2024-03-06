@@ -1,3 +1,22 @@
+## v0.22.0 [2024-03-06]
+_Whats new_
+* Added `version` column to `steampipe_plugin` table. ([#4141](https://github.com/turbot/steampipe/issues/4141))
+* Direct all errors and warnings to standard error(stderr). ([4162](https://github.com/turbot/steampipe/issues/4162))
+
+_Bug fixes_
+* Fix issue where `search_path_prefix` set in `database options` does not alert search path. ([#4160](https://github.com/turbot/steampipe/issues/4160))
+
+_Deprecations and migrations_
+* Removed support for deprecated `terminal options`. ([#3751](https://github.com/turbot/steampipe/issues/3751))
+* Removed support for deprecated `max_parallel` property in `general options`. ([#4132](https://github.com/turbot/steampipe/issues/4132))
+* Removed support for deprecated `connection options`. ([#4131](https://github.com/turbot/steampipe/issues/4131))
+* Removed deprecated `version` property from the mod `require` block. ([#3750](https://github.com/turbot/steampipe/issues/3750))
+* Deprecated `cloud-host` and `cloud-token` CLI args, replaced with `pipes-host` and `pipes-token` respectively. ([#4137](https://github.com/turbot/steampipe/issues/4137))
+* Deprecated `STEAMPIPE_CLOUD_HOST` and `STEAMPIPE_CLOUD_TOKEN` env vars, replaced with `PIPES_HOST` and `PIPES_TOKEN` respectively. ([#4137](https://github.com/turbot/steampipe/issues/4137))
+* Deprecated `cloud_host` and `cloud_token` workspace args, replaced with `pipes_host` and `pipes_token` respectively. ([#4137](https://github.com/turbot/steampipe/issues/4137))
+* Steampipe mods and dashboards are now separately available in [Powerpipe](https://powerpipe.io), a new [open-source project](https://github.com/turbot/powerpipe). The steampipe mod, check and dashboard commands have been deprecated and `will be removed` in a future version. Migration guide - https://powerpipe.io/blog/migrating-from-steampipe.
+
+
 ## v0.21.8 [2024-02-23]
 _Bug fixes_
 * Fix growing memory usage following file watching events when running dashboard server. ([#4150](https://github.com/turbot/steampipe/issues/4150))

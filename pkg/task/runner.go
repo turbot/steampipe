@@ -184,3 +184,16 @@ func IsBatchQueryCmd(cmd *cobra.Command, cmdArgs []string) bool {
 func isPluginListCmd(cmd *cobra.Command) bool {
 	return cmd.Name() == "list" && cmd.Parent() != nil && cmd.Parent().Name() == "plugin"
 }
+
+func IsCheckCmd(cmd *cobra.Command) bool {
+	return cmd.Name() == "check"
+}
+
+func IsDashboardCmd(cmd *cobra.Command) bool {
+	return cmd.Name() == "dashboard"
+}
+
+func IsModCmd(cmd *cobra.Command) bool {
+	parent := cmd.Parent()
+	return parent.Name() == "mod"
+}

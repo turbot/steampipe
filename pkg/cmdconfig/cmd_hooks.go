@@ -137,6 +137,11 @@ func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, e
 		return nil
 	}
 
+	// display deprecation warning for check, mod and dashboard commands
+	if task.IsCheckCmd(cmd) || task.IsDashboardCmd(cmd) || task.IsModCmd(cmd) {
+		displayPpDeprecationWarning()
+	}
+
 	taskUpdateCtx, cancelFn := context.WithCancel(ctx)
 	tasksCancelFn = cancelFn
 
@@ -463,4 +468,8 @@ func displayDeprecationWarnings(errorsAndWarnings *error_helpers.ErrorAndWarning
 		fmt.Println("For more details, see https://steampipe.io/docs/reference/config-files/workspace")
 		fmt.Println()
 	}
+}
+
+func displayPpDeprecationWarning() {
+	fmt.Fprintf(color.Error, "\n%s Steampipe mods and dashboards have been moved to %s. This command %s in a future version. Migration guide - https://powerpipe.io/blog/migrating-from-steampipe \n", color.YellowString("Deprecation warning:"), constants.Bold("Powerpipe"), constants.Bold("will be removed"))
 }

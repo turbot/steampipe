@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/turbot/go-kit/files"
@@ -93,18 +94,26 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 		return err
 	}
 
-	table, err := cachedVersions.asTable(ctx)
+	tableBuffer, err := cachedVersions.asTable(ctx)
+	if err != nil {
+		return err
+	}
+	// get the buffer width (to set the column width of ppTable)
+	lineLength := len(strings.Split(tableBuffer.String(), "\n")[0])
+
+	ppTable, err := ppNoptificationAsTable(lineLength)
 	if err != nil {
 		return err
 	}
 	// table can be nil if there are no notifications to display
-	if table == nil {
+	if tableBuffer == nil && ppTable == nil {
 		return nil
 	}
 
-	fmt.Println()
-	table.Render()
-	fmt.Println()
+	fmt.Println()            //nolint:forbidigo // acceptable
+	fmt.Println(tableBuffer) //nolint:forbidigo // acceptable
+	ppTable.Render()
+	fmt.Println() //nolint:forbidigo // acceptable
 
 	return nil
 }
