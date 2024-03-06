@@ -5,6 +5,7 @@ _Whats new_
 
 _Bug fixes_
 * Fix issue where `search_path_prefix` set in `database options` does not alert search path. ([#4160](https://github.com/turbot/steampipe/issues/4160))
+* Fix issue where asff output was always missing the first row. ([#4157](https://github.com/turbot/steampipe/pull/4157))
 
 _Deprecations and migrations_
 * Removed support for deprecated `terminal options`. ([#3751](https://github.com/turbot/steampipe/issues/3751))
