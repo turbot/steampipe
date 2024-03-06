@@ -24,29 +24,26 @@ var rootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
 	Version: version.SteampipeVersion.String(),
 	Short:   "Query cloud resources using SQL",
-	Long: `Query cloud resources using SQL.
+	Long: `Steampipe: select * from cloud;
 
-The available commands for execution are listed below.
-The most common, useful commands are shown first, followed by
-less common or more advanced commands. If you're just getting
-started with Steampipe, stick with the common commands. For the
-other commands, please read the help and docs before usage.
-
-Getting started:
-
+Dynamically query APIs, code and more with SQL.
+Zero-ETL from 140+ data sources.
+	
+Common commands:
+	
   # Interactive SQL query console
   steampipe query
+	
+  # Install a plugin from the hub - https://hub.steampipe.io
+  steampipe plugin install aws
 
   # Execute a defined SQL query
   steampipe query "select * from aws_s3_bucket"
 
-  # Install a plugin
-  steampipe plugin install azure
-
   # Get help for a command
   steampipe help query
-
-  Documentation available at https://steampipe.io/docs
+	
+Documentation: https://steampipe.io/docs
  `,
 }
 
