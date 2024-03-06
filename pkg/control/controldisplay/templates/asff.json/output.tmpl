@@ -1,22 +1,20 @@
 {{ define "output" }}
 {{- $first_row_rendered := false -}}
-[  {{- range $runIdx,$run := .Data.ControlRuns -}} 
-        {{- range $rowIdx,$row := $run.Rows -}} 
-            {{- if gt (add $runIdx $rowIdx) 0 -}} 
-                {{/* check if the control is related to aws */}}
-                {{- if $row.Run.MatchTag "plugin" "aws" -}} 
-                    {{ if $first_row_rendered -}},{{ end }}
-                    {{- template "control_row_template" $row -}} 
-                    {{ $first_row_rendered = true }}
-                {{- end -}} 
-            {{- end -}} 
-    {{- end -}} 
+[  {{- range $runIdx,$run := .Data.ControlRuns -}}
+        {{- range $rowIdx,$row := $run.Rows -}}
+            {{/* check if the control is related to aws */}}
+            {{- if $row.Run.MatchTag "plugin" "aws" -}}
+                {{ if $first_row_rendered -}},{{ end }}
+                {{- template "control_row_template" $row -}}
+                {{ $first_row_rendered = true }}
+            {{- end -}}
+    {{- end -}}
     {{- end }}
 ]
 {{ end }}
 
 {{/* sub template for control rows */}}
-{{ define "control_row_template" }} 
+{{ define "control_row_template" }}
 {
     "SchemaVersion": "2018-10-08",
     "Id": "{{ .Run.Control.FullName }}",
@@ -41,7 +39,7 @@
         "Label": "INFORMATIONAL"
     },{{ end }}
     "Resources": [
-        { 
+        {
             "Type": "Other",
             "Id": "{{ .Resource }}"
         }
@@ -49,7 +47,7 @@
     "Compliance": {
         "Status": "{{ template "statusmap" .Status -}}"
     }
-} {{ end -}}
+}{{ end -}}
 
 {{/* mapping steampipe statuses with ASFF status values */}}
 {{ define "statusmap" }}
