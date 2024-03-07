@@ -49,8 +49,8 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
 	github.com/stevenle/topsort v0.2.0
-	github.com/turbot/go-kit v0.9.0
-	github.com/turbot/pipe-fittings v0.2.2
+	github.com/turbot/go-kit v0.10.0-rc.0
+	github.com/turbot/pipe-fittings v0.3.1
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.9.0
 	github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7
