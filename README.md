@@ -97,7 +97,7 @@ You can also use psql, pgcli, Metabase, Tableau, or [any client](https://steampi
 Linux or WSL
 
 ```sh
-sudo /bin/sh -c "$(curl -fsSL https://raw.githubusercontent.com/turbot/steampipe/main/install.sh)"
+sudo /bin/sh -c "$(curl -fsSL https://steampipe.io/install/steampipe.sh)"
 ```
 
 MacOS
