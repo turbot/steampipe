@@ -122,7 +122,7 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 		}
 
 		// start plugin manager if needed
-		pluginManager, pluginManagerState, err := ensurePluginManager()
+		pluginManager, pluginManagerState, err := ensurePluginManager(ctx)
 		res.PluginManagerState = pluginManagerState
 		res.PluginManager = pluginManager
 		if err != nil {
@@ -136,7 +136,7 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 	return res
 }
 
-func ensurePluginManager() (*pluginmanager.PluginManagerClient, *pluginmanager.State, error) {
+func ensurePluginManager(ctx context.Context) (*pluginmanager.PluginManagerClient, *pluginmanager.State, error) {
 	// start the plugin manager if needed
 	state, err := pluginmanager.LoadState()
 	if err != nil {
@@ -208,7 +208,6 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 		return sperr.WrapWithMessage(err, "failed to migrate db public schema")
 	}
 
-	statushooks.SetStatus(ctx, "Call initial refresh connections")
 	return nil
 }
 
