@@ -17,7 +17,7 @@ function setup() {
 @test "snapshot mode - query output csv" {
   cd $FILE_PATH/test_data/mods/functionality_test_mod
 
-  steampipe query query.static_query_2 --snapshot --output csv --cloud-token $SPIPETOOLS_TOKEN --snapshot-location spipetools/toolstest > output.csv
+  steampipe query query.static_query_2 --snapshot --output csv --pipes-token $SPIPETOOLS_TOKEN --snapshot-location turbot-ops/clitesting > output.csv
 
   # extract the snapshot url from the output
   url=$(grep -o 'http[^"]*' output.csv)
@@ -46,7 +46,7 @@ function setup() {
 @test "snapshot mode - query output json" {
   cd $FILE_PATH/test_data/mods/functionality_test_mod
 
-  steampipe query query.static_query_2 --snapshot --output json --cloud-token $SPIPETOOLS_TOKEN --snapshot-location spipetools/toolstest > output.json
+  steampipe query query.static_query_2 --snapshot --output json --pipes-token $SPIPETOOLS_TOKEN --snapshot-location turbot-ops/clitesting > output.json
 
   # extract the snapshot url from the output
   url=$(grep -o 'http[^"]*' output.json)
@@ -75,7 +75,7 @@ function setup() {
 @test "snapshot mode - query output table" {
   cd $FILE_PATH/test_data/mods/functionality_test_mod
 
-  steampipe query query.static_query_2 --snapshot --output table --cloud-token $SPIPETOOLS_TOKEN --snapshot-location spipetools/toolstest > output.txt
+  steampipe query query.static_query_2 --snapshot --output table --pipes-token $SPIPETOOLS_TOKEN --snapshot-location turbot-ops/clitesting > output.txt
 
   # extract the snapshot url from the output
   url=$(grep -o 'http[^"]*' output.txt)
