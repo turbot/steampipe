@@ -51,7 +51,7 @@ steampipe plugin install hackernews
 
 ## Query with a plugin
 
-Run a query using `psql` — or another Postgres client , or [Powerpipe](https://powerpipe.io) — to query a tables provided by the installed plugin.
+Run a query using `psql` — or another Postgres client , or [Powerpipe](https://powerpipe.io) — to query a table provided by the installed plugin.
 
 
 ```
@@ -59,7 +59,7 @@ psql -h localhost -p 9193 -d steampipe -U steampipe
 ```
 
 ```
-steampipe=> select * from hackernews_new limit 1
+steampipe=> select * from hackernews_new limit 10
 ```
 
 ## Developing
