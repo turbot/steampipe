@@ -50,7 +50,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $output
 
   # check the error message
-  assert_output --partial 'Please check the identity and workspace names and try again.'
+  assert_output --partial 'Error: Not authenticated for Turbot Pipes.'
 }
 
 @test "connect to cloud workspace - passing the workspace name to workspace-database arg (unsetting ENV - the token should get picked from tptt file)" {
