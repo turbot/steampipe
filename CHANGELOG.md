@@ -1,3 +1,7 @@
+## v0.22.1 [tbd]
+_Whats new_
+Improve startup performance with high plugin count - parallelize plugin startup.  ([#4183](https://github.com/turbot/steampipe/issues/4183))
+
 ## v0.22.0 [2024-03-06]
 
 _Steampipe unbundled, introducing Powerpipe_
