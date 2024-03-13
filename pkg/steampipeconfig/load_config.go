@@ -138,7 +138,6 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
 	steampipeConfig.PluginVersions = v.Plugins
-	log.Println(v)
 
 	// load config from the installation folder -  load all spc files from config directory
 	include := filehelpers.InclusionsFromExtensions(constants.ConnectionConfigExtensions)

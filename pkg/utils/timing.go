@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -21,7 +22,7 @@ type timeLog struct {
 
 var Timing []timeLog
 
-func shouldProfile() bool {
+func ShouldProfile() bool {
 	profilingEnv, exists := os.LookupEnv("STEAMPIPE_PROFILE")
 	if exists {
 		return strings.ToUpper(profilingEnv) == "TRUE"
@@ -29,7 +30,7 @@ func shouldProfile() bool {
 	return profiling
 }
 func LogTime(operation string) {
-	if !shouldProfile() {
+	if !ShouldProfile() {
 		return
 	}
 	lastTimelogIdx := len(Timing) - 1
@@ -43,9 +44,9 @@ func LogTime(operation string) {
 	Timing = append(Timing, timeLog{time.Now(), elapsed, cumulative, operation})
 }
 
-func DisplayProfileData() {
-	if shouldProfile() {
-		fmt.Println("Timing")
+func DisplayProfileData(op io.Writer) {
+	if ShouldProfile() {
+		fmt.Fprint(op, "Timing\n")
 
 		var data [][]string
 		for _, logEntry := range Timing {
@@ -59,7 +60,7 @@ func DisplayProfileData() {
 			itemData = append(itemData, logEntry.Cumulative.String())
 			data = append(data, itemData)
 		}
-		table := tablewriter.NewWriter(os.Stdout)
+		table := tablewriter.NewWriter(op)
 		table.SetHeader([]string{"Operation", "Elapsed", "Cumulative"})
 		table.SetBorder(true)
 		table.SetReflowDuringAutoWrap(false)

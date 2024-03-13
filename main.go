@@ -31,7 +31,7 @@ func main() {
 			}
 		}
 		utils.LogTime("main end")
-		utils.DisplayProfileData()
+		utils.DisplayProfileData(os.Stdout)
 		os.Exit(exitCode)
 	}()
 

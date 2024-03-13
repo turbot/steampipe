@@ -137,24 +137,34 @@ func (m *PluginManager) Get(req *pb.GetRequest) (_ *pb.GetResponse, err error) {
 	log.Printf("[TRACE] PluginManager Get %p", req)
 	defer log.Printf("[TRACE] PluginManager Get DONE %p", req)
 
-	resp := &pb.GetResponse{
-		ReattachMap: make(map[string]*pb.ReattachConfig),
-		FailureMap:  make(map[string]string),
-	}
+	resp := newGetResponse()
 
 	// build a map of plugins to connection config for requested connections, and a lookup of the requested connections
 	plugins, requestedConnectionsLookup, err := m.buildRequiredPluginMap(req)
 	if err != nil {
-		return resp, err
+		return resp.GetResponse, err
 	}
 
 	log.Printf("[TRACE] PluginManager Get, connections: '%s'\n", req.Connections)
+	var pluginWg sync.WaitGroup
 	for pluginInstance, connectionConfigs := range plugins {
+		m.ensurePluginAsync(req, resp, pluginInstance, connectionConfigs, requestedConnectionsLookup, &pluginWg)
+	}
+	pluginWg.Wait()
+
+	log.Printf("[TRACE] PluginManager Get DONE")
+	return resp.GetResponse, nil
+}
+
+func (m *PluginManager) ensurePluginAsync(req *pb.GetRequest, resp *getResponse, pluginInstance string, connectionConfigs []*sdkproto.ConnectionConfig, requestedConnectionsLookup map[string]struct{}, pluginWg *sync.WaitGroup) {
+	pluginWg.Add(1)
+	go func() {
+		defer pluginWg.Done()
 		// ensure plugin is running
 		reattach, err := m.ensurePlugin(pluginInstance, connectionConfigs, req)
 		if err != nil {
 			log.Printf("[WARN] PluginManager Get failed for %s: %s (%p)", pluginInstance, err.Error(), resp)
-			resp.FailureMap[pluginInstance] = err.Error()
+			resp.AddFailure(pluginInstance, err.Error())
 		} else {
 			log.Printf("[TRACE] PluginManager Get succeeded for %s, pid %d (%p)", pluginInstance, reattach.Pid, resp)
 
@@ -163,13 +173,11 @@ func (m *PluginManager) Get(req *pb.GetRequest) (_ *pb.GetResponse, err error) {
 			for _, config := range connectionConfigs {
 				// if this connection was requested, copy reattach into responses
 				if _, connectionWasRequested := requestedConnectionsLookup[config.Connection]; connectionWasRequested {
-					resp.ReattachMap[config.Connection] = reattach
+					resp.AddReattach(config.Connection, reattach)
 				}
 			}
 		}
-	}
-
-	return resp, nil
+	}()
 }
 
 // build a map of plugins to connection config for requested connections, keyed by plugin instance,
