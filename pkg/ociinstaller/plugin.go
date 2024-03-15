@@ -44,21 +44,23 @@ func InstallPlugin(ctx context.Context, imageRef string, constraint string, sub 
 		return nil, err
 	}
 
+	pluginPath := pluginInstallDir(image.ImageRef, constraint)
+
 	sub <- struct{}{}
-	if err = installPluginBinary(image, tempDir.Path); err != nil {
+	if err = installPluginBinary(image, tempDir.Path, pluginPath); err != nil {
 		return nil, fmt.Errorf("plugin installation failed: %s", err)
 	}
 	sub <- struct{}{}
-	if err = installPluginDocs(image, tempDir.Path); err != nil {
+	if err = installPluginDocs(image, tempDir.Path, pluginPath); err != nil {
 		return nil, fmt.Errorf("plugin installation failed: %s", err)
 	}
 	if !config.skipConfigFile {
-		if err = installPluginConfigFiles(image, tempDir.Path); err != nil {
+		if err = installPluginConfigFiles(image, tempDir.Path, constraint); err != nil {
 			return nil, fmt.Errorf("plugin installation failed: %s", err)
 		}
 	}
 	sub <- struct{}{}
-	if err := updatePluginVersionFiles(ctx, image); err != nil {
+	if err := updatePluginVersionFiles(ctx, image, constraint); err != nil {
 		return nil, err
 	}
 	return image, nil
@@ -66,7 +68,7 @@ func InstallPlugin(ctx context.Context, imageRef string, constraint string, sub 
 
 // updatePluginVersionFiles updates the global versions.json to add installation of the plugin
 // also adds a version file in the plugin installation directory with the information
-func updatePluginVersionFiles(ctx context.Context, image *SteampipeImage) error {
+func updatePluginVersionFiles(ctx context.Context, image *SteampipeImage, constraint string) error {
 	versionFileUpdateLock.Lock()
 	defer versionFileUpdateLock.Unlock()
 
@@ -76,7 +78,7 @@ func updatePluginVersionFiles(ctx context.Context, image *SteampipeImage) error 
 		return err
 	}
 
-	pluginFullName := image.ImageRef.DisplayImageRef()
+	pluginFullName := image.ImageRef.DisplayImageRefConstraintOverride(constraint)
 
 	installedVersion, ok := v.Plugins[pluginFullName]
 	if !ok {
@@ -129,7 +131,7 @@ func installPluginBinary(image *SteampipeImage, tempdir string) error {
 
 	// unzip the file into the plugin folder
 	if _, err := ungzip(sourcePath, destDir); err != nil {
-		return fmt.Errorf("could not unzip %s to %s", sourcePath, destDir)
+		return fmt.Errorf("could not unzip %s to %s", sourcePath, pluginDir)
 	}
 	return nil
 }
@@ -154,7 +156,7 @@ func installPluginDocs(image *SteampipeImage, tempdir string) error {
 	return nil
 }
 
-func installPluginConfigFiles(image *SteampipeImage, tempdir string) error {
+func installPluginConfigFiles(image *SteampipeImage, tempdir string, constraint string) error {
 	installTo := filepaths.EnsureConfigDir()
 
 	// if ConfigFileDir is not set, then there are no config files.
@@ -172,7 +174,7 @@ func installPluginConfigFiles(image *SteampipeImage, tempdir string) error {
 	for _, obj := range objects {
 		sourceFile := filepath.Join(sourcePath, obj.Name())
 		destFile := filepath.Join(installTo, obj.Name())
-		if err := copyConfigFileUnlessExists(sourceFile, destFile, image.ImageRef); err != nil {
+		if err := copyConfigFileUnlessExists(sourceFile, destFile, constraint); err != nil {
 			return fmt.Errorf("could not copy config file from %s to %s", sourceFile, destFile)
 		}
 	}
@@ -180,7 +182,7 @@ func installPluginConfigFiles(image *SteampipeImage, tempdir string) error {
 	return nil
 }
 
-func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *SteampipeImageRef) error {
+func copyConfigFileUnlessExists(sourceFile string, destFile string, constraint string) error {
 	if fileExists(destFile) {
 		return nil
 	}
@@ -193,7 +195,7 @@ func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *Steampi
 		return fmt.Errorf("couldn't read source file permissions: %s", err)
 	}
 	// update the connection config with the correct plugin version
-	inputData = addPluginStreamToConfig(inputData, ref)
+	inputData = addPluginStreamToConfig(inputData, constraint)
 	if err = os.WriteFile(destFile, inputData, inputStat.Mode()); err != nil {
 		return fmt.Errorf("writing to output file failed: %s", err)
 	}
@@ -203,15 +205,14 @@ func copyConfigFileUnlessExists(sourceFile string, destFile string, ref *Steampi
 // The default config files have the plugin set to the 'latest' stream (as this is what is installed by default)
 // When installing non-latest plugins, that property needs to be adjusted to the stream actually getting installed.
 // Otherwise, during plugin resolution, it will resolve to an incorrect plugin instance
-// (or none at at all, if  'latest' versions isn't installed)
-func addPluginStreamToConfig(src []byte, ref *SteampipeImageRef) []byte {
-	_, _, stream := ref.GetOrgNameAndStream()
-	if stream == "latest" {
+// (or none at all, if  'latest' versions isn't installed)
+func addPluginStreamToConfig(src []byte, constraint string) []byte {
+	if constraint == "latest" {
 		return src
 	}
 
 	regex := regexp.MustCompile(`^(\s*)plugin\s*=\s*"(.*)"\s*$`)
-	substitution := fmt.Sprintf(`$1 plugin = "$2@%s"`, stream)
+	substitution := fmt.Sprintf(`$1 plugin = "$2@%s"`, constraint)
 
 	srcScanner := bufio.NewScanner(strings.NewReader(string(src)))
 	srcScanner.Split(bufio.ScanLines)
@@ -229,3 +230,14 @@ func addPluginStreamToConfig(src []byte, ref *SteampipeImageRef) []byte {
 	return destBuffer.Bytes()
 }
 
+func pluginInstallDir(ref *SteampipeImageRef, constraint string) string {
+	osSafePath := filepath.FromSlash(ref.DisplayImageRefConstraintOverride(constraint))
+	fullPath := filepath.Join(filepaths.EnsurePluginDir(), osSafePath)
+
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		err = os.MkdirAll(fullPath, 0755)
+		error_helpers.FailOnErrorWithMessage(err, "could not create plugin install directory")
+	}
+
+	return fullPath
+}

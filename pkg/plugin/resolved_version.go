@@ -19,3 +19,7 @@ func NewResolvedPluginVersion(pluginName string, version string, constraint stri
 func (r ResolvedPluginVersion) GetVersionTag() string {
 	return fmt.Sprintf("%s:%s", r.PluginName, r.Version)
 }
+
+func (r ResolvedPluginVersion) GetNameAndConstraint() string {
+	return fmt.Sprintf("%s@%s", r.PluginName, r.Constraint)
+}

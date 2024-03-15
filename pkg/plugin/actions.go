@@ -66,6 +66,7 @@ func Exists(ctx context.Context, plugin string) (bool, error) {
 
 // Install installs a plugin in the local file system
 func Install(ctx context.Context, plugin ResolvedPluginVersion, sub chan struct{}, opts ...ociinstaller.PluginInstallOption) (*ociinstaller.SteampipeImage, error) {
+	// Note: we pass the plugin info as strings here rather than passing the ResolvedPluginVersion struct as that causes circular dependency
 	image, err := ociinstaller.InstallPlugin(ctx, plugin.GetVersionTag(), plugin.Constraint, sub, opts...)
 	return image, err
 }

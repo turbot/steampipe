@@ -12,7 +12,6 @@ type versionCheckCorePayload struct {
 	Name    string `json:"name"`
 	Stream  string `json:"stream"`
 	Version string `json:"version"`
-	Digest  string `json:"digest"`
 }
 
 func (v *versionCheckCorePayload) getMapKey() string {
@@ -37,5 +36,6 @@ type responseManifest struct {
 }
 type versionCheckResponsePayload struct {
 	versionCheckCorePayload
+	Digest   string           `json:"digest"`
 	Manifest responseManifest `json:"manifest"`
 }

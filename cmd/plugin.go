@@ -600,6 +600,7 @@ func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVers
 		}
 	}
 
+	// TODO: This is only display output but currently shows "Updated plugin: chaos@0.4.1 v0.4.1" should be "Updated plugin: chaos@^0.4 v0.4.1"
 	org, name, stream := image.ImageRef.GetOrgNameAndStream()
 	versionString := ""
 	if image.Config.Plugin.Version != "" {
