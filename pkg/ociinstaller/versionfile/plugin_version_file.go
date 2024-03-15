@@ -132,21 +132,9 @@ func LoadPluginVersionFile(ctx context.Context) (*PluginVersionFile, error) {
 		if err == nil {
 			return pluginVersions, nil
 		}
-
-		// check if this was a syntax error during parsing
-		var syntaxError *json.SyntaxError
-		isSyntaxError := errors.As(err, &syntaxError)
-		if !isSyntaxError {
-			// not a syntax error - return the error
-			return nil, err
-		}
-
-		// it was a syntax error, either the file is corrupted or empty - try to regenerate it
-		// if it was empty, and there are no plugin version files, regeneration will detect it and
-		// return and Empty structure
 	}
 
-	// we don't have a global plugin/versions.json or it is not parseable
+	// we don't have a global plugin/versions.json or it is not parseable or is empty (always recompose)
 	// generate the version file from the individual version files by walking the plugin directories
 	// this will return an Empty Version file if there are no version files in the plugin directories
 	pluginVersions := recomposePluginVersionFile(ctx)
@@ -218,9 +206,9 @@ func readGlobalPluginVersionsFile(path string) (*PluginVersionFile, error) {
 		return nil, err
 	}
 	if len(file) == 0 {
-		// the file exists, but is empty
+		// the file exists, but is empty - return an error
 		// start from scratch
-		return newPluginVersionFile(), nil
+		return nil, sperr.New("plugin versions.json file is empty")
 	}
 
 	var data PluginVersionFile
