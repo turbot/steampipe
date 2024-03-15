@@ -12,7 +12,7 @@ import (
 func SkipUpdate(report VersionCheckReport) (bool, string) {
 
 	// 1) If there is an updated version ALWAYS update
-	if report.Plugin.ImageDigest != report.CheckResponse.Digest {
+	if report.Plugin.Version != report.CheckResponse.Version {
 		return false, ""
 	}
 
