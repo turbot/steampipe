@@ -63,6 +63,12 @@ func (r *SteampipeImageRef) DisplayImageRef() string {
 	return fullRef
 }
 
+func (r *SteampipeImageRef) DisplayImageRefConstraintOverride(constraint string) string {
+	dir := r.DisplayImageRef()
+	s := strings.Split(dir, "@")
+	return fmt.Sprintf("%s@%s", s[0], constraint)
+}
+
 func isDigestRef(ref string) bool {
 	return strings.Contains(ref, "@sha256:")
 }

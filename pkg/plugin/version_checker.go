@@ -150,13 +150,8 @@ func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.Install
 		Name:    name,
 		Stream:  stream,
 		Version: plugin.Version,
-		Digest:  plugin.ImageDigest,
 	}
-	// if Digest field is missing, populate with dummy field
-	// - this will force and update an in doing so fix the versions.json
-	if payload.Digest == "" {
-		payload.Digest = "no digest"
-	}
+
 	return payload
 }
 
@@ -215,7 +210,6 @@ func GetLatestPluginVersionByConstraint(ctx context.Context, installationID stri
 			Name:    name,
 			Stream:  constraint,
 			Version: "0.0.0",
-			Digest:  "no-digest",
 		},
 	}
 	orgAndName := fmt.Sprintf("%s/%s", org, name)
