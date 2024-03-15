@@ -1,6 +1,10 @@
-## v0.22.1 [tbd]
+## v0.22.1 [2024-03-15]
 _Whats new_
-Improve startup performance with high plugin count - parallelize plugin startup.  ([#4183](https://github.com/turbot/steampipe/issues/4183))
+* Improve startup performance with high plugin count - parallelize plugin startup.  ([#4183](https://github.com/turbot/steampipe/issues/4183))
+* Add database SSL password support for encrypted private key in order to handle your own certificates. ([#4149](https://github.com/turbot/steampipe/issues/4149))
+
+_Bug fixes_
+* Fix issue where plugin list cannot re-create top-level versions.json file if the file has been corrupted or empty. ([#4191](https://github.com/turbot/steampipe/issues/4191))
 
 ## v0.22.0 [2024-03-06]
 
