@@ -15,14 +15,14 @@ import (
 
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	versionfile "github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
 var versionFileUpdateLock = &sync.Mutex{}
 
 // InstallPlugin installs a plugin from an OCI Image
-func InstallPlugin(ctx context.Context, imageRef string, sub chan struct{}, opts ...PluginInstallOption) (*SteampipeImage, error) {
+func InstallPlugin(ctx context.Context, imageRef string, constraint string, sub chan struct{}, opts ...PluginInstallOption) (*SteampipeImage, error) {
 	config := &pluginInstallConfig{}
 	for _, opt := range opts {
 		opt(config)

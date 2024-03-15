@@ -242,7 +242,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	// args to 'plugin install' -- one or more plugins to install
 	// plugin names can be simple names ('aws') for "standard" plugins,
-	// or full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
+	// or full refs to the OCI image (ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0)
 	plugins := append([]string{}, args...)
 	showProgress := viper.GetBool(constants.ArgProgress)
 	installReports := make(display.PluginInstallReports, 0, len(plugins))
@@ -261,6 +261,13 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	state, err := installationstate.Load()
+	if err != nil {
+		error_helpers.ShowError(ctx, fmt.Errorf("could not load state"))
+		exitCode = constants.ExitCodePluginLoadingError
+		return
+	}
+
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
 	progressBars := uiprogress.New()
@@ -273,7 +280,31 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	for _, pluginName := range plugins {
 		installWaitGroup.Add(1)
 		bar := createProgressBar(pluginName, progressBars)
-		go doPluginInstall(ctx, bar, pluginName, installWaitGroup, reportChannel)
+
+		ref := ociinstaller.NewSteampipeImageRef(pluginName)
+		org, name, constraint := ref.GetOrgNameAndStream()
+		orgAndName := fmt.Sprintf("%s/%s", org, name)
+		var resolved plugin.ResolvedPluginVersion
+		if ref.IsFromSteampipeHub() {
+			rpv, err := plugin.GetLatestPluginVersionByConstraint(ctx, state.InstallationID, org, name, constraint)
+			if err != nil || rpv == nil {
+				// TODO: verify this correct way to gracefully exit
+				report := &display.PluginInstallReport{
+					Plugin:         pluginName,
+					Skipped:        true,
+					SkipReason:     constants.InstallMessagePluginNotFound,
+					IsUpdateReport: false,
+				}
+				reportChannel <- report
+				installWaitGroup.Done()
+				continue
+			}
+			resolved = *rpv
+		} else {
+			resolved = plugin.NewResolvedPluginVersion(orgAndName, constraint, constraint)
+		}
+
+		go doPluginInstall(ctx, bar, pluginName, resolved, installWaitGroup, reportChannel)
 	}
 	go func() {
 		installWaitGroup.Wait()
@@ -312,7 +343,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 }
 
-func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
+func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, resolvedPlugin plugin.ResolvedPluginVersion, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
 	pluginAlreadyInstalled, _ := plugin.Exists(ctx, pluginName)
@@ -343,7 +374,8 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 				return helpers.Resize(pluginInstallSteps[b.Current()-1], 20)
 			}
 		})
-		report = installPlugin(ctx, pluginName, false, bar)
+
+		report = installPlugin(ctx, resolvedPlugin, false, bar)
 	}
 	returnChannel <- report
 	wg.Done()
@@ -362,7 +394,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 	// args to 'plugin update' -- one or more plugins to update
 	// These can be simple names ('aws') for "standard" plugins,
-	// or full refs to the OCI image (us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0)
+	// or full refs to the OCI image (ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0)
 	plugins, err := resolveUpdatePluginsFromArgs(args)
 	showProgress := viper.GetBool(constants.ArgProgress)
 
@@ -519,7 +551,8 @@ func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.Version
 			}
 			return helpers.Resize(pluginInstallSteps[b.Current()-1], 20)
 		})
-		report = installPlugin(ctx, pvr.Plugin.Name, true, bar)
+		rp := plugin.NewResolvedPluginVersion(pvr.ShortName(), pvr.CheckResponse.Version, pvr.CheckResponse.Stream)
+		report = installPlugin(ctx, rp, true, bar)
 	}
 	returnChannel <- report
 	wg.Done()
@@ -533,7 +566,7 @@ func createProgressBar(plugin string, parentProgressBars *uiprogress.Progress) *
 	return bar
 }
 
-func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *uiprogress.Bar) *display.PluginInstallReport {
+func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVersion, isUpdate bool, bar *uiprogress.Bar) *display.PluginInstallReport {
 	// start a channel for progress publications from plugin.Install
 	progress := make(chan struct{}, 5)
 	defer func() {
@@ -549,10 +582,10 @@ func installPlugin(ctx context.Context, pluginName string, isUpdate bool, bar *u
 		}
 	}()
 
-	image, err := plugin.Install(ctx, pluginName, progress, ociinstaller.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
+	image, err := plugin.Install(ctx, resolvedPlugin, progress, ociinstaller.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
 	if err != nil {
 		msg := ""
-		_, name, stream := ociinstaller.NewSteampipeImageRef(pluginName).GetOrgNameAndStream()
+		_, name, stream := ociinstaller.NewSteampipeImageRef(resolvedPlugin.GetVersionTag()).GetOrgNameAndStream()
 		if isPluginNotFoundErr(err) {
 			exitCode = constants.ExitCodePluginNotFound
 			msg = constants.InstallMessagePluginNotFound
