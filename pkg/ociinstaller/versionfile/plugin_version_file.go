@@ -217,6 +217,7 @@ func readGlobalPluginVersionsFile(path string) (*PluginVersionFile, error) {
 	if err != nil {
 		return nil, err
 	}
+	// if empty file, then err
 	if len(file) == 0 {
 		// the file exists, but is empty
 		// start from scratch
