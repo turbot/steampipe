@@ -20,7 +20,7 @@ import (
 type VersionCheckReport struct {
 	Plugin        *versionfile.InstalledVersion
 	CheckResponse versionCheckResponsePayload
-	CheckRequest  versionCheckRequestPayload
+	CheckRequest  versionCheckCorePayload
 }
 
 func (vr *VersionCheckReport) ShortName() string {
@@ -112,18 +112,14 @@ func (v *VersionChecker) reportPluginUpdates(ctx context.Context) map[string]Ver
 
 func (v *VersionChecker) getLatestVersionsForPlugins(ctx context.Context, plugins []*versionfile.InstalledVersion) map[string]VersionCheckReport {
 
-	getMapKey := func(thisPayload versionCheckRequestPayload) string {
-		return fmt.Sprintf("%s/%s/%s", thisPayload.Org, thisPayload.Name, thisPayload.Stream)
-	}
-
-	var requestPayload []versionCheckRequestPayload
+	var requestPayload []versionCheckCorePayload
 	reports := map[string]VersionCheckReport{}
 
 	for _, ref := range plugins {
 		thisPayload := v.getPayloadFromInstalledData(ref)
 		requestPayload = append(requestPayload, thisPayload)
 
-		reports[getMapKey(thisPayload)] = VersionCheckReport{
+		reports[thisPayload.getMapKey()] = VersionCheckReport{
 			Plugin:        ref,
 			CheckRequest:  thisPayload,
 			CheckResponse: versionCheckResponsePayload{},
@@ -146,10 +142,10 @@ func (v *VersionChecker) getLatestVersionsForPlugins(ctx context.Context, plugin
 	return reports
 }
 
-func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.InstalledVersion) versionCheckRequestPayload {
+func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.InstalledVersion) versionCheckCorePayload {
 	ref := ociinstaller.NewSteampipeImageRef(plugin.Name)
 	org, name, stream := ref.GetOrgNameAndStream()
-	payload := versionCheckRequestPayload{
+	payload := versionCheckCorePayload{
 		Org:     org,
 		Name:    name,
 		Stream:  stream,
@@ -166,13 +162,16 @@ func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.Install
 
 func (v *VersionChecker) getVersionCheckURL() url.URL {
 	var u url.URL
-	u.Scheme = "https"
-	u.Host = "hub.steampipe.io"
+	//u.Scheme = "https"
+	//u.Host = "hub.steampipe.io"
+	//u.Path = "api/plugin/version"
+	u.Scheme = "http"
+	u.Host = "localhost:3000"
 	u.Path = "api/plugin/version"
 	return u
 }
 
-func (v *VersionChecker) requestServerForLatest(ctx context.Context, payload []versionCheckRequestPayload) ([]versionCheckResponsePayload, error) {
+func (v *VersionChecker) requestServerForLatest(ctx context.Context, payload []versionCheckCorePayload) ([]versionCheckResponsePayload, error) {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
 	sendRequestTo := v.getVersionCheckURL()
 	requestBody := utils.BuildRequestPayload(v.signature, map[string]interface{}{
@@ -206,4 +205,31 @@ func (v *VersionChecker) requestServerForLatest(ctx context.Context, payload []v
 	}
 
 	return responseData, nil
+}
+
+func GetLatestPluginVersionByConstraint(ctx context.Context, installationID string, org string, name string, constraint string) (*ResolvedPluginVersion, error) {
+	vc := VersionChecker{signature: installationID}
+	payload := []versionCheckCorePayload{
+		{
+			Org:     org,
+			Name:    name,
+			Stream:  constraint,
+			Version: "0.0.0",
+			Digest:  "no-digest",
+		},
+	}
+	orgAndName := fmt.Sprintf("%s/%s", org, name)
+
+	vcr, err := vc.requestServerForLatest(ctx, payload)
+	if err != nil {
+		return nil, err
+	}
+	if len(vcr) == 0 {
+		return nil, fmt.Errorf("no version found for %s with constraint %s", orgAndName, constraint)
+	}
+
+	v := vcr[0]
+	rpv := NewResolvedPluginVersion(orgAndName, v.Version, constraint)
+
+	return &rpv, nil
 }

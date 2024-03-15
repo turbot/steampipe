@@ -7,7 +7,7 @@ type versionCheckPayload interface {
 }
 
 // the payload that travels to-and-fro between steampipe and the server
-type versionCheckRequestPayload struct {
+type versionCheckCorePayload struct {
 	Org     string `json:"org"`
 	Name    string `json:"name"`
 	Stream  string `json:"stream"`
@@ -15,7 +15,7 @@ type versionCheckRequestPayload struct {
 	Digest  string `json:"digest"`
 }
 
-func (v *versionCheckRequestPayload) getMapKey() string {
+func (v *versionCheckCorePayload) getMapKey() string {
 	return fmt.Sprintf("%s/%s/%s", v.Org, v.Name, v.Stream)
 }
 
@@ -36,6 +36,6 @@ type responseManifest struct {
 	Annotations   responseManifestAnnotations `json:"annotations"`
 }
 type versionCheckResponsePayload struct {
-	versionCheckRequestPayload
+	versionCheckCorePayload
 	Manifest responseManifest `json:"manifest"`
 }

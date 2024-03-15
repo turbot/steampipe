@@ -18,12 +18,6 @@ import (
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-const (
-	DefaultImageTag     = "latest"
-	DefaultImageRepoURL = "us-docker.pkg.dev/steampipe/plugin"
-	DefaultImageOrg     = "turbot"
-)
-
 // Remove removes an installed plugin
 func Remove(ctx context.Context, image string, pluginConnections map[string][]*modconfig.Connection) (*steampipeconfig.PluginRemoveReport, error) {
 	statushooks.SetStatus(ctx, fmt.Sprintf("Removing plugin %s", image))
@@ -71,8 +65,8 @@ func Exists(ctx context.Context, plugin string) (bool, error) {
 }
 
 // Install installs a plugin in the local file system
-func Install(ctx context.Context, plugin string, sub chan struct{}, opts ...ociinstaller.PluginInstallOption) (*ociinstaller.SteampipeImage, error) {
-	image, err := ociinstaller.InstallPlugin(ctx, plugin, sub, opts...)
+func Install(ctx context.Context, plugin ResolvedPluginVersion, sub chan struct{}, opts ...ociinstaller.PluginInstallOption) (*ociinstaller.SteampipeImage, error) {
+	image, err := ociinstaller.InstallPlugin(ctx, plugin.GetVersionTag(), plugin.Constraint, sub, opts...)
 	return image, err
 }
 
