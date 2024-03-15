@@ -76,6 +76,14 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$flag" "0"
 }
 
+@test "adding an encrypted private key should work fine and service should start successfully" {
+  run openssl genrsa -aes256 -out $STEAMPIPE_INSTALL_DIR/db/14.2.0/data/server.key -passout pass:steampipe -traditional 2048 
+  
+  run openssl req -key $STEAMPIPE_INSTALL_DIR/db/14.2.0/data/server.key -passin pass:steampipe -new -x509 -out $STEAMPIPE_INSTALL_DIR/db/14.2.0/data/server.crt -subj "/CN=steampipe.io"
+
+  steampipe service start --database-ssl-password steampipe
+}
+
 function teardown() {
-  steampipe service stop
+  steampipe service stop --force
 }
