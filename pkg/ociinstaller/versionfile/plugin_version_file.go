@@ -118,6 +118,7 @@ var pluginLoadLock = sync.Mutex{}
 
 // LoadPluginVersionFile migrates from the old version file format if necessary and loads the plugin version data
 func LoadPluginVersionFile(ctx context.Context) (*PluginVersionFile, error) {
+
 	// we need a lock here so that we don't hit a race condition where
 	// the plugin file needs to be composed
 	// if recomposition is not required, this has (almost) zero penalty
@@ -145,6 +146,33 @@ func LoadPluginVersionFile(ctx context.Context) (*PluginVersionFile, error) {
 		return nil, err
 	}
 	return pluginVersions, err
+}
+
+func LoadLocalPlugins(ctx context.Context) (map[string]*InstalledVersion, error) {
+	localFolder := filepaths.LocalPluginPath()
+	localPlugins := map[string]*InstalledVersion{}
+
+	// iterate over all folders underneath the local plugin directory and if the folder contains a plugin, add to the map
+	pluginFolders, err := filehelpers.ListFilesWithContext(ctx, localFolder, &filehelpers.ListOptions{Flags: filehelpers.DirectoriesFlat})
+	if err != nil {
+		return nil, err
+	}
+	for _, pluginFolder := range pluginFolders {
+		// check if the folder contains a plugin file
+		pluginName := filepath.Base(pluginFolder)
+		pluginFile := filepath.Join(pluginFolder, pluginName+".plugin")
+		if filehelpers.FileExists(pluginFile) {
+			// read the plugin file
+
+			localPlugins[pluginName] = &InstalledVersion{
+				Name:          pluginName,
+				Version:       "latest",
+				StructVersion: InstalledVersionStructVersion,
+			}
+		}
+	}
+
+	return localPlugins, nil
 }
 
 // EnsureVersionFilesInPluginDirectories attempts a backfill of the individual version.json for plugins

@@ -24,6 +24,7 @@ const (
 	legacyStateFileName          = "update-check.json"
 	availableVersionsFileName    = "available_versions.json"
 	legacyNotificationsFileName  = "notifications.json"
+	localPluginFolder            = "local"
 )
 
 var SteampipeDir string
@@ -142,6 +143,11 @@ func LegacyVersionFilePath() string {
 // PluginVersionFilePath returns the plugin version file path
 func PluginVersionFilePath() string {
 	return filepath.Join(EnsurePluginDir(), versionFileName)
+}
+
+// LocalPluginPath returns the path to locally installed plugins
+func LocalPluginPath() string {
+	return filepath.Join(EnsurePluginDir(), localPluginFolder)
 }
 
 // DatabaseVersionFilePath returns the plugin version file path
