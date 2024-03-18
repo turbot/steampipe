@@ -179,11 +179,9 @@ func loadLocalPlugins(ctx context.Context) (map[string]*InstalledVersion, error)
 		pluginName := filepath.Base(pluginFolder)
 		pluginFile := filepath.Join(pluginFolder, pluginName+".plugin")
 		if filehelpers.FileExists(pluginFile) {
-			// read the plugin file
-
 			localPlugins[pluginName] = &InstalledVersion{
 				Name:          pluginName,
-				Version:       "latest",
+				Version:       "local",
 				StructVersion: InstalledVersionStructVersion,
 			}
 		}
