@@ -529,17 +529,17 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.VersionCheckReport, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
-	if skip, skipReason := plugin.SkipUpdate(pvr); skip {
+	if required := plugin.UpdateRequired(pvr); !required {
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
 			// set the progress bar to append itself with "Already Installed"
-			return helpers.Resize(skipReason, 30)
+			return helpers.Resize(constants.InstallMessagePluginLatestAlreadyInstalled, 30)
 		})
 		// set the progress bar to the maximum
 		bar.Set(len(pluginInstallSteps))
 		report = &display.PluginInstallReport{
 			Plugin:         fmt.Sprintf("%s@%s", pvr.CheckResponse.Name, pvr.CheckResponse.Constraint),
 			Skipped:        true,
-			SkipReason:     skipReason,
+			SkipReason:     constants.InstallMessagePluginLatestAlreadyInstalled,
 			IsUpdateReport: true,
 		}
 	} else {
@@ -600,7 +600,6 @@ func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVers
 		}
 	}
 
-	// TODO: This is only display output but currently shows "Updated plugin: chaos@0.4.1 v0.4.1" should be "Updated plugin: chaos@^0.4 v0.4.1"
 	org, name, _ := image.ImageRef.GetOrgNameAndStream()
 	versionString := ""
 	if image.Config.Plugin.Version != "" {
