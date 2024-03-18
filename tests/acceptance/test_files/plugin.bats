@@ -19,6 +19,25 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe plugin uninstall net@0.2
 }
 
+@test "create a local plugin, add connection and query" {
+  run steampipe plugin install chaos
+
+  # create a local plugin directory
+  mkdir $STEAMPIPE_INSTALL_DIR/plugins/local
+  mkdir $STEAMPIPE_INSTALL_DIR/plugins/local/myplugin
+  # use the chaos plugin binary to get a plugin binary for the local plugin
+  cp $STEAMPIPE_INSTALL_DIR/plugins/hub.steampipe.io/plugins/turbot/chaos@latest/steampipe-plugin-chaos.plugin $STEAMPIPE_INSTALL_DIR/plugins/local/myplugin/myplugin.plugin
+  # create a connection config file for the new local plugin
+  echo "connection \"myplugin\" {
+    plugin = \"local/myplugin\"
+  }" > $STEAMPIPE_INSTALL_DIR/config/myplugin.spc
+
+  run steampipe query "select * from myplugin.chaos_all_column_types"
+  assert_success
+  run steampipe plugin list
+  assert_output --partial "local/myplugin"
+}
+
 @test "start service, install plugin and query" {
   skip
   # start service
