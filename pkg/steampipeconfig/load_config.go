@@ -138,10 +138,11 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
 
-	//ew := addLocalPluginsIntoVersionFile(ctx, v)
-	//if ew != nil && ew.GetError() != nil {
-	//	return nil, ew
-	//}
+	// add any "local" plugins (i.e. plugins installed under the 'local' folder) into the version file
+	ew := v.AddLocalPlugins(ctx)
+	if ew != nil && ew.GetError() != nil {
+		return nil, ew
+	}
 	steampipeConfig.PluginVersions = v.Plugins
 
 	// load config from the installation folder -  load all spc files from config directory
@@ -186,23 +187,6 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 	logValidationResult(warnings, errors)
 
 	return steampipeConfig, errorsAndWarnings
-}
-
-func addLocalPluginsIntoVersionFile(ctx context.Context, v *versionfile.PluginVersionFile) *error_helpers.ErrorAndWarnings {
-	// any plugins installed under the `local` folder are added to the plugin version file
-	localPlugins, err := versionfile.LoadLocalPlugins(ctx)
-	if err != nil {
-		return error_helpers.NewErrorsAndWarning(err)
-
-	}
-	for name, install := range localPlugins {
-		if _, ok := v.Plugins[name]; ok {
-			// if the plugin is already in the global version file, skip it
-			continue
-		}
-		v.Plugins[fmt.Sprintf("local/%s", name)] = install
-	}
-	return nil
 }
 
 func logValidationResult(warnings []string, errors []string) {

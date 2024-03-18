@@ -12,6 +12,7 @@ import (
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
@@ -39,14 +40,14 @@ func newPluginVersionFile() *PluginVersionFile {
 
 // IsValid checks whether the struct was correctly deserialized,
 // by checking if the StructVersion is populated
-func (f PluginVersionFile) IsValid() bool {
-	return f.StructVersion > 0
+func (p *PluginVersionFile) IsValid() bool {
+	return p.StructVersion > 0
 }
 
 // EnsurePluginVersionFile reads the version file in the plugin directory (if exists) and overwrites it if the data in the
 // argument is different. The comparison is done using the `Name` and `BinaryDigest` properties.
 // If the file doesn't exist, or cannot be read/parsed, EnsurePluginVersionFile fails over to overwriting the data
-func (f *PluginVersionFile) EnsurePluginVersionFile(installData *InstalledVersion) error {
+func (p *PluginVersionFile) EnsurePluginVersionFile(installData *InstalledVersion) error {
 	pluginFolder, err := filepaths.FindPluginFolder(installData.Name)
 	if err != nil {
 		return err
@@ -71,15 +72,15 @@ func (f *PluginVersionFile) EnsurePluginVersionFile(installData *InstalledVersio
 }
 
 // Save writes the config file to disk
-func (f *PluginVersionFile) Save() error {
+func (p *PluginVersionFile) Save() error {
 	// set struct version
-	f.StructVersion = PluginStructVersion
+	p.StructVersion = PluginStructVersion
 	versionFilePath := filepaths.PluginVersionFilePath()
-	return f.write(versionFilePath)
+	return p.write(versionFilePath)
 }
 
-func (f *PluginVersionFile) write(path string) error {
-	versionFileJSON, err := json.MarshalIndent(f, "", "  ")
+func (p *PluginVersionFile) write(path string) error {
+	versionFileJSON, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {
 		log.Println("[ERROR]", "Error while writing version file", err)
 		return err
@@ -91,10 +92,10 @@ func (f *PluginVersionFile) write(path string) error {
 	return os.WriteFile(path, versionFileJSON, 0644)
 }
 
-func (f *PluginVersionFile) ensureVersionFilesInPluginDirectories() error {
+func (p *PluginVersionFile) ensureVersionFilesInPluginDirectories() error {
 	removals := []*InstalledVersion{}
-	for _, installation := range f.Plugins {
-		if err := f.EnsurePluginVersionFile(installation); err != nil {
+	for _, installation := range p.Plugins {
+		if err := p.EnsurePluginVersionFile(installation); err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				removals = append(removals, installation)
 				continue
@@ -106,9 +107,25 @@ func (f *PluginVersionFile) ensureVersionFilesInPluginDirectories() error {
 	// if we found any plugins that do not have installations, remove them from the map
 	if len(removals) > 0 {
 		for _, removal := range removals {
-			delete(f.Plugins, removal.Name)
+			delete(p.Plugins, removal.Name)
 		}
-		return f.Save()
+		return p.Save()
+	}
+	return nil
+}
+
+// any plugins installed under the `local` folder are added to the plugin version file
+func (p *PluginVersionFile) AddLocalPlugins(ctx context.Context) *error_helpers.ErrorAndWarnings {
+	localPlugins, err := loadLocalPlugins(ctx)
+	if err != nil {
+		return error_helpers.NewErrorsAndWarning(err)
+	}
+	for name, install := range localPlugins {
+		if _, ok := p.Plugins[name]; ok {
+			// if the plugin is already in the global version file, skip it
+			continue
+		}
+		p.Plugins[fmt.Sprintf("local/%s", name)] = install
 	}
 	return nil
 }
@@ -148,7 +165,7 @@ func LoadPluginVersionFile(ctx context.Context) (*PluginVersionFile, error) {
 	return pluginVersions, err
 }
 
-func LoadLocalPlugins(ctx context.Context) (map[string]*InstalledVersion, error) {
+func loadLocalPlugins(ctx context.Context) (map[string]*InstalledVersion, error) {
 	localFolder := filepaths.LocalPluginPath()
 	localPlugins := map[string]*InstalledVersion{}
 
