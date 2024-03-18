@@ -36,14 +36,6 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration start")
 	// populate file mod time for each referenced plugin
 	for name, connection := range connectionMap {
-		//pluginPath, _ := filepaths.GetPluginPath(connection.Plugin, connection.PluginAlias)
-		//// ignore error if plugin is not available
-		//// if plugin is not installed, the path will be returned as empty
-		//if pluginPath == "" {
-		//	missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
-		//	connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
-		//}
-
 		// if the connection is in error, create an error connection state
 		// this may have been set by the loading code
 		if connection.Error != nil {
