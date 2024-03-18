@@ -19,7 +19,7 @@ import (
 // VersionCheckReport ::
 type VersionCheckReport struct {
 	Plugin        *versionfile.InstalledVersion
-	CheckResponse versionCheckResponsePayload
+	CheckResponse versionCheckCorePayload
 	CheckRequest  versionCheckCorePayload
 }
 
@@ -122,7 +122,7 @@ func (v *VersionChecker) getLatestVersionsForPlugins(ctx context.Context, plugin
 		reports[thisPayload.getMapKey()] = VersionCheckReport{
 			Plugin:        ref,
 			CheckRequest:  thisPayload,
-			CheckResponse: versionCheckResponsePayload{},
+			CheckResponse: versionCheckCorePayload{},
 		}
 	}
 
@@ -166,7 +166,7 @@ func (v *VersionChecker) getVersionCheckURL() url.URL {
 	return u
 }
 
-func (v *VersionChecker) requestServerForLatest(ctx context.Context, payload []versionCheckCorePayload) ([]versionCheckResponsePayload, error) {
+func (v *VersionChecker) requestServerForLatest(ctx context.Context, payload []versionCheckCorePayload) ([]versionCheckCorePayload, error) {
 	// Set a default timeout of 3 sec for the check request (in milliseconds)
 	sendRequestTo := v.getVersionCheckURL()
 	requestBody := utils.BuildRequestPayload(v.signature, map[string]interface{}{
@@ -191,7 +191,7 @@ func (v *VersionChecker) requestServerForLatest(ctx context.Context, payload []v
 	}
 	defer resp.Body.Close()
 
-	var responseData []versionCheckResponsePayload
+	var responseData []versionCheckCorePayload
 
 	err = json.Unmarshal(bodyBytes, &responseData)
 	if err != nil {

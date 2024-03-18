@@ -97,7 +97,7 @@ func (r *Runner) run(ctx context.Context) {
 	if r.options.runUpdateCheck {
 		// check whether an updated version is available
 		r.runJobAsync(ctx, func(c context.Context) {
-			availableCliVersion, _ = fetchAvailableCLIVerion(ctx, r.currentState.InstallationID)
+			availableCliVersion, _ = fetchAvailableCLIVersion(ctx, r.currentState.InstallationID)
 		}, &waitGroup)
 
 		// check whether an updated version is available
