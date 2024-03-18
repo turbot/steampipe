@@ -153,7 +153,7 @@ func (av *AvailableVersionCache) getPluginNotificationLines(reports []plugin.Ver
 			line = fmt.Sprintf(
 				format,
 				thisName,
-				report.CheckResponse.Stream,
+				report.CheckResponse.Constraint,
 				constants.Bold(report.CheckResponse.Version),
 			)
 		} else {
@@ -166,7 +166,7 @@ func (av *AvailableVersionCache) getPluginNotificationLines(reports []plugin.Ver
 			line = fmt.Sprintf(
 				format,
 				thisName,
-				report.CheckResponse.Stream,
+				report.CheckResponse.Constraint,
 				constants.Bold(report.Plugin.Version),
 				constants.Bold(version),
 			)

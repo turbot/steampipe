@@ -8,14 +8,14 @@ type versionCheckPayload interface {
 
 // the payload that travels to-and-fro between steampipe and the server
 type versionCheckCorePayload struct {
-	Org     string `json:"org"`
-	Name    string `json:"name"`
-	Stream  string `json:"stream"`
-	Version string `json:"version"`
+	Org        string `json:"org"`
+	Name       string `json:"name"`
+	Constraint string `json:"constraint"`
+	Version    string `json:"version"`
 }
 
 func (v *versionCheckCorePayload) getMapKey() string {
-	return fmt.Sprintf("%s/%s/%s", v.Org, v.Name, v.Stream)
+	return fmt.Sprintf("%s/%s/%s", v.Org, v.Name, v.Constraint)
 }
 
 type responseManifestAnnotations map[string]string
