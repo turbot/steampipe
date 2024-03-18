@@ -27,10 +27,10 @@ func (vr *VersionCheckReport) ShortName() string {
 	return fmt.Sprintf("%s/%s", vr.CheckResponse.Org, vr.CheckResponse.Name)
 }
 
-func (vr *VersionCheckReport) ShortNameWithStream() string {
-	// dont show stream names for latest streams
-	if vr.CheckResponse.Stream != "latest" {
-		return fmt.Sprintf("%s/%s@%s", vr.CheckResponse.Org, vr.CheckResponse.Name, vr.CheckResponse.Stream)
+func (vr *VersionCheckReport) ShortNameWithConstraint() string {
+	// dont show constraints for latest
+	if vr.CheckResponse.Constraint != "latest" {
+		return fmt.Sprintf("%s/%s@%s", vr.CheckResponse.Org, vr.CheckResponse.Name, vr.CheckResponse.Constraint)
 	}
 	return fmt.Sprintf("%s/%s", vr.CheckResponse.Org, vr.CheckResponse.Name)
 }
@@ -146,10 +146,10 @@ func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.Install
 	ref := ociinstaller.NewSteampipeImageRef(plugin.Name)
 	org, name, stream := ref.GetOrgNameAndStream()
 	payload := versionCheckCorePayload{
-		Org:     org,
-		Name:    name,
-		Stream:  stream,
-		Version: plugin.Version,
+		Org:        org,
+		Name:       name,
+		Constraint: stream,
+		Version:    plugin.Version,
 	}
 
 	return payload
@@ -162,7 +162,7 @@ func (v *VersionChecker) getVersionCheckURL() url.URL {
 	//u.Path = "api/plugin/version"
 	u.Scheme = "http"
 	u.Host = "localhost:3000"
-	u.Path = "api/plugin/version"
+	u.Path = "api/plugin/version2"
 	return u
 }
 
@@ -206,10 +206,10 @@ func GetLatestPluginVersionByConstraint(ctx context.Context, installationID stri
 	vc := VersionChecker{signature: installationID}
 	payload := []versionCheckCorePayload{
 		{
-			Org:     org,
-			Name:    name,
-			Stream:  constraint,
-			Version: "0.0.0",
+			Org:        org,
+			Name:       name,
+			Constraint: constraint,
+			Version:    "0.0.0",
 		},
 	}
 	orgAndName := fmt.Sprintf("%s/%s", org, name)

@@ -501,7 +501,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	for _, key := range sorted {
 		report := reports[key]
 		updateWaitGroup.Add(1)
-		bar := createProgressBar(report.ShortNameWithStream(), progressBars)
+		bar := createProgressBar(report.ShortNameWithConstraint(), progressBars)
 		go doPluginUpdate(ctx, bar, report, updateWaitGroup, reportChannel)
 	}
 	go func() {
@@ -537,7 +537,7 @@ func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.Version
 		// set the progress bar to the maximum
 		bar.Set(len(pluginInstallSteps))
 		report = &display.PluginInstallReport{
-			Plugin:         fmt.Sprintf("%s@%s", pvr.CheckResponse.Name, pvr.CheckResponse.Stream),
+			Plugin:         fmt.Sprintf("%s@%s", pvr.CheckResponse.Name, pvr.CheckResponse.Constraint),
 			Skipped:        true,
 			SkipReason:     skipReason,
 			IsUpdateReport: true,
@@ -551,7 +551,7 @@ func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.Version
 			}
 			return helpers.Resize(pluginInstallSteps[b.Current()-1], 20)
 		})
-		rp := plugin.NewResolvedPluginVersion(pvr.ShortName(), pvr.CheckResponse.Version, pvr.CheckResponse.Stream)
+		rp := plugin.NewResolvedPluginVersion(pvr.ShortName(), pvr.CheckResponse.Version, pvr.CheckResponse.Constraint)
 		report = installPlugin(ctx, rp, true, bar)
 	}
 	returnChannel <- report
@@ -601,7 +601,7 @@ func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVers
 	}
 
 	// TODO: This is only display output but currently shows "Updated plugin: chaos@0.4.1 v0.4.1" should be "Updated plugin: chaos@^0.4 v0.4.1"
-	org, name, stream := image.ImageRef.GetOrgNameAndStream()
+	org, name, _ := image.ImageRef.GetOrgNameAndStream()
 	versionString := ""
 	if image.Config.Plugin.Version != "" {
 		versionString = " v" + image.Config.Plugin.Version
@@ -611,7 +611,7 @@ func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVers
 		docURL = fmt.Sprintf("https://%s/%s", org, name)
 	}
 	return &display.PluginInstallReport{
-		Plugin:         fmt.Sprintf("%s@%s", name, stream),
+		Plugin:         fmt.Sprintf("%s@%s", name, resolvedPlugin.Constraint),
 		Skipped:        false,
 		Version:        versionString,
 		DocURL:         docURL,
