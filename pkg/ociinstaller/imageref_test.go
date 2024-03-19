@@ -74,8 +74,8 @@ func TestActualImageRef(t *testing.T) {
 
 func TestDisplayImageRef(t *testing.T) {
 	cases := map[string]string{
-		"ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0":                                                                   "hub.steampipe.io/plugin/turbot/aws@1.0.0",
-		"ghcr.io/turbot/steampipe/plugins/turbot/aws@sha256:766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1": "hub.steampipe.io/plugin/turbot/aws@sha256-766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1",
+		"ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0":                                                                   "hub.steampipe.io/plugins/turbot/aws@1.0.0",
+		"ghcr.io/turbot/steampipe/plugins/turbot/aws@sha256:766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1": "hub.steampipe.io/plugins/turbot/aws@sha256-766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1",
 		"aws":                                 "hub.steampipe.io/plugins/turbot/aws@latest",
 		"aws:1":                               "hub.steampipe.io/plugins/turbot/aws@1",
 		"turbot/aws:1":                        "hub.steampipe.io/plugins/turbot/aws@1",
@@ -89,7 +89,7 @@ func TestDisplayImageRef(t *testing.T) {
 		"hub.steampipe.io/plugins/turbot/aws:latest":         "hub.steampipe.io/plugins/turbot/aws@latest",
 		"hub.steampipe.io/plugins/someoneelse/myimage:mytag": "hub.steampipe.io/plugins/someoneelse/myimage@mytag",
 
-		"ghcr.io/turbot/steampipe/plugins/turbot/aws@1.0.0": "hub.steampipe.io/plugin/turbot/aws@1.0.0",
+		"ghcr.io/turbot/steampipe/plugins/turbot/aws@1.0.0": "hub.steampipe.io/plugins/turbot/aws@1.0.0",
 		"aws@1":                               "hub.steampipe.io/plugins/turbot/aws@1",
 		"turbot/aws@1":                        "hub.steampipe.io/plugins/turbot/aws@1",
 		"turbot/aws@1.0":                      "hub.steampipe.io/plugins/turbot/aws@1.0",
