@@ -813,11 +813,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Clean up Linux Build
-      uses: geekyeggo/delete-artifact@v4
+      uses: geekyeggo/delete-artifact@v5
       with:
         name: build-artifact-linux
 
     - name: Clean up Darwin Build
-      uses: geekyeggo/delete-artifact@v4
+      uses: geekyeggo/delete-artifact@v5
       with:
         name: build-artifact-darwin
