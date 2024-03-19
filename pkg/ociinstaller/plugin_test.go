@@ -46,8 +46,8 @@ func TestAddPluginName(t *testing.T) {
 	for name, test := range transformTests {
 		sourcebytes := test.pluginLineContent
 		expectedBytes := test.expectedTransformedPluginLineContent
-		_, _, stream := test.ref.GetOrgNameAndStream()
-		transformed := bytes.TrimSpace(addPluginStreamToConfig(sourcebytes, stream))
+		_, _, suffix := test.ref.GetOrgNameAndSuffix()
+		transformed := bytes.TrimSpace(addPluginStreamToConfig(sourcebytes, suffix))
 
 		if !bytes.Equal(transformed, expectedBytes) {
 			t.Fatalf("%s failed - expected(%s) - got(%s)", name, test.expectedTransformedPluginLineContent, transformed)
