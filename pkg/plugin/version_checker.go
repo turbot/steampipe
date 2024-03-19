@@ -144,11 +144,11 @@ func (v *VersionChecker) getLatestVersionsForPlugins(ctx context.Context, plugin
 
 func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.InstalledVersion) versionCheckCorePayload {
 	ref := ociinstaller.NewSteampipeImageRef(plugin.Name)
-	org, name, stream := ref.GetOrgNameAndStream()
+	org, name, constraint := ref.GetOrgNameAndSuffix()
 	payload := versionCheckCorePayload{
 		Org:        org,
 		Name:       name,
-		Constraint: stream,
+		Constraint: constraint,
 		Version:    plugin.Version,
 	}
 

@@ -282,7 +282,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		bar := createProgressBar(pluginName, progressBars)
 
 		ref := ociinstaller.NewSteampipeImageRef(pluginName)
-		org, name, constraint := ref.GetOrgNameAndStream()
+		org, name, constraint := ref.GetOrgNameAndSuffix()
 		orgAndName := fmt.Sprintf("%s/%s", org, name)
 		var resolved plugin.ResolvedPluginVersion
 		if ref.IsFromSteampipeHub() {
@@ -436,8 +436,8 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	if cmdconfig.Viper().GetBool(constants.ArgAll) {
 		for k, v := range pluginVersions {
 			ref := ociinstaller.NewSteampipeImageRef(k)
-			org, name, stream := ref.GetOrgNameAndStream()
-			key := fmt.Sprintf("%s/%s@%s", org, name, stream)
+			org, name, suffix := ref.GetOrgNameAndSuffix()
+			key := fmt.Sprintf("%s/%s@%s", org, name, suffix)
 
 			plugins = append(plugins, key)
 			runUpdatesFor = append(runUpdatesFor, v)
@@ -585,7 +585,7 @@ func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVers
 	image, err := plugin.Install(ctx, resolvedPlugin, progress, ociinstaller.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
 	if err != nil {
 		msg := ""
-		_, name, stream := ociinstaller.NewSteampipeImageRef(resolvedPlugin.GetVersionTag()).GetOrgNameAndStream()
+		_, name, suffix := ociinstaller.NewSteampipeImageRef(resolvedPlugin.GetVersionTag()).GetOrgNameAndSuffix()
 		if isPluginNotFoundErr(err) {
 			exitCode = constants.ExitCodePluginNotFound
 			msg = constants.InstallMessagePluginNotFound
@@ -593,14 +593,14 @@ func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVers
 			msg = err.Error()
 		}
 		return &display.PluginInstallReport{
-			Plugin:         fmt.Sprintf("%s@%s", name, stream),
+			Plugin:         fmt.Sprintf("%s@%s", name, suffix),
 			Skipped:        true,
 			SkipReason:     msg,
 			IsUpdateReport: isUpdate,
 		}
 	}
 
-	org, name, _ := image.ImageRef.GetOrgNameAndStream()
+	org, name, _ := image.ImageRef.GetOrgNameAndSuffix()
 	versionString := ""
 	if image.Config.Plugin.Version != "" {
 		versionString = " v" + image.Config.Plugin.Version

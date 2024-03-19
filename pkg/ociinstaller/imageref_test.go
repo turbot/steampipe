@@ -119,7 +119,7 @@ func TestDisplayImageRef(t *testing.T) {
 
 }
 
-func TestGetOrgNameAndStream(t *testing.T) {
+func TestGetOrgNameAndSuffix(t *testing.T) {
 	cases := map[string][3]string{
 		"hub.steampipe.io/plugins/turbot/aws@latest":   {"turbot", "aws", "latest"},
 		"turbot/aws@latest":                            {"turbot", "aws", "latest"},
@@ -136,10 +136,10 @@ func TestGetOrgNameAndStream(t *testing.T) {
 	for testCase, want := range cases {
 		t.Run(testCase, func(t *testing.T) {
 			r := NewSteampipeImageRef(testCase)
-			org, name, stream := r.GetOrgNameAndStream()
-			got := [3]string{org, name, stream}
+			org, name, suffix := r.GetOrgNameAndSuffix()
+			got := [3]string{org, name, suffix}
 			if got != want {
-				t.Errorf("TestGetOrgNameAndStream failed for case '%s': expected %s, got %s", testCase, want, got)
+				t.Errorf("TestGetOrgNameAndSuffix failed for case '%s': expected %s, got %s", testCase, want, got)
 			}
 		})
 	}

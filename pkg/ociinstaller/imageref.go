@@ -94,15 +94,15 @@ func (r *SteampipeImageRef) IsFromSteampipeHub() bool {
 	return strings.HasPrefix(r.DisplayImageRef(), constants.SteampipeHubOCIBase)
 }
 
-// GetOrgNameAndStream splits the full image reference into (org, name, stream)
-func (r *SteampipeImageRef) GetOrgNameAndStream() (string, string, string) {
+// GetOrgNameAndSuffix splits the full image reference into (org, name, suffix)
+func (r *SteampipeImageRef) GetOrgNameAndSuffix() (string, string, string) {
 	// plugin.Name looks like `hub.steampipe.io/plugins/turbot/aws@latest`
 	split := strings.Split(r.DisplayImageRef(), "/")
-	pluginNameAndStream := strings.Split(split[len(split)-1], "@")
+	pluginNameAndSuffix := strings.Split(split[len(split)-1], "@")
 	if r.IsFromSteampipeHub() {
-		return split[len(split)-2], pluginNameAndStream[0], pluginNameAndStream[1]
+		return split[len(split)-2], pluginNameAndSuffix[0], pluginNameAndSuffix[1]
 	}
-	return strings.Join(split[0:len(split)-1], "/"), pluginNameAndStream[0], pluginNameAndStream[1]
+	return strings.Join(split[0:len(split)-1], "/"), pluginNameAndSuffix[0], pluginNameAndSuffix[1]
 }
 
 // GetFriendlyName returns the minimum friendly name so that the original name can be rebuilt using preset defaults:
