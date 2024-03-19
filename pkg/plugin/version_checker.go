@@ -157,12 +157,11 @@ func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.Install
 
 func (v *VersionChecker) getVersionCheckURL() url.URL {
 	var u url.URL
-	//u.Scheme = "https"
+	u.Scheme = "https"
 	//u.Host = "hub.steampipe.io"
 	//u.Path = "api/plugin/version"
-	u.Scheme = "http"
-	u.Host = "localhost:3000"
-	u.Path = "api/plugin/version2"
+	u.Host = "hub-steampipe-io-git-ghcr-hub-turbot.vercel.app"
+	u.Path = "api/plugin/version-ghcr"
 	return u
 }
 
