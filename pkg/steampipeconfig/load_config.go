@@ -137,6 +137,12 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 	if err != nil {
 		return nil, error_helpers.NewErrorsAndWarning(err)
 	}
+
+	// add any "local" plugins (i.e. plugins installed under the 'local' folder) into the version file
+	ew := v.AddLocalPlugins(ctx)
+	if ew != nil && ew.GetError() != nil {
+		return nil, ew
+	}
 	steampipeConfig.PluginVersions = v.Plugins
 
 	// load config from the installation folder -  load all spc files from config directory
