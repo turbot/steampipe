@@ -105,15 +105,17 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 	if err != nil {
 		return err
 	}
+
 	// table can be nil if there are no notifications to display
-	if tableBuffer == nil && ppTable == nil {
-		return nil
+	if tableBuffer != nil {
+		fmt.Println()            //nolint:forbidigo // acceptable
+		fmt.Println(tableBuffer) //nolint:forbidigo // acceptable
 	}
 
-	fmt.Println()            //nolint:forbidigo // acceptable
-	fmt.Println(tableBuffer) //nolint:forbidigo // acceptable
-	ppTable.Render()
-	fmt.Println() //nolint:forbidigo // acceptable
+	if ppTable != nil {
+		ppTable.Render()
+		fmt.Println() //nolint:forbidigo // acceptable
+	}
 
 	return nil
 }
