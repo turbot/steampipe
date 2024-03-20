@@ -172,7 +172,6 @@ func (m *PluginManager) updateRateLimiterStatus() {
 }
 
 func (m *PluginManager) getUserDefinedLimitersForPlugin(plugin string) connection.LimiterMap {
-	log.Printf("[WARN] plugin %s", plugin)
 	userDefinedLimiters := m.userLimiters[plugin]
 	if userDefinedLimiters == nil {
 		userDefinedLimiters = make(connection.LimiterMap)

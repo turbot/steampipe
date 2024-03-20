@@ -103,6 +103,7 @@ func getResourceSchema(resource modconfig.HclResource, nestedStructs []any) *hcl
 		res.Blocks = append(res.Blocks, hcl.BlockHeaderSchema{Type: modconfig.BlockTypeRequire})
 	case modconfig.BlockTypeDashboard, modconfig.BlockTypeContainer:
 		res.Blocks = append(res.Blocks,
+			hcl.BlockHeaderSchema{Type: modconfig.BlockTypeDashboard},
 			hcl.BlockHeaderSchema{Type: modconfig.BlockTypeControl},
 			hcl.BlockHeaderSchema{Type: modconfig.BlockTypeBenchmark},
 			hcl.BlockHeaderSchema{Type: modconfig.BlockTypeCard},
