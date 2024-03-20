@@ -78,6 +78,8 @@ func updatePluginVersionFiles(ctx context.Context, image *SteampipeImage, constr
 		return err
 	}
 
+	// For the full name we want the constraint (^0.4) used, not the resolved version (0.4.1)
+	// we override the DisplayImageRef with the constraint here.
 	pluginFullName := image.ImageRef.DisplayImageRefConstraintOverride(constraint)
 
 	installedVersion, ok := v.Plugins[pluginFullName]
@@ -195,7 +197,7 @@ func copyConfigFileUnlessExists(sourceFile string, destFile string, constraint s
 		return fmt.Errorf("couldn't read source file permissions: %s", err)
 	}
 	// update the connection config with the correct plugin version
-	inputData = addPluginStreamToConfig(inputData, constraint)
+	inputData = addPluginConstraintToConfig(inputData, constraint)
 	if err = os.WriteFile(destFile, inputData, inputStat.Mode()); err != nil {
 		return fmt.Errorf("writing to output file failed: %s", err)
 	}
@@ -206,7 +208,7 @@ func copyConfigFileUnlessExists(sourceFile string, destFile string, constraint s
 // When installing non-latest plugins, that property needs to be adjusted to the stream actually getting installed.
 // Otherwise, during plugin resolution, it will resolve to an incorrect plugin instance
 // (or none at all, if  'latest' versions isn't installed)
-func addPluginStreamToConfig(src []byte, constraint string) []byte {
+func addPluginConstraintToConfig(src []byte, constraint string) []byte {
 	if constraint == "latest" {
 		return src
 	}

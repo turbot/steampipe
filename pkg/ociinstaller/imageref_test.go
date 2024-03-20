@@ -119,7 +119,7 @@ func TestDisplayImageRef(t *testing.T) {
 
 }
 
-func TestGetOrgNameAndSuffix(t *testing.T) {
+func TestGetOrgNameAndConstraint(t *testing.T) {
 	cases := map[string][3]string{
 		"hub.steampipe.io/plugins/turbot/aws@latest":   {"turbot", "aws", "latest"},
 		"turbot/aws@latest":                            {"turbot", "aws", "latest"},
@@ -136,8 +136,8 @@ func TestGetOrgNameAndSuffix(t *testing.T) {
 	for testCase, want := range cases {
 		t.Run(testCase, func(t *testing.T) {
 			r := NewSteampipeImageRef(testCase)
-			org, name, suffix := r.GetOrgNameAndSuffix()
-			got := [3]string{org, name, suffix}
+			org, name, constraint := r.GetOrgNameAndConstraint()
+			got := [3]string{org, name, constraint}
 			if got != want {
 				t.Errorf("TestGetOrgNameAndSuffix failed for case '%s': expected %s, got %s", testCase, want, got)
 			}

@@ -16,6 +16,12 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
+const (
+	VersionCheckerSchema   = "https"
+	VersionCheckerHost     = "hub-steampipe-io-git-ghcr-hub-turbot.vercel.app" // "hub.steampipe.io"
+	VersionCheckerEndpoint = "api/plugin/version-ghcr"
+)
+
 // VersionCheckReport ::
 type VersionCheckReport struct {
 	Plugin        *versionfile.InstalledVersion
@@ -77,7 +83,7 @@ func (v *VersionChecker) reportPluginUpdates(ctx context.Context) map[string]Ver
 	// retrieve the plugin version data from steampipe config
 	versionFileData, err := versionfile.LoadPluginVersionFile(ctx)
 	if err != nil {
-		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not load versionfile")
+		log.Printf("[TRACE] reportPluginUpdates could not load version file: %s", err.Error())
 		return nil
 	}
 
@@ -103,7 +109,7 @@ func (v *VersionChecker) reportPluginUpdates(ctx context.Context) map[string]Ver
 	}
 
 	if err = versionFileData.Save(); err != nil {
-		log.Println("[TRACE]", "CheckAndReportPluginUpdates", "could not save versionfile")
+		log.Printf("[WARN] reportPluginUpdates could not save version file: %s", err.Error())
 		return nil
 	}
 
@@ -144,7 +150,7 @@ func (v *VersionChecker) getLatestVersionsForPlugins(ctx context.Context, plugin
 
 func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.InstalledVersion) versionCheckCorePayload {
 	ref := ociinstaller.NewSteampipeImageRef(plugin.Name)
-	org, name, constraint := ref.GetOrgNameAndSuffix()
+	org, name, constraint := ref.GetOrgNameAndConstraint()
 	payload := versionCheckCorePayload{
 		Org:        org,
 		Name:       name,
@@ -157,11 +163,9 @@ func (v *VersionChecker) getPayloadFromInstalledData(plugin *versionfile.Install
 
 func (v *VersionChecker) getVersionCheckURL() url.URL {
 	var u url.URL
-	u.Scheme = "https"
-	//u.Host = "hub.steampipe.io"
-	//u.Path = "api/plugin/version"
-	u.Host = "hub-steampipe-io-git-ghcr-hub-turbot.vercel.app"
-	u.Path = "api/plugin/version-ghcr"
+	u.Scheme = VersionCheckerSchema
+	u.Host = VersionCheckerHost
+	u.Path = VersionCheckerEndpoint
 	return u
 }
 
@@ -208,7 +212,7 @@ func GetLatestPluginVersionByConstraint(ctx context.Context, installationID stri
 			Org:        org,
 			Name:       name,
 			Constraint: constraint,
-			Version:    "0.0.0",
+			Version:    "0.0.0", // This is used by installer, version is required by the API, this makes sense as nothing installed.
 		},
 	}
 	orgAndName := fmt.Sprintf("%s/%s", org, name)
