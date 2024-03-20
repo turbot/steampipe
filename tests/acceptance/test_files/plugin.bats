@@ -2,21 +2,45 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "plugin install" {
-  run steampipe plugin install net
+  run steampipe plugin install chaos
   assert_success
-  steampipe plugin uninstall net
+  steampipe plugin uninstall chaos
 }
 
 @test "plugin install from stream" {
-  run steampipe plugin install net@0.2
+  run steampipe plugin install chaos@0.4
   assert_success
-  steampipe plugin uninstall net@0.2
+  steampipe plugin uninstall chaos@0.4
 }
 
 @test "plugin install from stream (prefixed with v)" {
-  run steampipe plugin install net@v0.2
+  run steampipe plugin install chaos@v0.4
   assert_success
-  steampipe plugin uninstall net@0.2
+  steampipe plugin uninstall chaos@0.4
+}
+
+@test "plugin install from caret constraint" {
+  run steampipe plugin install chaos@^0.4
+  assert_success
+  steampipe plugin uninstall chaos@^0.4
+}
+
+@test "plugin install from tilde constraint" {
+  run steampipe plugin install chaos@~0.4.0
+  assert_success
+  steampipe plugin uninstall chaos@~0.4.0
+}
+
+@test "plugin install from wildcard constraint" {
+  run steampipe plugin install chaos@0.4.*
+  assert_success
+  steampipe plugin uninstall chaos@0.4.*
+}
+
+@test "plugin install gte constraint" {
+  run steampipe plugin install "chaos@>=0.4"
+  assert_success
+  steampipe plugin uninstall "chaos@>=0.4"
 }
 
 @test "create a local plugin, add connection and query" {
