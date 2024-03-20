@@ -4,7 +4,7 @@ import "fmt"
 
 type ResolvedPluginVersion struct {
 	PluginName string
-	Version    string // TODO: Should this be a semver.Version ?
+	Version    string
 	Constraint string
 }
 
@@ -16,10 +16,7 @@ func NewResolvedPluginVersion(pluginName string, version string, constraint stri
 	}
 }
 
+// GetVersionTag returns the <PluginName>:<Version> (turbot/chaos:0.4.1)
 func (r ResolvedPluginVersion) GetVersionTag() string {
 	return fmt.Sprintf("%s:%s", r.PluginName, r.Version)
-}
-
-func (r ResolvedPluginVersion) GetNameAndConstraint() string {
-	return fmt.Sprintf("%s@%s", r.PluginName, r.Constraint)
 }

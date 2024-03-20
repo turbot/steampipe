@@ -40,14 +40,24 @@ var transformTests = map[string]transformTest{
 		pluginLineContent:                    []byte(`plugin = "chaos"`),
 		expectedTransformedPluginLineContent: []byte(`plugin = "chaos@0.2.0"`),
 	},
+	"^0.2": {
+		ref:                                  NewSteampipeImageRef("chaos@^0.2"),
+		pluginLineContent:                    []byte(`plugin = "chaos"`),
+		expectedTransformedPluginLineContent: []byte(`plugin = "chaos@^0.2"`),
+	},
+	">=0.2": {
+		ref:                                  NewSteampipeImageRef("chaos@>=0.2"),
+		pluginLineContent:                    []byte(`plugin = "chaos"`),
+		expectedTransformedPluginLineContent: []byte(`plugin = "chaos@>=0.2"`),
+	},
 }
 
 func TestAddPluginName(t *testing.T) {
 	for name, test := range transformTests {
 		sourcebytes := test.pluginLineContent
 		expectedBytes := test.expectedTransformedPluginLineContent
-		_, _, suffix := test.ref.GetOrgNameAndSuffix()
-		transformed := bytes.TrimSpace(addPluginStreamToConfig(sourcebytes, suffix))
+		_, _, constraint := test.ref.GetOrgNameAndConstraint()
+		transformed := bytes.TrimSpace(addPluginConstraintToConfig(sourcebytes, constraint))
 
 		if !bytes.Equal(transformed, expectedBytes) {
 			t.Fatalf("%s failed - expected(%s) - got(%s)", name, test.expectedTransformedPluginLineContent, transformed)

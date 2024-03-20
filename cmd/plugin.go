@@ -241,8 +241,12 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// args to 'plugin install' -- one or more plugins to install
-	// plugin names can be simple names ('aws') for "standard" plugins,
-	// or full refs to the OCI image (ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0)
+	// plugin names can be simple names for "standard" plugins, constraint suffixed names
+	// or full refs to the OCI image
+	// - aws
+	// - aws@0.118.0
+	// - aws@^0.118
+	// - ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0
 	plugins := append([]string{}, args...)
 	showProgress := viper.GetBool(constants.ArgProgress)
 	installReports := make(display.PluginInstallReports, 0, len(plugins))
@@ -282,13 +286,12 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		bar := createProgressBar(pluginName, progressBars)
 
 		ref := ociinstaller.NewSteampipeImageRef(pluginName)
-		org, name, constraint := ref.GetOrgNameAndSuffix()
+		org, name, constraint := ref.GetOrgNameAndConstraint()
 		orgAndName := fmt.Sprintf("%s/%s", org, name)
 		var resolved plugin.ResolvedPluginVersion
 		if ref.IsFromSteampipeHub() {
 			rpv, err := plugin.GetLatestPluginVersionByConstraint(ctx, state.InstallationID, org, name, constraint)
 			if err != nil || rpv == nil {
-				// TODO: verify this correct way to gracefully exit
 				report := &display.PluginInstallReport{
 					Plugin:         pluginName,
 					Skipped:        true,
@@ -393,8 +396,12 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	// args to 'plugin update' -- one or more plugins to update
-	// These can be simple names ('aws') for "standard" plugins,
-	// or full refs to the OCI image (ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0)
+	// These can be simple names for "standard" plugins, constraint suffixed names
+	// or full refs to the OCI image
+	// - aws
+	// - aws@0.118.0
+	// - aws@^0.118
+	// - ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0
 	plugins, err := resolveUpdatePluginsFromArgs(args)
 	showProgress := viper.GetBool(constants.ArgProgress)
 
@@ -408,7 +415,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if len(plugins) > 0 && !(cmdconfig.Viper().GetBool("all")) && plugins[0] == "all" {
+	if len(plugins) > 0 && !(cmdconfig.Viper().GetBool(constants.ArgAll)) && plugins[0] == constants.ArgAll {
 		// improve the response to wrong argument "steampipe plugin update all"
 		fmt.Println()
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
@@ -436,8 +443,8 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	if cmdconfig.Viper().GetBool(constants.ArgAll) {
 		for k, v := range pluginVersions {
 			ref := ociinstaller.NewSteampipeImageRef(k)
-			org, name, suffix := ref.GetOrgNameAndSuffix()
-			key := fmt.Sprintf("%s/%s@%s", org, name, suffix)
+			org, name, constraint := ref.GetOrgNameAndConstraint()
+			key := fmt.Sprintf("%s/%s@%s", org, name, constraint)
 
 			plugins = append(plugins, key)
 			runUpdatesFor = append(runUpdatesFor, v)
@@ -529,7 +536,20 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.VersionCheckReport, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
-	if required := plugin.UpdateRequired(pvr); !required {
+	if plugin.UpdateRequired(pvr) {
+		// update required, resolve version and install update
+		bar.AppendFunc(func(b *uiprogress.Bar) string {
+			// set the progress bar to append itself  with the step underway
+			if b.Current() == 0 {
+				// no install step to display yet
+				return ""
+			}
+			return helpers.Resize(pluginInstallSteps[b.Current()-1], 20)
+		})
+		rp := plugin.NewResolvedPluginVersion(pvr.ShortName(), pvr.CheckResponse.Version, pvr.CheckResponse.Constraint)
+		report = installPlugin(ctx, rp, true, bar)
+	} else {
+		// update NOT required, return already installed report
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
 			// set the progress bar to append itself with "Already Installed"
 			return helpers.Resize(constants.InstallMessagePluginLatestAlreadyInstalled, 30)
@@ -542,18 +562,8 @@ func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.Version
 			SkipReason:     constants.InstallMessagePluginLatestAlreadyInstalled,
 			IsUpdateReport: true,
 		}
-	} else {
-		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			// set the progress bar to append itself  with the step underway
-			if b.Current() == 0 {
-				// no install step to display yet
-				return ""
-			}
-			return helpers.Resize(pluginInstallSteps[b.Current()-1], 20)
-		})
-		rp := plugin.NewResolvedPluginVersion(pvr.ShortName(), pvr.CheckResponse.Version, pvr.CheckResponse.Constraint)
-		report = installPlugin(ctx, rp, true, bar)
 	}
+
 	returnChannel <- report
 	wg.Done()
 }
@@ -585,7 +595,8 @@ func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVers
 	image, err := plugin.Install(ctx, resolvedPlugin, progress, ociinstaller.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
 	if err != nil {
 		msg := ""
-		_, name, suffix := ociinstaller.NewSteampipeImageRef(resolvedPlugin.GetVersionTag()).GetOrgNameAndSuffix()
+		// used to build data for the plugin install report to be used for display purposes
+		_, name, constraint := ociinstaller.NewSteampipeImageRef(resolvedPlugin.GetVersionTag()).GetOrgNameAndConstraint()
 		if isPluginNotFoundErr(err) {
 			exitCode = constants.ExitCodePluginNotFound
 			msg = constants.InstallMessagePluginNotFound
@@ -593,14 +604,15 @@ func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVers
 			msg = err.Error()
 		}
 		return &display.PluginInstallReport{
-			Plugin:         fmt.Sprintf("%s@%s", name, suffix),
+			Plugin:         fmt.Sprintf("%s@%s", name, constraint),
 			Skipped:        true,
 			SkipReason:     msg,
 			IsUpdateReport: isUpdate,
 		}
 	}
 
-	org, name, _ := image.ImageRef.GetOrgNameAndSuffix()
+	// used to build data for the plugin install report to be used for display purposes
+	org, name, _ := image.ImageRef.GetOrgNameAndConstraint()
 	versionString := ""
 	if image.Config.Plugin.Version != "" {
 		versionString = " v" + image.Config.Plugin.Version

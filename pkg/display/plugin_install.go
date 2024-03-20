@@ -28,9 +28,9 @@ type PluginInstallReport struct {
 
 func (i *PluginInstallReport) skipString() string {
 	ref := ociinstaller.NewSteampipeImageRef(i.Plugin)
-	_, name, suffix := ref.GetOrgNameAndSuffix()
+	_, name, constraint := ref.GetOrgNameAndConstraint()
 
-	return fmt.Sprintf("Plugin:   %s\nReason:   %s", fmt.Sprintf("%s@%s", name, suffix), i.SkipReason)
+	return fmt.Sprintf("Plugin:   %s\nReason:   %s", fmt.Sprintf("%s@%s", name, constraint), i.SkipReason)
 }
 
 func (i *PluginInstallReport) installString() string {

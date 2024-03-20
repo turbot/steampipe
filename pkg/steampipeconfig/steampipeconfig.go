@@ -251,15 +251,15 @@ PluginOptions:
 func (c *SteampipeConfig) ConnectionsForPlugin(pluginLongName string, pluginVersion *version.Version) []*modconfig.Connection {
 	var res []*modconfig.Connection
 	for _, con := range c.Connections {
-		// extract stream from plugin
+		// extract constraint from plugin
 		ref := ociinstaller.NewSteampipeImageRef(con.Plugin)
-		org, plugin, suffix := ref.GetOrgNameAndSuffix()
+		org, plugin, constraint := ref.GetOrgNameAndConstraint()
 		longName := fmt.Sprintf("%s/%s", org, plugin)
 		if longName == pluginLongName {
-			if suffix == "latest" {
+			if constraint == "latest" {
 				res = append(res, con)
 			} else {
-				connectionPluginVersion, err := version.NewVersion(suffix)
+				connectionPluginVersion, err := version.NewVersion(constraint)
 				if err != nil && connectionPluginVersion.LessThanOrEqual(pluginVersion) {
 					res = append(res, con)
 				}

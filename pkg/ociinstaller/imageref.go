@@ -63,6 +63,9 @@ func (r *SteampipeImageRef) DisplayImageRef() string {
 	return fullRef
 }
 
+// DisplayImageRefConstraintOverride returns a "friendly" user-facing version of the image ref
+// but with the version replaced by provided constraint
+// (hub.steampipe.io/plugins/turbot/aws@^1.0)
 func (r *SteampipeImageRef) DisplayImageRefConstraintOverride(constraint string) string {
 	dir := r.DisplayImageRef()
 	s := strings.Split(dir, "@")
@@ -94,8 +97,9 @@ func (r *SteampipeImageRef) IsFromSteampipeHub() bool {
 	return strings.HasPrefix(r.DisplayImageRef(), constants.SteampipeHubOCIBase)
 }
 
-// GetOrgNameAndSuffix splits the full image reference into (org, name, suffix)
-func (r *SteampipeImageRef) GetOrgNameAndSuffix() (string, string, string) {
+// GetOrgNameAndConstraint splits the full image reference into (org, name, constraint)
+// Constraint will be either a SemVer version (1.2.3) or a SemVer constraint (^0.4)
+func (r *SteampipeImageRef) GetOrgNameAndConstraint() (string, string, string) {
 	// plugin.Name looks like `hub.steampipe.io/plugins/turbot/aws@latest`
 	split := strings.Split(r.DisplayImageRef(), "/")
 	pluginNameAndSuffix := strings.Split(split[len(split)-1], "@")
