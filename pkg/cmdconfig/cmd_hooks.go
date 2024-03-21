@@ -130,7 +130,7 @@ func setMemoryLimit() {
 // task run is complete
 //
 // runScheduledTasks skips running tasks if this instance is the plugin manager
-func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, ew *error_helpers.ErrorAndWarnings) chan struct{} {
+func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, ew error_helpers.ErrorAndWarnings) chan struct{} {
 	// skip running the task runner if this is the plugin manager
 	// since it's supposed to be a daemon
 	if task.IsPluginManagerCmd(cmd) {
@@ -189,7 +189,7 @@ func envLogLevelSet() bool {
 }
 
 // initConfig reads in config file and ENV variables if set.
-func initGlobalConfig() *error_helpers.ErrorAndWarnings {
+func initGlobalConfig() error_helpers.ErrorAndWarnings {
 	utils.LogTime("cmdconfig.initGlobalConfig start")
 	defer utils.LogTime("cmdconfig.initGlobalConfig end")
 
@@ -263,8 +263,8 @@ func initGlobalConfig() *error_helpers.ErrorAndWarnings {
 	return loadConfigErrorsAndWarnings
 }
 
-func handleDeprecations() *error_helpers.ErrorAndWarnings {
-	var ew = &error_helpers.ErrorAndWarnings{}
+func handleDeprecations() error_helpers.ErrorAndWarnings {
+	var ew = error_helpers.ErrorAndWarnings{}
 	// if deprecated cloud-token or cloud-host is set, show a warning and copy the value to the new arg
 	if viper.IsSet(constants.ArgCloudToken) {
 		if viper.IsSet(constants.ArgPipesToken) {
@@ -370,8 +370,8 @@ func getWorkspaceProfileLoader(ctx context.Context) (*steampipeconfig.WorkspaceP
 
 // now validate  config values have appropriate values
 // (currently validates telemetry)
-func validateConfig() *error_helpers.ErrorAndWarnings {
-	var res = &error_helpers.ErrorAndWarnings{}
+func validateConfig() error_helpers.ErrorAndWarnings {
+	var res = error_helpers.ErrorAndWarnings{}
 	telemetry := viper.GetString(constants.ArgTelemetry)
 	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
 		res.Error = sperr.New(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
@@ -459,7 +459,7 @@ func ensureInstallDir() {
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way
-func displayDeprecationWarnings(errorsAndWarnings *error_helpers.ErrorAndWarnings) {
+func displayDeprecationWarnings(errorsAndWarnings error_helpers.ErrorAndWarnings) {
 	if len(errorsAndWarnings.Warnings) > 0 {
 		fmt.Println(color.YellowString(fmt.Sprintf("\nDeprecation %s:", utils.Pluralize("warning", len(errorsAndWarnings.Warnings)))))
 		for _, warning := range errorsAndWarnings.Warnings {

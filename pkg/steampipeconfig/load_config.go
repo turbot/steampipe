@@ -32,7 +32,7 @@ var defaultConfigFileName = "default.spc"
 var defaultConfigSampleFileName = "default.spc.sample"
 
 // LoadSteampipeConfig loads the HCL connection config and workspace options
-func LoadSteampipeConfig(ctx context.Context, modLocation string, commandName string) (*SteampipeConfig, *error_helpers.ErrorAndWarnings) {
+func LoadSteampipeConfig(ctx context.Context, modLocation string, commandName string) (*SteampipeConfig, error_helpers.ErrorAndWarnings) {
 	utils.LogTime("steampipeconfig.LoadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
 
@@ -51,7 +51,7 @@ func LoadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 
 // LoadConnectionConfig loads the connection config but not the workspace options
 // this is called by the fdw
-func LoadConnectionConfig(ctx context.Context) (*SteampipeConfig, *error_helpers.ErrorAndWarnings) {
+func LoadConnectionConfig(ctx context.Context) (*SteampipeConfig, error_helpers.ErrorAndWarnings) {
 	return LoadSteampipeConfig(ctx, "", "")
 }
 
@@ -119,7 +119,7 @@ func ensureDefaultConfigFile(configFolder string) error {
 	return nil
 }
 
-func loadSteampipeConfig(ctx context.Context, modLocation string, commandName string) (steampipeConfig *SteampipeConfig, errorsAndWarnings *error_helpers.ErrorAndWarnings) {
+func loadSteampipeConfig(ctx context.Context, modLocation string, commandName string) (steampipeConfig *SteampipeConfig, errorsAndWarnings error_helpers.ErrorAndWarnings) {
 	utils.LogTime("steampipeconfig.loadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.loadSteampipeConfig end")
 
@@ -140,7 +140,7 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 
 	// add any "local" plugins (i.e. plugins installed under the 'local' folder) into the version file
 	ew := v.AddLocalPlugins(ctx)
-	if ew != nil && ew.GetError() != nil {
+	if ew.GetError() != nil {
 		return nil, ew
 	}
 	steampipeConfig.PluginVersions = v.Plugins
@@ -148,13 +148,12 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 	// load config from the installation folder -  load all spc files from config directory
 	include := filehelpers.InclusionsFromExtensions(constants.ConnectionConfigExtensions)
 	loadOptions := &loadConfigOptions{include: include}
-	if ew := loadConfig(ctx, filepaths.EnsureConfigDir(), steampipeConfig, loadOptions); ew != nil {
-		if ew.GetError() != nil {
-			return nil, ew
-		}
-		// merge the warning from this call
-		errorsAndWarnings.AddWarning(ew.Warnings...)
+	ew = loadConfig(ctx, filepaths.EnsureConfigDir(), steampipeConfig, loadOptions)
+	if ew.GetError() != nil {
+		return nil, ew
 	}
+	// merge the warning from this call
+	errorsAndWarnings.AddWarning(ew.Warnings...)
 
 	// now load config from the workspace folder, if provided
 	// this has precedence and so will overwrite any config which has already been set
@@ -168,14 +167,13 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 		include = filehelpers.InclusionsFromFiles([]string{filepaths.WorkspaceConfigFileName})
 		// update load options to ONLY allow terminal options
 		loadOptions = &loadConfigOptions{include: include, allowedOptions: []string{options.TerminalBlock}}
-		if ew := loadConfig(ctx, modLocation, steampipeConfig, loadOptions); ew != nil {
-			if ew.GetError() != nil {
-				return nil, ew.WrapErrorWithMessage("failed to load workspace config")
-			}
-
-			// merge the warning from this call
-			errorsAndWarnings.AddWarning(ew.Warnings...)
+		ew := loadConfig(ctx, modLocation, steampipeConfig, loadOptions)
+		if ew.GetError() != nil {
+			return nil, ew.WrapErrorWithMessage("failed to load workspace config")
 		}
+
+		// merge the warning from this call
+		errorsAndWarnings.AddWarning(ew.Warnings...)
 	}
 
 	// now set default options on all connections without options set
@@ -223,7 +221,7 @@ type loadConfigOptions struct {
 	allowedOptions []string
 }
 
-func loadConfig(ctx context.Context, configFolder string, steampipeConfig *SteampipeConfig, opts *loadConfigOptions) *error_helpers.ErrorAndWarnings {
+func loadConfig(ctx context.Context, configFolder string, steampipeConfig *SteampipeConfig, opts *loadConfigOptions) error_helpers.ErrorAndWarnings {
 	log.Printf("[INFO] loadConfig is loading connection config")
 	// get all the config files in the directory
 	configPaths, err := filehelpers.ListFilesWithContext(ctx, configFolder, &filehelpers.ListOptions{
@@ -236,7 +234,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 		return error_helpers.NewErrorsAndWarning(err)
 	}
 	if len(configPaths) == 0 {
-		return nil
+		return error_helpers.ErrorAndWarnings{}
 	}
 
 	fileData, diags := parse.LoadFileData(configPaths...)

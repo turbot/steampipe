@@ -155,12 +155,11 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 	i.Result.AddWarnings(errorsAndWarnings.Warnings...)
 
 	log.Printf("[INFO] ValidateClientCacheSettings")
-	if errorsAndWarnings := db_common.ValidateClientCacheSettings(client); errorsAndWarnings != nil {
-		if errorsAndWarnings.GetError() != nil {
-			i.Result.Error = errorsAndWarnings.GetError()
-		}
-		i.Result.AddWarnings(errorsAndWarnings.Warnings...)
+	errorsAndWarnings = db_common.ValidateClientCacheSettings(client)
+	if errorsAndWarnings.GetError() != nil {
+		i.Result.Error = errorsAndWarnings.GetError()
 	}
+	i.Result.AddWarnings(errorsAndWarnings.Warnings...)
 
 	i.Client = client
 }
@@ -190,7 +189,7 @@ func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap map
 }
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
-func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (db_common.Client, *error_helpers.ErrorAndWarnings) {
+func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (db_common.Client, error_helpers.ErrorAndWarnings) {
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		statushooks.SetStatus(ctx, "Connecting to remote Steampipe database")
 		client, err := db_client.NewDbClient(ctx, connectionString, onConnectionCallback, opts...)

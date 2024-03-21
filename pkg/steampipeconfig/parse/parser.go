@@ -129,7 +129,7 @@ func parseYamlFile(filename string) (*hcl.File, hcl.Diagnostics) {
 	return json.Parse(jsonData, filename)
 }
 
-func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclResources map[string]bool, mod *modconfig.Mod) *error_helpers.ErrorAndWarnings {
+func addPseudoResourcesToMod(pseudoResources []modconfig.MappableResource, hclResources map[string]bool, mod *modconfig.Mod) error_helpers.ErrorAndWarnings {
 	res := error_helpers.EmptyErrorsAndWarning()
 	for _, r := range pseudoResources {
 		// is there a hcl resource with the same name as this pseudo resource - it takes precedence

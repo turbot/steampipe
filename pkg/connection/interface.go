@@ -18,6 +18,6 @@ type pluginManager interface {
 	ShouldFetchRateLimiterDefs() bool
 	LoadPluginRateLimiters(map[string]string) (PluginLimiterMap, error)
 	SendPostgresSchemaNotification(context.Context) error
-	SendPostgresErrorsAndWarningsNotification(context.Context, *error_helpers.ErrorAndWarnings)
+	SendPostgresErrorsAndWarningsNotification(context.Context, error_helpers.ErrorAndWarnings)
 	UpdatePluginColumnsTable(context.Context, map[string]*proto.Schema, []string) error
 }

@@ -68,7 +68,7 @@ type Workspace struct {
 }
 
 // LoadWorkspaceVars creates a Workspace and loads the variables
-func LoadWorkspaceVars(ctx context.Context) (*Workspace, *modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
+func LoadWorkspaceVars(ctx context.Context) (*Workspace, *modconfig.ModVariableMap, error_helpers.ErrorAndWarnings) {
 	log.Printf("[INFO] LoadWorkspaceVars: creating workspace, loading variable and resolving variable values")
 	workspacePath := viper.GetString(constants.ArgModLocation)
 
@@ -99,7 +99,7 @@ func LoadWorkspaceVars(ctx context.Context) (*Workspace, *modconfig.ModVariableM
 
 // LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
 // this is use for the variable list command
-func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Variable, *error_helpers.ErrorAndWarnings) {
+func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Variable, error_helpers.ErrorAndWarnings) {
 	utils.LogTime("workspace.LoadVariables start")
 	defer utils.LogTime("workspace.LoadVariables end")
 
@@ -310,8 +310,8 @@ func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error 
 	return nil
 }
 
-func (w *Workspace) LoadWorkspaceMod(ctx context.Context, inputVariables *modconfig.ModVariableMap) *error_helpers.ErrorAndWarnings {
-	var errorsAndWarnings = &error_helpers.ErrorAndWarnings{}
+func (w *Workspace) LoadWorkspaceMod(ctx context.Context, inputVariables *modconfig.ModVariableMap) error_helpers.ErrorAndWarnings {
+	var errorsAndWarnings = error_helpers.ErrorAndWarnings{}
 
 	// build run context which we use to load the workspace
 	parseCtx, err := w.getParseContext(ctx, inputVariables)
@@ -345,7 +345,7 @@ func (w *Workspace) LoadWorkspaceMod(ctx context.Context, inputVariables *modcon
 	return errorsAndWarnings
 }
 
-func (w *Workspace) PopulateVariables(ctx context.Context) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
+func (w *Workspace) PopulateVariables(ctx context.Context) (*modconfig.ModVariableMap, error_helpers.ErrorAndWarnings) {
 	log.Printf("[TRACE] Workspace.PopulateVariables")
 	// resolve values of all input variables
 	// we WILL validate missing variables when loading
@@ -388,7 +388,7 @@ func (w *Workspace) PopulateVariables(ctx context.Context) (*modconfig.ModVariab
 	return inputVariables, errorsAndWarnings
 }
 
-func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
+func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, error_helpers.ErrorAndWarnings) {
 	log.Printf("[TRACE] Workspace.getInputVariables")
 	// build a run context just to use to load variable definitions
 	variablesParseCtx, err := w.getParseContext(ctx, nil)

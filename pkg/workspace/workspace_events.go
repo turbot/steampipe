@@ -115,7 +115,7 @@ func (w *Workspace) onNewIntrospectionData(ctx context.Context, client db_common
 	}
 }
 
-func (w *Workspace) reloadResourceMaps(ctx context.Context) (_ *modconfig.ResourceMaps, _ *modconfig.ResourceMaps, errAndWarnings *error_helpers.ErrorAndWarnings) {
+func (w *Workspace) reloadResourceMaps(ctx context.Context) (_ *modconfig.ResourceMaps, _ *modconfig.ResourceMaps, errAndWarnings error_helpers.ErrorAndWarnings) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 

@@ -95,7 +95,7 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	return res
 }
 
-func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings *error_helpers.ErrorAndWarnings) {
+func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings error_helpers.ErrorAndWarnings) {
 	errorsAndWarnings = error_helpers.NewErrorsAndWarning(nil)
 
 	switch o := opts.(type) {
