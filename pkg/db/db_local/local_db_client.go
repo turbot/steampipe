@@ -23,7 +23,7 @@ type LocalDbClient struct {
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
-func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (*LocalDbClient, *error_helpers.ErrorAndWarnings) {
+func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (*LocalDbClient, error_helpers.ErrorAndWarnings) {
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
@@ -41,7 +41,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	log.Printf("[INFO] StartServices")
 	startResult := StartServices(ctx, listenAddresses, port, invoker)
 	if startResult.Error != nil {
-		return nil, &startResult.ErrorAndWarnings
+		return nil, startResult.ErrorAndWarnings
 	}
 
 	log.Printf("[INFO] newLocalClient")
@@ -62,7 +62,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 		_, _ = startResult.PluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
 	}
 
-	return client, &startResult.ErrorAndWarnings
+	return client, startResult.ErrorAndWarnings
 }
 
 // newLocalClient verifies that the local database instance is running and returns a LocalDbClient to interact with it

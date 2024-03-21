@@ -115,7 +115,7 @@ func (p *PluginVersionFile) ensureVersionFilesInPluginDirectories() error {
 }
 
 // any plugins installed under the `local` folder are added to the plugin version file
-func (p *PluginVersionFile) AddLocalPlugins(ctx context.Context) *error_helpers.ErrorAndWarnings {
+func (p *PluginVersionFile) AddLocalPlugins(ctx context.Context) error_helpers.ErrorAndWarnings {
 	localPlugins, err := loadLocalPlugins(ctx)
 	if err != nil {
 		return error_helpers.NewErrorsAndWarning(err)
@@ -127,7 +127,7 @@ func (p *PluginVersionFile) AddLocalPlugins(ctx context.Context) *error_helpers.
 		}
 		p.Plugins[fmt.Sprintf("local/%s", name)] = install
 	}
-	return nil
+	return error_helpers.EmptyErrorsAndWarning()
 }
 
 // to lock plugin version file loads

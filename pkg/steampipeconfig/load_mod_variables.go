@@ -32,7 +32,7 @@ func LoadVariableDefinitions(ctx context.Context, variablePath string, parseCtx 
 	return variableMap, nil
 }
 
-func GetVariableValues(parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, *error_helpers.ErrorAndWarnings) {
+func GetVariableValues(parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (*modconfig.ModVariableMap, error_helpers.ErrorAndWarnings) {
 	log.Printf("[INFO] GetVariableValues")
 	// now resolve all input variables
 	inputValues, errorsAndWarnings := getInputVariables(parseCtx, variableMap, validate)
@@ -44,7 +44,7 @@ func GetVariableValues(parseCtx *parse.ModParseContext, variableMap *modconfig.M
 	return variableMap, errorsAndWarnings
 }
 
-func getInputVariables(parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (inputvars.InputValues, *error_helpers.ErrorAndWarnings) {
+func getInputVariables(parseCtx *parse.ModParseContext, variableMap *modconfig.ModVariableMap, validate bool) (inputvars.InputValues, error_helpers.ErrorAndWarnings) {
 	variableFileArgs := viper.GetStringSlice(constants.ArgVarFile)
 	variableArgs := viper.GetStringSlice(constants.ArgVariable)
 
@@ -87,7 +87,7 @@ func getInputVariables(parseCtx *parse.ModParseContext, variableMap *modconfig.M
 	return parsedValues, newVariableValidationResult(diags)
 }
 
-func newVariableValidationResult(diags tfdiags.Diagnostics) *error_helpers.ErrorAndWarnings {
+func newVariableValidationResult(diags tfdiags.Diagnostics) error_helpers.ErrorAndWarnings {
 	warnings := plugin.DiagsToWarnings(diags.ToHCL())
 	var err error
 	if diags.HasErrors() {

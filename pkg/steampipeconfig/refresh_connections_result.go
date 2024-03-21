@@ -16,7 +16,7 @@ type RefreshConnectionResult struct {
 }
 
 func NewErrorRefreshConnectionResult(err error) *RefreshConnectionResult {
-	return &RefreshConnectionResult{ErrorAndWarnings: *error_helpers.NewErrorsAndWarning(err)}
+	return &RefreshConnectionResult{ErrorAndWarnings: error_helpers.NewErrorsAndWarning(err)}
 }
 
 func (r *RefreshConnectionResult) Merge(other *RefreshConnectionResult) {

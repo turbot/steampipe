@@ -11,28 +11,28 @@ type ErrorAndWarnings struct {
 	Warnings []string
 }
 
-func DiagsToErrorsAndWarnings(errPrefix string, diags hcl.Diagnostics) *ErrorAndWarnings {
+func DiagsToErrorsAndWarnings(errPrefix string, diags hcl.Diagnostics) ErrorAndWarnings {
 	return NewErrorsAndWarning(
 		plugin.DiagsToError(errPrefix, diags),
 		plugin.DiagsToWarnings(diags)...,
 	)
 }
 
-func EmptyErrorsAndWarning() *ErrorAndWarnings {
+func EmptyErrorsAndWarning() ErrorAndWarnings {
 	return NewErrorsAndWarning(nil)
 }
 
-func NewErrorsAndWarning(err error, warnings ...string) *ErrorAndWarnings {
-	return &ErrorAndWarnings{
+func NewErrorsAndWarning(err error, warnings ...string) ErrorAndWarnings {
+	return ErrorAndWarnings{
 		Error: err, Warnings: warnings,
 	}
 }
 
-func (r *ErrorAndWarnings) WrapErrorWithMessage(msg string) *ErrorAndWarnings {
+func (r *ErrorAndWarnings) WrapErrorWithMessage(msg string) ErrorAndWarnings {
 	if r.Error != nil {
 		r.Error = sperr.WrapWithMessage(r.Error, msg)
 	}
-	return r
+	return *r
 }
 
 func (r *ErrorAndWarnings) AddWarning(warnings ...string) {
@@ -46,7 +46,6 @@ func (r *ErrorAndWarnings) AddWarning(warnings ...string) {
 }
 
 func (r *ErrorAndWarnings) ShowWarnings() {
-
 	for _, w := range r.Warnings {
 		ShowWarning(w)
 	}
@@ -59,11 +58,7 @@ func (r *ErrorAndWarnings) GetError() error {
 	return r.Error
 }
 
-func (r *ErrorAndWarnings) Merge(other *ErrorAndWarnings) *ErrorAndWarnings {
-	if other == nil {
-		return r
-	}
-
+func (r *ErrorAndWarnings) Merge(other ErrorAndWarnings) ErrorAndWarnings {
 	// TODO: Restructure ErrorsAndWarning
 	// [issue](https://github.com/turbot/steampipe/issues/3845)
 	if r.Error == nil {
@@ -72,7 +67,7 @@ func (r *ErrorAndWarnings) Merge(other *ErrorAndWarnings) *ErrorAndWarnings {
 	if len(other.Warnings) > 0 {
 		r.AddWarning(other.Warnings...)
 	}
-	return r
+	return *r
 }
 
 func (r *ErrorAndWarnings) Empty() bool {

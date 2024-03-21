@@ -16,7 +16,7 @@ func (m *PluginManager) SendPostgresSchemaNotification(ctx context.Context) erro
 
 }
 
-func (m *PluginManager) SendPostgresErrorsAndWarningsNotification(ctx context.Context, errorAndWarnings *error_helpers.ErrorAndWarnings) {
+func (m *PluginManager) SendPostgresErrorsAndWarningsNotification(ctx context.Context, errorAndWarnings error_helpers.ErrorAndWarnings) {
 	if err := m.sendPostgresNotification(ctx, steampipeconfig.NewErrorsAndWarningsNotification(errorAndWarnings)); err != nil {
 
 		log.Printf("[WARN] failed to send error notification, error")

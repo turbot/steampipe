@@ -31,7 +31,7 @@ func NewSchemaUpdateNotification() *PostgresNotification {
 	}
 }
 
-func NewErrorsAndWarningsNotification(errorAndWarnings *error_helpers.ErrorAndWarnings) *ErrorsAndWarningsNotification {
+func NewErrorsAndWarningsNotification(errorAndWarnings error_helpers.ErrorAndWarnings) *ErrorsAndWarningsNotification {
 	res := &ErrorsAndWarningsNotification{
 		PostgresNotification: PostgresNotification{
 			StructVersion: PostgresNotificationStructVersion,

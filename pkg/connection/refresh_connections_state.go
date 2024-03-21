@@ -89,7 +89,7 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 			}
 			if !s.res.ErrorAndWarnings.Empty() {
 				log.Printf("[INFO] refreshConnections completed with errors, sending notification")
-				s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, &s.res.ErrorAndWarnings)
+				s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, s.res.ErrorAndWarnings)
 			}
 
 		}

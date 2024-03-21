@@ -14,7 +14,7 @@ import (
 	"github.com/turbot/terraform-components/terraform"
 )
 
-func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, *error_helpers.ErrorAndWarnings) {
+func LoadWorkspacePromptingForVariables(ctx context.Context) (*Workspace, error_helpers.ErrorAndWarnings) {
 	t := time.Now()
 	defer func() {
 		log.Printf("[TRACE] Workspace load took %dms\n", time.Since(t).Milliseconds())

@@ -20,11 +20,11 @@ type ConnectionStateSummary map[string]int
 type ConnectionStateMap map[string]*ConnectionState
 
 // GetRequiredConnectionStateMap populates a map of connection data for all connections in connectionMap
-func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connection, currentConnectionState ConnectionStateMap) (ConnectionStateMap, map[string][]modconfig.Connection, *error_helpers.ErrorAndWarnings) {
+func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connection, currentConnectionState ConnectionStateMap) (ConnectionStateMap, map[string][]modconfig.Connection, error_helpers.ErrorAndWarnings) {
 	utils.LogTime("steampipeconfig.GetRequiredConnectionStateMap start")
 	defer utils.LogTime("steampipeconfig.GetRequiredConnectionStateMap end")
 
-	var res = &error_helpers.ErrorAndWarnings{}
+	var res = error_helpers.ErrorAndWarnings{}
 	requiredState := ConnectionStateMap{}
 
 	// cache plugin file creation times in a dictionary to avoid reloading the same plugin file multiple times
