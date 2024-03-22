@@ -1,15 +1,15 @@
 {
   "installed": [
     {
-      "name": "hub.steampipe.io/plugins/turbot/bitbucket@0.3.1",
-      "version": "0.3.1",
+      "name": "hub.steampipe.io/plugins/turbot/bitbucket@0.7.1",
+      "version": "0.7.1",
       "connections": [
         "bitbucket"
       ]
     },
     {
-      "name": "hub.steampipe.io/plugins/turbot/hackernews@0.6.0",
-      "version": "0.6.0",
+      "name": "hub.steampipe.io/plugins/turbot/hackernews@0.8.0",
+      "version": "0.8.0",
       "connections": [
         "hackernews"
       ]

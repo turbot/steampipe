@@ -1,12 +1,12 @@
 +-------------------------------------------------+---------+-------------+
 | Installed                                       | Version | Connections |
 +-------------------------------------------------+---------+-------------+
-| hub.steampipe.io/plugins/turbot/bitbucket@0.3.1 | 0.3.1   | bitbucket   |
+| hub.steampipe.io/plugins/turbot/bitbucket@0.7.1 | 0.7.1   | bitbucket   |
 +-------------------------------------------------+---------+-------------+
 
 +--------------------------------------------------+-------------+------------------------+
 | Failed                                           | Connections | Reason                 |
 +--------------------------------------------------+-------------+------------------------+
-| hub.steampipe.io/plugins/turbot/hackernews@0.6.0 | hackernews  | plugin failed to start |
+| hub.steampipe.io/plugins/turbot/hackernews@0.8.0 | hackernews  | plugin failed to start |
 +--------------------------------------------------+-------------+------------------------+
 
