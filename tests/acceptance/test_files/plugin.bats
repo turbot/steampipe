@@ -105,7 +105,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # Create a copy of the install directory
   copy_install_directory
 
-  steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $MY_TEST_COPY
+  steampipe plugin install hackernews@0.8.0 bitbucket@0.7.1 --progress=false --install-dir $MY_TEST_COPY
 
   # check table output
   run steampipe plugin list --install-dir $MY_TEST_COPY
@@ -126,9 +126,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # Create a copy of the install directory
   copy_install_directory
 
-  steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $MY_TEST_COPY
+  steampipe plugin install hackernews@0.8.0 bitbucket@0.7.1 --progress=false --install-dir $MY_TEST_COPY
   # uninstall a plugin but dont remove the config - to simulate the missing plugin scenario
-  steampipe plugin uninstall hackernews@0.6.0 --install-dir $MY_TEST_COPY
+  steampipe plugin uninstall hackernews@0.8.0 --install-dir $MY_TEST_COPY
 
   # check table output
   run steampipe plugin list --install-dir $MY_TEST_COPY
@@ -152,9 +152,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # Create a copy of the install directory
   copy_install_directory
 
-  steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $MY_TEST_COPY
+  steampipe plugin install hackernews@0.8.0 bitbucket@0.7.1 --progress=false --install-dir $MY_TEST_COPY
   # remove the contents of a plugin execuatable to simulate the failed plugin scenario
-  cat /dev/null > $MY_TEST_COPY/plugins/hub.steampipe.io/plugins/turbot/hackernews@0.6.0/steampipe-plugin-hackernews.plugin
+  cat /dev/null > $MY_TEST_COPY/plugins/hub.steampipe.io/plugins/turbot/hackernews@0.8.0/steampipe-plugin-hackernews.plugin
 
   # check table output
   run steampipe plugin list --install-dir $MY_TEST_COPY
