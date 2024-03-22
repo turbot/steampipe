@@ -14,7 +14,7 @@ func GetInstalledPlugins(ctx context.Context) (map[string]*modconfig.PluginVersi
 	installedPlugins := make(map[string]*modconfig.PluginVersionString)
 	installedPluginsData, _ := List(ctx, nil)
 	for _, plugin := range installedPluginsData {
-		org, name, _ := ociinstaller.NewSteampipeImageRef(plugin.Name).GetOrgNameAndStream()
+		org, name, _ := ociinstaller.NewSteampipeImageRef(plugin.Name).GetOrgNameAndConstraint()
 		pluginShortName := fmt.Sprintf("%s/%s", org, name)
 		installedPlugins[pluginShortName] = plugin.Version
 	}

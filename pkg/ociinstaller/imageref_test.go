@@ -32,31 +32,31 @@ func TestFriendlyImageRef(t *testing.T) {
 
 func TestActualImageRef(t *testing.T) {
 	cases := map[string]string{
-		"us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0":                                                                   "us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0",
-		"us-docker.pkg.dev/steampipe/plugin/turbot/aws@sha256:766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1": "us-docker.pkg.dev/steampipe/plugin/turbot/aws@sha256:766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1",
-		"aws":                                 "us-docker.pkg.dev/steampipe/plugins/turbot/aws:latest",
-		"aws:1":                               "us-docker.pkg.dev/steampipe/plugins/turbot/aws:1",
-		"turbot/aws:1":                        "us-docker.pkg.dev/steampipe/plugins/turbot/aws:1",
-		"turbot/aws:1.0":                      "us-docker.pkg.dev/steampipe/plugins/turbot/aws:1.0",
-		"turbot/aws:1.1.1":                    "us-docker.pkg.dev/steampipe/plugins/turbot/aws:1.1.1",
-		"turbot/aws":                          "us-docker.pkg.dev/steampipe/plugins/turbot/aws:latest",
-		"mycompany/my-plugin":                 "us-docker.pkg.dev/steampipe/plugins/mycompany/my-plugin:latest",
-		"mycompany/my-plugin:some-random_tag": "us-docker.pkg.dev/steampipe/plugins/mycompany/my-plugin:some-random_tag",
+		"ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0":                                                                   "ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0",
+		"ghcr.io/turbot/steampipe/plugins/turbot/aws@sha256:766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1": "ghcr.io/turbot/steampipe/plugins/turbot/aws@sha256:766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1",
+		"aws":                                 "ghcr.io/turbot/steampipe/plugins/turbot/aws:latest",
+		"aws:1":                               "ghcr.io/turbot/steampipe/plugins/turbot/aws:1",
+		"turbot/aws:1":                        "ghcr.io/turbot/steampipe/plugins/turbot/aws:1",
+		"turbot/aws:1.0":                      "ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0",
+		"turbot/aws:1.1.1":                    "ghcr.io/turbot/steampipe/plugins/turbot/aws:1.1.1",
+		"turbot/aws":                          "ghcr.io/turbot/steampipe/plugins/turbot/aws:latest",
+		"mycompany/my-plugin":                 "ghcr.io/turbot/steampipe/plugins/mycompany/my-plugin:latest",
+		"mycompany/my-plugin:some-random_tag": "ghcr.io/turbot/steampipe/plugins/mycompany/my-plugin:some-random_tag",
 		"dockerhub.org/myimage:mytag":         "dockerhub.org/myimage:mytag",
-		"us-docker.pkg.dev/steampipe/plugins/turbot/aws:latest": "us-docker.pkg.dev/steampipe/plugins/turbot/aws:latest",
-		"hub.steampipe.io/plugins/turbot/aws:latest":            "us-docker.pkg.dev/steampipe/plugins/turbot/aws:latest",
-		"hub.steampipe.io/plugins/someoneelse/myimage:mytag":    "us-docker.pkg.dev/steampipe/plugins/someoneelse/myimage:mytag",
+		"ghcr.io/turbot/steampipe/plugins/turbot/aws:latest": "ghcr.io/turbot/steampipe/plugins/turbot/aws:latest",
+		"hub.steampipe.io/plugins/turbot/aws:latest":         "ghcr.io/turbot/steampipe/plugins/turbot/aws:latest",
+		"hub.steampipe.io/plugins/someoneelse/myimage:mytag": "ghcr.io/turbot/steampipe/plugins/someoneelse/myimage:mytag",
 
-		"us-docker.pkg.dev/steampipe/plugin/turbot/aws@1.0.0": "us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0",
-		"aws@1":                               "us-docker.pkg.dev/steampipe/plugins/turbot/aws:1",
-		"turbot/aws@1":                        "us-docker.pkg.dev/steampipe/plugins/turbot/aws:1",
-		"turbot/aws@1.0":                      "us-docker.pkg.dev/steampipe/plugins/turbot/aws:1.0",
-		"turbot/aws@1.1.1":                    "us-docker.pkg.dev/steampipe/plugins/turbot/aws:1.1.1",
-		"mycompany/my-plugin@some-random_tag": "us-docker.pkg.dev/steampipe/plugins/mycompany/my-plugin:some-random_tag",
+		"ghcr.io/turbot/steampipe/plugins/turbot/aws@1.0.0": "ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0",
+		"aws@1":                               "ghcr.io/turbot/steampipe/plugins/turbot/aws:1",
+		"turbot/aws@1":                        "ghcr.io/turbot/steampipe/plugins/turbot/aws:1",
+		"turbot/aws@1.0":                      "ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0",
+		"turbot/aws@1.1.1":                    "ghcr.io/turbot/steampipe/plugins/turbot/aws:1.1.1",
+		"mycompany/my-plugin@some-random_tag": "ghcr.io/turbot/steampipe/plugins/mycompany/my-plugin:some-random_tag",
 		"dockerhub.org/myimage@mytag":         "dockerhub.org/myimage:mytag",
-		"us-docker.pkg.dev/steampipe/plugins/turbot/aws@latest": "us-docker.pkg.dev/steampipe/plugins/turbot/aws:latest",
-		"hub.steampipe.io/plugins/turbot/aws@latest":            "us-docker.pkg.dev/steampipe/plugins/turbot/aws:latest",
-		"hub.steampipe.io/plugins/someoneelse/myimage@mytag":    "us-docker.pkg.dev/steampipe/plugins/someoneelse/myimage:mytag",
+		"ghcr.io/turbot/steampipe/plugins/turbot/aws@latest": "ghcr.io/turbot/steampipe/plugins/turbot/aws:latest",
+		"hub.steampipe.io/plugins/turbot/aws@latest":         "ghcr.io/turbot/steampipe/plugins/turbot/aws:latest",
+		"hub.steampipe.io/plugins/someoneelse/myimage@mytag": "ghcr.io/turbot/steampipe/plugins/someoneelse/myimage:mytag",
 	}
 
 	for testCase, want := range cases {
@@ -74,8 +74,8 @@ func TestActualImageRef(t *testing.T) {
 
 func TestDisplayImageRef(t *testing.T) {
 	cases := map[string]string{
-		"us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0":                                                                   "hub.steampipe.io/plugin/turbot/aws@1.0.0",
-		"us-docker.pkg.dev/steampipe/plugin/turbot/aws@sha256:766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1": "hub.steampipe.io/plugin/turbot/aws@sha256-766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1",
+		"ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0":                                                                   "hub.steampipe.io/plugins/turbot/aws@1.0.0",
+		"ghcr.io/turbot/steampipe/plugins/turbot/aws@sha256:766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1": "hub.steampipe.io/plugins/turbot/aws@sha256-766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1",
 		"aws":                                 "hub.steampipe.io/plugins/turbot/aws@latest",
 		"aws:1":                               "hub.steampipe.io/plugins/turbot/aws@1",
 		"turbot/aws:1":                        "hub.steampipe.io/plugins/turbot/aws@1",
@@ -85,20 +85,20 @@ func TestDisplayImageRef(t *testing.T) {
 		"mycompany/my-plugin":                 "hub.steampipe.io/plugins/mycompany/my-plugin@latest",
 		"mycompany/my-plugin:some-random_tag": "hub.steampipe.io/plugins/mycompany/my-plugin@some-random_tag",
 		"dockerhub.org/myimage:mytag":         "dockerhub.org/myimage@mytag",
-		"us-docker.pkg.dev/steampipe/plugins/turbot/aws:latest": "hub.steampipe.io/plugins/turbot/aws@latest",
-		"hub.steampipe.io/plugins/turbot/aws:latest":            "hub.steampipe.io/plugins/turbot/aws@latest",
-		"hub.steampipe.io/plugins/someoneelse/myimage:mytag":    "hub.steampipe.io/plugins/someoneelse/myimage@mytag",
+		"ghcr.io/turbot/steampipe/plugins/turbot/aws:latest": "hub.steampipe.io/plugins/turbot/aws@latest",
+		"hub.steampipe.io/plugins/turbot/aws:latest":         "hub.steampipe.io/plugins/turbot/aws@latest",
+		"hub.steampipe.io/plugins/someoneelse/myimage:mytag": "hub.steampipe.io/plugins/someoneelse/myimage@mytag",
 
-		"us-docker.pkg.dev/steampipe/plugin/turbot/aws@1.0.0": "hub.steampipe.io/plugin/turbot/aws@1.0.0",
+		"ghcr.io/turbot/steampipe/plugins/turbot/aws@1.0.0": "hub.steampipe.io/plugins/turbot/aws@1.0.0",
 		"aws@1":                               "hub.steampipe.io/plugins/turbot/aws@1",
 		"turbot/aws@1":                        "hub.steampipe.io/plugins/turbot/aws@1",
 		"turbot/aws@1.0":                      "hub.steampipe.io/plugins/turbot/aws@1.0",
 		"turbot/aws@1.1.1":                    "hub.steampipe.io/plugins/turbot/aws@1.1.1",
 		"mycompany/my-plugin@some-random_tag": "hub.steampipe.io/plugins/mycompany/my-plugin@some-random_tag",
 		"dockerhub.org/myimage@mytag":         "dockerhub.org/myimage@mytag",
-		"us-docker.pkg.dev/steampipe/plugins/turbot/aws@latest": "hub.steampipe.io/plugins/turbot/aws@latest",
-		"hub.steampipe.io/plugins/turbot/aws@latest":            "hub.steampipe.io/plugins/turbot/aws@latest",
-		"hub.steampipe.io/plugins/someoneelse/myimage@mytag":    "hub.steampipe.io/plugins/someoneelse/myimage@mytag",
+		"ghcr.io/turbot/steampipe/plugins/turbot/aws@latest": "hub.steampipe.io/plugins/turbot/aws@latest",
+		"hub.steampipe.io/plugins/turbot/aws@latest":         "hub.steampipe.io/plugins/turbot/aws@latest",
+		"hub.steampipe.io/plugins/someoneelse/myimage@mytag": "hub.steampipe.io/plugins/someoneelse/myimage@mytag",
 
 		"aws@v1":            "hub.steampipe.io/plugins/turbot/aws@1",
 		"turbot/aws@v1":     "hub.steampipe.io/plugins/turbot/aws@1",
@@ -119,7 +119,7 @@ func TestDisplayImageRef(t *testing.T) {
 
 }
 
-func TestGetOrgNameAndStream(t *testing.T) {
+func TestGetOrgNameAndConstraint(t *testing.T) {
 	cases := map[string][3]string{
 		"hub.steampipe.io/plugins/turbot/aws@latest":   {"turbot", "aws", "latest"},
 		"turbot/aws@latest":                            {"turbot", "aws", "latest"},
@@ -136,10 +136,10 @@ func TestGetOrgNameAndStream(t *testing.T) {
 	for testCase, want := range cases {
 		t.Run(testCase, func(t *testing.T) {
 			r := NewSteampipeImageRef(testCase)
-			org, name, stream := r.GetOrgNameAndStream()
-			got := [3]string{org, name, stream}
+			org, name, constraint := r.GetOrgNameAndConstraint()
+			got := [3]string{org, name, constraint}
 			if got != want {
-				t.Errorf("TestGetOrgNameAndStream failed for case '%s': expected %s, got %s", testCase, want, got)
+				t.Errorf("TestGetOrgNameAndSuffix failed for case '%s': expected %s, got %s", testCase, want, got)
 			}
 		})
 	}

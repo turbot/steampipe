@@ -9,7 +9,7 @@ import (
 
 const (
 	DefaultImageTag            = "latest"
-	DefaultImageRepoActualURL  = "us-docker.pkg.dev/steampipe"
+	DefaultImageRepoActualURL  = "ghcr.io/turbot/steampipe"
 	DefaultImageRepoDisplayURL = "hub.steampipe.io"
 
 	DefaultImageOrg  = "turbot"
@@ -30,7 +30,7 @@ func NewSteampipeImageRef(ref string) *SteampipeImageRef {
 }
 
 // ActualImageRef returns the actual, physical full image ref
-// (us-docker.pkg.dev/steampipe/plugins/turbot/aws:1.0.0)
+// (ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0)
 func (r *SteampipeImageRef) ActualImageRef() string {
 	ref := r.requestedRef
 
@@ -63,6 +63,15 @@ func (r *SteampipeImageRef) DisplayImageRef() string {
 	return fullRef
 }
 
+// DisplayImageRefConstraintOverride returns a "friendly" user-facing version of the image ref
+// but with the version replaced by provided constraint
+// (hub.steampipe.io/plugins/turbot/aws@^1.0)
+func (r *SteampipeImageRef) DisplayImageRefConstraintOverride(constraint string) string {
+	dir := r.DisplayImageRef()
+	s := strings.Split(dir, "@")
+	return fmt.Sprintf("%s@%s", s[0], constraint)
+}
+
 func isDigestRef(ref string) bool {
 	return strings.Contains(ref, "@sha256:")
 }
@@ -84,19 +93,20 @@ func sanitizeRefStream(ref string) string {
 	return ref
 }
 
-func (r *SteampipeImageRef) IsFromSteampipeHub() (bool) {
+func (r *SteampipeImageRef) IsFromSteampipeHub() bool {
 	return strings.HasPrefix(r.DisplayImageRef(), constants.SteampipeHubOCIBase)
 }
 
-// GetOrgNameAndStream splits the full image reference into (org, name, stream)
-func (r *SteampipeImageRef) GetOrgNameAndStream() (string, string, string) {
+// GetOrgNameAndConstraint splits the full image reference into (org, name, constraint)
+// Constraint will be either a SemVer version (1.2.3) or a SemVer constraint (^0.4)
+func (r *SteampipeImageRef) GetOrgNameAndConstraint() (string, string, string) {
 	// plugin.Name looks like `hub.steampipe.io/plugins/turbot/aws@latest`
 	split := strings.Split(r.DisplayImageRef(), "/")
-	pluginNameAndStream := strings.Split(split[len(split)-1], "@")
+	pluginNameAndSuffix := strings.Split(split[len(split)-1], "@")
 	if r.IsFromSteampipeHub() {
-		return split[len(split)-2], pluginNameAndStream[0], pluginNameAndStream[1]
+		return split[len(split)-2], pluginNameAndSuffix[0], pluginNameAndSuffix[1]
 	}
-	return strings.Join(split[0:len(split)-1], "/"), pluginNameAndStream[0], pluginNameAndStream[1]
+	return strings.Join(split[0:len(split)-1], "/"), pluginNameAndSuffix[0], pluginNameAndSuffix[1]
 }
 
 // GetFriendlyName returns the minimum friendly name so that the original name can be rebuilt using preset defaults:
@@ -133,16 +143,16 @@ func getCondensedImageRef(imageRef string) string {
 }
 
 // possible formats include
-//		us-docker.pkg.dev/steampipe/plugin/turbot/aws:1.0.0
-//		us-docker.pkg.dev/steampipe/plugin/turbot/aws@sha256:766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1
+//		ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0
+//		ghcr.io/turbot/steampipe/plugins/turbot/aws@sha256:766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1
 //		turbot/aws:1.0.0
 //		turbot/aws
 //      dockerhub.org/myimage
 //      dockerhub.org/myimage:mytag
 //		aws:1.0.0
 //		aws
-//		us-docker.pkg.dev/steampipe/plugin/turbot/aws@1.0.0
-//		us-docker.pkg.dev/steampipe/plugin/turbot/aws@sha256:766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1
+//		ghcr.io/turbot/steampipe/plugins/turbot/aws@1.0.0
+//		ghcr.io/turbot/steampipe/plugins/turbot/aws@sha256:766389c9dd892132c7e7b9124f446b9599a80863d466cd1d333a167dedf2c2b1
 //		turbot/aws@1.0.0
 //      dockerhub.org/myimage@mytag
 //		aws@1.0.0
@@ -169,7 +179,7 @@ func getFullImageRef(imagePath string) string {
 			return fmt.Sprintf("%s:%s", items[0], tag)
 		}
 		return fmt.Sprintf("%s/%s/%s/%s:%s", DefaultImageRepoActualURL, DefaultImageType, org, parts[len(parts)-1], tag)
-	default: //ex: us-docker.pkg.dev/steampipe/plugin/turbot/aws
+	default: //ex: ghcr.io/turbot/steampipe/plugins/turbot/aws
 		return fmt.Sprintf("%s:%s", items[0], tag)
 	}
 }
