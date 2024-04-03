@@ -18,8 +18,8 @@ import (
 
 const (
 	VersionCheckerSchema   = "https"
-	VersionCheckerHost     = "hub.steampipe.io"
-	VersionCheckerEndpoint = "api/plugin/version-ghcr"
+	VersionCheckerHost     = "hub-steampipe-io-git-ghcr-hub-turbot.vercel.app" // "hub.steampipe.io"
+	VersionCheckerEndpoint = "api/plugin/version"
 )
 
 // VersionCheckReport ::
