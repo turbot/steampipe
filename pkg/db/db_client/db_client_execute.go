@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"net/netip"
 	"strings"
 	"time"
@@ -35,7 +36,10 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, args ...any) (
 
 	// set setShouldShowTiming flag
 	// (this will refetch ScanMetadataMaxId if timing has just been enabled)
-	c.setShouldShowTiming(ctx, sessionResult.Session)
+	err := c.setShouldShowTiming(ctx, sessionResult.Session)
+	if err != nil {
+		return nil, err
+	}
 
 	defer func() {
 		// we need to do this in a closure, otherwise the ctx will be evaluated immediately
@@ -91,7 +95,10 @@ func (c *DbClient) Execute(ctx context.Context, query string, args ...any) (*que
 
 	// re-read ArgTiming from viper (in case the .timing command has been run)
 	// (this will refetch ScanMetadataMaxId if timing has just been enabled)
-	c.setShouldShowTiming(timingCtx, sessionResult.Session)
+	err :=c.setShouldShowTiming(timingCtx, sessionResult.Session)
+	if err != nil {
+		return nil, err
+	}
 
 	// define callback to close session when the async execution is complete
 	closeSessionCallback := func() { sessionResult.Session.Close(error_helpers.IsContextCanceled(ctx)) }
@@ -200,6 +207,7 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		resultChannel <- timingResult
 	}()
 
+
 	var scanRows *ScanMetadataRow
 	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
 		query := fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
@@ -208,14 +216,21 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 			return err
 		}
 		scanRows, err = pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[ScanMetadataRow])
+		log.Printf("[WARN] getQueryTiming:executed '%s'", query)
+
 		return err
 	})
+
+
 
 	// if we failed to read scan metadata (either because the query failed or the plugin does not support it) just return
 	// we don't return the error, since we don't want to error out in this case
 	if err != nil || scanRows == nil {
+		log.Printf("[WARN] getQueryTiming: failed to read scan metadata, rows read: %d, err: %s", scanRows, err)
 		return
 	}
+
+
 
 	// so we have scan metadata - create the metadata struct
 	timingResult.Metadata = &queryresult.TimingMetadata{}
@@ -233,10 +248,14 @@ func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_comm
 	return db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
 		row := tx.QueryRow(ctx, fmt.Sprintf("select max(id) from %s.%s", constants.InternalSchema, constants.ForeignTableScanMetadata))
 		err := row.Scan(&session.ScanMetadataMaxId)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return nil
+			}
+			return err
 		}
-		return err
+		log.Printf("[WARN] updated scan metadata max id to %d", session.ScanMetadataMaxId)
+		return nil
 	})
 }
 

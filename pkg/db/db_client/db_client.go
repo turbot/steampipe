@@ -148,16 +148,20 @@ func (c *DbClient) loadServerSettings(ctx context.Context) error {
 	return nil
 }
 
-func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.DatabaseSession) {
+func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.DatabaseSession) error {
 	currentShowTimingFlag := viper.GetBool(constants.ArgTiming)
 
 	// if we are turning timing ON, fetch the ScanMetadataMaxId
 	// to ensure we only select the relevant scan metadata table entries
 	if currentShowTimingFlag && !c.showTimingFlag {
-		c.updateScanMetadataMaxId(ctx, session)
+		err :=c.updateScanMetadataMaxId(ctx, session)
+		if err != nil {
+			return err
+		}
 	}
 
 	c.showTimingFlag = currentShowTimingFlag
+	return nil
 }
 
 func (c *DbClient) shouldShowTiming() bool {
