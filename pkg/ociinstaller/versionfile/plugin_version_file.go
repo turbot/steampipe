@@ -177,12 +177,19 @@ func loadLocalPlugins(ctx context.Context) (map[string]*InstalledVersion, error)
 	for _, pluginFolder := range pluginFolders {
 		// check if the folder contains a plugin file
 		pluginName := filepath.Base(pluginFolder)
-		pluginFile := filepath.Join(pluginFolder, pluginName+".plugin")
-		if filehelpers.FileExists(pluginFile) {
-			localPlugins[pluginName] = &InstalledVersion{
-				Name:          pluginName,
-				Version:       "local",
-				StructVersion: InstalledVersionStructVersion,
+		pluginFiles := []string{
+			// check both short and long names
+			pluginName+".plugin",
+			"steampipe-plugin"+pluginName+".plugin",
+		}
+		for _, pluginFile := range pluginFiles {
+			pluginPath := filepath.Join(pluginFolder, pluginFile)
+			if filehelpers.FileExists(pluginPath) {
+				localPlugins[pluginName] = &InstalledVersion{
+					Name:          pluginPath,
+					Version:       "local",
+					StructVersion: InstalledVersionStructVersion,
+				}
 			}
 		}
 	}
