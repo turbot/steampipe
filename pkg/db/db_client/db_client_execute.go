@@ -95,7 +95,7 @@ func (c *DbClient) Execute(ctx context.Context, query string, args ...any) (*que
 
 	// re-read ArgTiming from viper (in case the .timing command has been run)
 	// (this will refetch ScanMetadataMaxId if timing has just been enabled)
-	err :=c.setShouldShowTiming(timingCtx, sessionResult.Session)
+	err := c.setShouldShowTiming(timingCtx, sessionResult.Session)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +207,6 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		resultChannel <- timingResult
 	}()
 
-
 	var scanRows *ScanMetadataRow
 	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
 		query := fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
@@ -221,8 +220,6 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		return err
 	})
 
-
-
 	// if we failed to read scan metadata (either because the query failed or the plugin does not support it) just return
 	// we don't return the error, since we don't want to error out in this case
 	if err != nil || scanRows == nil {
@@ -230,15 +227,13 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		return
 	}
 
-
-
 	// so we have scan metadata - create the metadata struct
-	timingResult.Metadata = &queryresult.TimingMetadata{}
-	timingResult.Metadata.HydrateCalls += scanRows.HydrateCalls
+
+	timingResult.HydrateCalls += scanRows.HydrateCalls
 	if scanRows.CacheHit {
-		timingResult.Metadata.CachedRowsFetched += scanRows.RowsFetched
+		timingResult.CachedRowsFetched += scanRows.RowsFetched
 	} else {
-		timingResult.Metadata.RowsFetched += scanRows.RowsFetched
+		timingResult.RowsFetched += scanRows.RowsFetched
 	}
 	// update the max id for this session
 	session.ScanMetadataMaxId = scanRows.Id
