@@ -406,7 +406,7 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 			return nil, nil
 		}
 
-		// so the plugin binary exists but it does not exist int he versions.json
+		// so the plugin binary exists but it does not exist in the versions.json
 		// this is probably because it has been built locally - add a version entry with version set to 'local'
 		c.PluginVersions[imageRef] = &versionfile.InstalledVersion{
 			Version: "local",
