@@ -7,21 +7,21 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/karrick/gows"
-	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/karrick/gows"
 	"github.com/spf13/viper"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -34,10 +34,14 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 	for _, o := range opts {
 		o(config)
 	}
+	log.Printf("[WARN] displaying output")
 
-	switch cmdconfig.Viper().GetString(constants.ArgOutput) {
+	var timingResult *queryresult.TimingResult
+
+	outputFormat := cmdconfig.Viper().GetString(constants.ArgOutput)
+	switch outputFormat {
 	case constants.OutputFormatJSON:
-		rowErrors = displayJSON(ctx, result)
+		rowErrors, timingResult = displayJSON(ctx, result)
 	case constants.OutputFormatCSV:
 		rowErrors = displayCSV(ctx, result)
 	case constants.OutputFormatLine:
@@ -46,8 +50,16 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 		rowErrors = displayTable(ctx, result)
 	}
 
+	// show timing
 	if config.timing {
-		fmt.Println(buildTimingString(result))
+		// if the output is json, we will already have ready the timing result from the channel
+		// otherwise read the channel
+		if outputFormat != constants.OutputFormatJSON {
+			timingResult = <-result.TimingResult
+		}
+		if timingResult != nil {
+			fmt.Println(buildTimingString(timingResult))
+		}
 	}
 	// return the number of rows that returned errors
 	return rowErrors
@@ -230,9 +242,20 @@ func getTerminalColumnsRequiredForString(str string) int {
 	return colsRequired
 }
 
-func displayJSON(ctx context.Context, result *queryresult.Result) int {
+type jsonOutput struct {
+	Rows     []map[string]interface{}  `json:"rows"`
+	Metadata *queryresult.TimingResult `json:"metadata"`
+}
+
+func newJSONOutput() *jsonOutput {
+	return &jsonOutput{
+		Rows: make([]map[string]interface{}, 0),
+	}
+
+}
+func displayJSON(ctx context.Context, result *queryresult.Result) (int, *queryresult.TimingResult) {
 	rowErrors := 0
-	jsonOutput := make([]map[string]interface{}, 0)
+	jsonOutput := newJSONOutput()
 
 	// define function to add each row to the JSON output
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
@@ -241,24 +264,28 @@ func displayJSON(ctx context.Context, result *queryresult.Result) int {
 			value, _ := ParseJSONOutputColumnValue(row[idx], col)
 			record[col.Name] = value
 		}
-		jsonOutput = append(jsonOutput, record)
+		jsonOutput.Rows = append(jsonOutput.Rows, record)
 	}
 
 	// call this function for each row
 	if err := iterateResults(result, rowFunc); err != nil {
 		error_helpers.ShowError(ctx, err)
 		rowErrors++
-		return rowErrors
+		return rowErrors, nil
 	}
+
+	// now we have iterated the rows, get the timing
+	jsonOutput.Metadata = <-result.TimingResult
+
 	// display the JSON
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", " ")
 	encoder.SetEscapeHTML(false)
 	if err := encoder.Encode(jsonOutput); err != nil {
 		fmt.Print("Error displaying result as JSON", err)
-		return 0
+		return 0, nil
 	}
-	return rowErrors
+	return rowErrors, jsonOutput.Metadata
 }
 
 func displayCSV(ctx context.Context, result *queryresult.Result) int {
@@ -352,14 +379,11 @@ func displayTable(ctx context.Context, result *queryresult.Result) int {
 
 	// page out the table
 	ShowPaged(ctx, outbuf.String())
+
 	return rowErrors
 }
 
-func buildTimingString(result *queryresult.Result) string {
-	timingResult := <-result.TimingResult
-	if timingResult == nil {
-		return ""
-	}
+func buildTimingString(timingResult *queryresult.TimingResult) string {
 	var sb strings.Builder
 	// large numbers should be formatted with commas
 	p := message.NewPrinter(language.English)
@@ -372,25 +396,23 @@ func buildTimingString(result *queryresult.Result) string {
 		sb.WriteString(p.Sprintf("\nTime: %.1fs.", seconds))
 	}
 
-	if timingMetadata := timingResult.Metadata; timingMetadata != nil {
-		totalRows := timingMetadata.RowsFetched + timingMetadata.CachedRowsFetched
-		sb.WriteString(" Rows fetched: ")
-		if totalRows == 0 {
-			sb.WriteString("0")
-		} else {
-			if totalRows > 0 {
-				sb.WriteString(p.Sprintf("%d", timingMetadata.RowsFetched+timingMetadata.CachedRowsFetched))
-			}
-			if timingMetadata.CachedRowsFetched > 0 {
-				if timingMetadata.RowsFetched == 0 {
-					sb.WriteString(" (cached)")
-				} else {
-					sb.WriteString(p.Sprintf(" (%d cached)", timingMetadata.CachedRowsFetched))
-				}
+	totalRows := timingResult.RowsFetched + timingResult.CachedRowsFetched
+	sb.WriteString(" Rows fetched: ")
+	if totalRows == 0 {
+		sb.WriteString("0")
+	} else {
+		if totalRows > 0 {
+			sb.WriteString(p.Sprintf("%d", timingResult.RowsFetched+timingResult.CachedRowsFetched))
+		}
+		if timingResult.CachedRowsFetched > 0 {
+			if timingResult.RowsFetched == 0 {
+				sb.WriteString(" (cached)")
+			} else {
+				sb.WriteString(p.Sprintf(" (%d cached)", timingResult.CachedRowsFetched))
 			}
 		}
-		sb.WriteString(p.Sprintf(". Hydrate calls: %d.", timingMetadata.HydrateCalls))
 	}
+	sb.WriteString(p.Sprintf(". Hydrate calls: %d.", timingResult.HydrateCalls))
 
 	return sb.String()
 }

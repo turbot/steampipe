@@ -1,18 +1,24 @@
 package queryresult
 
 import (
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"time"
 )
 
-type TimingMetadata struct {
-	RowsFetched       int64
-	CachedRowsFetched int64
-	HydrateCalls      int64
+type ScanTimingMetadata struct {
+	Table       string        `json:"table"`
+	RowsFetched int64         `json:"rows_fetched"`
+	Duration    time.Duration `json:"duration"`
+	Columns     []string      `json:"columns"`
+	Quals       []*proto.Qual `json:"quals"`
 }
 
 type TimingResult struct {
-	Duration time.Duration
-	Metadata *TimingMetadata
+	Duration          time.Duration
+	RowsReturned      int64 `json:"rows_returned"`
+	RowsFetched       int64 `json:"rows_fetched"`
+	CachedRowsFetched int64 `json:"cached_rows_fetched"`
+	HydrateCalls      int64 `json:"hydrate_calls"`
 }
 type RowResult struct {
 	Data  []interface{}
