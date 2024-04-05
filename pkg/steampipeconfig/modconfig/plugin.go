@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
+	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"golang.org/x/exp/maps"
 )
 
@@ -86,10 +87,7 @@ func ResolvePluginImageRef(pluginAlias string) string {
 	var imageRef string
 	if strings.HasPrefix(pluginAlias, `local/`) {
 		// convert name to long plugin name
-		pluginName := strings.TrimPrefix(pluginAlias, `local/`)
-		if !strings.HasPrefix(pluginName, `steampipe-plugin-`) {
-			pluginName = `steampipe-plugin-` + pluginName
-		}
+		pluginName := versionfile.GetPluginLongName(strings.TrimPrefix(pluginAlias, `local/`))
 		imageRef = `local/` + pluginName
 	} else {
 		// ok so there is no plugin block reference - build the plugin image ref from the PluginAlias field
@@ -98,3 +96,4 @@ func ResolvePluginImageRef(pluginAlias string) string {
 	//  are there any instances for this plugin
 	return imageRef
 }
+
