@@ -1,4 +1,4 @@
-package versionfile
+package filepaths
 
 import "strings"
 

@@ -83,14 +83,12 @@ func (l *Plugin) Equals(other *Plugin) bool {
 // ResolvePluginImageRef resolves the plugin image ref from the plugin alias
 // (this handles the special case of locally developed plugins in the plugins/local folder)
 func ResolvePluginImageRef(pluginAlias string) string {
-
 	if strings.HasPrefix(pluginAlias, `local/`) {
 		// if a local plugin is specified, return the plugin alias as the image ref.
 		// this will be used as the path to the plugin in the local folder
 		return pluginAlias
 	}
 	// ok so there is no plugin block reference - build the plugin image ref from the PluginAlias field
-		return ociinstaller.NewSteampipeImageRef(pluginAlias).DisplayImageRef()
-
+	return ociinstaller.NewSteampipeImageRef(pluginAlias).DisplayImageRef()
 }
 
