@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"golang.org/x/exp/maps"
 )
 
@@ -84,16 +83,14 @@ func (l *Plugin) Equals(other *Plugin) bool {
 // ResolvePluginImageRef resolves the plugin image ref from the plugin alias
 // (this handles the special case of locally developed plugins in the plugins/local folder)
 func ResolvePluginImageRef(pluginAlias string) string {
-	var imageRef string
+
 	if strings.HasPrefix(pluginAlias, `local/`) {
-		// convert name to long plugin name
-		pluginName := versionfile.GetPluginLongName(strings.TrimPrefix(pluginAlias, `local/`))
-		imageRef = `local/` + pluginName
-	} else {
-		// ok so there is no plugin block reference - build the plugin image ref from the PluginAlias field
-		imageRef = ociinstaller.NewSteampipeImageRef(pluginAlias).DisplayImageRef()
+		// if a local plugin is specified, return the plugin alias as the image ref.
+		// this will be used as the path to the plugin in the local folder
+		return pluginAlias
 	}
-	//  are there any instances for this plugin
-	return imageRef
+	// ok so there is no plugin block reference - build the plugin image ref from the PluginAlias field
+		return ociinstaller.NewSteampipeImageRef(pluginAlias).DisplayImageRef()
+
 }
 
