@@ -1,6 +1,13 @@
+## v0.22.2 [2024-04-05]
+_Bug fixes_
+* Fix issue where daily update check message showed a <nil> when there was no message to show. ([#4206](https://github.com/turbot/steampipe/issues/4206))
+* Fix issue where local plugins are not being loaded. ([#4196](https://github.com/turbot/steampipe/issues/4196))
+* Re-add support for 'implicit' local plugins (i.e. the plugin binary exists but there is no entry in the `versions.json`). ([#4223](https://github.com/turbot/steampipe/issues/4223))
+* Add support for nested dashboards. ([#4208](https://github.com/turbot/steampipe/issues/4208))
+
 ## v0.22.1 [2024-03-15]
 _Whats new_
-* Improve startup performance with high plugin count - parallelize plugin startup.  ([#4183](https://github.com/turbot/steampipe/issues/4183))
+* Improve startup performance with high plugin count - parallelize plugin startup. ([#4183](https://github.com/turbot/steampipe/issues/4183))
 * Add database SSL password support for encrypted private key in order to handle your own certificates. ([#4149](https://github.com/turbot/steampipe/issues/4149))
 
 _Bug fixes_
