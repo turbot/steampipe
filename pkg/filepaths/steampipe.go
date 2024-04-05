@@ -57,6 +57,28 @@ func EnsurePluginDir() string {
 	return ensureSteampipeSubDir("plugins")
 }
 
+func EnsurePluginInstallDir(pluginImageDisplayRef  string) string {
+	installDir := PluginInstallDir(pluginImageDisplayRef)
+
+	if _, err := os.Stat(installDir); os.IsNotExist(err) {
+		err = os.MkdirAll(installDir, 0755)
+		error_helpers.FailOnErrorWithMessage(err, "could not create plugin install directory")
+	}
+
+	return installDir
+}
+
+func PluginInstallDir(pluginImageDisplayRef  string) string {
+	osSafePath := filepath.FromSlash(pluginImageDisplayRef )
+
+	fullPath := filepath.Join(EnsurePluginDir(), osSafePath)
+	return fullPath
+}
+
+func PluginBinaryPath(pluginImageDisplayRef, pluginAlias  string) string {
+	return filepath.Join(PluginInstallDir(pluginImageDisplayRef), PluginAliasToLongName(pluginAlias)+".plugin")
+}
+
 // EnsureConfigDir returns the path to the config directory (creates if missing)
 func EnsureConfigDir() string {
 	return ensureSteampipeSubDir("config")

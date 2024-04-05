@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	versionfile "github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -109,7 +108,7 @@ func updatePluginVersionFiles(ctx context.Context, image *SteampipeImage) error 
 
 func installPluginBinary(image *SteampipeImage, tempdir string) error {
 	sourcePath := filepath.Join(tempdir, image.Plugin.BinaryFile)
-	destDir := pluginInstallDir(image.ImageRef)
+	destDir := filepaths.EnsurePluginInstallDir(image.ImageRef.DisplayImageRef())
 
 	// check if system is M1 - if so we need some special handling
 	isM1, err := utils.IsMacM1()
@@ -136,7 +135,7 @@ func installPluginBinary(image *SteampipeImage, tempdir string) error {
 }
 
 func installPluginDocs(image *SteampipeImage, tempdir string) error {
-	installTo := pluginInstallDir(image.ImageRef)
+	installTo := filepaths.EnsurePluginInstallDir(image.ImageRef.DisplayImageRef())
 
 	// if DocsDir is not set, then there are no docs.
 	if image.Plugin.DocsDir == "" {
@@ -230,15 +229,3 @@ func addPluginStreamToConfig(src []byte, ref *SteampipeImageRef) []byte {
 	return destBuffer.Bytes()
 }
 
-func pluginInstallDir(ref *SteampipeImageRef) string {
-	osSafePath := filepath.FromSlash(ref.DisplayImageRef())
-
-	fullPath := filepath.Join(filepaths.EnsurePluginDir(), osSafePath)
-
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		err = os.MkdirAll(fullPath, 0755)
-		error_helpers.FailOnErrorWithMessage(err, "could not create plugin install directory")
-	}
-
-	return fullPath
-}

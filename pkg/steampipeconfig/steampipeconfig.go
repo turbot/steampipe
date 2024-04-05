@@ -306,9 +306,9 @@ func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin) error {
 		log.Printf("[WARN] addPlugin called for plugin '%s' which is not installed", imageRef)
 		return nil
 	}
-	// NOTE: populate the version from the plugin version file data
+		//  populate the version from the plugin version file data
+		plugin.Version = pluginVersion.Version
 
-	plugin.Version = pluginVersion.Version
 	// add to list of plugin configs for this image ref
 	c.Plugins[imageRef] = append(c.Plugins[imageRef], plugin)
 	c.PluginsInstances[plugin.Instance] = plugin
@@ -399,8 +399,18 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 
 	// verify the plugin is installed - if not return nil
 	if _, ok := c.PluginVersions[imageRef]; !ok {
-		log.Printf("[INFO] plugin '%s' is not installed", imageRef)
-		return nil, nil
+		// tactical - check if the plugin binary exists
+		pluginBinaryPath := filepaths.PluginBinaryPath(imageRef, connection.PluginAlias)
+		if _, err := os.Stat(pluginBinaryPath); err != nil {
+			log.Printf("[INFO] plugin '%s' is not installed", imageRef)
+			return nil, nil
+		}
+
+		// so the plugin binary exists but it does not exist in the versions.json
+		// this is probably because it has been built locally - add a version entry with version set to 'local'
+		c.PluginVersions[imageRef] = &versionfile.InstalledVersion{
+			Version: "local",
+		}
 	}
 
 	// how many plugin instances are there for this image ref?
