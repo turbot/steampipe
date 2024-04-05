@@ -178,8 +178,8 @@ func loadLocalPlugins(ctx context.Context) (map[string]*InstalledVersion, error)
 		// check if the folder contains a plugin file
 		pluginName := filepath.Base(pluginFolder)
 
-		pluginShortName := filepaths.GetPluginShortName(pluginName)
-		pluginLongName := filepaths.GetPluginLongName(pluginName)
+		pluginShortName := filepaths.PluginAliasToShortName(pluginName)
+		pluginLongName := filepaths.PluginAliasToLongName(pluginName)
 
 		pluginFiles := []string{
 			pluginShortName + ".plugin",

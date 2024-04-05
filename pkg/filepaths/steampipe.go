@@ -76,14 +76,7 @@ func PluginInstallDir(pluginImageDisplayRef  string) string {
 }
 
 func PluginBinaryPath(pluginImageDisplayRef, pluginAlias  string) string {
-	fullPath := filepath.Join(PluginInstallDir(pluginImageDisplayRef), GetPluginLongName(pluginAlias)+".plugin")
-
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		err = os.MkdirAll(fullPath, 0755)
-		error_helpers.FailOnErrorWithMessage(err, "could not create plugin install directory")
-	}
-
-	return fullPath
+	return filepath.Join(PluginInstallDir(pluginImageDisplayRef), PluginAliasToLongName(pluginAlias)+".plugin")
 }
 
 // EnsureConfigDir returns the path to the config directory (creates if missing)
