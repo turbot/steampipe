@@ -85,7 +85,12 @@ func (l *Plugin) Equals(other *Plugin) bool {
 func ResolvePluginImageRef(pluginAlias string) string {
 	var imageRef string
 	if strings.HasPrefix(pluginAlias, `local/`) {
-		imageRef = pluginAlias
+		// convert name to long plugin name
+		pluginName := strings.TrimPrefix(pluginAlias, `local/`)
+		if !strings.HasPrefix(pluginName, `steampipe-plugin-`) {
+			pluginName = `steampipe-plugin-` + pluginName
+		}
+		imageRef = `local/` + pluginName
 	} else {
 		// ok so there is no plugin block reference - build the plugin image ref from the PluginAlias field
 		imageRef = ociinstaller.NewSteampipeImageRef(pluginAlias).DisplayImageRef()

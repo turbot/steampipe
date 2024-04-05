@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	filehelpers "github.com/turbot/go-kit/files"
@@ -176,16 +177,28 @@ func loadLocalPlugins(ctx context.Context) (map[string]*InstalledVersion, error)
 	}
 	for _, pluginFolder := range pluginFolders {
 		// check if the folder contains a plugin file
+		var pluginShortName, pluginLongName string
 		pluginName := filepath.Base(pluginFolder)
-		pluginFiles := []string{
-			// check both short and long names
-			pluginName+".plugin",
-			"steampipe-plugin"+pluginName+".plugin",
+
+
+
+		if strings.HasPrefix(pluginName, "steampipe-plugin-") {
+			pluginShortName = strings.TrimPrefix(pluginName, "steampipe-plugin-")
+			pluginLongName = pluginName
+		} else{
+			pluginShortName = pluginName
+			pluginLongName = "steampipe-plugin-" + pluginName
 		}
+		pluginFiles := []string{
+			pluginShortName + ".plugin",
+			pluginLongName + ".plugin",
+		}
+			// check both short and long names
+
 		for _, pluginFile := range pluginFiles {
 			pluginPath := filepath.Join(pluginFolder, pluginFile)
 			if filehelpers.FileExists(pluginPath) {
-				localPlugins[pluginName] = &InstalledVersion{
+				localPlugins[pluginLongName] = &InstalledVersion{
 					Name:          pluginPath,
 					Version:       "local",
 					StructVersion: InstalledVersionStructVersion,
