@@ -177,12 +177,24 @@ func loadLocalPlugins(ctx context.Context) (map[string]*InstalledVersion, error)
 	for _, pluginFolder := range pluginFolders {
 		// check if the folder contains a plugin file
 		pluginName := filepath.Base(pluginFolder)
-		pluginPath := filepath.Join(pluginFolder, pluginName+".plugin")
-		if filehelpers.FileExists(pluginPath) {
-			localPlugins[pluginName] = &InstalledVersion{
-				Name:          pluginPath,
-				Version:       "local",
-				StructVersion: InstalledVersionStructVersion,
+
+		pluginShortName := GetPluginShortName(pluginName)
+		pluginLongName := GetPluginLongName(pluginName)
+
+		pluginFiles := []string{
+			pluginShortName + ".plugin",
+			pluginLongName + ".plugin",
+		}
+			// check both short and long names
+
+		for _, pluginFile := range pluginFiles {
+			pluginPath := filepath.Join(pluginFolder, pluginFile)
+			if filehelpers.FileExists(pluginPath) {
+				localPlugins[pluginName] = &InstalledVersion{
+					Name:          pluginPath,
+					Version:       "local",
+					StructVersion: InstalledVersionStructVersion,
+				}
 			}
 		}
 	}
