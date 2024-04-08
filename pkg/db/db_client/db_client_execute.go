@@ -191,9 +191,10 @@ func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
 }
 
 func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {
-	if !c.shouldShowTiming() {
-		return
-	}
+	// TODO KAI comment out for now - as freezing
+	//if !c.shouldShowTiming() {
+	//	return
+	//}
 
 	var timingResult = &queryresult.TimingResult{
 		Duration: time.Since(startTime),
