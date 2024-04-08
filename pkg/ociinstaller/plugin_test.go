@@ -2,6 +2,7 @@ package ociinstaller
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"os"
 	"path/filepath"
@@ -121,7 +122,7 @@ func TestConstraintBasedFilePathsReadWrite(t *testing.T) {
 
 	for category, testCases := range cases {
 		for _, testCase := range testCases {
-			constraintedDir := pluginInstallDir(NewSteampipeImageRef("constraint-test:0.0.0"), testCase)
+			constraintedDir := filepaths.EnsurePluginInstallDir(fmt.Sprintf("constraint-test:%s", testCase))
 			filePath := filepath.Join(constraintedDir, "test.txt")
 
 			// Write Test
