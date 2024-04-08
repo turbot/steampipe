@@ -8,6 +8,7 @@ import (
 type ScanMetadataRow struct {
 	// the fields of this struct need to be public since these are populated by pgx using RowsToStruct
 	Id           int64         `db:"id" json:"id,omitempty"`
+	Connection   string        `db:"connection" json:"connection"`
 	Table        string        `db:"table"  json:"table"`
 	CacheHit     bool          `db:"cache_hit"  json:"cache_hit"`
 	RowsFetched  int64         `db:"rows_fetched" json:"rows_fetched"`
@@ -18,15 +19,3 @@ type ScanMetadataRow struct {
 	Limit        *int64        `db:"limit" json:"limit"`
 	Quals        []*proto.Qual `db:"-" json:"quals"`
 }
-
-//
-//{Name: "id", Type: proto.ColumnType_INT},
-//{Name: "table", Type: proto.ColumnType_STRING},
-//{Name: "cache_hit", Type: proto.ColumnType_BOOL},
-//{Name: "rows_fetched", Type: proto.ColumnType_INT},
-//{Name: "hydrate_calls", Type: proto.ColumnType_INT},
-//{Name: "start_time", Type: proto.ColumnType_TIMESTAMP},
-//{Name: "duration", Type: proto.ColumnType_DOUBLE},
-//{Name: "columns", Type: proto.ColumnType_JSON},
-//{Name: "limit", Type: proto.ColumnType_INT},
-//{Name: "quals", Type: proto.ColumnType_STRING},

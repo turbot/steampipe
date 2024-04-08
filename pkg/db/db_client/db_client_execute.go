@@ -34,13 +34,6 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, args ...any) (
 		return nil, sessionResult.Error
 	}
 
-	// set setShouldShowTiming flag
-	// (this will refetch ScanMetadataMaxId if timing has just been enabled)
-	err := c.setShouldShowTiming(ctx, sessionResult.Session)
-	if err != nil {
-		return nil, err
-	}
-
 	defer func() {
 		// we need to do this in a closure, otherwise the ctx will be evaluated immediately
 		// and not in call-time
@@ -88,16 +81,6 @@ func (c *DbClient) Execute(ctx context.Context, query string, args ...any) (*que
 	sessionResult := c.AcquireSession(ctx)
 	if sessionResult.Error != nil {
 		return nil, sessionResult.Error
-	}
-	// disable statushooks when timing is enabled, because setShouldShowTiming internally calls the readRows funcs which
-	// calls the statushooks.Done, which hides the `Executing query…` spinner, when timing is enabled.
-	timingCtx := statushooks.DisableStatusHooks(ctx)
-
-	// re-read ArgTiming from viper (in case the .timing command has been run)
-	// (this will refetch ScanMetadataMaxId if timing has just been enabled)
-	err := c.setShouldShowTiming(timingCtx, sessionResult.Session)
-	if err != nil {
-		return nil, err
 	}
 
 	// define callback to close session when the async execution is complete
@@ -191,10 +174,9 @@ func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
 }
 
 func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {
-	// TODO KAI comment out for now - as freezing
-	//if !c.shouldShowTiming() {
-	//	return
-	//}
+	if !c.shouldShowTiming() {
+		return
+	}
 
 	log.Printf("[WARN] getQueryTiming")
 
@@ -214,7 +196,8 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 	}()
 
 	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
-		query := fmt.Sprintf(`select id, 
+		query := fmt.Sprintf(`select id,
+connection,
 "table",
 cache_hit, 
 rows_fetched, 
