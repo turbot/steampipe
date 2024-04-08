@@ -43,11 +43,11 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 	case constants.OutputFormatJSON:
 		rowErrors, timingResult = displayJSON(ctx, result)
 	case constants.OutputFormatCSV:
-		rowErrors = displayCSV(ctx, result)
+		rowErrors, timingResult = displayCSV(ctx, result)
 	case constants.OutputFormatLine:
-		rowErrors = displayLine(ctx, result)
+		rowErrors, timingResult = displayLine(ctx, result)
 	case constants.OutputFormatTable:
-		rowErrors = displayTable(ctx, result)
+		rowErrors, timingResult = displayTable(ctx, result)
 	}
 
 	// show timing
@@ -165,7 +165,104 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 	return colConfigs, headerRow
 }
 
-func displayLine(ctx context.Context, result *queryresult.Result) int {
+// getTerminalColumnsRequiredForString returns the length of the longest line in the string
+func getTerminalColumnsRequiredForString(str string) int {
+	colsRequired := 0
+	scanner := bufio.NewScanner(bytes.NewBufferString(str))
+	for scanner.Scan() {
+		line := scanner.Text()
+		runeCount := utf8.RuneCountInString(line)
+		if runeCount > colsRequired {
+			colsRequired = runeCount
+		}
+	}
+	return colsRequired
+}
+
+type jsonOutput struct {
+	Rows     []map[string]interface{}  `json:"rows"`
+	Metadata *queryresult.TimingResult `json:"metadata"`
+}
+
+func newJSONOutput() *jsonOutput {
+	return &jsonOutput{
+		Rows: make([]map[string]interface{}, 0),
+	}
+
+}
+
+func displayJSON(ctx context.Context, result *queryresult.Result) (int, *queryresult.TimingResult) {
+	rowErrors := 0
+	jsonOutput := newJSONOutput()
+
+	// define function to add each row to the JSON output
+	rowFunc := func(row []interface{}, result *queryresult.Result) {
+		record := map[string]interface{}{}
+		for idx, col := range result.Cols {
+			value, _ := ParseJSONOutputColumnValue(row[idx], col)
+			record[col.Name] = value
+		}
+		jsonOutput.Rows = append(jsonOutput.Rows, record)
+	}
+
+	// call this function for each row
+	count, err := iterateResults(result, rowFunc)
+	if err != nil {
+		error_helpers.ShowError(ctx, err)
+		rowErrors++
+		return rowErrors, nil
+	}
+
+	// now we have iterated the rows, get the timing
+	jsonOutput.Metadata = getTiming(result, count)
+
+	// display the JSON
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", " ")
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(jsonOutput); err != nil {
+		fmt.Print("Error displaying result as JSON", err)
+		return 0, nil
+	}
+	return rowErrors, jsonOutput.Metadata
+}
+
+func displayCSV(ctx context.Context, result *queryresult.Result) (int, *queryresult.TimingResult) {
+	rowErrors := 0
+	csvWriter := csv.NewWriter(os.Stdout)
+	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
+
+	if cmdconfig.Viper().GetBool(constants.ArgHeader) {
+		_ = csvWriter.Write(ColumnNames(result.Cols))
+	}
+
+	// print the data as it comes
+	// define function display each csv row
+	rowFunc := func(row []interface{}, result *queryresult.Result) {
+		rowAsString, _ := ColumnValuesAsString(row, result.Cols, WithNullString(""))
+		_ = csvWriter.Write(rowAsString)
+	}
+
+	// call this function for each row
+	count, err := iterateResults(result, rowFunc)
+	if err != nil {
+		error_helpers.ShowError(ctx, err)
+		rowErrors++
+		return rowErrors, nil
+	}
+
+	csvWriter.Flush()
+	if csvWriter.Error() != nil {
+		error_helpers.ShowErrorWithMessage(ctx, csvWriter.Error(), "unable to print csv")
+	}
+
+	// now we have iterated the rows, get the timing
+	timingResult := getTiming(result, count)
+
+	return rowErrors, timingResult
+}
+
+func displayLine(ctx context.Context, result *queryresult.Result) (int, *queryresult.TimingResult) {
 
 	maxColNameLength, rowErrors := 0, 0
 	for _, col := range result.Cols {
@@ -220,105 +317,19 @@ func displayLine(ctx context.Context, result *queryresult.Result) int {
 	}
 
 	// call this function for each row
-	if err := iterateResults(result, rowFunc); err != nil {
-		error_helpers.ShowError(ctx, err)
-		rowErrors++
-		return rowErrors
-	}
-	return rowErrors
-}
-
-// getTerminalColumnsRequiredForString returns the length of the longest line in the string
-func getTerminalColumnsRequiredForString(str string) int {
-	colsRequired := 0
-	scanner := bufio.NewScanner(bytes.NewBufferString(str))
-	for scanner.Scan() {
-		line := scanner.Text()
-		runeCount := utf8.RuneCountInString(line)
-		if runeCount > colsRequired {
-			colsRequired = runeCount
-		}
-	}
-	return colsRequired
-}
-
-type jsonOutput struct {
-	Rows     []map[string]interface{}  `json:"rows"`
-	Metadata *queryresult.TimingResult `json:"metadata"`
-}
-
-func newJSONOutput() *jsonOutput {
-	return &jsonOutput{
-		Rows: make([]map[string]interface{}, 0),
-	}
-
-}
-func displayJSON(ctx context.Context, result *queryresult.Result) (int, *queryresult.TimingResult) {
-	rowErrors := 0
-	jsonOutput := newJSONOutput()
-
-	// define function to add each row to the JSON output
-	rowFunc := func(row []interface{}, result *queryresult.Result) {
-		record := map[string]interface{}{}
-		for idx, col := range result.Cols {
-			value, _ := ParseJSONOutputColumnValue(row[idx], col)
-			record[col.Name] = value
-		}
-		jsonOutput.Rows = append(jsonOutput.Rows, record)
-	}
-
-	// call this function for each row
-	if err := iterateResults(result, rowFunc); err != nil {
+	count, err := iterateResults(result, rowFunc)
+	if err != nil {
 		error_helpers.ShowError(ctx, err)
 		rowErrors++
 		return rowErrors, nil
 	}
 
 	// now we have iterated the rows, get the timing
-	jsonOutput.Metadata = <-result.TimingResult
-
-	// display the JSON
-	encoder := json.NewEncoder(os.Stdout)
-	encoder.SetIndent("", " ")
-	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(jsonOutput); err != nil {
-		fmt.Print("Error displaying result as JSON", err)
-		return 0, nil
-	}
-	return rowErrors, jsonOutput.Metadata
+	timingResult := getTiming(result, count)
+	return rowErrors, timingResult
 }
 
-func displayCSV(ctx context.Context, result *queryresult.Result) int {
-	rowErrors := 0
-	csvWriter := csv.NewWriter(os.Stdout)
-	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
-
-	if cmdconfig.Viper().GetBool(constants.ArgHeader) {
-		_ = csvWriter.Write(ColumnNames(result.Cols))
-	}
-
-	// print the data as it comes
-	// define function display each csv row
-	rowFunc := func(row []interface{}, result *queryresult.Result) {
-		rowAsString, _ := ColumnValuesAsString(row, result.Cols, WithNullString(""))
-		_ = csvWriter.Write(rowAsString)
-	}
-
-	// call this function for each row
-	if err := iterateResults(result, rowFunc); err != nil {
-		error_helpers.ShowError(ctx, err)
-		rowErrors++
-		return rowErrors
-	}
-
-	csvWriter.Flush()
-	if csvWriter.Error() != nil {
-		error_helpers.ShowErrorWithMessage(ctx, csvWriter.Error(), "unable to print csv")
-	}
-	return rowErrors
-}
-
-func displayTable(ctx context.Context, result *queryresult.Result) int {
+func displayTable(ctx context.Context, result *queryresult.Result) (int, *queryresult.TimingResult) {
 	rowErrors := 0
 	// the buffer to put the output data in
 	outbuf := bytes.NewBufferString("")
@@ -366,7 +377,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) int {
 	}
 
 	// iterate each row, adding each to the table
-	err := iterateResults(result, rowFunc)
+	count, err := iterateResults(result, rowFunc)
 	if err != nil {
 		// display the error
 		fmt.Println()
@@ -380,7 +391,18 @@ func displayTable(ctx context.Context, result *queryresult.Result) int {
 	// page out the table
 	ShowPaged(ctx, outbuf.String())
 
-	return rowErrors
+	// now we have iterated the rows, get the timing
+	timingResult := getTiming(result, count)
+
+	return rowErrors, timingResult
+}
+
+func getTiming(result *queryresult.Result, count int) *queryresult.TimingResult {
+	// now we have iterated the rows, get the timing
+	timingResult := <-result.TimingResult
+	// set rows returned
+	timingResult.RowsReturned = int64(count)
+	return timingResult
 }
 
 func buildTimingString(timingResult *queryresult.TimingResult) string {
@@ -396,22 +418,22 @@ func buildTimingString(timingResult *queryresult.TimingResult) string {
 		sb.WriteString(p.Sprintf("\nTime: %.1fs.", seconds))
 	}
 
-	totalRows := timingResult.RowsFetched + timingResult.CachedRowsFetched
+	//totalRows := timingResult.RowsFetched //+ timingResult.CachedRowsFetched
 	sb.WriteString(" Rows fetched: ")
-	if totalRows == 0 {
-		sb.WriteString("0")
-	} else {
-		if totalRows > 0 {
-			sb.WriteString(p.Sprintf("%d", timingResult.RowsFetched+timingResult.CachedRowsFetched))
-		}
-		if timingResult.CachedRowsFetched > 0 {
-			if timingResult.RowsFetched == 0 {
-				sb.WriteString(" (cached)")
-			} else {
-				sb.WriteString(p.Sprintf(" (%d cached)", timingResult.CachedRowsFetched))
-			}
-		}
-	}
+	//if totalRows == 0 {
+	//	sb.WriteString("0")
+	//} else {
+	//	if totalRows > 0 {
+	//		sb.WriteString(p.Sprintf("%d", timingResult.RowsFetched+timingResult.CachedRowsFetched))
+	//	}
+	//	if timingResult.CachedRowsFetched > 0 {
+	//		if timingResult.RowsFetched == 0 {
+	//			sb.WriteString(" (cached)")
+	//		} else {
+	//			sb.WriteString(p.Sprintf(" (%d cached)", timingResult.CachedRowsFetched))
+	//		}
+	//	}
+	//}
 	sb.WriteString(p.Sprintf(". Hydrate calls: %d.", timingResult.HydrateCalls))
 
 	return sb.String()
@@ -420,18 +442,20 @@ func buildTimingString(timingResult *queryresult.TimingResult) string {
 type displayResultsFunc func(row []interface{}, result *queryresult.Result)
 
 // call func displayResult for each row of results
-func iterateResults(result *queryresult.Result, displayResult displayResultsFunc) error {
+func iterateResults(result *queryresult.Result, displayResult displayResultsFunc) (int, error) {
+	count := 0
 	for row := range *result.RowChan {
 		if row == nil {
-			return nil
+			return count, nil
 		}
 		if row.Error != nil {
-			return row.Error
+			return count, row.Error
 		}
 		displayResult(row.Data, result)
+		count++
 	}
 	// we will not get here
-	return nil
+	return count, nil
 }
 
 // DisplayErrorTiming shows the time taken for the query to fail
