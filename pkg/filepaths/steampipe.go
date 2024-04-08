@@ -57,7 +57,7 @@ func EnsurePluginDir() string {
 	return ensureSteampipeSubDir("plugins")
 }
 
-func EnsurePluginInstallDir(pluginImageDisplayRef  string) string {
+func EnsurePluginInstallDir(pluginImageDisplayRef string) string {
 	installDir := PluginInstallDir(pluginImageDisplayRef)
 
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
@@ -68,14 +68,14 @@ func EnsurePluginInstallDir(pluginImageDisplayRef  string) string {
 	return installDir
 }
 
-func PluginInstallDir(pluginImageDisplayRef  string) string {
-	osSafePath := filepath.FromSlash(pluginImageDisplayRef )
+func PluginInstallDir(pluginImageDisplayRef string) string {
+	osSafePath := filepath.FromSlash(pluginImageDisplayRef)
 
 	fullPath := filepath.Join(EnsurePluginDir(), osSafePath)
 	return fullPath
 }
 
-func PluginBinaryPath(pluginImageDisplayRef, pluginAlias  string) string {
+func PluginBinaryPath(pluginImageDisplayRef, pluginAlias string) string {
 	return filepath.Join(PluginInstallDir(pluginImageDisplayRef), PluginAliasToLongName(pluginAlias)+".plugin")
 }
 

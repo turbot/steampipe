@@ -44,7 +44,9 @@ func InstallPlugin(ctx context.Context, imageRef string, constraint string, sub 
 		return nil, err
 	}
 
-	pluginPath := pluginInstallDir(image.ImageRef, constraint)
+	// update the image ref to include the constraint and use to get the plugin install path
+	constraintRef := image.ImageRef.DisplayImageRefConstraintOverride(constraint)
+	pluginPath := filepaths.EnsurePluginInstallDir(constraintRef)
 
 	sub <- struct{}{}
 	if err = installPluginBinary(image, tempDir.Path, pluginPath); err != nil {
@@ -110,9 +112,8 @@ func updatePluginVersionFiles(ctx context.Context, image *SteampipeImage, constr
 	return v.Save()
 }
 
-func installPluginBinary(image *SteampipeImage, tempdir string) error {
-	sourcePath := filepath.Join(tempdir, image.Plugin.BinaryFile)
-	destDir := filepaths.EnsurePluginInstallDir(image.ImageRef.DisplayImageRef())
+func installPluginBinary(image *SteampipeImage, tempDir string, destDir string) error {
+	sourcePath := filepath.Join(tempDir, image.Plugin.BinaryFile)
 
 	// check if system is M1 - if so we need some special handling
 	isM1, err := utils.IsMacM1()
@@ -133,22 +134,20 @@ func installPluginBinary(image *SteampipeImage, tempdir string) error {
 
 	// unzip the file into the plugin folder
 	if _, err := ungzip(sourcePath, destDir); err != nil {
-		return fmt.Errorf("could not unzip %s to %s", sourcePath, pluginDir)
+		return fmt.Errorf("could not unzip %s to %s", sourcePath, destDir)
 	}
 	return nil
 }
 
-func installPluginDocs(image *SteampipeImage, tempdir string) error {
-	installTo := filepaths.EnsurePluginInstallDir(image.ImageRef.DisplayImageRef())
-
+func installPluginDocs(image *SteampipeImage, tempDir string, destDir string) error {
 	// if DocsDir is not set, then there are no docs.
 	if image.Plugin.DocsDir == "" {
 		return nil
 	}
 
 	// install the docs
-	sourcePath := filepath.Join(tempdir, image.Plugin.DocsDir)
-	destPath := filepath.Join(installTo, "docs")
+	sourcePath := filepath.Join(tempDir, image.Plugin.DocsDir)
+	destPath := filepath.Join(destDir, "docs")
 	if fileExists(destPath) {
 		os.RemoveAll(destPath)
 	}
@@ -230,16 +229,4 @@ func addPluginConstraintToConfig(src []byte, constraint string) []byte {
 		destBuffer.WriteString(fmt.Sprintf("%s\n", line))
 	}
 	return destBuffer.Bytes()
-}
-
-func pluginInstallDir(ref *SteampipeImageRef, constraint string) string {
-	osSafePath := filepath.FromSlash(ref.DisplayImageRefConstraintOverride(constraint))
-	fullPath := filepath.Join(filepaths.EnsurePluginDir(), osSafePath)
-
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		err = os.MkdirAll(fullPath, 0755)
-		error_helpers.FailOnErrorWithMessage(err, "could not create plugin install directory")
-	}
-
-	return fullPath
 }
