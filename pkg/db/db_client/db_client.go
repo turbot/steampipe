@@ -53,9 +53,6 @@ type DbClient struct {
 	searchPathPrefix []string
 	// the default user search path
 	userSearchPath []string
-	// a cached copy of (viper.GetBool(constants.ArgTiming) && viper.GetString(constants.ArgOutput) == constants.OutputFormatTable)
-	// (cached to avoid concurrent access error on viper)
-	showTimingFlag bool
 	// disable timing - set whilst in process of querying the timing
 	disableTiming        bool
 	onConnectionCallback DbConnectionCallback
@@ -147,25 +144,8 @@ func (c *DbClient) loadServerSettings(ctx context.Context) error {
 	return nil
 }
 
-func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.DatabaseSession) error {
-	// TODO KAI HACK
-	currentShowTimingFlag := true // viper.GetBool(constants.ArgTiming)
-
-	// if we are turning timing ON, fetch the ScanMetadataMaxId
-	// to ensure we only select the relevant scan metadata table entries
-	if currentShowTimingFlag && !c.showTimingFlag {
-		err := c.updateScanMetadataMaxId(ctx, session)
-		if err != nil {
-			return err
-		}
-	}
-
-	c.showTimingFlag = currentShowTimingFlag
-	return nil
-}
-
 func (c *DbClient) shouldShowTiming() bool {
-	return c.showTimingFlag && !c.disableTiming
+	return !c.disableTiming
 }
 
 // ServerSettings returns the settings of the steampipe service that this DbClient is connected to
