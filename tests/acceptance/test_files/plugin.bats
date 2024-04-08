@@ -2,21 +2,45 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "plugin install" {
-  run steampipe plugin install net
+  run steampipe plugin install chaos
   assert_success
-  steampipe plugin uninstall net
+  steampipe plugin uninstall chaos
 }
 
 @test "plugin install from stream" {
-  run steampipe plugin install net@0.2
+  run steampipe plugin install chaos@0.4
   assert_success
-  steampipe plugin uninstall net@0.2
+  steampipe plugin uninstall chaos@0.4
 }
 
 @test "plugin install from stream (prefixed with v)" {
-  run steampipe plugin install net@v0.2
+  run steampipe plugin install chaos@v0.4
   assert_success
-  steampipe plugin uninstall net@0.2
+  steampipe plugin uninstall chaos@0.4
+}
+
+@test "plugin install from caret constraint" {
+  run steampipe plugin install chaos@^0.4
+  assert_success
+  steampipe plugin uninstall chaos@^0.4
+}
+
+@test "plugin install from tilde constraint" {
+  run steampipe plugin install chaos@~0.4.0
+  assert_success
+  steampipe plugin uninstall chaos@~0.4.0
+}
+
+@test "plugin install from wildcard constraint" {
+  run steampipe plugin install chaos@0.4.*
+  assert_success
+  steampipe plugin uninstall chaos@0.4.*
+}
+
+@test "plugin install gte constraint" {
+  run steampipe plugin install "chaos@>=0.4"
+  assert_success
+  steampipe plugin uninstall "chaos@>=0.4"
 }
 
 @test "create a local plugin, add connection and query" {
@@ -81,7 +105,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # Create a copy of the install directory
   copy_install_directory
 
-  steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $MY_TEST_COPY
+  steampipe plugin install hackernews@0.8.0 bitbucket@0.7.1 --progress=false --install-dir $MY_TEST_COPY
 
   # check table output
   run steampipe plugin list --install-dir $MY_TEST_COPY
@@ -102,9 +126,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # Create a copy of the install directory
   copy_install_directory
 
-  steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $MY_TEST_COPY
+  steampipe plugin install hackernews@0.8.0 bitbucket@0.7.1 --progress=false --install-dir $MY_TEST_COPY
   # uninstall a plugin but dont remove the config - to simulate the missing plugin scenario
-  steampipe plugin uninstall hackernews@0.6.0 --install-dir $MY_TEST_COPY
+  steampipe plugin uninstall hackernews@0.8.0 --install-dir $MY_TEST_COPY
 
   # check table output
   run steampipe plugin list --install-dir $MY_TEST_COPY
@@ -128,9 +152,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # Create a copy of the install directory
   copy_install_directory
 
-  steampipe plugin install hackernews@0.6.0 bitbucket@0.3.1 --progress=false --install-dir $MY_TEST_COPY
+  steampipe plugin install hackernews@0.8.0 bitbucket@0.7.1 --progress=false --install-dir $MY_TEST_COPY
   # remove the contents of a plugin execuatable to simulate the failed plugin scenario
-  cat /dev/null > $MY_TEST_COPY/plugins/hub.steampipe.io/plugins/turbot/hackernews@0.6.0/steampipe-plugin-hackernews.plugin
+  cat /dev/null > $MY_TEST_COPY/plugins/hub.steampipe.io/plugins/turbot/hackernews@0.8.0/steampipe-plugin-hackernews.plugin
 
   # check table output
   run steampipe plugin list --install-dir $MY_TEST_COPY

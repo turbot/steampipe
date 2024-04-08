@@ -31,7 +31,7 @@ type versionChecker struct {
 }
 
 // get the latest available version of the CLI
-func fetchAvailableCLIVerion(ctx context.Context, installationId string) (*CLIVersionCheckResponse, error) {
+func fetchAvailableCLIVersion(ctx context.Context, installationId string) (*CLIVersionCheckResponse, error) {
 	v := new(versionChecker)
 	v.signature = installationId
 	err := v.doCheckRequest(ctx)

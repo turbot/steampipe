@@ -152,7 +152,7 @@ func (r *Require) validatePluginVersions(modName string, plugins map[string]*Plu
 // the mod requirement. If plugin is found nil error is returned.
 func (r *Require) searchInstalledPluginForRequirement(modName string, requirement *PluginVersion, plugins map[string]*PluginVersionString) error {
 	for installedName, installed := range plugins {
-		org, name, _ := ociinstaller.NewSteampipeImageRef(installedName).GetOrgNameAndStream()
+		org, name, _ := ociinstaller.NewSteampipeImageRef(installedName).GetOrgNameAndConstraint()
 		if org != requirement.Org || name != requirement.Name {
 			// no point checking - different plugin
 			continue

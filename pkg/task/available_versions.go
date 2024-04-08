@@ -12,7 +12,6 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/plugin"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 
@@ -109,13 +108,9 @@ func ppNotificationLines() []string {
 
 func (av *AvailableVersionCache) pluginNotificationMessage(ctx context.Context) []string {
 	var pluginsToUpdate []plugin.VersionCheckReport
-	// retrieve the plugin version data from steampipe config
-	pluginVersions := steampipeconfig.GlobalConfig.PluginVersions
 
 	for _, r := range av.PluginCache {
-		installedVersion := pluginVersions[r.Plugin.Name]
-		skip, _ := plugin.SkipUpdate(r)
-		if !skip && installedVersion.ImageDigest != r.CheckResponse.Digest {
+		if plugin.UpdateRequired(r) {
 			pluginsToUpdate = append(pluginsToUpdate, r)
 		}
 	}
@@ -153,7 +148,7 @@ func (av *AvailableVersionCache) getPluginNotificationLines(reports []plugin.Ver
 			line = fmt.Sprintf(
 				format,
 				thisName,
-				report.CheckResponse.Stream,
+				report.CheckResponse.Constraint,
 				constants.Bold(report.CheckResponse.Version),
 			)
 		} else {
@@ -166,7 +161,7 @@ func (av *AvailableVersionCache) getPluginNotificationLines(reports []plugin.Ver
 			line = fmt.Sprintf(
 				format,
 				thisName,
-				report.CheckResponse.Stream,
+				report.CheckResponse.Constraint,
 				constants.Bold(report.Plugin.Version),
 				constants.Bold(version),
 			)
