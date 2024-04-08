@@ -2,9 +2,10 @@ package steampipeconfig
 
 import (
 	"fmt"
-	typehelpers "github.com/turbot/go-kit/types"
 	"log"
 	"strings"
+
+	typehelpers "github.com/turbot/go-kit/types"
 
 	"github.com/hashicorp/go-plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
@@ -144,13 +145,13 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 		}
 
 		// do we have a reattach config for this connection's plugin
-		if _, ok := getResponse.ReattachMap[connection.Name]; !ok {
+		reattach, ok := getResponse.ReattachMap[connection.Name]
+		if !ok {
 			log.Printf("[TRACE] CreateConnectionPlugins skipping connection '%s', plugin '%s' as plugin manager failed to start it", connection.Name, typehelpers.SafeString(connection.PluginInstance))
 			continue
 		}
 
 		// so we have a reattach - create a connection plugin
-		reattach := getResponse.ReattachMap[connection.Name]
 		connectionPlugin, err := createConnectionPlugin(connection, reattach)
 		if err != nil {
 			res.AddWarning(fmt.Sprintf("failed to attach to plugin process for '%s': %s", typehelpers.SafeString(connection.PluginInstance), err))
@@ -325,7 +326,8 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 		// we assume this has been populated either by the hub (if this is being invoked from the fdw) or the CLI
 		config, ok := GlobalConfig.Connections[c]
 		if !ok {
-			return nil, fmt.Errorf("no connection config loaded for '%s'", c)
+			log.Printf("[WARN] no connection config loaded for '%s', skipping", c)
+			continue
 		}
 		connectionPlugin.addConnection(c, config.Config, config.Options, config.Type)
 	}
