@@ -51,15 +51,9 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 	}
 
 	// show timing
-	if config.timing {
-		// if the output is json, we will already have ready the timing result from the channel
-		// otherwise read the channel
-		if outputFormat != constants.OutputFormatJSON {
-			timingResult = <-result.TimingResult
-		}
-		if timingResult != nil {
-			fmt.Println(buildTimingString(timingResult))
-		}
+	if config.timing && timingResult != nil {
+		fmt.Println(buildTimingString(timingResult))
+
 	}
 	// return the number of rows that returned errors
 	return rowErrors
@@ -398,8 +392,11 @@ func displayTable(ctx context.Context, result *queryresult.Result) (int, *queryr
 }
 
 func getTiming(result *queryresult.Result, count int) *queryresult.TimingResult {
+	log.Printf("[WARN] getting timing")
 	// now we have iterated the rows, get the timing
 	timingResult := <-result.TimingResult
+
+	log.Printf("[WARN] GOT timing")
 	// set rows returned
 	timingResult.RowsReturned = int64(count)
 	return timingResult
