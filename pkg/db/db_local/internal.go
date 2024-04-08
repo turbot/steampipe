@@ -137,6 +137,7 @@ func setupInternal(ctx context.Context, conn *pgx.Conn) error {
 
 	queries := []string{
 		"lock table pg_namespace;",
+		//fmt.Sprintf(`DROP FOREIGN TABLE IF EXISTS %s.%s;`, constants.InternalSchema, constants.ForeignTableScanMetadata),
 		fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS %s;`, constants.InternalSchema),
 		fmt.Sprintf(`GRANT USAGE ON SCHEMA %s TO %s;`, constants.InternalSchema, constants.DatabaseUsersRole),
 		fmt.Sprintf("IMPORT FOREIGN SCHEMA \"%s\" FROM SERVER steampipe INTO %s;", constants.InternalSchema, constants.InternalSchema),
