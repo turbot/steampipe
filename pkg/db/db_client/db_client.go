@@ -10,7 +10,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/serversettings"
@@ -149,12 +148,13 @@ func (c *DbClient) loadServerSettings(ctx context.Context) error {
 }
 
 func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.DatabaseSession) error {
-	currentShowTimingFlag := viper.GetBool(constants.ArgTiming)
+	// TODO KAI HACK
+	currentShowTimingFlag := true // viper.GetBool(constants.ArgTiming)
 
 	// if we are turning timing ON, fetch the ScanMetadataMaxId
 	// to ensure we only select the relevant scan metadata table entries
 	if currentShowTimingFlag && !c.showTimingFlag {
-		err :=c.updateScanMetadataMaxId(ctx, session)
+		err := c.updateScanMetadataMaxId(ctx, session)
 		if err != nil {
 			return err
 		}
