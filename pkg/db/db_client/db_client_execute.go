@@ -207,14 +207,22 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		resultChannel <- timingResult
 	}()
 
-	var scanRows *ScanMetadataRow
 	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
-		query := fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
+		query := fmt.Sprintf(`select id, 
+"table",
+cache_hit, 
+rows_fetched, 
+hydrate_calls, 
+start_time,
+duration,
+columns,
+"limit" from %s.%s where id > %d`, constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
+		//query := fmt.Sprintf("select id, 'table' as table, cache_hit, rows_fetched, hydrate_calls, start_time, duration, columns, 'limit' as limit, quals from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
 		rows, err := tx.Query(ctx, query)
 		if err != nil {
 			return err
 		}
-		scanRows, err = pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[ScanMetadataRow])
+		timingResult.Scans, err = pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[queryresult.ScanMetadataRow])
 		log.Printf("[WARN] getQueryTiming:executed '%s'", query)
 
 		return err
@@ -222,26 +230,24 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 
 	// if we failed to read scan metadata (either because the query failed or the plugin does not support it) just return
 	// we don't return the error, since we don't want to error out in this case
-	if err != nil || scanRows == nil {
-		log.Printf("[WARN] getQueryTiming: failed to read scan metadata, rows read: %d, err: %s", scanRows, err)
+	if err != nil || len(timingResult.Scans) == 0 {
+		log.Printf("[WARN] getQueryTiming: failed to read scan metadata, rows read: %d, err: %s", len(timingResult.Scans), err)
 		return
 	}
 
-	// so we have scan metadata - create the metadata struct
-
-	timingResult.HydrateCalls += scanRows.HydrateCalls
-	if scanRows.CacheHit {
-		timingResult.CachedRowsFetched += scanRows.RowsFetched
-	} else {
-		timingResult.RowsFetched += scanRows.RowsFetched
+	for _, scan := range timingResult.Scans {
+		timingResult.HydrateCalls += scan.HydrateCalls
+		timingResult.RowsFetched += scan.RowsFetched
+		// update the max id for this session
+		if scan.Id > session.ScanMetadataMaxId {
+			session.ScanMetadataMaxId = scan.Id
+		}
 	}
-	// update the max id for this session
-	session.ScanMetadataMaxId = scanRows.Id
 }
 
 func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_common.DatabaseSession) error {
 	return db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
-		row := tx.QueryRow(ctx, fmt.Sprintf("select max(id) from %s.%s", constants.InternalSchema, constants.ForeignTableScanMetadata))
+		row := tx.QueryRow(ctx, fmt.Sprintf("select COALESCE(MAX(id), 0) from %s.%s", constants.InternalSchema, constants.ForeignTableScanMetadata))
 		err := row.Scan(&session.ScanMetadataMaxId)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
@@ -249,7 +255,6 @@ func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_comm
 			}
 			return err
 		}
-		log.Printf("[WARN] updated scan metadata max id to %d", session.ScanMetadataMaxId)
 		return nil
 	})
 }

@@ -1,25 +1,18 @@
 package queryresult
 
 import (
-	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"time"
 )
 
-type ScanTimingMetadata struct {
-	Table       string        `json:"table"`
-	RowsFetched int64         `json:"rows_fetched"`
-	Duration    time.Duration `json:"duration"`
-	Columns     []string      `json:"columns"`
-	Quals       []*proto.Qual `json:"quals"`
+type TimingResult struct {
+	Duration time.Duration
+	Scans    []*ScanMetadataRow `json:"scans"`
+
+	RowsReturned int64 `json:"rows_returned"`
+	RowsFetched  int64 `json:"rows_fetched"`
+	HydrateCalls int64 `json:"hydrate_calls"`
 }
 
-type TimingResult struct {
-	Duration          time.Duration
-	RowsReturned      int64 `json:"rows_returned"`
-	RowsFetched       int64 `json:"rows_fetched"`
-	CachedRowsFetched int64 `json:"cached_rows_fetched"`
-	HydrateCalls      int64 `json:"hydrate_calls"`
-}
 type RowResult struct {
 	Data  []interface{}
 	Error error
@@ -31,7 +24,6 @@ type Result struct {
 }
 
 func NewResult(cols []*ColumnDef) *Result {
-
 	rowChan := make(chan *RowResult)
 	return &Result{
 		RowChan:      &rowChan,

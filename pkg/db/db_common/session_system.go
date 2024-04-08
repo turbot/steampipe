@@ -33,14 +33,18 @@ func ExecuteSystemClientCall(ctx context.Context, conn *pgx.Conn, executor Syste
 		}
 		defer func() {
 			// set back the original application name
-			_, e = tx.Exec(ctx, fmt.Sprintf("SET application_name TO '%s'", conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName]))
-			if e != nil {
+			_, err = tx.Exec(ctx, fmt.Sprintf("SET application_name TO '%s'", conn.Config().RuntimeParams[constants.RuntimeParamsKeyApplicationName]))
+			if err != nil {
 				log.Println("[TRACE] could not reset application_name", e)
+			}
+			// if there is not already an error, set the error
+			if e == nil {
+				e = err
 			}
 		}()
 
 		if err := executor(ctx, tx); err != nil {
-			return sperr.WrapWithMessage(err, "scoped execution failed with management client")
+			return sperr.WrapWithMessage(err, "system client query execution failed")
 		}
 		return nil
 	})
