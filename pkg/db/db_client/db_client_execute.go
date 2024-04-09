@@ -205,7 +205,8 @@ hydrate_calls,
 start_time,
 duration,
 columns,
-"limit" from %s.%s where id > %d`, constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
+"limit",
+quals from %s.%s where id > %d`, constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
 		//query := fmt.Sprintf("select id, 'table' as table, cache_hit, rows_fetched, hydrate_calls, start_time, duration, columns, 'limit' as limit, quals from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
 		rows, err := tx.Query(ctx, query)
 		if err != nil {
@@ -223,7 +224,7 @@ columns,
 		log.Printf("[WARN] getQueryTiming: failed to read scan metadata, rows read: %d, err: %s", len(timingResult.Scans), err)
 		return
 	}
-
+	// populate hydrate calls and rows fetched
 	for _, scan := range timingResult.Scans {
 		timingResult.HydrateCalls += scan.HydrateCalls
 		timingResult.RowsFetched += scan.RowsFetched
