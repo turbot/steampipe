@@ -55,9 +55,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe service stop
 
   # verify that the json contents of output1 and output2 files are the same
-  run jd output1.json output2.json
+  run jd -f patch output1.json output2.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
 
   rm -f output1.json
   rm -f output2.json
@@ -84,9 +88,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # stop the service
   steampipe service stop
 
-  unique1=$(cat out1.json | jq '.[].unique_col')
-  unique2=$(cat out2.json | jq '.[].unique_col')
-  unique3=$(cat out3.json | jq '.[].unique_col')
+  unique1=$(cat out1.json | jq '.rows[0].unique_col')
+  unique2=$(cat out2.json | jq '.rows[0].unique_col')
+  unique3=$(cat out3.json | jq '.rows[0].unique_col')
   # remove the output and the config files
   rm -f out*.json
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
@@ -160,9 +164,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # stop the service
   steampipe service stop
 
-  unique1=$(cat out1.json | jq '.[].unique_col')
-  unique2=$(cat out2.json | jq '.[].unique_col')
-  unique3=$(cat out3.json | jq '.[].unique_col')
+  unique1=$(cat out1.json | jq '.rows[0].unique_col')
+  unique2=$(cat out2.json | jq '.rows[0].unique_col')
+  unique3=$(cat out3.json | jq '.rows[0].unique_col')
 
   cat $STEAMPIPE_INSTALL_DIR/config/default.spc
   cat $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
@@ -250,9 +254,9 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # stop the service
   steampipe service stop
 
-  unique1=$(cat out1.json | jq '.[].unique_col')
-  unique2=$(cat out2.json | jq '.[].unique_col')
-  unique3=$(cat out3.json | jq '.[].unique_col')
+  unique1=$(cat out1.json | jq '.rows[0].unique_col')
+  unique2=$(cat out2.json | jq '.rows[0].unique_col')
+  unique3=$(cat out3.json | jq '.rows[0].unique_col')
 
   # remove the output and the config files
   rm -f out*.json
