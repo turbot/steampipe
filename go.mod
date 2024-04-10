@@ -8,7 +8,7 @@ replace (
 	github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50
 	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
 	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
-	github.com/turbot/steampipe-plugin-sdk/v5 => ../steampipe-plugin-sdk
+
 )
 
 require (
@@ -53,7 +53,7 @@ require (
 	github.com/turbot/go-kit v0.10.0-rc.0
 	github.com/turbot/pipe-fittings v1.1.0
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
-	github.com/turbot/steampipe-plugin-sdk/v5 v5.9.0
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.10.0-rc.3
 	github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7
 	github.com/xlab/treeprint v1.2.0
 	github.com/zclconf/go-cty v1.14.4
