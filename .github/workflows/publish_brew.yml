@@ -49,3 +49,34 @@ jobs:
           git fetch --all
           gh pr merge $STEAMPIPE_VERSION --squash --delete-branch
           git push origin --delete bump-brew
+
+  test_installation_darwin:
+    name: Test installation on macOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: main
+
+      - name: Install Steampipe
+        run: |
+          brew install turbot/tap/steampipe
+          
+      - name: Check version
+        run: |
+          steampipe --version
+
+  test_installation_linux:
+    name: Test installation on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Steampipe
+        run: |
+          sudo /bin/sh -c "$(curl -fsSL https://steampipe.io/install/steampipe.sh)"
+          
+      - name: Check version
+        run: |
+          steampipe --version
