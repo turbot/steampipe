@@ -8,7 +8,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query query.query_params_with_all_defaults --output json
 
   # store the reason field in `content`
-  content=$(echo $output | jq '.[].reason')
+  content=$(echo $output | jq '.rows[0].reason')
 
   assert_equal "$content" '"default_parameter_1 default_parameter_2 default_parameter_3"'
 }
@@ -18,7 +18,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query "query.query_params_with_all_defaults(\"command_param_1\")" --output json
 
   # store the reason field in `content`
-  content=$(echo $output | jq '.[].reason')
+  content=$(echo $output | jq '.rows[0].reason')
 
   assert_equal "$content" '"command_param_1 default_parameter_2 default_parameter_3"'
 }
@@ -28,7 +28,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query "query.query_params_with_all_defaults(p1 => \"command_param_1\")" --output json
 
   # store the reason field in `content`
-  content=$(echo $output | jq '.[].reason')
+  content=$(echo $output | jq '.rows[0].reason')
 
   assert_equal "$content" '"command_param_1 default_parameter_2 default_parameter_3"'
 }
@@ -45,7 +45,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query "query.query_params_with_all_defaults(\"command_param_1\",\"command_param_2\",\"command_param_3\")" --output json
 
   # store the reason field in `content`
-  content=$(echo $output | jq '.[].reason')
+  content=$(echo $output | jq '.rows[0].reason')
 
   assert_equal "$content" '"command_param_1 command_param_2 command_param_3"'
 }
@@ -55,7 +55,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # run steampipe query query.query_array_params_with_default --output json
 
   # # store the reason field in `content`
-  # content=$(echo $output | jq '.[].reason')
+  # content=$(echo $output | jq '.rows[0].reason')
 
   # assert_equal "$content" '"default_p1_element_02"'
 }
@@ -74,7 +74,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query query.query_map_params_with_default --output json
 
   # store the reason field in `content`
-  content=$(echo $output | jq '.[].reason')
+  content=$(echo $output | jq '.rows[0].reason')
 
   assert_equal "$content" '"default_property_value_01"'
 }
