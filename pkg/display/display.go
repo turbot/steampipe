@@ -7,7 +7,6 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -34,7 +33,6 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 	for _, o := range opts {
 		o(config)
 	}
-	log.Printf("[WARN] displaying output")
 
 	var timingResult *queryresult.TimingResult
 
@@ -392,11 +390,8 @@ func displayTable(ctx context.Context, result *queryresult.Result) (int, *queryr
 }
 
 func getTiming(result *queryresult.Result, count int) *queryresult.TimingResult {
-	log.Printf("[WARN] getting timing")
 	// now we have iterated the rows, get the timing
 	timingResult := <-result.TimingResult
-
-	log.Printf("[WARN] GOT timing")
 	// set rows returned
 	timingResult.RowsReturned = int64(count)
 	return timingResult
@@ -414,23 +409,28 @@ func buildTimingString(timingResult *queryresult.TimingResult) string {
 	} else {
 		sb.WriteString(p.Sprintf("\nTime: %.1fs.", seconds))
 	}
-
-	//totalRows := timingResult.RowsFetched //+ timingResult.CachedRowsFetched
+	sb.WriteString(p.Sprintf(" Rows returned: %d.", timingResult.RowsReturned))
 	sb.WriteString(" Rows fetched: ")
-	//if totalRows == 0 {
-	//	sb.WriteString("0")
-	//} else {
-	//	if totalRows > 0 {
-	//		sb.WriteString(p.Sprintf("%d", timingResult.RowsFetched+timingResult.CachedRowsFetched))
-	//	}
-	//	if timingResult.CachedRowsFetched > 0 {
-	//		if timingResult.RowsFetched == 0 {
-	//			sb.WriteString(" (cached)")
-	//		} else {
-	//			sb.WriteString(p.Sprintf(" (%d cached)", timingResult.CachedRowsFetched))
-	//		}
-	//	}
-	//}
+	if timingResult.RowsFetched == 0 {
+		sb.WriteString("0")
+	} else {
+
+		// calculate the number of cached rows fetched
+		var cachedRowsFetched int64
+		for _, scan := range timingResult.Scans {
+			if scan.CacheHit {
+				cachedRowsFetched += scan.RowsFetched
+			}
+		}
+		sb.WriteString(p.Sprintf("%d", timingResult.RowsFetched))
+
+		if timingResult.RowsFetched == cachedRowsFetched {
+			sb.WriteString(" (cached)")
+		} else if cachedRowsFetched > 0 {
+			sb.WriteString(p.Sprintf(" (%d cached)", cachedRowsFetched))
+		}
+	}
+
 	sb.WriteString(p.Sprintf(". Hydrate calls: %d.", timingResult.HydrateCalls))
 
 	return sb.String()

@@ -7,7 +7,7 @@ import (
 
 type ScanMetadataRow struct {
 	// the fields of this struct need to be public since these are populated by pgx using RowsToStruct
-	Id           int64                    `db:"-" json:"-"`
+	Id           int64                    `db:"id" json:"-"`
 	Connection   string                   `db:"connection" json:"connection"`
 	Table        string                   `db:"table"  json:"table"`
 	CacheHit     bool                     `db:"cache_hit"  json:"cache_hit"`
