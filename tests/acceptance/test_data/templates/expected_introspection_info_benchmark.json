@@ -1,27 +1,37 @@
-[
- {
-  "auto_generated": false,
-  "children": [
-   "introspection_table_mod.control.sample_control_1"
+{
+  "rows": [
+   {
+    "auto_generated": false,
+    "children": [
+     "introspection_table_mod.control.sample_control_1"
+    ],
+    "description": "Sample benchmark to test introspection functionality",
+    "documentation": null,
+    "end_line_number": 41,
+    "is_anonymous": false,
+    "mod_name": "introspection_table_mod",
+    "path": [
+     [
+      "mod.introspection_table_mod",
+      "introspection_table_mod.benchmark.sample_benchmark_1"
+     ]
+    ],
+    "qualified_name": "introspection_table_mod.benchmark.sample_benchmark_1",
+    "resource_name": "sample_benchmark_1",
+    "source_definition": "benchmark \"sample_benchmark_1\" {\n\ttitle = \"Sample benchmark 1\"\n\tdescription = \"Sample benchmark to test introspection functionality\"\n\tchildren = [\n\t\tcontrol.sample_control_1\n\t]\n}",
+    "start_line_number": 35,
+    "tags": null,
+    "title": "Sample benchmark 1",
+    "type": null,
+    "width": null
+   }
   ],
-  "description": "Sample benchmark to test introspection functionality",
-  "documentation": null,
-  "end_line_number": 41,
-  "is_anonymous": false,
-  "mod_name": "introspection_table_mod",
-  "path": [
-   [
-    "mod.introspection_table_mod",
-    "introspection_table_mod.benchmark.sample_benchmark_1"
-   ]
-  ],
-  "qualified_name": "introspection_table_mod.benchmark.sample_benchmark_1",
-  "resource_name": "sample_benchmark_1",
-  "source_definition": "benchmark \"sample_benchmark_1\" {\n\ttitle = \"Sample benchmark 1\"\n\tdescription = \"Sample benchmark to test introspection functionality\"\n\tchildren = [\n\t\tcontrol.sample_control_1\n\t]\n}",
-  "start_line_number": 35,
-  "tags": null,
-  "title": "Sample benchmark 1",
-  "type": null,
-  "width": null
+  "metadata": {
+   "Duration": 246208,
+   "scans": [],
+   "rows_returned": 1,
+   "rows_fetched": 0,
+   "hydrate_calls": 0
+  }
  }
-]
+ 
