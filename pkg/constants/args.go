@@ -7,6 +7,7 @@ const (
 	ArgForce                   = "force"
 	ArgAll                     = "all"
 	ArgTiming                  = "timing"
+	ArgVerboseTiming           = "verbose-timing"
 	ArgOn                      = "on"
 	ArgOff                     = "off"
 	ArgClear                   = "clear"

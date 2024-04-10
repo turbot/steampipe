@@ -8,14 +8,14 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
-// General
 type Query struct {
-	Output       *string `hcl:"output" cty:"query_output"`
-	Separator    *string `hcl:"separator" cty:"query_separator"`
-	Header       *bool   `hcl:"header" cty:"query_header"`
-	Multi        *bool   `hcl:"multi" cty:"query_multi"`
-	Timing       *bool   `hcl:"timing" cty:"query_timing"`
-	AutoComplete *bool   `hcl:"autocomplete" cty:"query_autocomplete"`
+	Output        *string `hcl:"output" cty:"query_output"`
+	Separator     *string `hcl:"separator" cty:"query_separator"`
+	Header        *bool   `hcl:"header" cty:"query_header"`
+	Multi         *bool   `hcl:"multi" cty:"query_multi"`
+	Timing        *bool   `hcl:"timing" cty:"query_timing"`
+	AutoComplete  *bool   `hcl:"autocomplete" cty:"query_autocomplete"`
+	VerboseTiming *bool
 }
 
 func (t *Query) SetBaseProperties(otherOptions Options) {
@@ -37,6 +37,9 @@ func (t *Query) SetBaseProperties(otherOptions Options) {
 		}
 		if t.Timing == nil && o.Timing != nil {
 			t.Timing = o.Timing
+		}
+		if t.VerboseTiming == nil && o.VerboseTiming != nil {
+			t.VerboseTiming = o.VerboseTiming
 		}
 		if t.AutoComplete == nil && o.AutoComplete != nil {
 			t.AutoComplete = o.AutoComplete
@@ -62,6 +65,9 @@ func (t *Query) ConfigMap() map[string]interface{} {
 	}
 	if t.Timing != nil {
 		res[constants.ArgTiming] = t.Timing
+	}
+	if t.VerboseTiming != nil {
+		res[constants.ArgVerboseTiming] = t.VerboseTiming
 	}
 	if t.AutoComplete != nil {
 		res[constants.ArgAutoComplete] = t.AutoComplete

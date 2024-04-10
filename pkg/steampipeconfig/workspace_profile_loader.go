@@ -41,6 +41,7 @@ func ensureDefaultWorkspaceFile(configFolder string) error {
 
 func NewWorkspaceProfileLoader(ctx context.Context, workspaceProfilePath string) (*WorkspaceProfileLoader, error) {
 	// write the workspaces.spc.sample file
+
 	if err := ensureDefaultWorkspaceFile(workspaceProfilePath); err != nil {
 		return nil,
 			sperr.WrapWithMessage(
@@ -57,7 +58,7 @@ func NewWorkspaceProfileLoader(ctx context.Context, workspaceProfilePath string)
 
 	defaultProfile, err := loader.get("default")
 	if err != nil {
-		// there must always be a default - this should have been added by parse.LoadWorkspaceProfiles
+		// there must always be a default - th		is should have been added by parse.LoadWorkspaceProfiles
 		return nil, err
 	}
 	loader.DefaultProfile = defaultProfile

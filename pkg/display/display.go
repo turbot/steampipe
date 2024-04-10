@@ -7,6 +7,8 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -61,6 +63,7 @@ type ShowWrappedTableOptions struct {
 	AutoMerge        bool
 	HideEmptyColumns bool
 	Truncate         bool
+	OutputMirror     io.Writer
 }
 
 func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableOptions) {
@@ -71,7 +74,11 @@ func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableO
 
 	t.SetStyle(table.StyleDefault)
 	t.Style().Format.Header = text.FormatDefault
-	t.SetOutputMirror(os.Stdout)
+	if opts.OutputMirror == nil {
+		t.SetOutputMirror(os.Stdout)
+	} else {
+		t.SetOutputMirror(opts.OutputMirror)
+	}
 
 	rowConfig := table.RowConfig{AutoMerge: opts.AutoMerge}
 	colConfigs, headerRow := getColumnSettings(headers, rows, opts)
@@ -332,7 +339,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) (int, *queryr
 	t.SetStyle(table.StyleDefault)
 	t.Style().Format.Header = text.FormatDefault
 
-	colConfigs := []table.ColumnConfig{}
+	var colConfigs []table.ColumnConfig
 	headers := make(table.Row, len(result.Cols))
 
 	for idx, column := range result.Cols {
@@ -402,13 +409,7 @@ func buildTimingString(timingResult *queryresult.TimingResult) string {
 	// large numbers should be formatted with commas
 	p := message.NewPrinter(language.English)
 
-	milliseconds := float64(timingResult.Duration.Microseconds()) / 1000
-	seconds := timingResult.Duration.Seconds()
-	if seconds < 0.5 {
-		sb.WriteString(p.Sprintf("\nTime: %dms.", int64(milliseconds)))
-	} else {
-		sb.WriteString(p.Sprintf("\nTime: %.1fs.", seconds))
-	}
+	sb.WriteString(fmt.Sprintf("\nTime: %s.", getDurationString(timingResult.Duration, p)))
 	sb.WriteString(p.Sprintf(" Rows returned: %d.", timingResult.RowsReturned))
 	sb.WriteString(" Rows fetched: ")
 	if timingResult.RowsFetched == 0 {
@@ -433,7 +434,54 @@ func buildTimingString(timingResult *queryresult.TimingResult) string {
 
 	sb.WriteString(p.Sprintf(". Hydrate calls: %d.", timingResult.HydrateCalls))
 
+	if viper.GetBool(constants.ArgVerboseTiming) && len(timingResult.Scans) > 0 {
+		if err := getVerboseTimingString(&sb, p, timingResult.Scans); err != nil {
+			log.Printf("[WARN] Error getting verbose timing: %v", err)
+		}
+	}
+
 	return sb.String()
+}
+
+func getDurationString(duration time.Duration, p *message.Printer) string {
+	milliseconds := float64(duration.Microseconds()) / 1000
+	seconds := duration.Seconds()
+	if seconds < 0.5 {
+		return p.Sprintf("%dms", int64(milliseconds))
+	} else {
+		return p.Sprintf("%.1fs", seconds)
+	}
+
+}
+
+func getVerboseTimingString(sb *strings.Builder, p *message.Printer, scans []*queryresult.ScanMetadataRow) error {
+
+	sb.WriteString("\n\nScans:\n")
+	for i, scan := range scans {
+		cacheString := ""
+		if scan.CacheHit {
+			cacheString = " (cached)"
+		}
+		qualsString := ""
+		if len(scan.Quals) > 0 {
+			qualsJson, err := json.Marshal(scan.Quals)
+			if err != nil {
+				return err
+			}
+			qualsString = fmt.Sprintf(" Quals: %s.", string(qualsJson))
+		}
+		limitString := ""
+		if scan.Limit != nil {
+			limitString = fmt.Sprintf(" Limit: %d.", *scan.Limit)
+		}
+		p := message.NewPrinter(language.English)
+
+		timeString := getDurationString(time.Duration(scan.Duration)*time.Millisecond, p)
+		rowsFetchedString := p.Sprintf("%d", scan.RowsFetched)
+
+		sb.WriteString(fmt.Sprintf("  %d) Table: %s. Connection: %s. Time: %s. Rows fetched: %s%s. Hydrate calls: %d.%s%s\n", i+1, scan.Table, scan.Connection, timeString, rowsFetchedString, cacheString, scan.HydrateCalls, qualsString, limitString))
+	}
+	return nil
 }
 
 type displayResultsFunc func(row []interface{}, result *queryresult.Result)
