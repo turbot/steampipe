@@ -178,8 +178,6 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		return
 	}
 
-	log.Printf("[WARN] getQueryTiming")
-
 	var timingResult = &queryresult.TimingResult{
 		Duration: time.Since(startTime),
 	}
@@ -188,15 +186,13 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 
 	// whatever happens, we need to reenable timing, and send the result back with at least the duration
 	defer func() {
-		log.Printf("[WARN] sending timing")
-
 		c.disableTiming = false
 		resultChannel <- timingResult
-		log.Printf("[WARN] SENT timing")
 	}()
 
 	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
-		query := fmt.Sprintf(`select id,
+		query := fmt.Sprintf(`
+select id, 
 connection,
 "table",
 cache_hit, 
@@ -213,8 +209,6 @@ quals from %s.%s where id > %d`, constants.InternalSchema, constants.ForeignTabl
 			return err
 		}
 		timingResult.Scans, err = pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[queryresult.ScanMetadataRow])
-		log.Printf("[WARN] getQueryTiming:executed '%s'", query)
-
 		return err
 	})
 
