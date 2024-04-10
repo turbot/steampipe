@@ -1,33 +1,43 @@
-[
- {
-  "args": null,
-  "auto_generated": false,
-  "description": null,
-  "documentation": null,
-  "end_line_number": 50,
-  "icon": null,
-  "is_anonymous": false,
-  "label": null,
-  "mod_name": "introspection_table_mod",
-  "params": null,
-  "path": [
-   [
-    "mod.introspection_table_mod",
-    "introspection_table_mod.dashboard.sample_dashboard_1",
-    "introspection_table_mod.container.sample_conatiner_1",
-    "introspection_table_mod.text.sample_text_1"
-   ]
+{
+  "rows": [
+   {
+    "args": null,
+    "auto_generated": false,
+    "description": null,
+    "documentation": null,
+    "end_line_number": 50,
+    "icon": null,
+    "is_anonymous": false,
+    "label": null,
+    "mod_name": "introspection_table_mod",
+    "params": null,
+    "path": [
+     [
+      "mod.introspection_table_mod",
+      "introspection_table_mod.dashboard.sample_dashboard_1",
+      "introspection_table_mod.container.sample_conatiner_1",
+      "introspection_table_mod.text.sample_text_1"
+     ]
+    ],
+    "qualified_name": "introspection_table_mod.card.sample_card_1",
+    "query": null,
+    "resource_name": "sample_card_1",
+    "source_definition": "\t\tcard \"sample_card_1\" {\n\t\t\ttitle = \"Sample card 1\"\n\t\t}",
+    "sql": null,
+    "start_line_number": 48,
+    "tags": null,
+    "title": "Sample card 1",
+    "type": null,
+    "value": null,
+    "width": null
+   }
   ],
-  "qualified_name": "introspection_table_mod.card.sample_card_1",
-  "query": null,
-  "resource_name": "sample_card_1",
-  "source_definition": "\t\tcard \"sample_card_1\" {\n\t\t\ttitle = \"Sample card 1\"\n\t\t}",
-  "sql": null,
-  "start_line_number": 48,
-  "tags": null,
-  "title": "Sample card 1",
-  "type": null,
-  "value": null,
-  "width": null
+  "metadata": {
+   "Duration": 263667,
+   "scans": [],
+   "rows_returned": 1,
+   "rows_fetched": 0,
+   "hydrate_calls": 0
+  }
  }
-]
+ 
