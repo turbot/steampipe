@@ -260,6 +260,11 @@ func initGlobalConfig() error_helpers.ErrorAndWarnings {
 	}
 	loadConfigErrorsAndWarnings.Merge(ew)
 
+	// TACTICAL
+	// if verbose timing is enabled - set timing to true
+	if viper.GetBool(constants.ArgVerboseTiming) {
+		viper.Set(constants.ArgTiming, true)
+	}
 	return loadConfigErrorsAndWarnings
 }
 
