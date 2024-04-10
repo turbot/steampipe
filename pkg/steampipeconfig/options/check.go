@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 )
@@ -104,4 +105,24 @@ func (t *Check) String() string {
 		str = append(str, fmt.Sprintf("  Timing: %v", *t.Timing))
 	}
 	return strings.Join(str, "\n")
+}
+
+func (t *Check) SetTiming(flag string, r hcl.Range) hcl.Diagnostics {
+	enabled := true
+	disabled := false
+	switch flag {
+	case "true", "on":
+		t.Timing = &enabled
+	case "false", "off":
+		t.Timing = &disabled
+	default:
+		return hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("Invalid timing value '%s', check options support: on, true, off, false", flag),
+				Subject:  &r,
+			},
+		}
+	}
+	return nil
 }

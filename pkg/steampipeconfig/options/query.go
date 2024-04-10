@@ -2,6 +2,7 @@ package options
 
 import (
 	"fmt"
+	"github.com/hashicorp/hcl/v2"
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
@@ -13,9 +14,10 @@ type Query struct {
 	Separator     *string `hcl:"separator" cty:"query_separator"`
 	Header        *bool   `hcl:"header" cty:"query_header"`
 	Multi         *bool   `hcl:"multi" cty:"query_multi"`
-	Timing        *bool   `hcl:"timing" cty:"query_timing"`
-	AutoComplete  *bool   `hcl:"autocomplete" cty:"query_autocomplete"`
-	VerboseTiming *bool
+	Timing        *bool   `cty:"query_timing"`         // parsed manually
+	VerboseTiming *bool   `cty:"verbose_query_timing"` // parsed manually
+	rawTiming     *string
+	AutoComplete  *bool `hcl:"autocomplete" cty:"query_autocomplete"`
 }
 
 func (t *Query) SetBaseProperties(otherOptions Options) {
@@ -37,9 +39,6 @@ func (t *Query) SetBaseProperties(otherOptions Options) {
 		}
 		if t.Timing == nil && o.Timing != nil {
 			t.Timing = o.Timing
-		}
-		if t.VerboseTiming == nil && o.VerboseTiming != nil {
-			t.VerboseTiming = o.VerboseTiming
 		}
 		if t.AutoComplete == nil && o.AutoComplete != nil {
 			t.AutoComplete = o.AutoComplete
@@ -64,10 +63,10 @@ func (t *Query) ConfigMap() map[string]interface{} {
 		res[constants.ArgMultiLine] = t.Multi
 	}
 	if t.Timing != nil {
-		res[constants.ArgTiming] = t.Timing
+		res[constants.ArgTiming] = *t.Timing
 	}
 	if t.VerboseTiming != nil {
-		res[constants.ArgVerboseTiming] = t.VerboseTiming
+		res[constants.ArgVerboseTiming] = *t.VerboseTiming
 	}
 	if t.AutoComplete != nil {
 		res[constants.ArgAutoComplete] = t.AutoComplete
@@ -97,6 +96,9 @@ func (t *Query) Merge(otherOptions Options) {
 		}
 		if o.Timing != nil {
 			t.Timing = o.Timing
+		}
+		if o.VerboseTiming != nil {
+			t.VerboseTiming = o.VerboseTiming
 		}
 		if o.AutoComplete != nil {
 			t.AutoComplete = o.AutoComplete
@@ -129,10 +131,10 @@ func (t *Query) String() string {
 	} else {
 		str = append(str, fmt.Sprintf("  Multi: %v", *t.Multi))
 	}
-	if t.Timing == nil {
+	if t.rawTiming == nil {
 		str = append(str, "  Timing: nil")
 	} else {
-		str = append(str, fmt.Sprintf("  Timing: %v", *t.Timing))
+		str = append(str, fmt.Sprintf("  Timing: %v", *t.rawTiming))
 	}
 	if t.AutoComplete == nil {
 		str = append(str, "  AutoComplete: nil")
@@ -140,4 +142,31 @@ func (t *Query) String() string {
 		str = append(str, fmt.Sprintf("  AutoComplete: %v", *t.AutoComplete))
 	}
 	return strings.Join(str, "\n")
+}
+
+func (t *Query) SetTiming(flag string, r hcl.Range) hcl.Diagnostics {
+	enabled := true
+	disabled := false
+	t.rawTiming = &flag
+
+	switch flag {
+	case "verbose":
+		t.Timing = &enabled
+		t.VerboseTiming = &enabled
+	case "true", "on":
+		t.Timing = &enabled
+		t.VerboseTiming = &disabled
+	case "false", "off":
+		t.Timing = &disabled
+		t.VerboseTiming = &disabled
+	default:
+		return hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("Invalid timing value '%s', query options support: on, true, off, false", flag),
+				Subject:  &r,
+			},
+		}
+	}
+	return nil
 }

@@ -37,9 +37,49 @@ func setMultiLine(_ context.Context, input *HandlerInput) error {
 
 // .timing
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
-func setTiming(_ context.Context, input *HandlerInput) error {
-	cmdconfig.Viper().Set(constants.ArgTiming, typeHelpers.StringToBool(input.args()[0]))
+func setTiming(ctx context.Context, input *HandlerInput) error {
+	if len(input.args()) == 0 {
+		showTiming()
+		return nil
+	}
+
+	switch input.args()[0] {
+	case "on":
+		cmdconfig.Viper().Set(constants.ArgTiming, true)
+		cmdconfig.Viper().Set(constants.ArgVerboseTiming, false)
+	case "off":
+		cmdconfig.Viper().Set(constants.ArgTiming, false)
+		cmdconfig.Viper().Set(constants.ArgVerboseTiming, false)
+	case "verbose":
+		cmdconfig.Viper().Set(constants.ArgTiming, true)
+		cmdconfig.Viper().Set(constants.ArgVerboseTiming, true)
+	}
 	return nil
+}
+
+func showTiming() {
+	timing := cmdconfig.Viper().GetBool(constants.ArgTiming)
+	verboseTiming := cmdconfig.Viper().GetBool(constants.ArgVerboseTiming)
+	timingString := "off"
+	if timing {
+		if verboseTiming {
+			timingString = "verbose"
+		} else {
+			timingString = "on"
+
+		}
+	}
+	fmt.Printf(
+		`Timing is %s. Available options are: %s, %s, %s.`,
+		constants.Bold(timingString),
+		constants.Bold("on"),
+		constants.Bold("off"),
+		constants.Bold("verbose"),
+	)
+	// add an empty line here so that the rendering buffer can start from the next line
+	fmt.Println()
+
+	return
 }
 
 // .separator and .output

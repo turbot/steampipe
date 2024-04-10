@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
-	"github.com/zclconf/go-cty/cty"
 )
 
 // DecodeOptions decodes an options block
@@ -17,8 +16,9 @@ func DecodeOptions(block *hcl.Block, overrides ...BlockMappingOverride) (options
 	for _, applyOverride := range overrides {
 		applyOverride(mapping)
 	}
+	optionsType := block.Labels[0]
 
-	destination, ok := mapping[block.Labels[0]]
+	destination, ok := mapping[optionsType]
 	if !ok {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -27,8 +27,13 @@ func DecodeOptions(block *hcl.Block, overrides ...BlockMappingOverride) (options
 		})
 		return nil, diags
 	}
-	if len(block.Labels) > 0 && block.Labels[0] == options.QueryBlock {
-		handleQueryTiming(block, destination)
+
+	if timingOptions, ok := destination.(options.CanSetTiming); ok {
+		morediags := decodeTimingFlag(block, timingOptions)
+		if morediags.HasErrors() {
+			diags = append(diags, morediags...)
+			return nil, diags
+		}
 	}
 	diags = gohcl.DecodeBody(block.Body, nil, destination)
 	if diags.HasErrors() {
@@ -39,23 +44,22 @@ func DecodeOptions(block *hcl.Block, overrides ...BlockMappingOverride) (options
 }
 
 // for Query options block,  if timing attribute is set to "verbose", replace with true and set verbose to true
-func handleQueryTiming(block *hcl.Block, destination options.Options) {
+func decodeTimingFlag(block *hcl.Block, timingOptions options.CanSetTiming) hcl.Diagnostics {
 	body := block.Body.(*hclsyntax.Body)
-	for _, attr := range body.Attributes {
-		// if timing attribute is set to "verbose", replace with true and set verbose to true
-		if attr.Name == "timing" {
-			if scopeTraversal, ok := attr.Expr.(*hclsyntax.ScopeTraversalExpr); ok {
-				if len(scopeTraversal.Traversal) == 1 && scopeTraversal.Traversal[0].(hcl.TraverseRoot).Name == "verbose" {
-					attr.Expr = &hclsyntax.LiteralValueExpr{
-						Val:      cty.BoolVal(true),
-						SrcRange: attr.Expr.Range(),
-					}
-					verbose := true
-					destination.(*options.Query).VerboseTiming = &verbose
-				}
-			}
-		}
+	timingAttribute := body.Attributes["timing"]
+	if timingAttribute == nil {
+		return nil
 	}
+	// remove the attribute so subsequent decoding does not see it
+	delete(body.Attributes, "timing")
+
+	scopeTraversal, ok := timingAttribute.Expr.(*hclsyntax.ScopeTraversalExpr)
+	if !ok || len(scopeTraversal.Traversal) != 1 {
+		return nil
+	}
+	value := scopeTraversal.Traversal[0].(hcl.TraverseRoot).Name
+	return timingOptions.SetTiming(value, timingAttribute.Range())
+
 }
 
 type OptionsBlockMapping = map[string]options.Options
