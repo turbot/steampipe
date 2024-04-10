@@ -90,7 +90,7 @@ func (c *DbClient) establishConnectionPool(ctx context.Context, overrides client
 	return c.establishManagementConnectionPool(ctx, config, overrides)
 }
 
-// establishSystemConnectionPool creates a connection pool to use to execute
+// establishManagementConnectionPool creates a connection pool to use to execute
 // system-initiated queries (loading of connection state etc.)
 // unlike establishConnectionPool, which is run first to create the user-query pool
 // this doesn't wait for the pool to completely start, as establishConnectionPool will have established and verified a connection with the service

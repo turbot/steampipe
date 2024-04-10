@@ -54,7 +54,7 @@ func postRunHook(cmd *cobra.Command, args []string) {
 	}
 }
 
-// postRunHook is a function that is executed before the PreRun of every command handler
+// preRunHook is a function that is executed before the PreRun of every command handler
 func preRunHook(cmd *cobra.Command, args []string) {
 	utils.LogTime("cmdhook.preRunHook start")
 	defer utils.LogTime("cmdhook.preRunHook end")
@@ -188,7 +188,7 @@ func envLogLevelSet() bool {
 	return false
 }
 
-// initConfig reads in config file and ENV variables if set.
+// initGlobalConfig reads in config file and ENV variables if set.
 func initGlobalConfig() error_helpers.ErrorAndWarnings {
 	utils.LogTime("cmdconfig.initGlobalConfig start")
 	defer utils.LogTime("cmdconfig.initGlobalConfig end")

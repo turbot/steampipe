@@ -75,7 +75,7 @@ func (b *HclResourceImpl) GetTags() map[string]string {
 	return map[string]string{}
 }
 
-// GetHclResourceBase implements HclResource
+// GetHclResourceImpl implements HclResource
 func (b *HclResourceImpl) GetHclResourceImpl() *HclResourceImpl {
 	return b
 }

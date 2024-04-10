@@ -52,7 +52,7 @@ func (b *ModTreeItemImpl) GetMod() *Mod {
 	return b.Mod
 }
 
-// GetModTreeItemBase implements ModTreeItem
+// GetModTreeItemImpl implements ModTreeItem
 func (b *ModTreeItemImpl) GetModTreeItemImpl() *ModTreeItemImpl {
 	return b
 }
