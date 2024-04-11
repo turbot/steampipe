@@ -179,7 +179,7 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 	}
 
 	var timingResult = &queryresult.TimingResult{
-		Duration: time.Since(startTime),
+		DurationMs: time.Since(startTime).Milliseconds(),
 	}
 	// disable fetching timing information to avoid recursion
 	c.disableTiming = true
@@ -199,7 +199,7 @@ cache_hit,
 rows_fetched, 
 hydrate_calls, 
 start_time,
-duration,
+duration_ms,
 columns,
 "limit",
 quals from %s.%s where id > %d`, constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)

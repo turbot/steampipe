@@ -51,9 +51,13 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 	}
 
 	// show timing
-	if config.timing && timingResult != nil {
-		fmt.Println(buildTimingString(timingResult))
-
+	if config.timing != constants.ArgOff && timingResult != nil {
+		str := buildTimingString(timingResult)
+		if viper.GetBool(constants.ConfigKeyInteractive) {
+			fmt.Println(str)
+		} else {
+			fmt.Fprintln(os.Stderr, str)
+		}
 	}
 	// return the number of rows that returned errors
 	return rowErrors
@@ -409,7 +413,7 @@ func buildTimingString(timingResult *queryresult.TimingResult) string {
 	// large numbers should be formatted with commas
 	p := message.NewPrinter(language.English)
 
-	sb.WriteString(fmt.Sprintf("\nTime: %s.", getDurationString(timingResult.Duration, p)))
+	sb.WriteString(fmt.Sprintf("\nTime: %s.", getDurationString(timingResult.DurationMs, p)))
 	sb.WriteString(p.Sprintf(" Rows returned: %d.", timingResult.RowsReturned))
 	sb.WriteString(" Rows fetched: ")
 	if timingResult.RowsFetched == 0 {
@@ -443,19 +447,16 @@ func buildTimingString(timingResult *queryresult.TimingResult) string {
 	return sb.String()
 }
 
-func getDurationString(duration time.Duration, p *message.Printer) string {
-	milliseconds := float64(duration.Microseconds()) / 1000
-	seconds := duration.Seconds()
-	if seconds < 0.5 {
-		return p.Sprintf("%dms", int64(milliseconds))
+func getDurationString(durationMs int64, p *message.Printer) string {
+	if durationMs < 500 {
+		return p.Sprintf("%dms", durationMs)
 	} else {
+		seconds := float64(durationMs / 1000)
 		return p.Sprintf("%.1fs", seconds)
 	}
-
 }
 
 func getVerboseTimingString(sb *strings.Builder, p *message.Printer, scans []*queryresult.ScanMetadataRow) error {
-
 	sb.WriteString("\n\nScans:\n")
 	for i, scan := range scans {
 		cacheString := ""
@@ -474,9 +475,8 @@ func getVerboseTimingString(sb *strings.Builder, p *message.Printer, scans []*qu
 		if scan.Limit != nil {
 			limitString = fmt.Sprintf(" Limit: %d.", *scan.Limit)
 		}
-		p := message.NewPrinter(language.English)
 
-		timeString := getDurationString(time.Duration(scan.Duration)*time.Millisecond, p)
+		timeString := getDurationString(scan.DurationMs, p)
 		rowsFetchedString := p.Sprintf("%d", scan.RowsFetched)
 
 		sb.WriteString(fmt.Sprintf("  %d) Table: %s. Connection: %s. Time: %s. Rows fetched: %s%s. Hydrate calls: %d.%s%s\n", i+1, scan.Table, scan.Connection, timeString, rowsFetchedString, cacheString, scan.HydrateCalls, qualsString, limitString))

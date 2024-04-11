@@ -14,7 +14,7 @@ type ScanMetadataRow struct {
 	RowsFetched  int64                    `db:"rows_fetched" json:"rows_fetched"`
 	HydrateCalls int64                    `db:"hydrate_calls" json:"hydrate_calls"`
 	StartTime    time.Time                `db:"start_time" json:"start_time"`
-	Duration     float64                  `db:"duration" json:"duration"`
+	DurationMs   int64                    `db:"duration_ms" json:"duration_ms"`
 	Columns      []string                 `db:"columns" json:"columns"`
 	Limit        *int64                   `db:"limit" json:"limit"`
 	Quals        []*grpc.SerializableQual `db:"quals" json:"quals"`

@@ -1,16 +1,11 @@
 package queryresult
 
-import (
-	"time"
-)
-
 type TimingResult struct {
-	Duration time.Duration
-	Scans    []*ScanMetadataRow `json:"scans"`
-
-	RowsReturned int64 `json:"rows_returned"`
-	RowsFetched  int64 `json:"rows_fetched"`
-	HydrateCalls int64 `json:"hydrate_calls"`
+	DurationMs   int64              `json:"duration_ms"`
+	Scans        []*ScanMetadataRow `json:"scans"`
+	RowsReturned int64              `json:"rows_returned"`
+	RowsFetched  int64              `json:"rows_fetched"`
+	HydrateCalls int64              `json:"hydrate_calls"`
 }
 
 type RowResult struct {
