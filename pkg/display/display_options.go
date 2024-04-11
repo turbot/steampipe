@@ -9,10 +9,10 @@ type displayConfiguration struct {
 	timing bool
 }
 
-// NewDisplayConfiguration creates a default configuration with timing set to
-// true if both --timing is true and --output is table
-func NewDisplayConfiguration() *displayConfiguration {
-	timingFlag := cmdconfig.Viper().GetBool(constants.ArgTiming)
+// newDisplayConfiguration creates a default configuration with timing set to
+// true if both --timing is not 'off' and --output is table
+func newDisplayConfiguration() *displayConfiguration {
+	timingFlag := cmdconfig.Viper().GetString(constants.ArgTiming) != constants.ArgOff
 	isInteractive := cmdconfig.Viper().GetBool(constants.ConfigKeyInteractive)
 	outputTable := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.OutputFormatTable
 

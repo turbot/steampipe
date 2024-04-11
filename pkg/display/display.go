@@ -31,7 +31,7 @@ import (
 // ShowOutput displays the output using the proper formatter as applicable
 func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) int {
 	rowErrors := 0
-	config := NewDisplayConfiguration()
+	config := newDisplayConfiguration()
 	for _, o := range opts {
 		o(config)
 	}
@@ -434,7 +434,7 @@ func buildTimingString(timingResult *queryresult.TimingResult) string {
 
 	sb.WriteString(p.Sprintf(". Hydrate calls: %d.", timingResult.HydrateCalls))
 
-	if viper.GetBool(constants.ArgVerboseTiming) && len(timingResult.Scans) > 0 {
+	if viper.GetString(constants.ArgTiming) == constants.ArgVerbose && len(timingResult.Scans) > 0 {
 		if err := getVerboseTimingString(&sb, p, timingResult.Scans); err != nil {
 			log.Printf("[WARN] Error getting verbose timing: %v", err)
 		}

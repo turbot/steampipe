@@ -11,15 +11,15 @@ import (
 
 var requiredColor = color.New(color.Bold).SprintfFunc()
 
-type flagOpt func(c *cobra.Command, name string, key string)
+type FlagOption func(c *cobra.Command, name string, key string)
 
 // FlagOptions - shortcut for common flag options
 var FlagOptions = struct {
-	Required      func() flagOpt
-	Hidden        func() flagOpt
-	Deprecated    func(string) flagOpt
-	NoOptDefVal   func(string) flagOpt
-	WithShortHand func(string) flagOpt
+	Required      func() FlagOption
+	Hidden        func() FlagOption
+	Deprecated    func(string) FlagOption
+	NoOptDefVal   func(string) FlagOption
+	WithShortHand func(string) FlagOption
 }{
 	Required:      requiredOpt,
 	Hidden:        hiddenOpt,
@@ -29,7 +29,7 @@ var FlagOptions = struct {
 }
 
 // Helper function to mark a flag as required
-func requiredOpt() flagOpt {
+func requiredOpt() FlagOption {
 	return func(c *cobra.Command, name, key string) {
 		err := c.MarkFlagRequired(key)
 		error_helpers.FailOnErrorWithMessage(err, "could not mark flag as required")
@@ -40,25 +40,25 @@ func requiredOpt() flagOpt {
 	}
 }
 
-func hiddenOpt() flagOpt {
+func hiddenOpt() FlagOption {
 	return func(c *cobra.Command, name, _ string) {
 		c.Flag(name).Hidden = true
 	}
 }
 
-func deprecatedOpt(replacement string) flagOpt {
+func deprecatedOpt(replacement string) FlagOption {
 	return func(c *cobra.Command, name, _ string) {
 		c.Flag(name).Deprecated = fmt.Sprintf("please use %s", replacement)
 	}
 }
 
-func noOptDefValOpt(noOptDefVal string) flagOpt {
+func noOptDefValOpt(noOptDefVal string) FlagOption {
 	return func(c *cobra.Command, name, _ string) {
 		c.Flag(name).NoOptDefVal = noOptDefVal
 	}
 }
 
-func withShortHand(shorthand string) flagOpt {
+func withShortHand(shorthand string) FlagOption {
 	return func(c *cobra.Command, name, _ string) {
 		c.Flag(name).Shorthand = shorthand
 	}
