@@ -83,7 +83,7 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 			failures++
 			error_helpers.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(initData.Queries), error_helpers.DecodePgError(err)))
 			// if timing flag is enabled, show the time taken for the query to fail
-			if cmdconfig.Viper().GetBool(constants.ArgTiming) {
+			if cmdconfig.Viper().GetString(constants.ArgTiming) != constants.ArgOff {
 				display.DisplayErrorTiming(t)
 			}
 		}

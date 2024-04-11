@@ -6,7 +6,9 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/pipe-fittings/hclhelpers"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // DecodeOptions decodes an options block
@@ -53,12 +55,17 @@ func decodeTimingFlag(block *hcl.Block, timingOptions options.CanSetTiming) hcl.
 	// remove the attribute so subsequent decoding does not see it
 	delete(body.Attributes, "timing")
 
-	scopeTraversal, ok := timingAttribute.Expr.(*hclsyntax.ScopeTraversalExpr)
-	if !ok || len(scopeTraversal.Traversal) != 1 {
-		return nil
+	val, diags := timingAttribute.Expr.Value(&hcl.EvalContext{
+		Variables: map[string]cty.Value{
+			constants.ArgOn:      cty.StringVal(constants.ArgOn),
+			constants.ArgOff:     cty.StringVal(constants.ArgOff),
+			constants.ArgVerbose: cty.StringVal(constants.ArgVerbose),
+		},
+	})
+	if diags.HasErrors() {
+		return diags
 	}
-	value := scopeTraversal.Traversal[0].(hcl.TraverseRoot).Name
-	return timingOptions.SetTiming(value, timingAttribute.Range())
+	return timingOptions.SetTiming(val.AsString(), timingAttribute.Range())
 
 }
 

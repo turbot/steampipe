@@ -2,6 +2,7 @@ package options
 
 import (
 	"fmt"
+	"golang.org/x/exp/maps"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -14,7 +15,7 @@ type Check struct {
 	Output    *string `hcl:"output" cty:"check_output"`
 	Separator *string `hcl:"separator" cty:"check_separator"`
 	Header    *bool   `hcl:"header" cty:"check_header"`
-	Timing    *bool   `hcl:"timing" cty:"check_timing"`
+	Timing    *string `hcl:"timing" cty:"check_timing"`
 }
 
 func (t *Check) SetBaseProperties(otherOptions Options) {
@@ -59,11 +60,8 @@ func (t *Check) ConfigMap() map[string]interface{} {
 // Merge :: merge other options over the the top of this options object
 // i.e. if a property is set in otherOptions, it takes precedence
 func (t *Check) Merge(otherOptions Options) {
-	if _, ok := otherOptions.(*Query); !ok {
-		return
-	}
 	switch o := otherOptions.(type) {
-	case *Query:
+	case *Check:
 		if o.Output != nil {
 			t.Output = o.Output
 		}
@@ -108,21 +106,17 @@ func (t *Check) String() string {
 }
 
 func (t *Check) SetTiming(flag string, r hcl.Range) hcl.Diagnostics {
-	enabled := true
-	disabled := false
-	switch flag {
-	case "true", "on":
-		t.Timing = &enabled
-	case "false", "off":
-		t.Timing = &disabled
-	default:
+	// check the value is valid
+	if _, ok := constants.CheckTimingValueLookup[flag]; !ok {
 		return hcl.Diagnostics{
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("Invalid timing value '%s', check options support: on, true, off, false", flag),
+				Summary:  fmt.Sprintf("Invalid timing value '%s', check options support: %s", flag, strings.Join(maps.Keys(constants.CheckTimingValueLookup), ", ")),
 				Subject:  &r,
 			},
 		}
 	}
+	t.Timing = &flag
+
 	return nil
 }
