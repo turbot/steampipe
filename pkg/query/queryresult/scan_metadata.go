@@ -16,8 +16,8 @@ type ScanMetadataRow struct {
 	StartTime    time.Time               `db:"start_time" json:"start_time"`
 	DurationMs   int64                   `db:"duration_ms" json:"duration_ms"`
 	Columns      []string                `db:"columns" json:"columns"`
-	Limit        *int64                  `db:"limit" json:"limit"`
-	Quals        []grpc.SerializableQual `db:"quals" json:"quals"`
+	Limit        *int64                  `db:"limit" json:"limit,omitempty"`
+	Quals        []grpc.SerializableQual `db:"quals" json:"quals,omitempty"`
 }
 
 func NewScanMetadataRow(connection string, table string, columns []string, quals map[string]*proto.Quals, startTime time.Time, diration time.Duration, limit int64, m *proto.QueryMetadata) ScanMetadataRow {
@@ -55,7 +55,12 @@ func (m ScanMetadataRow) AsResultRow() map[string]any {
 		"duration_ms":   m.DurationMs,
 		"columns":       m.Columns,
 		"quals":         m.Quals,
-		"limit":         m.Limit,
+	}
+	// explicitly set limit to nil if needed (otherwise postgres returns `1`)
+	if m.Limit != nil {
+		res["limit"] = *m.Limit
+	} else {
+		res["limit"] = nil // Explicitly set nil
 	}
 	return res
 }

@@ -497,8 +497,7 @@ func getVerboseTimingString(sb *strings.Builder, p *message.Printer, timingResul
 			qualsString = fmt.Sprintf(" Quals: %s.", string(qualsJson))
 		}
 		limitString := ""
-		// for some reason when we return nil limit from FDW, we are reading zero back
-		if scan.Limit != nil && *scan.Limit != 0 {
+		if scan.Limit != nil {
 			limitString = fmt.Sprintf(" Limit: %d.", *scan.Limit)
 		}
 
