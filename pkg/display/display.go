@@ -416,30 +416,33 @@ func buildTimingString(timingResult *queryresult.TimingResult) string {
 	sb.WriteString(fmt.Sprintf("\nTime: %s.", getDurationString(timingResult.DurationMs, p)))
 	sb.WriteString(p.Sprintf(" Rows returned: %d.", timingResult.RowsReturned))
 	sb.WriteString(" Rows fetched: ")
-	if timingResult.RowsFetched == 0 {
+	totalRowsFetched := timingResult.UncachedRowsFetched + timingResult.CachedRowsFetched
+	if totalRowsFetched == 0 {
 		sb.WriteString("0")
 	} else {
 
 		// calculate the number of cached rows fetched
-		var cachedRowsFetched int64
-		for _, scan := range timingResult.Scans {
-			if scan.CacheHit {
-				cachedRowsFetched += scan.RowsFetched
-			}
-		}
-		sb.WriteString(p.Sprintf("%d", timingResult.RowsFetched))
 
-		if timingResult.RowsFetched == cachedRowsFetched {
+		sb.WriteString(p.Sprintf("%d", totalRowsFetched))
+
+		// were all cached
+		if timingResult.UncachedRowsFetched == 0 {
 			sb.WriteString(" (cached)")
-		} else if cachedRowsFetched > 0 {
-			sb.WriteString(p.Sprintf(" (%d cached)", cachedRowsFetched))
+		} else if timingResult.CachedRowsFetched > 0 {
+			sb.WriteString(p.Sprintf(" (%d cached)", timingResult.CachedRowsFetched))
 		}
 	}
 
 	sb.WriteString(p.Sprintf(". Hydrate calls: %d.", timingResult.HydrateCalls))
+	if timingResult.ScanCount > 1 {
+		sb.WriteString(p.Sprintf(" Scans: %d.", timingResult.ScanCount))
+	}
+	if timingResult.ConnectionCount > 1 {
+		sb.WriteString(p.Sprintf(" Connections: %d.", timingResult.ConnectionCount))
+	}
 
 	if viper.GetString(constants.ArgTiming) == constants.ArgVerbose && len(timingResult.Scans) > 0 {
-		if err := getVerboseTimingString(&sb, p, timingResult.Scans); err != nil {
+		if err := getVerboseTimingString(&sb, p, timingResult); err != nil {
 			log.Printf("[WARN] Error getting verbose timing: %v", err)
 		}
 	}
@@ -456,9 +459,26 @@ func getDurationString(durationMs int64, p *message.Printer) string {
 	}
 }
 
-func getVerboseTimingString(sb *strings.Builder, p *message.Printer, scans []*queryresult.ScanMetadataRow) error {
-	sb.WriteString("\n\nScans:\n")
-	for i, scan := range scans {
+func getVerboseTimingString(sb *strings.Builder, p *message.Printer, timingResult *queryresult.TimingResult) error {
+	scans := timingResult.Scans
+
+	// keep track of empty scans and do not include them separately in scan list
+	emptyScanCount := 0
+	scanCount := 0
+	// is this all scans or just the slowest
+	if len(scans) == int(timingResult.ScanCount) {
+		sb.WriteString("\n\nScans:\n")
+	} else {
+		sb.WriteString(fmt.Sprintf("\n\nSlowest %d scans:\n", len(scans)))
+	}
+
+	for _, scan := range scans {
+		if scan.RowsFetched == 0 {
+			emptyScanCount++
+			continue
+		}
+		scanCount++
+
 		cacheString := ""
 		if scan.CacheHit {
 			cacheString = " (cached)"
@@ -479,7 +499,10 @@ func getVerboseTimingString(sb *strings.Builder, p *message.Printer, scans []*qu
 		timeString := getDurationString(scan.DurationMs, p)
 		rowsFetchedString := p.Sprintf("%d", scan.RowsFetched)
 
-		sb.WriteString(fmt.Sprintf("  %d) Table: %s. Connection: %s. Time: %s. Rows fetched: %s%s. Hydrate calls: %d.%s%s\n", i+1, scan.Table, scan.Connection, timeString, rowsFetchedString, cacheString, scan.HydrateCalls, qualsString, limitString))
+		sb.WriteString(fmt.Sprintf("  %d) Table: %s. Connection: %s. Time: %s. Rows fetched: %s%s. Hydrate calls: %d.%s%s\n", scanCount, scan.Table, scan.Connection, timeString, rowsFetchedString, cacheString, scan.HydrateCalls, qualsString, limitString))
+	}
+	if emptyScanCount > 0 {
+		sb.WriteString(fmt.Sprintf("  %d…%d) Zero rows fetched.\n", scanCount+1, scanCount+emptyScanCount))
 	}
 	return nil
 }

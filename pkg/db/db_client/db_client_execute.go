@@ -3,7 +3,6 @@ package db_client
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	"net/netip"
@@ -174,6 +173,7 @@ func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
 }
 
 func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {
+	// TODO do not fetch if timing is disable and output is not JSON
 	if !c.shouldShowTiming() {
 		return
 	}
@@ -190,10 +190,58 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		resultChannel <- timingResult
 	}()
 
+	// todo only load the timing metadata if output is JSON or timing is verbose
+	scans, err := c.loadTimingMetadata(ctx, session)
+	if err != nil {
+		log.Printf("[WARN] getQueryTiming: failed to read scan metadata, err: %s", err)
+		return
+	}
+
+	// also load the summary
+	summary, err := c.loadTimingSummary(ctx, session)
+	if err != nil {
+		log.Printf("[WARN] getQueryTiming: failed to read scan metadata, err: %s", err)
+		return
+	}
+
+	// populate hydrate calls and rows fetched
+	timingResult.Initialise(summary, scans)
+
+}
+
+func (c *DbClient) loadTimingSummary(ctx context.Context, session *db_common.DatabaseSession) (*queryresult.QueryRowSummary, error) {
+	var summary = &queryresult.QueryRowSummary{}
+	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
+		query := fmt.Sprintf(`select uncached_rows_fetched,
+cached_rows_fetched,
+hydrate_calls, 
+scan_count,
+connection_count from %s.%s `, constants.InternalSchema, constants.ForeignTableScanMetadataSummary)
+		//query := fmt.Sprintf("select id, 'table' as table, cache_hit, rows_fetched, hydrate_calls, start_time, duration, columns, 'limit' as limit, quals from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
+		rows, err := tx.Query(ctx, query)
+		if err != nil {
+			return err
+		}
+
+		// scan into summary
+
+		summary, err = pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[queryresult.QueryRowSummary])
+		if err != nil {
+			return err
+		}
+		// we only expect a
+
+		return nil
+	})
+	return summary, err
+}
+
+func (c *DbClient) loadTimingMetadata(ctx context.Context, session *db_common.DatabaseSession) ([]*queryresult.ScanMetadataRow, error) {
+	var scans []*queryresult.ScanMetadataRow
+
 	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
 		query := fmt.Sprintf(`
-select id, 
-connection,
+select connection,
 "table",
 cache_hit, 
 rows_fetched, 
@@ -202,45 +250,16 @@ start_time,
 duration_ms,
 columns,
 "limit",
-quals from %s.%s where id > %d`, constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
-		//query := fmt.Sprintf("select id, 'table' as table, cache_hit, rows_fetched, hydrate_calls, start_time, duration, columns, 'limit' as limit, quals from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
+quals from %s.%s order by duration_ms desc`, constants.InternalSchema, constants.ForeignTableScanMetadata)
 		rows, err := tx.Query(ctx, query)
 		if err != nil {
 			return err
 		}
-		timingResult.Scans, err = pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[queryresult.ScanMetadataRow])
+
+		scans, err = pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[queryresult.ScanMetadataRow])
 		return err
 	})
-
-	// if we failed to read scan metadata (either because the query failed or the plugin does not support it) just return
-	// we don't return the error, since we don't want to error out in this case
-	if err != nil || len(timingResult.Scans) == 0 {
-		log.Printf("[WARN] getQueryTiming: failed to read scan metadata, rows read: %d, err: %s", len(timingResult.Scans), err)
-		return
-	}
-	// populate hydrate calls and rows fetched
-	for _, scan := range timingResult.Scans {
-		timingResult.HydrateCalls += scan.HydrateCalls
-		timingResult.RowsFetched += scan.RowsFetched
-		// update the max id for this session
-		if scan.Id > session.ScanMetadataMaxId {
-			session.ScanMetadataMaxId = scan.Id
-		}
-	}
-}
-
-func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_common.DatabaseSession) error {
-	return db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
-		row := tx.QueryRow(ctx, fmt.Sprintf("select COALESCE(MAX(id), 0) from %s.%s", constants.InternalSchema, constants.ForeignTableScanMetadata))
-		err := row.Scan(&session.ScanMetadataMaxId)
-		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return nil
-			}
-			return err
-		}
-		return nil
-	})
+	return scans, err
 }
 
 // run query in a goroutine, so we can check for cancellation

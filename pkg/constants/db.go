@@ -71,6 +71,7 @@ const (
 	ConnectionStateError             = "error"
 
 	// foreign tables in internal schema
+	ForeignTableScanMetadataSummary       = "steampipe_scan_metadata_summary"
 	ForeignTableScanMetadata              = "steampipe_scan_metadata"
 	ForeignTableSettings                  = "steampipe_settings"
 	ForeignTableSettingsKeyColumn         = "name"
