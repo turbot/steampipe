@@ -65,7 +65,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 			syncResult.Rows = append(syncResult.Rows, row)
 		}
 	}
-	if c.shouldShowTiming() {
+	if c.shouldFetchTiming() {
 		syncResult.TimingResult = <-result.TimingResult
 	}
 
@@ -173,8 +173,8 @@ func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
 }
 
 func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {
-	// TODO do not fetch if timing is disable and output is not JSON
-	if !c.shouldShowTiming() {
+	// do not fetch if timing is disabled, unless output not JSON
+	if !c.shouldFetchTiming() {
 		return
 	}
 
@@ -190,23 +190,25 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		resultChannel <- timingResult
 	}()
 
-	// todo only load the timing metadata if output is JSON or timing is verbose
-	scans, err := c.loadTimingMetadata(ctx, session)
-	if err != nil {
-		log.Printf("[WARN] getQueryTiming: failed to read scan metadata, err: %s", err)
-		return
-	}
-
-	// also load the summary
+	// load the timing summary
 	summary, err := c.loadTimingSummary(ctx, session)
 	if err != nil {
 		log.Printf("[WARN] getQueryTiming: failed to read scan metadata, err: %s", err)
 		return
 	}
 
+	// only load the individual scan  metadata if output is JSON or timing is verbose
+	var scans []*queryresult.ScanMetadataRow
+	if c.shouldFetchVerboseTiming() {
+		scans, err = c.loadTimingMetadata(ctx, session)
+		if err != nil {
+			log.Printf("[WARN] getQueryTiming: failed to read scan metadata, err: %s", err)
+			return
+		}
+	}
+
 	// populate hydrate calls and rows fetched
 	timingResult.Initialise(summary, scans)
-
 }
 
 func (c *DbClient) loadTimingSummary(ctx context.Context, session *db_common.DatabaseSession) (*queryresult.QueryRowSummary, error) {
@@ -224,13 +226,11 @@ connection_count from %s.%s `, constants.InternalSchema, constants.ForeignTableS
 		}
 
 		// scan into summary
-
-		summary, err = pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[queryresult.QueryRowSummary])
+		summary, err = pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[queryresult.QueryRowSummary])
+		// no rows counts as an error
 		if err != nil {
 			return err
 		}
-		// we only expect a
-
 		return nil
 	})
 	return summary, err

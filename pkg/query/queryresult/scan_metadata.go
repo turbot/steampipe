@@ -3,7 +3,6 @@ package queryresult
 import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	"log"
 	"time"
 )
 
@@ -58,7 +57,6 @@ func (m ScanMetadataRow) AsResultRow() map[string]any {
 		"quals":         m.Quals,
 		"limit":         m.Limit,
 	}
-	log.Println("[WARN] ScanMetadataRow.AsResultRow", res)
 	return res
 }
 

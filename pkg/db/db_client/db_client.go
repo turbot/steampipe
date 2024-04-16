@@ -3,13 +3,14 @@ package db_client
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgconn"
 	"log"
 	"strings"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/serversettings"
@@ -144,8 +145,19 @@ func (c *DbClient) loadServerSettings(ctx context.Context) error {
 	return nil
 }
 
-func (c *DbClient) shouldShowTiming() bool {
-	return !c.disableTiming
+func (c *DbClient) shouldFetchTiming() bool {
+	// check for override flag (this is to prevent timing being fetched when we read the timing metadata table)
+	if c.disableTiming {
+		return false
+	}
+	// only fetch timing if timing flag is set, or output is JSON
+	return (viper.GetString(constants.ArgTiming) != constants.ArgOff) ||
+		(viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON)
+
+}
+func (c *DbClient) shouldFetchVerboseTiming() bool {
+	return (viper.GetString(constants.ArgTiming) == constants.ArgVerbose) ||
+		(viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON)
 }
 
 // ServerSettings returns the settings of the steampipe service that this DbClient is connected to

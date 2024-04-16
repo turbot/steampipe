@@ -415,8 +415,13 @@ func buildTimingString(timingResult *queryresult.TimingResult) string {
 
 	sb.WriteString(fmt.Sprintf("\nTime: %s.", getDurationString(timingResult.DurationMs, p)))
 	sb.WriteString(p.Sprintf(" Rows returned: %d.", timingResult.RowsReturned))
-	sb.WriteString(" Rows fetched: ")
 	totalRowsFetched := timingResult.UncachedRowsFetched + timingResult.CachedRowsFetched
+	if totalRowsFetched == 0 {
+		// maybe there was an error retrieving timing - just display the basics
+		return sb.String()
+	}
+
+	sb.WriteString(" Rows fetched: ")
 	if totalRowsFetched == 0 {
 		sb.WriteString("0")
 	} else {
@@ -454,7 +459,7 @@ func getDurationString(durationMs int64, p *message.Printer) string {
 	if durationMs < 500 {
 		return p.Sprintf("%dms", durationMs)
 	} else {
-		seconds := float64(durationMs / 1000)
+		seconds := float64(durationMs) / 1000
 		return p.Sprintf("%.1fs", seconds)
 	}
 }
@@ -492,7 +497,8 @@ func getVerboseTimingString(sb *strings.Builder, p *message.Printer, timingResul
 			qualsString = fmt.Sprintf(" Quals: %s.", string(qualsJson))
 		}
 		limitString := ""
-		if scan.Limit != nil {
+		// for some reason when we return nil limit from FDW, we are reading zero back
+		if scan.Limit != nil && *scan.Limit != 0 {
 			limitString = fmt.Sprintf(" Limit: %d.", *scan.Limit)
 		}
 
