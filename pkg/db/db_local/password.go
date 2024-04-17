@@ -22,7 +22,7 @@ func writePasswordFile(password string) error {
 }
 
 // readPasswordFile reads the password file and returns it contents.
-// the the password file could not be found, then it generates a new
+// the password file could not be found, then it generates a new
 // password and writes it to the password file, before returning it
 func readPasswordFile() (string, error) {
 	if !filehelpers.FileExists(filepaths.GetPasswordFileLocation()) {
