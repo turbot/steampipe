@@ -9,6 +9,7 @@ const (
 	ArgTiming                  = "timing"
 	ArgOn                      = "on"
 	ArgOff                     = "off"
+	ArgVerbose                 = "verbose"
 	ArgClear                   = "clear"
 	ArgDatabaseListenAddresses = "database-listen"
 	ArgDatabasePort            = "database-port"

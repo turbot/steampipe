@@ -2,19 +2,20 @@ package options
 
 import (
 	"fmt"
+	"github.com/hashicorp/hcl/v2"
+	"golang.org/x/exp/maps"
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
-// General
 type Query struct {
 	Output       *string `hcl:"output" cty:"query_output"`
 	Separator    *string `hcl:"separator" cty:"query_separator"`
 	Header       *bool   `hcl:"header" cty:"query_header"`
 	Multi        *bool   `hcl:"multi" cty:"query_multi"`
-	Timing       *bool   `hcl:"timing" cty:"query_timing"`
+	Timing       *string `cty:"query_timing"` // parsed manually
 	AutoComplete *bool   `hcl:"autocomplete" cty:"query_autocomplete"`
 }
 
@@ -61,7 +62,7 @@ func (t *Query) ConfigMap() map[string]interface{} {
 		res[constants.ArgMultiLine] = t.Multi
 	}
 	if t.Timing != nil {
-		res[constants.ArgTiming] = t.Timing
+		res[constants.ArgTiming] = *t.Timing
 	}
 	if t.AutoComplete != nil {
 		res[constants.ArgAutoComplete] = t.AutoComplete
@@ -134,4 +135,20 @@ func (t *Query) String() string {
 		str = append(str, fmt.Sprintf("  AutoComplete: %v", *t.AutoComplete))
 	}
 	return strings.Join(str, "\n")
+}
+
+func (t *Query) SetTiming(flag string, r hcl.Range) hcl.Diagnostics {
+	// check the value is valid
+	if _, ok := constants.QueryTimingValueLookup[flag]; !ok {
+		return hcl.Diagnostics{
+			&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("Invalid timing value '%s', query options support: %s", flag, strings.Join(maps.Keys(constants.QueryTimingValueLookup), ", ")),
+				Subject:  &r,
+			},
+		}
+	}
+	t.Timing = &flag
+
+	return nil
 }

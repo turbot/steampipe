@@ -17,9 +17,6 @@ type DatabaseSession struct {
 
 	// this gets rewritten, since the database/sql gives back a new instance everytime
 	Connection *pgxpool.Conn `json:"-"`
-
-	// the id of the last scan metadata retrieved
-	ScanMetadataMaxId int64 `json:"-"`
 }
 
 func NewDBSession(backendPid uint32) *DatabaseSession {

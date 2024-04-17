@@ -28,7 +28,7 @@ const (
 // constants for installing db and fdw images
 const (
 	DatabaseVersion = "14.2.0"
-	FdwVersion      = "1.10.0"
+	FdwVersion      = "1.11.0-rc.0"
 
 	// PostgresImageRef is the OCI Image ref for the database binaries
 	PostgresImageRef    = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
@@ -71,6 +71,7 @@ const (
 	ConnectionStateError             = "error"
 
 	// foreign tables in internal schema
+	ForeignTableScanMetadataSummary       = "steampipe_scan_metadata_summary"
 	ForeignTableScanMetadata              = "steampipe_scan_metadata"
 	ForeignTableSettings                  = "steampipe_settings"
 	ForeignTableSettingsKeyColumn         = "name"

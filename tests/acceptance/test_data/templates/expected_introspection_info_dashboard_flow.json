@@ -1,33 +1,43 @@
-[
- {
-  "args": null,
-  "auto_generated": false,
-  "description": null,
-  "documentation": null,
-  "edges": [
+{
+  "rows": [
    {
-    "name": "sample_edge_1"
+    "args": null,
+    "auto_generated": false,
+    "description": null,
+    "documentation": null,
+    "edges": [
+     {
+      "name": "sample_edge_1"
+     }
+    ],
+    "end_line_number": 83,
+    "is_anonymous": false,
+    "mod_name": "introspection_table_mod",
+    "nodes": [
+     {
+      "name": "sample_node_1"
+     }
+    ],
+    "params": null,
+    "path": null,
+    "qualified_name": "introspection_table_mod.flow.sample_flow_1",
+    "query": null,
+    "resource_name": "sample_flow_1",
+    "source_definition": "    flow \"sample_flow_1\" {\n      title = \"Sample flow 1\"\n      width = 3\n\n      node \"sample_node_1\" {\n        sql = <<-EOQ\n          select 1 as node\n        EOQ\n      }\n      edge \"sample_edge_1\" {\n        sql = <<-EOQ\n          select 1 as edge\n        EOQ\n      }\n    }",
+    "sql": null,
+    "start_line_number": 69,
+    "tags": null,
+    "title": "Sample flow 1",
+    "type": null,
+    "width": "3"
    }
   ],
-  "end_line_number": 83,
-  "is_anonymous": false,
-  "mod_name": "introspection_table_mod",
-  "nodes": [
-   {
-    "name": "sample_node_1"
-   }
-  ],
-  "params": null,
-  "path": null,
-  "qualified_name": "introspection_table_mod.flow.sample_flow_1",
-  "query": null,
-  "resource_name": "sample_flow_1",
-  "source_definition": "    flow \"sample_flow_1\" {\n      title = \"Sample flow 1\"\n      width = 3\n\n      node \"sample_node_1\" {\n        sql = <<-EOQ\n          select 1 as node\n        EOQ\n      }\n      edge \"sample_edge_1\" {\n        sql = <<-EOQ\n          select 1 as edge\n        EOQ\n      }\n    }",
-  "sql": null,
-  "start_line_number": 69,
-  "tags": null,
-  "title": "Sample flow 1",
-  "type": null,
-  "width": "3"
+  "metadata": {
+   "Duration": 278667,
+   "scans": [],
+   "rows_returned": 1,
+   "rows_fetched": 0,
+   "hydrate_calls": 0
+  }
  }
-]
+ 

@@ -3,8 +3,8 @@ package db_client
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
+	"log"
 	"net/netip"
 	"strings"
 	"time"
@@ -32,10 +32,6 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, args ...any) (
 	if sessionResult.Error != nil {
 		return nil, sessionResult.Error
 	}
-
-	// set setShouldShowTiming flag
-	// (this will refetch ScanMetadataMaxId if timing has just been enabled)
-	c.setShouldShowTiming(ctx, sessionResult.Session)
 
 	defer func() {
 		// we need to do this in a closure, otherwise the ctx will be evaluated immediately
@@ -69,7 +65,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 			syncResult.Rows = append(syncResult.Rows, row)
 		}
 	}
-	if c.shouldShowTiming() {
+	if c.shouldFetchTiming() {
 		syncResult.TimingResult = <-result.TimingResult
 	}
 
@@ -85,13 +81,6 @@ func (c *DbClient) Execute(ctx context.Context, query string, args ...any) (*que
 	if sessionResult.Error != nil {
 		return nil, sessionResult.Error
 	}
-	// disable statushooks when timing is enabled, because setShouldShowTiming internally calls the readRows funcs which
-	// calls the statushooks.Done, which hides the `Executing query…` spinner, when timing is enabled.
-	timingCtx := statushooks.DisableStatusHooks(ctx)
-
-	// re-read ArgTiming from viper (in case the .timing command has been run)
-	// (this will refetch ScanMetadataMaxId if timing has just been enabled)
-	c.setShouldShowTiming(timingCtx, sessionResult.Session)
 
 	// define callback to close session when the async execution is complete
 	closeSessionCallback := func() { sessionResult.Session.Close(error_helpers.IsContextCanceled(ctx)) }
@@ -184,12 +173,13 @@ func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
 }
 
 func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {
-	if !c.shouldShowTiming() {
+	// do not fetch if timing is disabled, unless output not JSON
+	if !c.shouldFetchTiming() {
 		return
 	}
 
 	var timingResult = &queryresult.TimingResult{
-		Duration: time.Since(startTime),
+		DurationMs: time.Since(startTime).Milliseconds(),
 	}
 	// disable fetching timing information to avoid recursion
 	c.disableTiming = true
@@ -200,44 +190,76 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		resultChannel <- timingResult
 	}()
 
-	var scanRows *ScanMetadataRow
+	// load the timing summary
+	summary, err := c.loadTimingSummary(ctx, session)
+	if err != nil {
+		log.Printf("[WARN] getQueryTiming: failed to read scan metadata, err: %s", err)
+		return
+	}
+
+	// only load the individual scan  metadata if output is JSON or timing is verbose
+	var scans []*queryresult.ScanMetadataRow
+	if c.shouldFetchVerboseTiming() {
+		scans, err = c.loadTimingMetadata(ctx, session)
+		if err != nil {
+			log.Printf("[WARN] getQueryTiming: failed to read scan metadata, err: %s", err)
+			return
+		}
+	}
+
+	// populate hydrate calls and rows fetched
+	timingResult.Initialise(summary, scans)
+}
+
+func (c *DbClient) loadTimingSummary(ctx context.Context, session *db_common.DatabaseSession) (*queryresult.QueryRowSummary, error) {
+	var summary = &queryresult.QueryRowSummary{}
 	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
-		query := fmt.Sprintf("select id, rows_fetched, cache_hit, hydrate_calls from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
+		query := fmt.Sprintf(`select uncached_rows_fetched,
+cached_rows_fetched,
+hydrate_calls, 
+scan_count,
+connection_count from %s.%s `, constants.InternalSchema, constants.ForeignTableScanMetadataSummary)
+		//query := fmt.Sprintf("select id, 'table' as table, cache_hit, rows_fetched, hydrate_calls, start_time, duration, columns, 'limit' as limit, quals from %s.%s where id > %d", constants.InternalSchema, constants.ForeignTableScanMetadata, session.ScanMetadataMaxId)
 		rows, err := tx.Query(ctx, query)
 		if err != nil {
 			return err
 		}
-		scanRows, err = pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[ScanMetadataRow])
-		return err
+
+		// scan into summary
+		summary, err = pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[queryresult.QueryRowSummary])
+		// no rows counts as an error
+		if err != nil {
+			return err
+		}
+		return nil
 	})
-
-	// if we failed to read scan metadata (either because the query failed or the plugin does not support it) just return
-	// we don't return the error, since we don't want to error out in this case
-	if err != nil || scanRows == nil {
-		return
-	}
-
-	// so we have scan metadata - create the metadata struct
-	timingResult.Metadata = &queryresult.TimingMetadata{}
-	timingResult.Metadata.HydrateCalls += scanRows.HydrateCalls
-	if scanRows.CacheHit {
-		timingResult.Metadata.CachedRowsFetched += scanRows.RowsFetched
-	} else {
-		timingResult.Metadata.RowsFetched += scanRows.RowsFetched
-	}
-	// update the max id for this session
-	session.ScanMetadataMaxId = scanRows.Id
+	return summary, err
 }
 
-func (c *DbClient) updateScanMetadataMaxId(ctx context.Context, session *db_common.DatabaseSession) error {
-	return db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
-		row := tx.QueryRow(ctx, fmt.Sprintf("select max(id) from %s.%s", constants.InternalSchema, constants.ForeignTableScanMetadata))
-		err := row.Scan(&session.ScanMetadataMaxId)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil
+func (c *DbClient) loadTimingMetadata(ctx context.Context, session *db_common.DatabaseSession) ([]*queryresult.ScanMetadataRow, error) {
+	var scans []*queryresult.ScanMetadataRow
+
+	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
+		query := fmt.Sprintf(`
+select connection,
+"table",
+cache_hit, 
+rows_fetched, 
+hydrate_calls, 
+start_time,
+duration_ms,
+columns,
+"limit",
+quals from %s.%s order by duration_ms desc`, constants.InternalSchema, constants.ForeignTableScanMetadata)
+		rows, err := tx.Query(ctx, query)
+		if err != nil {
+			return err
 		}
+
+		scans, err = pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[queryresult.ScanMetadataRow])
 		return err
 	})
+	return scans, err
 }
 
 // run query in a goroutine, so we can check for cancellation

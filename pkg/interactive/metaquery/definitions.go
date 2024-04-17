@@ -77,11 +77,12 @@ func init() {
 		constants.CmdTiming: {
 			title:       "timing",
 			handler:     setTiming,
-			validator:   booleanValidator(constants.CmdTiming, validatorFromArgsOf(constants.CmdTiming)),
+			validator:   validatorFromArgsOf(constants.CmdTiming),
 			description: "Enable or disable query execution timing",
 			args: []metaQueryArg{
-				{value: constants.ArgOn, description: "Display time elapsed after every query"},
 				{value: constants.ArgOff, description: "Turn off query timer"},
+				{value: constants.ArgOn, description: "Display time elapsed after every query"},
+				{value: constants.ArgVerbose, description: "Display time elapsed and details of each scan"},
 			},
 			completer: completerFromArgsOf(constants.CmdTiming),
 		},

@@ -6,20 +6,14 @@ import (
 )
 
 type displayConfiguration struct {
-	timing bool
+	timing string
 }
 
-// NewDisplayConfiguration creates a default configuration with timing set to
-// true if both --timing is true and --output is table
-func NewDisplayConfiguration() *displayConfiguration {
-	timingFlag := cmdconfig.Viper().GetBool(constants.ArgTiming)
-	isInteractive := cmdconfig.Viper().GetBool(constants.ConfigKeyInteractive)
-	outputTable := cmdconfig.Viper().GetString(constants.ArgOutput) == constants.OutputFormatTable
-
-	timing := timingFlag && (outputTable || isInteractive)
-
+// newDisplayConfiguration creates a default configuration with timing set to
+// true if both --timing is not 'off' and --output is table
+func newDisplayConfiguration() *displayConfiguration {
 	return &displayConfiguration{
-		timing: timing,
+		timing: cmdconfig.Viper().GetString(constants.ArgTiming),
 	}
 }
 
@@ -28,6 +22,6 @@ type DisplayOption = func(config *displayConfiguration)
 // WithTimingDisabled forcefully disables display of timing data
 func WithTimingDisabled() DisplayOption {
 	return func(o *displayConfiguration) {
-		o.timing = false
+		o.timing = constants.ArgOff
 	}
 }

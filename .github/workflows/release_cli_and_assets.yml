@@ -346,6 +346,8 @@ jobs:
             test_block: migration
           - platform: macos-latest
             test_block: force_stop
+          - platform: ubuntu-latest
+            test_block: chaos_and_query
     runs-on: ${{ matrix.platform }}
     steps:
     - name: Trim asset version prefix and Validate

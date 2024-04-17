@@ -3,9 +3,12 @@ package metaquery
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	typeHelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
+	"golang.org/x/exp/maps"
 )
 
 type handler func(ctx context.Context, input *HandlerInput) error
@@ -37,9 +40,26 @@ func setMultiLine(_ context.Context, input *HandlerInput) error {
 
 // .timing
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
-func setTiming(_ context.Context, input *HandlerInput) error {
-	cmdconfig.Viper().Set(constants.ArgTiming, typeHelpers.StringToBool(input.args()[0]))
+func setTiming(ctx context.Context, input *HandlerInput) error {
+	if len(input.args()) == 0 {
+		showTimingFlag()
+		return nil
+	}
+
+	cmdconfig.Viper().Set(constants.ArgTiming, input.args()[0])
 	return nil
+}
+
+func showTimingFlag() {
+	timing := cmdconfig.Viper().GetString(constants.ArgTiming)
+
+	fmt.Printf(`Timing is %s. Available options are: %s`,
+		constants.Bold(timing),
+		constants.Bold(strings.Join(maps.Keys(constants.QueryTimingValueLookup), ", ")))
+	// add an empty line here so that the rendering buffer can start from the next line
+	fmt.Println()
+
+	return
 }
 
 // .separator and .output
