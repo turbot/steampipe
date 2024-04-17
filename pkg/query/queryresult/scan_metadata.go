@@ -21,7 +21,6 @@ type ScanMetadataRow struct {
 }
 
 func NewScanMetadataRow(connection string, table string, columns []string, quals map[string]*proto.Quals, startTime time.Time, diration time.Duration, limit int64, m *proto.QueryMetadata) ScanMetadataRow {
-
 	res := ScanMetadataRow{
 		Connection: connection,
 		Table:      table,
