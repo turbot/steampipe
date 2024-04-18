@@ -1,43 +1,53 @@
-[
- {
-  "array1": "(408)-589-5841",
-  "booleancolumn": true,
-  "cidrrange": "10.1.2.3/32",
-  "currency": "$922,337,203,685,477.57",
-  "date1": "1978-02-05 00:00:00",
-  "floatcolumn": 4.681642125488754,
-  "integercolumn1": 3278,
-  "integercolumn2": 21445454,
-  "integercolumn3": 2147483645,
-  "integercolumn4": 92233720368547758,
-  "integercolumn5": 922337203685477580,
-  "interval1": "1 year 2 mons 3 days ",
-  "ipaddress": "192.168.0.0",
-  "jsondata": {
-   "customer": "John Doe",
-   "items": {
-    "product": "Beer",
-    "qty": 6
+{
+  "rows": [
+   {
+    "array1": "(408)-589-5841",
+    "booleancolumn": true,
+    "cidrrange": "10.1.2.3/32",
+    "currency": "$922,337,203,685,477.57",
+    "date1": "1978-02-05 00:00:00",
+    "floatcolumn": 4.681642125488754,
+    "integercolumn1": 3278,
+    "integercolumn2": 21445454,
+    "integercolumn3": 2147483645,
+    "integercolumn4": 92233720368547758,
+    "integercolumn5": 922337203685477580,
+    "interval1": "1 year 2 mons 3 days ",
+    "ipaddress": "192.168.0.0",
+    "jsondata": {
+     "customer": "John Doe",
+     "items": {
+      "product": "Beer",
+      "qty": 6
+     }
+    },
+    "jsondata2": {
+     "customer": "John Doe",
+     "items": {
+      "product": "Beer",
+      "qty": 6
+     }
+    },
+    "macaddress": "08:00:2b:01:02:03",
+    "nullcolumn": null,
+    "numericcolumn": "23.5142",
+    "realcolumn": 4660.338,
+    "textcolumn1": "Yes                 ",
+    "textcolumn2": "test for varchar",
+    "textcolumn3": "This is a very long text for the PostgreSQL text column",
+    "time1": "08:00:00",
+    "timestamp1": "2016-06-22 19:10:25",
+    "timestamp2": "2016-06-23T07:40:25+05:30",
+    "uuidcolumn": "6948df80-14bd-4e04-8842-7668d9c001f5",
+    "xmldata": "<book><title>Manual</title><chapter>...</chapter></book>"
    }
-  },
-  "jsondata2": {
-   "customer": "John Doe",
-   "items": {
-    "product": "Beer",
-    "qty": 6
-   }
-  },
-  "macaddress": "08:00:2b:01:02:03",
-  "nullcolumn": null,
-  "numericcolumn": "23.5142",
-  "realcolumn": 4660.338,
-  "textcolumn1": "Yes                 ",
-  "textcolumn2": "test for varchar",
-  "textcolumn3": "This is a very long text for the PostgreSQL text column",
-  "time1": "08:00:00",
-  "timestamp1": "2016-06-22 19:10:25",
-  "timestamp2": "2016-06-23T02:10:25Z",
-  "uuidcolumn": "6948df80-14bd-4e04-8842-7668d9c001f5",
-  "xmldata": "<book><title>Manual</title><chapter>...</chapter></book>"
+  ],
+  "metadata": {
+   "Duration": 2523750,
+   "scans": [],
+   "rows_returned": 1,
+   "rows_fetched": 0,
+   "hydrate_calls": 0
+  }
  }
-]
+ 

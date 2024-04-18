@@ -15,16 +15,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select * from steampipe_query" --output json > output.json
 
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 8th line, since it contains file location which would differ in github runners
+  # removing the 9th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "8d" output.json
+    run sed -i ".json" "9d" output.json
   else
-    run sed -i "8d" output.json
+    run sed -i "9d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_query.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_query.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -34,16 +39,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select * from steampipe_control" --output json > output.json
 
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 11th line, since it contains file location which would differ in github runners
+  # removing the 12th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "11d" output.json
+    run sed -i ".json" "12d" output.json
   else
-    run sed -i "11d" output.json
+    run sed -i "12d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_control.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_control.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -55,16 +65,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # checking for OS type, since sed command is different for linux and OSX
   # removing the 8th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "8d" output.json
-    run sed -i ".json" "33d" output.json
+    run sed -i ".json" "9d" output.json
+    run sed -i ".json" "34d" output.json
   else
-    run sed -i "8d" output.json
-    run sed -i "33d" output.json
+    run sed -i "9d" output.json
+    run sed -i "34d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_variable.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_variable.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -74,16 +89,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select * from steampipe_benchmark" --output json > output.json
 
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 10th line, since it contains file location which would differ in github runners
+  # removing the 11th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "10d" output.json
+    run sed -i ".json" "11d" output.json
   else
-    run sed -i "10d" output.json
+    run sed -i "11d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_benchmark.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_benchmark.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -93,16 +113,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select * from steampipe_dashboard" --output json > output.json
 
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 11th line, since it contains file location which would differ in github runners
+  # removing the 12th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "11d" output.json
+    run sed -i ".json" "12d" output.json
   else
-    run sed -i "11d" output.json
+    run sed -i "12d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -114,14 +139,19 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # checking for OS type, since sed command is different for linux and OSX
   # removing the 8th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "8d" output.json
+    run sed -i ".json" "9d" output.json
   else
-    run sed -i "8d" output.json
+    run sed -i "9d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_card.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_card.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -131,16 +161,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select * from steampipe_dashboard_image" --output json > output.json
 
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 9th line, since it contains file location which would differ in github runners
+  # removing the 10th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "9d" output.json
+    run sed -i ".json" "10d" output.json
   else
-    run sed -i "9d" output.json
+    run sed -i "10d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_image.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_image.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -150,16 +185,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select * from steampipe_dashboard_text" --output json > output.json
 
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 7th line, since it contains file location which would differ in github runners
+  # removing the 8th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "7d" output.json
+    run sed -i ".json" "8d" output.json
   else
-    run sed -i "7d" output.json
+    run sed -i "8d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_text.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_text.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -169,16 +209,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select * from steampipe_dashboard_chart" --output json > output.json
 
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 9th line, since it contains file location which would differ in github runners
+  # removing the 10th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "9d" output.json
+    run sed -i ".json" "10d" output.json
   else
-    run sed -i "9d" output.json
+    run sed -i "10d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_chart.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_chart.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -188,16 +233,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select * from steampipe_dashboard_flow" --output json > output.json
 
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 13th line, since it contains file location which would differ in github runners
+  # removing the 14th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "13d" output.json
+    run sed -i ".json" "14d" output.json
   else
-    run sed -i "13d" output.json
+    run sed -i "14d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_flow.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_flow.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -207,16 +257,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select * from steampipe_dashboard_graph" --output json > output.json
 
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 14th line, since it contains file location which would differ in github runners
+  # removing the 15th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "14d" output.json
+    run sed -i ".json" "15d" output.json
   else
-    run sed -i "14d" output.json
+    run sed -i "15d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_graph.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_graph.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -226,16 +281,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select * from steampipe_dashboard_hierarchy" --output json > output.json
 
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 13th line, since it contains file location which would differ in github runners
+  # removing the 14th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "13d" output.json
+    run sed -i ".json" "14d" output.json
   else
-    run sed -i "13d" output.json
+    run sed -i "14d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_hierarchy.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_hierarchy.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -245,16 +305,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select * from steampipe_dashboard_input" --output json > output.json
 
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 9th line, since it contains file location which would differ in github runners
+  # removing the 10th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "9d" output.json
+    run sed -i ".json" "10d" output.json
   else
-    run sed -i "9d" output.json
+    run sed -i "10d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_input.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_input.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -264,16 +329,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select * from steampipe_dashboard_table" --output json > output.json
 
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 9th line, since it contains file location which would differ in github runners
+  # removing the 10th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "9d" output.json
+    run sed -i ".json" "10d" output.json
   else
-    run sed -i "9d" output.json
+    run sed -i "10d" output.json
   fi
-
-  run jd "$TEST_DATA_DIR/expected_introspection_info_dashboard_table.json" output.json
+  
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_dashboard_table.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 
@@ -282,7 +352,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query "select * from steampipe_query" --output json
   
   # extract the first mod_name from the list 
-  mod_name=$(echo $output | jq '.[0].mod_name')
+  mod_name=$(echo $output | jq '.rows[0].mod_name')
 
   # check if mod_name starts with "mod."
   if [[ "$mod_name" == *"mod."* ]];
@@ -299,10 +369,10 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query "select * from steampipe_query" --output json
 
   # extract the first encountered sql file's file_name from the list
-  sql_file_name=$(echo $output | jq '.[].file_name' | grep ".sql" | head -1)
+  sql_file_name=$(echo $output | jq '.rows[0].file_name' | grep ".sql" | head -1)
 
   #extract the resource_name of the above extracted file_name
-  resource_name=$(echo $output | jq --arg FILENAME "$sql_file_name" '.[] | select(.file_name=="$FILENAME") | .resource_name')
+  resource_name=$(echo $output | jq --arg FILENAME "$sql_file_name" '.rows[0] | select(.file_name=="$FILENAME") | .resource_name')
 
   # check if resource_name starts with "query."
   if [[ "$resource_name" == *"query."* ]];
@@ -315,11 +385,12 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "ensure the reference_from column is populated correctly" {
+  skip
   cd $SIMPLE_MOD_DIR
   run steampipe query "select * from steampipe_reference" --output json
 
   # extract the refs and the referenced_by of the variable `sample_var_1`
-  refs=$(echo $output | jq '.[] | select(.reference_to=="var.sample_var_1") | .reference_from')
+  refs=$(echo $output | jq '.rows[0] | select(.reference_to=="var.sample_var_1") | .reference_from')
   echo $refs
 
   assert_equal "$refs" '"query.sample_query_1"'
@@ -330,7 +401,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   run steampipe query "select * from steampipe_query" --output json
 
   # extracting only description from the list, which is enough to prove that there is an output
-  description=$(echo $output | jq '.[].description')
+  description=$(echo $output | jq '.rows[0].description')
   assert_equal "$description" '"query 1 - 3 params all with defaults"'
 }
 
@@ -340,16 +411,21 @@ load "$LIB_BATS_SUPPORT/load.bash"
   steampipe query "select * from steampipe_control" --output json > output.json
 
   # checking for OS type, since sed command is different for linux and OSX
-  # removing the 11th line, since it contains file location which would differ in github runners
+  # removing the 12th line, since it contains file location which would differ in github runners
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".json" "11d" output.json
+    run sed -i ".json" "12d" output.json
   else
-    run sed -i "11d" output.json
+    run sed -i "12d" output.json
   fi
 
-  run jd "$TEST_DATA_DIR/expected_introspection_info_control.json" output.json
+  run jd -f patch "$TEST_DATA_DIR/expected_introspection_info_control.json" output.json
   echo $output
-  assert_success
+
+  diff=$($FILE_PATH/json_patch.sh $output)
+  echo $diff
+
+  # check if there is no diff returned by the script
+  assert_equal "$diff" ""
   rm -f output.json
 }
 

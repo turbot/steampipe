@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/thediveo/enumflag/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -30,6 +31,12 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
+
+// variable used to assign the timing mode flag
+var queryTimingMode = constants.QueryTimingModeOff
+
+// variable used to assign the output mode flag
+var queryOutputMode = constants.QueryOutputModeTable
 
 func queryCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -78,8 +85,13 @@ Examples:
 		AddBoolFlag(constants.ArgHelp, false, "Help for query", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddBoolFlag(constants.ArgHeader, true, "Include column headers csv and table output").
 		AddStringFlag(constants.ArgSeparator, ",", "Separator string for csv output").
-		AddStringFlag(constants.ArgOutput, "table", "Output format: line, csv, json, table or snapshot").
-		AddBoolFlag(constants.ArgTiming, false, "Turn on the timer which reports query time").
+		AddVarFlag(enumflag.New(&queryOutputMode, constants.ArgOutput, constants.QueryOutputModeIds, enumflag.EnumCaseInsensitive),
+			constants.ArgOutput,
+			fmt.Sprintf("Output format; one of: %s", strings.Join(constants.FlagValues(constants.QueryOutputModeIds), ", "))).
+		AddVarFlag(enumflag.New(&queryTimingMode, constants.ArgTiming, constants.QueryTimingModeIds, enumflag.EnumCaseInsensitive),
+			constants.ArgTiming,
+			fmt.Sprintf("Display query timing; one of: %s", strings.Join(constants.FlagValues(constants.QueryTimingModeIds), ", ")),
+			cmdconfig.FlagOptions.NoOptDefVal(constants.ArgOn)).
 		AddBoolFlag(constants.ArgWatch, true, "Watch SQL files in the current workspace (works only in interactive mode)").
 		AddStringSliceFlag(constants.ArgSearchPath, nil, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, nil, "Set a prefix to the current search path for a query session (comma-separated)").

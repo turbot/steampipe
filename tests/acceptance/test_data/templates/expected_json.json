@@ -1,16 +1,47 @@
-[
- {
-  "id": 0,
-  "json_column": {
-   "Id": 0,
-   "Name": "stringValuesomething-0",
-   "Statement": {
-    "Action": "iam:GetContextKeysForCustomPolicy",
-    "Effect": "Allow"
+{
+  "rows": [
+   {
+    "id": 0,
+    "json_column": {
+     "Id": 0,
+     "Name": "stringValuesomething-0",
+     "Statement": {
+      "Action": "iam:GetContextKeysForCustomPolicy",
+      "Effect": "Allow"
+     }
+    },
+    "string_column": "stringValuesomething-0"
    }
-  },
-  "string_column": "stringValuesomething-0"
+  ],
+  "metadata": {
+   "Duration": 51849333,
+   "scans": [
+    {
+     "connection": "chaos",
+     "table": "chaos_all_column_types",
+     "cache_hit": false,
+     "rows_fetched": 100,
+     "hydrate_calls": 100,
+     "start_time": "2024-04-11T11:53:34+05:30",
+     "duration": 13,
+     "columns": [
+      "id",
+      "string_column",
+      "json_column"
+     ],
+     "limit": null,
+     "quals": [
+      {
+       "column": "id",
+       "operator": "=",
+       "value": 0
+      }
+     ]
+    }
+   ],
+   "rows_returned": 1,
+   "rows_fetched": 100,
+   "hydrate_calls": 100
+  }
  }
-]
-
-
+ 

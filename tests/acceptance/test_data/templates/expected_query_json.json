@@ -1,6 +1,16 @@
-[
- {
-  "col": 2,
-  "val": 1
+{
+  "rows": [
+   {
+    "col": 2,
+    "val": 1
+   }
+  ],
+  "metadata": {
+   "Duration": 149041,
+   "scans": [],
+   "rows_returned": 1,
+   "rows_fetched": 0,
+   "hydrate_calls": 0
+  }
  }
-]
+ 

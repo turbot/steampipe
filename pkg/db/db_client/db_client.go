@@ -3,12 +3,12 @@ package db_client
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgconn"
 	"log"
 	"strings"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -54,9 +54,6 @@ type DbClient struct {
 	searchPathPrefix []string
 	// the default user search path
 	userSearchPath []string
-	// a cached copy of (viper.GetBool(constants.ArgTiming) && viper.GetString(constants.ArgOutput) == constants.OutputFormatTable)
-	// (cached to avoid concurrent access error on viper)
-	showTimingFlag bool
 	// disable timing - set whilst in process of querying the timing
 	disableTiming        bool
 	onConnectionCallback DbConnectionCallback
@@ -148,20 +145,19 @@ func (c *DbClient) loadServerSettings(ctx context.Context) error {
 	return nil
 }
 
-func (c *DbClient) setShouldShowTiming(ctx context.Context, session *db_common.DatabaseSession) {
-	currentShowTimingFlag := viper.GetBool(constants.ArgTiming)
-
-	// if we are turning timing ON, fetch the ScanMetadataMaxId
-	// to ensure we only select the relevant scan metadata table entries
-	if currentShowTimingFlag && !c.showTimingFlag {
-		c.updateScanMetadataMaxId(ctx, session)
+func (c *DbClient) shouldFetchTiming() bool {
+	// check for override flag (this is to prevent timing being fetched when we read the timing metadata table)
+	if c.disableTiming {
+		return false
 	}
+	// only fetch timing if timing flag is set, or output is JSON
+	return (viper.GetString(constants.ArgTiming) != constants.ArgOff) ||
+		(viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON)
 
-	c.showTimingFlag = currentShowTimingFlag
 }
-
-func (c *DbClient) shouldShowTiming() bool {
-	return c.showTimingFlag && !c.disableTiming
+func (c *DbClient) shouldFetchVerboseTiming() bool {
+	return (viper.GetString(constants.ArgTiming) == constants.ArgVerbose) ||
+		(viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON)
 }
 
 // ServerSettings returns the settings of the steampipe service that this DbClient is connected to

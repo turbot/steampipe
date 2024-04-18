@@ -78,7 +78,7 @@ type CreateDbOptions struct {
 // the provided username
 // if the database is not provided (empty), it connects to the default database in the service
 // that was created during installation.
-// NOTE: no session data callback is used - no session data will be present
+// NOTE: this connection will use the ServiceConnectionAppName
 func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn, error) {
 	utils.LogTime("db.CreateLocalDbConnection start")
 	defer utils.LogTime("db.CreateLocalDbConnection end")
@@ -95,6 +95,7 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 
 	// set an app name so that we can track database connections from this Steampipe execution
 	// this is used to determine whether the database can safely be closed
+	// and also in pipes to allow accurate usage tracking (it excludes system calls)
 	connConfig.Config.RuntimeParams = map[string]string{
 		constants.RuntimeParamsKeyApplicationName: runtime.ServiceConnectionAppName,
 	}
@@ -114,7 +115,8 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 	return conn, nil
 }
 
-// CreateConnectionPool
+// CreateConnectionPool creates a connection pool using the provided options
+// NOTE: this connection pool will use the ServiceConnectionAppName
 func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnections int) (*pgxpool.Pool, error) {
 	utils.LogTime("db_client.establishConnectionPool start")
 	defer utils.LogTime("db_client.establishConnectionPool end")

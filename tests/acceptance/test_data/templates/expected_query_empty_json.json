@@ -1,3 +1,11 @@
-[]
-
-
+{
+  "rows": [],
+  "metadata": {
+   "Duration": 377083,
+   "scans": [],
+   "rows_returned": 0,
+   "rows_fetched": 0,
+   "hydrate_calls": 0
+  }
+ }
+ 

@@ -397,7 +397,7 @@ func (c *InteractiveClient) executeQuery(ctx context.Context, queryCtx context.C
 	if err != nil {
 		error_helpers.ShowError(ctx, error_helpers.HandleCancelError(err))
 		// if timing flag is enabled, show the time taken for the query to fail
-		if cmdconfig.Viper().GetBool(constants.ArgTiming) {
+		if cmdconfig.Viper().GetString(constants.ArgTiming) != constants.ArgOff {
 			display.DisplayErrorTiming(t)
 		}
 	} else {

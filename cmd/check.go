@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/thediveo/enumflag/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -25,6 +26,12 @@ import (
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/workspace"
 )
+
+// variable used to assign the timing mode flag
+var checkTimingMode = constants.CheckTimingModeOff
+
+// variable used to assign the output mode flag
+var checkOutputMode = constants.CheckOutputModeText
 
 func checkCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -63,8 +70,13 @@ You may specify one or more benchmarks or controls to run (separated by a space)
 		AddBoolFlag(constants.ArgHeader, true, "Include column headers for csv and table output").
 		AddBoolFlag(constants.ArgHelp, false, "Help for check", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddStringFlag(constants.ArgSeparator, ",", "Separator string for csv output").
-		AddStringFlag(constants.ArgOutput, constants.OutputFormatText, "Output format: brief, csv, html, json, md, text, snapshot or none").
-		AddBoolFlag(constants.ArgTiming, false, "Turn on the timer which reports check time").
+		AddVarFlag(enumflag.New(&checkOutputMode, constants.ArgOutput, constants.CheckOutputModeIds, enumflag.EnumCaseInsensitive),
+			constants.ArgOutput,
+			fmt.Sprintf("Output format; one of: %s", strings.Join(constants.FlagValues(constants.CheckOutputModeIds), ", "))).
+		AddVarFlag(enumflag.New(&checkTimingMode, constants.ArgTiming, constants.CheckTimingModeIds, enumflag.EnumCaseInsensitive),
+			constants.ArgTiming,
+			fmt.Sprintf("Display timing information; one of: %s", strings.Join(constants.FlagValues(constants.CheckTimingModeIds), ", ")),
+			cmdconfig.FlagOptions.NoOptDefVal(constants.CheckTimingModeIds[checkTimingMode][0])).
 		AddStringSliceFlag(constants.ArgSearchPath, nil, "Set a custom search_path for the steampipe user for a check session (comma-separated)").
 		AddStringSliceFlag(constants.ArgSearchPathPrefix, nil, "Set a prefix to the current search path for a check session (comma-separated)").
 		AddStringFlag(constants.ArgTheme, "dark", "Set the output theme for 'text' output: light, dark or plain").
@@ -378,8 +390,8 @@ func printTiming(tree *controlexecute.ExecutionTree) {
 
 func shouldPrintTiming() bool {
 	outputFormat := viper.GetString(constants.ArgOutput)
-
-	return (viper.GetBool(constants.ArgTiming) && !viper.GetBool(constants.ArgDryRun)) &&
+	timingMode := viper.GetString(constants.ArgTiming)
+	return (timingMode != constants.ArgOff && !viper.GetBool(constants.ArgDryRun)) &&
 		(outputFormat == constants.OutputFormatText || outputFormat == constants.OutputFormatBrief)
 }
 
