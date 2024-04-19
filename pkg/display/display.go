@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 	"unicode"
@@ -491,14 +492,7 @@ func getVerboseTimingString(sb *strings.Builder, p *message.Printer, timingResul
 		if scan.CacheHit {
 			cacheString = " (cached)"
 		}
-		qualsString := ""
-		if len(scan.Quals) > 0 {
-			qualsJson, err := json.Marshal(scan.Quals)
-			if err != nil {
-				return err
-			}
-			qualsString = fmt.Sprintf(" Quals: %s.", string(qualsJson))
-		}
+		qualsString := formatQuals(scan)
 		limitString := ""
 		if scan.Limit != nil {
 			limitString = fmt.Sprintf(" Limit: %d.", *scan.Limit)
@@ -507,12 +501,62 @@ func getVerboseTimingString(sb *strings.Builder, p *message.Printer, timingResul
 		timeString := getDurationString(scan.DurationMs, p)
 		rowsFetchedString := p.Sprintf("%d", scan.RowsFetched)
 
-		sb.WriteString(fmt.Sprintf("  %d) Table: %s. Connection: %s. Time: %s. Rows fetched: %s%s. Hydrate calls: %d.%s%s\n", scanCount, scan.Table, scan.Connection, timeString, rowsFetchedString, cacheString, scan.HydrateCalls, qualsString, limitString))
+		sb.WriteString(fmt.Sprintf("  %d) %s.%s: Time: %s. Fetched: %s%s. Hydrates: %d.%s%s\n", scanCount, scan.Table, scan.Connection, timeString, rowsFetchedString, cacheString, scan.HydrateCalls, qualsString, limitString))
 	}
 	if emptyScanCount > 0 {
+
 		sb.WriteString(fmt.Sprintf("  %d…%d) Zero rows fetched.\n", scanCount+1, scanCount+emptyScanCount))
 	}
 	return nil
+}
+
+func formatQuals(scan *queryresult.ScanMetadataRow) string {
+	if len(scan.Quals) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+	for _, qual := range scan.Quals {
+		operator := qual.Operator
+		valueStr := formatQualValue(qual.Value)
+
+		if operator == "=" {
+
+			// Use reflection to check if qual.Value is an array or a slice
+			val := reflect.ValueOf(qual.Value)
+
+			if val.Kind() == reflect.Array || val.Kind() == reflect.Slice {
+				// Change operator to IN if it was "=" and the value is an array or slice
+				if operator == "=" {
+					operator = " IN "
+				}
+
+				// Build the string of array elements
+				valueElements := make([]string, val.Len())
+				for i := 0; i < val.Len(); i++ {
+					valueElements[i] = fmt.Sprintf("%s", formatQualValue(val.Index(i).Interface()))
+				}
+				valueStr = fmt.Sprintf("(%s)", strings.Join(valueElements, ", "))
+			} else {
+				// Use the original value if it's not an array or slice
+				valueStr = fmt.Sprintf("%v", qual.Value)
+			}
+		}
+
+		b.WriteString(fmt.Sprintf("%s%s%s, ", qual.Column, operator, valueStr))
+	}
+
+	// Remove the trailing comma and space
+	trimmedResult := strings.TrimRight(b.String(), ", ")
+
+	return fmt.Sprintf(" Quals: %s.", trimmedResult)
+}
+
+func formatQualValue(val any) string {
+	if str, ok := val.(string); ok {
+		return fmt.Sprintf("'%s'", str)
+	}
+	return fmt.Sprintf("%v", val)
 }
 
 type displayResultsFunc func(row []interface{}, result *queryresult.Result)
