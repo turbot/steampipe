@@ -13,6 +13,7 @@ func ungzip(sourceFile string, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer r.Close()
 
 	uncompressedStream, err := gzip.NewReader(r)
 	if err != nil {
