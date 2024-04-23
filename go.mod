@@ -52,7 +52,7 @@ require (
 	github.com/stevenle/topsort v0.2.0
 	github.com/thediveo/enumflag/v2 v2.0.5
 	github.com/turbot/go-kit v0.10.0-rc.0
-	github.com/turbot/pipe-fittings v1.1.1
+	github.com/turbot/pipe-fittings v1.1.2
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.10.0
 	github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7
