@@ -41,7 +41,7 @@ func (d *WorkspaceProfileDashboard) ConfigMap() map[string]interface{} {
 	return res
 }
 
-// Merge :: merge other options over the the top of this options object
+// Merge :: merge other options over the top of this options object
 // i.e. if a property is set in otherOptions, it takes precedence
 func (d *WorkspaceProfileDashboard) Merge(otherOptions Options) {
 	if _, ok := otherOptions.(*WorkspaceProfileDashboard); !ok {
@@ -86,7 +86,7 @@ func (d *GlobalDashboard) ConfigMap() map[string]interface{} {
 	return res
 }
 
-// Merge :: merge other options over the the top of this options object
+// Merge :: merge other options over the top of this options object
 // i.e. if a property is set in otherOptions, it takes precedence
 func (d *GlobalDashboard) Merge(otherOptions Options) {
 	switch o := otherOptions.(type) {
