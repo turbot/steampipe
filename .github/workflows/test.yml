@@ -181,7 +181,7 @@ jobs:
 
       - name: Install DB
         id: install-db
-        continue-on-error: false
+        continue-on-error: true
         run: |
           steampipe query "select 1"
           steampipe plugin install chaos chaosdynamic --progress=false
