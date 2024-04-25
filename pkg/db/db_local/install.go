@@ -502,6 +502,7 @@ func writePgHbaContent(databaseName string, username string) error {
 	return os.WriteFile(filepaths.GetPgHbaConfLocation(), []byte(content), 0600)
 }
 
+// install
 func installForeignServer(ctx context.Context, rawClient *pgx.Conn) error {
 	utils.LogTime("db_local.installForeignServer start")
 	defer utils.LogTime("db_local.installForeignServer end")
