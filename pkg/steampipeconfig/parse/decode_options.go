@@ -65,6 +65,13 @@ func decodeTimingFlag(block *hcl.Block, timingOptions options.CanSetTiming) hcl.
 	if diags.HasErrors() {
 		return diags
 	}
+	// support legacy boolean values
+	if val == cty.True {
+		val = cty.StringVal(constants.ArgOn)
+	}
+	if val == cty.False {
+		val = cty.StringVal(constants.ArgOff)
+	}
 	return timingOptions.SetTiming(val.AsString(), timingAttribute.Range())
 
 }

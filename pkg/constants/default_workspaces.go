@@ -34,7 +34,7 @@ const DefaultWorkspaceContent = `
 #     multi        = false   # true, false
 #     output       = "table" # json, csv, table, line
 #     separator    = ","     # any single char
-#     timing       = true   # true, false
+#     timing       = on   # off, on, verbose
 #   }
 # 
 #   options "check" {
