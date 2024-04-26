@@ -311,7 +311,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, macos-latest]
+        platform: [ubuntu-latest, macos-13]
         test_block:
           - "migration"
           - "brew"
@@ -342,9 +342,9 @@ jobs:
           - "exit_codes"
           - "force_stop"
         exclude:
-          - platform: macos-latest
+          - platform: macos-13
             test_block: migration
-          - platform: macos-latest
+          - platform: macos-13
             test_block: force_stop
           - platform: ubuntu-latest
             test_block: chaos_and_query
@@ -393,7 +393,7 @@ jobs:
 
     - name: Download Darwin Build Artifacts
       uses: actions/download-artifact@v4
-      if: ${{ matrix.platform == 'macos-latest' }}
+      if: ${{ matrix.platform == 'macos-13' }}
       with:
         name: build-artifact-darwin
         path: ~/artifacts
@@ -405,7 +405,7 @@ jobs:
         tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
     - name: Extract Darwin Artifacts and Install Binary
-      if: ${{ matrix.platform == 'macos-latest' }}
+      if: ${{ matrix.platform == 'macos-13' }}
       run: |
         mkdir ~/build
         unzip ~/artifacts/darwin.zip -d ~/build
