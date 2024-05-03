@@ -1,3 +1,17 @@
+
+## v0.23.0 [tbd]
+_Whats new_
+- Add support for pushing down sort order. ([#447](https://github.com/turbot/steampipe-postgres-fdw/issues/447))
+- Update limit pushdown logic to push down the limit if all sort clauses are pushed down. ([#458](https://github.com/turbot/steampipe-postgres-fdw/issues/458))
+- Add support for WHERE column=val1 OR column=val2 OR column=val3...
+- Adds support for verbose timing information. ([#4244](https://github.com/turbot/steampipe/issues/4244))
+- Migrate from plugin registry from GCP to GHCR. ([#4232](https://github.com/turbot/steampipe/issues/4232))
+
+_Bug fixes_
+- Fix hang when timing disabled. ([#4237](https://github.com/turbot/steampipe/issues/4237))
+- Add signal handler for signal 16 to avoid FDW crash.  ([#457](https://github.com/turbot/steampipe-postgres-fdw/issues/457))
+
+
 ## v0.22.2 [2024-04-05]
 _Bug fixes_
 * Fix issue where daily update check message showed a <nil> when there was no message to show. ([#4206](https://github.com/turbot/steampipe/issues/4206))
