@@ -1,16 +1,23 @@
 
-## v0.23.0 [tbd]
+## v0.23.0 [2024-05-09]
 _Whats new_
+- Add support for connection key columns. ([#768](https://github.com/turbot/steampipe-plugin-sdk/issues/768))
+  
+
+A `ConnectionKeyColumn` defines a column that has a value which maps 1-1 to a Steampipe connection
+    and so can be used to filter connections when executing an aggregator query. 
+
+These columns are treated as (optional) KeyColumns. This means they are taken into account in the query planning.
+
 - Add support for pushing down sort order. ([#447](https://github.com/turbot/steampipe-postgres-fdw/issues/447))
 - Update limit pushdown logic to push down the limit if all sort clauses are pushed down. ([#458](https://github.com/turbot/steampipe-postgres-fdw/issues/458))
-- Add support for WHERE column=val1 OR column=val2 OR column=val3...
+- Add support for `WHERE column=val1 OR column=val2 OR column=val3...`
 - Adds support for verbose timing information. ([#4244](https://github.com/turbot/steampipe/issues/4244))
 - Migrate from plugin registry from GCP to GHCR. ([#4232](https://github.com/turbot/steampipe/issues/4232))
 
 _Bug fixes_
 - Fix hang when timing disabled. ([#4237](https://github.com/turbot/steampipe/issues/4237))
 - Add signal handler for signal 16 to avoid FDW crash.  ([#457](https://github.com/turbot/steampipe-postgres-fdw/issues/457))
-
 
 ## v0.22.2 [2024-04-05]
 _Bug fixes_
