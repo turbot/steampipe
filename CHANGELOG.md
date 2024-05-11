@@ -1,4 +1,9 @@
 
+## v0.23.1 [2024-05-11]
+_Bug fixes_
+- Update FDW to 1.11.1 to fix bad Linux Arm build. ([#4271](https://github.com/turbot/steampipe/issues/4271))
+- Update hydrates count in timing verbose mode to use integer formatting(e.g. 119,138).  ([#4270](https://github.com/turbot/steampipe/issues/4270))
+
 ## v0.23.0 [2024-05-09]
 _Whats new_
 - Add support for connection key columns. ([#768](https://github.com/turbot/steampipe-plugin-sdk/issues/768))
