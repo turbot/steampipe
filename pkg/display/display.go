@@ -495,13 +495,13 @@ func getVerboseTimingString(sb *strings.Builder, p *message.Printer, timingResul
 		qualsString := formatQuals(scan)
 		limitString := ""
 		if scan.Limit != nil {
-			limitString = fmt.Sprintf(" Limit: %d.", *scan.Limit)
+			limitString = p.Sprintf(" Limit: %d.", *scan.Limit)
 		}
 
 		timeString := getDurationString(scan.DurationMs, p)
 		rowsFetchedString := p.Sprintf("%d", scan.RowsFetched)
 
-		sb.WriteString(fmt.Sprintf("  %d) %s.%s: Time: %s. Fetched: %s%s. Hydrates: %d.%s%s\n", scanCount, scan.Table, scan.Connection, timeString, rowsFetchedString, cacheString, scan.HydrateCalls, qualsString, limitString))
+		sb.WriteString(p.Sprintf("  %d) %s.%s: Time: %s. Fetched: %s%s. Hydrates: %d.%s%s\n", scanCount, scan.Table, scan.Connection, timeString, rowsFetchedString, cacheString, scan.HydrateCalls, qualsString, limitString))
 	}
 	if emptyScanCount > 0 {
 
