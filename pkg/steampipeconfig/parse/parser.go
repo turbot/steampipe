@@ -2,12 +2,13 @@ package parse
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
+
+	"github.com/turbot/steampipe/pkg/filepaths"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
@@ -29,7 +30,7 @@ func LoadFileData(paths ...string) (map[string][]byte, hcl.Diagnostics) {
 
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
+				Severity: hcl.DiagWarning,
 				Summary:  fmt.Sprintf("failed to read config file %s", configPath),
 				Detail:   err.Error()})
 			continue
