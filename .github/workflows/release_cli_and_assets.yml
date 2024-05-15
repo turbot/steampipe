@@ -459,7 +459,7 @@ jobs:
       - name: Install Dependencies and Test
         run: |
           docker exec ubuntu-24-test apt-get update
-          docker exec ubuntu-24-test apt-get install -y tar
+          docker exec ubuntu-24-test apt-get install -y tar ca-certificates
           docker exec ubuntu-24-test tar -xzf /artifacts/linux.tar.gz -C /usr/local/bin
           # Ensure the binary is executable
           docker exec ubuntu-24-test chmod +x /usr/local/bin/steampipe
