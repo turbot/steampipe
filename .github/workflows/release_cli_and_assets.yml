@@ -463,13 +463,15 @@ jobs:
           docker exec ubuntu-24-test tar -xzf /artifacts/linux.tar.gz -C /usr/local/bin
           # Ensure the binary is executable
           docker exec ubuntu-24-test chmod +x /usr/local/bin/steampipe
+          # Create user, since steampipe cannot be run as root
+          docker exec ubuntu-24-test useradd -m steampipe
           # Check the binary is executable
-          docker exec ubuntu-24-test steampipe --version
+          docker exec -u steampipe ubuntu-24-test steampipe --version
           # Run your tests inside the container
-          docker exec ubuntu-24-test steampipe query "select 1 as test"
-          docker exec ubuntu-24-test steampipe plugin install steampipe
-          docker exec ubuntu-24-test steampipe plugin list
-          docker exec ubuntu-24-test steampipe query "select name from steampipe_registry_plugin limit 10;"
+          docker exec -u steampipe ubuntu-24-test steampipe query "select 1 as test"
+          docker exec -u steampipe ubuntu-24-test steampipe plugin install steampipe
+          docker exec -u steampipe ubuntu-24-test steampipe plugin list
+          docker exec -u steampipe ubuntu-24-test steampipe query "select name from steampipe_registry_plugin limit 10;"
   
       - name: Stop and Remove Container
         run: |
