@@ -314,139 +314,139 @@ jobs:
         if-no-files-found: error
         overwrite: true
 
-  # run_acceptance_tests:
-  #   name: Acceptance tests
-  #   needs: [create_test_build,build_and_release_assets]
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       platform: [ubuntu-latest, macos-13]
-  #       test_block:
-  #         - "migration"
-  #         - "brew"
-  #         - "installation"
-  #         - "plugin"
-  #         - "service"
-  #         - "settings"
-  #         - "ssl"
-  #         - "blank_aggregators"
-  #         - "search_path"
-  #         - "chaos_and_query"
-  #         - "dynamic_schema"
-  #         - "dynamic_aggregators"
-  #         - "cache"
-  #         - "mod_install"
-  #         - "mod_vars"
-  #         - "mod"
-  #         - "mod_require"
-  #         - "check"
-  #         - "performance"
-  #         - "config_precedence"
-  #         - "introspection"
-  #         - "cloud"
-  #         - "snapshot"
-  #         - "dashboard"
-  #         - "dashboard_parsing_validation"
-  #         - "schema_cloning"
-  #         - "exit_codes"
-  #         - "force_stop"
-  #       exclude:
-  #         - platform: macos-13
-  #           test_block: migration
-  #         - platform: macos-13
-  #           test_block: force_stop
-  #         - platform: ubuntu-latest
-  #           test_block: chaos_and_query
-  #   runs-on: ${{ matrix.platform }}
-  #   steps:
-  #   - name: Trim asset version prefix and Validate
-  #     run: |-
-  #       echo $VERSION
-  #       trim=${VERSION#"v"}
-  #       echo $trim
-  #       if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-  #         echo "Version OK: $trim"
-  #       else
-  #         echo "Invalid version: $trim"
-  #         exit 1
-  #       fi
-  #       echo "VERSION=${trim}" >> $GITHUB_ENV
+  run_acceptance_tests:
+    name: Acceptance tests
+    needs: [create_test_build,build_and_release_assets]
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-latest, macos-13]
+        test_block:
+          - "migration"
+          - "brew"
+          - "installation"
+          - "plugin"
+          - "service"
+          - "settings"
+          - "ssl"
+          - "blank_aggregators"
+          - "search_path"
+          - "chaos_and_query"
+          - "dynamic_schema"
+          - "dynamic_aggregators"
+          - "cache"
+          - "mod_install"
+          - "mod_vars"
+          - "mod"
+          - "mod_require"
+          - "check"
+          - "performance"
+          - "config_precedence"
+          - "introspection"
+          - "cloud"
+          - "snapshot"
+          - "dashboard"
+          - "dashboard_parsing_validation"
+          - "schema_cloning"
+          - "exit_codes"
+          - "force_stop"
+        exclude:
+          - platform: macos-13
+            test_block: migration
+          - platform: macos-13
+            test_block: force_stop
+          - platform: ubuntu-latest
+            test_block: chaos_and_query
+    runs-on: ${{ matrix.platform }}
+    steps:
+    - name: Trim asset version prefix and Validate
+      run: |-
+        echo $VERSION
+        trim=${VERSION#"v"}
+        echo $trim
+        if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+          echo "Version OK: $trim"
+        else
+          echo "Invalid version: $trim"
+          exit 1
+        fi
+        echo "VERSION=${trim}" >> $GITHUB_ENV
 
-  #   - name: Checkout
-  #     uses: actions/checkout@v4
-  #     with:
-  #       submodules: true
-  #       ref: ${{ github.event.ref }}
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+        ref: ${{ github.event.ref }}
 
-  #   - name: Set up Go
-  #     uses: actions/setup-go@v5
-  #     with:
-  #       go-version: 1.21
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.21
 
-  #   - name: Setup BATS
-  #     uses: mig4/setup-bats@v1
-  #     with:
-  #       bats-version: 1.2.1
+    - name: Setup BATS
+      uses: mig4/setup-bats@v1
+      with:
+        bats-version: 1.2.1
 
-  #   - name: Prepare for downloads
-  #     id: prepare-for-downloads
-  #     run: |
-  #       mkdir ~/artifacts
+    - name: Prepare for downloads
+      id: prepare-for-downloads
+      run: |
+        mkdir ~/artifacts
 
-  #   - name: Download Linux Build Artifacts
-  #     uses: actions/download-artifact@v4
-  #     if: ${{ matrix.platform == 'ubuntu-latest' }}
-  #     with:
-  #       name: build-artifact-linux
-  #       path: ~/artifacts
+    - name: Download Linux Build Artifacts
+      uses: actions/download-artifact@v4
+      if: ${{ matrix.platform == 'ubuntu-latest' }}
+      with:
+        name: build-artifact-linux
+        path: ~/artifacts
 
-  #   - name: Download Darwin Build Artifacts
-  #     uses: actions/download-artifact@v4
-  #     if: ${{ matrix.platform == 'macos-13' }}
-  #     with:
-  #       name: build-artifact-darwin
-  #       path: ~/artifacts
+    - name: Download Darwin Build Artifacts
+      uses: actions/download-artifact@v4
+      if: ${{ matrix.platform == 'macos-13' }}
+      with:
+        name: build-artifact-darwin
+        path: ~/artifacts
 
-  #   - name: Extract Ubuntu Artifacts and Install Binary
-  #     if: ${{ matrix.platform == 'ubuntu-latest' }}
-  #     run: |
-  #       mkdir ~/build
-  #       tar -xf ~/artifacts/linux.tar.gz -C ~/build
+    - name: Extract Ubuntu Artifacts and Install Binary
+      if: ${{ matrix.platform == 'ubuntu-latest' }}
+      run: |
+        mkdir ~/build
+        tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
-  #   - name: Extract Darwin Artifacts and Install Binary
-  #     if: ${{ matrix.platform == 'macos-13' }}
-  #     run: |
-  #       mkdir ~/build
-  #       unzip ~/artifacts/darwin.zip -d ~/build
+    - name: Extract Darwin Artifacts and Install Binary
+      if: ${{ matrix.platform == 'macos-13' }}
+      run: |
+        mkdir ~/build
+        unzip ~/artifacts/darwin.zip -d ~/build
 
-  #   - name: Set PATH
-  #     run: |
-  #       echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats-core/libexec" >> $GITHUB_ENV
+    - name: Set PATH
+      run: |
+        echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats-core/libexec" >> $GITHUB_ENV
 
-  #   - name: Go install jd
-  #     run: |
-  #       go install github.com/josephburnett/jd@latest
+    - name: Go install jd
+      run: |
+        go install github.com/josephburnett/jd@latest
 
-  #   - name: Install DB
-  #     id: install-db
-  #     continue-on-error: false
-  #     run: |
-  #       steampipe service start
-  #       steampipe plugin install chaos chaosdynamic
-  #       steampipe service stop
+    - name: Install DB
+      id: install-db
+      continue-on-error: false
+      run: |
+        steampipe service start
+        steampipe plugin install chaos chaosdynamic
+        steampipe service stop
 
-  #   - name: Run Test Suite
-  #     id: run-test-suite
-  #     timeout-minutes: 15
-  #     run: |
-  #       chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
-  #       $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
-  #       steampipe service stop --force
+    - name: Run Test Suite
+      id: run-test-suite
+      timeout-minutes: 15
+      run: |
+        chmod +x $GITHUB_WORKSPACE/tests/acceptance/run.sh
+        $GITHUB_WORKSPACE/tests/acceptance/run.sh ${{ matrix.test_block }}.bats
+        steampipe service stop --force
 
   smoke_test_ubuntu_24:
     name: Smoke test on Ubuntu Latest (ubuntu 24)
     runs-on: ubuntu-latest
-    needs: [create_test_build]
+    needs: [create_test_build, build_and_release_assets]
     steps:
   
       - name: Download Linux Build Artifact
@@ -535,7 +535,7 @@ jobs:
   smoke_test_amazonlinux:
     name: Smoke test on AmazonLinux Latest (amazonlinux 2023)
     runs-on: ubuntu-latest
-    needs: [create_test_build]
+    needs: [create_test_build, build_and_release_assets]
     steps:
   
       - name: Download Linux Build Artifact
@@ -578,7 +578,7 @@ jobs:
   smoke_test_ubuntu_24_arm64:
     name: Smoke test on ARM64 Ubuntu Latest (ubuntu 24)
     runs-on: ubuntu-latest
-    needs: [create_test_build]
+    needs: [create_test_build, build_and_release_assets]
     steps:
       - name: Download Linux Build Artifact
         uses: actions/download-artifact@v4
@@ -631,7 +631,7 @@ jobs:
         
   create_release_tag:
     name: Tag Release
-    needs: [smoke_test_ubuntu_24, smoke_test_amazonlinux, smoke_test_ubuntu_24_arm64]
+    needs: [run_acceptance_tests, smoke_test_ubuntu_24, smoke_test_amazonlinux, smoke_test_ubuntu_24_arm64]
     runs-on: ubuntu-latest
     steps:
     - name: Trim asset version prefix and Validate
