@@ -576,7 +576,7 @@ jobs:
           docker rm amazonlinux-2023-test
 
   smoke_test_ubuntu_24_arm64:
-    name: Smoke test on Ubuntu Latest (ubuntu 24) ARM64
+    name: Smoke test on ARM64 Ubuntu Latest (ubuntu 24)
     runs-on: ubuntu-latest
     needs: [create_test_build]
     steps:
@@ -611,7 +611,7 @@ jobs:
           docker exec ubuntu-24-arm64-test uname -a
           docker exec ubuntu-24-arm64-test apt-get update
           docker exec ubuntu-24-arm64-test apt-get install -y tar ca-certificates
-          docker exec ubuntu-24-arm64-test tar -xzf /artifacts/linux.tar.gz -C /usr/local/bin
+          docker exec ubuntu-24-arm64-test tar -xzf /artifacts/linux-arm.tar.gz -C /usr/local/bin
           # Make the binary executable
           docker exec ubuntu-24-arm64-test chmod +x /usr/local/bin/steampipe
           # Create user, since steampipe cannot be run as root
