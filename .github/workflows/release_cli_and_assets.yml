@@ -284,6 +284,7 @@ jobs:
       run: |
         mkdir ~/artifacts
         mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
+        mv $GITHUB_WORKSPACE/dist/steampipe_linux_arm64.tar.gz ~/artifacts/linux-arm.tar.gz
         mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
 
     - name: List Build Artifacts
@@ -294,6 +295,14 @@ jobs:
       with:
         name: build-artifact-linux
         path: ~/artifacts/linux.tar.gz
+        if-no-files-found: error
+        overwrite: true
+
+    - name: Save Linux ARM Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifact-linux-arm
+        path: ~/artifacts/linux-arm.tar.gz
         if-no-files-found: error
         overwrite: true
 
@@ -574,7 +583,7 @@ jobs:
       - name: Download Linux Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: build-artifact-linux
+          name: build-artifact-linux-arm
           path: ./artifacts
   
       - name: Set up Docker Buildx
