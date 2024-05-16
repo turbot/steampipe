@@ -547,14 +547,19 @@ jobs:
   
       - name: Install Dependencies, Create User, and Test
         run: |
-          docker exec amazonlinux-2023-test yum install -y shadow-utils tar ca-certificates
+          docker exec amazonlinux-2023-test yum install -y shadow-utils tar gzip ca-certificates
           docker exec amazonlinux-2023-test useradd -m steampipe
           docker exec amazonlinux-2023-test tar -xzf /artifacts/linux.tar.gz -C /usr/local/bin
           # Ensure the binary is executable and owned by steampipe
           docker exec amazonlinux-2023-test chown steampipe:steampipe /usr/local/bin/steampipe
           docker exec amazonlinux-2023-test chmod +x /usr/local/bin/steampipe
-          # Run your tests as the steampipe user
-          docker exec -u steampipe amazonlinux-2023-test /usr/local/bin/steampipe --version # Replace this with your actual test command
+          # Check the binary is executable
+          docker exec -u steampipe amazonlinux-2023-test /usr/local/bin/steampipe --version
+          # Run your tests inside the container
+          docker exec -u steampipe amazonlinux-2023-test /usr/local/bin/steampipe query "select 1 as test"
+          docker exec -u steampipe amazonlinux-2023-test /usr/local/bin/steampipe plugin install steampipe
+          docker exec -u steampipe amazonlinux-2023-test /usr/local/bin/steampipe plugin list
+          docker exec -u steampipe amazonlinux-2023-test /usr/local/bin/steampipe query "select name from steampipe_registry_plugin limit 10;"
   
       - name: Stop and Remove Container
         run: |
