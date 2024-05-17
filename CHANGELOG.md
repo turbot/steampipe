@@ -1,3 +1,6 @@
+## v0.23.2 [2024-05-17]
+_Bug fixes_
+- Update FDW to 1.11.2 to remove unnecessary NOTICE level log messages. ([#469](https://github.com/turbot/steampipe-postgres-fdw/issues/469))
 
 ## v0.23.1 [2024-05-11]
 _Bug fixes_
