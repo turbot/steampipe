@@ -660,7 +660,7 @@ jobs:
 
       - name: Install and Test
         run: |
-          steampipie query "select 1 as test"
+          steampipe query "select 1 as test"
           steampipe plugin install steampipe
           steampipe plugin list
           steampipe query "select name from steampipe_registry_plugin limit 10;"
