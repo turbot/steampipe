@@ -490,7 +490,7 @@ jobs:
   smoke_test_centos_9:
     name: Smoke test on CentOS Latest (centos stream 9)
     runs-on: ubuntu-latest
-    needs: [create_test_build]
+    needs: [create_test_build, build_and_release_assets]
     steps:
   
       - name: Download Linux Build Artifact
