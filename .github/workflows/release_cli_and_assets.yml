@@ -652,6 +652,9 @@ jobs:
     runs-on: macos-latest
     needs: [create_test_build, build_and_release_assets]
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download Darwin Build Artifact
         uses: actions/download-artifact@v4
         with:
@@ -664,9 +667,9 @@ jobs:
 
       - name: Run Smoke tests
         run: |
-          ls -al scripts
-          chmod +x scripts/smoke_test.sh
-          scripts/smoke_test.sh
+          ls -al $GITHUB_WORKSPACE/scripts
+          chmod +x $GITHUB_WORKSPACE/scripts/smoke_test.sh
+          $GITHUB_WORKSPACE/scripts/smoke_test.sh
 
   create_release_tag:
     name: Tag Release
