@@ -314,6 +314,14 @@ jobs:
         if-no-files-found: error
         overwrite: true
 
+    - name: Save MacOS ARM Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifact-darwin-arm
+        path: ~/artifacts/darwin-arm.zip
+        if-no-files-found: error
+        overwrite: true
+
   run_acceptance_tests:
     name: Acceptance tests
     needs: [create_test_build,build_and_release_assets]
@@ -628,7 +636,34 @@ jobs:
         run: |
           docker stop ubuntu-24-arm64-test
           docker rm ubuntu-24-arm64-test
-        
+   
+  smoke_test_darwin_arm:
+    name: Smoke test on ARM64 MacOS (MacOS 14)
+    runs-on: macos-latest
+    needs: [create_test_build, build_and_release_assets]
+    steps:
+      - name: Download Darwin Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact-darwin-arm
+          path: ~/artifacts
+
+      - name: Extract Darwin Artifacts and Install Binary
+        run: |
+          mkdir ~/build
+          unzip ~/artifacts/darwin-arm.zip -d ~/build
+
+      - name: Set PATH
+        run: |
+          echo "PATH=$PATH:$HOME/build
+
+      - name: Install and Test
+        run: |
+          steampipie query "select 1 as test"
+          steampipe plugin install steampipe
+          steampipe plugin list
+          steampipe query "select name from steampipe_registry_plugin limit 10;"
+
   create_release_tag:
     name: Tag Release
     needs: [run_acceptance_tests, smoke_test_ubuntu_24, smoke_test_amazonlinux, smoke_test_centos_9, smoke_test_ubuntu_24_arm64]
