@@ -631,7 +631,7 @@ jobs:
         
   create_release_tag:
     name: Tag Release
-    needs: [run_acceptance_tests, smoke_test_ubuntu_24, smoke_test_amazonlinux, smoke_test_ubuntu_24_arm64]
+    needs: [run_acceptance_tests, smoke_test_ubuntu_24, smoke_test_amazonlinux, smoke_test_centos_9, smoke_test_ubuntu_24_arm64]
     runs-on: ubuntu-latest
     steps:
     - name: Trim asset version prefix and Validate
