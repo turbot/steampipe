@@ -644,13 +644,12 @@ jobs:
 
       - name: Get runner/container info
         run: |
-          docker exec ubuntu-24-test uname -a
-          docker exec ubuntu-24-test cat /etc/os-release
-          docker exec ubuntu-24-test ldd --version
+          docker exec ubuntu-24-arm64-test uname -a
+          docker exec ubuntu-24-arm64-test cat /etc/os-release
+          docker exec ubuntu-24-arm64-test ldd --version
 
       - name: Install dependencies, create user, and assign necessary permissions
         run: |
-          docker exec ubuntu-24-arm64-test uname -a
           docker exec ubuntu-24-arm64-test apt-get update
           docker exec ubuntu-24-arm64-test apt-get install -y tar ca-certificates jq
           docker exec ubuntu-24-arm64-test tar -xzf /artifacts/linux-arm.tar.gz -C /usr/local/bin

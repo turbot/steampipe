@@ -15,4 +15,4 @@
 
 /usr/local/bin/steampipe plugin install steampipe
 /usr/local/bin/steampipe query "select name from steampipe_registry_plugin limit 1;" --export sps # verify file export
-cat query.*.sps | jq '.end_time' # verify file is readable
+cat query.*.sps | jq '.end_time' # verify file created is readable
