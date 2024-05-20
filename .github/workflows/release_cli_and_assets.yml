@@ -576,10 +576,12 @@ jobs:
           # Ensure the script is executable
           docker exec amazonlinux-2023-test chown steampipe:steampipe /scripts/smoke_test.sh
           docker exec amazonlinux-2023-test chmod +x /scripts/smoke_test.sh
+          # List the script directory to verify
+          docker exec amazonlinux-2023-test ls -l /scripts
 
       - name: Run smoke tests
         run: |
-          docker exec -u steampipe amazonlinux-2023-test /scripts/test_script.sh
+          docker exec -u steampipe amazonlinux-2023-test /scripts/smoke_test.sh
   
       - name: Stop and Remove Container
         run: |
