@@ -487,50 +487,50 @@ jobs:
           docker stop ubuntu-24-test
           docker rm ubuntu-24-test
 
-  # smoke_test_centos_9:
-  #   name: Smoke test on CentOS Latest (centos 8.4)
-  #   runs-on: ubuntu-latest
-  #   needs: [create_test_build]
-  #   steps:
+  smoke_test_centos_9:
+    name: Smoke test on CentOS Latest (centos stream 9)
+    runs-on: ubuntu-latest
+    needs: [create_test_build]
+    steps:
   
-  #     - name: Download Linux Build Artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: build-artifact-linux
-  #         path: ./artifacts
+      - name: Download Linux Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact-linux
+          path: ./artifacts
   
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
   
-  #     - name: Pull CentOS latest image
-  #       run: docker pull centos:latest
+      - name: Pull CentOS Stream 9 image
+        run: docker pull quay.io/centos/centos:stream9
   
-  #     - name: Create and Start CentOS latest Container
-  #       run: |
-  #         docker run -d --name centos-latest-test -v ${{ github.workspace }}/artifacts:/artifacts centos:latest tail -f /dev/null
+      - name: Create and Start CentOS stream9 Container
+        run: |
+          docker run -d --name centos-stream9-test -v ${{ github.workspace }}/artifacts:/artifacts quay.io/centos/centos:stream9 tail -f /dev/null
   
-  #     - name: Install Dependencies, Create User, and Test
-  #       run: |
-  #         docker exec centos-latest-test yum install -y epel-release
-  #         docker exec centos-latest-test yum install -y tar ca-certificates
-  #         docker exec centos-latest-test tar -xzf /artifacts/linux.tar.gz -C /usr/local/bin
-  #         # Create user, since steampipe cannot be run as root
-  #         docker exec centos-latest-test useradd -m steampipe
-  #         # Ensure the binary is executable and owned by steampipe
-  #         docker exec centos-latest-test chown steampipe:steampipe /usr/local/bin/steampipe
-  #         docker exec centos-latest-test chmod +x /usr/local/bin/steampipe
-  #         # Check the binary is executable
-  #         docker exec -u steampipe centos-latest-test /usr/local/bin/steampipe --version
-  #         # Run your tests inside the container
-  #         docker exec -u steampipe centos-latest-test /usr/local/bin/steampipe query "select 1 as test"
-  #         docker exec -u steampipe centos-latest-test /usr/local/bin/steampipe plugin install steampipe
-  #         docker exec -u steampipe centos-latest-test /usr/local/bin/steampipe plugin list
-  #         docker exec -u steampipe centos-latest-test /usr/local/bin/steampipe query "select name from steampipe_registry_plugin limit 10;"
+      - name: Install Dependencies, Create User, and Test
+        run: |
+          docker exec centos-stream9-test yum install -y epel-release
+          docker exec centos-stream9-test yum install -y tar ca-certificates
+          docker exec centos-stream9-test tar -xzf /artifacts/linux.tar.gz -C /usr/local/bin
+          # Create user, since steampipe cannot be run as root
+          docker exec centos-stream9-test useradd -m steampipe
+          # Ensure the binary is executable and owned by steampipe
+          docker exec centos-stream9-test chown steampipe:steampipe /usr/local/bin/steampipe
+          docker exec centos-stream9-test chmod +x /usr/local/bin/steampipe
+          # Check the binary is executable
+          docker exec -u steampipe centos-stream9-test /usr/local/bin/steampipe --version
+          # Run your tests inside the container
+          docker exec -u steampipe centos-stream9-test /usr/local/bin/steampipe query "select 1 as test"
+          docker exec -u steampipe centos-stream9-test /usr/local/bin/steampipe plugin install steampipe
+          docker exec -u steampipe centos-stream9-test /usr/local/bin/steampipe plugin list
+          docker exec -u steampipe centos-stream9-test /usr/local/bin/steampipe query "select name from steampipe_registry_plugin limit 10;"
   
-  #     - name: Stop and Remove Container
-  #       run: |
-  #         docker stop centos-latest-test
-  #         docker rm centos-latest-test
+      - name: Stop and Remove Container
+        run: |
+          docker stop centos-stream9-test
+          docker rm centos-stream9-test
 
   smoke_test_amazonlinux:
     name: Smoke test on AmazonLinux Latest (amazonlinux 2023)
