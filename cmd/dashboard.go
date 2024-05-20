@@ -317,7 +317,10 @@ func runSingleDashboard(ctx context.Context, targetName string, inputs map[strin
 	// export the result (if needed)
 	exportArgs := viper.GetStringSlice(constants.ArgExport)
 	exportMsg, err := initData.ExportManager.DoExport(ctx, snap.FileNameRoot, snap, exportArgs)
-	error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
+	if err != nil {
+		exitCode = constants.ExitCodeSnapshotCreationFailed
+		error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
+	}
 
 	// print the location where the file is exported
 	if len(exportMsg) > 0 && viper.GetBool(constants.ArgProgress) {
