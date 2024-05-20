@@ -561,9 +561,9 @@ jobs:
   
       - name: Create and Start Amazon Linux 2023 Container
         run: |
-          docker run -d --name amazonlinux-2023-test -v ${{ github.workspace }}/artifacts:/artifacts amazonlinux:2023 tail -f /dev/null
+          docker run -d --name amazonlinux-2023-test -v ${{ github.workspace }}/artifacts:/artifacts -v ${{ github.workspace }}/scripts:/scripts amazonlinux:2023 tail -f /dev/null
   
-      - name: Install Dependencies, Create User, and Test
+      - name: Install dependencies, create User, and assign necessary permissions
         run: |
           docker exec amazonlinux-2023-test yum install -y shadow-utils tar gzip ca-certificates
           docker exec amazonlinux-2023-test useradd -m steampipe
@@ -571,13 +571,13 @@ jobs:
           # Ensure the binary is executable and owned by steampipe
           docker exec amazonlinux-2023-test chown steampipe:steampipe /usr/local/bin/steampipe
           docker exec amazonlinux-2023-test chmod +x /usr/local/bin/steampipe
-          # Check the binary is executable
-          docker exec -u steampipe amazonlinux-2023-test /usr/local/bin/steampipe --version
-          # Run your tests inside the container
-          docker exec -u steampipe amazonlinux-2023-test /usr/local/bin/steampipe query "select 1 as test"
-          docker exec -u steampipe amazonlinux-2023-test /usr/local/bin/steampipe plugin install steampipe
-          docker exec -u steampipe amazonlinux-2023-test /usr/local/bin/steampipe plugin list
-          docker exec -u steampipe amazonlinux-2023-test /usr/local/bin/steampipe query "select name from steampipe_registry_plugin limit 10;"
+          # Ensure the script is executable
+          docker exec amazonlinux-2023-test chown steampipe:steampipe /scripts/smoke_test.sh
+          docker exec amazonlinux-2023-test chmod +x /scripts/smoke_test.sh
+
+      - name: Run smoke tests
+        run: |
+          docker exec -u steampipe amazonlinux-2023-test /scripts/test_script.sh
   
       - name: Stop and Remove Container
         run: |
@@ -656,7 +656,7 @@ jobs:
 
       - name: Set PATH
         run: |
-          echo "PATH=$PATH:$HOME/build
+          echo "PATH=$PATH:$HOME/build" >> $GITHUB_ENV
 
       - name: Install and Test
         run: |
