@@ -475,6 +475,12 @@ jobs:
       - name: Create and Start Ubuntu latest Container
         run: |
           docker run -d --name ubuntu-24-test -v ${{ github.workspace }}/artifacts:/artifacts -v ${{ github.workspace }}/scripts:/scripts ubuntu:latest tail -f /dev/null
+
+      - name: Get runner/container info
+        run: |
+          docker exec ubuntu-24-test uname -a
+          docker exec ubuntu-24-test cat /etc/os-release
+          docker exec ubuntu-24-test ldd --version
   
       - name: Install dependencies, create User, and assign necessary permissions
         run: |
@@ -521,6 +527,12 @@ jobs:
       - name: Create and Start CentOS stream9 Container
         run: |
           docker run -d --name centos-stream9-test -v ${{ github.workspace }}/artifacts:/artifacts -v ${{ github.workspace }}/scripts:/scripts quay.io/centos/centos:stream9 tail -f /dev/null
+
+      - name: Get runner/container info
+        run: |
+          docker exec centos-stream9-test uname -a
+          docker exec centos-stream9-test cat /etc/os-release
+          docker exec centos-stream9-test ldd --version
   
       - name: Install dependencies, create User, and assign necessary permissions
         run: |
@@ -568,6 +580,12 @@ jobs:
       - name: Create and Start Amazon Linux 2023 Container
         run: |
           docker run -d --name amazonlinux-2023-test -v ${{ github.workspace }}/artifacts:/artifacts -v ${{ github.workspace }}/scripts:/scripts amazonlinux:2023 tail -f /dev/null
+
+      - name: Get runner/container info
+        run: |
+          docker exec amazonlinux-2023-test uname -a
+          docker exec amazonlinux-2023-test cat /etc/os-release
+          docker exec amazonlinux-2023-test ldd --version
   
       - name: Install dependencies, create User, and assign necessary permissions
         run: |
@@ -623,7 +641,13 @@ jobs:
       - name: Create and Start Ubuntu 24 ARM64 Container
         run: |
           docker run -d --name ubuntu-24-arm64-test -v ${{ github.workspace }}/artifacts:/artifacts -v ${{ github.workspace }}/scripts:/scripts arm64v8/ubuntu:latest tail -f /dev/null
-  
+
+      - name: Get runner/container info
+        run: |
+          docker exec ubuntu-24-test uname -a
+          docker exec ubuntu-24-test cat /etc/os-release
+          docker exec ubuntu-24-test ldd --version
+
       - name: Install dependencies, create User, and assign necessary permissions
         run: |
           docker exec ubuntu-24-arm64-test uname -a
@@ -664,6 +688,11 @@ jobs:
       - name: Extract Darwin Artifacts and Install Binary
         run: |
           unzip ~/artifacts/darwin-arm.zip -d /usr/local/bin
+
+      - name: Get runner/container info
+        run: |
+          uname -a
+          sw_vers
 
       - name: Run Smoke tests
         run: |
