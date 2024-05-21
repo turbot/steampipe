@@ -464,45 +464,24 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifact-linux
-          path: ./artifacts
-  
+          path: ./scripts/ubuntu/artifacts
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-  
-      - name: Pull Ubuntu latest Image
-        run: docker pull ubuntu:latest
-  
-      - name: Create and Start Ubuntu latest Container
+
+      - name: Build Docker Image
         run: |
-          docker run -d --name ubuntu-24-test -v ${{ github.workspace }}/artifacts:/artifacts -v ${{ github.workspace }}/scripts:/scripts ubuntu:latest tail -f /dev/null
+          docker build -t steampipe-test ./scripts/ubuntu
 
       - name: Get runner/container info
         run: |
-          docker exec ubuntu-24-test uname -a
-          docker exec ubuntu-24-test cat /etc/os-release
-          docker exec ubuntu-24-test ldd --version
-  
-      - name: Install dependencies, create user, and assign necessary permissions
-        run: |
-          docker exec ubuntu-24-test apt-get update
-          docker exec ubuntu-24-test apt-get install -y tar ca-certificates jq
-          docker exec ubuntu-24-test tar -xzf /artifacts/linux.tar.gz -C /usr/local/bin
-          # Make the binary executable
-          docker exec ubuntu-24-test chmod +x /usr/local/bin/steampipe
-          # Create user, since steampipe cannot be run as root
-          docker exec ubuntu-24-test useradd -m steampipe
-          # Ensure the script is executable
-          docker exec ubuntu-24-test chown steampipe:steampipe /scripts/smoke_test.sh
-          docker exec ubuntu-24-test chmod +x /scripts/smoke_test.sh
+          docker run --rm steampipe-test uname -a
+          docker run --rm steampipe-test cat /etc/os-release
+          docker run --rm steampipe-test ldd --version
 
       - name: Run smoke tests
         run: |
-          docker exec -u steampipe ubuntu-24-test /scripts/smoke_test.sh
-  
-      - name: Stop and Remove Container
-        run: |
-          docker stop ubuntu-24-test
-          docker rm ubuntu-24-test
+          docker run --rm steampipe-test
 
   smoke_test_centos_9:
     name: Smoke test (Centos stream 9, x86_64)
