@@ -48,7 +48,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # store the result of the verification statements(0.13.6)
   for ((i = 0; i < ${#verify_sql[@]}; i++)); do
-    $tmpdir/steampipe --install-dir $tmpdir query "${verify_sql[$i]}" > verify$i.txt
+    $tmpdir/steampipe --install-dir $tmpdir query "${verify_sql[$i]}" --output json > verify$i.json
   done
 
   # stop the service
@@ -60,7 +60,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # store the result of the verification statements(0.14.*)
   for ((i = 0; i < ${#verify_sql[@]}; i++)); do
     echo "VerifySQL: ${verify_sql[$i]}"
-    steampipe --install-dir $tmpdir query "${verify_sql[$i]}" > verify$i$i.txt
+    steampipe --install-dir $tmpdir query "${verify_sql[$i]}" --output json > verify$i$i.json
   done
 
   # stop the service
@@ -68,7 +68,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
   # verify data is migrated correctly
   for ((i = 0; i < ${#verify_sql[@]}; i++)); do
-    assert_equal "$(cat verify$i.txt)" "$(cat verify$i$i.txt)"
+    assert_equal "$(cat verify$i.json)" "$(cat verify$i$i.json)"
   done
 
   rm -rf $tmpdir
