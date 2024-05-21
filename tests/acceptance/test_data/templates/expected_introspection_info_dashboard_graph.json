@@ -1,44 +1,34 @@
-{
-  "rows": [
+[
+ {
+  "args": null,
+  "auto_generated": false,
+  "description": null,
+  "direction": null,
+  "documentation": null,
+  "edges": [
    {
-    "args": null,
-    "auto_generated": false,
-    "description": null,
-    "direction": null,
-    "documentation": null,
-    "edges": [
-     {
-      "name": "sample_edge_2"
-     }
-    ],
-    "end_line_number": 99,
-    "is_anonymous": false,
-    "mod_name": "introspection_table_mod",
-    "nodes": [
-     {
-      "name": "sample_node_2"
-     }
-    ],
-    "params": null,
-    "path": null,
-    "qualified_name": "introspection_table_mod.graph.sample_graph_1",
-    "query": null,
-    "resource_name": "sample_graph_1",
-    "source_definition": "    graph \"sample_graph_1\" {\n      title = \"Sample graph 1\"\n      width = 5\n\n      node \"sample_node_2\" {\n        sql = <<-EOQ\n          select 1 as node\n        EOQ\n      }\n      edge \"sample_edge_2\" {\n        sql = <<-EOQ\n          select 1 as edge\n        EOQ\n      }\n    }",
-    "sql": null,
-    "start_line_number": 85,
-    "tags": null,
-    "title": "Sample graph 1",
-    "type": null,
-    "width": "5"
+    "name": "sample_edge_2"
    }
   ],
-  "metadata": {
-   "Duration": 265750,
-   "scans": [],
-   "rows_returned": 1,
-   "rows_fetched": 0,
-   "hydrate_calls": 0
-  }
+  "end_line_number": 99,
+  "is_anonymous": false,
+  "mod_name": "introspection_table_mod",
+  "nodes": [
+   {
+    "name": "sample_node_2"
+   }
+  ],
+  "params": null,
+  "path": null,
+  "qualified_name": "introspection_table_mod.graph.sample_graph_1",
+  "query": null,
+  "resource_name": "sample_graph_1",
+  "source_definition": "    graph \"sample_graph_1\" {\n      title = \"Sample graph 1\"\n      width = 5\n\n      node \"sample_node_2\" {\n        sql = <<-EOQ\n          select 1 as node\n        EOQ\n      }\n      edge \"sample_edge_2\" {\n        sql = <<-EOQ\n          select 1 as edge\n        EOQ\n      }\n    }",
+  "sql": null,
+  "start_line_number": 85,
+  "tags": null,
+  "title": "Sample graph 1",
+  "type": null,
+  "width": "5"
  }
- 
+]

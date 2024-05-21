@@ -44,7 +44,6 @@ function setup() {
 }
 
 @test "snapshot mode - query output json" {
-  skip
   cd $FILE_PATH/test_data/mods/functionality_test_mod
 
   steampipe query query.static_query_2 --snapshot --output json --pipes-token $SPIPETOOLS_TOKEN --snapshot-location turbot-ops/clitesting > output.json

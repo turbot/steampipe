@@ -1,41 +1,31 @@
-{
-  "rows": [
-   {
-    "args": null,
-    "auto_generated": false,
-    "columns": null,
-    "description": null,
-    "documentation": null,
-    "end_line_number": 121,
-    "is_anonymous": false,
-    "mod_name": "introspection_table_mod",
-    "params": null,
-    "path": [
-     [
-      "mod.introspection_table_mod",
-      "introspection_table_mod.dashboard.sample_dashboard_1",
-      "introspection_table_mod.container.sample_conatiner_1",
-      "introspection_table_mod.text.sample_text_1"
-     ]
-    ],
-    "qualified_name": "introspection_table_mod.table.sample_table_1",
-    "query": null,
-    "resource_name": "sample_table_1",
-    "source_definition": "    table \"sample_table_1\" {\n      sql = \"select 1 as table\"\n      width = 4\n      title = \"Sample table 1\"\n    }",
-    "sql": "select 1 as table",
-    "start_line_number": 117,
-    "tags": null,
-    "title": "Sample table 1",
-    "type": null,
-    "width": "4"
-   }
+[
+ {
+  "args": null,
+  "auto_generated": false,
+  "columns": null,
+  "description": null,
+  "documentation": null,
+  "end_line_number": 121,
+  "is_anonymous": false,
+  "mod_name": "introspection_table_mod",
+  "params": null,
+  "path": [
+   [
+    "mod.introspection_table_mod",
+    "introspection_table_mod.dashboard.sample_dashboard_1",
+    "introspection_table_mod.container.sample_conatiner_1",
+    "introspection_table_mod.text.sample_text_1"
+   ]
   ],
-  "metadata": {
-   "Duration": 247458,
-   "scans": [],
-   "rows_returned": 1,
-   "rows_fetched": 0,
-   "hydrate_calls": 0
-  }
+  "qualified_name": "introspection_table_mod.table.sample_table_1",
+  "query": null,
+  "resource_name": "sample_table_1",
+  "source_definition": "    table \"sample_table_1\" {\n      sql = \"select 1 as table\"\n      width = 4\n      title = \"Sample table 1\"\n    }",
+  "sql": "select 1 as table",
+  "start_line_number": 117,
+  "tags": null,
+  "title": "Sample table 1",
+  "type": null,
+  "width": "4"
  }
- 
+]

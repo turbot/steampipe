@@ -1,43 +1,33 @@
-{
-  "rows": [
+[
+ {
+  "args": null,
+  "auto_generated": false,
+  "description": null,
+  "documentation": null,
+  "edges": [
    {
-    "args": null,
-    "auto_generated": false,
-    "description": null,
-    "documentation": null,
-    "edges": [
-     {
-      "name": "sample_edge_3"
-     }
-    ],
-    "end_line_number": 115,
-    "is_anonymous": false,
-    "mod_name": "introspection_table_mod",
-    "nodes": [
-     {
-      "name": "sample_node_3"
-     }
-    ],
-    "params": null,
-    "path": null,
-    "qualified_name": "introspection_table_mod.hierarchy.sample_hierarchy_1",
-    "query": null,
-    "resource_name": "sample_hierarchy_1",
-    "source_definition": "    hierarchy \"sample_hierarchy_1\" {\n      title = \"Sample hierarchy 1\"\n      width = 5\n\n      node \"sample_node_3\" {\n        sql = <<-EOQ\n          select 1 as node\n        EOQ\n      }\n      edge \"sample_edge_3\" {\n        sql = <<-EOQ\n          select 1 as edge\n        EOQ\n      }\n    }",
-    "sql": null,
-    "start_line_number": 101,
-    "tags": null,
-    "title": "Sample hierarchy 1",
-    "type": null,
-    "width": "5"
+    "name": "sample_edge_3"
    }
   ],
-  "metadata": {
-   "Duration": 278250,
-   "scans": [],
-   "rows_returned": 1,
-   "rows_fetched": 0,
-   "hydrate_calls": 0
-  }
+  "end_line_number": 115,
+  "is_anonymous": false,
+  "mod_name": "introspection_table_mod",
+  "nodes": [
+   {
+    "name": "sample_node_3"
+   }
+  ],
+  "params": null,
+  "path": null,
+  "qualified_name": "introspection_table_mod.hierarchy.sample_hierarchy_1",
+  "query": null,
+  "resource_name": "sample_hierarchy_1",
+  "source_definition": "    hierarchy \"sample_hierarchy_1\" {\n      title = \"Sample hierarchy 1\"\n      width = 5\n\n      node \"sample_node_3\" {\n        sql = <<-EOQ\n          select 1 as node\n        EOQ\n      }\n      edge \"sample_edge_3\" {\n        sql = <<-EOQ\n          select 1 as edge\n        EOQ\n      }\n    }",
+  "sql": null,
+  "start_line_number": 101,
+  "tags": null,
+  "title": "Sample hierarchy 1",
+  "type": null,
+  "width": "5"
  }
- 
+]
