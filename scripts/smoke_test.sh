@@ -18,5 +18,12 @@
 /usr/local/bin/steampipe service stop # verify service stop
 
 /usr/local/bin/steampipe plugin install steampipe
-/usr/local/bin/steampipe query "select name from steampipe_registry_plugin limit 1;" --export /home/steampipe/query.sps # verify file export
-cat /home/steampipe/query.sps | jq '.end_time' # verify file created is readable
+
+# if block to check the OS and run specific commands
+if [ "$(uname -s)" = "Darwin" ]; then
+  /usr/local/bin/steampipe query "select name from steampipe_registry_plugin limit 1;" --export /Users/runner/query.sps # verify file export
+  cat /Users/runner/query.sps | jq '.end_time' # verify file created is readable
+else
+  /usr/local/bin/steampipe query "select name from steampipe_registry_plugin limit 1;" --export /home/steampipe/query.sps # verify file export
+  cat /home/steampipe/query.sps | jq '.end_time' # verify file created is readable
+fi
