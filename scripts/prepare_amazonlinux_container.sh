@@ -1,6 +1,6 @@
 #!/bin/sh
 # This is a a script to install dependencies/packages, create user, and assign necessary permissions in the amazonlinux 2023 container.
-# Used in release smoke tests.
+# Used in release smoke tests. 
 
 # update yum and install required packages
 yum install -y shadow-utils tar gzip ca-certificates jq

@@ -1,6 +1,6 @@
 #!/bin/sh
 # This is a a script to install dependencies/packages, create user, and assign necessary permissions in the centos 9 container.
-# Used in release smoke tests.
+# Used in release smoke tests. 
 
 # update yum and install required packages
 yum install -y epel-release
