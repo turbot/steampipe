@@ -519,23 +519,11 @@ jobs:
 
       - name: Get runner/container info
         run: |
-          docker exec centos-stream9-test uname -a
-          docker exec centos-stream9-test cat /etc/os-release
-          docker exec centos-stream9-test ldd --version
+          docker exec centos-stream9-test /scripts/linux_container_info.sh
   
       - name: Install dependencies, create user, and assign necessary permissions
         run: |
-          docker exec centos-stream9-test yum install -y epel-release
-          docker exec centos-stream9-test yum install -y tar ca-certificates jq
-          docker exec centos-stream9-test tar -xzf /artifacts/linux.tar.gz -C /usr/local/bin
-          # Create user, since steampipe cannot be run as root
-          docker exec centos-stream9-test useradd -m steampipe
-          # Ensure the binary is executable and owned by steampipe
-          docker exec centos-stream9-test chown steampipe:steampipe /usr/local/bin/steampipe
-          docker exec centos-stream9-test chmod +x /usr/local/bin/steampipe
-          # Ensure the script is executable
-          docker exec centos-stream9-test chown steampipe:steampipe /scripts/smoke_test.sh
-          docker exec centos-stream9-test chmod +x /scripts/smoke_test.sh
+          docker exec centos-stream9-test /scripts/prepare_centos_container.sh
         
       - name: Run smoke tests
         run: |
@@ -572,21 +560,11 @@ jobs:
 
       - name: Get runner/container info
         run: |
-          docker exec amazonlinux-2023-test uname -a
-          docker exec amazonlinux-2023-test cat /etc/os-release
-          docker exec amazonlinux-2023-test ldd --version
+          docker exec amazonlinux-2023-test /scripts/linux_container_info.sh
   
       - name: Install dependencies, create user, and assign necessary permissions
         run: |
-          docker exec amazonlinux-2023-test yum install -y shadow-utils tar gzip ca-certificates jq
-          docker exec amazonlinux-2023-test useradd -m steampipe
-          docker exec amazonlinux-2023-test tar -xzf /artifacts/linux.tar.gz -C /usr/local/bin
-          # Ensure the binary is executable and owned by steampipe
-          docker exec amazonlinux-2023-test chown steampipe:steampipe /usr/local/bin/steampipe
-          docker exec amazonlinux-2023-test chmod +x /usr/local/bin/steampipe
-          # Ensure the script is executable
-          docker exec amazonlinux-2023-test chown steampipe:steampipe /scripts/smoke_test.sh
-          docker exec amazonlinux-2023-test chmod +x /scripts/smoke_test.sh
+          docker exec amazonlinux-2023-test /scripts/prepare_amazonlinux_container.sh
 
       - name: Run smoke tests
         run: |
@@ -633,22 +611,11 @@ jobs:
 
       - name: Get runner/container info
         run: |
-          docker exec ubuntu-24-arm64-test uname -a
-          docker exec ubuntu-24-arm64-test cat /etc/os-release
-          docker exec ubuntu-24-arm64-test ldd --version
+          docker exec ubuntu-24-arm64-test /scripts/linux_container_info.sh
 
       - name: Install dependencies, create user, and assign necessary permissions
         run: |
-          docker exec ubuntu-24-arm64-test apt-get update
-          docker exec ubuntu-24-arm64-test apt-get install -y tar ca-certificates jq
-          docker exec ubuntu-24-arm64-test tar -xzf /artifacts/linux-arm.tar.gz -C /usr/local/bin
-          # Make the binary executable
-          docker exec ubuntu-24-arm64-test chmod +x /usr/local/bin/steampipe
-          # Create user, since steampipe cannot be run as root
-          docker exec ubuntu-24-arm64-test useradd -m steampipe
-          # Ensure the script is executable
-          docker exec ubuntu-24-arm64-test chown steampipe:steampipe /scripts/smoke_test.sh
-          docker exec ubuntu-24-arm64-test chmod +x /scripts/smoke_test.sh
+          docker exec ubuntu-24-arm64-test /scripts/prepare_ubuntu_arm_container.sh
 
       - name: Run smoke tests
         run: |

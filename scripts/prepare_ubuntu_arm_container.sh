@@ -7,7 +7,7 @@ apt-get update
 apt-get install -y tar ca-certificates jq
 
 # Extract the steampipe binary
-tar -xzf /artifacts/linux.tar.gz -C /usr/local/bin
+tar -xzf /artifacts/linux-arm.tar.gz -C /usr/local/bin
 
 # Make the binary executable
 chmod +x /usr/local/bin/steampipe
