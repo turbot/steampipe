@@ -183,21 +183,9 @@ func getTerminalColumnsRequiredForString(str string) int {
 	return colsRequired
 }
 
-type jsonOutput struct {
-	Rows     []map[string]interface{}  `json:"rows"`
-	Metadata *queryresult.TimingResult `json:"metadata"`
-}
-
-func newJSONOutput() *jsonOutput {
-	return &jsonOutput{
-		Rows: make([]map[string]interface{}, 0),
-	}
-
-}
-
 func displayJSON(ctx context.Context, result *queryresult.Result) (int, *queryresult.TimingResult) {
 	rowErrors := 0
-	jsonOutput := newJSONOutput()
+	jsonOutput := make([]map[string]interface{}, 0)
 
 	// define function to add each row to the JSON output
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
@@ -206,7 +194,7 @@ func displayJSON(ctx context.Context, result *queryresult.Result) (int, *queryre
 			value, _ := ParseJSONOutputColumnValue(row[idx], col)
 			record[col.Name] = value
 		}
-		jsonOutput.Rows = append(jsonOutput.Rows, record)
+		jsonOutput = append(jsonOutput, record)
 	}
 
 	// call this function for each row
@@ -218,7 +206,8 @@ func displayJSON(ctx context.Context, result *queryresult.Result) (int, *queryre
 	}
 
 	// now we have iterated the rows, get the timing
-	jsonOutput.Metadata = getTiming(result, count)
+	//jsonOutput.Metadata = getTiming(result, count)
+	metadata := getTiming(result, count)
 
 	// display the JSON
 	encoder := json.NewEncoder(os.Stdout)
@@ -228,7 +217,7 @@ func displayJSON(ctx context.Context, result *queryresult.Result) (int, *queryre
 		fmt.Print("Error displaying result as JSON", err)
 		return 0, nil
 	}
-	return rowErrors, jsonOutput.Metadata
+	return rowErrors, metadata
 }
 
 func displayCSV(ctx context.Context, result *queryresult.Result) (int, *queryresult.TimingResult) {
