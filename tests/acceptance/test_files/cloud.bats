@@ -11,7 +11,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $output
 
   # fetch the value of account_alias to compare
-  op=$(echo $output | jq '.rows[0].account_aliases[0]')
+  op=$(echo $output | jq '.[0].account_aliases[0]')
   echo $op
 
   # check if values match
@@ -24,7 +24,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $output
 
   # fetch the value of account_alias to compare
-  op=$(echo $output | jq '.rows[0].account_aliases[0]')
+  op=$(echo $output | jq '.[0].account_aliases[0]')
   echo $op
 
   # check if values match
@@ -37,7 +37,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   echo $output
 
   # fetch the value of account_alias to compare
-  op=$(echo $output | jq '.rows[0].account_aliases[0]')
+  op=$(echo $output | jq '.[0].account_aliases[0]')
   echo $op
 
   # check if values match
