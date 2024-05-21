@@ -17,4 +17,4 @@ chmod +x /usr/local/bin/steampipe
 
 # Ensure the script is executable
 chown steampipe:steampipe /scripts/smoke_test.sh
-chmod +x /scripts/smoke_test.shs
+chmod +x /scripts/smoke_test.sh
