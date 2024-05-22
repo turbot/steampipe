@@ -31,18 +31,26 @@ const (
 	QueryTimingModeOff QueryTimingMode = iota
 	QueryTimingModeOn
 	QueryTimingModeVerbose
+	// support legacy values
+	QueryTimingModeTrue
+	QueryTimingModeFalse
 )
 
 var QueryTimingModeIds = map[QueryTimingMode][]string{
 	QueryTimingModeOff:     {constants.ArgOff},
 	QueryTimingModeOn:      {constants.ArgOn},
 	QueryTimingModeVerbose: {constants.ArgVerbose},
+	// support legacy values
+	QueryTimingModeTrue:  {"true"},
+	QueryTimingModeFalse: {"false"},
 }
 
 var QueryTimingValueLookup = map[string]struct{}{
 	constants.ArgOff:     {},
 	constants.ArgOn:      {},
 	constants.ArgVerbose: {},
+	"true":               {},
+	"false":              {},
 }
 
 type CheckTimingMode enumflag.Flag

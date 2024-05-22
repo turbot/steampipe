@@ -402,7 +402,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) (int, *queryr
 }
 
 func getTiming(result *queryresult.Result, count int) *queryresult.TimingResult {
-	if viper.GetString(constants.ArgTiming) == constants.ArgOff {
+	if timingConfig := viper.GetString(constants.ArgTiming); timingConfig == constants.ArgOff || timingConfig == "false" {
 		return nil
 	}
 	// now we have iterated the rows, get the timing
