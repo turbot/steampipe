@@ -19,7 +19,7 @@ require (
 	github.com/briandowns/spinner v1.23.0
 	github.com/c-bata/go-prompt v0.2.6
 	github.com/containerd/containerd v1.7.16
-	github.com/fatih/color v1.16.0
+	github.com/fatih/color v1.17.0
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gertd/go-pluralize v0.2.1
 	github.com/gin-contrib/static v1.1.1
