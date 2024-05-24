@@ -185,7 +185,7 @@ func getTerminalColumnsRequiredForString(str string) int {
 
 type jsonOutput struct {
 	Rows     []map[string]interface{}  `json:"rows"`
-	Metadata *queryresult.TimingResult `json:"metadata"`
+	Metadata *queryresult.TimingResult `json:"metadata,omitempty"`
 }
 
 func newJSONOutput() *jsonOutput {

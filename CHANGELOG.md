@@ -27,6 +27,9 @@ _Bug fixes_
 - Fix hang when timing disabled. ([#4237](https://github.com/turbot/steampipe/issues/4237))
 - Add signal handler for signal 16 to avoid FDW crash.  ([#457](https://github.com/turbot/steampipe-postgres-fdw/issues/457))
 
+_Breaking changes_
+- JSON query output has changed from a JSON array of result rows to a JSON object with a `rows` property containing the result rows, and (optionally) a metadata property containing timing information.  
+
 ## v0.22.2 [2024-04-05]
 _Bug fixes_
 * Fix issue where daily update check message showed a <nil> when there was no message to show. ([#4206](https://github.com/turbot/steampipe/issues/4206))
