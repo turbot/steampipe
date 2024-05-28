@@ -5,12 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"golang.org/x/exp/maps"
 
 	"github.com/fatih/color"
 	"github.com/fsnotify/fsnotify"
@@ -95,29 +96,6 @@ func LoadWorkspaceVars(ctx context.Context) (*Workspace, *modconfig.ModVariableM
 	log.Printf("[INFO] LoadWorkspaceVars succededed - got values for vars: %s", strings.Join(maps.Keys(workspace.VariableValues), ", "))
 
 	return workspace, inputVariables, errorsAndWarnings
-}
-
-// LoadVariables creates a Workspace and uses it to load all variables, ignoring any value resolution errors
-// this is use for the variable list command
-func LoadVariables(ctx context.Context, workspacePath string) ([]*modconfig.Variable, error_helpers.ErrorAndWarnings) {
-	utils.LogTime("workspace.LoadVariables start")
-	defer utils.LogTime("workspace.LoadVariables end")
-
-	// create shell workspace
-	workspace, err := createShellWorkspace(workspacePath)
-	if err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
-	}
-
-	// resolve variables values, WITHOUT validating missing vars
-	validateMissing := false
-	variableMap, errorAndWarnings := workspace.getInputVariables(ctx, validateMissing)
-	if errorAndWarnings.Error != nil {
-		return nil, errorAndWarnings
-	}
-
-	// convert into a sorted array
-	return variableMap.ToArray(), errorAndWarnings
 }
 
 func createShellWorkspace(workspacePath string) (*Workspace, error) {
