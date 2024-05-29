@@ -90,7 +90,6 @@ func AddCommands() {
 	rootCmd.AddCommand(
 		pluginCmd(),
 		queryCmd(),
-		checkCmd(),
 		serviceCmd(),
 		modCmd(),
 		generateCompletionScriptsCmd(),
