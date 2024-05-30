@@ -59,11 +59,6 @@ func NewDashboardContainerRun(container *modconfig.DashboardContainer, parent da
 			if err != nil {
 				return nil, err
 			}
-		case *modconfig.Benchmark, *modconfig.Control:
-			childRun, err = NewCheckRun(i.(modconfig.DashboardLeafNode), r, executionTree)
-			if err != nil {
-				return nil, err
-			}
 
 		default:
 			// ensure this item is a DashboardLeafNode
