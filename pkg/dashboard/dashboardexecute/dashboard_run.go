@@ -134,11 +134,6 @@ func (r *DashboardRun) createChildRuns(executionTree *DashboardExecutionTree) er
 			if err != nil {
 				return err
 			}
-		case *modconfig.Benchmark, *modconfig.Control:
-			childRun, err = NewCheckRun(i.(modconfig.DashboardLeafNode), r, executionTree)
-			if err != nil {
-				return err
-			}
 		case *modconfig.DashboardInput:
 			// NOTE: clone the input to avoid mutating the original
 			// TODO remove the need for this when we refactor input values resolution
