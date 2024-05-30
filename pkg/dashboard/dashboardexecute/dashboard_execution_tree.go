@@ -77,18 +77,6 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		rootName = fullName
 	}
 	switch parsedName.ItemType {
-	case modconfig.BlockTypeDashboard:
-		dashboard, ok := e.workspace.GetResourceMaps().Dashboards[rootName]
-		if !ok {
-			return nil, fmt.Errorf("dashboard '%s' does not exist in workspace", rootName)
-		}
-		return NewDashboardRun(dashboard, e, e)
-	case modconfig.BlockTypeBenchmark:
-		benchmark, ok := e.workspace.GetResourceMaps().Benchmarks[rootName]
-		if !ok {
-			return nil, fmt.Errorf("benchmark '%s' does not exist in workspace", rootName)
-		}
-		return NewCheckRun(benchmark, e, e)
 	case modconfig.BlockTypeQuery:
 		// wrap in a table
 		query, ok := e.workspace.GetResourceMaps().Queries[rootName]
@@ -99,18 +87,6 @@ func (e *DashboardExecutionTree) createRootItem(rootName string) (dashboardtypes
 		dashboard, err := modconfig.NewQueryDashboard(query)
 		// TACTICAL - set the execution tree dashboard name from the query dashboard
 		e.dashboardName = dashboard.Name()
-		if err != nil {
-			return nil, err
-		}
-		return NewDashboardRun(dashboard, e, e)
-	case modconfig.BlockTypeControl:
-		// wrap in a table
-		control, ok := e.workspace.GetResourceMaps().Controls[rootName]
-		if !ok {
-			return nil, fmt.Errorf("query '%s' does not exist in workspace", rootName)
-		}
-		// wrap this in a chart and a dashboard
-		dashboard, err := modconfig.NewQueryDashboard(control)
 		if err != nil {
 			return nil, err
 		}
@@ -274,13 +250,6 @@ func (e *DashboardExecutionTree) BuildSnapshotPanels() map[string]dashboardtypes
 
 	for name, run := range e.runs {
 		res[name] = run.(dashboardtypes.SnapshotPanel)
-		// special case handling for check runs
-		if checkRun, ok := run.(*CheckRun); ok {
-			checkRunChildren := checkRun.BuildSnapshotPanels(res)
-			for k, v := range checkRunChildren {
-				res[k] = v
-			}
-		}
 	}
 	return res
 }

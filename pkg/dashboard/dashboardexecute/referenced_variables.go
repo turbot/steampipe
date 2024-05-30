@@ -45,21 +45,6 @@ func GetReferencedVariables(root dashboardtypes.DashboardTreeRun, w *workspace.W
 				return true, nil
 			},
 		)
-	case *CheckRun:
-		switch n := r.resource.(type) {
-		case *modconfig.Benchmark:
-			//nolint:errcheck // we don't care about errors here, since the callback does not return an error
-			n.WalkResources(
-				func(resource modconfig.ModTreeItem) (bool, error) {
-					if resourceWithMetadata, ok := resource.(modconfig.ResourceWithMetadata); ok {
-						addReferencedVars(resourceWithMetadata.GetReferences())
-					}
-					return true, nil
-				},
-			)
-		case *modconfig.Control:
-			addReferencedVars(n.GetReferences())
-		}
 	}
 
 	return referencedVariables
