@@ -42,26 +42,6 @@ func NewInstallData(workspaceLock *versionmap.WorkspaceLock, workspaceMod *modco
 	}
 }
 
-// GetAvailableUpdates returns a map of all installed mods which are not in the lock file
-func (d *InstallData) GetAvailableUpdates() (versionmap.DependencyVersionMap, error) {
-	res := make(versionmap.DependencyVersionMap)
-	for parent, deps := range d.Lock.InstallCache {
-		for name, resolvedConstraint := range deps {
-			includePrerelease := resolvedConstraint.IsPrerelease()
-			availableVersions, err := d.getAvailableModVersions(name, includePrerelease)
-			if err != nil {
-				return nil, err
-			}
-			constraint, _ := versionhelpers.NewConstraint(resolvedConstraint.Constraint)
-			var latestVersion = getVersionSatisfyingConstraint(constraint, availableVersions)
-			if latestVersion.GreaterThan(resolvedConstraint.Version) {
-				res.Add(name, resolvedConstraint.Alias, latestVersion, constraint.Original, parent)
-			}
-		}
-	}
-	return res, nil
-}
-
 // onModInstalled is called when a dependency is satisfied by installing a mod version
 func (d *InstallData) onModInstalled(dependency *ResolvedModRef, modDef *modconfig.Mod, parent *modconfig.Mod) {
 	parentPath := parent.GetInstallCacheKey()
