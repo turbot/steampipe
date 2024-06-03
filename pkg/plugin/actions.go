@@ -141,7 +141,7 @@ func List(ctx context.Context, pluginConnectionMap map[string][]*modconfig.Conne
 func detectLocalPlugin(installation *versionfile.InstalledVersion, pluginBinary string) bool {
 	installDate, err := time.Parse(time.RFC3339, installation.InstallDate)
 	if err != nil {
-		log.Printf("[WARN] could not parse install date for %s: %s", installation.Name, installation.InstallDate)
+		log.Printf("[INFO] could not parse install date for %s: %s", installation.Name, installation.InstallDate)
 		return false
 	}
 
@@ -153,7 +153,7 @@ func detectLocalPlugin(installation *versionfile.InstalledVersion, pluginBinary 
 	// get the modtime of the plugin binary
 	stat, err := os.Lstat(pluginBinary)
 	if err != nil {
-		log.Printf("[WARN] could not parse install date for %s: %s", installation.Name, installation.InstallDate)
+		log.Printf("[INFO] could not parse install date for %s: %s", installation.Name, installation.InstallDate)
 		return false
 	}
 	modTime := stat.ModTime().
