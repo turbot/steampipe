@@ -54,7 +54,7 @@ jobs:
           go test -timeout 30s ./... -test.v
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
           args: release --clean --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
