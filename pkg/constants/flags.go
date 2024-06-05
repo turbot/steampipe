@@ -16,12 +16,15 @@ const (
 	QueryOutputModeTable
 )
 
+// steampipe snapshot
+const OutputFormatSpSnapshotShort = "sps"
+
 var QueryOutputModeIds = map[QueryOutputMode][]string{
 	QueryOutputModeCsv:           {constants.OutputFormatCSV},
 	QueryOutputModeJson:          {constants.OutputFormatJSON},
 	QueryOutputModeLine:          {constants.OutputFormatLine},
 	QueryOutputModeSnapshot:      {constants.OutputFormatSnapshot},
-	QueryOutputModeSnapshotShort: {constants.OutputFormatSnapshotShort},
+	QueryOutputModeSnapshotShort: {OutputFormatSpSnapshotShort},
 	QueryOutputModeTable:         {constants.OutputFormatTable},
 }
 
@@ -92,7 +95,7 @@ var CheckOutputModeIds = map[CheckOutputMode][]string{
 	CheckOutputModeJSON:          {constants.OutputFormatJSON},
 	CheckOutputModeMd:            {constants.OutputFormatMD},
 	CheckOutputModeSnapshot:      {constants.OutputFormatSnapshot},
-	CheckOutputModeSnapshotShort: {constants.OutputFormatSnapshotShort},
+	CheckOutputModeSnapshotShort: {OutputFormatSpSnapshotShort},
 	CheckOutputModeNone:          {constants.OutputFormatNone},
 }
 
