@@ -22,29 +22,26 @@ updates:
     pull-request-branch-name:
       separator: "-"
     assignees:
-      - "binaek"
+      - "pskrbasu"
       - "kaidaguerre"
     labels:
       - "dependencies"
       - "house-keeping"
 
-# Commenting out since we don't want dependabot PRs for the ui package right now.
-# We can add back when we need them.
-
-  # - package-ecosystem: "npm"
-  #   directory: "/ui/dashboard"
-  #   schedule:
-  #     interval: "daily"
-  #   commit-message:
-  #     prefix: "[dep][dash]"
-  #     include: "scope"
-  #   pull-request-branch-name:
-  #     separator: "-"
-  #   assignees:
-  #     - "MichaelBurgess"
-  #     - "binaek"
-  #     - "kaidaguerre"
-  #   labels:
-  #     - "dependencies"
-  #     - "dashboards"
-  #     - "house-keeping"
+  - package-ecosystem: "npm"
+    directory: "/ui/dashboard"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[dep][dash]"
+      include: "scope"
+    pull-request-branch-name:
+      separator: "-"
+    assignees:
+      - "MichaelBurgess"
+      - "pskrbasu"
+      - "kaidaguerre"
+    labels:
+      - "dependencies"
+      - "dashboards"
+      - "house-keeping"
