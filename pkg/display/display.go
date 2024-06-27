@@ -21,6 +21,7 @@ import (
 	"github.com/karrick/gows"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pfq "github.com/turbot/pipe-fittings/queryresult"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -184,6 +185,7 @@ func getTerminalColumnsRequiredForString(str string) int {
 }
 
 type jsonOutput struct {
+	Columns  []pfq.ColumnDef           `json:"columns"`
 	Rows     []map[string]interface{}  `json:"rows"`
 	Metadata *queryresult.TimingResult `json:"metadata,omitempty"`
 }
@@ -199,12 +201,27 @@ func displayJSON(ctx context.Context, result *queryresult.Result) (int, *queryre
 	rowErrors := 0
 	jsonOutput := newJSONOutput()
 
+	// add column defs to the JSON output
+	for _, col := range result.Cols {
+		// create a new column def, converting the data type to lowercase
+		c := pfq.ColumnDef{
+			Name:         col.Name,
+			OriginalName: col.OriginalName,
+			DataType:     strings.ToLower(col.DataType),
+		}
+		// add to the column def array
+		jsonOutput.Columns = append(jsonOutput.Columns, c)
+	}
+
 	// define function to add each row to the JSON output
 	rowFunc := func(row []interface{}, result *queryresult.Result) {
 		record := map[string]interface{}{}
 		for idx, col := range result.Cols {
 			value, _ := ParseJSONOutputColumnValue(row[idx], col)
-			record[col.Name] = value
+			// get the column def
+			c := jsonOutput.Columns[idx]
+			// add the value under the unique column name
+			record[c.Name] = value
 		}
 		jsonOutput.Rows = append(jsonOutput.Rows, record)
 	}
@@ -237,7 +254,7 @@ func displayCSV(ctx context.Context, result *queryresult.Result) (int, *queryres
 	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
 
 	if cmdconfig.Viper().GetBool(constants.ArgHeader) {
-		_ = csvWriter.Write(ColumnNames(result.Cols))
+		_ = csvWriter.Write(columnNames(result.Cols))
 	}
 
 	// print the data as it comes
@@ -291,16 +308,19 @@ func displayLine(ctx context.Context, result *queryresult.Result) (int, *queryre
 		lineFormat := fmt.Sprintf("%%-%ds | %%s\n", maxColNameLength)
 		multiLineFormat := fmt.Sprintf("%%-%ds | %%-%ds", maxColNameLength, requiredTerminalColumnsForValuesOfRecord)
 
-		fmt.Printf("-[ RECORD %-2d ]%s\n", (itemIdx + 1), strings.Repeat("-", 75))
+		fmt.Printf("-[ RECORD %-2d ]%s\n", itemIdx+1, strings.Repeat("-", 75)) //nolint:forbidigo // intentional use of fmt
+
+		// get the column names (this takes into account the original name)
+		columnNames := columnNames(result.Cols)
 		for idx, column := range recordAsString {
 			lines := strings.Split(column, "\n")
 			if len(lines) == 1 {
-				fmt.Printf(lineFormat, result.Cols[idx].Name, lines[0])
+				fmt.Printf(lineFormat, columnNames[idx], lines[0])
 			} else {
 				for lineIdx, line := range lines {
 					if lineIdx == 0 {
 						// the first line
-						fmt.Printf(multiLineFormat, result.Cols[idx].Name, line)
+						fmt.Printf(multiLineFormat, columnNames[idx], line)
 					} else {
 						// next lines
 						fmt.Printf(multiLineFormat, "", line)
@@ -347,10 +367,12 @@ func displayTable(ctx context.Context, result *queryresult.Result) (int, *queryr
 	var colConfigs []table.ColumnConfig
 	headers := make(table.Row, len(result.Cols))
 
-	for idx, column := range result.Cols {
-		headers[idx] = column.Name
+	// get the column names (this takes into account the original name)
+	columnNames := columnNames(result.Cols)
+	for idx, columnName := range columnNames {
+		headers[idx] = columnName
 		colConfigs = append(colConfigs, table.ColumnConfig{
-			Name:     column.Name,
+			Name:     columnName,
 			Number:   idx + 1,
 			WidthMax: constants.MaxColumnWidth,
 		})

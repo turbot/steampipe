@@ -1,11 +1,13 @@
 package db_client
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
 
@@ -18,7 +20,7 @@ func columnTypeDatabaseTypeName(field pgconn.FieldDescription, connection *pgx.C
 	return strconv.FormatInt(int64(field.DataTypeOID), 10)
 }
 
-func fieldDescriptionsToColumns(fieldDescriptions []pgconn.FieldDescription, connection *pgx.Conn) []*queryresult.ColumnDef {
+func fieldDescriptionsToColumns(fieldDescriptions []pgconn.FieldDescription, connection *pgx.Conn) ([]*queryresult.ColumnDef, error) {
 	cols := make([]*queryresult.ColumnDef, len(fieldDescriptions))
 
 	for i, f := range fieldDescriptions {
@@ -29,5 +31,30 @@ func fieldDescriptionsToColumns(fieldDescriptions []pgconn.FieldDescription, con
 			DataType: typeName,
 		}
 	}
-	return cols
+
+	// Ensure column names are unique
+	if err := ensureUniqueColumnName(cols); err != nil {
+		return nil, err
+	}
+
+	return cols, nil
+}
+
+func ensureUniqueColumnName(cols []*queryresult.ColumnDef) error {
+	// create a unique name generator
+	nameGenerator := utils.NewUniqueNameGenerator()
+
+	for _, col := range cols {
+		uniqueName, err := nameGenerator.GetUniqueName(col.Name)
+		if err != nil {
+			return fmt.Errorf("error generating unique column name: %w", err)
+		}
+		// if the column name has changed, store the original name and update the column name to be the unique name
+		if uniqueName != col.Name {
+			// set the original name first, BEFORE mutating name
+			col.OriginalName = col.Name
+			col.Name = uniqueName
+		}
+	}
+	return nil
 }
