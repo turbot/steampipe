@@ -1,0 +1,124 @@
+{
+ "columns": [
+  {
+   "name": "resource_name",
+   "data_type": "text"
+  },
+  {
+   "name": "mod_name",
+   "data_type": "text"
+  },
+  {
+   "name": "file_name",
+   "data_type": "text"
+  },
+  {
+   "name": "start_line_number",
+   "data_type": "int4"
+  },
+  {
+   "name": "end_line_number",
+   "data_type": "int4"
+  },
+  {
+   "name": "auto_generated",
+   "data_type": "bool"
+  },
+  {
+   "name": "source_definition",
+   "data_type": "text"
+  },
+  {
+   "name": "is_anonymous",
+   "data_type": "bool"
+  },
+  {
+   "name": "severity",
+   "data_type": "text"
+  },
+  {
+   "name": "width",
+   "data_type": "text"
+  },
+  {
+   "name": "type",
+   "data_type": "text"
+  },
+  {
+   "name": "sql",
+   "data_type": "text"
+  },
+  {
+   "name": "args",
+   "data_type": "jsonb"
+  },
+  {
+   "name": "params",
+   "data_type": "jsonb"
+  },
+  {
+   "name": "query",
+   "data_type": "text"
+  },
+  {
+   "name": "path",
+   "data_type": "jsonb"
+  },
+  {
+   "name": "qualified_name",
+   "data_type": "text"
+  },
+  {
+   "name": "title",
+   "data_type": "text"
+  },
+  {
+   "name": "description",
+   "data_type": "text"
+  },
+  {
+   "name": "documentation",
+   "data_type": "text"
+  },
+  {
+   "name": "tags",
+   "data_type": "jsonb"
+  }
+ ],
+ "rows": [
+  {
+   "args": {
+    "args_list": null,
+    "refs": null
+   },
+   "auto_generated": false,
+   "description": "Sample control to test introspection functionality",
+   "documentation": null,
+   "end_line_number": 33,
+   "file_name": "/Users/pskrbasu/work/src/steampipe/tests/acceptance/test_data/mods/introspection_table_mod/resources.sp",
+   "is_anonymous": false,
+   "mod_name": "introspection_table_mod",
+   "params": null,
+   "path": [
+    [
+     "mod.introspection_table_mod",
+     "introspection_table_mod.benchmark.sample_benchmark_1",
+     "introspection_table_mod.control.sample_control_1"
+    ]
+   ],
+   "qualified_name": "introspection_table_mod.control.sample_control_1",
+   "query": "introspection_table_mod.query.sample_query_1",
+   "resource_name": "sample_control_1",
+   "severity": "high",
+   "source_definition": "control \"sample_control_1\" {\n  title = \"Sample control 1\"\n  description = \"Sample control to test introspection functionality\"\n  query = query.sample_query_1\n  severity = \"high\"\n  tags = {\n    \"foo\": \"bar\"\n  }\n}",
+   "sql": null,
+   "start_line_number": 25,
+   "tags": {
+    "foo": "bar"
+   },
+   "title": "Sample control 1",
+   "type": null,
+   "width": null
+  }
+ ]
+}

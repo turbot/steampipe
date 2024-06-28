@@ -1,15 +1,14 @@
 {
+  "columns": [
+   {
+    "name": "a",
+    "data_type": "int4"
+   }
+  ],
   "rows": [
    {
     "a": 1
    }
-  ],
-  "metadata": {
-   "Duration": 141791,
-   "scans": [],
-   "rows_returned": 1,
-   "rows_fetched": 0,
-   "hydrate_calls": 0
-  }
+  ]
  }
  

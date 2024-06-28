@@ -1,4 +1,114 @@
 {
+  "columns": [
+   {
+    "name": "nullcolumn",
+    "data_type": "bpchar"
+   },
+   {
+    "name": "booleancolumn",
+    "data_type": "bool"
+   },
+   {
+    "name": "textcolumn1",
+    "data_type": "bpchar"
+   },
+   {
+    "name": "textcolumn2",
+    "data_type": "varchar"
+   },
+   {
+    "name": "textcolumn3",
+    "data_type": "text"
+   },
+   {
+    "name": "integercolumn1",
+    "data_type": "int2"
+   },
+   {
+    "name": "integercolumn2",
+    "data_type": "int4"
+   },
+   {
+    "name": "integercolumn3",
+    "data_type": "int4"
+   },
+   {
+    "name": "integercolumn4",
+    "data_type": "int8"
+   },
+   {
+    "name": "integercolumn5",
+    "data_type": "int8"
+   },
+   {
+    "name": "numericcolumn",
+    "data_type": "numeric"
+   },
+   {
+    "name": "realcolumn",
+    "data_type": "float4"
+   },
+   {
+    "name": "floatcolumn",
+    "data_type": "float8"
+   },
+   {
+    "name": "date1",
+    "data_type": "date"
+   },
+   {
+    "name": "time1",
+    "data_type": "time"
+   },
+   {
+    "name": "timestamp1",
+    "data_type": "timestamp"
+   },
+   {
+    "name": "timestamp2",
+    "data_type": "timestamptz"
+   },
+   {
+    "name": "interval1",
+    "data_type": "interval"
+   },
+   {
+    "name": "array1",
+    "data_type": "_text"
+   },
+   {
+    "name": "jsondata",
+    "data_type": "jsonb"
+   },
+   {
+    "name": "jsondata2",
+    "data_type": "json"
+   },
+   {
+    "name": "uuidcolumn",
+    "data_type": "uuid"
+   },
+   {
+    "name": "ipaddress",
+    "data_type": "inet"
+   },
+   {
+    "name": "macaddress",
+    "data_type": "macaddr"
+   },
+   {
+    "name": "cidrrange",
+    "data_type": "cidr"
+   },
+   {
+    "name": "xmldata",
+    "data_type": "142"
+   },
+   {
+    "name": "currency",
+    "data_type": "790"
+   }
+  ],
   "rows": [
    {
     "array1": "(408)-589-5841",
@@ -41,13 +151,6 @@
     "uuidcolumn": "6948df80-14bd-4e04-8842-7668d9c001f5",
     "xmldata": "<book><title>Manual</title><chapter>...</chapter></book>"
    }
-  ],
-  "metadata": {
-   "Duration": 2523750,
-   "scans": [],
-   "rows_returned": 1,
-   "rows_fetched": 0,
-   "hydrate_calls": 0
-  }
+  ]
  }
  

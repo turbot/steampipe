@@ -1,4 +1,50 @@
 {
+  "columns": [
+   {
+    "name": "column_0",
+    "data_type": "text"
+   },
+   {
+    "name": "column_1",
+    "data_type": "text"
+   },
+   {
+    "name": "column_2",
+    "data_type": "text"
+   },
+   {
+    "name": "column_3",
+    "data_type": "text"
+   },
+   {
+    "name": "column_4",
+    "data_type": "text"
+   },
+   {
+    "name": "column_5",
+    "data_type": "text"
+   },
+   {
+    "name": "column_6",
+    "data_type": "text"
+   },
+   {
+    "name": "column_7",
+    "data_type": "text"
+   },
+   {
+    "name": "column_8",
+    "data_type": "text"
+   },
+   {
+    "name": "column_9",
+    "data_type": "text"
+   },
+   {
+    "name": "id",
+    "data_type": "int8"
+   }
+  ],
   "rows": [
    {
     "column_0": "column_0-0",
@@ -130,38 +176,6 @@
     "column_9": "column_9-1005",
     "id": 1005
    }
-  ],
-  "metadata": {
-   "Duration": 201108250,
-   "scans": [
-    {
-     "connection": "chaos",
-     "table": "chaos_high_row_count",
-     "cache_hit": false,
-     "rows_fetched": 5000,
-     "hydrate_calls": 0,
-     "start_time": "2024-04-11T11:17:24+05:30",
-     "duration": 155,
-     "columns": [
-      "column_0",
-      "column_1",
-      "column_2",
-      "column_3",
-      "column_4",
-      "column_5",
-      "column_6",
-      "column_7",
-      "column_8",
-      "column_9",
-      "id"
-     ],
-     "limit": null,
-     "quals": null
-    }
-   ],
-   "rows_returned": 10,
-   "rows_fetched": 5000,
-   "hydrate_calls": 0
-  }
+  ]
  }
  

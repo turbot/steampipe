@@ -208,6 +208,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe check - export snapshot" {
+  skip "deprecated"
   cd $CONTROL_RENDERING_TEST_MOD
   run steampipe check control.sample_control_mixed_results_1 --export test.sps --progress=false
 

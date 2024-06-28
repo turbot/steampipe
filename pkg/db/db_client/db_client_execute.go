@@ -134,7 +134,10 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		return
 	}
 
-	colDefs := fieldDescriptionsToColumns(rows.FieldDescriptions(), session.Connection.Conn())
+	colDefs, err := fieldDescriptionsToColumns(rows.FieldDescriptions(), session.Connection.Conn())
+	if err != nil {
+		return nil, err
+	}
 
 	result := queryresult.NewResult(colDefs)
 
