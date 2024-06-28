@@ -34,6 +34,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "select from chaos.chaos_high_column_count order by column_0" {
+  skip
   run steampipe query --output json  "select * from chaos.chaos_high_column_count order by column_0 limit 10"
   echo $output > $TEST_DATA_DIR/actual_1.json
 

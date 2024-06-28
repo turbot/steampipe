@@ -1,37 +1,14 @@
 {
+  "columns": [
+   {
+    "name": "from_qual_column",
+    "data_type": "text"
+   }
+  ],
   "rows": [
    {
     "from_qual_column": "2"
    }
-  ],
-  "metadata": {
-   "Duration": 40179750,
-   "scans": [
-    {
-     "connection": "chaos",
-     "table": "chaos_transforms",
-     "cache_hit": false,
-     "rows_fetched": 1,
-     "hydrate_calls": 0,
-     "start_time": "2024-04-11T11:49:42+05:30",
-     "duration": 3,
-     "columns": [
-      "from_qual_column",
-      "id"
-     ],
-     "limit": null,
-     "quals": [
-      {
-       "column": "id",
-       "operator": "=",
-       "value": 2
-      }
-     ]
-    }
-   ],
-   "rows_returned": 1,
-   "rows_fetched": 1,
-   "hydrate_calls": 0
-  }
+  ]
  }
  
