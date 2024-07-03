@@ -1,4 +1,4 @@
-package dashboardexecute
+package snapshot
 
 type RuntimeDependencySubscriber interface {
 	RuntimeDependencyPublisher

@@ -1,4 +1,4 @@
-package dashboardexecute
+package snapshot
 
 import (
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
