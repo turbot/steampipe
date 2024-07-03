@@ -1,4 +1,4 @@
-package dashboardexecute
+package snapshot
 
 import (
 	"context"
