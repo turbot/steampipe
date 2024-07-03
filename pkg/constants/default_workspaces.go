@@ -36,16 +36,5 @@ const DefaultWorkspaceContent = `
 #     separator    = ","     # any single char
 #     timing       = on   # off, on, verbose
 #   }
-# 
-#   options "check" {
-#     header    = true    # true, false
-#     output    = "text"  # brief, csv, html, json, md, text, snapshot or none (default "text")
-#     separator = ","     # any single char
-#     timing    = true    # true, false
-#   }
-#   
-#   options "dashboard" {
-#     browser = true
-#   }
 # }
 `
