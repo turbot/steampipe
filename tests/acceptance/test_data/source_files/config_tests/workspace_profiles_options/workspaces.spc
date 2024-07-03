@@ -21,9 +21,6 @@ workspace "default" {
     separator = "|"
     timing = true
   }
-  options "dashboard" {
-    browser = true
-  }
 }
 
 workspace "sample" {
@@ -48,8 +45,5 @@ workspace "sample" {
     output = "csv"
     separator = ";"
     timing = true
-  }
-  options "dashboard" {
-    browser = true
   }
 }
