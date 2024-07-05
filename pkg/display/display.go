@@ -26,6 +26,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/snapshot2"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -42,6 +43,8 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 
 	outputFormat := cmdconfig.Viper().GetString(constants.ArgOutput)
 	switch outputFormat {
+	case constants.OutputFormatSnapshotShort:
+		rowErrors, timingResult = displaySnapshot(ctx, result)
 	case constants.OutputFormatJSON:
 		rowErrors, timingResult = displayJSON(ctx, result)
 	case constants.OutputFormatCSV:
@@ -195,6 +198,56 @@ func newJSONOutput() *jsonOutput {
 		Rows: make([]map[string]interface{}, 0),
 	}
 
+}
+
+func displaySnapshot(ctx context.Context, result *queryresult.Result) (int, *queryresult.TimingResult) {
+	rowErrors := 0
+	snapshotOutput := snapshot2.NewEmptySnapshot()
+
+	// add column defs to the JSON output
+	for _, col := range result.Cols {
+		// create a new column def, converting the data type to lowercase
+		c := pqueryresult.ColumnDef{
+			Name:     col.Name,
+			DataType: strings.ToLower(col.DataType),
+		}
+		// add to the column def array
+		snapshotOutput.Panels["abcd"].Columns = append(jsonOutput.Columns, c)
+	}
+
+	// define function to add each row to the JSON output
+	rowFunc := func(row []interface{}, result *queryresult.Result) {
+		record := map[string]interface{}{}
+		for idx, col := range result.Cols {
+			value, _ := ParseJSONOutputColumnValue(row[idx], col)
+			// get the column def
+			c := jsonOutput.Columns[idx]
+			// add the value under the unique column name
+			record[c.Name] = value
+		}
+		snapshotOutput.Panels.Rows = append(jsonOutput.Rows, record)
+	}
+
+	// call this function for each row
+	count, err := iterateResults(result, rowFunc)
+	if err != nil {
+		error_helpers.ShowError(ctx, err)
+		rowErrors++
+		return rowErrors, nil
+	}
+
+	// now we have iterated the rows, get the timing
+	snapshotOutput.Metadata = getTiming(result, count)
+
+	// display the JSON
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", " ")
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(snapshotOutput); err != nil {
+		fmt.Print("Error displaying result as JSON", err)
+		return 0, nil
+	}
+	return rowErrors, snapshotOutput.Metadata
 }
 
 func displayJSON(ctx context.Context, result *queryresult.Result) (int, *queryresult.TimingResult) {
