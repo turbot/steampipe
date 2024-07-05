@@ -21,12 +21,10 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/queryexecute"
-	"github.com/turbot/steampipe/pkg/query/queryresult"
-	"github.com/turbot/steampipe/pkg/snapshot"
+	"github.com/turbot/steampipe/pkg/snapshot2"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -243,7 +241,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 		baseInitData := &initData.InitData
 
 		// so a dashboard name was specified - just call GenerateSnapshot
-		snap, err := snapshot.GenerateSnapshot(ctx, queryProvider.Name(), baseInitData, nil)
+		snap, err := snapshot2.GenerateSnapshot(ctx, queryProvider.Name(), baseInitData, nil)
 		if err != nil {
 			exitCode = constants.ExitCodeSnapshotCreationFailed
 			error_helpers.FailOnError(err)
@@ -267,70 +265,71 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 			fmt.Println(string(jsonOutput))
 		default:
 			// otherwise convert the snapshot into a query result
-			result, err := snapshotToQueryResult(snap)
-			error_helpers.FailOnErrorWithMessage(err, "failed to display result as snapshot")
-			display.ShowOutput(ctx, result, display.WithTimingDisabled())
+			// result, err := snapshotToQueryResult(snap)
+			// error_helpers.FailOnErrorWithMessage(err, "failed to display result as snapshot")
+			fmt.Println()
+			// display.ShowOutput(ctx, result, display.WithTimingDisabled())
 		}
 
 		// share the snapshot if necessary
-		err = publishSnapshotIfNeeded(ctx, snap)
-		if err != nil {
-			exitCode = constants.ExitCodeSnapshotUploadFailed
-			error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
-		}
+		// err = publishSnapshotIfNeeded(ctx, snap)
+		// if err != nil {
+		// 	exitCode = constants.ExitCodeSnapshotUploadFailed
+		// 	error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
+		// }
 
 		// export the result if necessary
-		exportArgs := viper.GetStringSlice(constants.ArgExport)
-		exportMsg, err := initData.ExportManager.DoExport(ctx, snap.FileNameRoot, snap, exportArgs)
-		if err != nil {
-			exitCode = constants.ExitCodeSnapshotCreationFailed
-			error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
-		}
-		// print the location where the file is exported
-		if len(exportMsg) > 0 && viper.GetBool(constants.ArgProgress) {
-			fmt.Printf("\n")
-			fmt.Println(strings.Join(exportMsg, "\n"))
-			fmt.Printf("\n")
-		}
+		// exportArgs := viper.GetStringSlice(constants.ArgExport)
+		// exportMsg, err := initData.ExportManager.DoExport(ctx, snap.FileNameRoot, snap, exportArgs)
+		// if err != nil {
+		// 	exitCode = constants.ExitCodeSnapshotCreationFailed
+		// 	error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
+		// }
+		// // print the location where the file is exported
+		// if len(exportMsg) > 0 && viper.GetBool(constants.ArgProgress) {
+		// 	fmt.Printf("\n")
+		// 	fmt.Println(strings.Join(exportMsg, "\n"))
+		// 	fmt.Printf("\n")
+		// }
 	}
 	return 0
 }
 
-func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot) (*queryresult.Result, error) {
-	// the table of a snapshot query has a fixed name
-	tablePanel, ok := snap.Panels[modconfig.SnapshotQueryTableName]
-	if !ok {
-		return nil, sperr.New("dashboard does not contain table result for query")
-	}
-	chartRun := tablePanel.(*snapshot.LeafRun)
-	if !ok {
-		return nil, sperr.New("failed to read query result from snapshot")
-	}
-	// check for error
-	if err := chartRun.GetError(); err != nil {
-		return nil, error_helpers.DecodePgError(err)
-	}
+// func snapshotToQueryResult(snap *snapshot2.SteampipeSnapshot) (*queryresult.Result, error) {
+// 	// the table of a snapshot query has a fixed name
+// 	tablePanel, ok := snap.Panels[modconfig.SnapshotQueryTableName]
+// 	if !ok {
+// 		return nil, sperr.New("dashboard does not contain table result for query")
+// 	}
+// 	chartRun := tablePanel.(*snapshot.LeafRun)
+// 	if !ok {
+// 		return nil, sperr.New("failed to read query result from snapshot")
+// 	}
+// 	// check for error
+// 	if err := chartRun.GetError(); err != nil {
+// 		return nil, error_helpers.DecodePgError(err)
+// 	}
 
-	res := queryresult.NewResult(chartRun.Data.Columns)
+// 	res := queryresult.NewResult(chartRun.Data.Columns)
 
-	// start a goroutine to stream the results as rows
-	go func() {
-		for _, d := range chartRun.Data.Rows {
-			// we need to allocate a new slice everytime, since this gets read
-			// asynchronously on the other end and we need to make sure that we don't overwrite
-			// data already sent
-			rowVals := make([]interface{}, len(chartRun.Data.Columns))
-			for i, c := range chartRun.Data.Columns {
-				rowVals[i] = d[c.Name]
-			}
-			res.StreamRow(rowVals)
-		}
-		res.TimingResult <- chartRun.TimingResult
-		res.Close()
-	}()
+// 	// start a goroutine to stream the results as rows
+// 	go func() {
+// 		for _, d := range chartRun.Data.Rows {
+// 			// we need to allocate a new slice everytime, since this gets read
+// 			// asynchronously on the other end and we need to make sure that we don't overwrite
+// 			// data already sent
+// 			rowVals := make([]interface{}, len(chartRun.Data.Columns))
+// 			for i, c := range chartRun.Data.Columns {
+// 				rowVals[i] = d[c.Name]
+// 			}
+// 			res.StreamRow(rowVals)
+// 		}
+// 		res.TimingResult <- chartRun.TimingResult
+// 		res.Close()
+// 	}()
 
-	return res, nil
-}
+// 	return res, nil
+// }
 
 // convert the given command line query into a query resource and add to workspace
 // this is to allow us to use existing dashboard execution code
