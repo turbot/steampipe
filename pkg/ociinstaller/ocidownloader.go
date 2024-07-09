@@ -63,7 +63,7 @@ func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []strin
 
 	// Get credentials from the docker credentials store
 	storeOpts := credentials.StoreOptions{}
-	credStore, err := credentials.NewStoreFromDocker(storeOpts)
+	credStore, err := credentials.NewStore("", storeOpts)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
