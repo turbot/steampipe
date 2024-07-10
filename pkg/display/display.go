@@ -43,7 +43,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 
 	outputFormat := cmdconfig.Viper().GetString(constants.ArgOutput)
 	switch outputFormat {
-	case constants.OutputFormatSnapshotShort:
+	case constants.OutputFormatSnapshotShort, constants.OutputFormatSnapshot:
 		rowErrors, timingResult = displaySnapshot(ctx, result)
 	case constants.OutputFormatJSON:
 		rowErrors, timingResult = displayJSON(ctx, result)
@@ -203,41 +203,41 @@ func newJSONOutput() *jsonOutput {
 func displaySnapshot(ctx context.Context, result *queryresult.Result) (int, *queryresult.TimingResult) {
 	rowErrors := 0
 	snapshotOutput := snapshot2.NewEmptySnapshot()
+	//
+	//// add column defs to the JSON output
+	//for _, col := range result.Cols {
+	//	//// create a new column def, converting the data type to lowercase
+	//	//c := pfq.ColumnDef{
+	//	//	Name:     col.Name,
+	//	//	DataType: strings.ToLower(col.DataType),
+	//	//}
+	//	// add to the column def array
+	//	//snapshotOutput.Panels["abcd"].Columns = append(jsonOutput.Columns, c)
+	//}
 
-	// add column defs to the JSON output
-	for _, col := range result.Cols {
-		// create a new column def, converting the data type to lowercase
-		c := pqueryresult.ColumnDef{
-			Name:     col.Name,
-			DataType: strings.ToLower(col.DataType),
-		}
-		// add to the column def array
-		snapshotOutput.Panels["abcd"].Columns = append(jsonOutput.Columns, c)
-	}
+	//// define function to add each row to the JSON output
+	//rowFunc := func(row []interface{}, result *queryresult.Result) {
+	//	//record := map[string]interface{}{}
+	//	//for idx, col := range result.Cols {
+	//	//	value, _ := ParseJSONOutputColumnValue(row[idx], col)
+	//	//	// get the column def
+	//	//	c := jsonOutput.Columns[idx]
+	//	//	// add the value under the unique column name
+	//	//	record[c.Name] = value
+	//	//}
+	//	//snapshotOutput.Panels.Rows = append(jsonOutput.Rows, record)
+	//}
 
-	// define function to add each row to the JSON output
-	rowFunc := func(row []interface{}, result *queryresult.Result) {
-		record := map[string]interface{}{}
-		for idx, col := range result.Cols {
-			value, _ := ParseJSONOutputColumnValue(row[idx], col)
-			// get the column def
-			c := jsonOutput.Columns[idx]
-			// add the value under the unique column name
-			record[c.Name] = value
-		}
-		snapshotOutput.Panels.Rows = append(jsonOutput.Rows, record)
-	}
-
-	// call this function for each row
-	count, err := iterateResults(result, rowFunc)
-	if err != nil {
-		error_helpers.ShowError(ctx, err)
-		rowErrors++
-		return rowErrors, nil
-	}
+	//// call this function for each row
+	//count, err := iterateResults(result, rowFunc)
+	//if err != nil {
+	//	error_helpers.ShowError(ctx, err)
+	//	rowErrors++
+	//	return rowErrors, nil
+	//}
 
 	// now we have iterated the rows, get the timing
-	snapshotOutput.Metadata = getTiming(result, count)
+	//snapshotOutput.Metadata = getTiming(result, count)
 
 	// display the JSON
 	encoder := json.NewEncoder(os.Stdout)
@@ -247,7 +247,7 @@ func displaySnapshot(ctx context.Context, result *queryresult.Result) (int, *que
 		fmt.Print("Error displaying result as JSON", err)
 		return 0, nil
 	}
-	return rowErrors, snapshotOutput.Metadata
+	return rowErrors, nil //snapshotOutput.Metadata
 }
 
 func displayJSON(ctx context.Context, result *queryresult.Result) (int, *queryresult.TimingResult) {
