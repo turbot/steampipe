@@ -164,10 +164,10 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	switch {
 	case interactiveMode:
 		err = queryexecute.RunInteractiveSession(ctx, initData)
-	case snapshotRequired():
-		// if we are either outputting snapshot format, or sharing the results as a snapshot, execute the query
-		// as a dashboard
-		failures = executeSnapshotQuery(initData, ctx)
+	//case snapshotRequired():
+	//	// if we are either outputting snapshot format, or sharing the results as a snapshot, execute the query
+	//	// as a dashboard
+	//	failures = executeSnapshotQuery(initData, ctx)
 	default:
 		// NOTE: disable any status updates - we do not want 'loading' output from any queries
 		ctx = statushooks.DisableStatusHooks(ctx)
