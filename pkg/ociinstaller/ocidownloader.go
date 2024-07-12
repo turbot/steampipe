@@ -3,6 +3,7 @@ package ociinstaller
 import (
 	"context"
 	"encoding/json"
+	"github.com/turbot/steampipe/pkg/constants"
 	"log"
 	"strings"
 
@@ -63,7 +64,12 @@ func (o *ociDownloader) Pull(ctx context.Context, ref string, mediaTypes []strin
 
 	// Get credentials from the docker credentials store
 	storeOpts := credentials.StoreOptions{}
-	credStore, err := credentials.NewStore("", storeOpts)
+	var credStore *credentials.DynamicStore
+	if strings.HasPrefix(ref, constants.BaseImageRef) {
+		credStore, err = credentials.NewStore("", storeOpts)
+	} else {
+		credStore, err = credentials.NewStoreFromDocker(storeOpts)
+	}
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
