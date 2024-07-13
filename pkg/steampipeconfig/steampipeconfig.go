@@ -32,7 +32,6 @@ type SteampipeConfig struct {
 	// Steampipe options
 	DefaultConnectionOptions *options.Connection
 	DatabaseOptions          *options.Database
-	DashboardOptions         *options.GlobalDashboard
 	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
 	PluginOptions            *options.Plugin
@@ -85,9 +84,6 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	if c.DatabaseOptions != nil {
 		res.PopulateConfigMapForOptions(c.DatabaseOptions)
 	}
-	if c.DashboardOptions != nil {
-		res.PopulateConfigMapForOptions(c.DashboardOptions)
-	}
 	if c.PluginOptions != nil {
 		res.PopulateConfigMapForOptions(c.PluginOptions)
 	}
@@ -104,12 +100,6 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings er
 			c.DatabaseOptions = o
 		} else {
 			c.DatabaseOptions.Merge(o)
-		}
-	case *options.GlobalDashboard:
-		if c.DashboardOptions == nil {
-			c.DashboardOptions = o
-		} else {
-			c.DashboardOptions.Merge(o)
 		}
 	case *options.General:
 		if c.GeneralOptions == nil {
@@ -220,12 +210,6 @@ DefaultConnectionOptions:
 DatabaseOptions:
 %s`, c.DatabaseOptions.String())
 	}
-	if c.DashboardOptions != nil {
-		str += fmt.Sprintf(`
-
-DashboardOptions:
-%s`, c.DashboardOptions.String())
-	}
 	if c.TerminalOptions != nil {
 		str += fmt.Sprintf(`
 
@@ -306,8 +290,8 @@ func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin) error {
 		log.Printf("[WARN] addPlugin called for plugin '%s' which is not installed", imageRef)
 		return nil
 	}
-		//  populate the version from the plugin version file data
-		plugin.Version = pluginVersion.Version
+	//  populate the version from the plugin version file data
+	plugin.Version = pluginVersion.Version
 
 	// add to list of plugin configs for this image ref
 	c.Plugins[imageRef] = append(c.Plugins[imageRef], plugin)

@@ -39,11 +39,9 @@ type WorkspaceProfile struct {
 	Base              *WorkspaceProfile `hcl:"base"`
 
 	// options
-	QueryOptions     *options.Query                     `cty:"query-options"`
-	CheckOptions     *options.Check                     `cty:"check-options"`
-	DashboardOptions *options.WorkspaceProfileDashboard `cty:"dashboard-options"`
-	DeclRange        hcl.Range
-	block            *hcl.Block
+	QueryOptions *options.Query `cty:"query-options"`
+	DeclRange    hcl.Range
+	block        *hcl.Block
 }
 
 func NewWorkspaceProfile(block *hcl.Block) *WorkspaceProfile {
@@ -64,16 +62,6 @@ func (p *WorkspaceProfile) SetOptions(opts options.Options, block *hcl.Block) hc
 			diags = append(diags, duplicateOptionsBlockDiag(block))
 		}
 		p.QueryOptions = o
-	case *options.Check:
-		if p.CheckOptions != nil {
-			diags = append(diags, duplicateOptionsBlockDiag(block))
-		}
-		p.CheckOptions = o
-	case *options.WorkspaceProfileDashboard:
-		if p.DashboardOptions != nil {
-			diags = append(diags, duplicateOptionsBlockDiag(block))
-		}
-		p.DashboardOptions = o
 	default:
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
@@ -211,16 +199,6 @@ func (p *WorkspaceProfile) setBaseProperties() {
 	} else {
 		p.QueryOptions.SetBaseProperties(p.Base.QueryOptions)
 	}
-	if p.CheckOptions == nil {
-		p.CheckOptions = p.Base.CheckOptions
-	} else {
-		p.CheckOptions.SetBaseProperties(p.Base.CheckOptions)
-	}
-	if p.DashboardOptions == nil {
-		p.DashboardOptions = p.Base.DashboardOptions
-	} else {
-		p.DashboardOptions.SetBaseProperties(p.Base.DashboardOptions)
-	}
 }
 
 // ConfigMap creates a config map containing all options to pass to viper
@@ -250,12 +228,6 @@ func (p *WorkspaceProfile) ConfigMap(cmd *cobra.Command) map[string]interface{} 
 
 	if cmd.Name() == constants.CmdNameQuery && p.QueryOptions != nil {
 		res.PopulateConfigMapForOptions(p.QueryOptions)
-	}
-	if cmd.Name() == constants.CmdNameCheck && p.CheckOptions != nil {
-		res.PopulateConfigMapForOptions(p.CheckOptions)
-	}
-	if cmd.Name() == constants.CmdNameDashboard && p.DashboardOptions != nil {
-		res.PopulateConfigMapForOptions(p.DashboardOptions)
 	}
 
 	return res

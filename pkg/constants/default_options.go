@@ -19,11 +19,6 @@ const DefaultConnectionConfigContent = `
 #   cache_max_size_mb  = 1024                  # max total size of cache across all plugins
 # }
 
-# options "dashboard" {
-#   port   = 9193    # any valid, open port number
-#   listen = "local" # local, network
-# }
-
 # options "general" {
 #   update_check = true    		# true, false
 #   telemetry    = "info"  		# info, none
