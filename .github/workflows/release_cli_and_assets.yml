@@ -275,7 +275,7 @@ jobs:
     - name: Run GoReleaser
       uses: goreleaser/goreleaser-action@v6
       with:
-        version: latest
+        version: '~> v1'
         args: release --snapshot --clean --skip=publish
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -759,7 +759,7 @@ jobs:
     - name: Run GoReleaser
       uses: goreleaser/goreleaser-action@v6
       with:
-        version: latest
+        version: '~> v1'
         args: release --clean
       env:
         GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
