@@ -1,6 +1,6 @@
 ## v0.23.3 [2024-07-17]
 _Bug fixes_
-- When installing plugins, do not use local docker config for credential store, enabling installation from GHCR to work even if docker-credential-desktop not in PATH. ([#4323](https://github.com/turbot/steampipe/issues/4323))
+- When installing plugins, do not use local docker config for credential store if the plugin is being installed from GHCR, enabling installation from GHCR to work even if docker-credential-desktop not in PATH. ([#4323](https://github.com/turbot/steampipe/issues/4323))
 - Fix issue where steampipe returned 0 exit code even if failed to export snapshot. ([#4276](https://github.com/turbot/steampipe/issues/4276))
 - Query command should support legacy 'true' and 'false' for --timing flag. ([#4282](https://github.com/turbot/steampipe/issues/4282))
 - Fix issue where sps output is not working. ([#4297](https://github.com/turbot/steampipe/issues/4297))
