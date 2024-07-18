@@ -1,4 +1,90 @@
 {
+  "columns": [
+   {
+    "name": "resource_name",
+    "data_type": "text"
+   },
+   {
+    "name": "mod_name",
+    "data_type": "text"
+   },
+   {
+    "name": "file_name",
+    "data_type": "text"
+   },
+   {
+    "name": "start_line_number",
+    "data_type": "int4"
+   },
+   {
+    "name": "end_line_number",
+    "data_type": "int4"
+   },
+   {
+    "name": "auto_generated",
+    "data_type": "bool"
+   },
+   {
+    "name": "source_definition",
+    "data_type": "text"
+   },
+   {
+    "name": "is_anonymous",
+    "data_type": "bool"
+   },
+   {
+    "name": "severity",
+    "data_type": "text"
+   },
+   {
+    "name": "width",
+    "data_type": "text"
+   },
+   {
+    "name": "type",
+    "data_type": "text"
+   },
+   {
+    "name": "sql",
+    "data_type": "text"
+   },
+   {
+    "name": "args",
+    "data_type": "jsonb"
+   },
+   {
+    "name": "params",
+    "data_type": "jsonb"
+   },
+   {
+    "name": "query",
+    "data_type": "text"
+   },
+   {
+    "name": "path",
+    "data_type": "jsonb"
+   },
+   {
+    "name": "qualified_name",
+    "data_type": "text"
+   },
+   {
+    "name": "title",
+    "data_type": "text"
+   },
+   {
+    "name": "description",
+    "data_type": "text"
+   },
+   {
+    "name": "documentation",
+    "data_type": "text"
+   },
+   {
+    "name": "tags",
+    "data_type": "jsonb"
+   }
+  ],
   "rows": [
    {
     "args": {
@@ -33,13 +119,6 @@
     "type": null,
     "width": null
    }
-  ],
-  "metadata": {
-   "Duration": 280292,
-   "scans": [],
-   "rows_returned": 1,
-   "rows_fetched": 0,
-   "hydrate_calls": 0
-  }
+  ]
  }
  

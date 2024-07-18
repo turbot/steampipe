@@ -1,11 +1,70 @@
 {
-  "rows": [],
-  "metadata": {
-   "Duration": 377083,
-   "scans": [],
-   "rows_returned": 0,
-   "rows_fetched": 0,
-   "hydrate_calls": 0
-  }
+  "columns": [
+   {
+    "name": "name",
+    "data_type": "text"
+   },
+   {
+    "name": "state",
+    "data_type": "text"
+   },
+   {
+    "name": "type",
+    "data_type": "text"
+   },
+   {
+    "name": "connections",
+    "data_type": "_text"
+   },
+   {
+    "name": "import_schema",
+    "data_type": "text"
+   },
+   {
+    "name": "error",
+    "data_type": "text"
+   },
+   {
+    "name": "plugin",
+    "data_type": "text"
+   },
+   {
+    "name": "plugin_instance",
+    "data_type": "text"
+   },
+   {
+    "name": "schema_mode",
+    "data_type": "text"
+   },
+   {
+    "name": "schema_hash",
+    "data_type": "text"
+   },
+   {
+    "name": "comments_set",
+    "data_type": "bool"
+   },
+   {
+    "name": "connection_mod_time",
+    "data_type": "timestamptz"
+   },
+   {
+    "name": "plugin_mod_time",
+    "data_type": "timestamptz"
+   },
+   {
+    "name": "file_name",
+    "data_type": "text"
+   },
+   {
+    "name": "start_line_number",
+    "data_type": "int4"
+   },
+   {
+    "name": "end_line_number",
+    "data_type": "int4"
+   }
+  ],
+  "rows": []
  }
  

@@ -10,11 +10,16 @@ import (
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
 
-// ColumnNames :: extract names from columns
-func ColumnNames(columns []*queryresult.ColumnDef) []string {
+// columnNames builds a list of name from a slice of column defs - respecting the original name if present
+func columnNames(columns []*queryresult.ColumnDef) []string {
 	var colNames = make([]string, len(columns))
 	for i, c := range columns {
-		colNames[i] = c.Name
+		// respect original name
+		if c.OriginalName != "" {
+			colNames[i] = c.OriginalName
+		} else {
+			colNames[i] = c.Name
+		}
 	}
 
 	return colNames

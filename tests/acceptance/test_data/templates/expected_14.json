@@ -1,4 +1,10 @@
 {
+  "columns": [
+   {
+    "name": "transform_method_column",
+    "data_type": "text"
+   }
+  ],
   "rows": [
    {
     "transform_method_column": "Transform method"
@@ -6,29 +12,6 @@
    {
     "transform_method_column": "Transform method"
    }
-  ],
-  "metadata": {
-   "Duration": 40391583,
-   "scans": [
-    {
-     "connection": "chaos",
-     "table": "chaos_transforms",
-     "cache_hit": false,
-     "rows_fetched": 2,
-     "hydrate_calls": 0,
-     "start_time": "2024-04-11T11:45:30+05:30",
-     "duration": 3,
-     "columns": [
-      "transform_method_column",
-      "id"
-     ],
-     "limit": null,
-     "quals": null
-    }
-   ],
-   "rows_returned": 2,
-   "rows_fetched": 2,
-   "hydrate_calls": 0
-  }
+  ]
  }
  
