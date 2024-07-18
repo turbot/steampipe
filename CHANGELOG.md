@@ -1,3 +1,12 @@
+## v0.23.3 [2024-07-17]
+_Bug fixes_
+- When installing plugins, do not use local docker config for credential store if the plugin is being installed from GHCR, enabling installation from GHCR to work even if docker-credential-desktop not in PATH. ([#4323](https://github.com/turbot/steampipe/issues/4323))
+- Fix issue where steampipe returned 0 exit code even if failed to export snapshot. ([#4276](https://github.com/turbot/steampipe/issues/4276))
+- Query command should support legacy 'true' and 'false' for --timing flag. ([#4282](https://github.com/turbot/steampipe/issues/4282))
+- Fix issue where sps output is not working. ([#4297](https://github.com/turbot/steampipe/issues/4297))
+- When loading creating connection plugins, return connections successfully created even if some connections fail, due to config not being available. ([#474](https://github.com/turbot/steampipe-postgres-fdw/issues/474))
+- Show scan info in query JSON output only when timing config is verbose. ([#4292](https://github.com/turbot/steampipe/issues/4292))
+
 ## v0.23.2 [2024-05-17]
 _Bug fixes_
 - Update FDW to 1.11.2 to remove unnecessary NOTICE level log messages. ([#469](https://github.com/turbot/steampipe-postgres-fdw/issues/469))
