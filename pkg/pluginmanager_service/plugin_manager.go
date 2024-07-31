@@ -56,6 +56,7 @@ type PluginManager struct {
 	// shutdown syncronozation
 	// do not start any plugins while shutting down
 	shutdownMut sync.Mutex
+	shutdown    bool
 	// do not shutdown until all plugins have loaded
 	startPluginWg sync.WaitGroup
 
@@ -259,6 +260,7 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 	// lock shutdownMut before waiting for startPluginWg
 	// this enables us to exit from ensurePlugin early if needed
 	m.shutdownMut.Lock()
+	m.shutdown = true
 	m.startPluginWg.Wait()
 
 	// close our pool
@@ -609,7 +611,7 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 // return whether the plugin manager is shutting down
 func (m *PluginManager) shuttingDown() bool {
 	if !m.shutdownMut.TryLock() {
-		return true
+		return m.shutdown
 	}
 	m.shutdownMut.Unlock()
 	return false
