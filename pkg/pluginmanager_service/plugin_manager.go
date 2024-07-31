@@ -53,9 +53,10 @@ type PluginManager struct {
 	// map lock
 	mut sync.RWMutex
 
-	// shutdown syncronozation
+	// shutdown synchronization
 	// do not start any plugins while shutting down
-	shutdownMut sync.Mutex
+	shutdownMut  sync.RWMutex
+	shuttingDown bool
 	// do not shutdown until all plugins have loaded
 	startPluginWg sync.WaitGroup
 
@@ -259,6 +260,8 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 	// lock shutdownMut before waiting for startPluginWg
 	// this enables us to exit from ensurePlugin early if needed
 	m.shutdownMut.Lock()
+	m.shuttingDown = true
+	m.shutdownMut.Unlock()
 	m.startPluginWg.Wait()
 
 	// close our pool
@@ -316,7 +319,7 @@ func (m *PluginManager) ensurePlugin(pluginInstance string, connectionConfigs []
 	}()
 
 	// do not install a plugin while shutting down
-	if m.shuttingDown() {
+	if m.isShuttingDown() {
 		return nil, fmt.Errorf("plugin manager is shutting down")
 	}
 
@@ -563,7 +566,7 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	}
 
 	// provide opportunity to avoid setting connection configs if we are shutting down
-	if m.shuttingDown() {
+	if m.isShuttingDown() {
 		log.Printf("[INFO] aborting plugin %s initialization - plugin manager is shutting down", pluginName)
 		return nil, fmt.Errorf("plugin manager is shutting down")
 	}
@@ -607,12 +610,10 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 }
 
 // return whether the plugin manager is shutting down
-func (m *PluginManager) shuttingDown() bool {
-	if !m.shutdownMut.TryLock() {
-		return true
-	}
-	m.shutdownMut.Unlock()
-	return false
+func (m *PluginManager) isShuttingDown() bool {
+	m.shutdownMut.RLock()
+	defer m.shutdownMut.RUnlock()
+	return m.shuttingDown
 }
 
 // populate map of connection configs for each plugin instance
