@@ -13,6 +13,7 @@ type Plugin struct {
 	Instance        string         `hcl:"name,label" db:"plugin_instance"`
 	Alias           string         `hcl:"source,optional"`
 	MemoryMaxMb     *int           `hcl:"memory_max_mb,optional" db:"memory_max_mb"`
+	StartTimeout    *int           `hcl:"start_timeout,optional"`
 	Limiters        []*RateLimiter `hcl:"limiter,block" db:"limiters"`
 	FileName        *string        `db:"file_name"`
 	StartLineNumber *int           `db:"start_line_number"`
@@ -61,6 +62,15 @@ func (l *Plugin) GetMaxMemoryBytes() int64 {
 	}
 	return int64(1024 * 1024 * memoryMaxMb)
 }
+
+func (l *Plugin) GetStartTimeout() int64 {
+	startTimout := 0
+	if l.StartTimeout != nil {
+		startTimout = *l.StartTimeout
+	}
+	return int64(startTimout)
+}
+
 func (l *Plugin) GetLimiterMap() map[string]*RateLimiter {
 	res := make(map[string]*RateLimiter, len(l.Limiters))
 	for _, l := range l.Limiters {
@@ -74,6 +84,7 @@ func (l *Plugin) Equals(other *Plugin) bool {
 	return l.Instance == other.Instance &&
 		l.Alias == other.Alias &&
 		l.GetMaxMemoryBytes() == other.GetMaxMemoryBytes() &&
+		l.GetStartTimeout() == other.GetStartTimeout() &&
 		l.Plugin == other.Plugin &&
 		// compare limiters ignoring order
 		maps.EqualFunc(l.GetLimiterMap(), other.GetLimiterMap(), func(l, r *RateLimiter) bool { return l.Equals(r) })
@@ -91,4 +102,3 @@ func ResolvePluginImageRef(pluginAlias string) string {
 	// ok so there is no plugin block reference - build the plugin image ref from the PluginAlias field
 	return ociinstaller.NewSteampipeImageRef(pluginAlias).DisplayImageRef()
 }
-
