@@ -81,7 +81,7 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 		// if executeQuery fails it returns err, else it returns the number of rows that returned errors while execution
 		if err, failures = executeQuery(ctx, initData.Client, q); err != nil {
 			failures++
-			error_helpers.ShowWarning(fmt.Sprintf("executeQueries: query %d of %d failed: %v", i+1, len(initData.Queries), error_helpers.DecodePgError(err)))
+			error_helpers.ShowWarning(fmt.Sprintf("query %d of %d failed: %v", i+1, len(initData.Queries), error_helpers.DecodePgError(err)))
 			// if timing flag is enabled, show the time taken for the query to fail
 			if cmdconfig.Viper().GetString(constants.ArgTiming) != constants.ArgOff {
 				display.DisplayErrorTiming(t)
