@@ -18,8 +18,8 @@ on:
 
 env:
   PROJECT_ID: steampipe
-  IMAGE_NAME: steampipe-postgres-db
-  CORE_REPO: ghcr.io/turbot
+  IMAGE_NAME: db
+  CORE_REPO: ghcr.io/turbot/steampipe
   ORG: turbot
   CONFIG_SCHEMA_VERSION: "2020-11-18"
   VERSION: ${{ github.event.inputs.version }}
