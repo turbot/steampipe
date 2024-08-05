@@ -34,7 +34,7 @@ const (
 	PostgresImageRef    = "ghcr.io/turbot/steampipe/db:14.2.0"
 	PostgresImageDigest = "sha256:1972eee02bbd3bf52f8cce30a5109ab017f310a85d45a31ddd1623f1dfe455fa"
 
-	FdwImageRef       = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
+	FdwImageRef       = "ghcr.io/turbot/steampipe/fdw:" + FdwVersion
 	FdwBinaryFileName = "steampipe_postgres_fdw.so"
 )
 
