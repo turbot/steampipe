@@ -31,8 +31,8 @@ const (
 	FdwVersion      = "1.11.4"
 
 	// PostgresImageRef is the OCI Image ref for the database binaries
-	PostgresImageRef    = "us-docker.pkg.dev/steampipe/steampipe/db:14.2.0"
-	PostgresImageDigest = "sha256:a75637209f1bc2fa9885216f7972dfa0d82010a25d3cbfc07baceba8d16f4a93"
+	PostgresImageRef    = "ghcr.io/turbot/steampipe/db:14.2.0"
+	PostgresImageDigest = "sha256:1972eee02bbd3bf52f8cce30a5109ab017f310a85d45a31ddd1623f1dfe455fa"
 
 	FdwImageRef       = "us-docker.pkg.dev/steampipe/steampipe/fdw:" + FdwVersion
 	FdwBinaryFileName = "steampipe_postgres_fdw.so"
