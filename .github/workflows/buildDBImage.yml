@@ -19,7 +19,7 @@ on:
 env:
   PROJECT_ID: steampipe
   IMAGE_NAME: db
-  CORE_REPO: us-docker.pkg.dev/steampipe/steampipe
+  CORE_REPO: ghcr.io/turbot/steampipe
   ORG: turbot
   CONFIG_SCHEMA_VERSION: "2020-11-18"
   VERSION: ${{ github.event.inputs.version }}
@@ -65,23 +65,13 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      - name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v2'
+      # Login to GHCR
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
         with:
-          service_account: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
-          credentials_json: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS_CREDENTIAL_JSON }}
-
-      - name: Get GCloud CLI
-        uses: google-github-actions/setup-gcloud@v2.1.0
-        with:
-          project_id: ${{ env.PROJECT_ID }}
-
-      - name: Setup GCloud CLI
-        run: |-
-          gcloud config list
-          gcloud components install beta
-          gcloud components install alpha --quiet
-          gcloud beta auth configure-docker us-docker.pkg.dev
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GH_PUBLISH_ACCESS_TOKEN }}
 
       - name: Pull & Extract - darwin amd64
         run: |-
@@ -147,6 +137,7 @@ jobs:
         run: |-
           oras version
 
+      # Publish to GHCR
       - name: Push to Registry
         run: |-
           REF="$CORE_REPO/$IMAGE_NAME:$VERSION"
