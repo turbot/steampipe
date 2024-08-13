@@ -1,3 +1,10 @@
+## v0.23.4 [2024-08-13]
+_Whats new_
+- Compiled with Go 1.22. ([#4340](https://github.com/turbot/steampipe/issues/4340))
+
+_Bug fixes_
+- Fix query error message to not include internal function names. ([#4335](https://github.com/turbot/steampipe/issues/4335))
+
 ## v0.23.3 [2024-07-17]
 _Bug fixes_
 - When installing plugins, do not use local docker config for credential store if the plugin is being installed from GHCR, enabling installation from GHCR to work even if docker-credential-desktop not in PATH. ([#4323](https://github.com/turbot/steampipe/issues/4323))
