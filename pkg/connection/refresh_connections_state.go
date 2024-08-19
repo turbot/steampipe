@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -35,8 +36,11 @@ type connectionError struct {
 
 type refreshConnectionState struct {
 	// a connection pool to the DB service which uses the server appname
-	pool                       *pgxpool.Pool
-	searchPath                 []string
+	pool *pgxpool.Pool
+	// connectionOrder is the order of connections to be updated
+	// it is the search path, with any connections NOT in the searfch path in alphabetical order at the end
+	connectionOrder []string
+
 	connectionUpdates          *steampipeconfig.ConnectionUpdates
 	tableUpdater               *connectionStateTableUpdater
 	res                        *steampipeconfig.RefreshConnectionResult
@@ -64,9 +68,16 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 		return nil, err
 	}
 
+	//build list of connections in search path order, (with non search path connections at the end)
+	// get connections which are not in the search path
+	nonSearchPathConnections := steampipeconfig.GlobalConfig.GetNonSearchPathConnections(searchPath)
+	// sort alphabetically
+	slices.Sort(nonSearchPathConnections)
+	connectionOrder := append(searchPath, nonSearchPathConnections...)
+
 	res := &refreshConnectionState{
 		pool:                       pool,
-		searchPath:                 searchPath,
+		connectionOrder:            connectionOrder,
 		forceUpdateConnectionNames: forceUpdateConnectionNames,
 		pluginManager:              pluginManager,
 	}
@@ -151,6 +162,7 @@ func (s *refreshConnectionState) refreshConnections(ctx context.Context) {
 
 	// NOTE: delete any DYNAMIC plugin connections which will be updated
 	// to avoid them being accessed before they are updated
+	log.Printf("[TRACE] deleting %d dynamic plugin connections to avoid them being accessed before they are updated", len(s.connectionUpdates.DynamicUpdates()))
 	if err := s.executeDeleteQueries(ctx, s.connectionUpdates.DynamicUpdates()); err != nil {
 		s.res.Error = err
 		return
@@ -373,16 +385,20 @@ func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	log.Printf("[INFO] executing %d update %s", numUpdates, utils.Pluralize("query", numUpdates))
 
 	// execute initial updates
-	log.Printf("[INFO] executing initial updates")
 	var errors []error
-	moreErrors := s.executeUpdatesInParallel(ctx, initialUpdates)
-	errors = append(errors, moreErrors...)
+	if len(initialUpdates) > 0 {
+		log.Printf("[INFO] executing %d initial %s", len(initialUpdates), utils.Pluralize("update", len(initialUpdates)))
+		moreErrors := s.executeUpdatesInParallel(ctx, initialUpdates)
+		errors = append(errors, moreErrors...)
+	}
 
-	// execute dynamic updates (note, we update all connections in search path order,
-	// so must call executeUpdateSetsInParallel)
-	log.Printf("[INFO] executing dynamic updates")
-	moreErrors = s.executeUpdateSetsInParallel(ctx, dynamicUpdates)
-	errors = append(errors, moreErrors...)
+	if len(dynamicUpdates) > 0 {
+		// execute dynamic updates (note, we update all connections in search path order,
+		// so must call executeUpdateSetsInParallel)
+		log.Printf("[INFO] executing %d dynamic %s", len(dynamicUpdates), utils.Pluralize("update", len(dynamicUpdates)))
+		moreErrors := s.executeUpdateSetsInParallel(ctx, dynamicUpdates)
+		errors = append(errors, moreErrors...)
+	}
 
 	// if any of the initial schemas failed, do not proceed - these schemas are required to ensure we correctly
 	// resolve unqualified queries/tables
@@ -410,12 +426,14 @@ func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 		log.Printf("[WARN] failed to send schem update Postgres notification: %s", err.Error())
 	}
 
-	log.Printf("[INFO] Execute %d remaining %s",
-		len(remainingUpdates),
-		utils.Pluralize("updates", len(remainingUpdates)))
-	// now execute remaining updates
-	moreErrors = s.executeUpdatesInParallel(ctx, remainingUpdates)
-	errors = append(errors, moreErrors...)
+	if len(remainingUpdates) > 0 {
+		log.Printf("[INFO] Execute %d remaining %s",
+			len(remainingUpdates),
+			utils.Pluralize("updates", len(remainingUpdates)))
+		// now execute remaining updates
+		moreErrors := s.executeUpdatesInParallel(ctx, remainingUpdates)
+		errors = append(errors, moreErrors...)
+	}
 
 	log.Printf("[INFO] Set comments for %d remaining %s and %d %s missing comments",
 		len(remainingUpdates),
@@ -520,7 +538,7 @@ func (s *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Context
 	if envClone, ok := os.LookupEnv("STEAMPIPE_CLONE_SCHEMA"); ok {
 		cloneSchemaEnabled = strings.ToLower(envClone) == "true"
 	}
-	log.Printf("[INFO] executeUpdateForConnections - cloneSchema=%v", cloneSchemaEnabled)
+	log.Printf("[INFO] executeUpdateForConnections - cloneSchemaEnabled=%v", cloneSchemaEnabled)
 
 	// each update may be multiple connections, to execute in order
 	for _, states := range updates {
@@ -649,7 +667,6 @@ func (s *refreshConnectionState) UpdateCommentsInParallel(ctx context.Context, u
 					return
 				}
 				errors = append(errors, connectionError.err)
-				// TODO just log errors
 			}
 		}
 	}()
@@ -682,6 +699,8 @@ func (s *refreshConnectionState) UpdateCommentsInParallel(ctx context.Context, u
 
 // syncronously execute the comments queries for one or more connections
 func (s *refreshConnectionState) updateCommentsForConnection(ctx context.Context, errChan chan *connectionError, connectionPluginMap map[string]*steampipeconfig.ConnectionPlugin, connectionState *steampipeconfig.ConnectionState) {
+	log.Printf("[DEBUG] refreshConnectionState.updateCommentsForConnection start for connection '%s'", connectionState.ConnectionName)
+
 	connectionName := connectionState.ConnectionName
 
 	var sql string
@@ -771,7 +790,7 @@ func getCloneSchemaQuery(exemplarSchemaName string, connectionState *steampipeco
 
 func (s *refreshConnectionState) getInitialAndRemainingUpdates() (initialUpdates, remainingUpdates map[string]*steampipeconfig.ConnectionState, dynamicUpdates map[string][]*steampipeconfig.ConnectionState) {
 	updates := s.connectionUpdates.Update
-	searchPathConnections := s.connectionUpdates.FinalConnectionState.GetFirstSearchPathConnectionForPlugins(s.searchPath)
+	searchPathConnections := s.connectionUpdates.FinalConnectionState.GetFirstSearchPathConnectionForPlugins(s.connectionOrder)
 
 	initialUpdates = make(map[string]*steampipeconfig.ConnectionState)
 	remainingUpdates = make(map[string]*steampipeconfig.ConnectionState)
@@ -796,8 +815,20 @@ func (s *refreshConnectionState) getInitialAndRemainingUpdates() (initialUpdates
 		if connectionState.SchemaMode == plugin.SchemaModeStatic && !isInitialUpdate {
 			remainingUpdates[connectionName] = connectionState
 		}
-
 	}
+
+	log.Printf("[TRACE] getInitialAndRemainingUpdates: %d initialUpdates: %s, %d remainingUpdates: %s, %d dynamicUpdates: %s",
+		len(initialUpdates),
+		strings.Join(maps.Keys(initialUpdates), ", "),
+		len(remainingUpdates),
+		strings.Join(maps.Keys(remainingUpdates), ", "),
+		len(dynamicUpdates),
+		strings.Join(maps.Keys(dynamicUpdates), ", "))
+
+	if len(initialUpdates)+len(dynamicUpdates)+len(remainingUpdates) != len(updates) {
+		log.Printf("[WARN] getInitialAndRemainingUpdates: initialUpdates + remainingUpdates + dynamicUpdates != updates")
+	}
+
 	return initialUpdates, remainingUpdates, dynamicUpdates
 }
 
