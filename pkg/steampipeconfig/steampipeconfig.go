@@ -17,6 +17,7 @@ import (
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
@@ -306,8 +307,8 @@ func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin) error {
 		log.Printf("[WARN] addPlugin called for plugin '%s' which is not installed", imageRef)
 		return nil
 	}
-		//  populate the version from the plugin version file data
-		plugin.Version = pluginVersion.Version
+	//  populate the version from the plugin version file data
+	plugin.Version = pluginVersion.Version
 
 	// add to list of plugin configs for this image ref
 	c.Plugins[imageRef] = append(c.Plugins[imageRef], plugin)
@@ -441,4 +442,18 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 		}
 		return nil, sperr.New("connection '%s' specifies 'plugin=\"%s\"' but the correct instance cannot be uniquely resolved. There are %d plugin instances matching that configuration:\n%s", connection.Name, connection.PluginAlias, len(pluginsForImageRef), strings.Join(strs, "\n"))
 	}
+}
+
+// GetNonSearchPathConnections returns a list of connection names that are not in the provided search path
+func (c *SteampipeConfig) GetNonSearchPathConnections(searchPath []string) []string {
+	var res []string
+	//convert searchPath to map for easy lookup
+	searchPathLookup := utils.SliceToLookup(searchPath)
+
+	for connectionName, _ := range c.Connections {
+		if _, inSearchPath := searchPathLookup[connectionName]; !inSearchPath {
+			res = append(res, connectionName)
+		}
+	}
+	return res
 }
