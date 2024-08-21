@@ -1,3 +1,7 @@
+## v0.23.5 [2024-08-21]
+_Bug fixes_
+- Fix issue where refresh connections was not creating a new connection if it was not in the search path. ([#4353](https://github.com/turbot/steampipe/issues/4353))
+
 ## v0.23.4 [2024-08-13]
 _Whats new_
 - Compiled with Go 1.22. ([#4340](https://github.com/turbot/steampipe/issues/4340))
