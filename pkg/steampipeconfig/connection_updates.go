@@ -423,6 +423,7 @@ func (u *ConnectionUpdates) IdentifyMissingComments() {
 				_, updating := u.Update[name]
 				_, deleting := u.Delete[name]
 				if !updating || deleting {
+					log.Printf("[TRACE] connection %s comments not set, marking as missing", name)
 					u.MissingComments[name] = state
 				}
 			}
