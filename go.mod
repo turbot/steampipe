@@ -29,7 +29,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hcl/v2 v2.20.1
 	github.com/jackc/pgconn v1.14.3
-	github.com/jackc/pgx/v5 v5.5.5
+	github.com/jackc/pgx/v5 v5.6.0
 	github.com/jedib0t/go-pretty/v6 v6.5.9
 	github.com/karrick/gows v0.3.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
@@ -49,7 +49,7 @@ require (
 	github.com/stevenle/topsort v0.2.0
 	github.com/thediveo/enumflag/v2 v2.0.5
 	github.com/turbot/go-kit v0.10.0-rc.0
-	github.com/turbot/pipe-fittings v1.2.0
+	github.com/turbot/pipe-fittings v1.5.2
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.10.3
 	github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7
@@ -57,8 +57,8 @@ require (
 	github.com/zclconf/go-cty v1.14.4
 	github.com/zclconf/go-cty-yaml v1.0.3
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/sync v0.7.0
-	golang.org/x/text v0.16.0
+	golang.org/x/sync v0.8.0
+	golang.org/x/text v0.17.0
 	google.golang.org/grpc v1.64.1
 	google.golang.org/protobuf v1.34.1
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376

@@ -194,7 +194,32 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
 }
 
+# This test checks this pipes bug - https://github.com/turbot/steampipe/issues/4353
+# With service running, if a new connection is added but is not in search_path, it should be available and ready
+# previously, the connection was in error state
+# NOTE: This test should always be the last test in this file
+@test "dynamic schema - service running, new connection added(but not in search_path) - connection should be available and ready" {
+  steampipe plugin install servicenow --install-dir $STEAMPIPE_INSTALL_DIR
+  # start service
+  steampipe service start --install-dir $STEAMPIPE_INSTALL_DIR
+
+  # update search_path in db options, to exclude the new connection
+  cp $SRC_DATA_DIR/default_search_path.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
+
+	cat $STEAMPIPE_INSTALL_DIR/config/default.spc
+
+  # add a new connection
+  cp $SRC_DATA_DIR/servicenow.spc $STEAMPIPE_INSTALL_DIR/config/servicenow2.spc
+
+  sleep 10
+
+  # check if the new connection is available and ready
+  run steampipe query "select name, state from steampipe_connection" --output csv --install-dir $STEAMPIPE_INSTALL_DIR
+  assert_output --partial 'servicenow,ready'
+}
+
 @test "cleanup" {
+  steampipe service stop --install-dir $STEAMPIPE_INSTALL_DIR
   rm -f $STEAMPIPE_INSTALL_DIR/config/chaos_agg.spc
   run steampipe plugin uninstall steampipe
   rm -f $STEAMPIPE_INSTALL_DIR/config/steampipe.spc
