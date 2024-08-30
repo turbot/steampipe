@@ -3,6 +3,7 @@ package pluginmanager_service
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/plugin"
 	"log"
 
 	"github.com/jackc/pgx/v5"
@@ -16,7 +17,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/introspection"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
 )
 

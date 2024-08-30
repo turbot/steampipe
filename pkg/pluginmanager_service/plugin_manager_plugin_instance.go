@@ -2,9 +2,9 @@ package pluginmanager_service
 
 import (
 	"context"
+	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
 )
 

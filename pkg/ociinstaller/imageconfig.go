@@ -6,6 +6,10 @@ import (
 
 const DefaultConfigSchema string = "2020-11-18"
 
+type OciImageConfig interface {
+	Name()
+}
+
 type config struct {
 	SchemaVersion string        `json:"schemaVersion"`
 	Plugin        *configPlugin `json:"plugin,omitempty"`

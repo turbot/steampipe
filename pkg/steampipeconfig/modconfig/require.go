@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	modconfig2 "github.com/turbot/pipe-fittings/plugin"
 	"sort"
 
 	"github.com/Masterminds/semver/v3"
@@ -9,16 +10,15 @@ import (
 	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/version"
 )
 
 // Require is a struct representing mod dependencies
 type Require struct {
-	Plugins                          []*PluginVersion        `hcl:"plugin,block"`
-	DeprecatedSteampipeVersionString string                  `hcl:"steampipe,optional"`
-	Steampipe                        *SteampipeRequire       `hcl:"steampipe,block"`
-	Mods                             []*ModVersionConstraint `hcl:"mod,block"`
+	Plugins                          []*modconfig2.PluginVersion `hcl:"plugin,block"`
+	DeprecatedSteampipeVersionString string                      `hcl:"steampipe,optional"`
+	Steampipe                        *SteampipeRequire           `hcl:"steampipe,block"`
+	Mods                             []*ModVersionConstraint     `hcl:"mod,block"`
 	// map keyed by name [and alias]
 	modMap map[string]*ModVersionConstraint
 	// range of the definition of the require block
@@ -136,7 +136,7 @@ func (r *Require) validateSteampipeVersion(modName string) error {
 }
 
 // validatePluginVersions validates that for every plugin requirement there's at least one plugin installed
-func (r *Require) validatePluginVersions(modName string, plugins map[string]*PluginVersionString) []error {
+func (r *Require) validatePluginVersions(modName string, plugins map[string]*modconfig2.plugin) []error {
 	if len(r.Plugins) == 0 {
 		return nil
 	}
@@ -151,9 +151,9 @@ func (r *Require) validatePluginVersions(modName string, plugins map[string]*Plu
 
 // searchInstalledPluginForRequirement returns plugin validation errors if no plugin is found which satisfies
 // the mod requirement. If plugin is found nil error is returned.
-func (r *Require) searchInstalledPluginForRequirement(modName string, requirement *PluginVersion, plugins map[string]*PluginVersionString) error {
+func (r *Require) searchInstalledPluginForRequirement(modName string, requirement *modconfig2.PluginVersion, plugins map[string]*modconfig2.plugin) error {
 	for installedName, installed := range plugins {
-		org, name, _ := ociinstaller.NewImageRef(installedName).GetOrgNameAndConstraint(constants.SteampipeHubOCIBase)
+		org, name, _ := ociinstaller.NewImageRef(installedName).GetOrgNameAndStream()
 		if org != requirement.Org || name != requirement.Name {
 			// no point checking - different plugin
 			continue

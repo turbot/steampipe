@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"os"
 	"path"
@@ -74,7 +75,7 @@ func NewModInstaller(ctx context.Context, opts *InstallOpts) (*ModInstaller, err
 		return nil, err
 	}
 
-	installedPlugins, err := plugin.GetInstalledPlugins(ctx)
+	installedPlugins, err := plugin.GetInstalledPlugins(ctx, steampipeconfig.GlobalConfig.PluginVersions)
 	if err != nil {
 		return nil, err
 	}

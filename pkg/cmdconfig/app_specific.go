@@ -3,17 +3,18 @@ package cmdconfig
 import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/pkg/constants"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/app_specific"
-	"github.com/turbot/pipe-fittings/cmdconfig"
 	"github.com/turbot/pipe-fittings/error_helpers"
 )
 
 // TODO kai FIX ME!!!!!
+
 // SetAppSpecificConstants sets app specific constants defined in pipe-fittings
 func SetAppSpecificConstants() {
 	app_specific.AppName = "steampipe"
@@ -26,9 +27,10 @@ func SetAppSpecificConstants() {
 
 	app_specific.ConfigExtension = ".tpc"
 
+	app_specific.PluginHub = constants.SteampipeHubOCIBase
 	// set the command pre and post hooks
-	cmdconfig.CustomPreRunHook = preRunHook
-	cmdconfig.CustomPostRunHook = postRunHook
+	//cmdconfig.CustomPreRunHook = preRunHook
+	//cmdconfig.CustomPostRunHook = postRunHook
 
 	// Version check
 	app_specific.VersionCheckHost = "hub.steampipe.io"

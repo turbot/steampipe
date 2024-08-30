@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/plugin"
 	"log"
 	"os"
 	"os/exec"
@@ -32,7 +33,6 @@ import (
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 // PluginManager is the implementation of grpc.PluginManager
