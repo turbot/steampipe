@@ -2,6 +2,7 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/constants"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,7 +12,7 @@ import (
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/pipe-fittings/hclhelpers"
-	"github.com/turbot/steampipe/pkg/constants"
+
 	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/zclconf/go-cty/cty"
 )

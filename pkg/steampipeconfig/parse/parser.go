@@ -2,20 +2,20 @@ package parse
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/error_helpers"
+
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 
-	"github.com/turbot/steampipe/pkg/filepaths"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/json"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"sigs.k8s.io/yaml"
 )
@@ -53,9 +53,9 @@ func ParseHclFiles(fileData map[string][]byte) (hcl.Body, hcl.Diagnostics) {
 		var file *hcl.File
 		var moreDiags hcl.Diagnostics
 		ext := filepath.Ext(filePath)
-		if ext == constants.JsonExtension {
+		if ext == pconstants.JsonExtension {
 			file, moreDiags = json.ParseFile(filePath)
-		} else if constants.IsYamlExtension(ext) {
+		} else if pconstants.IsYamlExtension(ext) {
 			file, moreDiags = parseYamlFile(filePath)
 		} else {
 			data := fileData[filePath]

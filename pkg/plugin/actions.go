@@ -3,6 +3,8 @@ package plugin
 import (
 	"context"
 	"fmt"
+	ociinstaller2 "github.com/turbot/pipe-fittings/ociinstaller"
+	versionfile2 "github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,7 +14,6 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
@@ -22,7 +23,7 @@ import (
 func Remove(ctx context.Context, image string, pluginConnections map[string][]*modconfig.Connection) (*steampipeconfig.PluginRemoveReport, error) {
 	statushooks.SetStatus(ctx, fmt.Sprintf("Removing plugin %s", image))
 
-	imageRef := ociinstaller.NewSteampipeImageRef(image)
+	imageRef := ociinstaller2.NewImageRef(image)
 	fullPluginName := imageRef.DisplayImageRef()
 
 	// are any connections using this plugin???
@@ -40,7 +41,7 @@ func Remove(ctx context.Context, image string, pluginConnections map[string][]*m
 	}
 
 	// update the version file
-	v, err := versionfile.LoadPluginVersionFile(ctx)
+	v, err := versionfile2.LoadPluginVersionFile(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -52,12 +53,12 @@ func Remove(ctx context.Context, image string, pluginConnections map[string][]*m
 
 // Exists looks up the version file and reports whether a plugin is already installed
 func Exists(ctx context.Context, plugin string) (bool, error) {
-	versionData, err := versionfile.LoadPluginVersionFile(ctx)
+	versionData, err := versionfile2.LoadPluginVersionFile(ctx)
 	if err != nil {
 		return false, err
 	}
 
-	imageRef := ociinstaller.NewSteampipeImageRef(plugin)
+	imageRef := ociinstaller2.NewImageRef(plugin)
 
 	// lookup in the version data
 	_, found := versionData.Plugins[imageRef.DisplayImageRef()]
@@ -138,7 +139,7 @@ func List(ctx context.Context, pluginConnectionMap map[string][]*modconfig.Conne
 
 // detectLocalPlugin returns true if the modTime of the `pluginBinary` is after the installation date as recorded in the installation data
 // this may happen when a plugin is installed from the registry, but is then compiled from source
-func detectLocalPlugin(installation *versionfile.InstalledVersion, pluginBinary string) bool {
+func detectLocalPlugin(installation *versionfile2.InstalledVersion, pluginBinary string) bool {
 	installDate, err := time.Parse(time.RFC3339, installation.InstallDate)
 	if err != nil {
 		log.Printf("[WARN] could not parse install date for %s: %s", installation.Name, installation.InstallDate)

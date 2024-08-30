@@ -3,6 +3,7 @@ package pluginmanager_service
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"log"
 	"os"
 	"os/exec"
@@ -26,7 +27,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"

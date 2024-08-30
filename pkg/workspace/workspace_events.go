@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"fmt"
+	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
 	"log"
 	"reflect"
 	"strings"
@@ -115,7 +116,7 @@ func (w *Workspace) onNewIntrospectionData(ctx context.Context, client db_common
 	}
 }
 
-func (w *Workspace) reloadResourceMaps(ctx context.Context) (_ *modconfig.ResourceMaps, _ *modconfig.ResourceMaps, errAndWarnings error_helpers.ErrorAndWarnings) {
+func (w *Workspace) reloadResourceMaps(ctx context.Context) (_ *modconfig.ResourceMaps, _ *modconfig.ResourceMaps, errAndWarnings error_helpers2.ErrorAndWarnings) {
 	w.loadLock.Lock()
 	defer w.loadLock.Unlock()
 

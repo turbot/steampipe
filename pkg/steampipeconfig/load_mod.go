@@ -3,6 +3,7 @@ package steampipeconfig
 import (
 	"context"
 	"fmt"
+	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
 	"log"
 	"os"
 	"path/filepath"
@@ -22,10 +23,10 @@ import (
 // if CreatePseudoResources flag is set, construct hcl resources for files with specific extensions
 // NOTE: it is an error if there is more than 1 mod defined, however zero mods is acceptable
 // - a default mod will be created assuming there are any resource files
-func LoadMod(ctx context.Context, modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings error_helpers.ErrorAndWarnings) {
+func LoadMod(ctx context.Context, modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings error_helpers2.ErrorAndWarnings) {
 	defer func() {
 		if r := recover(); r != nil {
-			errorsAndWarnings = error_helpers.NewErrorsAndWarning(helpers.ToError(r))
+			errorsAndWarnings = error_helpers2.NewErrorsAndWarning(helpers.ToError(r))
 		}
 	}()
 
@@ -41,12 +42,12 @@ func LoadMod(ctx context.Context, modPath string, parseCtx *parse.ModParseContex
 
 	// set the current mod on the run context
 	if err := parseCtx.SetCurrentMod(mod); err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, error_helpers2.NewErrorsAndWarning(err)
 	}
 
 	// load the mod dependencies
 	if err := loadModDependencies(ctx, mod, parseCtx); err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, error_helpers2.NewErrorsAndWarning(err)
 	}
 
 	// populate the resource maps of the current mod using the dependency mods
@@ -59,12 +60,12 @@ func LoadMod(ctx context.Context, modPath string, parseCtx *parse.ModParseContex
 	return mod, errorsAndWarnings
 }
 
-func loadModDefinition(ctx context.Context, modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings error_helpers.ErrorAndWarnings) {
-	errorsAndWarnings = error_helpers.ErrorAndWarnings{}
+func loadModDefinition(ctx context.Context, modPath string, parseCtx *parse.ModParseContext) (mod *modconfig.Mod, errorsAndWarnings error_helpers2.ErrorAndWarnings) {
+	errorsAndWarnings = error_helpers2.ErrorAndWarnings{}
 	// verify the mod folder exists
 	_, err := os.Stat(modPath)
 	if os.IsNotExist(err) {
-		return nil, error_helpers.NewErrorsAndWarning(fmt.Errorf("mod folder %s does not exist", modPath))
+		return nil, error_helpers2.NewErrorsAndWarning(fmt.Errorf("mod folder %s does not exist", modPath))
 	}
 
 	modFilePath, exists := parse.ModfileExists(modPath)
@@ -72,7 +73,7 @@ func loadModDefinition(ctx context.Context, modPath string, parseCtx *parse.ModP
 		// load the mod definition to get the dependencies
 		var res *parse.DecodeResult
 		mod, res = parse.ParseModDefinition(modFilePath, parseCtx.EvalCtx)
-		errorsAndWarnings = error_helpers.DiagsToErrorsAndWarnings("mod load failed", res.Diags)
+		errorsAndWarnings = error_helpers2.DiagsToErrorsAndWarnings("mod load failed", res.Diags)
 		if res.Diags.HasErrors() {
 			return nil, errorsAndWarnings
 		}
@@ -153,7 +154,7 @@ func loadModDependency(ctx context.Context, modDependency *versionmap.ResolvedVe
 
 }
 
-func loadModResources(ctx context.Context, mod *modconfig.Mod, parseCtx *parse.ModParseContext) (*modconfig.Mod, error_helpers.ErrorAndWarnings) {
+func loadModResources(ctx context.Context, mod *modconfig.Mod, parseCtx *parse.ModParseContext) (*modconfig.Mod, error_helpers2.ErrorAndWarnings) {
 	// if flag is set, create pseudo resources by mapping files
 	var pseudoResources []modconfig.MappableResource
 	var err error
@@ -161,7 +162,7 @@ func loadModResources(ctx context.Context, mod *modconfig.Mod, parseCtx *parse.M
 		// now execute any pseudo-resource creations based on file mappings
 		pseudoResources, err = createPseudoResources(ctx, mod, parseCtx)
 		if err != nil {
-			return nil, error_helpers.NewErrorsAndWarning(err)
+			return nil, error_helpers2.NewErrorsAndWarning(err)
 		}
 	}
 
@@ -169,13 +170,13 @@ func loadModResources(ctx context.Context, mod *modconfig.Mod, parseCtx *parse.M
 	sourcePaths, err := getSourcePaths(ctx, mod.ModPath, parseCtx.ListOptions)
 	if err != nil {
 		log.Printf("[WARN] LoadMod: failed to get mod file paths: %v\n", err)
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, error_helpers2.NewErrorsAndWarning(err)
 	}
 
 	// load the raw file data
 	fileData, diags := parse.LoadFileData(sourcePaths...)
 	if diags.HasErrors() {
-		return nil, error_helpers.NewErrorsAndWarning(plugin.DiagsToError("Failed to load all mod files", diags))
+		return nil, error_helpers2.NewErrorsAndWarning(plugin.DiagsToError("Failed to load all mod files", diags))
 	}
 
 	// parse all hcl files (NOTE - this reads the CurrentMod out of ParseContext and adds to it)

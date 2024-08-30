@@ -3,8 +3,9 @@ package plugin
 import (
 	"context"
 	"fmt"
-
-	"github.com/turbot/steampipe/pkg/ociinstaller"
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
@@ -14,7 +15,7 @@ func GetInstalledPlugins(ctx context.Context) (map[string]*modconfig.PluginVersi
 	installedPlugins := make(map[string]*modconfig.PluginVersionString)
 	installedPluginsData, _ := List(ctx, nil)
 	for _, plugin := range installedPluginsData {
-		org, name, _ := ociinstaller.NewSteampipeImageRef(plugin.Name).GetOrgNameAndConstraint()
+		org, name, _ := ociinstaller.NewImageRef(plugin.Name).GetOrgNameAndConstraint(constants.SteampipeHubOCIBase)
 		pluginShortName := fmt.Sprintf("%s/%s", org, name)
 		installedPlugins[pluginShortName] = plugin.Version
 	}

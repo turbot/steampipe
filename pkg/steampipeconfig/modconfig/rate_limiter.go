@@ -1,13 +1,14 @@
 package modconfig
 
 import (
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/utils"
 	"sort"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
 )
 
 const (
@@ -18,20 +19,20 @@ const (
 )
 
 type RateLimiter struct {
-	Name            string                          `hcl:"name,label" db:"name"`
-	BucketSize      *int64                          `hcl:"bucket_size,optional" db:"bucket_size"`
-	FillRate        *float32                        `hcl:"fill_rate,optional" db:"fill_rate"`
-	MaxConcurrency  *int64                          `hcl:"max_concurrency,optional" db:"max_concurrency"`
-	Scope           []string                        `hcl:"scope,optional" db:"scope"`
-	Where           *string                         `hcl:"where,optional" db:"where"`
-	Plugin          string                          `db:"plugin"`
-	PluginInstance  string                          `db:"plugin_instance"`
-	FileName        *string                         `db:"file_name" json:"-"`
-	StartLineNumber *int                            `db:"start_line_number"  json:"-"`
-	EndLineNumber   *int                            `db:"end_line_number"  json:"-"`
-	Status          string                          `db:"status"`
-	Source          string                          `db:"source_type"`
-	ImageRef        *ociinstaller.SteampipeImageRef `db:"-" json:"-"`
+	Name            string                 `hcl:"name,label" db:"name"`
+	BucketSize      *int64                 `hcl:"bucket_size,optional" db:"bucket_size"`
+	FillRate        *float32               `hcl:"fill_rate,optional" db:"fill_rate"`
+	MaxConcurrency  *int64                 `hcl:"max_concurrency,optional" db:"max_concurrency"`
+	Scope           []string               `hcl:"scope,optional" db:"scope"`
+	Where           *string                `hcl:"where,optional" db:"where"`
+	Plugin          string                 `db:"plugin"`
+	PluginInstance  string                 `db:"plugin_instance"`
+	FileName        *string                `db:"file_name" json:"-"`
+	StartLineNumber *int                   `db:"start_line_number"  json:"-"`
+	EndLineNumber   *int                   `db:"end_line_number"  json:"-"`
+	Status          string                 `db:"status"`
+	Source          string                 `db:"source_type"`
+	ImageRef        *ociinstaller.ImageRef `db:"-" json:"-"`
 }
 
 // RateLimiterFromProto converts the proto format RateLimiterDefinition into a Defintion
@@ -116,7 +117,7 @@ func (l *RateLimiter) SetPlugin(plugin *Plugin) {
 }
 
 func (l *RateLimiter) setPluginImageRef(alias string) {
-	l.ImageRef = ociinstaller.NewSteampipeImageRef(alias)
+	l.ImageRef = ociinstaller.NewImageRef(alias)
 	l.Plugin = l.ImageRef.DisplayImageRef()
 
 }

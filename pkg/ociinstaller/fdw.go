@@ -3,6 +3,7 @@ package ociinstaller
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/ociinstaller"
 	"log"
 	"os"
 	"path/filepath"
@@ -25,7 +26,7 @@ func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
 	imageDownloader := NewOciDownloader()
 
 	// download the blobs.
-	image, err := imageDownloader.Download(ctx, NewSteampipeImageRef(constants.FdwImageRef), ImageTypeFdw, tempDir.Path)
+	image, err := imageDownloader.Download(ctx, ociinstaller.NewImageRef(constants.FdwImageRef), ImageTypeFdw, tempDir.Path)
 	if err != nil {
 		return "", err
 	}
@@ -51,7 +52,7 @@ func updateVersionFileFdw(image *SteampipeImage) error {
 	v.FdwExtension.Version = image.Config.Fdw.Version
 	v.FdwExtension.Name = "fdwExtension"
 	v.FdwExtension.ImageDigest = string(image.OCIDescriptor.Digest)
-	v.FdwExtension.InstalledFrom = image.ImageRef.requestedRef
+	v.FdwExtension.InstalledFrom = image.ImageRef.RequestedRef
 	v.FdwExtension.LastCheckedDate = timeNow
 	v.FdwExtension.InstallDate = timeNow
 	return v.Save()

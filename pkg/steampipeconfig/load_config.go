@@ -14,13 +14,15 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/hclhelpers"
+	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
@@ -32,14 +34,14 @@ var defaultConfigFileName = "default.spc"
 var defaultConfigSampleFileName = "default.spc.sample"
 
 // LoadSteampipeConfig loads the HCL connection config and workspace options
-func LoadSteampipeConfig(ctx context.Context, modLocation string, commandName string) (*SteampipeConfig, error_helpers.ErrorAndWarnings) {
+func LoadSteampipeConfig(ctx context.Context, modLocation string, commandName string) (*SteampipeConfig, perror_helpers.ErrorAndWarnings) {
 	utils.LogTime("steampipeconfig.LoadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.LoadSteampipeConfig end")
 
 	log.Printf("[INFO] ensureDefaultConfigFile")
 
 	if err := ensureDefaultConfigFile(filepaths.EnsureConfigDir()); err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(
+		return nil, perror_helpers.NewErrorsAndWarning(
 			sperr.WrapWithMessage(
 				err,
 				"could not create default config",
@@ -51,7 +53,7 @@ func LoadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 
 // LoadConnectionConfig loads the connection config but not the workspace options
 // this is called by the fdw
-func LoadConnectionConfig(ctx context.Context) (*SteampipeConfig, error_helpers.ErrorAndWarnings) {
+func LoadConnectionConfig(ctx context.Context) (*SteampipeConfig, perror_helpers.ErrorAndWarnings) {
 	return LoadSteampipeConfig(ctx, "", "")
 }
 
@@ -119,14 +121,14 @@ func ensureDefaultConfigFile(configFolder string) error {
 	return nil
 }
 
-func loadSteampipeConfig(ctx context.Context, modLocation string, commandName string) (steampipeConfig *SteampipeConfig, errorsAndWarnings error_helpers.ErrorAndWarnings) {
+func loadSteampipeConfig(ctx context.Context, modLocation string, commandName string) (steampipeConfig *SteampipeConfig, errorsAndWarnings perror_helpers.ErrorAndWarnings) {
 	utils.LogTime("steampipeconfig.loadSteampipeConfig start")
 	defer utils.LogTime("steampipeconfig.loadSteampipeConfig end")
 
-	errorsAndWarnings = error_helpers.NewErrorsAndWarning(nil)
+	errorsAndWarnings = perror_helpers.NewErrorsAndWarning(nil)
 	defer func() {
 		if r := recover(); r != nil {
-			errorsAndWarnings = error_helpers.NewErrorsAndWarning(helpers.ToError(r))
+			errorsAndWarnings = perror_helpers.NewErrorsAndWarning(helpers.ToError(r))
 		}
 	}()
 
@@ -135,7 +137,7 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 	// load plugin versions
 	v, err := versionfile.LoadPluginVersionFile(ctx)
 	if err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, perror_helpers.NewErrorsAndWarning(err)
 	}
 
 	// add any "local" plugins (i.e. plugins installed under the 'local' folder) into the version file
@@ -146,7 +148,7 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 	steampipeConfig.PluginVersions = v.Plugins
 
 	// load config from the installation folder -  load all spc files from config directory
-	include := filehelpers.InclusionsFromExtensions(constants.ConnectionConfigExtensions)
+	include := filehelpers.InclusionsFromExtensions(pconstants.ConnectionConfigExtensions)
 	loadOptions := &loadConfigOptions{include: include}
 	ew = loadConfig(ctx, filepaths.EnsureConfigDir(), steampipeConfig, loadOptions)
 	if ew.GetError() != nil {
@@ -160,7 +162,7 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 	// check workspace folder exists
 	if modLocation != "" {
 		if _, err := os.Stat(modLocation); os.IsNotExist(err) {
-			return nil, error_helpers.NewErrorsAndWarning(fmt.Errorf("mod location '%s' does not exist", modLocation))
+			return nil, perror_helpers.NewErrorsAndWarning(fmt.Errorf("mod location '%s' does not exist", modLocation))
 		}
 
 		// only include workspace.spc from workspace directory
@@ -221,7 +223,7 @@ type loadConfigOptions struct {
 	allowedOptions []string
 }
 
-func loadConfig(ctx context.Context, configFolder string, steampipeConfig *SteampipeConfig, opts *loadConfigOptions) error_helpers.ErrorAndWarnings {
+func loadConfig(ctx context.Context, configFolder string, steampipeConfig *SteampipeConfig, opts *loadConfigOptions) perror_helpers.ErrorAndWarnings {
 	log.Printf("[INFO] loadConfig is loading connection config")
 	// get all the config files in the directory
 	configPaths, err := filehelpers.ListFilesWithContext(ctx, configFolder, &filehelpers.ListOptions{
@@ -231,28 +233,28 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 
 	if err != nil {
 		log.Printf("[WARN] loadConfig: failed to get config file paths: %v\n", err)
-		return error_helpers.NewErrorsAndWarning(err)
+		return perror_helpers.NewErrorsAndWarning(err)
 	}
 	if len(configPaths) == 0 {
-		return error_helpers.ErrorAndWarnings{}
+		return perror_helpers.ErrorAndWarnings{}
 	}
 
 	fileData, diags := parse.LoadFileData(configPaths...)
 	if diags.HasErrors() {
 		log.Printf("[WARN] loadConfig: failed to load all config files: %v\n", err)
-		return error_helpers.DiagsToErrorsAndWarnings("Failed to load all config files", diags)
+		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load all config files", diags)
 	}
 
 	body, diags := parse.ParseHclFiles(fileData)
 	if diags.HasErrors() {
-		return error_helpers.DiagsToErrorsAndWarnings("Failed to load all config files", diags)
+		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load all config files", diags)
 	}
 
 	// do a partial decode
 	content, moreDiags := body.Content(parse.ConfigBlockSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
-		return error_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
+		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
 	}
 
 	// store block types which we have found in this folder - each is only allowed once
@@ -272,7 +274,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 			// add plugin to steampipeConfig
 			// NOTE: this errors if there is a plugin block with a duplicate label
 			if err := steampipeConfig.addPlugin(plugin); err != nil {
-				return error_helpers.NewErrorsAndWarning(err)
+				return perror_helpers.NewErrorsAndWarning(err)
 			}
 
 		case modconfig.BlockTypeConnection:
@@ -283,17 +285,17 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 			}
 			if existingConnection, alreadyThere := steampipeConfig.Connections[connection.Name]; alreadyThere {
 				err := getDuplicateConnectionError(existingConnection, connection)
-				return error_helpers.NewErrorsAndWarning(err)
+				return perror_helpers.NewErrorsAndWarning(err)
 			}
 			if ok, errorMessage := db_common.IsSchemaNameValid(connection.Name); !ok {
-				return error_helpers.NewErrorsAndWarning(sperr.New("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage))
+				return perror_helpers.NewErrorsAndWarning(sperr.New("invalid connection name: '%s' in '%s'. %s ", connection.Name, block.TypeRange.Filename, errorMessage))
 			}
 			steampipeConfig.Connections[connection.Name] = connection
 
 		case modconfig.BlockTypeOptions:
 			// check this options type is permitted based on the options passed in
 			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
-				return error_helpers.NewErrorsAndWarning(err)
+				return perror_helpers.NewErrorsAndWarning(err)
 			}
 			opts, moreDiags := parse.DecodeOptions(block)
 			if moreDiags.HasErrors() {
@@ -323,10 +325,10 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 	}
 
 	if diags.HasErrors() {
-		return error_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
+		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
 	}
 
-	res := error_helpers.DiagsToErrorsAndWarnings("", diags)
+	res := perror_helpers.DiagsToErrorsAndWarnings("", diags)
 
 	log.Printf("[INFO] loadConfig calling initializePlugins")
 

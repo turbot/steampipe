@@ -1,6 +1,7 @@
 package steampipeconfig
 
 import (
+	filepaths2 "github.com/turbot/pipe-fittings/filepaths"
 	"os"
 	"path/filepath"
 	"testing"
@@ -48,7 +49,7 @@ func TestFindPluginFolderTest(t *testing.T) {
 
 	setupFindPluginFolderTest(directories)
 	for name, test := range testCasesFindPluginFolderTest {
-		path, err := filepaths.FindPluginFolder(test.schema)
+		path, err := filepaths2.FindPluginFolder(test.schema)
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)

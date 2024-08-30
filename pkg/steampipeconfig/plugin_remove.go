@@ -2,17 +2,16 @@ package steampipeconfig
 
 import (
 	"fmt"
+	utils2 "github.com/turbot/pipe-fittings/ociinstaller"
 	"sort"
 	"strings"
 
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type PluginRemoveReport struct {
-	Image       *ociinstaller.SteampipeImageRef
+	Image       *ociinstaller.ImageRef
 	ShortName   string
 	Connections []*modconfig.Connection
 }
@@ -23,9 +22,9 @@ func (r PluginRemoveReports) Print() {
 	length := len(r)
 	var staleConnections []*modconfig.Connection
 	if length > 0 {
-		fmt.Printf("\nUninstalled %s:\n", utils.Pluralize("plugin", length))
+		fmt.Printf("\nUninstalled %s:\n", utils2.Pluralize("plugin", length))
 		for _, report := range r {
-			org, name, _ := report.Image.GetOrgNameAndConstraint()
+			org, name, _ := report.Image.GetOrgNameAndConstraint(constants.SteampipeHubOCIBase)
 			fmt.Printf("* %s/%s\n", org, name)
 			staleConnections = append(staleConnections, report.Connections...)
 
@@ -49,8 +48,8 @@ func (r PluginRemoveReports) Print() {
 
 			str := append([]string{}, fmt.Sprintf(
 				"Please remove %s %s to continue using steampipe:",
-				utils.Pluralize("this", len(uniqueFiles)),
-				utils.Pluralize("connection", len(uniqueFiles)),
+				utils2.Pluralize("this", len(uniqueFiles)),
+				utils2.Pluralize("connection", len(uniqueFiles)),
 			))
 
 			str = append(str, "")

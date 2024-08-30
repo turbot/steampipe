@@ -2,6 +2,7 @@ package versionfile
 
 import (
 	"encoding/json"
+	versionfile2 "github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"log"
 	"os"
 	"time"
@@ -13,15 +14,15 @@ import (
 const DatabaseStructVersion = 20220411
 
 type DatabaseVersionFile struct {
-	FdwExtension  InstalledVersion `json:"fdw_extension"`
-	EmbeddedDB    InstalledVersion `json:"embedded_db"`
-	StructVersion int64            `json:"struct_version"`
+	FdwExtension  versionfile2.InstalledVersion `json:"fdw_extension"`
+	EmbeddedDB    versionfile2.InstalledVersion `json:"embedded_db"`
+	StructVersion int64                         `json:"struct_version"`
 }
 
 func NewDBVersionFile() *DatabaseVersionFile {
 	return &DatabaseVersionFile{
-		FdwExtension:  InstalledVersion{},
-		EmbeddedDB:    InstalledVersion{},
+		FdwExtension:  versionfile2.InstalledVersion{},
+		EmbeddedDB:    versionfile2.InstalledVersion{},
 		StructVersion: DatabaseStructVersion,
 	}
 }
@@ -48,12 +49,12 @@ func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 		log.Println("[ERROR]", "Error while reading DB version file", err)
 		return nil, err
 	}
-	if data.FdwExtension == (InstalledVersion{}) {
-		data.FdwExtension = InstalledVersion{}
+	if data.FdwExtension == (versionfile2.InstalledVersion{}) {
+		data.FdwExtension = versionfile2.InstalledVersion{}
 	}
 
-	if data.EmbeddedDB == (InstalledVersion{}) {
-		data.EmbeddedDB = InstalledVersion{}
+	if data.EmbeddedDB == (versionfile2.InstalledVersion{}) {
+		data.EmbeddedDB = versionfile2.InstalledVersion{}
 	}
 
 	return &data, nil
