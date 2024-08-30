@@ -2,9 +2,10 @@ package cmdconfig
 
 import (
 	"fmt"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"log"
 	"os"
+
+	"github.com/turbot/steampipe/pkg/filepaths"
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
@@ -175,6 +176,7 @@ func setDefaultsFromEnv() {
 		constants.EnvCacheMaxTTL:           {[]string{constants.ArgCacheMaxTtl}, Int},
 		constants.EnvMemoryMaxMb:           {[]string{constants.ArgMemoryMaxMb}, Int},
 		constants.EnvMemoryMaxMbPlugin:     {[]string{constants.ArgMemoryMaxMbPlugin}, Int},
+		constants.EnvPluginStartTimeout:    {[]string{constants.ArgPluginStartTimeout}, Int},
 
 		// we need this value to go into different locations
 		constants.EnvCacheEnabled: {[]string{

@@ -43,4 +43,6 @@ const (
 
 	EnvMemoryMaxMb       = "STEAMPIPE_MEMORY_MAX_MB"
 	EnvMemoryMaxMbPlugin = "STEAMPIPE_PLUGIN_MEMORY_MAX_MB"
+
+	EnvPluginStartTimeout = "STEAMPIPE_PLUGIN_START_TIMEOUT"
 )
