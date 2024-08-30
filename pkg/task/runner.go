@@ -3,6 +3,8 @@ package task
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"os"
 	"sync"
@@ -10,12 +12,11 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/installationstate"
-	"github.com/turbot/steampipe/pkg/plugin"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 const minimumDurationBetweenChecks = 24 * time.Hour
@@ -90,7 +91,7 @@ func (r *Runner) run(ctx context.Context) {
 	defer utils.LogTime("task.Runner.Run end")
 
 	var availableCliVersion *CLIVersionCheckResponse
-	var availablePluginVersions map[string]plugin.VersionCheckReport
+	var availablePluginVersions map[string]plugin.PluginVersionCheckReport
 
 	waitGroup := sync.WaitGroup{}
 
@@ -101,8 +102,8 @@ func (r *Runner) run(ctx context.Context) {
 		}, &waitGroup)
 
 		// check whether an updated version is available
-		r.runJobAsync(ctx, func(c context.Context) {
-			availablePluginVersions = plugin.GetAllUpdateReport(c, r.currentState.InstallationID)
+		r.runJobAsync(ctx, func(ctx context.Context) {
+			availablePluginVersions = plugin.GetAllUpdateReport(ctx, r.currentState.InstallationID, steampipeconfig.GlobalConfig.PluginVersions)
 		}, &waitGroup)
 	}
 

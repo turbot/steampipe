@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/plugin"
 	"log"
 
 	"github.com/jackc/pgx/v5"
@@ -18,7 +19,6 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/modinstaller"
-	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/workspace"

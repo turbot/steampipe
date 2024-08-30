@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/utils"
 	"net"
 	"strings"
 
@@ -95,8 +96,8 @@ func IsPortBindable(host string, port int) error {
 }
 
 func GetNextFreePort() (int, error) {
-	LogTime("utils.GetNextFreePort start")
-	defer LogTime("utils.GetNextFreePort end")
+	utils.LogTime("utils.GetNextFreePort start")
+	defer utils.LogTime("utils.GetNextFreePort end")
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return -1, err

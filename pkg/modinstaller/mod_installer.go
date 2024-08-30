@@ -3,6 +3,7 @@ package modinstaller
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/plugin"
 	"log"
 	"os"
 	"path"
@@ -12,15 +13,14 @@ import (
 	git "github.com/go-git/go-git/v5"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/versionmap"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type ModInstaller struct {

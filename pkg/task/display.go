@@ -3,23 +3,23 @@ package task
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/pipe-fittings/plugin"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/plugin"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 const (
 	AvailableVersionsCacheStructVersion = 20230117
 )
 
-func (r *Runner) saveAvailableVersions(cli *CLIVersionCheckResponse, plugin map[string]plugin.VersionCheckReport) error {
+func (r *Runner) saveAvailableVersions(cli *CLIVersionCheckResponse, plugin map[string]plugin.PluginVersionCheckReport) error {
 	utils.LogTime("Runner.saveAvailableVersions start")
 	defer utils.LogTime("Runner.saveAvailableVersions end")
 

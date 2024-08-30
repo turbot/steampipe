@@ -1,6 +1,6 @@
 package modconfig
 
-import "github.com/turbot/steampipe/pkg/utils"
+import "github.com/turbot/pipe-fittings/utils"
 
 type DashboardChartSeries struct {
 	Name       string                                `hcl:"name,label" json:"name"`

@@ -1,6 +1,6 @@
 package modconfig
 
-import "github.com/turbot/steampipe/pkg/utils"
+import "github.com/turbot/pipe-fittings/utils"
 
 // DashboardInputOption is a struct representing dashboard input option
 type DashboardInputOption struct {

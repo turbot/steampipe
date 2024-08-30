@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
+	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
@@ -23,8 +24,8 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 	if opts == nil {
 		opts = &CreateDbOptions{}
 	}
-	utils.LogTime("db.createDbClient start")
-	defer utils.LogTime("db.createDbClient end")
+	putils.LogTime("db.createDbClient start")
+	defer putils.LogTime("db.createDbClient end")
 
 	// load the db status
 	info, err := GetState()
@@ -58,7 +59,7 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 		"dbname": opts.DatabaseName,
 	}
 	log.Println("[TRACE] SQLInfoMap >>>", psqlInfoMap)
-	psqlInfoMap = utils.MergeMaps(psqlInfoMap, dsnSSLParams())
+	psqlInfoMap = putils.MergeMaps(psqlInfoMap, dsnSSLParams())
 	log.Println("[TRACE] SQLInfoMap >>>", psqlInfoMap)
 
 	psqlInfo := []string{}
@@ -80,8 +81,8 @@ type CreateDbOptions struct {
 // that was created during installation.
 // NOTE: this connection will use the ServiceConnectionAppName
 func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.Conn, error) {
-	utils.LogTime("db.CreateLocalDbConnection start")
-	defer utils.LogTime("db.CreateLocalDbConnection end")
+	putils.LogTime("db.CreateLocalDbConnection start")
+	defer putils.LogTime("db.CreateLocalDbConnection end")
 
 	psqlInfo, err := getLocalSteampipeConnectionString(opts)
 	if err != nil {
@@ -118,8 +119,8 @@ func CreateLocalDbConnection(ctx context.Context, opts *CreateDbOptions) (*pgx.C
 // CreateConnectionPool creates a connection pool using the provided options
 // NOTE: this connection pool will use the ServiceConnectionAppName
 func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnections int) (*pgxpool.Pool, error) {
-	utils.LogTime("db_client.establishConnectionPool start")
-	defer utils.LogTime("db_client.establishConnectionPool end")
+	putils.LogTime("db_client.establishConnectionPool start")
+	defer putils.LogTime("db_client.establishConnectionPool end")
 
 	psqlInfo, err := getLocalSteampipeConnectionString(opts)
 	if err != nil {
@@ -172,8 +173,8 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 // this is called immediately after the service process is started and hence
 // all special handling related to service startup failures SHOULD be handled here
 func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
-	utils.LogTime("db_local.createMaintenanceClient start")
-	defer utils.LogTime("db_local.createMaintenanceClient end")
+	putils.LogTime("db_local.createMaintenanceClient start")
+	defer putils.LogTime("db_local.createMaintenanceClient end")
 
 	connStr := fmt.Sprintf("host=127.0.0.1 port=%d user=%s dbname=postgres sslmode=disable application_name=%s", port, constants.DatabaseSuperUser, runtime.ServiceConnectionAppName)
 

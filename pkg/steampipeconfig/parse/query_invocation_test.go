@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/utils"
 
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )

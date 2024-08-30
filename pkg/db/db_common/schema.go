@@ -8,8 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	typeHelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type schemaRecord struct {

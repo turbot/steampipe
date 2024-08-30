@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/gertd/go-pluralize"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/terraform-components/tfdiags"
 )
 

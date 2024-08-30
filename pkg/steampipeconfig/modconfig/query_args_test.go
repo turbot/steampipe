@@ -2,7 +2,7 @@ package modconfig
 
 import (
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/utils"
 	"reflect"
 	"testing"
 )
