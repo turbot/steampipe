@@ -26,10 +26,8 @@ import (
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/installationstate"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 type installedPlugin struct {
@@ -288,10 +286,10 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		bar := createProgressBar(pluginName, progressBars)
 
 		ref := putils.NewImageRef(pluginName)
-		org, name, constraint := ref.GetOrgNameAndConstraint(constants.SteampipeHubOCIBase)
+		org, name, constraint := ref.GetOrgNameAndStream()
 		orgAndName := fmt.Sprintf("%s/%s", org, name)
 		var resolved plugin.ResolvedPluginVersion
-		if ref.IsFromTurbotHub(constants.SteampipeHubOCIBase) {
+		if ref.IsFromTurbotHub() {
 			rpv, err := plugin.GetLatestPluginVersionByConstraint(ctx, state.InstallationID, org, name, constraint)
 			if err != nil || rpv == nil {
 				report := &display.PluginInstallReport{
@@ -445,7 +443,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	if cmdconfig.Viper().GetBool(constants.ArgAll) {
 		for k, v := range pluginVersions {
 			ref := putils.NewImageRef(k)
-			org, name, constraint := ref.GetOrgNameAndConstraint(constants.SteampipeHubOCIBase)
+			org, name, constraint := ref.GetOrgNameAndStream()
 			key := fmt.Sprintf("%s/%s@%s", org, name, constraint)
 
 			plugins = append(plugins, key)
@@ -594,11 +592,11 @@ func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVers
 		}
 	}()
 
-	image, err := plugin.Install(ctx, resolvedPlugin, progress, ociinstaller.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
+	image, err := plugin.Install(ctx, resolvedPlugin, progress, putils.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
 	if err != nil {
 		msg := ""
 		// used to build data for the plugin install report to be used for display purposes
-		_, name, constraint := putils.NewImageRef(resolvedPlugin.GetVersionTag()).GetOrgNameAndConstraint(constants.SteampipeHubOCIBase)
+		_, name, constraint := putils.NewImageRef(resolvedPlugin.GetVersionTag()).GetOrgNameAndStream()
 		if isPluginNotFoundErr(err) {
 			exitCode = constants.ExitCodePluginNotFound
 			msg = constants.InstallMessagePluginNotFound
@@ -614,13 +612,13 @@ func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVers
 	}
 
 	// used to build data for the plugin install report to be used for display purposes
-	org, name, _ := image.ImageRef.GetOrgNameAndConstraint(constants.SteampipeHubOCIBase)
+	org, name, _ := image.ImageRef.GetOrgNameAndStream()
 	versionString := ""
 	if image.Config.Plugin.Version != "" {
 		versionString = " v" + image.Config.Plugin.Version
 	}
 	docURL := fmt.Sprintf("https://hub.steampipe.io/plugins/%s/%s", org, name)
-	if !image.ImageRef.IsFromTurbotHub(constants.SteampipeHubOCIBase) {
+	if !image.ImageRef.IsFromTurbotHub() {
 		docURL = fmt.Sprintf("https://%s/%s", org, name)
 	}
 	return &display.PluginInstallReport{
@@ -856,7 +854,7 @@ func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, fai
 	// TODO do we really need to look at installed plugins - can't we just use the plugin connection map
 	// get a list of the installed plugins by inspecting the install location
 	// pass pluginConnectionMap so we can populate the connections for each plugin
-	pluginList, err := plugin.List(ctx, pluginConnectionMap)
+	pluginList, err := plugin.List(ctx, pluginConnectionMap, nil)
 	if err != nil {
 		res.Error = err
 		return nil, nil, nil, res

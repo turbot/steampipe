@@ -13,15 +13,19 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
-type SteampipeImage struct {
+type OciImageData interface {
+	Type() ImageType
+}
+type OciImage struct {
 	OCIDescriptor *ocispec.Descriptor
 	ImageRef      *ociinstaller.ImageRef
-	Config        *config
-	Plugin        *PluginImage
-	Database      *DbImage
-	Fdw           *HubImage
-	Assets        *AssetsImage
-	resolver      *remotes.Resolver
+
+	Config   *config
+	Plugin   *PluginImage
+	Database *DbImage
+	Fdw      *FdwImage
+	Assets   *AssetsImage
+	resolver *remotes.Resolver
 }
 
 type PluginImage struct {
@@ -33,24 +37,42 @@ type PluginImage struct {
 	LicenseFile        string
 }
 
+func (s *PluginImage) Type() ImageType {
+	return ImageTypePlugin
+}
+
 type DbImage struct {
 	ArchiveDir  string
 	ReadmeFile  string
 	LicenseFile string
 }
-type HubImage struct {
+
+func (s *DbImage) Type() ImageType {
+	return ImageTypeDatabase
+}
+
+type FdwImage struct {
 	BinaryFile  string
 	ReadmeFile  string
 	LicenseFile string
 	ControlFile string
 	SqlFile     string
 }
+
+func (s *FdwImage) Type() ImageType {
+	return ImageTypeFdw
+}
+
 type AssetsImage struct {
 	ReportUI string
 }
 
-func (o *ociDownloader) newSteampipeImage() *SteampipeImage {
-	SteampipeImage := &SteampipeImage{
+func (s *AssetsImage) Type() ImageType {
+	return ImageTypeAssets
+}
+
+func (o *ociinstaller.ociDownloader) newSteampipeImage() *OciImage {
+	SteampipeImage := &OciImage{
 		resolver: &o.resolver,
 	}
 	o.Images = append(o.Images, SteampipeImage)
@@ -66,7 +88,7 @@ const (
 	ImageTypePlugin   ImageType = "plugin"
 )
 
-func (o *ociDownloader) Download(ctx context.Context, ref *ociinstaller.ImageRef, imageType ImageType, destDir string) (*SteampipeImage, error) {
+func (o *ociinstaller.ociDownloader) Download(ctx context.Context, ref *ociinstaller.ImageRef, imageType ImageType, destDir string) (*OciImage, error) {
 	var mediaTypes []string
 	Image := o.newSteampipeImage()
 	Image.ImageRef = ref
@@ -154,8 +176,8 @@ func getDBImageData(layers []ocispec.Descriptor) (*DbImage, error) {
 	return res, nil
 }
 
-func getFdwImageData(layers []ocispec.Descriptor) (*HubImage, error) {
-	res := &HubImage{}
+func getFdwImageData(layers []ocispec.Descriptor) (*FdwImage, error) {
+	res := &FdwImage{}
 
 	// get the binary (steampipe-postgres-fdw.so) info
 	mediaType, err := MediaTypeForPlatform("fdw")

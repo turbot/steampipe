@@ -28,7 +28,7 @@ type PluginInstallReport struct {
 
 func (i *PluginInstallReport) skipString() string {
 	ref := ociinstaller.NewImageRef(i.Plugin)
-	_, name, constraint := ref.GetOrgNameAndConstraint(constants.SteampipeHubOCIBase)
+	_, name, constraint := ref.GetOrgNameAndStream()
 
 	return fmt.Sprintf("Plugin:   %s\nReason:   %s", fmt.Sprintf("%s@%s", name, constraint), i.SkipReason)
 }

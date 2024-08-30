@@ -25,7 +25,7 @@ func (r PluginRemoveReports) Print() {
 	if length > 0 {
 		fmt.Printf("\nUninstalled %s:\n", utils.Pluralize("plugin", length))
 		for _, report := range r {
-			org, name, _ := report.Image.GetOrgNameAndConstraint(constants.SteampipeHubOCIBase)
+			org, name, _ := report.Image.GetOrgNameAndStream()
 			fmt.Printf("* %s/%s\n", org, name)
 			staleConnections = append(staleConnections, report.Connections...)
 
