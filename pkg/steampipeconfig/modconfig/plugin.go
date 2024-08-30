@@ -1,11 +1,12 @@
 package modconfig
 
 import (
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/utils"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/pipe-fittings/hclhelpers"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"golang.org/x/exp/maps"
 )
 
@@ -52,7 +53,7 @@ func (l *Plugin) IsDefault() bool {
 }
 
 func (l *Plugin) FriendlyName() string {
-	return ociinstaller.NewSteampipeImageRef(l.Plugin).GetFriendlyName()
+	return ociinstaller.NewImageRef(l.Plugin).GetFriendlyName()
 }
 
 func (l *Plugin) GetMaxMemoryBytes() int64 {
@@ -100,5 +101,5 @@ func ResolvePluginImageRef(pluginAlias string) string {
 		return pluginAlias
 	}
 	// ok so there is no plugin block reference - build the plugin image ref from the PluginAlias field
-	return ociinstaller.NewSteampipeImageRef(pluginAlias).DisplayImageRef()
+	return ociinstaller.NewImageRef(pluginAlias).DisplayImageRef()
 }

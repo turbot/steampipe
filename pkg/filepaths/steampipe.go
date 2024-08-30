@@ -2,6 +2,7 @@ package filepaths
 
 import (
 	"fmt"
+	filepaths2 "github.com/turbot/pipe-fittings/filepaths"
 	"os"
 	"path/filepath"
 
@@ -76,7 +77,7 @@ func PluginInstallDir(pluginImageDisplayRef string) string {
 }
 
 func PluginBinaryPath(pluginImageDisplayRef, pluginAlias string) string {
-	return filepath.Join(PluginInstallDir(pluginImageDisplayRef), PluginAliasToLongName(pluginAlias)+".plugin")
+	return filepath.Join(PluginInstallDir(pluginImageDisplayRef), filepaths2.PluginAliasToLongName(pluginAlias)+".plugin")
 }
 
 // EnsureConfigDir returns the path to the config directory (creates if missing)

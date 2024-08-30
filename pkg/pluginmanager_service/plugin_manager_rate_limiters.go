@@ -3,6 +3,8 @@ package pluginmanager_service
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/utils"
 	"log"
 
 	"github.com/jackc/pgx/v5"
@@ -14,7 +16,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/introspection"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
@@ -111,7 +112,7 @@ func (m *PluginManager) handleUserLimiterChanges(_ context.Context, plugins conn
 
 func (m *PluginManager) setRateLimitersForPlugin(pluginShortName string) error {
 	// get running plugin for this plugin
-	imageRef := ociinstaller.NewSteampipeImageRef(pluginShortName).DisplayImageRef()
+	imageRef := ociinstaller.NewImageRef(pluginShortName).DisplayImageRef()
 
 	runningPlugin, ok := m.runningPluginMap[imageRef]
 	if !ok {

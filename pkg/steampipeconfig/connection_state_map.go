@@ -2,7 +2,7 @@ package steampipeconfig
 
 import (
 	"encoding/json"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"log"
 	"os"
 	"time"

@@ -2,9 +2,9 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/utils"
 )
 

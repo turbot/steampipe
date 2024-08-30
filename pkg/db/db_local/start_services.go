@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
 	"log"
 	"os"
 	"os/exec"
@@ -27,7 +28,7 @@ import (
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
 type StartResult struct {
-	error_helpers.ErrorAndWarnings
+	error_helpers2.ErrorAndWarnings
 	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
 	PluginManagerState *pluginmanager.State

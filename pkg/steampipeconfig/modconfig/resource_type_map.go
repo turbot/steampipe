@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/Machiel/slugify"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/constants"
 )
 
 // map of file extension to factory function to create
