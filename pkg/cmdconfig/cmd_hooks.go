@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"io"
 	"log"
 	"os"
@@ -27,7 +29,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/task"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -130,7 +131,7 @@ func setMemoryLimit() {
 // task run is complete
 //
 // runScheduledTasks skips running tasks if this instance is the plugin manager
-func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, ew error_helpers.ErrorAndWarnings) chan struct{} {
+func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, ew error_helpers2.ErrorAndWarnings) chan struct{} {
 	// skip running the task runner if this is the plugin manager
 	// since it's supposed to be a daemon
 	if task.IsPluginManagerCmd(cmd) {
@@ -189,7 +190,7 @@ func envLogLevelSet() bool {
 }
 
 // initGlobalConfig reads in config file and ENV variables if set.
-func initGlobalConfig() error_helpers.ErrorAndWarnings {
+func initGlobalConfig() error_helpers2.ErrorAndWarnings {
 	utils.LogTime("cmdconfig.initGlobalConfig start")
 	defer utils.LogTime("cmdconfig.initGlobalConfig end")
 
@@ -199,7 +200,7 @@ func initGlobalConfig() error_helpers.ErrorAndWarnings {
 	// load workspace profile from the configured install dir
 	loader, err := getWorkspaceProfileLoader(ctx)
 	if err != nil {
-		return error_helpers.NewErrorsAndWarning(err)
+		return error_helpers2.NewErrorsAndWarning(err)
 	}
 
 	// set global workspace profile
@@ -208,7 +209,7 @@ func initGlobalConfig() error_helpers.ErrorAndWarnings {
 	// set-up viper with defaults from the env and default workspace profile
 	err = bootstrapViper(loader, cmd)
 	if err != nil {
-		return error_helpers.NewErrorsAndWarning(err)
+		return error_helpers2.NewErrorsAndWarning(err)
 	}
 
 	// set global containing the configured install dir (create directory if needed)
@@ -263,8 +264,8 @@ func initGlobalConfig() error_helpers.ErrorAndWarnings {
 	return loadConfigErrorsAndWarnings
 }
 
-func handleDeprecations() error_helpers.ErrorAndWarnings {
-	var ew = error_helpers.ErrorAndWarnings{}
+func handleDeprecations() error_helpers2.ErrorAndWarnings {
+	var ew = error_helpers2.ErrorAndWarnings{}
 	// if deprecated cloud-token or cloud-host is set, show a warning and copy the value to the new arg
 	if viper.IsSet(constants.ArgCloudToken) {
 		if viper.IsSet(constants.ArgPipesToken) {
@@ -370,8 +371,8 @@ func getWorkspaceProfileLoader(ctx context.Context) (*steampipeconfig.WorkspaceP
 
 // now validate  config values have appropriate values
 // (currently validates telemetry)
-func validateConfig() error_helpers.ErrorAndWarnings {
-	var res = error_helpers.ErrorAndWarnings{}
+func validateConfig() error_helpers2.ErrorAndWarnings {
+	var res = error_helpers2.ErrorAndWarnings{}
 	telemetry := viper.GetString(constants.ArgTelemetry)
 	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
 		res.Error = sperr.New(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
@@ -459,7 +460,7 @@ func ensureInstallDir() {
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way
-func displayDeprecationWarnings(errorsAndWarnings error_helpers.ErrorAndWarnings) {
+func displayDeprecationWarnings(errorsAndWarnings error_helpers2.ErrorAndWarnings) {
 	if len(errorsAndWarnings.Warnings) > 0 {
 		fmt.Println(color.YellowString(fmt.Sprintf("\nDeprecation %s:", utils.Pluralize("warning", len(errorsAndWarnings.Warnings)))))
 		for _, warning := range errorsAndWarnings.Warnings {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/turbot/pipe-fittings/ociinstaller"
 	"log"
 	"strings"
 
@@ -14,7 +15,7 @@ import (
 
 type SteampipeImage struct {
 	OCIDescriptor *ocispec.Descriptor
-	ImageRef      *SteampipeImageRef
+	ImageRef      *ociinstaller.ImageRef
 	Config        *config
 	Plugin        *PluginImage
 	Database      *DbImage
@@ -65,7 +66,7 @@ const (
 	ImageTypePlugin   ImageType = "plugin"
 )
 
-func (o *ociDownloader) Download(ctx context.Context, ref *SteampipeImageRef, imageType ImageType, destDir string) (*SteampipeImage, error) {
+func (o *ociDownloader) Download(ctx context.Context, ref *ociinstaller.ImageRef, imageType ImageType, destDir string) (*SteampipeImage, error) {
 	var mediaTypes []string
 	Image := o.newSteampipeImage()
 	Image.ImageRef = ref

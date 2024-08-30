@@ -3,6 +3,7 @@ package ociinstaller
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/ociinstaller"
 	"log"
 	"path/filepath"
 
@@ -21,7 +22,7 @@ func InstallAssets(ctx context.Context, assetsLocation string) error {
 
 	// download the blobs
 	imageDownloader := NewOciDownloader()
-	image, err := imageDownloader.Download(ctx, NewSteampipeImageRef(constants.DashboardAssetsImageRef), ImageTypeAssets, tempDir.Path)
+	image, err := imageDownloader.Download(ctx, ociinstaller.NewImageRef(constants.DashboardAssetsImageRef), ImageTypeAssets, tempDir.Path)
 	if err != nil {
 		return err
 	}

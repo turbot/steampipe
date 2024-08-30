@@ -3,6 +3,7 @@ package ociinstaller
 import (
 	"bytes"
 	"fmt"
+	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"os"
 	"path/filepath"
@@ -10,7 +11,7 @@ import (
 )
 
 type transformTest struct {
-	ref                                  *SteampipeImageRef
+	ref                                  *ociinstaller.ImageRef
 	pluginLineContent                    []byte
 	expectedTransformedPluginLineContent []byte
 }
@@ -57,7 +58,7 @@ func TestAddPluginName(t *testing.T) {
 	for name, test := range transformTests {
 		sourcebytes := test.pluginLineContent
 		expectedBytes := test.expectedTransformedPluginLineContent
-		_, _, constraint := test.ref.GetOrgNameAndConstraint()
+		_, _, constraint := test.ref.GetOrgNameAndConstraint(constants.SteampipeHubOCIBase)
 		transformed := bytes.TrimSpace(addPluginConstraintToConfig(sourcebytes, constraint))
 
 		if !bytes.Equal(transformed, expectedBytes) {

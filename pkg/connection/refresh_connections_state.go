@@ -3,6 +3,7 @@ package connection
 import (
 	"context"
 	"fmt"
+	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
 	"log"
 	"os"
 	"slices"
@@ -225,7 +226,7 @@ func (s *refreshConnectionState) updateRateLimiterDefinitions(ctx context.Contex
 	if len(updatedPluginLimiters) > 0 {
 		err := s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
 		if err != nil {
-			s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, error_helpers.NewErrorsAndWarning(err))
+			s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, error_helpers2.NewErrorsAndWarning(err))
 		}
 	}
 	return nil

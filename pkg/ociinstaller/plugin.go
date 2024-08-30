@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	putils "github.com/turbot/pipe-fittings/ociinstaller"
+	versionfile2 "github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"log"
 	"os"
 	"path/filepath"
@@ -35,7 +37,7 @@ func InstallPlugin(ctx context.Context, imageRef string, constraint string, sub 
 		}
 	}()
 
-	ref := NewSteampipeImageRef(imageRef)
+	ref := putils.NewImageRef(imageRef)
 	imageDownloader := NewOciDownloader()
 
 	sub <- struct{}{}
@@ -75,7 +77,7 @@ func updatePluginVersionFiles(ctx context.Context, image *SteampipeImage, constr
 	defer versionFileUpdateLock.Unlock()
 
 	timeNow := versionfile.FormatTime(time.Now())
-	v, err := versionfile.LoadPluginVersionFile(ctx)
+	v, err := versionfile2.LoadPluginVersionFile(ctx)
 	if err != nil {
 		return err
 	}
@@ -86,7 +88,7 @@ func updatePluginVersionFiles(ctx context.Context, image *SteampipeImage, constr
 
 	installedVersion, ok := v.Plugins[pluginFullName]
 	if !ok {
-		installedVersion = versionfile.EmptyInstalledVersion()
+		installedVersion = versionfile2.EmptyInstalledVersion()
 	}
 
 	installedVersion.Name = pluginFullName

@@ -2,12 +2,14 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/steampipe/pkg/constants"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/pipe-fittings/hclhelpers"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
 )
 
 type PluginVersion struct {
@@ -55,7 +57,7 @@ func (p *PluginVersion) Initialise(block *hcl.Block) hcl.Diagnostics {
 		})
 	}
 	// parse plugin name
-	p.Org, p.Name, _ = ociinstaller.NewSteampipeImageRef(p.RawName).GetOrgNameAndConstraint()
+	p.Org, p.Name, _ = ociinstaller.NewImageRef(p.RawName).GetOrgNameAndConstraint(constants.SteampipeHubOCIBase)
 
 	return diags
 }

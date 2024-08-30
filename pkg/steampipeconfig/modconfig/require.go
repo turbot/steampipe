@@ -2,13 +2,15 @@ package modconfig
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/steampipe/pkg/constants"
 	"sort"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/version"
 )
 
@@ -152,7 +154,7 @@ func (r *Require) validatePluginVersions(modName string, plugins map[string]*Plu
 // the mod requirement. If plugin is found nil error is returned.
 func (r *Require) searchInstalledPluginForRequirement(modName string, requirement *PluginVersion, plugins map[string]*PluginVersionString) error {
 	for installedName, installed := range plugins {
-		org, name, _ := ociinstaller.NewSteampipeImageRef(installedName).GetOrgNameAndConstraint()
+		org, name, _ := ociinstaller.NewImageRef(installedName).GetOrgNameAndConstraint(constants.SteampipeHubOCIBase)
 		if org != requirement.Org || name != requirement.Name {
 			// no point checking - different plugin
 			continue

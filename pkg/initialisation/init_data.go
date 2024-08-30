@@ -3,6 +3,7 @@ package initialisation
 import (
 	"context"
 	"fmt"
+	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
 	"log"
 
 	"github.com/jackc/pgx/v5"
@@ -189,11 +190,11 @@ func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap map
 }
 
 // GetDbClient either creates a DB client using the configured connection string (if present) or creates a LocalDbClient
-func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (db_common.Client, error_helpers.ErrorAndWarnings) {
+func GetDbClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (db_common.Client, error_helpers2.ErrorAndWarnings) {
 	if connectionString := viper.GetString(constants.ArgConnectionString); connectionString != "" {
 		statushooks.SetStatus(ctx, "Connecting to remote Steampipe database")
 		client, err := db_client.NewDbClient(ctx, connectionString, onConnectionCallback, opts...)
-		return client, error_helpers.NewErrorsAndWarning(err)
+		return client, error_helpers2.NewErrorsAndWarning(err)
 	}
 
 	statushooks.SetStatus(ctx, "Starting local Steampipe database")

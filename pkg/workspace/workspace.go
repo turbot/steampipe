@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
 	"log"
 	"os"
 	"path/filepath"
@@ -69,7 +70,7 @@ type Workspace struct {
 }
 
 // LoadWorkspaceVars creates a Workspace and loads the variables
-func LoadWorkspaceVars(ctx context.Context) (*Workspace, *modconfig.ModVariableMap, error_helpers.ErrorAndWarnings) {
+func LoadWorkspaceVars(ctx context.Context) (*Workspace, *modconfig.ModVariableMap, error_helpers2.ErrorAndWarnings) {
 	log.Printf("[INFO] LoadWorkspaceVars: creating workspace, loading variable and resolving variable values")
 	workspacePath := viper.GetString(constants.ArgModLocation)
 
@@ -79,13 +80,13 @@ func LoadWorkspaceVars(ctx context.Context) (*Workspace, *modconfig.ModVariableM
 	workspace, err := createShellWorkspace(workspacePath)
 	if err != nil {
 		log.Printf("[INFO] createShellWorkspace failed %s", err.Error())
-		return nil, nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, nil, error_helpers2.NewErrorsAndWarning(err)
 	}
 
 	// check if your workspace path is home dir and if modfile exists - if yes then warn and ask user to continue or not
 	if err := HomeDirectoryModfileCheck(ctx, workspacePath); err != nil {
 		log.Printf("[INFO] HomeDirectoryModfileCheck failed %s", err.Error())
-		return nil, nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, nil, error_helpers2.NewErrorsAndWarning(err)
 	}
 	inputVariables, errorsAndWarnings := workspace.PopulateVariables(ctx)
 	if errorsAndWarnings.Error != nil {
@@ -288,8 +289,8 @@ func HomeDirectoryModfileCheck(ctx context.Context, workspacePath string) error 
 	return nil
 }
 
-func (w *Workspace) LoadWorkspaceMod(ctx context.Context, inputVariables *modconfig.ModVariableMap) error_helpers.ErrorAndWarnings {
-	var errorsAndWarnings = error_helpers.ErrorAndWarnings{}
+func (w *Workspace) LoadWorkspaceMod(ctx context.Context, inputVariables *modconfig.ModVariableMap) error_helpers2.ErrorAndWarnings {
+	var errorsAndWarnings = error_helpers2.ErrorAndWarnings{}
 
 	// build run context which we use to load the workspace
 	parseCtx, err := w.getParseContext(ctx, inputVariables)
@@ -323,7 +324,7 @@ func (w *Workspace) LoadWorkspaceMod(ctx context.Context, inputVariables *modcon
 	return errorsAndWarnings
 }
 
-func (w *Workspace) PopulateVariables(ctx context.Context) (*modconfig.ModVariableMap, error_helpers.ErrorAndWarnings) {
+func (w *Workspace) PopulateVariables(ctx context.Context) (*modconfig.ModVariableMap, error_helpers2.ErrorAndWarnings) {
 	log.Printf("[TRACE] Workspace.PopulateVariables")
 	// resolve values of all input variables
 	// we WILL validate missing variables when loading
@@ -343,14 +344,14 @@ func (w *Workspace) PopulateVariables(ctx context.Context) (*modconfig.ModVariab
 		}
 		// if interactive input is disabled, return the missing variables error
 		if !viper.GetBool(constants.ArgInput) {
-			return nil, error_helpers.NewErrorsAndWarning(missingVariablesError)
+			return nil, error_helpers2.NewErrorsAndWarning(missingVariablesError)
 		}
 		// so we have missing variables - prompt for them
 		// first hide spinner if it is there
 		statushooks.Done(ctx)
 		if err := promptForMissingVariables(ctx, missingVariablesError.MissingVariables, w.Path); err != nil {
 			log.Printf("[TRACE] Interactive variables prompting returned error %v", err)
-			return nil, error_helpers.NewErrorsAndWarning(err)
+			return nil, error_helpers2.NewErrorsAndWarning(err)
 		}
 
 		// now try to load vars again
@@ -366,18 +367,18 @@ func (w *Workspace) PopulateVariables(ctx context.Context) (*modconfig.ModVariab
 	return inputVariables, errorsAndWarnings
 }
 
-func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, error_helpers.ErrorAndWarnings) {
+func (w *Workspace) getInputVariables(ctx context.Context, validateMissing bool) (*modconfig.ModVariableMap, error_helpers2.ErrorAndWarnings) {
 	log.Printf("[TRACE] Workspace.getInputVariables")
 	// build a run context just to use to load variable definitions
 	variablesParseCtx, err := w.getParseContext(ctx, nil)
 	if err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, error_helpers2.NewErrorsAndWarning(err)
 	}
 
 	// load variable definitions
 	variableMap, err := steampipeconfig.LoadVariableDefinitions(ctx, w.Path, variablesParseCtx)
 	if err != nil {
-		return nil, error_helpers.NewErrorsAndWarning(err)
+		return nil, error_helpers2.NewErrorsAndWarning(err)
 	}
 
 	log.Printf("[INFO] loaded variable definitions: %s", variableMap)
