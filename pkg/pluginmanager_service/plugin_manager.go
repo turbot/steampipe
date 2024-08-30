@@ -668,9 +668,23 @@ func (m *PluginManager) notifyNewDynamicSchemas(pluginClient *sdkgrpc.PluginClie
 }
 
 func (m *PluginManager) waitForPluginLoad(p *runningPlugin, req *pb.GetRequest) error {
-	log.Printf("[TRACE] waitForPluginLoad (%p)", req)
-	// TODO make this configurable
-	pluginStartTimeoutSecs := 30
+	pluginConfig := m.plugins[p.pluginInstance]
+	if pluginConfig == nil {
+		// not expected
+		return sperr.New("plugin manager has no config for plugin instance %s", p.pluginInstance)
+	}
+	pluginStartTimeoutSecs := pluginConfig.GetStartTimeout()
+	if pluginStartTimeoutSecs == 0 {
+		if viper.IsSet(constants.ArgMemoryMaxMbPlugin) {
+			pluginStartTimeoutSecs = viper.GetInt64(constants.ArgPluginStartTimeout)
+		}
+	}
+	if pluginStartTimeoutSecs == 0 {
+		// if we don't have any timeout set use 30 seconds
+		pluginStartTimeoutSecs = int64(30)
+	}
+
+	log.Printf("[TRACE] waitForPluginLoad: waiting %d seconds (%p)", pluginStartTimeoutSecs, req)
 
 	// wait for the plugin to be initialized
 	select {

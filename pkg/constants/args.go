@@ -71,6 +71,7 @@ const (
 	ArgDatabaseSSLPassword     = "database-ssl-password"
 	ArgMemoryMaxMb             = "memory-max-mb"
 	ArgMemoryMaxMbPlugin       = "memory-max-mb-plugin"
+	ArgPluginStartTimeout      = "plugin-start-timeout"
 )
 
 // metaquery mode arguments
