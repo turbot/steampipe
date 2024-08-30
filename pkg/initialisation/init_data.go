@@ -5,6 +5,7 @@ import (
 	"fmt"
 	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 
 	"github.com/jackc/pgx/v5"
@@ -116,7 +117,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 
 	statushooks.SetStatus(ctx, "Checking for required plugins")
 	log.Printf("[INFO] Checking for required plugins")
-	pluginsInstalled, err := plugin.GetInstalledPlugins(ctx)
+	pluginsInstalled, err := plugin.GetInstalledPlugins(ctx, steampipeconfig.GlobalConfig.PluginVersions)
 	if err != nil {
 		i.Result.Error = err
 		return

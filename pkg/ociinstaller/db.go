@@ -21,7 +21,7 @@ func InstallDB(ctx context.Context, dblocation string) (string, error) {
 		}
 	}()
 
-	imageDownloader := NewOciDownloader()
+	imageDownloader := ociinstaller.NewOciDownloader()
 
 	// Download the blobs
 	image, err := imageDownloader.Download(ctx, ociinstaller.NewImageRef(constants.PostgresImageRef), ImageTypeDatabase, tempDir.Path)
@@ -40,7 +40,7 @@ func InstallDB(ctx context.Context, dblocation string) (string, error) {
 	return string(image.OCIDescriptor.Digest), nil
 }
 
-func updateVersionFileDB(image *SteampipeImage) error {
+func updateVersionFileDB(image *OciImage) error {
 	timeNow := utils.FormatTime(time.Now())
 	v, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {
@@ -55,7 +55,7 @@ func updateVersionFileDB(image *SteampipeImage) error {
 	return v.Save()
 }
 
-func installDbFiles(image *SteampipeImage, tempDir string, dest string) error {
+func installDbFiles(image *OciImage, tempDir string, dest string) error {
 	source := filepath.Join(tempDir, image.Database.ArchiveDir)
 	return ociinstaller.MoveFolderWithinPartition(source, dest)
 }

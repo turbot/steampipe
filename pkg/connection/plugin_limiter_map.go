@@ -1,7 +1,7 @@
 package connection
 
 import (
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/plugin"
 	"golang.org/x/exp/maps"
 )
 

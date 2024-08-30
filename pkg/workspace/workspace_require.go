@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"sort"
 	"strings"
 
@@ -15,7 +16,7 @@ import (
 
 func (w *Workspace) CheckRequiredPluginsInstalled(ctx context.Context) error {
 	// get the list of all installed plugins
-	installedPlugins, err := plugin.GetInstalledPlugins(ctx)
+	installedPlugins, err := plugin.GetInstalledPlugins(ctx, steampipeconfig.GlobalConfig.PluginVersions)
 	if err != nil {
 		return err
 	}

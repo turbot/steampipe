@@ -2,10 +2,10 @@ package introspection
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/plugin"
 
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 func GetRateLimiterTableCreateSql() db_common.QueryWithArgs {

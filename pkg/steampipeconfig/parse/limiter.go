@@ -3,7 +3,7 @@ package parse
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/plugin"
 )
 
 func DecodeLimiter(block *hcl.Block) (*modconfig.RateLimiter, hcl.Diagnostics) {
