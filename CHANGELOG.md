@@ -1,3 +1,7 @@
+## v0.24.0 [tbd]
+_Whats new_
+- Add ability to configure plugin startup timeout. ([#4320](https://github.com/turbot/steampipe/issues/4320))
+
 ## v0.23.5 [2024-08-21]
 _Bug fixes_
 - Fix issue where refresh connections was not creating a new connection if it was not in the search path. ([#4353](https://github.com/turbot/steampipe/issues/4353))
