@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/turbot/pipe-fittings/hclhelpers"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/utils"
 	"golang.org/x/exp/maps"
 )
 

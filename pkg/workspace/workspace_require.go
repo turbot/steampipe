@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/turbot/pipe-fittings/plugin"
 	"sort"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/plugin"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func (w *Workspace) CheckRequiredPluginsInstalled(ctx context.Context) error {

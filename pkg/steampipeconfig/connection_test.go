@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/otiai10/copy"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type getConnectionsToUpdateTest struct {

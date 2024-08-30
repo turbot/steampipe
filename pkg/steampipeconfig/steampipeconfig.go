@@ -2,17 +2,18 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/error_helpers"
-	filepaths2 "github.com/turbot/pipe-fittings/filepaths"
-	utils2 "github.com/turbot/pipe-fittings/ociinstaller"
-	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/hashicorp/go-version"
+	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -333,7 +334,7 @@ func (c *SteampipeConfig) initializePlugins() {
 		pluginImageRef := plugin.Plugin
 		connection.PluginAlias = plugin.Alias
 		connection.Plugin = pluginImageRef
-		if pluginPath, _ := filepaths2.GetPluginPath(pluginImageRef, plugin.Alias); pluginPath != "" {
+		if pluginPath, _ := pfilepaths.GetPluginPath(pluginImageRef, plugin.Alias); pluginPath != "" {
 			// plugin is installed - set the instance and the plugin path
 			connection.PluginInstance = &plugin.Instance
 			connection.PluginPath = &pluginPath
@@ -432,7 +433,7 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 func (c *SteampipeConfig) GetNonSearchPathConnections(searchPath []string) []string {
 	var res []string
 	//convert searchPath to map for easy lookup
-	searchPathLookup := utils2.SliceToLookup(searchPath)
+	searchPathLookup := helpers.SliceToLookup(searchPath)
 
 	for connectionName, _ := range c.Connections {
 		if _, inSearchPath := searchPathLookup[connectionName]; !inSearchPath {

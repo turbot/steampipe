@@ -2,10 +2,11 @@ package display
 
 import (
 	"fmt"
-	utils2 "github.com/turbot/pipe-fittings/ociinstaller"
 	"sort"
 	"strings"
 
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
@@ -122,7 +123,7 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 		if (len(installSkipReports)) > 0 {
 			fmt.Printf(
 				"\nSkipped the following %s:\n\n%s\n",
-				utils2.Pluralize("plugin", skipCount),
+				utils.Pluralize("plugin", skipCount),
 				strings.Join(installSkipReports, "\n\n"),
 			)
 		}
@@ -135,8 +136,8 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 			fmt.Println()
 			fmt.Printf(
 				"To install %s which %s not installed, please run %s\n",
-				utils2.Pluralize("plugin", len(canBeInstalled)),
-				utils2.Pluralize("is", len(canBeInstalled)),
+				utils.Pluralize("plugin", len(canBeInstalled)),
+				utils.Pluralize("is", len(canBeInstalled)),
 				constants.Bold(fmt.Sprintf(
 					"steampipe plugin install %s",
 					strings.Join(pluginList, " "),
@@ -152,8 +153,8 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 			fmt.Println()
 			fmt.Printf(
 				"To update %s %s: %s\nTo update all plugins: %s",
-				utils2.Pluralize("this", len(pluginList)),
-				utils2.Pluralize("plugin", len(pluginList)),
+				utils.Pluralize("this", len(pluginList)),
+				utils.Pluralize("plugin", len(pluginList)),
 				constants.Bold(fmt.Sprintf("steampipe plugin update %s", strings.Join(pluginList, " "))),
 				constants.Bold(fmt.Sprintln("steampipe plugin update --all")),
 			)

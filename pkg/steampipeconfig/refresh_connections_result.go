@@ -2,10 +2,10 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/error_helpers"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 // RefreshConnectionResult is a structure used to contain the result of either a RefreshConnections or a NewLocalClient operation

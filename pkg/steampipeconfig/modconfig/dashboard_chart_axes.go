@@ -1,7 +1,7 @@
 package modconfig
 
 import (
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 type DashboardChartAxes struct {

@@ -1,6 +1,6 @@
 package modconfig
 
-import "github.com/turbot/steampipe/pkg/utils"
+import "github.com/turbot/pipe-fittings/utils"
 
 type DashboardChartLegend struct {
 	Display  *string `cty:"display" hcl:"display" json:"display,omitempty"`

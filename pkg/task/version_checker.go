@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
 

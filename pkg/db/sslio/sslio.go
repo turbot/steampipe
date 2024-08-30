@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 func ParseCertificateInLocation(location string) (*x509.Certificate, error) {

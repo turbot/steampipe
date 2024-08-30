@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	utils "github.com/turbot/steampipe/pkg/utils"
+	utils "github.com/turbot/pipe-fittings/utils"
 	"golang.org/x/exp/maps"
 
 	"github.com/turbot/steampipe/pkg/filepaths"

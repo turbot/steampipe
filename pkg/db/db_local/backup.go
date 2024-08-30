@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/go-kit/files"
 
 	"github.com/shirou/gopsutil/process"
+	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -349,7 +350,7 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 // This needs to be done because the pg_dump will always set a blank search path in the backup archive
 // and backed up MATERIALIZED VIEWS may have functions with unqualified table names
 func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []string) (string, string, error) {
-	onlyRefresh, withoutRefresh := utils.Partition(tableOfContentsOfBackup, func(v string) bool {
+	onlyRefresh, withoutRefresh := putils.Partition(tableOfContentsOfBackup, func(v string) bool {
 		return strings.Contains(strings.ToUpper(v), "MATERIALIZED VIEW DATA")
 	})
 
@@ -420,7 +421,7 @@ func retainBackup(ctx context.Context) error {
 	textBackupFilePath := filepath.Join(backupDir, textBackupRetentionFileName)
 
 	log.Println("[TRACE] moving database back up to", binaryBackupFilePath)
-	if err := utils.MoveFile(filepaths.DatabaseBackupFilePath(), binaryBackupFilePath); err != nil {
+	if err := putils.MoveFile(filepaths.DatabaseBackupFilePath(), binaryBackupFilePath); err != nil {
 		return err
 	}
 	log.Println("[TRACE] converting database back up to", textBackupFilePath)
@@ -475,7 +476,7 @@ func trimBackups() {
 	}
 
 	// retain only the .dump files (just to get the unique backups)
-	files = utils.Filter(files, func(v fs.DirEntry) bool {
+	files = putils.Filter(files, func(v fs.DirEntry) bool {
 		if v.Type().IsDir() {
 			return false
 		}
@@ -484,7 +485,7 @@ func trimBackups() {
 	})
 
 	// map to the names of the backups, without extensions
-	names := utils.Map(files, func(v fs.DirEntry) string {
+	names := putils.Map(files, func(v fs.DirEntry) string {
 		return strings.TrimSuffix(v.Name(), filepath.Ext(v.Name()))
 	})
 

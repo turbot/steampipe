@@ -1,8 +1,8 @@
 package dashboardevents
 
 import (
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
-	"github.com/turbot/steampipe/pkg/utils"
 	"time"
 )
 

@@ -13,7 +13,7 @@ import (
 
 // InstallAssets installs the Steampipe report server assets
 func InstallAssets(ctx context.Context, assetsLocation string) error {
-	tempDir := NewTempDir(assetsLocation)
+	tempDir := ociinstaller.NewTempDir(assetsLocation)
 	defer func() {
 		if err := tempDir.Delete(); err != nil {
 			log.Printf("[TRACE] Failed to delete temp dir '%s' after installing assets: %s", tempDir, err)
@@ -38,7 +38,7 @@ func InstallAssets(ctx context.Context, assetsLocation string) error {
 func installAssetsFiles(image *SteampipeImage, tempdir string, dest string) error {
 	fileName := image.Assets.ReportUI
 	sourcePath := filepath.Join(tempdir, fileName)
-	if err := moveFolderWithinPartition(sourcePath, filepaths.EnsureDashboardAssetsDir()); err != nil {
+	if err := ociinstaller.MoveFolderWithinPartition(sourcePath, filepaths.EnsureDashboardAssetsDir()); err != nil {
 		return fmt.Errorf("could not install %s to %s", sourcePath, filepaths.EnsureDashboardAssetsDir())
 	}
 	return nil
