@@ -2,13 +2,11 @@ package versionfile
 
 import (
 	"encoding/json"
+	filehelpers "github.com/turbot/go-kit/files"
 	versionfile2 "github.com/turbot/pipe-fittings/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"log"
 	"os"
-	"time"
-
-	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 const DatabaseStructVersion = 20220411
@@ -76,11 +74,4 @@ func (f *DatabaseVersionFile) write(path string) error {
 		return err
 	}
 	return os.WriteFile(path, versionFileJSON, 0644)
-}
-
-// FormatTime :: format time as RFC3339 in UTC
-func FormatTime(localTime time.Time) string {
-	loc, _ := time.LoadLocation("UTC")
-	utcTime := localTime.In(loc)
-	return (utcTime.Format(time.RFC3339))
 }

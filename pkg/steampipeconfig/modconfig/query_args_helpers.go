@@ -2,11 +2,11 @@ package modconfig
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/helpers"
 	"log"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 // MergeArgs ensures base and runtime args are non nil and merges them into single args

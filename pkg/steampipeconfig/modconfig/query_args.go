@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 // QueryArgs is a struct which contains the arguments used to invoke a query

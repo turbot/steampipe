@@ -7,11 +7,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/turbot/pipe-fittings/utils"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 )
 

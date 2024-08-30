@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type runtimeDependencyPublisherImpl struct {

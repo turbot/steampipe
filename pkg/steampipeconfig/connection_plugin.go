@@ -5,9 +5,9 @@ import (
 	"log"
 	"strings"
 
-	typehelpers "github.com/turbot/go-kit/types"
-
 	"github.com/hashicorp/go-plugin"
+	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/utils"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -17,7 +17,6 @@ import (
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 )
 

@@ -3,6 +3,7 @@ package ociinstaller
 import (
 	"context"
 	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/utils"
 	"log"
 	"path/filepath"
 	"time"
@@ -13,7 +14,7 @@ import (
 
 // InstallDB :: Install Postgres files fom OCI image
 func InstallDB(ctx context.Context, dblocation string) (string, error) {
-	tempDir := NewTempDir(dblocation)
+	tempDir := ociinstaller.NewTempDir(dblocation)
 	defer func() {
 		if err := tempDir.Delete(); err != nil {
 			log.Printf("[TRACE] Failed to delete temp dir '%s' after installing db files: %s", tempDir, err)
@@ -40,7 +41,7 @@ func InstallDB(ctx context.Context, dblocation string) (string, error) {
 }
 
 func updateVersionFileDB(image *SteampipeImage) error {
-	timeNow := versionfile.FormatTime(time.Now())
+	timeNow := utils.FormatTime(time.Now())
 	v, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {
 		return err
@@ -56,5 +57,5 @@ func updateVersionFileDB(image *SteampipeImage) error {
 
 func installDbFiles(image *SteampipeImage, tempDir string, dest string) error {
 	source := filepath.Join(tempDir, image.Database.ArchiveDir)
-	return moveFolderWithinPartition(source, dest)
+	return ociinstaller.MoveFolderWithinPartition(source, dest)
 }

@@ -8,11 +8,11 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // LocalDbClient wraps over DbClient

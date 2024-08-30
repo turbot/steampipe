@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -136,9 +137,9 @@ func serviceRestartCmd() *cobra.Command {
 
 func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
-	utils.LogTime("runServiceStartCmd start")
+	putils.LogTime("runServiceStartCmd start")
 	defer func() {
-		utils.LogTime("runServiceStartCmd end")
+		putils.LogTime("runServiceStartCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
 			if exitCode == constants.ExitCodeSuccessful {
@@ -304,9 +305,9 @@ func runServiceInForeground(ctx context.Context) {
 
 func runServiceRestartCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
-	utils.LogTime("runServiceRestartCmd start")
+	putils.LogTime("runServiceRestartCmd start")
 	defer func() {
-		utils.LogTime("runServiceRestartCmd end")
+		putils.LogTime("runServiceRestartCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
 			if exitCode == constants.ExitCodeSuccessful {
@@ -380,9 +381,9 @@ to force a restart.
 
 func runServiceStatusCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
-	utils.LogTime("runServiceStatusCmd status")
+	putils.LogTime("runServiceStatusCmd status")
 	defer func() {
-		utils.LogTime("runServiceStatusCmd end")
+		putils.LogTime("runServiceStatusCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
 		}
@@ -424,14 +425,14 @@ func composeStateError(dbStateErr error, pmStateErr error) error {
 
 func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
-	utils.LogTime("runServiceStopCmd stop")
+	putils.LogTime("runServiceStopCmd stop")
 
 	var status db_local.StopStatus
 	var dbStopError error
 	var dbState *db_local.RunningDBInstanceInfo
 
 	defer func() {
-		utils.LogTime("runServiceStopCmd end")
+		putils.LogTime("runServiceStopCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
 			if exitCode == constants.ExitCodeSuccessful {

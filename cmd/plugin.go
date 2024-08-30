@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	putils "github.com/turbot/pipe-fittings/ociinstaller"
 	"strings"
 	"sync"
 	"time"
@@ -15,7 +14,10 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
+	putils "github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
+	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -25,11 +27,9 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/installationstate"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
-	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type installedPlugin struct {
@@ -489,7 +489,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	defer cancel()
 
 	statushooks.SetStatus(ctx, "Checking for available updates")
-	reports := plugin.GetUpdateReport(timeoutCtx, state.InstallationID, runUpdatesFor)
+	reports := plugin.GetUpdateReport(timeoutCtx, state.InstallationID, runUpdatesFor, constants.SteampipeHubOCIBase)
 	statushooks.Done(ctx)
 	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
@@ -535,7 +535,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 }
 
-func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.VersionCheckReport, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
+func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.PluginVersionCheckReport, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
 	if plugin.UpdateRequired(pvr) {

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
 	"log"
 	"os"
 	"os/exec"
@@ -16,6 +15,8 @@ import (
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
+	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -28,7 +29,7 @@ import (
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
 type StartResult struct {
-	error_helpers2.ErrorAndWarnings
+	perror_helpers.ErrorAndWarnings
 	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
 	PluginManagerState *pluginmanager.State
@@ -73,8 +74,8 @@ func (slt StartListenType) ToListenAddresses() []string {
 }
 
 func StartServices(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) *StartResult {
-	utils.LogTime("db_local.StartServices start")
-	defer utils.LogTime("db_local.StartServices end")
+	putils.LogTime("db_local.StartServices start")
+	defer putils.LogTime("db_local.StartServices end")
 
 	// we want the service to always listen on IPv4 loopback
 	if !utils.ListenAddressesContainsOneOfAddresses(listenAddresses, []string{"127.0.0.1", "*", "localhost"}) {
@@ -215,8 +216,8 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 // StartDB starts the database if not already running
 func startDB(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) (res *StartResult) {
 	log.Printf("[TRACE] StartDB invoker %s (listenAddresses=%s, port=%d)", invoker, listenAddresses, port)
-	utils.LogTime("db.StartDB start")
-	defer utils.LogTime("db.StartDB end")
+	putils.LogTime("db.StartDB start")
+	defer putils.LogTime("db.StartDB end")
 	var postgresCmd *exec.Cmd
 
 	res = &StartResult{}
@@ -243,7 +244,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 	// remove the stale info file, ignoring errors - will overwrite anyway
 	_ = removeRunningInstanceInfo()
 
-	if err := utils.EnsureDirectoryPermission(filepaths.GetDataLocation()); err != nil {
+	if err := putils.EnsureDirectoryPermission(filepaths.GetDataLocation()); err != nil {
 		return res.SetError(fmt.Errorf("%s does not have the necessary permissions to start the service", filepaths.GetDataLocation()))
 	}
 
@@ -259,7 +260,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 	}
 
 	if err := utils.IsPortBindable(utils.GetFirstListenAddress(listenAddresses), port); err != nil {
-		return res.SetError(fmt.Errorf("cannot listen on port %d and %s %s. To check if there's any other steampipe services running, use %s", constants.Bold(port), utils.Pluralize("address", len(listenAddresses)), constants.Bold(strings.Join(listenAddresses, ",")), constants.Bold("steampipe service status --all")))
+		return res.SetError(fmt.Errorf("cannot listen on port %d and %s %s. To check if there's any other steampipe services running, use %s", constants.Bold(port), putils.Pluralize("address", len(listenAddresses)), constants.Bold(strings.Join(listenAddresses, ",")), constants.Bold("steampipe service status --all")))
 	}
 
 	if err := migrateLegacyPasswordFile(); err != nil {
@@ -310,7 +311,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 		return res.SetError(err)
 	}
 
-	utils.LogTime("postgresCmd end")
+	putils.LogTime("postgresCmd end")
 	res.Status = ServiceStarted
 	return res
 }

@@ -1,13 +1,12 @@
 package modconfig
 
 import (
-	"github.com/turbot/pipe-fittings/ociinstaller"
-	"github.com/turbot/pipe-fittings/utils"
 	"sort"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/turbot/pipe-fittings/hclhelpers"
+	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 )
 

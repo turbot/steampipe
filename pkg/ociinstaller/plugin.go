@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	putils "github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/ociinstaller"
 	versionfile2 "github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"log"
 	"os"
@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/turbot/pipe-fittings/utils"
+	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 var versionFileUpdateLock = &sync.Mutex{}
@@ -28,7 +28,7 @@ func InstallPlugin(ctx context.Context, imageRef string, constraint string, sub 
 	for _, opt := range opts {
 		opt(config)
 	}
-	tempDir := NewTempDir(filepaths.EnsurePluginDir())
+	tempDir := ociinstaller.NewTempDir(filepaths.EnsurePluginDir())
 	defer func() {
 		// send a last beacon to signal completion
 		sub <- struct{}{}
@@ -37,7 +37,7 @@ func InstallPlugin(ctx context.Context, imageRef string, constraint string, sub 
 		}
 	}()
 
-	ref := putils.NewImageRef(imageRef)
+	ref := ociinstaller.NewImageRef(imageRef)
 	imageDownloader := NewOciDownloader()
 
 	sub <- struct{}{}
@@ -76,7 +76,7 @@ func updatePluginVersionFiles(ctx context.Context, image *SteampipeImage, constr
 	versionFileUpdateLock.Lock()
 	defer versionFileUpdateLock.Unlock()
 
-	timeNow := versionfile.FormatTime(time.Now())
+	timeNow := putils.FormatTime(time.Now())
 	v, err := versionfile2.LoadPluginVersionFile(ctx)
 	if err != nil {
 		return err
@@ -135,7 +135,7 @@ func installPluginBinary(image *SteampipeImage, tempDir string, destDir string) 
 	}
 
 	// unzip the file into the plugin folder
-	if _, err := ungzip(sourcePath, destDir); err != nil {
+	if _, err := ociinstaller.Ungzip(sourcePath, destDir); err != nil {
 		return fmt.Errorf("could not unzip %s to %s", sourcePath, destDir)
 	}
 	return nil
@@ -150,10 +150,10 @@ func installPluginDocs(image *SteampipeImage, tempDir string, destDir string) er
 	// install the docs
 	sourcePath := filepath.Join(tempDir, image.Plugin.DocsDir)
 	destPath := filepath.Join(destDir, "docs")
-	if fileExists(destPath) {
+	if ociinstaller.FileExists(destPath) {
 		os.RemoveAll(destPath)
 	}
-	if err := moveFolderWithinPartition(sourcePath, destPath); err != nil {
+	if err := ociinstaller.MoveFolderWithinPartition(sourcePath, destPath); err != nil {
 		return fmt.Errorf("could not copy %s to %s", sourcePath, destPath)
 	}
 	return nil
@@ -186,7 +186,7 @@ func installPluginConfigFiles(image *SteampipeImage, tempdir string, constraint 
 }
 
 func copyConfigFileUnlessExists(sourceFile string, destFile string, constraint string) error {
-	if fileExists(destFile) {
+	if ociinstaller.FileExists(destFile) {
 		return nil
 	}
 	inputData, err := os.ReadFile(sourceFile)
