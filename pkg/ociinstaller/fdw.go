@@ -24,7 +24,7 @@ func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
 		}
 	}()
 
-	imageDownloader := ociinstaller.NewOciDownloader()
+	imageDownloader := ociinstaller.NewOciDownloader(constants.BaseImageRef, GetAllMediaTypes)
 
 	// download the blobs.
 	image, err := imageDownloader.Download(ctx, ociinstaller.NewImageRef(constants.FdwImageRef), ImageTypeFdw, tempDir.Path)
@@ -44,7 +44,7 @@ func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
 	return string(image.OCIDescriptor.Digest), nil
 }
 
-func updateVersionFileFdw(image *OciImage) error {
+func updateVersionFileFdw(image *ociinstaller.OciImage) error {
 	timeNow := putils.FormatTime(time.Now())
 	v, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {
@@ -59,7 +59,7 @@ func updateVersionFileFdw(image *OciImage) error {
 	return v.Save()
 }
 
-func installFdwFiles(image *OciImage, tempdir string) error {
+func installFdwFiles(image *ociinstaller.OciImage, tempdir string) error {
 	fdwBinDir := filepaths.GetFDWBinaryDir()
 	fdwBinFileSourcePath := filepath.Join(tempdir, image.Fdw.BinaryFile)
 	fdwBinFileDestPath := filepath.Join(fdwBinDir, constants.FdwBinaryFileName)
