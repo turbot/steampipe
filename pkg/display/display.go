@@ -21,7 +21,7 @@ import (
 	"github.com/karrick/gows"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	pfq "github.com/turbot/pipe-fittings/queryresult"
+	pqueryresult "github.com/turbot/pipe-fittings/queryresult"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -185,7 +185,7 @@ func getTerminalColumnsRequiredForString(str string) int {
 }
 
 type jsonOutput struct {
-	Columns  []pfq.ColumnDef           `json:"columns"`
+	Columns  []pqueryresult.ColumnDef  `json:"columns"`
 	Rows     []map[string]interface{}  `json:"rows"`
 	Metadata *queryresult.TimingResult `json:"metadata,omitempty"`
 }
@@ -204,7 +204,7 @@ func displayJSON(ctx context.Context, result *queryresult.Result) (int, *queryre
 	// add column defs to the JSON output
 	for _, col := range result.Cols {
 		// create a new column def, converting the data type to lowercase
-		c := pfq.ColumnDef{
+		c := pqueryresult.ColumnDef{
 			Name:         col.Name,
 			OriginalName: col.OriginalName,
 			DataType:     strings.ToLower(col.DataType),
