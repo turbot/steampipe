@@ -44,8 +44,8 @@ func ensureUniqueColumnName(cols []*queryresult.ColumnDef) error {
 	// create a unique name generator
 	nameGenerator := utils.NewUniqueNameGenerator()
 
-	for _, col := range cols {
-		uniqueName, err := nameGenerator.GetUniqueName(col.Name)
+	for colIdx, col := range cols {
+		uniqueName, err := nameGenerator.GetUniqueName(col.Name, colIdx)
 		if err != nil {
 			return fmt.Errorf("error generating unique column name: %w", err)
 		}
