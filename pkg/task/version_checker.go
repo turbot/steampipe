@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
@@ -87,7 +88,7 @@ func (c *versionChecker) versionCheckURL() url.URL {
 	var u url.URL
 	//https://hub.steampipe.io/api/cli/version/latest
 	u.Scheme = "https"
-	u.Host = "hub.steampipe.io"
-	u.Path = "api/cli/version/latest"
+	u.Host = app_specific.VersionCheckHost
+	u.Path = app_specific.VersionCheckPath
 	return u
 }

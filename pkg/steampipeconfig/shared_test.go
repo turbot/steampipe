@@ -1,12 +1,13 @@
 package steampipeconfig
 
 import (
-	filepaths2 "github.com/turbot/pipe-fittings/filepaths"
 	"os"
 	"path/filepath"
 	"testing"
 
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/app_specific"
+	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
@@ -36,8 +37,7 @@ func setupTestData() {
 }
 
 func TestFindPluginFolderTest(t *testing.T) {
-
-	filepaths.SteampipeDir, _ = filehelpers.Tildefy("~/.steampipe")
+	app_specific.InstallDir, _ = filehelpers.Tildefy("~/.steampipe")
 	setupTestData()
 
 	directories := []string{
@@ -49,7 +49,7 @@ func TestFindPluginFolderTest(t *testing.T) {
 
 	setupFindPluginFolderTest(directories)
 	for name, test := range testCasesFindPluginFolderTest {
-		path, err := filepaths2.FindPluginFolder(test.schema)
+		path, err := pfilepaths.FindPluginFolder(test.schema)
 		if err != nil {
 			if test.expected != "ERROR" {
 				t.Errorf(`Test: '%s'' FAILED : unexpected error %v`, name, err)

@@ -377,7 +377,7 @@ connection "b" {
 // 	// set steampipe dir
 // 	os.Chdir("./test_data/connections_to_update")
 // 	wd, _ := os.Getwd()
-// 	filepaths.SteampipeDir = wd
+// 	app_specific.InstallDir = wd
 
 // 	for name, test := range testCasesGetConnectionsToUpdate {
 // 		// setup connection config

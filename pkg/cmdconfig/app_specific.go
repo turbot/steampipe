@@ -1,36 +1,24 @@
 package cmdconfig
 
 import (
-	"github.com/Masterminds/semver/v3"
-	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/constants"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/version"
 )
-
-// TODO kai FIX ME!!!!!
 
 // SetAppSpecificConstants sets app specific constants defined in pipe-fittings
 func SetAppSpecificConstants() {
 	app_specific.AppName = "steampipe"
 
-	versionString := viper.GetString("main.version")
-	app_specific.AppVersion = semver.MustParse(versionString)
+	app_specific.AppVersion = version.SteampipeVersion
 
-	// set all app specific env var keys
 	app_specific.SetAppSpecificEnvVarKeys("STEAMPIPE_")
-
-	app_specific.ConfigExtension = ".tpc"
-
+	app_specific.ConfigExtension = ".spc"
 	app_specific.PluginHub = constants.SteampipeHubOCIBase
-	// set the command pre and post hooks
-	//cmdconfig.CustomPreRunHook = preRunHook
-	//cmdconfig.CustomPostRunHook = postRunHook
 
 	// Version check
 	app_specific.VersionCheckHost = "hub.steampipe.io"
@@ -41,20 +29,12 @@ func SetAppSpecificConstants() {
 	error_helpers.FailOnError(err)
 	app_specific.DefaultInstallDir = defaultInstallDir
 
-	// set the default config path
-	globalConfigPath := filepath.Join(defaultInstallDir, "config")
 	// check whether install-dir env has been set - if so, respect it
 	if envInstallDir, ok := os.LookupEnv(app_specific.EnvInstallDir); ok {
-		globalConfigPath = filepath.Join(envInstallDir, "config")
 		app_specific.InstallDir = envInstallDir
 	} else {
-		/*
-			NOTE:
-			If InstallDir is settable outside of default & env var, need to add
-			the following code to end of initGlobalConfig in init.go
-			app_specific.InstallDir = viper.GetString(constants.ArgInstallDir) at end of
-		*/
+		// NOTE: install dir will be set to configured value at the end of InitGlobalConfig
 		app_specific.InstallDir = defaultInstallDir
 	}
-	app_specific.DefaultConfigPath = strings.Join([]string{".", globalConfigPath}, ":")
+
 }

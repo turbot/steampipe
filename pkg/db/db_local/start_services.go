@@ -15,6 +15,7 @@ import (
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/app_specific"
 	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
 	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -469,7 +470,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		)
 	}
 
-	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths.SteampipeDir))
+	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", app_specific.InstallDir))
 
 	//  Check if the /etc/ssl directory exist in os
 	dirExist, _ := os.Stat(constants.SslConfDir)
