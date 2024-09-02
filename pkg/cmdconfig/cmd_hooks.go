@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
-	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"io"
 	"log"
 	"os"
@@ -21,6 +19,9 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/logging"
+	"github.com/turbot/pipe-fittings/app_specific"
+	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/pipe-fittings/utils"
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -131,7 +132,7 @@ func setMemoryLimit() {
 // task run is complete
 //
 // runScheduledTasks skips running tasks if this instance is the plugin manager
-func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, ew error_helpers2.ErrorAndWarnings) chan struct{} {
+func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, ew perror_helpers.ErrorAndWarnings) chan struct{} {
 	// skip running the task runner if this is the plugin manager
 	// since it's supposed to be a daemon
 	if task.IsPluginManagerCmd(cmd) {
@@ -190,7 +191,7 @@ func envLogLevelSet() bool {
 }
 
 // initGlobalConfig reads in config file and ENV variables if set.
-func initGlobalConfig() error_helpers2.ErrorAndWarnings {
+func initGlobalConfig() perror_helpers.ErrorAndWarnings {
 	utils.LogTime("cmdconfig.initGlobalConfig start")
 	defer utils.LogTime("cmdconfig.initGlobalConfig end")
 
@@ -200,7 +201,7 @@ func initGlobalConfig() error_helpers2.ErrorAndWarnings {
 	// load workspace profile from the configured install dir
 	loader, err := getWorkspaceProfileLoader(ctx)
 	if err != nil {
-		return error_helpers2.NewErrorsAndWarning(err)
+		return perror_helpers.NewErrorsAndWarning(err)
 	}
 
 	// set global workspace profile
@@ -209,7 +210,7 @@ func initGlobalConfig() error_helpers2.ErrorAndWarnings {
 	// set-up viper with defaults from the env and default workspace profile
 	err = bootstrapViper(loader, cmd)
 	if err != nil {
-		return error_helpers2.NewErrorsAndWarning(err)
+		return perror_helpers.NewErrorsAndWarning(err)
 	}
 
 	// set global containing the configured install dir (create directory if needed)
@@ -264,8 +265,8 @@ func initGlobalConfig() error_helpers2.ErrorAndWarnings {
 	return loadConfigErrorsAndWarnings
 }
 
-func handleDeprecations() error_helpers2.ErrorAndWarnings {
-	var ew = error_helpers2.ErrorAndWarnings{}
+func handleDeprecations() perror_helpers.ErrorAndWarnings {
+	var ew = perror_helpers.ErrorAndWarnings{}
 	// if deprecated cloud-token or cloud-host is set, show a warning and copy the value to the new arg
 	if viper.IsSet(constants.ArgCloudToken) {
 		if viper.IsSet(constants.ArgPipesToken) {
@@ -371,8 +372,8 @@ func getWorkspaceProfileLoader(ctx context.Context) (*steampipeconfig.WorkspaceP
 
 // now validate  config values have appropriate values
 // (currently validates telemetry)
-func validateConfig() error_helpers2.ErrorAndWarnings {
-	var res = error_helpers2.ErrorAndWarnings{}
+func validateConfig() perror_helpers.ErrorAndWarnings {
+	var res = perror_helpers.ErrorAndWarnings{}
 	telemetry := viper.GetString(constants.ArgTelemetry)
 	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
 		res.Error = sperr.New(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
@@ -396,7 +397,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 
 	level := sdklogging.LogLevel()
 	var logDestination io.Writer
-	if len(filepaths.SteampipeDir) == 0 {
+	if len(app_specific.InstallDir) == 0 {
 		// write to the buffer - this is to make sure that we don't lose logs
 		// till the time we get the log directory
 		logDestination = logBuffer
@@ -454,13 +455,16 @@ func ensureInstallDir() {
 		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create pipes installation directory: %s", pipesInstallDir))
 	}
 
-	// store as SteampipeDir and PipesInstallDir
-	filepaths.SteampipeDir = installDir
+	// store as app_specific.InstallDir and PipesInstallDir
+	app_specific.InstallDir = installDir
 	filepaths.PipesInstallDir = pipesInstallDir
+	// now we have loaded all config, set the install dir in the app specific config
+	app_specific.InstallDir = viper.GetString(constants.ArgInstallDir)
+
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way
-func displayDeprecationWarnings(errorsAndWarnings error_helpers2.ErrorAndWarnings) {
+func displayDeprecationWarnings(errorsAndWarnings perror_helpers.ErrorAndWarnings) {
 	if len(errorsAndWarnings.Warnings) > 0 {
 		fmt.Println(color.YellowString(fmt.Sprintf("\nDeprecation %s:", utils.Pluralize("warning", len(errorsAndWarnings.Warnings)))))
 		for _, warning := range errorsAndWarnings.Warnings {

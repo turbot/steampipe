@@ -2,18 +2,18 @@ package filepaths
 
 import (
 	"fmt"
-	filepaths2 "github.com/turbot/pipe-fittings/filepaths"
 	"os"
 	"path/filepath"
 
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/app_specific"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 // Constants for Config
 const (
-	DefaultInstallDir      = "~/.steampipe"
 	DefaultPipesInstallDir = "~/.pipes"
 
 	connectionsStateFileName     = "connection.json"
@@ -28,8 +28,6 @@ const (
 	localPluginFolder            = "local"
 )
 
-var SteampipeDir string
-
 func ensureSteampipeSubDir(dirName string) string {
 	subDir := steampipeSubDir(dirName)
 
@@ -42,10 +40,10 @@ func ensureSteampipeSubDir(dirName string) string {
 }
 
 func steampipeSubDir(dirName string) string {
-	if SteampipeDir == "" {
-		panic(fmt.Errorf("cannot call any Steampipe directory functions before SteampipeDir is set"))
+	if app_specific.InstallDir == "" {
+		panic(fmt.Errorf("cannot call any Steampipe directory functions before app_specific.InstallDir is set"))
 	}
-	return filepath.Join(SteampipeDir, dirName)
+	return filepath.Join(app_specific.InstallDir, dirName)
 }
 
 // EnsureTemplateDir returns the path to the templates directory (creates if missing)
@@ -77,7 +75,7 @@ func PluginInstallDir(pluginImageDisplayRef string) string {
 }
 
 func PluginBinaryPath(pluginImageDisplayRef, pluginAlias string) string {
-	return filepath.Join(PluginInstallDir(pluginImageDisplayRef), filepaths2.PluginAliasToLongName(pluginAlias)+".plugin")
+	return filepath.Join(PluginInstallDir(pluginImageDisplayRef), filepaths.PluginAliasToLongName(pluginAlias)+".plugin")
 }
 
 // EnsureConfigDir returns the path to the config directory (creates if missing)
