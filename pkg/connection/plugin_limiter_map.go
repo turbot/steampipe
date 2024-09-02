@@ -12,7 +12,7 @@ func (l PluginLimiterMap) Equals(other PluginLimiterMap) bool {
 	return maps.EqualFunc(l, other, func(m1, m2 LimiterMap) bool { return m1.Equals(m2) })
 }
 
-type PluginMap map[string]*modconfig.Plugin
+type PluginMap map[string]*plugin.Plugin
 
 func (p PluginMap) ToPluginLimiterMap() PluginLimiterMap {
 	var limiterPluginMap = make(PluginLimiterMap)
@@ -24,11 +24,11 @@ func (p PluginMap) ToPluginLimiterMap() PluginLimiterMap {
 	return limiterPluginMap
 }
 
-//func (p PluginMap) Diff(otherMap PluginMap) (added, deleted, changed map[string][]*modconfig.Plugin) {
+//func (p PluginMap) Diff(otherMap PluginMap) (added, deleted, changed map[string][]*plugin.Plugin) {
 //	// results are maps of connections keyed by plugin instance
-//	added = make(map[string][]*modconfig.Plugin)
-//	deleted = make(map[string][]*modconfig.Plugin)
-//	changed = make(map[string][]*modconfig.Plugin)
+//	added = make(map[string][]*plugin.Plugin)
+//	deleted = make(map[string][]*plugin.Plugin)
+//	changed = make(map[string][]*plugin.Plugin)
 //
 //	for name, plugin := range p {
 //		if otherConnection, ok := otherMap[name]; !ok {

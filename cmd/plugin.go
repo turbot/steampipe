@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"strings"
 	"sync"
 	"time"
@@ -487,7 +488,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	defer cancel()
 
 	statushooks.SetStatus(ctx, "Checking for available updates")
-	reports := plugin.GetUpdateReport(timeoutCtx, state.InstallationID, runUpdatesFor, constants.SteampipeHubOCIBase)
+	reports := plugin.GetUpdateReport(timeoutCtx, state.InstallationID, runUpdatesFor)
 	statushooks.Done(ctx)
 	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
@@ -592,7 +593,7 @@ func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVers
 		}
 	}()
 
-	image, err := plugin.Install(ctx, resolvedPlugin, progress, constants.BaseImageRef, putils.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
+	image, err := plugin.Install(ctx, resolvedPlugin, progress, constants.BaseImageRef, ociinstaller.SteampipeMediaTypeProvider{}, putils.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
 	if err != nil {
 		msg := ""
 		// used to build data for the plugin install report to be used for display purposes
@@ -679,7 +680,7 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 
 }
 
-func showPluginListOutput(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res perror_helpers.ErrorAndWarnings, outputFormat string) error {
+func showPluginListOutput(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]plugin.PluginConnection, res perror_helpers.ErrorAndWarnings, outputFormat string) error {
 	switch outputFormat {
 	case "table":
 		return showPluginListAsTable(pluginList, failedPluginMap, missingPluginMap, res)
@@ -690,7 +691,7 @@ func showPluginListOutput(pluginList []plugin.PluginListItem, failedPluginMap, m
 	}
 }
 
-func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res perror_helpers.ErrorAndWarnings) error {
+func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]plugin.PluginConnection, res perror_helpers.ErrorAndWarnings) error {
 	headers := []string{"Installed", "Version", "Connections"}
 	var rows [][]string
 	// List installed plugins in a table
@@ -713,7 +714,7 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 		// failed plugins
 		for p, item := range failedPluginMap {
 			for _, conn := range item {
-				conns = append(conns, conn.Name)
+				conns = append(conns, conn.GetName())
 			}
 			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.ConnectionErrorPluginFailedToStart})
 			conns = []string{}
@@ -722,7 +723,7 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 		// missing plugins
 		for p, item := range missingPluginMap {
 			for _, conn := range item {
-				conns = append(conns, conn.Name)
+				conns = append(conns, conn.GetName())
 			}
 			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.InstallMessagePluginNotInstalled})
 			conns = []string{}
@@ -740,7 +741,7 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 	return nil
 }
 
-func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res perror_helpers.ErrorAndWarnings) error {
+func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]plugin.PluginConnection, res perror_helpers.ErrorAndWarnings) error {
 	output := pluginJsonOutput{}
 
 	for _, item := range pluginList {
@@ -755,7 +756,7 @@ func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, m
 	for p, item := range failedPluginMap {
 		connections := make([]string, len(item))
 		for i, conn := range item {
-			connections[i] = conn.Name
+			connections[i] = conn.GetName()
 		}
 		failed := failedPlugin{
 			Name:        p,
@@ -768,7 +769,7 @@ func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, m
 	for p, item := range missingPluginMap {
 		connections := make([]string, len(item))
 		for i, conn := range item {
-			connections[i] = conn.Name
+			connections[i] = conn.GetName()
 		}
 		missing := failedPlugin{
 			Name:        p,
@@ -823,7 +824,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	reports := steampipeconfig.PluginRemoveReports{}
+	reports := plugin.PluginRemoveReports{}
 	statushooks.SetStatus(ctx, fmt.Sprintf("Uninstalling %s", utils.Pluralize("plugin", len(args))))
 	for _, p := range args {
 		statushooks.SetStatus(ctx, fmt.Sprintf("Uninstalling %s", p))
@@ -841,7 +842,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	reports.Print()
 }
 
-func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res perror_helpers.ErrorAndWarnings) {
+func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, failedPluginMap, missingPluginMap map[string][]plugin.PluginConnection, res perror_helpers.ErrorAndWarnings) {
 	statushooks.Show(ctx)
 	defer statushooks.Done(ctx)
 
@@ -872,7 +873,7 @@ func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, fai
 	return pluginList, failedPluginMap, missingPluginMap, res
 }
 
-func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPluginMap, missingPluginMap map[string][]*modconfig.Connection, res perror_helpers.ErrorAndWarnings) {
+func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPluginMap, missingPluginMap map[string][]plugin.PluginConnection, res perror_helpers.ErrorAndWarnings) {
 	utils.LogTime("cmd.getPluginConnectionMap start")
 	defer utils.LogTime("cmd.getPluginConnectionMap end")
 
@@ -887,9 +888,9 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 	}
 
 	// create the map of failed/missing plugins and available/loaded plugins
-	failedPluginMap = map[string][]*modconfig.Connection{}
-	missingPluginMap = map[string][]*modconfig.Connection{}
-	pluginConnectionMap = make(map[string][]*modconfig.Connection)
+	failedPluginMap = map[string][]plugin.PluginConnection{}
+	missingPluginMap = map[string][]plugin.PluginConnection{}
+	pluginConnectionMap = make(map[string][]plugin.PluginConnection)
 
 	for _, state := range connectionStateMap {
 		connection, ok := steampipeconfig.GlobalConfig.Connections[state.ConnectionName]

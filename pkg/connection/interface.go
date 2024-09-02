@@ -2,6 +2,7 @@ package connection
 
 import (
 	"context"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/plugin"
@@ -11,7 +12,7 @@ import (
 
 type pluginManager interface {
 	shared.PluginManager
-	OnConnectionConfigChanged(context.Context, ConnectionConfigMap, map[string]*modconfig.Plugin)
+	OnConnectionConfigChanged(context.Context, ConnectionConfigMap, map[string]*plugin.Plugin)
 	GetConnectionConfig() ConnectionConfigMap
 	HandlePluginLimiterChanges(PluginLimiterMap) error
 	Pool() *pgxpool.Pool
