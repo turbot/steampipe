@@ -14,6 +14,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/cmd"
+	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 )
@@ -45,6 +46,8 @@ func main() {
 	checkOSXVersion(ctx)
 
 	cmd.InitCmd()
+
+	cmdconfig.SetAppSpecificConstants()
 
 	// execute the command
 	exitCode = cmd.Execute()

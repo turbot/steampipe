@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/go-kit/files"
-
 	"github.com/shirou/gopsutil/process"
+	"github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/app_specific"
 	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -113,7 +113,7 @@ func killRunningDbInstance(ctx context.Context) error {
 
 		// check if the name of the process is prefixed with the $STEAMPIPE_INSTALL_DIR
 		// that means this is a steampipe service from this installation directory
-		if strings.HasPrefix(cmdLine, filepaths.SteampipeDir) {
+		if strings.HasPrefix(cmdLine, app_specific.InstallDir) {
 			log.Println("[TRACE] Terminating running postgres process")
 			if err := p.Kill(); err != nil {
 				error_helpers.ShowWarning(fmt.Sprintf("Failed to kill orphan postgres process PID %d", p.Pid))

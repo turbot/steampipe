@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	utils "github.com/turbot/pipe-fittings/utils"
-	"golang.org/x/exp/maps"
-
-	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/pipe-fittings/app_specific"
+	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
+	"golang.org/x/exp/maps"
 )
 
 // TODO KAI add plugin block tests
@@ -60,14 +60,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Type:           "",
 					ImportSchema:   "enabled",
 					Config:         "access_key = \"aws_dmi_001_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_001_secret_key\"\n",
-					DeclRange: modconfig.Range{
+					DeclRange: plugin.Range{
 						Filename: "$$test_pwd$$/testdata/connection_config/multiple_connections/config/connection1.spc",
-						Start: modconfig.Pos{
+						Start: plugin.Pos{
 							Line:   1,
 							Column: 1,
 							Byte:   0,
 						},
-						End: modconfig.Pos{
+						End: plugin.Pos{
 							Line:   1,
 							Column: 11,
 							Byte:   10,
@@ -82,14 +82,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Type:           "",
 					ImportSchema:   "enabled",
 					Config:         "access_key = \"aws_dmi_002_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_002_secret_key\"\n",
-					DeclRange: modconfig.Range{
+					DeclRange: plugin.Range{
 						Filename: "$$test_pwd$$/testdata/connection_config/multiple_connections/config/connection2.spc",
-						Start: modconfig.Pos{
+						Start: plugin.Pos{
 							Line:   1,
 							Column: 1,
 							Byte:   0,
 						},
-						End: modconfig.Pos{
+						End: plugin.Pos{
 							Line:   1,
 							Column: 11,
 							Byte:   10,
@@ -115,14 +115,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//				Type:           "",
 	//				ImportSchema:   "enabled",
 	//				Config:         "",
-	//				DeclRange: modconfig.Range{
+	//				DeclRange: plugin.Range{
 	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection/config/connection1.spc",
-	//					Start: modconfig.Pos{
+	//					Start: plugin.Pos{
 	//						Line:   1,
 	//						Column: 1,
 	//						Byte:   0,
 	//					},
-	//					End: modconfig.Pos{
+	//					End: plugin.Pos{
 	//						Line:   1,
 	//						Column: 11,
 	//						Byte:   10,
@@ -148,14 +148,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//				Type:           "",
 	//				ImportSchema:   "enabled",
 	//				Config:         "",
-	//				DeclRange: modconfig.Range{
+	//				DeclRange: plugin.Range{
 	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
-	//					Start: modconfig.Pos{
+	//					Start: plugin.Pos{
 	//						Line:   1,
 	//						Column: 1,
 	//						Byte:   0,
 	//					},
-	//					End: modconfig.Pos{
+	//					End: plugin.Pos{
 	//						Line:   1,
 	//						Column: 11,
 	//						Byte:   10,
@@ -195,14 +195,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//				Type:           "",
 	//				ImportSchema:   "enabled",
 	//				Config:         "",
-	//				DeclRange: modconfig.Range{
+	//				DeclRange: plugin.Range{
 	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
-	//					Start: modconfig.Pos{
+	//					Start: plugin.Pos{
 	//						Line:   1,
 	//						Column: 1,
 	//						Byte:   0,
 	//					},
-	//					End: modconfig.Pos{
+	//					End: plugin.Pos{
 	//						Line:   1,
 	//						Column: 11,
 	//						Byte:   10,
@@ -237,14 +237,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//				Type:           "",
 	//				ImportSchema:   "enabled",
 	//				Config:         "",
-	//				DeclRange: modconfig.Range{
+	//				DeclRange: plugin.Range{
 	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
-	//					Start: modconfig.Pos{
+	//					Start: plugin.Pos{
 	//						Line:   1,
 	//						Column: 1,
 	//						Byte:   0,
 	//					},
-	//					End: modconfig.Pos{
+	//					End: plugin.Pos{
 	//						Line:   1,
 	//						Column: 11,
 	//						Byte:   10,
@@ -281,14 +281,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//					Cache:    &trueVal,
 	//					CacheTTL: &ttlVal,
 	//				},
-	//				DeclRange: modconfig.Range{
+	//				DeclRange: plugin.Range{
 	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_and_connection_options/config/connection1.spc",
-	//					Start: modconfig.Pos{
+	//					Start: plugin.Pos{
 	//						Line:   1,
 	//						Column: 1,
 	//						Byte:   0,
 	//					},
-	//					End: modconfig.Pos{
+	//					End: plugin.Pos{
 	//						Line:   1,
 	//						Column: 11,
 	//						Byte:   10,
@@ -359,8 +359,8 @@ func TestLoadConfig(t *testing.T) {
 			t.Errorf("failed to build absolute config filepath from %s", workspaceDir)
 		}
 
-		// set SteampipeDir
-		filepaths.SteampipeDir = steampipeDir
+		// set app_specific.InstallDir
+		app_specific.InstallDir = steampipeDir
 
 		// now load config
 		config, errorsAndWarnings := loadSteampipeConfig(context.TODO(), workspaceDir, "")
