@@ -22,7 +22,7 @@ func InstallAssets(ctx context.Context, assetsLocation string) error {
 
 	// download the blobs
 	imageDownloader := ociinstaller.NewOciDownloader()
-	image, err := imageDownloader.Download(ctx, ociinstaller.NewImageRef(constants.DashboardAssetsImageRef), ImageTypeAssets, tempDir.Path)
+	image, err := imageDownloader.Download(ctx, ociinstaller.NewImageRef(constants.DashboardAssetsImageRef), ociinstaller.ImageTypeAssets, tempDir.Path)
 	if err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func InstallAssets(ctx context.Context, assetsLocation string) error {
 	return nil
 }
 
-func installAssetsFiles(image *OciImage, tempdir string, dest string) error {
+func installAssetsFiles(image *ociinstaller.OciImage, tempdir string, dest string) error {
 	fileName := image.Assets.ReportUI
 	sourcePath := filepath.Join(tempdir, fileName)
 	if err := ociinstaller.MoveFolderWithinPartition(sourcePath, filepaths.EnsureDashboardAssetsDir()); err != nil {

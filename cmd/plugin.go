@@ -592,7 +592,7 @@ func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVers
 		}
 	}()
 
-	image, err := plugin.Install(ctx, resolvedPlugin, progress, putils.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
+	image, err := plugin.Install(ctx, resolvedPlugin, progress, constants.BaseImageRef, putils.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
 	if err != nil {
 		msg := ""
 		// used to build data for the plugin install report to be used for display purposes
