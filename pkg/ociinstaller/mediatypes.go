@@ -50,19 +50,21 @@ const (
 	MediaTypeAssetReportLayer = "application/vnd.turbot.steampipe.assets.report.layer.v1+tar"
 )
 
-func GetAllMediaTypes(imageType ociinstaller.ImageType) ([]string, error) {
-	p, err := MediaTypeForPlatform(imageType)
+type SteampipeMediaTypeProvider struct{}
+
+func (p SteampipeMediaTypeProvider) GetAllMediaTypes(imageType ociinstaller.ImageType) ([]string, error) {
+	m, err := p.MediaTypeForPlatform(imageType)
 	if err != nil {
 		return nil, err
 	}
-	s := SharedMediaTypes(imageType)
-	c := ConfigMediaTypes()
-	return append(append(p, s...), c...), nil
+	s := p.SharedMediaTypes(imageType)
+	c := p.ConfigMediaTypes()
+	return append(append(m, s...), c...), nil
 }
 
 // MediaTypeForPlatform returns media types for binaries for this OS and architecture
 // and it's fallbacks in order of priority
-func MediaTypeForPlatform(imageType ociinstaller.ImageType) ([]string, error) {
+func (SteampipeMediaTypeProvider) MediaTypeForPlatform(imageType ociinstaller.ImageType) ([]string, error) {
 	layerFmtGzip := "application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+gzip"
 	layerFmtTar := "application/vnd.turbot.steampipe.%s.%s-%s.layer.v1+tar"
 
@@ -94,7 +96,7 @@ func MediaTypeForPlatform(imageType ociinstaller.ImageType) ([]string, error) {
 }
 
 // SharedMediaTypes returns media types that are NOT specific to the os and arch (readmes, control files, etc)
-func SharedMediaTypes(imageType ociinstaller.ImageType) []string {
+func (SteampipeMediaTypeProvider) SharedMediaTypes(imageType ociinstaller.ImageType) []string {
 	switch imageType {
 	case ImageTypeAssets:
 		return []string{MediaTypeAssetReportLayer}
@@ -109,6 +111,6 @@ func SharedMediaTypes(imageType ociinstaller.ImageType) []string {
 }
 
 // ConfigMediaTypes :: returns media types for OCI $config data ( in the config, not a layer)
-func ConfigMediaTypes() []string {
+func (SteampipeMediaTypeProvider) ConfigMediaTypes() []string {
 	return []string{ociinstaller.MediaTypeConfig(), ociinstaller.MediaTypePluginConfig()}
 }

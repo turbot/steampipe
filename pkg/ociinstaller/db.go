@@ -2,12 +2,12 @@ package ociinstaller
 
 import (
 	"context"
-	"github.com/turbot/pipe-fittings/ociinstaller"
-	"github.com/turbot/pipe-fittings/utils"
 	"log"
 	"path/filepath"
 	"time"
 
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	versionfile "github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 )
@@ -21,10 +21,10 @@ func InstallDB(ctx context.Context, dblocation string) (string, error) {
 		}
 	}()
 
-	imageDownloader := ociinstaller.NewOciDownloader()
+	imageDownloader := newDbDownloader()
 
 	// Download the blobs
-	image, err := imageDownloader.Download(ctx, ociinstaller.NewImageRef(constants.PostgresImageRef), ociinstaller.ImageTypeDatabase, tempDir.Path)
+	image, err := imageDownloader.Download(ctx, ociinstaller.NewImageRef(constants.PostgresImageRef), ImageTypeDatabase, tempDir.Path)
 	if err != nil {
 		return "", err
 	}
@@ -40,7 +40,7 @@ func InstallDB(ctx context.Context, dblocation string) (string, error) {
 	return string(image.OCIDescriptor.Digest), nil
 }
 
-func updateVersionFileDB(image *ociinstaller.OciImage) error {
+func updateVersionFileDB(image *ociinstaller.OciImage[*dbImage, *dbImageConfig]) error {
 	timeNow := utils.FormatTime(time.Now())
 	v, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {
@@ -55,7 +55,7 @@ func updateVersionFileDB(image *ociinstaller.OciImage) error {
 	return v.Save()
 }
 
-func installDbFiles(image *ociinstaller.OciImage, tempDir string, dest string) error {
-	source := filepath.Join(tempDir, image.Database.ArchiveDir)
+func installDbFiles(image *ociinstaller.OciImage[*dbImage, *dbImageConfig], tempDir string, dest string) error {
+	source := filepath.Join(tempDir, image.Data.ArchiveDir)
 	return ociinstaller.MoveFolderWithinPartition(source, dest)
 }
