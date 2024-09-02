@@ -9,7 +9,7 @@ import (
 )
 
 func (m *PluginManager) handlePluginInstanceChanges(ctx context.Context, newPlugins connection.PluginMap) error {
-	if maps.EqualFunc(m.plugins, newPlugins, func(l *modconfig.Plugin, r *modconfig.Plugin) bool {
+	if maps.EqualFunc(m.plugins, newPlugins, func(l *plugin.Plugin, r *plugin.Plugin) bool {
 		return l.Equals(r)
 	}) {
 		return nil

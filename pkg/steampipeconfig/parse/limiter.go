@@ -6,8 +6,8 @@ import (
 	"github.com/turbot/pipe-fittings/plugin"
 )
 
-func DecodeLimiter(block *hcl.Block) (*modconfig.RateLimiter, hcl.Diagnostics) {
-	var limiter = &modconfig.RateLimiter{
+func DecodeLimiter(block *hcl.Block) (*plugin.RateLimiter, hcl.Diagnostics) {
+	var limiter = &plugin.RateLimiter{
 		// populate name from label
 		Name: block.Labels[0],
 	}

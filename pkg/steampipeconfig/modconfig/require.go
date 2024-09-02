@@ -136,7 +136,7 @@ func (r *Require) validateSteampipeVersion(modName string) error {
 }
 
 // validatePluginVersions validates that for every plugin requirement there's at least one plugin installed
-func (r *Require) validatePluginVersions(modName string, plugins map[string]*plugin.Plugin) []error {
+func (r *Require) validatePluginVersions(modName string, plugins map[string]*plugin.PluginVersionString) []error {
 	if len(r.Plugins) == 0 {
 		return nil
 	}
@@ -151,7 +151,7 @@ func (r *Require) validatePluginVersions(modName string, plugins map[string]*plu
 
 // searchInstalledPluginForRequirement returns plugin validation errors if no plugin is found which satisfies
 // the mod requirement. If plugin is found nil error is returned.
-func (r *Require) searchInstalledPluginForRequirement(modName string, requirement *plugin.PluginVersion, plugins map[string]*plugin.Plugin) error {
+func (r *Require) searchInstalledPluginForRequirement(modName string, requirement *plugin.PluginVersion, plugins map[string]*plugin.PluginVersionString) error {
 	for installedName, installed := range plugins {
 		org, name, _ := ociinstaller.NewImageRef(installedName).GetOrgNameAndStream()
 		if org != requirement.Org || name != requirement.Name {

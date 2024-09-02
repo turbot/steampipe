@@ -2,8 +2,8 @@ package introspection
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/plugin"
 
+	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )
@@ -23,7 +23,7 @@ func GetPluginTableCreateSql() db_common.QueryWithArgs {
 	}
 }
 
-func GetPluginTablePopulateSql(plugin *modconfig.Plugin) db_common.QueryWithArgs {
+func GetPluginTablePopulateSql(plugin *plugin.Plugin) db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
 plugin,
