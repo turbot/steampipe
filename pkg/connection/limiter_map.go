@@ -6,9 +6,9 @@ import (
 )
 
 // LimiterMap is a map of limiter name to limiter definition
-type LimiterMap map[string]*modconfig.RateLimiter
+type LimiterMap map[string]*plugin.RateLimiter
 
-func NewLimiterMap(limiters []*modconfig.RateLimiter) LimiterMap {
+func NewLimiterMap(limiters []*plugin.RateLimiter) LimiterMap {
 	res := make(LimiterMap)
 	for _, l := range limiters {
 		res[l.Name] = l
@@ -16,7 +16,7 @@ func NewLimiterMap(limiters []*modconfig.RateLimiter) LimiterMap {
 	return res
 }
 func (l LimiterMap) Equals(other LimiterMap) bool {
-	return maps.EqualFunc(l, other, func(l1, l2 *modconfig.RateLimiter) bool { return l1.Equals(l2) })
+	return maps.EqualFunc(l, other, func(l1, l2 *plugin.RateLimiter) bool { return l1.Equals(l2) })
 }
 
 // ToPluginLimiterMap converts limiter map keyed by limiter name to a map of limiter maps keyed by plugin image ref

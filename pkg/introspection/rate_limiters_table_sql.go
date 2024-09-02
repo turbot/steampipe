@@ -2,8 +2,8 @@ package introspection
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/plugin"
 
+	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )
@@ -38,7 +38,7 @@ func GetRateLimiterTableDropSql() db_common.QueryWithArgs {
 	}
 }
 
-func GetRateLimiterTablePopulateSql(settings *modconfig.RateLimiter) db_common.QueryWithArgs {
+func GetRateLimiterTablePopulateSql(settings *plugin.RateLimiter) db_common.QueryWithArgs {
 	return db_common.QueryWithArgs{
 		Query: fmt.Sprintf(`INSERT INTO %s.%s (
 "name",

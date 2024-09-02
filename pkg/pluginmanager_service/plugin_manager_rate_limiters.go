@@ -3,11 +3,12 @@ package pluginmanager_service
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/pipe-fittings/plugin"
+
 	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -155,17 +156,17 @@ func (m *PluginManager) getPluginsWithChangedLimiters(newLimiters connection.Plu
 
 func (m *PluginManager) updateRateLimiterStatus() {
 	// iterate through limiters for each plug
-	for plugin, pluginDefinedLimiters := range m.pluginLimiters {
+	for p, pluginDefinedLimiters := range m.pluginLimiters {
 		// get user limiters for this plugin
-		userDefinedLimiters := m.getUserDefinedLimitersForPlugin(plugin)
+		userDefinedLimiters := m.getUserDefinedLimitersForPlugin(p)
 
 		// is there a user override? - if so set status to overriden
 		for name, pluginLimiter := range pluginDefinedLimiters {
 			_, isOverriden := userDefinedLimiters[name]
 			if isOverriden {
-				pluginLimiter.Status = modconfig.LimiterStatusOverridden
+				pluginLimiter.Status = plugin.LimiterStatusOverridden
 			} else {
-				pluginLimiter.Status = modconfig.LimiterStatusActive
+				pluginLimiter.Status = plugin.LimiterStatusActive
 			}
 		}
 	}
@@ -225,19 +226,19 @@ func (m *PluginManager) bootstrapRateLimiterTable(ctx context.Context) error {
 	return m.refreshRateLimiterTable(ctx)
 }
 
-func (m *PluginManager) loadRateLimitersFromTable(ctx context.Context) ([]*modconfig.RateLimiter, error) {
+func (m *PluginManager) loadRateLimitersFromTable(ctx context.Context) ([]*plugin.RateLimiter, error) {
 	rows, err := m.pool.Query(ctx, fmt.Sprintf("SELECT * FROM %s.%s", constants.InternalSchema, constants.RateLimiterDefinitionTable))
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	rateLimiters, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[modconfig.RateLimiter])
+	rateLimiters, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[plugin.RateLimiter])
 	if err != nil {
 		return nil, err
 	}
 	// convert to pointer array
-	pRateLimiters := make([]*modconfig.RateLimiter, len(rateLimiters))
+	pRateLimiters := make([]*plugin.RateLimiter, len(rateLimiters))
 	for i, r := range rateLimiters {
 		// copy into loop var
 		rateLimiter := r
@@ -246,11 +247,11 @@ func (m *PluginManager) loadRateLimitersFromTable(ctx context.Context) ([]*modco
 	return pRateLimiters, nil
 }
 
-func (m *PluginManager) getUserAndPluginLimitersFromTableResult(rateLimiters []*modconfig.RateLimiter) (connection.PluginLimiterMap, connection.PluginLimiterMap) {
+func (m *PluginManager) getUserAndPluginLimitersFromTableResult(rateLimiters []*plugin.RateLimiter) (connection.PluginLimiterMap, connection.PluginLimiterMap) {
 	pluginLimiters := make(connection.PluginLimiterMap)
 	userLimiters := make(connection.PluginLimiterMap)
 	for _, r := range rateLimiters {
-		if r.Source == modconfig.LimiterSourcePlugin {
+		if r.Source == plugin.LimiterSourcePlugin {
 			pluginLimitersForPlugin := pluginLimiters[r.Plugin]
 			if pluginLimitersForPlugin == nil {
 				pluginLimitersForPlugin = make(connection.LimiterMap)
@@ -305,16 +306,16 @@ func (m *PluginManager) LoadPluginRateLimiters(pluginConnectionMap map[string]st
 
 		limitersForPlugin := make(connection.LimiterMap)
 		for _, l := range rateLimiterResp.Definitions {
-			r, err := modconfig.RateLimiterFromProto(l, reattach.Plugin, pluginInstance)
+			r, err := plugin.RateLimiterFromProto(l, reattach.Plugin, pluginInstance)
 			if err != nil {
 				errors = append(errors, sperr.WrapWithMessage(err, "failed to create rate limiter %s from plugin definition", err))
 				continue
 			}
 
 			// set plugin as source
-			r.Source = modconfig.LimiterSourcePlugin
+			r.Source = plugin.LimiterSourcePlugin
 			// default status to active
-			r.Status = modconfig.LimiterStatusActive
+			r.Status = plugin.LimiterStatusActive
 			// add to map
 			limitersForPlugin[l.Name] = r
 		}

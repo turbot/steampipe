@@ -166,7 +166,7 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 	i.Client = client
 }
 
-func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap map[string]*modconfig.PluginVersionString) []string {
+func validateModRequirementsRecursively(mod *modconfig.Mod, pluginVersionMap map[string]*plugin.PluginVersionString) []string {
 	var validationErrors []string
 
 	// validate this mod

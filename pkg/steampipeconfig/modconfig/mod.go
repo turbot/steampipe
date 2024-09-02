@@ -2,7 +2,7 @@ package modconfig
 
 import (
 	"fmt"
-	modconfig2 "github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/pipe-fittings/plugin"
 	"os"
 	"path/filepath"
 
@@ -312,7 +312,7 @@ func (m *Mod) SetFilePath(modFilePath string) {
 }
 
 // ValidateRequirements validates that the current steampipe CLI and the installed plugins is compatible with the mod
-func (m *Mod) ValidateRequirements(pluginVersionMap map[string]*modconfig2.PluginVersionString) []error {
+func (m *Mod) ValidateRequirements(pluginVersionMap map[string]*plugin.PluginVersionString) []error {
 	validationErrors := []error{}
 	if err := m.validateSteampipeVersion(); err != nil {
 		validationErrors = append(validationErrors, err)
@@ -329,7 +329,7 @@ func (m *Mod) validateSteampipeVersion() error {
 	return m.Require.validateSteampipeVersion(m.Name())
 }
 
-func (m *Mod) validatePluginVersions(availablePlugins map[string]*modconfig2.PluginVersionString) []error {
+func (m *Mod) validatePluginVersions(availablePlugins map[string]*plugin.PluginVersionString) []error {
 	if m.Require == nil {
 		return nil
 	}
