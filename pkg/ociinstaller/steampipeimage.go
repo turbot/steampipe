@@ -16,16 +16,14 @@ import (
 type OciImageData interface {
 	Type() ImageType
 }
+
 type OciImage struct {
 	OCIDescriptor *ocispec.Descriptor
 	ImageRef      *ociinstaller.ImageRef
 
-	Config   *config
-	Plugin   *PluginImage
-	Database *DbImage
-	Fdw      *FdwImage
-	Assets   *AssetsImage
-	resolver *remotes.Resolver
+	ImageConfig OciConfig
+	ImageData   OciImageData
+	resolver    *remotes.Resolver
 }
 
 type PluginImage struct {
