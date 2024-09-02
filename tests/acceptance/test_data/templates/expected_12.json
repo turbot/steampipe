@@ -1,4 +1,22 @@
 {
+  "columns": [
+   {
+    "name": "float32_data",
+    "data_type": "float8"
+   },
+   {
+    "name": "id",
+    "data_type": "int8"
+   },
+   {
+    "name": "int64_data",
+    "data_type": "int8"
+   },
+   {
+    "name": "uint16_data",
+    "data_type": "int8"
+   }
+  ],
   "rows": [
    {
     "float32_data": 4.4285712242126465,
@@ -6,37 +24,6 @@
     "int64_data": 465,
     "uint16_data": 341
    }
-  ],
-  "metadata": {
-   "Duration": 39542459,
-   "scans": [
-    {
-     "connection": "chaos",
-     "table": "chaos_all_numeric_column",
-     "cache_hit": false,
-     "rows_fetched": 10,
-     "hydrate_calls": 30,
-     "start_time": "2024-04-11T11:44:55+05:30",
-     "duration": 2,
-     "columns": [
-      "float32_data",
-      "id",
-      "int64_data",
-      "uint16_data"
-     ],
-     "limit": null,
-     "quals": [
-      {
-       "column": "id",
-       "operator": "=",
-       "value": 31
-      }
-     ]
-    }
-   ],
-   "rows_returned": 1,
-   "rows_fetched": 10,
-   "hydrate_calls": 30
-  }
+  ]
  }
  

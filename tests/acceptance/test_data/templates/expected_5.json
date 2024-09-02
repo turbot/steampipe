@@ -1,4 +1,30 @@
 {
+  "columns": [
+   {
+    "name": "hydrate_column_1",
+    "data_type": "text"
+   },
+   {
+    "name": "hydrate_column_2",
+    "data_type": "text"
+   },
+   {
+    "name": "hydrate_column_3",
+    "data_type": "text"
+   },
+   {
+    "name": "hydrate_column_4",
+    "data_type": "text"
+   },
+   {
+    "name": "hydrate_column_5",
+    "data_type": "text"
+   },
+   {
+    "name": "id",
+    "data_type": "int8"
+   }
+  ],
   "rows": [
    {
     "hydrate_column_1": "hydrate1-0",
@@ -8,39 +34,6 @@
     "hydrate_column_5": "hydrate5-0-hydrate4-0-hydrate1-0",
     "id": 0
    }
-  ],
-  "metadata": {
-   "Duration": 2085913625,
-   "scans": [
-    {
-     "connection": "chaos",
-     "table": "chaos_hydrate_columns_dependency",
-     "cache_hit": false,
-     "rows_fetched": 2,
-     "hydrate_calls": 10,
-     "start_time": "2024-04-11T12:34:06+05:30",
-     "duration": 2045,
-     "columns": [
-      "hydrate_column_1",
-      "hydrate_column_2",
-      "hydrate_column_3",
-      "hydrate_column_4",
-      "hydrate_column_5",
-      "id"
-     ],
-     "limit": null,
-     "quals": [
-      {
-       "column": "id",
-       "operator": "=",
-       "value": 0
-      }
-     ]
-    }
-   ],
-   "rows_returned": 1,
-   "rows_fetched": 2,
-   "hydrate_calls": 10
-  }
+  ]
  }
  

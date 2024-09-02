@@ -1,11 +1,62 @@
 {
-  "rows": [],
-  "metadata": {
-   "Duration": 42311542,
-   "scans": [],
-   "rows_returned": 0,
-   "rows_fetched": 0,
-   "hydrate_calls": 0
-  }
+  "columns": [
+   {
+    "name": "id",
+    "data_type": "int8"
+   },
+   {
+    "name": "column_0",
+    "data_type": "text"
+   },
+   {
+    "name": "column_1",
+    "data_type": "text"
+   },
+   {
+    "name": "column_2",
+    "data_type": "text"
+   },
+   {
+    "name": "column_3",
+    "data_type": "text"
+   },
+   {
+    "name": "column_4",
+    "data_type": "text"
+   },
+   {
+    "name": "column_5",
+    "data_type": "text"
+   },
+   {
+    "name": "column_6",
+    "data_type": "text"
+   },
+   {
+    "name": "column_7",
+    "data_type": "text"
+   },
+   {
+    "name": "column_8",
+    "data_type": "text"
+   },
+   {
+    "name": "column_9",
+    "data_type": "text"
+   },
+   {
+    "name": "sp_connection_name",
+    "data_type": "text"
+   },
+   {
+    "name": "sp_ctx",
+    "data_type": "jsonb"
+   },
+   {
+    "name": "_ctx",
+    "data_type": "jsonb"
+   }
+  ],
+  "rows": []
  }
  
