@@ -24,7 +24,7 @@ func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
 		}
 	}()
 
-	imageDownloader := ociinstaller.NewOciDownloader(constants.BaseImageRef, GetAllMediaTypes)
+	imageDownloader := newFdwDownloader()
 
 	// download the blobs.
 	image, err := imageDownloader.Download(ctx, ociinstaller.NewImageRef(constants.FdwImageRef), ImageTypeFdw, tempDir.Path)
@@ -44,7 +44,7 @@ func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
 	return string(image.OCIDescriptor.Digest), nil
 }
 
-func updateVersionFileFdw(image *ociinstaller.OciImage) error {
+func updateVersionFileFdw(image *ociinstaller.OciImage[*fdwImage, *FdwIfageConfig]) error {
 	timeNow := putils.FormatTime(time.Now())
 	v, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {
@@ -59,9 +59,9 @@ func updateVersionFileFdw(image *ociinstaller.OciImage) error {
 	return v.Save()
 }
 
-func installFdwFiles(image *ociinstaller.OciImage, tempdir string) error {
+func installFdwFiles(image *ociinstaller.OciImage[*fdwImage, *FdwIfageConfig], tempdir string) error {
 	fdwBinDir := filepaths.GetFDWBinaryDir()
-	fdwBinFileSourcePath := filepath.Join(tempdir, image.Fdw.BinaryFile)
+	fdwBinFileSourcePath := filepath.Join(tempdir, image.Data.BinaryFile)
 	fdwBinFileDestPath := filepath.Join(fdwBinDir, constants.FdwBinaryFileName)
 
 	// NOTE: for Mac M1 machines, if the fdw binary is updated in place without deleting the existing file,
@@ -74,16 +74,16 @@ func installFdwFiles(image *ociinstaller.OciImage, tempdir string) error {
 	}
 
 	fdwControlDir := filepaths.GetFDWSQLAndControlDir()
-	controlFileName := image.Fdw.ControlFile
+	controlFileName := image.Data.ControlFile
 	controlFileSourcePath := filepath.Join(tempdir, controlFileName)
-	controlFileDestPath := filepath.Join(fdwControlDir, image.Fdw.ControlFile)
+	controlFileDestPath := filepath.Join(fdwControlDir, image.Data.ControlFile)
 
 	if err := ociinstaller.MoveFileWithinPartition(controlFileSourcePath, controlFileDestPath); err != nil {
 		return fmt.Errorf("could not install %s to %s", controlFileSourcePath, fdwControlDir)
 	}
 
 	fdwSQLDir := filepaths.GetFDWSQLAndControlDir()
-	sqlFileName := image.Fdw.SqlFile
+	sqlFileName := image.Data.SqlFile
 	sqlFileSourcePath := filepath.Join(tempdir, sqlFileName)
 	sqlFileDestPath := filepath.Join(fdwSQLDir, sqlFileName)
 	if err := ociinstaller.MoveFileWithinPartition(sqlFileSourcePath, sqlFileDestPath); err != nil {
