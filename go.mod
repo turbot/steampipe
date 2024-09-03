@@ -51,7 +51,7 @@ require (
 	github.com/turbot/go-kit v0.10.0-rc.0
 	github.com/turbot/pipe-fittings v1.5.2
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
-	github.com/turbot/steampipe-plugin-sdk/v5 v5.10.3
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.10.4
 	github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7
 	github.com/xlab/treeprint v1.2.0
 	github.com/zclconf/go-cty v1.14.4
