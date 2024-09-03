@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -34,7 +35,7 @@ func ValidateSnapshotArgs(ctx context.Context) error {
 	}
 
 	// if workspace-database or snapshot-location are a cloud workspace handle, cloud token must be set
-	requireCloudToken := steampipeconfig.IsCloudWorkspaceIdentifier(viper.GetString(constants.ArgWorkspaceDatabase)) ||
+	requireCloudToken := steampipeconfig.IsCloudWorkspaceIdentifier(viper.GetString(pconstants.ArgWorkspaceDatabase)) ||
 		steampipeconfig.IsCloudWorkspaceIdentifier(viper.GetString(constants.ArgSnapshotLocation))
 
 	// verify cloud token and workspace has been set

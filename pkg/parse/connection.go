@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/turbot/pipe-fittings/hclhelpers"
+	pmodconfig "github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/zclconf/go-cty/cty"
 	"golang.org/x/exp/maps"
@@ -54,44 +56,21 @@ func DecodeConnection(block *hcl.Block) (*modconfig.Connection, hcl.Diagnostics)
 		connection.ConnectionNames = connections
 	}
 
-	// check for nested options
+	// blocks are not (currently) supported in connections
 	for _, connectionBlock := range connectionContent.Blocks {
-		switch connectionBlock.Type {
-		case "options":
-			// if we already found settings, fail
-			opts, moreDiags := DecodeOptions(connectionBlock)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-				break
-			}
-			moreDiags = connection.SetOptions(opts, connectionBlock)
-			if moreDiags.HasErrors() {
-				diags = append(diags, moreDiags...)
-			}
-
-		default:
-			// this can never happen
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("connections do not support '%s' blocks", block.Type),
-				Subject:  hclhelpers.BlockRangePointer(connectionBlock),
-			})
-		}
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("connections do not support '%s' blocks", block.Type),
+			Subject:  hclhelpers.BlockRangePointer(connectionBlock),
+		})
 	}
-
-	// tactical - update when support for options blocks is removed
-	// this needs updating to use a single block check
-	// at present we do not support blocks for plugin specific connection config
-	// so any blocks present in 'rest' are an error
 	if hclBody, ok := rest.(*hclsyntax.Body); ok {
 		for _, b := range hclBody.Blocks {
-			if b.Type != "options" {
-				diags = append(diags, &hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("connections do not support '%s' blocks", b.Type),
-					Subject:  hclhelpers.HclSyntaxBlockRangePointer(b),
-				})
-			}
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("connections do not support '%s' blocks", b.Type),
+				Subject:  hclhelpers.HclSyntaxBlockRangePointer(b),
+			})
 		}
 	}
 
@@ -111,8 +90,8 @@ func decodeConnectionPluginProperty(connectionContent *hcl.BodyContent, connecti
 	evalCtx := &hcl.EvalContext{Variables: make(map[string]cty.Value)}
 
 	diags := gohcl.DecodeExpression(connectionContent.Attributes["plugin"].Expr, evalCtx, &pluginName)
-	res := newDecodeResult()
-	res.handleDecodeDiags(diags)
+	res := parse.NewDecodeResult()
+	res.HandleDecodeDiags(diags)
 	if res.Diags.HasErrors() {
 		return res.Diags
 	}
@@ -140,7 +119,7 @@ func decodeConnectionPluginProperty(connectionContent *hcl.BodyContent, connecti
 	return nil
 }
 
-func getPluginInstanceFromDependency(dependencies []*modconfig.ResourceDependency) (string, bool) {
+func getPluginInstanceFromDependency(dependencies []*pmodconfig.ResourceDependency) (string, bool) {
 	if len(dependencies) != 1 {
 		return "", false
 	}

@@ -2,6 +2,7 @@ package cmdconfig
 
 import (
 	"fmt"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -120,7 +121,7 @@ func (c *CmdBuilder) AddCloudFlags() *CmdBuilder {
 // AddWorkspaceDatabaseFlag is helper function to add the workspace-databse flag to a command
 func (c *CmdBuilder) AddWorkspaceDatabaseFlag() *CmdBuilder {
 	return c.
-		AddStringFlag(constants.ArgWorkspaceDatabase, constants.DefaultWorkspaceDatabase, "Turbot Pipes workspace database")
+		AddStringFlag(pconstants.ArgWorkspaceDatabase, constants.DefaultWorkspaceDatabase, "Turbot Pipes workspace database")
 }
 
 // AddModLocationFlag is helper function to add the mod-location flag to a command

@@ -16,16 +16,14 @@ import (
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"golang.org/x/exp/maps"
 )
 
 type ConnectionPluginData struct {
-	Name    string
-	Config  string
-	Type    string
-	Options *options.Connection
-	Schema  *sdkproto.Schema
+	Name   string
+	Config string
+	Type   string
+	Schema *sdkproto.Schema
 }
 
 // ConnectionPlugin is a structure representing an instance of a plugin
@@ -41,12 +39,11 @@ type ConnectionPlugin struct {
 	PluginShortName     string
 }
 
-func (p ConnectionPlugin) addConnection(name string, config string, connectionOptions *options.Connection, connectionType string) {
+func (p ConnectionPlugin) addConnection(name string, config string, connectionType string) {
 	p.ConnectionMap[name] = &ConnectionPluginData{
-		Name:    name,
-		Config:  config,
-		Type:    connectionType,
-		Options: connectionOptions,
+		Name:   name,
+		Config: config,
+		Type:   connectionType,
 	}
 }
 
@@ -328,7 +325,7 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 			log.Printf("[WARN] no connection config loaded for '%s', skipping", c)
 			continue
 		}
-		connectionPlugin.addConnection(c, config.Config, config.Options, config.Type)
+		connectionPlugin.addConnection(c, config.Config, config.Type)
 	}
 
 	log.Printf("[TRACE] created connection plugin for connection: '%s', pluginInstance: '%s'", connectionName, pluginInstance)

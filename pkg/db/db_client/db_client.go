@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
@@ -59,20 +58,9 @@ type DbClient struct {
 	onConnectionCallback DbConnectionCallback
 }
 
-func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback, opts ...ClientOption) (_ *DbClient, err error) {
+func NewDbClient(ctx context.Context, connectionString string, opts ...ClientOption) (_ *DbClient, err error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
-
-	wg := &sync.WaitGroup{}
-	// wrap onConnectionCallback to use wait group
-	var wrappedOnConnectionCallback DbConnectionCallback
-	if onConnectionCallback != nil {
-		wrappedOnConnectionCallback = func(ctx context.Context, conn *pgx.Conn) error {
-			wg.Add(1)
-			defer wg.Done()
-			return onConnectionCallback(ctx, conn)
-		}
-	}
 
 	client := &DbClient{
 		// a weighted semaphore to control the maximum number parallel
@@ -80,9 +68,7 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
 		sessions:                make(map[uint32]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
-		// store the callback
-		onConnectionCallback: wrappedOnConnectionCallback,
-		connectionString:     connectionString,
+		connectionString:        connectionString,
 	}
 
 	defer func() {

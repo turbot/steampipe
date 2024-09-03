@@ -6,13 +6,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/workspace"
 )
 
 // init data has arrived, handle any errors/warnings/messages
@@ -46,12 +43,6 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	// initialise autocomplete suggestions
 	//nolint:golint,errcheck // worst case is we won't have autocomplete - this is not a failure
 	c.initialiseSuggestions(ctx)
-	// tell the workspace to reset the prompt after displaying async filewatcher messages
-	c.initData.Workspace.SetOnFileWatcherEventMessages(func() {
-		//nolint:golint,errcheck // worst case is we won't have autocomplete - this is not a failure
-		c.initialiseSuggestions(ctx)
-		c.interactivePrompt.Render()
-	})
 
 }
 
@@ -123,14 +114,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	log.Printf("[TRACE] SetupWatcher")
 
 	statushooks.SetStatus(ctx, "Start file watcher…")
-	// start the workspace file watcher
-	if viper.GetBool(constants.ArgWatch) {
-		// provide an explicit error handler which re-renders the prompt after displaying the error
-		if err := c.initData.Workspace.SetupWatcher(ctx, c.initData.Client, c.workspaceWatcherErrorHandler); err != nil {
-			c.initData.Result.Error = err
-		}
-	}
-
+	
 	statushooks.SetStatus(ctx, "Start notifications listener…")
 	log.Printf("[TRACE] Start notifications listener")
 
@@ -168,14 +152,6 @@ func (c *InteractiveClient) waitForInitData(ctx context.Context) error {
 			return fmt.Errorf("timed out waiting for initialisation to complete")
 		}
 	}
-}
-
-// return the workspace, or nil if not yet initialised
-func (c *InteractiveClient) workspace() *workspace.Workspace {
-	if c.initData == nil {
-		return nil
-	}
-	return c.initData.Workspace
 }
 
 // return the client, or nil if not yet initialised

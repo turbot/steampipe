@@ -8,17 +8,17 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
+	"github.com/turbot/pipe-fittings/options"
 	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/pipe-fittings/workspace_profile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
@@ -32,10 +32,9 @@ type SteampipeConfig struct {
 	Connections map[string]*modconfig.Connection
 
 	// Steampipe options
-	DefaultConnectionOptions *options.Connection
-	DatabaseOptions          *options.Database
-	GeneralOptions           *options.General
-	PluginOptions            *options.Plugin
+	DatabaseOptions *options.Database
+	GeneralOptions  *options.General
+	PluginOptions   *options.Plugin
 	// map of installed plugin versions, keyed by plugin image ref
 	PluginVersions map[string]*versionfile.InstalledVersion
 }
@@ -72,7 +71,7 @@ func (c *SteampipeConfig) Validate() (validationWarnings, validationErrors []str
 
 // ConfigMap creates a config map to pass to viper
 func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
-	res := modconfig.ConfigMap{}
+	res := workspace_profile.ConfigMap{}
 
 	// build flat config map with order or precedence (low to high): general, database, terminal
 	// this means if (for example) 'search-path' is set in both database and terminal options,
@@ -123,75 +122,10 @@ var defaultTTL = 300
 
 // if default connection options have been set, assign them to any connection which do not define specific options
 func (c *SteampipeConfig) setDefaultConnectionOptions() {
-	if c.DefaultConnectionOptions == nil {
-		c.DefaultConnectionOptions = &options.Connection{}
-	}
-
 	// precedence for the default is (high to low):
 	// env var
-	// default connection config
 	// base default
-
-	// As connection options are alco loaded by the FDW, which does not have access to viper,
-	// we must manually apply env var defaulting
-
-	// if CacheEnabledEnvVar is set, overwrite the value in DefaultConnectionOptions
-	if envStr, ok := os.LookupEnv(constants.EnvCacheEnabled); ok {
-		if parsedEnv, err := types.ToBool(envStr); err == nil {
-			c.DefaultConnectionOptions.Cache = &parsedEnv
-		}
-	}
-	if c.DefaultConnectionOptions.Cache == nil {
-		// if DefaultConnectionOptions.Cache value is NOT set, default it to true
-		c.DefaultConnectionOptions.Cache = &defaultCacheEnabled
-	}
-
-	// if CacheTTLEnvVar is set, overwrite the value in DefaultConnectionOptions
-	if ttlString, ok := os.LookupEnv(constants.EnvCacheTTL); ok {
-		if parsed, err := types.ToInt64(ttlString); err == nil {
-			ttl := int(parsed)
-			c.DefaultConnectionOptions.CacheTTL = &ttl
-		}
-	}
-
-	if c.DefaultConnectionOptions.CacheTTL == nil {
-		// if DefaultConnectionOptions.CacheTTL value is NOT set, default it to true
-		c.DefaultConnectionOptions.CacheTTL = &defaultTTL
-	}
 }
-
-func (c *SteampipeConfig) GetConnectionOptions(connectionName string) *options.Connection {
-	log.Printf("[TRACE] GetConnectionOptions for %s", connectionName)
-	connection, ok := c.Connections[connectionName]
-	if !ok {
-		log.Printf("[TRACE] connection %s not found - returning default \n%v", connectionName, c.DefaultConnectionOptions)
-		// if we can't find connection, just return defaults
-		return c.DefaultConnectionOptions
-	}
-	// does the connection have connection options set - if not, return the default
-	if connection.Options == nil {
-		log.Printf("[TRACE] connection %s has no options - returning default \n%v", connectionName, c.DefaultConnectionOptions)
-		return c.DefaultConnectionOptions
-	}
-	// so there are connection options, ensure all fields are set
-	log.Printf("[TRACE] connection %s defines options %v", connectionName, connection.Options)
-
-	// create a copy of the options to return
-	result := &options.Connection{
-		Cache:    c.DefaultConnectionOptions.Cache,
-		CacheTTL: c.DefaultConnectionOptions.CacheTTL,
-	}
-	if connection.Options.Cache != nil {
-		log.Printf("[TRACE] connection defines cache option %v", *connection.Options.Cache)
-		result.Cache = connection.Options.Cache
-	}
-	if connection.Options.CacheTTL != nil {
-		result.CacheTTL = connection.Options.CacheTTL
-	}
-
-	return result
-}
-
 func (c *SteampipeConfig) String() string {
 	var connectionStrings []string
 	for _, c := range c.Connections {
@@ -202,8 +136,7 @@ func (c *SteampipeConfig) String() string {
 Connections: 
 %s
 ----
-DefaultConnectionOptions:
-%s`, strings.Join(connectionStrings, "\n"), c.DefaultConnectionOptions.String())
+`, strings.Join(connectionStrings, "\n"))
 
 	if c.DatabaseOptions != nil {
 		str += fmt.Sprintf(`

@@ -28,11 +28,11 @@ const (
 	EnvCacheMaxSize = "STEAMPIPE_CACHE_MAX_SIZE_MB"
 	EnvQueryTimeout = "STEAMPIPE_QUERY_TIMEOUT"
 
-	EnvConnectionWatcher        = "STEAMPIPE_CONNECTION_WATCHER"
-	EnvWorkspaceChDir           = "STEAMPIPE_WORKSPACE_CHDIR"
-	EnvModLocation              = "STEAMPIPE_MOD_LOCATION"
-	EnvTelemetry                = "STEAMPIPE_TELEMETRY"
-	EnvIntrospection            = "STEAMPIPE_INTROSPECTION"
+	EnvConnectionWatcher = "STEAMPIPE_CONNECTION_WATCHER"
+	EnvWorkspaceChDir    = "STEAMPIPE_WORKSPACE_CHDIR"
+	EnvModLocation       = "STEAMPIPE_MOD_LOCATION"
+	EnvTelemetry         = "STEAMPIPE_TELEMETRY"
+	//EnvIntrospection            = "STEAMPIPE_INTROSPECTION"
 	EnvWorkspaceProfileLocation = "STEAMPIPE_WORKSPACE_PROFILES_LOCATION"
 
 	// EnvInputVarPrefix is the prefix for environment variables that represent values for input variables.

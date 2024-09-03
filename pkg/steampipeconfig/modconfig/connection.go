@@ -5,7 +5,6 @@ import (
 	"github.com/turbot/pipe-fittings/plugin"
 	"log"
 	"path"
-	"reflect"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -13,7 +12,6 @@ import (
 	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 	"golang.org/x/exp/maps"
 )
 
@@ -62,9 +60,7 @@ type Connection struct {
 
 	Error error
 
-	// options
-	Options   *options.Connection `json:"options,omitempty"`
-	DeclRange plugin.Range        `json:"decl_range"`
+	DeclRange plugin.Range `json:"decl_range"`
 }
 
 func (c *Connection) GetDeclRange() plugin.Range {
@@ -97,39 +93,17 @@ func (c *Connection) ImportDisabled() bool {
 }
 
 func (c *Connection) Equals(other *Connection) bool {
-	connectionOptionsEqual := (c.Options == nil) == (other.Options == nil)
-	if c.Options != nil {
-		connectionOptionsEqual = c.Options.Equals(other.Options)
-	}
 	return c.Name == other.Name &&
 		c.Plugin == other.Plugin &&
 		c.Type == other.Type &&
 		strings.Join(c.ConnectionNames, ",") == strings.Join(other.ConnectionNames, ",") &&
-		connectionOptionsEqual &&
 		c.Config == other.Config &&
 		c.ImportSchema == other.ImportSchema
 
 }
 
-// SetOptions sets the options on the connection
-// verify the options object is a valid options type (only options.Connection currently supported)
-func (c *Connection) SetOptions(opts options.Options, block *hcl.Block) hcl.Diagnostics {
-	var diags hcl.Diagnostics
-	switch o := opts.(type) {
-	case *options.Connection:
-		c.Options = o
-	default:
-		diags = append(diags, &hcl.Diagnostic{
-			Severity: hcl.DiagError,
-			Summary:  fmt.Sprintf("invalid nested option type %s - only 'connection' options blocks are supported for Connections", reflect.TypeOf(o).Name()),
-			Subject:  hclhelpers.BlockRangePointer(block),
-		})
-	}
-	return diags
-}
-
 func (c *Connection) String() string {
-	return fmt.Sprintf("\n----\nName: %s\nPlugin: %s\nConfig:\n%s\nOptions:\n%s\n", c.Name, c.Plugin, c.Config, c.Options.String())
+	return fmt.Sprintf("\n----\nName: %s\nPlugin: %s\nConfig:\n%s\n", c.Name, c.Plugin, c.Config)
 }
 
 // Validate verifies the Type property is valid,
