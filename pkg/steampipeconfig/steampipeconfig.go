@@ -34,7 +34,6 @@ type SteampipeConfig struct {
 	// Steampipe options
 	DefaultConnectionOptions *options.Connection
 	DatabaseOptions          *options.Database
-	TerminalOptions          *options.Terminal
 	GeneralOptions           *options.General
 	PluginOptions            *options.Plugin
 	// map of installed plugin versions, keyed by plugin image ref
@@ -211,12 +210,6 @@ DefaultConnectionOptions:
 
 DatabaseOptions:
 %s`, c.DatabaseOptions.String())
-	}
-	if c.TerminalOptions != nil {
-		str += fmt.Sprintf(`
-
-TerminalOptions:
-%s`, c.TerminalOptions.String())
 	}
 	if c.GeneralOptions != nil {
 		str += fmt.Sprintf(`
@@ -435,7 +428,7 @@ func (c *SteampipeConfig) GetNonSearchPathConnections(searchPath []string) []str
 	//convert searchPath to map for easy lookup
 	searchPathLookup := helpers.SliceToLookup(searchPath)
 
-	for connectionName, _ := range c.Connections {
+	for connectionName := range c.Connections {
 		if _, inSearchPath := searchPathLookup[connectionName]; !inSearchPath {
 			res = append(res, connectionName)
 		}
