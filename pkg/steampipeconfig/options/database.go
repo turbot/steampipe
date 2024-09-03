@@ -133,3 +133,13 @@ func (d *Database) String() string {
 	}
 	return strings.Join(str, "\n")
 }
+
+func searchPathToArray(searchPathString string) []string {
+	// convert comma separated list to array
+	searchPath := strings.Split(searchPathString, ",")
+	// strip whitespace
+	for i, s := range searchPath {
+		searchPath[i] = strings.TrimSpace(s)
+	}
+	return searchPath
+}
