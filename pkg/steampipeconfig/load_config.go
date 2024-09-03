@@ -16,6 +16,7 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	pconstants "github.com/turbot/pipe-fittings/constants"
 	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
+	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/pipe-fittings/utils"
@@ -40,7 +41,7 @@ func LoadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 
 	log.Printf("[INFO] ensureDefaultConfigFile")
 
-	if err := ensureDefaultConfigFile(filepaths.EnsureConfigDir()); err != nil {
+	if err := ensureDefaultConfigFile(pfilepaths.EnsureConfigDir()); err != nil {
 		return nil, perror_helpers.NewErrorsAndWarning(
 			sperr.WrapWithMessage(
 				err,
@@ -150,7 +151,7 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 	// load config from the installation folder -  load all spc files from config directory
 	include := filehelpers.InclusionsFromExtensions(pconstants.ConnectionConfigExtensions)
 	loadOptions := &loadConfigOptions{include: include}
-	ew = loadConfig(ctx, filepaths.EnsureConfigDir(), steampipeConfig, loadOptions)
+	ew = loadConfig(ctx, pfilepaths.EnsureConfigDir(), steampipeConfig, loadOptions)
 	if ew.GetError() != nil {
 		return nil, ew
 	}

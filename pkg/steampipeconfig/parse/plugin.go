@@ -4,12 +4,11 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	modconfig2 "github.com/turbot/pipe-fittings/plugin"
-
+	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
-func DecodePlugin(block *hcl.Block) (*modconfig2.Plugin, hcl.Diagnostics) {
+func DecodePlugin(block *hcl.Block) (*plugin.Plugin, hcl.Diagnostics) {
 	// manually decode child limiter blocks
 	content, rest, diags := block.Body.PartialContent(PluginBlockSchema)
 	if diags.HasErrors() {
@@ -18,7 +17,7 @@ func DecodePlugin(block *hcl.Block) (*modconfig2.Plugin, hcl.Diagnostics) {
 	body := rest.(*hclsyntax.Body)
 
 	// decode attributes using 'rest' (these are automativally parsed so are not in schema)
-	var plugin = &modconfig2.Plugin{
+	var plugin = &plugin.Plugin{
 		// default source and name to label
 		Instance: block.Labels[0],
 		Alias:    block.Labels[0],
