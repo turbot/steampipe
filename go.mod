@@ -60,7 +60,7 @@ require (
 	golang.org/x/sync v0.8.0
 	golang.org/x/text v0.17.0
 	google.golang.org/grpc v1.66.0
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
 	oras.land/oras-go/v2 v2.5.0
 	sigs.k8s.io/yaml v1.4.0
