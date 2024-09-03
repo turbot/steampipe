@@ -458,9 +458,6 @@ func ensureInstallDir() {
 	// store as app_specific.InstallDir and PipesInstallDir
 	app_specific.InstallDir = installDir
 	filepaths.PipesInstallDir = pipesInstallDir
-	// now we have loaded all config, set the install dir in the app specific config
-	app_specific.InstallDir = viper.GetString(constants.ArgInstallDir)
-
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way

@@ -45,9 +45,9 @@ func main() {
 	// check OSX kernel version
 	checkOSXVersion(ctx)
 
-	cmd.InitCmd()
-
 	cmdconfig.SetAppSpecificConstants()
+
+	cmd.InitCmd()
 
 	// execute the command
 	exitCode = cmd.Execute()

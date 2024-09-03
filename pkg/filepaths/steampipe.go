@@ -7,7 +7,6 @@ import (
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/app_specific"
-	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 )
@@ -49,38 +48,6 @@ func steampipeSubDir(dirName string) string {
 // EnsureTemplateDir returns the path to the templates directory (creates if missing)
 func EnsureTemplateDir() string {
 	return ensureSteampipeSubDir(filepath.Join("check", "templates"))
-}
-
-// EnsurePluginDir returns the path to the plugins directory (creates if missing)
-func EnsurePluginDir() string {
-	return ensureSteampipeSubDir("plugins")
-}
-
-func EnsurePluginInstallDir(pluginImageDisplayRef string) string {
-	installDir := PluginInstallDir(pluginImageDisplayRef)
-
-	if _, err := os.Stat(installDir); os.IsNotExist(err) {
-		err = os.MkdirAll(installDir, 0755)
-		error_helpers.FailOnErrorWithMessage(err, "could not create plugin install directory")
-	}
-
-	return installDir
-}
-
-func PluginInstallDir(pluginImageDisplayRef string) string {
-	osSafePath := filepath.FromSlash(pluginImageDisplayRef)
-
-	fullPath := filepath.Join(EnsurePluginDir(), osSafePath)
-	return fullPath
-}
-
-func PluginBinaryPath(pluginImageDisplayRef, pluginAlias string) string {
-	return filepath.Join(PluginInstallDir(pluginImageDisplayRef), filepaths.PluginAliasToLongName(pluginAlias)+".plugin")
-}
-
-// EnsureConfigDir returns the path to the config directory (creates if missing)
-func EnsureConfigDir() string {
-	return ensureSteampipeSubDir("config")
 }
 
 // EnsureInternalDir returns the path to the internal directory (creates if missing)
@@ -159,16 +126,6 @@ func ConnectionStatePath() string {
 // LegacyVersionFilePath returns the legacy version file path
 func LegacyVersionFilePath() string {
 	return filepath.Join(EnsureInternalDir(), versionFileName)
-}
-
-// PluginVersionFilePath returns the plugin version file path
-func PluginVersionFilePath() string {
-	return filepath.Join(EnsurePluginDir(), versionFileName)
-}
-
-// LocalPluginPath returns the path to locally installed plugins
-func LocalPluginPath() string {
-	return filepath.Join(EnsurePluginDir(), localPluginFolder)
 }
 
 // DatabaseVersionFilePath returns the plugin version file path
