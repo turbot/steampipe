@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"os"
 	"os/signal"
@@ -91,7 +92,7 @@ func newInteractiveClient(ctx context.Context, initData *query.InitData, result 
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
 		initResultChan:          make(chan *db_common.InitResult, 1),
-		highlighter:             getHighlighter(viper.GetString(constants.ArgTheme)),
+		highlighter:             getHighlighter(viper.GetString(pconstants.ArgTheme)),
 		suggestions:             newAutocompleteSuggestions(),
 	}
 
@@ -464,7 +465,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfi
 	}
 
 	// in case of a named query call with params, parse the where clause
-	resolvedQuery, queryProvider, err := c.workspace().ResolveQueryAndArgsFromSQLString(queryString)
+	resolvedQuery, err := query.ResolveQueryAndArgsFromSQLString(queryString)
 	if err != nil {
 		// if we fail to resolve:
 		// - show error but do not return it so we  stay in the prompt
@@ -474,12 +475,11 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfi
 		error_helpers.ShowError(ctx, err)
 		return nil
 	}
-	isNamedQuery := queryProvider != nil
 
 	// should we execute?
 	// we will NOT execute if we are in multiline mode, there is no semi-colon
 	// and it is NOT a metaquery or a named query
-	if !c.shouldExecute(queryString, isNamedQuery) {
+	if !c.shouldExecute(queryString) {
 		// is we are not executing, do not store history
 		historyEntry = ""
 		// do not clear interactive buffer
@@ -500,7 +500,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfi
 		return nil
 	}
 	// if this is a multiline query, update history entry
-	if !isNamedQuery && len(strings.Split(resolvedQuery.ExecuteSQL, "\n")) > 1 {
+	if len(strings.Split(resolvedQuery.ExecuteSQL, "\n")) > 1 {
 		historyEntry = resolvedQuery.ExecuteSQL
 	}
 
@@ -557,11 +557,7 @@ func (c *InteractiveClient) restartInteractiveSession() {
 	c.ClosePrompt(c.afterClose)
 }
 
-func (c *InteractiveClient) shouldExecute(line string, namedQuery bool) bool {
-	if namedQuery {
-		// execute named queries with no ';' even in multiline mode
-		return true
-	}
+func (c *InteractiveClient) shouldExecute(line string) bool {
 	if !cmdconfig.Viper().GetBool(constants.ArgMultiLine) {
 		// NOT multiline mode
 		return true

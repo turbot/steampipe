@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/parse"
+	"github.com/turbot/pipe-fittings/workspace_profile"
 	"io"
 	"log"
 	"os"
@@ -169,7 +171,7 @@ func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, e
 //	the GlobalConfig has a loglevel set
 func logLevelNeedsReset() bool {
 	envLogLevelIsSet := envLogLevelSet()
-	generalOptionsSet := (steampipeconfig.GlobalConfig.GeneralOptions != nil && steampipeconfig.GlobalConfig.GeneralOptions.LogLevel != nil)
+	generalOptionsSet := steampipeconfig.GlobalConfig.GeneralOptions != nil && steampipeconfig.GlobalConfig.GeneralOptions.LogLevel != nil
 
 	return !envLogLevelIsSet && generalOptionsSet
 }
@@ -304,7 +306,7 @@ func handleDeprecations() perror_helpers.ErrorAndWarnings {
 	return ew
 }
 
-func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error {
+func setCloudTokenDefault(loader *parse.WorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile]) error {
 	/*
 	   saved cloud token
 	   cloud_token in default workspace
@@ -344,7 +346,7 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 	return nil
 }
 
-func getWorkspaceProfileLoader(ctx context.Context) (*steampipeconfig.WorkspaceProfileLoader, error) {
+func getWorkspaceProfileLoader(ctx context.Context) (*parse.WorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile], error) {
 	// set viper default for workspace profile, using EnvWorkspaceProfile env var
 	SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, String)
 	// set viper default for install dir, using EnvInstallDir env var
@@ -362,7 +364,7 @@ func getWorkspaceProfileLoader(ctx context.Context) (*steampipeconfig.WorkspaceP
 	}
 
 	// create loader
-	loader, err := steampipeconfig.NewWorkspaceProfileLoader(ctx, workspaceProfileDir)
+	loader, err := parse.NewWorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile](workspaceProfileDir)
 	if err != nil {
 		return nil, err
 	}

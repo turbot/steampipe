@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/options"
+	"github.com/turbot/pipe-fittings/workspace_profile"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,16 +21,18 @@ import (
 	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
+	pparse "github.com/turbot/pipe-fittings/parse"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/parse"
 )
+
+var GlobalWorkspaceProfile *workspace_profile.SteampipeWorkspaceProfile
 
 var GlobalConfig *SteampipeConfig
 var defaultConfigFileName = "default.spc"
@@ -169,7 +173,7 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 		// only include workspace.spc from workspace directory
 		include = filehelpers.InclusionsFromFiles([]string{filepaths.WorkspaceConfigFileName})
 		// update load options to ONLY allow terminal options
-		loadOptions = &loadConfigOptions{include: include, allowedOptions: []string{options.TerminalBlock}}
+		loadOptions = &loadConfigOptions{include: include}
 		ew := loadConfig(ctx, modLocation, steampipeConfig, loadOptions)
 		if ew.GetError() != nil {
 			return nil, ew.WrapErrorWithMessage("failed to load workspace config")
@@ -240,19 +244,19 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 		return perror_helpers.ErrorAndWarnings{}
 	}
 
-	fileData, diags := parse.LoadFileData(configPaths...)
+	fileData, diags := pparse.LoadFileData(configPaths...)
 	if diags.HasErrors() {
 		log.Printf("[WARN] loadConfig: failed to load all config files: %v\n", err)
 		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load all config files", diags)
 	}
 
-	body, diags := parse.ParseHclFiles(fileData)
+	body, diags := pparse.ParseHclFiles(fileData)
 	if diags.HasErrors() {
 		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load all config files", diags)
 	}
 
 	// do a partial decode
-	content, moreDiags := body.Content(parse.ConfigBlockSchema)
+	content, moreDiags := body.Content(pparse.ConfigBlockSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
@@ -267,7 +271,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 		switch block.Type {
 
 		case modconfig.BlockTypePlugin:
-			plugin, moreDiags := parse.DecodePlugin(block)
+			plugin, moreDiags := pparse.DecodePlugin(block)
 			diags = append(diags, moreDiags...)
 			if moreDiags.HasErrors() {
 				continue
@@ -298,7 +302,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
 				return perror_helpers.NewErrorsAndWarning(err)
 			}
-			opts, moreDiags := parse.DecodeOptions(block)
+			opts, moreDiags := pparse.DecodeOptions(block, SteampipeOptionsBlockMapping)
 			if moreDiags.HasErrors() {
 				diags = append(diags, moreDiags...)
 				continue
@@ -360,4 +364,31 @@ func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loa
 		return fmt.Errorf("'%s' options block is not permitted", blockType)
 	}
 	return nil
+}
+
+// SteampipeOptionsBlockMapping is an OptionsBlockFactory used to map global steampipe options
+// TODO KAI look at deprecations
+func SteampipeOptionsBlockMapping(block *hcl.Block) (options.Options, hcl.Diagnostics) {
+	var diags hcl.Diagnostics
+
+	switch block.Labels[0] {
+
+	case options.DatabaseBlock:
+		return new(options.Database), nil
+	case options.GeneralBlock:
+		return new(options.General), nil
+	case options.QueryBlock:
+		return new(options.Query), nil
+	case options.CheckBlock:
+		return new(options.Check), nil
+	case options.PluginBlock:
+		return new(options.Plugin), nil
+	default:
+		diags = append(diags, &hcl.Diagnostic{
+			Severity: hcl.DiagError,
+			Summary:  fmt.Sprintf("Unexpected options type '%s'", block.Type),
+			Subject:  hclhelpers.BlockRangePointer(block),
+		})
+		return nil, diags
+	}
 }
