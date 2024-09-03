@@ -2,7 +2,6 @@ package steampipeconfig
 
 import (
 	"fmt"
-	modconfig2 "github.com/turbot/pipe-fittings/plugin"
 	"log"
 	"os"
 	"strings"
@@ -12,12 +11,12 @@ import (
 	"github.com/turbot/go-kit/types"
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/pipe-fittings/error_helpers"
-	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
+	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
@@ -26,9 +25,9 @@ import (
 type SteampipeConfig struct {
 	// map of plugin configs, keyed by plugin image ref
 	// (for each image ref we store an array of configs)
-	Plugins map[string][]*modconfig2.Plugin
+	Plugins map[string][]*plugin.Plugin
 	// map of plugin configs, keyed by plugin instance
-	PluginsInstances map[string]*modconfig2.Plugin
+	PluginsInstances map[string]*plugin.Plugin
 	// map of connection name to partially parsed connection config
 	Connections map[string]*modconfig.Connection
 
@@ -45,8 +44,8 @@ type SteampipeConfig struct {
 func NewSteampipeConfig(commandName string) *SteampipeConfig {
 	return &SteampipeConfig{
 		Connections:      make(map[string]*modconfig.Connection),
-		Plugins:          make(map[string][]*modconfig2.Plugin),
-		PluginsInstances: make(map[string]*modconfig2.Plugin),
+		Plugins:          make(map[string][]*plugin.Plugin),
+		PluginsInstances: make(map[string]*plugin.Plugin),
 	}
 }
 
@@ -279,7 +278,7 @@ func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
 
 // add a plugin config to PluginsInstances and Plugins
 // NOTE: this returns an error if we already have a config with the same label
-func (c *SteampipeConfig) addPlugin(plugin *modconfig2.Plugin) error {
+func (c *SteampipeConfig) addPlugin(plugin *plugin.Plugin) error {
 	if existingPlugin, exists := c.PluginsInstances[plugin.Instance]; exists {
 		return duplicatePluginError(existingPlugin, plugin)
 	}
@@ -303,7 +302,7 @@ func (c *SteampipeConfig) addPlugin(plugin *modconfig2.Plugin) error {
 	return nil
 }
 
-func duplicatePluginError(existingPlugin, newPlugin *modconfig2.Plugin) error {
+func duplicatePluginError(existingPlugin, newPlugin *plugin.Plugin) error {
 	return sperr.New("duplicate plugin instance: '%s'\n\t(%s:%d)\n\t(%s:%d)",
 		existingPlugin.Instance, *existingPlugin.FileName, *existingPlugin.StartLineNumber,
 		*newPlugin.FileName, *newPlugin.StartLineNumber)
@@ -335,7 +334,7 @@ func (c *SteampipeConfig) initializePlugins() {
 		pluginImageRef := plugin.Plugin
 		connection.PluginAlias = plugin.Alias
 		connection.Plugin = pluginImageRef
-		if pluginPath, _ := pfilepaths.GetPluginPath(pluginImageRef, plugin.Alias); pluginPath != "" {
+		if pluginPath, _ := filepaths.GetPluginPath(pluginImageRef, plugin.Alias); pluginPath != "" {
 			// plugin is installed - set the instance and the plugin path
 			connection.PluginInstance = &plugin.Instance
 			connection.PluginPath = &pluginPath
@@ -361,7 +360,7 @@ func (c *SteampipeConfig) initializePlugins() {
 	       NOTE: if there is more than one config for the plugin this is an error
 		5) create a default config for the plugin (with the label set to the image ref)
 */
-func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconfig.Connection) (*modconfig2.Plugin, error) {
+func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconfig.Connection) (*plugin.Plugin, error) {
 	// NOTE: at this point, c.Plugin is NOT populated, only either c.PluginAlias or c.PluginInstance
 	// we populate c.Plugin AFTER resolving the plugin
 
@@ -382,7 +381,7 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 	}
 
 	// resolve the image ref (this handles the special case of locally developed plugins in the plugins/local folder)
-	imageRef := modconfig2.ResolvePluginImageRef(connection.PluginAlias)
+	imageRef := plugin.ResolvePluginImageRef(connection.PluginAlias)
 
 	// verify the plugin is installed - if not return nil
 	if _, ok := c.PluginVersions[imageRef]; !ok {
@@ -406,7 +405,7 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 	switch len(pluginsForImageRef) {
 	case 0:
 		// there is no plugin instance for this connection - add an implicit plugin instance
-		p := modconfig2.NewImplicitPlugin(connection.PluginAlias, imageRef)
+		p := plugin.NewImplicitPlugin(connection.PluginAlias, imageRef)
 
 		// now add to our map
 		if err := c.addPlugin(p); err != nil {
