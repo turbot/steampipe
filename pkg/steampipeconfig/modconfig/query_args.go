@@ -3,7 +3,6 @@ package modconfig
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 
 	typehelpers "github.com/turbot/go-kit/types"
@@ -17,8 +16,7 @@ type QueryArgs struct {
 	ArgMap map[string]string `cty:"args" json:"args,omitempty"`
 	// args list may be sparsely populated (in case of runtime dependencies)
 	// so use *string
-	ArgList    []*string            `cty:"args_list" json:"args_list"`
-	References []*ResourceReference `cty:"refs" json:"refs"`
+	ArgList []*string `cty:"args_list" json:"args_list"`
 	// TACTICAL: map of positional and named args which are strings and therefor do NOT need JSON serialising
 	// (can be removed when we move to cty)
 	stringNamedArgs      map[string]struct{}
@@ -117,75 +115,76 @@ func (q *QueryArgs) Validate() error {
 	return nil
 }
 
-// Merge merges the other args with ourselves, creating and returning a new QueryArgs with the result
-// NOTE: other has precedence
-func (q *QueryArgs) Merge(other *QueryArgs, source QueryProvider) (*QueryArgs, error) {
-	if other == nil {
-		return q, nil
-	}
-
-	// ensure we valid before trying to merge (i.e. cannot define both arg list and arg map)
-	if err := q.Validate(); err != nil {
-		return nil, fmt.Errorf("argument validation failed for '%s': %s", source.Name(), err.Error())
-	}
-
-	// ensure the other args are valid
-	if err := other.Validate(); err != nil {
-		return nil, fmt.Errorf("runtime argument validation failed for '%s': %s", source.Name(), err.Error())
-	}
-
-	// create a new query args to store the merged result
-	result := NewQueryArgs()
-	result.stringNamedArgs = other.stringNamedArgs
-	result.stringPositionalArgs = other.stringPositionalArgs
-
-	// named args
-	// first set values from other
-	for k, v := range other.ArgMap {
-		result.ArgMap[k] = v
-
-	}
-	// now set any unset values from our map
-	for k, v := range q.ArgMap {
-		if _, ok := result.ArgMap[k]; !ok {
-			result.ArgMap[k] = v
-			if _, ok := q.stringNamedArgs[k]; ok {
-				result.stringNamedArgs[k] = struct{}{}
-			}
-		}
-	}
-
-	// positional args
-	// so we must have an args list - figure out how long
-	listLength := len(q.ArgList)
-	if otherLen := len(other.ArgList); otherLen > listLength {
-		listLength = otherLen
-	}
-	if listLength > 0 {
-		result.ArgList = make([]*string, listLength)
-
-		// first set values from other
-		copy(result.ArgList, other.ArgList)
-
-		// now set any unset values from base list
-		for i, a := range q.ArgList {
-			if result.ArgList[i] == nil {
-				result.ArgList[i] = a
-				if _, ok := q.stringPositionalArgs[i]; ok {
-					result.stringPositionalArgs[i] = struct{}{}
-				}
-			}
-		}
-	}
-
-	// validate the merged result
-	// runtime args must specify args in same way as base args (i.e. both must define either map or list)
-	if err := result.Validate(); err != nil {
-		return nil, fmt.Errorf("runtime argument validation failed when merging runtime args into '%s': %s", source.Name(), err.Error())
-	}
-
-	return result, nil
-}
+//
+//// Merge merges the other args with ourselves, creating and returning a new QueryArgs with the result
+//// NOTE: other has precedence
+//func (q *QueryArgs) Merge(other *QueryArgs, source QueryProvider) (*QueryArgs, error) {
+//	if other == nil {
+//		return q, nil
+//	}
+//
+//	// ensure we valid before trying to merge (i.e. cannot define both arg list and arg map)
+//	if err := q.Validate(); err != nil {
+//		return nil, fmt.Errorf("argument validation failed for '%s': %s", source.Name(), err.Error())
+//	}
+//
+//	// ensure the other args are valid
+//	if err := other.Validate(); err != nil {
+//		return nil, fmt.Errorf("runtime argument validation failed for '%s': %s", source.Name(), err.Error())
+//	}
+//
+//	// create a new query args to store the merged result
+//	result := NewQueryArgs()
+//	result.stringNamedArgs = other.stringNamedArgs
+//	result.stringPositionalArgs = other.stringPositionalArgs
+//
+//	// named args
+//	// first set values from other
+//	for k, v := range other.ArgMap {
+//		result.ArgMap[k] = v
+//
+//	}
+//	// now set any unset values from our map
+//	for k, v := range q.ArgMap {
+//		if _, ok := result.ArgMap[k]; !ok {
+//			result.ArgMap[k] = v
+//			if _, ok := q.stringNamedArgs[k]; ok {
+//				result.stringNamedArgs[k] = struct{}{}
+//			}
+//		}
+//	}
+//
+//	// positional args
+//	// so we must have an args list - figure out how long
+//	listLength := len(q.ArgList)
+//	if otherLen := len(other.ArgList); otherLen > listLength {
+//		listLength = otherLen
+//	}
+//	if listLength > 0 {
+//		result.ArgList = make([]*string, listLength)
+//
+//		// first set values from other
+//		copy(result.ArgList, other.ArgList)
+//
+//		// now set any unset values from base list
+//		for i, a := range q.ArgList {
+//			if result.ArgList[i] == nil {
+//				result.ArgList[i] = a
+//				if _, ok := q.stringPositionalArgs[i]; ok {
+//					result.stringPositionalArgs[i] = struct{}{}
+//				}
+//			}
+//		}
+//	}
+//
+//	// validate the merged result
+//	// runtime args must specify args in same way as base args (i.e. both must define either map or list)
+//	if err := result.Validate(); err != nil {
+//		return nil, fmt.Errorf("runtime argument validation failed when merging runtime args into '%s': %s", source.Name(), err.Error())
+//	}
+//
+//	return result, nil
+//}
 
 func (q *QueryArgs) SetNamedArgVal(value any, name string) (err error) {
 	strVal, ok := value.(string)
@@ -284,103 +283,104 @@ func (q *QueryArgs) GetPositionalArg(idx int) (interface{}, bool, error) {
 	}
 	return res, true, nil
 }
-func (q *QueryArgs) resolveNamedParameters(queryProvider QueryProvider) (argVals []any, missingParams []string, err error) {
-	// if query params contains both positional and named params, error out
-	params := queryProvider.GetParams()
 
-	argVals = make([]any, len(params))
+//func (q *QueryArgs) resolveNamedParameters(queryProvider QueryProvider) (argVals []any, missingParams []string, err error) {
+//	// if query params contains both positional and named params, error out
+//	params := queryProvider.GetParams()
+//
+//	argVals = make([]any, len(params))
+//
+//	// iterate through each param def and resolve the value
+//	// build a map of which args have been matched (used to validate all args have param defs)
+//	argsWithParamDef := make(map[string]bool)
+//	for i, param := range params {
+//		// first set default
+//		defaultValue, err := param.GetDefault()
+//		if err != nil {
+//			return nil, nil, err
+//		}
+//
+//		// can we resolve a value for this param?
+//		if argVal, ok, err := q.GetNamedArg(param.ShortName); ok {
+//			if err != nil {
+//				return nil, nil, err
+//			}
+//			argVals[i] = argVal
+//			argsWithParamDef[param.ShortName] = true
+//
+//		} else if defaultValue != nil {
+//			// is there a default
+//			argVals[i] = defaultValue
+//		} else {
+//			// no value provided and no default defined - add to missing list
+//			missingParams = append(missingParams, param.ShortName)
+//		}
+//	}
+//
+//	// verify we have param defs for all provided args
+//	for arg := range q.ArgMap {
+//		if _, ok := argsWithParamDef[arg]; !ok {
+//			log.Printf("[TRACE] no parameter definition found for argument '%s'", arg)
+//		}
+//	}
+//
+//	return argVals, missingParams, nil
+//}
 
-	// iterate through each param def and resolve the value
-	// build a map of which args have been matched (used to validate all args have param defs)
-	argsWithParamDef := make(map[string]bool)
-	for i, param := range params {
-		// first set default
-		defaultValue, err := param.GetDefault()
-		if err != nil {
-			return nil, nil, err
-		}
-
-		// can we resolve a value for this param?
-		if argVal, ok, err := q.GetNamedArg(param.ShortName); ok {
-			if err != nil {
-				return nil, nil, err
-			}
-			argVals[i] = argVal
-			argsWithParamDef[param.ShortName] = true
-
-		} else if defaultValue != nil {
-			// is there a default
-			argVals[i] = defaultValue
-		} else {
-			// no value provided and no default defined - add to missing list
-			missingParams = append(missingParams, param.ShortName)
-		}
-	}
-
-	// verify we have param defs for all provided args
-	for arg := range q.ArgMap {
-		if _, ok := argsWithParamDef[arg]; !ok {
-			log.Printf("[TRACE] no parameter definition found for argument '%s'", arg)
-		}
-	}
-
-	return argVals, missingParams, nil
-}
-
-func (q *QueryArgs) resolvePositionalParameters(queryProvider QueryProvider) (argValues []any, missingParams []string, err error) {
-	// if query params contains both positional and named params, error out
-	// if there are param defs - we must be able to resolve all params
-	// if there are MORE defs than provided parameters, all remaining defs MUST provide a default
-	params := queryProvider.GetParams()
-
-	// if no param defs are defined, just use the given values, using runtime dependencies where available
-	if len(params) == 0 {
-		// no params defined, so we return as many args as are provided
-		// (convert arg vals from json)
-		argValues, err = q.ConvertArgsList()
-		if err != nil {
-			return nil, nil, err
-		}
-		return argValues, nil, nil
-	}
-
-	// verify we have enough args
-	if len(params) < len(q.ArgList) {
-		err = fmt.Errorf("resolvePositionalParameters failed for '%s' - %d %s were provided but there %s %d parameter %s",
-			queryProvider.Name(),
-			len(q.ArgList),
-			utils.Pluralize("argument", len(q.ArgList)),
-			utils.Pluralize("is", len(params)),
-			len(params),
-			utils.Pluralize("definition", len(params)),
-		)
-		return
-	}
-
-	// so there are param definitions - use these to populate argValues
-	argValues = make([]any, len(params))
-
-	for i, param := range params {
-		// first set default
-		defaultValue, err := param.GetDefault()
-		if err != nil {
-			return nil, nil, err
-		}
-
-		if i < len(q.ArgList) && q.ArgList[i] != nil {
-			argVal, _, err := q.GetPositionalArg(i)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			argValues[i] = argVal
-		} else if defaultValue != nil {
-			// so we have run out of provided params - is there a default?
-			argValues[i] = defaultValue
-		} else {
-			// no value provided and no default defined - add to missing list
-			missingParams = append(missingParams, param.ShortName)
-		}
-	}
-	return argValues, missingParams, nil
-}
+//func (q *QueryArgs) resolvePositionalParameters(queryProvider QueryProvider) (argValues []any, missingParams []string, err error) {
+//	// if query params contains both positional and named params, error out
+//	// if there are param defs - we must be able to resolve all params
+//	// if there are MORE defs than provided parameters, all remaining defs MUST provide a default
+//	params := queryProvider.GetParams()
+//
+//	// if no param defs are defined, just use the given values, using runtime dependencies where available
+//	if len(params) == 0 {
+//		// no params defined, so we return as many args as are provided
+//		// (convert arg vals from json)
+//		argValues, err = q.ConvertArgsList()
+//		if err != nil {
+//			return nil, nil, err
+//		}
+//		return argValues, nil, nil
+//	}
+//
+//	// verify we have enough args
+//	if len(params) < len(q.ArgList) {
+//		err = fmt.Errorf("resolvePositionalParameters failed for '%s' - %d %s were provided but there %s %d parameter %s",
+//			queryProvider.Name(),
+//			len(q.ArgList),
+//			utils.Pluralize("argument", len(q.ArgList)),
+//			utils.Pluralize("is", len(params)),
+//			len(params),
+//			utils.Pluralize("definition", len(params)),
+//		)
+//		return
+//	}
+//
+//	// so there are param definitions - use these to populate argValues
+//	argValues = make([]any, len(params))
+//
+//	for i, param := range params {
+//		// first set default
+//		defaultValue, err := param.GetDefault()
+//		if err != nil {
+//			return nil, nil, err
+//		}
+//
+//		if i < len(q.ArgList) && q.ArgList[i] != nil {
+//			argVal, _, err := q.GetPositionalArg(i)
+//			if err != nil {
+//				return nil, nil, err
+//			}
+//
+//			argValues[i] = argVal
+//		} else if defaultValue != nil {
+//			// so we have run out of provided params - is there a default?
+//			argValues[i] = defaultValue
+//		} else {
+//			// no value provided and no default defined - add to missing list
+//			missingParams = append(missingParams, param.ShortName)
+//		}
+//	}
+//	return argValues, missingParams, nil
+//}

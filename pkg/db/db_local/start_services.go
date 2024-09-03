@@ -447,8 +447,8 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		// by this time, we are sure that the port is free to listen to
 		"-p", fmt.Sprint(port),
 		"-c", fmt.Sprintf("listen_addresses=%s", strings.Join(listenAddresses, ",")),
-		"-c", fmt.Sprintf("application_name=%s", constants.AppName),
-		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
+		"-c", fmt.Sprintf("application_name=%s", app_specific.AppName),
+		"-c", fmt.Sprintf("cluster_name=%s", app_specific.AppName),
 
 		// log directory
 		"-c", fmt.Sprintf("log_directory=%s", filepaths.EnsureLogDir()),
@@ -667,7 +667,7 @@ func isSteampipePostgresProcess(ctx context.Context, cmdline []string) bool {
 	}
 	if strings.Contains(cmdline[0], "postgres") {
 		// this is a postgres process - but is it a steampipe service?
-		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", constants.AppName))
+		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", app_specific.AppName))
 	}
 	return false
 }

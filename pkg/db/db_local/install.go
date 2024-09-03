@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"log"
 	"os"
 	"os/exec"
@@ -356,8 +357,8 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 		// NOTE: If quoted, the application name includes the quotes. Worried about
 		// having spaces in the APPNAME, but leaving it unquoted since currently
 		// the APPNAME is hardcoded to be steampipe.
-		"-c", fmt.Sprintf("application_name=%s", constants.AppName),
-		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
+		"-c", fmt.Sprintf("application_name=%s", app_specific.AppName),
+		"-c", fmt.Sprintf("cluster_name=%s", app_specific.AppName),
 
 		// log directory
 		"-c", fmt.Sprintf("log_directory=%s", filepaths.EnsureLogDir()),

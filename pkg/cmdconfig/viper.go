@@ -12,8 +12,13 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/parse"
+	"github.com/turbot/pipe-fittings/workspace_profile"
 	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 // Viper fetches the global viper instance
@@ -22,7 +27,7 @@ func Viper() *viper.Viper {
 }
 
 // bootstrapViper sets up viper with the essential path config (workspace-chdir and install-dir)
-func bootstrapViper(loader *steampipeconfig.WorkspaceProfileLoader, cmd *cobra.Command) error {
+func bootstrapViper(loader *parse.WorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile], cmd *cobra.Command) error {
 	// set defaults  for keys which do not have a corresponding command flag
 	if err := setBaseDefaults(); err != nil {
 		return err
@@ -104,8 +109,7 @@ func setBaseDefaults() error {
 		constants.ArgPipesInstallDir: pipesInstallDir,
 
 		// workspace profile
-		constants.ArgAutoComplete:  true,
-		constants.ArgIntrospection: constants.IntrospectionNone,
+		constants.ArgAutoComplete: true,
 
 		// from global database options
 		constants.ArgDatabasePort:         constants.DatabaseDefaultPort,
@@ -155,16 +159,17 @@ func setDefaultsFromEnv() {
 		constants.EnvInstallDir:     {[]string{constants.ArgInstallDir}, String},
 		constants.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, String},
 		constants.EnvModLocation:    {[]string{constants.ArgModLocation}, String},
-		constants.EnvIntrospection:  {[]string{constants.ArgIntrospection}, String},
-		constants.EnvTelemetry:      {[]string{constants.ArgTelemetry}, String},
-		constants.EnvUpdateCheck:    {[]string{constants.ArgUpdateCheck}, Bool},
+		// TODO #breakingchange
+		//constants.EnvIntrospection:  {[]string{constants.ArgIntrospection}, String},
+		constants.EnvTelemetry:   {[]string{constants.ArgTelemetry}, String},
+		constants.EnvUpdateCheck: {[]string{constants.ArgUpdateCheck}, Bool},
 		// deprecated
 		constants.EnvCloudHost:             {[]string{constants.ArgPipesHost}, String},
 		constants.EnvCloudToken:            {[]string{constants.ArgPipesToken}, String},
 		constants.EnvPipesHost:             {[]string{constants.ArgPipesHost}, String},
 		constants.EnvPipesToken:            {[]string{constants.ArgPipesToken}, String},
 		constants.EnvSnapshotLocation:      {[]string{constants.ArgSnapshotLocation}, String},
-		constants.EnvWorkspaceDatabase:     {[]string{constants.ArgWorkspaceDatabase}, String},
+		constants.EnvWorkspaceDatabase:     {[]string{pconstants.ArgWorkspaceDatabase}, String},
 		constants.EnvServicePassword:       {[]string{constants.ArgServicePassword}, String},
 		constants.EnvDisplayWidth:          {[]string{constants.ArgDisplayWidth}, Int},
 		constants.EnvMaxParallel:           {[]string{constants.ArgMaxParallel}, Int},

@@ -17,9 +17,7 @@ type ParamDef struct {
 	// tactical - is the raw value a string
 	IsString bool `cty:"is_string" json:"-"`
 
-	// list of all blocks referenced by the resource
-	References []*ResourceReference `json:"-"`
-	DeclRange  hcl.Range            `json:"-"`
+	DeclRange hcl.Range `json:"-"`
 }
 
 func NewParamDef(block *hcl.Block) *ParamDef {
