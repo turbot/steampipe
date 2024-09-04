@@ -17,7 +17,6 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
@@ -53,7 +52,7 @@ func getLocalSteampipeConnectionString(opts *CreateDbOptions) (string, error) {
 	}
 
 	psqlInfoMap := map[string]string{
-		"host":   utils.GetFirstListenAddress(info.ResolvedListenAddresses),
+		"host":   putils.GetFirstListenAddress(info.ResolvedListenAddresses),
 		"port":   fmt.Sprintf("%d", info.Port),
 		"user":   opts.Username,
 		"dbname": opts.DatabaseName,
