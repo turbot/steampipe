@@ -2,8 +2,7 @@
 _Whats new_
 - Add ability to configure plugin startup timeout. ([#4320](https://github.com/turbot/steampipe/issues/4320))
 - Install FDW and embedded postgres database from GHCR instead of GCP. ([#4344](https://github.com/turbot/steampipe/issues/4344))
-- Update JSON output to handle duplicate column names - append a unique suffix to duplicate column names. ([#4317](https://github.com/turbot/steampipe/issues/4317))
-- JSON query output object will now have a `columns` property containing the column information. ([#4317](https://github.com/turbot/steampipe/issues/4317))
+- Update query JSON output format to add a `columns` property containing the column information. This allows us to handle duplicate column names by appending a unique suffix to duplicate column name ([#4317](https://github.com/turbot/steampipe/issues/4317))
 
 Existing query JSON format:
 ```
@@ -17,7 +16,7 @@ $ steampipe query "select account_id, arn from aws_account" --output json
  ]
 }
 ```
-New query JSON format(with new columns info):
+New query JSON format(with new `columns` property):
 ```
 $ steampipe query "select account_id, arn from aws_account" --output json
 {
