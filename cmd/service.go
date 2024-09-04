@@ -25,7 +25,6 @@ import (
 	"github.com/turbot/steampipe/pkg/pluginmanager"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func serviceCmd() *cobra.Command {
@@ -594,7 +593,7 @@ Managing the Steampipe service:
 			"postgres://%v:%v@%v:%v/%v",
 			dbState.User,
 			dbState.Password,
-			utils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
+			putils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
 			dbState.Port,
 			dbState.Database,
 		)
@@ -603,7 +602,7 @@ Managing the Steampipe service:
 		connectionStr = fmt.Sprintf(
 			"postgres://%v@%v:%v/%v",
 			dbState.User,
-			utils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
+			putils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
 			dbState.Port,
 			dbState.Database,
 		)

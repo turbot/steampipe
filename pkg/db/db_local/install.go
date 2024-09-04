@@ -21,7 +21,6 @@ import (
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 var ensureMux sync.Mutex
@@ -279,7 +278,7 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	}
 
 	statushooks.SetStatus(ctx, "Starting database…")
-	port, err := utils.GetNextFreePort()
+	port, err := putils.GetNextFreePort()
 	if err != nil {
 		log.Printf("[TRACE] getNextFreePort failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")

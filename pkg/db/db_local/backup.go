@@ -20,7 +20,6 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 var (
@@ -154,7 +153,7 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningInfo, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")
-	port, err := utils.GetNextFreePort()
+	port, err := putils.GetNextFreePort()
 	if err != nil {
 		return nil, err
 	}

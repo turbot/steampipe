@@ -25,7 +25,6 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
@@ -79,7 +78,7 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 	defer putils.LogTime("db_local.StartServices end")
 
 	// we want the service to always listen on IPv4 loopback
-	if !utils.ListenAddressesContainsOneOfAddresses(listenAddresses, []string{"127.0.0.1", "*", "localhost"}) {
+	if !putils.ListenAddressesContainsOneOfAddresses(listenAddresses, []string{"127.0.0.1", "*", "localhost"}) {
 		log.Println("[TRACE] StartServices - prepending 127.0.0.1 to listenAddresses")
 		listenAddresses = append([]string{"127.0.0.1"}, listenAddresses...)
 	}
@@ -260,7 +259,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 		error_helpers.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
 	}
 
-	if err := utils.IsPortBindable(utils.GetFirstListenAddress(listenAddresses), port); err != nil {
+	if err := putils.IsPortBindable(putils.GetFirstListenAddress(listenAddresses), port); err != nil {
 		return res.SetError(fmt.Errorf("cannot listen on port %d and %s %s. To check if there's any other steampipe services running, use %s", constants.Bold(port), putils.Pluralize("address", len(listenAddresses)), constants.Bold(strings.Join(listenAddresses, ",")), constants.Bold("steampipe service status --all")))
 	}
 
