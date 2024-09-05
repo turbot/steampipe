@@ -1,4 +1,4 @@
-## v0.24.0 [2024-09-04]
+## v0.24.0 [2024-09-05]
 _Whats new_
 - Add ability to configure plugin startup timeout. ([#4320](https://github.com/turbot/steampipe/issues/4320))
 - Install FDW and embedded postgres database from GHCR instead of GCP. ([#4344](https://github.com/turbot/steampipe/issues/4344))
