@@ -398,7 +398,7 @@ func (c *InteractiveClient) executeQuery(ctx context.Context, queryCtx context.C
 	if err != nil {
 		error_helpers.ShowError(ctx, error_helpers.HandleCancelError(err))
 		// if timing flag is enabled, show the time taken for the query to fail
-		if cmdconfig.Viper().GetString(constants.ArgTiming) != constants.ArgOff {
+		if cmdconfig.Viper().GetString(pconstants.ArgTiming) != pconstants.ArgOff {
 			display.DisplayErrorTiming(t)
 		}
 	} else {
@@ -558,7 +558,7 @@ func (c *InteractiveClient) restartInteractiveSession() {
 }
 
 func (c *InteractiveClient) shouldExecute(line string) bool {
-	if !cmdconfig.Viper().GetBool(constants.ArgMultiLine) {
+	if !cmdconfig.Viper().GetBool(pconstants.ArgMultiLine) {
 		// NOT multiline mode
 		return true
 	}
@@ -575,7 +575,7 @@ func (c *InteractiveClient) shouldExecute(line string) bool {
 }
 
 func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
-	if !cmdconfig.Viper().GetBool(constants.ArgAutoComplete) {
+	if !cmdconfig.Viper().GetBool(pconstants.ArgAutoComplete) {
 		return nil
 	}
 	if !c.isInitialised() {
@@ -720,7 +720,7 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 
 func (c *InteractiveClient) handleErrorsAndWarningsNotification(ctx context.Context, notification *steampipeconfig.ErrorsAndWarningsNotification) {
 	log.Printf("[TRACE] handleErrorsAndWarningsNotification")
-	output := viper.Get(constants.ArgOutput)
+	output := viper.Get(pconstants.ArgOutput)
 	if output == constants.OutputFormatJSON || output == constants.OutputFormatCSV {
 		return
 	}

@@ -2,6 +2,7 @@ package db_client
 
 import (
 	"context"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -80,7 +81,7 @@ func (c *DbClient) establishConnectionPool(ctx context.Context, overrides client
 		ctx,
 		dbPool,
 		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
-		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second),
+		db_common.WithTimeout(time.Duration(viper.GetInt(constants2.ArgDatabaseStartTimeout))*time.Second),
 	)
 	if err != nil {
 		return err

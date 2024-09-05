@@ -1,6 +1,7 @@
 package metaquery
 
 import (
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
@@ -48,7 +49,7 @@ func init() {
 		},
 		constants.CmdSeparator: {
 			title:       constants.CmdSeparator,
-			handler:     setViperConfigFromArg(constants.ArgSeparator),
+			handler:     setViperConfigFromArg(constants2.ArgSeparator),
 			validator:   exactlyNArgs(1),
 			description: "Set csv output separator",
 		},
@@ -58,8 +59,8 @@ func init() {
 			validator:   booleanValidator(constants.CmdHeaders, validatorFromArgsOf(constants.CmdHeaders)),
 			description: "Enable or disable column headers",
 			args: []metaQueryArg{
-				{value: constants.ArgOn, description: "Turn on headers in output"},
-				{value: constants.ArgOff, description: "Turn off headers in output"},
+				{value: constants2.ArgOn, description: "Turn on headers in output"},
+				{value: constants2.ArgOff, description: "Turn off headers in output"},
 			},
 			completer: completerFromArgsOf(constants.CmdHeaders),
 		},
@@ -69,8 +70,8 @@ func init() {
 			validator:   booleanValidator(constants.CmdMulti, validatorFromArgsOf(constants.CmdMulti)),
 			description: "Enable or disable multiline mode",
 			args: []metaQueryArg{
-				{value: constants.ArgOn, description: "Turn on multiline mode"},
-				{value: constants.ArgOff, description: "Turn off multiline mode"},
+				{value: constants2.ArgOn, description: "Turn on multiline mode"},
+				{value: constants2.ArgOff, description: "Turn off multiline mode"},
 			},
 			completer: completerFromArgsOf(constants.CmdMulti),
 		},
@@ -80,15 +81,15 @@ func init() {
 			validator:   validatorFromArgsOf(constants.CmdTiming),
 			description: "Enable or disable query execution timing",
 			args: []metaQueryArg{
-				{value: constants.ArgOff, description: "Turn off query timer"},
-				{value: constants.ArgOn, description: "Display time elapsed after every query"},
-				{value: constants.ArgVerbose, description: "Display time elapsed and details of each scan"},
+				{value: constants2.ArgOff, description: "Turn off query timer"},
+				{value: constants2.ArgOn, description: "Display time elapsed after every query"},
+				{value: constants2.ArgVerbose, description: "Display time elapsed and details of each scan"},
 			},
 			completer: completerFromArgsOf(constants.CmdTiming),
 		},
 		constants.CmdOutput: {
 			title:       constants.CmdOutput,
-			handler:     setViperConfigFromArg(constants.ArgOutput),
+			handler:     setViperConfigFromArg(constants2.ArgOutput),
 			validator:   composeValidator(exactlyNArgs(1), validatorFromArgsOf(constants.CmdOutput)),
 			description: "Set output format: csv, json, table or line",
 			args: []metaQueryArg{
@@ -105,9 +106,9 @@ func init() {
 			validator:   validatorFromArgsOf(constants.CmdCache),
 			description: "Enable, disable or clear the query cache",
 			args: []metaQueryArg{
-				{value: constants.ArgOn, description: "Turn on caching"},
-				{value: constants.ArgOff, description: "Turn off caching"},
-				{value: constants.ArgClear, description: "Clear the cache"},
+				{value: constants2.ArgOn, description: "Turn on caching"},
+				{value: constants2.ArgOff, description: "Turn off caching"},
+				{value: constants2.ArgClear, description: "Clear the cache"},
 			},
 			completer: completerFromArgsOf(constants.CmdCache),
 		},
@@ -157,8 +158,8 @@ func init() {
 			validator:   booleanValidator(constants.CmdAutoComplete, validatorFromArgsOf(constants.CmdAutoComplete)),
 			description: "Enable or disable auto-completion",
 			args: []metaQueryArg{
-				{value: constants.ArgOn, description: "Turn on auto-completion"},
-				{value: constants.ArgOff, description: "Turn off auto-completion"},
+				{value: constants2.ArgOn, description: "Turn on auto-completion"},
+				{value: constants2.ArgOff, description: "Turn off auto-completion"},
 			},
 			completer: completerFromArgsOf(constants.CmdAutoComplete),
 		},

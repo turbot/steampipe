@@ -17,6 +17,7 @@ import (
 	"github.com/sethvargo/go-retry"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/pipe-fittings/utils"
@@ -523,8 +524,8 @@ func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConf
 func (m *PluginManager) setPluginMaxMemory(pluginConfig *plugin.Plugin, cmd *exec.Cmd) {
 	maxMemoryBytes := pluginConfig.GetMaxMemoryBytes()
 	if maxMemoryBytes == 0 {
-		if viper.IsSet(constants.ArgMemoryMaxMbPlugin) {
-			maxMemoryBytes = viper.GetInt64(constants.ArgMemoryMaxMbPlugin) * 1024 * 1024
+		if viper.IsSet(pconstants.ArgMemoryMaxMbPlugin) {
+			maxMemoryBytes = viper.GetInt64(pconstants.ArgMemoryMaxMbPlugin) * 1024 * 1024
 		}
 	}
 	if maxMemoryBytes != 0 {
@@ -758,9 +759,9 @@ func (m *PluginManager) setAllConnectionConfigs(connectionConfigs []*sdkproto.Co
 
 func (m *PluginManager) setCacheOptions(pluginClient *sdkgrpc.PluginClient) error {
 	req := &sdkproto.SetCacheOptionsRequest{
-		Enabled:   viper.GetBool(constants.ArgServiceCacheEnabled),
-		Ttl:       viper.GetInt64(constants.ArgCacheMaxTtl),
-		MaxSizeMb: viper.GetInt64(constants.ArgMaxCacheSizeMb),
+		Enabled:   viper.GetBool(pconstants.ArgServiceCacheEnabled),
+		Ttl:       viper.GetInt64(pconstants.ArgCacheMaxTtl),
+		MaxSizeMb: viper.GetInt64(pconstants.ArgMaxCacheSizeMb),
 	}
 	_, err := pluginClient.SetCacheOptions(req)
 	return err
@@ -771,7 +772,7 @@ func (m *PluginManager) setRateLimiters(pluginInstance string, pluginClient *sdk
 	var defs []*sdkproto.RateLimiterDefinition
 
 	for _, l := range m.userLimiters[pluginInstance] {
-		defs = append(defs, l.AsProto())
+		defs = append(defs, sdkproto.RateLimiterAsProto(l))
 	}
 
 	req := &sdkproto.SetRateLimitersRequest{Definitions: defs}

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"os"
 	"os/exec"
@@ -367,8 +368,8 @@ func resolvePassword() (string, error) {
 	// if a password was set through the `STEAMPIPE_DATABASE_PASSWORD` environment variable
 	// or through the `--database-password` cmdline flag, then use that for this session
 	// instead of the default one
-	if viper.IsSet(constants.ArgServicePassword) {
-		password = viper.GetString(constants.ArgServicePassword)
+	if viper.IsSet(constants2.ArgServicePassword) {
+		password = viper.GetString(constants2.ArgServicePassword)
 	}
 	return password, nil
 }
@@ -461,7 +462,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		// Data Directory
 		"-D", filepaths.GetDataLocation())
 
-	if sslpassword := viper.GetString(constants.ArgDatabaseSSLPassword); sslpassword != "" {
+	if sslpassword := viper.GetString(constants2.ArgDatabaseSSLPassword); sslpassword != "" {
 		postgresCmd.Args = append(
 			postgresCmd.Args,
 			"-c", fmt.Sprintf("ssl_passphrase_command_supports_reload=%s", "true"),
