@@ -1,3 +1,47 @@
+## v0.24.0 [2024-09-05]
+_Whats new_
+- Add ability to configure plugin startup timeout. ([#4320](https://github.com/turbot/steampipe/issues/4320))
+- Install FDW and embedded postgres database from GHCR instead of GCP. ([#4344](https://github.com/turbot/steampipe/issues/4344))
+- Update query JSON output format to add a `columns` property containing the column information. This allows us to handle duplicate column names by appending a unique suffix to duplicate column name ([#4317](https://github.com/turbot/steampipe/issues/4317))
+
+Existing query JSON format:
+```
+$ steampipe query "select account_id, arn from aws_account" --output json
+{
+ "rows": [
+  {
+   "account_id": "123456789012",
+   "arn": "arn:aws:::123456789012"
+  }
+ ]
+}
+```
+New query JSON format(with new `columns` property):
+```
+$ steampipe query "select account_id, arn from aws_account" --output json
+{
+ "columns": [
+  {
+   "name": "account_id",
+   "data_type": "text"
+  },
+  {
+   "name": "arn",
+   "data_type": "text"
+  }
+ ],
+ "rows": [
+  {
+   "account_id": "123456789012",
+   "arn": "arn:aws:::123456789012"
+  }
+ ]
+}
+```
+
+_Bug fixes_
+- Fix issue where plugin manager was incorrectly reporting a shutdown. ([#4365](https://github.com/turbot/steampipe/issues/4365))
+
 ## v0.23.5 [2024-08-21]
 _Bug fixes_
 - Fix issue where refresh connections was not creating a new connection if it was not in the search path. ([#4353](https://github.com/turbot/steampipe/issues/4353))
