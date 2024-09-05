@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"strings"
 	"sync"
 	"time"
@@ -14,10 +13,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
 	putils "github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
-	"github.com/turbot/pipe-fittings/plugin"
+	pplugin "github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -27,6 +27,8 @@ import (
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/installationstate"
+	"github.com/turbot/steampipe/pkg/ociinstaller"
+	"github.com/turbot/steampipe/pkg/plugin"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
@@ -76,14 +78,14 @@ Examples:
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			utils.LogTime("cmd.plugin.PersistentPostRun start")
 			defer utils.LogTime("cmd.plugin.PersistentPostRun end")
-			plugin.CleanupOldTmpDirs(cmd.Context())
+			pplugin.CleanupOldTmpDirs(cmd.Context())
 		},
 	}
 	cmd.AddCommand(pluginInstallCmd())
 	cmd.AddCommand(pluginListCmd())
 	cmd.AddCommand(pluginUninstallCmd())
 	cmd.AddCommand(pluginUpdateCmd())
-	cmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for plugin")
+	cmd.Flags().BoolP(pconstants.ArgHelp, "h", false, "Help for plugin")
 
 	return cmd
 }
@@ -122,9 +124,9 @@ Examples:
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants.ArgProgress, true, "Display installation progress").
-		AddBoolFlag(constants.ArgSkipConfig, false, "Skip creating the default config file for plugin").
-		AddBoolFlag(constants.ArgHelp, false, "Help for plugin install", cmdconfig.FlagOptions.WithShortHand("h"))
+		AddBoolFlag(pconstants.ArgProgress, true, "Display installation progress").
+		AddBoolFlag(pconstants.ArgSkipConfig, false, "Skip creating the default config file for plugin").
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for plugin install", cmdconfig.FlagOptions.WithShortHand("h"))
 	return cmd
 }
 
@@ -156,9 +158,9 @@ Examples:
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants.ArgAll, false, "Update all plugins to its latest available version").
-		AddBoolFlag(constants.ArgProgress, true, "Display installation progress").
-		AddBoolFlag(constants.ArgHelp, false, "Help for plugin update", cmdconfig.FlagOptions.WithShortHand("h"))
+		AddBoolFlag(pconstants.ArgAll, false, "Update all plugins to its latest available version").
+		AddBoolFlag(pconstants.ArgProgress, true, "Display installation progress").
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for plugin update", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
 }
@@ -189,8 +191,8 @@ Examples:
 	cmdconfig.
 		OnCmd(cmd).
 		AddBoolFlag("outdated", false, "Check each plugin in the list for updates").
-		AddStringFlag(constants.ArgOutput, "table", "Output format: table or json").
-		AddBoolFlag(constants.ArgHelp, false, "Help for plugin list", cmdconfig.FlagOptions.WithShortHand("h"))
+		AddStringFlag(pconstants.ArgOutput, "table", "Output format: table or json").
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for plugin list", cmdconfig.FlagOptions.WithShortHand("h"))
 	return cmd
 }
 
@@ -216,7 +218,7 @@ Example:
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgHelp, false, "Help for plugin uninstall", cmdconfig.FlagOptions.WithShortHand("h"))
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for plugin uninstall", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
 }
@@ -249,7 +251,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	// - aws@^0.118
 	// - ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0
 	plugins := append([]string{}, args...)
-	showProgress := viper.GetBool(constants.ArgProgress)
+	showProgress := viper.GetBool(pconstants.ArgProgress)
 	installReports := make(display.PluginInstallReports, 0, len(plugins))
 
 	if len(plugins) == 0 {
@@ -289,14 +291,14 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		ref := putils.NewImageRef(pluginName)
 		org, name, constraint := ref.GetOrgNameAndStream()
 		orgAndName := fmt.Sprintf("%s/%s", org, name)
-		var resolved plugin.ResolvedPluginVersion
+		var resolved pplugin.ResolvedPluginVersion
 		if ref.IsFromTurbotHub() {
-			rpv, err := plugin.GetLatestPluginVersionByConstraint(ctx, state.InstallationID, org, name, constraint)
+			rpv, err := pplugin.GetLatestPluginVersionByConstraint(ctx, state.InstallationID, org, name, constraint)
 			if err != nil || rpv == nil {
 				report := &display.PluginInstallReport{
 					Plugin:         pluginName,
 					Skipped:        true,
-					SkipReason:     constants.InstallMessagePluginNotFound,
+					SkipReason:     pconstants.InstallMessagePluginNotFound,
 					IsUpdateReport: false,
 				}
 				reportChannel <- report
@@ -305,7 +307,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 			}
 			resolved = *rpv
 		} else {
-			resolved = plugin.NewResolvedPluginVersion(orgAndName, constraint, constraint)
+			resolved = pplugin.NewResolvedPluginVersion(orgAndName, constraint, constraint)
 		}
 
 		go doPluginInstall(ctx, bar, pluginName, resolved, installWaitGroup, reportChannel)
@@ -332,7 +334,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 		// reload the config, since an installation should have created a new config file
 		var cmd = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command)
-		config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(ctx, viper.GetString(constants.ArgModLocation), cmd.Name())
+		config, errorsAndWarnings := steampipeconfig.LoadSteampipeConfig(ctx, viper.GetString(pconstants.ArgModLocation), cmd.Name())
 		if errorsAndWarnings.GetError() != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to reload config - install report may be incomplete (%s)", errorsAndWarnings.GetError()))
 		} else {
@@ -347,29 +349,29 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 }
 
-func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, resolvedPlugin plugin.ResolvedPluginVersion, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
+func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, resolvedPlugin pplugin.ResolvedPluginVersion, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
-	pluginAlreadyInstalled, _ := plugin.Exists(ctx, pluginName)
+	pluginAlreadyInstalled, _ := pplugin.Exists(ctx, pluginName)
 	if pluginAlreadyInstalled {
 		// set the bar to MAX
 		//nolint:golint,errcheck // the error happens if we set this over the max value
 		bar.Set(len(pluginInstallSteps))
 		// let the bar append itself with "Already Installed"
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			return helpers.Resize(constants.InstallMessagePluginAlreadyInstalled, 20)
+			return helpers.Resize(pconstants.InstallMessagePluginAlreadyInstalled, 20)
 		})
 		report = &display.PluginInstallReport{
 			Plugin:         pluginName,
 			Skipped:        true,
-			SkipReason:     constants.InstallMessagePluginAlreadyInstalled,
+			SkipReason:     pconstants.InstallMessagePluginAlreadyInstalled,
 			IsUpdateReport: false,
 		}
 	} else {
 		// let the bar append itself with the current installation step
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
-			if report != nil && report.SkipReason == constants.InstallMessagePluginNotFound {
-				return helpers.Resize(constants.InstallMessagePluginNotFound, 20)
+			if report != nil && report.SkipReason == pconstants.InstallMessagePluginNotFound {
+				return helpers.Resize(pconstants.InstallMessagePluginNotFound, 20)
 			} else {
 				if b.Current() == 0 {
 					// no install step to display yet
@@ -404,7 +406,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	// - aws@^0.118
 	// - ghcr.io/turbot/steampipe/plugins/turbot/aws:1.0.0
 	plugins, err := resolveUpdatePluginsFromArgs(args)
-	showProgress := viper.GetBool(constants.ArgProgress)
+	showProgress := viper.GetBool(pconstants.ArgProgress)
 
 	if err != nil {
 		fmt.Println()
@@ -416,7 +418,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if len(plugins) > 0 && !(cmdconfig.Viper().GetBool(constants.ArgAll)) && plugins[0] == constants.ArgAll {
+	if len(plugins) > 0 && !(cmdconfig.Viper().GetBool(pconstants.ArgAll)) && plugins[0] == pconstants.ArgAll {
 		// improve the response to wrong argument "steampipe plugin update all"
 		fmt.Println()
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
@@ -441,7 +443,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	// a leading blank line - since we always output multiple lines
 	fmt.Println()
 
-	if cmdconfig.Viper().GetBool(constants.ArgAll) {
+	if cmdconfig.Viper().GetBool(pconstants.ArgAll) {
 		for k, v := range pluginVersions {
 			ref := putils.NewImageRef(k)
 			org, name, constraint := ref.GetOrgNameAndStream()
@@ -454,7 +456,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		// get the args and retrieve the installed versions
 		for _, p := range plugins {
 			ref := putils.NewImageRef(p)
-			isExists, _ := plugin.Exists(ctx, p)
+			isExists, _ := pplugin.Exists(ctx, p)
 			if isExists {
 				if strings.HasPrefix(ref.DisplayImageRef(), constants.SteampipeHubOCIBase) {
 					runUpdatesFor = append(runUpdatesFor, pluginVersions[ref.DisplayImageRef()])
@@ -468,7 +470,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 				updateResults = append(updateResults, &display.PluginInstallReport{
 					Skipped:        true,
 					Plugin:         p,
-					SkipReason:     constants.InstallMessagePluginNotInstalled,
+					SkipReason:     pconstants.InstallMessagePluginNotInstalled,
 					IsUpdateReport: true,
 				})
 			}
@@ -488,7 +490,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	defer cancel()
 
 	statushooks.SetStatus(ctx, "Checking for available updates")
-	reports := plugin.GetUpdateReport(timeoutCtx, state.InstallationID, runUpdatesFor)
+	reports := pplugin.GetUpdateReport(timeoutCtx, state.InstallationID, runUpdatesFor)
 	statushooks.Done(ctx)
 	if len(reports) == 0 {
 		// this happens if for some reason the update server could not be contacted,
@@ -534,10 +536,10 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	fmt.Println()
 }
 
-func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.PluginVersionCheckReport, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
+func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr pplugin.PluginVersionCheckReport, wg *sync.WaitGroup, returnChannel chan *display.PluginInstallReport) {
 	var report *display.PluginInstallReport
 
-	if plugin.UpdateRequired(pvr) {
+	if pplugin.UpdateRequired(pvr) {
 		// update required, resolve version and install update
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
 			// set the progress bar to append itself  with the step underway
@@ -547,20 +549,20 @@ func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr plugin.PluginV
 			}
 			return helpers.Resize(pluginInstallSteps[b.Current()-1], 20)
 		})
-		rp := plugin.NewResolvedPluginVersion(pvr.ShortName(), pvr.CheckResponse.Version, pvr.CheckResponse.Constraint)
+		rp := pplugin.NewResolvedPluginVersion(pvr.ShortName(), pvr.CheckResponse.Version, pvr.CheckResponse.Constraint)
 		report = installPlugin(ctx, rp, true, bar)
 	} else {
 		// update NOT required, return already installed report
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
 			// set the progress bar to append itself with "Already Installed"
-			return helpers.Resize(constants.InstallMessagePluginLatestAlreadyInstalled, 30)
+			return helpers.Resize(pconstants.InstallMessagePluginLatestAlreadyInstalled, 30)
 		})
 		// set the progress bar to the maximum
 		bar.Set(len(pluginInstallSteps))
 		report = &display.PluginInstallReport{
 			Plugin:         fmt.Sprintf("%s@%s", pvr.CheckResponse.Name, pvr.CheckResponse.Constraint),
 			Skipped:        true,
-			SkipReason:     constants.InstallMessagePluginLatestAlreadyInstalled,
+			SkipReason:     pconstants.InstallMessagePluginLatestAlreadyInstalled,
 			IsUpdateReport: true,
 		}
 	}
@@ -577,7 +579,7 @@ func createProgressBar(plugin string, parentProgressBars *uiprogress.Progress) *
 	return bar
 }
 
-func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVersion, isUpdate bool, bar *uiprogress.Bar) *display.PluginInstallReport {
+func installPlugin(ctx context.Context, resolvedPlugin pplugin.ResolvedPluginVersion, isUpdate bool, bar *uiprogress.Bar) *display.PluginInstallReport {
 	// start a channel for progress publications from plugin.Install
 	progress := make(chan struct{}, 5)
 	defer func() {
@@ -593,14 +595,14 @@ func installPlugin(ctx context.Context, resolvedPlugin plugin.ResolvedPluginVers
 		}
 	}()
 
-	image, err := plugin.Install(ctx, resolvedPlugin, progress, constants.BaseImageRef, ociinstaller.SteampipeMediaTypeProvider{}, putils.WithSkipConfig(viper.GetBool(constants.ArgSkipConfig)))
+	image, err := plugin.Install(ctx, resolvedPlugin, progress, constants.BaseImageRef, ociinstaller.SteampipeMediaTypeProvider{}, putils.WithSkipConfig(viper.GetBool(pconstants.ArgSkipConfig)))
 	if err != nil {
 		msg := ""
 		// used to build data for the plugin install report to be used for display purposes
 		_, name, constraint := putils.NewImageRef(resolvedPlugin.GetVersionTag()).GetOrgNameAndStream()
 		if isPluginNotFoundErr(err) {
 			exitCode = constants.ExitCodePluginNotFound
-			msg = constants.InstallMessagePluginNotFound
+			msg = pconstants.InstallMessagePluginNotFound
 		} else {
 			msg = err.Error()
 		}
@@ -643,7 +645,7 @@ func resolveUpdatePluginsFromArgs(args []string) ([]string, error) {
 		return nil, fmt.Errorf("you need to provide at least one plugin to update or use the %s flag", constants.Bold("--all"))
 	}
 
-	if len(plugins) > 0 && cmdconfig.Viper().GetBool(constants.ArgAll) {
+	if len(plugins) > 0 && cmdconfig.Viper().GetBool(pconstants.ArgAll) {
 		// we can't allow update and install at the same time
 		return nil, fmt.Errorf("%s cannot be used when updating specific plugins", constants.Bold("`--all`"))
 	}
@@ -655,7 +657,7 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 	// setup a cancel context and start cancel handler
 	ctx, cancel := context.WithCancel(cmd.Context())
 	contexthelpers.StartCancelHandler(cancel)
-	outputFormat := viper.GetString(constants.ArgOutput)
+	outputFormat := viper.GetString(pconstants.ArgOutput)
 
 	utils.LogTime("runPluginListCmd list")
 	defer func() {
@@ -716,7 +718,7 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 			for _, conn := range item {
 				conns = append(conns, conn.GetName())
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.ConnectionErrorPluginFailedToStart})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), pconstants.ConnectionErrorPluginFailedToStart})
 			conns = []string{}
 		}
 
@@ -725,7 +727,7 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 			for _, conn := range item {
 				conns = append(conns, conn.GetName())
 			}
-			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), constants.InstallMessagePluginNotInstalled})
+			missingRows = append(missingRows, []string{p, strings.Join(conns, ","), pconstants.InstallMessagePluginNotInstalled})
 			conns = []string{}
 		}
 
@@ -761,7 +763,7 @@ func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, m
 		failed := failedPlugin{
 			Name:        p,
 			Connections: connections,
-			Reason:      constants.ConnectionErrorPluginFailedToStart,
+			Reason:      pconstants.ConnectionErrorPluginFailedToStart,
 		}
 		output.Failed = append(output.Failed, failed)
 	}
@@ -774,7 +776,7 @@ func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, m
 		missing := failedPlugin{
 			Name:        p,
 			Connections: connections,
-			Reason:      constants.InstallMessagePluginNotInstalled,
+			Reason:      pconstants.InstallMessagePluginNotInstalled,
 		}
 		output.Failed = append(output.Failed, missing)
 	}
@@ -898,9 +900,9 @@ func getPluginConnectionMap(ctx context.Context) (pluginConnectionMap, failedPlu
 			continue
 		}
 
-		if state.State == constants.ConnectionStateError && state.Error() == constants.ConnectionErrorPluginFailedToStart {
+		if state.State == constants.ConnectionStateError && state.Error() == pconstants.ConnectionErrorPluginFailedToStart {
 			failedPluginMap[state.Plugin] = append(failedPluginMap[state.Plugin], connection)
-		} else if state.State == constants.ConnectionStateError && state.Error() == constants.ConnectionErrorPluginNotInstalled {
+		} else if state.State == constants.ConnectionStateError && state.Error() == pconstants.ConnectionErrorPluginNotInstalled {
 			missingPluginMap[state.Plugin] = append(missingPluginMap[state.Plugin], connection)
 		}
 

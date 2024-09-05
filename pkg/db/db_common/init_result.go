@@ -3,6 +3,7 @@ package db_common
 import (
 	"context"
 	"fmt"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -43,7 +44,7 @@ func (r *InitResult) DisplayMessages() {
 		}
 	}
 	// do not display message in json or csv output mode
-	output := viper.Get(constants.ArgOutput)
+	output := viper.Get(constants2.ArgOutput)
 	if output == constants.OutputFormatJSON || output == constants.OutputFormatCSV {
 		return
 	}

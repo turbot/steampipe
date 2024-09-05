@@ -7,6 +7,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"io"
 	"log"
 	"os"
@@ -40,7 +41,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 
 	var timingResult *queryresult.TimingResult
 
-	outputFormat := cmdconfig.Viper().GetString(constants.ArgOutput)
+	outputFormat := cmdconfig.Viper().GetString(constants2.ArgOutput)
 	switch outputFormat {
 	case constants.OutputFormatJSON:
 		rowErrors, timingResult = displayJSON(ctx, result)
@@ -53,7 +54,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 	}
 
 	// show timing
-	if config.timing != constants.ArgOff && timingResult != nil {
+	if config.timing != constants2.ArgOff && timingResult != nil {
 		str := buildTimingString(timingResult)
 		if viper.GetBool(constants.ConfigKeyInteractive) {
 			fmt.Println(str)
@@ -105,8 +106,8 @@ func ShowWrappedTable(headers []string, rows [][]string, opts *ShowWrappedTableO
 func GetMaxCols() int {
 	colsAvailable, _, _ := gows.GetWinSize()
 	// check if STEAMPIPE_DISPLAY_WIDTH env variable is set
-	if viper.IsSet(constants.ArgDisplayWidth) {
-		colsAvailable = viper.GetInt(constants.ArgDisplayWidth)
+	if viper.IsSet(constants2.ArgDisplayWidth) {
+		colsAvailable = viper.GetInt(constants2.ArgDisplayWidth)
 	}
 	return colsAvailable
 }
@@ -119,7 +120,7 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 	sumOfAllCols := 0
 
 	// account for the spaces around the value of a column and separators
-	spaceAccounting := ((len(headers) * 3) + 1)
+	spaceAccounting := (len(headers) * 3) + 1
 
 	for idx, colName := range headers {
 		headerRow[idx] = colName
@@ -160,8 +161,8 @@ func getColumnSettings(headers []string, rows [][]string, opts *ShowWrappedTable
 	// get the max cols width
 	maxCols := GetMaxCols()
 	if sumOfAllCols > maxCols {
-		colConfigs[len(colConfigs)-1].WidthMax = (maxCols - sumOfRest - spaceAccounting)
-		colConfigs[len(colConfigs)-1].WidthMin = (maxCols - sumOfRest - spaceAccounting)
+		colConfigs[len(colConfigs)-1].WidthMax = maxCols - sumOfRest - spaceAccounting
+		colConfigs[len(colConfigs)-1].WidthMin = maxCols - sumOfRest - spaceAccounting
 		if opts.Truncate {
 			colConfigs[len(colConfigs)-1].WidthMaxEnforcer = helpers.TruncateString
 		}
@@ -251,7 +252,7 @@ func displayJSON(ctx context.Context, result *queryresult.Result) (int, *queryre
 func displayCSV(ctx context.Context, result *queryresult.Result) (int, *queryresult.TimingResult) {
 	rowErrors := 0
 	csvWriter := csv.NewWriter(os.Stdout)
-	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants.ArgSeparator))[0]
+	csvWriter.Comma = []rune(cmdconfig.Viper().GetString(constants2.ArgSeparator))[0]
 
 	if cmdconfig.Viper().GetBool(constants.ArgHeader) {
 		_ = csvWriter.Write(columnNames(result.Cols))
@@ -379,7 +380,7 @@ func displayTable(ctx context.Context, result *queryresult.Result) (int, *queryr
 	}
 
 	t.SetColumnConfigs(colConfigs)
-	if viper.GetBool(constants.ArgHeader) {
+	if viper.GetBool(constants2.ArgHeader) {
 		t.AppendHeader(headers)
 	}
 
@@ -424,9 +425,9 @@ func displayTable(ctx context.Context, result *queryresult.Result) (int, *queryr
 }
 
 func getTiming(result *queryresult.Result, count int) *queryresult.TimingResult {
-	timingConfig := viper.GetString(constants.ArgTiming)
+	timingConfig := viper.GetString(constants2.ArgTiming)
 
-	if timingConfig == constants.ArgOff || timingConfig == "false" {
+	if timingConfig == constants2.ArgOff || timingConfig == "false" {
 		return nil
 	}
 	// now we have iterated the rows, get the timing
@@ -434,7 +435,7 @@ func getTiming(result *queryresult.Result, count int) *queryresult.TimingResult 
 	// set rows returned
 	timingResult.RowsReturned = int64(count)
 
-	if timingConfig != constants.ArgVerbose {
+	if timingConfig != constants2.ArgVerbose {
 		timingResult.Scans = nil
 	}
 	return timingResult
@@ -478,7 +479,7 @@ func buildTimingString(timingResult *queryresult.TimingResult) string {
 		sb.WriteString(p.Sprintf(" Connections: %d.", timingResult.ConnectionCount))
 	}
 
-	if viper.GetString(constants.ArgTiming) == constants.ArgVerbose && len(timingResult.Scans) > 0 {
+	if viper.GetString(constants2.ArgTiming) == constants2.ArgVerbose && len(timingResult.Scans) > 0 {
 		if err := getVerboseTimingString(&sb, p, timingResult); err != nil {
 			log.Printf("[WARN] Error getting verbose timing: %v", err)
 		}

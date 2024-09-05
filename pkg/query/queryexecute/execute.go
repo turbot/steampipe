@@ -3,13 +3,13 @@ package queryexecute
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/constants"
 	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection_sync"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/display"

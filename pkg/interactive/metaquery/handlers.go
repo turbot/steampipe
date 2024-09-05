@@ -3,6 +3,7 @@ package metaquery
 import (
 	"context"
 	"fmt"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"strings"
 
 	typeHelpers "github.com/turbot/go-kit/types"
@@ -27,14 +28,14 @@ func Handle(ctx context.Context, input *HandlerInput) error {
 // .header
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
 func setHeader(_ context.Context, input *HandlerInput) error {
-	cmdconfig.Viper().Set(constants.ArgHeader, typeHelpers.StringToBool(input.args()[0]))
+	cmdconfig.Viper().Set(constants2.ArgHeader, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
 // .multi
 // set the ArgMulti viper key with the boolean value evaluated from arg[0]
 func setMultiLine(_ context.Context, input *HandlerInput) error {
-	cmdconfig.Viper().Set(constants.ArgMultiLine, typeHelpers.StringToBool(input.args()[0]))
+	cmdconfig.Viper().Set(constants2.ArgMultiLine, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
@@ -46,12 +47,12 @@ func setTiming(ctx context.Context, input *HandlerInput) error {
 		return nil
 	}
 
-	cmdconfig.Viper().Set(constants.ArgTiming, input.args()[0])
+	cmdconfig.Viper().Set(constants2.ArgTiming, input.args()[0])
 	return nil
 }
 
 func showTimingFlag() {
-	timing := cmdconfig.Viper().GetString(constants.ArgTiming)
+	timing := cmdconfig.Viper().GetString(constants2.ArgTiming)
 
 	fmt.Printf(`Timing is %s. Available options are: %s`,
 		constants.Bold(timing),
@@ -85,6 +86,6 @@ func clearScreen(_ context.Context, input *HandlerInput) error {
 
 // .autocomplete
 func setAutoComplete(_ context.Context, input *HandlerInput) error {
-	cmdconfig.Viper().Set(constants.ArgAutoComplete, typeHelpers.StringToBool(input.args()[0]))
+	cmdconfig.Viper().Set(constants2.ArgAutoComplete, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }

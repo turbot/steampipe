@@ -3,6 +3,7 @@ package pluginmanager_service
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/error_helpers"
 
 	"log"
 
@@ -306,7 +307,7 @@ func (m *PluginManager) LoadPluginRateLimiters(pluginConnectionMap map[string]st
 
 		limitersForPlugin := make(connection.LimiterMap)
 		for _, l := range rateLimiterResp.Definitions {
-			r, err := plugin.RateLimiterFromProto(l, reattach.Plugin, pluginInstance)
+			r, err := proto.RateLimiterFromProto(l, reattach.Plugin, pluginInstance)
 			if err != nil {
 				errors = append(errors, sperr.WrapWithMessage(err, "failed to create rate limiter %s from plugin definition", err))
 				continue
@@ -321,6 +322,10 @@ func (m *PluginManager) LoadPluginRateLimiters(pluginConnectionMap map[string]st
 		}
 		// store back
 		res[reattach.Plugin] = limitersForPlugin
+	}
+
+	if len(errors) > 0 {
+		return nil, error_helpers.CombineErrors(errors...)
 	}
 
 	return res, nil
