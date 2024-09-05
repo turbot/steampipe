@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/constants"
 	"log"
 	"os"
 	"strings"
@@ -17,7 +18,6 @@ import (
 	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/pipe-fittings/workspace_profile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 

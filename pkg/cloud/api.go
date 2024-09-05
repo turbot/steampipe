@@ -2,11 +2,11 @@ package cloud
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/constants"
 	"net/url"
 
 	"github.com/spf13/viper"
 	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 func newSteampipeCloudClient(token string) *steampipecloud.APIClient {

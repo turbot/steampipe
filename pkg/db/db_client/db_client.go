@@ -3,6 +3,7 @@ package db_client
 import (
 	"context"
 	"fmt"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"strings"
 	"sync"
@@ -137,13 +138,13 @@ func (c *DbClient) shouldFetchTiming() bool {
 		return false
 	}
 	// only fetch timing if timing flag is set, or output is JSON
-	return (viper.GetString(constants.ArgTiming) != constants.ArgOff) ||
-		(viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON)
+	return (viper.GetString(constants2.ArgTiming) != constants2.ArgOff) ||
+		(viper.GetString(constants2.ArgOutput) == constants.OutputFormatJSON)
 
 }
 func (c *DbClient) shouldFetchVerboseTiming() bool {
-	return (viper.GetString(constants.ArgTiming) == constants.ArgVerbose) ||
-		(viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON)
+	return (viper.GetString(constants2.ArgTiming) == constants2.ArgVerbose) ||
+		(viper.GetString(constants2.ArgOutput) == constants.OutputFormatJSON)
 }
 
 // ServerSettings returns the settings of the steampipe service that this DbClient is connected to

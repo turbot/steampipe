@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"strings"
 
@@ -194,7 +195,7 @@ func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionRes
 		for _, c := range connectionsToCreate {
 			if c.Plugin == failedPluginInstance {
 
-				res.AddFailedConnection(c.Name, constants.ConnectionErrorPluginFailedToStart)
+				res.AddFailedConnection(c.Name, constants2.ConnectionErrorPluginFailedToStart)
 			}
 		}
 	}

@@ -112,10 +112,10 @@ func (c *CmdBuilder) AddBoolFlag(name string, defaultValue bool, desc string, op
 // AddCloudFlags is helper function to add the cloud flags to a command
 func (c *CmdBuilder) AddCloudFlags() *CmdBuilder {
 	return c.
-		AddStringFlag(constants.ArgPipesHost, constants.DefaultPipesHost, "Turbot Pipes host").
-		AddStringFlag(constants.ArgPipesToken, "", "Turbot Pipes authentication token").
-		AddStringFlag(constants.ArgCloudHost, constants.DefaultPipesHost, "Turbot Pipes host", FlagOptions.Deprecated(constants.ArgPipesHost)).
-		AddStringFlag(constants.ArgCloudToken, "", "Turbot Pipes authentication token", FlagOptions.Deprecated(constants.ArgPipesToken))
+		AddStringFlag(pconstants.ArgPipesHost, constants.DefaultPipesHost, "Turbot Pipes host").
+		AddStringFlag(pconstants.ArgPipesToken, "", "Turbot Pipes authentication token").
+		AddStringFlag(pconstants.ArgCloudHost, constants.DefaultPipesHost, "Turbot Pipes host", FlagOptions.Deprecated(pconstants.ArgPipesHost)).
+		AddStringFlag(pconstants.ArgCloudToken, "", "Turbot Pipes authentication token", FlagOptions.Deprecated(pconstants.ArgPipesToken))
 }
 
 // AddWorkspaceDatabaseFlag is helper function to add the workspace-databse flag to a command
@@ -129,7 +129,7 @@ func (c *CmdBuilder) AddModLocationFlag() *CmdBuilder {
 	cwd, err := os.Getwd()
 	error_helpers.FailOnError(err)
 	return c.
-		AddStringFlag(constants.ArgModLocation, cwd, "Path to the workspace working directory")
+		AddStringFlag(pconstants.ArgModLocation, cwd, "Path to the workspace working directory")
 }
 
 // AddStringSliceFlag is a helper function to add a flag that accepts an array of strings

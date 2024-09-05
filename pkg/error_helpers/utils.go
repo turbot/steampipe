@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"os"
 	"strings"
 
@@ -97,7 +98,7 @@ func HandleCancelError(err error) error {
 
 func HandleQueryTimeoutError(err error) error {
 	if errors.Is(err, context.DeadlineExceeded) {
-		err = fmt.Errorf("query timeout exceeded (%ds)", viper.GetInt(constants.ArgDatabaseQueryTimeout))
+		err = fmt.Errorf("query timeout exceeded (%ds)", viper.GetInt(constants2.ArgDatabaseQueryTimeout))
 	}
 	return err
 }

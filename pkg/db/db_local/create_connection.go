@@ -3,6 +3,7 @@ package db_local
 import (
 	"context"
 	"fmt"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"strings"
 	"time"
@@ -155,7 +156,7 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 		ctx,
 		dbPool,
 		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
-		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second),
+		db_common.WithTimeout(time.Duration(viper.GetInt(constants2.ArgDatabaseStartTimeout))*time.Second),
 	)
 	if err != nil {
 		return nil, err
@@ -177,7 +178,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 
 	connStr := fmt.Sprintf("host=127.0.0.1 port=%d user=%s dbname=postgres sslmode=disable application_name=%s", port, constants.DatabaseSuperUser, runtime.ServiceConnectionAppName)
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Duration(viper.GetInt(constants2.ArgDatabaseStartTimeout))*time.Second)
 	defer cancel()
 
 	statushooks.SetStatus(ctx, "Waiting for connection")
@@ -185,7 +186,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		timeoutCtx,
 		connStr,
 		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
-		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second),
+		db_common.WithTimeout(time.Duration(viper.GetInt(constants2.ArgDatabaseStartTimeout))*time.Second),
 	)
 	if err != nil {
 		log.Println("[TRACE] could not connect to service")
@@ -197,7 +198,7 @@ func createMaintenanceClient(ctx context.Context, port int) (*pgx.Conn, error) {
 		timeoutCtx,
 		conn,
 		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
-		db_common.WithTimeout(viper.GetDuration(constants.ArgDatabaseStartTimeout)*time.Second),
+		db_common.WithTimeout(viper.GetDuration(constants2.ArgDatabaseStartTimeout)*time.Second),
 	)
 	if err != nil {
 		conn.Close(ctx)

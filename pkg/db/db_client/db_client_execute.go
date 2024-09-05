@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"net/netip"
 	"strings"
@@ -162,7 +163,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 }
 
 func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
-	queryTimeout := time.Duration(viper.GetInt(constants.ArgDatabaseQueryTimeout)) * time.Second
+	queryTimeout := time.Duration(viper.GetInt(constants2.ArgDatabaseQueryTimeout)) * time.Second
 	// if timeout is zero, do not set a timeout
 	if queryTimeout == 0 {
 		return ctx
@@ -398,7 +399,7 @@ func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]i
 }
 
 func isStreamingOutput() bool {
-	outputFormat := viper.GetString(constants.ArgOutput)
+	outputFormat := viper.GetString(constants2.ArgOutput)
 
 	return helpers.StringSliceContains([]string{constants.OutputFormatCSV, constants.OutputFormatLine}, outputFormat)
 }

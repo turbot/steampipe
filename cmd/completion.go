@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/constants"
 	"os"
 	"runtime"
 
 	"github.com/spf13/cobra"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 func generateCompletionScriptsCmd() *cobra.Command {

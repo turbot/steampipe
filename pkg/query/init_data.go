@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 	"fmt"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"os"
 	"path/filepath"
@@ -84,18 +85,18 @@ func (i *InitData) init(ctx context.Context, args []string) {
 	}()
 
 	// validate export args
-	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
+	if len(viper.GetStringSlice(constants2.ArgExport)) > 0 {
 		i.RegisterExporters(queryExporters()...)
 
 		// validate required export formats
-		if err := i.ExportManager.ValidateExportFormat(viper.GetStringSlice(constants.ArgExport)); err != nil {
+		if err := i.ExportManager.ValidateExportFormat(viper.GetStringSlice(constants2.ArgExport)); err != nil {
 			i.Result.Error = err
 			return
 		}
 	}
 
 	// set max DB connections to 1
-	viper.Set(constants.ArgMaxParallel, 1)
+	viper.Set(constants2.ArgMaxParallel, 1)
 
 	statushooks.SetStatus(ctx, "Resolving arguments")
 

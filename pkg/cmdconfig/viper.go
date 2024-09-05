@@ -48,11 +48,11 @@ func bootstrapViper(loader *parse.WorkspaceProfileLoader[*workspace_profile.Stea
 	if loader.ConfiguredProfile != nil {
 		if loader.ConfiguredProfile.ModLocation != nil {
 			log.Printf("[TRACE] setting mod location from configured profile '%s' to '%s'", loader.ConfiguredProfile.Name(), *loader.ConfiguredProfile.ModLocation)
-			viper.SetDefault(constants.ArgModLocation, *loader.ConfiguredProfile.ModLocation)
+			viper.SetDefault(pconstants.ArgModLocation, *loader.ConfiguredProfile.ModLocation)
 		}
 		if loader.ConfiguredProfile.InstallDir != nil {
 			log.Printf("[TRACE] setting install dir from configured profile '%s' to '%s'", loader.ConfiguredProfile.Name(), *loader.ConfiguredProfile.InstallDir)
-			viper.SetDefault(constants.ArgInstallDir, *loader.ConfiguredProfile.InstallDir)
+			viper.SetDefault(pconstants.ArgInstallDir, *loader.ConfiguredProfile.InstallDir)
 		}
 	}
 
@@ -63,8 +63,8 @@ func bootstrapViper(loader *parse.WorkspaceProfileLoader[*workspace_profile.Stea
 // tildefyPaths cleans all path config values and replaces '~' with the home directory
 func tildefyPaths() error {
 	pathArgs := []string{
-		constants.ArgModLocation,
-		constants.ArgInstallDir,
+		pconstants.ArgModLocation,
+		pconstants.ArgInstallDir,
 	}
 	var err error
 	for _, argName := range pathArgs {
@@ -104,25 +104,25 @@ func setBaseDefaults() error {
 	}
 	defaults := map[string]interface{}{
 		// global general options
-		constants.ArgTelemetry:       constants.TelemetryInfo,
-		constants.ArgUpdateCheck:     true,
-		constants.ArgPipesInstallDir: pipesInstallDir,
+		pconstants.ArgTelemetry:       constants.TelemetryInfo,
+		pconstants.ArgUpdateCheck:     true,
+		pconstants.ArgPipesInstallDir: pipesInstallDir,
 
 		// workspace profile
-		constants.ArgAutoComplete: true,
+		pconstants.ArgAutoComplete: true,
 
 		// from global database options
-		constants.ArgDatabasePort:         constants.DatabaseDefaultPort,
-		constants.ArgDatabaseStartTimeout: constants.DBStartTimeout.Seconds(),
-		constants.ArgServiceCacheEnabled:  true,
-		constants.ArgCacheMaxTtl:          300,
+		pconstants.ArgDatabasePort:         constants.DatabaseDefaultPort,
+		pconstants.ArgDatabaseStartTimeout: constants.DBStartTimeout.Seconds(),
+		pconstants.ArgServiceCacheEnabled:  true,
+		pconstants.ArgCacheMaxTtl:          300,
 
 		// dashboard
-		constants.ArgDashboardStartTimeout: constants.DashboardStartTimeout.Seconds(),
+		pconstants.ArgDashboardStartTimeout: constants.DashboardStartTimeout.Seconds(),
 
 		// memory
-		constants.ArgMemoryMaxMbPlugin: 1024,
-		constants.ArgMemoryMaxMb:       1024,
+		pconstants.ArgMemoryMaxMbPlugin: 1024,
+		pconstants.ArgMemoryMaxMb:       1024,
 	}
 
 	for k, v := range defaults {
@@ -139,9 +139,9 @@ type envMapping struct {
 // set default values of INSTALL_DIR and ModLocation from env vars
 func setDirectoryDefaultsFromEnv() {
 	envMappings := map[string]envMapping{
-		constants.EnvInstallDir:     {[]string{constants.ArgInstallDir}, String},
-		constants.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, String},
-		constants.EnvModLocation:    {[]string{constants.ArgModLocation}, String},
+		constants.EnvInstallDir:     {[]string{pconstants.ArgInstallDir}, String},
+		constants.EnvWorkspaceChDir: {[]string{pconstants.ArgModLocation}, String},
+		constants.EnvModLocation:    {[]string{pconstants.ArgModLocation}, String},
 	}
 
 	for envVar, mapping := range envMappings {
@@ -156,37 +156,37 @@ func setDefaultsFromEnv() {
 
 	// a map of known environment variables to map to viper keys
 	envMappings := map[string]envMapping{
-		constants.EnvInstallDir:     {[]string{constants.ArgInstallDir}, String},
-		constants.EnvWorkspaceChDir: {[]string{constants.ArgModLocation}, String},
-		constants.EnvModLocation:    {[]string{constants.ArgModLocation}, String},
+		constants.EnvInstallDir:     {[]string{pconstants.ArgInstallDir}, String},
+		constants.EnvWorkspaceChDir: {[]string{pconstants.ArgModLocation}, String},
+		constants.EnvModLocation:    {[]string{pconstants.ArgModLocation}, String},
 		// TODO #breakingchange
 		//constants.EnvIntrospection:  {[]string{constants.ArgIntrospection}, String},
-		constants.EnvTelemetry:   {[]string{constants.ArgTelemetry}, String},
-		constants.EnvUpdateCheck: {[]string{constants.ArgUpdateCheck}, Bool},
+		constants.EnvTelemetry:   {[]string{pconstants.ArgTelemetry}, String},
+		constants.EnvUpdateCheck: {[]string{pconstants.ArgUpdateCheck}, Bool},
 		// deprecated
-		constants.EnvCloudHost:             {[]string{constants.ArgPipesHost}, String},
-		constants.EnvCloudToken:            {[]string{constants.ArgPipesToken}, String},
-		constants.EnvPipesHost:             {[]string{constants.ArgPipesHost}, String},
-		constants.EnvPipesToken:            {[]string{constants.ArgPipesToken}, String},
-		constants.EnvSnapshotLocation:      {[]string{constants.ArgSnapshotLocation}, String},
+		constants.EnvCloudHost:             {[]string{pconstants.ArgPipesHost}, String},
+		constants.EnvCloudToken:            {[]string{pconstants.ArgPipesToken}, String},
+		constants.EnvPipesHost:             {[]string{pconstants.ArgPipesHost}, String},
+		constants.EnvPipesToken:            {[]string{pconstants.ArgPipesToken}, String},
+		constants.EnvSnapshotLocation:      {[]string{pconstants.ArgSnapshotLocation}, String},
 		constants.EnvWorkspaceDatabase:     {[]string{pconstants.ArgWorkspaceDatabase}, String},
-		constants.EnvServicePassword:       {[]string{constants.ArgServicePassword}, String},
-		constants.EnvDisplayWidth:          {[]string{constants.ArgDisplayWidth}, Int},
-		constants.EnvMaxParallel:           {[]string{constants.ArgMaxParallel}, Int},
-		constants.EnvQueryTimeout:          {[]string{constants.ArgDatabaseQueryTimeout}, Int},
-		constants.EnvDatabaseStartTimeout:  {[]string{constants.ArgDatabaseStartTimeout}, Int},
-		constants.EnvDatabaseSSLPassword:   {[]string{constants.ArgDatabaseSSLPassword}, String},
-		constants.EnvDashboardStartTimeout: {[]string{constants.ArgDashboardStartTimeout}, Int},
-		constants.EnvCacheTTL:              {[]string{constants.ArgCacheTtl}, Int},
-		constants.EnvCacheMaxTTL:           {[]string{constants.ArgCacheMaxTtl}, Int},
-		constants.EnvMemoryMaxMb:           {[]string{constants.ArgMemoryMaxMb}, Int},
-		constants.EnvMemoryMaxMbPlugin:     {[]string{constants.ArgMemoryMaxMbPlugin}, Int},
+		constants.EnvServicePassword:       {[]string{pconstants.ArgServicePassword}, String},
+		constants.EnvDisplayWidth:          {[]string{pconstants.ArgDisplayWidth}, Int},
+		constants.EnvMaxParallel:           {[]string{pconstants.ArgMaxParallel}, Int},
+		constants.EnvQueryTimeout:          {[]string{pconstants.ArgDatabaseQueryTimeout}, Int},
+		constants.EnvDatabaseStartTimeout:  {[]string{pconstants.ArgDatabaseStartTimeout}, Int},
+		constants.EnvDatabaseSSLPassword:   {[]string{pconstants.ArgDatabaseSSLPassword}, String},
+		constants.EnvDashboardStartTimeout: {[]string{pconstants.ArgDashboardStartTimeout}, Int},
+		constants.EnvCacheTTL:              {[]string{pconstants.ArgCacheTtl}, Int},
+		constants.EnvCacheMaxTTL:           {[]string{pconstants.ArgCacheMaxTtl}, Int},
+		constants.EnvMemoryMaxMb:           {[]string{pconstants.ArgMemoryMaxMb}, Int},
+		constants.EnvMemoryMaxMbPlugin:     {[]string{pconstants.ArgMemoryMaxMbPlugin}, Int},
 		constants.EnvPluginStartTimeout:    {[]string{constants.ArgPluginStartTimeout}, Int},
 
 		// we need this value to go into different locations
 		constants.EnvCacheEnabled: {[]string{
-			constants.ArgClientCacheEnabled,
-			constants.ArgServiceCacheEnabled,
+			pconstants.ArgClientCacheEnabled,
+			pconstants.ArgServiceCacheEnabled,
 		}, Bool},
 	}
 
