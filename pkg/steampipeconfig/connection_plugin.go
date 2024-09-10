@@ -2,12 +2,12 @@ package steampipeconfig
 
 import (
 	"fmt"
-	constants2 "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"strings"
 
 	"github.com/hashicorp/go-plugin"
 	typehelpers "github.com/turbot/go-kit/types"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/utils"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -195,7 +195,7 @@ func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionRes
 		for _, c := range connectionsToCreate {
 			if c.Plugin == failedPluginInstance {
 
-				res.AddFailedConnection(c.Name, constants2.ConnectionErrorPluginFailedToStart)
+				res.AddFailedConnection(c.Name, pconstants.ConnectionErrorPluginFailedToStart)
 			}
 		}
 	}

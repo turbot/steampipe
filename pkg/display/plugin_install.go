@@ -2,10 +2,10 @@ package display
 
 import (
 	"fmt"
-	constants2 "github.com/turbot/pipe-fittings/constants"
 	"sort"
 	"strings"
 
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -82,11 +82,11 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 		report.IsUpdateReport = isUpdateReport
 		if !report.Skipped {
 			installedOrUpdated = append(installedOrUpdated, report)
-		} else if report.SkipReason == constants2.InstallMessagePluginNotInstalled {
+		} else if report.SkipReason == pconstants.InstallMessagePluginNotInstalled {
 			canBeInstalled = append(canBeInstalled, report)
-		} else if report.SkipReason == constants2.InstallMessagePluginAlreadyInstalled {
+		} else if report.SkipReason == pconstants.InstallMessagePluginAlreadyInstalled {
 			canBeUpdated = append(canBeUpdated, report)
-		} else if report.SkipReason == constants2.InstallMessagePluginNotFound {
+		} else if report.SkipReason == pconstants.InstallMessagePluginNotFound {
 			notFound = append(notFound, report)
 		}
 	}
@@ -112,7 +112,7 @@ func PrintInstallReports(reports PluginInstallReports, isUpdateReport bool) {
 		installSkipReports := []string{}
 		for _, report := range reports {
 			showReport := true
-			if report.SkipReason == constants2.InstallMessagePluginAlreadyInstalled || report.SkipReason == constants2.InstallMessagePluginLatestAlreadyInstalled {
+			if report.SkipReason == pconstants.InstallMessagePluginAlreadyInstalled || report.SkipReason == pconstants.InstallMessagePluginLatestAlreadyInstalled {
 				showReport = false
 			}
 			if report.Skipped && showReport {

@@ -3,12 +3,12 @@ package db_local
 import (
 	"context"
 	"fmt"
-	constants2 "github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/error_helpers"
 	"log"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spf13/viper"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
@@ -32,7 +32,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_c
 	defer log.Printf("[INFO] GetLocalClient complete")
 
 	listenAddresses := StartListenType(ListenTypeLocal).ToListenAddresses()
-	port := viper.GetInt(constants2.ArgDatabasePort)
+	port := viper.GetInt(pconstants.ArgDatabasePort)
 	log.Println(fmt.Sprintf("[TRACE] GetLocalClient - listenAddresses=%s, port=%d", listenAddresses, port))
 	// start db if necessary
 	if err := EnsureDBInstalled(ctx); err != nil {

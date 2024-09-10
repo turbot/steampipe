@@ -2,12 +2,12 @@ package steampipeconfig
 
 import (
 	"encoding/json"
-	constants2 "github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/error_helpers"
 	"log"
 	"os"
 	"time"
 
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/utils"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -44,7 +44,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 			requiredState[connection.Name] = newErrorConnectionState(connection)
 			// if error is a missing plugin, add to missingPluginMap
 			// this will be used to build missing plugin warnings
-			if connection.Error.Error() == constants2.ConnectionErrorPluginNotInstalled {
+			if connection.Error.Error() == pconstants.ConnectionErrorPluginNotInstalled {
 				missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
 			} else {
 				// otherwise add error to result as warning, so we display it
