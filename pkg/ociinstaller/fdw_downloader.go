@@ -8,18 +8,18 @@ import (
 )
 
 type fdwDownloader struct {
-	ociinstaller.OciDownloader[*fdwImage, *FdwIfageConfig]
+	ociinstaller.OciDownloader[*fdwImage, *FdwImageConfig]
 }
 
-func (p *fdwDownloader) EmptyConfig() *FdwIfageConfig {
-	return &FdwIfageConfig{}
+func (p *fdwDownloader) EmptyConfig() *FdwImageConfig {
+	return &FdwImageConfig{}
 }
 
 func newFdwDownloader() *fdwDownloader {
 	res := &fdwDownloader{}
 
 	// create the base downloader, passing res as the image provider
-	ociDownloader := ociinstaller.NewOciDownloader[*fdwImage, *FdwIfageConfig](constants.BaseImageRef, SteampipeMediaTypeProvider{}, res)
+	ociDownloader := ociinstaller.NewOciDownloader[*fdwImage, *FdwImageConfig](constants.BaseImageRef, SteampipeMediaTypeProvider{}, res)
 
 	res.OciDownloader = *ociDownloader
 

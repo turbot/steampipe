@@ -14,7 +14,7 @@ func (s *fdwImage) Type() ociinstaller.ImageType {
 	return ImageTypeFdw
 }
 
-type FdwIfageConfig struct {
+type FdwImageConfig struct {
 	ociinstaller.OciConfigBase
 	Fdw struct {
 		Name         string `json:"name,omitempty"`
