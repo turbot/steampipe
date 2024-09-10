@@ -5,11 +5,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/turbot/steampipe/pkg/filepaths"
-
-	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -181,7 +176,7 @@ func setDefaultsFromEnv() {
 		constants.EnvCacheMaxTTL:           {[]string{pconstants.ArgCacheMaxTtl}, Int},
 		constants.EnvMemoryMaxMb:           {[]string{pconstants.ArgMemoryMaxMb}, Int},
 		constants.EnvMemoryMaxMbPlugin:     {[]string{pconstants.ArgMemoryMaxMbPlugin}, Int},
-		constants.EnvPluginStartTimeout:    {[]string{constants.ArgPluginStartTimeout}, Int},
+		constants.EnvPluginStartTimeout:    {[]string{pconstants.ArgPluginStartTimeout}, Int},
 
 		// we need this value to go into different locations
 		constants.EnvCacheEnabled: {[]string{
