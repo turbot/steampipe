@@ -2,12 +2,12 @@ package db_local
 
 import (
 	"context"
-	constants2 "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/serversettings"
@@ -23,9 +23,9 @@ func setupServerSettingsTable(ctx context.Context, conn *pgx.Conn) error {
 		StartTime:        time.Now(),
 		SteampipeVersion: version.VersionString,
 		FdwVersion:       constants.FdwVersion,
-		CacheMaxTtl:      viper.GetInt(constants2.ArgCacheMaxTtl),
-		CacheMaxSizeMb:   viper.GetInt(constants2.ArgMaxCacheSizeMb),
-		CacheEnabled:     viper.GetBool(constants2.ArgServiceCacheEnabled),
+		CacheMaxTtl:      viper.GetInt(pconstants.ArgCacheMaxTtl),
+		CacheMaxSizeMb:   viper.GetInt(pconstants.ArgMaxCacheSizeMb),
+		CacheEnabled:     viper.GetBool(pconstants.ArgServiceCacheEnabled),
 	}
 
 	queries := []db_common.QueryWithArgs{

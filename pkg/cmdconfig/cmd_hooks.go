@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	constants2 "github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/parse"
-	"github.com/turbot/pipe-fittings/workspace_profile"
 	"io"
 	"log"
 	"os"
@@ -23,9 +20,12 @@ import (
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/logging"
 	"github.com/turbot/pipe-fittings/app_specific"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/parse"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/pipe-fittings/versionfile"
+	"github.com/turbot/pipe-fittings/workspace_profile"
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -93,7 +93,7 @@ func preRunHook(cmd *cobra.Command, args []string) {
 
 	// if the log level was set in the general config
 	if logLevelNeedsReset() {
-		logLevel := viper.GetString(constants2.ArgLogLevel)
+		logLevel := viper.GetString(pconstants.ArgLogLevel)
 		// set my environment to the desired log level
 		// so that this gets inherited by any other process
 		// started by this process (postgres/plugin-manager)
@@ -124,7 +124,7 @@ func preRunHook(cmd *cobra.Command, args []string) {
 }
 
 func setMemoryLimit() {
-	maxMemoryBytes := viper.GetInt64(constants2.ArgMemoryMaxMb) * 1024 * 1024
+	maxMemoryBytes := viper.GetInt64(pconstants.ArgMemoryMaxMb) * 1024 * 1024
 	if maxMemoryBytes > 0 {
 		// set the max memory
 		debug.SetMemoryLimit(maxMemoryBytes)
@@ -157,7 +157,7 @@ func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, e
 		// pass the config value in rather than runRasks querying viper directly - to avoid concurrent map access issues
 		// (we can use the update-check viper config here, since initGlobalConfig has already set it up
 		// with values from the config files and ENV settings - update-check cannot be set from the command line)
-		task.WithUpdateCheck(viper.GetBool(constants2.ArgUpdateCheck)),
+		task.WithUpdateCheck(viper.GetBool(pconstants.ArgUpdateCheck)),
 		// show deprecation warnings
 		task.WithPreHook(func(_ context.Context) {
 			displayDeprecationWarnings(ew)
@@ -220,7 +220,7 @@ func initGlobalConfig() perror_helpers.ErrorAndWarnings {
 	ensureInstallDir()
 
 	// load the connection config and HCL options
-	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(ctx, viper.GetString(constants2.ArgModLocation), cmd.Name())
+	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(ctx, viper.GetString(pconstants.ArgModLocation), cmd.Name())
 	if loadConfigErrorsAndWarnings.Error != nil {
 		return loadConfigErrorsAndWarnings
 	}
@@ -271,19 +271,19 @@ func initGlobalConfig() perror_helpers.ErrorAndWarnings {
 func handleDeprecations() perror_helpers.ErrorAndWarnings {
 	var ew = perror_helpers.ErrorAndWarnings{}
 	// if deprecated cloud-token or cloud-host is set, show a warning and copy the value to the new arg
-	if viper.IsSet(constants2.ArgCloudToken) {
-		if viper.IsSet(constants2.ArgPipesToken) {
-			ew.Error = sperr.New("Only one of flags --%s and --%s may be set", constants2.ArgCloudToken, constants2.ArgPipesToken)
+	if viper.IsSet(pconstants.ArgCloudToken) {
+		if viper.IsSet(pconstants.ArgPipesToken) {
+			ew.Error = sperr.New("Only one of flags --%s and --%s may be set", pconstants.ArgCloudToken, pconstants.ArgPipesToken)
 			return ew
 		}
-		viper.Set(constants2.ArgPipesToken, viper.GetString(constants2.ArgCloudToken))
+		viper.Set(pconstants.ArgPipesToken, viper.GetString(pconstants.ArgCloudToken))
 	}
-	if viper.IsSet(constants2.ArgCloudHost) {
-		if viper.IsSet(constants2.ArgPipesHost) {
-			ew.Error = sperr.New("Only one of flags --%s and --%s may be set", constants2.ArgCloudHost, constants2.ArgPipesHost)
+	if viper.IsSet(pconstants.ArgCloudHost) {
+		if viper.IsSet(pconstants.ArgPipesHost) {
+			ew.Error = sperr.New("Only one of flags --%s and --%s may be set", pconstants.ArgCloudHost, pconstants.ArgPipesHost)
 			return ew
 		}
-		viper.Set(constants2.ArgPipesHost, viper.GetString(constants2.ArgCloudHost))
+		viper.Set(pconstants.ArgPipesHost, viper.GetString(pconstants.ArgCloudHost))
 	}
 
 	// is deprecated STEAMPIPE_CLOUD_TOKEN env var set?
@@ -321,40 +321,40 @@ func setCloudTokenDefault(loader *parse.WorkspaceProfileLoader[*workspace_profil
 		return err
 	}
 	if savedToken != "" {
-		viper.SetDefault(constants2.ArgPipesToken, savedToken)
+		viper.SetDefault(pconstants.ArgPipesToken, savedToken)
 	}
 	// 2) default profile pipes token
 	if loader.DefaultProfile.PipesToken != nil {
-		viper.SetDefault(constants2.ArgPipesToken, *loader.DefaultProfile.PipesToken)
+		viper.SetDefault(pconstants.ArgPipesToken, *loader.DefaultProfile.PipesToken)
 	}
 	// deprecated - cloud token
 	if loader.DefaultProfile.CloudToken != nil {
-		viper.SetDefault(constants2.ArgPipesToken, *loader.DefaultProfile.CloudToken)
+		viper.SetDefault(pconstants.ArgPipesToken, *loader.DefaultProfile.CloudToken)
 	}
 	// 3) env var (STEAMIPE_CLOUD_TOKEN )
-	SetDefaultFromEnv(constants.EnvPipesToken, constants2.ArgPipesToken, String)
+	SetDefaultFromEnv(constants.EnvPipesToken, pconstants.ArgPipesToken, String)
 	// deprecated env var
-	SetDefaultFromEnv(constants.EnvCloudToken, constants2.ArgPipesToken, String)
+	SetDefaultFromEnv(constants.EnvCloudToken, pconstants.ArgPipesToken, String)
 
 	// 4) explicit workspace profile
 	if p := loader.ConfiguredProfile; p != nil && p.PipesToken != nil {
-		viper.SetDefault(constants2.ArgPipesToken, *p.PipesToken)
+		viper.SetDefault(pconstants.ArgPipesToken, *p.PipesToken)
 	}
 	// deprecated - cloud token
 	if p := loader.ConfiguredProfile; p != nil && p.CloudToken != nil {
-		viper.SetDefault(constants2.ArgPipesToken, *p.CloudToken)
+		viper.SetDefault(pconstants.ArgPipesToken, *p.CloudToken)
 	}
 	return nil
 }
 
 func getWorkspaceProfileLoader(ctx context.Context) (*parse.WorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile], error) {
 	// set viper default for workspace profile, using EnvWorkspaceProfile env var
-	SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants2.ArgWorkspaceProfile, String)
+	SetDefaultFromEnv(constants.EnvWorkspaceProfile, pconstants.ArgWorkspaceProfile, String)
 	// set viper default for install dir, using EnvInstallDir env var
-	SetDefaultFromEnv(constants.EnvInstallDir, constants2.ArgInstallDir, String)
+	SetDefaultFromEnv(constants.EnvInstallDir, pconstants.ArgInstallDir, String)
 
 	// resolve the workspace profile dir
-	installDir, err := filehelpers.Tildefy(viper.GetString(constants2.ArgInstallDir))
+	installDir, err := filehelpers.Tildefy(viper.GetString(pconstants.ArgInstallDir))
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +377,7 @@ func getWorkspaceProfileLoader(ctx context.Context) (*parse.WorkspaceProfileLoad
 // (currently validates telemetry)
 func validateConfig() perror_helpers.ErrorAndWarnings {
 	var res = perror_helpers.ErrorAndWarnings{}
-	telemetry := viper.GetString(constants2.ArgTelemetry)
+	telemetry := viper.GetString(pconstants.ArgTelemetry)
 	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
 		res.Error = sperr.New(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
 		return res
@@ -442,8 +442,8 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 }
 
 func ensureInstallDir() {
-	pipesInstallDir := viper.GetString(constants2.ArgPipesInstallDir)
-	installDir := viper.GetString(constants2.ArgInstallDir)
+	pipesInstallDir := viper.GetString(pconstants.ArgPipesInstallDir)
+	installDir := viper.GetString(pconstants.ArgInstallDir)
 
 	log.Printf("[TRACE] ensureInstallDir %s", installDir)
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	constants2 "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"net/netip"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -163,7 +163,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 }
 
 func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
-	queryTimeout := time.Duration(viper.GetInt(constants2.ArgDatabaseQueryTimeout)) * time.Second
+	queryTimeout := time.Duration(viper.GetInt(pconstants.ArgDatabaseQueryTimeout)) * time.Second
 	// if timeout is zero, do not set a timeout
 	if queryTimeout == 0 {
 		return ctx
@@ -399,7 +399,7 @@ func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]i
 }
 
 func isStreamingOutput() bool {
-	outputFormat := viper.GetString(constants2.ArgOutput)
+	outputFormat := viper.GetString(pconstants.ArgOutput)
 
 	return helpers.StringSliceContains([]string{constants.OutputFormatCSV, constants.OutputFormatLine}, outputFormat)
 }

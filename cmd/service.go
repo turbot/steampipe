@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	constants2 "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"os"
 	"os/signal"
@@ -15,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -43,7 +43,7 @@ connection from any Postgres compatible database client.`,
 	cmd.AddCommand(serviceStatusCmd())
 	cmd.AddCommand(serviceStopCmd())
 	cmd.AddCommand(serviceRestartCmd())
-	cmd.Flags().BoolP(constants2.ArgHelp, "h", false, "Help for service")
+	cmd.Flags().BoolP(pconstants.ArgHelp, "h", false, "Help for service")
 	return cmd
 }
 
@@ -63,17 +63,17 @@ connection from any Postgres compatible database client.`,
 	cmdconfig.
 		OnCmd(cmd).
 		AddModLocationFlag().
-		AddBoolFlag(constants2.ArgHelp, false, "Help for service start", cmdconfig.FlagOptions.WithShortHand("h")).
-		AddIntFlag(constants2.ArgDatabasePort, constants.DatabaseDefaultPort, "Database service port").
-		AddStringFlag(constants2.ArgDatabaseListenAddresses, string(db_local.ListenTypeNetwork), "Accept connections from: `local` (an alias for `localhost` only), `network` (an alias for `*`), or a comma separated list of hosts and/or IP addresses").
-		AddStringFlag(constants2.ArgServicePassword, "", "Set the database password for this session").
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for service start", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddIntFlag(pconstants.ArgDatabasePort, constants.DatabaseDefaultPort, "Database service port").
+		AddStringFlag(pconstants.ArgDatabaseListenAddresses, string(db_local.ListenTypeNetwork), "Accept connections from: `local` (an alias for `localhost` only), `network` (an alias for `*`), or a comma separated list of hosts and/or IP addresses").
+		AddStringFlag(pconstants.ArgServicePassword, "", "Set the database password for this session").
 		// default is false and hides the database user password from service start prompt
-		AddBoolFlag(constants2.ArgServiceShowPassword, false, "View database password for connecting from another machine").
+		AddBoolFlag(pconstants.ArgServiceShowPassword, false, "View database password for connecting from another machine").
 		// foreground enables the service to run in the foreground - till exit
-		AddBoolFlag(constants2.ArgForeground, false, "Run the service in the foreground").
+		AddBoolFlag(pconstants.ArgForeground, false, "Run the service in the foreground").
 
 		// hidden flags for internal use
-		AddStringFlag(constants2.ArgInvoker, string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
+		AddStringFlag(pconstants.ArgInvoker, string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
 }
@@ -91,10 +91,10 @@ Report current status of the Steampipe database service.`,
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants2.ArgHelp, false, "Help for service status", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for service status", cmdconfig.FlagOptions.WithShortHand("h")).
 		// default is false and hides the database user password from service start prompt
-		AddBoolFlag(constants2.ArgServiceShowPassword, false, "View database password for connecting from another machine").
-		AddBoolFlag(constants2.ArgAll, false, "Bypasses the INSTALL_DIR and reports status of all running steampipe services")
+		AddBoolFlag(pconstants.ArgServiceShowPassword, false, "View database password for connecting from another machine").
+		AddBoolFlag(pconstants.ArgAll, false, "Bypasses the INSTALL_DIR and reports status of all running steampipe services")
 
 	return cmd
 }
@@ -111,8 +111,8 @@ func serviceStopCmd() *cobra.Command {
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants2.ArgHelp, false, "Help for service stop", cmdconfig.FlagOptions.WithShortHand("h")).
-		AddBoolFlag(constants2.ArgForce, false, "Forces all services to shutdown, releasing all open connections and ports")
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for service stop", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddBoolFlag(pconstants.ArgForce, false, "Forces all services to shutdown, releasing all open connections and ports")
 
 	return cmd
 }
@@ -129,8 +129,8 @@ func serviceRestartCmd() *cobra.Command {
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants2.ArgHelp, false, "Help for service restart", cmdconfig.FlagOptions.WithShortHand("h")).
-		AddBoolFlag(constants2.ArgForce, false, "Forces the service to restart, releasing all open connections and ports")
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for service restart", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddBoolFlag(pconstants.ArgForce, false, "Forces the service to restart, releasing all open connections and ports")
 
 	return cmd
 }
@@ -154,15 +154,15 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 	defer cancel()
 
-	listenAddresses := db_local.StartListenType(viper.GetString(constants2.ArgDatabaseListenAddresses)).ToListenAddresses()
+	listenAddresses := db_local.StartListenType(viper.GetString(pconstants.ArgDatabaseListenAddresses)).ToListenAddresses()
 
-	port := viper.GetInt(constants2.ArgDatabasePort)
+	port := viper.GetInt(pconstants.ArgDatabasePort)
 	if port < 1 || port > 65535 {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		panic("Invalid port - must be within range (1:65535)")
 	}
 
-	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants2.ArgInvoker))
+	invoker := constants.Invoker(cmdconfig.Viper().GetString(pconstants.ArgInvoker))
 	if invoker.IsValid() != nil {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		error_helpers.FailOnError(invoker.IsValid())
@@ -173,7 +173,7 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 
 	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, alreadyRunning)
 
-	if viper.GetBool(constants2.ArgForeground) {
+	if viper.GetBool(pconstants.ArgForeground) {
 		runServiceInForeground(ctx)
 	}
 }
@@ -339,7 +339,7 @@ func restartService(ctx context.Context) (_ *db_local.StartResult) {
 	}
 
 	// stop db
-	stopStatus, err := db_local.StopServices(ctx, viper.GetBool(constants2.ArgForce), constants.InvokerService)
+	stopStatus, err := db_local.StopServices(ctx, viper.GetBool(pconstants.ArgForce), constants.InvokerService)
 	if err != nil {
 		exitCode = constants.ExitCodeServiceStopFailure
 		error_helpers.FailOnErrorWithMessage(err, "could not stop current instance")
@@ -366,7 +366,7 @@ to force a restart.
 	}
 
 	// set the password in 'viper' so that it can be used by 'service start'
-	viper.Set(constants2.ArgServicePassword, currentDbState.Password)
+	viper.Set(pconstants.ArgServicePassword, currentDbState.Password)
 
 	// start db
 	dbStartResult := startServiceAndRefreshConnections(ctx, currentDbState.ResolvedListenAddresses, currentDbState.Port, currentDbState.Invoker)
@@ -394,7 +394,7 @@ func runServiceStatusCmd(cmd *cobra.Command, _ []string) {
 		return
 	}
 
-	if viper.GetBool(constants2.ArgAll) {
+	if viper.GetBool(pconstants.ArgAll) {
 		showAllStatus(ctx)
 	} else {
 		dbState, dbStateErr := db_local.GetState()
@@ -444,7 +444,7 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
-	force := cmdconfig.Viper().GetBool(constants2.ArgForce)
+	force := cmdconfig.Viper().GetBool(pconstants.ArgForce)
 	if force {
 		status, dbStopError = db_local.StopServices(ctx, force, constants.InvokerService)
 		dbStopError = error_helpers.CombineErrors(dbStopError)
@@ -589,7 +589,7 @@ Managing the Steampipe service:
 
 	var connectionStr string
 	var password string
-	if viper.GetBool(constants2.ArgServiceShowPassword) {
+	if viper.GetBool(pconstants.ArgServiceShowPassword) {
 		connectionStr = fmt.Sprintf(
 			"postgres://%v:%v@%v:%v/%v",
 			dbState.User,

@@ -2,10 +2,10 @@ package metaquery
 
 import (
 	"fmt"
-	constants2 "github.com/turbot/pipe-fittings/constants"
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -62,11 +62,11 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 			newStatus := !currentStatus
 
 			// convert current and new status to on/off
-			currentStatusString := constants2.BoolToOnOff(currentStatus)
-			newStatusString := constants2.BoolToOnOff(newStatus)
+			currentStatusString := pconstants.BoolToOnOff(currentStatus)
+			newStatusString := pconstants.BoolToOnOff(newStatus)
 
 			// what is the action to get to the new status
-			actionString := constants2.BoolToEnableDisable(newStatus)
+			actionString := pconstants.BoolToEnableDisable(newStatus)
 
 			return ValidationResult{
 				Message: fmt.Sprintf(`%s mode is %s. You can %s it with: %s.`,
