@@ -2,7 +2,6 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/constants"
 	"log"
 	"os"
 	"strings"
@@ -10,12 +9,13 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/ociinstaller"
-	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
 	"github.com/turbot/pipe-fittings/options"
 	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/pipe-fittings/versionfile"
 	"github.com/turbot/pipe-fittings/workspace_profile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
