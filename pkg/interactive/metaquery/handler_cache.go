@@ -3,13 +3,13 @@ package metaquery
 import (
 	"context"
 	"fmt"
-	constants2 "github.com/turbot/pipe-fittings/constants"
 	"math"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/spf13/viper"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -38,17 +38,17 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 	conn := sessionResult.Session.Connection.Conn()
 	command := strings.ToLower(input.args()[0])
 	switch command {
-	case constants2.ArgOn:
+	case pconstants.ArgOn:
 		serverSettings := input.Client.ServerSettings()
 		if serverSettings != nil && !serverSettings.CacheEnabled {
 			fmt.Println("Caching is disabled on the server.")
 		}
-		viper.Set(constants2.ArgClientCacheEnabled, true)
+		viper.Set(pconstants.ArgClientCacheEnabled, true)
 		return db_common.SetCacheEnabled(ctx, true, conn)
-	case constants2.ArgOff:
-		viper.Set(constants2.ArgClientCacheEnabled, false)
+	case pconstants.ArgOff:
+		viper.Set(pconstants.ArgClientCacheEnabled, false)
 		return db_common.SetCacheEnabled(ctx, false, conn)
-	case constants2.ArgClear:
+	case pconstants.ArgClear:
 		return db_common.CacheClear(ctx, conn)
 	}
 
@@ -78,7 +78,7 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 		// we need to do this in a closure, otherwise the ctx will be evaluated immediately
 		// and not in call-time
 		sessionResult.Session.Close(false)
-		viper.Set(constants2.ArgCacheTtl, seconds)
+		viper.Set(pconstants.ArgCacheTtl, seconds)
 	}()
 	return db_common.SetCacheTtl(ctx, time.Duration(seconds)*time.Second, sessionResult.Session.Connection.Conn())
 }
@@ -92,7 +92,7 @@ func showCache(_ context.Context, input *HandlerInput) error {
 	currentStatusString := "off"
 	action := "on"
 
-	if !viper.IsSet(constants2.ArgClientCacheEnabled) || viper.GetBool(constants2.ArgClientCacheEnabled) {
+	if !viper.IsSet(pconstants.ArgClientCacheEnabled) || viper.GetBool(pconstants.ArgClientCacheEnabled) {
 		currentStatusString = "on"
 		action = "off"
 	}
@@ -111,8 +111,8 @@ func showCache(_ context.Context, input *HandlerInput) error {
 }
 
 func showCacheTtl(ctx context.Context, input *HandlerInput) error {
-	if viper.IsSet(constants2.ArgCacheTtl) {
-		ttl := getEffectiveCacheTtl(input.Client.ServerSettings(), viper.GetInt(constants2.ArgCacheTtl))
+	if viper.IsSet(pconstants.ArgCacheTtl) {
+		ttl := getEffectiveCacheTtl(input.Client.ServerSettings(), viper.GetInt(pconstants.ArgCacheTtl))
 		fmt.Println("Cache TTL is", ttl, "seconds.")
 	} else if input.Client.ServerSettings() != nil {
 		serverTtl := input.Client.ServerSettings().CacheMaxTtl

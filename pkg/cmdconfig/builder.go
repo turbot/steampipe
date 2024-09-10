@@ -2,12 +2,12 @@ package cmdconfig
 
 import (
 	"fmt"
-	pconstants "github.com/turbot/pipe-fittings/constants"
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"

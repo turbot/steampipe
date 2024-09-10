@@ -3,8 +3,6 @@ package connection
 import (
 	"context"
 	"fmt"
-	constants2 "github.com/turbot/pipe-fittings/constants"
-	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
 	"log"
 	"os"
 	"slices"
@@ -17,6 +15,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -650,7 +650,7 @@ func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, co
 // set connection comments
 
 func (s *refreshConnectionState) UpdateCommentsInParallel(ctx context.Context, updates []*steampipeconfig.ConnectionState, plugins map[string]*steampipeconfig.ConnectionPlugin) (errors []error) {
-	if !viper.GetBool(constants2.ArgSchemaComments) {
+	if !viper.GetBool(pconstants.ArgSchemaComments) {
 		return nil
 	}
 

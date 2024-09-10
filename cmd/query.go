@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	constants2 "github.com/turbot/pipe-fittings/constants"
 	"os"
 	"path"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/thediveo/enumflag/v2"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -60,34 +60,34 @@ Examples:
 		AddCloudFlags().
 		AddWorkspaceDatabaseFlag().
 		AddModLocationFlag().
-		AddBoolFlag(constants2.ArgHelp, false, "Help for query", cmdconfig.FlagOptions.WithShortHand("h")).
-		AddBoolFlag(constants2.ArgHeader, true, "Include column headers csv and table output").
-		AddStringFlag(constants2.ArgSeparator, ",", "Separator string for csv output").
-		AddVarFlag(enumflag.New(&queryOutputMode, constants2.ArgOutput, constants.QueryOutputModeIds, enumflag.EnumCaseInsensitive),
-			constants2.ArgOutput,
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for query", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddBoolFlag(pconstants.ArgHeader, true, "Include column headers csv and table output").
+		AddStringFlag(pconstants.ArgSeparator, ",", "Separator string for csv output").
+		AddVarFlag(enumflag.New(&queryOutputMode, pconstants.ArgOutput, constants.QueryOutputModeIds, enumflag.EnumCaseInsensitive),
+			pconstants.ArgOutput,
 			fmt.Sprintf("Output format; one of: %s", strings.Join(constants.FlagValues(constants.QueryOutputModeIds), ", "))).
-		AddVarFlag(enumflag.New(&queryTimingMode, constants2.ArgTiming, constants.QueryTimingModeIds, enumflag.EnumCaseInsensitive),
-			constants2.ArgTiming,
+		AddVarFlag(enumflag.New(&queryTimingMode, pconstants.ArgTiming, constants.QueryTimingModeIds, enumflag.EnumCaseInsensitive),
+			pconstants.ArgTiming,
 			fmt.Sprintf("Display query timing; one of: %s", strings.Join(constants.FlagValues(constants.QueryTimingModeIds), ", ")),
-			cmdconfig.FlagOptions.NoOptDefVal(constants2.ArgOn)).
+			cmdconfig.FlagOptions.NoOptDefVal(pconstants.ArgOn)).
 		// TODO #breakingchange
 		//AddBoolFlag(constants.ArgWatch, true, "Watch SQL files in the current workspace (works only in interactive mode)").
-		AddStringSliceFlag(constants2.ArgSearchPath, nil, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
-		AddStringSliceFlag(constants2.ArgSearchPathPrefix, nil, "Set a prefix to the current search path for a query session (comma-separated)").
-		AddStringSliceFlag(constants2.ArgVarFile, nil, "Specify a file containing variable values").
+		AddStringSliceFlag(pconstants.ArgSearchPath, nil, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
+		AddStringSliceFlag(pconstants.ArgSearchPathPrefix, nil, "Set a prefix to the current search path for a query session (comma-separated)").
+		AddStringSliceFlag(pconstants.ArgVarFile, nil, "Specify a file containing variable values").
 		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
 		// Cobra will interpret values passed to a StringSliceFlag as CSV,
 		// where args passed to StringArrayFlag are not parsed and used raw
-		AddStringArrayFlag(constants2.ArgVariable, nil, "Specify the value of a variable").
-		AddBoolFlag(constants2.ArgInput, true, "Enable interactive prompts").
-		AddBoolFlag(constants2.ArgSnapshot, false, "Create snapshot in Turbot Pipes with the default (workspace) visibility").
-		AddBoolFlag(constants2.ArgShare, false, "Create snapshot in Turbot Pipes with 'anyone_with_link' visibility").
-		AddStringArrayFlag(constants2.ArgSnapshotTag, nil, "Specify tags to set on the snapshot").
-		AddStringFlag(constants2.ArgSnapshotTitle, "", "The title to give a snapshot").
-		AddIntFlag(constants2.ArgDatabaseQueryTimeout, 0, "The query timeout").
-		AddStringSliceFlag(constants2.ArgExport, nil, "Export output to file, supported format: sps (snapshot)").
-		AddStringFlag(constants2.ArgSnapshotLocation, "", "The location to write snapshots - either a local file path or a Turbot Pipes workspace").
-		AddBoolFlag(constants2.ArgProgress, true, "Display snapshot upload status")
+		AddStringArrayFlag(pconstants.ArgVariable, nil, "Specify the value of a variable").
+		AddBoolFlag(pconstants.ArgInput, true, "Enable interactive prompts").
+		AddBoolFlag(pconstants.ArgSnapshot, false, "Create snapshot in Turbot Pipes with the default (workspace) visibility").
+		AddBoolFlag(pconstants.ArgShare, false, "Create snapshot in Turbot Pipes with 'anyone_with_link' visibility").
+		AddStringArrayFlag(pconstants.ArgSnapshotTag, nil, "Specify tags to set on the snapshot").
+		AddStringFlag(pconstants.ArgSnapshotTitle, "", "The title to give a snapshot").
+		AddIntFlag(pconstants.ArgDatabaseQueryTimeout, 0, "The query timeout").
+		AddStringSliceFlag(pconstants.ArgExport, nil, "Export output to file, supported format: sps (snapshot)").
+		AddStringFlag(pconstants.ArgSnapshotLocation, "", "The location to write snapshots - either a local file path or a Turbot Pipes workspace").
+		AddBoolFlag(pconstants.ArgProgress, true, "Display snapshot upload status")
 
 	cmd.AddCommand(getListSubCmd(listSubCmdOptions{parentCmd: cmd}))
 
@@ -167,11 +167,11 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 
 func validateQueryArgs(ctx context.Context, args []string) error {
 	interactiveMode := len(args) == 0
-	if interactiveMode && (viper.IsSet(constants2.ArgSnapshot) || viper.IsSet(constants2.ArgShare)) {
+	if interactiveMode && (viper.IsSet(pconstants.ArgSnapshot) || viper.IsSet(pconstants.ArgShare)) {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return sperr.New("cannot share snapshots in interactive mode")
 	}
-	if interactiveMode && len(viper.GetStringSlice(constants2.ArgExport)) > 0 {
+	if interactiveMode && len(viper.GetStringSlice(pconstants.ArgExport)) > 0 {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return sperr.New("cannot export query results in interactive mode")
 	}
@@ -183,7 +183,7 @@ func validateQueryArgs(ctx context.Context, args []string) error {
 	}
 
 	validOutputFormats := []string{constants.OutputFormatLine, constants.OutputFormatCSV, constants.OutputFormatTable, constants.OutputFormatJSON, constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort, constants.OutputFormatNone}
-	output := viper.GetString(constants2.ArgOutput)
+	output := viper.GetString(pconstants.ArgOutput)
 	if !helpers.StringSliceContains(validOutputFormats, output) {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return sperr.New("invalid output format: '%s', must be one of [%s]", output, strings.Join(validOutputFormats, ", "))
@@ -343,15 +343,15 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 func snapshotRequired() bool {
 	SnapshotFormatNames := []string{constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort}
 	// if a snapshot exporter is specified return true
-	for _, e := range viper.GetStringSlice(constants2.ArgExport) {
+	for _, e := range viper.GetStringSlice(pconstants.ArgExport) {
 		if helpers.StringSliceContains(SnapshotFormatNames, e) || path.Ext(e) == constants.SnapshotExtension {
 			return true
 		}
 	}
 	// if share/snapshot args are set or output is snapshot, return true
-	return viper.IsSet(constants2.ArgShare) ||
-		viper.IsSet(constants2.ArgSnapshot) ||
-		helpers.StringSliceContains(SnapshotFormatNames, viper.GetString(constants2.ArgOutput))
+	return viper.IsSet(pconstants.ArgShare) ||
+		viper.IsSet(pconstants.ArgSnapshot) ||
+		helpers.StringSliceContains(SnapshotFormatNames, viper.GetString(pconstants.ArgOutput))
 
 }
 

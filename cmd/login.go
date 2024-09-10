@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	constants2 "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -29,7 +29,7 @@ func loginCmd() *cobra.Command {
 
 	cmdconfig.OnCmd(cmd).
 		AddCloudFlags().
-		AddBoolFlag(constants2.ArgHelp, false, "Help for dashboard", cmdconfig.FlagOptions.WithShortHand("h"))
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for dashboard", cmdconfig.FlagOptions.WithShortHand("h"))
 
 	return cmd
 }
@@ -37,7 +37,7 @@ func loginCmd() *cobra.Command {
 func runLoginCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
 
-	log.Printf("[TRACE] login, pipes host %s", viper.Get(constants2.ArgPipesHost))
+	log.Printf("[TRACE] login, pipes host %s", viper.Get(pconstants.ArgPipesHost))
 	log.Printf("[TRACE] opening login web page")
 	// start login flow - this will open a web page prompting user to login, and will give the user a code to enter
 	var id, err = cloud.WebLogin(ctx)

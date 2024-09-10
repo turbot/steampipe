@@ -2,11 +2,11 @@ package metaquery
 
 import (
 	"context"
-	constants2 "github.com/turbot/pipe-fittings/constants"
 	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/display"
 )
@@ -32,7 +32,7 @@ func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
 			s = strings.TrimSpace(s)
 			paths = append(paths, s)
 		}
-		viper.Set(constants2.ArgSearchPath, paths)
+		viper.Set(pconstants.ArgSearchPath, paths)
 
 		// now that the viper is set, call back into the client (exposed via QueryExecutor) which
 		// already knows how to setup the search_paths with the viper values
@@ -49,7 +49,7 @@ func setSearchPathPrefix(ctx context.Context, input *HandlerInput) error {
 		s = strings.TrimSpace(s)
 		paths = append(paths, s)
 	}
-	viper.Set(constants2.ArgSearchPathPrefix, paths)
+	viper.Set(pconstants.ArgSearchPathPrefix, paths)
 
 	// now that the viper is set, call back into the client (exposed via QueryExecutor) which
 	// already knows how to setup the search_paths with the viper values
