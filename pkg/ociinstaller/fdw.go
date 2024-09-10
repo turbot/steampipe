@@ -12,7 +12,7 @@ import (
 	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	versionfile "github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 )
 
 // InstallFdw installs the Steampipe Postgres foreign data wrapper from an OCI image
@@ -44,7 +44,7 @@ func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
 	return string(image.OCIDescriptor.Digest), nil
 }
 
-func updateVersionFileFdw(image *ociinstaller.OciImage[*fdwImage, *FdwIfageConfig]) error {
+func updateVersionFileFdw(image *ociinstaller.OciImage[*fdwImage, *FdwImageConfig]) error {
 	timeNow := putils.FormatTime(time.Now())
 	v, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {
@@ -59,7 +59,7 @@ func updateVersionFileFdw(image *ociinstaller.OciImage[*fdwImage, *FdwIfageConfi
 	return v.Save()
 }
 
-func installFdwFiles(image *ociinstaller.OciImage[*fdwImage, *FdwIfageConfig], tempdir string) error {
+func installFdwFiles(image *ociinstaller.OciImage[*fdwImage, *FdwImageConfig], tempdir string) error {
 	fdwBinDir := filepaths.GetFDWBinaryDir()
 	fdwBinFileSourcePath := filepath.Join(tempdir, image.Data.BinaryFile)
 	fdwBinFileDestPath := filepath.Join(fdwBinDir, constants.FdwBinaryFileName)

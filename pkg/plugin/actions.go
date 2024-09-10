@@ -3,7 +3,6 @@ package plugin
 import (
 	"context"
 	"fmt"
-	plugin2 "github.com/turbot/pipe-fittings/plugin"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,8 +11,9 @@ import (
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/ociinstaller"
-	"github.com/turbot/pipe-fittings/ociinstaller/versionfile"
+	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/versionfile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 )
 
@@ -50,7 +50,7 @@ func Remove(ctx context.Context, image string, pluginConnections map[string][]Pl
 }
 
 // Install installs a plugin in the local file system
-func Install(ctx context.Context, plugin plugin2.ResolvedPluginVersion, sub chan struct{}, baseImageRef string, mediaTypesProvider ociinstaller.MediaTypeProvider, opts ...ociinstaller.PluginInstallOption) (*ociinstaller.OciImage[*ociinstaller.PluginImage, *ociinstaller.PluginImageConfig], error) {
+func Install(ctx context.Context, plugin plugin.ResolvedPluginVersion, sub chan struct{}, baseImageRef string, mediaTypesProvider ociinstaller.MediaTypeProvider, opts ...ociinstaller.PluginInstallOption) (*ociinstaller.OciImage[*ociinstaller.PluginImage, *ociinstaller.PluginImageConfig], error) {
 	// Note: we pass the plugin info as strings here rather than passing the ResolvedPluginVersion struct as that causes circular dependency
 	image, err := ociinstaller.InstallPlugin(ctx, plugin.GetVersionTag(), plugin.Constraint, sub, baseImageRef, mediaTypesProvider, opts...)
 	return image, err
@@ -59,7 +59,7 @@ func Install(ctx context.Context, plugin plugin2.ResolvedPluginVersion, sub chan
 // PluginListItem is a struct representing an item in the list of plugins
 type PluginListItem struct {
 	Name        string
-	Version     *plugin2.PluginVersionString
+	Version     *plugin.PluginVersionString
 	Connections []string
 }
 
@@ -85,14 +85,14 @@ func List(ctx context.Context, pluginConnectionMap map[string][]PluginConnection
 		// for local plugin
 		item := PluginListItem{
 			Name:    fullPluginName,
-			Version: plugin2.LocalPluginVersionString(),
+			Version: plugin.LocalPluginVersionString(),
 		}
 		// check if this plugin is recorded in plugin versions
 		installation, found := pluginVersions[fullPluginName]
 		if found {
 			// if not a local plugin, get the semver version
 			if !detectLocalPlugin(installation, pluginBinary) {
-				item.Version, err = plugin2.NewPluginVersionString(installation.Version)
+				item.Version, err = plugin.NewPluginVersionString(installation.Version)
 				if err != nil {
 					return nil, sperr.WrapWithMessage(err, "could not evaluate plugin version %s", installation.Version)
 				}

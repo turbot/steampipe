@@ -3,7 +3,7 @@ package versionfile
 import (
 	"encoding/json"
 	filehelpers "github.com/turbot/go-kit/files"
-	versionfile2 "github.com/turbot/pipe-fittings/ociinstaller/versionfile"
+	"github.com/turbot/pipe-fittings/versionfile"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"log"
 	"os"
@@ -12,15 +12,15 @@ import (
 const DatabaseStructVersion = 20220411
 
 type DatabaseVersionFile struct {
-	FdwExtension  versionfile2.InstalledVersion `json:"fdw_extension"`
-	EmbeddedDB    versionfile2.InstalledVersion `json:"embedded_db"`
-	StructVersion int64                         `json:"struct_version"`
+	FdwExtension  versionfile.InstalledVersion `json:"fdw_extension"`
+	EmbeddedDB    versionfile.InstalledVersion `json:"embedded_db"`
+	StructVersion int64                        `json:"struct_version"`
 }
 
 func NewDBVersionFile() *DatabaseVersionFile {
 	return &DatabaseVersionFile{
-		FdwExtension:  versionfile2.InstalledVersion{},
-		EmbeddedDB:    versionfile2.InstalledVersion{},
+		FdwExtension:  versionfile.InstalledVersion{},
+		EmbeddedDB:    versionfile.InstalledVersion{},
 		StructVersion: DatabaseStructVersion,
 	}
 }
@@ -47,12 +47,12 @@ func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 		log.Println("[ERROR]", "Error while reading DB version file", err)
 		return nil, err
 	}
-	if data.FdwExtension == (versionfile2.InstalledVersion{}) {
-		data.FdwExtension = versionfile2.InstalledVersion{}
+	if data.FdwExtension == (versionfile.InstalledVersion{}) {
+		data.FdwExtension = versionfile.InstalledVersion{}
 	}
 
-	if data.EmbeddedDB == (versionfile2.InstalledVersion{}) {
-		data.EmbeddedDB = versionfile2.InstalledVersion{}
+	if data.EmbeddedDB == (versionfile.InstalledVersion{}) {
+		data.EmbeddedDB = versionfile.InstalledVersion{}
 	}
 
 	return &data, nil
