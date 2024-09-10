@@ -678,8 +678,8 @@ func (m *PluginManager) waitForPluginLoad(p *runningPlugin, req *pb.GetRequest) 
 	}
 	pluginStartTimeoutSecs := pluginConfig.GetStartTimeout()
 	if pluginStartTimeoutSecs == 0 {
-		if viper.IsSet(constants.ArgMemoryMaxMbPlugin) {
-			pluginStartTimeoutSecs = viper.GetInt64(constants.ArgPluginStartTimeout)
+		if viper.IsSet(pconstants.ArgMemoryMaxMbPlugin) {
+			pluginStartTimeoutSecs = viper.GetInt64(pconstants.ArgPluginStartTimeout)
 		}
 	}
 	if pluginStartTimeoutSecs == 0 {
