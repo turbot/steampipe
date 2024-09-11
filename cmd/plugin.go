@@ -854,10 +854,13 @@ func getPluginList(ctx context.Context) (pluginList []plugin.PluginListItem, fai
 		return nil, nil, nil, res
 	}
 
+	// retrieve the plugin version data from steampipe config
+	pluginVersions := steampipeconfig.GlobalConfig.PluginVersions
+
 	// TODO do we really need to look at installed plugins - can't we just use the plugin connection map
 	// get a list of the installed plugins by inspecting the install location
 	// pass pluginConnectionMap so we can populate the connections for each plugin
-	pluginList, err := plugin.List(ctx, pluginConnectionMap, nil)
+	pluginList, err := plugin.List(ctx, pluginConnectionMap, pluginVersions)
 	if err != nil {
 		res.Error = err
 		return nil, nil, nil, res
@@ -918,7 +921,7 @@ func getConnectionState(ctx context.Context) (steampipeconfig.ConnectionStateMap
 	defer utils.LogTime("cmd.getConnectionState end")
 
 	// start service
-	client, res := db_local.GetLocalClient(ctx, constants.InvokerPlugin, nil)
+	client, res := db_local.GetLocalClient(ctx, constants.InvokerPlugin)
 	if res.Error != nil {
 		return nil, res
 	}
