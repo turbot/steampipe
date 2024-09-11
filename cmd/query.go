@@ -89,8 +89,6 @@ Examples:
 		AddStringFlag(pconstants.ArgSnapshotLocation, "", "The location to write snapshots - either a local file path or a Turbot Pipes workspace").
 		AddBoolFlag(pconstants.ArgProgress, true, "Display snapshot upload status")
 
-	cmd.AddCommand(getListSubCmd(listSubCmdOptions{parentCmd: cmd}))
-
 	return cmd
 }
 
