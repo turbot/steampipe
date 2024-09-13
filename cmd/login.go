@@ -105,7 +105,7 @@ func displayLoginMessage(ctx context.Context, token string) {
 	error_helpers.FailOnError(sperr.WrapWithMessage(err, "failed to read user name"))
 
 	fmt.Println()
-	fmt.Printf("Logged in as: %s\n", constants.Bold(userName))
+	fmt.Printf("Logged in as: %s\n", pconstants.Bold(userName))
 	fmt.Println()
 }
 

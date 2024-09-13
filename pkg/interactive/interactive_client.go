@@ -132,7 +132,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 	statushooks.Message(
 		ctx,
 		fmt.Sprintf("Welcome to Steampipe v%s", version.SteampipeVersion.String()),
-		fmt.Sprintf("For more information, type %s", constants.Bold(".help")),
+		fmt.Sprintf("For more information, type %s", pconstants.Bold(".help")),
 	)
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors
@@ -288,22 +288,22 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) {
 		}),
 		// Opt+LeftArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants.OptLeftArrowASCIICode,
+			ASCIICode: pconstants.OptLeftArrowASCIICode,
 			Fn:        prompt.GoLeftWord,
 		}),
 		// Opt+RightArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants.OptRightArrowASCIICode,
+			ASCIICode: pconstants.OptRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
 		// Alt+LeftArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants.AltLeftArrowASCIICode,
+			ASCIICode: pconstants.AltLeftArrowASCIICode,
 			Fn:        prompt.GoLeftWord,
 		}),
 		// Alt+RightArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants.AltRightArrowASCIICode,
+			ASCIICode: pconstants.AltRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
 		prompt.OptionBufferPreHook(func(input string) (modifiedInput string, ignore bool) {

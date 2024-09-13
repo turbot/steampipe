@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	pqueryresult "github.com/turbot/pipe-fittings/queryresult"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
 
@@ -21,7 +22,7 @@ type Client interface {
 	AcquireSession(context.Context) *AcquireSessionResult
 
 	ExecuteSync(context.Context, string, ...any) (*queryresult.SyncQueryResult, error)
-	Execute(context.Context, string, ...any) (*queryresult.Result, error)
+	Execute(context.Context, string, ...any) (*pqueryresult.Result[queryresult.TimingResultStream], error)
 
 	ExecuteSyncInSession(context.Context, *DatabaseSession, string, ...any) (*queryresult.SyncQueryResult, error)
 	ExecuteInSession(context.Context, *DatabaseSession, func(), string, ...any) (*queryresult.Result, error)

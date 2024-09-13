@@ -3,7 +3,7 @@ package metaquery
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/display"
 	"sort"
 	"strings"

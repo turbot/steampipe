@@ -3,8 +3,7 @@ package error_helpers
 import (
 	"errors"
 	"fmt"
-
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/constants"
 )
 
 var MissingCloudTokenError = fmt.Errorf("Not authenticated for Turbot Pipes.\nPlease run %s or setup a token.", constants.Bold("steampipe login"))

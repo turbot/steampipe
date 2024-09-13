@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/viper"
 	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )
 
@@ -99,9 +98,9 @@ func showCache(_ context.Context, input *HandlerInput) error {
 
 	fmt.Printf(
 		`Caching is %s. To turn it %s, type %s`,
-		constants.Bold(currentStatusString),
-		constants.Bold(action),
-		constants.Bold(fmt.Sprintf(".cache %s", action)),
+		pconstants.Bold(currentStatusString),
+		pconstants.Bold(action),
+		pconstants.Bold(fmt.Sprintf(".cache %s", action)),
 	)
 
 	// add an empty line here so that the rendering buffer can start from the next line

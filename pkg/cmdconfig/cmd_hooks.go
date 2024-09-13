@@ -476,5 +476,5 @@ func displayDeprecationWarnings(errorsAndWarnings perror_helpers.ErrorAndWarning
 }
 
 func displayPpDeprecationWarning() {
-	fmt.Fprintf(color.Error, "\n%s Steampipe mods and dashboards have been moved to %s. This command %s in a future version. Migration guide - https://powerpipe.io/blog/migrating-from-steampipe \n", color.YellowString("Deprecation warning:"), constants.Bold("Powerpipe"), constants.Bold("will be removed"))
+	fmt.Fprintf(color.Error, "\n%s Steampipe mods and dashboards have been moved to %s. This command %s in a future version. Migration guide - https://powerpipe.io/blog/migrating-from-steampipe \n", color.YellowString("Deprecation warning:"), pconstants.Bold("Powerpipe"), pconstants.Bold("will be removed"))
 }

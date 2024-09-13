@@ -3,6 +3,7 @@ package metaquery
 import (
 	"context"
 	"fmt"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"sort"
 	"strings"
 
@@ -26,7 +27,7 @@ func doHelp(_ context.Context, _ *HandlerInput) error {
 	fmt.Printf("Welcome to Steampipe shell.\n\nTo start, simply enter your SQL query at the prompt:\n\n  select * from aws_iam_user\n\nCommon commands:\n\n%s\n\nAdvanced commands:\n\n%s\n\nDocumentation available at %s\n",
 		buildTable(commonCmdRows, true),
 		buildTable(advanceCmdRows, true),
-		constants.Bold("https://steampipe.io/docs"))
+		constants2.Bold("https://steampipe.io/docs"))
 	fmt.Println()
 	return nil
 }

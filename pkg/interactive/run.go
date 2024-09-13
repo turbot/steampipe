@@ -2,7 +2,6 @@ package interactive
 
 import (
 	"context"
-
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"

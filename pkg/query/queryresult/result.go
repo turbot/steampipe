@@ -1,5 +1,9 @@
 package queryresult
 
+import "github.com/turbot/pipe-fittings/queryresult"
+
+type TimingResultStream chan *TimingResult
+
 type TimingResult struct {
 	DurationMs          int64              `json:"duration_ms"`
 	Scans               []*ScanMetadataRow `json:"scans"`
@@ -21,42 +25,16 @@ func (r *TimingResult) Initialise(summary *QueryRowSummary, scans []*ScanMetadat
 	r.Scans = scans
 }
 
-type RowResult struct {
-	Data  []interface{}
-	Error error
-}
-type Result struct {
-	RowChan      *chan *RowResult
-	Cols         []*ColumnDef
-	TimingResult chan *TimingResult
+type Result = queryresult.Result[TimingResultStream]
+
+func NewResult(cols []*queryresult.ColumnDef) *Result {
+	return queryresult.NewResult[TimingResultStream](cols)
 }
 
-func NewResult(cols []*ColumnDef) *Result {
-	rowChan := make(chan *RowResult)
-	return &Result{
-		RowChan:      &rowChan,
-		Cols:         cols,
-		TimingResult: make(chan *TimingResult, 1),
-	}
-}
+type SyncQueryResult = queryresult.SyncQueryResult[*TimingResult]
 
-// IsExportSourceData implements ExportSourceData
-func (*Result) IsExportSourceData() {}
+type ResultStreamer = queryresult.ResultStreamer[TimingResultStream]
 
-// Close closes the row channel
-func (r *Result) Close() {
-	close(*r.RowChan)
-}
-
-func (r *Result) StreamRow(rowResult []interface{}) {
-	*r.RowChan <- &RowResult{Data: rowResult}
-}
-func (r *Result) StreamError(err error) {
-	*r.RowChan <- &RowResult{Error: err}
-}
-
-type SyncQueryResult struct {
-	Rows         []interface{}
-	Cols         []*ColumnDef
-	TimingResult *TimingResult
+func NewResultStreamer() *ResultStreamer {
+	return queryresult.NewResultStreamer[TimingResultStream]()
 }

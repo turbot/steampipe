@@ -71,9 +71,9 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 			return ValidationResult{
 				Message: fmt.Sprintf(`%s mode is %s. You can %s it with: %s.`,
 					title,
-					constants.Bold(currentStatusString),
+					pconstants.Bold(currentStatusString),
 					actionString,
-					constants.Bold(fmt.Sprintf("%s %s", metaquery, newStatusString))),
+					pconstants.Bold(fmt.Sprintf("%s %s", metaquery, newStatusString))),
 			}
 		}
 		if numArgs > 1 {

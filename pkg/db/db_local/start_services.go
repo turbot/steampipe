@@ -261,7 +261,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 	}
 
 	if err := putils.IsPortBindable(putils.GetFirstListenAddress(listenAddresses), port); err != nil {
-		return res.SetError(fmt.Errorf("cannot listen on port %d and %s %s. To check if there's any other steampipe services running, use %s", constants.Bold(port), putils.Pluralize("address", len(listenAddresses)), constants.Bold(strings.Join(listenAddresses, ",")), constants.Bold("steampipe service status --all")))
+		return res.SetError(fmt.Errorf("cannot listen on port %d and %s %s. To check if there's any other steampipe services running, use %s", pconstants.Bold(port), putils.Pluralize("address", len(listenAddresses)), pconstants.Bold(strings.Join(listenAddresses, ",")), pconstants.Bold("steampipe service status --all")))
 	}
 
 	if err := migrateLegacyPasswordFile(); err != nil {

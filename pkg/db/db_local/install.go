@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/turbot/pipe-fittings/app_specific"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"os"
 	"os/exec"
@@ -65,7 +66,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return err
 	}
 	if dbState != nil {
-		return fmt.Errorf("cannot install service - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
+		return fmt.Errorf("cannot install service - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants2.Bold("steampipe service stop"))
 	}
 
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
@@ -209,7 +210,7 @@ func prepareDb(ctx context.Context) error {
 		// get the message renderer from the context
 		// this allows the interactive client init to inject a custom renderer
 		messageRenderer := statushooks.MessageRendererFromContext(ctx)
-		messageRenderer("%s updated to %s.", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
+		messageRenderer("%s updated to %s.", constants2.Bold("steampipe-postgres-fdw"), constants2.Bold(constants.FdwVersion))
 	}
 
 	if needsInit() {
@@ -246,7 +247,7 @@ func installFDW(ctx context.Context, firstSetup bool) (string, error) {
 			}
 		}()
 	}
-	statushooks.SetStatus(ctx, fmt.Sprintf("Download & install %s…", constants.Bold("steampipe-postgres-fdw")))
+	statushooks.SetStatus(ctx, fmt.Sprintf("Download & install %s…", constants2.Bold("steampipe-postgres-fdw")))
 	return ociinstaller.InstallFdw(ctx, filepaths.GetDatabaseLocation())
 }
 

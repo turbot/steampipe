@@ -648,7 +648,7 @@ To keep the service running after the %s session completes, use %s.
 			msg,
 			fmt.Sprintf("steampipe %s", dbState.Invoker),
 			dbState.Invoker,
-			constants.Bold("steampipe service start"),
+			pconstants.Bold("steampipe service start"),
 		)
 	}
 
@@ -662,7 +662,7 @@ To keep the service running after the %s session completes, use %s.
 Service is running, but the Plugin Manager cannot be recovered.
 Please use %s to recover the service
 `,
-			constants.Bold("steampipe service restart"),
+			pconstants.Bold("steampipe service restart"),
 		))
 	}
 }
@@ -675,7 +675,7 @@ To force stop the service, use %s
 
 `,
 		fmt.Sprintf("steampipe %s", invoker),
-		constants.Bold("steampipe service stop --force"),
+		pconstants.Bold("steampipe service stop --force"),
 	)
 }
 
@@ -687,7 +687,7 @@ Cannot stop service since there are clients connected to the service.
 To force stop the service, use %s
 
 `,
-		constants.Bold("steampipe service stop --force"),
+		pconstants.Bold("steampipe service stop --force"),
 	)
 }
 
