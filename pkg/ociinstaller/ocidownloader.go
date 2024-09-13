@@ -3,7 +3,6 @@ package ociinstaller
 import (
 	"context"
 	"encoding/json"
-	"github.com/turbot/steampipe/pkg/constants"
 	"log"
 	"strings"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/containerd/containerd/remotes/docker"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/sirupsen/logrus"
+	"github.com/turbot/steampipe/pkg/constants"
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content"
 	"oras.land/oras-go/v2/content/file"
