@@ -1,6 +1,6 @@
 [<picture><source media="(prefers-color-scheme: dark)" srcset="https://steampipe.io/images/steampipe-color-logo-and-wordmark-with-white-bubble.svg"><source media="(prefers-color-scheme: light)" srcset="https://steampipe.io/images/steampipe-color-logo-and-wordmark-with-white-bubble.svg"><img width="67%" alt="Steampipe Logo" src="https://steampipe.io/images/steampipe-color-logo-and-wordmark-with-white-bubble.svg"></picture>](https://steampipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
-[![plugins](https://img.shields.io/badge/apis_supported-140-blue)](https://hub.powerpipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp; 
+[![plugins](https://img.shields.io/badge/apis_supported-140-blue)](https://hub.steampipe.io/) &nbsp; 
 [![slack](https://img.shields.io/badge/slack-2297-blue)](https://turbot.com/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
 [![maintained by](https://img.shields.io/badge/maintained%20by-Turbot-blue)](https://turbot.com?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
@@ -19,7 +19,7 @@ Steampipe is the zero-ETL solution for getting data directly from APIs and servi
 
 ## Steampipe API plugins
 
-The Steampipe community has grown a suite of [plugins](https://hub.powerpipe.io/plugins?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) that map APIs to database tables. They work with all Steampipe engines.
+The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/) that map APIs to database tables. They work with all Steampipe engines.
 
 
 ## Install Steampipe
@@ -41,7 +41,7 @@ brew install steampipe
 
 ## Install a plugin
 
- Choose a plugin from the [hub](https://hub.powerpipe.io?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme), for example: [Hacker News](https://hub.powerpipe.io/plugins/turbot/hackernews?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme).
+ Choose a plugin from the [hub](https://hub.steampipe.io/), for example: [Hacker News](https://hub.steampipe.io/plugins/turbot/hackernews).
 
  Run the `steampipe plugin` command to install it.
 
