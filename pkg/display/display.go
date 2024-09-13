@@ -593,7 +593,7 @@ type displayResultsFunc func(row []interface{}, result *queryresult.Result)
 // call func displayResult for each row of results
 func iterateResults(result *queryresult.Result, displayResult displayResultsFunc) (int, error) {
 	count := 0
-	for row := range *result.RowChan {
+	for row := range result.RowChan {
 		if row == nil {
 			return count, nil
 		}
