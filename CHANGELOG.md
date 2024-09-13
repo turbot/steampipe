@@ -1,3 +1,7 @@
+## v0.24.2 [2024-09-13]
+_Bug fixes_
+- Fix incorrect versioning in v0.24.1. ([#4388](https://github.com/turbot/steampipe/issues/4388))
+
 ## v0.24.1 [2024-09-13]
 _Bug fixes_
 - Fix issue where steampipe failed to download embedded PostgreSQL database and FDW during installation. ([#4382](https://github.com/turbot/steampipe/issues/4382))
