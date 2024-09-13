@@ -32,13 +32,8 @@ import (
 )
 
 // ShowOutput displays the output using the proper formatter as applicable
-func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...DisplayOption) int {
+func ShowOutput(ctx context.Context, result *queryresult.Result) int {
 	rowErrors := 0
-	config := newDisplayConfiguration()
-	for _, o := range opts {
-		o(config)
-	}
-
 	var timingResult *queryresult.TimingResult
 
 	outputFormat := cmdconfig.Viper().GetString(pconstants.ArgOutput)
@@ -54,7 +49,7 @@ func ShowOutput(ctx context.Context, result *queryresult.Result, opts ...Display
 	}
 
 	// show timing
-	if config.timing != pconstants.ArgOff && timingResult != nil {
+	if viper.GetString(pconstants.ArgTiming) != pconstants.ArgOff && timingResult != nil {
 		str := buildTimingString(timingResult)
 		if viper.GetBool(constants.ConfigKeyInteractive) {
 			fmt.Println(str)
