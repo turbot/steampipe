@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/constants"
 	plugin2 "github.com/turbot/pipe-fittings/plugin"
 	"os"
 	"sort"
@@ -12,7 +13,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
 	"github.com/turbot/pipe-fittings/utils"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 type AvailableVersionCache struct {

@@ -3,6 +3,7 @@ package metaquery
 import (
 	"context"
 	"fmt"
+	constants2 "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"regexp"
 	"sort"
@@ -109,7 +110,7 @@ func listTables(ctx context.Context, input *HandlerInput) error {
 		fmt.Printf(`
 To get information about the columns in a table, run %s
 	
-`, constants.Bold(".inspect {connection}.{table}"))
+`, constants2.Bold(".inspect {connection}.{table}"))
 	} else {
 		// could be one of connectionName and {string}*
 		arg := input.args()[0]
@@ -193,7 +194,7 @@ func listConnections(ctx context.Context, input *HandlerInput) error {
 To get information about the tables in a connection, run %s
 To get information about the columns in a table, run %s
 
-`, constants.Bold(".inspect {connection}"), constants.Bold(".inspect {connection}.{table}"))
+`, constants2.Bold(".inspect {connection}"), constants2.Bold(".inspect {connection}.{table}"))
 
 	return nil
 }

@@ -301,7 +301,7 @@ func (s *refreshConnectionState) addMissingPluginWarnings() {
 			len(connectionNames),
 			utils.Pluralize("connection", len(connectionNames)),
 			utils.Pluralize("is", len(pluginNames)),
-			constants.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(pluginNames, " ")))))
+			pconstants.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(pluginNames, " ")))))
 	}
 }
 

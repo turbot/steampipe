@@ -2,12 +2,12 @@ package steampipeconfig
 
 import (
 	"fmt"
+	"github.com/turbot/pipe-fittings/constants"
 	"log"
 	"strings"
 
 	"github.com/turbot/pipe-fittings/utils"
 	sdkversion "github.com/turbot/steampipe-plugin-sdk/v5/version"
-	"github.com/turbot/steampipe/pkg/constants"
 )
 
 func (u *ConnectionUpdates) validate() {

@@ -7,6 +7,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	pqueryresult "github.com/turbot/pipe-fittings/queryresult"
 	"io"
 	"log"
 	"os"
@@ -22,7 +23,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	pconstants "github.com/turbot/pipe-fittings/constants"
-	pqueryresult "github.com/turbot/pipe-fittings/queryresult"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -431,7 +431,7 @@ func getTiming(result *queryresult.Result, count int) *queryresult.TimingResult 
 		return nil
 	}
 	// now we have iterated the rows, get the timing
-	timingResult := <-result.TimingResult
+	timingResult := <-result.Timing
 	// set rows returned
 	timingResult.RowsReturned = int64(count)
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	queryresult2 "github.com/turbot/pipe-fittings/queryresult"
 	"log"
 	"net/netip"
 	"strings"
@@ -67,7 +68,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 		}
 	}
 	if c.shouldFetchTiming() {
-		syncResult.TimingResult = <-result.TimingResult
+		syncResult.Timing = <-result.Timing
 	}
 
 	return syncResult, err
@@ -147,7 +148,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		// define a callback which fetches the timing information
 		// this will be invoked after reading rows is complete but BEFORE closing the rows object (which closes the connection)
 		timingCallback := func() {
-			c.getQueryTiming(ctxExecute, startTime, session, result.TimingResult)
+			c.getQueryTiming(ctxExecute, startTime, session, result.Timing)
 		}
 
 		// read in the rows and stream to the query result object
@@ -331,7 +332,7 @@ Loop:
 	}
 }
 
-func readRow(rows pgx.Rows, cols []*queryresult.ColumnDef) ([]interface{}, error) {
+func readRow(rows pgx.Rows, cols []*queryresult2.ColumnDef) ([]interface{}, error) {
 	columnValues, err := rows.Values()
 	if err != nil {
 		return nil, error_helpers.WrapError(err)
@@ -339,7 +340,7 @@ func readRow(rows pgx.Rows, cols []*queryresult.ColumnDef) ([]interface{}, error
 	return populateRow(columnValues, cols)
 }
 
-func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]interface{}, error) {
+func populateRow(columnValues []interface{}, cols []*queryresult2.ColumnDef) ([]interface{}, error) {
 	result := make([]interface{}, len(columnValues))
 	for i, columnValue := range columnValues {
 		if columnValue != nil {
