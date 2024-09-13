@@ -1,3 +1,7 @@
+## v0.24.1 [2024-09-13]
+_Bug fixes_
+- Fix issue where steampipe failed to download embedded PostgreSQL database and FDW during installation. ([#4382](https://github.com/turbot/steampipe/issues/4382))
+
 ## v0.24.0 [2024-09-05]
 _Whats new_
 - Add ability to configure plugin startup timeout. ([#4320](https://github.com/turbot/steampipe/issues/4320))
