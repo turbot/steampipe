@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	constants2 "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/querydisplay"
 	"log"
 	"regexp"
 	"sort"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
@@ -139,7 +139,7 @@ To get information about the columns in a table, run %s
 			})
 			rows = append(rows, tables...)
 		}
-		display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: true})
+		querydisplay.ShowWrappedTable(header, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: true})
 	}
 
 	return nil
@@ -184,7 +184,7 @@ func listConnections(ctx context.Context, input *HandlerInput) error {
 		return rows[i][0] < rows[j][0]
 	})
 
-	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+	querydisplay.ShowWrappedTable(header, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 
 	if showStateSummary {
 		showStateSummaryTable(connectionState)
@@ -209,7 +209,7 @@ func showStateSummaryTable(connectionState steampipeconfig.ConnectionStateMap) {
 			rows = append(rows, []string{state, fmt.Sprintf("%d", connectionsInState)})
 		}
 	}
-	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+	querydisplay.ShowWrappedTable(header, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 }
 
 func inspectQualifiedTable(ctx context.Context, connectionName string, tableName string, input *HandlerInput) error {
@@ -244,7 +244,7 @@ func inspectQualifiedTable(ctx context.Context, connectionName string, tableName
 		return rows[i][0] < rows[j][0]
 	})
 
-	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+	querydisplay.ShowWrappedTable(header, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 
 	return nil
 }
@@ -298,7 +298,7 @@ func inspectConnection(ctx context.Context, connectionName string, input *Handle
 		return rows[i][0] < rows[j][0]
 	})
 
-	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+	querydisplay.ShowWrappedTable(header, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 
 	return true
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/turbot/pipe-fittings/querydisplay"
 	"log"
 	"os"
 	"os/signal"
@@ -20,7 +21,6 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
@@ -532,7 +532,7 @@ func showAllStatus(ctx context.Context) {
 		rows = append(rows, []string{pid, installDir, port, string(listen)})
 	}
 
-	display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+	querydisplay.ShowWrappedTable(headers, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 }
 
 func getServiceProcessDetails(process *psutils.Process) (string, string, string, db_local.StartListenType) {

@@ -3,7 +3,7 @@ package statushooks
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/contexthelpers"
+	"github.com/turbot/pipe-fittings/contexthelpers"
 )
 
 var (
