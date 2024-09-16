@@ -3,14 +3,15 @@ package queryexecute
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/pipe-fittings/constants"
 	"time"
 
 	"github.com/spf13/viper"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/contexthelpers"
+	"github.com/turbot/pipe-fittings/querydisplay"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection_sync"
-	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -28,7 +29,9 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) error 
 
 	// print the data as it comes
 	for r := range result.Streamer.Results {
-		display.ShowOutput(ctx, r)
+		rowCount, _ := querydisplay.ShowOutput(ctx, r)
+		// show timing
+		display.DisplayTiming(r, rowCount)
 		// signal to the resultStreamer that we are done with this chunk of the stream
 		result.Streamer.AllResultsRead()
 	}
@@ -83,8 +86,8 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 			failures++
 			error_helpers.ShowWarning(fmt.Sprintf("query %d of %d failed: %v", i+1, len(initData.Queries), error_helpers.DecodePgError(err)))
 			// if timing flag is enabled, show the time taken for the query to fail
-			if cmdconfig.Viper().GetString(constants.ArgTiming) != constants.ArgOff {
-				display.DisplayErrorTiming(t)
+			if cmdconfig.Viper().GetString(pconstants.ArgTiming) != pconstants.ArgOff {
+				querydisplay.DisplayErrorTiming(t)
 			}
 		}
 		// TODO move into display layer
@@ -110,7 +113,10 @@ func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *m
 	rowErrors := 0 // get the number of rows that returned an error
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		rowErrors = display.ShowOutput(ctx, r)
+		rowCount, _ := querydisplay.ShowOutput(ctx, r)
+		// show timing
+		display.DisplayTiming(r, rowCount)
+
 		// signal to the resultStreamer that we are done with this result
 		resultsStreamer.AllResultsRead()
 	}
@@ -119,5 +125,5 @@ func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *m
 
 // if we are displaying csv with no header, do not include lines between the query results
 func showBlankLineBetweenResults() bool {
-	return !(viper.GetString(constants.ArgOutput) == "csv" && !viper.GetBool(constants.ArgHeader))
+	return !(viper.GetString(pconstants.ArgOutput) == "csv" && !viper.GetBool(pconstants.ArgHeader))
 }

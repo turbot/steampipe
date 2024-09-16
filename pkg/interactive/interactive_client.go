@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/turbot/pipe-fittings/querydisplay"
 	"log"
 	"os"
 	"os/signal"
@@ -25,7 +26,6 @@ import (
 	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/interactive/metaquery"
 	"github.com/turbot/steampipe/pkg/query"
@@ -399,7 +399,7 @@ func (c *InteractiveClient) executeQuery(ctx context.Context, queryCtx context.C
 		error_helpers.ShowError(ctx, error_helpers.HandleCancelError(err))
 		// if timing flag is enabled, show the time taken for the query to fail
 		if cmdconfig.Viper().GetString(pconstants.ArgTiming) != pconstants.ArgOff {
-			display.DisplayErrorTiming(t)
+			querydisplay.DisplayErrorTiming(t)
 		}
 	} else {
 		c.promptResult.Streamer.StreamResult(result)

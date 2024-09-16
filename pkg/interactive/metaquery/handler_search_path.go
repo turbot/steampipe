@@ -2,13 +2,13 @@ package metaquery
 
 import (
 	"context"
+	"github.com/turbot/pipe-fittings/querydisplay"
 	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/display"
 )
 
 func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
@@ -17,12 +17,12 @@ func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
 
 		sessionSearchPath = helpers.RemoveFromStringSlice(sessionSearchPath, constants.InternalSchema)
 
-		display.ShowWrappedTable(
+		querydisplay.ShowWrappedTable(
 			[]string{"search_path"},
 			[][]string{
 				{strings.Join(sessionSearchPath, ",")},
 			},
-			&display.ShowWrappedTableOptions{AutoMerge: false},
+			&querydisplay.ShowWrappedTableOptions{AutoMerge: false},
 		)
 	} else {
 		arg := input.args()[0]

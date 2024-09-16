@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/turbot/pipe-fittings/contexthelpers"
+	"github.com/turbot/pipe-fittings/querydisplay"
 	"strings"
 	"sync"
 	"time"
@@ -22,9 +24,7 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/contexthelpers"
 	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/installationstate"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
@@ -704,7 +704,7 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 	} else {
 		rows = append(rows, []string{"", "", ""})
 	}
-	display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+	querydisplay.ShowWrappedTable(headers, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 	fmt.Printf("\n")
 
 	// List failed/missing plugins in a separate table
@@ -731,7 +731,7 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 			conns = []string{}
 		}
 
-		display.ShowWrappedTable(headers, missingRows, &display.ShowWrappedTableOptions{AutoMerge: false})
+		querydisplay.ShowWrappedTable(headers, missingRows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 		fmt.Println()
 	}
 
