@@ -19,9 +19,6 @@ jobs:
         with:
           path: steampipe
 
-      - name: Unshallow
-        run: git fetch
-
       - name: Checkout Pipe Fittings Components repository
         uses: actions/checkout@v4
         with:
