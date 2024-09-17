@@ -2,12 +2,12 @@ package metaquery
 
 import (
 	"context"
-	"github.com/turbot/pipe-fittings/querydisplay"
 	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/querydisplay"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 

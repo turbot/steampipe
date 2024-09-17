@@ -3,6 +3,7 @@ package error_helpers
 import (
 	"errors"
 	"fmt"
+
 	"github.com/turbot/pipe-fittings/constants"
 )
 

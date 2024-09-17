@@ -2,13 +2,13 @@ package db_local
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/constants"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/filepaths"
 )

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	queryresult2 "github.com/turbot/pipe-fittings/queryresult"
 	"log"
 	"net/netip"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	pconstants "github.com/turbot/pipe-fittings/constants"
+	pqueryresult "github.com/turbot/pipe-fittings/queryresult"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -332,7 +332,7 @@ Loop:
 	}
 }
 
-func readRow(rows pgx.Rows, cols []*queryresult2.ColumnDef) ([]interface{}, error) {
+func readRow(rows pgx.Rows, cols []*pqueryresult.ColumnDef) ([]interface{}, error) {
 	columnValues, err := rows.Values()
 	if err != nil {
 		return nil, error_helpers.WrapError(err)
@@ -340,7 +340,7 @@ func readRow(rows pgx.Rows, cols []*queryresult2.ColumnDef) ([]interface{}, erro
 	return populateRow(columnValues, cols)
 }
 
-func populateRow(columnValues []interface{}, cols []*queryresult2.ColumnDef) ([]interface{}, error) {
+func populateRow(columnValues []interface{}, cols []*pqueryresult.ColumnDef) ([]interface{}, error) {
 	result := make([]interface{}, len(columnValues))
 	for i, columnValue := range columnValues {
 		if columnValue != nil {
