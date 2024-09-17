@@ -3,14 +3,14 @@ package metaquery
 import (
 	"context"
 	"fmt"
-	constants2 "github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/querydisplay"
 	"log"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
 
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/querydisplay"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -110,7 +110,7 @@ func listTables(ctx context.Context, input *HandlerInput) error {
 		fmt.Printf(`
 To get information about the columns in a table, run %s
 	
-`, constants2.Bold(".inspect {connection}.{table}"))
+`, pconstants.Bold(".inspect {connection}.{table}"))
 	} else {
 		// could be one of connectionName and {string}*
 		arg := input.args()[0]
@@ -194,7 +194,7 @@ func listConnections(ctx context.Context, input *HandlerInput) error {
 To get information about the tables in a connection, run %s
 To get information about the columns in a table, run %s
 
-`, constants2.Bold(".inspect {connection}"), constants2.Bold(".inspect {connection}.{table}"))
+`, pconstants.Bold(".inspect {connection}"), pconstants.Bold(".inspect {connection}.{table}"))
 
 	return nil
 }

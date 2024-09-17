@@ -2,10 +2,10 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/constants"
 	"log"
 	"strings"
 
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/utils"
 	sdkversion "github.com/turbot/steampipe-plugin-sdk/v5/version"
 )

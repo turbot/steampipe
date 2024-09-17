@@ -2,12 +2,12 @@ package db_client
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/queryresult"
 	"strconv"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/turbot/pipe-fittings/queryresult"
 	"github.com/turbot/pipe-fittings/utils"
 )
 

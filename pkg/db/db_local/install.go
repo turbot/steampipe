@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/turbot/pipe-fittings/app_specific"
-	constants2 "github.com/turbot/pipe-fittings/constants"
 	"log"
 	"os"
 	"os/exec"
@@ -16,6 +14,8 @@ import (
 	psutils "github.com/shirou/gopsutil/process"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/app_specific"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
@@ -66,7 +66,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return err
 	}
 	if dbState != nil {
-		return fmt.Errorf("cannot install service - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants2.Bold("steampipe service stop"))
+		return fmt.Errorf("cannot install service - a previous version of the Steampipe service is still running. To stop running services, use %s ", pconstants.Bold("steampipe service stop"))
 	}
 
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
@@ -210,7 +210,7 @@ func prepareDb(ctx context.Context) error {
 		// get the message renderer from the context
 		// this allows the interactive client init to inject a custom renderer
 		messageRenderer := statushooks.MessageRendererFromContext(ctx)
-		messageRenderer("%s updated to %s.", constants2.Bold("steampipe-postgres-fdw"), constants2.Bold(constants.FdwVersion))
+		messageRenderer("%s updated to %s.", pconstants.Bold("steampipe-postgres-fdw"), pconstants.Bold(constants.FdwVersion))
 	}
 
 	if needsInit() {
@@ -247,7 +247,7 @@ func installFDW(ctx context.Context, firstSetup bool) (string, error) {
 			}
 		}()
 	}
-	statushooks.SetStatus(ctx, fmt.Sprintf("Download & install %s…", constants2.Bold("steampipe-postgres-fdw")))
+	statushooks.SetStatus(ctx, fmt.Sprintf("Download & install %s…", pconstants.Bold("steampipe-postgres-fdw")))
 	return ociinstaller.InstallFdw(ctx, filepaths.GetDatabaseLocation())
 }
 

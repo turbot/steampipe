@@ -2,7 +2,6 @@ package statushooks
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/constants"
 	"os"
 	"strings"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/karrick/gows"
+	"github.com/turbot/pipe-fittings/constants"
 )
 
 // spinner format:
