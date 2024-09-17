@@ -20,6 +20,12 @@ jobs:
       - name: Unshallow
         run: git fetch
 
+      - name: Checkout Pipe Fittings Components repository
+        uses: actions/checkout@v4
+        with:
+          repository: turbot/pipe-fittings
+          path: pipe-fittings
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
