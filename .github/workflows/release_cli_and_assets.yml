@@ -276,12 +276,14 @@ jobs:
 
     - name: Run CLI Unit Tests
       run: |
+        cd steampipe
         go clean -testcache
         go test -timeout 30s ./... -test.v
 
     - name: Run GoReleaser
       uses: goreleaser/goreleaser-action@v6
       with:
+        path: steampipe
         version: latest
         args: release --snapshot --clean --skip=publish
       env:
@@ -290,10 +292,10 @@ jobs:
     - name: Move build artifacts
       run: |
         mkdir ~/artifacts
-        mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
-        mv $GITHUB_WORKSPACE/dist/steampipe_linux_arm64.tar.gz ~/artifacts/linux-arm.tar.gz
-        mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
-        mv $GITHUB_WORKSPACE/dist/steampipe_darwin_arm64.zip ~/artifacts/darwin-arm.zip
+        mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
+        mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_linux_arm64.tar.gz ~/artifacts/linux-arm.tar.gz
+        mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
+        mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_arm64.zip ~/artifacts/darwin-arm.zip
 
     - name: List Build Artifacts
       run: ls -l ~/artifacts
