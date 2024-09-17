@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"fmt"
+	options2 "github.com/turbot/steampipe/pkg/options"
 	"log"
 	"os"
 	"strings"
@@ -32,9 +33,9 @@ type SteampipeConfig struct {
 	Connections map[string]*modconfig.Connection
 
 	// Steampipe options
-	DatabaseOptions *options.Database
-	GeneralOptions  *options.General
-	PluginOptions   *options.Plugin
+	DatabaseOptions *options2.Database
+	GeneralOptions  *options2.General
+	PluginOptions   *options2.Plugin
 	// map of installed plugin versions, keyed by plugin image ref
 	PluginVersions map[string]*versionfile.InstalledVersion
 }
@@ -95,19 +96,19 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings er
 	errorsAndWarnings = error_helpers.NewErrorsAndWarning(nil)
 
 	switch o := opts.(type) {
-	case *options.Database:
+	case *options2.Database:
 		if c.DatabaseOptions == nil {
 			c.DatabaseOptions = o
 		} else {
 			c.DatabaseOptions.Merge(o)
 		}
-	case *options.General:
+	case *options2.General:
 		if c.GeneralOptions == nil {
 			c.GeneralOptions = o
 		} else {
 			c.GeneralOptions.Merge(o)
 		}
-	case *options.Plugin:
+	case *options2.Plugin:
 		if c.PluginOptions == nil {
 			c.PluginOptions = o
 		} else {
