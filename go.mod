@@ -30,7 +30,6 @@ require (
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/jedib0t/go-pretty/v6 v6.5.9
 	github.com/karrick/gows v0.3.0
-	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/olekukonko/tablewriter v0.0.5
@@ -210,6 +209,7 @@ require (
 
 require (
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
+	github.com/logrusorgru/aurora v2.0.3+incompatible // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/pkg/term v1.1.0 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
