@@ -33,6 +33,9 @@ jobs:
         with:
           go-version: 1.22
 
+      - name: Change directory to steampipe
+        run: cd steampipe
+
       - name: Fetching Go Cache Paths
         id: go-cache-paths
         run: |

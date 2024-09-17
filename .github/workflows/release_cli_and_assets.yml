@@ -274,6 +274,9 @@ jobs:
       with:
         go-version: 1.22
 
+    - name: Change directory to steampipe
+      run: cd steampipe
+
     - name: Run CLI Unit Tests
       run: |
         go clean -testcache
