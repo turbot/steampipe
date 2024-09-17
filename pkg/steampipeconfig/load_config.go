@@ -18,7 +18,7 @@ import (
 	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
 	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/hclhelpers"
-	"github.com/turbot/pipe-fittings/options"
+	poptions "github.com/turbot/pipe-fittings/options"
 	pparse "github.com/turbot/pipe-fittings/parse"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/pipe-fittings/versionfile"
@@ -28,6 +28,7 @@ import (
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/pkg/options"
 	"github.com/turbot/steampipe/pkg/parse"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
@@ -366,22 +367,18 @@ func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loa
 	return nil
 }
 
-// SteampipeOptionsBlockMapping is an OptionsBlockFactory used to map global steampipe options
-// TODO KAI look at deprecations
-func SteampipeOptionsBlockMapping(block *hcl.Block) (options.Options, hcl.Diagnostics) {
+// SteampipeOptionsBlockMapping is an OptionsBlockFactory used to map GLOBAL steampipe options
+func SteampipeOptionsBlockMapping(block *hcl.Block) (poptions.Options, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
 	switch block.Labels[0] {
-
-	case options.DatabaseBlock:
+	case poptions.DatabaseBlock:
 		return new(options.Database), nil
-	case options.GeneralBlock:
+	case poptions.GeneralBlock:
 		return new(options.General), nil
-	case options.QueryBlock:
-		return new(options.Query), nil
-	case options.CheckBlock:
-		return new(options.Check), nil
-	case options.PluginBlock:
+	case poptions.DashboardBlock:
+		return new(poptions.Dashboard), nil
+	case poptions.PluginBlock:
 		return new(options.Plugin), nil
 	default:
 		diags = append(diags, &hcl.Diagnostic{
