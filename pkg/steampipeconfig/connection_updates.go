@@ -10,13 +10,13 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
 )
 
@@ -28,7 +28,7 @@ type ConnectionUpdates struct {
 	MissingComments ConnectionStateMap
 	// map of missing plugins, keyed by plugin ALIAS
 	// NOTE: we key by alias so the error message refers to the string which was used to specify the plugin
-	MissingPlugins map[string][]modconfig.Connection
+	MissingPlugins map[string][]modconfig.SteampipeConnection
 	// the connections which will exist after the update
 	FinalConnectionState ConnectionStateMap
 	// connection plugins required to perform the updates, keyed by connection name
@@ -353,7 +353,7 @@ func (u *ConnectionUpdates) getConnectionsToCreate(alreadyCreatedConnectionPlugi
 	// ensure we instantiate all plugins required for schema AND comment updates
 	connections := append(maps.Keys(u.Update), maps.Keys(u.MissingComments)...)
 	// put connections into a map to avoid dupes
-	var connectionMap = make(map[string]*modconfig.Connection, len(connections))
+	var connectionMap = make(map[string]*modconfig.SteampipeConnection, len(connections))
 	for _, connectionName := range connections {
 		connection := GlobalConfig.Connections[connectionName]
 		connectionMap[connectionName] = connection

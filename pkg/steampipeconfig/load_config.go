@@ -18,8 +18,10 @@ import (
 	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
 	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/hclhelpers"
+	"github.com/turbot/pipe-fittings/modconfig"
 	poptions "github.com/turbot/pipe-fittings/options"
 	pparse "github.com/turbot/pipe-fittings/parse"
+	"github.com/turbot/pipe-fittings/schema"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/pipe-fittings/versionfile"
 	"github.com/turbot/pipe-fittings/workspace_profile"
@@ -29,8 +31,6 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/options"
-	"github.com/turbot/steampipe/pkg/parse"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 var GlobalWorkspaceProfile *workspace_profile.SteampipeWorkspaceProfile
@@ -271,7 +271,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 	for _, block := range content.Blocks {
 		switch block.Type {
 
-		case modconfig.BlockTypePlugin:
+		case schema.BlockTypePlugin:
 			plugin, moreDiags := pparse.DecodePlugin(block)
 			diags = append(diags, moreDiags...)
 			if moreDiags.HasErrors() {
@@ -283,8 +283,8 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 				return perror_helpers.NewErrorsAndWarning(err)
 			}
 
-		case modconfig.BlockTypeConnection:
-			connection, moreDiags := parse.DecodeConnection(block)
+		case schema.BlockTypeConnection:
+			connection, moreDiags := pparse.DecodeConnection(block)
 			diags = append(diags, moreDiags...)
 			if moreDiags.HasErrors() {
 				continue
@@ -298,7 +298,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 			}
 			steampipeConfig.Connections[connection.Name] = connection
 
-		case modconfig.BlockTypeOptions:
+		case schema.BlockTypeOptions:
 			// check this options type is permitted based on the options passed in
 			if err := optionsBlockPermitted(block, optionBlockMap, opts); err != nil {
 				return perror_helpers.NewErrorsAndWarning(err)
@@ -345,7 +345,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 	return res
 }
 
-func getDuplicateConnectionError(existingConnection, newConnection *modconfig.Connection) error {
+func getDuplicateConnectionError(existingConnection, newConnection *modconfig.SteampipeConnection) error {
 	return sperr.New("duplicate connection name: '%s'\n\t(%s:%d)\n\t(%s:%d)",
 		existingConnection.Name, existingConnection.DeclRange.Filename, existingConnection.DeclRange.Start.Line,
 		newConnection.DeclRange.Filename, newConnection.DeclRange.Start.Line)

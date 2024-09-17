@@ -2,7 +2,6 @@ package steampipeconfig
 
 import (
 	"fmt"
-	options2 "github.com/turbot/steampipe/pkg/options"
 	"log"
 	"os"
 	"strings"
@@ -13,13 +12,14 @@ import (
 	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/ociinstaller"
-	"github.com/turbot/pipe-fittings/options"
+	poptions "github.com/turbot/pipe-fittings/options"
 	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/pipe-fittings/versionfile"
 	"github.com/turbot/pipe-fittings/workspace_profile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/steampipe/pkg/options"
 )
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
@@ -30,19 +30,19 @@ type SteampipeConfig struct {
 	// map of plugin configs, keyed by plugin instance
 	PluginsInstances map[string]*plugin.Plugin
 	// map of connection name to partially parsed connection config
-	Connections map[string]*modconfig.Connection
+	Connections map[string]*modconfig.SteampipeConnection
 
 	// Steampipe options
-	DatabaseOptions *options2.Database
-	GeneralOptions  *options2.General
-	PluginOptions   *options2.Plugin
+	DatabaseOptions *options.Database
+	GeneralOptions  *options.General
+	PluginOptions   *options.Plugin
 	// map of installed plugin versions, keyed by plugin image ref
 	PluginVersions map[string]*versionfile.InstalledVersion
 }
 
 func NewSteampipeConfig(commandName string) *SteampipeConfig {
 	return &SteampipeConfig{
-		Connections:      make(map[string]*modconfig.Connection),
+		Connections:      make(map[string]*modconfig.SteampipeConnection),
 		Plugins:          make(map[string][]*plugin.Plugin),
 		PluginsInstances: make(map[string]*plugin.Plugin),
 	}
@@ -92,23 +92,23 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	return res
 }
 
-func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings error_helpers.ErrorAndWarnings) {
+func (c *SteampipeConfig) SetOptions(opts poptions.Options) (errorsAndWarnings error_helpers.ErrorAndWarnings) {
 	errorsAndWarnings = error_helpers.NewErrorsAndWarning(nil)
 
 	switch o := opts.(type) {
-	case *options2.Database:
+	case *options.Database:
 		if c.DatabaseOptions == nil {
 			c.DatabaseOptions = o
 		} else {
 			c.DatabaseOptions.Merge(o)
 		}
-	case *options2.General:
+	case *options.General:
 		if c.GeneralOptions == nil {
 			c.GeneralOptions = o
 		} else {
 			c.GeneralOptions.Merge(o)
 		}
-	case *options2.Plugin:
+	case *options.Plugin:
 		if c.PluginOptions == nil {
 			c.PluginOptions = o
 		} else {
@@ -161,8 +161,8 @@ PluginOptions:
 	return str
 }
 
-func (c *SteampipeConfig) ConnectionsForPlugin(pluginLongName string, pluginVersion *version.Version) []*modconfig.Connection {
-	var res []*modconfig.Connection
+func (c *SteampipeConfig) ConnectionsForPlugin(pluginLongName string, pluginVersion *version.Version) []*modconfig.SteampipeConnection {
+	var res []*modconfig.SteampipeConnection
 	for _, con := range c.Connections {
 		// extract constraint from plugin
 		ref := ociinstaller.NewImageRef(con.Plugin)
@@ -193,8 +193,8 @@ func (c *SteampipeConfig) ConnectionNames() []string {
 	return res
 }
 
-func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
-	res := make([]*modconfig.Connection, len(c.Connections))
+func (c *SteampipeConfig) ConnectionList() []*modconfig.SteampipeConnection {
+	res := make([]*modconfig.SteampipeConnection, len(c.Connections))
 	idx := 0
 	for _, c := range c.Connections {
 		res[idx] = c
@@ -287,7 +287,7 @@ func (c *SteampipeConfig) initializePlugins() {
 	       NOTE: if there is more than one config for the plugin this is an error
 		5) create a default config for the plugin (with the label set to the image ref)
 */
-func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconfig.Connection) (*plugin.Plugin, error) {
+func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconfig.SteampipeConnection) (*plugin.Plugin, error) {
 	// NOTE: at this point, c.Plugin is NOT populated, only either c.PluginAlias or c.PluginInstance
 	// we populate c.Plugin AFTER resolving the plugin
 

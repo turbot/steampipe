@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/go-plugin"
 	typehelpers "github.com/turbot/go-kit/types"
 	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/utils"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
@@ -15,7 +16,6 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
 )
 
@@ -97,7 +97,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 	}
 	log.Printf("[TRACE] CreateConnectionPlugin creating %d %s", len(connectionNamesToCreate), utils.Pluralize("connection", len(connectionNamesToCreate)))
 
-	var connectionsToCreate = make([]*modconfig.Connection, len(connectionNamesToCreate))
+	var connectionsToCreate = make([]*modconfig.SteampipeConnection, len(connectionNamesToCreate))
 	for i, name := range connectionNamesToCreate {
 		connectionsToCreate[i] = GlobalConfig.Connections[name]
 	}
@@ -170,7 +170,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 	return requestedConnectionPluginMap, res
 }
 
-func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionResult, connectionsToCreate []*modconfig.Connection) {
+func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionResult, connectionsToCreate []*modconfig.SteampipeConnection) {
 	// handle PluginSdkCompatibilityError separately
 	var pluginsWithCompatibilityError = make(map[string]struct{})
 	var compatibilityErrorConnectionCount int
@@ -282,7 +282,7 @@ func fullConnectionPluginMap(sparseConnectionPluginMap map[string]*ConnectionPlu
 }
 
 // createConnectionPlugin attaches to the plugin process
-func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.ReattachConfig) (*ConnectionPlugin, error) {
+func createConnectionPlugin(connection *modconfig.SteampipeConnection, reattach *proto.ReattachConfig) (*ConnectionPlugin, error) {
 	// we must have a plugin instance
 	if connection.PluginInstance == nil {
 		// unexpected
