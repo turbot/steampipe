@@ -7,7 +7,7 @@ replace (
 	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
 	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
 	github.com/turbot/pipe-fittings => ../pipe-fittings
-	github.com/turbot/steampipe-plugin-sdk/v5 => ../steampipe-plugin-sdk
+// github.com/turbot/steampipe-plugin-sdk/v5 => ../steampipe-plugin-sdk
 
 )
 
@@ -46,7 +46,8 @@ require (
 	github.com/turbot/go-kit v0.10.0-rc.0
 	github.com/turbot/pipe-fittings v1.5.2
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
-	github.com/turbot/steampipe-plugin-sdk/v5 v5.10.4
+	// branch: workspace_profiles
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.11.0-alpha.1.0.20240917091738-c9b068b239fe
 	github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7
 	github.com/zclconf/go-cty v1.14.4
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
