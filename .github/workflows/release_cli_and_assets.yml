@@ -257,6 +257,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
+        path: steampipe
         ref: ${{ github.event.ref }}
 
     - name: Unshallow
