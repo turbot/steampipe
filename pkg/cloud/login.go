@@ -19,8 +19,6 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
-var UnconfirmedError = "Not confirmed"
-
 // WebLogin POSTs to ${envBaseUrl}/api/latest/login/token to retrieve a login is
 // it then opens the login webpage and returns th eid
 func WebLogin(ctx context.Context) (string, error) {

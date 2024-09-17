@@ -9,10 +9,9 @@ import (
 	"testing"
 
 	"github.com/turbot/pipe-fittings/app_specific"
-	"github.com/turbot/pipe-fittings/options"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/pipe-fittings/utils"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
 )
 
@@ -51,7 +50,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	"multiple_connections": {
 		steampipeDir: "testdata/connection_config/multiple_connections",
 		expected: &SteampipeConfig{
-			Connections: map[string]*modconfig.Connection{
+			Connections: map[string]*modconfig.SteampipeConnection{
 				"aws_dmi_001": {
 					Name:           "aws_dmi_001",
 					PluginAlias:    "aws",
@@ -96,10 +95,6 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 						},
 					},
 				},
-			},
-			DefaultConnectionOptions: &options.Connection{
-				Cache:    &trueVal,
-				CacheTTL: &ttlVal,
 			},
 		},
 	},
@@ -393,16 +388,10 @@ func SteampipeConfigEquals(left, right *SteampipeConfig) bool {
 	}
 
 	if !maps.EqualFunc(left.Connections, right.Connections,
-		func(c1, c2 *modconfig.Connection) bool { return c1.Equals(c2) }) {
-		return false
-	}
-	if !reflect.DeepEqual(left.DefaultConnectionOptions, right.DefaultConnectionOptions) {
+		func(c1, c2 *modconfig.SteampipeConnection) bool { return c1.Equals(c2) }) {
 		return false
 	}
 	if !reflect.DeepEqual(left.DatabaseOptions, right.DatabaseOptions) {
-		return false
-	}
-	if !reflect.DeepEqual(left.TerminalOptions, right.TerminalOptions) {
 		return false
 	}
 	if !reflect.DeepEqual(left.GeneralOptions, right.GeneralOptions) {
