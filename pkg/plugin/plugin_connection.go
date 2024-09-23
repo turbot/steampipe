@@ -1,9 +1,9 @@
 package plugin
 
-import pplugin "github.com/turbot/pipe-fittings/plugin"
+import "github.com/turbot/pipe-fittings/hclhelpers"
 
 type PluginConnection interface {
-	GetDeclRange() pplugin.Range
+	GetDeclRange() hclhelpers.Range
 	GetName() string
 	GetDisplayName() string
 }

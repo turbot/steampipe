@@ -29,7 +29,7 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) error 
 
 	// print the data as it comes
 	for r := range result.Streamer.Results {
-		rowCount, _ := querydisplay.ShowOutput(ctx, r)
+		rowCount, _ := querydisplay.ShowOutput(ctx, r, nil, nil)
 		// show timing
 		display.DisplayTiming(r, rowCount)
 		// signal to the resultStreamer that we are done with this chunk of the stream
@@ -113,7 +113,7 @@ func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *m
 	rowErrors := 0 // get the number of rows that returned an error
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		rowCount, _ := querydisplay.ShowOutput(ctx, r)
+		rowCount, _ := querydisplay.ShowOutput(ctx, r, resolvedQuery, client.GetRequiredSessionSearchPath())
 		// show timing
 		display.DisplayTiming(r, rowCount)
 

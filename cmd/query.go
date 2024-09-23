@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -17,7 +16,6 @@ import (
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query"
@@ -142,10 +140,6 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	switch {
 	case interactiveMode:
 		err = queryexecute.RunInteractiveSession(ctx, initData)
-	case snapshotRequired():
-		// if we are either outputting snapshot format, or sharing the results as a snapshot, execute the query
-		// as a dashboard
-		failures = executeSnapshotQuery(initData, ctx)
 	default:
 		// NOTE: disable any status updates - we do not want 'loading' output from any queries
 		ctx = statushooks.DisableStatusHooks(ctx)
@@ -188,169 +182,6 @@ func validateQueryArgs(ctx context.Context, args []string) error {
 	}
 
 	return nil
-}
-
-func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
-	// start cancel handler to intercept interrupts and cancel the context
-	// NOTE: use the initData Cancel function to ensure any initialisation is cancelled if needed
-	contexthelpers.StartCancelHandler(initData.Cancel)
-
-	// wait for init
-	<-initData.Loaded
-	if err := initData.Result.Error; err != nil {
-		exitCode = constants.ExitCodeInitializationFailed
-		error_helpers.FailOnError(err)
-	}
-
-	// if there is a custom search path, wait until the first connection of each plugin has loaded
-	if customSearchPath := initData.Client.GetCustomSearchPath(); customSearchPath != nil {
-		if err := connection_sync.WaitForSearchPathSchemas(ctx, initData.Client, customSearchPath); err != nil {
-			exitCode = constants.ExitCodeInitializationFailed
-			error_helpers.FailOnError(err)
-		}
-	}
-
-	return 0
-	// TODO fix me
-	//
-	//for _, resolvedQuery := range initData.Queries {
-	//	// if a manual query is being run (i.e. not a named query), convert into a query and add to workspace
-	//	// this is to allow us to use existing dashboard execution code
-	//	queryProvider, existingResource := ensureSnapshotQueryResource(resolvedQuery.Name, resolvedQuery, initData.Workspace)
-	//
-	//	// we need to pass the embedded initData to  GenerateSnapshot
-	//	baseInitData := &initData.InitData
-	//
-	//	// so a dashboard name was specified - just call GenerateSnapshot
-	//	snap, err := snapshot.GenerateSnapshot(ctx, queryProvider.Name(), baseInitData, nil)
-	//	if err != nil {
-	//		exitCode = constants.ExitCodeSnapshotCreationFailed
-	//		error_helpers.FailOnError(err)
-	//	}
-	//
-	//	// set the filename root for the snapshot (in case needed)
-	//	if !existingResource {
-	//		snap.FileNameRoot = "query"
-	//	}
-	//
-	//	// display the result
-	//	switch viper.GetString(constants.ArgOutput) {
-	//	case constants.OutputFormatNone:
-	//		// do nothing
-	//	case constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort:
-	//		// if the format is snapshot, just dump it out
-	//		jsonOutput, err := json.MarshalIndent(snap, "", "  ")
-	//		if err != nil {
-	//			error_helpers.FailOnErrorWithMessage(err, "failed to display result as snapshot")
-	//		}
-	//		fmt.Println(string(jsonOutput))
-	//	default:
-	//		// otherwise convert the snapshot into a query result
-	//		result, err := snapshotToQueryResult(snap)
-	//		error_helpers.FailOnErrorWithMessage(err, "failed to display result as snapshot")
-	//		display.ShowOutput(ctx, result, display.WithTimingDisabled())
-	//	}
-	//
-	//	// share the snapshot if necessary
-	//	err = publishSnapshotIfNeeded(ctx, snap)
-	//	if err != nil {
-	//		exitCode = constants.ExitCodeSnapshotUploadFailed
-	//		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("failed to publish snapshot to %s", viper.GetString(constants.ArgSnapshotLocation)))
-	//	}
-	//
-	//	// export the result if necessary
-	//	exportArgs := viper.GetStringSlice(constants.ArgExport)
-	//	exportMsg, err := initData.ExportManager.DoExport(ctx, snap.FileNameRoot, snap, exportArgs)
-	//	if err != nil {
-	//		exitCode = constants.ExitCodeSnapshotCreationFailed
-	//		error_helpers.FailOnErrorWithMessage(err, "failed to export snapshot")
-	//	}
-	//	// print the location where the file is exported
-	//	if len(exportMsg) > 0 && viper.GetBool(constants.ArgProgress) {
-	//		fmt.Printf("\n")
-	//		fmt.Println(strings.Join(exportMsg, "\n"))
-	//		fmt.Printf("\n")
-	//	}
-	//}
-	return 0
-}
-
-//
-//func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot) (*queryresult.Result, error) {
-//	// the table of a snapshot query has a fixed name
-//	tablePanel, ok := snap.Panels[modconfig.SnapshotQueryTableName]
-//	if !ok {
-//		return nil, sperr.New("dashboard does not contain table result for query")
-//	}
-//	chartRun := tablePanel.(*snapshot.LeafRun)
-//	if !ok {
-//		return nil, sperr.New("failed to read query result from snapshot")
-//	}
-//	// check for error
-//	if err := chartRun.GetError(); err != nil {
-//		return nil, error_helpers.DecodePgError(err)
-//	}
-//
-//	res := queryresult.NewResult(chartRun.Data.Columns)
-//
-//	// start a goroutine to stream the results as rows
-//	go func() {
-//		for _, d := range chartRun.Data.Rows {
-//			// we need to allocate a new slice everytime, since this gets read
-//			// asynchronously on the other end and we need to make sure that we don't overwrite
-//			// data already sent
-//			rowVals := make([]interface{}, len(chartRun.Data.Columns))
-//			for i, c := range chartRun.Data.Columns {
-//				rowVals[i] = d[c.Name]
-//			}
-//			res.StreamRow(rowVals)
-//		}
-//		res.TimingResult <- chartRun.TimingResult
-//		res.Close()
-//	}()
-//
-//	return res, nil
-//}
-//
-//// convert the given command line query into a query resource and add to workspace
-//// this is to allow us to use existing dashboard execution code
-//func ensureSnapshotQueryResource(name string, resolvedQuery *modconfig.ResolvedQuery, w *workspace.Workspace) (queryProvider modconfig.HclResource, existingResource bool) {
-//	// is this an existing resource?
-//	if parsedName, err := modconfig.ParseResourceName(name); err == nil {
-//		if resource, found := w.GetResource(parsedName); found {
-//			return resource, true
-//		}
-//	}
-//
-//	// build name
-//	shortName := "command_line_query"
-//
-//	// this is NOT a named query - create the query using RawSql
-//	q := modconfig.NewQuery(&hcl.Block{Type: modconfig.BlockTypeQuery}, w.Mod, shortName).(*modconfig.Query)
-//	q.SQL = utils.ToStringPointer(resolvedQuery.RawSQL)
-//	q.SetArgs(resolvedQuery.QueryArgs())
-//	// add empty metadata
-//	q.SetMetadata(&modconfig.ResourceMetadata{})
-//
-//	// add to the workspace mod so the dashboard execution code can find it
-//	w.Mod.AddResource(q)
-//	// return the new resource name
-//	return q, false
-//}
-
-func snapshotRequired() bool {
-	SnapshotFormatNames := []string{constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort}
-	// if a snapshot exporter is specified return true
-	for _, e := range viper.GetStringSlice(pconstants.ArgExport) {
-		if helpers.StringSliceContains(SnapshotFormatNames, e) || path.Ext(e) == constants.SnapshotExtension {
-			return true
-		}
-	}
-	// if share/snapshot args are set or output is snapshot, return true
-	return viper.IsSet(pconstants.ArgShare) ||
-		viper.IsSet(pconstants.ArgSnapshot) ||
-		helpers.StringSliceContains(SnapshotFormatNames, viper.GetString(pconstants.ArgOutput))
-
 }
 
 // getPipedStdinData reads the Standard Input and returns the available data as a string
