@@ -3,9 +3,8 @@ package queryexecute
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"github.com/turbot/pipe-fittings/constants"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/utils"
@@ -29,7 +28,7 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) error 
 
 	// print the data as it comes
 	for r := range result.Streamer.Results {
-		display.ShowOutput(ctx, r, nil, nil)
+		display.ShowOutput(ctx, r)
 		// signal to the resultStreamer that we are done with this chunk of the stream
 		result.Streamer.AllResultsRead()
 	}
@@ -107,12 +106,11 @@ func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *m
 	if err != nil {
 		return err, 0
 	}
-	client.GetRequiredSessionSearchPath()
 
 	rowErrors := 0 // get the number of rows that returned an error
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		rowErrors = display.ShowOutput(ctx, r, resolvedQuery, client.GetRequiredSessionSearchPath())
+		rowErrors = display.ShowOutput(ctx, r)
 		// signal to the resultStreamer that we are done with this result
 		resultsStreamer.AllResultsRead()
 	}
