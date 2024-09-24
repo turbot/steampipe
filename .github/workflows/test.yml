@@ -66,10 +66,9 @@ jobs:
           ls -al
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          version: latest
-          args: release --clean --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
+        run: |
+          cd steampipe
+          goreleaser release --clean --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
