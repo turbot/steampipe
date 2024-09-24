@@ -66,7 +66,7 @@ jobs:
         with:
           path: steampipe
           version: latest
-          args: release --clean --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
+          args: release --clean --snapshot --parallelism 2 --config=$GITHUB_WORKSPACE/steampipe/.acceptance.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
