@@ -37,4 +37,8 @@ func SetAppSpecificConstants() {
 		app_specific.InstallDir = defaultInstallDir
 	}
 
+	// ociinstaller
+	app_specific.DefaultImageRepoActualURL = "ghcr.io/turbot/steampipe"
+	app_specific.DefaultImageRepoDisplayURL = "hub.steampipe.io"
+
 }
