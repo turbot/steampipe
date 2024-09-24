@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/turbot/pipe-fittings/app_specific"
+	"github.com/turbot/pipe-fittings/hclhelpers"
 	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/pipe-fittings/utils"
 	"golang.org/x/exp/maps"
 )
@@ -59,14 +59,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Type:           "",
 					ImportSchema:   "enabled",
 					Config:         "access_key = \"aws_dmi_001_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_001_secret_key\"\n",
-					DeclRange: plugin.Range{
+					DeclRange: hclhelpers.Range{
 						Filename: "$$test_pwd$$/testdata/connection_config/multiple_connections/config/connection1.spc",
-						Start: plugin.Pos{
+						Start: hclhelpers.Pos{
 							Line:   1,
 							Column: 1,
 							Byte:   0,
 						},
-						End: plugin.Pos{
+						End: hclhelpers.Pos{
 							Line:   1,
 							Column: 11,
 							Byte:   10,
@@ -81,14 +81,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Type:           "",
 					ImportSchema:   "enabled",
 					Config:         "access_key = \"aws_dmi_002_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_002_secret_key\"\n",
-					DeclRange: plugin.Range{
+					DeclRange: hclhelpers.Range{
 						Filename: "$$test_pwd$$/testdata/connection_config/multiple_connections/config/connection2.spc",
-						Start: plugin.Pos{
+						Start: hclhelpers.Pos{
 							Line:   1,
 							Column: 1,
 							Byte:   0,
 						},
-						End: plugin.Pos{
+						End: hclhelpers.Pos{
 							Line:   1,
 							Column: 11,
 							Byte:   10,
