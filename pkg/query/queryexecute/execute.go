@@ -29,7 +29,7 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) error 
 
 	// print the data as it comes
 	for r := range result.Streamer.Results {
-		rowCount, _ := querydisplay.ShowOutput(ctx, r, nil, nil)
+		rowCount, _ := querydisplay.ShowOutput(ctx, time.Now(), r, nil, nil)
 		// show timing
 		display.DisplayTiming(r, rowCount)
 		// signal to the resultStreamer that we are done with this chunk of the stream
@@ -82,7 +82,7 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 
 	for i, q := range initData.Queries {
 		// if executeQuery fails it returns err, else it returns the number of rows that returned errors while execution
-		if err, failures = executeQuery(ctx, initData.Client, q); err != nil {
+		if err, failures = executeQuery(ctx, initData, q); err != nil {
 			failures++
 			error_helpers.ShowWarning(fmt.Sprintf("query %d of %d failed: %v", i+1, len(initData.Queries), error_helpers.DecodePgError(err)))
 			// if timing flag is enabled, show the time taken for the query to fail
@@ -100,12 +100,12 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 	return failures
 }
 
-func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *modconfig.ResolvedQuery) (error, int) {
+func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *modconfig.ResolvedQuery) (error, int) {
 	utils.LogTime("query.execute.executeQuery start")
 	defer utils.LogTime("query.execute.executeQuery end")
 
 	// the db executor sends result data over resultsStreamer
-	resultsStreamer, err := db_common.ExecuteQuery(ctx, client, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
+	resultsStreamer, err := db_common.ExecuteQuery(ctx, initData.Client, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
 	if err != nil {
 		return err, 0
 	}
@@ -113,7 +113,7 @@ func executeQuery(ctx context.Context, client db_common.Client, resolvedQuery *m
 	rowErrors := 0 // get the number of rows that returned an error
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		rowCount, _ := querydisplay.ShowOutput(ctx, r, resolvedQuery, client.GetRequiredSessionSearchPath())
+		rowCount, _ := querydisplay.ShowOutput(ctx, initData.StartTime, r, resolvedQuery, initData.Client.GetRequiredSessionSearchPath())
 		// show timing
 		display.DisplayTiming(r, rowCount)
 
