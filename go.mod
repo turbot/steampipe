@@ -14,7 +14,7 @@ replace (
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/alecthomas/chroma v0.10.0
-	github.com/bgentry/speakeasy v0.1.0
+	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/briandowns/spinner v1.23.0
 	github.com/c-bata/go-prompt v0.2.6
 	github.com/fatih/color v1.17.0
@@ -31,7 +31,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.5.9
 	github.com/karrick/gows v0.3.0
 	github.com/mattn/go-isatty v0.0.20
-	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
+	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/otiai10/copy v1.14.0
@@ -49,7 +49,7 @@ require (
 	// branch: workspace_profiles
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.11.0-alpha.1.0.20240917091738-c9b068b239fe
 	github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7
-	github.com/zclconf/go-cty v1.14.4
+	github.com/zclconf/go-cty v1.14.4 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/sync v0.8.0
 	golang.org/x/text v0.17.0
