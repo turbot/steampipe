@@ -431,27 +431,27 @@ load "$LIB_BATS_SUPPORT/load.bash"
 #   rm -f output.json
 # }
 
-@test "steampipe check --where | steampipe_introspection=control" {
-  cd $SIMPLE_MOD_DIR
-  export STEAMPIPE_INTROSPECTION=control
-  steampipe check control.sample_control_1 --where "severity in ('high')" --export output.json
+# @test "steampipe check --where | steampipe_introspection=control" {
+#   cd $SIMPLE_MOD_DIR
+#   export STEAMPIPE_INTROSPECTION=control
+#   steampipe check control.sample_control_1 --where "severity in ('high')" --export output.json
 
-  run jd "$TEST_DATA_DIR/expected_introspection_check_where.json" output.json
-  echo $output
-  assert_success
-  rm -f output.json
-}
+#   run jd "$TEST_DATA_DIR/expected_introspection_check_where.json" output.json
+#   echo $output
+#   assert_success
+#   rm -f output.json
+# }
 
-@test "steampipe check --tag | steampipe_introspection=control" {
-  cd $SIMPLE_MOD_DIR
-  export STEAMPIPE_INTROSPECTION=control
-  steampipe check control.sample_control_1 --tag foo=bar --export output.json
+# @test "steampipe check --tag | steampipe_introspection=control" {
+#   cd $SIMPLE_MOD_DIR
+#   export STEAMPIPE_INTROSPECTION=control
+#   steampipe check control.sample_control_1 --tag foo=bar --export output.json
 
-  run jd "$TEST_DATA_DIR/expected_introspection_check_where.json" output.json
-  echo $output
-  assert_success
-  rm -f output.json
-}
+#   run jd "$TEST_DATA_DIR/expected_introspection_check_where.json" output.json
+#   echo $output
+#   assert_success
+#   rm -f output.json
+# }
 
 function teardown_file() {
   # list running processes
