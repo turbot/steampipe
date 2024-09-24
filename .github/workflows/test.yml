@@ -50,7 +50,7 @@ jobs:
         continue-on-error: true # we dont want to enforce just yet
         with:
           version: v1.52.2
-          args: --timeout=15m --config=steampipe/.golangci.yml
+          args: --timeout=15m --config=.golangci.yml
           skip-pkg-cache: true
           skip-build-cache: true
 
@@ -60,11 +60,16 @@ jobs:
           go clean -testcache
           go test -timeout 30s ./... -test.v
 
+      - name: Debug
+        run: |
+          pwd
+          ls -al
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
-          args: release --clean --snapshot --parallelism 2 --config=steampipe/.acceptance.goreleaser.yml
+          args: release --clean --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
