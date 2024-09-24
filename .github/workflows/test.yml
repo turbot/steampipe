@@ -45,6 +45,7 @@ jobs:
           path: ${{ steps.go-cache-paths.outputs.go-build }}
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
 
+      # TODO fix this step (cant find the path to golangci.yml)
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         continue-on-error: true # we dont want to enforce just yet
@@ -60,10 +61,10 @@ jobs:
           go clean -testcache
           go test -timeout 30s ./... -test.v
 
-      - name: Debug
-        run: |
-          pwd
-          ls -al
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          install-only: true
 
       - name: Run GoReleaser
         run: |
