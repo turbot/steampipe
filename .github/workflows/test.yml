@@ -24,7 +24,7 @@ jobs:
         with:
           repository: turbot/pipe-fittings
           path: pipe-fittings
-          ref: v1.6.x
+          ref: snapshot-format
 
       - name: Set up Go
         uses: actions/setup-go@v5
