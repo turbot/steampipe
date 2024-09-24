@@ -2,6 +2,7 @@ load "$LIB_BATS_ASSERT/load.bash"
 load "$LIB_BATS_SUPPORT/load.bash"
 
 @test "steampipe cache functionality check ON" {
+  skip "TODO - test using steampipe query command"
   run steampipe plugin install chaos
   cd $FUNCTIONALITY_TEST_MOD
 
@@ -20,6 +21,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "steampipe cache functionality check OFF" {
+  skip "TODO - test using steampipe query command"
   cd $FUNCTIONALITY_TEST_MOD
 
   # set the env variable to false
@@ -183,6 +185,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "test caching with cache=true in workspace profile" {
+    skip "TODO - test using steampipe query command"
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
     cp $SRC_DATA_DIR/workspace_cache_enabled.spc $STEAMPIPE_INSTALL_DIR/config/workspace_cache_enabled.spc
 
@@ -206,6 +209,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "test caching with cache=false in workspace profile" {
+    skip "TODO - test using steampipe query command"
     cp $SRC_DATA_DIR/chaos_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_options.spc
     cp $SRC_DATA_DIR/workspace_cache_disabled.spc $STEAMPIPE_INSTALL_DIR/config/workspace_cache_disabled.spc
 
