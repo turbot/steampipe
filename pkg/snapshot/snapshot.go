@@ -2,7 +2,6 @@ package snapshot
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -12,74 +11,11 @@ import (
 	"github.com/turbot/pipe-fittings/querydisplay"
 	"github.com/turbot/pipe-fittings/queryresult"
 	pqueryresult "github.com/turbot/pipe-fittings/queryresult"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/pipe-fittings/utils"
-	steampipecloud "github.com/turbot/pipes-sdk-go"
 )
 
 const schemaVersion = "20221222"
-
-// SteampipeSnapshot struct definition
-type SteampipeSnapshot struct {
-	SchemaVersion string                 `json:"schema_version"`
-	Panels        map[string]PanelData   `json:"panels"`
-	Inputs        map[string]interface{} `json:"inputs"`
-	Variables     map[string]interface{} `json:"variables"`
-	SearchPath    []string               `json:"search_path"`
-	StartTime     string                 `json:"start_time"`
-	EndTime       string                 `json:"end_time"`
-	Layout        LayoutData             `json:"layout"`
-}
-
-func (s *SteampipeSnapshot) IsExportSourceData() {}
-
-func (s *SteampipeSnapshot) AsCloudSnapshot() (*steampipecloud.WorkspaceSnapshotData, error) {
-	jsonbytes, err := json.Marshal(s)
-	if err != nil {
-		return nil, err
-	}
-
-	res := &steampipecloud.WorkspaceSnapshotData{}
-	if err := json.Unmarshal(jsonbytes, res); err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
-func (s *SteampipeSnapshot) AsStrippedJson(indent bool) ([]byte, error) {
-	res, err := s.AsCloudSnapshot()
-	if err != nil {
-		return nil, err
-	}
-	if err = StripSnapshot(res); err != nil {
-		return nil, err
-	}
-	if indent {
-		return json.MarshalIndent(res, "", "  ")
-	}
-	return json.Marshal(res)
-}
-
-func StripSnapshot(snapshot *steampipecloud.WorkspaceSnapshotData) error {
-	propertiesToStrip := []string{
-		"sql",
-		"source_definition",
-		"documentation",
-		"search_path",
-		"search_path_prefix"}
-	for _, p := range snapshot.Panels {
-		panel := p.(map[string]any)
-		properties, _ := panel["properties"].(map[string]any)
-		for _, property := range propertiesToStrip {
-			// look both at top level and under properties
-			delete(panel, property)
-			if properties != nil {
-				delete(properties, property)
-			}
-		}
-	}
-	return nil
-}
 
 type PanelData struct {
 	Dashboard        string                 `json:"dashboard"`
@@ -93,6 +29,9 @@ type PanelData struct {
 	Data             map[string]interface{} `json:"data,omitempty"`
 }
 
+// IsSnapshotPanel implements SnapshotPanel
+func (*PanelData) IsSnapshotPanel() {}
+
 type LayoutData struct {
 	Name      string        `json:"name"`
 	Children  []LayoutChild `json:"children"` // Slice of LayoutChild structs
@@ -105,52 +44,67 @@ type LayoutChild struct {
 }
 
 // QueryResultToSnapshot function to generate a snapshot from a query result
-func QueryResultToSnapshot[T any](ctx context.Context, result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery, searchPath []string, startTime time.Time) (*SteampipeSnapshot, error) {
+func QueryResultToSnapshot[T any](ctx context.Context, result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery, searchPath []string, startTime time.Time) (*steampipeconfig.SteampipeSnapshot, error) {
 
 	endTime := time.Now()
+	hash, err := utils.Base36Hash(resolvedQuery.RawSQL, 8)
+	if err != nil {
+		return nil, err
+	}
+	dashboardName := fmt.Sprintf("custom.dashboard.sql_%s", hash)
 	// Build the snapshot data (use the new getData function to retrieve data)
-	snapshotData := &SteampipeSnapshot{
+	snapshotData := &steampipeconfig.SteampipeSnapshot{
 		SchemaVersion: schemaVersion,
-		Panels:        getPanels[T](ctx, result, resolvedQuery),
-		Inputs:        map[string]interface{}{},
-		Variables:     map[string]interface{}{},
-		SearchPath:    searchPath,
-		StartTime:     startTime.Format(time.RFC3339),
-		EndTime:       endTime.Format(time.RFC3339),
-		Layout:        getLayout[T](result, resolvedQuery),
+		Panels: map[string]steampipeconfig.SnapshotPanel{
+			dashboardName:          getPanelDashboard[T](ctx, result, resolvedQuery),
+			"custom.table.results": getPanelTable[T](ctx, result, resolvedQuery),
+		},
+		Inputs:     map[string]interface{}{},
+		Variables:  map[string]string{},
+		SearchPath: searchPath,
+		StartTime:  startTime,
+		EndTime:    endTime,
+		Layout:     getLayout[T](result, resolvedQuery),
 	}
 	// Return the snapshot data
 	return snapshotData, nil
 }
 
-func getPanels[T any](ctx context.Context, result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery) map[string]PanelData {
+func getPanelDashboard[T any](ctx context.Context, result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery) *PanelData {
 	hash, err := utils.Base36Hash(resolvedQuery.RawSQL, 8)
 	if err != nil {
-		return nil
+		return &PanelData{}
 	}
 	dashboardName := fmt.Sprintf("custom.dashboard.sql_%s", hash)
 	// Build panel data with proper fields
-	return map[string]PanelData{
-		dashboardName: {
-			Dashboard:        dashboardName,
-			Name:             dashboardName,
-			PanelType:        "dashboard",
-			SourceDefinition: "",
-			Status:           "complete",
-			Title:            fmt.Sprintf("Custom query [%s]", hash),
+	return &PanelData{
+		Dashboard:        dashboardName,
+		Name:             dashboardName,
+		PanelType:        "dashboard",
+		SourceDefinition: "",
+		Status:           "complete",
+		Title:            fmt.Sprintf("Custom query [%s]", hash),
+	}
+}
+
+func getPanelTable[T any](ctx context.Context, result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery) *PanelData {
+	hash, err := utils.Base36Hash(resolvedQuery.RawSQL, 8)
+	if err != nil {
+		return &PanelData{}
+	}
+	dashboardName := fmt.Sprintf("custom.dashboard.sql_%s", hash)
+	// Build panel data with proper fields
+	return &PanelData{
+		Dashboard:        dashboardName,
+		Name:             "custom.table.results",
+		PanelType:        "table",
+		SourceDefinition: "",
+		Status:           "complete",
+		SQL:              resolvedQuery.RawSQL,
+		Properties: map[string]string{
+			"name": "results",
 		},
-		"custom.table.results": {
-			Dashboard:        dashboardName,
-			Name:             "custom.table.results",
-			PanelType:        "table",
-			SourceDefinition: "",
-			Status:           "complete",
-			SQL:              resolvedQuery.RawSQL,
-			Properties: map[string]string{
-				"name": "results",
-			},
-			Data: getData(ctx, result),
-		},
+		Data: getData(ctx, result),
 	}
 }
 
@@ -190,21 +144,21 @@ func getData[T any](ctx context.Context, result *queryresult.Result[T]) map[stri
 	}
 }
 
-func getLayout[T any](result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery) LayoutData {
+func getLayout[T any](result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery) *steampipeconfig.SnapshotTreeNode {
 	hash, err := utils.Base36Hash(resolvedQuery.RawSQL, 8)
 	if err != nil {
-		return LayoutData{}
+		return nil
 	}
 	dashboardName := fmt.Sprintf("custom.dashboard.sql_%s", hash)
 	// Define layout structure
-	return LayoutData{
+	return &steampipeconfig.SnapshotTreeNode{
 		Name: dashboardName,
-		Children: []LayoutChild{
+		Children: []*steampipeconfig.SnapshotTreeNode{
 			{
-				Name:      "custom.table.results",
-				PanelType: "table",
+				Name:     "custom.table.results",
+				NodeType: "table",
 			},
 		},
-		PanelType: "dashboard",
+		NodeType: "dashboard",
 	}
 }
