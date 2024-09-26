@@ -201,30 +201,3 @@ func getPipedStdinData() string {
 	}
 	return stdinData
 }
-
-//
-//func publishSnapshotIfNeeded(ctx context.Context, snapshot *dashboardtypes.SteampipeSnapshot) error {
-//	shouldShare := viper.GetBool(constants.ArgShare)
-//	shouldUpload := viper.GetBool(constants.ArgSnapshot)
-//
-//	if !(shouldShare || shouldUpload) {
-//		return nil
-//	}
-//
-//	message, err := cloud.PublishSnapshot(ctx, snapshot, shouldShare)
-//	if err != nil {
-//		// reword "402 Payment Required" error
-//		return handlePublishSnapshotError(err)
-//	}
-//	if viper.GetBool(constants.ArgProgress) {
-//		fmt.Println(message)
-//	}
-//	return nil
-//}
-//
-//func handlePublishSnapshotError(err error) error {
-//	if err.Error() == "402 Payment Required" {
-//		return fmt.Errorf("maximum number of snapshots reached")
-//	}
-//	return err
-//}

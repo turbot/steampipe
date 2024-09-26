@@ -10,11 +10,11 @@ import (
 
 	"github.com/spf13/viper"
 	pconstants "github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/export"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/statushooks"
 )
@@ -47,8 +47,6 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 }
 
 func queryExporters() []export.Exporter {
-	// TODO #snapshot
-	// return nil
 	return []export.Exporter{&export.SnapshotExporter{}}
 }
 
@@ -86,16 +84,16 @@ func (i *InitData) init(ctx context.Context, args []string) {
 		i.cancelInitialisation = nil
 	}()
 
-	// // validate export args
-	// if len(viper.GetStringSlice(pconstants.ArgExport)) > 0 {
-	// 	i.RegisterExporters(queryExporters()...)
+	// validate export args
+	if len(viper.GetStringSlice(pconstants.ArgExport)) > 0 {
+		i.RegisterExporters(queryExporters()...)
 
-	// 	// validate required export formats
-	// 	if err := i.ExportManager.ValidateExportFormat(viper.GetStringSlice(pconstants.ArgExport)); err != nil {
-	// 		i.Result.Error = err
-	// 		return
-	// 	}
-	// }
+		// validate required export formats
+		if err := i.ExportManager.ValidateExportFormat(viper.GetStringSlice(pconstants.ArgExport)); err != nil {
+			i.Result.Error = err
+			return
+		}
+	}
 
 	// set max DB connections to 1
 	viper.Set(pconstants.ArgMaxParallel, 1)
