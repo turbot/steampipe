@@ -13,6 +13,7 @@ import (
 	"github.com/turbot/pipe-fittings/contexthelpers"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/querydisplay"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection_sync"
@@ -108,7 +109,7 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 	utils.LogTime("query.execute.executeQuery start")
 	defer utils.LogTime("query.execute.executeQuery end")
 
-	var snap *snapshot.SteampipeSnapshot
+	var snap *steampipeconfig.SteampipeSnapshot
 
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db_common.ExecuteQuery(ctx, initData.Client, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
