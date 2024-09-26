@@ -2,7 +2,10 @@ package queryexecute
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -18,6 +21,7 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/interactive"
 	"github.com/turbot/steampipe/pkg/query"
+	"github.com/turbot/steampipe/pkg/snapshot"
 )
 
 func RunInteractiveSession(ctx context.Context, initData *query.InitData) error {
@@ -29,7 +33,7 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) error 
 
 	// print the data as it comes
 	for r := range result.Streamer.Results {
-		rowCount, _ := querydisplay.ShowOutput(ctx, time.Now(), r, nil, nil)
+		rowCount, _ := querydisplay.ShowOutput(ctx, r)
 		// show timing
 		display.DisplayTiming(r, rowCount)
 		// signal to the resultStreamer that we are done with this chunk of the stream
@@ -104,6 +108,8 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 	utils.LogTime("query.execute.executeQuery start")
 	defer utils.LogTime("query.execute.executeQuery end")
 
+	var snap *snapshot.SteampipeSnapshot
+
 	// the db executor sends result data over resultsStreamer
 	resultsStreamer, err := db_common.ExecuteQuery(ctx, initData.Client, resolvedQuery.ExecuteSQL, resolvedQuery.Args...)
 	if err != nil {
@@ -113,7 +119,48 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 	rowErrors := 0 // get the number of rows that returned an error
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
-		rowCount, _ := querydisplay.ShowOutput(ctx, initData.StartTime, r, resolvedQuery, initData.Client.GetRequiredSessionSearchPath())
+
+		// if the output format is snapshot or export is set, we need to generate a snapshot
+		if needSnapshot() {
+			snap, err = snapshot.QueryResultToSnapshot(ctx, r, resolvedQuery, initData.Client.GetRequiredSessionSearchPath(), initData.StartTime)
+			if err != nil {
+				return err, 0
+			}
+		}
+
+		// if the output format is snapshot we don't call the querydisplay code in pipe-fittings, instead we short-circuit,
+		// generate the snapshot and display it to stdout
+		outputFormat := viper.GetString(pconstants.ArgOutput)
+		if outputFormat == pconstants.OutputFormatSnapshot || outputFormat == pconstants.OutputFormatSteampipeSnapshotShort {
+
+			// display the snapshot as JSON
+			encoder := json.NewEncoder(os.Stdout)
+			encoder.SetIndent("", "  ")
+			encoder.SetEscapeHTML(false)
+			if err := encoder.Encode(snap); err != nil {
+				//nolint:forbidigo // acceptable
+				fmt.Print("Error displaying result as snapshot", err)
+				return err, 0
+			}
+		}
+
+		// if we need to export the snapshot, we export it directly from here
+		if viper.IsSet(pconstants.ArgExport) {
+			exportArgs := viper.GetStringSlice(pconstants.ArgExport)
+			exportMsg, err := initData.ExportManager.DoExport(ctx, "query", snap, exportArgs)
+			if err != nil {
+				return err, 0
+			}
+			// print the location where the file is exported
+			if len(exportMsg) > 0 && viper.GetBool(pconstants.ArgProgress) {
+				fmt.Printf("\n")                           //nolint:forbidigo // intentional use of fmt
+				fmt.Println(strings.Join(exportMsg, "\n")) //nolint:forbidigo // intentional use of fmt
+				fmt.Printf("\n")                           //nolint:forbidigo // intentional use of fmt
+			}
+		}
+
+		// for other output formats, we call the querydisplay code in pipe-fittings
+		rowCount, _ := querydisplay.ShowOutput(ctx, r)
 		// show timing
 		display.DisplayTiming(r, rowCount)
 
@@ -122,6 +169,45 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 	}
 	return nil, rowErrors
 }
+
+func needSnapshot() bool {
+	// Get the output format from the configuration
+	outputFormat := viper.GetString(pconstants.ArgOutput)
+
+	// Check if the output format is a snapshot format or if ArgExport is set
+	if outputFormat == pconstants.OutputFormatSnapshot || outputFormat == pconstants.OutputFormatSteampipeSnapshotShort || viper.IsSet(pconstants.ArgExport) {
+		return true
+	}
+
+	// If none of the conditions are met, return false
+	return false
+}
+
+// func publishSnapshotIfNeeded(ctx context.Context, snapshot *snapshot.SteampipeSnapshot) error {
+// 	shouldShare := viper.GetBool(pconstants.ArgShare)
+// 	shouldUpload := viper.GetBool(pconstants.ArgSnapshot)
+
+// 	if !(shouldShare || shouldUpload) {
+// 		return nil
+// 	}
+
+// 	message, err := cloud.PublishSnapshot(ctx, snapshot, shouldShare)
+// 	if err != nil {
+// 		// reword "402 Payment Required" error
+// 		return handlePublishSnapshotError(err)
+// 	}
+// 	if viper.GetBool(constants.ArgProgress) {
+// 		fmt.Println(message)
+// 	}
+// 	return nil
+// }
+
+// func handlePublishSnapshotError(err error) error {
+// 	if err.Error() == "402 Payment Required" {
+// 		return fmt.Errorf("maximum number of snapshots reached")
+// 	}
+// 	return err
+// }
 
 // if we are displaying csv with no header, do not include lines between the query results
 func showBlankLineBetweenResults() bool {
