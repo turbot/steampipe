@@ -34,7 +34,7 @@ func getTiming(result *queryresult.Result, count int) *queryresult.TimingResult 
 		return nil
 	}
 	// now we have iterated the rows, get the timing
-	timingResult := <-result.Timing
+	timingResult := <-result.Timing.Stream
 	// set rows returned
 	timingResult.RowsReturned = int64(count)
 
