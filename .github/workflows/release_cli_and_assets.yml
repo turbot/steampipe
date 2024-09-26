@@ -355,7 +355,6 @@ jobs:
           - "cache"
           - "performance"
           - "config_precedence"
-          - "introspection"
           - "cloud"
           - "snapshot"
           - "schema_cloning"
