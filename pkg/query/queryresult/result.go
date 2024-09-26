@@ -6,7 +6,7 @@ import "github.com/turbot/pipe-fittings/queryresult"
 type Result = queryresult.Result[TimingResultStream]
 
 func NewResult(cols []*queryresult.ColumnDef) *Result {
-	return queryresult.NewResult[TimingResultStream](cols, make(TimingResultStream, 1))
+	return queryresult.NewResult[TimingResultStream](cols, NewTimingResultStream())
 }
 
 // SyncQueryResult is a type alias for queryresult.SyncQueryResult[TimingResult]

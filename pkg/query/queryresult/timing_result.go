@@ -1,6 +1,14 @@
 package queryresult
 
-type TimingResultStream chan *TimingResult
+type TimingResultStream struct {
+	Stream chan *TimingResult
+}
+
+func NewTimingResultStream() TimingResultStream {
+	return TimingResultStream{
+		Stream: make(chan *TimingResult, 1),
+	}
+}
 
 type TimingResult struct {
 	DurationMs          int64              `json:"duration_ms"`
