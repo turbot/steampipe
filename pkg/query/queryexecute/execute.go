@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/cloud"
+	"github.com/turbot/pipe-fittings/constants"
 	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/contexthelpers"
 	"github.com/turbot/pipe-fittings/modconfig"
@@ -160,6 +162,11 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 			}
 		}
 
+		// if we need to publisg the snapshot, we publish it directly from here
+		if err := publishSnapshotIfNeeded(ctx, snap); err != nil {
+			return err, 0
+		}
+
 		// for other output formats, we call the querydisplay code in pipe-fittings
 		rowCount, _ := querydisplay.ShowOutput(ctx, r)
 		// show timing
@@ -174,9 +181,11 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 func needSnapshot() bool {
 	// Get the output format from the configuration
 	outputFormat := viper.GetString(pconstants.ArgOutput)
+	shouldShare := viper.GetBool(pconstants.ArgShare)
+	shouldUpload := viper.GetBool(pconstants.ArgSnapshot)
 
 	// Check if the output format is a snapshot format or if ArgExport is set
-	if outputFormat == pconstants.OutputFormatSnapshot || outputFormat == pconstants.OutputFormatSteampipeSnapshotShort || viper.IsSet(pconstants.ArgExport) {
+	if outputFormat == pconstants.OutputFormatSnapshot || outputFormat == pconstants.OutputFormatSteampipeSnapshotShort || viper.IsSet(pconstants.ArgExport) || shouldShare || shouldUpload {
 		return true
 	}
 
@@ -184,31 +193,31 @@ func needSnapshot() bool {
 	return false
 }
 
-// func publishSnapshotIfNeeded(ctx context.Context, snapshot *snapshot.SteampipeSnapshot) error {
-// 	shouldShare := viper.GetBool(pconstants.ArgShare)
-// 	shouldUpload := viper.GetBool(pconstants.ArgSnapshot)
+func publishSnapshotIfNeeded(ctx context.Context, snapshot *steampipeconfig.SteampipeSnapshot) error {
+	shouldShare := viper.GetBool(pconstants.ArgShare)
+	shouldUpload := viper.GetBool(pconstants.ArgSnapshot)
 
-// 	if !(shouldShare || shouldUpload) {
-// 		return nil
-// 	}
+	if !(shouldShare || shouldUpload) {
+		return nil
+	}
 
-// 	message, err := cloud.PublishSnapshot(ctx, snapshot, shouldShare)
-// 	if err != nil {
-// 		// reword "402 Payment Required" error
-// 		return handlePublishSnapshotError(err)
-// 	}
-// 	if viper.GetBool(constants.ArgProgress) {
-// 		fmt.Println(message)
-// 	}
-// 	return nil
-// }
+	message, err := cloud.PublishSnapshot(ctx, snapshot, shouldShare)
+	if err != nil {
+		// reword "402 Payment Required" error
+		return handlePublishSnapshotError(err)
+	}
+	if viper.GetBool(constants.ArgProgress) {
+		fmt.Println(message)
+	}
+	return nil
+}
 
-// func handlePublishSnapshotError(err error) error {
-// 	if err.Error() == "402 Payment Required" {
-// 		return fmt.Errorf("maximum number of snapshots reached")
-// 	}
-// 	return err
-// }
+func handlePublishSnapshotError(err error) error {
+	if err.Error() == "402 Payment Required" {
+		return fmt.Errorf("maximum number of snapshots reached")
+	}
+	return err
+}
 
 // if we are displaying csv with no header, do not include lines between the query results
 func showBlankLineBetweenResults() bool {
