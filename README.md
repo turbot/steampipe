@@ -21,40 +21,33 @@
 
 <img alt="steampipe demo" width=500 src="https://steampipe.io/images/steampipe-sql-demo.gif" >
 
-## Documentation
 
-See the [documentation](https://steampipe.io/docs) for:
+## Getting started with Steampipe
 
-- [Running queries](https://steampipe.io/docs/query/overview)
-- [Managing Steampipe](https://steampipe.io/docs/managing/overview)
-- [CLI commands](https://steampipe.io/docs/reference/cli/overview)
-- [Integrations](https://steampipe.io/docs/integrations/overview)
-- [Developing plugins](https://steampipe.io/docs/develop/overview)
+Install Steampipe from the [downloads](https://steampipe.io/downloads) page.
 
-## Install Steampipe
-
- The <a href="https://steampipe.io/downloads">downloads</a> page shows you how but tl;dr:
+**MacOS**
  
-Linux or WSL
-
 ```sh
+brew install turbot/tap/steampipe
+```
+
+**Linux or WSL2**
+
+```
 sudo /bin/sh -c "$(curl -fsSL https://steampipe.io/install/steampipe.sh)"
 ```
 
-MacOS
+Install a plugin for your favorite service (e.g. [AWS](https://hub.steampipe.io/plugins/turbot/aws), [Azure](https://hub.steampipe.io/plugins/turbot/azure), [GCP](https://hub.steampipe.io/plugins/turbot/gcp), [GitHub](https://hub.steampipe.io/plugins/turbot/github), [Kubernetes](https://hub.steampipe.io/plugins/turbot/kubernetes), [Hacker News](https://hub.steampipe.io/plugins/turbot/hackernews), etc).
 
 ```sh
-brew tap turbot/tap
-brew install steampipe
-```
-
-## Install a plugin and run your first query
-
-```
 steampipe plugin install hackernews
+```
 
+Query!
+
+```sh
 steampipe query
-
 > select * from hackernews_new limit 10
 ```
 
@@ -77,6 +70,16 @@ Plugins are available in these distributions.
 **Steampipe export tools**. Use [standalone binaries](https://steampipe.io/docs/steampipe_export/overview) that export data from APIs, no database required.
 
 **Turbot Pipes**. Use [Turbot Pipes](https://turbot.com/pipes) to run Steampipe in the cloud.
+
+## Documentation
+
+See the [documentation](https://steampipe.io/docs) for:
+
+- [Running queries](https://steampipe.io/docs/query/overview)
+- [Managing Steampipe](https://steampipe.io/docs/managing/overview)
+- [CLI commands](https://steampipe.io/docs/reference/cli/overview)
+- [Integrations](https://steampipe.io/docs/integrations/overview)
+- [Developing plugins](https://steampipe.io/docs/develop/overview)
 
 ## Developing
 
