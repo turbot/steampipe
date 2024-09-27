@@ -24,21 +24,17 @@
 
 ## Getting Started
 
-Install Steampipe from the [downloads](https://steampipe.io/downloads) page.
+Install Steampipe from the [downloads](https://steampipe.io/downloads) page:
 
-**MacOS**
- 
 ```sh
+# MacOS
 brew install turbot/tap/steampipe
-```
 
-**Linux or WSL2**
-
-```
+# Linux or WSL2
 sudo /bin/sh -c "$(curl -fsSL https://steampipe.io/install/steampipe.sh)"
 ```
 
-Install a plugin for your favorite service (e.g. [AWS](https://hub.steampipe.io/plugins/turbot/aws), [Azure](https://hub.steampipe.io/plugins/turbot/azure), [GCP](https://hub.steampipe.io/plugins/turbot/gcp), [GitHub](https://hub.steampipe.io/plugins/turbot/github), [Kubernetes](https://hub.steampipe.io/plugins/turbot/kubernetes), [Hacker News](https://hub.steampipe.io/plugins/turbot/hackernews), etc).
+Install a plugin for your favorite service (e.g. [AWS](https://hub.steampipe.io/plugins/turbot/aws), [Azure](https://hub.steampipe.io/plugins/turbot/azure), [GCP](https://hub.steampipe.io/plugins/turbot/gcp), [GitHub](https://hub.steampipe.io/plugins/turbot/github), [Kubernetes](https://hub.steampipe.io/plugins/turbot/kubernetes), [Hacker News](https://hub.steampipe.io/plugins/turbot/hackernews), etc):
 
 ```sh
 steampipe plugin install hackernews
