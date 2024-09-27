@@ -22,7 +22,7 @@
 <img alt="steampipe demo" width=500 src="https://steampipe.io/images/steampipe-sql-demo.gif" >
 
 
-## Getting started with Steampipe
+## Getting Started
 
 Install Steampipe from the [downloads](https://steampipe.io/downloads) page.
 
@@ -51,6 +51,16 @@ steampipe query
 > select * from hackernews_new limit 10
 ```
 
+## Documentation
+
+See the [documentation](https://steampipe.io/docs) for:
+
+- [Running queries](https://steampipe.io/docs/query/overview)
+- [Managing Steampipe](https://steampipe.io/docs/managing/overview)
+- [CLI commands](https://steampipe.io/docs/reference/cli/overview)
+- [Integrations](https://steampipe.io/docs/integrations/overview)
+- [Developing plugins](https://steampipe.io/docs/develop/overview)
+
 ## Steampipe plugins
 
 The Steampipe community has grown a suite of [plugins](https://hub.powerpipe.io/plugins) that map APIs to database tables. Plugins are available for [AWS](https://hub.steampipe.io/plugins/turbot/aws), [Azure](https://hub.steampipe.io/plugins/turbot/azure), [GCP](https://hub.steampipe.io/plugins/turbot/gcp), [Kubernetes](https://hub.steampipe.io/plugins/turbot/kubernetes), [GitHub](https://hub.steampipe.io/plugins/turbot/github), [Microsoft 365](https://hub.steampipe.io/plugins/turbot/microsoft365), [Salesforce](https://hub.steampipe.io/plugins/turbot/salesforce), and many more.
@@ -70,16 +80,6 @@ Plugins are available in these distributions.
 **Steampipe export tools**. Use [standalone binaries](https://steampipe.io/docs/steampipe_export/overview) that export data from APIs, no database required.
 
 **Turbot Pipes**. Use [Turbot Pipes](https://turbot.com/pipes) to run Steampipe in the cloud.
-
-## Documentation
-
-See the [documentation](https://steampipe.io/docs) for:
-
-- [Running queries](https://steampipe.io/docs/query/overview)
-- [Managing Steampipe](https://steampipe.io/docs/managing/overview)
-- [CLI commands](https://steampipe.io/docs/reference/cli/overview)
-- [Integrations](https://steampipe.io/docs/integrations/overview)
-- [Developing plugins](https://steampipe.io/docs/develop/overview)
 
 ## Developing
 
