@@ -17,6 +17,9 @@ import (
 
 const schemaVersion = "20221222"
 
+// PanelData implements SnapshotPanel in the pipe-fittings SteampipeSnapshot struct
+// We cannot use the SnapshotPanel interface directly in this package as it references
+// powerpipe types that are not available in this package
 type PanelData struct {
 	Dashboard        string                 `json:"dashboard"`
 	Name             string                 `json:"name"`
@@ -31,17 +34,6 @@ type PanelData struct {
 
 // IsSnapshotPanel implements SnapshotPanel
 func (*PanelData) IsSnapshotPanel() {}
-
-type LayoutData struct {
-	Name      string        `json:"name"`
-	Children  []LayoutChild `json:"children"` // Slice of LayoutChild structs
-	PanelType string        `json:"panel_type"`
-}
-
-type LayoutChild struct {
-	Name      string `json:"name"`
-	PanelType string `json:"panel_type"`
-}
 
 // QueryResultToSnapshot function to generate a snapshot from a query result
 func QueryResultToSnapshot[T any](ctx context.Context, result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery, searchPath []string, startTime time.Time) (*steampipeconfig.SteampipeSnapshot, error) {

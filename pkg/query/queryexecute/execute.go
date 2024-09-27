@@ -123,7 +123,7 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
 
-		// if the output format is snapshot or export is set, we need to generate a snapshot
+		// if the output format is snapshot or export is set or share/snapshot args are set, we need to generate a snapshot
 		if needSnapshot() {
 			snap, err = snapshot.QueryResultToSnapshot(ctx, r, resolvedQuery, initData.Client.GetRequiredSessionSearchPath(), initData.StartTime)
 			if err != nil {
@@ -131,7 +131,7 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 			}
 		}
 
-		// if the output format is snapshot we don't call the querydisplay code in pipe-fittings, instead we short-circuit,
+		// if the output format is snapshot we don't call the querydisplay code in pipe-fittings, instead we
 		// generate the snapshot and display it to stdout
 		outputFormat := viper.GetString(pconstants.ArgOutput)
 		if outputFormat == pconstants.OutputFormatSnapshot || outputFormat == pconstants.OutputFormatSteampipeSnapshotShort {
@@ -162,7 +162,7 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 			}
 		}
 
-		// if we need to publisg the snapshot, we publish it directly from here
+		// if we need to publish the snapshot, we publish it directly from here
 		if err := publishSnapshotIfNeeded(ctx, snap); err != nil {
 			return err, 0
 		}
