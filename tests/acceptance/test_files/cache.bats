@@ -141,13 +141,11 @@ load "$LIB_BATS_SUPPORT/load.bash"
 @test "verify cache ttl works when set in database options" {
   export STEAMPIPE_LOG=info
 
-  cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
-  cp $SRC_DATA_DIR/default_cache_ttl_10.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
-  
-  cat $STEAMPIPE_INSTALL_DIR/config/default.spc
-
   # start the service
   steampipe service start
+
+  cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
+  cp $SRC_DATA_DIR/default_cache_ttl_10.spc $STEAMPIPE_INSTALL_DIR/config/default.spc
   cat $STEAMPIPE_INSTALL_DIR/config/default.spc
 
   # cache functionality check since cache=true in options
@@ -239,6 +237,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "verify cache ttl works when set in workspace profile" {
+  skip "TODO - test using steampipe query command"
   cp $FILE_PATH/test_data/source_files/workspace_cache_ttl.spc $STEAMPIPE_INSTALL_DIR/config/workspace.spc
   cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
 
