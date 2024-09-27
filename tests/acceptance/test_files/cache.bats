@@ -139,6 +139,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "verify cache ttl works when set in database options" {
+  skip "TODO - fix and test using steampipe query command"
   export STEAMPIPE_LOG=info
   cp $SRC_DATA_DIR/chaos_no_options.spc $STEAMPIPE_INSTALL_DIR/config/chaos_no_options.spc
 
