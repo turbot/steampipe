@@ -9,9 +9,6 @@ func NewResult(cols []*queryresult.ColumnDef) *Result {
 	return queryresult.NewResult[TimingResultStream](cols, NewTimingResultStream())
 }
 
-// SyncQueryResult is a type alias for queryresult.SyncQueryResult[TimingResult]
-type SyncQueryResult = queryresult.SyncQueryResult[*TimingResult]
-
 // ResultStreamer is a type alias for queryresult.ResultStreamer[TimingResultStream]
 type ResultStreamer = queryresult.ResultStreamer[TimingResultStream]
 
