@@ -36,7 +36,7 @@ type PanelData struct {
 func (*PanelData) IsSnapshotPanel() {}
 
 // QueryResultToSnapshot function to generate a snapshot from a query result
-func QueryResultToSnapshot[T any](ctx context.Context, result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery, searchPath []string, startTime time.Time) (*steampipeconfig.SteampipeSnapshot, error) {
+func QueryResultToSnapshot[T queryresult.TimingContainer](ctx context.Context, result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery, searchPath []string, startTime time.Time) (*steampipeconfig.SteampipeSnapshot, error) {
 
 	endTime := time.Now()
 	hash, err := utils.Base36Hash(resolvedQuery.RawSQL, 8)
@@ -62,7 +62,7 @@ func QueryResultToSnapshot[T any](ctx context.Context, result *queryresult.Resul
 	return snapshotData, nil
 }
 
-func getPanelDashboard[T any](ctx context.Context, result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery) *PanelData {
+func getPanelDashboard[T queryresult.TimingContainer](ctx context.Context, result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery) *PanelData {
 	hash, err := utils.Base36Hash(resolvedQuery.RawSQL, 8)
 	if err != nil {
 		return &PanelData{}
@@ -79,7 +79,7 @@ func getPanelDashboard[T any](ctx context.Context, result *queryresult.Result[T]
 	}
 }
 
-func getPanelTable[T any](ctx context.Context, result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery) *PanelData {
+func getPanelTable[T queryresult.TimingContainer](ctx context.Context, result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery) *PanelData {
 	hash, err := utils.Base36Hash(resolvedQuery.RawSQL, 8)
 	if err != nil {
 		return &PanelData{}
@@ -100,8 +100,8 @@ func getPanelTable[T any](ctx context.Context, result *queryresult.Result[T], re
 	}
 }
 
-func getData[T any](ctx context.Context, result *queryresult.Result[T]) map[string]interface{} {
-	jsonOutput := querydisplay.NewJSONOutput[T]()
+func getData[T queryresult.TimingContainer](ctx context.Context, result *queryresult.Result[T]) map[string]interface{} {
+	jsonOutput := querydisplay.NewJSONOutput()
 	// Ensure columns are being added
 	if len(result.Cols) == 0 {
 		error_helpers.ShowError(ctx, fmt.Errorf("no columns found in the result"))
@@ -136,7 +136,7 @@ func getData[T any](ctx context.Context, result *queryresult.Result[T]) map[stri
 	}
 }
 
-func getLayout[T any](result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery) *steampipeconfig.SnapshotTreeNode {
+func getLayout[T queryresult.TimingContainer](result *queryresult.Result[T], resolvedQuery *modconfig.ResolvedQuery) *steampipeconfig.SnapshotTreeNode {
 	hash, err := utils.Base36Hash(resolvedQuery.RawSQL, 8)
 	if err != nil {
 		return nil

@@ -28,7 +28,7 @@ import (
 
 // ExecuteSync implements Client
 // execute a query against this client and wait for the result
-func (c *DbClient) ExecuteSync(ctx context.Context, query string, args ...any) (*queryresult.SyncQueryResult, error) {
+func (c *DbClient) ExecuteSync(ctx context.Context, query string, args ...any) (*pqueryresult.SyncQueryResult, error) {
 	// acquire a session
 	sessionResult := c.AcquireSession(ctx)
 	if sessionResult.Error != nil {
@@ -45,9 +45,9 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, args ...any) (
 
 // ExecuteSyncInSession implements Client
 // execute a query against this client and wait for the result
-func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string, args ...any) (*queryresult.SyncQueryResult, error) {
+func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string, args ...any) (*pqueryresult.SyncQueryResult, error) {
 	if query == "" {
-		return &queryresult.SyncQueryResult{}, nil
+		return &pqueryresult.SyncQueryResult{}, nil
 	}
 
 	result, err := c.ExecuteInSession(ctx, session, nil, query, args...)
@@ -55,7 +55,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 		return nil, error_helpers.WrapError(err)
 	}
 
-	syncResult := &queryresult.SyncQueryResult{Cols: result.Cols}
+	syncResult := &pqueryresult.SyncQueryResult{Cols: result.Cols}
 	for row := range result.RowChan {
 		select {
 		case <-ctx.Done():
@@ -68,7 +68,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 		}
 	}
 	if c.shouldFetchTiming() {
-		syncResult.Timing = <-result.Timing
+		syncResult.Timing = result.Timing.GetTiming()
 	}
 
 	return syncResult, err
@@ -177,7 +177,7 @@ func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
 	return newCtx
 }
 
-func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {
+func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel queryresult.TimingResultStream) {
 	// do not fetch if timing is disabled, unless output not JSON
 	if !c.shouldFetchTiming() {
 		return
@@ -192,7 +192,7 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 	// whatever happens, we need to reenable timing, and send the result back with at least the duration
 	defer func() {
 		c.disableTiming = false
-		resultChannel <- timingResult
+		resultChannel.SetTiming(timingResult)
 	}()
 
 	// load the timing summary

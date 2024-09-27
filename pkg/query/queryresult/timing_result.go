@@ -4,6 +4,15 @@ type TimingResultStream struct {
 	Stream chan *TimingResult
 }
 
+// GetTiming implements TimingContainer
+func (t TimingResultStream) GetTiming() any {
+	return <-t.Stream
+}
+
+func (t TimingResultStream) SetTiming(result *TimingResult) {
+	t.Stream <- result
+}
+
 func NewTimingResultStream() TimingResultStream {
 	return TimingResultStream{
 		Stream: make(chan *TimingResult, 1),
@@ -29,4 +38,10 @@ func (r *TimingResult) Initialise(summary *QueryRowSummary, scans []*ScanMetadat
 	r.HydrateCalls = summary.HydrateCalls
 	// populate scans - note this may not be all scans
 	r.Scans = scans
+}
+
+// GetTiming implements TimingContainer
+func (t TimingResult) GetTiming() any {
+	// just return ourselves
+	return t
 }
