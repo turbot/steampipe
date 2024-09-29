@@ -15,17 +15,18 @@ import (
 	"github.com/thediveo/enumflag/v2"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/contexthelpers"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardexecute"
 	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/queryexecute"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/pkg/snapshot"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"github.com/turbot/steampipe/pkg/utils"
@@ -242,7 +243,7 @@ func executeSnapshotQuery(initData *query.InitData, ctx context.Context) int {
 		baseInitData := &initData.InitData
 
 		// so a dashboard name was specified - just call GenerateSnapshot
-		snap, err := dashboardexecute.GenerateSnapshot(ctx, queryProvider.Name(), baseInitData, nil)
+		snap, err := snapshot.GenerateSnapshot(ctx, queryProvider.Name(), baseInitData, nil)
 		if err != nil {
 			exitCode = constants.ExitCodeSnapshotCreationFailed
 			error_helpers.FailOnError(err)
@@ -301,7 +302,7 @@ func snapshotToQueryResult(snap *dashboardtypes.SteampipeSnapshot) (*queryresult
 	if !ok {
 		return nil, sperr.New("dashboard does not contain table result for query")
 	}
-	chartRun := tablePanel.(*dashboardexecute.LeafRun)
+	chartRun := tablePanel.(*snapshot.LeafRun)
 	if !ok {
 		return nil, sperr.New("failed to read query result from snapshot")
 	}
@@ -388,4 +389,30 @@ func getPipedStdinData() string {
 		}
 	}
 	return stdinData
+}
+
+func publishSnapshotIfNeeded(ctx context.Context, snapshot *dashboardtypes.SteampipeSnapshot) error {
+	shouldShare := viper.GetBool(constants.ArgShare)
+	shouldUpload := viper.GetBool(constants.ArgSnapshot)
+
+	if !(shouldShare || shouldUpload) {
+		return nil
+	}
+
+	message, err := cloud.PublishSnapshot(ctx, snapshot, shouldShare)
+	if err != nil {
+		// reword "402 Payment Required" error
+		return handlePublishSnapshotError(err)
+	}
+	if viper.GetBool(constants.ArgProgress) {
+		fmt.Println(message)
+	}
+	return nil
+}
+
+func handlePublishSnapshotError(err error) error {
+	if err.Error() == "402 Payment Required" {
+		return fmt.Errorf("maximum number of snapshots reached")
+	}
+	return err
 }
