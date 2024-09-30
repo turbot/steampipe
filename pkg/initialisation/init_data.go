@@ -10,6 +10,7 @@ import (
 	"github.com/turbot/pipe-fittings/app_specific"
 	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe-plugin-sdk/v5/telemetry"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
@@ -20,8 +21,9 @@ import (
 )
 
 type InitData struct {
-	Client db_common.Client
-	Result *db_common.InitResult
+	Client        db_common.Client
+	Result        *db_common.InitResult
+	CloudMetadata *steampipeconfig.CloudMetadata
 
 	ShutdownTelemetry func()
 	ExportManager     *export.Manager
@@ -76,16 +78,15 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 		i.ShutdownTelemetry = shutdownTelemetry
 	}
 
-	// TODO #KAI what to do with cloud metadata
 	// retrieve cloud metadata
-	//cloudMetadata, err := getCloudMetadata(ctx)
-	//if err != nil {
-	//	i.Result.Error = err
-	//	return
-	//}
-	//
-	//// set cloud metadata (may be nil)
-	//i.Workspace.CloudMetadata = cloudMetadata
+	cloudMetadata, err := getCloudMetadata(ctx)
+	if err != nil {
+		i.Result.Error = err
+		return
+	}
+
+	// set cloud metadata (may be nil)
+	i.CloudMetadata = cloudMetadata
 
 	// get a client
 	// add a message rendering function to the context - this is used for the fdw update message and
