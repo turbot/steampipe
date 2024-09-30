@@ -152,11 +152,5 @@ This repository is published under the [AGPL 3.0](https://www.gnu.org/licenses/a
 
 **[Join #steampipe on Slack →](https://turbot.com/community/join)**
 
-
-
-## Get involved
-
-**[Join #steampipe on Slack →](https://turbot.com/community/join)**
-
 Want to help but don't know where to start? Pick up one of the `help wanted` issues:
 * [Steampipe](https://github.com/turbot/steampipe/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
