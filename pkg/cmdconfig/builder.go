@@ -2,7 +2,6 @@ package cmdconfig
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -10,7 +9,6 @@ import (
 	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 type CmdBuilder struct {
@@ -122,14 +120,6 @@ func (c *CmdBuilder) AddCloudFlags() *CmdBuilder {
 func (c *CmdBuilder) AddWorkspaceDatabaseFlag() *CmdBuilder {
 	return c.
 		AddStringFlag(pconstants.ArgWorkspaceDatabase, constants.DefaultWorkspaceDatabase, "Turbot Pipes workspace database")
-}
-
-// AddModLocationFlag is helper function to add the mod-location flag to a command
-func (c *CmdBuilder) AddModLocationFlag() *CmdBuilder {
-	cwd, err := os.Getwd()
-	error_helpers.FailOnError(err)
-	return c.
-		AddStringFlag(pconstants.ArgModLocation, cwd, "Path to the workspace working directory")
 }
 
 // AddStringSliceFlag is a helper function to add a flag that accepts an array of strings

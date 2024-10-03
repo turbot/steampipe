@@ -62,7 +62,6 @@ connection from any Postgres compatible database client.`,
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddModLocationFlag().
 		AddBoolFlag(pconstants.ArgHelp, false, "Help for service start", cmdconfig.FlagOptions.WithShortHand("h")).
 		AddIntFlag(pconstants.ArgDatabasePort, constants.DatabaseDefaultPort, "Database service port").
 		AddStringFlag(pconstants.ArgDatabaseListenAddresses, string(db_local.ListenTypeNetwork), "Accept connections from: `local` (an alias for `localhost` only), `network` (an alias for `*`), or a comma separated list of hosts and/or IP addresses").
