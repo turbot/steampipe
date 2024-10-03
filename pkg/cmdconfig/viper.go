@@ -153,14 +153,12 @@ func setDefaultsFromEnv() {
 	envMappings := map[string]envMapping{
 		constants.EnvInstallDir:     {[]string{pconstants.ArgInstallDir}, String},
 		constants.EnvWorkspaceChDir: {[]string{pconstants.ArgModLocation}, String},
-		constants.EnvModLocation:    {[]string{pconstants.ArgModLocation}, String},
-		// TODO #breakingchange
-		//constants.EnvIntrospection:  {[]string{constants.ArgIntrospection}, String},
-		constants.EnvTelemetry:   {[]string{pconstants.ArgTelemetry}, String},
-		constants.EnvUpdateCheck: {[]string{pconstants.ArgUpdateCheck}, Bool},
+		constants.EnvTelemetry:      {[]string{pconstants.ArgTelemetry}, String},
+		constants.EnvUpdateCheck:    {[]string{pconstants.ArgUpdateCheck}, Bool},
 		// deprecated
-		constants.EnvCloudHost:             {[]string{pconstants.ArgPipesHost}, String},
-		constants.EnvCloudToken:            {[]string{pconstants.ArgPipesToken}, String},
+		constants.EnvCloudHost:  {[]string{pconstants.ArgPipesHost}, String},
+		constants.EnvCloudToken: {[]string{pconstants.ArgPipesToken}, String},
+
 		constants.EnvPipesHost:             {[]string{pconstants.ArgPipesHost}, String},
 		constants.EnvPipesToken:            {[]string{pconstants.ArgPipesToken}, String},
 		constants.EnvSnapshotLocation:      {[]string{pconstants.ArgSnapshotLocation}, String},
