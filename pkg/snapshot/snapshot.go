@@ -13,6 +13,7 @@ import (
 	pqueryresult "github.com/turbot/pipe-fittings/queryresult"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 )
 
 const schemaVersion = "20221222"
@@ -21,15 +22,20 @@ const schemaVersion = "20221222"
 // We cannot use the SnapshotPanel interface directly in this package as it references
 // powerpipe types that are not available in this package
 type PanelData struct {
-	Dashboard        string                 `json:"dashboard"`
-	Name             string                 `json:"name"`
-	PanelType        string                 `json:"panel_type"`
-	SourceDefinition string                 `json:"source_definition"`
-	Status           string                 `json:"status,omitempty"`
-	Title            string                 `json:"title,omitempty"`
-	SQL              string                 `json:"sql,omitempty"`
-	Properties       map[string]string      `json:"properties,omitempty"`
-	Data             map[string]interface{} `json:"data,omitempty"`
+	Dashboard        string            `json:"dashboard"`
+	Name             string            `json:"name"`
+	PanelType        string            `json:"panel_type"`
+	SourceDefinition string            `json:"source_definition"`
+	Status           string            `json:"status,omitempty"`
+	Title            string            `json:"title,omitempty"`
+	SQL              string            `json:"sql,omitempty"`
+	Properties       map[string]string `json:"properties,omitempty"`
+	Data             LeafData          `json:"data,omitempty"`
+}
+
+type LeafData struct {
+	Columns []*queryresult.ColumnDef `json:"columns"`
+	Rows    []map[string]interface{} `json:"rows"`
 }
 
 // IsSnapshotPanel implements SnapshotPanel
@@ -100,15 +106,15 @@ func getPanelTable[T queryresult.TimingContainer](ctx context.Context, result *q
 	}
 }
 
-func getData[T queryresult.TimingContainer](ctx context.Context, result *queryresult.Result[T]) map[string]interface{} {
-	jsonOutput := querydisplay.NewJSONOutput()
+func getData[T queryresult.TimingContainer](ctx context.Context, result *queryresult.Result[T]) LeafData {
+	jsonOutput := querydisplay.NewSnapshotPanelData()
 	// Ensure columns are being added
 	if len(result.Cols) == 0 {
 		error_helpers.ShowError(ctx, fmt.Errorf("no columns found in the result"))
 	}
 	// Add column definitions to the JSON output
 	for _, col := range result.Cols {
-		c := pqueryresult.ColumnDef{
+		c := &pqueryresult.ColumnDef{
 			Name:         col.Name,
 			OriginalName: col.OriginalName,
 			DataType:     strings.ToUpper(col.DataType),
@@ -130,9 +136,9 @@ func getData[T queryresult.TimingContainer](ctx context.Context, result *queryre
 		error_helpers.ShowError(ctx, err)
 	}
 	// Return the full data (including columns and rows)
-	return map[string]interface{}{
-		"columns": jsonOutput.Columns,
-		"rows":    jsonOutput.Rows,
+	return LeafData{
+		Columns: jsonOutput.Columns,
+		Rows:    jsonOutput.Rows,
 	}
 }
 
@@ -153,4 +159,40 @@ func getLayout[T queryresult.TimingContainer](result *queryresult.Result[T], res
 		},
 		NodeType: "dashboard",
 	}
+}
+
+// SnapshotToQueryResult function to generate a queryresult with streamed rows from a snapshot
+func SnapshotToQueryResult[T queryresult.TimingContainer](snap *steampipeconfig.SteampipeSnapshot, startTime time.Time) (*queryresult.Result[T], error) {
+	// the table of a snapshot query has a fixed name
+	tablePanel, ok := snap.Panels[modconfig.SnapshotQueryTableName]
+	if !ok {
+		return nil, sperr.New("dashboard does not contain table result for query")
+	}
+	chartRun := tablePanel.(*PanelData)
+	if !ok {
+		return nil, sperr.New("failed to read query result from snapshot")
+	}
+
+	var tim T
+	res := queryresult.NewResult[T](chartRun.Data.Columns, tim)
+
+	// start a goroutine to stream the results as rows
+	go func() {
+		for _, d := range chartRun.Data.Rows {
+			// we need to allocate a new slice everytime, since this gets read
+			// asynchronously on the other end and we need to make sure that we don't overwrite
+			// data already sent
+			rowVals := make([]interface{}, len(chartRun.Data.Columns))
+			for i, c := range chartRun.Data.Columns {
+				rowVals[i] = d[c.Name]
+			}
+			res.StreamRow(rowVals)
+		}
+		res.Close()
+	}()
+
+	// res.Timing = &queryresult.TimingMetadata{
+	// 	Duration: time.Since(startTime),
+	// }
+	return res, nil
 }

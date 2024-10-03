@@ -15,6 +15,7 @@ import (
 	"github.com/turbot/pipe-fittings/contexthelpers"
 	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/pipe-fittings/querydisplay"
+	"github.com/turbot/pipe-fittings/queryresult"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -129,42 +130,58 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 			if err != nil {
 				return err, 0
 			}
-		}
 
-		// if the output format is snapshot we don't call the querydisplay code in pipe-fittings, instead we
-		// generate the snapshot and display it to stdout
-		outputFormat := viper.GetString(pconstants.ArgOutput)
-		if outputFormat == pconstants.OutputFormatSnapshot || outputFormat == pconstants.OutputFormatSteampipeSnapshotShort {
-
-			// display the snapshot as JSON
-			encoder := json.NewEncoder(os.Stdout)
-			encoder.SetIndent("", "  ")
-			encoder.SetEscapeHTML(false)
-			if err := encoder.Encode(snap); err != nil {
-				//nolint:forbidigo // acceptable
-				fmt.Print("Error displaying result as snapshot", err)
-				return err, 0
-			}
-		}
-
-		// if we need to export the snapshot, we export it directly from here
-		if viper.IsSet(pconstants.ArgExport) {
-			exportArgs := viper.GetStringSlice(pconstants.ArgExport)
-			exportMsg, err := initData.ExportManager.DoExport(ctx, "query", snap, exportArgs)
+			// re-generate the query result from the snapshot. since the row stream in the actual queryresult has been exhausted(while generating the snapshot),
+			// we need to re-generate it for other output formats
+			newQueryResult, err := snapshot.SnapshotToQueryResult[queryresult.TimingContainer](snap, initData.StartTime)
 			if err != nil {
 				return err, 0
 			}
-			// print the location where the file is exported
-			if len(exportMsg) > 0 && viper.GetBool(pconstants.ArgProgress) {
-				fmt.Printf("\n")                           //nolint:forbidigo // intentional use of fmt
-				fmt.Println(strings.Join(exportMsg, "\n")) //nolint:forbidigo // intentional use of fmt
-				fmt.Printf("\n")                           //nolint:forbidigo // intentional use of fmt
-			}
-		}
 
-		// if we need to publish the snapshot, we publish it directly from here
-		if err := publishSnapshotIfNeeded(ctx, snap); err != nil {
-			return err, 0
+			// if the output format is snapshot we don't call the querydisplay code in pipe-fittings, instead we
+			// generate the snapshot and display it to stdout
+			outputFormat := viper.GetString(pconstants.ArgOutput)
+			if outputFormat == pconstants.OutputFormatSnapshot || outputFormat == pconstants.OutputFormatSteampipeSnapshotShort {
+
+				// display the snapshot as JSON
+				encoder := json.NewEncoder(os.Stdout)
+				encoder.SetIndent("", "  ")
+				encoder.SetEscapeHTML(false)
+				if err := encoder.Encode(snap); err != nil {
+					//nolint:forbidigo // acceptable
+					fmt.Print("Error displaying result as snapshot", err)
+					return err, 0
+				}
+			}
+
+			// if we need to export the snapshot, we export it directly from here
+			if viper.IsSet(pconstants.ArgExport) {
+				exportArgs := viper.GetStringSlice(pconstants.ArgExport)
+				exportMsg, err := initData.ExportManager.DoExport(ctx, "query", snap, exportArgs)
+				if err != nil {
+					return err, 0
+				}
+				// print the location where the file is exported
+				if len(exportMsg) > 0 && viper.GetBool(pconstants.ArgProgress) {
+					fmt.Printf("\n")                           //nolint:forbidigo // intentional use of fmt
+					fmt.Println(strings.Join(exportMsg, "\n")) //nolint:forbidigo // intentional use of fmt
+					fmt.Printf("\n")                           //nolint:forbidigo // intentional use of fmt
+				}
+			}
+
+			// if we need to publish the snapshot, we publish it directly from here
+			if err := publishSnapshotIfNeeded(ctx, snap); err != nil {
+				return err, 0
+			}
+
+			// if other output formats are also needed, we call the querydisplay using the re-generated query result
+			rowCount, _ := querydisplay.ShowOutput(ctx, newQueryResult)
+			// show timing
+			display.DisplayTiming(r, rowCount)
+
+			// signal to the resultStreamer that we are done with this result
+			resultsStreamer.AllResultsRead()
+			return nil, rowErrors
 		}
 
 		// for other output formats, we call the querydisplay code in pipe-fittings
