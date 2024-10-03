@@ -96,7 +96,7 @@ jobs:
     - name: Run GoReleaser
       run: |
         cd steampipe
-        goreleaser release --clean --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
+        goreleaser release --clean --snapshot --skip=publish
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
