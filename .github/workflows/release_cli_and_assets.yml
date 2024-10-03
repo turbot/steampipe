@@ -1,4 +1,4 @@
-name: Steampipe Release (CLI and Assets)
+name: Steampipe CLI Release
 
 on:
   workflow_dispatch:
@@ -42,199 +42,6 @@ jobs:
       uses: actions/checkout@v4
       with:
         ref: ${{ github.event.ref }}
-
-  verify_asset_unreleased:
-    name: Verify Assets Unreleased
-    needs: [verify_input]
-    runs-on: ubuntu-latest
-
-    outputs:
-      status: ${{ steps.verify.conclusion }}
-
-    steps:
-    - name: Trim asset version prefix and Validate
-      run: |-
-        echo $VERSION
-        trim=${VERSION#"v"}
-        echo $trim
-        if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-          echo "Version OK: $trim"
-        else
-          echo "Invalid version: $trim"
-          exit 1
-        fi
-        echo "VERSION=${trim}" >> $GITHUB_ENV
-
-    - name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v2'
-      with:
-        service_account: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
-        credentials_json: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS_CREDENTIAL_JSON }}
-
-    - name: Get GCloud CLI
-      uses: google-github-actions/setup-gcloud@v2.1.1
-      with:
-        project_id: ${{ env.PROJECT_ID }}
-
-    - name: Setup GCloud CLI
-      run: |-
-        gcloud config list
-        gcloud components install beta
-        gcloud components install alpha --quiet
-        gcloud beta auth configure-docker us-docker.pkg.dev
-
-    - name: Delete the tag if it already exists
-      id: verify
-      continue-on-error: true
-      run: |-
-        [ $(gcloud beta artifacts docker tags list ${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}  --project ${{ env.PROJECT_ID }}  --format=json | jq 'map(select(.tag | endswith("${{ env.VERSION }}"))) | length') -eq 1 ]
-        gcloud beta artifacts docker tags delete ${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}:"${{ env.VERSION }}"
-
-  build_and_release_assets:
-    name: Build and Release Assets
-    needs: [verify_input,verify_asset_unreleased]
-    if: needs.verify_asset_unreleased.outputs.status == 'success'
-    runs-on: ubuntu-latest
-    steps:
-    - name: Trim asset version prefix and Validate
-      run: |-
-        echo $VERSION
-        trim=${VERSION#"v"}
-        echo $trim
-        if [[ $trim =~  ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
-          echo "Version OK: $trim"
-        else
-          echo "Invalid version: $trim"
-          exit 1
-        fi
-        echo "VERSION=${trim}" >> $GITHUB_ENV
-
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        ref: ${{ github.event.ref }}
-
-    - name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v2'
-      with:
-        service_account: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
-        credentials_json: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS_CREDENTIAL_JSON }}
-
-    - name: Get GCloud CLI
-      uses: google-github-actions/setup-gcloud@v2.1.1
-      with:
-        project_id: ${{ env.PROJECT_ID }}
-
-    - name: Setup GCloud CLI
-      run: |-
-        gcloud config list
-        gcloud components install beta
-        gcloud components install alpha --quiet
-        gcloud beta auth configure-docker us-docker.pkg.dev
-
-    - name: Verify ORAS
-      run: |- 
-        gcloud beta auth configure-docker us-docker.pkg.dev
-        oras version
-      
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: '16'
-
-    - name: Setup Yarn
-      working-directory: ./ui/dashboard
-      run: |-
-        rm -rf ./build
-
-    - name: YARN Install
-      working-directory: ./ui/dashboard
-      run: |-
-        unset CI
-        yarn install
-
-    - name: Generate dashboard UI icons
-      working-directory: ./ui/dashboard
-      run: |-
-        make setup
-
-    - name: Run Unit Tests
-      working-directory: ./ui/dashboard
-      run: |
-        yarn install
-        CI=true yarn test
-
-    - name: YARN Build
-      working-directory: ./ui/dashboard
-      run: |-
-        unset CI
-        yarn build
-      env:
-        REACT_APP_HEAP_ID: ${{ secrets.HEAP_ANALYTICS_PRODUCTION_ID }}
-        REACT_APP_VERSION: ${{ env.VERSION }}
-
-    - name: Move Build Assets
-      run: |-
-        mkdir -p dashboard_ui_build
-        mv ./ui/dashboard/build/* dashboard_ui_build/
-        ls -la dashboard_ui_build
-
-    - name: Create a version file
-      run: |-
-        JSON_STRING=$( jq -n \
-            --arg version "$VERSION" \
-          '{
-              "version":$version,
-          }' )
-
-          echo $JSON_STRING > ./dashboard_ui_build/versions.json
-
-    - name: Create Image Config File
-      run: |-
-        JSON_STRING=$( jq -n \
-          --arg name "${{ env.ASSET_IMAGE_NAME }}" \
-          --arg organization "$ORG" \
-          --arg version "$VERSION" \
-          --arg schemaVersion "$CONFIG_SCHEMA_VERSION" \
-          '{schemaVersion: $schemaVersion, assets: { name: $name, organization: $organization, version: $version} }' )
-
-        echo $JSON_STRING > config.json
-
-    - name: Create Image Annotations File
-      run: |-
-        JSON_STRING=$( jq -n \
-            --arg title "${{ env.ASSET_IMAGE_NAME }}" \
-            --arg desc "$ORG" \
-            --arg version "$VERSION" \
-            --arg timestamp "$(date +%FT%TZ)" \
-            --arg vendor "Turbot HQ, Inc." \
-          '{
-              "$manifest": {
-                  "org.opencontainers.image.title": $title,
-                  "org.opencontainers.image.description": $desc,
-                  "org.opencontainers.image.version": $version,
-                  "org.opencontainers.image.created": $timestamp,
-                  "org.opencontainers.image.vendor":  $vendor
-              }
-          }' )
-
-          echo $JSON_STRING > annotations.json        
-
-    - name: Generate Image REF
-      id: image_ref
-      run: |
-        cat config.json
-        cat annotations.json
-        cat dashboard_ui_build/versions.json
-        REF="${{ env.CORE_REPO }}/${{ env.ASSET_IMAGE_NAME }}:${{ env.VERSION }}"
-        echo "REF=$REF" >> $GITHUB_OUTPUT
-
-    - name: Push to registry
-      run: |-
-        oras push ${{ steps.image_ref.outputs.REF }} \
-          --config config.json:application/vnd.turbot.steampipe.config.v1+json \
-          --annotation-file annotations.json \
-          dashboard_ui_build:application/vnd.turbot.steampipe.assets.report.layer.v1+tar \
 
   create_test_build:
     name: Create Test Build
@@ -334,7 +141,7 @@ jobs:
 
   run_acceptance_tests:
     name: Acceptance tests
-    needs: [create_test_build,build_and_release_assets]
+    needs: [create_test_build]
     strategy:
       fail-fast: false
       matrix:
@@ -456,7 +263,7 @@ jobs:
   smoke_test_ubuntu_24:
     name: Smoke test (Ubuntu 24, x86_64)
     runs-on: ubuntu-latest
-    needs: [create_test_build, build_and_release_assets]
+    needs: [create_test_build]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -497,7 +304,7 @@ jobs:
   smoke_test_centos_9:
     name: Smoke test (Centos stream 9, x86_64)
     runs-on: ubuntu-latest
-    needs: [create_test_build, build_and_release_assets]
+    needs: [create_test_build]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -538,7 +345,7 @@ jobs:
   smoke_test_amazonlinux:
     name: Smoke test (Amazonlinux 2023, x86_64)
     runs-on: ubuntu-latest
-    needs: [create_test_build, build_and_release_assets]
+    needs: [create_test_build]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -579,7 +386,7 @@ jobs:
   smoke_test_ubuntu_24_arm64:
     name: Smoke test (Ubuntu 24, ARM64)
     runs-on: ubuntu-latest
-    needs: [create_test_build, build_and_release_assets]
+    needs: [create_test_build]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -630,7 +437,7 @@ jobs:
   smoke_test_darwin_arm:
     name: Smoke test (MacOS 14, ARM64)
     runs-on: macos-latest
-    needs: [create_test_build, build_and_release_assets]
+    needs: [create_test_build]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -764,29 +571,6 @@ jobs:
         args: release --clean
       env:
         GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-
-    # - name: 'Authenticate to Google Cloud'
-    #   uses: 'google-github-actions/auth@v2'
-    #   with:
-    #     service_account: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS }}
-    #     credentials_json: ${{ secrets.GCP_GITHUB_ACTION_PUSH_ARTIFACTS_CREDENTIAL_JSON }}
-
-    # - name: Get GCloud CLI
-    #   uses: google-github-actions/setup-gcloud@v2.1.1
-    #   with:
-    #     project_id: ${{ env.PROJECT_ID }}
-
-    # - name: Setup GCloud CLI
-    #   run: |-
-    #     gcloud config list
-    #     gcloud components install beta
-    #     gcloud components install alpha --quiet
-    #     gcloud beta auth configure-docker us-docker.pkg.dev
-
-    # - name: Upload rpm and deb packages to artifact registry
-    #   run: |
-    #     gcloud beta artifacts yum upload steampipe-yum-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.rpm --project steampipe
-    #     gcloud beta artifacts apt upload steampipe-apt-repo --location=us --source=$GITHUB_WORKSPACE/dist/steampipe_linux_amd64.deb --project steampipe
 
   create_pr_in_homebrew:
     name: Create PR in homebrew-tap
