@@ -69,8 +69,6 @@ Examples:
 			pconstants.ArgTiming,
 			fmt.Sprintf("Display query timing; one of: %s", strings.Join(constants.FlagValues(constants.QueryTimingModeIds), ", ")),
 			cmdconfig.FlagOptions.NoOptDefVal(pconstants.ArgOn)).
-		// TODO #breakingchange
-		//AddBoolFlag(constants.ArgWatch, true, "Watch SQL files in the current workspace (works only in interactive mode)").
 		AddStringSliceFlag(pconstants.ArgSearchPath, nil, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
 		AddStringSliceFlag(pconstants.ArgSearchPathPrefix, nil, "Set a prefix to the current search path for a query session (comma-separated)").
 		AddStringSliceFlag(pconstants.ArgVarFile, nil, "Specify a file containing variable values").
