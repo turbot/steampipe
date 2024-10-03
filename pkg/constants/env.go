@@ -15,8 +15,6 @@ const (
 	EnvSnapshotLocation  = "STEAMPIPE_SNAPSHOT_LOCATION"
 	EnvWorkspaceDatabase = "STEAMPIPE_WORKSPACE_DATABASE"
 	EnvWorkspaceProfile  = "STEAMPIPE_WORKSPACE"
-	EnvCloudHost         = "STEAMPIPE_CLOUD_HOST"
-	EnvCloudToken        = "STEAMPIPE_CLOUD_TOKEN"
 
 	EnvPipesHost  = "PIPES_HOST"
 	EnvPipesToken = "PIPES_TOKEN"
