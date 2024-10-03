@@ -3,10 +3,10 @@ package task
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/turbot/pipe-fittings/plugin"
 	"log"
 	"os"
-	"strings"
+
+	"github.com/turbot/pipe-fittings/plugin"
 
 	"github.com/spf13/cobra"
 	"github.com/turbot/go-kit/files"
@@ -98,23 +98,11 @@ func (r *Runner) displayNotifications(cmd *cobra.Command, cmdArgs []string) erro
 	if err != nil {
 		return err
 	}
-	// get the buffer width (to set the column width of ppTable)
-	lineLength := len(strings.Split(tableBuffer.String(), "\n")[0])
-
-	ppTable, err := ppNoptificationAsTable(lineLength)
-	if err != nil {
-		return err
-	}
 
 	// table can be nil if there are no notifications to display
 	if tableBuffer != nil {
 		fmt.Println()            //nolint:forbidigo // acceptable
 		fmt.Println(tableBuffer) //nolint:forbidigo // acceptable
-	}
-
-	if ppTable != nil {
-		ppTable.Render()
-		fmt.Println() //nolint:forbidigo // acceptable
 	}
 
 	return nil
