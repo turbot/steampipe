@@ -106,8 +106,20 @@ func getPanelTable[T queryresult.TimingContainer](ctx context.Context, result *q
 	}
 }
 
+type snapshotPanelData struct {
+	Columns  []*queryresult.ColumnDef `json:"columns"`
+	Rows     []map[string]interface{} `json:"rows"`
+	Metadata any                      `json:"metadata,omitempty"`
+}
+
+func newSnapshotPanelData() *snapshotPanelData {
+	return &snapshotPanelData{
+		Rows: make([]map[string]interface{}, 0),
+	}
+}
+
 func getData[T queryresult.TimingContainer](ctx context.Context, result *queryresult.Result[T]) LeafData {
-	jsonOutput := querydisplay.NewSnapshotPanelData()
+	jsonOutput := newSnapshotPanelData()
 	// Ensure columns are being added
 	if len(result.Cols) == 0 {
 		error_helpers.ShowError(ctx, fmt.Errorf("no columns found in the result"))
