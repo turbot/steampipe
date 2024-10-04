@@ -280,20 +280,12 @@ func setCloudTokenDefault(loader *parse.WorkspaceProfileLoader[*workspace_profil
 	if loader.DefaultProfile.PipesToken != nil {
 		viper.SetDefault(pconstants.ArgPipesToken, *loader.DefaultProfile.PipesToken)
 	}
-	// deprecated - cloud token
-	if loader.DefaultProfile.CloudToken != nil {
-		viper.SetDefault(pconstants.ArgPipesToken, *loader.DefaultProfile.CloudToken)
-	}
-	// 3) env var (STEAMIPE_CLOUD_TOKEN )
+	// 3) env var (PIPES_TOKEN )
 	SetDefaultFromEnv(constants.EnvPipesToken, pconstants.ArgPipesToken, String)
 
 	// 4) explicit workspace profile
 	if p := loader.ConfiguredProfile; p != nil && p.PipesToken != nil {
 		viper.SetDefault(pconstants.ArgPipesToken, *p.PipesToken)
-	}
-	// deprecated - cloud token
-	if p := loader.ConfiguredProfile; p != nil && p.CloudToken != nil {
-		viper.SetDefault(pconstants.ArgPipesToken, *p.CloudToken)
 	}
 	return nil
 }

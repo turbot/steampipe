@@ -36,15 +36,11 @@ func bootstrapViper(loader *parse.WorkspaceProfileLoader[*workspace_profile.Stea
 	// default install dir
 	setDirectoryDefaultsFromEnv()
 
-	// NOTE: if an explicit workspace profile was set, default the mod location and install dir _now_
+	// NOTE: if an explicit workspace profile was set, default the install dir _now_
 	// All other workspace profile values are defaults _after defaulting to the connection config options
 	// to give them higher precedence, but these must be done now as subsequent operations depend on them
 	// (and they cannot be set from hcl options)
 	if loader.ConfiguredProfile != nil {
-		if loader.ConfiguredProfile.ModLocation != nil {
-			log.Printf("[TRACE] setting mod location from configured profile '%s' to '%s'", loader.ConfiguredProfile.Name(), *loader.ConfiguredProfile.ModLocation)
-			viper.SetDefault(pconstants.ArgModLocation, *loader.ConfiguredProfile.ModLocation)
-		}
 		if loader.ConfiguredProfile.InstallDir != nil {
 			log.Printf("[TRACE] setting install dir from configured profile '%s' to '%s'", loader.ConfiguredProfile.Name(), *loader.ConfiguredProfile.InstallDir)
 			viper.SetDefault(pconstants.ArgInstallDir, *loader.ConfiguredProfile.InstallDir)
