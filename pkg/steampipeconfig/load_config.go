@@ -376,8 +376,6 @@ func SteampipeOptionsBlockMapping(block *hcl.Block) (poptions.Options, hcl.Diagn
 		return new(options.Database), nil
 	case poptions.GeneralBlock:
 		return new(options.General), nil
-	case poptions.DashboardBlock:
-		return new(poptions.Dashboard), nil
 	case poptions.PluginBlock:
 		return new(options.Plugin), nil
 	default:
