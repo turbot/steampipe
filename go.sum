@@ -782,8 +782,8 @@ github.com/turbot/steampipe-cloud-sdk-go v0.6.0 h1:ufAxOpKS1uq7eejuE5sfEu1+d7QAd
 github.com/turbot/steampipe-cloud-sdk-go v0.6.0/go.mod h1:M42TMBdMim4bV1YTMxhKyzfSGSMo4CXUkm3wt9w7t1Y=
 github.com/turbot/steampipe-plugin-code v0.7.0 h1:SROYIo/TI/Q/YNfXK+sAIS71umypUFm1Uz851TmoJkM=
 github.com/turbot/steampipe-plugin-code v0.7.0/go.mod h1:GvdjncWum4sZNmR0iM03SKkIzl7aZKAFtIsyAR+z4YI=
-github.com/turbot/steampipe-plugin-sdk/v5 v5.10.5-rc.0 h1:N5E3mRHdSVVoR6GJnc9PPS9apZWemCELmxrDrJ57mN4=
-github.com/turbot/steampipe-plugin-sdk/v5 v5.10.5-rc.0/go.mod h1:X5FxxmHD2M/ephkgfZtM1dYruCQKYprd7BGXiBh+98U=
+github.com/turbot/steampipe-plugin-sdk/v5 v5.11.0-rc.0 h1:KNkPewT6Poztirt9C6BJNjnC9SRdIBnGWIMeZjKhzFs=
+github.com/turbot/steampipe-plugin-sdk/v5 v5.11.0-rc.0/go.mod h1:cMYfsJKn3zkiWnnFKZiHbL4qHQzl340oM7k3sT7++mU=
 github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7 h1:qDMxFVd8Zo0rIhnEBdCIbR+T6WgjwkxpFZMN8zZmmjg=
 github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7/go.mod h1:5hzpfalEjfcJWp9yq75/EZoEu2Mzm34eJAPm3HOW2tw=
 github.com/ulikunitz/xz v0.5.10 h1:t92gobL9l3HE202wg3rlk19F6X+JOxl9BBrCCMYEYd8=
