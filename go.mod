@@ -47,8 +47,8 @@ require (
 	// v1.6.x d0901d32 (Remove SteampipeWorkspaceProfile args, options and update snapshot output format.)
 	github.com/turbot/pipe-fittings v1.6.0-beta.1.0.20241004093702-d0901d32f327
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
-	// branch: workspace_profiles_2
-	github.com/turbot/steampipe-plugin-sdk/v5 v5.10.5-rc.0
+	// branch: workspace_profiles
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.11.0-rc.0
 	github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7
 	github.com/zclconf/go-cty v1.14.4 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
