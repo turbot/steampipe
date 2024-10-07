@@ -44,8 +44,8 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/thediveo/enumflag/v2 v2.0.5
 	github.com/turbot/go-kit v0.10.0-rc.0
-	// v1.6.x d0901d32 (Remove SteampipeWorkspaceProfile args, options and update snapshot output format.)
-	github.com/turbot/pipe-fittings v1.6.0-beta.1.0.20241004093702-d0901d32f327
+	// v1.6.x 9e279d8 (Fix issue where var ConnectionConfigExtension was unable to access...)
+	github.com/turbot/pipe-fittings v1.6.0-beta.1.0.20241007143302-9e279d8205fe
 	github.com/turbot/steampipe-cloud-sdk-go v0.6.0
 	// branch: workspace_profiles
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.11.0-rc.1
