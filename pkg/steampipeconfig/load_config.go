@@ -154,7 +154,7 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 	steampipeConfig.PluginVersions = v.Plugins
 
 	// load config from the installation folder -  load all spc files from config directory
-	include := filehelpers.InclusionsFromExtensions(pconstants.ConnectionConfigExtensions)
+	include := filehelpers.InclusionsFromExtensions(pconstants.ConnectionConfigExtension())
 	loadOptions := &loadConfigOptions{include: include}
 	ew = loadConfig(ctx, pfilepaths.EnsureConfigDir(), steampipeConfig, loadOptions)
 	if ew.GetError() != nil {
