@@ -15,6 +15,10 @@ import (
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/app_specific"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
+	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -22,12 +26,11 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // StartResult is a pseudoEnum for outcomes of StartNewInstance
 type StartResult struct {
-	error_helpers.ErrorAndWarnings
+	perror_helpers.ErrorAndWarnings
 	Status             StartDbStatus
 	DbState            *RunningDBInstanceInfo
 	PluginManagerState *pluginmanager.State
@@ -72,11 +75,11 @@ func (slt StartListenType) ToListenAddresses() []string {
 }
 
 func StartServices(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) *StartResult {
-	utils.LogTime("db_local.StartServices start")
-	defer utils.LogTime("db_local.StartServices end")
+	putils.LogTime("db_local.StartServices start")
+	defer putils.LogTime("db_local.StartServices end")
 
 	// we want the service to always listen on IPv4 loopback
-	if !utils.ListenAddressesContainsOneOfAddresses(listenAddresses, []string{"127.0.0.1", "*", "localhost"}) {
+	if !putils.ListenAddressesContainsOneOfAddresses(listenAddresses, []string{"127.0.0.1", "*", "localhost"}) {
 		log.Println("[TRACE] StartServices - prepending 127.0.0.1 to listenAddresses")
 		listenAddresses = append([]string{"127.0.0.1"}, listenAddresses...)
 	}
@@ -214,8 +217,8 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 // StartDB starts the database if not already running
 func startDB(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) (res *StartResult) {
 	log.Printf("[TRACE] StartDB invoker %s (listenAddresses=%s, port=%d)", invoker, listenAddresses, port)
-	utils.LogTime("db.StartDB start")
-	defer utils.LogTime("db.StartDB end")
+	putils.LogTime("db.StartDB start")
+	defer putils.LogTime("db.StartDB end")
 	var postgresCmd *exec.Cmd
 
 	res = &StartResult{}
@@ -242,7 +245,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 	// remove the stale info file, ignoring errors - will overwrite anyway
 	_ = removeRunningInstanceInfo()
 
-	if err := utils.EnsureDirectoryPermission(filepaths.GetDataLocation()); err != nil {
+	if err := putils.EnsureDirectoryPermission(filepaths.GetDataLocation()); err != nil {
 		return res.SetError(fmt.Errorf("%s does not have the necessary permissions to start the service", filepaths.GetDataLocation()))
 	}
 
@@ -257,8 +260,8 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 		error_helpers.ShowWarning("self signed certificate creation failed, connecting to the database without SSL")
 	}
 
-	if err := utils.IsPortBindable(utils.GetFirstListenAddress(listenAddresses), port); err != nil {
-		return res.SetError(fmt.Errorf("cannot listen on port %d and %s %s. To check if there's any other steampipe services running, use %s", constants.Bold(port), utils.Pluralize("address", len(listenAddresses)), constants.Bold(strings.Join(listenAddresses, ",")), constants.Bold("steampipe service status --all")))
+	if err := putils.IsPortBindable(putils.GetFirstListenAddress(listenAddresses), port); err != nil {
+		return res.SetError(fmt.Errorf("cannot listen on port %d and %s %s. To check if there's any other steampipe services running, use %s", pconstants.Bold(port), putils.Pluralize("address", len(listenAddresses)), pconstants.Bold(strings.Join(listenAddresses, ",")), pconstants.Bold("steampipe service status --all")))
 	}
 
 	if err := migrateLegacyPasswordFile(); err != nil {
@@ -309,7 +312,7 @@ func startDB(ctx context.Context, listenAddresses []string, port int, invoker co
 		return res.SetError(err)
 	}
 
-	utils.LogTime("postgresCmd end")
+	putils.LogTime("postgresCmd end")
 	res.Status = ServiceStarted
 	return res
 }
@@ -365,8 +368,8 @@ func resolvePassword() (string, error) {
 	// if a password was set through the `STEAMPIPE_DATABASE_PASSWORD` environment variable
 	// or through the `--database-password` cmdline flag, then use that for this session
 	// instead of the default one
-	if viper.IsSet(constants.ArgServicePassword) {
-		password = viper.GetString(constants.ArgServicePassword)
+	if viper.IsSet(pconstants.ArgServicePassword) {
+		password = viper.GetString(pconstants.ArgServicePassword)
 	}
 	return password, nil
 }
@@ -444,8 +447,8 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		// by this time, we are sure that the port is free to listen to
 		"-p", fmt.Sprint(port),
 		"-c", fmt.Sprintf("listen_addresses=%s", strings.Join(listenAddresses, ",")),
-		"-c", fmt.Sprintf("application_name=%s", constants.AppName),
-		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
+		"-c", fmt.Sprintf("application_name=%s", app_specific.AppName),
+		"-c", fmt.Sprintf("cluster_name=%s", app_specific.AppName),
 
 		// log directory
 		"-c", fmt.Sprintf("log_directory=%s", filepaths.EnsureLogDir()),
@@ -459,7 +462,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		// Data Directory
 		"-D", filepaths.GetDataLocation())
 
-	if sslpassword := viper.GetString(constants.ArgDatabaseSSLPassword); sslpassword != "" {
+	if sslpassword := viper.GetString(pconstants.ArgDatabaseSSLPassword); sslpassword != "" {
 		postgresCmd.Args = append(
 			postgresCmd.Args,
 			"-c", fmt.Sprintf("ssl_passphrase_command_supports_reload=%s", "true"),
@@ -467,7 +470,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		)
 	}
 
-	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", filepaths.SteampipeDir))
+	postgresCmd.Env = append(os.Environ(), fmt.Sprintf("STEAMPIPE_INSTALL_DIR=%s", app_specific.InstallDir))
 
 	//  Check if the /etc/ssl directory exist in os
 	dirExist, _ := os.Stat(constants.SslConfDir)
@@ -664,7 +667,7 @@ func isSteampipePostgresProcess(ctx context.Context, cmdline []string) bool {
 	}
 	if strings.Contains(cmdline[0], "postgres") {
 		// this is a postgres process - but is it a steampipe service?
-		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", constants.AppName))
+		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", app_specific.AppName))
 	}
 	return false
 }

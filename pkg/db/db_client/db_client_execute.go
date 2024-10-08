@@ -14,19 +14,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	pqueryresult "github.com/turbot/pipe-fittings/queryresult"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
 
 // ExecuteSync implements Client
 // execute a query against this client and wait for the result
-func (c *DbClient) ExecuteSync(ctx context.Context, query string, args ...any) (*queryresult.SyncQueryResult, error) {
+func (c *DbClient) ExecuteSync(ctx context.Context, query string, args ...any) (*pqueryresult.SyncQueryResult, error) {
 	// acquire a session
 	sessionResult := c.AcquireSession(ctx)
 	if sessionResult.Error != nil {
@@ -43,9 +45,9 @@ func (c *DbClient) ExecuteSync(ctx context.Context, query string, args ...any) (
 
 // ExecuteSyncInSession implements Client
 // execute a query against this client and wait for the result
-func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string, args ...any) (*queryresult.SyncQueryResult, error) {
+func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.DatabaseSession, query string, args ...any) (*pqueryresult.SyncQueryResult, error) {
 	if query == "" {
-		return &queryresult.SyncQueryResult{}, nil
+		return &pqueryresult.SyncQueryResult{}, nil
 	}
 
 	result, err := c.ExecuteInSession(ctx, session, nil, query, args...)
@@ -53,8 +55,8 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 		return nil, error_helpers.WrapError(err)
 	}
 
-	syncResult := &queryresult.SyncQueryResult{Cols: result.Cols}
-	for row := range *result.RowChan {
+	syncResult := &pqueryresult.SyncQueryResult{Cols: result.Cols}
+	for row := range result.RowChan {
 		select {
 		case <-ctx.Done():
 		default:
@@ -66,7 +68,7 @@ func (c *DbClient) ExecuteSyncInSession(ctx context.Context, session *db_common.
 		}
 	}
 	if c.shouldFetchTiming() {
-		syncResult.TimingResult = <-result.TimingResult
+		syncResult.Timing = result.Timing.GetTiming()
 	}
 
 	return syncResult, err
@@ -146,7 +148,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 		// define a callback which fetches the timing information
 		// this will be invoked after reading rows is complete but BEFORE closing the rows object (which closes the connection)
 		timingCallback := func() {
-			c.getQueryTiming(ctxExecute, startTime, session, result.TimingResult)
+			c.getQueryTiming(ctxExecute, startTime, session, result.Timing)
 		}
 
 		// read in the rows and stream to the query result object
@@ -162,7 +164,7 @@ func (c *DbClient) ExecuteInSession(ctx context.Context, session *db_common.Data
 }
 
 func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
-	queryTimeout := time.Duration(viper.GetInt(constants.ArgDatabaseQueryTimeout)) * time.Second
+	queryTimeout := time.Duration(viper.GetInt(pconstants.ArgDatabaseQueryTimeout)) * time.Second
 	// if timeout is zero, do not set a timeout
 	if queryTimeout == 0 {
 		return ctx
@@ -175,7 +177,7 @@ func (c *DbClient) getExecuteContext(ctx context.Context) context.Context {
 	return newCtx
 }
 
-func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel chan *queryresult.TimingResult) {
+func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, session *db_common.DatabaseSession, resultChannel queryresult.TimingResultStream) {
 	// do not fetch if timing is disabled, unless output not JSON
 	if !c.shouldFetchTiming() {
 		return
@@ -190,7 +192,7 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 	// whatever happens, we need to reenable timing, and send the result back with at least the duration
 	defer func() {
 		c.disableTiming = false
-		resultChannel <- timingResult
+		resultChannel.SetTiming(timingResult)
 	}()
 
 	// load the timing summary
@@ -330,7 +332,7 @@ Loop:
 	}
 }
 
-func readRow(rows pgx.Rows, cols []*queryresult.ColumnDef) ([]interface{}, error) {
+func readRow(rows pgx.Rows, cols []*pqueryresult.ColumnDef) ([]interface{}, error) {
 	columnValues, err := rows.Values()
 	if err != nil {
 		return nil, error_helpers.WrapError(err)
@@ -338,7 +340,7 @@ func readRow(rows pgx.Rows, cols []*queryresult.ColumnDef) ([]interface{}, error
 	return populateRow(columnValues, cols)
 }
 
-func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]interface{}, error) {
+func populateRow(columnValues []interface{}, cols []*pqueryresult.ColumnDef) ([]interface{}, error) {
 	result := make([]interface{}, len(columnValues))
 	for i, columnValue := range columnValues {
 		if columnValue != nil {
@@ -398,7 +400,7 @@ func populateRow(columnValues []interface{}, cols []*queryresult.ColumnDef) ([]i
 }
 
 func isStreamingOutput() bool {
-	outputFormat := viper.GetString(constants.ArgOutput)
+	outputFormat := viper.GetString(pconstants.ArgOutput)
 
 	return helpers.StringSliceContains([]string{constants.OutputFormatCSV, constants.OutputFormatLine}, outputFormat)
 }

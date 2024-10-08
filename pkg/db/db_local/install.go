@@ -14,12 +14,14 @@ import (
 	psutils "github.com/shirou/gopsutil/process"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/app_specific"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 var ensureMux sync.Mutex
@@ -36,7 +38,7 @@ If you need to restore the contents of your public schema, please open an issue 
 
 // EnsureDBInstalled makes sure that the embedded postgres database is installed and ready to run
 func EnsureDBInstalled(ctx context.Context) (err error) {
-	utils.LogTime("db_local.EnsureDBInstalled start")
+	putils.LogTime("db_local.EnsureDBInstalled start")
 
 	ensureMux.Lock()
 
@@ -46,7 +48,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 			err = helpers.ToError(r)
 		}
 
-		utils.LogTime("db_local.EnsureDBInstalled end")
+		putils.LogTime("db_local.EnsureDBInstalled end")
 		ensureMux.Unlock()
 		close(doneChan)
 	}()
@@ -64,7 +66,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return err
 	}
 	if dbState != nil {
-		return fmt.Errorf("cannot install service - a previous version of the Steampipe service is still running. To stop running services, use %s ", constants.Bold("steampipe service stop"))
+		return fmt.Errorf("cannot install service - a previous version of the Steampipe service is still running. To stop running services, use %s ", pconstants.Bold("steampipe service stop"))
 	}
 
 	log.Println("[TRACE] calling removeRunningInstanceInfo")
@@ -141,8 +143,8 @@ func downloadAndInstallDbFiles(ctx context.Context) error {
 
 // IsDBInstalled checks and reports whether the embedded database binaries are available
 func IsDBInstalled() bool {
-	utils.LogTime("db_local.IsInstalled start")
-	defer utils.LogTime("db_local.IsInstalled end")
+	putils.LogTime("db_local.IsInstalled start")
+	defer putils.LogTime("db_local.IsInstalled end")
 	// check that both postgres binary and initdb binary exist
 	if _, err := os.Stat(filepaths.GetInitDbBinaryExecutablePath()); os.IsNotExist(err) {
 		return false
@@ -171,9 +173,9 @@ func IsFDWInstalled() bool {
 // prepareDb updates the db binaries and FDW if needed, and inits the database if required
 func prepareDb(ctx context.Context) error {
 	// load the db version info file
-	utils.LogTime("db_local.LoadDatabaseVersionFile start")
+	putils.LogTime("db_local.LoadDatabaseVersionFile start")
 	versionInfo, err := versionfile.LoadDatabaseVersionFile()
-	utils.LogTime("db_local.LoadDatabaseVersionFile end")
+	putils.LogTime("db_local.LoadDatabaseVersionFile end")
 	if err != nil {
 		return err
 	}
@@ -208,7 +210,7 @@ func prepareDb(ctx context.Context) error {
 		// get the message renderer from the context
 		// this allows the interactive client init to inject a custom renderer
 		messageRenderer := statushooks.MessageRendererFromContext(ctx)
-		messageRenderer("%s updated to %s.", constants.Bold("steampipe-postgres-fdw"), constants.Bold(constants.FdwVersion))
+		messageRenderer("%s updated to %s.", pconstants.Bold("steampipe-postgres-fdw"), pconstants.Bold(constants.FdwVersion))
 	}
 
 	if needsInit() {
@@ -230,8 +232,8 @@ func dbNeedsUpdate(versionInfo *versionfile.DatabaseVersionFile) bool {
 }
 
 func installFDW(ctx context.Context, firstSetup bool) (string, error) {
-	utils.LogTime("db_local.installFDW start")
-	defer utils.LogTime("db_local.installFDW end")
+	putils.LogTime("db_local.installFDW start")
+	defer putils.LogTime("db_local.installFDW end")
 
 	state, err := GetState()
 	if err != nil {
@@ -245,25 +247,25 @@ func installFDW(ctx context.Context, firstSetup bool) (string, error) {
 			}
 		}()
 	}
-	statushooks.SetStatus(ctx, fmt.Sprintf("Download & install %s…", constants.Bold("steampipe-postgres-fdw")))
+	statushooks.SetStatus(ctx, fmt.Sprintf("Download & install %s…", pconstants.Bold("steampipe-postgres-fdw")))
 	return ociinstaller.InstallFdw(ctx, filepaths.GetDatabaseLocation())
 }
 
 func needsInit() bool {
-	utils.LogTime("db_local.needsInit start")
-	defer utils.LogTime("db_local.needsInit end")
+	putils.LogTime("db_local.needsInit start")
+	defer putils.LogTime("db_local.needsInit end")
 
 	// test whether pg_hba.conf exists in our target directory
 	return !filehelpers.FileExists(filepaths.GetPgHbaConfLocation())
 }
 
 func runInstall(ctx context.Context, oldDbName *string) error {
-	utils.LogTime("db_local.runInstall start")
-	defer utils.LogTime("db_local.runInstall end")
+	putils.LogTime("db_local.runInstall start")
+	defer putils.LogTime("db_local.runInstall end")
 
 	statushooks.SetStatus(ctx, "Cleaning up…")
 
-	err := utils.RemoveDirectoryContents(filepaths.GetDataLocation())
+	err := putils.RemoveDirectoryContents(filepaths.GetDataLocation())
 	if err != nil {
 		log.Printf("[TRACE] %v", err)
 		return fmt.Errorf("Prepare database install location... FAILED!")
@@ -277,7 +279,7 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	}
 
 	statushooks.SetStatus(ctx, "Starting database…")
-	port, err := utils.GetNextFreePort()
+	port, err := putils.GetNextFreePort()
 	if err != nil {
 		log.Printf("[TRACE] getNextFreePort failed: %v", err)
 		return fmt.Errorf("Starting database... FAILED!")
@@ -355,8 +357,8 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 		// NOTE: If quoted, the application name includes the quotes. Worried about
 		// having spaces in the APPNAME, but leaving it unquoted since currently
 		// the APPNAME is hardcoded to be steampipe.
-		"-c", fmt.Sprintf("application_name=%s", constants.AppName),
-		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
+		"-c", fmt.Sprintf("application_name=%s", app_specific.AppName),
+		"-c", fmt.Sprintf("cluster_name=%s", app_specific.AppName),
 
 		// log directory
 		"-c", fmt.Sprintf("log_directory=%s", filepaths.EnsureLogDir()),
@@ -379,8 +381,8 @@ func isValidDatabaseName(databaseName string) bool {
 }
 
 func initDatabase() error {
-	utils.LogTime("db_local.install.initDatabase start")
-	defer utils.LogTime("db_local.install.initDatabase end")
+	putils.LogTime("db_local.install.initDatabase start")
+	defer putils.LogTime("db_local.install.initDatabase end")
 
 	// initdb sometimes fail due to invalid locale settings, to avoid this we update
 	// the locale settings to use 'C' only for the initdb process to complete, and
@@ -430,8 +432,8 @@ func initDatabase() error {
 }
 
 func installDatabaseWithPermissions(ctx context.Context, databaseName string, rawClient *pgx.Conn) error {
-	utils.LogTime("db_local.install.installDatabaseWithPermissions start")
-	defer utils.LogTime("db_local.install.installDatabaseWithPermissions end")
+	putils.LogTime("db_local.install.installDatabaseWithPermissions start")
+	defer putils.LogTime("db_local.install.installDatabaseWithPermissions end")
 
 	log.Println("[TRACE] installing database with name", databaseName)
 
@@ -503,8 +505,8 @@ func writePgHbaContent(databaseName string, username string) error {
 }
 
 func installForeignServer(ctx context.Context, rawClient *pgx.Conn) error {
-	utils.LogTime("db_local.installForeignServer start")
-	defer utils.LogTime("db_local.installForeignServer end")
+	putils.LogTime("db_local.installForeignServer start")
+	defer putils.LogTime("db_local.installForeignServer end")
 
 	statements := []string{
 		// Install the FDW. The name must match the binary file.
@@ -527,8 +529,8 @@ func installForeignServer(ctx context.Context, rawClient *pgx.Conn) error {
 }
 
 func updateDownloadedBinarySignature() error {
-	utils.LogTime("db_local.updateDownloadedBinarySignature start")
-	defer utils.LogTime("db_local.updateDownloadedBinarySignature end")
+	putils.LogTime("db_local.updateDownloadedBinarySignature start")
+	defer putils.LogTime("db_local.updateDownloadedBinarySignature end")
 
 	versionInfo, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {

@@ -5,9 +5,10 @@ import (
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -61,18 +62,18 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 			newStatus := !currentStatus
 
 			// convert current and new status to on/off
-			currentStatusString := constants.BoolToOnOff(currentStatus)
-			newStatusString := constants.BoolToOnOff(newStatus)
+			currentStatusString := pconstants.BoolToOnOff(currentStatus)
+			newStatusString := pconstants.BoolToOnOff(newStatus)
 
 			// what is the action to get to the new status
-			actionString := constants.BoolToEnableDisable(newStatus)
+			actionString := pconstants.BoolToEnableDisable(newStatus)
 
 			return ValidationResult{
 				Message: fmt.Sprintf(`%s mode is %s. You can %s it with: %s.`,
 					title,
-					constants.Bold(currentStatusString),
+					pconstants.Bold(currentStatusString),
 					actionString,
-					constants.Bold(fmt.Sprintf("%s %s", metaquery, newStatusString))),
+					pconstants.Bold(fmt.Sprintf("%s %s", metaquery, newStatusString))),
 			}
 		}
 		if numArgs > 1 {

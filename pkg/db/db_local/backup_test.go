@@ -8,13 +8,13 @@ import (
 	"time"
 
 	filehelpers "github.com/turbot/go-kit/files"
-
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 func TestTrimBackups(t *testing.T) {
-	filepaths.SteampipeDir, _ = filehelpers.Tildefy("~/.steampipe")
+	app_specific.InstallDir, _ = filehelpers.Tildefy("~/.steampipe")
 	// create backups more than MaxBackups
 	backupDir := filepaths.EnsureBackupsDir()
 	filesCreated := []string{}

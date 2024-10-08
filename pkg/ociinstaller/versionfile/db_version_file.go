@@ -2,26 +2,25 @@ package versionfile
 
 import (
 	"encoding/json"
+	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/versionfile"
+	"github.com/turbot/steampipe/pkg/filepaths"
 	"log"
 	"os"
-	"time"
-
-	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 const DatabaseStructVersion = 20220411
 
 type DatabaseVersionFile struct {
-	FdwExtension  InstalledVersion `json:"fdw_extension"`
-	EmbeddedDB    InstalledVersion `json:"embedded_db"`
-	StructVersion int64            `json:"struct_version"`
+	FdwExtension  versionfile.InstalledVersion `json:"fdw_extension"`
+	EmbeddedDB    versionfile.InstalledVersion `json:"embedded_db"`
+	StructVersion int64                        `json:"struct_version"`
 }
 
 func NewDBVersionFile() *DatabaseVersionFile {
 	return &DatabaseVersionFile{
-		FdwExtension:  InstalledVersion{},
-		EmbeddedDB:    InstalledVersion{},
+		FdwExtension:  versionfile.InstalledVersion{},
+		EmbeddedDB:    versionfile.InstalledVersion{},
 		StructVersion: DatabaseStructVersion,
 	}
 }
@@ -48,12 +47,12 @@ func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 		log.Println("[ERROR]", "Error while reading DB version file", err)
 		return nil, err
 	}
-	if data.FdwExtension == (InstalledVersion{}) {
-		data.FdwExtension = InstalledVersion{}
+	if data.FdwExtension == (versionfile.InstalledVersion{}) {
+		data.FdwExtension = versionfile.InstalledVersion{}
 	}
 
-	if data.EmbeddedDB == (InstalledVersion{}) {
-		data.EmbeddedDB = InstalledVersion{}
+	if data.EmbeddedDB == (versionfile.InstalledVersion{}) {
+		data.EmbeddedDB = versionfile.InstalledVersion{}
 	}
 
 	return &data, nil
@@ -75,11 +74,4 @@ func (f *DatabaseVersionFile) write(path string) error {
 		return err
 	}
 	return os.WriteFile(path, versionFileJSON, 0644)
-}
-
-// FormatTime :: format time as RFC3339 in UTC
-func FormatTime(localTime time.Time) string {
-	loc, _ := time.LoadLocation("UTC")
-	utcTime := localTime.In(loc)
-	return (utcTime.Format(time.RFC3339))
 }

@@ -6,8 +6,9 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/querydisplay"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/display"
 )
 
 func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
@@ -16,12 +17,12 @@ func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
 
 		sessionSearchPath = helpers.RemoveFromStringSlice(sessionSearchPath, constants.InternalSchema)
 
-		display.ShowWrappedTable(
+		querydisplay.ShowWrappedTable(
 			[]string{"search_path"},
 			[][]string{
 				{strings.Join(sessionSearchPath, ",")},
 			},
-			&display.ShowWrappedTableOptions{AutoMerge: false},
+			&querydisplay.ShowWrappedTableOptions{AutoMerge: false},
 		)
 	} else {
 		arg := input.args()[0]
@@ -31,7 +32,7 @@ func setOrGetSearchPath(ctx context.Context, input *HandlerInput) error {
 			s = strings.TrimSpace(s)
 			paths = append(paths, s)
 		}
-		viper.Set(constants.ArgSearchPath, paths)
+		viper.Set(pconstants.ArgSearchPath, paths)
 
 		// now that the viper is set, call back into the client (exposed via QueryExecutor) which
 		// already knows how to setup the search_paths with the viper values
@@ -48,7 +49,7 @@ func setSearchPathPrefix(ctx context.Context, input *HandlerInput) error {
 		s = strings.TrimSpace(s)
 		paths = append(paths, s)
 	}
-	viper.Set(constants.ArgSearchPathPrefix, paths)
+	viper.Set(pconstants.ArgSearchPathPrefix, paths)
 
 	// now that the viper is set, call back into the client (exposed via QueryExecutor) which
 	// already knows how to setup the search_paths with the viper values

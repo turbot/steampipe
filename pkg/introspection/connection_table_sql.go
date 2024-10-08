@@ -3,10 +3,10 @@ package introspection
 import (
 	"fmt"
 
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
 )
 
@@ -136,7 +136,7 @@ DO
 	return getConnectionStateQueries(queryFormat, args)
 }
 
-func GetNewConnectionStateFromConnectionInsertSql(c *modconfig.Connection) []db_common.QueryWithArgs {
+func GetNewConnectionStateFromConnectionInsertSql(c *modconfig.SteampipeConnection) []db_common.QueryWithArgs {
 	queryFormat := `INSERT INTO %s.%s (name, 
 		state,
 		type,

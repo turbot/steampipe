@@ -16,9 +16,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          path: steampipe
 
-      - name: Unshallow
-        run: git fetch
+      - name: Checkout Pipe Fittings Components repository
+        uses: actions/checkout@v4
+        with:
+          repository: turbot/pipe-fittings
+          path: pipe-fittings
+          ref: v1.6.x
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -39,6 +45,7 @@ jobs:
           path: ${{ steps.go-cache-paths.outputs.go-build }}
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
 
+      # TODO fix this step (cant find the path to golangci.yml)
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         continue-on-error: true # we dont want to enforce just yet
@@ -50,22 +57,27 @@ jobs:
 
       - name: Run CLI Unit Tests
         run: |
+          cd steampipe
           go clean -testcache
           go test -timeout 30s ./... -test.v
 
-      - name: Run GoReleaser
+      - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
-          version: latest
-          args: release --clean --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
+          install-only: true
+
+      - name: Run GoReleaser
+        run: |
+          cd steampipe
+          goreleaser release --clean --snapshot --parallelism 2 --config=.acceptance.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Move build artifacts
         run: |
           mkdir ~/artifacts
-          mv $GITHUB_WORKSPACE/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
-          mv $GITHUB_WORKSPACE/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
+          mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
+          mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
 
       - name: List Build Artifacts
         run: ls -l ~/artifacts
@@ -108,18 +120,10 @@ jobs:
           - "dynamic_schema"
           - "dynamic_aggregators"
           - "cache"
-          - "mod_install"
-          - "mod_vars"
-          - "mod"
-          - "mod_require"
-          - "check"
           - "performance"
           - "config_precedence"
-          - "introspection"
           - "cloud"
           - "snapshot"
-          - "dashboard"
-          - "dashboard_parsing_validation"
           - "schema_cloning"
           - "exit_codes"
           - "force_stop"

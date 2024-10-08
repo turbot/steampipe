@@ -2,14 +2,13 @@ package cmdconfig
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type CmdBuilder struct {
@@ -111,24 +110,14 @@ func (c *CmdBuilder) AddBoolFlag(name string, defaultValue bool, desc string, op
 // AddCloudFlags is helper function to add the cloud flags to a command
 func (c *CmdBuilder) AddCloudFlags() *CmdBuilder {
 	return c.
-		AddStringFlag(constants.ArgPipesHost, constants.DefaultPipesHost, "Turbot Pipes host").
-		AddStringFlag(constants.ArgPipesToken, "", "Turbot Pipes authentication token").
-		AddStringFlag(constants.ArgCloudHost, constants.DefaultPipesHost, "Turbot Pipes host", FlagOptions.Deprecated(constants.ArgPipesHost)).
-		AddStringFlag(constants.ArgCloudToken, "", "Turbot Pipes authentication token", FlagOptions.Deprecated(constants.ArgPipesToken))
+		AddStringFlag(pconstants.ArgPipesHost, constants.DefaultPipesHost, "Turbot Pipes host").
+		AddStringFlag(pconstants.ArgPipesToken, "", "Turbot Pipes authentication token")
 }
 
 // AddWorkspaceDatabaseFlag is helper function to add the workspace-databse flag to a command
 func (c *CmdBuilder) AddWorkspaceDatabaseFlag() *CmdBuilder {
 	return c.
-		AddStringFlag(constants.ArgWorkspaceDatabase, constants.DefaultWorkspaceDatabase, "Turbot Pipes workspace database")
-}
-
-// AddModLocationFlag is helper function to add the mod-location flag to a command
-func (c *CmdBuilder) AddModLocationFlag() *CmdBuilder {
-	cwd, err := os.Getwd()
-	error_helpers.FailOnError(err)
-	return c.
-		AddStringFlag(constants.ArgModLocation, cwd, "Path to the workspace working directory")
+		AddStringFlag(pconstants.ArgWorkspaceDatabase, constants.DefaultWorkspaceDatabase, "Turbot Pipes workspace database")
 }
 
 // AddStringSliceFlag is a helper function to add a flag that accepts an array of strings

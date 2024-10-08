@@ -293,17 +293,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_success
 }
 
-@test "named query current folder" {
-  cd $FILE_PATH/test_data/mods/sample_workspace/query
-  run steampipe query query.named_query_1
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_named_query_current_folder.txt)"
-}
-
-@test "named query workspace folder" {
-  run steampipe query query.named_query_4 --mod-location "$FILE_PATH/test_data/mods/sample_workspace/"
-  assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_workspace_folder.txt)"
-}
-
 @test "sql file" {
   run steampipe query $FILE_PATH/test_data/mods/sample_workspace/query/named_query_7.sql
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_sql_file.txt)"

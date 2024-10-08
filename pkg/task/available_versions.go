@@ -10,15 +10,15 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/plugin"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 type AvailableVersionCache struct {
-	StructVersion uint32                               `json:"struct_version"`
-	CliCache      *CLIVersionCheckResponse             `json:"cli_version"`
-	PluginCache   map[string]plugin.VersionCheckReport `json:"plugin_version"`
+	StructVersion uint32                                     `json:"struct_version"`
+	CliCache      *CLIVersionCheckResponse                   `json:"cli_version"`
+	PluginCache   map[string]plugin.PluginVersionCheckReport `json:"plugin_version"`
 }
 
 func (av *AvailableVersionCache) asTable(ctx context.Context) (*bytes.Buffer, error) {
@@ -107,7 +107,7 @@ func ppNotificationLines() []string {
 }
 
 func (av *AvailableVersionCache) pluginNotificationMessage(ctx context.Context) []string {
-	var pluginsToUpdate []plugin.VersionCheckReport
+	var pluginsToUpdate []plugin.PluginVersionCheckReport
 
 	for _, r := range av.PluginCache {
 		if plugin.UpdateRequired(r) {
@@ -121,7 +121,7 @@ func (av *AvailableVersionCache) pluginNotificationMessage(ctx context.Context) 
 	return notificationLines
 }
 
-func (av *AvailableVersionCache) getPluginNotificationLines(reports []plugin.VersionCheckReport) []string {
+func (av *AvailableVersionCache) getPluginNotificationLines(reports []plugin.PluginVersionCheckReport) []string {
 	var notificationLines = []string{
 		"",
 		"Updated versions of the following plugins are available:",

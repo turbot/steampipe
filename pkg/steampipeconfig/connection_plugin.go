@@ -5,28 +5,25 @@ import (
 	"log"
 	"strings"
 
-	typehelpers "github.com/turbot/go-kit/types"
-
 	"github.com/hashicorp/go-plugin"
+	typehelpers "github.com/turbot/go-kit/types"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/utils"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 )
 
 type ConnectionPluginData struct {
-	Name    string
-	Config  string
-	Type    string
-	Options *options.Connection
-	Schema  *sdkproto.Schema
+	Name   string
+	Config string
+	Type   string
+	Schema *sdkproto.Schema
 }
 
 // ConnectionPlugin is a structure representing an instance of a plugin
@@ -42,12 +39,11 @@ type ConnectionPlugin struct {
 	PluginShortName     string
 }
 
-func (p ConnectionPlugin) addConnection(name string, config string, connectionOptions *options.Connection, connectionType string) {
+func (p ConnectionPlugin) addConnection(name string, config string, connectionType string) {
 	p.ConnectionMap[name] = &ConnectionPluginData{
-		Name:    name,
-		Config:  config,
-		Type:    connectionType,
-		Options: connectionOptions,
+		Name:   name,
+		Config: config,
+		Type:   connectionType,
 	}
 }
 
@@ -101,7 +97,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 	}
 	log.Printf("[TRACE] CreateConnectionPlugin creating %d %s", len(connectionNamesToCreate), utils.Pluralize("connection", len(connectionNamesToCreate)))
 
-	var connectionsToCreate = make([]*modconfig.Connection, len(connectionNamesToCreate))
+	var connectionsToCreate = make([]*modconfig.SteampipeConnection, len(connectionNamesToCreate))
 	for i, name := range connectionNamesToCreate {
 		connectionsToCreate[i] = GlobalConfig.Connections[name]
 	}
@@ -174,7 +170,7 @@ func CreateConnectionPlugins(pluginManager pluginshared.PluginManager, connectio
 	return requestedConnectionPluginMap, res
 }
 
-func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionResult, connectionsToCreate []*modconfig.Connection) {
+func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionResult, connectionsToCreate []*modconfig.SteampipeConnection) {
 	// handle PluginSdkCompatibilityError separately
 	var pluginsWithCompatibilityError = make(map[string]struct{})
 	var compatibilityErrorConnectionCount int
@@ -198,7 +194,7 @@ func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionRes
 		for _, c := range connectionsToCreate {
 			if c.Plugin == failedPluginInstance {
 
-				res.AddFailedConnection(c.Name, constants.ConnectionErrorPluginFailedToStart)
+				res.AddFailedConnection(c.Name, pconstants.ConnectionErrorPluginFailedToStart)
 			}
 		}
 	}
@@ -209,7 +205,7 @@ func handleGetFailures(getResponse *proto.GetResponse, res *RefreshConnectionRes
 			utils.Pluralize("plugin", pluginCount),
 			compatibilityErrorConnectionCount,
 			utils.Pluralize("connection", compatibilityErrorConnectionCount),
-			constants.Bold(fmt.Sprintf("steampipe plugin update %s", strings.Join(maps.Keys(pluginsWithCompatibilityError), " "))))
+			pconstants.Bold(fmt.Sprintf("steampipe plugin update %s", strings.Join(maps.Keys(pluginsWithCompatibilityError), " "))))
 		res.AddWarning(compatibilityWarning)
 	}
 }
@@ -286,7 +282,7 @@ func fullConnectionPluginMap(sparseConnectionPluginMap map[string]*ConnectionPlu
 }
 
 // createConnectionPlugin attaches to the plugin process
-func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.ReattachConfig) (*ConnectionPlugin, error) {
+func createConnectionPlugin(connection *modconfig.SteampipeConnection, reattach *proto.ReattachConfig) (*ConnectionPlugin, error) {
 	// we must have a plugin instance
 	if connection.PluginInstance == nil {
 		// unexpected
@@ -329,7 +325,7 @@ func createConnectionPlugin(connection *modconfig.Connection, reattach *proto.Re
 			log.Printf("[WARN] no connection config loaded for '%s', skipping", c)
 			continue
 		}
-		connectionPlugin.addConnection(c, config.Config, config.Options, config.Type)
+		connectionPlugin.addConnection(c, config.Config, config.Type)
 	}
 
 	log.Printf("[TRACE] created connection plugin for connection: '%s', pluginInstance: '%s'", connectionName, pluginInstance)

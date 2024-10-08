@@ -6,23 +6,25 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	versionfile "github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 )
 
 // InstallDB :: Install Postgres files fom OCI image
 func InstallDB(ctx context.Context, dblocation string) (string, error) {
-	tempDir := NewTempDir(dblocation)
+	tempDir := ociinstaller.NewTempDir(dblocation)
 	defer func() {
 		if err := tempDir.Delete(); err != nil {
 			log.Printf("[TRACE] Failed to delete temp dir '%s' after installing db files: %s", tempDir, err)
 		}
 	}()
 
-	imageDownloader := NewOciDownloader()
+	imageDownloader := newDbDownloader()
 
 	// Download the blobs
-	image, err := imageDownloader.Download(ctx, NewSteampipeImageRef(constants.PostgresImageRef), ImageTypeDatabase, tempDir.Path)
+	image, err := imageDownloader.Download(ctx, ociinstaller.NewImageRef(constants.PostgresImageRef), ImageTypeDatabase, tempDir.Path)
 	if err != nil {
 		return "", err
 	}
@@ -38,8 +40,8 @@ func InstallDB(ctx context.Context, dblocation string) (string, error) {
 	return string(image.OCIDescriptor.Digest), nil
 }
 
-func updateVersionFileDB(image *SteampipeImage) error {
-	timeNow := versionfile.FormatTime(time.Now())
+func updateVersionFileDB(image *ociinstaller.OciImage[*dbImage, *dbImageConfig]) error {
+	timeNow := utils.FormatTime(time.Now())
 	v, err := versionfile.LoadDatabaseVersionFile()
 	if err != nil {
 		return err
@@ -47,13 +49,13 @@ func updateVersionFileDB(image *SteampipeImage) error {
 	v.EmbeddedDB.Version = image.Config.Database.Version
 	v.EmbeddedDB.Name = "embeddedDB"
 	v.EmbeddedDB.ImageDigest = string(image.OCIDescriptor.Digest)
-	v.EmbeddedDB.InstalledFrom = image.ImageRef.requestedRef
+	v.EmbeddedDB.InstalledFrom = image.ImageRef.RequestedRef
 	v.EmbeddedDB.LastCheckedDate = timeNow
 	v.EmbeddedDB.InstallDate = timeNow
 	return v.Save()
 }
 
-func installDbFiles(image *SteampipeImage, tempDir string, dest string) error {
-	source := filepath.Join(tempDir, image.Database.ArchiveDir)
-	return moveFolderWithinPartition(source, dest)
+func installDbFiles(image *ociinstaller.OciImage[*dbImage, *dbImageConfig], tempDir string, dest string) error {
+	source := filepath.Join(tempDir, image.Data.ArchiveDir)
+	return ociinstaller.MoveFolderWithinPartition(source, dest)
 }

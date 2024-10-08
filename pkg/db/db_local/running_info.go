@@ -11,9 +11,9 @@ import (
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
+	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 const RunningDBStructVersion = 20220411
@@ -55,7 +55,7 @@ func getListenAddresses(listenAddresses []string) []string {
 	addresses := []string{}
 
 	if helpers.StringSliceContains(listenAddresses, "localhost") {
-		loopAddrs, err := utils.LocalLoopbackAddresses()
+		loopAddrs, err := putils.LocalLoopbackAddresses()
 		if err != nil {
 			return nil
 		}
@@ -65,11 +65,11 @@ func getListenAddresses(listenAddresses []string) []string {
 	if helpers.StringSliceContains(listenAddresses, "*") {
 		// remove the * wildcard, we want to replace that with the actual addresses
 		listenAddresses = helpers.RemoveFromStringSlice(listenAddresses, "*")
-		loopAddrs, err := utils.LocalLoopbackAddresses()
+		loopAddrs, err := putils.LocalLoopbackAddresses()
 		if err != nil {
 			return nil
 		}
-		publicAddrs, err := utils.LocalPublicAddresses()
+		publicAddrs, err := putils.LocalPublicAddresses()
 		if err != nil {
 			return nil
 		}
@@ -135,8 +135,8 @@ func (r *RunningDBInstanceInfo) String() string {
 }
 
 func loadRunningInstanceInfo() (*RunningDBInstanceInfo, error) {
-	utils.LogTime("db.loadRunningInstanceInfo start")
-	defer utils.LogTime("db.loadRunningInstanceInfo end")
+	putils.LogTime("db.loadRunningInstanceInfo start")
+	defer putils.LogTime("db.loadRunningInstanceInfo end")
 
 	if !filehelpers.FileExists(filepaths.RunningInfoFilePath()) {
 		return nil, nil

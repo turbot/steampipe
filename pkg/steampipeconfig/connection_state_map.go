@@ -2,16 +2,17 @@ package steampipeconfig
 
 import (
 	"encoding/json"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	"log"
 	"os"
 	"time"
 
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/utils"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 )
 
@@ -20,7 +21,7 @@ type ConnectionStateSummary map[string]int
 type ConnectionStateMap map[string]*ConnectionState
 
 // GetRequiredConnectionStateMap populates a map of connection data for all connections in connectionMap
-func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connection, currentConnectionState ConnectionStateMap) (ConnectionStateMap, map[string][]modconfig.Connection, error_helpers.ErrorAndWarnings) {
+func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.SteampipeConnection, currentConnectionState ConnectionStateMap) (ConnectionStateMap, map[string][]modconfig.SteampipeConnection, error_helpers.ErrorAndWarnings) {
 	utils.LogTime("steampipeconfig.GetRequiredConnectionStateMap start")
 	defer utils.LogTime("steampipeconfig.GetRequiredConnectionStateMap end")
 
@@ -31,7 +32,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 	pluginModTimeMap := make(map[string]time.Time)
 
 	// map of missing plugins, keyed by plugin alias, value is list of connections using missing plugin
-	missingPluginMap := make(map[string][]modconfig.Connection)
+	missingPluginMap := make(map[string][]modconfig.SteampipeConnection)
 
 	utils.LogTime("steampipeconfig.getRequiredConnections config - iteration start")
 	// populate file mod time for each referenced plugin
@@ -43,7 +44,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 			requiredState[connection.Name] = newErrorConnectionState(connection)
 			// if error is a missing plugin, add to missingPluginMap
 			// this will be used to build missing plugin warnings
-			if connection.Error.Error() == constants.ConnectionErrorPluginNotInstalled {
+			if connection.Error.Error() == pconstants.ConnectionErrorPluginNotInstalled {
 				missingPluginMap[connection.PluginAlias] = append(missingPluginMap[connection.PluginAlias], *connection)
 			} else {
 				// otherwise add error to result as warning, so we display it
@@ -84,7 +85,7 @@ func GetRequiredConnectionStateMap(connectionMap map[string]*modconfig.Connectio
 	return requiredState, missingPluginMap, res
 }
 
-func newErrorConnectionState(connection *modconfig.Connection) *ConnectionState {
+func newErrorConnectionState(connection *modconfig.SteampipeConnection) *ConnectionState {
 	res := NewConnectionState(connection, time.Now())
 	res.SetError(connection.Error.Error())
 	return res

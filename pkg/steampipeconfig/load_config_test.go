@@ -8,12 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	utils "github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/pipe-fittings/app_specific"
+	"github.com/turbot/pipe-fittings/hclhelpers"
+	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/utils"
 	"golang.org/x/exp/maps"
-
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
 )
 
 // TODO KAI add plugin block tests
@@ -51,7 +50,7 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	"multiple_connections": {
 		steampipeDir: "testdata/connection_config/multiple_connections",
 		expected: &SteampipeConfig{
-			Connections: map[string]*modconfig.Connection{
+			Connections: map[string]*modconfig.SteampipeConnection{
 				"aws_dmi_001": {
 					Name:           "aws_dmi_001",
 					PluginAlias:    "aws",
@@ -60,14 +59,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Type:           "",
 					ImportSchema:   "enabled",
 					Config:         "access_key = \"aws_dmi_001_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_001_secret_key\"\n",
-					DeclRange: modconfig.Range{
+					DeclRange: hclhelpers.Range{
 						Filename: "$$test_pwd$$/testdata/connection_config/multiple_connections/config/connection1.spc",
-						Start: modconfig.Pos{
+						Start: hclhelpers.Pos{
 							Line:   1,
 							Column: 1,
 							Byte:   0,
 						},
-						End: modconfig.Pos{
+						End: hclhelpers.Pos{
 							Line:   1,
 							Column: 11,
 							Byte:   10,
@@ -82,24 +81,20 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 					Type:           "",
 					ImportSchema:   "enabled",
 					Config:         "access_key = \"aws_dmi_002_access_key\"\nregions    = \"- us-east-1\\n-us-west-\"\nsecret_key = \"aws_dmi_002_secret_key\"\n",
-					DeclRange: modconfig.Range{
+					DeclRange: hclhelpers.Range{
 						Filename: "$$test_pwd$$/testdata/connection_config/multiple_connections/config/connection2.spc",
-						Start: modconfig.Pos{
+						Start: hclhelpers.Pos{
 							Line:   1,
 							Column: 1,
 							Byte:   0,
 						},
-						End: modconfig.Pos{
+						End: hclhelpers.Pos{
 							Line:   1,
 							Column: 11,
 							Byte:   10,
 						},
 					},
 				},
-			},
-			DefaultConnectionOptions: &options.Connection{
-				Cache:    &trueVal,
-				CacheTTL: &ttlVal,
 			},
 		},
 	},
@@ -115,14 +110,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//				Type:           "",
 	//				ImportSchema:   "enabled",
 	//				Config:         "",
-	//				DeclRange: modconfig.Range{
+	//				DeclRange: plugin.Range{
 	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection/config/connection1.spc",
-	//					Start: modconfig.Pos{
+	//					Start: plugin.Pos{
 	//						Line:   1,
 	//						Column: 1,
 	//						Byte:   0,
 	//					},
-	//					End: modconfig.Pos{
+	//					End: plugin.Pos{
 	//						Line:   1,
 	//						Column: 11,
 	//						Byte:   10,
@@ -148,14 +143,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//				Type:           "",
 	//				ImportSchema:   "enabled",
 	//				Config:         "",
-	//				DeclRange: modconfig.Range{
+	//				DeclRange: plugin.Range{
 	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
-	//					Start: modconfig.Pos{
+	//					Start: plugin.Pos{
 	//						Line:   1,
 	//						Column: 1,
 	//						Byte:   0,
 	//					},
-	//					End: modconfig.Pos{
+	//					End: plugin.Pos{
 	//						Line:   1,
 	//						Column: 11,
 	//						Byte:   10,
@@ -195,14 +190,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//				Type:           "",
 	//				ImportSchema:   "enabled",
 	//				Config:         "",
-	//				DeclRange: modconfig.Range{
+	//				DeclRange: plugin.Range{
 	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
-	//					Start: modconfig.Pos{
+	//					Start: plugin.Pos{
 	//						Line:   1,
 	//						Column: 1,
 	//						Byte:   0,
 	//					},
-	//					End: modconfig.Pos{
+	//					End: plugin.Pos{
 	//						Line:   1,
 	//						Column: 11,
 	//						Byte:   10,
@@ -237,14 +232,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//				Type:           "",
 	//				ImportSchema:   "enabled",
 	//				Config:         "",
-	//				DeclRange: modconfig.Range{
+	//				DeclRange: plugin.Range{
 	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_options/config/connection1.spc",
-	//					Start: modconfig.Pos{
+	//					Start: plugin.Pos{
 	//						Line:   1,
 	//						Column: 1,
 	//						Byte:   0,
 	//					},
-	//					End: modconfig.Pos{
+	//					End: plugin.Pos{
 	//						Line:   1,
 	//						Column: 11,
 	//						Byte:   10,
@@ -281,14 +276,14 @@ var testCasesLoadConfig = map[string]loadConfigTest{
 	//					Cache:    &trueVal,
 	//					CacheTTL: &ttlVal,
 	//				},
-	//				DeclRange: modconfig.Range{
+	//				DeclRange: plugin.Range{
 	//					Filename: "$$test_pwd$$/testdata/connection_config/single_connection_with_default_and_connection_options/config/connection1.spc",
-	//					Start: modconfig.Pos{
+	//					Start: plugin.Pos{
 	//						Line:   1,
 	//						Column: 1,
 	//						Byte:   0,
 	//					},
-	//					End: modconfig.Pos{
+	//					End: plugin.Pos{
 	//						Line:   1,
 	//						Column: 11,
 	//						Byte:   10,
@@ -359,8 +354,8 @@ func TestLoadConfig(t *testing.T) {
 			t.Errorf("failed to build absolute config filepath from %s", workspaceDir)
 		}
 
-		// set SteampipeDir
-		filepaths.SteampipeDir = steampipeDir
+		// set app_specific.InstallDir
+		app_specific.InstallDir = steampipeDir
 
 		// now load config
 		config, errorsAndWarnings := loadSteampipeConfig(context.TODO(), workspaceDir, "")
@@ -393,16 +388,10 @@ func SteampipeConfigEquals(left, right *SteampipeConfig) bool {
 	}
 
 	if !maps.EqualFunc(left.Connections, right.Connections,
-		func(c1, c2 *modconfig.Connection) bool { return c1.Equals(c2) }) {
-		return false
-	}
-	if !reflect.DeepEqual(left.DefaultConnectionOptions, right.DefaultConnectionOptions) {
+		func(c1, c2 *modconfig.SteampipeConnection) bool { return c1.Equals(c2) }) {
 		return false
 	}
 	if !reflect.DeepEqual(left.DatabaseOptions, right.DatabaseOptions) {
-		return false
-	}
-	if !reflect.DeepEqual(left.TerminalOptions, right.TerminalOptions) {
 		return false
 	}
 	if !reflect.DeepEqual(left.GeneralOptions, right.GeneralOptions) {

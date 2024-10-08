@@ -3,16 +3,16 @@ package ociinstaller
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/ociinstaller"
 	"log"
 	"path/filepath"
 
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 // InstallAssets installs the Steampipe report server assets
 func InstallAssets(ctx context.Context, assetsLocation string) error {
-	tempDir := NewTempDir(assetsLocation)
+	tempDir := ociinstaller.NewTempDir(assetsLocation)
 	defer func() {
 		if err := tempDir.Delete(); err != nil {
 			log.Printf("[TRACE] Failed to delete temp dir '%s' after installing assets: %s", tempDir, err)
@@ -20,8 +20,8 @@ func InstallAssets(ctx context.Context, assetsLocation string) error {
 	}()
 
 	// download the blobs
-	imageDownloader := NewOciDownloader()
-	image, err := imageDownloader.Download(ctx, NewSteampipeImageRef(constants.DashboardAssetsImageRef), ImageTypeAssets, tempDir.Path)
+	imageDownloader := newAssetDownloader()
+	image, err := imageDownloader.Download(ctx, ociinstaller.NewImageRef(constants.DashboardAssetsImageRef), ImageTypeAssets, tempDir.Path)
 	if err != nil {
 		return err
 	}
@@ -34,11 +34,11 @@ func InstallAssets(ctx context.Context, assetsLocation string) error {
 	return nil
 }
 
-func installAssetsFiles(image *SteampipeImage, tempdir string, dest string) error {
-	fileName := image.Assets.ReportUI
+func installAssetsFiles(image *ociinstaller.OciImage[*assetsImage, *assetsImageConfig], tempdir string, dest string) error {
+	fileName := image.Data.ReportUI
 	sourcePath := filepath.Join(tempdir, fileName)
-	if err := moveFolderWithinPartition(sourcePath, filepaths.EnsureDashboardAssetsDir()); err != nil {
-		return fmt.Errorf("could not install %s to %s", sourcePath, filepaths.EnsureDashboardAssetsDir())
+	if err := ociinstaller.MoveFolderWithinPartition(sourcePath, dest); err != nil {
+		return fmt.Errorf("could not install %s to %s", sourcePath, dest)
 	}
 	return nil
 }

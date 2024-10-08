@@ -3,13 +3,13 @@ package db_client
 import (
 	"context"
 	"fmt"
+	"github.com/turbot/pipe-fittings/constants"
 	"log"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )
 

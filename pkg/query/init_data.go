@@ -3,24 +3,27 @@ package query
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/export"
 	"github.com/turbot/steampipe/pkg/initialisation"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/workspace"
 )
 
 type InitData struct {
 	initialisation.InitData
 
 	cancelInitialisation context.CancelFunc
+	StartTime            time.Time
 	Loaded               chan struct{}
 	// map of query name to resolved query (key is the query text for command line queries)
 	Queries []*modconfig.ResolvedQuery
@@ -31,37 +34,14 @@ type InitData struct {
 // InitData.Done closes after asynchronous initialization completes
 func NewInitData(ctx context.Context, args []string) *InitData {
 	i := &InitData{
-		InitData: *initialisation.NewInitData(),
-		Loaded:   make(chan struct{}),
-	}
-	// for interactive mode - do the home directory modfile check before init
-	if viper.GetBool(constants.ConfigKeyInteractive) {
-		path := viper.GetString(constants.ArgModLocation)
-		modFilePath, _ := workspace.FindModFilePath(path)
-
-		// if the user cancels - no need to continue init
-		if err := workspace.HomeDirectoryModfileCheck(ctx, filepath.Dir(modFilePath)); err != nil {
-			i.Result.Error = err
-			close(i.Loaded)
-			return i
-		}
-		// home dir modfile already done - set the viper config
-		viper.Set(constants.ConfigKeyBypassHomeDirModfileWarning, true)
+		StartTime: time.Now(),
+		InitData:  *initialisation.NewInitData(),
+		Loaded:    make(chan struct{}),
 	}
 
 	statushooks.SetStatus(ctx, "Loading workspace")
 
-	// load workspace variables syncronously
-	w, inputVariables, errAndWarnings := workspace.LoadWorkspaceVars(ctx)
-	if errAndWarnings.GetError() != nil {
-		i.Result.Error = fmt.Errorf("failed to load workspace: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())
-		return i
-	}
-
-	i.Result.AddWarnings(errAndWarnings.Warnings...)
-	i.Workspace = w
-
-	go i.init(ctx, inputVariables, args)
+	go i.init(ctx, args)
 
 	return i
 }
@@ -97,7 +77,7 @@ func (i *InitData) Cleanup(ctx context.Context) {
 	}
 }
 
-func (i *InitData) init(ctx context.Context, inputVariables *modconfig.ModVariableMap, args []string) {
+func (i *InitData) init(ctx context.Context, args []string) {
 	defer func() {
 		close(i.Loaded)
 		// clear the cancelInitialisation function
@@ -105,31 +85,23 @@ func (i *InitData) init(ctx context.Context, inputVariables *modconfig.ModVariab
 	}()
 
 	// validate export args
-	if len(viper.GetStringSlice(constants.ArgExport)) > 0 {
+	if len(viper.GetStringSlice(pconstants.ArgExport)) > 0 {
 		i.RegisterExporters(queryExporters()...)
 
 		// validate required export formats
-		if err := i.ExportManager.ValidateExportFormat(viper.GetStringSlice(constants.ArgExport)); err != nil {
+		if err := i.ExportManager.ValidateExportFormat(viper.GetStringSlice(pconstants.ArgExport)); err != nil {
 			i.Result.Error = err
 			return
 		}
 	}
 
-	// load the workspace mod (this load is asynchronous as it is within the async init function)
-	errAndWarnings := i.Workspace.LoadWorkspaceMod(ctx, inputVariables)
-	i.Result.AddWarnings(errAndWarnings.Warnings...)
-	if errAndWarnings.GetError() != nil {
-		i.Result.Error = fmt.Errorf("failed to load workspace mod: %s", error_helpers.HandleCancelError(errAndWarnings.GetError()).Error())
-		return
-	}
-
 	// set max DB connections to 1
-	viper.Set(constants.ArgMaxParallel, 1)
+	viper.Set(pconstants.ArgMaxParallel, 1)
 
 	statushooks.SetStatus(ctx, "Resolving arguments")
 
 	// convert the query or sql file arg into an array of executable queries - check names queries in the current workspace
-	resolvedQueries, err := i.Workspace.GetQueriesFromArgs(args)
+	resolvedQueries, err := getQueriesFromArgs(args)
 	if err != nil {
 		i.Result.Error = err
 		return
@@ -155,4 +127,84 @@ func (i *InitData) init(ctx context.Context, inputVariables *modconfig.ModVariab
 			Size: 2,
 		}),
 	)
+}
+
+// getQueriesFromArgs retrieves queries from args
+//
+// For each arg check if it is a named query or a file, before falling back to treating it as sql
+func getQueriesFromArgs(args []string) ([]*modconfig.ResolvedQuery, error) {
+
+	var queries = make([]*modconfig.ResolvedQuery, len(args))
+	for idx, arg := range args {
+		resolvedQuery, err := ResolveQueryAndArgsFromSQLString(arg)
+		if err != nil {
+			return nil, err
+		}
+		if len(resolvedQuery.ExecuteSQL) > 0 {
+			// default name to the query text
+			resolvedQuery.Name = resolvedQuery.ExecuteSQL
+
+			queries[idx] = resolvedQuery
+		}
+	}
+	return queries, nil
+}
+
+// ResolveQueryAndArgsFromSQLString attempts to resolve 'arg' to a query and query args
+func ResolveQueryAndArgsFromSQLString(sqlString string) (*modconfig.ResolvedQuery, error) {
+	var err error
+
+	// 2) is this a file
+	// get absolute filename
+	filePath, err := filepath.Abs(sqlString)
+	if err != nil {
+		return nil, fmt.Errorf("%s", err.Error())
+	}
+	fileQuery, fileExists, err := getQueryFromFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("%s", err.Error())
+	}
+	if fileExists {
+		if fileQuery.ExecuteSQL == "" {
+			error_helpers.ShowWarning(fmt.Sprintf("file '%s' does not contain any data", filePath))
+			// (just return the empty query - it will be filtered above)
+		}
+		return fileQuery, nil
+	}
+	// the argument cannot be resolved as an existing file
+	// if it has a sql suffix (i.e we believe the user meant to specify a file) return a file not found error
+	if strings.HasSuffix(strings.ToLower(sqlString), ".sql") {
+		return nil, fmt.Errorf("file '%s' does not exist", filePath)
+	}
+
+	// 2) just use the query string as is and assume it is valid SQL
+	return &modconfig.ResolvedQuery{RawSQL: sqlString, ExecuteSQL: sqlString}, nil
+}
+
+// try to treat the input string as a file name and if it exists, return its contents
+func getQueryFromFile(input string) (*modconfig.ResolvedQuery, bool, error) {
+	// get absolute filename
+	path, err := filepath.Abs(input)
+	if err != nil {
+		//nolint:golint,nilerr // if this gives any error, return not exist
+		return nil, false, nil
+	}
+
+	// does it exist?
+	if _, err := os.Stat(path); err != nil {
+		//nolint:golint,nilerr // if this gives any error, return not exist (we may get a not found or a path too long for example)
+		return nil, false, nil
+	}
+
+	// read file
+	fileBytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, true, err
+	}
+
+	res := &modconfig.ResolvedQuery{
+		RawSQL:     string(fileBytes),
+		ExecuteSQL: string(fileBytes),
+	}
+	return res, true, nil
 }

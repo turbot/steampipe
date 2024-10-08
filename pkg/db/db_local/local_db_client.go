@@ -7,12 +7,13 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spf13/viper"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_client"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/error_helpers"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // LocalDbClient wraps over DbClient
@@ -23,7 +24,7 @@ type LocalDbClient struct {
 }
 
 // GetLocalClient starts service if needed and creates a new LocalDbClient
-func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (*LocalDbClient, error_helpers.ErrorAndWarnings) {
+func GetLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_client.ClientOption) (*LocalDbClient, error_helpers.ErrorAndWarnings) {
 	utils.LogTime("db.GetLocalClient start")
 	defer utils.LogTime("db.GetLocalClient end")
 
@@ -31,7 +32,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	defer log.Printf("[INFO] GetLocalClient complete")
 
 	listenAddresses := StartListenType(ListenTypeLocal).ToListenAddresses()
-	port := viper.GetInt(constants.ArgDatabasePort)
+	port := viper.GetInt(pconstants.ArgDatabasePort)
 	log.Println(fmt.Sprintf("[TRACE] GetLocalClient - listenAddresses=%s, port=%d", listenAddresses, port))
 	// start db if necessary
 	if err := EnsureDBInstalled(ctx); err != nil {
@@ -45,7 +46,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	}
 
 	log.Printf("[INFO] newLocalClient")
-	client, err := newLocalClient(ctx, invoker, onConnectionCallback, opts...)
+	client, err := newLocalClient(ctx, invoker, opts...)
 	if err != nil {
 		ShutdownService(ctx, invoker)
 		startResult.Error = err
@@ -67,7 +68,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 
 // newLocalClient verifies that the local database instance is running and returns a LocalDbClient to interact with it
 // (This FAILS if local service is not running - use GetLocalClient to start service first)
-func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnectionCallback db_client.DbConnectionCallback, opts ...db_client.ClientOption) (*LocalDbClient, error) {
+func newLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_client.ClientOption) (*LocalDbClient, error) {
 	utils.LogTime("db.newLocalClient start")
 	defer utils.LogTime("db.newLocalClient end")
 
@@ -75,7 +76,7 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, onConnection
 	if err != nil {
 		return nil, err
 	}
-	dbClient, err := db_client.NewDbClient(ctx, connString, onConnectionCallback, opts...)
+	dbClient, err := db_client.NewDbClient(ctx, connString, opts...)
 	if err != nil {
 		log.Printf("[TRACE] error getting local client %s", err.Error())
 		return nil, err

@@ -7,15 +7,15 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/serversettings"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 	"golang.org/x/sync/semaphore"
 )
@@ -59,20 +59,9 @@ type DbClient struct {
 	onConnectionCallback DbConnectionCallback
 }
 
-func NewDbClient(ctx context.Context, connectionString string, onConnectionCallback DbConnectionCallback, opts ...ClientOption) (_ *DbClient, err error) {
+func NewDbClient(ctx context.Context, connectionString string, opts ...ClientOption) (_ *DbClient, err error) {
 	utils.LogTime("db_client.NewDbClient start")
 	defer utils.LogTime("db_client.NewDbClient end")
-
-	wg := &sync.WaitGroup{}
-	// wrap onConnectionCallback to use wait group
-	var wrappedOnConnectionCallback DbConnectionCallback
-	if onConnectionCallback != nil {
-		wrappedOnConnectionCallback = func(ctx context.Context, conn *pgx.Conn) error {
-			wg.Add(1)
-			defer wg.Done()
-			return onConnectionCallback(ctx, conn)
-		}
-	}
 
 	client := &DbClient{
 		// a weighted semaphore to control the maximum number parallel
@@ -80,9 +69,7 @@ func NewDbClient(ctx context.Context, connectionString string, onConnectionCallb
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
 		sessions:                make(map[uint32]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
-		// store the callback
-		onConnectionCallback: wrappedOnConnectionCallback,
-		connectionString:     connectionString,
+		connectionString:        connectionString,
 	}
 
 	defer func() {
@@ -151,13 +138,13 @@ func (c *DbClient) shouldFetchTiming() bool {
 		return false
 	}
 	// only fetch timing if timing flag is set, or output is JSON
-	return (viper.GetString(constants.ArgTiming) != constants.ArgOff) ||
-		(viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON)
+	return (viper.GetString(pconstants.ArgTiming) != pconstants.ArgOff) ||
+		(viper.GetString(pconstants.ArgOutput) == constants.OutputFormatJSON)
 
 }
 func (c *DbClient) shouldFetchVerboseTiming() bool {
-	return (viper.GetString(constants.ArgTiming) == constants.ArgVerbose) ||
-		(viper.GetString(constants.ArgOutput) == constants.OutputFormatJSON)
+	return (viper.GetString(pconstants.ArgTiming) == pconstants.ArgVerbose) ||
+		(viper.GetString(pconstants.ArgOutput) == constants.OutputFormatJSON)
 }
 
 // ServerSettings returns the settings of the steampipe service that this DbClient is connected to
