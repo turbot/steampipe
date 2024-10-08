@@ -71,11 +71,6 @@ Examples:
 			cmdconfig.FlagOptions.NoOptDefVal(pconstants.ArgOn)).
 		AddStringSliceFlag(pconstants.ArgSearchPath, nil, "Set a custom search_path for the steampipe user for a query session (comma-separated)").
 		AddStringSliceFlag(pconstants.ArgSearchPathPrefix, nil, "Set a prefix to the current search path for a query session (comma-separated)").
-		AddStringSliceFlag(pconstants.ArgVarFile, nil, "Specify a file containing variable values").
-		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
-		// Cobra will interpret values passed to a StringSliceFlag as CSV,
-		// where args passed to StringArrayFlag are not parsed and used raw
-		AddStringArrayFlag(pconstants.ArgVariable, nil, "Specify the value of a variable").
 		AddBoolFlag(pconstants.ArgInput, true, "Enable interactive prompts").
 		AddBoolFlag(pconstants.ArgSnapshot, false, "Create snapshot in Turbot Pipes with the default (workspace) visibility").
 		AddBoolFlag(pconstants.ArgShare, false, "Create snapshot in Turbot Pipes with 'anyone_with_link' visibility").

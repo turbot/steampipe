@@ -111,9 +111,7 @@ func (c *CmdBuilder) AddBoolFlag(name string, defaultValue bool, desc string, op
 func (c *CmdBuilder) AddCloudFlags() *CmdBuilder {
 	return c.
 		AddStringFlag(pconstants.ArgPipesHost, constants.DefaultPipesHost, "Turbot Pipes host").
-		AddStringFlag(pconstants.ArgPipesToken, "", "Turbot Pipes authentication token").
-		AddStringFlag(pconstants.ArgCloudHost, constants.DefaultPipesHost, "Turbot Pipes host", FlagOptions.Deprecated(pconstants.ArgPipesHost)).
-		AddStringFlag(pconstants.ArgCloudToken, "", "Turbot Pipes authentication token", FlagOptions.Deprecated(pconstants.ArgPipesToken))
+		AddStringFlag(pconstants.ArgPipesToken, "", "Turbot Pipes authentication token")
 }
 
 // AddWorkspaceDatabaseFlag is helper function to add the workspace-databse flag to a command
