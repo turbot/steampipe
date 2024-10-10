@@ -15,6 +15,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/hclhelpers"
+	pparse "github.com/turbot/pipe-fittings/parse"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -249,7 +250,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 	}
 
 	// do a partial decode
-	content, moreDiags := body.Content(parse.ConfigBlockSchema)
+	content, moreDiags := body.Content(pparse.SteampipeConfigBlockSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 		return error_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)
