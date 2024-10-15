@@ -257,7 +257,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 	}
 
 	// do a partial decode
-	content, moreDiags := body.Content(pparse.ConfigBlockSchema)
+	content, moreDiags := body.Content(pparse.SteampipeConfigBlockSchema)
 	if moreDiags.HasErrors() {
 		diags = append(diags, moreDiags...)
 		return perror_helpers.DiagsToErrorsAndWarnings("Failed to load config", diags)

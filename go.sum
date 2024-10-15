@@ -774,8 +774,8 @@ github.com/turbot/go-kit v0.10.0-rc.0 h1:kd+jp2ibbIV33Hc8SsMAN410Dl9Pz6SJ40axbKU
 github.com/turbot/go-kit v0.10.0-rc.0/go.mod h1:fFQqR59I5z5JeeBLfK1PjSifn4Oprs3NiQx0CxeSJxs=
 github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50 h1:zs87uA6QZsYLk4RRxDOIxt8ro/B2V6HzoMWm05Lo7ao=
 github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
-github.com/turbot/pipe-fittings v1.6.0-beta.1.0.20241008150745-ec081153b1b3 h1:Ws96Wk9uDEqqVSWe+lw8IfSCvbZJ/wTuvxMHlFC8FB8=
-github.com/turbot/pipe-fittings v1.6.0-beta.1.0.20241008150745-ec081153b1b3/go.mod h1:bBriS3DBSCvv6aJsHu5UZviRDHEMrNrfMvMsK8K5hc8=
+github.com/turbot/pipe-fittings v1.6.0-beta.1.0.20241011155452-11f7dcedff30 h1:OnGIXpnB08vYcjVNNsGgiLy54fKgDp1DFNLheTGdIXg=
+github.com/turbot/pipe-fittings v1.6.0-beta.1.0.20241011155452-11f7dcedff30/go.mod h1:bBriS3DBSCvv6aJsHu5UZviRDHEMrNrfMvMsK8K5hc8=
 github.com/turbot/pipes-sdk-go v0.9.1 h1:2yRojY2wymvJn6NQyE6A0EDFV267MNe+yDLxPVvsBwM=
 github.com/turbot/pipes-sdk-go v0.9.1/go.mod h1:Mb+KhvqqEdRbz/6TSZc2QWDrMa5BN3E4Xw+gPt2TRkc=
 github.com/turbot/steampipe-cloud-sdk-go v0.6.0 h1:ufAxOpKS1uq7eejuE5sfEu1+d7QAd0RBjl8Bn6+mIs8=
