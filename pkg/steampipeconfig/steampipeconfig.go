@@ -121,12 +121,6 @@ func (c *SteampipeConfig) SetOptions(opts poptions.Options) (errorsAndWarnings e
 var defaultCacheEnabled = true
 var defaultTTL = 300
 
-// if default connection options have been set, assign them to any connection which do not define specific options
-func (c *SteampipeConfig) setDefaultConnectionOptions() {
-	// precedence for the default is (high to low):
-	// env var
-	// base default
-}
 func (c *SteampipeConfig) String() string {
 	var connectionStrings []string
 	for _, c := range c.Connections {

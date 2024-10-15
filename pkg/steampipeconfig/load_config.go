@@ -184,10 +184,6 @@ func loadSteampipeConfig(ctx context.Context, modLocation string, commandName st
 		errorsAndWarnings.AddWarning(ew.Warnings...)
 	}
 
-	// now set default options on all connections without options set
-	// this is needed as the connection config is also loaded by the FDW which has no access to viper
-	steampipeConfig.setDefaultConnectionOptions()
-
 	// now validate the config
 	warnings, errors := steampipeConfig.Validate()
 	logValidationResult(warnings, errors)

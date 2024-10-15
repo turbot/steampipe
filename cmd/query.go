@@ -11,10 +11,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/thediveo/enumflag/v2"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/cloud"
 	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/contexthelpers"
-	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
@@ -194,30 +192,4 @@ func getPipedStdinData() string {
 		}
 	}
 	return stdinData
-}
-
-func publishSnapshotIfNeeded(ctx context.Context, snapshot *steampipeconfig.SteampipeSnapshot) error {
-	shouldShare := viper.GetBool(pconstants.ArgShare)
-	shouldUpload := viper.GetBool(pconstants.ArgSnapshot)
-
-	if !(shouldShare || shouldUpload) {
-		return nil
-	}
-
-	message, err := cloud.PublishSnapshot(ctx, snapshot, shouldShare)
-	if err != nil {
-		// reword "402 Payment Required" error
-		return handlePublishSnapshotError(err)
-	}
-	if viper.GetBool(pconstants.ArgProgress) {
-		fmt.Println(message)
-	}
-	return nil
-}
-
-func handlePublishSnapshotError(err error) error {
-	if err.Error() == "402 Payment Required" {
-		return fmt.Errorf("maximum number of snapshots reached")
-	}
-	return err
 }
