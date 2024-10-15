@@ -1,7 +1,5 @@
 package constants
 
-import "fmt"
-
 // Metaquery commands
 
 const (
@@ -23,11 +21,3 @@ const (
 	CmdCacheTtl         = ".cache_ttl"          // set cache ttl
 	CmdAutoComplete     = ".autocomplete"       // enable or disable auto complete
 )
-
-// ArgFromMetaquery converts a metaquery of form '.header' into the config argument used to set the mode, i.e. 'header'
-func ArgFromMetaquery(cmd string) string {
-	if cmd[:1] != "." {
-		panic(fmt.Sprintf("ArgFromMetaquery called for non-metyaquery: %s", cmd))
-	}
-	return cmd[1:]
-}

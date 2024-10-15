@@ -56,7 +56,7 @@ func init() {
 		constants.CmdHeaders: {
 			title:       "headers",
 			handler:     setHeader,
-			validator:   booleanValidator(constants.CmdHeaders, validatorFromArgsOf(constants.CmdHeaders)),
+			validator:   booleanValidator(constants.CmdHeaders, pconstants.ArgHeader, validatorFromArgsOf(constants.CmdHeaders)),
 			description: "Enable or disable column headers",
 			args: []metaQueryArg{
 				{value: pconstants.ArgOn, description: "Turn on headers in output"},
@@ -67,7 +67,7 @@ func init() {
 		constants.CmdMulti: {
 			title:       "multi-line",
 			handler:     setMultiLine,
-			validator:   booleanValidator(constants.CmdMulti, validatorFromArgsOf(constants.CmdMulti)),
+			validator:   booleanValidator(constants.CmdMulti, pconstants.ArgMultiLine, validatorFromArgsOf(constants.CmdMulti)),
 			description: "Enable or disable multiline mode",
 			args: []metaQueryArg{
 				{value: pconstants.ArgOn, description: "Turn on multiline mode"},
@@ -155,7 +155,7 @@ func init() {
 		constants.CmdAutoComplete: {
 			title:       "auto-complete",
 			handler:     setAutoComplete,
-			validator:   booleanValidator(constants.CmdAutoComplete, validatorFromArgsOf(constants.CmdAutoComplete)),
+			validator:   booleanValidator(constants.CmdAutoComplete, pconstants.ArgAutoComplete, validatorFromArgsOf(constants.CmdAutoComplete)),
 			description: "Enable or disable auto-completion",
 			args: []metaQueryArg{
 				{value: pconstants.ArgOn, description: "Turn on auto-completion"},

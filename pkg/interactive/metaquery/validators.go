@@ -8,7 +8,6 @@ import (
 	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -46,7 +45,7 @@ func titleSentenceCase(title string) string {
 	return strings.Join(titleSegments, "-")
 }
 
-func booleanValidator(metaquery string, validators ...validator) validator {
+func booleanValidator(metaquery, arg string, validators ...validator) validator {
 	return func(args []string) ValidationResult {
 		//	Error: argument required multi-line mode is off.  You can enable it with: .multi on
 		//	headers mode is off.  You can enable it with: .headers on
@@ -57,7 +56,7 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 		if numArgs == 0 {
 			// get the current status of this mode (convert metaquery name into arg name)
 			// NOTE - request second arg from cast even though we donl;t use it - to avoid panic
-			currentStatus := cmdconfig.Viper().GetBool(constants.ArgFromMetaquery(metaquery))
+			currentStatus := cmdconfig.Viper().GetBool(arg)
 			// what is the new status (the opposite)
 			newStatus := !currentStatus
 
