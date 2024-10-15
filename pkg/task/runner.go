@@ -3,8 +3,6 @@ package task
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/pipe-fittings/plugin"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"log"
 	"os"
 	"sync"
@@ -12,11 +10,13 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/installationstate"
+	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
 const minimumDurationBetweenChecks = 24 * time.Hour

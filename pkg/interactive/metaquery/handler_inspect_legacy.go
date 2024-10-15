@@ -3,10 +3,11 @@ package metaquery
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/querydisplay"
 	"sort"
 	"strings"
+
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/querydisplay"
 )
 
 // inspect

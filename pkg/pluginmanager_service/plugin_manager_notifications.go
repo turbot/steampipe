@@ -2,10 +2,11 @@ package pluginmanager_service
 
 import (
 	"context"
+	"log"
+
 	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"log"
 )
 
 func (m *PluginManager) SendPostgresSchemaNotification(ctx context.Context) error {

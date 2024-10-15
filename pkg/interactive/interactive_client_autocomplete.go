@@ -105,7 +105,7 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 }
 
 func (c *InteractiveClient) initialiseQuerySuggestions() {
-	//	 TODO #KAI add sql files???
+	//	 TODO add sql files???
 }
 
 func sanitiseTableName(strToEscape string) string {

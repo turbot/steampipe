@@ -3,11 +3,10 @@ package pluginmanager_service
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/pipe-fittings/error_helpers"
-
 	"log"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/plugin"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"

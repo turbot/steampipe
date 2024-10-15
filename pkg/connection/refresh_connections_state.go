@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	pconstants "github.com/turbot/pipe-fittings/constants"
-	error_helpers2 "github.com/turbot/pipe-fittings/error_helpers"
+	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
@@ -227,7 +227,7 @@ func (s *refreshConnectionState) updateRateLimiterDefinitions(ctx context.Contex
 	if len(updatedPluginLimiters) > 0 {
 		err := s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
 		if err != nil {
-			s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, error_helpers2.NewErrorsAndWarning(err))
+			s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, perror_helpers.NewErrorsAndWarning(err))
 		}
 	}
 	return nil

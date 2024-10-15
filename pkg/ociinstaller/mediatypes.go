@@ -2,9 +2,9 @@ package ociinstaller
 
 import (
 	"fmt"
-	"github.com/turbot/pipe-fittings/constants"
 	"runtime"
 
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/ociinstaller"
 	"github.com/turbot/pipe-fittings/utils"
 )

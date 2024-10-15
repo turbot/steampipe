@@ -2,6 +2,7 @@ package pluginmanager_service
 
 import (
 	"context"
+
 	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/db/db_local"
