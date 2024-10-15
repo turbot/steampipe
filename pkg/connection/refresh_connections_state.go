@@ -15,6 +15,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -24,7 +27,6 @@ import (
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/introspection"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/exp/maps"
 	"golang.org/x/sync/semaphore"
 )
@@ -225,7 +227,7 @@ func (s *refreshConnectionState) updateRateLimiterDefinitions(ctx context.Contex
 	if len(updatedPluginLimiters) > 0 {
 		err := s.pluginManager.HandlePluginLimiterChanges(updatedPluginLimiters)
 		if err != nil {
-			s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, error_helpers.NewErrorsAndWarning(err))
+			s.pluginManager.SendPostgresErrorsAndWarningsNotification(ctx, perror_helpers.NewErrorsAndWarning(err))
 		}
 	}
 	return nil
@@ -299,7 +301,7 @@ func (s *refreshConnectionState) addMissingPluginWarnings() {
 			len(connectionNames),
 			utils.Pluralize("connection", len(connectionNames)),
 			utils.Pluralize("is", len(pluginNames)),
-			constants.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(pluginNames, " ")))))
+			pconstants.Bold(fmt.Sprintf("steampipe plugin install %s", strings.Join(pluginNames, " ")))))
 	}
 }
 
@@ -648,7 +650,7 @@ func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, co
 // set connection comments
 
 func (s *refreshConnectionState) UpdateCommentsInParallel(ctx context.Context, updates []*steampipeconfig.ConnectionState, plugins map[string]*steampipeconfig.ConnectionPlugin) (errors []error) {
-	if !viper.GetBool(constants.ArgSchemaComments) {
+	if !viper.GetBool(pconstants.ArgSchemaComments) {
 		return nil
 	}
 

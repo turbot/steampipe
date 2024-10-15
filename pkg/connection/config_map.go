@@ -2,15 +2,15 @@ package connection
 
 import (
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/modconfig"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 type ConnectionConfigMap map[string]*sdkproto.ConnectionConfig
 
 // NewConnectionConfigMap creates a map of sdkproto.ConnectionConfig keyed by connection name
 // NOTE: connections in error are EXCLUDED
-func NewConnectionConfigMap(connectionMap map[string]*modconfig.Connection) ConnectionConfigMap {
+func NewConnectionConfigMap(connectionMap map[string]*modconfig.SteampipeConnection) ConnectionConfigMap {
 	configMap := make(ConnectionConfigMap)
 	for k, v := range connectionMap {
 		if v.Error != nil {

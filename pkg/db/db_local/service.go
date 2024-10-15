@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // GetState checks that the database instance is running and returns its details

@@ -5,9 +5,9 @@ import (
 	"log"
 	"strings"
 
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 	sdkversion "github.com/turbot/steampipe-plugin-sdk/v5/version"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func (u *ConnectionUpdates) validate() {

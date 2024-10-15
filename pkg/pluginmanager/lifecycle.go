@@ -9,10 +9,10 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/turbot/pipe-fittings/app_specific"
+	"github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
@@ -43,11 +43,11 @@ func StartNewInstance(steampipeExecutablePath string) (*State, error) {
 // when the plugin mananager is first started by steampipe, we derive the exe path from the running process and
 // store it in the plugin manager state file - then if the fdw needs to start the plugin manager it knows how to
 func start(steampipeExecutablePath string) (*State, error) {
-	// note: we assume the install dir has been assigned to file_paths.SteampipeDir
+	// note: we assume the install dir has been assigned to file_paths.app_specific.InstallDir
 	// - this is done both by the FDW and Steampipe
 	pluginManagerCmd := exec.Command(steampipeExecutablePath,
 		"plugin-manager",
-		"--"+constants.ArgInstallDir, filepaths.SteampipeDir)
+		"--"+constants.ArgInstallDir, app_specific.InstallDir)
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
 	pluginManagerCmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,

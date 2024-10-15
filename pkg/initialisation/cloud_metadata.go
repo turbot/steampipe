@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/cloud"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/cloud"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
 )
 
 func getCloudMetadata(ctx context.Context) (*steampipeconfig.CloudMetadata, error) {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 )
@@ -43,7 +44,7 @@ func (r *InitResult) DisplayMessages() {
 		}
 	}
 	// do not display message in json or csv output mode
-	output := viper.Get(constants.ArgOutput)
+	output := viper.Get(pconstants.ArgOutput)
 	if output == constants.OutputFormatJSON || output == constants.OutputFormatCSV {
 		return
 	}

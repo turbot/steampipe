@@ -19,19 +19,20 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/querydisplay"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/connection_sync"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/interactive/metaquery"
 	"github.com/turbot/steampipe/pkg/query"
 	"github.com/turbot/steampipe/pkg/query/queryhistory"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
 
@@ -91,7 +92,7 @@ func newInteractiveClient(ctx context.Context, initData *query.InitData, result 
 		interactiveBuffer:       []string{},
 		autocompleteOnEmpty:     false,
 		initResultChan:          make(chan *db_common.InitResult, 1),
-		highlighter:             getHighlighter(viper.GetString(constants.ArgTheme)),
+		highlighter:             getHighlighter(viper.GetString(pconstants.ArgTheme)),
 		suggestions:             newAutocompleteSuggestions(),
 	}
 
@@ -131,7 +132,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 	statushooks.Message(
 		ctx,
 		fmt.Sprintf("Welcome to Steampipe v%s", version.SteampipeVersion.String()),
-		fmt.Sprintf("For more information, type %s", constants.Bold(".help")),
+		fmt.Sprintf("For more information, type %s", pconstants.Bold(".help")),
 	)
 
 	// run the prompt in a goroutine, so we can also detect async initialisation errors
@@ -287,22 +288,22 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) {
 		}),
 		// Opt+LeftArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants.OptLeftArrowASCIICode,
+			ASCIICode: pconstants.OptLeftArrowASCIICode,
 			Fn:        prompt.GoLeftWord,
 		}),
 		// Opt+RightArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants.OptRightArrowASCIICode,
+			ASCIICode: pconstants.OptRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
 		// Alt+LeftArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants.AltLeftArrowASCIICode,
+			ASCIICode: pconstants.AltLeftArrowASCIICode,
 			Fn:        prompt.GoLeftWord,
 		}),
 		// Alt+RightArrow
 		prompt.OptionAddASCIICodeBind(prompt.ASCIICodeBind{
-			ASCIICode: constants.AltRightArrowASCIICode,
+			ASCIICode: pconstants.AltRightArrowASCIICode,
 			Fn:        prompt.GoRightWord,
 		}),
 		prompt.OptionBufferPreHook(func(input string) (modifiedInput string, ignore bool) {
@@ -397,8 +398,8 @@ func (c *InteractiveClient) executeQuery(ctx context.Context, queryCtx context.C
 	if err != nil {
 		error_helpers.ShowError(ctx, error_helpers.HandleCancelError(err))
 		// if timing flag is enabled, show the time taken for the query to fail
-		if cmdconfig.Viper().GetString(constants.ArgTiming) != constants.ArgOff {
-			display.DisplayErrorTiming(t)
+		if cmdconfig.Viper().GetString(pconstants.ArgTiming) != pconstants.ArgOff {
+			querydisplay.DisplayErrorTiming(t)
 		}
 	} else {
 		c.promptResult.Streamer.StreamResult(result)
@@ -464,7 +465,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfi
 	}
 
 	// in case of a named query call with params, parse the where clause
-	resolvedQuery, queryProvider, err := c.workspace().ResolveQueryAndArgsFromSQLString(queryString)
+	resolvedQuery, err := query.ResolveQueryAndArgsFromSQLString(queryString)
 	if err != nil {
 		// if we fail to resolve:
 		// - show error but do not return it so we  stay in the prompt
@@ -474,12 +475,11 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfi
 		error_helpers.ShowError(ctx, err)
 		return nil
 	}
-	isNamedQuery := queryProvider != nil
 
 	// should we execute?
 	// we will NOT execute if we are in multiline mode, there is no semi-colon
 	// and it is NOT a metaquery or a named query
-	if !c.shouldExecute(queryString, isNamedQuery) {
+	if !c.shouldExecute(queryString) {
 		// is we are not executing, do not store history
 		historyEntry = ""
 		// do not clear interactive buffer
@@ -500,7 +500,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfi
 		return nil
 	}
 	// if this is a multiline query, update history entry
-	if !isNamedQuery && len(strings.Split(resolvedQuery.ExecuteSQL, "\n")) > 1 {
+	if len(strings.Split(resolvedQuery.ExecuteSQL, "\n")) > 1 {
 		historyEntry = resolvedQuery.ExecuteSQL
 	}
 
@@ -557,12 +557,8 @@ func (c *InteractiveClient) restartInteractiveSession() {
 	c.ClosePrompt(c.afterClose)
 }
 
-func (c *InteractiveClient) shouldExecute(line string, namedQuery bool) bool {
-	if namedQuery {
-		// execute named queries with no ';' even in multiline mode
-		return true
-	}
-	if !cmdconfig.Viper().GetBool(constants.ArgMultiLine) {
+func (c *InteractiveClient) shouldExecute(line string) bool {
+	if !cmdconfig.Viper().GetBool(pconstants.ArgMultiLine) {
 		// NOT multiline mode
 		return true
 	}
@@ -579,7 +575,7 @@ func (c *InteractiveClient) shouldExecute(line string, namedQuery bool) bool {
 }
 
 func (c *InteractiveClient) queryCompleter(d prompt.Document) []prompt.Suggest {
-	if !cmdconfig.Viper().GetBool(constants.ArgAutoComplete) {
+	if !cmdconfig.Viper().GetBool(pconstants.ArgAutoComplete) {
 		return nil
 	}
 	if !c.isInitialised() {
@@ -724,7 +720,7 @@ func (c *InteractiveClient) handlePostgresNotification(ctx context.Context, noti
 
 func (c *InteractiveClient) handleErrorsAndWarningsNotification(ctx context.Context, notification *steampipeconfig.ErrorsAndWarningsNotification) {
 	log.Printf("[TRACE] handleErrorsAndWarningsNotification")
-	output := viper.Get(constants.ArgOutput)
+	output := viper.Get(pconstants.ArgOutput)
 	if output == constants.OutputFormatJSON || output == constants.OutputFormatCSV {
 		return
 	}

@@ -10,11 +10,9 @@
       "args": []
     },
     "expected": {
-      "introspection": "info",
       "pipes-host": "latestpipe.turbot.io/",
       "pipes-token": "spt_012faketoken34567890_012faketoken3456789099999",
       "install-dir": "sp_install_dir_default",
-      "mod-location": "sp_install_dir_default",
       "snapshot-location": "snaps",
       "workspace": "default",
       "workspace-database": "fk43e7"
@@ -28,16 +26,13 @@
       "env": [
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
         "PIPES_HOST=testpipe.turbot.io",
-        "STEAMPIPE_MOD_LOCATION=sp_install_dir_env",
         "STEAMPIPE_INSTALL_DIR=sp_install_dir_env",
         "PIPES_TOKEN=spt_012faketoken34567890_012faketoken3456789099996",
         "STEAMPIPE_SNAPSHOT_LOCATION=snapshot",
-        "STEAMPIPE_WORKSPACE_DATABASE=fk/43e7",
-        "STEAMPIPE_INTROSPECTION=none"
+        "STEAMPIPE_WORKSPACE_DATABASE=fk/43e7"
       ],
       "args": [
         "--install-dir=sp_install_dir_default",
-        "--mod-location=sp_install_dir_default",
         "--pipes-host=fastestpipe.turbot.io",
         "--pipes-token=spt_012faketoken34567890_012faketoken3456789099990",
         "--snapshot-location=snaps",
@@ -45,11 +40,9 @@
       ]
     },
     "expected": {
-      "introspection": "none",
       "pipes-host": "fastestpipe.turbot.io",
       "pipes-token": "spt_012faketoken34567890_012faketoken3456789099990",
       "install-dir": "sp_install_dir_default",
-      "mod-location": "sp_install_dir_default",
       "snapshot-location": "snaps",
       "workspace": "default",
       "workspace-database": "fk43e9"
@@ -63,7 +56,6 @@
       "env": [
         "PIPES_HOST=latestpipe.turbot.io/",
         "STEAMPIPE_INSTALL_DIR=sp_install_dir_env",
-        "STEAMPIPE_MOD_LOCATION=sp_install_dir_env",
         "PIPES_TOKEN=spt_012faketoken34567890_012faketoken3456789099999",
         "STEAMPIPE_SNAPSHOT_LOCATION=snaps",
         "STEAMPIPE_WORKSPACE_DATABASE=fk43e7"
@@ -74,7 +66,6 @@
       "pipes-host": "latestpipe.turbot.io/",
       "pipes-token": "spt_012faketoken34567890_012faketoken3456789099999",
       "install-dir": "sp_install_dir_env",
-      "mod-location": "sp_install_dir_env",
       "snapshot-location": "snaps",
       "workspace": "default",
       "workspace-database": "fk43e7"
@@ -93,11 +84,9 @@
       ]
     },
     "expected": {
-      "introspection": "control",
       "pipes-host": "testpipe.turbot.io",
       "pipes-token": "spt_012faketoken34567890_012faketoken3456789099999",
       "install-dir": "sp_install_dir_sample",
-      "mod-location": "sp_install_dir_sample",
       "snapshot-location": "snap",
       "workspace": "sample",
       "workspace-database": "fk43e8"
@@ -111,7 +100,6 @@
       "env": [],
       "args": [
         "--install-dir=sp_install_dir_sample",
-        "--mod-location=sp_install_dir_sample",
         "--pipes-host=fastestpipe.turbot.io",
         "--pipes-token=spt_012faketoken34567890_012faketoken3456789099990",
         "--snapshot-location=snaps",
@@ -122,7 +110,6 @@
       "pipes-host": "fastestpipe.turbot.io",
       "pipes-token": "spt_012faketoken34567890_012faketoken3456789099990",
       "install-dir": "sp_install_dir_sample",
-      "mod-location": "sp_install_dir_sample",
       "snapshot-location": "snaps",
       "workspace": "default",
       "workspace-database": "fk43e9"
@@ -137,7 +124,6 @@
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
         "PIPES_HOST=fastestpipe.turbot.io/",
         "STEAMPIPE_INSTALL_DIR=sp_install_dir_env",
-        "STEAMPIPE_MOD_LOCATION=sp_install_dir_env",
         "PIPES_TOKEN=spt_012faketoken34567890_012faketoken3456789099996",
         "STEAMPIPE_SNAPSHOT_LOCATION=snapshot",
         "STEAMPIPE_WORKSPACE_DATABASE=ab43e6"
@@ -148,7 +134,6 @@
       "pipes-host": "fastestpipe.turbot.io/",
       "pipes-token": "spt_012faketoken34567890_012faketoken3456789099996",
       "install-dir": "sp_install_dir_env",
-      "mod-location": "sp_install_dir_env",
       "snapshot-location": "snapshot",
       "workspace": "default",
       "workspace-database": "ab43e6"
@@ -163,7 +148,6 @@
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
         "PIPES_HOST=fastestpipe.turbot.io/",
         "STEAMPIPE_INSTALL_DIR=sp_install_dir_env",
-        "STEAMPIPE_MOD_LOCATION=sp_install_dir_env",
         "PIPES_TOKEN=spt_012faketoken34567890_012faketoken3456789099996",
         "STEAMPIPE_SNAPSHOT_LOCATION=snapshot",
         "STEAMPIPE_WORKSPACE_DATABASE=ab43e6"
@@ -176,7 +160,6 @@
       "pipes-host": "testpipe.turbot.io",
       "pipes-token": "spt_012faketoken34567890_012faketoken3456789099999",
       "install-dir": "sp_install_dir_sample",
-      "mod-location": "sp_install_dir_sample",
       "snapshot-location": "snap",
       "workspace": "sample",
       "workspace-database": "fk43e8"
@@ -191,7 +174,6 @@
         "STEAMPIPE_WORKSPACE_PROFILES_LOCATION=workspace_profiles",
         "PIPES_HOST=fastestpipe.turbot.io/",
         "STEAMPIPE_INSTALL_DIR=sp_install_dir_env",
-        "STEAMPIPE_MOD_LOCATION=sp_install_dir_env",
         "PIPES_TOKEN=spt_012faketoken34567890_012faketoken3456789099996",
         "STEAMPIPE_SNAPSHOT_LOCATION=snapshot",
         "STEAMPIPE_WORKSPACE_DATABASE=ab43e6"
@@ -204,7 +186,6 @@
       "pipes-host": "testpipe.turbot.io",
       "pipes-token": "spt_012faketoken34567890_012faketoken3456789099999",
       "install-dir": "sp_install_dir_sample",
-      "mod-location": "sp_install_dir_sample",
       "snapshot-location": "snap",
       "workspace": "sample",
       "workspace-database": "fk43e8"
@@ -220,7 +201,6 @@
       ],
       "args": [
         "--install-dir=sp_install_dir_default",
-        "--mod-location=sp_install_dir_default",
         "--pipes-host=fastestpipe.turbot.io",
         "--pipes-token=spt_012faketoken34567890_012faketoken3456789099990",
         "--snapshot-location=snaps",
@@ -231,7 +211,6 @@
       "pipes-host": "fastestpipe.turbot.io",
       "pipes-token": "spt_012faketoken34567890_012faketoken3456789099990",
       "install-dir": "sp_install_dir_default",
-      "mod-location": "sp_install_dir_default",
       "snapshot-location": "snaps",
       "workspace": "default",
       "workspace-database": "fk43e9"
@@ -248,18 +227,16 @@
       "args": []
     },
     "expected": {
-      "query.autocomplete": false,
+      "query.auto-complete": false,
       "query.header": false,
-      "query.multi": true,
+      "query.multi-line": true,
       "query.output": "json",
       "query-timeout": 0,
       "search-path": "[ ]",
       "search-path-prefix": "[ abc ]",
       "query.separator": "|",
       "query.timing": true,
-      "telemetry": "info",
-      "update-check": "false",
-      "watch": false
+      "telemetry": "info"
     }
   },
   {
@@ -296,17 +273,16 @@
       ]
     },
     "expected": {
-      "query.autocomplete": true,
+      "query.auto-complete": true,
       "query.header": false,
-      "query.multi": true,
+      "query.multi-line": true,
       "query.output": "csv",
       "search-path": "[ abc ]",
       "search-path-prefix": "[ abc, def ]",
       "query.separator": ";",
       "query.timing": true,
       "telemetry": "none",
-      "update-check": "true",
-      "watch": false
+      "update-check": "true"
     }
   },
   {
@@ -322,12 +298,11 @@
         "--search-path=abc",
         "--search-path-prefix=def",
         "--separator=+",
-        "--timing=true", 
-        "--watch=true"
+        "--timing=true"
       ]
     },
     "expected": {
-      "query.autocomplete": false,
+      "query.auto-complete": false,
       "header": true,
       "output": "table",
       "query-timeout": 190,
@@ -335,8 +310,7 @@
       "search-path-prefix": "[ def ]",
       "separator": "+",
       "telemetry": "none",
-      "update-check": "true",
-      "watch": true
+      "update-check": "true"
     }
   },
   {
@@ -354,18 +328,17 @@
       "args": []
     },
     "expected": {
-      "query.autocomplete": false,
+      "query.auto-complete": false,
       "query.header": false,
       "max-parallel": 10,
-      "query.multi": true,
+      "query.multi-line": true,
       "query.output": "json",
       "query-timeout": 100,
       "search-path": "[ ]",
       "search-path-prefix": "[ abc ]",
       "query.separator": "|",
       "telemetry": "none",
-      "update-check": true,
-      "watch": false
+      "update-check": true
     }
   },
   {
@@ -385,18 +358,17 @@
       ]
     },
     "expected": {
-      "autocomplete": true,
+      "auto-complete": true,
       "header": false,
       "max-parallel": 10,
-      "multi": true,
+      "multi-line": true,
       "output": "csv",
       "query-timeout": 100,
       "search-path": "[ abc ]",
       "search-path-prefix": "[ abc, def ]",
       "separator": ";",
       "telemetry": "none",
-      "update-check": true,
-      "watch": false
+      "update-check": true
     }
   },
   {
@@ -415,18 +387,17 @@
       "args": []
     },
     "expected": {
-      "autocomplete": true,
+      "auto-complete": true,
       "header": false,
       "max-parallel": 10,
-      "multi": true,
+      "multi-line": true,
       "output": "csv",
       "query-timeout": 100,
       "search-path": "[ abc ]",
       "search-path-prefix": "[ abc, def ]",
       "separator": ";",
       "telemetry": "none",
-      "update-check": true,
-      "watch": false
+      "update-check": true
     }
   },
   {
@@ -449,23 +420,21 @@
         "--search-path=xyz",
         "--search-path-prefix=pqr",
         "--separator=+",
-        "--timing=true", 
-        "--watch=true"
+        "--timing=true"
       ]
     },
     "expected": {
-      "autocomplete": true,
+      "auto-complete": true,
       "header": true,
       "max-parallel": 10,
-      "multi": true,
+      "multi-line": true,
       "output": "table",
       "query-timeout": 190,
       "search-path": "[ xyz ]",
       "search-path-prefix": "[ pqr ]",
       "separator": "+",
       "telemetry": "none",
-      "update-check": true,
-      "watch": true
+      "update-check": true
     }
   },
   {
@@ -487,23 +456,21 @@
         "--search-path=xyz",
         "--search-path-prefix=pqr",
         "--separator=+",
-        "--timing=true", 
-        "--watch=true"
+        "--timing=true"
       ]
     },
     "expected": {
-      "autocomplete": true,
+      "auto-complete": true,
       "header": true,
       "max-parallel": 10,
-      "multi": true,
+      "multi-line": true,
       "output": "table",
       "query-timeout": 190,
       "search-path": "[ xyz ]",
       "search-path-prefix": "[ pqr ]",
       "separator": "+",
       "telemetry": "none",
-      "update-check": true,
-      "watch": true
+      "update-check": true
     }
   },
   {
@@ -520,18 +487,17 @@
       "args": []
     },
     "expected": {
-      "autocomplete": true,
+      "auto-complete": true,
       "header": false,
       "max-parallel": 10,
-      "multi": true,
+      "multi-line": true,
       "output": "csv",
       "query-timeout": 100,
       "search-path": "[ abc ]",
       "search-path-prefix": "[ abc, def ]",
       "separator": ";",
       "telemetry": "none",
-      "update-check": true,
-      "watch": false
+      "update-check": true
     }
   }
 ]

@@ -3,17 +3,15 @@ package interactive
 import (
 	"context"
 	"fmt"
-	"github.com/spf13/viper"
 	"log"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
@@ -27,7 +25,7 @@ func (c *InteractiveClient) initialiseSuggestions(ctx context.Context) error {
 
 	connectionStateMap, err := steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitUntilLoading())
 	if err != nil {
-		c.initialiseSuggestionsLegacy()
+		log.Printf("[WARN] could not load connection state: %v", err)
 		//nolint:golint,nilerr // valid condition - not an error
 		return nil
 	}
@@ -49,7 +47,7 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 	// unqualified table names
 	// use lookup to avoid dupes from dynamic plugins
 	// (this is needed as GetFirstSearchPathConnectionForPlugins will return ALL dynamic connections)
-	var unqualifiedTablesToAdd = getIntrospectionTableSuggestions()
+	var unqualifiedTablesToAdd = make(map[string]struct{})
 
 	// add connection state and rate limit
 	unqualifiedTablesToAdd[constants.ConnectionTable] = struct{}{}
@@ -106,83 +104,8 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 	}
 }
 
-func getIntrospectionTableSuggestions() map[string]struct{} {
-	res := make(map[string]struct{})
-	switch strings.ToLower(viper.GetString(constants.ArgIntrospection)) {
-	case constants.IntrospectionInfo:
-		res[constants.IntrospectionTableQuery] = struct{}{}
-		res[constants.IntrospectionTableControl] = struct{}{}
-		res[constants.IntrospectionTableBenchmark] = struct{}{}
-		res[constants.IntrospectionTableMod] = struct{}{}
-		res[constants.IntrospectionTableDashboard] = struct{}{}
-		res[constants.IntrospectionTableDashboardContainer] = struct{}{}
-		res[constants.IntrospectionTableDashboardCard] = struct{}{}
-		res[constants.IntrospectionTableDashboardChart] = struct{}{}
-		res[constants.IntrospectionTableDashboardFlow] = struct{}{}
-		res[constants.IntrospectionTableDashboardGraph] = struct{}{}
-		res[constants.IntrospectionTableDashboardHierarchy] = struct{}{}
-		res[constants.IntrospectionTableDashboardImage] = struct{}{}
-		res[constants.IntrospectionTableDashboardInput] = struct{}{}
-		res[constants.IntrospectionTableDashboardTable] = struct{}{}
-		res[constants.IntrospectionTableDashboardText] = struct{}{}
-		res[constants.IntrospectionTableVariable] = struct{}{}
-		res[constants.IntrospectionTableReference] = struct{}{}
-	case constants.IntrospectionControl:
-		res[constants.IntrospectionTableControl] = struct{}{}
-		res[constants.IntrospectionTableBenchmark] = struct{}{}
-	}
-	return res
-}
-
 func (c *InteractiveClient) initialiseQuerySuggestions() {
-	workspaceModName := c.initData.Workspace.Mod.Name()
-	resourceFunc := func(item modconfig.HclResource) (continueWalking bool, err error) {
-		continueWalking = true
-
-		// should we include this item
-		qp, ok := item.(modconfig.QueryProvider)
-		if !ok {
-			return
-		}
-		if qp.GetQuery() == nil && qp.GetSQL() == nil {
-			return
-		}
-		rm := item.(modconfig.ResourceWithMetadata)
-		if rm.IsAnonymous() {
-			return
-		}
-		mod := qp.GetMod()
-		isLocal := mod.Name() == workspaceModName
-		itemType := item.BlockType()
-
-		// only include global inputs
-		if itemType == modconfig.BlockTypeInput {
-			if _, ok := c.initData.Workspace.Mod.ResourceMaps.GlobalDashboardInputs[item.Name()]; !ok {
-				return
-			}
-		}
-		// special case for query
-		if itemType == modconfig.BlockTypeQuery {
-			itemType = "named query"
-		}
-		if isLocal {
-			suggestion := c.newSuggestion(itemType, qp.GetDescription(), qp.GetUnqualifiedName())
-			c.suggestions.unqualifiedQueries = append(c.suggestions.unqualifiedQueries, suggestion)
-		} else {
-			suggestion := c.newSuggestion(itemType, qp.GetDescription(), qp.Name())
-			c.suggestions.queriesByMod[mod.ShortName] = append(c.suggestions.queriesByMod[mod.ShortName], suggestion)
-		}
-
-		return
-	}
-
-	c.workspace().GetResourceMaps().WalkResources(resourceFunc)
-
-	// populate mod suggestions
-	for mod := range c.suggestions.queriesByMod {
-		suggestion := c.newSuggestion("mod", "", mod)
-		c.suggestions.mods = append(c.suggestions.mods, suggestion)
-	}
+	//	 TODO add sql files???
 }
 
 func sanitiseTableName(strToEscape string) string {

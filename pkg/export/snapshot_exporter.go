@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardtypes"
 )
 
 type SnapshotExporter struct {
@@ -14,7 +14,7 @@ type SnapshotExporter struct {
 }
 
 func (e *SnapshotExporter) Export(_ context.Context, input ExportSourceData, filePath string) error {
-	snapshot, ok := input.(*dashboardtypes.SteampipeSnapshot)
+	snapshot, ok := input.(*steampipeconfig.SteampipeSnapshot)
 	if !ok {
 		return fmt.Errorf("SnapshotExporter input must be *dashboardtypes.SteampipeSnapshot")
 	}

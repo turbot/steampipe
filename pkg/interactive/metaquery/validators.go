@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/utils"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -45,7 +45,7 @@ func titleSentenceCase(title string) string {
 	return strings.Join(titleSegments, "-")
 }
 
-func booleanValidator(metaquery string, validators ...validator) validator {
+func booleanValidator(metaquery, arg string, validators ...validator) validator {
 	return func(args []string) ValidationResult {
 		//	Error: argument required multi-line mode is off.  You can enable it with: .multi on
 		//	headers mode is off.  You can enable it with: .headers on
@@ -56,23 +56,23 @@ func booleanValidator(metaquery string, validators ...validator) validator {
 		if numArgs == 0 {
 			// get the current status of this mode (convert metaquery name into arg name)
 			// NOTE - request second arg from cast even though we donl;t use it - to avoid panic
-			currentStatus := cmdconfig.Viper().GetBool(constants.ArgFromMetaquery(metaquery))
+			currentStatus := cmdconfig.Viper().GetBool(arg)
 			// what is the new status (the opposite)
 			newStatus := !currentStatus
 
 			// convert current and new status to on/off
-			currentStatusString := constants.BoolToOnOff(currentStatus)
-			newStatusString := constants.BoolToOnOff(newStatus)
+			currentStatusString := pconstants.BoolToOnOff(currentStatus)
+			newStatusString := pconstants.BoolToOnOff(newStatus)
 
 			// what is the action to get to the new status
-			actionString := constants.BoolToEnableDisable(newStatus)
+			actionString := pconstants.BoolToEnableDisable(newStatus)
 
 			return ValidationResult{
 				Message: fmt.Sprintf(`%s mode is %s. You can %s it with: %s.`,
 					title,
-					constants.Bold(currentStatusString),
+					pconstants.Bold(currentStatusString),
 					actionString,
-					constants.Bold(fmt.Sprintf("%s %s", metaquery, newStatusString))),
+					pconstants.Bold(fmt.Sprintf("%s %s", metaquery, newStatusString))),
 			}
 		}
 		if numArgs > 1 {

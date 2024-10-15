@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	typeHelpers "github.com/turbot/go-kit/types"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"golang.org/x/exp/maps"
@@ -27,14 +28,14 @@ func Handle(ctx context.Context, input *HandlerInput) error {
 // .header
 // set the ArgHeader viper key with the boolean value evaluated from arg[0]
 func setHeader(_ context.Context, input *HandlerInput) error {
-	cmdconfig.Viper().Set(constants.ArgHeader, typeHelpers.StringToBool(input.args()[0]))
+	cmdconfig.Viper().Set(pconstants.ArgHeader, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
 // .multi
 // set the ArgMulti viper key with the boolean value evaluated from arg[0]
 func setMultiLine(_ context.Context, input *HandlerInput) error {
-	cmdconfig.Viper().Set(constants.ArgMultiLine, typeHelpers.StringToBool(input.args()[0]))
+	cmdconfig.Viper().Set(pconstants.ArgMultiLine, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }
 
@@ -46,16 +47,16 @@ func setTiming(ctx context.Context, input *HandlerInput) error {
 		return nil
 	}
 
-	cmdconfig.Viper().Set(constants.ArgTiming, input.args()[0])
+	cmdconfig.Viper().Set(pconstants.ArgTiming, input.args()[0])
 	return nil
 }
 
 func showTimingFlag() {
-	timing := cmdconfig.Viper().GetString(constants.ArgTiming)
+	timing := cmdconfig.Viper().GetString(pconstants.ArgTiming)
 
 	fmt.Printf(`Timing is %s. Available options are: %s`,
-		constants.Bold(timing),
-		constants.Bold(strings.Join(maps.Keys(constants.QueryTimingValueLookup), ", ")))
+		pconstants.Bold(timing),
+		pconstants.Bold(strings.Join(maps.Keys(constants.QueryTimingValueLookup), ", ")))
 	// add an empty line here so that the rendering buffer can start from the next line
 	fmt.Println()
 
@@ -85,6 +86,6 @@ func clearScreen(_ context.Context, input *HandlerInput) error {
 
 // .autocomplete
 func setAutoComplete(_ context.Context, input *HandlerInput) error {
-	cmdconfig.Viper().Set(constants.ArgAutoComplete, typeHelpers.StringToBool(input.args()[0]))
+	cmdconfig.Viper().Set(pconstants.ArgAutoComplete, typeHelpers.StringToBool(input.args()[0]))
 	return nil
 }

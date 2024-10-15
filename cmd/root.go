@@ -9,11 +9,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/pipe-fittings/app_specific"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
 
@@ -51,7 +51,7 @@ func InitCmd() {
 	utils.LogTime("cmd.root.InitCmd start")
 	defer utils.LogTime("cmd.root.InitCmd end")
 
-	defaultInstallDir, err := filehelpers.Tildefy(filepaths.DefaultInstallDir)
+	defaultInstallDir, err := filehelpers.Tildefy(app_specific.DefaultInstallDir)
 	error_helpers.FailOnError(err)
 	rootCmd.SetVersionTemplate(fmt.Sprintf("Steampipe v%s\n", version.SteampipeVersion.String()))
 
@@ -90,13 +90,9 @@ func AddCommands() {
 	rootCmd.AddCommand(
 		pluginCmd(),
 		queryCmd(),
-		checkCmd(),
 		serviceCmd(),
-		modCmd(),
 		generateCompletionScriptsCmd(),
 		pluginManagerCmd(),
-		dashboardCmd(),
-		variableCmd(),
 		loginCmd(),
 	)
 }

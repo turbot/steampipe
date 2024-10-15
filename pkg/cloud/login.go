@@ -11,19 +11,18 @@ import (
 
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 	steampipecloud "github.com/turbot/steampipe-cloud-sdk-go"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
 )
-
-var UnconfirmedError = "Not confirmed"
 
 // WebLogin POSTs to ${envBaseUrl}/api/latest/login/token to retrieve a login is
 // it then opens the login webpage and returns th eid
 func WebLogin(ctx context.Context) (string, error) {
-	client := newSteampipeCloudClient(viper.GetString(constants.ArgPipesToken))
+	client := newSteampipeCloudClient(viper.GetString(pconstants.ArgPipesToken))
 
 	tempTokenReq, _, err := client.Auth.LoginTokenCreate(ctx).Execute()
 	if err != nil {
@@ -64,7 +63,7 @@ func GetLoginToken(ctx context.Context, id, code string) (string, error) {
 
 // SaveToken writes the token to  ~/.steampipe/internal/{cloud-host}.tptt
 func SaveToken(token string) error {
-	tokenPath := tokenFilePath(viper.GetString(constants.ArgPipesHost))
+	tokenPath := tokenFilePath(viper.GetString(pconstants.ArgPipesHost))
 	return sperr.Wrap(os.WriteFile(tokenPath, []byte(token), 0600))
 }
 
@@ -72,7 +71,7 @@ func LoadToken() (string, error) {
 	if err := migrateDefaultTokenFile(); err != nil {
 		log.Println("[TRACE] ERROR during migrating token file", err)
 	}
-	tokenPath := tokenFilePath(viper.GetString(constants.ArgPipesHost))
+	tokenPath := tokenFilePath(viper.GetString(pconstants.ArgPipesHost))
 	if !filehelpers.FileExists(tokenPath) {
 		return "", nil
 	}

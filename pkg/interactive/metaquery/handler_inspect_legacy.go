@@ -3,10 +3,11 @@ package metaquery
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/display"
 	"sort"
 	"strings"
+
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/querydisplay"
 )
 
 // inspect
@@ -105,7 +106,7 @@ func listConnectionsLegacy(ctx context.Context, input *HandlerInput) error {
 		return rows[i][0] < rows[j][0]
 	})
 
-	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+	querydisplay.ShowWrappedTable(header, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 
 	fmt.Printf(`
 To get information about the tables in a connection, run %s
@@ -135,7 +136,7 @@ func inspectConnectionLegacy(connectionName string, input *HandlerInput) bool {
 		return rows[i][0] < rows[j][0]
 	})
 
-	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+	querydisplay.ShowWrappedTable(header, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 
 	return true
 }
@@ -162,7 +163,7 @@ func inspectTableLegacy(connectionName string, tableName string, input *HandlerI
 		return rows[i][0] < rows[j][0]
 	})
 
-	display.ShowWrappedTable(header, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+	querydisplay.ShowWrappedTable(header, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 
 	return nil
 }

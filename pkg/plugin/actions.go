@@ -9,20 +9,19 @@ import (
 	"time"
 
 	"github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/pipe-fittings/statushooks"
+	"github.com/turbot/pipe-fittings/versionfile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 // Remove removes an installed plugin
-func Remove(ctx context.Context, image string, pluginConnections map[string][]*modconfig.Connection) (*steampipeconfig.PluginRemoveReport, error) {
+func Remove(ctx context.Context, image string, pluginConnections map[string][]PluginConnection) (*PluginRemoveReport, error) {
 	statushooks.SetStatus(ctx, fmt.Sprintf("Removing plugin %s", image))
 
-	imageRef := ociinstaller.NewSteampipeImageRef(image)
+	imageRef := ociinstaller.NewImageRef(image)
 	fullPluginName := imageRef.DisplayImageRef()
 
 	// are any connections using this plugin???
@@ -47,43 +46,26 @@ func Remove(ctx context.Context, image string, pluginConnections map[string][]*m
 	delete(v.Plugins, fullPluginName)
 	err = v.Save()
 
-	return &steampipeconfig.PluginRemoveReport{Connections: conns, Image: imageRef}, err
-}
-
-// Exists looks up the version file and reports whether a plugin is already installed
-func Exists(ctx context.Context, plugin string) (bool, error) {
-	versionData, err := versionfile.LoadPluginVersionFile(ctx)
-	if err != nil {
-		return false, err
-	}
-
-	imageRef := ociinstaller.NewSteampipeImageRef(plugin)
-
-	// lookup in the version data
-	_, found := versionData.Plugins[imageRef.DisplayImageRef()]
-	return found, nil
+	return &PluginRemoveReport{Connections: conns, Image: imageRef}, err
 }
 
 // Install installs a plugin in the local file system
-func Install(ctx context.Context, plugin ResolvedPluginVersion, sub chan struct{}, opts ...ociinstaller.PluginInstallOption) (*ociinstaller.SteampipeImage, error) {
+func Install(ctx context.Context, plugin plugin.ResolvedPluginVersion, sub chan struct{}, baseImageRef string, mediaTypesProvider ociinstaller.MediaTypeProvider, opts ...ociinstaller.PluginInstallOption) (*ociinstaller.OciImage[*ociinstaller.PluginImage, *ociinstaller.PluginImageConfig], error) {
 	// Note: we pass the plugin info as strings here rather than passing the ResolvedPluginVersion struct as that causes circular dependency
-	image, err := ociinstaller.InstallPlugin(ctx, plugin.GetVersionTag(), plugin.Constraint, sub, opts...)
+	image, err := ociinstaller.InstallPlugin(ctx, plugin.GetVersionTag(), plugin.Constraint, sub, baseImageRef, mediaTypesProvider, opts...)
 	return image, err
 }
 
 // PluginListItem is a struct representing an item in the list of plugins
 type PluginListItem struct {
 	Name        string
-	Version     *modconfig.PluginVersionString
+	Version     *plugin.PluginVersionString
 	Connections []string
 }
 
 // List returns all installed plugins
-func List(ctx context.Context, pluginConnectionMap map[string][]*modconfig.Connection) ([]PluginListItem, error) {
+func List(ctx context.Context, pluginConnectionMap map[string][]PluginConnection, pluginVersions map[string]*versionfile.InstalledVersion) ([]PluginListItem, error) {
 	var items []PluginListItem
-
-	// retrieve the plugin version data from steampipe config
-	pluginVersions := steampipeconfig.GlobalConfig.PluginVersions
 
 	pluginBinaries, err := files.ListFilesWithContext(ctx, filepaths.EnsurePluginDir(), &files.ListOptions{
 		Include: []string{"**/*.plugin"},
@@ -103,14 +85,14 @@ func List(ctx context.Context, pluginConnectionMap map[string][]*modconfig.Conne
 		// for local plugin
 		item := PluginListItem{
 			Name:    fullPluginName,
-			Version: modconfig.LocalPluginVersionString(),
+			Version: plugin.LocalPluginVersionString(),
 		}
 		// check if this plugin is recorded in plugin versions
 		installation, found := pluginVersions[fullPluginName]
 		if found {
 			// if not a local plugin, get the semver version
 			if !detectLocalPlugin(installation, pluginBinary) {
-				item.Version, err = modconfig.NewPluginVersionString(installation.Version)
+				item.Version, err = plugin.NewPluginVersionString(installation.Version)
 				if err != nil {
 					return nil, sperr.WrapWithMessage(err, "could not evaluate plugin version %s", installation.Version)
 				}
@@ -120,10 +102,8 @@ func List(ctx context.Context, pluginConnectionMap map[string][]*modconfig.Conne
 				// extract only the connection names
 				var connectionNames []string
 				for _, connection := range pluginConnectionMap[fullPluginName] {
-					connectionName := connection.Name
-					if connection.ImportDisabled() {
-						connectionName = fmt.Sprintf("%s(disabled)", connectionName)
-					}
+					connectionName := connection.GetDisplayName()
+
 					connectionNames = append(connectionNames, connectionName)
 				}
 				item.Connections = connectionNames
