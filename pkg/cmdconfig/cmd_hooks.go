@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"io"
 	"log"
 	"os"
@@ -403,7 +404,7 @@ func ensureInstallDir() {
 
 	// store as app_specific.InstallDir and PipesInstallDir
 	app_specific.InstallDir = installDir
-	filepaths.PipesInstallDir = pipesInstallDir
+	pfilepaths.PipesInstallDir = pipesInstallDir
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way
