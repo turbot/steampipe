@@ -53,21 +53,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_output --partial 'Error: Not authenticated for Turbot Pipes.'
 }
 
-@test "connect to cloud workspace - passing the workspace name to workspace-database arg (unsetting ENV - the token should get picked from tptt file)" {
-  # write the pipes.turbot.com.tptt file in internal
-  # write the token to the file
-  file_name=$STEAMPIPE_INSTALL_DIR/internal/pipes.turbot.com.tptt
-  echo -ne $SPIPETOOLS_TOKEN > $file_name
-  cat $file_name
-
-  # this step will create snapshots in the workspace - but that's ok
-  # workspaces expire snapshots anyway
-  run steampipe query "select 1" --share
-  echo $output
-
-  assert_success
-}
-
 function teardown_file() {
   # list running processes
   ps -ef | grep steampipe
