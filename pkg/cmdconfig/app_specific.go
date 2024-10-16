@@ -1,6 +1,7 @@
 package cmdconfig
 
 import (
+	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"os"
 
 	"github.com/turbot/go-kit/files"
@@ -28,6 +29,9 @@ func SetAppSpecificConstants() {
 	defaultInstallDir, err := files.Tildefy("~/.steampipe")
 	error_helpers.FailOnError(err)
 	app_specific.DefaultInstallDir = defaultInstallDir
+	defaultPipesInstallDir, err := files.Tildefy("~/.pipes")
+	pfilepaths.DefaultPipesInstallDir = defaultPipesInstallDir
+	error_helpers.FailOnError(err)
 
 	// check whether install-dir env has been set - if so, respect it
 	if envInstallDir, ok := os.LookupEnv(app_specific.EnvInstallDir); ok {
