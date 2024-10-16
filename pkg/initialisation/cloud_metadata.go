@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
-	"github.com/turbot/pipe-fittings/cloud"
 	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/pipes"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
-func getCloudMetadata(ctx context.Context) (*steampipeconfig.CloudMetadata, error) {
+func getPipesMetadata(ctx context.Context) (*steampipeconfig.PipesMetadata, error) {
 	workspaceDatabase := viper.GetString(constants.ArgWorkspaceDatabase)
 	if workspaceDatabase == "local" {
 		// local database - nothing to do here
@@ -19,7 +19,7 @@ func getCloudMetadata(ctx context.Context) (*steampipeconfig.CloudMetadata, erro
 	}
 	connectionString := workspaceDatabase
 
-	var cloudMetadata *steampipeconfig.CloudMetadata
+	var pipesMetadata *steampipeconfig.PipesMetadata
 
 	// so a backend was set - is it a connection string or a database name
 	workspaceDatabaseIsConnectionString := strings.HasPrefix(workspaceDatabase, "postgresql://") || strings.HasPrefix(workspaceDatabase, "postgres://")
@@ -32,15 +32,15 @@ func getCloudMetadata(ctx context.Context) (*steampipeconfig.CloudMetadata, erro
 
 		// so we have a database and a token - build the connection string and set it in viper
 		var err error
-		if cloudMetadata, err = cloud.GetCloudMetadata(ctx, workspaceDatabase, cloudToken); err != nil {
+		if pipesMetadata, err = pipes.GetPipesMetadata(ctx, workspaceDatabase, cloudToken); err != nil {
 			return nil, err
 		}
-		// read connection string out of cloudMetadata
-		connectionString = cloudMetadata.ConnectionString
+		// read connection string out of pipesMetadata
+		connectionString = pipesMetadata.ConnectionString
 	}
 
 	// now set the connection string in viper
 	viper.Set(constants.ArgConnectionString, connectionString)
 
-	return cloudMetadata, nil
+	return pipesMetadata, nil
 }

@@ -2,6 +2,7 @@ package cmdconfig
 
 import (
 	"fmt"
+	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"log"
 	"os"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/turbot/pipe-fittings/parse"
 	"github.com/turbot/pipe-fittings/workspace_profile"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 // Viper fetches the global viper instance
@@ -89,15 +89,11 @@ func SetDefaultsFromConfig(configMap map[string]interface{}) {
 // Do not add keys here which have command line defaults - the way this is setup, this value takes
 // precedence over command line default
 func setBaseDefaults() error {
-	pipesInstallDir, err := filehelpers.Tildefy(filepaths.DefaultPipesInstallDir)
-	if err != nil {
-		return err
-	}
 	defaults := map[string]interface{}{
 		// global general options
 		pconstants.ArgTelemetry:       constants.TelemetryInfo,
 		pconstants.ArgUpdateCheck:     true,
-		pconstants.ArgPipesInstallDir: pipesInstallDir,
+		pconstants.ArgPipesInstallDir: pfilepaths.DefaultPipesInstallDir,
 
 		// workspace profile
 		pconstants.ArgAutoComplete: true,

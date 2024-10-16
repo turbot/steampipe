@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"io"
 	"log"
 	"os"
@@ -23,13 +24,13 @@ import (
 	pconstants "github.com/turbot/pipe-fittings/constants"
 	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
 	"github.com/turbot/pipe-fittings/parse"
+	"github.com/turbot/pipe-fittings/pipes"
 	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/pipe-fittings/versionfile"
 	"github.com/turbot/pipe-fittings/workspace_profile"
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -269,7 +270,7 @@ func setCloudTokenDefault(loader *parse.WorkspaceProfileLoader[*workspace_profil
 	*/
 	// set viper defaults in order of increasing precedence
 	// 1) saved cloud token
-	savedToken, err := cloud.LoadToken()
+	savedToken, err := pipes.LoadToken()
 	if err != nil {
 		return err
 	}
@@ -403,7 +404,7 @@ func ensureInstallDir() {
 
 	// store as app_specific.InstallDir and PipesInstallDir
 	app_specific.InstallDir = installDir
-	filepaths.PipesInstallDir = pipesInstallDir
+	pfilepaths.PipesInstallDir = pipesInstallDir
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way

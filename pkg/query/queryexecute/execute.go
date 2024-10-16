@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	"github.com/turbot/pipe-fittings/cloud"
 	"github.com/turbot/pipe-fittings/constants"
 	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/pipe-fittings/contexthelpers"
 	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/pipes"
 	"github.com/turbot/pipe-fittings/querydisplay"
 	"github.com/turbot/pipe-fittings/queryresult"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
@@ -218,7 +218,7 @@ func publishSnapshotIfNeeded(ctx context.Context, snapshot *steampipeconfig.Stea
 		return nil
 	}
 
-	message, err := cloud.PublishSnapshot(ctx, snapshot, shouldShare)
+	message, err := pipes.PublishSnapshot(ctx, snapshot, shouldShare)
 	if err != nil {
 		// reword "402 Payment Required" error
 		return handlePublishSnapshotError(err)
