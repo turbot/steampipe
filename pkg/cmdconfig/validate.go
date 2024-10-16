@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/cloud"
 	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/pipes"
 	"github.com/turbot/pipe-fittings/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 )
@@ -35,8 +35,8 @@ func ValidateSnapshotArgs(ctx context.Context) error {
 	}
 
 	// if workspace-database or snapshot-location are a cloud workspace handle, cloud token must be set
-	requireCloudToken := steampipeconfig.IsCloudWorkspaceIdentifier(viper.GetString(pconstants.ArgWorkspaceDatabase)) ||
-		steampipeconfig.IsCloudWorkspaceIdentifier(viper.GetString(pconstants.ArgSnapshotLocation))
+	requireCloudToken := steampipeconfig.IsPipesWorkspaceIdentifier(viper.GetString(pconstants.ArgWorkspaceDatabase)) ||
+		steampipeconfig.IsPipesWorkspaceIdentifier(viper.GetString(pconstants.ArgSnapshotLocation))
 
 	// verify cloud token and workspace has been set
 	if requireCloudToken && token == "" {
@@ -64,7 +64,7 @@ func validateSnapshotLocation(ctx context.Context, cloudToken string) error {
 
 	// if it is NOT a workspace handle, assume it is a local file location:
 	// tildefy it and ensure it exists
-	if !steampipeconfig.IsCloudWorkspaceIdentifier(snapshotLocation) {
+	if !steampipeconfig.IsPipesWorkspaceIdentifier(snapshotLocation) {
 		var err error
 		snapshotLocation, err = filehelpers.Tildefy(snapshotLocation)
 		if err != nil {
@@ -82,7 +82,7 @@ func validateSnapshotLocation(ctx context.Context, cloudToken string) error {
 }
 
 func setSnapshotLocationFromDefaultWorkspace(ctx context.Context, cloudToken string) error {
-	workspaceHandle, err := cloud.GetUserWorkspaceHandle(ctx, cloudToken)
+	workspaceHandle, err := pipes.GetUserWorkspaceHandle(ctx, cloudToken)
 	if err != nil {
 		return err
 	}

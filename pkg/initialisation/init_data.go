@@ -23,7 +23,7 @@ import (
 type InitData struct {
 	Client        db_common.Client
 	Result        *db_common.InitResult
-	CloudMetadata *steampipeconfig.CloudMetadata
+	PipesMetadata *steampipeconfig.PipesMetadata
 
 	ShutdownTelemetry func()
 	ExportManager     *export.Manager
@@ -79,14 +79,14 @@ func (i *InitData) Init(ctx context.Context, invoker constants.Invoker, opts ...
 	}
 
 	// retrieve cloud metadata
-	cloudMetadata, err := getCloudMetadata(ctx)
+	pipesMetadata, err := getPipesMetadata(ctx)
 	if err != nil {
 		i.Result.Error = err
 		return
 	}
 
 	// set cloud metadata (may be nil)
-	i.CloudMetadata = cloudMetadata
+	i.PipesMetadata = pipesMetadata
 
 	// get a client
 	// add a message rendering function to the context - this is used for the fdw update message and
