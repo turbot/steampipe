@@ -1,3 +1,39 @@
+## v1.0.0 [tbd]
+_Breaking changes_
+
+Mod functionality which was deprecated and moved to Powerpipe, has been removed.
+
+_Commands removed_
+  - `check`  
+  - `dashboard`  
+  - `mod`  
+  - `variable`
+
+_Removed support for running named queries_
+
+Support for running named query-based resources has been removed e.g., `steampipe query query.account`
+
+_Args removed_
+  - `--watch` (query)  
+  - `--mod-location` (query, service)  
+  - `--dashboard` (service)  
+  - `--dashboard-listen` (service)  
+  - `--dashboard-port` (service)  
+
+_Environment variables removed_
+  - `STEAMPIPE_MOD_LOCATION`  
+  - `STEAMPIPE_INTROSPECTION`  
+  - `STEAMPIPE_CLOUD_HOST` (deprecated in v0.22)  
+  - `STEAMPIPE_CLOUD_TOKEN` (deprecated in v0.22)  
+
+_Workspace args removed_
+  - `watch`  
+  - `introspection`  
+  - `mod-location`
+
+_Global options removed (default.spc)_
+  - `dashboard`
+
 ## v0.24.2 [2024-09-13]
 _Bug fixes_
 - Fix incorrect versioning in v0.24.1. ([#4388](https://github.com/turbot/steampipe/issues/4388))
