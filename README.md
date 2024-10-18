@@ -1,6 +1,6 @@
 [<picture><source media="(prefers-color-scheme: dark)" srcset="https://steampipe.io/images/steampipe-color-logo-and-wordmark-with-white-bubble.svg"><source media="(prefers-color-scheme: light)" srcset="https://steampipe.io/images/steampipe-color-logo-and-wordmark-with-white-bubble.svg"><img width="67%" alt="Steampipe Logo" src="https://steampipe.io/images/steampipe-color-logo-and-wordmark-with-white-bubble.svg"></picture>](https://steampipe.io)
 
-[![plugins](https://img.shields.io/badge/apis_supported-145-blue)](https://hub.steampipe.io/plugins) &nbsp; 
+[![plugins](https://img.shields.io/badge/plugins-145-blue)](https://hub.steampipe.io/) &nbsp; 
 [![slack](https://img.shields.io/badge/slack-2695-blue)](https://turbot.com/community/join) &nbsp;
 [![maintained by](https://img.shields.io/badge/maintained%20by-Turbot-blue)](https://turbot.com)
 
@@ -29,8 +29,10 @@ Install Steampipe from the [downloads](https://steampipe.io/downloads) page:
 ```sh
 # MacOS
 brew install turbot/tap/steampipe
+```
 
-# Linux or WSL2
+```
+# Linux or Windows (WSL2)
 sudo /bin/sh -c "$(curl -fsSL https://steampipe.io/install/steampipe.sh)"
 ```
 
