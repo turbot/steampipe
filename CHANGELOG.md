@@ -1,35 +1,17 @@
 ## v1.0.0 [tbd]
 _Breaking changes_
 
-Mod functionality which was deprecated and moved to Powerpipe, has been removed.
-- Commands removed:
-  - `check`
-  - `dashboard`  
-  - `mod`  
-  - `variable`
+The mod functionality, which was deprecated and moved to Powerpipe, has been removed.  
 
-- Removed support for running named queries. 
-
-- Command line args removed:
-  - `--watch` (query)
-  - `--mod-location` (query, service)
-  - `--dashboard` (service)
-  - `--dashboard-listen` (service)
-  - `--dashboard-port` (service)
-
-- Environment variables removed:
-  - `STEAMPIPE_MOD_LOCATION`  
-  - `STEAMPIPE_INTROSPECTION`  
-  - `STEAMPIPE_CLOUD_HOST` (deprecated in v0.22)  
-  - `STEAMPIPE_CLOUD_TOKEN` (deprecated in v0.22)  
-
-- Workspace args removed:
-  - `watch`  
-  - `introspection`  
-  - `mod-location`
-
-- Global options removed (default.spc):
-  - `dashboard`
+- Removed the `check`, `dashboard`, `mod`, and `variable` commands.
+- Removed support for running named queries.
+- Removed the `watch` and `mod-location` CLI args from the `query` command.
+- Removed the `dashboard`, `dashboard-listen`, and `dashboard-port` CLI args from the `service` command.
+- Removed the `STEAMPIPE_MOD_LOCATION` and `STEAMPIPE_INTROSPECTION` env vars.
+- Removed support for deprecated `STEAMPIPE_CLOUD_HOST` and `STEAMPIPE_CLOUD_TOKEN` env vars.
+- Removed the `watch`, `introspection`, and `mod-location` workspace profile args.
+- Removed the `check` and `dashboard` options from workspace profiles. 
+- Removed the `dashboard` option from global options (`default.spc`).
 
 ## v0.24.2 [2024-09-13]
 _Bug fixes_
