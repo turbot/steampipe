@@ -2,36 +2,33 @@
 _Breaking changes_
 
 Mod functionality which was deprecated and moved to Powerpipe, has been removed.
-
-_Commands removed_
-  - `check`  
+- Commands removed:
+  - `check`
   - `dashboard`  
   - `mod`  
   - `variable`
 
-_Removed support for running named queries_
+- Removed support for running named queries. 
 
-Support for running named query-based resources has been removed e.g., `steampipe query query.account`
+- Command line args removed:
+  - `--watch` (query)
+  - `--mod-location` (query, service)
+  - `--dashboard` (service)
+  - `--dashboard-listen` (service)
+  - `--dashboard-port` (service)
 
-_Args removed_
-  - `--watch` (query)  
-  - `--mod-location` (query, service)  
-  - `--dashboard` (service)  
-  - `--dashboard-listen` (service)  
-  - `--dashboard-port` (service)  
-
-_Environment variables removed_
+- Environment variables removed:
   - `STEAMPIPE_MOD_LOCATION`  
   - `STEAMPIPE_INTROSPECTION`  
   - `STEAMPIPE_CLOUD_HOST` (deprecated in v0.22)  
   - `STEAMPIPE_CLOUD_TOKEN` (deprecated in v0.22)  
 
-_Workspace args removed_
+- Workspace args removed:
   - `watch`  
   - `introspection`  
   - `mod-location`
 
-_Global options removed (default.spc)_
+- Global options removed (default.spc):
   - `dashboard`
 
 ## v0.24.2 [2024-09-13]
