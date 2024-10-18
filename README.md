@@ -29,8 +29,10 @@ Install Steampipe from the [downloads](https://steampipe.io/downloads) page:
 ```sh
 # MacOS
 brew install turbot/tap/steampipe
+```
 
-# Linux or WSL2
+```
+# Linux or Windows (WSL2)
 sudo /bin/sh -c "$(curl -fsSL https://steampipe.io/install/steampipe.sh)"
 ```
 
