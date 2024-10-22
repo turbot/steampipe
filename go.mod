@@ -6,7 +6,7 @@ replace (
 	github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50
 	github.com/docker/distribution => github.com/distribution/distribution v2.7.1+incompatible
 	github.com/docker/docker => github.com/moby/moby v20.10.17+incompatible
-	github.com/turbot/pipe-fittings => ../pipe-fittings
+// github.com/turbot/pipe-fittings => ../pipe-fittings
 
 )
 
@@ -43,8 +43,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/thediveo/enumflag/v2 v2.0.5
 	github.com/turbot/go-kit v0.10.0-rc.0
-	// v1.6.x 11f7dce (Update SteampipeWorkspaceProfile to warn for removed args in workspace instead or erroring...)
-	github.com/turbot/pipe-fittings v1.6.0-beta.1.0.20241011155452-11f7dcedff30
+	github.com/turbot/pipe-fittings v1.6.0
 	// branch: workspace_profiles
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.11.0-rc.1
 	github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7
