@@ -2,14 +2,15 @@ package pluginmanager_service
 
 import (
 	"context"
+
+	"github.com/turbot/pipe-fittings/plugin"
 	"github.com/turbot/steampipe/pkg/connection"
 	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 	"golang.org/x/exp/maps"
 )
 
 func (m *PluginManager) handlePluginInstanceChanges(ctx context.Context, newPlugins connection.PluginMap) error {
-	if maps.EqualFunc(m.plugins, newPlugins, func(l *modconfig.Plugin, r *modconfig.Plugin) bool {
+	if maps.EqualFunc(m.plugins, newPlugins, func(l *plugin.Plugin, r *plugin.Plugin) bool {
 		return l.Equals(r)
 	}) {
 		return nil

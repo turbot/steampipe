@@ -8,10 +8,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 const (
@@ -80,7 +81,7 @@ func (c *DbClient) establishConnectionPool(ctx context.Context, overrides client
 		ctx,
 		dbPool,
 		db_common.WithRetryInterval(constants.DBConnectionRetryBackoff),
-		db_common.WithTimeout(time.Duration(viper.GetInt(constants.ArgDatabaseStartTimeout))*time.Second),
+		db_common.WithTimeout(time.Duration(viper.GetInt(pconstants.ArgDatabaseStartTimeout))*time.Second),
 	)
 	if err != nil {
 		return err

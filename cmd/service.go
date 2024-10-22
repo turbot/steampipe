@@ -14,18 +14,18 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/querydisplay"
+	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/dashboard/dashboardserver"
 	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/display"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 func serviceCmd() *cobra.Command {
@@ -43,7 +43,7 @@ connection from any Postgres compatible database client.`,
 	cmd.AddCommand(serviceStatusCmd())
 	cmd.AddCommand(serviceStopCmd())
 	cmd.AddCommand(serviceRestartCmd())
-	cmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for service")
+	cmd.Flags().BoolP(pconstants.ArgHelp, "h", false, "Help for service")
 	return cmd
 }
 
@@ -62,29 +62,17 @@ connection from any Postgres compatible database client.`,
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddModLocationFlag().
-		AddBoolFlag(constants.ArgHelp, false, "Help for service start", cmdconfig.FlagOptions.WithShortHand("h")).
-		AddIntFlag(constants.ArgDatabasePort, constants.DatabaseDefaultPort, "Database service port").
-		AddStringFlag(constants.ArgDatabaseListenAddresses, string(db_local.ListenTypeNetwork), "Accept connections from: `local` (an alias for `localhost` only), `network` (an alias for `*`), or a comma separated list of hosts and/or IP addresses").
-		AddStringFlag(constants.ArgServicePassword, "", "Set the database password for this session").
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for service start", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddIntFlag(pconstants.ArgDatabasePort, constants.DatabaseDefaultPort, "Database service port").
+		AddStringFlag(pconstants.ArgDatabaseListenAddresses, string(db_local.ListenTypeNetwork), "Accept connections from: `local` (an alias for `localhost` only), `network` (an alias for `*`), or a comma separated list of hosts and/or IP addresses").
+		AddStringFlag(pconstants.ArgServicePassword, "", "Set the database password for this session").
 		// default is false and hides the database user password from service start prompt
-		AddBoolFlag(constants.ArgServiceShowPassword, false, "View database password for connecting from another machine").
-		// dashboard server
-		AddBoolFlag(constants.ArgDashboard, false, "Run the dashboard webserver with the service").
-		AddStringFlag(constants.ArgDashboardListen, string(dashboardserver.ListenTypeNetwork), "Accept connections from: local (localhost only) or network (open) (dashboard)").
-		AddIntFlag(constants.ArgDashboardPort, constants.DashboardServerDefaultPort, "Report server port").
+		AddBoolFlag(pconstants.ArgServiceShowPassword, false, "View database password for connecting from another machine").
 		// foreground enables the service to run in the foreground - till exit
-		AddBoolFlag(constants.ArgForeground, false, "Run the service in the foreground").
-
-		// flags relevant only if the --dashboard arg is used:
-		AddStringSliceFlag(constants.ArgVarFile, nil, "Specify an .spvar file containing variable values (only applies if '--dashboard' flag is also set)").
-		// NOTE: use StringArrayFlag for ArgVariable, not StringSliceFlag
-		// Cobra will interpret values passed to a StringSliceFlag as CSV,
-		// where args passed to StringArrayFlag are not parsed and used raw
-		AddStringArrayFlag(constants.ArgVariable, nil, "Specify the value of a variable (only applies if '--dashboard' flag is also set)").
+		AddBoolFlag(pconstants.ArgForeground, false, "Run the service in the foreground").
 
 		// hidden flags for internal use
-		AddStringFlag(constants.ArgInvoker, string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
+		AddStringFlag(pconstants.ArgInvoker, string(constants.InvokerService), "Invoked by \"service\" or \"query\"", cmdconfig.FlagOptions.Hidden())
 
 	return cmd
 }
@@ -102,10 +90,10 @@ Report current status of the Steampipe database service.`,
 	}
 
 	cmdconfig.OnCmd(cmd).
-		AddBoolFlag(constants.ArgHelp, false, "Help for service status", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for service status", cmdconfig.FlagOptions.WithShortHand("h")).
 		// default is false and hides the database user password from service start prompt
-		AddBoolFlag(constants.ArgServiceShowPassword, false, "View database password for connecting from another machine").
-		AddBoolFlag(constants.ArgAll, false, "Bypasses the INSTALL_DIR and reports status of all running steampipe services")
+		AddBoolFlag(pconstants.ArgServiceShowPassword, false, "View database password for connecting from another machine").
+		AddBoolFlag(pconstants.ArgAll, false, "Bypasses the INSTALL_DIR and reports status of all running steampipe services")
 
 	return cmd
 }
@@ -122,8 +110,8 @@ func serviceStopCmd() *cobra.Command {
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants.ArgHelp, false, "Help for service stop", cmdconfig.FlagOptions.WithShortHand("h")).
-		AddBoolFlag(constants.ArgForce, false, "Forces all services to shutdown, releasing all open connections and ports")
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for service stop", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddBoolFlag(pconstants.ArgForce, false, "Forces all services to shutdown, releasing all open connections and ports")
 
 	return cmd
 }
@@ -140,17 +128,17 @@ func serviceRestartCmd() *cobra.Command {
 
 	cmdconfig.
 		OnCmd(cmd).
-		AddBoolFlag(constants.ArgHelp, false, "Help for service restart", cmdconfig.FlagOptions.WithShortHand("h")).
-		AddBoolFlag(constants.ArgForce, false, "Forces the service to restart, releasing all open connections and ports")
+		AddBoolFlag(pconstants.ArgHelp, false, "Help for service restart", cmdconfig.FlagOptions.WithShortHand("h")).
+		AddBoolFlag(pconstants.ArgForce, false, "Forces the service to restart, releasing all open connections and ports")
 
 	return cmd
 }
 
 func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
-	utils.LogTime("runServiceStartCmd start")
+	putils.LogTime("runServiceStartCmd start")
 	defer func() {
-		utils.LogTime("runServiceStartCmd end")
+		putils.LogTime("runServiceStartCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
 			if exitCode == constants.ExitCodeSuccessful {
@@ -165,31 +153,31 @@ func runServiceStartCmd(cmd *cobra.Command, _ []string) {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 	defer cancel()
 
-	listenAddresses := db_local.StartListenType(viper.GetString(constants.ArgDatabaseListenAddresses)).ToListenAddresses()
+	listenAddresses := db_local.StartListenType(viper.GetString(pconstants.ArgDatabaseListenAddresses)).ToListenAddresses()
 
-	port := viper.GetInt(constants.ArgDatabasePort)
+	port := viper.GetInt(pconstants.ArgDatabasePort)
 	if port < 1 || port > 65535 {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		panic("Invalid port - must be within range (1:65535)")
 	}
 
-	invoker := constants.Invoker(cmdconfig.Viper().GetString(constants.ArgInvoker))
+	invoker := constants.Invoker(cmdconfig.Viper().GetString(pconstants.ArgInvoker))
 	if invoker.IsValid() != nil {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		error_helpers.FailOnError(invoker.IsValid())
 	}
 
-	startResult, dashboardState, dbServiceStarted := startService(ctx, listenAddresses, port, invoker)
+	startResult, dbServiceStarted := startService(ctx, listenAddresses, port, invoker)
 	alreadyRunning := !dbServiceStarted
 
-	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, dashboardState, alreadyRunning)
+	printStatus(ctx, startResult.DbState, startResult.PluginManagerState, alreadyRunning)
 
-	if viper.GetBool(constants.ArgForeground) {
+	if viper.GetBool(pconstants.ArgForeground) {
 		runServiceInForeground(ctx)
 	}
 }
 
-func startService(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState, dbServiceStarted bool) {
+func startService(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) (_ *db_local.StartResult, dbServiceStarted bool) {
 	statushooks.Show(ctx)
 	defer statushooks.Done(ctx)
 	log.Printf("[TRACE] startService - listenAddresses=%q", listenAddresses)
@@ -233,25 +221,7 @@ func startService(ctx context.Context, listenAddresses []string, port int, invok
 
 	dbServiceStarted = startResult.Status == db_local.ServiceStarted
 
-	var dashboardState *dashboardserver.DashboardServiceState
-	if viper.GetBool(constants.ArgDashboard) {
-		dashboardState, err = dashboardserver.GetDashboardServiceState()
-		if err != nil {
-			tryToStopServices(ctx)
-			exitCode = constants.ExitCodeServiceStartupFailure
-			error_helpers.FailOnError(err)
-		}
-		if dashboardState == nil {
-			dashboardState, err = startDashboardServer(ctx)
-			if err != nil {
-				tryToStopServices(ctx)
-				exitCode = constants.ExitCodeServiceStartupFailure
-				error_helpers.FailOnError(err)
-			}
-			dbServiceStarted = true
-		}
-	}
-	return startResult, dashboardState, dbServiceStarted
+	return startResult, dbServiceStarted
 }
 
 func startServiceAndRefreshConnections(ctx context.Context, listenAddresses []string, port int, invoker constants.Invoker) *db_local.StartResult {
@@ -277,44 +247,6 @@ func tryToStopServices(ctx context.Context) {
 	if _, err := db_local.StopServices(ctx, false, constants.InvokerService); err != nil {
 		error_helpers.ShowError(ctx, err)
 	}
-	// stop the dashboard service
-	if err := dashboardserver.StopDashboardService(ctx); err != nil {
-		error_helpers.ShowError(ctx, err)
-	}
-}
-
-func startDashboardServer(ctx context.Context) (*dashboardserver.DashboardServiceState, error) {
-	var dashboardState *dashboardserver.DashboardServiceState
-	var err error
-
-	serverPort := dashboardserver.ListenPort(viper.GetInt(constants.ArgDashboardPort))
-	serverListen := dashboardserver.ListenType(viper.GetString(constants.ArgDashboardListen))
-
-	dashboardState, err = dashboardserver.GetDashboardServiceState()
-	if err != nil {
-		return nil, err
-	}
-
-	if dashboardState == nil {
-		// try stopping the previous service
-		// StopDashboardService does nothing if the service is not running
-		err = dashboardserver.StopDashboardService(ctx)
-		if err != nil {
-			return nil, err
-		}
-		// start dashboard service
-		err = dashboardserver.RunForService(ctx, serverListen, serverPort)
-		if err != nil {
-			return nil, err
-		}
-		// get the updated state
-		dashboardState, err = dashboardserver.GetDashboardServiceState()
-		if err != nil {
-			error_helpers.ShowWarning(fmt.Sprintf("Started Dashboard server, but could not retrieve state: %v", err))
-		}
-	}
-
-	return dashboardState, err
 }
 
 func runServiceInForeground(ctx context.Context) {
@@ -342,7 +274,6 @@ func runServiceInForeground(ctx context.Context) {
 			}
 		case <-sigIntChannel:
 			fmt.Print("\r")
-			dashboardserver.StopDashboardService(ctx)
 			// if we have received this signal, then the user probably wants to shut down
 			// everything. Shutdowns MUST NOT happen in cancellable contexts
 			connectedClients, err := db_local.GetClientCount(context.Background())
@@ -373,9 +304,9 @@ func runServiceInForeground(ctx context.Context) {
 
 func runServiceRestartCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
-	utils.LogTime("runServiceRestartCmd start")
+	putils.LogTime("runServiceRestartCmd start")
 	defer func() {
-		utils.LogTime("runServiceRestartCmd end")
+		putils.LogTime("runServiceRestartCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
 			if exitCode == constants.ExitCodeSuccessful {
@@ -387,14 +318,14 @@ func runServiceRestartCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
-	dbStartResult, currentDashboardState := restartService(ctx)
+	dbStartResult := restartService(ctx)
 
 	if dbStartResult != nil {
-		printStatus(ctx, dbStartResult.DbState, dbStartResult.PluginManagerState, currentDashboardState, false)
+		printStatus(ctx, dbStartResult.DbState, dbStartResult.PluginManagerState, false)
 	}
 }
 
-func restartService(ctx context.Context) (_ *db_local.StartResult, _ *dashboardserver.DashboardServiceState) {
+func restartService(ctx context.Context) (_ *db_local.StartResult) {
 	statushooks.Show(ctx)
 	defer statushooks.Done(ctx)
 
@@ -406,12 +337,8 @@ func restartService(ctx context.Context) (_ *db_local.StartResult, _ *dashboards
 		return
 	}
 
-	// along with the current dashboard state - maybe nil
-	currentDashboardState, err := dashboardserver.GetDashboardServiceState()
-	error_helpers.FailOnError(err)
-
 	// stop db
-	stopStatus, err := db_local.StopServices(ctx, viper.GetBool(constants.ArgForce), constants.InvokerService)
+	stopStatus, err := db_local.StopServices(ctx, viper.GetBool(pconstants.ArgForce), constants.InvokerService)
 	if err != nil {
 		exitCode = constants.ExitCodeServiceStopFailure
 		error_helpers.FailOnErrorWithMessage(err, "could not stop current instance")
@@ -429,13 +356,6 @@ to force a restart.
 		return
 	}
 
-	// stop the running dashboard server
-	err = dashboardserver.StopDashboardService(ctx)
-	if err != nil {
-		exitCode = constants.ExitCodeServiceStopFailure
-		error_helpers.FailOnErrorWithMessage(err, "could not stop dashboard service")
-	}
-
 	// the DB must be installed and therefore is a noop,
 	// and EnsureDBInstalled also checks and installs the latest FDW
 	err = db_local.EnsureDBInstalled(ctx)
@@ -445,7 +365,7 @@ to force a restart.
 	}
 
 	// set the password in 'viper' so that it can be used by 'service start'
-	viper.Set(constants.ArgServicePassword, currentDbState.Password)
+	viper.Set(pconstants.ArgServicePassword, currentDbState.Password)
 
 	// start db
 	dbStartResult := startServiceAndRefreshConnections(ctx, currentDbState.ResolvedListenAddresses, currentDbState.Port, currentDbState.Invoker)
@@ -455,24 +375,14 @@ to force a restart.
 		return
 	}
 
-	// if the dashboard was running, start it
-	if currentDashboardState != nil {
-		err = dashboardserver.RunForService(ctx, dashboardserver.ListenType(currentDashboardState.ListenType), dashboardserver.ListenPort(currentDashboardState.Port))
-		error_helpers.FailOnError(err)
-
-		// reload the state
-		currentDashboardState, err = dashboardserver.GetDashboardServiceState()
-		error_helpers.FailOnError(err)
-	}
-
-	return dbStartResult, currentDashboardState
+	return dbStartResult
 }
 
 func runServiceStatusCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
-	utils.LogTime("runServiceStatusCmd status")
+	putils.LogTime("runServiceStatusCmd status")
 	defer func() {
-		utils.LogTime("runServiceStatusCmd end")
+		putils.LogTime("runServiceStatusCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
 		}
@@ -483,22 +393,21 @@ func runServiceStatusCmd(cmd *cobra.Command, _ []string) {
 		return
 	}
 
-	if viper.GetBool(constants.ArgAll) {
+	if viper.GetBool(pconstants.ArgAll) {
 		showAllStatus(ctx)
 	} else {
 		dbState, dbStateErr := db_local.GetState()
 		pmState, pmStateErr := pluginmanager.LoadState()
-		dashboardState, dashboardStateErr := dashboardserver.GetDashboardServiceState()
 
 		if dbStateErr != nil || pmStateErr != nil {
-			error_helpers.ShowError(ctx, composeStateError(dbStateErr, pmStateErr, dashboardStateErr))
+			error_helpers.ShowError(ctx, composeStateError(dbStateErr, pmStateErr))
 			return
 		}
-		printStatus(ctx, dbState, pmState, dashboardState, false)
+		printStatus(ctx, dbState, pmState, false)
 	}
 }
 
-func composeStateError(dbStateErr error, pmStateErr error, dashboardStateErr error) error {
+func composeStateError(dbStateErr error, pmStateErr error) error {
 	msg := "could not get Steampipe service status:"
 
 	if dbStateErr != nil {
@@ -509,24 +418,20 @@ func composeStateError(dbStateErr error, pmStateErr error, dashboardStateErr err
 		msg = fmt.Sprintf(`%s
 	failed to get plugin manager state: %s`, msg, pmStateErr.Error())
 	}
-	if dashboardStateErr != nil {
-		msg = fmt.Sprintf(`%s
-	failed to get dashboard server state: %s`, msg, pmStateErr.Error())
-	}
 
 	return errors.New(msg)
 }
 
 func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 	ctx := cmd.Context()
-	utils.LogTime("runServiceStopCmd stop")
+	putils.LogTime("runServiceStopCmd stop")
 
 	var status db_local.StopStatus
 	var dbStopError error
 	var dbState *db_local.RunningDBInstanceInfo
 
 	defer func() {
-		utils.LogTime("runServiceStopCmd end")
+		putils.LogTime("runServiceStopCmd end")
 		if r := recover(); r != nil {
 			error_helpers.ShowError(ctx, helpers.ToError(r))
 			if exitCode == constants.ExitCodeSuccessful {
@@ -538,11 +443,10 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 		}
 	}()
 
-	force := cmdconfig.Viper().GetBool(constants.ArgForce)
+	force := cmdconfig.Viper().GetBool(pconstants.ArgForce)
 	if force {
-		dashboardStopError := dashboardserver.StopDashboardService(ctx)
 		status, dbStopError = db_local.StopServices(ctx, force, constants.InvokerService)
-		dbStopError = error_helpers.CombineErrors(dbStopError, dashboardStopError)
+		dbStopError = error_helpers.CombineErrors(dbStopError)
 		if dbStopError != nil {
 			exitCode = constants.ExitCodeServiceStopFailure
 			error_helpers.FailOnError(dbStopError)
@@ -554,12 +458,6 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 			error_helpers.FailOnErrorWithMessage(dbStopError, "could not stop Steampipe service")
 		}
 
-		dashboardState, err := dashboardserver.GetDashboardServiceState()
-		if err != nil {
-			exitCode = constants.ExitCodeServiceStopFailure
-			error_helpers.FailOnErrorWithMessage(err, "could not stop Steampipe service")
-		}
-
 		if dbState == nil {
 			fmt.Println("Steampipe service is not running.")
 			return
@@ -567,14 +465,6 @@ func runServiceStopCmd(cmd *cobra.Command, _ []string) {
 		if dbState.Invoker != constants.InvokerService {
 			printRunningImplicit(dbState.Invoker)
 			return
-		}
-
-		if dashboardState != nil {
-			err = dashboardserver.StopDashboardService(ctx)
-			if err != nil {
-				exitCode = constants.ExitCodeServiceStopFailure
-				error_helpers.FailOnErrorWithMessage(err, "could not stop dashboard server")
-			}
 		}
 
 		// check if there are any connected clients to the service
@@ -641,7 +531,7 @@ func showAllStatus(ctx context.Context) {
 		rows = append(rows, []string{pid, installDir, port, string(listen)})
 	}
 
-	display.ShowWrappedTable(headers, rows, &display.ShowWrappedTableOptions{AutoMerge: false})
+	querydisplay.ShowWrappedTable(headers, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
 }
 
 func getServiceProcessDetails(process *psutils.Process) (string, string, string, db_local.StartListenType) {
@@ -666,7 +556,7 @@ func getServiceProcessDetails(process *psutils.Process) (string, string, string,
 	return fmt.Sprintf("%d", process.Pid), installDir, port, listenType
 }
 
-func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.State, dashboardState *dashboardserver.DashboardServiceState, alreadyRunning bool) {
+func printStatus(ctx context.Context, dbState *db_local.RunningDBInstanceInfo, pmState *pluginmanager.State, alreadyRunning bool) {
 	if dbState == nil && !pmState.Running {
 		fmt.Println("Service is not running")
 		return
@@ -698,12 +588,12 @@ Managing the Steampipe service:
 
 	var connectionStr string
 	var password string
-	if viper.GetBool(constants.ArgServiceShowPassword) {
+	if viper.GetBool(pconstants.ArgServiceShowPassword) {
 		connectionStr = fmt.Sprintf(
 			"postgres://%v:%v@%v:%v/%v",
 			dbState.User,
 			dbState.Password,
-			utils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
+			putils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
 			dbState.Port,
 			dbState.Database,
 		)
@@ -712,7 +602,7 @@ Managing the Steampipe service:
 		connectionStr = fmt.Sprintf(
 			"postgres://%v@%v:%v/%v",
 			dbState.User,
-			utils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
+			putils.GetFirstListenAddress(dbState.ResolvedListenAddresses),
 			dbState.Port,
 			dbState.Database,
 		)
@@ -739,25 +629,11 @@ Database:
 		connectionStr,
 	)
 
-	dashboardMsg := ""
-
-	if dashboardState != nil {
-		browserUrl := fmt.Sprintf("http://%s:%d/", dashboardState.Listen[0], dashboardState.Port)
-		dashboardMsg = fmt.Sprintf(`
-Dashboard:
-
-  Host(s):  %v
-  Port:     %v
-  URL:      %v
-`, strings.Join(dashboardState.Listen, ", "), dashboardState.Port, browserUrl)
-	}
-
 	if dbState.Invoker == constants.InvokerService {
 		statusMessage = fmt.Sprintf(
-			"%s%s%s%s",
+			"%s%s%s",
 			prefix,
 			postgresMsg,
-			dashboardMsg,
 			suffix,
 		)
 	} else {
@@ -771,7 +647,7 @@ To keep the service running after the %s session completes, use %s.
 			msg,
 			fmt.Sprintf("steampipe %s", dbState.Invoker),
 			dbState.Invoker,
-			constants.Bold("steampipe service start"),
+			pconstants.Bold("steampipe service start"),
 		)
 	}
 
@@ -785,7 +661,7 @@ To keep the service running after the %s session completes, use %s.
 Service is running, but the Plugin Manager cannot be recovered.
 Please use %s to recover the service
 `,
-			constants.Bold("steampipe service restart"),
+			pconstants.Bold("steampipe service restart"),
 		))
 	}
 }
@@ -798,7 +674,7 @@ To force stop the service, use %s
 
 `,
 		fmt.Sprintf("steampipe %s", invoker),
-		constants.Bold("steampipe service stop --force"),
+		pconstants.Bold("steampipe service stop --force"),
 	)
 }
 
@@ -810,7 +686,7 @@ Cannot stop service since there are clients connected to the service.
 To force stop the service, use %s
 
 `,
-		constants.Bold("steampipe service stop --force"),
+		pconstants.Bold("steampipe service stop --force"),
 	)
 }
 

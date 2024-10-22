@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/otiai10/copy"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 type getConnectionsToUpdateTest struct {
@@ -377,7 +377,7 @@ connection "b" {
 // 	// set steampipe dir
 // 	os.Chdir("./test_data/connections_to_update")
 // 	wd, _ := os.Getwd()
-// 	filepaths.SteampipeDir = wd
+// 	app_specific.InstallDir = wd
 
 // 	for name, test := range testCasesGetConnectionsToUpdate {
 // 		// setup connection config

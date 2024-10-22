@@ -6,15 +6,13 @@ import (
 	"path/filepath"
 
 	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/app_specific"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 
 // Constants for Config
 const (
-	DefaultInstallDir      = "~/.steampipe"
-	DefaultPipesInstallDir = "~/.pipes"
-
 	connectionsStateFileName     = "connection.json"
 	versionFileName              = "versions.json"
 	databaseRunningInfoFileName  = "steampipe.json"
@@ -26,8 +24,6 @@ const (
 	legacyNotificationsFileName  = "notifications.json"
 	localPluginFolder            = "local"
 )
-
-var SteampipeDir string
 
 func ensureSteampipeSubDir(dirName string) string {
 	subDir := steampipeSubDir(dirName)
@@ -41,47 +37,15 @@ func ensureSteampipeSubDir(dirName string) string {
 }
 
 func steampipeSubDir(dirName string) string {
-	if SteampipeDir == "" {
-		panic(fmt.Errorf("cannot call any Steampipe directory functions before SteampipeDir is set"))
+	if app_specific.InstallDir == "" {
+		panic(fmt.Errorf("cannot call any Steampipe directory functions before app_specific.InstallDir is set"))
 	}
-	return filepath.Join(SteampipeDir, dirName)
+	return filepath.Join(app_specific.InstallDir, dirName)
 }
 
 // EnsureTemplateDir returns the path to the templates directory (creates if missing)
 func EnsureTemplateDir() string {
 	return ensureSteampipeSubDir(filepath.Join("check", "templates"))
-}
-
-// EnsurePluginDir returns the path to the plugins directory (creates if missing)
-func EnsurePluginDir() string {
-	return ensureSteampipeSubDir("plugins")
-}
-
-func EnsurePluginInstallDir(pluginImageDisplayRef string) string {
-	installDir := PluginInstallDir(pluginImageDisplayRef)
-
-	if _, err := os.Stat(installDir); os.IsNotExist(err) {
-		err = os.MkdirAll(installDir, 0755)
-		error_helpers.FailOnErrorWithMessage(err, "could not create plugin install directory")
-	}
-
-	return installDir
-}
-
-func PluginInstallDir(pluginImageDisplayRef string) string {
-	osSafePath := filepath.FromSlash(pluginImageDisplayRef)
-
-	fullPath := filepath.Join(EnsurePluginDir(), osSafePath)
-	return fullPath
-}
-
-func PluginBinaryPath(pluginImageDisplayRef, pluginAlias string) string {
-	return filepath.Join(PluginInstallDir(pluginImageDisplayRef), PluginAliasToLongName(pluginAlias)+".plugin")
-}
-
-// EnsureConfigDir returns the path to the config directory (creates if missing)
-func EnsureConfigDir() string {
-	return ensureSteampipeSubDir("config")
 }
 
 // EnsureInternalDir returns the path to the internal directory (creates if missing)
@@ -160,16 +124,6 @@ func ConnectionStatePath() string {
 // LegacyVersionFilePath returns the legacy version file path
 func LegacyVersionFilePath() string {
 	return filepath.Join(EnsureInternalDir(), versionFileName)
-}
-
-// PluginVersionFilePath returns the plugin version file path
-func PluginVersionFilePath() string {
-	return filepath.Join(EnsurePluginDir(), versionFileName)
-}
-
-// LocalPluginPath returns the path to locally installed plugins
-func LocalPluginPath() string {
-	return filepath.Join(EnsurePluginDir(), localPluginFolder)
 }
 
 // DatabaseVersionFilePath returns the plugin version file path

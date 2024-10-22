@@ -1,11 +1,12 @@
 package db_common
 
 import (
-	"github.com/turbot/steampipe/pkg/utils"
-	"golang.org/x/exp/maps"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/turbot/pipe-fittings/utils"
+	"golang.org/x/exp/maps"
 )
 
 func NewSchemaMetadata() *SchemaMetadata {

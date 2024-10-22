@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
 )
 
 func ValidateClientCacheSettings(c Client) error_helpers.ErrorAndWarnings {

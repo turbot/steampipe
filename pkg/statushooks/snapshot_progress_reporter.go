@@ -3,9 +3,10 @@ package statushooks
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/utils"
 	"strings"
 	"sync"
+
+	"github.com/turbot/pipe-fittings/utils"
 )
 
 // SnapshotProgressReporter is an implementation of SnapshotProgress

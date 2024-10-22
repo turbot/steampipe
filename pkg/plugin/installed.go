@@ -4,17 +4,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/turbot/steampipe/pkg/ociinstaller"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/pipe-fittings/versionfile"
 )
 
 // GetInstalledPlugins returns the list of plugins keyed by the shortname (org/name) and its specific version
 // Does not validate/check of available connections
-func GetInstalledPlugins(ctx context.Context) (map[string]*modconfig.PluginVersionString, error) {
-	installedPlugins := make(map[string]*modconfig.PluginVersionString)
-	installedPluginsData, _ := List(ctx, nil)
+func GetInstalledPlugins(ctx context.Context, pluginVersions map[string]*versionfile.InstalledVersion) (map[string]*plugin.PluginVersionString, error) {
+	installedPlugins := make(map[string]*plugin.PluginVersionString)
+	installedPluginsData, _ := List(ctx, nil, pluginVersions)
 	for _, plugin := range installedPluginsData {
-		org, name, _ := ociinstaller.NewSteampipeImageRef(plugin.Name).GetOrgNameAndConstraint()
+		org, name, _ := ociinstaller.NewImageRef(plugin.Name).GetOrgNameAndStream()
 		pluginShortName := fmt.Sprintf("%s/%s", org, name)
 		installedPlugins[pluginShortName] = plugin.Version
 	}

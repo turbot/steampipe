@@ -7,45 +7,44 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-version"
-	"github.com/turbot/go-kit/types"
+	"github.com/turbot/go-kit/helpers"
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/ociinstaller"
+	poptions "github.com/turbot/pipe-fittings/options"
+	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/pipe-fittings/versionfile"
+	"github.com/turbot/pipe-fittings/workspace_profile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/options"
-	"github.com/turbot/steampipe/pkg/utils"
+	"github.com/turbot/steampipe/pkg/options"
 )
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
 type SteampipeConfig struct {
 	// map of plugin configs, keyed by plugin image ref
 	// (for each image ref we store an array of configs)
-	Plugins map[string][]*modconfig.Plugin
+	Plugins map[string][]*plugin.Plugin
 	// map of plugin configs, keyed by plugin instance
-	PluginsInstances map[string]*modconfig.Plugin
+	PluginsInstances map[string]*plugin.Plugin
 	// map of connection name to partially parsed connection config
-	Connections map[string]*modconfig.Connection
+	Connections map[string]*modconfig.SteampipeConnection
 
 	// Steampipe options
-	DefaultConnectionOptions *options.Connection
-	DatabaseOptions          *options.Database
-	DashboardOptions         *options.GlobalDashboard
-	TerminalOptions          *options.Terminal
-	GeneralOptions           *options.General
-	PluginOptions            *options.Plugin
+	DatabaseOptions *options.Database
+	GeneralOptions  *options.General
+	PluginOptions   *options.Plugin
 	// map of installed plugin versions, keyed by plugin image ref
 	PluginVersions map[string]*versionfile.InstalledVersion
 }
 
 func NewSteampipeConfig(commandName string) *SteampipeConfig {
 	return &SteampipeConfig{
-		Connections:      make(map[string]*modconfig.Connection),
-		Plugins:          make(map[string][]*modconfig.Plugin),
-		PluginsInstances: make(map[string]*modconfig.Plugin),
+		Connections:      make(map[string]*modconfig.SteampipeConnection),
+		Plugins:          make(map[string][]*plugin.Plugin),
+		PluginsInstances: make(map[string]*plugin.Plugin),
 	}
 }
 
@@ -73,7 +72,7 @@ func (c *SteampipeConfig) Validate() (validationWarnings, validationErrors []str
 
 // ConfigMap creates a config map to pass to viper
 func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
-	res := modconfig.ConfigMap{}
+	res := workspace_profile.ConfigMap{}
 
 	// build flat config map with order or precedence (low to high): general, database, terminal
 	// this means if (for example) 'search-path' is set in both database and terminal options,
@@ -86,9 +85,6 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	if c.DatabaseOptions != nil {
 		res.PopulateConfigMapForOptions(c.DatabaseOptions)
 	}
-	if c.DashboardOptions != nil {
-		res.PopulateConfigMapForOptions(c.DashboardOptions)
-	}
 	if c.PluginOptions != nil {
 		res.PopulateConfigMapForOptions(c.PluginOptions)
 	}
@@ -96,7 +92,7 @@ func (c *SteampipeConfig) ConfigMap() map[string]interface{} {
 	return res
 }
 
-func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings error_helpers.ErrorAndWarnings) {
+func (c *SteampipeConfig) SetOptions(opts poptions.Options) (errorsAndWarnings error_helpers.ErrorAndWarnings) {
 	errorsAndWarnings = error_helpers.NewErrorsAndWarning(nil)
 
 	switch o := opts.(type) {
@@ -105,12 +101,6 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings er
 			c.DatabaseOptions = o
 		} else {
 			c.DatabaseOptions.Merge(o)
-		}
-	case *options.GlobalDashboard:
-		if c.DashboardOptions == nil {
-			c.DashboardOptions = o
-		} else {
-			c.DashboardOptions.Merge(o)
 		}
 	case *options.General:
 		if c.GeneralOptions == nil {
@@ -131,77 +121,6 @@ func (c *SteampipeConfig) SetOptions(opts options.Options) (errorsAndWarnings er
 var defaultCacheEnabled = true
 var defaultTTL = 300
 
-// if default connection options have been set, assign them to any connection which do not define specific options
-func (c *SteampipeConfig) setDefaultConnectionOptions() {
-	if c.DefaultConnectionOptions == nil {
-		c.DefaultConnectionOptions = &options.Connection{}
-	}
-
-	// precedence for the default is (high to low):
-	// env var
-	// default connection config
-	// base default
-
-	// As connection options are alco loaded by the FDW, which does not have access to viper,
-	// we must manually apply env var defaulting
-
-	// if CacheEnabledEnvVar is set, overwrite the value in DefaultConnectionOptions
-	if envStr, ok := os.LookupEnv(constants.EnvCacheEnabled); ok {
-		if parsedEnv, err := types.ToBool(envStr); err == nil {
-			c.DefaultConnectionOptions.Cache = &parsedEnv
-		}
-	}
-	if c.DefaultConnectionOptions.Cache == nil {
-		// if DefaultConnectionOptions.Cache value is NOT set, default it to true
-		c.DefaultConnectionOptions.Cache = &defaultCacheEnabled
-	}
-
-	// if CacheTTLEnvVar is set, overwrite the value in DefaultConnectionOptions
-	if ttlString, ok := os.LookupEnv(constants.EnvCacheTTL); ok {
-		if parsed, err := types.ToInt64(ttlString); err == nil {
-			ttl := int(parsed)
-			c.DefaultConnectionOptions.CacheTTL = &ttl
-		}
-	}
-
-	if c.DefaultConnectionOptions.CacheTTL == nil {
-		// if DefaultConnectionOptions.CacheTTL value is NOT set, default it to true
-		c.DefaultConnectionOptions.CacheTTL = &defaultTTL
-	}
-}
-
-func (c *SteampipeConfig) GetConnectionOptions(connectionName string) *options.Connection {
-	log.Printf("[TRACE] GetConnectionOptions for %s", connectionName)
-	connection, ok := c.Connections[connectionName]
-	if !ok {
-		log.Printf("[TRACE] connection %s not found - returning default \n%v", connectionName, c.DefaultConnectionOptions)
-		// if we can't find connection, just return defaults
-		return c.DefaultConnectionOptions
-	}
-	// does the connection have connection options set - if not, return the default
-	if connection.Options == nil {
-		log.Printf("[TRACE] connection %s has no options - returning default \n%v", connectionName, c.DefaultConnectionOptions)
-		return c.DefaultConnectionOptions
-	}
-	// so there are connection options, ensure all fields are set
-	log.Printf("[TRACE] connection %s defines options %v", connectionName, connection.Options)
-
-	// create a copy of the options to return
-	result := &options.Connection{
-		Cache:    c.DefaultConnectionOptions.Cache,
-		CacheTTL: c.DefaultConnectionOptions.CacheTTL,
-	}
-	if connection.Options.Cache != nil {
-		log.Printf("[TRACE] connection defines cache option %v", *connection.Options.Cache)
-		result.Cache = connection.Options.Cache
-	}
-	if connection.Options.CacheTTL != nil {
-		result.CacheTTL = connection.Options.CacheTTL
-	}
-
-	return result
-}
-
 func (c *SteampipeConfig) String() string {
 	var connectionStrings []string
 	for _, c := range c.Connections {
@@ -212,26 +131,13 @@ func (c *SteampipeConfig) String() string {
 Connections: 
 %s
 ----
-DefaultConnectionOptions:
-%s`, strings.Join(connectionStrings, "\n"), c.DefaultConnectionOptions.String())
+`, strings.Join(connectionStrings, "\n"))
 
 	if c.DatabaseOptions != nil {
 		str += fmt.Sprintf(`
 
 DatabaseOptions:
 %s`, c.DatabaseOptions.String())
-	}
-	if c.DashboardOptions != nil {
-		str += fmt.Sprintf(`
-
-DashboardOptions:
-%s`, c.DashboardOptions.String())
-	}
-	if c.TerminalOptions != nil {
-		str += fmt.Sprintf(`
-
-TerminalOptions:
-%s`, c.TerminalOptions.String())
 	}
 	if c.GeneralOptions != nil {
 		str += fmt.Sprintf(`
@@ -249,12 +155,12 @@ PluginOptions:
 	return str
 }
 
-func (c *SteampipeConfig) ConnectionsForPlugin(pluginLongName string, pluginVersion *version.Version) []*modconfig.Connection {
-	var res []*modconfig.Connection
+func (c *SteampipeConfig) ConnectionsForPlugin(pluginLongName string, pluginVersion *version.Version) []*modconfig.SteampipeConnection {
+	var res []*modconfig.SteampipeConnection
 	for _, con := range c.Connections {
 		// extract constraint from plugin
-		ref := ociinstaller.NewSteampipeImageRef(con.Plugin)
-		org, plugin, constraint := ref.GetOrgNameAndConstraint()
+		ref := ociinstaller.NewImageRef(con.Plugin)
+		org, plugin, constraint := ref.GetOrgNameAndStream()
 		longName := fmt.Sprintf("%s/%s", org, plugin)
 		if longName == pluginLongName {
 			if constraint == "latest" {
@@ -281,8 +187,8 @@ func (c *SteampipeConfig) ConnectionNames() []string {
 	return res
 }
 
-func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
-	res := make([]*modconfig.Connection, len(c.Connections))
+func (c *SteampipeConfig) ConnectionList() []*modconfig.SteampipeConnection {
+	res := make([]*modconfig.SteampipeConnection, len(c.Connections))
 	idx := 0
 	for _, c := range c.Connections {
 		res[idx] = c
@@ -293,7 +199,7 @@ func (c *SteampipeConfig) ConnectionList() []*modconfig.Connection {
 
 // add a plugin config to PluginsInstances and Plugins
 // NOTE: this returns an error if we already have a config with the same label
-func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin) error {
+func (c *SteampipeConfig) addPlugin(plugin *plugin.Plugin) error {
 	if existingPlugin, exists := c.PluginsInstances[plugin.Instance]; exists {
 		return duplicatePluginError(existingPlugin, plugin)
 	}
@@ -317,7 +223,7 @@ func (c *SteampipeConfig) addPlugin(plugin *modconfig.Plugin) error {
 	return nil
 }
 
-func duplicatePluginError(existingPlugin, newPlugin *modconfig.Plugin) error {
+func duplicatePluginError(existingPlugin, newPlugin *plugin.Plugin) error {
 	return sperr.New("duplicate plugin instance: '%s'\n\t(%s:%d)\n\t(%s:%d)",
 		existingPlugin.Instance, *existingPlugin.FileName, *existingPlugin.StartLineNumber,
 		*newPlugin.FileName, *newPlugin.StartLineNumber)
@@ -338,7 +244,7 @@ func (c *SteampipeConfig) initializePlugins() {
 		// and is not installed - set the plugin error
 		if plugin == nil {
 			// set the Plugin to the image ref of the plugin
-			connection.Plugin = ociinstaller.NewSteampipeImageRef(connection.PluginAlias).DisplayImageRef()
+			connection.Plugin = ociinstaller.NewImageRef(connection.PluginAlias).DisplayImageRef()
 			connection.Error = fmt.Errorf(constants.ConnectionErrorPluginNotInstalled)
 			log.Printf("[INFO] connection '%s' requires plugin '%s' which is not loaded and has no instance config", connection.Name, connection.PluginAlias)
 			continue
@@ -375,7 +281,7 @@ func (c *SteampipeConfig) initializePlugins() {
 	       NOTE: if there is more than one config for the plugin this is an error
 		5) create a default config for the plugin (with the label set to the image ref)
 */
-func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconfig.Connection) (*modconfig.Plugin, error) {
+func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconfig.SteampipeConnection) (*plugin.Plugin, error) {
 	// NOTE: at this point, c.Plugin is NOT populated, only either c.PluginAlias or c.PluginInstance
 	// we populate c.Plugin AFTER resolving the plugin
 
@@ -396,7 +302,7 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 	}
 
 	// resolve the image ref (this handles the special case of locally developed plugins in the plugins/local folder)
-	imageRef := modconfig.ResolvePluginImageRef(connection.PluginAlias)
+	imageRef := plugin.ResolvePluginImageRef(connection.PluginAlias)
 
 	// verify the plugin is installed - if not return nil
 	if _, ok := c.PluginVersions[imageRef]; !ok {
@@ -420,7 +326,7 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 	switch len(pluginsForImageRef) {
 	case 0:
 		// there is no plugin instance for this connection - add an implicit plugin instance
-		p := modconfig.NewImplicitPlugin(connection, imageRef)
+		p := plugin.NewImplicitPlugin(connection.PluginAlias, imageRef)
 
 		// now add to our map
 		if err := c.addPlugin(p); err != nil {
@@ -448,9 +354,9 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 func (c *SteampipeConfig) GetNonSearchPathConnections(searchPath []string) []string {
 	var res []string
 	//convert searchPath to map for easy lookup
-	searchPathLookup := utils.SliceToLookup(searchPath)
+	searchPathLookup := helpers.SliceToLookup(searchPath)
 
-	for connectionName, _ := range c.Connections {
+	for connectionName := range c.Connections {
 		if _, inSearchPath := searchPathLookup[connectionName]; !inSearchPath {
 			res = append(res, connectionName)
 		}

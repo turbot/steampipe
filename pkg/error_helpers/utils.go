@@ -4,15 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"os"
 	"strings"
-
-	"golang.org/x/exp/maps"
 
 	"github.com/fatih/color"
 	"github.com/shiena/ansicolor"
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/constants"
+	pconstants "github.com/turbot/pipe-fittings/constants"
 	"github.com/turbot/steampipe/pkg/statushooks"
 )
 
@@ -47,7 +46,7 @@ func ShowError(ctx context.Context, err error) {
 	}
 	err = HandleCancelError(err)
 	statushooks.Done(ctx)
-	fmt.Fprintf(color.Error, "%s: %v\n", constants.ColoredErr, TransformErrorToSteampipe(err))
+	fmt.Fprintf(color.Error, "%s: %v\n", pconstants.ColoredErr, TransformErrorToSteampipe(err))
 }
 
 // ShowErrorWithMessage displays the given error nicely with the given message
@@ -57,7 +56,7 @@ func ShowErrorWithMessage(ctx context.Context, err error, message string) {
 	}
 	err = HandleCancelError(err)
 	statushooks.Done(ctx)
-	fmt.Fprintf(color.Error, "%s: %s - %v\n", constants.ColoredErr, message, TransformErrorToSteampipe(err))
+	fmt.Fprintf(color.Error, "%s: %s - %v\n", pconstants.ColoredErr, message, TransformErrorToSteampipe(err))
 }
 
 // TransformErrorToSteampipe removes the pq: and rpc error prefixes along
@@ -97,7 +96,7 @@ func HandleCancelError(err error) error {
 
 func HandleQueryTimeoutError(err error) error {
 	if errors.Is(err, context.DeadlineExceeded) {
-		err = fmt.Errorf("query timeout exceeded (%ds)", viper.GetInt(constants.ArgDatabaseQueryTimeout))
+		err = fmt.Errorf("query timeout exceeded (%ds)", viper.GetInt(pconstants.ArgDatabaseQueryTimeout))
 	}
 	return err
 }
@@ -110,7 +109,7 @@ func ShowWarning(warning string) {
 	if len(warning) == 0 {
 		return
 	}
-	fmt.Fprintf(color.Error, "%s: %v\n", constants.ColoredWarn, warning)
+	fmt.Fprintf(color.Error, "%s: %v\n", pconstants.ColoredWarn, warning)
 }
 
 func CombineErrorsWithPrefix(prefix string, errors ...error) error {

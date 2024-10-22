@@ -12,11 +12,15 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-plugin"
+	goplugin "github.com/hashicorp/go-plugin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sethvargo/go-retry"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/pipe-fittings/utils"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkshared "github.com/turbot/steampipe-plugin-sdk/v5/grpc/shared"
@@ -26,13 +30,10 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_local"
 	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // PluginManager is the implementation of grpc.PluginManager
@@ -117,14 +118,14 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 
 func (m *PluginManager) Serve() {
 	// create a plugin map, using ourselves as the implementation
-	pluginMap := map[string]plugin.Plugin{
+	pluginMap := map[string]goplugin.Plugin{
 		pluginshared.PluginName: &pluginshared.PluginManagerPlugin{Impl: m},
 	}
-	plugin.Serve(&plugin.ServeConfig{
+	goplugin.Serve(&goplugin.ServeConfig{
 		HandshakeConfig: pluginshared.Handshake,
 		Plugins:         pluginMap,
 		//  enable gRPC serving for this plugin...
-		GRPCServer: plugin.DefaultGRPCServer,
+		GRPCServer: goplugin.DefaultGRPCServer,
 	})
 }
 
@@ -229,7 +230,7 @@ func (m *PluginManager) doRefresh() {
 }
 
 // OnConnectionConfigChanged is the callback function invoked by the connection watcher when the config changed
-func (m *PluginManager) OnConnectionConfigChanged(ctx context.Context, configMap connection.ConnectionConfigMap, plugins map[string]*modconfig.Plugin) {
+func (m *PluginManager) OnConnectionConfigChanged(ctx context.Context, configMap connection.ConnectionConfigMap, plugins map[string]*plugin.Plugin) {
 	m.mut.Lock()
 	defer m.mut.Unlock()
 
@@ -474,7 +475,7 @@ func (m *PluginManager) addRunningPlugin(pluginInstance string) (*runningPlugin,
 	return startingPlugin, nil
 }
 
-func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConfigs []*sdkproto.ConnectionConfig) (*plugin.Client, error) {
+func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConfigs []*sdkproto.ConnectionConfig) (*goplugin.Client, error) {
 	// retrieve the plugin config
 	pluginConfig := m.plugins[pluginInstance]
 	// must be there (if no explicit config was specified, we create a default)
@@ -494,17 +495,17 @@ func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConf
 	log.Printf("[INFO] ************ plugin path %s ********************\n", pluginPath)
 
 	// create the plugin map
-	pluginMap := map[string]plugin.Plugin{
+	pluginMap := map[string]goplugin.Plugin{
 		imageRef: &sdkshared.WrapperPlugin{},
 	}
 
 	cmd := exec.Command(pluginPath)
 	m.setPluginMaxMemory(pluginConfig, cmd)
-	client := plugin.NewClient(&plugin.ClientConfig{
+	client := goplugin.NewClient(&goplugin.ClientConfig{
 		HandshakeConfig:  sdkshared.Handshake,
 		Plugins:          pluginMap,
 		Cmd:              cmd,
-		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
+		AllowedProtocols: []goplugin.Protocol{goplugin.ProtocolGRPC},
 
 		// pass our logger to the plugin client to ensure plugin logs end up in logfile
 		Logger: m.logger,
@@ -520,11 +521,11 @@ func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConf
 
 }
 
-func (m *PluginManager) setPluginMaxMemory(pluginConfig *modconfig.Plugin, cmd *exec.Cmd) {
+func (m *PluginManager) setPluginMaxMemory(pluginConfig *plugin.Plugin, cmd *exec.Cmd) {
 	maxMemoryBytes := pluginConfig.GetMaxMemoryBytes()
 	if maxMemoryBytes == 0 {
-		if viper.IsSet(constants.ArgMemoryMaxMbPlugin) {
-			maxMemoryBytes = viper.GetInt64(constants.ArgMemoryMaxMbPlugin) * 1024 * 1024
+		if viper.IsSet(pconstants.ArgMemoryMaxMbPlugin) {
+			maxMemoryBytes = viper.GetInt64(pconstants.ArgMemoryMaxMbPlugin) * 1024 * 1024
 		}
 	}
 	if maxMemoryBytes != 0 {
@@ -536,7 +537,7 @@ func (m *PluginManager) setPluginMaxMemory(pluginConfig *modconfig.Plugin, cmd *
 }
 
 // set the connection configs and build a ReattachConfig
-func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.ConnectionConfig, client *plugin.Client, req *pb.GetRequest) (_ *pb.ReattachConfig, err error) {
+func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.ConnectionConfig, client *goplugin.Client, req *pb.GetRequest) (_ *pb.ReattachConfig, err error) {
 	// extract connection names
 	connectionNames := make([]string, len(connectionConfigs))
 	for i, c := range connectionConfigs {
@@ -677,8 +678,8 @@ func (m *PluginManager) waitForPluginLoad(p *runningPlugin, req *pb.GetRequest) 
 	}
 	pluginStartTimeoutSecs := pluginConfig.GetStartTimeout()
 	if pluginStartTimeoutSecs == 0 {
-		if viper.IsSet(constants.ArgMemoryMaxMbPlugin) {
-			pluginStartTimeoutSecs = viper.GetInt64(constants.ArgPluginStartTimeout)
+		if viper.IsSet(pconstants.ArgMemoryMaxMbPlugin) {
+			pluginStartTimeoutSecs = viper.GetInt64(pconstants.ArgPluginStartTimeout)
 		}
 	}
 	if pluginStartTimeoutSecs == 0 {
@@ -758,9 +759,9 @@ func (m *PluginManager) setAllConnectionConfigs(connectionConfigs []*sdkproto.Co
 
 func (m *PluginManager) setCacheOptions(pluginClient *sdkgrpc.PluginClient) error {
 	req := &sdkproto.SetCacheOptionsRequest{
-		Enabled:   viper.GetBool(constants.ArgServiceCacheEnabled),
-		Ttl:       viper.GetInt64(constants.ArgCacheMaxTtl),
-		MaxSizeMb: viper.GetInt64(constants.ArgMaxCacheSizeMb),
+		Enabled:   viper.GetBool(pconstants.ArgServiceCacheEnabled),
+		Ttl:       viper.GetInt64(pconstants.ArgCacheMaxTtl),
+		MaxSizeMb: viper.GetInt64(pconstants.ArgMaxCacheSizeMb),
 	}
 	_, err := pluginClient.SetCacheOptions(req)
 	return err
@@ -771,7 +772,7 @@ func (m *PluginManager) setRateLimiters(pluginInstance string, pluginClient *sdk
 	var defs []*sdkproto.RateLimiterDefinition
 
 	for _, l := range m.userLimiters[pluginInstance] {
-		defs = append(defs, l.AsProto())
+		defs = append(defs, sdkproto.RateLimiterAsProto(l))
 	}
 
 	req := &sdkproto.SetRateLimitersRequest{Definitions: defs}

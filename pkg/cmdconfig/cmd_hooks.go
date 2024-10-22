@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"io"
 	"log"
 	"os"
@@ -19,18 +20,23 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/logging"
+	"github.com/turbot/pipe-fittings/app_specific"
+	pconstants "github.com/turbot/pipe-fittings/constants"
+	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/parse"
+	"github.com/turbot/pipe-fittings/pipes"
+	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/versionfile"
+	"github.com/turbot/pipe-fittings/workspace_profile"
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/cloud"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/task"
-	"github.com/turbot/steampipe/pkg/utils"
 	"github.com/turbot/steampipe/pkg/version"
 )
 
@@ -88,7 +94,7 @@ func preRunHook(cmd *cobra.Command, args []string) {
 
 	// if the log level was set in the general config
 	if logLevelNeedsReset() {
-		logLevel := viper.GetString(constants.ArgLogLevel)
+		logLevel := viper.GetString(pconstants.ArgLogLevel)
 		// set my environment to the desired log level
 		// so that this gets inherited by any other process
 		// started by this process (postgres/plugin-manager)
@@ -119,7 +125,7 @@ func preRunHook(cmd *cobra.Command, args []string) {
 }
 
 func setMemoryLimit() {
-	maxMemoryBytes := viper.GetInt64(constants.ArgMemoryMaxMb) * 1024 * 1024
+	maxMemoryBytes := viper.GetInt64(pconstants.ArgMemoryMaxMb) * 1024 * 1024
 	if maxMemoryBytes > 0 {
 		// set the max memory
 		debug.SetMemoryLimit(maxMemoryBytes)
@@ -130,7 +136,7 @@ func setMemoryLimit() {
 // task run is complete
 //
 // runScheduledTasks skips running tasks if this instance is the plugin manager
-func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, ew error_helpers.ErrorAndWarnings) chan struct{} {
+func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, ew perror_helpers.ErrorAndWarnings) chan struct{} {
 	// skip running the task runner if this is the plugin manager
 	// since it's supposed to be a daemon
 	if task.IsPluginManagerCmd(cmd) {
@@ -152,7 +158,7 @@ func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, e
 		// pass the config value in rather than runRasks querying viper directly - to avoid concurrent map access issues
 		// (we can use the update-check viper config here, since initGlobalConfig has already set it up
 		// with values from the config files and ENV settings - update-check cannot be set from the command line)
-		task.WithUpdateCheck(viper.GetBool(constants.ArgUpdateCheck)),
+		task.WithUpdateCheck(viper.GetBool(pconstants.ArgUpdateCheck)),
 		// show deprecation warnings
 		task.WithPreHook(func(_ context.Context) {
 			displayDeprecationWarnings(ew)
@@ -167,7 +173,7 @@ func runScheduledTasks(ctx context.Context, cmd *cobra.Command, args []string, e
 //	the GlobalConfig has a loglevel set
 func logLevelNeedsReset() bool {
 	envLogLevelIsSet := envLogLevelSet()
-	generalOptionsSet := (steampipeconfig.GlobalConfig.GeneralOptions != nil && steampipeconfig.GlobalConfig.GeneralOptions.LogLevel != nil)
+	generalOptionsSet := steampipeconfig.GlobalConfig.GeneralOptions != nil && steampipeconfig.GlobalConfig.GeneralOptions.LogLevel != nil
 
 	return !envLogLevelIsSet && generalOptionsSet
 }
@@ -189,7 +195,7 @@ func envLogLevelSet() bool {
 }
 
 // initGlobalConfig reads in config file and ENV variables if set.
-func initGlobalConfig() error_helpers.ErrorAndWarnings {
+func initGlobalConfig() perror_helpers.ErrorAndWarnings {
 	utils.LogTime("cmdconfig.initGlobalConfig start")
 	defer utils.LogTime("cmdconfig.initGlobalConfig end")
 
@@ -199,7 +205,7 @@ func initGlobalConfig() error_helpers.ErrorAndWarnings {
 	// load workspace profile from the configured install dir
 	loader, err := getWorkspaceProfileLoader(ctx)
 	if err != nil {
-		return error_helpers.NewErrorsAndWarning(err)
+		return perror_helpers.NewErrorsAndWarning(err)
 	}
 
 	// set global workspace profile
@@ -208,14 +214,14 @@ func initGlobalConfig() error_helpers.ErrorAndWarnings {
 	// set-up viper with defaults from the env and default workspace profile
 	err = bootstrapViper(loader, cmd)
 	if err != nil {
-		return error_helpers.NewErrorsAndWarning(err)
+		return perror_helpers.NewErrorsAndWarning(err)
 	}
 
 	// set global containing the configured install dir (create directory if needed)
 	ensureInstallDir()
 
 	// load the connection config and HCL options
-	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(ctx, viper.GetString(constants.ArgModLocation), cmd.Name())
+	config, loadConfigErrorsAndWarnings := steampipeconfig.LoadSteampipeConfig(ctx, viper.GetString(pconstants.ArgModLocation), cmd.Name())
 	if loadConfigErrorsAndWarnings.Error != nil {
 		return loadConfigErrorsAndWarnings
 	}
@@ -237,12 +243,6 @@ func initGlobalConfig() error_helpers.ErrorAndWarnings {
 		SetDefaultsFromConfig(loader.ConfiguredProfile.ConfigMap(cmd))
 	}
 
-	// handle deprecated cloud-host and cloud-token args and env vars
-	ew := handleDeprecations()
-	if ew.Error != nil {
-		return ew
-	}
-
 	// NOTE: we need to resolve the token separately
 	// - that is because we need the resolved value of ArgPipesHost in order to load any saved token
 	// and we cannot get this until the other config has been resolved
@@ -251,10 +251,8 @@ func initGlobalConfig() error_helpers.ErrorAndWarnings {
 		loadConfigErrorsAndWarnings.Error = err
 		return loadConfigErrorsAndWarnings
 	}
-
-	loadConfigErrorsAndWarnings.Merge(ew)
 	// now validate all config values have appropriate values
-	ew = validateConfig()
+	ew := validateConfig()
 	if ew.Error != nil {
 		return ew
 	}
@@ -263,46 +261,7 @@ func initGlobalConfig() error_helpers.ErrorAndWarnings {
 	return loadConfigErrorsAndWarnings
 }
 
-func handleDeprecations() error_helpers.ErrorAndWarnings {
-	var ew = error_helpers.ErrorAndWarnings{}
-	// if deprecated cloud-token or cloud-host is set, show a warning and copy the value to the new arg
-	if viper.IsSet(constants.ArgCloudToken) {
-		if viper.IsSet(constants.ArgPipesToken) {
-			ew.Error = sperr.New("Only one of flags --%s and --%s may be set", constants.ArgCloudToken, constants.ArgPipesToken)
-			return ew
-		}
-		viper.Set(constants.ArgPipesToken, viper.GetString(constants.ArgCloudToken))
-	}
-	if viper.IsSet(constants.ArgCloudHost) {
-		if viper.IsSet(constants.ArgPipesHost) {
-			ew.Error = sperr.New("Only one of flags --%s and --%s may be set", constants.ArgCloudHost, constants.ArgPipesHost)
-			return ew
-		}
-		viper.Set(constants.ArgPipesHost, viper.GetString(constants.ArgCloudHost))
-	}
-
-	// is deprecated STEAMPIPE_CLOUD_TOKEN env var set?
-	if _, isCloudTokenSet := os.LookupEnv(constants.EnvCloudToken); isCloudTokenSet {
-		// is PIPES_TOKEN also set? This is an error
-		if _, isPipesTokenSet := os.LookupEnv(constants.EnvPipesToken); isPipesTokenSet {
-			ew.Error = sperr.New("Only one of env vars %s and %s may be set", constants.EnvCloudToken, constants.EnvPipesToken)
-			return ew
-		}
-		// otherwise, show a warning
-		ew.AddWarning(fmt.Sprintf("The %s env var is deprecated - use %s", constants.EnvCloudToken, constants.EnvPipesToken))
-	}
-	// the same for STEAMPIPE_CLOUD_HOST
-	if _, isCloudTokenSet := os.LookupEnv(constants.EnvCloudHost); isCloudTokenSet {
-		if _, isPipesTokenSet := os.LookupEnv(constants.EnvPipesHost); isPipesTokenSet {
-			ew.Error = sperr.New("Only one of env vars %s and %s may be set", constants.EnvCloudHost, constants.EnvPipesHost)
-			return ew
-		}
-		ew.AddWarning(fmt.Sprintf("The %s env var is deprecated - use %s", constants.EnvCloudHost, constants.EnvPipesHost))
-	}
-	return ew
-}
-
-func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error {
+func setCloudTokenDefault(loader *parse.WorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile]) error {
 	/*
 	   saved cloud token
 	   cloud_token in default workspace
@@ -311,45 +270,35 @@ func setCloudTokenDefault(loader *steampipeconfig.WorkspaceProfileLoader) error 
 	*/
 	// set viper defaults in order of increasing precedence
 	// 1) saved cloud token
-	savedToken, err := cloud.LoadToken()
+	savedToken, err := pipes.LoadToken()
 	if err != nil {
 		return err
 	}
 	if savedToken != "" {
-		viper.SetDefault(constants.ArgPipesToken, savedToken)
+		viper.SetDefault(pconstants.ArgPipesToken, savedToken)
 	}
 	// 2) default profile pipes token
 	if loader.DefaultProfile.PipesToken != nil {
-		viper.SetDefault(constants.ArgPipesToken, *loader.DefaultProfile.PipesToken)
+		viper.SetDefault(pconstants.ArgPipesToken, *loader.DefaultProfile.PipesToken)
 	}
-	// deprecated - cloud token
-	if loader.DefaultProfile.CloudToken != nil {
-		viper.SetDefault(constants.ArgPipesToken, *loader.DefaultProfile.CloudToken)
-	}
-	// 3) env var (STEAMIPE_CLOUD_TOKEN )
-	SetDefaultFromEnv(constants.EnvPipesToken, constants.ArgPipesToken, String)
-	// deprecated env var
-	SetDefaultFromEnv(constants.EnvCloudToken, constants.ArgPipesToken, String)
+	// 3) env var (PIPES_TOKEN )
+	SetDefaultFromEnv(constants.EnvPipesToken, pconstants.ArgPipesToken, String)
 
 	// 4) explicit workspace profile
 	if p := loader.ConfiguredProfile; p != nil && p.PipesToken != nil {
-		viper.SetDefault(constants.ArgPipesToken, *p.PipesToken)
-	}
-	// deprecated - cloud token
-	if p := loader.ConfiguredProfile; p != nil && p.CloudToken != nil {
-		viper.SetDefault(constants.ArgPipesToken, *p.CloudToken)
+		viper.SetDefault(pconstants.ArgPipesToken, *p.PipesToken)
 	}
 	return nil
 }
 
-func getWorkspaceProfileLoader(ctx context.Context) (*steampipeconfig.WorkspaceProfileLoader, error) {
+func getWorkspaceProfileLoader(ctx context.Context) (*parse.WorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile], error) {
 	// set viper default for workspace profile, using EnvWorkspaceProfile env var
-	SetDefaultFromEnv(constants.EnvWorkspaceProfile, constants.ArgWorkspaceProfile, String)
+	SetDefaultFromEnv(constants.EnvWorkspaceProfile, pconstants.ArgWorkspaceProfile, String)
 	// set viper default for install dir, using EnvInstallDir env var
-	SetDefaultFromEnv(constants.EnvInstallDir, constants.ArgInstallDir, String)
+	SetDefaultFromEnv(constants.EnvInstallDir, pconstants.ArgInstallDir, String)
 
 	// resolve the workspace profile dir
-	installDir, err := filehelpers.Tildefy(viper.GetString(constants.ArgInstallDir))
+	installDir, err := filehelpers.Tildefy(viper.GetString(pconstants.ArgInstallDir))
 	if err != nil {
 		return nil, err
 	}
@@ -360,7 +309,7 @@ func getWorkspaceProfileLoader(ctx context.Context) (*steampipeconfig.WorkspaceP
 	}
 
 	// create loader
-	loader, err := steampipeconfig.NewWorkspaceProfileLoader(ctx, workspaceProfileDir)
+	loader, err := parse.NewWorkspaceProfileLoader[*workspace_profile.SteampipeWorkspaceProfile](workspaceProfileDir)
 	if err != nil {
 		return nil, err
 	}
@@ -370,9 +319,9 @@ func getWorkspaceProfileLoader(ctx context.Context) (*steampipeconfig.WorkspaceP
 
 // now validate  config values have appropriate values
 // (currently validates telemetry)
-func validateConfig() error_helpers.ErrorAndWarnings {
-	var res = error_helpers.ErrorAndWarnings{}
-	telemetry := viper.GetString(constants.ArgTelemetry)
+func validateConfig() perror_helpers.ErrorAndWarnings {
+	var res = perror_helpers.ErrorAndWarnings{}
+	telemetry := viper.GetString(pconstants.ArgTelemetry)
 	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
 		res.Error = sperr.New(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
 		return res
@@ -395,7 +344,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 
 	level := sdklogging.LogLevel()
 	var logDestination io.Writer
-	if len(filepaths.SteampipeDir) == 0 {
+	if len(app_specific.InstallDir) == 0 {
 		// write to the buffer - this is to make sure that we don't lose logs
 		// till the time we get the log directory
 		logDestination = logBuffer
@@ -437,8 +386,8 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 }
 
 func ensureInstallDir() {
-	pipesInstallDir := viper.GetString(constants.ArgPipesInstallDir)
-	installDir := viper.GetString(constants.ArgInstallDir)
+	pipesInstallDir := viper.GetString(pconstants.ArgPipesInstallDir)
+	installDir := viper.GetString(pconstants.ArgInstallDir)
 
 	log.Printf("[TRACE] ensureInstallDir %s", installDir)
 	if _, err := os.Stat(installDir); os.IsNotExist(err) {
@@ -453,13 +402,13 @@ func ensureInstallDir() {
 		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create pipes installation directory: %s", pipesInstallDir))
 	}
 
-	// store as SteampipeDir and PipesInstallDir
-	filepaths.SteampipeDir = installDir
-	filepaths.PipesInstallDir = pipesInstallDir
+	// store as app_specific.InstallDir and PipesInstallDir
+	app_specific.InstallDir = installDir
+	pfilepaths.PipesInstallDir = pipesInstallDir
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way
-func displayDeprecationWarnings(errorsAndWarnings error_helpers.ErrorAndWarnings) {
+func displayDeprecationWarnings(errorsAndWarnings perror_helpers.ErrorAndWarnings) {
 	if len(errorsAndWarnings.Warnings) > 0 {
 		fmt.Println(color.YellowString(fmt.Sprintf("\nDeprecation %s:", utils.Pluralize("warning", len(errorsAndWarnings.Warnings)))))
 		for _, warning := range errorsAndWarnings.Warnings {
@@ -471,5 +420,5 @@ func displayDeprecationWarnings(errorsAndWarnings error_helpers.ErrorAndWarnings
 }
 
 func displayPpDeprecationWarning() {
-	fmt.Fprintf(color.Error, "\n%s Steampipe mods and dashboards have been moved to %s. This command %s in a future version. Migration guide - https://powerpipe.io/blog/migrating-from-steampipe \n", color.YellowString("Deprecation warning:"), constants.Bold("Powerpipe"), constants.Bold("will be removed"))
+	fmt.Fprintf(color.Error, "\n%s Steampipe mods and dashboards have been moved to %s. This command %s in a future version. Migration guide - https://powerpipe.io/blog/migrating-from-steampipe \n", color.YellowString("Deprecation warning:"), pconstants.Bold("Powerpipe"), pconstants.Bold("will be removed"))
 }

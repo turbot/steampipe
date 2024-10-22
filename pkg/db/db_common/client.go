@@ -2,8 +2,10 @@ package db_common
 
 import (
 	"context"
+
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	pqueryresult "github.com/turbot/pipe-fittings/queryresult"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
 
@@ -20,10 +22,10 @@ type Client interface {
 	// acquire a query execution session (which search pathand cache options  set) - must be closed
 	AcquireSession(context.Context) *AcquireSessionResult
 
-	ExecuteSync(context.Context, string, ...any) (*queryresult.SyncQueryResult, error)
-	Execute(context.Context, string, ...any) (*queryresult.Result, error)
+	ExecuteSync(context.Context, string, ...any) (*pqueryresult.SyncQueryResult, error)
+	Execute(context.Context, string, ...any) (*pqueryresult.Result[queryresult.TimingResultStream], error)
 
-	ExecuteSyncInSession(context.Context, *DatabaseSession, string, ...any) (*queryresult.SyncQueryResult, error)
+	ExecuteSyncInSession(context.Context, *DatabaseSession, string, ...any) (*pqueryresult.SyncQueryResult, error)
 	ExecuteInSession(context.Context, *DatabaseSession, func(), string, ...any) (*queryresult.Result, error)
 
 	ResetPools(context.Context)

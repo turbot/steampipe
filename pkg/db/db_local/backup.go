@@ -13,13 +13,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/turbot/go-kit/files"
-
 	"github.com/shirou/gopsutil/process"
+	"github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/app_specific"
+	putils "github.com/turbot/pipe-fittings/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/utils"
 )
 
 var (
@@ -112,7 +112,7 @@ func killRunningDbInstance(ctx context.Context) error {
 
 		// check if the name of the process is prefixed with the $STEAMPIPE_INSTALL_DIR
 		// that means this is a steampipe service from this installation directory
-		if strings.HasPrefix(cmdLine, filepaths.SteampipeDir) {
+		if strings.HasPrefix(cmdLine, app_specific.InstallDir) {
 			log.Println("[TRACE] Terminating running postgres process")
 			if err := p.Kill(); err != nil {
 				error_helpers.ShowWarning(fmt.Sprintf("Failed to kill orphan postgres process PID %d", p.Pid))
@@ -153,7 +153,7 @@ func takeBackup(ctx context.Context, config *pgRunningInfo) error {
 func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningInfo, error) {
 	binaryLocation := filepath.Join(location, "postgres", "bin", "postgres")
 	dataLocation := filepath.Join(location, "data")
-	port, err := utils.GetNextFreePort()
+	port, err := putils.GetNextFreePort()
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +166,8 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 		// NOTE: If quoted, the application name includes the quotes. Worried about
 		// having spaces in the APPNAME, but leaving it unquoted since currently
 		// the APPNAME is hardcoded to be steampipe.
-		"-c", fmt.Sprintf("application_name=%s", constants.AppName),
-		"-c", fmt.Sprintf("cluster_name=%s", constants.AppName),
+		"-c", fmt.Sprintf("application_name=%s", app_specific.AppName),
+		"-c", fmt.Sprintf("cluster_name=%s", app_specific.AppName),
 
 		// Data Directory
 		"-D", dataLocation,
@@ -349,7 +349,7 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 // This needs to be done because the pg_dump will always set a blank search path in the backup archive
 // and backed up MATERIALIZED VIEWS may have functions with unqualified table names
 func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []string) (string, string, error) {
-	onlyRefresh, withoutRefresh := utils.Partition(tableOfContentsOfBackup, func(v string) bool {
+	onlyRefresh, withoutRefresh := putils.Partition(tableOfContentsOfBackup, func(v string) bool {
 		return strings.Contains(strings.ToUpper(v), "MATERIALIZED VIEW DATA")
 	})
 
@@ -420,7 +420,7 @@ func retainBackup(ctx context.Context) error {
 	textBackupFilePath := filepath.Join(backupDir, textBackupRetentionFileName)
 
 	log.Println("[TRACE] moving database back up to", binaryBackupFilePath)
-	if err := utils.MoveFile(filepaths.DatabaseBackupFilePath(), binaryBackupFilePath); err != nil {
+	if err := putils.MoveFile(filepaths.DatabaseBackupFilePath(), binaryBackupFilePath); err != nil {
 		return err
 	}
 	log.Println("[TRACE] converting database back up to", textBackupFilePath)
@@ -475,7 +475,7 @@ func trimBackups() {
 	}
 
 	// retain only the .dump files (just to get the unique backups)
-	files = utils.Filter(files, func(v fs.DirEntry) bool {
+	files = putils.Filter(files, func(v fs.DirEntry) bool {
 		if v.Type().IsDir() {
 			return false
 		}
@@ -484,7 +484,7 @@ func trimBackups() {
 	})
 
 	// map to the names of the backups, without extensions
-	names := utils.Map(files, func(v fs.DirEntry) string {
+	names := putils.Map(files, func(v fs.DirEntry) string {
 		return strings.TrimSuffix(v.Name(), filepath.Ext(v.Name()))
 	})
 

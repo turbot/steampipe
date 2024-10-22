@@ -15,9 +15,8 @@ function setup() {
 # Related to https://github.com/turbot/steampipe/issues/3112
 
 @test "snapshot mode - query output csv" {
-  cd $FILE_PATH/test_data/mods/functionality_test_mod
 
-  steampipe query query.static_query_2 --snapshot --output csv --pipes-token $SPIPETOOLS_TOKEN --snapshot-location turbot-ops/clitesting > output.csv
+  steampipe query $FILE_PATH/test_data/mods/functionality_test_mod/query/static_query_2.sql --snapshot --output csv --pipes-token $SPIPETOOLS_TOKEN --snapshot-location turbot-ops/clitesting > output.csv
 
   # extract the snapshot url from the output
   url=$(grep -o 'http[^"]*' output.csv)
@@ -26,9 +25,9 @@ function setup() {
   # checking for OS type, since sed command is different for linux and OSX
   # removing the 15th line, since it contains snapshot upload link, which will be different in each run
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".csv" "15d" output.csv
+    run sed -i ".csv" "2d" output.csv
   else
-    run sed -i "15d" output.csv
+    run sed -i "2d" output.csv
   fi
   cat output.csv
 
@@ -45,9 +44,7 @@ function setup() {
 
 @test "snapshot mode - query output json" {
   skip
-  cd $FILE_PATH/test_data/mods/functionality_test_mod
-
-  steampipe query query.static_query_2 --snapshot --output json --pipes-token $SPIPETOOLS_TOKEN --snapshot-location turbot-ops/clitesting > output.json
+  steampipe query $FILE_PATH/test_data/mods/functionality_test_mod/query/static_query_2.sql --snapshot --output json --pipes-token $SPIPETOOLS_TOKEN --snapshot-location turbot-ops/clitesting > output.json
 
   # extract the snapshot url from the output
   url=$(grep -o 'http[^"]*' output.json)
@@ -56,9 +53,9 @@ function setup() {
   # checking for OS type, since sed command is different for linux and OSX
   # removing the 64th line, since it contains snapshot upload link, which will be different in each run
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".csv" "64d" output.json
+    run sed -i ".csv" "2d" output.json
   else
-    run sed -i "64d" output.json
+    run sed -i "2d" output.json
   fi
   cat output.json
 
@@ -74,9 +71,8 @@ function setup() {
 }
 
 @test "snapshot mode - query output table" {
-  cd $FILE_PATH/test_data/mods/functionality_test_mod
 
-  steampipe query query.static_query_2 --snapshot --output table --pipes-token $SPIPETOOLS_TOKEN --snapshot-location turbot-ops/clitesting > output.txt
+  steampipe query $FILE_PATH/test_data/mods/functionality_test_mod/query/static_query_2.sql --snapshot --output table --pipes-token $SPIPETOOLS_TOKEN --snapshot-location turbot-ops/clitesting > output.txt
 
   # extract the snapshot url from the output
   url=$(grep -o 'http[^"]*' output.txt)
@@ -85,9 +81,9 @@ function setup() {
   # checking for OS type, since sed command is different for linux and OSX
   # removing the 18th line, since it contains snapshot upload link, which will be different in each run
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    run sed -i ".csv" "18d" output.txt
+    run sed -i ".csv" "2d" output.txt
   else
-    run sed -i "18d" output.txt
+    run sed -i "2d" output.txt
   fi
   cat output.txt
 

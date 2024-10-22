@@ -6,9 +6,9 @@ import (
 	"time"
 
 	typehelpers "github.com/turbot/go-kit/types"
+	"github.com/turbot/pipe-fittings/modconfig"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/steampipeconfig/modconfig"
 )
 
 // ConnectionState is a struct containing all details for a connection
@@ -46,7 +46,7 @@ type ConnectionState struct {
 	EndLineNumber   int      `json:"end_line_number" db:"end_line_number"`
 }
 
-func NewConnectionState(connection *modconfig.Connection, creationTime time.Time) *ConnectionState {
+func NewConnectionState(connection *modconfig.SteampipeConnection, creationTime time.Time) *ConnectionState {
 	state := &ConnectionState{
 		Plugin:         connection.Plugin,
 		PluginInstance: connection.PluginInstance,
@@ -64,7 +64,7 @@ func NewConnectionState(connection *modconfig.Connection, creationTime time.Time
 	return state
 }
 
-func (d *ConnectionState) setFilename(connection *modconfig.Connection) {
+func (d *ConnectionState) setFilename(connection *modconfig.SteampipeConnection) {
 	d.FileName = connection.DeclRange.Filename
 	d.StartLineNumber = connection.DeclRange.Start.Line
 	d.EndLineNumber = connection.DeclRange.End.Line
