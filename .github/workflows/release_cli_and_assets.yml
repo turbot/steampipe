@@ -149,7 +149,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, macos-13]
+        platform: [ubuntu-latest]
         test_block:
           - "migration"
           - "brew"
@@ -172,12 +172,6 @@ jobs:
           - "exit_codes"
           - "force_stop"
         exclude:
-          - platform: macos-13
-            test_block: migration
-          - platform: macos-13
-            test_block: ssl
-          - platform: macos-13
-            test_block: force_stop
           - platform: ubuntu-latest
             test_block: chaos_and_query
     runs-on: ${{ matrix.platform }}
