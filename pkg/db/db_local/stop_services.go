@@ -228,7 +228,7 @@ Postgres has three levels of shutdown:
 
   - SIGTERM   - Smart Shutdown	 :  Wait for children to end normally - exit self
   - SIGINT    - Fast Shutdown      :  SIGTERM children, causing them to abort current
-    transations and exit - wait for children to exit -
+    transactions and exit - wait for children to exit -
     exit self
   - SIGQUIT   - Immediate Shutdown :  SIGQUIT children - wait at most 5 seconds,
     send SIGKILL to children - exit self immediately

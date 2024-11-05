@@ -21,7 +21,7 @@ Client side search path (the session search path) is determined according to fol
 4) The compiled default (public, then alphabetical by connection name)
 
 
-When a DB session is created, if viper has a setting for either `search_path` ot `search_path_prefix`,  the session search path is set (determined using the precedence above.)
+When a DB session is created, if viper has a setting for either `search_path` or `search_path_prefix`,  the session search path is set (determined using the precedence above.)
 
 
 

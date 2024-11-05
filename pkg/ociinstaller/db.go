@@ -12,7 +12,7 @@ import (
 	versionfile "github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
 )
 
-// InstallDB :: Install Postgres files fom OCI image
+// InstallDB :: Install Postgres files from OCI image
 func InstallDB(ctx context.Context, dblocation string) (string, error) {
 	tempDir := ociinstaller.NewTempDir(dblocation)
 	defer func() {
