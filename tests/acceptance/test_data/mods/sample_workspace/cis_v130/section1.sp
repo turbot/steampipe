@@ -186,7 +186,7 @@ control "cis_v130_1_10" {
 
 control "cis_v130_1_11" {
   title       = "1.11 Do not setup access keys during initial user setup for all IAM users that have a console password"
-  description = "AWS console defaults to no check boxes selected when creating a new IAM user. When cerating the IAM User credentials you have to determine what type of access they require."
+  description = "AWS console defaults to no check boxes selected when creating a new IAM user. When creating the IAM User credentials you have to determine what type of access they require."
   sql         = query.ok.sql
   #documentation = file("./cis_v130/docs/cis_v130_1_11.md")
 

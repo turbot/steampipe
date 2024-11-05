@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// HandleStartFailure is used to handle errors when starting both Steampipe plugins an dthe plugin manage
+// HandleStartFailure is used to handle errors when starting both Steampipe plugins an the plugin manage
 // (which is itself a GRPC plugin)
 //
 // When starting a GRPC plugin, a specific handshake sequence is expected on stdout.

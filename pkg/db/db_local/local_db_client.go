@@ -56,7 +56,7 @@ func GetLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_c
 	// NOTE: we cannot do this until after creating the client to ensure we do not miss notifications
 	if startResult.Status == ServiceStarted {
 		// ask the plugin manager to refresh connections
-		// this is executed asyncronously by the plugin manager
+		// this is executed asynchronously by the plugin manager
 		// we ignore this error, since RefreshConnections is async and all errors will flow through
 		// the notification system
 		// we do not expect any I/O errors on this since the PluginManager is running in the same box

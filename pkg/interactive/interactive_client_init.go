@@ -102,9 +102,9 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	statushooks.SetStatus(ctx, "Load plugin schemas…")
 	//  fetch the schema
 	// TODO make this async https://github.com/turbot/steampipe/issues/3400
-	// NOTE: we would like to do this asyncronously, but we are currently limited to a single Db connection in our
+	// NOTE: we would like to do this asynchronously, but we are currently limited to a single Db connection in our
 	// as the client cache settings are set per connection so we rely on only having a single connection
-	// This means that the schema load would block other queries anyway so there is no benefit right not in making asyncronous
+	// This means that the schema load would block other queries anyway so there is no benefit right not in making asynchronous
 
 	if err := c.loadSchema(); err != nil {
 		c.initData.Result.Error = err

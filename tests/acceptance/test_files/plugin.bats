@@ -153,7 +153,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   copy_install_directory
 
   steampipe plugin install hackernews@0.8.0 bitbucket@0.7.1 --progress=false --install-dir $MY_TEST_COPY
-  # remove the contents of a plugin execuatable to simulate the failed plugin scenario
+  # remove the contents of a plugin executable to simulate the failed plugin scenario
   cat /dev/null > $MY_TEST_COPY/plugins/hub.steampipe.io/plugins/turbot/hackernews@0.8.0/steampipe-plugin-hackernews.plugin
 
   # check table output

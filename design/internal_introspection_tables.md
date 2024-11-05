@@ -33,7 +33,7 @@ to either `ready` or `error`
 ### Connection config file changed
 
 The when a connection file is changed the ConnectionWatcher calls `pluginManager.OnConnectionConfigChanged`, and then calls 
-`RefreshConnections` asyncronously
+`RefreshConnections` asynchronously
 
 `OnConnectionConfigChanged`calls:
 - `handleConnectionConfigChanges`
@@ -69,7 +69,7 @@ with updated rate limiters.
 ### Plugin config file changed
 
 The when a connection file is changed the ConnectionWatcher calls `pluginManager.OnConnectionConfigChanged`, and then calls
-`RefreshConnections` asyncronously
+`RefreshConnections` asynchronously
 
 `OnConnectionConfigChanged` determines which connections have been added, removed and deleted.
 It then builds a set of SetConnectionConfigRequest, one for each plugin instance with changed connections

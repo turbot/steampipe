@@ -431,7 +431,7 @@ func retainBackup(ctx context.Context) error {
 	)
 
 	if output, err := txtConvertCmd.CombinedOutput(); err != nil {
-		log.Println("[TRACE] pg_restore convertion process output:", string(output))
+		log.Println("[TRACE] pg_restore conversion process output:", string(output))
 		return err
 	}
 

@@ -89,12 +89,12 @@ connection "aws" {
 
 #### On interactive startup:
 ```
-Warning: counld not resolve plugin
+Warning: could not resolve plugin
 ```
 
 #### On file watcher event startup:
 ```
-Warning: counld not resolve plugin
+Warning: could not resolve plugin
 ```
 
 ### Actual

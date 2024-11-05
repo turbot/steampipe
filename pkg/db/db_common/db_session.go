@@ -15,7 +15,7 @@ type DatabaseSession struct {
 	BackendPid uint32   `json:"backend_pid"`
 	SearchPath []string `json:"-"`
 
-	// this gets rewritten, since the database/sql gives back a new instance everytime
+	// this gets rewritten, since the database/sql gives back a new instance every time
 	Connection *pgxpool.Conn `json:"-"`
 }
 

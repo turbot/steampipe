@@ -11,7 +11,7 @@ import (
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
-// SendPostgresNotification send a postgres notification that the schema has chganged
+// SendPostgresNotification send a postgres notification that the schema has changed
 func SendPostgresNotification(_ context.Context, conn *pgx.Conn, notification any) error {
 	notificationBytes, err := json.Marshal(notification)
 	if err != nil {

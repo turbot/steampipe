@@ -155,7 +155,7 @@ func IsDBInstalled() bool {
 	return true
 }
 
-// IsFDWInstalled chceks whether all files required for the Steampipe FDW are available
+// IsFDWInstalled checks whether all files required for the Steampipe FDW are available
 func IsFDWInstalled() bool {
 	fdwSQLFile, fdwControlFile := filepaths.GetFDWSQLAndControlLocation()
 	if _, err := os.Stat(fdwSQLFile); os.IsNotExist(err) {

@@ -5,7 +5,7 @@
 ### Adding simple properties to `Workspace Profile`
 
 * Add properties to the `WorkspaceProfile` struct in `pkg/steampipeconfig/modconfig/workspace_profile.go`.
-* Add `hcl` and `cty` tags to the properties. (eample: `hcl:"search_path" cty:"search_path"`).
+* Add `hcl` and `cty` tags to the properties. (example: `hcl:"search_path" cty:"search_path"`).
 * Add to `(p *WorkspaceProfile) setBaseProperties()`. This enables `base` profile inheritance. **Remember to check for `nil`**.
 * Add to `(p *WorkspaceProfile) ConfigMap(commandName string)`.
 

@@ -360,10 +360,10 @@ _Bug fixes_
 
 #### Connection Management 
 - Optimise connection initialisation for high connection count ([#3394](https://github.com/turbot/steampipe/issues/3394),[#3267](https://github.com/turbot/steampipe/issues/3267),[#3236](https://github.com/turbot/steampipe/issues/3236),[#3229](https://github.com/turbot/steampipe/issues/3229),[#3413](https://github.com/turbot/steampipe/issues/3413))
-  - Execute RefreshConnections asyncronously in service startup
+  - Execute RefreshConnections asynchronously in service startup
   - Start executing queries without waiting for connections to load, add smart error handling to wait for required connection
   - Optimise autocomplete for high connection count
-  - Autocomplete and inspect data available before all conections are refreshed
+  - Autocomplete and inspect data available before all connections are refreshed
   - Add `steampipe_connection_state` table to indicate the loading state of connections
   - Add support for `import_schema` property in connection config, controlling whether to create a postgres schema for a steampipe connection. Closes #3407
   - Optimise schema creation by cloning connection schemas
@@ -375,7 +375,7 @@ _Bug fixes_
   - Schema names starting with steampipe_ are to be reserved for steampipe. 
 
 #### Mod Dependency Management
-- Support mods requiring different versions of the same depdency mod. ([#3302](https://github.com/turbot/steampipe/issues/3302))
+- Support mods requiring different versions of the same dependency mod. ([#3302](https://github.com/turbot/steampipe/issues/3302))
 - Support transitive dependencies referencing variables from different versions of same mod.([#3337](https://github.com/turbot/steampipe/issues/3337))
 - Resource references in dependency mods must be fully qualified. ([#3335](https://github.com/turbot/steampipe/issues/3335))
 - Locals in dependency mods cannot be referenced. ([#3336](https://github.com/turbot/steampipe/issues/3336))
@@ -724,7 +724,7 @@ _Bug fixes_
 ## v0.15.0 [2022-06-23]
 _What's new?_
 * Add support for Open Telemetry. ([#1193](https://github.com/turbot/steampipe/issues/1193))
-* Update `.timing` output to return additional query metadata such as the number of hydrate functions called andd the cache status. ([#2192](https://github.com/turbot/steampipe/issues/2192))
+* Update `.timing` output to return additional query metadata such as the number of hydrate functions called and the cache status. ([#2192](https://github.com/turbot/steampipe/issues/2192))
 * Add `steampipe_command.scan_metadata` table to support returning additional data from `.timing` command.  ([#203](https://github.com/turbot/steampipe-postgres-fdw/issues/203))
 * Update postgres config to enable auto-vacuum. ([#2083](https://github.com/turbot/steampipe/issues/2083))
 * Add `--show-password` CLI arg to reveal the db user password. Disables password visibility by default. ([#2033](https://github.com/turbot/steampipe/issues/2033)) 
@@ -853,7 +853,7 @@ _What's new?_
 * Add feedback during workspace load in `dashboard` command. ([#1567](https://github.com/turbot/steampipe/issues/1567))
 
 _Bug fixes_
-* Fix excessive memory usage intialising a high number of connections. ([#1656](https://github.com/turbot/steampipe/issues/1656))
+* Fix excessive memory usage initialising a high number of connections. ([#1656](https://github.com/turbot/steampipe/issues/1656))
 * Fix issue where service was not shut down if command is cancelled during initialisation. ([#1288](https://github.com/turbot/steampipe/issues/1288))
 * Fix issue where installing a plugin from any `stream` other than `latest` did not install the default `config` file. ([#1660](https://github.com/turbot/steampipe/issues/1660))
 * Fix query argument resolution not working correctly when some args are provided by HCL and some from runtime args. ([#1661](https://github.com/turbot/steampipe/issues/1661))
@@ -950,7 +950,7 @@ _What's new?_
 * Do not show plugin error messages in JSON/CSV output. ([#1110](https://github.com/turbot/steampipe/issues/1110))
 * Provider more responsive feedback for control runs. ([#1101](https://github.com/turbot/steampipe/issues/1101))
 * Create prepared statements one by one to allow accurate error reporting and reduce memory burden. ([#1148](https://github.com/turbot/steampipe/issues/1148))
-* Improve display of asyncronous error in interactive prompt. ([#1085](https://github.com/turbot/steampipe/issues/1085))
+* Improve display of asynchronous error in interactive prompt. ([#1085](https://github.com/turbot/steampipe/issues/1085))
 * Deprecate `workspace` argument, replace with `workspace-chdir`
 
 _Bug fixes_
@@ -1039,9 +1039,9 @@ _What's new?_
 * Various minor UI tweaks. ([#786](https://github.com/turbot/steampipe/issues/786))
 
 _Bug fixes_
-* Fix issue where the `>` prompt disappears when messages are shown from file watcher or asyncronous initialisation. ([#713](https://github.com/turbot/steampipe/issues/713))
+* Fix issue where the `>` prompt disappears when messages are shown from file watcher or asynchronous initialisation. ([#713](https://github.com/turbot/steampipe/issues/713))
 * Fix errors during async interactive startup leaving the prompt in a bad state. ([#728](https://github.com/turbot/steampipe/issues/728))
-* Fix for delay in `loading results` spinner showing, caused by asyncronous initialisation. ([#671](https://github.com/turbot/steampipe/issues/671))
+* Fix for delay in `loading results` spinner showing, caused by asynchronous initialisation. ([#671](https://github.com/turbot/steampipe/issues/671))
 * Fix for missing `control_description`, `control_title` in `csv` output of `check` command. ([#739](https://github.com/turbot/steampipe/issues/739))
 * Fix for `0` exit code even if `service start` fails. ([#762](https://github.com/turbot/steampipe/issues/762))
 * Fix issue where configs referring to unavailable plugin will display incorrect error message. ([#796](https://github.com/turbot/steampipe/issues/796))
@@ -1095,7 +1095,7 @@ _Bug fixes_
 * Fixes issue where `STEAMPIPE_INSTALL_DIR` was not being respected. ([#613](https://github.com/turbot/steampipe/issues/613))
 * Fix multiple ctrl+C presses causing a crash on control runs. ([#630](https://github.com/turbot/steampipe/issues/630))
 * Ensure multiline control errors are rendered in full ([#672](https://github.com/turbot/steampipe/issues/672))
-* Fix crash when benchmark has duplicate children. Instead, raise a validaiton failure. ([#667](https://github.com/turbot/steampipe/issues/667))
+* Fix crash when benchmark has duplicate children. Instead, raise a validation failure. ([#667](https://github.com/turbot/steampipe/issues/667))
 * Fixes issue where `service stop` does not work on `Linux` systems. ([#653](https://github.com/turbot/steampipe/issues/653))
 * Plugin schema validation errors should be displayed as warning, and not cause Steampipe to exit. ([#644](https://github.com/turbot/steampipe/issues/644))
 

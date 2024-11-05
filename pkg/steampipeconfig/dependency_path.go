@@ -22,7 +22,7 @@ func (k DependencyPathKey) GetParent() DependencyPathKey {
 	return newDependencyPathKey(elements[:len(elements)-2]...)
 }
 
-// how long is the depdency path
+// how long is the dependency path
 func (k DependencyPathKey) PathLength() int {
 	return len(strings.Split(string(k), pathSeparator))
 }

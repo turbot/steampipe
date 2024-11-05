@@ -20,7 +20,7 @@ func WaitForSearchPathSchemas(ctx context.Context, client db_common.Client, sear
 
 	_, err = steampipeconfig.LoadConnectionState(ctx, conn.Conn(), steampipeconfig.WithWaitForSearchPath(searchPath))
 
-	// NOTE: if we failed to load conection state, this must be because we are connected to an older version of the CLI
+	// NOTE: if we failed to load connection state, this must be because we are connected to an older version of the CLI
 	// just return nil error
 	if db_common.IsRelationNotFoundError(err) {
 		return nil

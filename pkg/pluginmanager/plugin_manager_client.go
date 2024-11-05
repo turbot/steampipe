@@ -56,7 +56,7 @@ func (c *PluginManagerClient) attachToPluginManager() error {
 	// request the plugin
 	raw, err := rpcClient.Dispense(pluginshared.PluginName)
 	if err != nil {
-		log.Printf("[TRACE] failed to retreive to plugin manager from running plugin process: %s", err.Error())
+		log.Printf("[TRACE] failed to retrieve to plugin manager from running plugin process: %s", err.Error())
 		return err
 	}
 

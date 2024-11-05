@@ -215,7 +215,7 @@ func (m *PluginManager) RefreshConnections(*pb.RefreshConnectionsRequest) (*pb.R
 
 	resp := &pb.RefreshConnectionsResponse{}
 
-	log.Printf("[INFO] calling RefreshConnections asyncronously")
+	log.Printf("[INFO] calling RefreshConnections asynchronously")
 
 	go m.doRefresh()
 	return resp, nil

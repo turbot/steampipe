@@ -9,7 +9,7 @@ Server side search path (the 'steampipe' user search path) is determined accordi
 
 It is set as follows:
 - When service is started the user search path is cleared (to avoid a race condition if the config has changed, and a query is executed before the user searhc path is update)
-- Post-service-start, RefreshConnections is called asyncronously. 
+- Post-service-start, RefreshConnections is called asynchronously. 
 - RefreshConnections sets the required user search path, (determined using the precedence above.) 
 - It then adds new schemas in the order of the search path
 
@@ -77,7 +77,7 @@ the updated search path will be reflected in any _new_ Steampipe interactive ses
 If an interactive session (or third paty client session) is running, changes to the search path options _will not_ be
 reflected in the current session.
  
-### Dasboard Service
+### Dashboard Service
 If the dashboard service is running, changes to the search path options _will not_ be
 reflected until the dashboard service is restarted
 

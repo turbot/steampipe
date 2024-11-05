@@ -233,7 +233,7 @@ func startServiceAndRefreshConnections(ctx context.Context, listenAddresses []st
 
 	if startResult.Status == db_local.ServiceStarted {
 		// ask the plugin manager to refresh connections
-		// this is executed asyncronously by the plugin manager
+		// this is executed asynchronously by the plugin manager
 		// we ignore this error, since RefreshConnections is async and all errors will flow through
 		// the notification system
 		// we do not expect any I/O errors on this since the PluginManager is running in the same box

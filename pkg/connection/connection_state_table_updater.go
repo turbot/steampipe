@@ -35,7 +35,7 @@ func (u *connectionStateTableUpdater) start(ctx context.Context) error {
 
 	var queries []db_common.QueryWithArgs
 
-	// update the conection state table to set appropriate state for all connections
+	// update the connection state table to set appropriate state for all connections
 	// set updates to "updating"
 	for name, connectionState := range u.updates.FinalConnectionState {
 		// set the connection data state based on whether this connection is being created or deleted

@@ -58,7 +58,7 @@ func (i *InitData) Cancel() {
 	i.cancelInitialisation = nil
 }
 
-// Cleanup overrides the initialisation.InitData.Cleanup to provide syncronisation with the loaded channel
+// Cleanup overrides the initialisation.InitData.Cleanup to provide synchronisation with the loaded channel
 func (i *InitData) Cleanup(ctx context.Context) {
 	// cancel any ongoing operation
 	i.Cancel()
