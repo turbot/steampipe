@@ -3,5 +3,5 @@
 skip = .git*,go.sum,.codespellrc
 check-hidden = true
 # all lines with latin 
-ignore-regex = .* tincidunt .*
+ignore-regex = .* tincidunt .*|\bMany Withs\b
 # ignore-words-list =
