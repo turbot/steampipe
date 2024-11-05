@@ -456,8 +456,7 @@ func (u *ConnectionUpdates) populateAggregators() {
 	log.Printf("[INFO] found %d %s with aggregators", len(pluginAggregatorMap), utils.Pluralize("plugin", len(pluginAggregatorMap)))
 
 	// for all updates/deletes, if there any aggregators of the same plugin type, update those as well
-	// build a map of all plugins with connecti
-	//ons being updated/deleted
+	// build a map of all plugins with connections being updated/deleted
 	modifiedPluginLookup := make(map[string]struct{})
 	for _, c := range u.Update {
 		modifiedPluginLookup[c.Plugin] = struct{}{}
