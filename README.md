@@ -142,7 +142,7 @@ If you're interested in developing [Steampipe plugins](https://hub.steampipe.io)
 
 ## Turbot Pipes
 
-Bring your team to [Turbot Pipes](https://turbot.com/pipes) to use Steampipe together in the cloud.
+Bring your team to [Turbot Pipes](https://turbot.com/pipes) to use Steampipe together in the cloud. In a Pipes workspace you can use Steampipe for data access, [Powerpipe](https://github.com/turbot/powerpipe) to visualize query results, and [Flowpipe](https://github.com/turbot/flowpipe) to automate workflow. 
 
 ## Open source and contributing
 
