@@ -21,8 +21,17 @@
 
 <img alt="steampipe demo" width=500 src="https://steampipe.io/images/steampipe-sql-demo.gif" >
 
+## Documentation
 
-## Getting Started
+See the [documentation](https://steampipe.io/docs) for:
+
+- [Running queries](https://steampipe.io/docs/query/overview)
+- [Managing Steampipe](https://steampipe.io/docs/managing/overview)
+- [CLI commands](https://steampipe.io/docs/reference/cli/overview)
+- [Integrations](https://steampipe.io/docs/integrations/overview)
+- [Developing plugins](https://steampipe.io/docs/develop/overview)
+
+## Install Steampipe
 
 Install Steampipe from the [downloads](https://steampipe.io/downloads) page:
 
@@ -48,16 +57,6 @@ Query!
 steampipe query
 > select * from hackernews_new limit 10
 ```
-
-## Documentation
-
-See the [documentation](https://steampipe.io/docs) for:
-
-- [Running queries](https://steampipe.io/docs/query/overview)
-- [Managing Steampipe](https://steampipe.io/docs/managing/overview)
-- [CLI commands](https://steampipe.io/docs/reference/cli/overview)
-- [Integrations](https://steampipe.io/docs/integrations/overview)
-- [Developing plugins](https://steampipe.io/docs/develop/overview)
 
 ## Steampipe plugins
 
