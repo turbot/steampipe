@@ -61,7 +61,7 @@ steampipe query
 
 ## Steampipe plugins
 
-The Steampipe community has grown a suite of [plugins](https://hub.powerpipe.io/plugins) that map APIs to database tables. Plugins are available for [AWS](https://hub.steampipe.io/plugins/turbot/aws), [Azure](https://hub.steampipe.io/plugins/turbot/azure), [GCP](https://hub.steampipe.io/plugins/turbot/gcp), [Kubernetes](https://hub.steampipe.io/plugins/turbot/kubernetes), [GitHub](https://hub.steampipe.io/plugins/turbot/github), [Microsoft 365](https://hub.steampipe.io/plugins/turbot/microsoft365), [Salesforce](https://hub.steampipe.io/plugins/turbot/salesforce), and many more.
+The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/plugins) that map APIs to database tables. Plugins are available for [AWS](https://hub.steampipe.io/plugins/turbot/aws), [Azure](https://hub.steampipe.io/plugins/turbot/azure), [GCP](https://hub.steampipe.io/plugins/turbot/gcp), [Kubernetes](https://hub.steampipe.io/plugins/turbot/kubernetes), [GitHub](https://hub.steampipe.io/plugins/turbot/github), [Microsoft 365](https://hub.steampipe.io/plugins/turbot/microsoft365), [Salesforce](https://hub.steampipe.io/plugins/turbot/salesforce), and many more.
 
 There are more than 2000 tables in all, each clearly documented with copy/paste/run examples.
 
