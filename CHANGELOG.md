@@ -1,3 +1,7 @@
+## v1.0.1 [2024-11-21]
+_Bug fixes_
+- Fix issue where the steampipe interactive meta-command `.cache clear` was not clearing the cache. ([#4443](https://github.com/turbot/steampipe/issues/4443))
+
 ## v1.0.0 [2024-10-22]
 _Breaking changes_
 
