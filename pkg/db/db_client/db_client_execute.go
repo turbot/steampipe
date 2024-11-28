@@ -279,6 +279,12 @@ func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string,
 
 	select {
 	case <-doneChan:
+		// once we are done, Err() on the returned rows must be checked after the rows is closed to
+		// determine if the query executed successfully.
+		rows.Close()
+		if rows.Err() != nil {
+			err = rows.Err()
+		}
 	case <-ctx.Done():
 		err = ctx.Err()
 	}
