@@ -31,7 +31,7 @@ dashboard "bug_column_does_not_exist" {
         EOQ
 
         param policy_arn {
-          // commented out becuase input not working here yet..
+          // commented out because input not working here yet..
           // default = self.input.policy_arn.value
           default = "arn:aws:iam::aws:policy/AdministratorAccess"
         }

@@ -453,7 +453,7 @@ func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cm
 		// log directory
 		"-c", fmt.Sprintf("log_directory=%s", filepaths.EnsureLogDir()),
 
-		// If ssl is off  it doesnot matter what we pass in the ssl_cert_file and ssl_key_file
+		// If ssl is off  it doesn't matter what we pass in the ssl_cert_file and ssl_key_file
 		// SSL will only get validated if ssl is on
 		"-c", fmt.Sprintf("ssl=%s", sslStatus()),
 		"-c", fmt.Sprintf("ssl_cert_file=%s", filepaths.GetServerCertLocation()),

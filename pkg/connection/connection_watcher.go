@@ -101,9 +101,9 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	// to use the GlobalConfig here and ignore Workspace Profile in general
 	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
 
-	log.Printf("[INFO] calling RefreshConnections asyncronously")
+	log.Printf("[INFO] calling RefreshConnections asynchronously")
 
-	// call RefreshConnections asyncronously
+	// call RefreshConnections asynchronously
 	// the RefreshConnections implements its own locking to ensure only a single execution and a single queues execution
 	go RefreshConnections(ctx, w.pluginManager)
 

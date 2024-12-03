@@ -50,7 +50,7 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 		return nil
 	}
 
-	// update the status of the plugin rate limiters (determine which are overriden and set state accordingly)
+	// update the status of the plugin rate limiters (determine which are overridden and set state accordingly)
 	m.updateRateLimiterStatus()
 
 	queries := []db_common.QueryWithArgs{
@@ -160,7 +160,7 @@ func (m *PluginManager) updateRateLimiterStatus() {
 		// get user limiters for this plugin
 		userDefinedLimiters := m.getUserDefinedLimitersForPlugin(p)
 
-		// is there a user override? - if so set status to overriden
+		// is there a user override? - if so set status to overridden
 		for name, pluginLimiter := range pluginDefinedLimiters {
 			_, isOverriden := userDefinedLimiters[name]
 			if isOverriden {

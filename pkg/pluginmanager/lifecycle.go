@@ -145,7 +145,7 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 	}
 	// if we did not load it and there was no error, it means the plugin manager is not running
 	// we cannot start it as we do not know the correct steampipe exe path - which is stored in the state
-	// this is not expected - we would expect the plugin manager to have been started with the datatbase
+	// this is not expected - we would expect the plugin manager to have been started with the database
 	if state.Executable == "" {
 		return nil, fmt.Errorf("plugin manager is not running and there is no state file")
 	}

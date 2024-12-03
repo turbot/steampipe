@@ -6,7 +6,7 @@ This mod is used to test variable resolution precedence in a mod by passing the 
 
 ### Usage
 
-This mod is used in the tests in `mod_vars.bats` to simulate a scenario where the version defined in the mod is picked from the --var command line argument over the steampipe.spvars and *.auto.spvars file and over the default value of variable 'version' set in the mod, because command line arguments have higher precendence.
+This mod is used in the tests in `mod_vars.bats` to simulate a scenario where the version defined in the mod is picked from the --var command line argument over the steampipe.spvars and *.auto.spvars file and over the default value of variable 'version' set in the mod, because command line arguments have higher precedence.
 
 Steampipe loads variables in the following order, with later sources taking precedence over earlier ones:
 

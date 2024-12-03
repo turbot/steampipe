@@ -43,7 +43,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 		session = db_common.NewDBSession(backendPid)
 		c.sessions[backendPid] = session
 	}
-	// we get a new *sql.Conn everytime. USE IT!
+	// we get a new *sql.Conn every time. USE IT!
 	session.Connection = databaseConnection
 	sessionResult.Session = session
 	c.sessionsMutex.Unlock()

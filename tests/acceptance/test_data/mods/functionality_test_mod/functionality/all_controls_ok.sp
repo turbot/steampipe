@@ -1,5 +1,5 @@
 benchmark "all_controls_ok" {
-  title         = "All controls in OK, no ALARMS/ERORS"
+  title         = "All controls in OK, no ALARMS/ERRORS"
   description   = "Benchmark to verify the exit code when no controls are in error/alarm"
   children      = [
     control.ok_1,

@@ -59,7 +59,7 @@ dashboard "inputs" {
   title = "Inputs Test"
 
   text {
-    value = "dasboard input"
+    value = "dashboard input"
   }
   input "region" {
     sql   = query.aws_region_input.sql

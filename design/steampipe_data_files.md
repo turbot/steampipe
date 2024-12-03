@@ -10,7 +10,7 @@
 
 - `pipes.turbot.com.sptt` - Stores the [Turbot Pipes](https://pipes.turbot.com) token. Deleting the file would require you to run steampipe login again.
 
-- `connection.json` - Stores the connection config information. This file gets re-generated everytime RefreshConnections is called.
+- `connection.json` - Stores the connection config information. This file gets re-generated every time RefreshConnections is called.
 
 - `history.json` - Stores the last used queries. Deleting this file would result in losing your history of queries. This file gets re-generated.
 

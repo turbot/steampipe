@@ -23,7 +23,7 @@ Current behaviour:
 
 Currently this loads the connections.json file
 However instead it should load the connections table, joined with the foreign schema list, and identify 'ready' connections.
-This is more up to date (the state file is onl written at the end)
+This is more up to date (the state file is only written at the end)
 
 
 ## Connection state table

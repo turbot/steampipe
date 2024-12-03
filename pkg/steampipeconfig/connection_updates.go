@@ -257,7 +257,7 @@ func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, 
 		return res
 	}
 
-	// determine whethe the plugin mod time has changed
+	// determine whether the plugin mod time has changed
 	if currentConnectionState.pluginModTimeChanged(requiredConnectionState) {
 		res.requiresUpdate = true
 		res.pluginBinaryChanged = true
@@ -326,7 +326,7 @@ func (u *ConnectionUpdates) populateConnectionPlugins(alreadyCreatedConnectionPl
 	// - add connections which will be updated or have the comments updated
 	// - exclude connections already created
 	// - for any aggregator connections, instantiate the first child connection instead
-	// - if FetchRateLimitersForAllPlugins, start ALL plugins, using an abitrary exemplar connection if necessary
+	// - if FetchRateLimitersForAllPlugins, start ALL plugins, using an arbitrary exemplar connection if necessary
 	connectionsToCreate := u.getConnectionsToCreate(alreadyCreatedConnectionPlugins)
 
 	// now create them
@@ -456,8 +456,7 @@ func (u *ConnectionUpdates) populateAggregators() {
 	log.Printf("[INFO] found %d %s with aggregators", len(pluginAggregatorMap), utils.Pluralize("plugin", len(pluginAggregatorMap)))
 
 	// for all updates/deletes, if there any aggregators of the same plugin type, update those as well
-	// build a map of all plugins with connecti
-	//ons being updated/deleted
+	// build a map of all plugins with connections being updated/deleted
 	modifiedPluginLookup := make(map[string]struct{})
 	for _, c := range u.Update {
 		modifiedPluginLookup[c.Plugin] = struct{}{}

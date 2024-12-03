@@ -107,7 +107,7 @@ showCaseErr := sperr.Wrap(
 
 ```
 
-Outputs of the `showCaseErr` in preceeding program would be:
+Outputs of the `showCaseErr` in preceding program would be:
 
 #### `%q`
 

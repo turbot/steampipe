@@ -510,7 +510,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfi
 func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) error {
 	// the client must be initialised to get here
 	if !c.isInitialised() {
-		panic("client is not initalised")
+		panic("client is not initialised")
 	}
 	// validate the metaquery arguments
 	validateResult := metaquery.Validate(query)

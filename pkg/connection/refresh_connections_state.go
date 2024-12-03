@@ -425,7 +425,7 @@ func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 	// this gives any attached interactive clients a chance to update their inspect data and autocomplete
 	if err := s.pluginManager.SendPostgresSchemaNotification(ctx); err != nil {
 		// just log
-		log.Printf("[WARN] failed to send schem update Postgres notification: %s", err.Error())
+		log.Printf("[WARN] failed to send scheme update Postgres notification: %s", err.Error())
 	}
 
 	if len(remainingUpdates) > 0 {
@@ -568,7 +568,7 @@ func (s *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Context
 	return errors
 }
 
-// syncronously execute the update queries for one or more connections
+// synchronously execute the update queries for one or more connections
 func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context, errChan chan *connectionError, cloneSchemaEnabled bool, connectionStates ...*steampipeconfig.ConnectionState) {
 	log.Println("[DEBUG] refreshConnectionState.executeUpdateForConnections start")
 	defer log.Println("[DEBUG] refreshConnectionState.executeUpdateForConnections end")
@@ -699,7 +699,7 @@ func (s *refreshConnectionState) UpdateCommentsInParallel(ctx context.Context, u
 	return errors
 }
 
-// syncronously execute the comments queries for one or more connections
+// synchronously execute the comments queries for one or more connections
 func (s *refreshConnectionState) updateCommentsForConnection(ctx context.Context, errChan chan *connectionError, connectionPluginMap map[string]*steampipeconfig.ConnectionPlugin, connectionState *steampipeconfig.ConnectionState) {
 	log.Printf("[DEBUG] refreshConnectionState.updateCommentsForConnection start for connection '%s'", connectionState.ConnectionName)
 
