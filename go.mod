@@ -27,7 +27,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.22.0
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgx/v5 v5.7.1
-	github.com/jedib0t/go-pretty/v6 v6.5.9
+	github.com/jedib0t/go-pretty/v6 v6.6.5
 	github.com/karrick/gows v0.3.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
@@ -48,8 +48,8 @@ require (
 	github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7
 	github.com/zclconf/go-cty v1.14.4 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/sync v0.8.0
-	golang.org/x/text v0.18.0
+	golang.org/x/sync v0.10.0
+	golang.org/x/text v0.21.0
 	google.golang.org/grpc v1.66.0
 	google.golang.org/protobuf v1.34.2
 )
