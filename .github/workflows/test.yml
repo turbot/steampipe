@@ -191,7 +191,7 @@ jobs:
           steampipe plugin install chaos chaosdynamic --progress=false
 
       - name: Save Install DB Logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: install-db-logs-${{ matrix.test_block }}-${{ matrix.platform }}
           path: ~/.steampipe/logs
@@ -208,7 +208,7 @@ jobs:
           echo ">> here"
 
       - name: Save Test Suite Logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-logs-${{ matrix.test_block }}-${{ matrix.platform }}
           path: ~/.steampipe/logs
