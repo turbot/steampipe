@@ -1,3 +1,7 @@
+## v1.0.2 [2025-01-20]
+_Dependencies_
+- Upgrade `crypto`, `net` and `go-git` packages to remediate critical and high vulnerabilities.
+
 ## v1.0.1 [2024-11-21]
 _Bug fixes_
 - Fix issue where the steampipe interactive meta-command `.cache clear` was not clearing the cache. ([#4443](https://github.com/turbot/steampipe/issues/4443))
