@@ -65,7 +65,7 @@ func start(steampipeExecutablePath string) (*State, error) {
 		Cmd:              pluginManagerCmd,
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
 		Logger:           logger,
-		StartTimeout:     3 * time.Minute, //TODO: macke this configurable
+		StartTimeout:     3 * time.Minute, //TODO: make this configurable
 	})
 
 	if _, err := client.Start(); err != nil {
