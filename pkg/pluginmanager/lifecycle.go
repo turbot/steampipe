@@ -6,6 +6,7 @@ import (
 	"log"
 	"os/exec"
 	"syscall"
+	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -64,6 +65,7 @@ func start(steampipeExecutablePath string) (*State, error) {
 		Cmd:              pluginManagerCmd,
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
 		Logger:           logger,
+		StartTimeout:     3 * time.Minute, //TODO: macke this configurable
 	})
 
 	if _, err := client.Start(); err != nil {
