@@ -1,3 +1,7 @@
+## v1.0.3 [2025-02-03]
+_Bug fixes_
+- Update FDW to 1.12.2 to remediate critical and high vulnerabilities. ([#533](https://github.com/turbot/steampipe-postgres-fdw/issues/533))
+
 ## v1.0.2 [2025-01-20]
 _Dependencies_
 - Upgrade `crypto`, `net` and `go-git` packages to remediate critical and high vulnerabilities.
