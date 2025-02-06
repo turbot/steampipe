@@ -3,6 +3,7 @@ package snapshot
 import (
 	"context"
 	"fmt"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"strings"
 	"time"
 
@@ -176,7 +177,7 @@ func getLayout[T queryresult.TimingContainer](result *queryresult.Result[T], res
 // SnapshotToQueryResult function to generate a queryresult with streamed rows from a snapshot
 func SnapshotToQueryResult[T queryresult.TimingContainer](snap *steampipeconfig.SteampipeSnapshot, startTime time.Time) (*queryresult.Result[T], error) {
 	// the table of a snapshot query has a fixed name
-	tablePanel, ok := snap.Panels[modconfig.SnapshotQueryTableName]
+	tablePanel, ok := snap.Panels[pconstants.SnapshotQueryTableName]
 	if !ok {
 		return nil, sperr.New("dashboard does not contain table result for query")
 	}

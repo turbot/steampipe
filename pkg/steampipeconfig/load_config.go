@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/turbot/steampipe/pkg/parse"
 	"log"
 	"os"
 	"path/filepath"
@@ -269,7 +270,7 @@ func loadConfig(ctx context.Context, configFolder string, steampipeConfig *Steam
 		switch block.Type {
 
 		case schema.BlockTypePlugin:
-			plugin, moreDiags := pparse.DecodePlugin(block)
+			plugin, moreDiags := parse.DecodePlugin(block)
 			diags = append(diags, moreDiags...)
 			if moreDiags.HasErrors() {
 				continue
