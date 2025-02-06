@@ -8,7 +8,7 @@ import (
 
 	"github.com/hashicorp/go-plugin"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 )
@@ -60,10 +60,8 @@ func LoadState() (*State, error) {
 
 	// check is the manager is running - this deletes that state file if it is not running,
 	// and set the 'Running' property on the state if it is
-	pluginManagerRunning, err := s.verifyRunning()
-	if err != nil {
-		return s, err
-	}
+	pluginManagerRunning := s.verifyRunning()
+
 	// save the running status on the state struct
 	s.Running = pluginManagerRunning
 
@@ -92,12 +90,9 @@ func (s *State) reattachConfig() *plugin.ReattachConfig {
 }
 
 // check whether the plugin manager is running
-func (s *State) verifyRunning() (bool, error) {
-	pidExists, err := utils.PidExists(s.Pid)
-	if err != nil {
-		return false, err
-	}
-	return pidExists, nil
+func (s *State) verifyRunning() bool {
+	pidExists := utils.PidExists(s.Pid)
+	return pidExists
 }
 
 // kill the plugin manager process and delete the state

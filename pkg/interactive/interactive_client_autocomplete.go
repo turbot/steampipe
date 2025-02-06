@@ -8,7 +8,7 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"

@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"slices"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/modconfig"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -271,7 +272,7 @@ func connectionRequiresUpdate(forceUpdateConnectionNames []string, name string, 
 	}
 
 	// are we are forcing an update of this connection,
-	if helpers.StringSliceContains(forceUpdateConnectionNames, name) {
+	if slices.Contains(forceUpdateConnectionNames, name) {
 		res.requiresUpdate = true
 		return res
 	}

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
-	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -303,7 +303,7 @@ func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 	for {
 		select {
 		case <-checkTimer.C:
-			pEx, _ := utils.PidExists(int(process.Pid))
+			pEx := utils.PidExists(int(process.Pid))
 			if pEx {
 				continue
 			}

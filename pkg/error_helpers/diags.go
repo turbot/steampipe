@@ -3,9 +3,9 @@ package error_helpers
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/terraform-components/tfdiags"
 )
 
@@ -25,7 +25,7 @@ func DiagsToError(prefix string, diags tfdiags.Diagnostics) error {
 				errorString += fmt.Sprintf(": %s", diag.Description().Detail)
 			}
 
-			if !helpers.StringSliceContains(errorMessages, errorString) {
+			if !slices.Contains(errorMessages, errorString) {
 				errorMessages = append(errorMessages, errorString)
 				// now add in the subject and add to the output array
 				if diag.Source().Subject != nil && len(diag.Source().Subject.Filename) > 0 {

@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/filepaths"
-	"github.com/turbot/pipe-fittings/ociinstaller"
-	"github.com/turbot/pipe-fittings/plugin"
-	"github.com/turbot/pipe-fittings/statushooks"
-	"github.com/turbot/pipe-fittings/versionfile"
+	"github.com/turbot/pipe-fittings/v2/filepaths"
+	"github.com/turbot/pipe-fittings/v2/ociinstaller"
+	"github.com/turbot/pipe-fittings/v2/plugin"
+	"github.com/turbot/pipe-fittings/v2/statushooks"
+	"github.com/turbot/pipe-fittings/v2/versionfile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 )
 

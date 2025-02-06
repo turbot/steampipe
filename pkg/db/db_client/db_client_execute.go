@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/netip"
+	"slices"
 	"strings"
 	"time"
 
@@ -13,10 +14,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/spf13/viper"
-	"github.com/turbot/go-kit/helpers"
-	pconstants "github.com/turbot/pipe-fittings/constants"
-	pqueryresult "github.com/turbot/pipe-fittings/queryresult"
-	"github.com/turbot/pipe-fittings/utils"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
+	pqueryresult "github.com/turbot/pipe-fittings/v2/queryresult"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/error_helpers"
@@ -402,7 +402,7 @@ func populateRow(columnValues []interface{}, cols []*pqueryresult.ColumnDef) ([]
 func isStreamingOutput() bool {
 	outputFormat := viper.GetString(pconstants.ArgOutput)
 
-	return helpers.StringSliceContains([]string{constants.OutputFormatCSV, constants.OutputFormatLine}, outputFormat)
+	return slices.Contains([]string{constants.OutputFormatCSV, constants.OutputFormatLine}, outputFormat)
 }
 
 func humanizeRowCount(count int) string {

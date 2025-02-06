@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -14,17 +15,17 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	pconstants "github.com/turbot/pipe-fittings/constants"
-	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
-	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
-	"github.com/turbot/pipe-fittings/hclhelpers"
-	"github.com/turbot/pipe-fittings/modconfig"
-	poptions "github.com/turbot/pipe-fittings/options"
-	pparse "github.com/turbot/pipe-fittings/parse"
-	"github.com/turbot/pipe-fittings/schema"
-	"github.com/turbot/pipe-fittings/utils"
-	"github.com/turbot/pipe-fittings/versionfile"
-	"github.com/turbot/pipe-fittings/workspace_profile"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
+	perror_helpers "github.com/turbot/pipe-fittings/v2/error_helpers"
+	pfilepaths "github.com/turbot/pipe-fittings/v2/filepaths"
+	"github.com/turbot/pipe-fittings/v2/hclhelpers"
+	"github.com/turbot/pipe-fittings/v2/modconfig"
+	poptions "github.com/turbot/pipe-fittings/v2/options"
+	pparse "github.com/turbot/pipe-fittings/v2/parse"
+	"github.com/turbot/pipe-fittings/v2/schema"
+	"github.com/turbot/pipe-fittings/v2/utils"
+	"github.com/turbot/pipe-fittings/v2/versionfile"
+	"github.com/turbot/pipe-fittings/v2/workspace_profile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -355,7 +356,7 @@ func optionsBlockPermitted(block *hcl.Block, blockMap map[string]bool, opts *loa
 	}
 	blockMap[blockType] = true
 	permitted := len(opts.allowedOptions) == 0 ||
-		helpers.StringSliceContains(opts.allowedOptions, blockType)
+		slices.Contains(opts.allowedOptions, blockType)
 
 	if !permitted {
 		return fmt.Errorf("'%s' options block is not permitted", blockType)

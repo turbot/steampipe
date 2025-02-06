@@ -15,8 +15,8 @@ import (
 
 	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/app_specific"
-	putils "github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/app_specific"
+	putils "github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/filepaths"
