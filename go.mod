@@ -6,7 +6,7 @@ toolchain go1.23.3
 
 replace (
 	github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50
-// github.com/turbot/pipe-fittings => ../pipe-fittings
+// github.com/turbot/pipe-fittings/v2 => ../pipe-fittings
 
 )
 
@@ -43,7 +43,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/thediveo/enumflag/v2 v2.0.5
 	github.com/turbot/go-kit v1.0.0
-	github.com/turbot/pipe-fittings/v2 v2.0.1-rc.2
+	github.com/turbot/pipe-fittings/v2 v2.0.1-rc.3
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.11.3-rc.0
 	github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7
 	github.com/zclconf/go-cty v1.14.4 // indirect
