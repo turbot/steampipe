@@ -315,6 +315,12 @@ func getWorkspaceProfileLoader(ctx context.Context) (*parse.WorkspaceProfileLoad
 		return nil, err
 	}
 
+	// TODO look at unifying this with `GetWorkspaceProfileLoader` func in pipe-fittings/v2/cmdconfig
+	// https://github.com/turbot/steampipe/issues/4486
+	if err = loader.Load(); err != nil {
+		return nil, err
+	}
+
 	return loader, nil
 }
 
