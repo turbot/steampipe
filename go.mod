@@ -202,8 +202,6 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-require github.com/turbot/pipe-fittings v1.7.3
-
 require (
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
