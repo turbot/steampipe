@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/turbot/pipe-fittings/queryresult"
-	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/queryresult"
+	"github.com/turbot/pipe-fittings/v2/utils"
 )
 
 // ColumnTypeDatabaseTypeName returns the database system type name. If the name is unknown the OID is returned.

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/turbot/pipe-fittings/constants"
+	"github.com/turbot/pipe-fittings/v2/constants"
 )
 
 var MissingCloudTokenError = fmt.Errorf("Not authenticated for Turbot Pipes.\nPlease run %s or setup a token.", constants.Bold("steampipe login"))

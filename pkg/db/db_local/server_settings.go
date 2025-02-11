@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
-	pconstants "github.com/turbot/pipe-fittings/constants"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 	"github.com/turbot/steampipe/pkg/serversettings"

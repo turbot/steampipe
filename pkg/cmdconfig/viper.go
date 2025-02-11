@@ -2,17 +2,18 @@ package cmdconfig
 
 import (
 	"fmt"
-	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"log"
 	"os"
+
+	pfilepaths "github.com/turbot/pipe-fittings/v2/filepaths"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
-	pconstants "github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/parse"
-	"github.com/turbot/pipe-fittings/workspace_profile"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/parse"
+	"github.com/turbot/pipe-fittings/v2/workspace_profile"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 

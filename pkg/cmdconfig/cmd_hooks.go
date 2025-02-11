@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"io"
 	"log"
 	"os"
 	"runtime/debug"
+	"slices"
 	"strings"
 	"time"
+
+	pfilepaths "github.com/turbot/pipe-fittings/v2/filepaths"
 
 	"github.com/fatih/color"
 	"github.com/hashicorp/go-hclog"
@@ -18,16 +20,15 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/go-kit/logging"
-	"github.com/turbot/pipe-fittings/app_specific"
-	pconstants "github.com/turbot/pipe-fittings/constants"
-	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
-	"github.com/turbot/pipe-fittings/parse"
-	"github.com/turbot/pipe-fittings/pipes"
-	"github.com/turbot/pipe-fittings/utils"
-	"github.com/turbot/pipe-fittings/versionfile"
-	"github.com/turbot/pipe-fittings/workspace_profile"
+	"github.com/turbot/pipe-fittings/v2/app_specific"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
+	perror_helpers "github.com/turbot/pipe-fittings/v2/error_helpers"
+	"github.com/turbot/pipe-fittings/v2/parse"
+	"github.com/turbot/pipe-fittings/v2/pipes"
+	"github.com/turbot/pipe-fittings/v2/utils"
+	"github.com/turbot/pipe-fittings/v2/versionfile"
+	"github.com/turbot/pipe-fittings/v2/workspace_profile"
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -314,6 +315,12 @@ func getWorkspaceProfileLoader(ctx context.Context) (*parse.WorkspaceProfileLoad
 		return nil, err
 	}
 
+	// TODO look at unifying this with `GetWorkspaceProfileLoader` func in pipe-fittings/v2/cmdconfig
+	// https://github.com/turbot/steampipe/issues/4486
+	if err = loader.Load(); err != nil {
+		return nil, err
+	}
+
 	return loader, nil
 }
 
@@ -322,7 +329,7 @@ func getWorkspaceProfileLoader(ctx context.Context) (*parse.WorkspaceProfileLoad
 func validateConfig() perror_helpers.ErrorAndWarnings {
 	var res = perror_helpers.ErrorAndWarnings{}
 	telemetry := viper.GetString(pconstants.ArgTelemetry)
-	if !helpers.StringSliceContains(constants.TelemetryLevels, telemetry) {
+	if !slices.Contains(constants.TelemetryLevels, telemetry) {
 		res.Error = sperr.New(`invalid value of 'telemetry' (%s), must be one of: %s`, telemetry, strings.Join(constants.TelemetryLevels, ", "))
 		return res
 	}

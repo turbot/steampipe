@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/app_specific"
-	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
+	"github.com/turbot/pipe-fittings/v2/app_specific"
+	pfilepaths "github.com/turbot/pipe-fittings/v2/filepaths"
 )
 
 type findPluginFolderTest struct {

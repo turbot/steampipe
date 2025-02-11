@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/viper"
 	filehelpers "github.com/turbot/go-kit/files"
-	pconstants "github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/pipes"
-	"github.com/turbot/pipe-fittings/steampipeconfig"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/pipes"
+	"github.com/turbot/pipe-fittings/v2/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 )
 

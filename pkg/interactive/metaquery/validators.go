@@ -2,11 +2,11 @@ package metaquery
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
-	"github.com/turbot/go-kit/helpers"
-	pconstants "github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/utils"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -156,7 +156,7 @@ var allowedArgValues = func(caseSensitive bool, allowedValues ...string) validat
 		}
 
 		for _, arg := range args {
-			if !helpers.StringSliceContains(allowedValues, arg) {
+			if !slices.Contains(allowedValues, arg) {
 				return ValidationResult{
 					Err: fmt.Errorf("valid values for this command are %v - got %s", allowedValues, arg),
 				}

@@ -1,6 +1,6 @@
 package ociinstaller
 
-import "github.com/turbot/pipe-fittings/ociinstaller"
+import "github.com/turbot/pipe-fittings/v2/ociinstaller"
 
 type dbImage struct {
 	ArchiveDir  string

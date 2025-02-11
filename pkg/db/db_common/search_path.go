@@ -3,6 +3,7 @@ package db_common
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -22,7 +23,7 @@ func AddSearchPathPrefix(searchPathPrefix []string, searchPath []string) []strin
 	if len(searchPathPrefix) > 0 {
 		prefixedSearchPath := searchPathPrefix
 		for _, p := range searchPath {
-			if !helpers.StringSliceContains(prefixedSearchPath, p) {
+			if !slices.Contains(prefixedSearchPath, p) {
 				prefixedSearchPath = append(prefixedSearchPath, p)
 			}
 		}

@@ -5,8 +5,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	sdkversion "github.com/turbot/steampipe-plugin-sdk/v5/version"
 )
 

@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
@@ -29,10 +29,7 @@ func GetState() (*RunningDBInstanceInfo, error) {
 		return nil, errorIfUnknownService()
 	}
 
-	pidExists, err := utils.PidExists(info.Pid)
-	if err != nil {
-		return nil, err
-	}
+	pidExists := utils.PidExists(info.Pid)
 	if !pidExists {
 		log.Printf("[TRACE] GetState - pid %v does not exist\n", info.Pid)
 		// nothing to do here
@@ -79,10 +76,7 @@ func errorIfUnknownService() error {
 	}
 
 	// check if a process with that PID exists
-	exists, err := utils.PidExists(int(pid))
-	if err != nil {
-		return err
-	}
+	exists := utils.PidExists(int(pid))
 	if exists {
 		// if it does, then somehow we don't know about it. Error out
 		return fmt.Errorf("service is running in an unknown state [PID: %d] - try killing it with %s", pid, constants.Bold("steampipe service stop --force"))

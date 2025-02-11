@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 
 	"github.com/spf13/viper"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 )
@@ -22,7 +22,7 @@ func DisplayConfig() {
 	}
 	diagnostics = strings.ToLower(diagnostics)
 	configFormats := []string{"config", "config_json"}
-	if !helpers.StringSliceContains(configFormats, diagnostics) {
+	if !slices.Contains(configFormats, diagnostics) {
 		error_helpers.ShowWarning("invalid value for STEAMPIPE_CONFIG_DUMP, expected values: config,config_json")
 		return
 	}

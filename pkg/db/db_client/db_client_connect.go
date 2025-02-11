@@ -2,14 +2,14 @@ package db_client
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/viper"
-	"github.com/turbot/go-kit/helpers"
-	pconstants "github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/utils"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -46,7 +46,7 @@ func (c *DbClient) establishConnectionPool(ctx context.Context, overrides client
 	// that we can turn off caching for plugins compiled with SDK pre-V5
 	// worst case scenario is that we don't switch off the cache for pre-V5 plugins
 	// refer to: https://github.com/turbot/steampipe/blob/f7f983a552a07e50e526fcadf2ccbfdb7b247cc0/pkg/db/db_client/db_client_session.go#L66
-	if helpers.StringSliceContains(locals, config.ConnConfig.Host) {
+	if slices.Contains(locals, config.ConnConfig.Host) {
 		c.isLocalService = true
 	}
 

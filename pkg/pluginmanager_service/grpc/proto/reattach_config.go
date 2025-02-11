@@ -1,8 +1,9 @@
 package proto
 
 import (
+	"slices"
+
 	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 )
 
@@ -35,7 +36,7 @@ func (r *ReattachConfig) Convert() *plugin.ReattachConfig {
 }
 
 func (r *ReattachConfig) AddConnection(connection string) {
-	if !helpers.StringSliceContains(r.Connections, connection) {
+	if !slices.Contains(r.Connections, connection) {
 		r.Connections = append(r.Connections, connection)
 	}
 }

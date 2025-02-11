@@ -11,7 +11,7 @@ import (
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/helpers"
-	putils "github.com/turbot/pipe-fittings/utils"
+	putils "github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
@@ -54,7 +54,7 @@ func newRunningDBInstanceInfo(cmd *exec.Cmd, listenAddresses []string, port int,
 func getListenAddresses(listenAddresses []string) []string {
 	addresses := []string{}
 
-	if helpers.StringSliceContains(listenAddresses, "localhost") {
+	if slices.Contains(listenAddresses, "localhost") {
 		loopAddrs, err := putils.LocalLoopbackAddresses()
 		if err != nil {
 			return nil
@@ -62,7 +62,7 @@ func getListenAddresses(listenAddresses []string) []string {
 		addresses = loopAddrs
 	}
 
-	if helpers.StringSliceContains(listenAddresses, "*") {
+	if slices.Contains(listenAddresses, "*") {
 		// remove the * wildcard, we want to replace that with the actual addresses
 		listenAddresses = helpers.RemoveFromStringSlice(listenAddresses, "*")
 		loopAddrs, err := putils.LocalLoopbackAddresses()
@@ -87,7 +87,7 @@ func getListenAddresses(listenAddresses []string) []string {
 			"::1",
 			"localhost",
 		}
-		return !helpers.StringSliceContains(locals, addresses[j])
+		return !slices.Contains(locals, addresses[j])
 	})
 
 	return addresses

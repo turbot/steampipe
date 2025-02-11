@@ -1,6 +1,6 @@
 package queryresult
 
-import "github.com/turbot/pipe-fittings/queryresult"
+import "github.com/turbot/pipe-fittings/v2/queryresult"
 
 // Result is a type alias for queryresult.Result[TimingResultStream]
 type Result = queryresult.Result[TimingResultStream]

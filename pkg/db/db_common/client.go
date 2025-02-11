@@ -5,7 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	pqueryresult "github.com/turbot/pipe-fittings/queryresult"
+	pqueryresult "github.com/turbot/pipe-fittings/v2/queryresult"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
 

@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -15,10 +16,10 @@ import (
 	psutils "github.com/shirou/gopsutil/process"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/app_specific"
-	pconstants "github.com/turbot/pipe-fittings/constants"
-	perror_helpers "github.com/turbot/pipe-fittings/error_helpers"
-	putils "github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/app_specific"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
+	perror_helpers "github.com/turbot/pipe-fittings/v2/error_helpers"
+	putils "github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -667,7 +668,7 @@ func isSteampipePostgresProcess(ctx context.Context, cmdline []string) bool {
 	}
 	if strings.Contains(cmdline[0], "postgres") {
 		// this is a postgres process - but is it a steampipe service?
-		return helpers.StringSliceContains(cmdline, fmt.Sprintf("application_name=%s", app_specific.AppName))
+		return slices.Contains(cmdline, fmt.Sprintf("application_name=%s", app_specific.AppName))
 	}
 	return false
 }

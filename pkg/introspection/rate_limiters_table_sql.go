@@ -3,7 +3,7 @@ package introspection
 import (
 	"fmt"
 
-	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/pipe-fittings/v2/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/db/db_common"
 )

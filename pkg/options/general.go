@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/options"
+	"github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/options"
 )
 
 type General struct {

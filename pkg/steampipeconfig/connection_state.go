@@ -6,7 +6,7 @@ import (
 	"time"
 
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/v2/modconfig"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe/pkg/constants"
 )

@@ -1,7 +1,7 @@
 package connection
 
 import (
-	"github.com/turbot/pipe-fittings/plugin"
+	"github.com/turbot/pipe-fittings/v2/plugin"
 	"golang.org/x/exp/maps"
 )
 

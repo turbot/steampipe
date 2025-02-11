@@ -3,7 +3,7 @@ package db_common
 import (
 	"context"
 
-	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 )
 

@@ -3,11 +3,11 @@ package metaquery
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
-	"github.com/turbot/go-kit/helpers"
-	pconstants "github.com/turbot/pipe-fittings/constants"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 
@@ -18,7 +18,7 @@ func doHelp(_ context.Context, _ *HandlerInput) error {
 	commonCmdRows := getMetaQueryHelpRows(commonCmds, false)
 	var advanceCmds []string
 	for cmd := range metaQueryDefinitions {
-		if !helpers.StringSliceContains(commonCmds, cmd) {
+		if !slices.Contains(commonCmds, cmd) {
 			advanceCmds = append(advanceCmds, cmd)
 		}
 	}

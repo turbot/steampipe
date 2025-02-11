@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/turbot/pipe-fittings/ociinstaller"
-	putils "github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/ociinstaller"
+	putils "github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
