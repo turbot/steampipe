@@ -11,10 +11,10 @@ linters:
     - unused
     # other rules
     - asasalint
+    - depguard
     - asciicheck
     - bidichk
     - durationcheck
-    - exportloopref
     - forbidigo
     - gocritic
     - gocheckcompilerdirectives
@@ -31,6 +31,13 @@ linters-settings:
     require-explanation: true
     require-specific: true
 
+  forbidigo:
+    forbid:
+      - "^(fmt\\.Print(|f|ln)|print|println)$"
+      - "^(fmt\\.Fprint(|f|ln)|print|println)$"
+      - '^zap\.Error$'
+      - '^grpc\.(Header|Trailer)$' # easy to misuse and create a data race
+
   gocritic:
     disabled-checks:
       - ifElseChain       # style
@@ -38,7 +45,28 @@ linters-settings:
       - assignOp          # style
       - commentFormatting # style
 
+  depguard:
+    rules:
+      # Name of a rule.
+      main:
+        # List of file globs that will match this list of settings to compare against.
+        # Default: $all
+        # files:
+        #   - "!**/*_a _file.go"
+        # List of allowed packages.
+        # allow:
+        #   - $gostd
+        #   - github.com/OpenPeeDeeP
+        # Packages that are not allowed where the value is a suggestion.
+        deny:
+          - pkg: "go.uber.org/zap"
+            desc: do not use Uber zap directly, use the fplog package instead
+          - pkg: "github.com/pkg/errors"
+            desc: Should be replaced by standard lib errors package
+
 run:
   timeout: 5m
-  skip-dirs:
+
+issues:
+  exclude-dirs:
     - "tests/acceptance"
