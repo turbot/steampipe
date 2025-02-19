@@ -14,7 +14,6 @@ linters:
     - asciicheck
     - bidichk
     - durationcheck
-    - exportloopref
     - forbidigo
     - gocritic
     - gocheckcompilerdirectives
@@ -40,5 +39,7 @@ linters-settings:
 
 run:
   timeout: 5m
-  skip-dirs:
+
+issues:
+  exclude-dirs:
     - "tests/acceptance"

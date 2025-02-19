@@ -45,13 +45,12 @@ jobs:
           path: ${{ steps.go-cache-paths.outputs.go-build }}
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
 
-      # TODO fix this step (cant find the path to golangci.yml)
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
-        continue-on-error: true # we dont want to enforce just yet
         with:
-          version: v1.52.2
+          version: latest
           args: --timeout=15m --config=.golangci.yml
+          working-directory: steampipe
           skip-pkg-cache: true
           skip-build-cache: true
 
