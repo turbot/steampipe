@@ -51,8 +51,7 @@ jobs:
           version: latest
           args: --timeout=15m --config=.golangci.yml
           working-directory: steampipe
-          skip-pkg-cache: true
-          skip-build-cache: true
+          skip-cache: true
 
       - name: Run CLI Unit Tests
         run: |
