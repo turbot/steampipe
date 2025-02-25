@@ -111,6 +111,9 @@ func setBaseDefaults() error {
 		// memory
 		pconstants.ArgMemoryMaxMbPlugin: 1024,
 		pconstants.ArgMemoryMaxMb:       1024,
+
+		// plugin start timeout
+		pconstants.ArgPluginStartTimeout: constants.PluginStartTimeout.Seconds(),
 	}
 
 	for k, v := range defaults {

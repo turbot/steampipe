@@ -22,8 +22,6 @@ func (t *Plugin) ConfigMap() map[string]interface{} {
 	}
 	if t.StartTimeout != nil {
 		res[constants.ArgPluginStartTimeout] = t.StartTimeout
-	} else {
-		res[constants.ArgPluginStartTimeout] = constants.PluginStartTimeout.Seconds()
 	}
 
 	return res
