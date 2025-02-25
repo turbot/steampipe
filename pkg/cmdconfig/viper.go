@@ -2,7 +2,6 @@ package cmdconfig
 
 import (
 	"fmt"
-	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"log"
 	"os"
 
@@ -11,6 +10,7 @@ import (
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/go-kit/types"
 	pconstants "github.com/turbot/pipe-fittings/constants"
+	pfilepaths "github.com/turbot/pipe-fittings/filepaths"
 	"github.com/turbot/pipe-fittings/parse"
 	"github.com/turbot/pipe-fittings/workspace_profile"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -110,6 +110,9 @@ func setBaseDefaults() error {
 		// memory
 		pconstants.ArgMemoryMaxMbPlugin: 1024,
 		pconstants.ArgMemoryMaxMb:       1024,
+
+		// plugin start timeout
+		pconstants.ArgPluginStartTimeout: constants.PluginStartTimeout.Seconds(),
 	}
 
 	for k, v := range defaults {
