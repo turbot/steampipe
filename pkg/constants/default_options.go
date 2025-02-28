@@ -28,6 +28,6 @@ const DefaultConnectionConfigContent = `
 
 # options "plugin" {
 #   memory_max_mb    = "1024"	# the default maximum memory to allow a plugin process - used if there is not max memory specified in the 'plugin' block' for that plugin
-#   start_timeout    = 180    # the default maximum time (in seconds) to wait for a plugin to start up
+#   start_timeout    = 30       # maximum time (in seconds) to wait for a plugin to start up
 # }
 `
