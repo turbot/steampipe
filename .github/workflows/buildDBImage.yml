@@ -9,12 +9,12 @@ on:
           Version number for the OCI image for this release - usually the same as the
           postgres version
         required: true
-        default: 14.2.0
+        default: 14.17.0
 
       postgres_version:
         description: "Postgres Version to package (eg 14.2.0)"
         required: true
-        default: 14.2.0
+        default: 14.17.0
 
 env:
   PROJECT_ID: steampipe
@@ -76,28 +76,28 @@ jobs:
       - name: Pull & Extract - darwin amd64
         run: |-
           EXTRACT_DIR=extracted-darwin-amd64
-          curl -L -O -J -L https://www.dropbox.com/s/4ilvb7ixmkbyhq5/darwin-amd64.txz?dl=0 --output darwin-amd64.txz
+          curl -L -O -J -L https://drive.google.com/file/d/1A89VJrE2ts5bPGNu5qaRl_SXOUbOWPbz/view?usp=drive_link --output darwin-amd64.txz
           mkdir $EXTRACT_DIR
           tar -xf darwin-amd64.txz --directory $EXTRACT_DIR
 
       - name: Pull & Extract - darwin arm64
         run: |-
           EXTRACT_DIR=extracted-darwin-arm64
-          curl -L -O -J -L https://www.dropbox.com/s/qztyzex9zr6pq00/darwin-arm64.txz?dl=0 --output darwin-arm64.txz
+          curl -L -O -J -L https://drive.google.com/file/d/1I5RvKMNC17cX9v3n9X3YFn3PVyH5DrE7/view?usp=drive_link --output darwin-arm64.txz
           mkdir $EXTRACT_DIR
           tar -xf darwin-arm64.txz --directory $EXTRACT_DIR
 
       - name: Pull & Extract - linux amd64
         run: |-
           EXTRACT_DIR=extracted-linux-amd64
-          curl -L  -O -J -L https://www.dropbox.com/s/kqkcp6q8jts82e9/linux-amd64.txz?dl=0 --output linux-amd64.txz
+          curl -L  -O -J -L https://drive.google.com/file/d/1T7C6d5lp1IVr85P0Uc46rgGIKrxCG5Bj/view?usp=drive_link --output linux-amd64.txz
           mkdir $EXTRACT_DIR
           tar -xf linux-amd64.txz --directory $EXTRACT_DIR
 
       - name: Pull & Extract - linux arm64
         run: |-
           EXTRACT_DIR=extracted-linux-arm64
-          curl -L  -O -J -L https://www.dropbox.com/s/mcyi7lmx0r3x008/linux-arm64.txz?dl=0 --output linux-arm64.txz
+          curl -L  -O -J -L https://drive.google.com/file/d/1Z_QU5uXtIo8ra9ynweckakzDidQQGYUM/view?usp=drive_link --output linux-arm64.txz
           mkdir $EXTRACT_DIR
           tar -xf linux-arm64.txz --directory $EXTRACT_DIR
 
