@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/turbot/pipe-fittings/contexthelpers"
+	"github.com/turbot/pipe-fittings/v2/contexthelpers"
 )
 
 var (

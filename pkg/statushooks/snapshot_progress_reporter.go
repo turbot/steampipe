@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/utils"
 )
 
 // SnapshotProgressReporter is an implementation of SnapshotProgress

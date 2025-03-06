@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/querydisplay"
+	"github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/querydisplay"
 )
 
 // inspect

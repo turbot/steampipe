@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/pipe-fittings/steampipeconfig"
+	"github.com/turbot/pipe-fittings/v2/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 

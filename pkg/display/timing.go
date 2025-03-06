@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
-	pconstants "github.com/turbot/pipe-fittings/constants"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/steampipe/pkg/query/queryresult"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"

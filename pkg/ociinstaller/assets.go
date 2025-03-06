@@ -3,10 +3,10 @@ package ociinstaller
 import (
 	"context"
 	"fmt"
-	"github.com/turbot/pipe-fittings/ociinstaller"
 	"log"
 	"path/filepath"
 
+	"github.com/turbot/pipe-fittings/v2/ociinstaller"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 

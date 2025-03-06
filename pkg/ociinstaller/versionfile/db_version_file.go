@@ -2,11 +2,12 @@ package versionfile
 
 import (
 	"encoding/json"
-	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/versionfile"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"log"
 	"os"
+
+	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/v2/versionfile"
+	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 const DatabaseStructVersion = 20220411

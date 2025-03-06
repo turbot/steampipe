@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"os"
 	"strings"
+
+	"golang.org/x/exp/maps"
 
 	"github.com/fatih/color"
 	"github.com/shiena/ansicolor"
 	"github.com/spf13/viper"
-	pconstants "github.com/turbot/pipe-fittings/constants"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/steampipe/pkg/statushooks"
 )
 

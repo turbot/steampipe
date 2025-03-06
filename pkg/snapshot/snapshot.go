@@ -3,16 +3,17 @@ package snapshot
 import (
 	"context"
 	"fmt"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"strings"
 	"time"
 
-	"github.com/turbot/pipe-fittings/error_helpers"
-	"github.com/turbot/pipe-fittings/modconfig"
-	"github.com/turbot/pipe-fittings/querydisplay"
-	"github.com/turbot/pipe-fittings/queryresult"
-	pqueryresult "github.com/turbot/pipe-fittings/queryresult"
-	"github.com/turbot/pipe-fittings/steampipeconfig"
-	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/error_helpers"
+	"github.com/turbot/pipe-fittings/v2/modconfig"
+	"github.com/turbot/pipe-fittings/v2/querydisplay"
+	"github.com/turbot/pipe-fittings/v2/queryresult"
+	pqueryresult "github.com/turbot/pipe-fittings/v2/queryresult"
+	"github.com/turbot/pipe-fittings/v2/steampipeconfig"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 )
 
@@ -176,7 +177,7 @@ func getLayout[T queryresult.TimingContainer](result *queryresult.Result[T], res
 // SnapshotToQueryResult function to generate a queryresult with streamed rows from a snapshot
 func SnapshotToQueryResult[T queryresult.TimingContainer](snap *steampipeconfig.SteampipeSnapshot, startTime time.Time) (*queryresult.Result[T], error) {
 	// the table of a snapshot query has a fixed name
-	tablePanel, ok := snap.Panels[modconfig.SnapshotQueryTableName]
+	tablePanel, ok := snap.Panels[pconstants.SnapshotQueryTableName]
 	if !ok {
 		return nil, sperr.New("dashboard does not contain table result for query")
 	}

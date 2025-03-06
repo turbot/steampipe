@@ -2,7 +2,7 @@ package connection
 
 import (
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/pipe-fittings/modconfig"
+	"github.com/turbot/pipe-fittings/v2/modconfig"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 )
 

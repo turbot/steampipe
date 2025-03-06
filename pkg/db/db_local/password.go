@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/utils"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
