@@ -31,6 +31,7 @@ env:
 jobs:
   # This workflow contains a single job called "build"
   build:
+    name: Build and Publish DB Image
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -83,21 +84,21 @@ jobs:
       - name: Pull & Extract - darwin arm64
         run: |-
           EXTRACT_DIR=extracted-darwin-arm64
-          curl -L -o darwin-arm64.txz "https://drive.google.com/uc?export=download&id=1I5RvKMNC17cX9v3n9X3YFn3PVyH5DrE7"
+          curl -L -o darwin-arm64.txz "https://drive.google.com/uc?export=download&id=1F7EXt7XG8w3EDCJK7aQgg-XnheA2ASKj"
           mkdir $EXTRACT_DIR
           tar -xf darwin-arm64.txz --directory $EXTRACT_DIR
 
       - name: Pull & Extract - linux amd64
         run: |-
           EXTRACT_DIR=extracted-linux-amd64
-          curl -L -o linux-amd64.txz "https://drive.google.com/uc?export=download&id=1T7C6d5lp1IVr85P0Uc46rgGIKrxCG5Bj"
+          curl -L -o linux-amd64.txz "https://drive.google.com/uc?export=download&id=1I9YaJf0H3kezTNAdeH7bfSNE4dRkuYlZ"
           mkdir $EXTRACT_DIR
           tar -xf linux-amd64.txz --directory $EXTRACT_DIR
 
       - name: Pull & Extract - linux arm64
         run: |-
           EXTRACT_DIR=extracted-linux-arm64
-          curl -L -o linux-arm64.txz "https://drive.google.com/uc?export=download&id=1Z_QU5uXtIo8ra9ynweckakzDidQQGYUM"
+          curl -L -o linux-arm64.txz "https://drive.google.com/uc?export=download&id=1XaLR76TipSFsidwgskoG0dJT-dzhiDd-"
           mkdir $EXTRACT_DIR
           tar -xf linux-arm64.txz --directory $EXTRACT_DIR
 
