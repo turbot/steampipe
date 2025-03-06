@@ -207,11 +207,6 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 		return sperr.WrapWithMessage(err, "failed to create clone_comments function")
 	}
 
-	// if there is an unprocessed db backup file, restore it now
-	if err := restoreDBBackup(ctx); err != nil {
-		return sperr.WrapWithMessage(err, "failed to migrate db public schema")
-	}
-
 	return nil
 }
 

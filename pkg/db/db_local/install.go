@@ -2,14 +2,12 @@ package db_local
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"sync"
 
-	"github.com/fatih/color"
 	"github.com/jackc/pgx/v5"
 	psutils "github.com/shirou/gopsutil/process"
 	filehelpers "github.com/turbot/go-kit/files"
@@ -25,16 +23,6 @@ import (
 )
 
 var ensureMux sync.Mutex
-
-func noBackupWarning() string {
-	warningMessage := `Steampipe database has been upgraded from Postgres 12 to Postgres 14.
-
-Unfortunately the data in your public schema failed migration using the standard pg_dump and pg_restore tools. Your data has been preserved in the ~/.steampipe/db directory.
-
-If you need to restore the contents of your public schema, please open an issue at https://github.com/turbot/steampipe.`
-
-	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
-}
 
 // EnsureDBInstalled makes sure that the embedded postgres database is installed and ready to run
 func EnsureDBInstalled(ctx context.Context) (err error) {
@@ -83,21 +71,6 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		return err
 	}
 
-	statushooks.SetStatus(ctx, "Preparing backups…")
-
-	// call prepareBackup to generate the db dump file if necessary
-	// NOTE: this returns the existing database name - we use this when creating the new database
-	dbName, err := prepareBackup(ctx)
-	if err != nil {
-		if errors.Is(err, errDbInstanceRunning) {
-			// remove the installation - otherwise, the backup won't get triggered, even if the user stops the service
-			os.RemoveAll(filepaths.DatabaseInstanceDir())
-			return err
-		}
-		// ignore all other errors with the backup, displaying a warning instead
-		statushooks.Message(ctx, noBackupWarning())
-	}
-
 	// install the fdw
 	_, err = installFDW(ctx, true)
 	if err != nil {
@@ -106,7 +79,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	}
 
 	// run the database installation
-	err = runInstall(ctx, dbName)
+	err = runInstall(ctx, nil)
 	if err != nil {
 		return err
 	}

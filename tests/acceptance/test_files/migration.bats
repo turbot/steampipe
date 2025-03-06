@@ -29,7 +29,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 	esac
     
   # download the zip and extract
-  steampipe_uri="https://github.com/turbot/steampipe/releases/download/v0.13.6/steampipe_${target}"
+  steampipe_uri="https://github.com/turbot/steampipe/releases/download/v1.0.3/steampipe_${target}"
   case $(uname -s) in
     "Darwin") zip_location="${tmpdir}/steampipe.zip" ;;
     "Linux") zip_location="${tmpdir}/steampipe.tar.gz" ;;
@@ -46,7 +46,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     $tmpdir/steampipe --install-dir $tmpdir query "${setup_sql[$i]}"
   done
 
-  # store the result of the verification statements(0.13.6)
+  # store the result of the verification statements(1.0.3)
   for ((i = 0; i < ${#verify_sql[@]}; i++)); do
     $tmpdir/steampipe --install-dir $tmpdir query "${verify_sql[$i]}" > verify$i.txt
   done
@@ -57,7 +57,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   # Now run this version - which should migrate the data
   steampipe --install-dir $tmpdir service start
   
-  # store the result of the verification statements(0.14.*)
+  # store the result of the verification statements(1.1.0)
   for ((i = 0; i < ${#verify_sql[@]}; i++)); do
     echo "VerifySQL: ${verify_sql[$i]}"
     steampipe --install-dir $tmpdir query "${verify_sql[$i]}" > verify$i$i.txt
