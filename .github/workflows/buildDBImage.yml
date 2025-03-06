@@ -27,6 +27,7 @@ env:
   PATH_BASE: https://repo1.maven.org/maven2/io/zonky/test/postgres
   NAME_PREFIX: embedded-postgres-binaries
   STEAMPIPE_UPDATE_CHECK: false
+  ORAS_VERSION: 1.1.0
 
 jobs:
   # This workflow contains a single job called "build"
@@ -134,8 +135,11 @@ jobs:
 
             echo $JSON_STRING > annotations.json
 
-      - name: Verify ORAS
-        run: |-
+      # Setup ORAS
+      - name: Install specific version of ORAS
+        run: |
+          curl -LO https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz
+          sudo tar xzf oras_${ORAS_VERSION}_linux_amd64.tar.gz -C /usr/local/bin oras
           oras version
 
       # Publish to GHCR
