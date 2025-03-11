@@ -85,8 +85,8 @@ jobs:
       - name: Pull & Extract - darwin arm64
         run: |-
           EXTRACT_DIR=extracted-darwin-arm64
-          # new link  - https://drive.google.com/file/d/1xz9FAfqNLp9IZExE73qli4_N8S47ndun/view?usp=sharing
-          curl -L -o darwin-arm64.txz "https://drive.google.com/uc?export=download&id=1xz9FAfqNLp9IZExE73qli4_N8S47ndun"
+          # new link  - https://drive.google.com/file/d/1_jzGou4nkAOcvuzDanTZaYfFrk9g-uTL/view?usp=drive_link
+          curl -L -o darwin-arm64.txz "https://drive.google.com/uc?export=download&id=1_jzGou4nkAOcvuzDanTZaYfFrk9g-uTL"
           mkdir $EXTRACT_DIR
           tar -xf darwin-arm64.txz --directory $EXTRACT_DIR
 
