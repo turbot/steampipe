@@ -306,7 +306,7 @@ func (m *PluginManager) LoadPluginRateLimiters(pluginConnectionMap map[string]st
 
 		limitersForPlugin := make(connection.LimiterMap)
 		for _, l := range rateLimiterResp.Definitions {
-			r, err := proto.RateLimiterFromProto(l, reattach.Plugin, pluginInstance)
+			r, err := RateLimiterFromProto(l, reattach.Plugin, pluginInstance)
 			if err != nil {
 				errors = append(errors, sperr.WrapWithMessage(err, "failed to create rate limiter %s from plugin definition", err))
 				continue

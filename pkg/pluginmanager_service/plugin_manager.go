@@ -772,7 +772,7 @@ func (m *PluginManager) setRateLimiters(pluginInstance string, pluginClient *sdk
 	var defs []*sdkproto.RateLimiterDefinition
 
 	for _, l := range m.userLimiters[pluginInstance] {
-		defs = append(defs, sdkproto.RateLimiterAsProto(l))
+		defs = append(defs, RateLimiterAsProto(l))
 	}
 
 	req := &sdkproto.SetRateLimitersRequest{Definitions: defs}

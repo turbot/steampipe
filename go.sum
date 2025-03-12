@@ -771,8 +771,8 @@ github.com/tklauser/numcpus v0.3.0 h1:ILuRUQBtssgnxw0XXIjKUC56fgnOrFoQQ/4+DeU2bi
 github.com/tklauser/numcpus v0.3.0/go.mod h1:yFGUr7TUHQRAhyqBcEg0Ge34zDBAsIvJJcyE6boqnA8=
 github.com/tkrajina/go-reflector v0.5.6 h1:hKQ0gyocG7vgMD2M3dRlYN6WBBOmdoOzJ6njQSepKdE=
 github.com/tkrajina/go-reflector v0.5.6/go.mod h1:ECbqLgccecY5kPmPmXg1MrHW585yMcDkVl6IvJe64T4=
-github.com/turbot/go-kit v1.0.0 h1:TeVYepMyPMpiQ8GxmZcth9h1CzKRshWK+X9JGKAnXOo=
-github.com/turbot/go-kit v1.0.0/go.mod h1:vPk4gTUM8HhYGdzfKKLrPeZgnjLVBin41uqxjHScz6k=
+github.com/turbot/go-kit v1.1.0 h1:2gW+MFDJD+mN41GcvhAajTrwR8HgN9KKJ8HnYwPGTV0=
+github.com/turbot/go-kit v1.1.0/go.mod h1:1xmRuQ0cn/10QUMNLNOAFIqN8P6Rz5s3VLT8mkN3nF8=
 github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50 h1:zs87uA6QZsYLk4RRxDOIxt8ro/B2V6HzoMWm05Lo7ao=
 github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50/go.mod h1:vFnjEGDIIA/Lib7giyE4E9c50Lvl8j0S+7FVlAwDAVw=
 github.com/turbot/pipe-fittings/v2 v2.1.1 h1:sV6bviX7WH3zivi45n29+ui+I9tJLlFNCNA2rOpw6/U=
@@ -781,8 +781,8 @@ github.com/turbot/pipes-sdk-go v0.12.0 h1:esbbR7bALa5L8n/hqroMPaQSSo3gNM/4X0iTmH
 github.com/turbot/pipes-sdk-go v0.12.0/go.mod h1:Mb+KhvqqEdRbz/6TSZc2QWDrMa5BN3E4Xw+gPt2TRkc=
 github.com/turbot/steampipe-plugin-code v1.0.1-alpha.1 h1:mN0k0SGAN0pqPh92QZfJIzFzXuz6TiMALnLLLgCqnTI=
 github.com/turbot/steampipe-plugin-code v1.0.1-alpha.1/go.mod h1:Dhkl99FVa9eHbBbHgyy0Zf6jj7eVjZZujyqore+RHmQ=
-github.com/turbot/steampipe-plugin-sdk/v5 v5.11.3 h1:/b+ZUVydvkvjtNB0LbzVkDoWy/GB0qrucAxiUg4yznM=
-github.com/turbot/steampipe-plugin-sdk/v5 v5.11.3/go.mod h1:zI1JuJjVV+tiqK1MbOfEfeyHJzONRQh/NEYVXEOyd4o=
+github.com/turbot/steampipe-plugin-sdk/v5 v5.11.4 h1:Mt1j8xX6bcmtCyFjRg8opvaglaxx2+vnNr+GOCU9gzE=
+github.com/turbot/steampipe-plugin-sdk/v5 v5.11.4/go.mod h1:DnhNZF6QJXShotqVurAn1nrfxQFLx3+E8hRwYZ9fO6g=
 github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7 h1:qDMxFVd8Zo0rIhnEBdCIbR+T6WgjwkxpFZMN8zZmmjg=
 github.com/turbot/terraform-components v0.0.0-20231213122222-1f3526cab7a7/go.mod h1:5hzpfalEjfcJWp9yq75/EZoEu2Mzm34eJAPm3HOW2tw=
 github.com/ulikunitz/xz v0.5.10 h1:t92gobL9l3HE202wg3rlk19F6X+JOxl9BBrCCMYEYd8=
