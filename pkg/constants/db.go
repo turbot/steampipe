@@ -27,12 +27,12 @@ const (
 
 // constants for installing db and fdw images
 const (
-	DatabaseVersion = "14.17.0-dev.4"
+	DatabaseVersion = "14.17.0-dev.5"
 	FdwVersion      = "1.12.4"
 
 	// PostgresImageRef is the OCI Image ref for the database binaries
-	PostgresImageRef    = "ghcr.io/turbot/steampipe/db:14.17.0-dev.4"
-	PostgresImageDigest = "sha256:899d2ec4e75226bd04c62d9a185416252a6ce5b966a5fc47d2d7b082684f51b8"
+	PostgresImageRef    = "ghcr.io/turbot/steampipe/db:14.17.0-dev.5"
+	PostgresImageDigest = "sha256:bf7dcd73414ba12ca867b281ecc3b55ab9cfc828fab73b435ea02d3582e1e532"
 
 	FdwImageRef       = "ghcr.io/turbot/steampipe/fdw:" + FdwVersion
 	FdwBinaryFileName = "steampipe_postgres_fdw.so"
