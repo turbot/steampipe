@@ -77,7 +77,7 @@ jobs:
         run: |
           mkdir ~/artifacts
           mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
-          mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
+          mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_arm64.zip ~/artifacts/darwin.zip
 
       - name: List Build Artifacts
         run: ls -l ~/artifacts
@@ -104,7 +104,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, macos-13]
+        platform: [ubuntu-latest, macos-14]
         test_block:
           - "migration"
           - "brew"
@@ -128,9 +128,9 @@ jobs:
           - "exit_codes"
           - "force_stop"
         exclude:
-          - platform: macos-13
+          - platform: macos-14
             test_block: migration
-          - platform: macos-13
+          - platform: macos-14
             test_block: force_stop
     runs-on: ${{ matrix.platform }}
     steps:
@@ -158,13 +158,13 @@ jobs:
 
       - name: Download Darwin Build Artifacts
         uses: actions/download-artifact@v4
-        if: ${{ matrix.platform == 'macos-13' }}
+        if: ${{ matrix.platform == 'macos-14' }}
         with:
           name: build-artifact-darwin
           path: ~/artifacts
 
       - name: Extract Darwin Artifacts and Install Binary
-        if: ${{ matrix.platform == 'macos-13' }}
+        if: ${{ matrix.platform == 'macos-14' }}
         run: |
           mkdir ~/build
           unzip ~/artifacts/darwin.zip -d ~/build
