@@ -329,7 +329,7 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 		// connection parameters
 		"--host=127.0.0.1",
 		fmt.Sprintf("--port=%d", info.Port),
-		fmt.Sprintf("--username=%s", info.User),
+		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)
 
 	log.Println("[TRACE]", cmd.String())
