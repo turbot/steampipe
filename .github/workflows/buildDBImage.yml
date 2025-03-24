@@ -78,8 +78,8 @@ jobs:
       - name: Pull & Extract - darwin amd64
         run: |-
           EXTRACT_DIR=extracted-darwin-amd64
-          # new link (darwin-amd64.txz) - https://drive.google.com/file/d/1QYNAtqoAinmxYS8AtKMKkDtqH3W18EH8/view?usp=drive_link
-          curl -L -o darwin-amd64.txz "https://drive.google.com/uc?export=download&id=1QYNAtqoAinmxYS8AtKMKkDtqH3W18EH8"
+          # new link (darwin-amd64.txz) - https://drive.google.com/file/d/12fxd_jZxdP4Ilwd0BnefbVCLZV957TNJ/view?usp=drive_link
+          curl -L -o darwin-amd64.txz "https://drive.google.com/uc?export=download&id=12fxd_jZxdP4Ilwd0BnefbVCLZV957TNJ"
           mkdir $EXTRACT_DIR
           tar -xf darwin-amd64.txz --directory $EXTRACT_DIR
 
@@ -94,16 +94,16 @@ jobs:
       - name: Pull & Extract - linux amd64
         run: |-
           EXTRACT_DIR=extracted-linux-amd64
-          # new link (linux-amd64.txz) - https://drive.google.com/file/d/1wSc5phbdbi8Ths0BIpA3qdMgPkXafaH9/view?usp=drive_link
-          curl -L -o linux-amd64.txz "https://drive.google.com/uc?export=download&id=1wSc5phbdbi8Ths0BIpA3qdMgPkXafaH9"
+          # new link (linux-amd64.txz) - https://drive.google.com/file/d/11pqDcTtlD7RF5LPj-X4gRVfl4mk00fuy/view?usp=drive_link
+          curl -L -o linux-amd64.txz "https://drive.google.com/uc?export=download&id=11pqDcTtlD7RF5LPj-X4gRVfl4mk00fuy"
           mkdir $EXTRACT_DIR
           tar -xf linux-amd64.txz --directory $EXTRACT_DIR
 
       - name: Pull & Extract - linux arm64
         run: |-
           EXTRACT_DIR=extracted-linux-arm64
-          # new link (linux-arm64.txz) - https://drive.google.com/file/d/1-WYsrDB7CXV8yt5VEsCKF3OH5xASzxGQ/view?usp=drive_link
-          curl -L -o linux-arm64.txz "https://drive.google.com/uc?export=download&id=1-WYsrDB7CXV8yt5VEsCKF3OH5xASzxGQ"
+          # new link (linux-arm64.txz) - https://drive.google.com/file/d/1lpjyHegwd_8574uVWgaPB31yR7vRB8Zh/view?usp=drive_link
+          curl -L -o linux-arm64.txz "https://drive.google.com/uc?export=download&id=1lpjyHegwd_8574uVWgaPB31yR7vRB8Zh"
           mkdir $EXTRACT_DIR
           tar -xf linux-arm64.txz --directory $EXTRACT_DIR
 
