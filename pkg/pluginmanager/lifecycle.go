@@ -66,7 +66,7 @@ func start(steampipeExecutablePath string) (*State, error) {
 		Cmd:              pluginManagerCmd,
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
 		Logger:           logger,
-		StartTimeout:     time.Duration(viper.GetInt(pconstants.ArgPluginStartTimeout)) * time.Second,
+		StartTimeout:     time.Duration(viper.GetInt(constants.ArgPluginStartTimeout)) * time.Second,
 	})
 
 	if _, err := client.Start(); err != nil {
