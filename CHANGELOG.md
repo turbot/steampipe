@@ -1,4 +1,4 @@
-## v1.1.0 [tbd]
+## v1.1.0 [2025-04-10]
 _Whats new_
 - Update database version to PostgreSQL 14.17. ([#4461](https://github.com/turbot/steampipe/issues/4461))
 
