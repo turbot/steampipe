@@ -4,6 +4,7 @@
 [![slack](https://img.shields.io/badge/slack-2695-blue)](https://turbot.com/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
 [![maintained by](https://img.shields.io/badge/maintained%20by-Turbot-blue)](https://turbot.com?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
+## select * from cloud;
 
 [Steampipe](https://steampipe.io) is **the zero-ETL way** to query APIs and services. Use it to expose data sources to SQL.
 
@@ -21,8 +22,17 @@
 
 <img alt="steampipe demo" width=500 src="https://steampipe.io/images/steampipe-sql-demo.gif" >
 
+## Documentation
 
-## Getting Started
+See the [documentation](https://steampipe.io/docs) for:
+
+- [Running queries](https://steampipe.io/docs/query/overview)
+- [Managing Steampipe](https://steampipe.io/docs/managing/overview)
+- [CLI commands](https://steampipe.io/docs/reference/cli/overview)
+- [Integrations](https://steampipe.io/docs/integrations/overview)
+- [Developing plugins](https://steampipe.io/docs/develop/overview)
+
+## Install Steampipe
 
 Install Steampipe from the [downloads](https://steampipe.io/downloads) page:
 
@@ -49,19 +59,9 @@ steampipe query
 > select * from hackernews_new limit 10
 ```
 
-## Documentation
-
-See the [documentation](https://steampipe.io/docs) for:
-
-- [Running queries](https://steampipe.io/docs/query/overview)
-- [Managing Steampipe](https://steampipe.io/docs/managing/overview)
-- [CLI commands](https://steampipe.io/docs/reference/cli/overview)
-- [Integrations](https://steampipe.io/docs/integrations/overview)
-- [Developing plugins](https://steampipe.io/docs/develop/overview)
-
 ## Steampipe plugins
 
-The Steampipe community has grown a suite of [plugins](https://hub.powerpipe.io/plugins) that map APIs to database tables. Plugins are available for [AWS](https://hub.steampipe.io/plugins/turbot/aws), [Azure](https://hub.steampipe.io/plugins/turbot/azure), [GCP](https://hub.steampipe.io/plugins/turbot/gcp), [Kubernetes](https://hub.steampipe.io/plugins/turbot/kubernetes), [GitHub](https://hub.steampipe.io/plugins/turbot/github), [Microsoft 365](https://hub.steampipe.io/plugins/turbot/microsoft365), [Salesforce](https://hub.steampipe.io/plugins/turbot/salesforce), and many more.
+The Steampipe community has grown a suite of [plugins](https://hub.steampipe.io/plugins) that map APIs to database tables. Plugins are available for [AWS](https://hub.steampipe.io/plugins/turbot/aws), [Azure](https://hub.steampipe.io/plugins/turbot/azure), [GCP](https://hub.steampipe.io/plugins/turbot/gcp), [Kubernetes](https://hub.steampipe.io/plugins/turbot/kubernetes), [GitHub](https://hub.steampipe.io/plugins/turbot/github), [Microsoft 365](https://hub.steampipe.io/plugins/turbot/microsoft365), [Salesforce](https://hub.steampipe.io/plugins/turbot/salesforce), and many more.
 
 There are more than 2000 tables in all, each clearly documented with copy/paste/run examples.
 
@@ -142,7 +142,7 @@ If you're interested in developing [Steampipe plugins](https://hub.steampipe.io)
 
 ## Turbot Pipes
 
-Bring your team to [Turbot Pipes](https://turbot.com/pipes) to use Steampipe together in the cloud.
+Bring your team to [Turbot Pipes](https://turbot.com/pipes) to use Steampipe together in the cloud. In a Pipes workspace you can use Steampipe for data access, [Powerpipe](https://github.com/turbot/powerpipe) to visualize query results, and [Flowpipe](https://github.com/turbot/flowpipe) to automate workflow. 
 
 ## Open source and contributing
 

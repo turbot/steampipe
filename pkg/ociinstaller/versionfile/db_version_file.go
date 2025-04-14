@@ -2,11 +2,12 @@ package versionfile
 
 import (
 	"encoding/json"
-	filehelpers "github.com/turbot/go-kit/files"
-	"github.com/turbot/pipe-fittings/versionfile"
-	"github.com/turbot/steampipe/pkg/filepaths"
 	"log"
 	"os"
+
+	filehelpers "github.com/turbot/go-kit/files"
+	"github.com/turbot/pipe-fittings/v2/versionfile"
+	"github.com/turbot/steampipe/pkg/filepaths"
 )
 
 const DatabaseStructVersion = 20220411
@@ -46,13 +47,6 @@ func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 	if err := json.Unmarshal(file, &data); err != nil {
 		log.Println("[ERROR]", "Error while reading DB version file", err)
 		return nil, err
-	}
-	if data.FdwExtension == (versionfile.InstalledVersion{}) {
-		data.FdwExtension = versionfile.InstalledVersion{}
-	}
-
-	if data.EmbeddedDB == (versionfile.InstalledVersion{}) {
-		data.EmbeddedDB = versionfile.InstalledVersion{}
 	}
 
 	return &data, nil

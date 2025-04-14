@@ -1,7 +1,7 @@
 package steampipeconfig
 
 import (
-	"github.com/turbot/pipe-fittings/error_helpers"
+	"github.com/turbot/pipe-fittings/v2/error_helpers"
 )
 
 const PostgresNotificationStructVersion = 20230306

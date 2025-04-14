@@ -1,7 +1,7 @@
 package metaquery
 
 import (
-	pconstants "github.com/turbot/pipe-fittings/constants"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 

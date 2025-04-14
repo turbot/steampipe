@@ -17,10 +17,10 @@ import (
 	"github.com/sethvargo/go-retry"
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
-	pconstants "github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/filepaths"
-	"github.com/turbot/pipe-fittings/plugin"
-	"github.com/turbot/pipe-fittings/utils"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/filepaths"
+	"github.com/turbot/pipe-fittings/v2/plugin"
+	"github.com/turbot/pipe-fittings/v2/utils"
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkshared "github.com/turbot/steampipe-plugin-sdk/v5/grpc/shared"
@@ -501,11 +501,16 @@ func (m *PluginManager) startPluginProcess(pluginInstance string, connectionConf
 
 	cmd := exec.Command(pluginPath)
 	m.setPluginMaxMemory(pluginConfig, cmd)
+
+	pluginStartTimeoutDuration := time.Duration(viper.GetInt64(pconstants.ArgPluginStartTimeout)) * time.Second
+	log.Printf("[TRACE] %s pluginStartTimeoutDuration: %s", pluginPath, pluginStartTimeoutDuration)
+
 	client := goplugin.NewClient(&goplugin.ClientConfig{
 		HandshakeConfig:  sdkshared.Handshake,
 		Plugins:          pluginMap,
 		Cmd:              cmd,
 		AllowedProtocols: []goplugin.Protocol{goplugin.ProtocolGRPC},
+		StartTimeout:     pluginStartTimeoutDuration,
 
 		// pass our logger to the plugin client to ensure plugin logs end up in logfile
 		Logger: m.logger,
@@ -678,13 +683,9 @@ func (m *PluginManager) waitForPluginLoad(p *runningPlugin, req *pb.GetRequest) 
 	}
 	pluginStartTimeoutSecs := pluginConfig.GetStartTimeout()
 	if pluginStartTimeoutSecs == 0 {
-		if viper.IsSet(pconstants.ArgMemoryMaxMbPlugin) {
+		if viper.IsSet(pconstants.ArgPluginStartTimeout) {
 			pluginStartTimeoutSecs = viper.GetInt64(pconstants.ArgPluginStartTimeout)
 		}
-	}
-	if pluginStartTimeoutSecs == 0 {
-		// if we don't have any timeout set use 30 seconds
-		pluginStartTimeoutSecs = int64(30)
 	}
 
 	log.Printf("[TRACE] waitForPluginLoad: waiting %d seconds (%p)", pluginStartTimeoutSecs, req)
@@ -772,7 +773,7 @@ func (m *PluginManager) setRateLimiters(pluginInstance string, pluginClient *sdk
 	var defs []*sdkproto.RateLimiterDefinition
 
 	for _, l := range m.userLimiters[pluginInstance] {
-		defs = append(defs, sdkproto.RateLimiterAsProto(l))
+		defs = append(defs, RateLimiterAsProto(l))
 	}
 
 	req := &sdkproto.SetRateLimitersRequest{Definitions: defs}

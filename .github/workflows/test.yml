@@ -77,7 +77,7 @@ jobs:
         run: |
           mkdir ~/artifacts
           mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
-          mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin.zip
+          mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_arm64.zip ~/artifacts/darwin.zip
 
       - name: List Build Artifacts
         run: ls -l ~/artifacts
@@ -104,7 +104,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest]
+        platform: [ubuntu-latest] # add other platforms as needed
         test_block:
           - "migration"
           - "brew"

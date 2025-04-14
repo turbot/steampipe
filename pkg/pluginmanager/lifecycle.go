@@ -6,11 +6,13 @@ import (
 	"log"
 	"os/exec"
 	"syscall"
+	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/turbot/pipe-fittings/app_specific"
-	"github.com/turbot/pipe-fittings/constants"
+	"github.com/spf13/viper"
+	"github.com/turbot/pipe-fittings/v2/app_specific"
+	"github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
 	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc"
@@ -64,6 +66,7 @@ func start(steampipeExecutablePath string) (*State, error) {
 		Cmd:              pluginManagerCmd,
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
 		Logger:           logger,
+		StartTimeout:     time.Duration(viper.GetInt(constants.ArgPluginStartTimeout)) * time.Second,
 	})
 
 	if _, err := client.Start(); err != nil {

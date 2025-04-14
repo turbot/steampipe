@@ -2,13 +2,14 @@ package steampipeconfig
 
 import (
 	"fmt"
-	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/constants"
+	"slices"
 	"strings"
+
+	"github.com/turbot/steampipe/pkg/constants"
 )
 
 func ValidateConnectionName(connectionName string) error {
-	if helpers.StringSliceContains(constants.ReservedConnectionNames, connectionName) {
+	if slices.Contains(constants.ReservedConnectionNames, connectionName) {
 		return fmt.Errorf("'%s' is a reserved connection name", connectionName)
 	}
 	if strings.HasPrefix(connectionName, constants.ReservedConnectionNamePrefix) {

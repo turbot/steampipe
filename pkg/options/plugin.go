@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/turbot/pipe-fittings/constants"
-	"github.com/turbot/pipe-fittings/options"
+	"github.com/turbot/pipe-fittings/v2/constants"
+	"github.com/turbot/pipe-fittings/v2/options"
 )
 
 type Plugin struct {
@@ -22,8 +22,6 @@ func (t *Plugin) ConfigMap() map[string]interface{} {
 	}
 	if t.StartTimeout != nil {
 		res[constants.ArgPluginStartTimeout] = t.StartTimeout
-	} else {
-		res[constants.ArgPluginStartTimeout] = constants.PluginStartTimeout.Seconds()
 	}
 
 	return res

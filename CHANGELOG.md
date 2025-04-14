@@ -1,3 +1,10 @@
+## v1.1.0 [2025-04-10]
+_Whats new_
+- Update database version to PostgreSQL 14.17. ([#4461](https://github.com/turbot/steampipe/issues/4461))
+
+_Bug fixes_
+- Fix issue where plugin start timeout was getting limited to 60s. ([#4477](https://github.com/turbot/steampipe/issues/4477))
+
 ## v1.0.3 [2025-02-03]
 _Bug fixes_
 - Update FDW to 1.12.2 to remediate critical and high vulnerabilities. ([#533](https://github.com/turbot/steampipe-postgres-fdw/issues/533))

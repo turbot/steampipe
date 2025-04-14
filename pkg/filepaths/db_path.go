@@ -46,6 +46,10 @@ func DatabaseBackupFilePath() string {
 	return filepath.Join(EnsureDatabaseDir(), "backup.bk")
 }
 
+func GetDatabaseLibPath() string {
+	return filepath.Join(GetDatabaseLocation(), "lib")
+}
+
 func GetRootCertLocation() string {
 	return filepath.Join(GetDataLocation(), constants.RootCert)
 }

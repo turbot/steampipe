@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/v2/ociinstaller"
 	"github.com/turbot/steampipe/pkg/constants"
 )
 

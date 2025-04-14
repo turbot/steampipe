@@ -10,7 +10,7 @@ import (
 	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
-	"github.com/turbot/pipe-fittings/utils"
+	putils "github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/constants/runtime"
 	"github.com/turbot/steampipe/pkg/db/db_common"
@@ -18,6 +18,7 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/pluginmanager"
 	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/pkg/utils"
 )
 
 // StopStatus is a pseudoEnum for service stop result
@@ -33,8 +34,8 @@ const (
 
 // ShutdownService stops the database instance if the given 'invoker' matches
 func ShutdownService(ctx context.Context, invoker constants.Invoker) {
-	utils.LogTime("db_local.ShutdownService start")
-	defer utils.LogTime("db_local.ShutdownService end")
+	putils.LogTime("db_local.ShutdownService start")
+	defer putils.LogTime("db_local.ShutdownService end")
 
 	if error_helpers.IsContextCanceled(ctx) {
 		ctx = context.Background()
@@ -57,7 +58,7 @@ func ShutdownService(ctx context.Context, invoker constants.Invoker) {
 		// there are other steampipe clients connected to the database
 		// we don't need to stop the service
 		// the last one to exit will shutdown the service
-		log.Printf("[INFO] ShutdownService not closing database service - %d steampipe %s connected", clientCounts.SteampipeClients, utils.Pluralize("client", clientCounts.SteampipeClients))
+		log.Printf("[INFO] ShutdownService not closing database service - %d steampipe %s connected", clientCounts.SteampipeClients, putils.Pluralize("client", clientCounts.SteampipeClients))
 		return
 	}
 
@@ -98,8 +99,8 @@ type ClientCount struct {
 // from this instance at the time of shutdown - for example when a control run is cancelled
 // If we do not exclude connections from this execution, the DB will not be shut down after a cancellation
 func GetClientCount(ctx context.Context) (*ClientCount, error) {
-	utils.LogTime("db_local.GetClientCount start")
-	defer utils.LogTime(fmt.Sprintf("db_local.GetClientCount end"))
+	putils.LogTime("db_local.GetClientCount start")
+	defer putils.LogTime(fmt.Sprintf("db_local.GetClientCount end"))
 
 	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {
@@ -161,13 +162,13 @@ GROUP BY application_name
 // StopServices searches for and stops the running instance. Does nothing if an instance was not found
 func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (status StopStatus, e error) {
 	log.Printf("[TRACE] StopDB invoker %s, force %v", invoker, force)
-	utils.LogTime("db_local.StopDB start")
+	putils.LogTime("db_local.StopDB start")
 
 	defer func() {
 		if e == nil {
 			os.Remove(filepaths.RunningInfoFilePath())
 		}
-		utils.LogTime("db_local.StopDB end")
+		putils.LogTime("db_local.StopDB end")
 	}()
 
 	log.Println("[INFO] shutting down plugin manager")
@@ -249,8 +250,8 @@ checked that the service can indeed shutdown gracefully,
 the sequence is there only as a backup.
 */
 func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) error {
-	utils.LogTime("db_local.doThreeStepPostgresExit start")
-	defer utils.LogTime("db_local.doThreeStepPostgresExit end")
+	putils.LogTime("db_local.doThreeStepPostgresExit start")
+	defer putils.LogTime("db_local.doThreeStepPostgresExit end")
 
 	var err error
 	var exitSuccessful bool
@@ -294,8 +295,8 @@ func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) erro
 }
 
 func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
-	utils.LogTime("db_local.waitForProcessExit start")
-	defer utils.LogTime("db_local.waitForProcessExit end")
+	putils.LogTime("db_local.waitForProcessExit start")
+	defer putils.LogTime("db_local.waitForProcessExit end")
 
 	checkTimer := time.NewTicker(50 * time.Millisecond)
 	timeoutAt := time.After(waitFor)
@@ -316,8 +317,8 @@ func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 }
 
 func getPrintableProcessDetails(process *psutils.Process, indent int) string {
-	utils.LogTime("db_local.getPrintableProcessDetails start")
-	defer utils.LogTime("db_local.getPrintableProcessDetails end")
+	putils.LogTime("db_local.getPrintableProcessDetails start")
+	defer putils.LogTime("db_local.getPrintableProcessDetails end")
 
 	indentString := strings.Repeat("  ", indent)
 	appendTo := []string{}

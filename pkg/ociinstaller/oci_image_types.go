@@ -1,7 +1,7 @@
 package ociinstaller
 
 import (
-	"github.com/turbot/pipe-fittings/ociinstaller"
+	"github.com/turbot/pipe-fittings/v2/ociinstaller"
 )
 
 const (
