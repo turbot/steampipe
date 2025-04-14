@@ -48,13 +48,6 @@ func readDatabaseVersionFile(path string) (*DatabaseVersionFile, error) {
 		log.Println("[ERROR]", "Error while reading DB version file", err)
 		return nil, err
 	}
-	if data.FdwExtension == (versionfile.InstalledVersion{}) {
-		data.FdwExtension = versionfile.InstalledVersion{}
-	}
-
-	if data.EmbeddedDB == (versionfile.InstalledVersion{}) {
-		data.EmbeddedDB = versionfile.InstalledVersion{}
-	}
 
 	return &data, nil
 }

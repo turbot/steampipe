@@ -329,7 +329,7 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 		// connection parameters
 		"--host=127.0.0.1",
 		fmt.Sprintf("--port=%d", info.Port),
-		fmt.Sprintf("--username=%s", info.User),
+		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)
 
 	log.Println("[TRACE]", cmd.String())
@@ -449,6 +449,12 @@ func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
 	)
 	cmd.Env = append(os.Environ(), "PGSSLMODE=disable")
 
+	// set the library path for the pg_dump command
+	// this is required for the pg_dump to work correctly since we build the pg_dump binary
+	// from source(zonkyio does not package it), they are incorrectly linked, so the correct
+	// library path must be set before running it
+	cmd.Env = append(cmd.Env, fmt.Sprintf("DYLD_LIBRARY_PATH=%s", filepaths.GetDatabaseLibPath()))
+
 	log.Println("[TRACE] pg_dump command:", cmd.String())
 	return cmd
 }
@@ -460,6 +466,12 @@ func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
 		args...,
 	)
 	cmd.Env = append(os.Environ(), "PGSSLMODE=disable")
+
+	// set the library path for the pg_restore command
+	// this is required for the pg_restore to work correctly since we build the pg_restore binary
+	// from source(zonkyio does not package it), they are incorrectly linked, so the correct
+	// library path must be set before running it
+	cmd.Env = append(cmd.Env, fmt.Sprintf("DYLD_LIBRARY_PATH=%s", filepaths.GetDatabaseLibPath()))
 
 	log.Println("[TRACE] pg_restore command:", cmd.String())
 	return cmd

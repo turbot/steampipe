@@ -3,7 +3,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 
 ## public schema migration
 
-@test "verify data is properly migrated when upgrading from v0.13.6" {
+@test "verify data is properly migrated when upgrading from v1.0.3" {
   # setup sql statements
   setup_sql[0]="create table sample(sample_col_1 char(10), sample_col_2 char(10))"
   setup_sql[1]="insert into sample(sample_col_1,sample_col_2) values ('foo','bar')"
@@ -14,7 +14,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   verify_sql[0]="select * from sample"
   verify_sql[1]="select * from sample_func()"
 
-  # create a temp directory to install steampipe(0.13.6)
+  # create a temp directory to install steampipe(1.0.3)
   tmpdir="$(mktemp -d)"
   mkdir -p "${tmpdir}"
   tmpdir="${tmpdir%/}"
@@ -29,7 +29,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 	esac
     
   # download the zip and extract
-  steampipe_uri="https://github.com/turbot/steampipe/releases/download/v0.13.6/steampipe_${target}"
+  steampipe_uri="https://github.com/turbot/steampipe/releases/download/v1.0.3/steampipe_${target}"
   case $(uname -s) in
     "Darwin") zip_location="${tmpdir}/steampipe.zip" ;;
     "Linux") zip_location="${tmpdir}/steampipe.tar.gz" ;;
@@ -46,7 +46,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
     $tmpdir/steampipe --install-dir $tmpdir query "${setup_sql[$i]}"
   done
 
-  # store the result of the verification statements(0.13.6)
+  # store the result of the verification statements(1.0.3)
   for ((i = 0; i < ${#verify_sql[@]}; i++)); do
     $tmpdir/steampipe --install-dir $tmpdir query "${verify_sql[$i]}" > verify$i.txt
   done

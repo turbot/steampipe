@@ -198,6 +198,11 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 		return err
 	}
 
+	// if there is an unprocessed db backup file, restore it now
+	if err := restoreDBBackup(ctx); err != nil {
+		return sperr.WrapWithMessage(err, "failed to migrate db public schema")
+	}
+
 	// create the clone_foreign_schema function
 	if _, err := executeSqlAsRoot(ctx, cloneForeignSchemaSQL); err != nil {
 		return sperr.WrapWithMessage(err, "failed to create clone_foreign_schema function")
@@ -205,11 +210,6 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	// create the clone_comments function
 	if _, err := executeSqlAsRoot(ctx, cloneCommentsSQL); err != nil {
 		return sperr.WrapWithMessage(err, "failed to create clone_comments function")
-	}
-
-	// if there is an unprocessed db backup file, restore it now
-	if err := restoreDBBackup(ctx); err != nil {
-		return sperr.WrapWithMessage(err, "failed to migrate db public schema")
 	}
 
 	return nil

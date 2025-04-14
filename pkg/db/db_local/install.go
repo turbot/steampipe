@@ -27,7 +27,7 @@ import (
 var ensureMux sync.Mutex
 
 func noBackupWarning() string {
-	warningMessage := `Steampipe database has been upgraded from Postgres 12 to Postgres 14.
+	warningMessage := `Steampipe database has been upgraded from Postgres 14.2 to Postgres 14.17.
 
 Unfortunately the data in your public schema failed migration using the standard pg_dump and pg_restore tools. Your data has been preserved in the ~/.steampipe/db directory.
 
@@ -89,6 +89,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	// NOTE: this returns the existing database name - we use this when creating the new database
 	dbName, err := prepareBackup(ctx)
 	if err != nil {
+		log.Printf("[ERROR] prepareBackup failed: %s", err.Error())
 		if errors.Is(err, errDbInstanceRunning) {
 			// remove the installation - otherwise, the backup won't get triggered, even if the user stops the service
 			os.RemoveAll(filepaths.DatabaseInstanceDir())

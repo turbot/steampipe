@@ -9,12 +9,12 @@ on:
           Version number for the OCI image for this release - usually the same as the
           postgres version
         required: true
-        default: 14.2.0
+        default: 14.17.0
 
       postgres_version:
         description: "Postgres Version to package (eg 14.2.0)"
         required: true
-        default: 14.2.0
+        default: 14.17.0
 
 env:
   PROJECT_ID: steampipe
@@ -27,10 +27,12 @@ env:
   PATH_BASE: https://repo1.maven.org/maven2/io/zonky/test/postgres
   NAME_PREFIX: embedded-postgres-binaries
   STEAMPIPE_UPDATE_CHECK: false
+  ORAS_VERSION: 1.1.0
 
 jobs:
   # This workflow contains a single job called "build"
   build:
+    name: Build and Publish DB Image
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -76,28 +78,32 @@ jobs:
       - name: Pull & Extract - darwin amd64
         run: |-
           EXTRACT_DIR=extracted-darwin-amd64
-          curl -L -O -J -L https://www.dropbox.com/s/4ilvb7ixmkbyhq5/darwin-amd64.txz?dl=0 --output darwin-amd64.txz
+          # new link (darwin-amd64.txz) - https://drive.google.com/file/d/12fxd_jZxdP4Ilwd0BnefbVCLZV957TNJ/view?usp=drive_link
+          curl -L -o darwin-amd64.txz "https://drive.google.com/uc?export=download&id=12fxd_jZxdP4Ilwd0BnefbVCLZV957TNJ"
           mkdir $EXTRACT_DIR
           tar -xf darwin-amd64.txz --directory $EXTRACT_DIR
 
       - name: Pull & Extract - darwin arm64
         run: |-
           EXTRACT_DIR=extracted-darwin-arm64
-          curl -L -O -J -L https://www.dropbox.com/s/qztyzex9zr6pq00/darwin-arm64.txz?dl=0 --output darwin-arm64.txz
+          # new link (darwin-arm64.txz) - https://drive.google.com/file/d/1lG6eNYM5JaywbRxQBubzMDmbCtGVilQh/view?usp=drive_link
+          curl -L -o darwin-arm64.txz "https://drive.google.com/uc?export=download&id=1lG6eNYM5JaywbRxQBubzMDmbCtGVilQh"
           mkdir $EXTRACT_DIR
           tar -xf darwin-arm64.txz --directory $EXTRACT_DIR
 
       - name: Pull & Extract - linux amd64
         run: |-
           EXTRACT_DIR=extracted-linux-amd64
-          curl -L  -O -J -L https://www.dropbox.com/s/kqkcp6q8jts82e9/linux-amd64.txz?dl=0 --output linux-amd64.txz
+          # new link (linux-amd64.txz) - https://drive.google.com/file/d/11pqDcTtlD7RF5LPj-X4gRVfl4mk00fuy/view?usp=drive_link
+          curl -L -o linux-amd64.txz "https://drive.google.com/uc?export=download&id=11pqDcTtlD7RF5LPj-X4gRVfl4mk00fuy"
           mkdir $EXTRACT_DIR
           tar -xf linux-amd64.txz --directory $EXTRACT_DIR
 
       - name: Pull & Extract - linux arm64
         run: |-
           EXTRACT_DIR=extracted-linux-arm64
-          curl -L  -O -J -L https://www.dropbox.com/s/mcyi7lmx0r3x008/linux-arm64.txz?dl=0 --output linux-arm64.txz
+          # new link (linux-arm64.txz) - https://drive.google.com/file/d/1lpjyHegwd_8574uVWgaPB31yR7vRB8Zh/view?usp=drive_link
+          curl -L -o linux-arm64.txz "https://drive.google.com/uc?export=download&id=1lpjyHegwd_8574uVWgaPB31yR7vRB8Zh"
           mkdir $EXTRACT_DIR
           tar -xf linux-arm64.txz --directory $EXTRACT_DIR
 
@@ -133,8 +139,11 @@ jobs:
 
             echo $JSON_STRING > annotations.json
 
-      - name: Verify ORAS
-        run: |-
+      # Setup ORAS
+      - name: Install specific version of ORAS
+        run: |
+          curl -LO https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz
+          sudo tar xzf oras_${ORAS_VERSION}_linux_amd64.tar.gz -C /usr/local/bin oras
           oras version
 
       # Publish to GHCR
