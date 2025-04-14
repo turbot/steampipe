@@ -27,7 +27,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
   elif [[ "$arch" == "x86_64" && "$os" == "Darwin" ]]; then
     assert_output --partial 'Mach-O 64-bit executable x86_64'
   elif [[ "$arch" == "x86_64" && "$os" == "Linux" ]]; then
-    assert_output --partial 'ELF 64-bit LSB executable, x86-64'
+    assert_output --partial 'ELF 64-bit LSB pie executable, x86-64'
   elif [[ "$arch" == "aarch64" && "$os" == "Linux" ]]; then
     assert_output --partial 'ELF 64-bit LSB executable, ARM aarch64'
   fi
