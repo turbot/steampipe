@@ -1,3 +1,8 @@
+## v1.1.1 [2025-04-25]
+_Bug fixes_
+- Fix issue where query batch mode outputs(json, csv, line) were not printing the rows received to stdout when any of the other rows returned an API error. ([#4516](https://github.com/turbot/steampipe/issues/4516))
+- Fix issue where query batch mode table output always returned a 0 row count when timing was enabled. ([#4520](https://github.com/turbot/steampipe/issues/4520))
+
 ## v1.1.0 [2025-04-10]
 _Whats new_
 - Update database version to PostgreSQL 14.17. ([#4461](https://github.com/turbot/steampipe/issues/4461))
