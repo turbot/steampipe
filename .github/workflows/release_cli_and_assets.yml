@@ -39,7 +39,7 @@ jobs:
         echo "VERSION=${trim}" >> $GITHUB_ENV
         
     - name: Validate Branch
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         ref: ${{ github.event.ref }}
 
@@ -62,20 +62,20 @@ jobs:
         echo "VERSION=${trim}" >> $GITHUB_ENV
         
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         path: steampipe
         ref: ${{ github.event.ref }}
 
     - name: Checkout Pipe Fittings Components repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         repository: turbot/pipe-fittings
         path: pipe-fittings
         ref: v1.6.x
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
       with:
         go-version: 1.22
 
@@ -89,7 +89,7 @@ jobs:
         go test -timeout 30s ./... -test.v
 
     - name: Install GoReleaser
-      uses: goreleaser/goreleaser-action@v6
+      uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
       with:
         install-only: true
 
@@ -112,7 +112,7 @@ jobs:
       run: ls -l ~/artifacts
 
     - name: Save Linux Build Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: build-artifact-linux
         path: ~/artifacts/linux.tar.gz
@@ -120,7 +120,7 @@ jobs:
         overwrite: true
 
     - name: Save Linux ARM Build Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: build-artifact-linux-arm
         path: ~/artifacts/linux-arm.tar.gz
@@ -128,7 +128,7 @@ jobs:
         overwrite: true
 
     - name: Save MacOS Build Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: build-artifact-darwin
         path: ~/artifacts/darwin.zip
@@ -136,7 +136,7 @@ jobs:
         overwrite: true
 
     - name: Save MacOS ARM Build Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: build-artifact-darwin-arm
         path: ~/artifacts/darwin-arm.zip
@@ -190,18 +190,18 @@ jobs:
         echo "VERSION=${trim}" >> $GITHUB_ENV
 
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         submodules: true
         ref: ${{ github.event.ref }}
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
       with:
         go-version: 1.22
 
     - name: Setup BATS
-      uses: mig4/setup-bats@v1
+      uses: mig4/setup-bats@af9a00deb21b5d795cabfeaa8d9060410377686d # v1.2.0
       with:
         bats-version: 1.2.1
 
@@ -211,14 +211,14 @@ jobs:
         mkdir ~/artifacts
 
     - name: Download Linux Build Artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
       if: ${{ matrix.platform == 'ubuntu-latest' }}
       with:
         name: build-artifact-linux
         path: ~/artifacts
 
     - name: Download Darwin Build Artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
       if: ${{ matrix.platform == 'macos-13' }}
       with:
         name: build-artifact-darwin
@@ -266,16 +266,16 @@ jobs:
     needs: [create_test_build]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Download Linux Build Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
         with:
           name: build-artifact-linux
           path: ./artifacts
   
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
   
       - name: Pull Ubuntu latest Image
         run: docker pull ubuntu:latest
@@ -307,16 +307,16 @@ jobs:
     needs: [create_test_build]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
   
       - name: Download Linux Build Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
         with:
           name: build-artifact-linux
           path: ./artifacts
   
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
   
       - name: Pull CentOS Stream 9 image
         run: docker pull quay.io/centos/centos:stream9
@@ -348,16 +348,16 @@ jobs:
     needs: [create_test_build]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Download Linux Build Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
         with:
           name: build-artifact-linux
           path: ./artifacts
   
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
   
       - name: Pull Amazon Linux 2023 Image
         run: docker pull amazonlinux:2023
@@ -441,10 +441,10 @@ jobs:
     needs: [create_test_build]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Download Darwin Build Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
         with:
           name: build-artifact-darwin-arm
           path: ~/artifacts
@@ -487,7 +487,7 @@ jobs:
         echo "VERSION=${trim}" >> $GITHUB_ENV
         
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         ref: ${{ github.event.ref }}
 
@@ -508,13 +508,13 @@ jobs:
     steps:
       - name: Parse semver string
         id: semver_parser
-        uses: booxmedialtd/ws-action-parse-semver@v1
+        uses: booxmedialtd/ws-action-parse-semver@3576f3a20a39f8752fe0d8195f5ed384090285dc # v1.3.0
         with:
           input_string: ${{ github.event.inputs.version }}
 
       - name: Checkout
         if: steps.semver_parser.outputs.prerelease == ''
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: turbot/homebrew-tap
           token: ${{ secrets.GH_ACCESS_TOKEN }}
@@ -553,25 +553,25 @@ jobs:
         echo "VERSION=${trim}" >> $GITHUB_ENV
         
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         path: steampipe
         ref: ${{ github.event.inputs.version }}
 
     - name: Checkout Pipe Fittings Components repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       with:
         repository: turbot/pipe-fittings
         path: pipe-fittings
         ref: v1.6.x
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
       with:
         go-version: 1.22
 
     - name: Install GoReleaser
-      uses: goreleaser/goreleaser-action@v6
+      uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
       with:
         install-only: true
 
@@ -591,13 +591,13 @@ jobs:
     steps:
       - name: Parse semver string
         id: semver_parser
-        uses: booxmedialtd/ws-action-parse-semver@v1
+        uses: booxmedialtd/ws-action-parse-semver@3576f3a20a39f8752fe0d8195f5ed384090285dc # v1.3.0
         with:
           input_string: ${{ github.event.inputs.version }}
 
       - name: Checkout
         if: steps.semver_parser.outputs.prerelease == ''
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: turbot/homebrew-tap
           token: ${{ secrets.GH_ACCESS_TOKEN }}
@@ -631,13 +631,13 @@ jobs:
     steps:
       - name: Parse semver string
         id: semver_parser
-        uses: booxmedialtd/ws-action-parse-semver@v1
+        uses: booxmedialtd/ws-action-parse-semver@3576f3a20a39f8752fe0d8195f5ed384090285dc # v1.3.0
         with:
           input_string: ${{ github.event.inputs.version }}
 
       - name: Checkout
         if: steps.semver_parser.outputs.prerelease == ''
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: turbot/homebrew-tap
           token: ${{ secrets.GH_ACCESS_TOKEN }}
@@ -664,11 +664,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Clean up Linux Build
-      uses: geekyeggo/delete-artifact@v5
+      uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5.1.0
       with:
         name: build-artifact-linux
 
     - name: Clean up Darwin Build
-      uses: geekyeggo/delete-artifact@v5
+      uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5.1.0
       with:
         name: build-artifact-darwin
