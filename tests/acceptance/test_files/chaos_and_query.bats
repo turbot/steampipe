@@ -262,6 +262,18 @@ load "$LIB_BATS_SUPPORT/load.bash"
   assert_equal "$output" "$(cat $TEST_DATA_DIR/expected_csv_separator_no_header.csv)"
 }
 
+@test "verify system-ingestible format(json) values are unchanged" {
+  run steampipe query --output json "select 100000 as id"
+  id=$(echo $output | jq '.rows.[0].id')
+  assert_equal "$id" "100000"
+}
+
+@test "verify system-ingestible formats(csv) values are unchanged" {
+  run steampipe query --output csv "select 100000 as id"
+  assert_equal "$output" "id
+100000"
+}
+
 @test "json" {
   run steampipe query --output json "select id, string_column, json_column from chaos.chaos_all_column_types where id='0'"
   echo $output > $TEST_DATA_DIR/actual_1.json
