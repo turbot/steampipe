@@ -1,3 +1,7 @@
+## v1.1.2 [2025-05-06]
+_Bug fixes_
+- Fix issue where system-ingestible output format(csv) was humanised(comma separated) leading to a breaking change in query outputs. ([#4525](https://github.com/turbot/steampipe/issues/4525))
+
 ## v1.1.1 [2025-04-25]
 _Bug fixes_
 - Fix issue where query batch mode outputs(json, csv, line) were not printing the rows received to stdout when any of the other rows returned an API error. ([#4516](https://github.com/turbot/steampipe/issues/4516))
