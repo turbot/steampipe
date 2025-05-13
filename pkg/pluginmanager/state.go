@@ -111,7 +111,7 @@ func (s *State) verifyRunning() (bool, error) {
 	exe, _ := p.Exe()
 	cmd, _ := p.Cmdline()
 	// verify this is a plugin manager process by comparing the executable name and the command line
-	return exe == s.Executable && strings.Contains(cmd, "plugin_manager"), nil
+	return exe == s.Executable && strings.Contains(cmd, "plugin-manager"), nil
 }
 
 // kill the plugin manager process and delete the state
