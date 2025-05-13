@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"strings"
 	"syscall"
 
 	"github.com/hashicorp/go-plugin"
@@ -60,7 +61,11 @@ func LoadState() (*State, error) {
 
 	// check is the manager is running - this deletes that state file if it is not running,
 	// and set the 'Running' property on the state if it is
-	pluginManagerRunning := s.verifyRunning()
+	pluginManagerRunning, err := s.verifyRunning()
+	if err != nil {
+		log.Printf("[TRACE] error verifying plugin manager running: %s", err)
+		return s, err
+	}
 
 	// save the running status on the state struct
 	s.Running = pluginManagerRunning
@@ -90,18 +95,42 @@ func (s *State) reattachConfig() *plugin.ReattachConfig {
 }
 
 // check whether the plugin manager is running
-func (s *State) verifyRunning() bool {
-	pidExists := utils.PidExists(s.Pid)
-	return pidExists
+func (s *State) verifyRunning() (bool, error) {
+	log.Printf("[TRACE] verify plugin manager running, pid: %d", s.Pid)
+	p, err := utils.FindProcess(s.Pid)
+	if err != nil {
+		log.Printf("[TRACE] error finding process %d: %s", s.Pid, err)
+		return false, err
+	}
+	if p == nil {
+		log.Printf("[TRACE] process %d not found", s.Pid)
+		return false, nil
+	}
+
+	// verify this is the correct process (and not a reused pid for a different process)
+	exe, _ := p.Exe()
+	cmd, _ := p.Cmdline()
+	// verify this is a plugin manager process by comparing the executable name and the command line
+	return exe == s.Executable && strings.Contains(cmd, "plugin_manager"), nil
 }
 
 // kill the plugin manager process and delete the state
-func (s *State) kill() error {
+func (s *State) kill() (err error) {
+	log.Printf("[TRACE] kill plugin manager, pid: %d", s.Pid)
+
+	defer func() {
+		// no error means the process is no longer running - delete the state file
+		if err == nil {
+			log.Printf("[TRACE] plugin manager process %d killed, deleting state file", s.Pid)
+			s.delete()
+		}
+	}()
 	// the state file contains the Pid of the daemon process - find and kill the process
 	process, err := utils.FindProcess(s.Pid)
 	if err != nil {
 		return err
 	}
+
 	if process == nil {
 		log.Printf("[TRACE] tried to kill plugin_manager, but couldn't find process (%d)", s.Pid)
 		return nil
@@ -112,8 +141,7 @@ func (s *State) kill() error {
 		log.Println("[TRACE] tried to kill plugin_manager, but couldn't send signal to process", err)
 		return err
 	}
-	// delete the state file as we have shutdown the plugin manager
-	s.delete()
+
 	return nil
 }
 
