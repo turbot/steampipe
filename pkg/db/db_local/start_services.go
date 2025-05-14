@@ -90,7 +90,7 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 	// if we were not successful, stop services again
 	defer func() {
 		if res.Status == ServiceStarted && res.Error != nil {
-			StopServices(ctx, false, invoker)
+			_, _ = StopServices(ctx, false, invoker)
 			res.Status = ServiceFailedToStart
 		}
 	}()
