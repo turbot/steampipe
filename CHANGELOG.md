@@ -1,3 +1,7 @@
+## v1.1.3 [2025-05-15]
+_Bug fixes_
+- Fix intermittent `Reattachment process not found` error when starting steampipe service. ([#4507](https://github.com/turbot/steampipe/issues/4507))
+
 ## v1.1.2 [2025-05-06]
 _Bug fixes_
 - Fix issue where system-ingestible output format(csv) was humanised(comma separated) leading to a breaking change in query outputs. ([#4525](https://github.com/turbot/steampipe/issues/4525))
