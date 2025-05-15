@@ -25,6 +25,7 @@ func NewPluginManagerClient(pluginManagerState *State) (*PluginManagerClient, er
 	}
 	err := res.attachToPluginManager()
 	if err != nil {
+		log.Printf("[TRACE] failed to attach to plugin manager: %s", err.Error())
 		return nil, err
 	}
 
