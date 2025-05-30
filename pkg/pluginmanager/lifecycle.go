@@ -95,9 +95,15 @@ func Stop() error {
 	// try to load the plugin manager state
 	state, err := LoadState()
 	if err != nil {
+		log.Println("[WARN] pluginmanager.Stop failed to load plugin manager state:", err)
 		return err
 	}
 	if state == nil || !state.Running {
+		if state != nil {
+			log.Printf("[DEBUG] pluginmanager.Stop called but state.Running is false, pid %d", state.Pid)
+		} else {
+			log.Println("[DEBUG] pluginmanager.Stop called but no plugin manager state found")
+		}
 		// nothing to do
 		return nil
 	}
