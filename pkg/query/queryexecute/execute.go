@@ -185,12 +185,13 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 		}
 
 		// for other output formats, we call the querydisplay code in pipe-fittings
-		rowCount, _ := querydisplay.ShowOutput(ctx, r)
+		rowCount, rowErrs := querydisplay.ShowOutput(ctx, r)
 		// show timing
 		display.DisplayTiming(r, rowCount)
 
 		// signal to the resultStreamer that we are done with this result
 		resultsStreamer.AllResultsRead()
+		rowErrors = rowErrs
 	}
 	return nil, rowErrors
 }
