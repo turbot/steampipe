@@ -103,7 +103,10 @@ func Execute() int {
 
 	ctx := createRootContext()
 
-	rootCmd.ExecuteContext(ctx)
+	err := rootCmd.ExecuteContext(ctx)
+	if err != nil {
+		exitCode = 1
+	}
 	return exitCode
 }
 

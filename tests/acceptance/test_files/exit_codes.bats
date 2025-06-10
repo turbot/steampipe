@@ -15,6 +15,13 @@ load "$LIB_BATS_SUPPORT/load.bash"
   [ $status -eq 0 ]
 }
 
+@test "steampipe nonexistant pass with 1 exit code" {
+  # this command should exit one since nonexistant does not exist 
+  run steampipe nonexistant
+  echo $status
+  [ $status -eq 1 ]
+}
+
 function teardown_file() {
   # list running processes
   ps -ef | grep steampipe
