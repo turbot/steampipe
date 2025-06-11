@@ -110,6 +110,7 @@ func (s *State) verifyRunning() (bool, error) {
 	// verify this is the correct process (and not a reused pid for a different process)
 	exe, _ := p.Exe()
 	cmd, _ := p.Cmdline()
+	log.Printf("[TRACE] found process %d, checking if it is the plugin manager, exe: %s, cmd: %s, expected exe: %s", s.Pid, exe, cmd, s.Executable)
 	// verify this is a plugin manager process by comparing the executable name and the command line
 	return exe == s.Executable && strings.Contains(cmd, "plugin-manager"), nil
 }
