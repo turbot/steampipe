@@ -1,6 +1,6 @@
 ## v1.2.0 [2025-06-11]
 _Breaking changes_
-- Increased minimum required `glibc` version to `2.34` for the FDW due to upgrading the Linux build environment from Ubuntu 20.04 to Ubuntu 22.04 GitHub runners. As a result, Steampipe no longer supports older Linux distributions such as Ubuntu 20.04 and Amazon Linux 2.
+- Increased the minimum required `glibc` version to `2.34` for the FDW, due to due to the upgrade of the Linux build environment from Ubuntu 20.04 to Ubuntu 22.04 GitHub runners. As a result, Steampipe no longer supports older Linux distributions such as Ubuntu 20.04 and Amazon Linux 2.
 
 _Bug fixes_
 - Fix issue where the FDW did not correctly provide planning cost information for key-columns with an `any-of` requirement. This led the Postgres planner to choose query plans that do not include filters on those columns, even when filters were present in the query. ([#558](https://github.com/turbot/steampipe-postgres-fdw/issues/558))
