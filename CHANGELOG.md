@@ -1,4 +1,4 @@
-## v1.2.0 [2025-06-11]
+## v2.0.0 [2025-06-11]
 _Breaking changes_
 - Increased the minimum required `glibc` version to `2.34` for the FDW, due to the upgrade of the Linux build environment from Ubuntu 20.04 to Ubuntu 22.04 GitHub runners. As a result, Steampipe no longer supports older Linux distributions such as Ubuntu 20.04 and Amazon Linux 2.
 
