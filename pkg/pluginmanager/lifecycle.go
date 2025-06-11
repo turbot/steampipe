@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -45,9 +46,20 @@ func StartNewInstance(steampipeExecutablePath string) (*State, error) {
 // when the plugin mananager is first started by steampipe, we derive the exe path from the running process and
 // store it in the plugin manager state file - then if the fdw needs to start the plugin manager it knows how to
 func start(steampipeExecutablePath string) (*State, error) {
+	// first resolve the steampipe executable path to be the actual exe path
+	// - so that we DO NOT store a symlink in the plugin manager state
+	// (If steampipe is started via a symlink, if we do not resolve the symlink, the state file will contain the symlink
+	// which means pluginmanager.State.verifyRunning will return a false negative, i.e. it will think the plugin
+	// manager is not running, as the exe stored in the state file does not match the actual running process)
+	resolvedExecutablePath, err := filepath.EvalSymlinks(steampipeExecutablePath)
+	if err != nil {
+		log.Printf("[WARN] could not resolve symlink for %s: %s", steampipeExecutablePath, err)
+		return nil, err
+	}
+
 	// note: we assume the install dir has been assigned to file_paths.app_specific.InstallDir
 	// - this is done both by the FDW and Steampipe
-	pluginManagerCmd := exec.Command(steampipeExecutablePath,
+	pluginManagerCmd := exec.Command(resolvedExecutablePath,
 		"plugin-manager",
 		"--"+constants.ArgInstallDir, app_specific.InstallDir)
 	// set attributes on the command to ensure the process is not shutdown when its parent terminates
@@ -77,7 +89,7 @@ func start(steampipeExecutablePath string) (*State, error) {
 	}
 
 	// create a plugin manager state.
-	state := NewState(steampipeExecutablePath, client.ReattachConfig())
+	state := NewState(resolvedExecutablePath, client.ReattachConfig())
 
 	log.Printf("[TRACE] start: started plugin manager, pid %d", state.Pid)
 
