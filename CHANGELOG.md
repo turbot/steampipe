@@ -1,6 +1,6 @@
 ## v2.0.1 [2025-06-11]
 _Bug fixes_
-- Fix "plugin manager is not running" error when starting steampipe via a symlink. Fixes  ([#4573](https://github.com/turbot/steampipe/issues/4573))
+- Fix `plugin manager is not running` error when starting steampipe via a symlink. ([#4573](https://github.com/turbot/steampipe/issues/4573))
 
 ## v2.0.0 [2025-06-11]
 _Breaking changes_
