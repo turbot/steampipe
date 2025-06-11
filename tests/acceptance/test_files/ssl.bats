@@ -81,7 +81,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
   
   run openssl req -key $STEAMPIPE_INSTALL_DIR/db/14.17.0/data/server.key -passin pass:steampipe -new -x509 -out $STEAMPIPE_INSTALL_DIR/db/14.17.0/data/server.crt -subj "/CN=steampipe.io"
 
-  steampipe service start --database-ssl-password steampipe
+  run steampipe service start --database-password steampipe
+  assert_success
 }
 
 function teardown() {
