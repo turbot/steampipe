@@ -99,7 +99,7 @@ func (s *State) verifyRunning() (bool, error) {
 	log.Printf("[TRACE] verify plugin manager running, pid: %d", s.Pid)
 	p, err := utils.FindProcess(s.Pid)
 	if err != nil {
-		log.Printf("[TRACE] error finding process %d: %s", s.Pid, err)
+		log.Printf("[WARN] error finding process %d: %s", s.Pid, err)
 		return false, err
 	}
 	if p == nil {
@@ -138,7 +138,7 @@ func (s *State) kill() (err error) {
 	// kill the plugin manager process by sending a SIGTERM (to give it a chance to clean up its children)
 	err = process.SendSignal(syscall.SIGTERM)
 	if err != nil {
-		log.Println("[TRACE] tried to kill plugin_manager, but couldn't send signal to process", err)
+		log.Println("[WARN] tried to kill plugin_manager, but couldn't send signal to process", err)
 		return err
 	}
 
