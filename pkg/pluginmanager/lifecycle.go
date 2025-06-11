@@ -164,6 +164,7 @@ func getPluginManager(startIfNeeded bool) (pluginshared.PluginManager, error) {
 		log.Printf("[TRACE] calling StartNewInstance()")
 		// start the plugin manager
 		if _, err := start(state.Executable); err != nil {
+			log.Printf("[TRACE] >> failed to start plugin manager: %s", err.Error())
 			return nil, err
 		}
 		// recurse in, setting startIfNeeded to false to avoid further recursion on failure
