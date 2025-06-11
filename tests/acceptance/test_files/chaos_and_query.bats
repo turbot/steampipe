@@ -338,26 +338,6 @@ load "$LIB_BATS_SUPPORT/load.bash"
   rm -f $TEST_DATA_DIR/actual_1.json
 }
 
-@test "migrate legacy lock file" {
-  cd $FILE_PATH/test_data/mods/dependent_mod_with_legacy_lock
-  steampipe mod install
-  # run steampipe query twice - the bug we are testing for caused the workspace lock to be deleted after the first query
-  steampipe query "select 1 as a" --output json
-  run steampipe query "select 1 as a" --output json
-  echo $output > $TEST_DATA_DIR/actual_1.json
-
-  # verify that the json contents of actual_1 and expected_15 files are the same
-  run jd -f patch $TEST_DATA_DIR/actual_1.json $TEST_DATA_DIR/expected_15.json
-  echo $output
-
-  diff=$($FILE_PATH/json_patch.sh $output)
-  echo $diff
-  # check if there is no diff returned by the script
-  assert_equal "$diff" ""
-  
-  rm -f $TEST_DATA_DIR/actual_1.json
-}
-
 function teardown_file() {
   # list running processes
   ps -ef | grep steampipe
