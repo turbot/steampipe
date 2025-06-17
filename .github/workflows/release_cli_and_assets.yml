@@ -275,7 +275,7 @@ jobs:
           path: ./artifacts
   
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+        uses: docker/setup-buildx-action@18ce135bb5112fa8ce4ed6c17ab05699d7f3a5e0 # v3.11.0
   
       - name: Pull Ubuntu latest Image
         run: docker pull ubuntu:latest
@@ -316,7 +316,7 @@ jobs:
           path: ./artifacts
   
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+        uses: docker/setup-buildx-action@18ce135bb5112fa8ce4ed6c17ab05699d7f3a5e0 # v3.11.0
   
       - name: Pull CentOS Stream 9 image
         run: docker pull quay.io/centos/centos:stream9
@@ -357,7 +357,7 @@ jobs:
           path: ./artifacts
   
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+        uses: docker/setup-buildx-action@18ce135bb5112fa8ce4ed6c17ab05699d7f3a5e0 # v3.11.0
   
       - name: Pull Amazon Linux 2023 Image
         run: docker pull amazonlinux:2023
