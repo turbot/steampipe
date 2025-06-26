@@ -651,13 +651,6 @@ func (c *InteractiveClient) getTableAndConnectionSuggestions(word string) []prom
 	return t
 }
 
-func (c *InteractiveClient) newSuggestion(itemType string, description string, name string) prompt.Suggest {
-	if description != "" {
-		itemType += fmt.Sprintf(": %s", description)
-	}
-	return prompt.Suggest{Text: name, Output: name, Description: itemType}
-}
-
 func (c *InteractiveClient) startCancelHandler() chan bool {
 	sigIntChannel := make(chan os.Signal, 1)
 	quitChannel := make(chan bool, 1)

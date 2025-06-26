@@ -118,9 +118,6 @@ func (c *SteampipeConfig) SetOptions(opts poptions.Options) (errorsAndWarnings e
 	return errorsAndWarnings
 }
 
-var defaultCacheEnabled = true
-var defaultTTL = 300
-
 func (c *SteampipeConfig) String() string {
 	var connectionStrings []string
 	for _, c := range c.Connections {

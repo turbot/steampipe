@@ -242,13 +242,6 @@ func startServiceAndRefreshConnections(ctx context.Context, listenAddresses []st
 	return startResult
 }
 
-func tryToStopServices(ctx context.Context) {
-	// stop db service
-	if _, err := db_local.StopServices(ctx, false, constants.InvokerService); err != nil {
-		error_helpers.ShowError(ctx, err)
-	}
-}
-
 func runServiceInForeground(ctx context.Context) {
 	fmt.Println("Hit Ctrl+C to stop the service")
 

@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/constants"
@@ -208,43 +206,7 @@ func DeleteConnectionStateFile() {
 	os.Remove(filepaths.ConnectionStatePath())
 }
 
-func isColumnNotFoundError(err error) (string, bool) {
-	if err == nil {
-		return "", false
-	}
-	pgErr, ok := err.(*pgconn.PgError)
-	if !ok || pgErr.Code != "42703" {
-		return "", false
-	}
-
-	// at this point, we know that it's a PgError with code 42703 (column not found)
-	// let's try to find out the name of the column
-
-	// try to find out the name from <tablename>.<columnname>
-	r := regexp.MustCompile(`^column "(.*)\.(.*)" does not exist$`)
-	captureGroups := r.FindStringSubmatch(pgErr.Message)
-	if len(captureGroups) == 3 {
-		return captureGroups[2], true
-	}
-
-	// maybe there is no table name
-	// try to find out the name from <columnname>
-	r = regexp.MustCompile(`^column "(.*)" does not exist$`)
-	captureGroups = r.FindStringSubmatch(pgErr.Message)
-	if len(captureGroups) == 2 {
-		return captureGroups[1], true
-	}
-	return "", true
-}
-
 type loadConnectionStateConfig struct {
-	ignoredColumns []string
 }
 
 type loadConnectionStateOption func(l *loadConnectionStateConfig)
-
-func ignoreColumns(cols ...string) loadConnectionStateOption {
-	return func(l *loadConnectionStateConfig) {
-		l.ignoredColumns = cols
-	}
-}
