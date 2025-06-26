@@ -263,6 +263,7 @@ load "$LIB_BATS_SUPPORT/load.bash"
 }
 
 @test "verify system-ingestible format(json) values are unchanged" {
+  skip "TODO: reenable this test after fixing the issue with FDW acceptance tests - https://github.com/turbot/steampipe-postgres-fdw/issues/571"
   run steampipe query --output json "select 100000 as id"
   id=$(echo $output | jq '.rows.[0].id')
   assert_equal "$id" "100000"
