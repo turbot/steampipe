@@ -14,7 +14,6 @@ import (
 	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/version"
 )
 
 var exitCode int
@@ -22,7 +21,7 @@ var exitCode int
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:     "steampipe [--version] [--help] COMMAND [args]",
-	Version: version.SteampipeVersion.String(),
+	Version: viper.GetString("main.version"),
 	Short:   "Query cloud resources using SQL",
 	Long: `Steampipe: select * from cloud;
 
@@ -53,7 +52,7 @@ func InitCmd() {
 
 	defaultInstallDir, err := filehelpers.Tildefy(app_specific.DefaultInstallDir)
 	error_helpers.FailOnError(err)
-	rootCmd.SetVersionTemplate(fmt.Sprintf("Steampipe v%s\n", version.SteampipeVersion.String()))
+	rootCmd.SetVersionTemplate(fmt.Sprintf("Steampipe v%s\n", viper.GetString("main.version")))
 
 	// global flags
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceProfile, "default", "The workspace profile to use") // workspace profile profile is a global flag since install-dir(global) can be set through the workspace profile

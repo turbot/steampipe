@@ -3,7 +3,8 @@ package constants
 import (
 	"fmt"
 
-	"github.com/turbot/steampipe/pkg/version"
+	"github.com/Masterminds/semver/v3"
+	"github.com/spf13/viper"
 )
 
 // DashboardListenAddresses is an arrays is listen addresses which Steampipe accepts
@@ -15,5 +16,5 @@ const (
 )
 
 var (
-	DashboardAssetsImageRef = fmt.Sprintf(DashboardAssetsImageRefFormat, version.VersionString)
+	DashboardAssetsImageRef = fmt.Sprintf(DashboardAssetsImageRefFormat, semver.MustParse(viper.GetString("main.version")))
 )

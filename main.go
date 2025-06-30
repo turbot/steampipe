@@ -9,7 +9,8 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/hashicorp/go-version"
+	"github.com/spf13/viper"
+	go_version "github.com/hashicorp/go-version"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/v2/utils"
@@ -17,9 +18,18 @@ import (
 	"github.com/turbot/steampipe/pkg/cmdconfig"
 	"github.com/turbot/steampipe/pkg/constants"
 	"github.com/turbot/steampipe/pkg/error_helpers"
+	localconstants "github.com/turbot/steampipe/pkg/constants"
 )
 
 var exitCode int = constants.ExitCodeSuccessful
+
+var (
+	// these variables will be set by GoReleaser
+	version = localconstants.DefaultVersion
+	commit  = localconstants.DefaultCommit
+	date    = localconstants.DefaultDate
+	builtBy = localconstants.DefaultBuiltBy
+)
 
 func main() {
 	ctx := context.Background()
@@ -98,13 +108,13 @@ func checkWsl1(ctx context.Context) {
 
 		// store the system kernel version
 		sys_kernel, _, _ := strings.Cut(string(output), "-")
-		sys_kernel_ver, err := version.NewVersion(sys_kernel)
+		sys_kernel_ver, err := go_version.NewVersion(sys_kernel)
 		if err != nil {
 			error_helpers.ShowErrorWithMessage(ctx, err, "failed to check system kernel version")
 			return
 		}
 		// if the kernel version >= 4.19, it's WSL Version 2.
-		kernel_ver, err := version.NewVersion("4.19")
+		kernel_ver, err := go_version.NewVersion("4.19")
 		if err != nil {
 			error_helpers.ShowErrorWithMessage(ctx, err, "checking system kernel version")
 			return
@@ -149,4 +159,11 @@ func checkOSXVersion(ctx context.Context) {
 		error_helpers.ShowError(ctx, fmt.Errorf("Steampipe requires MacOS 10.15 (Catalina) and above, please upgrade and try again."))
 		os.Exit(constants.ExitCodeInvalidExecutionEnvironment)
 	}
+}
+
+func setVersionProperties() {
+	viper.SetDefault(constants.ConfigKeyVersion, version)
+	viper.SetDefault(constants.ConfigKeyCommit, commit)
+	viper.SetDefault(constants.ConfigKeyDate, date)
+	viper.SetDefault(constants.ConfigKeyBuiltBy, builtBy)
 }

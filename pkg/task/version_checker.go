@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe/pkg/version"
 )
 
 // the current version of the Steampipe CLI application
-var currentVersion = version.SteampipeVersion.String()
+var currentVersion = viper.GetString("main.version")
 
 type CLIVersionCheckResponse struct {
 	NewVersion   string    `json:"latest_version,omitempty"` // `json:"current_version"`
