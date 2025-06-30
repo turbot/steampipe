@@ -55,9 +55,10 @@ snapshot:
 
 checksum:
   name_template: 'checksums.txt'
+
 release:
-  # Visit your project's GitHub Releases page to publish this release.
-  draft: true
+  prerelease: auto
+
 changelog:
   disable: true
 
