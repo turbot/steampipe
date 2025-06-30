@@ -2,6 +2,7 @@ name: Steampipe CLI Release
 
 on:
   workflow_dispatch:
+    inputs:
       environment:
         type: choice
         description: "Select Release Type"
