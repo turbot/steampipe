@@ -122,6 +122,7 @@ jobs:
 
   create_pr_in_homebrew:
     name: Create PR in homebrew-tap
+    if: ${{ github.event.inputs.environment == 'Final (RC and final release)' }}
     needs: [ensure_branch_in_homebrew, build_and_release_cli]
     runs-on: ubuntu-latest
     env:
@@ -167,6 +168,7 @@ jobs:
 
   update_pr_for_versioning:
     name: Update PR
+    if: ${{ github.event.inputs.environment == 'Final (RC and final release)' }}
     needs: [create_pr_in_homebrew]
     runs-on: ubuntu-latest
     env:
@@ -203,6 +205,7 @@ jobs:
 
   update_homebrew_tap:
     name: Update homebrew-tap formula
+    if: ${{ github.event.inputs.environment == 'Final (RC and final release)' }}
     needs: update_pr_for_versioning
     runs-on: ubuntu-latest
     steps:
