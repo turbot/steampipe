@@ -1,4 +1,4 @@
-name: Steampipe Acceptance Tests
+name: "11 - Test: Acceptance"
 on:
   pull_request:
 
