@@ -1,4 +1,4 @@
-name: "01 - Steampipe: Release"
+name: "Steampipe CLI Release"
 
 on:
   workflow_dispatch:
