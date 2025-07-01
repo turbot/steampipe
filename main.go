@@ -46,6 +46,9 @@ func main() {
 		os.Exit(exitCode)
 	}()
 
+	// add the auto-populated version properties into viper
+	setVersionProperties()
+
 	// ensure steampipe is not being run as root
 	checkRoot(ctx)
 
