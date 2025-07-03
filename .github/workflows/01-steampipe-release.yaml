@@ -161,7 +161,7 @@ jobs:
       - name: Create pull request
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          gh pr create --base main --head $VERSION --title "$Version" --body "Update formula"
+          gh pr create --base main --head $VERSION --title "Steampipe $Version" --body "Update formula"
 
   update_pr_for_versioning:
     name: Update PR
@@ -227,7 +227,7 @@ jobs:
 
       - name: Fail if PR title does not match with version
         run: |
-          if ${{ (steps.pr_title.outputs.PR_TITLE == env.VERSION) }} == 'true';then
+          if [[ "${{ steps.pr_title.outputs.PR_TITLE }}" == "Steampipe ${{ env.VERSION }}" ]]; then
             echo "Correct version"
           else
             echo "Incorrect version"
