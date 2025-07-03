@@ -17,6 +17,11 @@ builds:
     id: "steampipe"
     binary:
       'steampipe'
+    ldflags:
+      # Go Releaser analyzes your Git repository and identifies the most recent Git tag (typically the highest version number) as the version for your release.
+      # This is how it determines the value of {{.Version}}.
+      - -s -w -X main.version={{.Version}} -X main.date={{.Date}} -X main.commit={{.Commit}} -X main.builtBy=goreleaser
+
 archives:
   - files:
     - none*
@@ -55,9 +60,10 @@ snapshot:
 
 checksum:
   name_template: 'checksums.txt'
+
 release:
-  # Visit your project's GitHub Releases page to publish this release.
-  draft: true
+  prerelease: auto
+
 changelog:
   disable: true
 

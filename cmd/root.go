@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/mattn/go-isatty"
@@ -14,16 +13,14 @@ import (
 	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/pkg/error_helpers"
 	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/version"
 )
 
 var exitCode int
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:     "steampipe [--version] [--help] COMMAND [args]",
-	Version: version.SteampipeVersion.String(),
-	Short:   "Query cloud resources using SQL",
+	Use:   "steampipe [--version] [--help] COMMAND [args]",
+	Short: "Query cloud resources using SQL",
 	Long: `Steampipe: select * from cloud;
 
 Dynamically query APIs, code and more with SQL.
@@ -53,7 +50,10 @@ func InitCmd() {
 
 	defaultInstallDir, err := filehelpers.Tildefy(app_specific.DefaultInstallDir)
 	error_helpers.FailOnError(err)
-	rootCmd.SetVersionTemplate(fmt.Sprintf("Steampipe v%s\n", version.SteampipeVersion.String()))
+
+	// Set the version after viper has been initialized
+	rootCmd.Version = viper.GetString("main.version")
+	rootCmd.SetVersionTemplate("Steampipe v{{.Version}}\n")
 
 	// global flags
 	rootCmd.PersistentFlags().String(constants.ArgWorkspaceProfile, "default", "The workspace profile to use") // workspace profile profile is a global flag since install-dir(global) can be set through the workspace profile
@@ -70,7 +70,6 @@ func InitCmd() {
 	// powershell yet - and there's no way to disable powershell in the default generator
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.Flags().BoolP(constants.ArgHelp, "h", false, "Help for steampipe")
-	rootCmd.Flags().BoolP(constants.ArgVersion, "v", false, "Version for steampipe")
 
 	hideRootFlags(constants.ArgSchemaComments)
 

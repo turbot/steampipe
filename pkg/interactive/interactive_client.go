@@ -33,7 +33,6 @@ import (
 	"github.com/turbot/steampipe/pkg/query/queryhistory"
 	"github.com/turbot/steampipe/pkg/statushooks"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/version"
 )
 
 type AfterPromptCloseAction int
@@ -131,7 +130,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 
 	statushooks.Message(
 		ctx,
-		fmt.Sprintf("Welcome to Steampipe v%s", version.SteampipeVersion.String()),
+		fmt.Sprintf("Welcome to Steampipe v%s", viper.GetString("main.version")),
 		fmt.Sprintf("For more information, type %s", pconstants.Bold(".help")),
 	)
 

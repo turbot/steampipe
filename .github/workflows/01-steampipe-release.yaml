@@ -1,0 +1,249 @@
+name: "01 - Steampipe: Release"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: "Select Release Type"
+        options:
+          # to change the values in this option, we also need to update the condition test below in at least 3 location. Search for github.event.inputs.environment
+          - Development (alpha)
+          - Development (beta)
+          - Final (RC and final release)
+        required: true
+      version:
+        description: "Version (without 'v')"
+        required: true
+        default: 0.2.\invalid
+      confirmDevelop:
+        description: Confirm running on develop branch
+        required: true
+        type: boolean
+
+env:
+  # Version number from user input, used throughout the workflow for tagging, branching, and release operations
+  VERSION: ${{ github.event.inputs.version }}
+  # GitHub personal access token for authenticated API operations like creating releases, managing PRs, and repository access
+  GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+  # PostgreSQL connection string used in acceptance tests (tests/acceptance/test_files/cloud.bats)
+  SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
+  # Authentication token for Steampipe Cloud services used in acceptance tests (tests/acceptance/test_files/cloud.bats and snapshot.bats)
+  SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
+  # Disable update checks during CI runs to avoid unnecessary network calls and delays
+  STEAMPIPE_UPDATE_CHECK: false
+
+jobs:
+  ensure_branch_in_homebrew:
+    name: Ensure branch exists in homebrew-tap
+    runs-on: ubuntu-latest
+    steps:
+      - name: Calculate version
+        id: calculate_version
+        run: |
+          echo "VERSION=v${{ github.event.inputs.version }}" >> $GITHUB_ENV
+
+      - name: Parse semver string
+        id: semver_parser
+        uses: booxmedialtd/ws-action-parse-semver@7784200024d6b3fc01253e617ec0168daf603de3 # v1.4.7
+        with:
+          input_string: ${{ github.event.inputs.version }}
+
+      - name: Checkout
+        if: steps.semver_parser.outputs.prerelease == ''
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: main
+
+      - name: Delete base branch if exists
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          git fetch --all
+          git push origin --delete bump-brew
+          git push origin --delete $VERSION
+        continue-on-error: true
+
+      - name: Create base branch
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          git checkout -b bump-brew
+          git push --set-upstream origin bump-brew
+
+  build_and_release_cli:
+    name: Release CLI
+    needs: [ensure_branch_in_homebrew]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: steampipe
+          ref: ${{ github.event.ref }}
+
+      - name: Checkout Pipe Fittings Components repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: turbot/pipe-fittings
+          path: pipe-fittings
+          ref: v1.6.x
+
+      - name: Calculate version
+        id: calculate_version
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "Development (alpha)" ]; then
+            echo "VERSION=v${{ github.event.inputs.version }}-alpha.$(date +'%Y%m%d%H%M')" >> $GITHUB_ENV
+          elif [ "${{ github.event.inputs.environment }}" = "Development (beta)" ]; then
+            echo "VERSION=v${{ github.event.inputs.version }}-beta.$(date +'%Y%m%d%H%M')" >> $GITHUB_ENV
+          else
+            echo "VERSION=v${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          fi
+
+      - name: Tag Release
+        run: |
+          cd steampipe
+          git config user.name "Steampipe GitHub Actions Bot"
+          git config user.email noreply@github.com
+          git tag $VERSION
+          git push origin $VERSION
+
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: 1.23
+
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
+        with:
+          install-only: true
+
+      - name: Run GoReleaser
+        run: |
+          cd steampipe
+          goreleaser release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+
+  create_pr_in_homebrew:
+    name: Create PR in homebrew-tap
+    if: ${{ github.event.inputs.environment == 'Final (RC and final release)' }}
+    needs: [ensure_branch_in_homebrew, build_and_release_cli]
+    runs-on: ubuntu-latest
+    env:
+      Version: ${{ github.event.inputs.version }}
+    steps:
+      - name: Calculate version
+        id: calculate_version
+        run: |
+          echo "VERSION=v${{ github.event.inputs.version }}" >> $GITHUB_ENV
+
+      - name: Parse semver string
+        id: semver_parser
+        uses: booxmedialtd/ws-action-parse-semver@7784200024d6b3fc01253e617ec0168daf603de3 # v1.4.7
+        with:
+          input_string: ${{ github.event.inputs.version }}
+
+      - name: Checkout
+        if: steps.semver_parser.outputs.prerelease == ''
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: main
+
+      - name: Create a new branch off the base branch
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          git fetch --all
+          git checkout bump-brew
+          git checkout -b $VERSION
+          git push --set-upstream origin $VERSION
+
+      - name: Close pull request if already exists
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          gh pr close $VERSION
+        continue-on-error: true
+
+      - name: Create pull request
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          gh pr create --base main --head $VERSION --title "Steampipe $Version" --body "Update formula"
+
+  update_pr_for_versioning:
+    name: Update PR
+    if: ${{ github.event.inputs.environment == 'Final (RC and final release)' }}
+    needs: [create_pr_in_homebrew]
+    runs-on: ubuntu-latest
+    env:
+      Version: ${{ github.event.inputs.version }}
+    steps:
+      - name: Calculate version
+        id: calculate_version
+        run: |
+          echo "VERSION=v${{ github.event.inputs.version }}" >> $GITHUB_ENV
+
+      - name: Parse semver string
+        id: semver_parser
+        uses: booxmedialtd/ws-action-parse-semver@7784200024d6b3fc01253e617ec0168daf603de3 # v1.4.7
+        with:
+          input_string: ${{ github.event.inputs.version }}
+
+      - name: Checkout
+        if: steps.semver_parser.outputs.prerelease == ''
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: ${{ github.event.inputs.version }}
+
+      - name: Update live version
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          scripts/formula_versioning.sh
+          git config --global user.email "puskar@turbot.com"
+          git config --global user.name "Puskar Basu"
+          git add .
+          git commit -m "Versioning brew formulas"
+          git push origin $VERSION
+
+  update_homebrew_tap:
+    name: Update homebrew-tap formula
+    if: ${{ github.event.inputs.environment == 'Final (RC and final release)' }}
+    needs: update_pr_for_versioning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: turbot/homebrew-tap
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          ref: main
+
+      - name: Get pull request title
+        id: pr_title
+        run: >-
+          echo "PR_TITLE=$(
+            gh pr view $VERSION --json title | jq .title | tr -d '"'
+          )" >> $GITHUB_OUTPUT
+
+      - name: Output
+        run: |
+          echo ${{ steps.pr_title.outputs.PR_TITLE }}
+          echo ${{ env.VERSION }}
+
+      - name: Fail if PR title does not match with version
+        run: |
+          if [[ "${{ steps.pr_title.outputs.PR_TITLE }}" == "Steampipe ${{ env.VERSION }}" ]]; then
+            echo "Correct version"
+          else
+            echo "Incorrect version"
+            exit 1
+          fi
+
+      - name: Merge pull request to update brew formula
+        run: |
+          git fetch --all
+          gh pr merge $VERSION --squash --delete-branch
+          git push origin --delete bump-brew
