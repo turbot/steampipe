@@ -22,8 +22,16 @@ on:
         type: boolean
 
 env:
+  # Version number from user input, used throughout the workflow for tagging, branching, and release operations
   VERSION: ${{ github.event.inputs.version }}
+  # GitHub personal access token for authenticated API operations like creating releases, managing PRs, and repository access
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+  # PostgreSQL connection string used in acceptance tests (tests/acceptance/test_files/cloud.bats)
+  SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
+  # Authentication token for Steampipe Cloud services used in acceptance tests (tests/acceptance/test_files/cloud.bats and snapshot.bats)
+  SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
+  # Disable update checks during CI runs to avoid unnecessary network calls and delays
+  STEAMPIPE_UPDATE_CHECK: false
 
 jobs:
   ensure_branch_in_homebrew:
