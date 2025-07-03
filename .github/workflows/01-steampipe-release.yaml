@@ -24,8 +24,6 @@ on:
 env:
   VERSION: ${{ github.event.inputs.version }}
   GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-  SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
-  SPIPETOOLS_TOKEN: ${{ secrets.SPIPETOOLS_TOKEN }}
 
 jobs:
   ensure_branch_in_homebrew:
@@ -70,55 +68,54 @@ jobs:
     needs: [ensure_branch_in_homebrew]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: steampipe
+          ref: ${{ github.event.ref }}
 
-    - name: Checkout
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      with:
-        path: steampipe
-        ref: ${{ github.event.ref }}
+      - name: Checkout Pipe Fittings Components repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: turbot/pipe-fittings
+          path: pipe-fittings
+          ref: v1.6.x
 
-    - name: Checkout Pipe Fittings Components repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      with:
-        repository: turbot/pipe-fittings
-        path: pipe-fittings
-        ref: v1.6.x
+      - name: Calculate version
+        id: calculate_version
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "Development (alpha)" ]; then
+            echo "VERSION=v${{ github.event.inputs.version }}-alpha.$(date +'%Y%m%d%H%M')" >> $GITHUB_ENV
+          elif [ "${{ github.event.inputs.environment }}" = "Development (beta)" ]; then
+            echo "VERSION=v${{ github.event.inputs.version }}-beta.$(date +'%Y%m%d%H%M')" >> $GITHUB_ENV
+          else
+            echo "VERSION=v${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          fi
 
-    - name: Calculate version
-      id: calculate_version
-      run: |
-        if [ "${{ github.event.inputs.environment }}" = "Development (alpha)" ]; then
-          echo "VERSION=v${{ github.event.inputs.version }}-alpha.$(date +'%Y%m%d%H%M')" >> $GITHUB_ENV
-        elif [ "${{ github.event.inputs.environment }}" = "Development (beta)" ]; then
-          echo "VERSION=v${{ github.event.inputs.version }}-beta.$(date +'%Y%m%d%H%M')" >> $GITHUB_ENV
-        else
-          echo "VERSION=v${{ github.event.inputs.version }}" >> $GITHUB_ENV
-        fi
-
-    - name: Tag Release
-      run: |
-        cd steampipe
-        git config user.name "Powerpipe GitHub Actions Bot"
+      - name: Tag Release
+        run: |
+          cd steampipe
+          git config user.name "Steampipe GitHub Actions Bot"
           git config user.email noreply@github.com
           git tag $VERSION
           git push origin $VERSION
 
-    - name: Set up Go
-      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
-      with:
-        go-version: 1.23
+      - name: Set up Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: 1.23
 
-    - name: Install GoReleaser
-      uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
-      with:
-        install-only: true
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
+        with:
+          install-only: true
 
-    - name: Run GoReleaser
-      run: |
-        cd steampipe
-        goreleaser release --clean
-      env:
-        GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+      - name: Run GoReleaser
+        run: |
+          cd steampipe
+          goreleaser release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
   create_pr_in_homebrew:
     name: Create PR in homebrew-tap
