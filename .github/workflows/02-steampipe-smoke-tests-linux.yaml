@@ -1,0 +1,154 @@
+name: "02 - Steampipe: Smoke Tests (Linux)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to test (with 'v' prefix, e.g., v1.0.0)"
+        required: true
+        type: string
+
+env:
+  # Version from input, used to download the correct release artifacts
+  VERSION: ${{ github.event.inputs.version }}
+  # Disable update checks during smoke tests
+  STEAMPIPE_UPDATE_CHECK: false
+
+jobs:
+  smoke_test_ubuntu_24:
+    name: Smoke test (Ubuntu 24, x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Download Linux Release Artifact
+        run: |
+          mkdir -p ./artifacts
+          gh release download ${{ env.VERSION }} \
+            --pattern "*linux_amd64.tar.gz" \
+            --dir ./artifacts \
+            --repo ${{ github.repository }}
+          # Rename to expected format
+          mv ./artifacts/*linux_amd64.tar.gz ./artifacts/linux.tar.gz
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Pull Ubuntu latest Image
+        run: docker pull ubuntu:latest
+
+      - name: Create and Start Ubuntu latest Container
+        run: |
+          docker run -d --name ubuntu-24-test -v ${{ github.workspace }}/artifacts:/artifacts -v ${{ github.workspace }}/scripts:/scripts ubuntu:latest tail -f /dev/null
+
+      - name: Get runner/container info
+        run: |
+          docker exec ubuntu-24-test /scripts/linux_container_info.sh
+
+      - name: Install dependencies, create user, and assign necessary permissions
+        run: |
+          docker exec ubuntu-24-test /scripts/prepare_ubuntu_container.sh
+
+      - name: Run smoke tests
+        run: |
+          docker exec -u steampipe ubuntu-24-test /scripts/smoke_test.sh
+
+      - name: Stop and Remove Container
+        run: |
+          docker stop ubuntu-24-test
+          docker rm ubuntu-24-test
+
+  smoke_test_centos_9:
+    name: Smoke test (CentOS Stream 9, x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Download Linux Release Artifact
+        run: |
+          mkdir -p ./artifacts
+          gh release download ${{ env.VERSION }} \
+            --pattern "*linux_amd64.tar.gz" \
+            --dir ./artifacts \
+            --repo ${{ github.repository }}
+          # Rename to expected format
+          mv ./artifacts/*linux_amd64.tar.gz ./artifacts/linux.tar.gz
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Pull CentOS Stream 9 image
+        run: docker pull quay.io/centos/centos:stream9
+
+      - name: Create and Start CentOS stream9 Container
+        run: |
+          docker run -d --name centos-stream9-test -v ${{ github.workspace }}/artifacts:/artifacts -v ${{ github.workspace }}/scripts:/scripts quay.io/centos/centos:stream9 tail -f /dev/null
+
+      - name: Get runner/container info
+        run: |
+          docker exec centos-stream9-test /scripts/linux_container_info.sh
+
+      - name: Install dependencies, create user, and assign necessary permissions
+        run: |
+          docker exec centos-stream9-test /scripts/prepare_centos_container.sh
+
+      - name: Run smoke tests
+        run: |
+          docker exec -u steampipe centos-stream9-test /scripts/smoke_test.sh
+
+      - name: Stop and Remove Container
+        run: |
+          docker stop centos-stream9-test
+          docker rm centos-stream9-test
+
+  smoke_test_amazonlinux:
+    name: Smoke test (Amazon Linux 2023, x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Download Linux Release Artifact
+        run: |
+          mkdir -p ./artifacts
+          gh release download ${{ env.VERSION }} \
+            --pattern "*linux_amd64.tar.gz" \
+            --dir ./artifacts \
+            --repo ${{ github.repository }}
+          # Rename to expected format
+          mv ./artifacts/*linux_amd64.tar.gz ./artifacts/linux.tar.gz
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Pull Amazon Linux 2023 Image
+        run: docker pull amazonlinux:2023
+
+      - name: Create and Start Amazon Linux 2023 Container
+        run: |
+          docker run -d --name amazonlinux-2023-test -v ${{ github.workspace }}/artifacts:/artifacts -v ${{ github.workspace }}/scripts:/scripts amazonlinux:2023 tail -f /dev/null
+
+      - name: Get runner/container info
+        run: |
+          docker exec amazonlinux-2023-test /scripts/linux_container_info.sh
+
+      - name: Install dependencies, create user, and assign necessary permissions
+        run: |
+          docker exec amazonlinux-2023-test /scripts/prepare_amazonlinux_container.sh
+
+      - name: Run smoke tests
+        run: |
+          docker exec -u steampipe amazonlinux-2023-test /scripts/smoke_test.sh
+
+      - name: Stop and Remove Container
+        run: |
+          docker stop amazonlinux-2023-test
+          docker rm amazonlinux-2023-test
