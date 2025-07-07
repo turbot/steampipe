@@ -1,4 +1,4 @@
-name: Stale Issues and PRs
+name: "30 - Admin: Stale Issues and PRs"
 on:
   schedule:
     - cron: "0 8 * * *"

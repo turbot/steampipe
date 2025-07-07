@@ -3,20 +3,22 @@ package cmdconfig
 import (
 	"os"
 
+	"github.com/Masterminds/semver/v3"
+	"github.com/spf13/viper"
 	pfilepaths "github.com/turbot/pipe-fittings/v2/filepaths"
 
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	"github.com/turbot/pipe-fittings/v2/error_helpers"
 	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/version"
 )
 
 // SetAppSpecificConstants sets app specific constants defined in pipe-fittings
 func SetAppSpecificConstants() {
 	app_specific.AppName = "steampipe"
 
-	app_specific.AppVersion = version.SteampipeVersion
+	versionString := viper.GetString("main.version")
+	app_specific.AppVersion = semver.MustParse(versionString)
 
 	app_specific.SetAppSpecificEnvVarKeys("STEAMPIPE_")
 	app_specific.ConfigExtension = ".spc"

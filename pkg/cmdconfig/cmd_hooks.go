@@ -38,7 +38,6 @@ import (
 	"github.com/turbot/steampipe/pkg/filepaths"
 	"github.com/turbot/steampipe/pkg/steampipeconfig"
 	"github.com/turbot/steampipe/pkg/task"
-	"github.com/turbot/steampipe/pkg/version"
 )
 
 var waitForTasksChannel chan struct{}
@@ -385,7 +384,7 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 		// we need to do this since all instances will log to a single file and logs will be interleaved
 		log.Printf("[INFO] ********************************************************\n")
 		log.Printf("[INFO] steampipe %s [%s]", cmd.Name(), runtime.ExecutionID)
-		log.Printf("[INFO] Version:   v%s\n", version.VersionString)
+		log.Printf("[INFO] Version:   v%s\n", viper.GetString("main.version"))
 		log.Printf("[INFO] Log level: %s\n", sdklogging.LogLevel())
 		log.Printf("[INFO] Log date:  %s\n", time.Now().Format("2006-01-02"))
 		log.Printf("[INFO] ********************************************************\n")
