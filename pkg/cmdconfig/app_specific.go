@@ -1,6 +1,7 @@
 package cmdconfig
 
 import (
+	"log"
 	"os"
 
 	"github.com/Masterminds/semver/v3"
@@ -17,8 +18,23 @@ import (
 func SetAppSpecificConstants() {
 	app_specific.AppName = "steampipe"
 
+	// set an initial value for the version
+	initialVersion := "0.0.0"
+
 	versionString := viper.GetString("main.version")
-	app_specific.AppVersion = semver.MustParse(versionString)
+	log.Printf("[TRACE] versionString: %s", versionString)
+
+	// check if the version is set in viper, otherwise use the initial value
+	// this is required since when the FDW is initialized SetAppSpecificConstants is called, at that time
+	// the viper config will have not been initialized yet and the version will not be set, which will cause
+	// semver.MustParse to panic
+	if versionString == "" {
+		log.Printf("[TRACE] versionString is empty, using initial version: %s", initialVersion)
+		versionString = initialVersion
+	} else {
+		log.Printf("[TRACE] versionString is set: %s", versionString)
+		app_specific.AppVersion = semver.MustParse(versionString)
+	}
 
 	app_specific.SetAppSpecificEnvVarKeys("STEAMPIPE_")
 	app_specific.ConfigExtension = ".spc"
