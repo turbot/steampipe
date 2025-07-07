@@ -9,6 +9,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
+	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/pipe-fittings/v2/plugin"
 	"github.com/turbot/pipe-fittings/v2/utils"
@@ -61,6 +62,9 @@ func (av *AvailableVersionCache) buildNotification(ctx context.Context) ([]strin
 }
 
 func (av *AvailableVersionCache) cliNotificationMessage() ([]string, error) {
+	// the current version of the Steampipe CLI application
+	currentVer := viper.GetString("main.version")
+
 	info := av.CliCache
 	if info == nil {
 		return nil, nil
@@ -75,7 +79,7 @@ func (av *AvailableVersionCache) cliNotificationMessage() ([]string, error) {
 		return nil, err
 	}
 
-	currentVersion, err := semver.NewVersion(currentVersion)
+	currentVersion, err := semver.NewVersion(currentVer)
 	if err != nil {
 		fmt.Println(fmt.Errorf("there's something wrong with the Current Version"))
 		fmt.Println(err)
