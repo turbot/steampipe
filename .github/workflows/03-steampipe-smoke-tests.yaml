@@ -1,4 +1,4 @@
-name: "02 - Steampipe: Smoke Tests"
+name: "03 - Steampipe: Smoke Tests"
 
 on:
   workflow_dispatch:
