@@ -17,11 +17,11 @@ import (
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	putils "github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/ociinstaller"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
-	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
+	"github.com/turbot/steampipe/v2/pkg/ociinstaller"
+	"github.com/turbot/steampipe/v2/pkg/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/v2/pkg/statushooks"
 )
 
 var ensureMux sync.Mutex

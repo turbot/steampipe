@@ -10,10 +10,10 @@ import (
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/pipe-fittings/v2/error_helpers"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_client"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_client"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	pb "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/proto"
 )
 
 // LocalDbClient wraps over DbClient

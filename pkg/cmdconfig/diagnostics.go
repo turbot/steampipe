@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/spf13/viper"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
 )
 
 // DisplayConfig prints all config set via WorkspaceProfile or HCL options

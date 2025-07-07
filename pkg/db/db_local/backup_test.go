@@ -9,8 +9,8 @@ import (
 
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
 func TestTrimBackups(t *testing.T) {

@@ -16,9 +16,9 @@ import (
 	"github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc"
-	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
+	"github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc"
+	pb "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/shared"
 )
 
 // StartNewInstance loads the plugin manager state, stops any previous instance and instantiates a new plugin manager

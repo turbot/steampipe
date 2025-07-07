@@ -8,8 +8,8 @@ import (
 
 	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/statushooks"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )

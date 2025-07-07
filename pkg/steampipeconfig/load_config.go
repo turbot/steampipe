@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/turbot/steampipe/pkg/parse"
 	"log"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/turbot/steampipe/v2/pkg/parse"
 
 	"github.com/gertd/go-pluralize"
 	"github.com/hashicorp/hcl/v2"
@@ -28,11 +29,11 @@ import (
 	"github.com/turbot/pipe-fittings/v2/versionfile"
 	"github.com/turbot/pipe-fittings/v2/workspace_profile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/options"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
+	"github.com/turbot/steampipe/v2/pkg/options"
 )
 
 var GlobalWorkspaceProfile *workspace_profile.SteampipeWorkspaceProfile

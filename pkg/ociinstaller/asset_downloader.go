@@ -3,7 +3,7 @@ package ociinstaller
 import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/turbot/pipe-fittings/v2/ociinstaller"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
 type assetsDownloader struct {

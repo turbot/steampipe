@@ -13,9 +13,9 @@ import (
 	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/shared"
 	"golang.org/x/exp/maps"
 )
 

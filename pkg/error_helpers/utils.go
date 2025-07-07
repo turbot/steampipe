@@ -13,7 +13,7 @@ import (
 	"github.com/shiena/ansicolor"
 	"github.com/spf13/viper"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
-	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/v2/pkg/statushooks"
 )
 
 func init() {

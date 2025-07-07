@@ -1,8 +1,9 @@
 package pluginmanager_service
 
 import (
-	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
 	"sync"
+
+	pb "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/proto"
 )
 
 // getResponse wraps pb.GetResponse, implementing locking or map access to allow concurrent usage
