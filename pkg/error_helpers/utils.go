@@ -82,7 +82,7 @@ func TransformErrorToSteampipe(err error) error {
 			errString = strings.TrimPrefix(errString, "rpc error: code = Unknown desc =")
 		}
 	}
-	return fmt.Errorf(strings.TrimSpace(errString))
+	return fmt.Errorf("%s", strings.TrimSpace(errString))
 }
 
 // HandleCancelError modifies a context.Canceled error into a readable error that can
@@ -138,7 +138,7 @@ func CombineErrorsWithPrefix(prefix string, errors ...error) error {
 		combinedErrorString[e.Error()] = struct{}{}
 	}
 
-	return fmt.Errorf(strings.Join(maps.Keys(combinedErrorString), "\n\t"))
+	return fmt.Errorf("%s", strings.Join(maps.Keys(combinedErrorString), "\n\t"))
 }
 
 func allErrorsNil(errors ...error) bool {

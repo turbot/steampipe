@@ -286,7 +286,7 @@ func createConnectionPlugin(connection *modconfig.SteampipeConnection, reattach 
 	// we must have a plugin instance
 	if connection.PluginInstance == nil {
 		// unexpected
-		return nil, fmt.Errorf(fmt.Sprintf("connection '%s' has no plugin instance", connection.Name))
+		return nil, fmt.Errorf("%s", fmt.Sprintf("connection '%s' has no plugin instance", connection.Name))
 	}
 
 	log.Printf("[TRACE] createConnectionPlugin for connection %s", connection.Name)

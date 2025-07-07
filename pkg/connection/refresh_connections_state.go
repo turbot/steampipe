@@ -204,7 +204,7 @@ func (s *refreshConnectionState) setFailedConnectionsToError(ctx context.Context
 
 	for _, c := range s.connectionUpdates.FinalConnectionState {
 		if c.State == constants.ConnectionStateError {
-			if err := s.tableUpdater.onConnectionError(ctx, conn.Conn(), c.ConnectionName, fmt.Errorf(c.Error())); err != nil {
+			if err := s.tableUpdater.onConnectionError(ctx, conn.Conn(), c.ConnectionName, fmt.Errorf("%s", c.Error())); err != nil {
 				return sperr.WrapWithMessage(err, "failed to update connection state table")
 			}
 		}

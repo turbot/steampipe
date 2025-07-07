@@ -568,7 +568,7 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	}
 	// if this plugin does not support multiple connections, we no longer support it
 	if !supportedOperations.MultipleConnections {
-		return nil, fmt.Errorf(error_helpers.PluginSdkCompatibilityError)
+		return nil, fmt.Errorf("%s", error_helpers.PluginSdkCompatibilityError)
 	}
 
 	// provide opportunity to avoid setting connection configs if we are shutting down
