@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/turbot/pipe-fittings/v2/constants"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/v2/pkg/cmdconfig"
 )
 
 func generateCompletionScriptsCmd() *cobra.Command {

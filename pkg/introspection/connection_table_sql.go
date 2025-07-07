@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/turbot/pipe-fittings/v2/modconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/steampipeconfig"
 	"golang.org/x/exp/maps"
 )
 

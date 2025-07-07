@@ -2,7 +2,7 @@ package pluginmanager_service
 
 import (
 	"github.com/hashicorp/go-plugin"
-	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
+	pb "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/proto"
 )
 
 type runningPlugin struct {

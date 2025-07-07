@@ -9,10 +9,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/sethvargo/go-retry"
 	typehelpers "github.com/turbot/go-kit/types"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/statushooks"
+	"github.com/turbot/steampipe/v2/pkg/steampipeconfig"
 )
 
 // execute query - if it fails with a "relation not found" error, determine whether this is because the required schema

@@ -10,7 +10,7 @@ import (
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	"github.com/turbot/pipe-fittings/v2/error_helpers"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
 // SetAppSpecificConstants sets app specific constants defined in pipe-fittings

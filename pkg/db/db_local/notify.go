@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
 // SendPostgresNotification send a postgres notification that the schema has chganged

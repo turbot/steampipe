@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/turbot/pipe-fittings/v2/plugin"
-	"github.com/turbot/steampipe/pkg/connection"
-	"github.com/turbot/steampipe/pkg/db/db_local"
+	"github.com/turbot/steampipe/v2/pkg/connection"
+	"github.com/turbot/steampipe/v2/pkg/db/db_local"
 	"golang.org/x/exp/maps"
 )
 

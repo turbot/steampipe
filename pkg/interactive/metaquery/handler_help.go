@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
 // .help

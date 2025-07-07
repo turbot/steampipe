@@ -10,7 +10,7 @@ import (
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/pipe-fittings/v2/pipes"
 	"github.com/turbot/pipe-fittings/v2/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
 )
 
 func ValidateSnapshotArgs(ctx context.Context) error {

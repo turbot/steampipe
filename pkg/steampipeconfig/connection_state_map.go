@@ -11,8 +11,8 @@ import (
 	"github.com/turbot/pipe-fittings/v2/modconfig"
 	"github.com/turbot/pipe-fittings/v2/utils"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
 	"golang.org/x/exp/maps"
 )
 

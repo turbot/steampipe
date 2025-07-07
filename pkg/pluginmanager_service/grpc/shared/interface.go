@@ -3,7 +3,8 @@ package shared
 
 import (
 	"context"
-	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
+
+	"github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/proto"
 
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"

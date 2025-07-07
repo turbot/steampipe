@@ -19,7 +19,7 @@ import (
 	"github.com/turbot/pipe-fittings/v2/versionfile"
 	"github.com/turbot/pipe-fittings/v2/workspace_profile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/options"
+	"github.com/turbot/steampipe/v2/pkg/options"
 )
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options

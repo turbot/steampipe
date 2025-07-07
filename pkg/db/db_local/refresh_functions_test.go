@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/turbot/pipe-fittings/v2/app_specific"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
 // test used for debug purposes to replicate `tuple concurrently updated` DB error

@@ -12,12 +12,12 @@ import (
 	"github.com/turbot/pipe-fittings/v2/error_helpers"
 	"github.com/turbot/pipe-fittings/v2/steampipeconfig"
 	"github.com/turbot/steampipe-plugin-sdk/v5/telemetry"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_client"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/export"
-	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_client"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/db/db_local"
+	"github.com/turbot/steampipe/v2/pkg/export"
+	"github.com/turbot/steampipe/v2/pkg/statushooks"
 )
 
 type InitData struct {

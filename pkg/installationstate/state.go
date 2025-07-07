@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/turbot/go-kit/files"
-	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
 const StateStructVersion = 20220411

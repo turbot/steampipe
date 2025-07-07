@@ -4,9 +4,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/platform"
-	"github.com/turbot/steampipe/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/platform"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
 )
 
 func ServiceExecutableRelativeLocation() string {

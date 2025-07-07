@@ -10,10 +10,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
+	"github.com/turbot/steampipe/v2/pkg/statushooks"
 )
 
 // LoadConnectionState populates a ConnectionStateMap from the connection_state table

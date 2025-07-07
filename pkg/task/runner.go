@@ -12,11 +12,11 @@ import (
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/v2/plugin"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/installationstate"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/v2/pkg/db/db_local"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
+	"github.com/turbot/steampipe/v2/pkg/installationstate"
+	"github.com/turbot/steampipe/v2/pkg/steampipeconfig"
 )
 
 const minimumDurationBetweenChecks = 24 * time.Hour

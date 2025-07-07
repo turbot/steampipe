@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
 const logRetentionDays = 7

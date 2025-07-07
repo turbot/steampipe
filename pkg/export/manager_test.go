@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
 type testExporter struct {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 )
 
 func GetPopulateServerSettingsSql(ctx context.Context, settings db_common.ServerSettings) db_common.QueryWithArgs {

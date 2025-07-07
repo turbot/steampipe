@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/turbot/go-kit/helpers"
 	"github.com/turbot/pipe-fittings/v2/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 )
 
 // SetRequiredSessionSearchPath implements Client

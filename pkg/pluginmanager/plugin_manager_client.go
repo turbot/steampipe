@@ -8,8 +8,8 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc"
 	"github.com/turbot/steampipe-plugin-sdk/v5/logging"
-	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
+	pb "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/shared"
 )
 
 // PluginManagerClient is the client used by steampipe to access the plugin manager

@@ -32,12 +32,12 @@ import (
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/constants/runtime"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/task"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/constants/runtime"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
+	"github.com/turbot/steampipe/v2/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/v2/pkg/task"
 )
 
 var waitForTasksChannel chan struct{}
