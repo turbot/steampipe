@@ -269,7 +269,7 @@ jobs:
         # if: steps.semver_parser.outputs.prerelease == ''
         run: |
           gh workflow run "02-steampipe-smoke-tests.yaml" \
-            --ref ${{ github.ref }} \
+            --ref refs/heads/smoke-tests \
             --field version=$VERSION \
             --repo ${{ github.repository }}
         env:
