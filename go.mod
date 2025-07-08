@@ -24,7 +24,7 @@ require (
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.6.3
 	github.com/hashicorp/go-version v1.7.0
-	github.com/hashicorp/hcl/v2 v2.23.0
+	github.com/hashicorp/hcl/v2 v2.24.0
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgx/v5 v5.7.3
 	github.com/jedib0t/go-pretty/v6 v6.6.7
@@ -45,7 +45,7 @@ require (
 	github.com/turbot/pipe-fittings/v2 v2.5.0
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.11.7
 	github.com/turbot/terraform-components v0.0.0-20250114051614-04b806a9cbed
-	github.com/zclconf/go-cty v1.16.2 // indirect
+	github.com/zclconf/go-cty v1.16.3 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 	golang.org/x/sync v0.15.0
 	golang.org/x/text v0.26.0
