@@ -164,17 +164,17 @@ jobs:
         run: |
           mkdir -p ./artifacts
           gh release download ${{ env.VERSION }} \
-            --pattern "*linux_arm64.zip" \
+            --pattern "*linux_arm64.tar.gz" \
             --dir ./artifacts \
             --repo ${{ github.repository }}
           # Rename to expected format
-          mv ./artifacts/*linux_arm64.zip ./artifacts/linux.zip
+          mv ./artifacts/*linux_arm64.tar.gz ./artifacts/linux.tar.gz
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract Linux Artifacts and Install Binary
         run: |
-          sudo unzip ./artifacts/linux.zip -d /usr/local/bin
+          sudo tar -xzf ./artifacts/linux.tar.gz -C /usr/local/bin
           sudo chmod +x /usr/local/bin/steampipe
 
       - name: Install jq
