@@ -182,6 +182,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq
 
+      - name: Create steampipe user and setup environment
+        run: |
+          sudo useradd -m steampipe
+          sudo mkdir -p /home/steampipe/.steampipe/logs
+          sudo chown -R steampipe:steampipe /home/steampipe
+
       - name: Get runner/container info
         run: |
           uname -a
@@ -190,4 +196,4 @@ jobs:
       - name: Run smoke tests
         run: |
           chmod +x $GITHUB_WORKSPACE/scripts/smoke_test.sh
-          $GITHUB_WORKSPACE/scripts/smoke_test.sh
+          sudo -u steampipe $GITHUB_WORKSPACE/scripts/smoke_test.sh
