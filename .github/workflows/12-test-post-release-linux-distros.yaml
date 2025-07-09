@@ -1,4 +1,4 @@
-name: "02 - Steampipe: Smoke Tests"
+name: "12 - Test: Linux Distros (Post-release)"
 
 on:
   workflow_dispatch:
