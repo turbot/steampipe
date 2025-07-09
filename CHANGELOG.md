@@ -1,3 +1,17 @@
+## v2.1.0 [2025-07-09]
+_Whats new_
+- Compiled with Go 1.24.
+- The versioning mechanism has been changed to use GoReleaser for automated version management during the build process.
+
+_Breaking changes_
+- The [version](https://pkg.go.dev/github.com/turbot/steampipe@v1.1.4/pkg/version) package, which was previously used to control CLI versioning, has been removed in this version. This change only affects users who were importing the Steampipe version package in their Go code. Regular CLI usage is not impacted.
+
+_Bug fixes_
+- Bump module to v2. ([#4593](https://github.com/turbot/steampipe/issues/4593))
+
+_Dependencies_
+- Update `go-viper` package to remediate moderate vulnerabilities.
+
 ## v2.0.1 [2025-06-11]
 _Bug fixes_
 - Fix `plugin manager is not running` error when starting steampipe via a symlink. ([#4573](https://github.com/turbot/steampipe/issues/4573))
