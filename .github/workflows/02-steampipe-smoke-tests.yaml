@@ -196,4 +196,6 @@ jobs:
       - name: Run smoke tests
         run: |
           chmod +x $GITHUB_WORKSPACE/scripts/smoke_test.sh
-          sudo -u steampipe $GITHUB_WORKSPACE/scripts/smoke_test.sh
+          sudo cp $GITHUB_WORKSPACE/scripts/smoke_test.sh /home/steampipe/smoke_test.sh
+          sudo chown steampipe:steampipe /home/steampipe/smoke_test.sh
+          sudo -u steampipe /home/steampipe/smoke_test.sh
