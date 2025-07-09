@@ -2,7 +2,8 @@ package shared
 
 import (
 	"context"
-	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
+
+	"github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/proto"
 )
 
 // GRPCClient is an implementation of PluginManager service that talks over GRPC.

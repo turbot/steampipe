@@ -7,7 +7,7 @@ import (
 
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
+	"github.com/turbot/steampipe/v2/pkg/cmdconfig"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )

@@ -3,7 +3,7 @@ package db_common
 import (
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
 func IsClientAppName(appName string) bool {

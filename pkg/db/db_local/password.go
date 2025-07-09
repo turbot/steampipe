@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	filehelpers "github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe/pkg/filepaths"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
 )
 
 // Passwords :: structure for working with DB passwords

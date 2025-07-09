@@ -11,9 +11,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/statushooks"
 )
 
 var ErrServiceInRecoveryMode = errors.New("service is in recovery mode")

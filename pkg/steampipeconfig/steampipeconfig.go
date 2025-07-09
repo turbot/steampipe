@@ -19,7 +19,7 @@ import (
 	"github.com/turbot/pipe-fittings/v2/versionfile"
 	"github.com/turbot/pipe-fittings/v2/workspace_profile"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/options"
+	"github.com/turbot/steampipe/v2/pkg/options"
 )
 
 // SteampipeConfig is a struct to hold Connection map and Steampipe options
@@ -117,9 +117,6 @@ func (c *SteampipeConfig) SetOptions(opts poptions.Options) (errorsAndWarnings e
 	}
 	return errorsAndWarnings
 }
-
-var defaultCacheEnabled = true
-var defaultTTL = 300
 
 func (c *SteampipeConfig) String() string {
 	var connectionStrings []string

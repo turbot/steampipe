@@ -18,14 +18,14 @@ import (
 	"github.com/turbot/pipe-fittings/v2/querydisplay"
 	putils "github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/pluginmanager"
-	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
-	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/v2/pkg/cmdconfig"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_local"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
+	"github.com/turbot/steampipe/v2/pkg/pluginmanager"
+	pb "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/proto"
+	"github.com/turbot/steampipe/v2/pkg/statushooks"
 )
 
 func serviceCmd() *cobra.Command {
@@ -240,13 +240,6 @@ func startServiceAndRefreshConnections(ctx context.Context, listenAddresses []st
 		_, _ = startResult.PluginManager.RefreshConnections(&pb.RefreshConnectionsRequest{})
 	}
 	return startResult
-}
-
-func tryToStopServices(ctx context.Context) {
-	// stop db service
-	if _, err := db_local.StopServices(ctx, false, constants.InvokerService); err != nil {
-		error_helpers.ShowError(ctx, err)
-	}
 }
 
 func runServiceInForeground(ctx context.Context) {

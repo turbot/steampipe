@@ -3,11 +3,11 @@ package interactive
 import (
 	"context"
 
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/query"
-	"github.com/turbot/steampipe/pkg/query/queryresult"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_local"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/query"
+	"github.com/turbot/steampipe/v2/pkg/query/queryresult"
 )
 
 type RunInteractivePromptResult struct {

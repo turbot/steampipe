@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/c-bata/go-prompt"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/steampipeconfig"
 )
 
 type ConnectionStateGetter func(context.Context) (steampipeconfig.ConnectionStateMap, error)

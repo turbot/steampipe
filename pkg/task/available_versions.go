@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"sort"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
+	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/pipe-fittings/v2/plugin"
 	"github.com/turbot/pipe-fittings/v2/utils"
@@ -62,6 +62,9 @@ func (av *AvailableVersionCache) buildNotification(ctx context.Context) ([]strin
 }
 
 func (av *AvailableVersionCache) cliNotificationMessage() ([]string, error) {
+	// the current version of the Steampipe CLI application
+	currentVer := viper.GetString("main.version")
+
 	info := av.CliCache
 	if info == nil {
 		return nil, nil
@@ -76,7 +79,7 @@ func (av *AvailableVersionCache) cliNotificationMessage() ([]string, error) {
 		return nil, err
 	}
 
-	currentVersion, err := semver.NewVersion(currentVersion)
+	currentVersion, err := semver.NewVersion(currentVer)
 	if err != nil {
 		fmt.Println(fmt.Errorf("there's something wrong with the Current Version"))
 		fmt.Println(err)
@@ -93,17 +96,6 @@ func (av *AvailableVersionCache) cliNotificationMessage() ([]string, error) {
 		return notificationLines, nil
 	}
 	return nil, nil
-}
-
-func ppNotificationLines() []string {
-	var notificationLines = []string{
-		"",
-		fmt.Sprintf("%s Steampipe mods and dashboards are now separately available in Powerpipe (%s), a new open-source project (%s).", constants.Bold("Introducing Powerpipe:"), color.YellowString("https://powerpipe.io"), color.YellowString("https://github.com/turbot/powerpipe")),
-		"",
-		fmt.Sprintf("The steampipe mod, check and dashboard commands %s in a future version. Migration guide - %s", constants.Bold("will be removed"), color.YellowString("https://powerpipe.io/blog/migrating-from-steampipe")),
-		"",
-	}
-	return notificationLines
 }
 
 func (av *AvailableVersionCache) pluginNotificationMessage(ctx context.Context) []string {
@@ -173,26 +165,4 @@ func (av *AvailableVersionCache) getPluginNotificationLines(reports []plugin.Plu
 	notificationLines = append(notificationLines, "")
 
 	return notificationLines
-}
-
-func ppNoptificationAsTable(colWidth int) (*tablewriter.Table, error) {
-	notificationLines := ppNotificationLines()
-
-	notificationTable := utils.Map(notificationLines, func(line string) []string {
-		return []string{line}
-	})
-
-	if len(notificationLines) == 0 {
-		return nil, nil
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{})                // no headers please
-	table.SetAlignment(tablewriter.ALIGN_LEFT) // we align to the left
-	table.SetAutoWrapText(true)                // let's wrap the text
-	table.SetBorder(true)                      // there needs to be a border to provide the dialog feel
-	table.SetColWidth(colWidth - 4)            // set the column width which matches the steampipe notification table width
-	table.AppendBulk(notificationTable)        // Add Bulk Data
-
-	return table, nil
 }

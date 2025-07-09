@@ -21,12 +21,12 @@ import (
 	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/introspection"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/db/db_local"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/introspection"
+	"github.com/turbot/steampipe/v2/pkg/steampipeconfig"
 	"golang.org/x/exp/maps"
 	"golang.org/x/sync/semaphore"
 )
@@ -204,7 +204,7 @@ func (s *refreshConnectionState) setFailedConnectionsToError(ctx context.Context
 
 	for _, c := range s.connectionUpdates.FinalConnectionState {
 		if c.State == constants.ConnectionStateError {
-			if err := s.tableUpdater.onConnectionError(ctx, conn.Conn(), c.ConnectionName, fmt.Errorf(c.Error())); err != nil {
+			if err := s.tableUpdater.onConnectionError(ctx, conn.Conn(), c.ConnectionName, fmt.Errorf("%s", c.Error())); err != nil {
 				return sperr.WrapWithMessage(err, "failed to update connection state table")
 			}
 		}

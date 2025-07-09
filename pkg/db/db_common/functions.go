@@ -1,6 +1,6 @@
 package db_common
 
-import "github.com/turbot/steampipe/pkg/constants"
+import "github.com/turbot/steampipe/v2/pkg/constants"
 
 // Functions is a list of SQLFunction objects that are installed in the db 'steampipe_internal' schema startup
 var Functions = []SQLFunction{

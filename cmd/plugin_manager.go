@@ -16,12 +16,12 @@ import (
 	"github.com/turbot/go-kit/types"
 	sdklogging "github.com/turbot/steampipe-plugin-sdk/v5/logging"
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/connection"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/pluginmanager_service"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/v2/pkg/cmdconfig"
+	"github.com/turbot/steampipe/v2/pkg/connection"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
+	"github.com/turbot/steampipe/v2/pkg/pluginmanager_service"
+	"github.com/turbot/steampipe/v2/pkg/steampipeconfig"
 )
 
 func pluginManagerCmd() *cobra.Command {

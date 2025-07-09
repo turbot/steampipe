@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
 func ValidateConnectionName(connectionName string) error {

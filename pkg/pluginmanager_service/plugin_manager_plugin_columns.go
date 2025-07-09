@@ -3,18 +3,19 @@ package pluginmanager_service
 import (
 	"context"
 	"fmt"
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
-	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/introspection"
-	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
-	"golang.org/x/exp/maps"
 	"log"
 	"slices"
 	"strings"
+
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
+	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/db/db_local"
+	"github.com/turbot/steampipe/v2/pkg/introspection"
+	pb "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/proto"
+	"golang.org/x/exp/maps"
 )
 
 func (m *PluginManager) initialisePluginColumns(ctx context.Context) error {

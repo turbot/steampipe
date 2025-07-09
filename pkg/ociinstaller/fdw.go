@@ -10,9 +10,9 @@ import (
 
 	"github.com/turbot/pipe-fittings/v2/ociinstaller"
 	putils "github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/filepaths"
-	"github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/filepaths"
+	"github.com/turbot/steampipe/v2/pkg/ociinstaller/versionfile"
 )
 
 // InstallFdw installs the Steampipe Postgres foreign data wrapper from an OCI image

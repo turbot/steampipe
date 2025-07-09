@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/statushooks"
 )
 
 // init data has arrived, handle any errors/warnings/messages
@@ -114,7 +114,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	log.Printf("[TRACE] SetupWatcher")
 
 	statushooks.SetStatus(ctx, "Start file watcher…")
-	
+
 	statushooks.SetStatus(ctx, "Start notifications listener…")
 	log.Printf("[TRACE] Start notifications listener")
 
@@ -122,12 +122,6 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 	statushooks.SetStatus(ctx, "Subscribe to postgres notifications…")
 
 	c.listenToPgNotifications(ctx)
-}
-
-func (c *InteractiveClient) workspaceWatcherErrorHandler(ctx context.Context, err error) {
-	fmt.Println()
-	error_helpers.ShowError(ctx, err)
-	c.interactivePrompt.Render()
 }
 
 // return whether the client is initialises

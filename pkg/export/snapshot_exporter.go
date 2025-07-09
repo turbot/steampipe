@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/turbot/pipe-fittings/v2/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
 type SnapshotExporter struct {

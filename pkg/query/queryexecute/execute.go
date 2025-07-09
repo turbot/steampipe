@@ -18,14 +18,14 @@ import (
 	"github.com/turbot/pipe-fittings/v2/queryresult"
 	"github.com/turbot/pipe-fittings/v2/steampipeconfig"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/connection_sync"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/display"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/interactive"
-	"github.com/turbot/steampipe/pkg/query"
-	"github.com/turbot/steampipe/pkg/snapshot"
+	"github.com/turbot/steampipe/v2/pkg/cmdconfig"
+	"github.com/turbot/steampipe/v2/pkg/connection_sync"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/display"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/interactive"
+	"github.com/turbot/steampipe/v2/pkg/query"
+	"github.com/turbot/steampipe/v2/pkg/snapshot"
 )
 
 func RunInteractiveSession(ctx context.Context, initData *query.InitData) error {

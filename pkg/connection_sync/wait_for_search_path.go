@@ -3,8 +3,8 @@ package connection_sync
 import (
 	"context"
 
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/steampipeconfig"
 )
 
 // WaitForSearchPathSchemas identifies the first connection in the search path for each plugin,

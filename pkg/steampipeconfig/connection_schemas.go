@@ -2,8 +2,9 @@ package steampipeconfig
 
 import (
 	"context"
+
 	"github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/v2/pkg/statushooks"
 )
 
 // ConnectionSchemaMap is a map of connection to all connections with the same schema

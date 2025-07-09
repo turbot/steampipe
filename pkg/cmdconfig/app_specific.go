@@ -3,20 +3,34 @@ package cmdconfig
 import (
 	"os"
 
+	"github.com/Masterminds/semver/v3"
+	"github.com/spf13/viper"
 	pfilepaths "github.com/turbot/pipe-fittings/v2/filepaths"
 
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	"github.com/turbot/pipe-fittings/v2/error_helpers"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/version"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
 // SetAppSpecificConstants sets app specific constants defined in pipe-fittings
 func SetAppSpecificConstants() {
 	app_specific.AppName = "steampipe"
 
-	app_specific.AppVersion = version.SteampipeVersion
+	// set an initial value for the version
+	initialVersion := "0.0.0"
+
+	versionString := viper.GetString("main.version")
+
+	// check if the version is set in viper, otherwise use the initial value
+	// this is required since when the FDW is initialized SetAppSpecificConstants is called, at that time
+	// the viper config will have not been initialized yet and the version will not be set, which will cause
+	// semver.MustParse to panic
+	if versionString == "" {
+		versionString = initialVersion
+	} else {
+		app_specific.AppVersion = semver.MustParse(versionString)
+	}
 
 	app_specific.SetAppSpecificEnvVarKeys("STEAMPIPE_")
 	app_specific.ConfigExtension = ".spc"

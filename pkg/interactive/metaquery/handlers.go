@@ -7,8 +7,8 @@ import (
 
 	typeHelpers "github.com/turbot/go-kit/types"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/cmdconfig"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 	"golang.org/x/exp/maps"
 )
 

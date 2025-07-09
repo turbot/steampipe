@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/turbot/go-kit/helpers"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/v2/pkg/steampipeconfig"
 )
 
 // only allow one execution of refresh connections

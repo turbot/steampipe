@@ -26,14 +26,14 @@ import (
 	sdkshared "github.com/turbot/steampipe-plugin-sdk/v5/grpc/shared"
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/connection"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_local"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/pluginmanager_service/grpc"
-	pb "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/proto"
-	pluginshared "github.com/turbot/steampipe/pkg/pluginmanager_service/grpc/shared"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
+	"github.com/turbot/steampipe/v2/pkg/connection"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_local"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc"
+	pb "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/proto"
+	pluginshared "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/shared"
+	"github.com/turbot/steampipe/v2/pkg/steampipeconfig"
 )
 
 // PluginManager is the implementation of grpc.PluginManager
@@ -568,7 +568,7 @@ func (m *PluginManager) initializePlugin(connectionConfigs []*sdkproto.Connectio
 	}
 	// if this plugin does not support multiple connections, we no longer support it
 	if !supportedOperations.MultipleConnections {
-		return nil, fmt.Errorf(error_helpers.PluginSdkCompatibilityError)
+		return nil, fmt.Errorf("%s", error_helpers.PluginSdkCompatibilityError)
 	}
 
 	// provide opportunity to avoid setting connection configs if we are shutting down

@@ -8,10 +8,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/spf13/viper"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/serversettings"
-	"github.com/turbot/steampipe/pkg/version"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/serversettings"
 )
 
 // setupServerSettingsTable creates a new read-only table with information in the current
@@ -21,7 +20,7 @@ import (
 func setupServerSettingsTable(ctx context.Context, conn *pgx.Conn) error {
 	settings := db_common.ServerSettings{
 		StartTime:        time.Now(),
-		SteampipeVersion: version.VersionString,
+		SteampipeVersion: viper.GetString("main.version"),
 		FdwVersion:       constants.FdwVersion,
 		CacheMaxTtl:      viper.GetInt(pconstants.ArgCacheMaxTtl),
 		CacheMaxSizeMb:   viper.GetInt(pconstants.ArgMaxCacheSizeMb),

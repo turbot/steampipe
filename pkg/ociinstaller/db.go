@@ -8,8 +8,8 @@ import (
 
 	"github.com/turbot/pipe-fittings/v2/ociinstaller"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe/pkg/constants"
-	versionfile "github.com/turbot/steampipe/pkg/ociinstaller/versionfile"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	versionfile "github.com/turbot/steampipe/v2/pkg/ociinstaller/versionfile"
 )
 
 // InstallDB :: Install Postgres files fom OCI image

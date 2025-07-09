@@ -1,9 +1,10 @@
 package grpc
 
 import (
+	"strings"
+
 	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"strings"
 )
 
 // HandleStartFailure is used to handle errors when starting both Steampipe plugins an dthe plugin manage
@@ -38,7 +39,7 @@ func HandleStartFailure(err error) error {
 	}
 
 	if strings.Contains(pluginMessage, sdkplugin.PluginStartupFailureMessage) {
-		return sperr.New(pluginError)
+		return sperr.New("%s", pluginError)
 	}
 	return err
 }

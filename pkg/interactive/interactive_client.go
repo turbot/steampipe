@@ -23,17 +23,16 @@ import (
 	"github.com/turbot/pipe-fittings/v2/modconfig"
 	"github.com/turbot/pipe-fittings/v2/querydisplay"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/connection_sync"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/db/db_common"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/interactive/metaquery"
-	"github.com/turbot/steampipe/pkg/query"
-	"github.com/turbot/steampipe/pkg/query/queryhistory"
-	"github.com/turbot/steampipe/pkg/statushooks"
-	"github.com/turbot/steampipe/pkg/steampipeconfig"
-	"github.com/turbot/steampipe/pkg/version"
+	"github.com/turbot/steampipe/v2/pkg/cmdconfig"
+	"github.com/turbot/steampipe/v2/pkg/connection_sync"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/interactive/metaquery"
+	"github.com/turbot/steampipe/v2/pkg/query"
+	"github.com/turbot/steampipe/v2/pkg/query/queryhistory"
+	"github.com/turbot/steampipe/v2/pkg/statushooks"
+	"github.com/turbot/steampipe/v2/pkg/steampipeconfig"
 )
 
 type AfterPromptCloseAction int
@@ -131,7 +130,7 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 
 	statushooks.Message(
 		ctx,
-		fmt.Sprintf("Welcome to Steampipe v%s", version.SteampipeVersion.String()),
+		fmt.Sprintf("Welcome to Steampipe v%s", viper.GetString("main.version")),
 		fmt.Sprintf("For more information, type %s", pconstants.Bold(".help")),
 	)
 
@@ -649,13 +648,6 @@ func (c *InteractiveClient) getTableAndConnectionSuggestions(word string) []prom
 	connection := strings.TrimSpace(parts[0])
 	t := c.suggestions.tablesBySchema[connection]
 	return t
-}
-
-func (c *InteractiveClient) newSuggestion(itemType string, description string, name string) prompt.Suggest {
-	if description != "" {
-		itemType += fmt.Sprintf(": %s", description)
-	}
-	return prompt.Suggest{Text: name, Output: name, Description: itemType}
 }
 
 func (c *InteractiveClient) startCancelHandler() chan bool {

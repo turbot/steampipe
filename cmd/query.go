@@ -16,12 +16,12 @@ import (
 	"github.com/turbot/pipe-fittings/v2/contexthelpers"
 	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
-	"github.com/turbot/steampipe/pkg/cmdconfig"
-	"github.com/turbot/steampipe/pkg/constants"
-	"github.com/turbot/steampipe/pkg/error_helpers"
-	"github.com/turbot/steampipe/pkg/query"
-	"github.com/turbot/steampipe/pkg/query/queryexecute"
-	"github.com/turbot/steampipe/pkg/statushooks"
+	"github.com/turbot/steampipe/v2/pkg/cmdconfig"
+	"github.com/turbot/steampipe/v2/pkg/constants"
+	"github.com/turbot/steampipe/v2/pkg/error_helpers"
+	"github.com/turbot/steampipe/v2/pkg/query"
+	"github.com/turbot/steampipe/v2/pkg/query/queryexecute"
+	"github.com/turbot/steampipe/v2/pkg/statushooks"
 )
 
 // variable used to assign the timing mode flag
