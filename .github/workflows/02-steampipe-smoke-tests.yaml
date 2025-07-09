@@ -179,7 +179,8 @@ jobs:
 
       - name: Install jq
         run: |
-          brew install jq
+          sudo apt-get update
+          sudo apt-get install -y jq
 
       - name: Get runner/container info
         run: |
