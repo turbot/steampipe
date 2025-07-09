@@ -266,7 +266,7 @@ jobs:
 
   trigger_smoke_tests:
     name: Trigger Smoke Tests
-    if: ${{ github.event.inputs.environment == 'Final (RC and final release)' }}
+    # if: ${{ github.event.inputs.environment == 'Final (RC and final release)' }}
     needs: update_homebrew_tap
     runs-on: ubuntu-latest
     steps:
@@ -282,9 +282,9 @@ jobs:
           input_string: ${{ github.event.inputs.version }}
 
       - name: Trigger smoke test workflow
-        if: steps.semver_parser.outputs.prerelease == ''
+        # if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          gh workflow run "03-steampipe-smoke-tests.yaml" \
+          gh workflow run "02-steampipe-smoke-tests.yaml" \
             --ref ${{ github.ref }} \
             --field version=$VERSION \
             --repo ${{ github.repository }}
@@ -292,7 +292,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Wait for smoke test workflow to start
-        if: steps.semver_parser.outputs.prerelease == ''
+        # if: steps.semver_parser.outputs.prerelease == ''
         run: |
           echo "Smoke test workflow triggered for version $VERSION"
           echo "You can monitor the progress at: https://github.com/${{ github.repository }}/actions/workflows/02-steampipe-smoke-tests.yaml"
