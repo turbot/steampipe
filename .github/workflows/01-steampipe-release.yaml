@@ -273,7 +273,7 @@ jobs:
       - name: Calculate version
         id: calculate_version
         run: |
-          echo "VERSION=v${{ github.event.inputs.version }}-alpha.$(date +'%Y%m%d%H%M')" >> $GITHUB_ENV
+          echo "VERSION=v${{ github.event.inputs.version }}" >> $GITHUB_ENV
 
       - name: Parse semver string
         id: semver_parser
