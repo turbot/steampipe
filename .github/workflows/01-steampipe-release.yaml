@@ -291,8 +291,32 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
-      - name: Wait for smoke test workflow to start
+      - name: Get smoke test workflow run URL
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          echo "Smoke test workflow triggered for version $VERSION"
-          echo "You can monitor the progress at: https://github.com/${{ github.repository }}/actions/workflows/02-steampipe-smoke-tests.yaml"
+          echo "Waiting for smoke test workflow to start..."
+          sleep 10
+
+          # Get the most recent run of the smoke test workflow
+          RUN_ID=$(gh run list \
+            --workflow="12-test-post-release-linux-distros.yaml" \
+            --repo ${{ github.repository }} \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          if [ -n "$RUN_ID" ]; then
+            WORKFLOW_URL="https://github.com/${{ github.repository }}/actions/runs/$RUN_ID"
+            echo "✅ Smoke test workflow triggered successfully!"
+            echo "🔗 Monitor progress at: $WORKFLOW_URL"
+            echo ""
+            echo "Workflow details:"
+            echo "  - Version: $VERSION"
+            echo "  - Workflow: 12-test-post-release-linux-distros.yaml"
+            echo "  - Run ID: $RUN_ID"
+          else
+            echo "⚠️  Could not retrieve workflow run ID. Check manually at:"
+            echo "https://github.com/${{ github.repository }}/actions/workflows/12-test-post-release-linux-distros.yaml"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
