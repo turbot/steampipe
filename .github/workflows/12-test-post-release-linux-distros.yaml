@@ -14,7 +14,7 @@ env:
   # Disable update checks during smoke tests
   STEAMPIPE_UPDATE_CHECK: false
   # Slack webhook URL for notifications
-  SLACK_WEBHOOK_URL: ${{ secrets.STEAMPIPE_PLUGIN_ANYWHERE_RELEASE_COMPONENT_SLACK_WEBHOOK_URL }}
+  SLACK_WEBHOOK_URL: ${{ secrets.PIPELING_RELEASE_BOT_WEBHOOK_URL }}
 
 jobs:
   smoke_test_ubuntu_24:
