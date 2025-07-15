@@ -13,6 +13,8 @@ env:
   VERSION: ${{ github.event.inputs.version }}
   # Disable update checks during smoke tests
   STEAMPIPE_UPDATE_CHECK: false
+  # Slack webhook URL for notifications
+  SLACK_WEBHOOK_URL: ${{ secrets.PIPELING_RELEASE_BOT_WEBHOOK_URL }}
 
 jobs:
   smoke_test_ubuntu_24:
@@ -199,3 +201,35 @@ jobs:
           sudo cp $GITHUB_WORKSPACE/scripts/smoke_test.sh /home/steampipe/smoke_test.sh
           sudo chown steampipe:steampipe /home/steampipe/smoke_test.sh
           sudo -u steampipe /home/steampipe/smoke_test.sh
+
+  notify_completion:
+    name: Notify completion
+    runs-on: ubuntu-latest
+    needs:
+      [
+        smoke_test_ubuntu_24,
+        smoke_test_centos_9,
+        smoke_test_amazonlinux,
+        smoke_test_linux_arm64,
+      ]
+    if: always()
+    steps:
+      - name: Check results and notify
+        run: |
+          # Check if all jobs succeeded
+          UBUNTU_24_RESULT="${{ needs.smoke_test_ubuntu_24.result }}"
+          CENTOS_9_RESULT="${{ needs.smoke_test_centos_9.result }}"
+          AMAZONLINUX_RESULT="${{ needs.smoke_test_amazonlinux.result }}"
+          ARM64_RESULT="${{ needs.smoke_test_linux_arm64.result }}"
+
+          WORKFLOW_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          if [ "$UBUNTU_24_RESULT" = "success" ] && [ "$CENTOS_9_RESULT" = "success" ] && [ "$AMAZONLINUX_RESULT" = "success" ] && [ "$ARM64_RESULT" = "success" ]; then
+            MESSAGE="✅ Steampipe ${{ env.VERSION }} smoke tests passed!\n\n🔗 View details: $WORKFLOW_URL"
+          else
+            MESSAGE="❌ Steampipe ${{ env.VERSION }} smoke tests failed!\n\n🔗 View details: $WORKFLOW_URL"
+          fi
+
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"$MESSAGE\"}" \
+            ${{ env.SLACK_WEBHOOK_URL }}
