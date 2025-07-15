@@ -215,62 +215,21 @@ jobs:
     if: always()
     steps:
       - name: Check results and notify
-        id: check_results
         run: |
-          # Check which jobs failed
+          # Check if all jobs succeeded
           UBUNTU_24_RESULT="${{ needs.smoke_test_ubuntu_24.result }}"
           CENTOS_9_RESULT="${{ needs.smoke_test_centos_9.result }}"
           AMAZONLINUX_RESULT="${{ needs.smoke_test_amazonlinux.result }}"
           ARM64_RESULT="${{ needs.smoke_test_linux_arm64.result }}"
-          
-          FAILED_PLATFORMS=""
-          SUCCESS_COUNT=0
-          TOTAL_COUNT=4
-          
-          if [ "$UBUNTU_24_RESULT" != "success" ]; then
-            FAILED_PLATFORMS="$FAILED_PLATFORMS• Ubuntu 24 (x86_64): $UBUNTU_24_RESULT\n"
-          else
-            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-          fi
-          
-          if [ "$CENTOS_9_RESULT" != "success" ]; then
-            FAILED_PLATFORMS="$FAILED_PLATFORMS• CentOS Stream 9 (x86_64): $CENTOS_9_RESULT\n"
-          else
-            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-          fi
-          
-          if [ "$AMAZONLINUX_RESULT" != "success" ]; then
-            FAILED_PLATFORMS="$FAILED_PLATFORMS• Amazon Linux 2023 (x86_64): $AMAZONLINUX_RESULT\n"
-          else
-            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-          fi
-          
-          if [ "$ARM64_RESULT" != "success" ]; then
-            FAILED_PLATFORMS="$FAILED_PLATFORMS• Ubuntu 24 (ARM64): $ARM64_RESULT\n"
-          else
-            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-          fi
-          WORKFLOW_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          if [ "$SUCCESS_COUNT" -eq "$TOTAL_COUNT" ]; then
-            MESSAGE="✅ Steampipe ${{ env.VERSION }} release completed successfully! All smoke tests passed across all Linux distributions.\n\n🔗 View details: $WORKFLOW_URL"
-            echo "status=success" >> $GITHUB_OUTPUT
-          else
-            MESSAGE="❌ Steampipe ${{ env.VERSION }} smoke tests completed with failures:\n\n✅ Passed: $SUCCESS_COUNT/$TOTAL_COUNT platforms\n"
-            if [ -n "$FAILED_PLATFORMS" ]; then
-              MESSAGE="$MESSAGE\n❌ Failed platforms:\n$FAILED_PLATFORMS"
-            fi
-            MESSAGE="$MESSAGE\n🔗 View details: $WORKFLOW_URL"
-            echo "status=failure" >> $GITHUB_OUTPUT
-          fi
-          
-          echo "message<<EOF" >> $GITHUB_OUTPUT
-          echo -e "$MESSAGE" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Send Slack Notification
-        uses: act10ns/slack@87c73aef9f8838eb6feae81589a6b1487a4a9e08 # v1.6.0
-        with:
-          status: ${{ steps.check_results.outputs.status }}
-          message: ${{ steps.check_results.outputs.message }}
-          channel: "#tools"
-          webhook-url: ${{ env.SLACK_WEBHOOK_URL }}
+          WORKFLOW_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          if [ "$UBUNTU_24_RESULT" = "success" ] && [ "$CENTOS_9_RESULT" = "success" ] && [ "$AMAZONLINUX_RESULT" = "success" ] && [ "$ARM64_RESULT" = "success" ]; then
+            MESSAGE="✅ Steampipe ${{ env.VERSION }} smoke tests passed!\n\n🔗 View details: $WORKFLOW_URL"
+          else
+            MESSAGE="❌ Steampipe ${{ env.VERSION }} smoke tests failed!\n\n🔗 View details: $WORKFLOW_URL"
+          fi
+
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"$MESSAGE\"}" \
+            ${{ env.SLACK_WEBHOOK_URL }}
