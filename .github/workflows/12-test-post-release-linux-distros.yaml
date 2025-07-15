@@ -1,4 +1,4 @@
-name: "02 - Steampipe: Smoke Tests"
+name: "12 - Test: Linux Distros (Post-release)"
 
 on:
   workflow_dispatch:
@@ -153,40 +153,49 @@ jobs:
           docker stop amazonlinux-2023-test
           docker rm amazonlinux-2023-test
 
-  smoke_test_darwin_arm64:
-    name: Smoke test (macOS 14, ARM64)
-    runs-on: macos-latest
+  smoke_test_linux_arm64:
+    name: Smoke test (Ubuntu 24, ARM64)
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Download Darwin Release Artifact
+      - name: Download Linux Release Artifact
         run: |
           mkdir -p ./artifacts
           gh release download ${{ env.VERSION }} \
-            --pattern "*darwin_arm64.zip" \
+            --pattern "*linux_arm64.tar.gz" \
             --dir ./artifacts \
             --repo ${{ github.repository }}
           # Rename to expected format
-          mv ./artifacts/*darwin_arm64.zip ./artifacts/darwin.zip
+          mv ./artifacts/*linux_arm64.tar.gz ./artifacts/linux.tar.gz
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Darwin Artifacts and Install Binary
+      - name: Extract Linux Artifacts and Install Binary
         run: |
-          sudo unzip ./artifacts/darwin.zip -d /usr/local/bin
+          sudo tar -xzf ./artifacts/linux.tar.gz -C /usr/local/bin
           sudo chmod +x /usr/local/bin/steampipe
 
       - name: Install jq
         run: |
-          brew install jq
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Create steampipe user and setup environment
+        run: |
+          sudo useradd -m steampipe
+          sudo mkdir -p /home/steampipe/.steampipe/logs
+          sudo chown -R steampipe:steampipe /home/steampipe
 
       - name: Get runner/container info
         run: |
           uname -a
-          sw_vers
+          cat /etc/os-release
 
       - name: Run smoke tests
         run: |
           chmod +x $GITHUB_WORKSPACE/scripts/smoke_test.sh
-          $GITHUB_WORKSPACE/scripts/smoke_test.sh
+          sudo cp $GITHUB_WORKSPACE/scripts/smoke_test.sh /home/steampipe/smoke_test.sh
+          sudo chown steampipe:steampipe /home/steampipe/smoke_test.sh
+          sudo -u steampipe /home/steampipe/smoke_test.sh

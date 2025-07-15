@@ -196,7 +196,6 @@ jobs:
         with:
           repository: turbot/homebrew-tap
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          ref: ${{ github.event.inputs.version }}
 
       - name: Update live version
         if: steps.semver_parser.outputs.prerelease == ''
@@ -263,3 +262,60 @@ jobs:
           git fetch --all
           gh pr merge $VERSION --squash --delete-branch
           git push origin --delete bump-brew
+
+  trigger_smoke_tests:
+    name: Trigger Smoke Tests
+    if: ${{ github.event.inputs.environment == 'Final (RC and final release)' }}
+    needs: update_homebrew_tap
+    runs-on: ubuntu-latest
+    steps:
+      - name: Calculate version
+        id: calculate_version
+        run: |
+          echo "VERSION=v${{ github.event.inputs.version }}" >> $GITHUB_ENV
+
+      - name: Parse semver string
+        id: semver_parser
+        uses: booxmedialtd/ws-action-parse-semver@7784200024d6b3fc01253e617ec0168daf603de3 # v1.4.7
+        with:
+          input_string: ${{ github.event.inputs.version }}
+
+      - name: Trigger smoke test workflow
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          gh workflow run "12-test-post-release-linux-distros.yaml" \
+            --ref ${{ github.ref }} \
+            --field version=$VERSION \
+            --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Get smoke test workflow run URL
+        if: steps.semver_parser.outputs.prerelease == ''
+        run: |
+          echo "Waiting for smoke test workflow to start..."
+          sleep 10
+
+          # Get the most recent run of the smoke test workflow
+          RUN_ID=$(gh run list \
+            --workflow="12-test-post-release-linux-distros.yaml" \
+            --repo ${{ github.repository }} \
+            --limit 1 \
+            --json databaseId \
+            --jq '.[0].databaseId')
+
+          if [ -n "$RUN_ID" ]; then
+            WORKFLOW_URL="https://github.com/${{ github.repository }}/actions/runs/$RUN_ID"
+            echo "✅ Smoke test workflow triggered successfully!"
+            echo "🔗 Monitor progress at: $WORKFLOW_URL"
+            echo ""
+            echo "Workflow details:"
+            echo "  - Version: $VERSION"
+            echo "  - Workflow: 12-test-post-release-linux-distros.yaml"
+            echo "  - Run ID: $RUN_ID"
+          else
+            echo "⚠️  Could not retrieve workflow run ID. Check manually at:"
+            echo "https://github.com/${{ github.repository }}/actions/workflows/12-test-post-release-linux-distros.yaml"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
