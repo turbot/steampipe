@@ -160,9 +160,6 @@ jobs:
               extracted-linux-amd64:application/vnd.turbot.steampipe.db.linux-amd64.layer.v1+tar \
               extracted-linux-arm64:application/vnd.turbot.steampipe.db.linux-arm64.layer.v1+tar
 
-          # tag the image with the GitHub Run ID for traceability
-          oras tag $REF $GITHUB_RUN_ID
-
           # check if the version is NOT an rc version before tagging as latest
           if [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Tagging as latest: $LATEST_REF"
