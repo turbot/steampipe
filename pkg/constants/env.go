@@ -16,8 +16,9 @@ const (
 	EnvWorkspaceDatabase = "STEAMPIPE_WORKSPACE_DATABASE"
 	EnvWorkspaceProfile  = "STEAMPIPE_WORKSPACE"
 
-	EnvPipesHost  = "PIPES_HOST"
-	EnvPipesToken = "PIPES_TOKEN"
+	EnvPipesHost       = "PIPES_HOST"
+	EnvPipesToken      = "PIPES_TOKEN"
+	EnvPipesInstallDir = "PIPES_INSTALL_DIR"
 
 	EnvDisplayWidth = "STEAMPIPE_DISPLAY_WIDTH"
 	EnvCacheEnabled = "STEAMPIPE_CACHE"
