@@ -150,6 +150,7 @@ jobs:
       - name: Push to Registry
         run: |-
           REF="$CORE_REPO/$IMAGE_NAME:$VERSION"
+          LATEST_REF="$CORE_REPO/$IMAGE_NAME:latest"
 
           oras push $REF \
               --config config.json:application/vnd.turbot.steampipe.config.v1+json \
@@ -158,3 +159,11 @@ jobs:
               extracted-darwin-arm64:application/vnd.turbot.steampipe.db.darwin-arm64.layer.v1+tar \
               extracted-linux-amd64:application/vnd.turbot.steampipe.db.linux-amd64.layer.v1+tar \
               extracted-linux-arm64:application/vnd.turbot.steampipe.db.linux-arm64.layer.v1+tar
+
+          # check if the version is NOT an rc version before tagging as latest
+          if [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tagging as latest: $LATEST_REF"
+            oras tag $REF latest
+          else
+            echo "Skipping latest tag for rc version: $VERSION"
+          fi
