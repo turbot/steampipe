@@ -152,6 +152,7 @@ func setDefaultsFromEnv() {
 		constants.EnvUpdateCheck:           {[]string{pconstants.ArgUpdateCheck}, Bool},
 		constants.EnvPipesHost:             {[]string{pconstants.ArgPipesHost}, String},
 		constants.EnvPipesToken:            {[]string{pconstants.ArgPipesToken}, String},
+		constants.EnvPipesInstallDir:       {[]string{pconstants.ArgPipesInstallDir}, String},
 		constants.EnvSnapshotLocation:      {[]string{pconstants.ArgSnapshotLocation}, String},
 		constants.EnvWorkspaceDatabase:     {[]string{pconstants.ArgWorkspaceDatabase}, String},
 		constants.EnvServicePassword:       {[]string{pconstants.ArgServicePassword}, String},
