@@ -16,7 +16,7 @@ import (
 	"github.com/turbot/steampipe/v2/pkg/db/db_client"
 	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 	"github.com/turbot/steampipe/v2/pkg/db/db_local"
-	"github.com/turbot/steampipe/v2/pkg/export"
+	"github.com/turbot/pipe-fittings/v2/export"
 	"github.com/turbot/steampipe/v2/pkg/statushooks"
 )
 

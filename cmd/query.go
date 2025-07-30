@@ -76,7 +76,7 @@ Examples:
 		AddStringArrayFlag(pconstants.ArgSnapshotTag, nil, "Specify tags to set on the snapshot").
 		AddStringFlag(pconstants.ArgSnapshotTitle, "", "The title to give a snapshot").
 		AddIntFlag(pconstants.ArgDatabaseQueryTimeout, 0, "The query timeout").
-		AddStringSliceFlag(pconstants.ArgExport, nil, "Export output to file, supported format: sps (snapshot)").
+		AddStringSliceFlag(pconstants.ArgExport, nil, "Export output to file, supported formats: csv, json, sps (snapshot)").
 		AddStringFlag(pconstants.ArgSnapshotLocation, "", "The location to write snapshots - either a local file path or a Turbot Pipes workspace").
 		AddBoolFlag(pconstants.ArgProgress, true, "Display snapshot upload status")
 
