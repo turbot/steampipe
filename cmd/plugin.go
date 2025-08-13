@@ -593,7 +593,8 @@ func installPlugin(ctx context.Context, resolvedPlugin pplugin.ResolvedPluginVer
 			bar.Incr()
 		}
 	}()
-
+	
+	// we should never install the config file for plugin updates, config files should only be installed during plugin install
 	skipConfig := viper.GetBool(pconstants.ArgSkipConfig)
 	if isUpdate {
 		skipConfig = true
