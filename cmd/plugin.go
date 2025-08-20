@@ -16,6 +16,7 @@ import (
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/pipe-fittings/v2/contexthelpers"
 	perror_helpers "github.com/turbot/pipe-fittings/v2/error_helpers"
+	"github.com/turbot/pipe-fittings/v2/filepaths"
 	putils "github.com/turbot/pipe-fittings/v2/ociinstaller"
 	pplugin "github.com/turbot/pipe-fittings/v2/plugin"
 	"github.com/turbot/pipe-fittings/v2/querydisplay"
@@ -78,7 +79,6 @@ Examples:
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			utils.LogTime("cmd.plugin.PersistentPostRun start")
 			defer utils.LogTime("cmd.plugin.PersistentPostRun end")
-			pplugin.CleanupOldTmpDirs(cmd.Context())
 		},
 	}
 	cmd.AddCommand(pluginInstallCmd())
@@ -242,6 +242,9 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// Clean up plugin temporary directories from previous crashes/interrupted installations
+	filepaths.CleanupPluginTempDirs()
+
 	// args to 'plugin install' -- one or more plugins to install
 	// plugin names can be simple names for "standard" plugins, constraint suffixed names
 	// or full refs to the OCI image
@@ -396,6 +399,9 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
+
+	// Clean up plugin temporary directories from previous crashes/interrupted installations
+	filepaths.CleanupPluginTempDirs()
 
 	// args to 'plugin update' -- one or more plugins to update
 	// These can be simple names for "standard" plugins, constraint suffixed names
@@ -593,7 +599,7 @@ func installPlugin(ctx context.Context, resolvedPlugin pplugin.ResolvedPluginVer
 			bar.Incr()
 		}
 	}()
-	
+
 	skipConfig := viper.GetBool(pconstants.ArgSkipConfig)
 	// we should never install the config file for plugin updates; config files should only be installed during plugin install
 	if isUpdate {
@@ -672,6 +678,9 @@ func runPluginListCmd(cmd *cobra.Command, _ []string) {
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
+
+	// Clean up plugin temporary directories from previous crashes/interrupted installations
+	filepaths.CleanupPluginTempDirs()
 
 	pluginList, failedPluginMap, missingPluginMap, res := getPluginList(ctx)
 	if res.Error != nil {
@@ -813,6 +822,9 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 			exitCode = constants.ExitCodeUnknownErrorPanic
 		}
 	}()
+
+	// Clean up plugin temporary directories from previous crashes/interrupted installations
+	filepaths.CleanupPluginTempDirs()
 
 	if len(args) == 0 {
 		fmt.Println()
