@@ -42,8 +42,8 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/thediveo/enumflag/v2 v2.0.7
 	github.com/turbot/go-kit v1.3.0
-	github.com/turbot/pipe-fittings/v2 v2.6.1-0.20250728115701-0c92714c1dce
-	github.com/turbot/steampipe-plugin-sdk/v5 v5.13.1-0.20250725143810-fc6ba64930c5
+	github.com/turbot/pipe-fittings/v2 v2.6.3
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.11.7
 	github.com/turbot/terraform-components v0.0.0-20250114051614-04b806a9cbed
 	github.com/zclconf/go-cty v1.16.2 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
@@ -116,7 +116,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-getter v1.7.8 // indirect
+	github.com/hashicorp/go-getter v1.7.9 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
@@ -140,7 +140,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mattn/go-tty v0.0.7 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moby/locker v1.0.1 // indirect
