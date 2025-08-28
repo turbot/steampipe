@@ -28,7 +28,7 @@ const (
 // constants for installing db and fdw images
 const (
 	DatabaseVersion = "14.17.0"
-	FdwVersion      = "2.1.0"
+	FdwVersion      = "2.1.3-rc.0"
 
 	// PostgresImageRef is the OCI Image ref for the database binaries
 	PostgresImageRef    = "ghcr.io/turbot/steampipe/db:14.17.0"
