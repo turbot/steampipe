@@ -47,9 +47,9 @@ func (r PluginRemoveReports) Print() {
 			}
 
 			str := append([]string{}, fmt.Sprintf(
-				"Please remove %s %s to continue using steampipe:",
-				utils.Pluralize("this", len(uniqueFiles)),
+				"The following %s %s now stale and should be removed:",
 				utils.Pluralize("connection", len(uniqueFiles)),
+				utils.Pluralize("is", len(uniqueFiles)),
 			))
 
 			str = append(str, "")
