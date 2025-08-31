@@ -18,7 +18,6 @@ import (
 	"github.com/turbot/steampipe/v2/pkg/filepaths"
 	"github.com/turbot/steampipe/v2/pkg/pluginmanager"
 	"github.com/turbot/steampipe/v2/pkg/statushooks"
-	"github.com/turbot/steampipe/v2/pkg/utils"
 )
 
 // StopStatus is a pseudoEnum for service stop result
@@ -304,7 +303,7 @@ func waitForProcessExit(process *psutils.Process, waitFor time.Duration) bool {
 	for {
 		select {
 		case <-checkTimer.C:
-			pEx, _ := utils.PidExists(int(process.Pid))
+			pEx, _ := putils.PidExists(int(process.Pid))
 			if pEx {
 				continue
 			}
