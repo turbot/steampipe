@@ -1,0 +1,13 @@
+name: Assign Issue to Project
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  add-to-project:
+    uses: turbot/steampipe-workflows/.github/workflows/assign-issue-to-pipeling-issue-tracker.yml@main
+    with:
+      issue_number: ${{ github.event.issue.number }}
+      repository: ${{ github.repository }}
+    secrets: inherit
