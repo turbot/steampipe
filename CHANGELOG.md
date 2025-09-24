@@ -6,6 +6,7 @@ _Whats new_
 _Bug fixes_
 - Fix issue where running `plugin update` was creating the default config file, if it did not exist. ([#4628](https://github.com/turbot/steampipe/issues/4628))
 - Fix help message after uninstalling plugins. ([#4483](https://github.com/turbot/steampipe/issues/4483))
+- Fix issue where steampipe login was not respecting `PIPES_INSTALL_DIR` env var. ([#4402](https://github.com/turbot/steampipe/issues/4402))
 
 ## v2.1.0 [2025-07-09]
 _Whats new_
