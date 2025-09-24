@@ -107,7 +107,7 @@ func StartServices(ctx context.Context, listenAddresses []string, port int, invo
 		}
 	} else {
 		res.Status = ServiceAlreadyRunning
-
+		res.Warnings = append(res.Warnings, fmt.Sprintf("Connected to existing Steampipe service running on port %d", res.DbState.Port))
 		// if the service is already running, also load the state of the plugin manager
 		pluginManagerState, err := pluginmanager.LoadState()
 		if err != nil {

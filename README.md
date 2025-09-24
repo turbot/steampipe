@@ -1,7 +1,7 @@
 [<picture><source media="(prefers-color-scheme: dark)" srcset="https://steampipe.io/images/steampipe-color-logo-and-wordmark-with-white-bubble.svg"><source media="(prefers-color-scheme: light)" srcset="https://steampipe.io/images/steampipe-color-logo-and-wordmark-with-white-bubble.svg"><img width="67%" alt="Steampipe Logo" src="https://steampipe.io/images/steampipe-color-logo-and-wordmark-with-white-bubble.svg"></picture>](https://steampipe.io)
 
-[![plugins](https://img.shields.io/badge/apis_supported-145-blue)](https://hub.steampipe.io/) &nbsp; 
-[![slack](https://img.shields.io/badge/slack-2695-blue)](https://turbot.com/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
+[![plugins](https://img.shields.io/endpoint?url=https://turbot.com/api/badge-stats?stat=apis_supported)](https://hub.steampipe.io/) &nbsp; 
+[![slack](https://img.shields.io/endpoint?url=https://turbot.com/api/badge-stats?stat=slack)](https://turbot.com/community/join?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme) &nbsp;
 [![maintained by](https://img.shields.io/badge/maintained%20by-Turbot-blue)](https://turbot.com?utm_id=gspreadme&utm_source=github&utm_medium=repo&utm_campaign=github&utm_content=readme)
 
 ## select * from cloud;

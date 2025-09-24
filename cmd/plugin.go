@@ -161,7 +161,6 @@ Examples:
 		AddBoolFlag(pconstants.ArgAll, false, "Update all plugins to its latest available version").
 		AddBoolFlag(pconstants.ArgProgress, true, "Display installation progress").
 		AddBoolFlag(pconstants.ArgHelp, false, "Help for plugin update", cmdconfig.FlagOptions.WithShortHand("h"))
-
 	return cmd
 }
 
@@ -594,8 +593,14 @@ func installPlugin(ctx context.Context, resolvedPlugin pplugin.ResolvedPluginVer
 			bar.Incr()
 		}
 	}()
+	
+	skipConfig := viper.GetBool(pconstants.ArgSkipConfig)
+	// we should never install the config file for plugin updates; config files should only be installed during plugin install
+	if isUpdate {
+		skipConfig = true
+	}
 
-	image, err := plugin.Install(ctx, resolvedPlugin, progress, constants.BaseImageRef, ociinstaller.SteampipeMediaTypeProvider{}, putils.WithSkipConfig(viper.GetBool(pconstants.ArgSkipConfig)))
+	image, err := plugin.Install(ctx, resolvedPlugin, progress, constants.BaseImageRef, ociinstaller.SteampipeMediaTypeProvider{}, putils.WithSkipConfig(skipConfig))
 	if err != nil {
 		msg := ""
 		// used to build data for the plugin install report to be used for display purposes

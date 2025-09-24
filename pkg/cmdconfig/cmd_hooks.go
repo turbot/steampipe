@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	pfilepaths "github.com/turbot/pipe-fittings/v2/filepaths"
-
 	"github.com/fatih/color"
 	"github.com/hashicorp/go-hclog"
 	"github.com/mattn/go-isatty"
@@ -24,6 +22,7 @@ import (
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	perror_helpers "github.com/turbot/pipe-fittings/v2/error_helpers"
+	pfilepaths "github.com/turbot/pipe-fittings/v2/filepaths"
 	"github.com/turbot/pipe-fittings/v2/parse"
 	"github.com/turbot/pipe-fittings/v2/pipes"
 	"github.com/turbot/pipe-fittings/v2/utils"
@@ -243,6 +242,9 @@ func initGlobalConfig() perror_helpers.ErrorAndWarnings {
 		SetDefaultsFromConfig(loader.ConfiguredProfile.ConfigMap(cmd))
 	}
 
+	// now env vars have been processed, set PipesInstallDir
+	pfilepaths.PipesInstallDir = viper.GetString(pconstants.ArgPipesInstallDir)
+
 	// NOTE: we need to resolve the token separately
 	// - that is because we need the resolved value of ArgPipesHost in order to load any saved token
 	// and we cannot get this until the other config has been resolved
@@ -392,7 +394,6 @@ func createLogger(logBuffer *bytes.Buffer, cmd *cobra.Command) {
 }
 
 func ensureInstallDir() {
-	pipesInstallDir := viper.GetString(pconstants.ArgPipesInstallDir)
 	installDir := viper.GetString(pconstants.ArgInstallDir)
 
 	log.Printf("[TRACE] ensureInstallDir %s", installDir)
@@ -402,15 +403,8 @@ func ensureInstallDir() {
 		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create installation directory: %s", installDir))
 	}
 
-	if _, err := os.Stat(pipesInstallDir); os.IsNotExist(err) {
-		log.Printf("[TRACE] creating install dir")
-		err = os.MkdirAll(pipesInstallDir, 0755)
-		error_helpers.FailOnErrorWithMessage(err, fmt.Sprintf("could not create pipes installation directory: %s", pipesInstallDir))
-	}
-
-	// store as app_specific.InstallDir and PipesInstallDir
+	// store as app_specific.InstallDir
 	app_specific.InstallDir = installDir
-	pfilepaths.PipesInstallDir = pipesInstallDir
 }
 
 // displayDeprecationWarnings shows the deprecated warnings in a formatted way
