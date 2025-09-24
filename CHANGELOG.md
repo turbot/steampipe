@@ -1,3 +1,12 @@
+## v2.2.0 [2025-09-24]
+_Whats new_
+- Add support for using context functions in steampipe connection config. ([#4433](https://github.com/turbot/steampipe/issues/4433))
+- Show message during startup indicating whether Steampipe launched its own Postgres or connected to an existing service. ([#4427](https://github.com/turbot/steampipe/issues/4427))
+
+_Bug fixes_
+- Fix issue where running `plugin update` was creating the default config file, if it did not exist. ([#4628](https://github.com/turbot/steampipe/issues/4628))
+- Fix help message after uninstalling plugins. ([#4483](https://github.com/turbot/steampipe/issues/4483))
+
 ## v2.1.0 [2025-07-09]
 _Whats new_
 - Compiled with Go 1.24.
