@@ -14,9 +14,9 @@ import (
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/db/db_client"
 	"github.com/turbot/steampipe/v2/pkg/error_helpers"
-	"github.com/turbot/steampipe/v2/pkg/export"
 	"github.com/turbot/steampipe/v2/pkg/initialisation"
 	"github.com/turbot/steampipe/v2/pkg/statushooks"
+	"github.com/turbot/pipe-fittings/v2/export"
 )
 
 type InitData struct {
@@ -47,7 +47,7 @@ func NewInitData(ctx context.Context, args []string) *InitData {
 }
 
 func queryExporters() []export.Exporter {
-	return []export.Exporter{&export.SnapshotExporter{}}
+	return []export.Exporter{&export.SnapshotExporter{}, &export.CsvExporter{}, &export.JsonExporter{}}
 }
 
 func (i *InitData) Cancel() {

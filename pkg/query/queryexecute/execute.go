@@ -184,6 +184,18 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 			return nil, rowErrors
 		}
 
+		if needCsvOrJson() {
+			exportArgs := viper.GetStringSlice(pconstants.ArgExport)
+			exportMsg, err := initData.ExportManager.DoExport(ctx, "query", r, exportArgs)
+			if err != nil {
+				return err, 0
+			}
+			if len(exportMsg) > 0 && viper.GetBool(pconstants.ArgProgress) {
+				fmt.Printf("\n")                           //nolint:forbidigo // intentional use of fmt
+				fmt.Println(strings.Join(exportMsg, "\n")) //nolint:forbidigo // intentional use of fmt
+				fmt.Printf("\n")                           //nolint:forbidigo // intentional use of fmt
+			}
+	}
 		// for other output formats, we call the querydisplay code in pipe-fittings
 		rowCount, rowErrs := querydisplay.ShowOutput(ctx, r)
 		// show timing
@@ -201,13 +213,32 @@ func needSnapshot() bool {
 	outputFormat := viper.GetString(pconstants.ArgOutput)
 	shouldShare := viper.GetBool(pconstants.ArgShare)
 	shouldUpload := viper.GetBool(pconstants.ArgSnapshot)
+	exportArgs := viper.GetStringSlice(constants.ArgExport)
+	isSnapshot := false
+	for _, arg := range exportArgs {
+		argLower := strings.ToLower(arg)
+		if strings.Contains(argLower, "pps") {
+			isSnapshot = true
+		}
+	}
 
 	// Check if the output format is a snapshot format or if ArgExport is set
-	if outputFormat == pconstants.OutputFormatSnapshot || outputFormat == pconstants.OutputFormatSteampipeSnapshotShort || viper.IsSet(pconstants.ArgExport) || shouldShare || shouldUpload {
+	if outputFormat == pconstants.OutputFormatSnapshot || outputFormat == pconstants.OutputFormatSteampipeSnapshotShort || isSnapshot || shouldShare || shouldUpload {
 		return true
 	}
 
 	// If none of the conditions are met, return false
+	return false
+}
+
+func needCsvOrJson() bool {
+	exportArgs := viper.GetStringSlice(constants.ArgExport)
+	for _, arg := range exportArgs {
+		argLower := strings.ToLower(arg)
+		if strings.Contains(argLower, "csv") || strings.Contains(argLower, "json") {
+			return true
+		}
+	}
 	return false
 }
 
