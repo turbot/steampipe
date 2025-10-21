@@ -67,6 +67,7 @@ jobs:
         run: |
           mkdir ~/artifacts
           mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
+          mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_linux_arm64.tar.gz ~/artifacts/linux-arm64.tar.gz
           mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_arm64.zip ~/artifacts/darwin.zip
 
       - name: List Build Artifacts
@@ -77,6 +78,14 @@ jobs:
         with:
           name: build-artifact-linux
           path: ~/artifacts/linux.tar.gz
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Save Linux ARM64 Build Artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: build-artifact-linux-arm64
+          path: ~/artifacts/linux-arm64.tar.gz
           if-no-files-found: error
           overwrite: true
 
@@ -94,7 +103,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest] # add other platforms as needed
+        platform: [ubuntu-latest, ubuntu-24.04-arm, macos-latest] # add other platforms as needed
         test_block:
           - "migration"
           - "brew"
@@ -146,6 +155,13 @@ jobs:
           name: build-artifact-linux
           path: ~/artifacts
 
+      - name: Download Linux ARM64 Build Artifacts
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        if: ${{ matrix.platform == 'ubuntu-24.04-arm' }}
+        with:
+          name: build-artifact-linux-arm64
+          path: ~/artifacts
+
       - name: Download Darwin Build Artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         if: ${{ matrix.platform == 'macos-latest' }}
@@ -165,12 +181,18 @@ jobs:
           mkdir ~/build
           tar -xf ~/artifacts/linux.tar.gz -C ~/build
 
+      - name: Extract Ubuntu ARM64 Artifacts and Install Binary
+        if: ${{ matrix.platform == 'ubuntu-24.04-arm' }}
+        run: |
+          mkdir ~/build
+          tar -xf ~/artifacts/linux-arm64.tar.gz -C ~/build
+
       - name: Set PATH
         run: |
-          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats-core/libexec" >> $GITHUB_ENV
+          echo "PATH=$PATH:$HOME/build:$GITHUB_WORKSPACE/tests/acceptance/lib/bats-core/libexec" >> $GITHUB_ENV
 
       - name: Go install jd
-        run: |
+        run: |-
           go install github.com/josephburnett/jd@latest
 
       - name: Install DB
