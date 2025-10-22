@@ -69,6 +69,7 @@ jobs:
           mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
           mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_linux_arm64.tar.gz ~/artifacts/linux-arm64.tar.gz
           mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_arm64.zip ~/artifacts/darwin.zip
+          mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin-amd64.zip
 
       - name: List Build Artifacts
         run: ls -l ~/artifacts
@@ -97,13 +98,21 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
+      - name: Save MacOS AMD64 Build Artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: build-artifact-darwin-amd64
+          path: ~/artifacts/darwin-amd64.zip
+          if-no-files-found: error
+          overwrite: true
+
   acceptance_test:
     name: Test
     needs: goreleaser
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, ubuntu-24.04-arm, macos-latest] # add other platforms as needed
+        platform: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-13] # add other platforms as needed
         test_block:
           - "migration"
           - "brew"
@@ -169,11 +178,24 @@ jobs:
           name: build-artifact-darwin
           path: ~/artifacts
 
+      - name: Download Darwin AMD64 Build Artifacts
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        if: ${{ matrix.platform == 'macos-13' }}
+        with:
+          name: build-artifact-darwin-amd64
+          path: ~/artifacts
+
       - name: Extract Darwin Artifacts and Install Binary
         if: ${{ matrix.platform == 'macos-latest' }}
         run: |
           mkdir ~/build
           unzip ~/artifacts/darwin.zip -d ~/build
+
+      - name: Extract Darwin AMD64 Artifacts and Install Binary
+        if: ${{ matrix.platform == 'macos-13' }}
+        run: |
+          mkdir ~/build
+          unzip ~/artifacts/darwin-amd64.zip -d ~/build
 
       - name: Extract Ubuntu Artifacts and Install Binary
         if: ${{ matrix.platform == 'ubuntu-latest' }}
