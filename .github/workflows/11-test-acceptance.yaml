@@ -112,7 +112,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-13] # add other platforms as needed
+        platform: [ubuntu-latest, ubuntu-24.04-arm, macos-latest] # add other platforms as needed
         test_block:
           - "migration"
           - "brew"
