@@ -78,8 +78,8 @@ jobs:
       - name: Pull & Extract - darwin amd64
         run: |-
           EXTRACT_DIR=extracted-darwin-amd64
-          # new link (darwin-amd64.txz) - https://drive.google.com/file/d/1tR4zYcquuM8wSCbCmiwqAiuZ9KPR9sVA/view?usp=drive_link
-          curl -L -o darwin-amd64.txz "https://drive.google.com/uc?export=download&id=1tR4zYcquuM8wSCbCmiwqAiuZ9KPR9sVA"
+          # new link (darwin-amd64.txz) - https://drive.google.com/file/d/14t83HKLJ-ckLwgqRnkVPMTeaw5wMoPu2/view?usp=drive_link
+          curl -L -o darwin-amd64.txz "https://drive.google.com/uc?export=download&id=14t83HKLJ-ckLwgqRnkVPMTeaw5wMoPu2"
           mkdir $EXTRACT_DIR
           tar -xf darwin-amd64.txz --directory $EXTRACT_DIR
 
