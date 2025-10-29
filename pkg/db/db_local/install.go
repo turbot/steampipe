@@ -27,7 +27,7 @@ import (
 var ensureMux sync.Mutex
 
 func noBackupWarning() string {
-	warningMessage := `Steampipe database has been upgraded from Postgres 14.2 to Postgres 14.17.
+	warningMessage := `Steampipe database has been upgraded from Postgres 14.17 to Postgres 14.19.
 
 Unfortunately the data in your public schema failed migration using the standard pg_dump and pg_restore tools. Your data has been preserved in the ~/.steampipe/db directory.
 

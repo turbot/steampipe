@@ -67,7 +67,9 @@ jobs:
         run: |
           mkdir ~/artifacts
           mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_linux_amd64.tar.gz ~/artifacts/linux.tar.gz
+          mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_linux_arm64.tar.gz ~/artifacts/linux-arm64.tar.gz
           mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_arm64.zip ~/artifacts/darwin.zip
+          mv $GITHUB_WORKSPACE/steampipe/dist/steampipe_darwin_amd64.zip ~/artifacts/darwin-amd64.zip
 
       - name: List Build Artifacts
         run: ls -l ~/artifacts
@@ -77,14 +79,6 @@ jobs:
         with:
           name: build-artifact-linux
           path: ~/artifacts/linux.tar.gz
-          if-no-files-found: error
-          overwrite: true
-
-      - name: Save MacOS Build Artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: build-artifact-darwin
-          path: ~/artifacts/darwin.zip
           if-no-files-found: error
           overwrite: true
 
@@ -146,20 +140,7 @@ jobs:
           name: build-artifact-linux
           path: ~/artifacts
 
-      - name: Download Darwin Build Artifacts
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
-        if: ${{ matrix.platform == 'macos-latest' }}
-        with:
-          name: build-artifact-darwin
-          path: ~/artifacts
-
-      - name: Extract Darwin Artifacts and Install Binary
-        if: ${{ matrix.platform == 'macos-latest' }}
-        run: |
-          mkdir ~/build
-          unzip ~/artifacts/darwin.zip -d ~/build
-
-      - name: Extract Ubuntu Artifacts and Install Binary
+      - name: Extract Linux Artifacts and Install Binary
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: |
           mkdir ~/build
@@ -167,20 +148,21 @@ jobs:
 
       - name: Set PATH
         run: |
-          echo "PATH=$PATH:$HOME/build:$GTIHUB_WORKSPACE/tests/acceptance/lib/bats-core/libexec" >> $GITHUB_ENV
+          echo "PATH=$PATH:$HOME/build:$GITHUB_WORKSPACE/tests/acceptance/lib/bats-core/libexec" >> $GITHUB_ENV
 
       - name: Go install jd
-        run: |
+        run: |-
           go install github.com/josephburnett/jd@latest
 
       - name: Install DB
         id: install-db
         continue-on-error: false
         run: |
-          steampipe query "select 1"
+          STEAMPIPE_LOG_LEVEL=trace steampipe query "select 1"
           steampipe plugin install chaos chaosdynamic --progress=false
 
       - name: Save Install DB Logs
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: install-db-logs-${{ matrix.test_block }}-${{ matrix.platform }}
