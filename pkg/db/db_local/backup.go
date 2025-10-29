@@ -332,7 +332,7 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
 	)
 
-	log.Println("[TRACE]", cmd.String())
+	log.Println("[TRACE] pg_restore command:", cmd.String())
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		log.Println("[TRACE] runRestoreUsingList process:", string(output))
