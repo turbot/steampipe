@@ -1,3 +1,7 @@
+## v1.2.0 [2025-10-30]
+_Whats new_
+- Update database version to PostgreSQL 14.19. ([#4644](https://github.com/turbot/steampipe/issues/4644))
+
 ## v1.1.4 [2025-06-04]
 _Bug fixes_
 - Fix issue where steampipe was returning 0 exit-code in batch mode even incase of API failures. ([#4551](https://github.com/turbot/steampipe/issues/4551))
