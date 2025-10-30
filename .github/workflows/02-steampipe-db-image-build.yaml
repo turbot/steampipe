@@ -9,12 +9,12 @@ on:
           Version number for the OCI image for this release - usually the same as the
           postgres version
         required: true
-        default: 14.17.0
+        default: 14.19.0
 
       postgres_version:
         description: "Postgres Version to package (eg 14.2.0)"
         required: true
-        default: 14.17.0
+        default: 14.19.0
 
 env:
   PROJECT_ID: steampipe
@@ -63,13 +63,13 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           ref: ${{ github.event.inputs.branch }}
 
       # Login to GHCR
       - name: Log in to the Container registry
-        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -78,32 +78,32 @@ jobs:
       - name: Pull & Extract - darwin amd64
         run: |-
           EXTRACT_DIR=extracted-darwin-amd64
-          # new link (darwin-amd64.txz) - https://drive.google.com/file/d/12fxd_jZxdP4Ilwd0BnefbVCLZV957TNJ/view?usp=drive_link
-          curl -L -o darwin-amd64.txz "https://drive.google.com/uc?export=download&id=12fxd_jZxdP4Ilwd0BnefbVCLZV957TNJ"
+          # new link (darwin-amd64.txz) - https://drive.google.com/file/d/14t83HKLJ-ckLwgqRnkVPMTeaw5wMoPu2/view?usp=drive_link
+          curl -L -o darwin-amd64.txz "https://drive.google.com/uc?export=download&id=14t83HKLJ-ckLwgqRnkVPMTeaw5wMoPu2"
           mkdir $EXTRACT_DIR
           tar -xf darwin-amd64.txz --directory $EXTRACT_DIR
 
       - name: Pull & Extract - darwin arm64
         run: |-
           EXTRACT_DIR=extracted-darwin-arm64
-          # new link (darwin-arm64.txz) - https://drive.google.com/file/d/1lG6eNYM5JaywbRxQBubzMDmbCtGVilQh/view?usp=drive_link
-          curl -L -o darwin-arm64.txz "https://drive.google.com/uc?export=download&id=1lG6eNYM5JaywbRxQBubzMDmbCtGVilQh"
+          # new link (darwin-arm64.txz) - https://drive.google.com/file/d/1UXdLn9aNDY_5OVLjgwF_cAPKiAsxHHB-/view?usp=drive_link
+          curl -L -o darwin-arm64.txz "https://drive.google.com/uc?export=download&id=1UXdLn9aNDY_5OVLjgwF_cAPKiAsxHHB-"
           mkdir $EXTRACT_DIR
           tar -xf darwin-arm64.txz --directory $EXTRACT_DIR
 
       - name: Pull & Extract - linux amd64
         run: |-
           EXTRACT_DIR=extracted-linux-amd64
-          # new link (linux-amd64.txz) - https://drive.google.com/file/d/11pqDcTtlD7RF5LPj-X4gRVfl4mk00fuy/view?usp=drive_link
-          curl -L -o linux-amd64.txz "https://drive.google.com/uc?export=download&id=11pqDcTtlD7RF5LPj-X4gRVfl4mk00fuy"
+          # new link (linux-amd64.txz) - https://drive.google.com/file/d/1CetXFMZZRAtkVr4gCTlcJcOfIm0wyyYn/view?usp=drive_link
+          curl -L -o linux-amd64.txz "https://drive.google.com/uc?export=download&id=1CetXFMZZRAtkVr4gCTlcJcOfIm0wyyYn"
           mkdir $EXTRACT_DIR
           tar -xf linux-amd64.txz --directory $EXTRACT_DIR
 
       - name: Pull & Extract - linux arm64
         run: |-
           EXTRACT_DIR=extracted-linux-arm64
-          # new link (linux-arm64.txz) - https://drive.google.com/file/d/1lpjyHegwd_8574uVWgaPB31yR7vRB8Zh/view?usp=drive_link
-          curl -L -o linux-arm64.txz "https://drive.google.com/uc?export=download&id=1lpjyHegwd_8574uVWgaPB31yR7vRB8Zh"
+          # new link (linux-arm64.txz) - https://drive.google.com/file/d/1ce43gJu8HPAufcsZEk87uFPyT6fGEair/view?usp=drive_link
+          curl -L -o linux-arm64.txz "https://drive.google.com/uc?export=download&id=1ce43gJu8HPAufcsZEk87uFPyT6fGEair"
           mkdir $EXTRACT_DIR
           tar -xf linux-arm64.txz --directory $EXTRACT_DIR
 
@@ -160,10 +160,10 @@ jobs:
               extracted-linux-amd64:application/vnd.turbot.steampipe.db.linux-amd64.layer.v1+tar \
               extracted-linux-arm64:application/vnd.turbot.steampipe.db.linux-arm64.layer.v1+tar
 
-          # check if the version is NOT an rc version before tagging as latest
+          # check if the version is NOT an pre-release version before tagging as latest
           if [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Tagging as latest: $LATEST_REF"
             oras tag $REF latest
           else
-            echo "Skipping latest tag for rc version: $VERSION"
+            echo "Skipping latest tag for pre-release version: $VERSION"
           fi
