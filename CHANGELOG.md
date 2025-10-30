@@ -1,3 +1,11 @@
+## v2.3.0 [2025-10-30]
+_Whats new_
+- Update database version to PostgreSQL 14.19. ([#4644](https://github.com/turbot/steampipe/issues/4644))
+
+_Bug fixes_
+- Fix issue where the truncation message was not showing in batch queries for table output format. ([#4674](https://github.com/turbot/steampipe/issues/4674))
+- Improve truncation message for datasets exceeding 10k rows in table output format. ([#4674](https://github.com/turbot/steampipe/issues/4674))
+
 ## v2.2.0 [2025-09-24]
 _Whats new_
 - Add support for using context functions in steampipe connection config. ([#4433](https://github.com/turbot/steampipe/issues/4433))
