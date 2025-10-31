@@ -78,16 +78,16 @@ jobs:
       - name: Pull & Extract - darwin amd64
         run: |-
           EXTRACT_DIR=extracted-darwin-amd64
-          # new link (darwin-amd64.txz) - https://drive.google.com/file/d/14t83HKLJ-ckLwgqRnkVPMTeaw5wMoPu2/view?usp=drive_link
-          curl -L -o darwin-amd64.txz "https://drive.google.com/uc?export=download&id=14t83HKLJ-ckLwgqRnkVPMTeaw5wMoPu2"
+          # new link (darwin-amd64.txz) - https://drive.google.com/file/d/1eFFtffVnZiyGbqdSEsT1rJwsx6B8UPfW/view?usp=drive_link
+          curl -L -o darwin-amd64.txz "https://drive.google.com/uc?export=download&id=1eFFtffVnZiyGbqdSEsT1rJwsx6B8UPfW"
           mkdir $EXTRACT_DIR
           tar -xf darwin-amd64.txz --directory $EXTRACT_DIR
 
       - name: Pull & Extract - darwin arm64
         run: |-
           EXTRACT_DIR=extracted-darwin-arm64
-          # new link (darwin-arm64.txz) - https://drive.google.com/file/d/1UXdLn9aNDY_5OVLjgwF_cAPKiAsxHHB-/view?usp=drive_link
-          curl -L -o darwin-arm64.txz "https://drive.google.com/uc?export=download&id=1UXdLn9aNDY_5OVLjgwF_cAPKiAsxHHB-"
+          # new link (darwin-arm64.txz) - https://drive.google.com/file/d/1JWaAsd6_DUpUPLgwmvlGkeeuv70V9Hfx/view?usp=drive_link
+          curl -L -o darwin-arm64.txz "https://drive.google.com/uc?export=download&id=1JWaAsd6_DUpUPLgwmvlGkeeuv70V9Hfx"
           mkdir $EXTRACT_DIR
           tar -xf darwin-arm64.txz --directory $EXTRACT_DIR
 
