@@ -75,7 +75,7 @@ jobs:
         run: ls -l ~/artifacts
 
       - name: Save Linux Build Artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: build-artifact-linux
           path: ~/artifacts/linux.tar.gz
@@ -163,7 +163,7 @@ jobs:
 
       - name: Save Install DB Logs
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: install-db-logs-${{ matrix.test_block }}-${{ matrix.platform }}
           path: ~/.steampipe/logs
@@ -180,7 +180,7 @@ jobs:
           echo ">> here"
 
       - name: Save Test Suite Logs
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: test-logs-${{ matrix.test_block }}-${{ matrix.platform }}
           path: ~/.steampipe/logs
