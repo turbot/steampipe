@@ -1,3 +1,7 @@
+## v2.3.1 [2025-10-31]
+_Bug fixes_
+- Fix issue where MacOS binaries failed to run due to absolute openssl paths. ([#4679](https://github.com/turbot/steampipe/issues/4679))
+
 ## v2.3.0 [2025-10-30]
 _Whats new_
 - Update database version to PostgreSQL 14.19. ([#4644](https://github.com/turbot/steampipe/issues/4644))
