@@ -32,7 +32,7 @@ const (
 
 	// PostgresImageRef is the OCI Image ref for the database binaries
 	PostgresImageRef    = "ghcr.io/turbot/steampipe/db:14.19.0"
-	PostgresImageDigest = "sha256:239e89f889c1e5ea6d4ed70403943f12eba25d3172875ab88cb9446b5e7db1ab"
+	PostgresImageDigest = "sha256:42fd8972700e40565799ee5f4dc6a66afa146e0994ef9103c944f2b5f5adc43a"
 
 	FdwImageRef       = "ghcr.io/turbot/steampipe/fdw:" + FdwVersion
 	FdwBinaryFileName = "steampipe_postgres_fdw.so"
