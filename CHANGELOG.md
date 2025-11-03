@@ -1,3 +1,7 @@
+## v2.3.2 [2025-11-03]
+_Bug fixes_
+- Fix Linux builds by aligning the glibc baseline with supported distros to restore compatibility. ([#4691](https://github.com/turbot/steampipe/issues/4691))
+
 ## v2.3.1 [2025-10-31]
 _Bug fixes_
 - Fix issue where MacOS binaries failed to run due to absolute openssl paths. ([#4679](https://github.com/turbot/steampipe/issues/4679))
