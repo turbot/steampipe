@@ -8,6 +8,7 @@ func TestIsValidDatabaseName(t *testing.T) {
 		"_valid_name": true,
 		"InvalidName": false,
 		"123Invalid":  false,
+		"":            false, // empty string should return false
 	}
 
 	for dbName, expectedResult := range tests {
