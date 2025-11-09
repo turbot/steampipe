@@ -90,13 +90,18 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 
 	for i, q := range initData.Queries {
 		// if executeQuery fails it returns err, else it returns the number of rows that returned errors while execution
-		if err, failures = executeQuery(ctx, initData, q); err != nil {
+		var rowErrors int
+		err, rowErrors = executeQuery(ctx, initData, q)
+		if err != nil {
 			failures++
 			error_helpers.ShowWarning(fmt.Sprintf("query %d of %d failed: %v", i+1, len(initData.Queries), error_helpers.DecodePgError(err)))
 			// if timing flag is enabled, show the time taken for the query to fail
 			if cmdconfig.Viper().GetString(pconstants.ArgTiming) != pconstants.ArgOff {
 				querydisplay.DisplayErrorTiming(t)
 			}
+		} else {
+			// Add row errors to the total failures count
+			failures += rowErrors
 		}
 		// TODO move into display layer
 		// Only show the blank line between queries, not after the last one
