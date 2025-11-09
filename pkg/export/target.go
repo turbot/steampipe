@@ -13,6 +13,11 @@ type Target struct {
 }
 
 func (t *Target) Export(ctx context.Context, input ExportSourceData) (string, error) {
+	// Add defensive nil check
+	if t.exporter == nil {
+		return "", fmt.Errorf("target has nil exporter - invalid target")
+	}
+
 	err := t.exporter.Export(ctx, input, t.filePath)
 	if err != nil {
 		return "", err
