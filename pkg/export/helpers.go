@@ -14,13 +14,23 @@ func GenerateDefaultExportFileName(executionName, fileExtension string) string {
 }
 
 func Write(filePath string, exportData io.Reader) error {
-	// create the output file
-	destination, err := os.Create(filePath)
+	// Write to temp file first for atomic operation
+	tempPath := filePath + ".tmp"
+	destination, err := os.Create(tempPath)
 	if err != nil {
 		return err
 	}
-	defer destination.Close()
 
+	// Copy data to temp file
 	_, err = io.Copy(destination, exportData)
-	return err
+	destination.Close()
+
+	if err != nil {
+		// Clean up temp file on error
+		os.Remove(tempPath)
+		return err
+	}
+
+	// Atomic rename - either succeeds completely or not at all
+	return os.Rename(tempPath, filePath)
 }
