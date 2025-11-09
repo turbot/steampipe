@@ -334,8 +334,7 @@ func TestNewResult_ErrorStreaming(t *testing.T) {
 	}
 }
 
-// TestNewResult_DoubleClose documents that calling Close() twice causes a panic
-// This is a known behavior of the underlying pipe-fittings Result type
+// TestNewResult_DoubleClose verifies that calling Close() twice is safe and idempotent
 func TestNewResult_DoubleClose(t *testing.T) {
 	cols := []*queryresult.ColumnDef{
 		{Name: "id", DataType: "integer"},
@@ -345,10 +344,57 @@ func TestNewResult_DoubleClose(t *testing.T) {
 
 	// First close should succeed
 	result.Close()
+	assert.True(t, result.IsClosed(), "Result should be marked as closed after first Close()")
 
-	// Second close will panic - this test documents this behavior
-	// In production code, callers must ensure Close() is called only once
-	assert.Panics(t, func() {
+	// Second close should be safe (no panic)
+	assert.NotPanics(t, func() {
 		result.Close()
-	}, "Calling Close() twice should panic")
+	}, "Calling Close() twice should not panic")
+
+	// Result should still be closed
+	assert.True(t, result.IsClosed(), "Result should still be closed after second Close()")
+}
+
+// TestNewResult_ConcurrentClose verifies that concurrent Close() calls are safe
+func TestNewResult_ConcurrentClose(t *testing.T) {
+	cols := []*queryresult.ColumnDef{
+		{Name: "id", DataType: "integer"},
+	}
+
+	result := NewResult(cols)
+
+	// Attempt to close from multiple goroutines concurrently
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			assert.NotPanics(t, func() {
+				result.Close()
+			}, "Concurrent Close() calls should not panic")
+		}()
+	}
+
+	wg.Wait()
+	assert.True(t, result.IsClosed(), "Result should be closed after concurrent Close() calls")
+}
+
+// TestNewResult_IsClosed verifies the IsClosed() method works correctly
+func TestNewResult_IsClosed(t *testing.T) {
+	cols := []*queryresult.ColumnDef{
+		{Name: "id", DataType: "integer"},
+	}
+
+	result := NewResult(cols)
+
+	// Initially not closed
+	assert.False(t, result.IsClosed(), "Result should not be closed initially")
+
+	// After Close(), should be closed
+	result.Close()
+	assert.True(t, result.IsClosed(), "Result should be closed after Close()")
+
+	// Multiple checks should still return true
+	assert.True(t, result.IsClosed(), "IsClosed() should remain true")
+	assert.True(t, result.IsClosed(), "IsClosed() should remain true on repeated calls")
 }
