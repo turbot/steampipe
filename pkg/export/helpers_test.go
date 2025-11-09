@@ -2,11 +2,13 @@ package export
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/turbot/steampipe/v2/pkg/test/helpers"
 )
 
 // TestGenerateDefaultExportFileName_Format tests the filename format
@@ -91,4 +93,29 @@ func TestGenerateDefaultExportFileName_Components(t *testing.T) {
 	currentYear := fmt.Sprintf("%d", now.Year())
 	timestampPart := parts[1]
 	assert.True(t, strings.HasPrefix(timestampPart, currentYear), "timestamp should start with current year")
+}
+
+// TestWrite_InvalidPath tests Write with an invalid file path
+func TestWrite_InvalidPath(t *testing.T) {
+	// Try to write to a path that doesn't exist
+	invalidPath := "/nonexistent/directory/that/does/not/exist/file.json"
+	data := strings.NewReader(`{"test": "data"}`)
+
+	err := Write(invalidPath, data)
+	assert.Error(t, err, "writing to invalid path should fail")
+}
+
+// TestWrite_SuccessfulWrite tests Write with valid path
+func TestWrite_SuccessfulWrite(t *testing.T) {
+	tempDir := helpers.CreateTempDir(t)
+	filePath := filepath.Join(tempDir, "test.json")
+	data := strings.NewReader(`{"test": "data"}`)
+
+	err := Write(filePath, data)
+	assert.NoError(t, err)
+
+	// Verify file exists and has correct content
+	assert.True(t, helpers.FileExists(filePath))
+	content := helpers.ReadTestFile(t, filePath)
+	assert.Equal(t, `{"test": "data"}`, content)
 }

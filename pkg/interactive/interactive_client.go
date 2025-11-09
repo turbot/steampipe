@@ -642,11 +642,23 @@ func (c *InteractiveClient) getTableAndConnectionSuggestions(word string) []prom
 	parts := strings.SplitN(word, ".", 2)
 	if len(parts) == 1 {
 		// no connection, just return schemas and unqualified tables
-		return append(c.suggestions.schemas, c.suggestions.unqualifiedTables...)
+		// initialize empty slice if suggestions are nil to avoid returning nil
+		result := []prompt.Suggest{}
+		if c.suggestions.schemas != nil {
+			result = append(result, c.suggestions.schemas...)
+		}
+		if c.suggestions.unqualifiedTables != nil {
+			result = append(result, c.suggestions.unqualifiedTables...)
+		}
+		return result
 	}
 
 	connection := strings.TrimSpace(parts[0])
 	t := c.suggestions.tablesBySchema[connection]
+	// return empty slice if not found instead of nil
+	if t == nil {
+		return []prompt.Suggest{}
+	}
 	return t
 }
 

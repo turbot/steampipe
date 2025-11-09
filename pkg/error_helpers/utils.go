@@ -103,6 +103,9 @@ func HandleQueryTimeoutError(err error) error {
 }
 
 func IsCancelledError(err error) bool {
+	if err == nil {
+		return false
+	}
 	return errors.Is(err, context.Canceled) || strings.Contains(err.Error(), "canceling statement due to user request")
 }
 

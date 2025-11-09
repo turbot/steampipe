@@ -361,3 +361,205 @@ func TestGenerateDefaultExportFileName(t *testing.T) {
 	assert.GreaterOrEqual(t, len(parts), 3) // name, timestamp, extension
 }
 
+// TestRegisterExporterByExtension_ExtensionClash tests the complex logic for handling extension conflicts
+func TestRegisterExporterByExtension_ExtensionClash(t *testing.T) {
+	tests := map[string]struct {
+		first           *testExporter
+		second          *testExporter
+		expectedWinner  string
+		description     string
+	}{
+		"default exporter wins over non-default": {
+			first:          &testExporter{name: "custom", extension: ".json", alias: ""},
+			second:         &testExporter{name: "json", extension: ".json", alias: ""},
+			expectedWinner: "json",
+			description:    "json exporter is default for .json extension",
+		},
+		"first default keeps precedence": {
+			first:          &testExporter{name: "json", extension: ".json", alias: ""},
+			second:         &testExporter{name: "custom", extension: ".json", alias: ""},
+			expectedWinner: "json",
+			description:    "first registered default keeps precedence",
+		},
+		"neither default registers second": {
+			first:          &testExporter{name: "asff", extension: ".json", alias: "asff.json"},
+			second:         &testExporter{name: "nunit3", extension: ".json", alias: "nunit3.json"},
+			expectedWinner: "nunit3",
+			description:    "when neither is default, the second exporter wins",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			m := NewManager()
+
+			// Register first exporter
+			err := m.Register(tc.first)
+			assert.NoError(t, err)
+
+			// Register second exporter
+			err = m.Register(tc.second)
+			assert.NoError(t, err)
+
+			// Check which exporter is mapped to the extension
+			exporter, exists := m.registeredExtensions[".json"]
+			assert.True(t, exists, tc.description)
+			assert.Equal(t, tc.expectedWinner, exporter.Name(), tc.description)
+		})
+	}
+}
+
+// TestRegisterExporterByExtension_MultiSegmentExtension tests handling of extensions like .asff.json
+func TestRegisterExporterByExtension_MultiSegmentExtension(t *testing.T) {
+	m := NewManager()
+
+	// Register exporter with multi-segment extension
+	asffExporter := &testExporter{
+		name:      "asff",
+		extension: ".asff.json",
+		alias:     "asff.json",
+	}
+
+	err := m.Register(asffExporter)
+	assert.NoError(t, err)
+
+	// Should be registered under both full extension and short extension
+	fullExtExporter, fullExists := m.registeredExtensions[".asff.json"]
+	assert.True(t, fullExists)
+	assert.Equal(t, "asff", fullExtExporter.Name())
+
+	shortExtExporter, shortExists := m.registeredExtensions[".json"]
+	assert.True(t, shortExists)
+	assert.Equal(t, "asff", shortExtExporter.Name())
+}
+
+// TestHasNamedExport tests detection of named exports
+func TestHasNamedExport(t *testing.T) {
+	m := NewManager()
+	m.Register(&dummyJSONExporter)
+	m.Register(&dummyCSVExporter)
+
+	tests := map[string]struct {
+		exports  []string
+		expected bool
+	}{
+		"only format names": {
+			exports:  []string{"json", "csv"},
+			expected: false,
+		},
+		"only named files": {
+			exports:  []string{"output.json", "data.csv"},
+			expected: true,
+		},
+		"mixed named and unnamed": {
+			exports:  []string{"json", "output.csv"},
+			expected: true, // Has at least one named export
+		},
+		"single named export": {
+			exports:  []string{"report.json"},
+			expected: true,
+		},
+		"single format name": {
+			exports:  []string{"json"},
+			expected: false,
+		},
+		"empty list": {
+			exports:  []string{},
+			expected: false,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			result := m.HasNamedExport(tc.exports)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+// TestDoExport_WithErrors tests error handling in DoExport
+func TestDoExport_WithErrors(t *testing.T) {
+	tests := map[string]struct {
+		exports      []string
+		expectError  bool
+		expectCount  int
+		description  string
+	}{
+		"empty exports": {
+			exports:      []string{},
+			expectError:  false,
+			expectCount:  0,
+			description:  "empty exports should return nil without error",
+		},
+		"invalid format": {
+			exports:      []string{"invalid-format"},
+			expectError:  true,
+			expectCount:  0,
+			description:  "invalid format should return error",
+		},
+		"partial success with invalid": {
+			exports:      []string{"json", "invalid-format"},
+			expectError:  true,
+			expectCount:  0,
+			description:  "should fail if any format is invalid",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			m := NewManager()
+			m.Register(&fileWritingExporter{name: "json", extension: ".json"})
+
+			testData := &testExportSourceData{}
+			locations, err := m.DoExport(context.Background(), "test", testData, tc.exports)
+
+			if tc.expectError {
+				assert.Error(t, err, tc.description)
+			} else {
+				assert.NoError(t, err, tc.description)
+			}
+			assert.Len(t, locations, tc.expectCount)
+		})
+	}
+}
+
+// TestRegister_ErrorCases tests error handling in Register
+func TestRegister_ErrorCases(t *testing.T) {
+	tests := map[string]struct {
+		setup       func(*Manager)
+		exporter    *testExporter
+		expectError bool
+		description string
+	}{
+		"duplicate alias fails": {
+			setup: func(m *Manager) {
+				// Register exporter with alias "sps"
+				m.Register(&testExporter{name: "snapshot1", extension: ".sps", alias: "sps"})
+			},
+			exporter:    &testExporter{name: "snapshot2", extension: ".snap", alias: "sps"},
+			expectError: true,
+			description: "registering exporter with duplicate alias should fail",
+		},
+		"exporter with empty alias succeeds": {
+			setup:       func(m *Manager) {},
+			exporter:    &testExporter{name: "test", extension: ".test", alias: ""},
+			expectError: false,
+			description: "exporter with empty alias should succeed",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			m := NewManager()
+			tc.setup(m)
+
+			err := m.Register(tc.exporter)
+			if tc.expectError {
+				assert.Error(t, err, tc.description)
+			} else {
+				assert.NoError(t, err, tc.description)
+			}
+		})
+	}
+}
+

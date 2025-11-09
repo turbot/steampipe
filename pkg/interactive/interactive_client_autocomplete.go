@@ -44,6 +44,12 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 		return
 	}
 
+	// check if client is available before accessing it
+	client := c.client()
+	if client == nil {
+		return
+	}
+
 	// unqualified table names
 	// use lookup to avoid dupes from dynamic plugins
 	// (this is needed as GetFirstSearchPathConnectionForPlugins will return ALL dynamic connections)
@@ -57,7 +63,7 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 	unqualifiedTablesToAdd[constants.ServerSettingsTable] = struct{}{}
 
 	// get the first search path connection for each plugin
-	firstConnectionPerPlugin := connectionStateMap.GetFirstSearchPathConnectionForPlugins(c.client().GetRequiredSessionSearchPath())
+	firstConnectionPerPlugin := connectionStateMap.GetFirstSearchPathConnectionForPlugins(client.GetRequiredSessionSearchPath())
 	firstConnectionPerPluginLookup := utils.SliceToLookup(firstConnectionPerPlugin)
 	// NOTE: add temporary schema into firstConnectionPerPluginLookup
 	// as we want to add unqualified tables from there into autocomplete

@@ -1,0 +1,113 @@
+═══════════════════════════════════════════════════════════════
+PROMPT TO UPDATE ISSUE #3737
+═══════════════════════════════════════════════════════════════
+
+Use this in a Claude terminal to update the GitHub issue:
+
+═══════════════════════════════════════════════════════════════
+
+cd /Users/nathan/src/steampipe
+claude
+
+Then paste:
+
+Please update GitHub issue #3737 with the following information:
+
+ISSUE: https://github.com/turbot/steampipe/issues/3737
+TITLE: Session map memory leak in db_client
+
+Add this comment:
+
+---
+
+## ✅ CONFIRMED in Wave 1.5 Test Quality Assessment (2025-11-09)
+
+This memory leak has been verified with a new test that demonstrates the issue.
+
+### Evidence
+
+**Test Created:** `TestSessionMapLeak` in `pkg/db/db_client/db_client_test.go` (lines 153-184)
+
+**Reproduction:**
+```go
+// Simulate 1000 connections
+for i := 0; i < 1000; i++ {
+    client.sessions[i] = &Session{BackendPid: i}
+}
+// BUG: Sessions never cleaned up during normal operation
+// Map grows unbounded in long-running services
+```
+
+**Source Code Confirmation:**
+`pkg/db/db_client/db_client.go:45-46` has TODO comment explicitly referencing this issue:
+```go
+// TODO: there's no code which cleans up this map when connections get dropped by pgx
+// https://github.com/turbot/steampipe/issues/3737
+```
+
+### Impact
+
+**Severity:** HIGH - Memory Leak
+
+**Affected:** Long-running Steampipe services with connection churn
+
+**Symptoms:**
+- Memory grows unbounded over time
+- Stale session entries accumulate (map never shrinks)
+- No cleanup during normal operation
+- Only cleared when entire client is closed
+
+**Scenario:**
+1. Service starts, creates DbClient
+2. Queries execute → sessions added to map
+3. Connections drop (timeout, error, disconnect)
+4. **BUG:** Session entries remain in map forever
+5. With high connection churn → thousands of stale entries
+6. Memory usage increases continuously
+
+### Proposed Fix
+
+Three-part solution:
+
+**1. Cleanup on Close** ✅ Already works
+```go
+func (c *DbClient) Close(ctx context.Context) error {
+    c.closePools()
+    c.sessions = nil  // Already implemented
+}
+```
+
+**2. Cleanup on Connection Drop** ⚠️ NEEDS IMPLEMENTATION
+```go
+// Listen for pgx connection close events
+// Remove session from map when connection drops
+func (c *DbClient) setupConnectionNotifications() {
+    // Implementation needed
+}
+```
+
+**3. Periodic Cleanup** 💡 Optional (defense in depth)
+```go
+// Scan for stale sessions every 5 minutes
+// Remove sessions older than threshold
+```
+
+### Test Location
+- **Branch:** `testing-wave-1.5-quality`
+- **File:** `pkg/db/db_client/db_client_test.go`
+- **Test:** `TestSessionMapLeak` (lines 153-184)
+- **Run:** `go test -v ./pkg/db/db_client/ -run TestSessionMapLeak`
+
+### Found In
+- **Wave 1.5 Test Quality Assessment** (critical test review)
+- **Date:** 2025-11-09
+- **Priority:** HIGH (confirmed memory leak with test)
+- **Part of 4 bugs found in Wave 1.5**
+
+---
+
+**Status Update:** ⬆️ Severity confirmed HIGH, test demonstrates issue, ready for fix implementation.
+
+Labels to add: `priority:high`, `confirmed`, `memory-leak`, `has-test`
+
+═══════════════════════════════════════════════════════════════

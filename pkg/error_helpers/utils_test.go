@@ -143,10 +143,15 @@ func TestIsCancelledError(t *testing.T) {
 			err:        errors.New("error while canceling statement due to user request occurred"),
 			isCanceled: true,
 		},
+		"nil error": {
+			err:        nil,
+			isCanceled: false,
+		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			// BUG CAUGHT: This test will panic if IsCancelledError doesn't check for nil
 			result := IsCancelledError(tc.err)
 			assert.Equal(t, tc.isCanceled, result)
 		})
@@ -446,85 +451,11 @@ func TestAllErrorsNil(t *testing.T) {
 	}
 }
 
-func TestShowError(t *testing.T) {
-	// Test that ShowError doesn't panic with various inputs
-	tests := map[string]struct {
-		err error
-	}{
-		"nil error": {
-			err: nil,
-		},
-		"simple error": {
-			err: errors.New("test error"),
-		},
-		"context canceled": {
-			err: context.Canceled,
-		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			ctx := context.Background()
-			// Just verify it doesn't panic
-			assert.NotPanics(t, func() {
-				ShowError(ctx, tc.err)
-			})
-		})
-	}
-}
-
-func TestShowErrorWithMessage(t *testing.T) {
-	// Test that ShowErrorWithMessage doesn't panic with various inputs
-	tests := map[string]struct {
-		err     error
-		message string
-	}{
-		"nil error": {
-			err:     nil,
-			message: "Operation",
-		},
-		"simple error with message": {
-			err:     errors.New("test error"),
-			message: "Database operation failed",
-		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			ctx := context.Background()
-			// Just verify it doesn't panic
-			assert.NotPanics(t, func() {
-				ShowErrorWithMessage(ctx, tc.err, tc.message)
-			})
-		})
-	}
-}
-
-func TestShowWarning(t *testing.T) {
-	// Test that ShowWarning doesn't panic with various inputs
-	tests := map[string]struct {
-		warning string
-	}{
-		"empty warning": {
-			warning: "",
-		},
-		"simple warning": {
-			warning: "deprecated feature",
-		},
-		"multi-line warning": {
-			warning: "line 1\nline 2",
-		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			// Just verify it doesn't panic
-			assert.NotPanics(t, func() {
-				ShowWarning(tc.warning)
-			})
-		})
-	}
-}
+// DELETED: LOW-VALUE tests that just checked "doesn't panic"
+// - TestShowError: No complex logic to test (just prints)
+// - TestShowErrorWithMessage: No complex logic to test (just prints)
+// - TestShowWarning: No complex logic to test (just prints)
+// The actual logic (HandleCancelError, TransformErrorToSteampipe) is tested elsewhere.
 
 func TestTransformErrorEdgeCases(t *testing.T) {
 	tests := map[string]struct {

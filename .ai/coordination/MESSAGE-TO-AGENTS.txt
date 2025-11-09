@@ -1,0 +1,40 @@
+═══════════════════════════════════════════════════════════════
+URGENT MESSAGE TO ALL WAVE 2 AGENTS
+═══════════════════════════════════════════════════════════════
+
+COPY-PASTE THIS TO EACH RUNNING AGENT:
+
+═══════════════════════════════════════════════════════════════
+
+IMPORTANT UPDATE: Coverage targets in your task file are WRONG.
+
+Please read: .ai/coordination/WAVE-2-QUALITY-OVERRIDE.md
+
+KEY CHANGES:
+- IGNORE coverage % targets (70%, 60%, etc.)
+- Focus on finding bugs, not hitting coverage numbers
+- Delete any low-value tests you've written
+- Success = bugs found, not coverage achieved
+
+UPDATED SUCCESS CRITERIA:
+✅ Find at least 1 bug in your domain
+✅ Zero low-value tests (no empty functions, trivial getters, constants)
+✅ All tests must be HIGH value (complex logic, error paths, edge cases)
+✅ Test value score > 2.0
+✅ Coverage is tracked but NOT a goal
+
+RATIONALE:
+Wave 1.5 proved: 30% coverage with quality tests > 70% coverage with mixed quality.
+We deleted 30% of tests and found 4 bugs. Quality > Coverage.
+
+Please audit your work so far and delete any tests that:
+- Test empty functions or trivial getters
+- Just check "doesn't panic"
+- Test constants or hardcoded strings
+- Use fake test doubles that always succeed
+
+Better to have 50 high-value tests than 200 mixed-quality tests.
+
+Continue with bug hunting focus!
+
+═══════════════════════════════════════════════════════════════
