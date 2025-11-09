@@ -33,3 +33,6 @@
 
 # Dist directory is created by goreleaser
 /dist
+
+# AI workflow and scratch files
+/.ai/wip/
