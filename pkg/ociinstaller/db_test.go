@@ -192,9 +192,16 @@ func TestGetImageData_MissingAnnotations_BugDocumentation(t *testing.T) {
 func TestDbDownloader_GetImageData_WithValidLayers(t *testing.T) {
 	downloader := newDbDownloader()
 
+	// Use runtime platform to ensure test works on any OS/arch
+	provider := SteampipeMediaTypeProvider{}
+	mediaTypes, err := provider.MediaTypeForPlatform("db")
+	if err != nil {
+		t.Fatalf("Failed to get media type: %v", err)
+	}
+
 	layers := []ocispec.Descriptor{
 		{
-			MediaType: "application/vnd.turbot.steampipe.db.darwin-arm64.layer.v1+tar",
+			MediaType: mediaTypes[0],
 			Annotations: map[string]string{
 				"org.opencontainers.image.title": "postgres-14.2",
 			},
