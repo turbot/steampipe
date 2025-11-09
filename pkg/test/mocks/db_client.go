@@ -21,7 +21,7 @@ type MockClient struct {
 	AcquireManagementConnectionFunc func(context.Context) (*pgxpool.Conn, error)
 	AcquireSessionFunc              func(context.Context) *db_common.AcquireSessionResult
 	ExecuteSyncFunc                 func(context.Context, string, ...any) (*pqueryresult.SyncQueryResult, error)
-	ExecuteFunc                     func(context.Context, string, ...any) (*pqueryresult.Result[queryresult.TimingResultStream], error)
+	ExecuteFunc                     func(context.Context, string, ...any) (*queryresult.Result, error)
 	ExecuteSyncInSessionFunc        func(context.Context, *db_common.DatabaseSession, string, ...any) (*pqueryresult.SyncQueryResult, error)
 	ExecuteInSessionFunc            func(context.Context, *db_common.DatabaseSession, func(), string, ...any) (*queryresult.Result, error)
 	ResetPoolsFunc                  func(context.Context)
@@ -134,12 +134,13 @@ func (m *MockClient) ExecuteSync(ctx context.Context, sql string, args ...any) (
 }
 
 // Execute implements db_common.Client
-func (m *MockClient) Execute(ctx context.Context, sql string, args ...any) (*pqueryresult.Result[queryresult.TimingResultStream], error) {
+func (m *MockClient) Execute(ctx context.Context, sql string, args ...any) (*queryresult.Result, error) {
 	m.ExecuteCalls = append(m.ExecuteCalls, ExecuteCall{SQL: sql, Args: args})
 	if m.ExecuteFunc != nil {
 		return m.ExecuteFunc(ctx, sql, args...)
 	}
-	return &pqueryresult.Result[queryresult.TimingResultStream]{}, nil
+	// Return a properly initialized Result
+	return queryresult.NewResult([]*pqueryresult.ColumnDef{}), nil
 }
 
 // ExecuteSyncInSession implements db_common.Client

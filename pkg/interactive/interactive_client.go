@@ -401,7 +401,8 @@ func (c *InteractiveClient) executeQuery(ctx context.Context, queryCtx context.C
 			querydisplay.DisplayErrorTiming(t)
 		}
 	} else {
-		c.promptResult.Streamer.StreamResult(result)
+		// Pass the embedded pipe-fittings Result to the streamer
+		c.promptResult.Streamer.StreamResult(result.Result)
 	}
 }
 

@@ -18,7 +18,8 @@ func ExecuteQuery(ctx context.Context, client Client, queryString string, args .
 		return nil, err
 	}
 	go func() {
-		resultsStreamer.StreamResult(result)
+		// Pass the embedded pipe-fittings Result to the streamer
+		resultsStreamer.StreamResult(result.Result)
 		resultsStreamer.Close()
 	}()
 	return resultsStreamer, nil

@@ -9,12 +9,14 @@ import (
 
 	"github.com/spf13/viper"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
+	pqueryresult "github.com/turbot/pipe-fittings/v2/queryresult"
 	"github.com/turbot/steampipe/v2/pkg/query/queryresult"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
 
-func DisplayTiming(result *queryresult.Result, rowCount int) {
+// DisplayTiming accepts the pipe-fittings Result type since it only needs to read timing data
+func DisplayTiming(result *pqueryresult.Result[queryresult.TimingResultStream], rowCount int) {
 	// show timing
 	timingResult := getTiming(result, rowCount)
 	if viper.GetString(pconstants.ArgTiming) != pconstants.ArgOff && timingResult != nil {
@@ -27,7 +29,7 @@ func DisplayTiming(result *queryresult.Result, rowCount int) {
 	}
 }
 
-func getTiming(result *queryresult.Result, count int) *queryresult.TimingResult {
+func getTiming(result *pqueryresult.Result[queryresult.TimingResultStream], count int) *queryresult.TimingResult {
 	timingConfig := viper.GetString(pconstants.ArgTiming)
 
 	if timingConfig == pconstants.ArgOff || timingConfig == "false" {
