@@ -44,6 +44,11 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 		return
 	}
 
+	// check if client is nil to avoid panic
+	if c.client() == nil {
+		return
+	}
+
 	// unqualified table names
 	// use lookup to avoid dupes from dynamic plugins
 	// (this is needed as GetFirstSearchPathConnectionForPlugins will return ALL dynamic connections)
