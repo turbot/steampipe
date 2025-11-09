@@ -39,21 +39,10 @@ func TestIsValidDatabaseName(t *testing.T) {
 	}
 }
 
-// TestIsValidDatabaseName_EmptyString tests that empty string would panic
-// This documents the current behavior - ideally the function should handle this gracefully
+// TestIsValidDatabaseName_EmptyString tests that empty string returns false
 func TestIsValidDatabaseName_EmptyString(t *testing.T) {
-	t.Skip("Function panics on empty string - known limitation, not fixing as part of this test task")
-
-	// This would panic:
-	// isValidDatabaseName("")
-	//
-	// Ideally the function should check length first:
-	// func isValidDatabaseName(databaseName string) bool {
-	//     if len(databaseName) == 0 {
-	//         return false
-	//     }
-	//     return databaseName[0] == '_' || (databaseName[0] >= 'a' && databaseName[0] <= 'z')
-	// }
+	result := isValidDatabaseName("")
+	assert.False(t, result, "isValidDatabaseName(\"\") should return false")
 }
 
 // TestIsDBInstalled tests database installation detection
