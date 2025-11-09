@@ -378,6 +378,9 @@ func startServiceForInstall(port int) (*psutils.Process, error) {
 }
 
 func isValidDatabaseName(databaseName string) bool {
+	if len(databaseName) == 0 {
+		return false
+	}
 	return databaseName[0] == '_' || (databaseName[0] >= 'a' && databaseName[0] <= 'z')
 }
 
