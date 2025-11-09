@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"slices"
 	"strings"
@@ -185,12 +185,13 @@ func getPipedStdinData() string {
 		error_helpers.ShowWarning("could not fetch information about STDIN")
 		return ""
 	}
-	stdinData := ""
 	if (fi.Mode()&os.ModeCharDevice) == 0 && fi.Size() > 0 {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			stdinData = fmt.Sprintf("%s%s", stdinData, scanner.Text())
+		data, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			error_helpers.ShowWarning("could not read from STDIN")
+			return ""
 		}
+		return string(data)
 	}
-	return stdinData
+	return ""
 }
