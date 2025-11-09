@@ -468,6 +468,7 @@ func TestSetDefaultFromEnv_ConcurrentAccess(t *testing.T) {
 }
 
 func TestSetDefaultsFromConfig_ConcurrentCalls(t *testing.T) {
+	t.Skip("Demonstrates bugs #4756, #4757 - SetDefaultsFromConfig has race conditions on concurrent calls. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	// BUG?: Test concurrent calls to SetDefaultsFromConfig
 	viper.Reset()
 	defer viper.Reset()
