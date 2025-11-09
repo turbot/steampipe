@@ -80,7 +80,9 @@ func InitCmd() {
 
 func hideRootFlags(flags ...string) {
 	for _, flag := range flags {
-		rootCmd.Flag(flag).Hidden = true
+		if f := rootCmd.Flag(flag); f != nil {
+			f.Hidden = true
+		}
 	}
 }
 
