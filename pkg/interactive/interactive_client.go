@@ -647,6 +647,9 @@ func (c *InteractiveClient) getTableAndConnectionSuggestions(word string) []prom
 
 	connection := strings.TrimSpace(parts[0])
 	t := c.suggestions.tablesBySchema[connection]
+	if t == nil {
+		return []prompt.Suggest{}
+	}
 	return t
 }
 
