@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
@@ -15,6 +16,7 @@ import (
 )
 
 type Manager struct {
+	mu                   sync.RWMutex
 	registeredExporters  map[string]Exporter
 	registeredExtensions map[string]Exporter
 }
@@ -27,6 +29,9 @@ func NewManager() *Manager {
 }
 
 func (m *Manager) Register(exporter Exporter) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	name := exporter.Name()
 	if _, ok := m.registeredExporters[name]; ok {
 		return fmt.Errorf("failed to register exporter - duplicate name %s", name)
@@ -114,6 +119,9 @@ func (m *Manager) resolveTargetsFromArgs(exportArgs []string, executionName stri
 }
 
 func (m *Manager) getExportTarget(export, executionName string) (*Target, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	if e, ok := m.registeredExporters[export]; ok {
 		t := &Target{
 			exporter: e,
