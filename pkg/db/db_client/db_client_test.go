@@ -57,16 +57,16 @@ func TestResetPools(t *testing.T) {
 		expectPanic  bool
 		description  string
 	}{
-		"panics with nil userPool": {
+		"does not panic with nil pools": {
 			setupClient: func() *DbClient {
-				// Create client with nil userPool (bug!)
+				// Create client with nil pools - should handle gracefully
 				return &DbClient{
 					userPool:       nil,
 					managementPool: nil,
 				}
 			},
-			expectPanic: true,
-			description: "BUG: ResetPools panics with nil pools - needs nil checks like closePools()",
+			expectPanic: false,
+			description: "ResetPools should handle nil pools gracefully with nil checks",
 		},
 	}
 
@@ -77,7 +77,6 @@ func TestResetPools(t *testing.T) {
 
 			if tc.expectPanic {
 				// This SHOULD panic with current implementation
-				// TODO: Fix ResetPools to add nil checks
 				assert.Panics(t, func() {
 					client.ResetPools(ctx)
 				}, tc.description)
