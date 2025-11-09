@@ -246,8 +246,12 @@ func (c *DbClient) ResetPools(ctx context.Context) {
 	log.Println("[TRACE] db_client.ResetPools start")
 	defer log.Println("[TRACE] db_client.ResetPools end")
 
-	c.userPool.Reset()
-	c.managementPool.Reset()
+	if c.userPool != nil {
+		c.userPool.Reset()
+	}
+	if c.managementPool != nil {
+		c.managementPool.Reset()
+	}
 }
 
 func (c *DbClient) buildSchemasQuery(schemas ...string) string {
