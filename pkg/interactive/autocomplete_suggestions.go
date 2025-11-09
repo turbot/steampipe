@@ -1,11 +1,14 @@
 package interactive
 
 import (
-	"github.com/c-bata/go-prompt"
 	"sort"
+	"sync"
+
+	"github.com/c-bata/go-prompt"
 )
 
 type autoCompleteSuggestions struct {
+	mu                 sync.RWMutex
 	schemas            []prompt.Suggest
 	unqualifiedTables  []prompt.Suggest
 	unqualifiedQueries []prompt.Suggest
@@ -20,7 +23,10 @@ func newAutocompleteSuggestions() *autoCompleteSuggestions {
 		queriesByMod:   make(map[string][]prompt.Suggest),
 	}
 }
-func (s autoCompleteSuggestions) sort() {
+func (s *autoCompleteSuggestions) sort() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	sortSuggestions := func(s []prompt.Suggest) {
 		sort.Slice(s, func(i, j int) bool {
 			return s[i].Text < s[j].Text
