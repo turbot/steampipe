@@ -167,19 +167,6 @@ func TestDecodeResult(t *testing.T) {
 	})
 }
 
-// TestFetchAvailableCLIVersion tests the top-level version fetch function
-func TestFetchAvailableCLIVersion(t *testing.T) {
-	// These tests require full app initialization including app_specific settings
-	// Skipping to avoid nil pointer issues in test environment
-	t.Skip("Requires full app initialization - tested via integration tests")
-}
-
-// TestVersionCheckerConcurrency tests concurrent version checking
-func TestVersionCheckerConcurrency(t *testing.T) {
-	// Requires full app initialization - tested via integration tests
-	t.Skip("Requires full app initialization - tested via integration tests")
-}
-
 // TestVersionCheckerResponseCodes tests handling of various HTTP response codes
 func TestVersionCheckerResponseCodes(t *testing.T) {
 	testCases := []struct {
@@ -247,14 +234,6 @@ func TestVersionCheckerBodyReadFailure(t *testing.T) {
 	})
 }
 
-// TestVersionCheckURL tests URL construction
-func TestVersionCheckURL(t *testing.T) {
-	// This test requires app_specific.VersionCheckHost and VersionCheckPath
-	// to be set, which happens during app initialization
-	// Skipping to avoid nil pointer issues
-	t.Skip("Requires app_specific initialization")
-}
-
 // TestVersionCheckerStructure tests the versionChecker struct
 func TestVersionCheckerStructure(t *testing.T) {
 	t.Run("new_checker", func(t *testing.T) {
@@ -266,15 +245,6 @@ func TestVersionCheckerStructure(t *testing.T) {
 		assert.Equal(t, "test-installation-id", checker.signature)
 		assert.Nil(t, checker.checkResult)
 	})
-}
-
-// TestResponseBodyClosing tests that response bodies are properly closed
-func TestResponseBodyClosing(t *testing.T) {
-	// This test requires full app initialization to make actual HTTP requests
-	// The important observation is documented in code review:
-	// version_checker.go:59 has: defer resp.Body.Close()
-	// This ensures response bodies are properly closed
-	t.Skip("Requires app_specific initialization - body closing verified in code review")
 }
 
 // TestReadAllFailureScenarios documents scenarios where io.ReadAll can fail

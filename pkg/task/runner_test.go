@@ -233,29 +233,6 @@ func TestRunnerWaitGroupPropagation(t *testing.T) {
 	assert.Equal(t, 5, completedCount, "Not all jobs completed before WaitGroup.Wait() returned")
 }
 
-// TestRunnerJobPanic tests that panics in jobs don't crash the entire runner
-func TestRunnerJobPanic(t *testing.T) {
-	setupTestEnvironment(t)
-
-	// BUG DOCUMENTATION: runJobAsync does not recover from panics
-	// If a job function panics, it will crash the goroutine and propagate upward
-	// This is documented behavior - defer wg.Done() will execute due to defer,
-	// but the panic is not recovered.
-	//
-	// IMPACT: If any async job (version check, log trimming, etc.) panics,
-	// it can crash the parent goroutine or even the process
-	//
-	// RECOMMENDATION: Add panic recovery in runJobAsync:
-	//   defer func() {
-	//     if r := recover(); r != nil {
-	//       log.Printf("[ERROR] Job panic recovered: %v", r)
-	//     }
-	//     wg.Done()
-	//   }()
-
-	t.Skip("runJobAsync does not recover from panics - documented limitation")
-}
-
 // TestShouldRunLogic tests the shouldRun time-based logic
 func TestShouldRunLogic(t *testing.T) {
 	setupTestEnvironment(t)

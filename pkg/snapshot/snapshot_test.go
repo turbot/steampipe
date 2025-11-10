@@ -198,7 +198,7 @@ func TestConcurrentSnapshotToQueryResult_Race(t *testing.T) {
 // TestSnapshotToQueryResult_GoroutineCleanup tests goroutine cleanup
 // FOUND BUG: Goroutine leak when rows are not fully consumed
 func TestSnapshotToQueryResult_GoroutineCleanup(t *testing.T) {
-	t.Skip("KNOWN BUG: Goroutines leak when rows are not consumed - see snapshot.go:193")
+	t.Skip("Demonstrates bug #4768 - Goroutines leak when rows are not consumed - see snapshot.go:193. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	ctx := context.Background()
 
 	cols := []*pqueryresult.ColumnDef{
@@ -238,7 +238,7 @@ func TestSnapshotToQueryResult_GoroutineCleanup(t *testing.T) {
 // TestSnapshotToQueryResult_PartialConsumption tests partial row consumption
 // FOUND BUG: Goroutine leak when rows are not fully consumed
 func TestSnapshotToQueryResult_PartialConsumption(t *testing.T) {
-	t.Skip("KNOWN BUG: Goroutines leak when rows are not consumed - see snapshot.go:193")
+	t.Skip("Demonstrates bug #4768 - Goroutines leak when rows are not consumed - see snapshot.go:193. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	ctx := context.Background()
 
 	cols := []*pqueryresult.ColumnDef{
