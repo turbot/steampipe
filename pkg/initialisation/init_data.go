@@ -120,6 +120,9 @@ func GetDbClient(ctx context.Context, invoker constants.Invoker, opts ...db_clie
 	if connectionString := viper.GetString(pconstants.ArgConnectionString); connectionString != "" {
 		statushooks.SetStatus(ctx, "Connecting to remote Steampipe database")
 		client, err := db_client.NewDbClient(ctx, connectionString, opts...)
+		if err != nil {
+			return nil, error_helpers.NewErrorsAndWarning(err)
+		}
 		return client, error_helpers.NewErrorsAndWarning(err)
 	}
 
