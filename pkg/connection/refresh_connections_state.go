@@ -598,7 +598,10 @@ func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context
 			// we can clone this plugin, add to exemplarSchemaMap
 			// (AFTER executing the update query)
 			if !haveExemplarSchema && connectionState.CanCloneSchema() {
+				// Fix #4757: Protect map write with mutex to prevent race condition
+				s.exemplarSchemaMapMut.Lock()
 				s.exemplarSchemaMap[connectionState.Plugin] = connectionName
+				s.exemplarSchemaMapMut.Unlock()
 			}
 		}
 	}
