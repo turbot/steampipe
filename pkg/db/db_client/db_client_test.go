@@ -213,6 +213,39 @@ func TestDbClient_ConcurrentCloseAndRead(t *testing.T) {
 	// After the fix, this test should pass cleanly
 }
 
+// TestDbClient_ConcurrentClose tests concurrent Close() calls
+// BUG FOUND: Race condition in Close() - c.sessions = nil at line 171 is not protected by mutex
+// Reference: https://github.com/turbot/steampipe/issues/4780
+func TestDbClient_ConcurrentClose(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping concurrent test in short mode")
+	}
+
+	ctx := context.Background()
+
+	client := &DbClient{
+		sessions:      make(map[uint32]*db_common.DatabaseSession),
+		sessionsMutex: &sync.Mutex{},
+	}
+
+	var wg sync.WaitGroup
+	numGoroutines := 10
+
+	// Call Close() from multiple goroutines simultaneously
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = client.Close(ctx)
+		}()
+	}
+
+	wg.Wait()
+
+	// Should not panic and sessions should be nil
+	assert.Nil(t, client.sessions)
+}
+
 // TestDbClient_SessionsMapNilAfterClose verifies that accessing sessions after Close
 // doesn't cause a nil pointer panic
 // Reference: https://github.com/turbot/steampipe/issues/4793
