@@ -22,7 +22,7 @@ import (
 // BUG FOUND: The 'state' parameter is directly interpolated into SQL string
 // allowing SQL injection attacks
 func TestGetSetConnectionStateSql_SQLInjection(t *testing.T) {
-	t.Skip("Demonstrates bug #4748 - CRITICAL SQL injection vulnerability in GetSetConnectionStateSql. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+	// t.Skip("Demonstrates bug #4748 - CRITICAL SQL injection vulnerability in GetSetConnectionStateSql. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	tests := []struct {
 		name          string
 		connectionName string
@@ -695,7 +695,8 @@ func TestVeryLongIdentifiers(t *testing.T) {
 		result := GetSetConnectionStateSql(longName, "ready")
 		require.NotEmpty(t, result)
 		// Should be in args, not cause buffer issues
-		assert.Equal(t, longName, result[0].Args[0])
+		// Args order: state (args[0]), connectionName (args[1])
+		assert.Equal(t, longName, result[0].Args[1])
 	})
 
 	t.Run("very long state", func(t *testing.T) {
