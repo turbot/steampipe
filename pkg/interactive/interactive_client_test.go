@@ -95,7 +95,7 @@ func TestAutocompleteSuggestionsMemoryUsage(t *testing.T) {
 				Description: "Description for table",
 			}
 		}
-		c.suggestions.tablesBySchema[schemaName] = tables
+		c.suggestions.setTablesForSchema(schemaName, tables)
 	}
 
 	// The fix should enforce reasonable limits on map sizes
