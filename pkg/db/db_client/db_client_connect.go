@@ -67,7 +67,10 @@ func (c *DbClient) establishConnectionPool(ctx context.Context, overrides client
 		if conn != nil && conn.PgConn() != nil {
 			backendPid := conn.PgConn().PID()
 			c.sessionsMutex.Lock()
-			delete(c.sessions, backendPid)
+			// Check if sessions map has been nil'd by Close()
+			if c.sessions != nil {
+				delete(c.sessions, backendPid)
+			}
 			c.sessionsMutex.Unlock()
 		}
 	}

@@ -38,6 +38,12 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	backendPid := databaseConnection.Conn().PgConn().PID()
 
 	c.sessionsMutex.Lock()
+	// Check if sessions map has been nil'd by Close()
+	if c.sessions == nil {
+		c.sessionsMutex.Unlock()
+		sessionResult.Error = fmt.Errorf("database client has been closed")
+		return sessionResult
+	}
 	session, found := c.sessions[backendPid]
 	if !found {
 		session = db_common.NewDBSession(backendPid)
