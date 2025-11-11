@@ -27,6 +27,9 @@ func (r *Result) Close() {
 
 // WrapResult wraps a pipe-fittings Result with our wrapper that has idempotent Close
 func WrapResult(r *queryresult.Result[TimingResultStream]) *Result {
+	if r == nil {
+		return nil
+	}
 	return &Result{
 		Result: r,
 	}
