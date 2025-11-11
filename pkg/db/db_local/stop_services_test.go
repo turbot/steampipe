@@ -3,9 +3,9 @@ package db_local
 import (
 	"context"
 	"os"
+	"os/exec"
 	"syscall"
 	"testing"
-	"time"
 
 	psutils "github.com/shirou/gopsutil/process"
 )
@@ -132,17 +132,23 @@ func TestDoThreeStepPostgresExit_Timeout(t *testing.T) {
 
 // Helper function to create a mock postgres-like process
 // The shouldExit function determines which signals the process responds to
-func createMockPostgresProcess(t *testing.T, shouldExit func(os.Signal) bool) *os.ProcessState {
+func createMockPostgresProcess(t *testing.T, shouldExit func(os.Signal) bool) *exec.Cmd {
 	// This is a placeholder - in a real test, you would create a subprocess
 	// that simulates postgres behavior
 	t.Helper()
 	// TODO: Implement actual process creation for testing
-	return nil
+	// For now, return a simple sleep command as a mock process
+	cmd := exec.Command("sleep", "1000")
+	_ = cmd.Start()
+	return cmd
 }
 
 // Helper function to cleanup test processes
-func cleanupProcess(cmd *os.ProcessState) {
-	// TODO: Implement cleanup
+func cleanupProcess(cmd *exec.Cmd) {
+	if cmd != nil && cmd.Process != nil {
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+	}
 }
 
 // Helper function to check if process is still running
