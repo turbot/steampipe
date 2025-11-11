@@ -132,3 +132,63 @@ func TestDoExport(t *testing.T) {
 		}
 	}
 }
+
+// TestManager_ConcurrentRegistration tests that the Manager can handle concurrent
+// exporter registration safely. This test is designed to expose race conditions
+// when run with the -race flag.
+//
+// Related issue: #4715
+func TestManager_ConcurrentRegistration(t *testing.T) {
+	// Create a manager instance
+	m := NewManager()
+
+	// Create multiple test exporters with unique names
+	exporters := []*testExporter{
+		{alias: "", extension: ".csv", name: "csv"},
+		{alias: "", extension: ".json", name: "json"},
+		{alias: "", extension: ".xml", name: "xml"},
+		{alias: "", extension: ".html", name: "html"},
+		{alias: "", extension: ".yaml", name: "yaml"},
+		{alias: "", extension: ".md", name: "markdown"},
+		{alias: "", extension: ".txt", name: "text"},
+		{alias: "", extension: ".log", name: "log"},
+	}
+
+	// Channel to collect errors from goroutines
+	errChan := make(chan error, len(exporters))
+	done := make(chan bool)
+
+	// Register all exporters concurrently
+	for _, exp := range exporters {
+		go func(e *testExporter) {
+			err := m.Register(e)
+			errChan <- err
+		}(exp)
+	}
+
+	// Collect results
+	go func() {
+		for i := 0; i < len(exporters); i++ {
+			err := <-errChan
+			if err != nil {
+				t.Errorf("Failed to register exporter: %v", err)
+			}
+		}
+		done <- true
+	}()
+
+	// Wait for completion
+	<-done
+
+	// Verify all exporters were registered successfully
+	// Each exporter should be accessible by its name
+	for _, exp := range exporters {
+		target, err := m.getExportTarget(exp.name, "test_exec")
+		if err != nil {
+			t.Errorf("Exporter '%s' was not registered properly: %v", exp.name, err)
+		}
+		if target == nil {
+			t.Errorf("Exporter '%s' returned nil target", exp.name)
+		}
+	}
+}
