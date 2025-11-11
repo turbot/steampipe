@@ -1,6 +1,7 @@
 package cmdconfig
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -345,6 +346,7 @@ func TestViperGlobalState_ConcurrentReads(t *testing.T) {
 	viper.Set("test-key", "test-value")
 
 	done := make(chan bool)
+	errors := make(chan string, 100)
 	numGoroutines := 10
 
 	for i := 0; i < numGoroutines; i++ {
@@ -353,7 +355,7 @@ func TestViperGlobalState_ConcurrentReads(t *testing.T) {
 			for j := 0; j < 100; j++ {
 				val := viper.GetString("test-key")
 				if val != "test-value" {
-					t.Errorf("Goroutine %d: Expected 'test-value', got '%s'", id, val)
+					errors <- fmt.Sprintf("Goroutine %d: Expected 'test-value', got '%s'", id, val)
 				}
 			}
 		}(i)
@@ -361,6 +363,11 @@ func TestViperGlobalState_ConcurrentReads(t *testing.T) {
 
 	for i := 0; i < numGoroutines; i++ {
 		<-done
+	}
+	close(errors)
+
+	for err := range errors {
+		t.Error(err)
 	}
 }
 

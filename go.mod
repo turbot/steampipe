@@ -189,9 +189,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	oras.land/oras-go/v2 v2.5.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
+	github.com/stretchr/testify v1.10.0 // indirect
 )
-
-require github.com/stretchr/testify v1.10.0
 
 require (
 	cel.dev/expr v0.23.0 // indirect

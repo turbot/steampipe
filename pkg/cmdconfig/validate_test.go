@@ -12,6 +12,9 @@ import (
 
 func TestValidateSnapshotTags_EdgeCases(t *testing.T) {
 	t.Skip("Demonstrates bugs #4756, #4757 - validateSnapshotTags accepts invalid tags. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+	// NOTE: This test documents expected behavior. The bug is in validateSnapshotTags
+	// which uses strings.Split(tagStr, "=") without checking for empty key/value parts.
+	// Tags like "key=" and "=value" should fail but currently pass validation.
 	tests := []struct {
 		name      string
 		tags      []string

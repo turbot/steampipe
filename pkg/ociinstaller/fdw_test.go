@@ -19,10 +19,19 @@ func createValidGzipFile(path string, content []byte) error {
 	defer f.Close()
 
 	gzipWriter := gzip.NewWriter(f)
-	defer gzipWriter.Close()
 
 	_, err = gzipWriter.Write(content)
-	return err
+	if err != nil {
+		gzipWriter.Close() // Attempt to close even on error
+		return err
+	}
+
+	// Explicitly check Close() error
+	if err := gzipWriter.Close(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // TestDownloadImageData_InvalidLayerCount tests validation of image layer counts
