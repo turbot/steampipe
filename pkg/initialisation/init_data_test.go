@@ -110,7 +110,7 @@ func TestInitData_CleanupIdempotency(t *testing.T) {
 
 // TestInitData_NilExporter tests registering nil exporters
 func TestInitData_NilExporter(t *testing.T) {
-	t.Skip("Demonstrates bug #4750 - HIGH nil pointer panic when registering nil exporter. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+	// t.Skip("Demonstrates bug #4750 - HIGH nil pointer panic when registering nil exporter. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	initData := NewInitData()
 
 	// Register nil exporter - should this panic or handle gracefully?
