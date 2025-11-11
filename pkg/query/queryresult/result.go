@@ -31,13 +31,21 @@ func (r *Result) Close() {
 	})
 }
 
-// StreamRow wraps the underlying StreamRow with synchronization
-func (r *Result) StreamRow(row []interface{}) {
+// StreamRow safely sends a row to the RowChan, checking if it's closed first
+func (r *Result) StreamRow(rowResult []interface{}) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-
 	if !r.closed {
-		r.Result.StreamRow(row)
+		r.Result.StreamRow(rowResult)
+	}
+}
+
+// StreamError safely sends an error to the RowChan, checking if it's closed first
+func (r *Result) StreamError(err error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if !r.closed {
+		r.Result.StreamError(err)
 	}
 }
 
