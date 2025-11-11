@@ -46,6 +46,10 @@ func NewInitData() *InitData {
 
 func (i *InitData) RegisterExporters(exporters ...export.Exporter) *InitData {
 	for _, e := range exporters {
+		// Skip nil exporters to prevent nil pointer panic
+		if e == nil {
+			continue
+		}
 		if err := i.ExportManager.Register(e); err != nil {
 			// short circuit if there is an error
 			i.Result.Error = err
