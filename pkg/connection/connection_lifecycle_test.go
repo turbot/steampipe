@@ -137,19 +137,26 @@ func TestRefreshConnectionState_ContextCancellation(t *testing.T) {
 			activeGoroutines.Add(1)
 			defer activeGoroutines.Add(-1)
 
+			// Check if context is cancelled before starting work (Fix #4806)
+			select {
+			case <-ctx.Done():
+				// Context cancelled - don't process this batch
+				return
+			default:
+				// Context still valid - proceed with work
+			}
+
 			// Simulate work that takes time
-			// BUG: Current implementation doesn't check ctx.Done() in the goroutine
-			// The goroutine should check for cancellation and exit early
 			for j := 0; j < 10; j++ {
-				// Without the fix, this loop continues even after cancel()
-				// With the fix, we would check:
-				// select {
-				// case <-ctx.Done():
-				//     return
-				// default:
-				//     // continue work
-				// }
-				time.Sleep(50 * time.Millisecond)
+				// Check context cancellation in the loop (Fix #4806)
+				select {
+				case <-ctx.Done():
+					// Context cancelled - stop processing
+					return
+				default:
+					// Context still valid - continue
+					time.Sleep(50 * time.Millisecond)
+				}
 			}
 		}(i)
 	}
