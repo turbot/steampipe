@@ -175,6 +175,7 @@ func TestConcurrentSnapshotToQueryResult_Race(t *testing.T) {
 
 	// BUG?: Race condition when multiple goroutines read the same snapshot?
 	var wg sync.WaitGroup
+	errors := make(chan error, 10)
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
@@ -182,7 +183,7 @@ func TestConcurrentSnapshotToQueryResult_Race(t *testing.T) {
 
 			result2, err := SnapshotToQueryResult[queryresult.TimingResultStream](snapshot, time.Now())
 			if err != nil {
-				t.Errorf("Error in concurrent conversion: %v", err)
+				errors <- fmt.Errorf("error in concurrent conversion: %w", err)
 				return
 			}
 
@@ -193,6 +194,11 @@ func TestConcurrentSnapshotToQueryResult_Race(t *testing.T) {
 	}
 
 	wg.Wait()
+	close(errors)
+
+	for err := range errors {
+		t.Error(err)
+	}
 }
 
 // TestSnapshotToQueryResult_GoroutineCleanup tests goroutine cleanup
@@ -403,7 +409,7 @@ func TestConcurrentDataAccess_MultipleGoroutines(t *testing.T) {
 	close(errors)
 
 	for err := range errors {
-		t.Errorf("Concurrent error: %v", err)
+		t.Error(err)
 	}
 }
 
