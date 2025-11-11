@@ -772,9 +772,11 @@ func (m *PluginManager) setRateLimiters(pluginInstance string, pluginClient *sdk
 	log.Printf("[INFO] setRateLimiters for plugin '%s'", pluginInstance)
 	var defs []*sdkproto.RateLimiterDefinition
 
+	m.mut.RLock()
 	for _, l := range m.userLimiters[pluginInstance] {
 		defs = append(defs, RateLimiterAsProto(l))
 	}
+	m.mut.RUnlock()
 
 	req := &sdkproto.SetRateLimitersRequest{Definitions: defs}
 

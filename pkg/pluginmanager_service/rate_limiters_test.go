@@ -67,7 +67,7 @@ func TestPluginManager_ConcurrentRateLimiterMapAccess(t *testing.T) {
 			defer wg.Done()
 
 			for j := 0; j < numIterations; j++ {
-				// Simulate concurrent writes (like in handleUserLimiterChanges line 96)
+				// Simulate concurrent writes (like in handleUserLimiterChanges line 98-100)
 				newLimiters := make(connection.PluginLimiterMap)
 				newLimiters["gcp"] = connection.LimiterMap{
 					"gcp-limiter-1": &plugin.RateLimiter{
@@ -75,8 +75,10 @@ func TestPluginManager_ConcurrentRateLimiterMapAccess(t *testing.T) {
 						Plugin: "gcp",
 					},
 				}
-				// This write will race with the reads in getUserDefinedLimitersForPlugin
+				// This write must be protected with mutex (just like in handleUserLimiterChanges)
+				pm.mut.Lock()
 				pm.userLimiters = newLimiters
+				pm.mut.Unlock()
 			}
 		}(i)
 	}
