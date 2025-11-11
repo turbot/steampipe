@@ -253,41 +253,55 @@ func doThreeStepPostgresExit(ctx context.Context, process *psutils.Process) erro
 	putils.LogTime("db_local.doThreeStepPostgresExit start")
 	defer putils.LogTime("db_local.doThreeStepPostgresExit end")
 
-	var err error
 	var exitSuccessful bool
+	var signalErrors []error
 
-	// send a SIGTERM
-	err = process.SendSignal(syscall.SIGTERM)
+	// Step 1: Send SIGTERM (Smart Shutdown)
+	// Wait for children to end normally, then exit
+	err := process.SendSignal(syscall.SIGTERM)
 	if err != nil {
-		return err
-	}
-	exitSuccessful = waitForProcessExit(process, 2*time.Second)
-	if !exitSuccessful {
-		// process didn't quit
-
-		// set status, as this is taking time
-		statushooks.SetStatus(ctx, "Shutting down…")
-
-		// try a SIGINT
-		err = process.SendSignal(syscall.SIGINT)
-		if err != nil {
-			return err
-		}
+		log.Printf("[WARN] Failed to send SIGTERM: %v", err)
+		signalErrors = append(signalErrors, fmt.Errorf("SIGTERM: %w", err))
+	} else {
 		exitSuccessful = waitForProcessExit(process, 2*time.Second)
 	}
+
 	if !exitSuccessful {
-		// process didn't quit
-		// desperation prevails
-		err = process.SendSignal(syscall.SIGQUIT)
+		// process didn't quit, set status as this is taking time
+		statushooks.SetStatus(ctx, "Shutting down…")
+
+		// Step 2: Send SIGINT (Fast Shutdown)
+		// SIGTERM children to abort current transactions and exit
+		err = process.SendSignal(syscall.SIGINT)
 		if err != nil {
-			return err
+			log.Printf("[WARN] Failed to send SIGINT: %v", err)
+			signalErrors = append(signalErrors, fmt.Errorf("SIGINT: %w", err))
+		} else {
+			exitSuccessful = waitForProcessExit(process, 2*time.Second)
 		}
-		exitSuccessful = waitForProcessExit(process, 5*time.Second)
 	}
 
 	if !exitSuccessful {
-		log.Println("[ERROR] Failed to stop service")
+		// Step 3: Send SIGQUIT (Immediate Shutdown)
+		// SIGQUIT children, wait max 5 seconds, then SIGKILL children
+		err = process.SendSignal(syscall.SIGQUIT)
+		if err != nil {
+			log.Printf("[WARN] Failed to send SIGQUIT: %v", err)
+			signalErrors = append(signalErrors, fmt.Errorf("SIGQUIT: %w", err))
+		} else {
+			exitSuccessful = waitForProcessExit(process, 5*time.Second)
+		}
+	}
+
+	// Check final exit status
+	if !exitSuccessful {
+		log.Println("[ERROR] Failed to stop service after all three shutdown attempts")
 		log.Printf("[ERROR] Service Details:\n%s\n", getPrintableProcessDetails(process, 0))
+
+		// Combine any signal errors with the timeout error
+		if len(signalErrors) > 0 {
+			return fmt.Errorf("service shutdown timed out (signal errors: %v)", error_helpers.CombineErrors(signalErrors...))
+		}
 		return fmt.Errorf("service shutdown timed out")
 	}
 
