@@ -74,11 +74,14 @@ Closes #<issue-number>
 
 - [ ] Test added/unskipped in commit 1
 - [ ] Test fails in commit 1
+- [ ] Pushed commit 1 separately (CI should fail)
 - [ ] Fix implemented in commit 2
 - [ ] Test passes in commit 2
+- [ ] Pushed commit 2 separately (CI should pass)
 - [ ] No unrelated changes included
 - [ ] Exactly 2 commits in PR
 - [ ] PR description starts with "Closes #XXXX"
+- [ ] CI history shows: failed run (commit 1) → passed run (commit 2)
 ```
 
 ## Examples
@@ -142,11 +145,14 @@ Closes #4750
 
 - [x] Test added/unskipped in commit 1
 - [x] Test fails in commit 1
+- [x] Pushed commit 1 separately (CI should fail)
 - [x] Fix implemented in commit 2
 - [x] Test passes in commit 2
+- [x] Pushed commit 2 separately (CI should pass)
 - [x] No unrelated changes included
 - [x] Exactly 2 commits in PR
 - [x] PR description starts with "Closes #XXXX"
+- [x] CI history shows: failed run (commit 1) → passed run (commit 2)
 ```
 
 ### Example 2: Race Condition Fix
@@ -212,11 +218,14 @@ Closes #4743
 
 - [x] Test added/unskipped in commit 1
 - [x] Test fails in commit 1 (with -race flag)
+- [x] Pushed commit 1 separately (CI should fail)
 - [x] Fix implemented in commit 2
 - [x] Test passes in commit 2
+- [x] Pushed commit 2 separately (CI should pass)
 - [x] No unrelated changes included
 - [x] Exactly 2 commits in PR
 - [x] PR description starts with "Closes #XXXX"
+- [x] CI history shows: failed run (commit 1) → passed run (commit 2)
 ```
 
 ## Commit Messages

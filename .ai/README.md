@@ -52,6 +52,9 @@ Our approach to AI-assisted development prioritizes:
 - Two commits:
   1. Unskip test (demonstrates bug - test fails)
   2. Fix bug (test passes)
+- **Two-phase push**: Push commits separately to trigger CI runs
+  - Phase 1: Push test commit → CI fails (proves bug exists)
+  - Phase 2: Push fix commit → CI passes (proves fix works)
 - Base on: `develop` branch
 
 ### 5. Review and Merge

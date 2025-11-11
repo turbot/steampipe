@@ -133,6 +133,98 @@ git commit -m "Fix #1234: Description of fix"
 go test -v -run TestName ./pkg/path
 ```
 
+## Pushing to GitHub: Two-Phase Push
+
+**IMPORTANT**: Push commits separately to trigger CI runs for each commit. This provides clear visual evidence in the PR that the test fails before the fix and passes after.
+
+### Phase 1: Push Test Commit (Should Fail CI)
+
+```bash
+# Create and switch to your branch
+git checkout -b fix/1234-description develop
+
+# Make commit 1 (unskip test)
+git add pkg/path/file_test.go
+git commit -m "Unskip test demonstrating bug #1234: Description"
+
+# Verify test fails locally
+go test -v -run TestName ./pkg/path
+
+# Push ONLY the first commit
+git push -u origin fix/1234-description
+```
+
+At this point:
+- GitHub Actions will run tests
+- CI should **FAIL** on the test you unskipped
+- This proves the test catches the bug
+
+### Phase 2: Push Fix Commit (Should Pass CI)
+
+```bash
+# Make commit 2 (fix bug)
+git add pkg/path/file.go
+git commit -m "Fix #1234: Description of fix"
+
+# Verify test passes locally
+go test -v -run TestName ./pkg/path
+
+# Push the second commit
+git push
+```
+
+At this point:
+- GitHub Actions will run tests again
+- CI should **PASS** with the fix
+- This proves the fix works
+
+### Creating the PR
+
+Create the PR after the first push (before the fix):
+
+```bash
+# After phase 1 push
+gh pr create --base develop \
+  --title "Fix #1234: Brief description" \
+  --body "Closes #1234
+
+## Summary
+[Description]
+
+## Changes
+- Commit 1: Unskipped test demonstrating the bug
+- Commit 2: Implemented fix (coming in next push)
+
+## Test Results
+Will be visible in CI runs:
+- First CI run should FAIL (demonstrating bug)
+- Second CI run should PASS (proving fix works)
+"
+```
+
+Or create it after both commits are pushed - either way works.
+
+### Why This Matters for Reviewers
+
+This two-phase push gives reviewers:
+1. **Visual proof** the test fails without the fix (failed CI run)
+2. **Visual proof** the test passes with the fix (passed CI run)
+3. **No manual verification needed** - just look at the CI history in the PR
+4. **Clear diff** between what fails and what fixes it
+
+### Example PR Timeline
+
+```
+✅ PR opened
+❌ CI run #1: Test failure (commit 1)
+   "FAIL: TestName - expected nil, got non-nil client"
+⏱️ Commit 2 pushed
+✅ CI run #2: All tests pass (commit 2)
+   "PASS: TestName"
+```
+
+Reviewers can click through the CI runs to see the exact failure and success.
+
 ## PR Structure
 
 ### Branch Naming

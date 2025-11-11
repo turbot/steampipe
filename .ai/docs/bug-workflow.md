@@ -165,28 +165,43 @@ Changes:
 
 See [templates/bugfix-pr-template.md](../templates/bugfix-pr-template.md)
 
-## Step 6: Verification
+## Step 6: Push to GitHub (Two-Phase Push)
 
-Before pushing the bug fix PR:
+**IMPORTANT**: Push commits separately to trigger separate CI runs. This gives reviewers visual proof that the test fails before the fix and passes after.
+
+### Phase 1: Push Test Commit
 
 ```bash
-# Checkout commit 1 (test only)
-git checkout HEAD~1
-
-# Verify test FAILS
+# Verify test FAILS locally
 go test -v -run TestName ./pkg/path
 
-# Should see failure/panic
-
-
-# Checkout commit 2 (with fix)
-git checkout HEAD
-
-# Verify test PASSES
-go test -v -run TestName ./pkg/path
-
-# Should see success
+# Push ONLY the first commit
+git push -u origin fix/<issue>-description
 ```
+
+**Result**: GitHub Actions runs and should **FAIL** (proves test catches bug)
+
+### Phase 2: Push Fix Commit
+
+```bash
+# Verify test PASSES locally
+go test -v -run TestName ./pkg/path
+
+# Push the second commit
+git push
+```
+
+**Result**: GitHub Actions runs again and should **PASS** (proves fix works)
+
+### Why Two Pushes?
+
+Reviewers can see in the PR's CI history:
+1. ❌ First CI run fails (test demonstrates bug)
+2. ✅ Second CI run passes (fix resolves bug)
+
+No manual verification needed - the CI runs provide visual proof.
+
+**See**: [PR Commit Structure Guide](./pr-commit-structure.md#pushing-to-github-two-phase-push) for detailed workflow.
 
 ## Workflow Diagram
 
