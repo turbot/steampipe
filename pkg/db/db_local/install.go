@@ -40,6 +40,18 @@ If you need to restore the contents of your public schema, please open an issue 
 func EnsureDBInstalled(ctx context.Context) (err error) {
 	putils.LogTime("db_local.EnsureDBInstalled start")
 
+	// Fix #4818: Fast-path check before acquiring mutex to avoid unnecessary contention
+	// when DB is already installed (common case)
+	if IsDBInstalled() {
+		// Still need to prepare the DB even if already installed
+		ensureMux.Lock()
+		defer ensureMux.Unlock()
+		err := prepareDb(ctx)
+		putils.LogTime("db_local.EnsureDBInstalled end")
+		return err
+	}
+
+	// DB not installed - acquire mutex for installation
 	ensureMux.Lock()
 
 	doneChan := make(chan bool, 1)
@@ -53,6 +65,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		close(doneChan)
 	}()
 
+	// Double-check after acquiring mutex - another goroutine may have installed it
 	if IsDBInstalled() {
 		// check if the FDW need updating, and init the db if required
 		err := prepareDb(ctx)
