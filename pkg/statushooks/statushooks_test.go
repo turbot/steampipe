@@ -55,7 +55,7 @@ func TestSpinnerConcurrentShowHide(t *testing.T) {
 // TestSpinnerConcurrentUpdate tests concurrent message updates for race conditions
 // BUG: This exposes a race condition on spinner.Suffix field
 func TestSpinnerConcurrentUpdate(t *testing.T) {
-	t.Skip("Demonstrates bugs #4743, #4744 - Race condition in concurrent Update. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+	// t.Skip("Demonstrates bugs #4743, #4744 - Race condition in concurrent Update. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	spinner := NewStatusSpinnerHook()
 	spinner.Show()
 	defer spinner.Hide()
@@ -242,7 +242,7 @@ func TestSpinnerUpdateAfterHide(t *testing.T) {
 
 // TestSpinnerSetStatusRace tests concurrent SetStatus calls
 func TestSpinnerSetStatusRace(t *testing.T) {
-	t.Skip("Demonstrates bugs #4743, #4744 - Race condition in SetStatus. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+	// t.Skip("Demonstrates bugs #4743, #4744 - Race condition in SetStatus. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	spinner := NewStatusSpinnerHook()
 	spinner.Show()
 
@@ -327,7 +327,7 @@ func TestSpinnerMultipleStartStopCycles(t *testing.T) {
 
 // TestSpinnerConcurrentSetStatusAndHide tests race between SetStatus and Hide
 func TestSpinnerConcurrentSetStatusAndHide(t *testing.T) {
-	t.Skip("Demonstrates bugs #4743, #4744 - Race condition in concurrent SetStatus and Hide. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+	// t.Skip("Demonstrates bugs #4743, #4744 - Race condition in concurrent SetStatus and Hide. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	spinner := NewStatusSpinnerHook()
 	spinner.Show()
 
