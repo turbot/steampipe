@@ -7,9 +7,12 @@ import (
 )
 
 // Result wraps queryresult.Result[TimingResultStream] with idempotent Close()
+// and synchronization to prevent race between StreamRow and Close
 type Result struct {
 	*queryresult.Result[TimingResultStream]
 	closeOnce sync.Once
+	mu        sync.RWMutex
+	closed    bool
 }
 
 func NewResult(cols []*queryresult.ColumnDef) *Result {
@@ -21,8 +24,21 @@ func NewResult(cols []*queryresult.ColumnDef) *Result {
 // Close closes the row channel in an idempotent manner
 func (r *Result) Close() {
 	r.closeOnce.Do(func() {
+		r.mu.Lock()
+		r.closed = true
+		r.mu.Unlock()
 		r.Result.Close()
 	})
+}
+
+// StreamRow wraps the underlying StreamRow with synchronization
+func (r *Result) StreamRow(row []interface{}) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if !r.closed {
+		r.Result.StreamRow(row)
+	}
 }
 
 // WrapResult wraps a pipe-fittings Result with our wrapper that has idempotent Close
