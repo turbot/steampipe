@@ -319,7 +319,7 @@ func TestInitData_DoubleInit(t *testing.T) {
 
 // TestGetDbClient_WithConnectionString tests the client creation with connection string
 func TestGetDbClient_WithConnectionString(t *testing.T) {
-	t.Skip("Demonstrates bug #4767 - GetDbClient returns non-nil client even when error occurs, causing nil pointer panic on Close. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+	// t.Skip("Demonstrates bug #4767 - GetDbClient returns non-nil client even when error occurs, causing nil pointer panic on Close. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	originalConnString := viper.GetString(pconstants.ArgConnectionString)
 	defer func() {
 		viper.Set(pconstants.ArgConnectionString, originalConnString)
