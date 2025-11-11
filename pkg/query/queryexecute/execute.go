@@ -84,6 +84,12 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 	utils.LogTime("queryexecute.executeQueries start")
 	defer utils.LogTime("queryexecute.executeQueries end")
 
+	// Check if Client is nil - this can happen if initialization failed
+	if initData.Client == nil {
+		error_helpers.ShowWarning("cannot execute queries: database client is not initialized")
+		return len(initData.Queries)
+	}
+
 	// failures return the number of queries that failed and also the number of rows that
 	// returned errors
 	failures := 0
