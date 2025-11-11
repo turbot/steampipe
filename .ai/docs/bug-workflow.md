@@ -17,11 +17,10 @@ Examples:
 - `[SECURITY] SQL Injection vulnerability in GetSetConnectionStateSql`
 - `BUG: Goroutine leak when snapshot rows are not fully consumed`
 
-### Issue Severity Labels
+### Issue Labels
 
-- `critical` - Security vulnerabilities, data corruption, crashes
-- `bug` - Functional bugs, incorrect behavior
-- `high-priority` (if available) - Significant impact bugs
+- Add the `bug` label to all bug-reporting issues
+- No other labels are required at this stage
 
 ### Issue Template
 
