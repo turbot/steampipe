@@ -181,6 +181,7 @@ func TestDbClient_SessionSearchPathUpdatesThreadSafe(t *testing.T) {
 	client := &DbClient{
 		customSearchPath: []string{"public", "internal"},
 		userSearchPath:   []string{"public"},
+		searchPathMutex:  &sync.Mutex{},
 	}
 
 	// Number of concurrent operations to test
