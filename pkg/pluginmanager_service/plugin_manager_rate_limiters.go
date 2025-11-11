@@ -50,6 +50,11 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 		return nil
 	}
 
+	// if the pool is nil, we cannot refresh the table
+	if m.pool == nil {
+		return nil
+	}
+
 	// update the status of the plugin rate limiters (determine which are overriden and set state accordingly)
 	m.updateRateLimiterStatus()
 
