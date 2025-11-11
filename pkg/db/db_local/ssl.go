@@ -10,6 +10,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -83,10 +84,50 @@ func certificatesExist() bool {
 	return filehelpers.FileExists(filepaths.GetRootCertLocation()) && filehelpers.FileExists(filepaths.GetServerCertLocation())
 }
 
+// backupCertificateFile creates a timestamped backup of a certificate file before removal
+func backupCertificateFile(certPath string) error {
+	// Only backup if file exists
+	if !filehelpers.FileExists(certPath) {
+		return nil
+	}
+
+	now := time.Now()
+	backupDir := filepaths.EnsureBackupsDir()
+
+	// Extract just the filename (e.g., "server.crt" or "server.key")
+	filename := filepath.Base(certPath)
+
+	// Create timestamped backup name (e.g., "server.crt-2024-11-12-14-30-45")
+	backupName := fmt.Sprintf("%s-%s", filename, now.Format("2006-01-02-15-04-05"))
+	backupPath := filepath.Join(backupDir, backupName)
+
+	// Read original file
+	data, err := os.ReadFile(certPath)
+	if err != nil {
+		return sperr.WrapWithRootMessage(err, "failed to read certificate file for backup")
+	}
+
+	// Write backup
+	if err := os.WriteFile(backupPath, data, 0600); err != nil {
+		return sperr.WrapWithRootMessage(err, "failed to write certificate backup")
+	}
+
+	log.Printf("[TRACE] backed up certificate %s to %s", certPath, backupPath)
+	return nil
+}
+
 // removeServerCertificate removes the server certificate certificates so it will be regenerated
 func removeServerCertificate() error {
 	utils.LogTime("db_local.RemoveServerCertificate start")
 	defer utils.LogTime("db_local.RemoveServerCertificate end")
+
+	// Backup certificates before removal
+	if err := backupCertificateFile(filepaths.GetServerCertLocation()); err != nil {
+		return sperr.WrapWithRootMessage(err, "failed to backup server certificate")
+	}
+	if err := backupCertificateFile(filepaths.GetServerCertKeyLocation()); err != nil {
+		return sperr.WrapWithRootMessage(err, "failed to backup server certificate key")
+	}
 
 	if err := os.Remove(filepaths.GetServerCertLocation()); err != nil {
 		return err
@@ -99,11 +140,16 @@ func removeAllCertificates() error {
 	utils.LogTime("db_local.RemoveAllCertificates start")
 	defer utils.LogTime("db_local.RemoveAllCertificates end")
 
+	// Backup root certificate before removal
+	if err := backupCertificateFile(filepaths.GetRootCertLocation()); err != nil {
+		return sperr.WrapWithRootMessage(err, "failed to backup root certificate")
+	}
+
 	// remove the root cert (but not key)
 	if err := os.Remove(filepaths.GetRootCertLocation()); err != nil {
 		return err
 	}
-	// remove the server cert and key
+	// remove the server cert and key (this will also backup them)
 	return removeServerCertificate()
 }
 
