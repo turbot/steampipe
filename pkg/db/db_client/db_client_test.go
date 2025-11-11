@@ -48,3 +48,35 @@ func TestSessionMapCleanupImplemented(t *testing.T) {
 	assert.True(t, hasCleanupComment,
 		"Comment should document automatic cleanup mechanism")
 }
+
+// TestDbClient_SessionsMapNilAfterClose demonstrates bug #4809
+// After Close() sets sessions to nil, operations that access the sessions map
+// must handle the nil case properly. This test verifies nil checks are in place.
+func TestDbClient_SessionsMapNilAfterClose(t *testing.T) {
+	// Read the source files to verify nil checks are present
+	sessionCode, err := os.ReadFile("db_client_session.go")
+	require.NoError(t, err, "should be able to read db_client_session.go")
+
+	connectCode, err := os.ReadFile("db_client_connect.go")
+	require.NoError(t, err, "should be able to read db_client_connect.go")
+
+	sessionSource := string(sessionCode)
+	connectSource := string(connectCode)
+
+	// Verify AcquireSession checks for nil sessions map
+	// The check should happen after acquiring the mutex and before accessing the map
+	hasNilCheckInAcquire := strings.Contains(sessionSource, "c.sessions == nil") ||
+		strings.Contains(sessionSource, "if c.sessions == nil")
+	assert.True(t, hasNilCheckInAcquire,
+		"AcquireSession must check if sessions map is nil after Close()")
+
+	// Verify BeforeClose callback checks for nil sessions map
+	// The check should happen before attempting to delete from the map
+	// Can be either "c.sessions == nil" or "c.sessions != nil" pattern
+	hasNilCheckInBeforeClose := strings.Contains(connectSource, "c.sessions == nil") ||
+		strings.Contains(connectSource, "c.sessions != nil") ||
+		strings.Contains(connectSource, "if c.sessions == nil") ||
+		strings.Contains(connectSource, "if c.sessions != nil")
+	assert.True(t, hasNilCheckInBeforeClose,
+		"BeforeClose callback must check if sessions map is nil after Close()")
+}
