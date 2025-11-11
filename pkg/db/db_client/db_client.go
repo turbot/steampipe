@@ -168,7 +168,10 @@ func (c *DbClient) Close(context.Context) error {
 	c.closePools()
 	// nullify active sessions, since with the closing of the pools
 	// none of the sessions will be valid anymore
+	// Acquire mutex to prevent concurrent access to sessions map
+	c.sessionsMutex.Lock()
 	c.sessions = nil
+	c.sessionsMutex.Unlock()
 
 	return nil
 }
