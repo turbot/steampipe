@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -28,6 +29,7 @@ type StatusSpinner struct {
 	cancel  chan struct{}
 	delay   time.Duration
 	visible bool
+	mu      sync.Mutex // protects visible field
 }
 
 type StatusSpinnerOpt func(*StatusSpinner)
@@ -92,7 +94,9 @@ func (s *StatusSpinner) Warn(msg string) {
 
 // Hide implements StatusHooks
 func (s *StatusSpinner) Hide() {
+	s.mu.Lock()
 	s.visible = false
+	s.mu.Unlock()
 	if s.cancel != nil {
 		close(s.cancel)
 	}
@@ -100,7 +104,9 @@ func (s *StatusSpinner) Hide() {
 }
 
 func (s *StatusSpinner) Show() {
+	s.mu.Lock()
 	s.visible = true
+	s.mu.Unlock()
 	if len(strings.TrimSpace(s.spinner.Suffix)) > 0 {
 		// only show the spinner if there's an actual message to show
 		s.spinner.Start()
@@ -112,7 +118,10 @@ func (s *StatusSpinner) UpdateSpinnerMessage(newMessage string) {
 	newMessage = s.truncateSpinnerMessageToScreen(newMessage)
 	s.spinner.Suffix = fmt.Sprintf(" %s", newMessage)
 	// if the spinner is not active, start it
-	if s.visible && !s.spinner.Active() {
+	s.mu.Lock()
+	visible := s.visible
+	s.mu.Unlock()
+	if visible && !s.spinner.Active() {
 		s.spinner.Start()
 	}
 }
