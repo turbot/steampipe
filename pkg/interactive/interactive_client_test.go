@@ -68,3 +68,53 @@ func TestGetTableAndConnectionSuggestions_ReturnsEmptySliceNotNil(t *testing.T) 
 		})
 	}
 }
+
+// TestGetQueryInfo_FromDetection tests that getQueryInfo correctly detects
+// when the user is editing a table name after typing "from ".
+//
+// This is important for autocomplete - when a user types "from " (with a space),
+// the system should recognize they are about to enter a table name and enable
+// table suggestions.
+//
+// Bug: #4810
+func TestGetQueryInfo_FromDetection(t *testing.T) {
+	tests := []struct {
+		name              string
+		input             string
+		expectedTable     string
+		expectedEditTable bool
+	}{
+		{
+			name:              "just_from",
+			input:             "from ",
+			expectedTable:     "",
+			expectedEditTable: true, // Should be true - user is about to enter table name
+		},
+		{
+			name:              "from_with_table",
+			input:             "from my_table",
+			expectedTable:     "my_table",
+			expectedEditTable: false, // Not editing, already entered
+		},
+		{
+			name:              "from_keyword_only",
+			input:             "from",
+			expectedTable:     "",
+			expectedEditTable: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := getQueryInfo(tt.input)
+
+			if result.Table != tt.expectedTable {
+				t.Errorf("getQueryInfo(%q).Table = %q, expected %q", tt.input, result.Table, tt.expectedTable)
+			}
+
+			if result.EditingTable != tt.expectedEditTable {
+				t.Errorf("getQueryInfo(%q).EditingTable = %v, expected %v", tt.input, result.EditingTable, tt.expectedEditTable)
+			}
+		})
+	}
+}
