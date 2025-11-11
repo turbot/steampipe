@@ -23,3 +23,11 @@ func TestResultClose_DoubleClose(t *testing.T) {
 		result.Close()
 	}, "Result.Close() should be idempotent and not panic on second call")
 }
+
+func TestWrapResult_NilResult(t *testing.T) {
+	// WrapResult should handle nil input gracefully
+	result := WrapResult(nil)
+
+	// Result should be nil, not a wrapper around nil
+	assert.Nil(t, result, "WrapResult(nil) should return nil")
+}
