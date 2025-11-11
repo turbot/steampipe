@@ -1,6 +1,7 @@
 package interactive
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/c-bata/go-prompt"
@@ -66,5 +67,51 @@ func TestGetTableAndConnectionSuggestions_ReturnsEmptySliceNotNil(t *testing.T) 
 				t.Errorf("getTableAndConnectionSuggestions(%q) returned non-empty slice %v, expected empty slice", tt.word, result)
 			}
 		})
+	}
+}
+
+// TestAutocompleteSuggestionsMemoryUsage tests that autocomplete suggestion maps
+// have reasonable size limits to prevent unbounded memory growth.
+//
+// Bug: #4812 - Without limits, large schemas cause excessive memory consumption
+func TestAutocompleteSuggestionsMemoryUsage(t *testing.T) {
+	// Create a client with suggestions
+	c := &InteractiveClient{
+		suggestions: newAutocompleteSuggestions(),
+	}
+
+	// Simulate a large schema with many tables
+	// This represents a real-world scenario with cloud providers having 100+ connections
+	// each with 50+ tables
+	const numSchemas = 150
+	const tablesPerSchema = 75
+
+	for schema := 0; schema < numSchemas; schema++ {
+		schemaName := fmt.Sprintf("connection_%d", schema)
+		tables := make([]prompt.Suggest, tablesPerSchema)
+		for i := 0; i < tablesPerSchema; i++ {
+			tables[i] = prompt.Suggest{
+				Text:        fmt.Sprintf("table_%d", i),
+				Description: "Description for table",
+			}
+		}
+		c.suggestions.tablesBySchema[schemaName] = tables
+	}
+
+	// The fix should enforce reasonable limits on map sizes
+	// Max 100 schemas in the suggestions map
+	const maxSchemas = 100
+	if len(c.suggestions.tablesBySchema) > maxSchemas {
+		t.Errorf("tablesBySchema map should be limited to %d schemas, got %d",
+			maxSchemas, len(c.suggestions.tablesBySchema))
+	}
+
+	// Max 500 tables per schema
+	const maxTablesPerSchema = 500
+	for schema, tables := range c.suggestions.tablesBySchema {
+		if len(tables) > maxTablesPerSchema {
+			t.Errorf("tablesBySchema[%s] should be limited to %d tables, got %d",
+				schema, maxTablesPerSchema, len(tables))
+		}
 	}
 }
