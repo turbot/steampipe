@@ -30,10 +30,17 @@ func (s autoCompleteSuggestions) sort() {
 	sortSuggestions(s.schemas)
 	sortSuggestions(s.unqualifiedTables)
 	sortSuggestions(s.unqualifiedQueries)
-	for _, tables := range s.tablesBySchema {
-		sortSuggestions(tables)
+
+	// Defensive nil checks for maps
+	// While Go handles nil map iteration safely, explicit checks improve code clarity
+	if s.tablesBySchema != nil {
+		for _, tables := range s.tablesBySchema {
+			sortSuggestions(tables)
+		}
 	}
-	for _, queries := range s.queriesByMod {
-		sortSuggestions(queries)
+	if s.queriesByMod != nil {
+		for _, queries := range s.queriesByMod {
+			sortSuggestions(queries)
+		}
 	}
 }
