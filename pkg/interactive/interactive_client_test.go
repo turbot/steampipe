@@ -543,9 +543,8 @@ func TestCancelActiveQueryIfAny(t *testing.T) {
 //
 // Bug: #4803
 func TestInitialisationComplete_RaceCondition(t *testing.T) {
-	c := &InteractiveClient{
-		initialisationComplete: false,
-	}
+	c := &InteractiveClient{}
+	c.initialisationComplete.Store(false)
 
 	var wg sync.WaitGroup
 
@@ -554,8 +553,8 @@ func TestInitialisationComplete_RaceCondition(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		for i := 0; i < 100; i++ {
-			c.initialisationComplete = true
-			c.initialisationComplete = false
+			c.initialisationComplete.Store(true)
+			c.initialisationComplete.Store(false)
 		}
 	}()
 
@@ -574,7 +573,7 @@ func TestInitialisationComplete_RaceCondition(t *testing.T) {
 		defer wg.Done()
 		for i := 0; i < 100; i++ {
 			// Check the flag directly (as handleConnectionUpdateNotification does)
-			if !c.initialisationComplete {
+			if !c.initialisationComplete.Load() {
 				continue
 			}
 		}
