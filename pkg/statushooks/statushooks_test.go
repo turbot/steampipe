@@ -29,7 +29,7 @@ func TestSpinnerCancelChannelNeverInitialized(t *testing.T) {
 // TestSpinnerConcurrentShowHide tests concurrent Show/Hide calls for race conditions
 // BUG: This exposes a race condition on the 'visible' field
 func TestSpinnerConcurrentShowHide(t *testing.T) {
-	t.Skip("Demonstrates bugs #4743, #4744 - Race condition in concurrent Show/Hide. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+	// t.Skip("Demonstrates bugs #4743, #4744 - Race condition in concurrent Show/Hide. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	spinner := NewStatusSpinnerHook()
 
 	var wg sync.WaitGroup
