@@ -27,6 +27,12 @@ func (m *PluginManager) handlePluginInstanceChanges(ctx context.Context, newPlug
 	// update connectionConfigMap
 	m.plugins = newPlugins
 
+	// if pool is nil, we're in a test environment or the plugin manager hasn't been fully initialized
+	// in this case, we can't repopulate the plugin table, so just return early
+	if m.pool == nil {
+		return nil
+	}
+
 	// repopulate the plugin table
 	conn, err := m.pool.Acquire(ctx)
 	if err != nil {
