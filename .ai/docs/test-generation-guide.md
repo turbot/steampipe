@@ -1,17 +1,16 @@
 # Test Generation Guide
 
-## Philosophy: Quality Over Coverage
+Guidelines for writing effective tests.
 
-**We prioritize test value over coverage percentage.** Our goal is to catch real bugs and verify critical functionality, not to achieve arbitrary coverage metrics.
+## Focus on Value
 
-## Test Value Scoring
+Prioritize tests that:
+- Catch real bugs
+- Verify complex logic and edge cases
+- Test error handling and concurrency
+- Cover critical functionality
 
-Rate each test by value:
-- **HIGH** (3 points): Tests complex logic, edge cases, concurrency, or catches bugs
-- **MEDIUM** (2 points): Tests important functionality with reasonable complexity
-- **LOW** (1 point): Simple happy-path tests with minimal value
-
-**Target: Average score > 2.0** (prefer HIGH-value tests)
+Avoid simple tests of getters, setters, or trivial constructors.
 
 ## Test Generation Process
 
@@ -24,10 +23,7 @@ Before writing tests:
 - Check for concurrency patterns
 - Review TODOs and FIXMEs
 
-### 2. Focus Areas (Prioritized)
-
-#### A. Bug Hunting (HIGHEST PRIORITY)
-**Keep testing until you find bugs.** This is the primary goal.
+### 2. Focus Areas
 
 Look for:
 - **Nil pointer dereferences** - Missing nil checks
@@ -35,26 +31,8 @@ Look for:
 - **Resource leaks** - Goroutines, connections, files not cleaned up
 - **Edge cases** - Empty strings, zero values, boundary conditions
 - **Error handling** - Incorrect error propagation
-- **SQL injection** - Unparameterized queries
-- **Memory leaks** - Unbounded growth of maps/slices
-
-#### B. Concurrency Testing
-- Concurrent reads/writes to shared data
-- Race conditions (test with `-race` flag)
-- Goroutine leaks
-- Deadlocks and livelocks
-- Context cancellation handling
-
-#### C. Error Paths
-- What happens when dependencies fail?
-- Invalid input handling
-- Nil/empty parameter handling
-- Boundary conditions
-
-#### D. Complex Logic
-- Multiple conditional branches
-- State machines
-- Algorithms with edge cases
+- **Concurrency issues** - Deadlocks, goroutine leaks
+- **Complex logic paths** - Multiple branches, state machines
 
 ### 3. Test Structure
 
@@ -72,21 +50,18 @@ func TestFunctionName_Scenario(t *testing.T) {
 
 ### 4. When You Find a Bug
 
-**IMMEDIATELY**:
 1. Mark the test with `t.Skip()`
-2. Add skip message: `"Demonstrates bug #XXXX - description. Remove this skip in bug fix PR commit 1, then fix in commit 2."`
+2. Add skip message: `"Demonstrates bug #XXXX - description. Remove skip in bug fix PR."`
 3. Create a GitHub issue (see [bug-workflow.md](bug-workflow.md))
-4. Continue testing other scenarios
+4. Continue testing
 
 Example:
 ```go
 func TestResetPools_NilPools(t *testing.T) {
-    t.Skip("Demonstrates bug #4698 - ResetPools panics with nil pools. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+    t.Skip("Demonstrates bug #4698 - ResetPools panics with nil pools. Remove skip in bug fix PR.")
 
-    client := &DbClient{} // pools is nil
-
-    // This should not panic
-    client.ResetPools(context.Background())
+    client := &DbClient{}
+    client.ResetPools(context.Background()) // Should not panic
 }
 ```
 
@@ -241,19 +216,6 @@ func TestGetDbClient_ErrorHandling(t *testing.T) {
 }
 ```
 
-## Quality Metrics
-
-After generating tests, calculate:
-- **Test Value Score**: (HIGH*3 + MEDIUM*2 + LOW*1) / total_tests
-- **Bug Discovery**: Number of bugs found
-- **Coverage**: Secondary metric - don't chase this
-
-Target: Value score > 2.0, at least 1 bug found per 20-30 tests
-
-## Examples
-
-See [examples/good-test-example.go](../examples/good-test-example.go) for reference implementations.
-
 ## Tools
 
 - `go test -race` - Always run concurrency tests with race detector
@@ -264,6 +226,5 @@ See [examples/good-test-example.go](../examples/good-test-example.go) for refere
 ## Next Steps
 
 When tests are complete:
-1. Review test value scores
-2. Create GitHub issues for bugs found
-3. Follow [bug-workflow.md](bug-workflow.md) for next steps
+1. Create GitHub issues for bugs found
+2. Follow [bug-workflow.md](bug-workflow.md) for PR workflow

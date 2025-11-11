@@ -1,6 +1,6 @@
-# PR and Commit Structure Guide
+# Bug Fix PR Guide
 
-## Two-Commit Pattern for Bug Fixes
+## Two-Commit Pattern
 
 Every bug fix PR must have **exactly 2 commits**:
 1. **Commit 1**: Demonstrate the bug (test fails)
@@ -185,10 +185,8 @@ Create the PR after the first push (before the fix):
 ```bash
 # After phase 1 push
 gh pr create --base develop \
-  --title "Fix #1234: Brief description" \
-  --body "Closes #1234
-
-## Summary
+  --title "Brief description closes #1234" \
+  --body "## Summary
 [Description]
 
 ## Changes
@@ -241,20 +239,16 @@ Examples:
 ### PR Title
 
 ```
-Fix #<issue>: Brief description
+Brief description closes #<issue>
 ```
 
 Examples:
-- `Fix #4767: GetDbClient error handling`
-- `Fix #4743: Race condition on StatusSpinner.visible field`
+- `GetDbClient error handling closes #4767`
+- `Race condition on StatusSpinner.visible field closes #4743`
 
 ### PR Description
 
-Start with `Closes #<issue>` for automatic linking:
-
 ```markdown
-Closes #<issue>
-
 ## Summary
 [Brief description of the bug and fix]
 
@@ -408,22 +402,8 @@ Real examples from our codebase:
 - PR #4769: [Fix #4750: Nil pointer panic in RegisterExporters](https://github.com/turbot/steampipe/pull/4769)
 - PR #4773: [Fix #4748: SQL injection vulnerability](https://github.com/turbot/steampipe/pull/4773)
 
-## Automation
-
-Consider creating a git hook to verify commit structure:
-
-```bash
-# .git/hooks/pre-push
-#!/bin/bash
-commits=$(git log --oneline origin/develop..HEAD | wc -l)
-if [ $commits -ne 2 ]; then
-    echo "Error: Bug fix PRs must have exactly 2 commits"
-    exit 1
-fi
-```
-
 ## Next Steps
 
-- [Bug Workflow Guide](bug-workflow.md) - Creating issues and PRs
-- [Git Worktree Guide](git-worktree-guide.md) - Working in parallel
-- [Templates](../templates/) - PR and commit message templates
+- [GitHub Issues](bug-workflow.md) - Creating bug reports
+- [Parallel Coordination](parallel-coordination.md) - Working on multiple bugs in parallel
+- [Templates](../templates/) - PR templates
