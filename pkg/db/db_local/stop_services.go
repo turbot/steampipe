@@ -166,7 +166,12 @@ func StopServices(ctx context.Context, force bool, invoker constants.Invoker) (s
 
 	defer func() {
 		if e == nil {
-			os.Remove(filepaths.RunningInfoFilePath())
+			// Remove the running info file if it exists
+			// This operation is idempotent - if the file doesn't exist, no error is raised
+			runningInfoPath := filepaths.RunningInfoFilePath()
+			if _, err := os.Stat(runningInfoPath); err == nil {
+				os.Remove(runningInfoPath)
+			}
 		}
 		putils.LogTime("db_local.StopDB end")
 	}()
