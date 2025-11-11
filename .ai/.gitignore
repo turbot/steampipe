@@ -1,0 +1,11 @@
+# AI Working Directory
+# Temporary files created by AI agents during development
+
+wip/
+*.tmp
+*.swp
+*.bak
+*~
+
+# Keep directory structure
+!wip/.gitkeep
