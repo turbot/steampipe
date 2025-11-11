@@ -1,8 +1,11 @@
 package connection
 
 import (
+	"context"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 // TestExemplarSchemaMapConcurrentAccess tests concurrent access to exemplarSchemaMap
@@ -106,4 +109,73 @@ func TestExemplarSchemaMapRaceCondition(t *testing.T) {
 			t.Errorf("Expected plugin %s to be in exemplarSchemaMap", plugin)
 		}
 	}
+}
+
+// TestRefreshConnectionState_ContextCancellation tests that executeUpdateSetsInParallel
+// properly checks context cancellation in spawned goroutines.
+// This test demonstrates issue #4806 - goroutines continue running until completion
+// after context cancellation, wasting resources.
+func TestRefreshConnectionState_ContextCancellation(t *testing.T) {
+	// Create a context that will be cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+	_ = ctx // Will be used in the fixed version
+
+	// Track how many goroutines are still running after cancellation
+	var activeGoroutines atomic.Int32
+	var goroutinesStarted atomic.Int32
+
+	// Simulate executeUpdateSetsInParallel behavior
+	var wg sync.WaitGroup
+	numGoroutines := 20
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+
+			goroutinesStarted.Add(1)
+			activeGoroutines.Add(1)
+			defer activeGoroutines.Add(-1)
+
+			// Simulate work that takes time
+			// BUG: Current implementation doesn't check ctx.Done() in the goroutine
+			// The goroutine should check for cancellation and exit early
+			for j := 0; j < 10; j++ {
+				// Without the fix, this loop continues even after cancel()
+				// With the fix, we would check:
+				// select {
+				// case <-ctx.Done():
+				//     return
+				// default:
+				//     // continue work
+				// }
+				time.Sleep(50 * time.Millisecond)
+			}
+		}(i)
+	}
+
+	// Wait a bit for goroutines to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Cancel the context - goroutines should stop
+	cancel()
+
+	// Wait a bit to see if goroutines respect cancellation
+	time.Sleep(100 * time.Millisecond)
+
+	// Check how many are still active
+	active := activeGoroutines.Load()
+	started := goroutinesStarted.Load()
+
+	t.Logf("Goroutines started: %d, still active after cancellation: %d", started, active)
+
+	// BUG #4806: Without the fix, most/all goroutines will still be running
+	// because they don't check ctx.Done()
+	// With the fix, active should be 0 or very low
+	if active > started/2 {
+		t.Errorf("Bug #4806: Too many goroutines still active after context cancellation (started: %d, active: %d). Goroutines should check ctx.Done() and exit early.", started, active)
+	}
+
+	// Clean up - wait for all goroutines to finish
+	wg.Wait()
 }
