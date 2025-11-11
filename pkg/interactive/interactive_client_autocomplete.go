@@ -114,10 +114,22 @@ func sanitiseTableName(strToEscape string) string {
 	for _, token := range tokens {
 		// if string contains spaces or special characters(-) or upper case characters, escape it,
 		// as Postgres by default converts to lower case
-		if strings.ContainsAny(token, " -") || utils.ContainsUpper(token) {
+		// Also escape unicode/emoji characters as PostgreSQL requires escaping for non-ASCII identifiers
+		if strings.ContainsAny(token, " -") || utils.ContainsUpper(token) || containsNonASCII(token) {
 			token = db_common.PgEscapeName(token)
 		}
 		escaped = append(escaped, token)
 	}
 	return strings.Join(escaped, ".")
+}
+
+// containsNonASCII checks if a string contains any non-ASCII characters
+// (unicode, emoji, etc.) which require PostgreSQL identifier escaping
+func containsNonASCII(s string) bool {
+	for _, r := range s {
+		if r > 127 {
+			return true
+		}
+	}
+	return false
 }
