@@ -50,6 +50,10 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) error 
 }
 
 func RunBatchSession(ctx context.Context, initData *query.InitData) (int, error) {
+	if initData == nil {
+		return 0, fmt.Errorf("initData cannot be nil")
+	}
+
 	// start cancel handler to intercept interrupts and cancel the context
 	// NOTE: use the initData Cancel function to ensure any initialisation is cancelled if needed
 	contexthelpers.StartCancelHandler(initData.Cancel)
