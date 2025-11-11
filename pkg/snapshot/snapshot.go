@@ -189,8 +189,12 @@ func SnapshotToQueryResult[T queryresult.TimingContainer](snap *steampipeconfig.
 	var tim T
 	res := queryresult.NewResult[T](chartRun.Data.Columns, tim)
 
+	// Create a done channel to allow the goroutine to be cancelled
+	done := make(chan struct{})
+
 	// start a goroutine to stream the results as rows
 	go func() {
+		defer res.Close()
 		for _, d := range chartRun.Data.Rows {
 			// we need to allocate a new slice everytime, since this gets read
 			// asynchronously on the other end and we need to make sure that we don't overwrite
@@ -199,10 +203,24 @@ func SnapshotToQueryResult[T queryresult.TimingContainer](snap *steampipeconfig.
 			for i, c := range chartRun.Data.Columns {
 				rowVals[i] = d[c.Name]
 			}
-			res.StreamRow(rowVals)
+
+			// Use select with timeout to prevent goroutine leak when consumer stops reading
+			select {
+			case res.RowChan <- &queryresult.RowResult{Data: rowVals}:
+				// Row sent successfully
+			case <-done:
+				// Cancelled, stop sending rows
+				return
+			case <-time.After(5 * time.Second):
+				// Timeout - consumer likely stopped reading, exit to prevent leak
+				return
+			}
 		}
-		res.Close()
 	}()
+
+	// Note: The done channel is intentionally not closed anywhere because we don't have
+	// a way to detect when the consumer abandons the result. The timeout in the select
+	// statement handles the goroutine leak case.
 
 	// res.Timing = &queryresult.TimingMetadata{
 	// 	Duration: time.Since(startTime),
