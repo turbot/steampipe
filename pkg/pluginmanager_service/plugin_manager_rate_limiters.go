@@ -162,6 +162,9 @@ func (m *PluginManager) getPluginsWithChangedLimiters(newLimiters connection.Plu
 }
 
 func (m *PluginManager) updateRateLimiterStatus() {
+	m.mut.Lock()
+	defer m.mut.Unlock()
+
 	// iterate through limiters for each plug
 	for p, pluginDefinedLimiters := range m.pluginLimiters {
 		// get user limiters for this plugin
