@@ -372,7 +372,7 @@ func TestViperGlobalState_ConcurrentReads(t *testing.T) {
 }
 
 func TestViperGlobalState_ConcurrentWrites(t *testing.T) {
-	t.Skip("Demonstrates bugs #4756, #4757 - Viper global state has race conditions on concurrent writes. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+	// t.Skip("Demonstrates bugs #4756, #4757 - Viper global state has race conditions on concurrent writes. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	// BUG?: Test concurrent writes to viper - likely to cause race conditions
 	viper.Reset()
 	defer viper.Reset()
@@ -399,7 +399,7 @@ func TestViperGlobalState_ConcurrentWrites(t *testing.T) {
 }
 
 func TestViperGlobalState_ConcurrentReadWrite(t *testing.T) {
-	t.Skip("Demonstrates bugs #4756, #4757 - Viper global state has race conditions on concurrent read/write. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+	// t.Skip("Demonstrates bugs #4756, #4757 - Viper global state has race conditions on concurrent read/write. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	// BUG?: Test concurrent reads and writes - should trigger race detector
 	viper.Reset()
 	defer viper.Reset()
@@ -439,7 +439,7 @@ func TestViperGlobalState_ConcurrentReadWrite(t *testing.T) {
 }
 
 func TestSetDefaultFromEnv_ConcurrentAccess(t *testing.T) {
-	t.Skip("Demonstrates bugs #4756, #4757 - SetDefaultFromEnv has race conditions on concurrent access. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+	// t.Skip("Demonstrates bugs #4756, #4757 - SetDefaultFromEnv has race conditions on concurrent access. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	// BUG?: Test concurrent access to SetDefaultFromEnv
 	viper.Reset()
 	defer viper.Reset()
@@ -475,7 +475,7 @@ func TestSetDefaultFromEnv_ConcurrentAccess(t *testing.T) {
 }
 
 func TestSetDefaultsFromConfig_ConcurrentCalls(t *testing.T) {
-	t.Skip("Demonstrates bugs #4756, #4757 - SetDefaultsFromConfig has race conditions on concurrent calls. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+	// t.Skip("Demonstrates bugs #4756, #4757 - SetDefaultsFromConfig has race conditions on concurrent calls. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	// BUG?: Test concurrent calls to SetDefaultsFromConfig
 	viper.Reset()
 	defer viper.Reset()
