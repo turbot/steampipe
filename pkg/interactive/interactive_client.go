@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/alecthomas/chroma/formatters"
@@ -58,7 +59,7 @@ type InteractiveClient struct {
 	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
 	// flag set when initialisation is complete (with or without errors)
-	initialisationComplete bool
+	initialisationComplete atomic.Bool
 	afterClose             AfterPromptCloseAction
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock sync.Mutex
@@ -731,7 +732,7 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	// ignore schema update notifications until initialisation is complete
 	// (we may receive schema update messages from the initial refresh connections, but we do not need to reload
 	// the schema as we will have already loaded the correct schema)
-	if !c.initialisationComplete {
+	if !c.initialisationComplete.Load() {
 		log.Printf("[INFO] received schema update notification but ignoring it as we are initializing")
 		return
 	}
