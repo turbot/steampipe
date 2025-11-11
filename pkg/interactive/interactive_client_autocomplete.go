@@ -92,9 +92,9 @@ func (c *InteractiveClient) initialiseSchemaAndTableSuggestions(connectionStateM
 			}
 		}
 
-		// add qualified table to tablesBySchema
+		// add qualified table to tablesBySchema with size limits
 		if len(qualifiedTablesToAdd) > 0 {
-			c.suggestions.tablesBySchema[schemaName] = qualifiedTablesToAdd
+			c.suggestions.setTablesForSchema(schemaName, qualifiedTablesToAdd)
 		}
 	}
 
