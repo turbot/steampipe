@@ -72,9 +72,12 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 
 	//build list of connections in search path order, (with non search path connections at the end)
 	// get connections which are not in the search path
-	nonSearchPathConnections := steampipeconfig.GlobalConfig.GetNonSearchPathConnections(searchPath)
-	// sort alphabetically
-	slices.Sort(nonSearchPathConnections)
+	var nonSearchPathConnections []string
+	if steampipeconfig.GlobalConfig != nil {
+		nonSearchPathConnections = steampipeconfig.GlobalConfig.GetNonSearchPathConnections(searchPath)
+		// sort alphabetically
+		slices.Sort(nonSearchPathConnections)
+	}
 	connectionOrder := append(searchPath, nonSearchPathConnections...)
 
 	res := &refreshConnectionState{
