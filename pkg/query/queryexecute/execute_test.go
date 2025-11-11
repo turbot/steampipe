@@ -126,7 +126,6 @@ func TestRunBatchSession_NilClient(t *testing.T) {
 // if initData.Loaded never closes, even when the context is cancelled.
 // References issue #4781
 func TestRunBatchSession_LoadedTimeout(t *testing.T) {
-	t.Skip("Test demonstrates bug #4781 - RunBatchSession blocks forever if initData.Loaded never closes")
 
 	// Create a context with a short timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
