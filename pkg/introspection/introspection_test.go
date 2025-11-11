@@ -695,7 +695,8 @@ func TestVeryLongIdentifiers(t *testing.T) {
 		result := GetSetConnectionStateSql(longName, "ready")
 		require.NotEmpty(t, result)
 		// Should be in args, not cause buffer issues
-		assert.Equal(t, longName, result[0].Args[0])
+		// Args order: state (args[0]), connectionName (args[1])
+		assert.Equal(t, longName, result[0].Args[1])
 	})
 
 	t.Run("very long state", func(t *testing.T) {

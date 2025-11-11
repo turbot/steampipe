@@ -180,14 +180,14 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),now(),$12,$13,$14)
 }
 
 func GetSetConnectionStateSql(connectionName string, state string) []db_common.QueryWithArgs {
-	queryFormat := fmt.Sprintf(`UPDATE %%s.%%s 
-    SET	state = '%s', 
+	queryFormat := `UPDATE %s.%s
+    SET	state = $1,
 	 	connection_mod_time = now()
-    WHERE 
-        name = $1
-`, state)
+    WHERE
+        name = $2
+`
 
-	args := []any{connectionName}
+	args := []any{state, connectionName}
 	return getConnectionStateQueries(queryFormat, args)
 }
 
