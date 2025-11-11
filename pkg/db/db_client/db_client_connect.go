@@ -61,6 +61,16 @@ func (c *DbClient) establishConnectionPool(ctx context.Context, overrides client
 	if c.onConnectionCallback != nil {
 		config.AfterConnect = c.onConnectionCallback
 	}
+	// Clean up session map when connections are closed to prevent memory leak
+	// Reference: https://github.com/turbot/steampipe/issues/3737
+	config.BeforeClose = func(conn *pgx.Conn) {
+		if conn != nil && conn.PgConn() != nil {
+			backendPid := conn.PgConn().PID()
+			c.sessionsMutex.Lock()
+			delete(c.sessions, backendPid)
+			c.sessionsMutex.Unlock()
+		}
+	}
 	// set an app name so that we can track database connections from this Steampipe execution
 	// this is used to determine whether the database can safely be closed
 	config.ConnConfig.Config.RuntimeParams = map[string]string{

@@ -192,6 +192,8 @@ require (
 	github.com/stretchr/testify v1.10.0 // indirect
 )
 
+require github.com/stretchr/testify v1.10.0
+
 require (
 	cel.dev/expr v0.23.0 // indirect
 	cloud.google.com/go/auth v0.15.0 // indirect

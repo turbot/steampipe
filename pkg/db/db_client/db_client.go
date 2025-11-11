@@ -42,8 +42,9 @@ type DbClient struct {
 
 	// map of database sessions, keyed to the backend_pid in postgres
 	// used to update session search path where necessary
-	// TODO: there's no code which cleans up this map when connections get dropped by pgx
-	// https://github.com/turbot/steampipe/issues/3737
+	// Session lifecycle: entries are added when connections are established and automatically
+	// removed via a pgxpool BeforeClose callback when connections are closed by the pool.
+	// This prevents memory accumulation from stale connection entries (see issue #3737)
 	sessions map[uint32]*db_common.DatabaseSession
 
 	// allows locked access to the 'sessions' map
