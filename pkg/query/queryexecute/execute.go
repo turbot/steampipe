@@ -15,7 +15,7 @@ import (
 	"github.com/turbot/pipe-fittings/v2/modconfig"
 	"github.com/turbot/pipe-fittings/v2/pipes"
 	"github.com/turbot/pipe-fittings/v2/querydisplay"
-	"github.com/turbot/pipe-fittings/v2/queryresult"
+	pqueryresult "github.com/turbot/pipe-fittings/v2/queryresult"
 	"github.com/turbot/pipe-fittings/v2/steampipeconfig"
 	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/steampipe/v2/pkg/cmdconfig"
@@ -25,6 +25,7 @@ import (
 	"github.com/turbot/steampipe/v2/pkg/error_helpers"
 	"github.com/turbot/steampipe/v2/pkg/interactive"
 	"github.com/turbot/steampipe/v2/pkg/query"
+	"github.com/turbot/steampipe/v2/pkg/query/queryresult"
 	"github.com/turbot/steampipe/v2/pkg/snapshot"
 )
 
@@ -37,9 +38,11 @@ func RunInteractiveSession(ctx context.Context, initData *query.InitData) error 
 
 	// print the data as it comes
 	for r := range result.Streamer.Results {
+		// wrap the result from pipe-fittings with our wrapper that has idempotent Close
+		wrapped := queryresult.WrapResult(r)
 		rowCount, _ := querydisplay.ShowOutput(ctx, r)
 		// show timing
-		display.DisplayTiming(r, rowCount)
+		display.DisplayTiming(wrapped, rowCount)
 		// signal to the resultStreamer that we are done with this chunk of the stream
 		result.Streamer.AllResultsRead()
 	}
@@ -123,6 +126,8 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 	rowErrors := 0 // get the number of rows that returned an error
 	// print the data as it comes
 	for r := range resultsStreamer.Results {
+		// wrap the result from pipe-fittings with our wrapper that has idempotent Close
+		wrapped := queryresult.WrapResult(r)
 
 		// if the output format is snapshot or export is set or share/snapshot args are set, we need to generate a snapshot
 		if needSnapshot() {
@@ -133,7 +138,7 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 
 			// re-generate the query result from the snapshot. since the row stream in the actual queryresult has been exhausted(while generating the snapshot),
 			// we need to re-generate it for other output formats
-			newQueryResult, err := snapshot.SnapshotToQueryResult[queryresult.TimingContainer](snap, initData.StartTime)
+			newQueryResult, err := snapshot.SnapshotToQueryResult[pqueryresult.TimingContainer](snap, initData.StartTime)
 			if err != nil {
 				return err, 0
 			}
@@ -177,7 +182,7 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 			// if other output formats are also needed, we call the querydisplay using the re-generated query result
 			rowCount, _ := querydisplay.ShowOutput(ctx, newQueryResult)
 			// show timing
-			display.DisplayTiming(r, rowCount)
+			display.DisplayTiming(wrapped, rowCount)
 
 			// signal to the resultStreamer that we are done with this result
 			resultsStreamer.AllResultsRead()
@@ -187,7 +192,7 @@ func executeQuery(ctx context.Context, initData *query.InitData, resolvedQuery *
 		// for other output formats, we call the querydisplay code in pipe-fittings
 		rowCount, rowErrs := querydisplay.ShowOutput(ctx, r)
 		// show timing
-		display.DisplayTiming(r, rowCount)
+		display.DisplayTiming(wrapped, rowCount)
 
 		// signal to the resultStreamer that we are done with this result
 		resultsStreamer.AllResultsRead()

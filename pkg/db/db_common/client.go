@@ -23,7 +23,7 @@ type Client interface {
 	AcquireSession(context.Context) *AcquireSessionResult
 
 	ExecuteSync(context.Context, string, ...any) (*pqueryresult.SyncQueryResult, error)
-	Execute(context.Context, string, ...any) (*pqueryresult.Result[queryresult.TimingResultStream], error)
+	Execute(context.Context, string, ...any) (*queryresult.Result, error)
 
 	ExecuteSyncInSession(context.Context, *DatabaseSession, string, ...any) (*pqueryresult.SyncQueryResult, error)
 	ExecuteInSession(context.Context, *DatabaseSession, func(), string, ...any) (*queryresult.Result, error)
