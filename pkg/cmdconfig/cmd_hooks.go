@@ -66,9 +66,11 @@ func preRunHook(cmd *cobra.Command, args []string) {
 
 	ctx := cmd.Context()
 
+	viperMutex.Lock()
 	viper.Set(constants.ConfigKeyActiveCommand, cmd)
 	viper.Set(constants.ConfigKeyActiveCommandArgs, args)
 	viper.Set(constants.ConfigKeyIsTerminalTTY, isatty.IsTerminal(os.Stdout.Fd()))
+	viperMutex.Unlock()
 
 	// steampipe completion should not create INSTALL DIR or seup/init global config
 	if cmd.Name() == "completion" {
@@ -277,18 +279,24 @@ func setCloudTokenDefault(loader *parse.WorkspaceProfileLoader[*workspace_profil
 		return err
 	}
 	if savedToken != "" {
+		viperMutex.Lock()
 		viper.SetDefault(pconstants.ArgPipesToken, savedToken)
+		viperMutex.Unlock()
 	}
 	// 2) default profile pipes token
 	if loader.DefaultProfile.PipesToken != nil {
+		viperMutex.Lock()
 		viper.SetDefault(pconstants.ArgPipesToken, *loader.DefaultProfile.PipesToken)
+		viperMutex.Unlock()
 	}
 	// 3) env var (PIPES_TOKEN )
 	SetDefaultFromEnv(constants.EnvPipesToken, pconstants.ArgPipesToken, String)
 
 	// 4) explicit workspace profile
 	if p := loader.ConfiguredProfile; p != nil && p.PipesToken != nil {
+		viperMutex.Lock()
 		viper.SetDefault(pconstants.ArgPipesToken, *p.PipesToken)
+		viperMutex.Unlock()
 	}
 	return nil
 }

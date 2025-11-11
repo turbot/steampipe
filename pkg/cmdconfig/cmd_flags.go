@@ -34,7 +34,9 @@ func requiredOpt() FlagOption {
 		err := c.MarkFlagRequired(key)
 		error_helpers.FailOnErrorWithMessage(err, "could not mark flag as required")
 		key = fmt.Sprintf("required.%s", key)
+		viperMutex.Lock()
 		viper.GetViper().Set(key, true)
+		viperMutex.Unlock()
 		u := c.Flag(name).Usage
 		c.Flag(name).Usage = fmt.Sprintf("%s %s", u, requiredColor("(required)"))
 	}
