@@ -22,7 +22,7 @@ import (
 // BUG FOUND: The 'state' parameter is directly interpolated into SQL string
 // allowing SQL injection attacks
 func TestGetSetConnectionStateSql_SQLInjection(t *testing.T) {
-	t.Skip("Demonstrates bug #4748 - CRITICAL SQL injection vulnerability in GetSetConnectionStateSql. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
+	// t.Skip("Demonstrates bug #4748 - CRITICAL SQL injection vulnerability in GetSetConnectionStateSql. Remove this skip in bug fix PR commit 1, then fix in commit 2.")
 	tests := []struct {
 		name          string
 		connectionName string
