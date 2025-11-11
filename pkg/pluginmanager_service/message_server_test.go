@@ -72,6 +72,19 @@ func TestPluginMessageServer_LogReceiveError(t *testing.T) {
 	ms.logReceiveError(context.DeadlineExceeded, "test-connection")
 }
 
+// TestPluginMessageServer_LogReceiveError_NilError tests that logReceiveError
+// handles nil error gracefully without panicking
+func TestPluginMessageServer_LogReceiveError_NilError(t *testing.T) {
+	// Create a message server
+	pm := &PluginManager{}
+	server := &PluginMessageServer{
+		pluginManager: pm,
+	}
+
+	// This should not panic - calling logReceiveError with nil error
+	server.logReceiveError(nil, "test-connection")
+}
+
 // Test 5: Multiple Message Servers
 
 func TestPluginManager_MultipleMessageServers(t *testing.T) {
