@@ -8,11 +8,11 @@ name: "10 - Test: Quick Checks (EXPERIMENTAL)"
 
 on:
   pull_request:
-    branches:
-      - 'test/**'
+    # Run on EVERY PR push - this is Tier 1 for fast feedback
   push:
     branches:
-      - 'test/**'
+      - develop
+      - main
   workflow_dispatch:
     inputs:
       debug_mode:

@@ -7,6 +7,13 @@ name: "11 - Test: Standard Suite (EXPERIMENTAL)"
 # What: All unit tests + core acceptance tests (4-6 most critical)
 
 on:
+  pull_request:
+    types: [ready_for_review]
+    # Run when PR is marked ready for review - Tier 2 comprehensive validation
+  push:
+    branches:
+      - develop
+      - main
   workflow_dispatch:
     inputs:
       test_mode:

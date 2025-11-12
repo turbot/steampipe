@@ -7,6 +7,15 @@ name: "11 - Test: Full Suite (EXPERIMENTAL)"
 # What: All 21 acceptance tests
 
 on:
+  push:
+    branches:
+      - develop
+      # Run full suite after merge to develop - Tier 3 complete coverage
+  schedule:
+    - cron: '0 2 * * *'  # 2 AM daily
+  pull_request:
+    types: [labeled]
+    # Run if PR has "test:full" label
   workflow_dispatch:
     inputs:
       test_mode:
@@ -28,6 +37,11 @@ jobs:
   goreleaser:
     name: Build
     runs-on: ubuntu-latest
+    # Skip if PR is labeled but doesn't have "test:full" label
+    if: |
+      github.event_name != 'pull_request' ||
+      github.event.action != 'labeled' ||
+      github.event.label.name == 'test:full'
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
