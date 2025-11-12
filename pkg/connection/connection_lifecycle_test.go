@@ -3,6 +3,10 @@ package connection
 import (
 	"sync"
 	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
 // TestExemplarSchemaMapConcurrentAccess tests concurrent access to exemplarSchemaMap
@@ -106,4 +110,93 @@ func TestExemplarSchemaMapRaceCondition(t *testing.T) {
 			t.Errorf("Expected plugin %s to be in exemplarSchemaMap", plugin)
 		}
 	}
+}
+
+// TestLogRefreshConnectionResultsTypeAssertion tests the type assertion panic bug in logRefreshConnectionResults
+// This test demonstrates issue #4807 - potential panic when viper.Get returns nil or wrong type
+func TestLogRefreshConnectionResultsTypeAssertion(t *testing.T) {
+	// Save original viper value
+	originalValue := viper.Get(constants.ConfigKeyActiveCommand)
+	defer func() {
+		if originalValue != nil {
+			viper.Set(constants.ConfigKeyActiveCommand, originalValue)
+		} else {
+			// Clean up by setting to nil if it was nil
+			viper.Set(constants.ConfigKeyActiveCommand, nil)
+		}
+	}()
+
+	// Test case 1: viper.Get returns nil
+	t.Run("nil value does not panic", func(t *testing.T) {
+		viper.Set(constants.ConfigKeyActiveCommand, nil)
+
+		state := &refreshConnectionState{}
+
+		// After the fix, this should NOT panic
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic occurred: %v", r)
+			}
+		}()
+
+		// This should handle nil gracefully after the fix
+		state.logRefreshConnectionResults()
+
+		// If we get here without panic, the fix is working
+		t.Log("Successfully handled nil value without panic")
+	})
+
+	// Test case 2: viper.Get returns wrong type
+	t.Run("wrong type does not panic", func(t *testing.T) {
+		viper.Set(constants.ConfigKeyActiveCommand, "not-a-cobra-command")
+
+		state := &refreshConnectionState{}
+
+		// After the fix, this should NOT panic
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic occurred: %v", r)
+			}
+		}()
+
+		// This should handle wrong type gracefully after the fix
+		state.logRefreshConnectionResults()
+
+		// If we get here without panic, the fix is working
+		t.Log("Successfully handled wrong type without panic")
+	})
+
+	// Test case 3: viper.Get returns *cobra.Command but it's nil
+	t.Run("nil cobra.Command pointer does not panic", func(t *testing.T) {
+		var nilCmd *cobra.Command
+		viper.Set(constants.ConfigKeyActiveCommand, nilCmd)
+
+		state := &refreshConnectionState{}
+
+		// After the fix, this should NOT panic
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Unexpected panic occurred: %v", r)
+			}
+		}()
+
+		// This should handle nil cobra.Command gracefully after the fix
+		state.logRefreshConnectionResults()
+
+		// If we get here without panic, the fix is working
+		t.Log("Successfully handled nil cobra.Command pointer without panic")
+	})
+
+	// Test case 4: Valid cobra.Command (should work)
+	t.Run("valid cobra.Command works", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use: "plugin-manager",
+		}
+		viper.Set(constants.ConfigKeyActiveCommand, cmd)
+
+		state := &refreshConnectionState{}
+
+		// This should work
+		state.logRefreshConnectionResults()
+	})
 }
