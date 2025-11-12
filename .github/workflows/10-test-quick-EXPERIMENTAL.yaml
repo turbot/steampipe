@@ -1,0 +1,74 @@
+name: "10 - Test: Quick Checks (EXPERIMENTAL)"
+
+# This is an EXPERIMENTAL workflow for testing the tiered CI approach
+# It only runs on test/** branches to avoid interfering with production CI
+#
+# Goal: Provide fast feedback (< 2 minutes) on every commit
+# What: Runs only quick unit tests using -short flag
+
+on:
+  pull_request:
+    branches:
+      - 'test/**'
+  push:
+    branches:
+      - 'test/**'
+  workflow_dispatch:
+    inputs:
+      debug_mode:
+        description: 'Enable debug logging'
+        type: boolean
+        default: false
+
+env:
+  STEAMPIPE_UPDATE_CHECK: false
+  GOTOOLCHAIN: local
+
+jobs:
+  quick_tests:
+    name: Quick Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          path: steampipe
+
+      - name: Checkout Pipe Fittings Components repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          repository: turbot/pipe-fittings
+          path: pipe-fittings
+          ref: v1.6.x
+
+      - name: Set up Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version: 1.24
+
+      - name: Go Cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('steampipe/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Run Quick Tests
+        run: |
+          cd steampipe
+          echo "🚀 Running quick unit tests with -short flag"
+          echo "This should complete in < 2 minutes"
+          go clean -testcache
+          go test -short -timeout 30s ./... -test.v
+        env:
+          STEAMPIPE_UPDATE_CHECK: false
+
+      - name: Test Results
+        if: always()
+        run: |
+          echo "✅ Quick tests completed"
+          echo "See job logs above for detailed results"
