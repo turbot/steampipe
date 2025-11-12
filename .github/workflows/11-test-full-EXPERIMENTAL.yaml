@@ -11,8 +11,6 @@ on:
     branches:
       - develop
       # Run full suite after merge to develop - Tier 3 complete coverage
-  schedule:
-    - cron: '0 2 * * *'  # 2 AM daily
   pull_request:
     types: [labeled]
     # Run if PR has "test:full" label
