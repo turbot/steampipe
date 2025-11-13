@@ -211,8 +211,8 @@ func SnapshotToQueryResult[T queryresult.TimingContainer](snap *steampipeconfig.
 			case <-done:
 				// Cancelled, stop sending rows
 				return
-			case <-time.After(5 * time.Second):
-				// Timeout - consumer likely stopped reading, exit to prevent leak
+			case <-time.After(30 * time.Second):
+				// Timeout after 30s - consumer likely stopped reading, exit to prevent leak
 				return
 			}
 		}
