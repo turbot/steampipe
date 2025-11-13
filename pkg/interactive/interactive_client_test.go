@@ -532,3 +532,33 @@ func TestCancelActiveQueryIfAny(t *testing.T) {
 		}
 	})
 }
+
+// TestAutocompleteSuggestionsNilMaps tests that sort() handles nil maps gracefully.
+//
+// When autoCompleteSuggestions is initialized without using the constructor
+// (e.g., through struct literal or improper initialization), the tablesBySchema
+// and queriesByMod maps will be nil. The sort() method should handle this
+// gracefully with explicit nil checks for defensive programming.
+//
+// Issue: #4813
+func TestAutocompleteSuggestionsNilMaps(t *testing.T) {
+	// Initialize struct without using constructor - maps will be nil
+	suggestions := &autoCompleteSuggestions{
+		schemas:            []prompt.Suggest{{Text: "zebra"}, {Text: "apple"}},
+		unqualifiedTables:  []prompt.Suggest{{Text: "users"}, {Text: "accounts"}},
+		unqualifiedQueries: []prompt.Suggest{{Text: "query2"}, {Text: "query1"}},
+		// tablesBySchema and queriesByMod are nil (not initialized)
+	}
+
+	// This should not panic even with nil maps
+	// The sort() method should handle nil maps gracefully
+	suggestions.sort()
+
+	// Verify the slices were sorted correctly
+	if len(suggestions.schemas) != 2 || suggestions.schemas[0].Text != "apple" {
+		t.Errorf("schemas not sorted correctly, got %v", suggestions.schemas)
+	}
+	if len(suggestions.unqualifiedTables) != 2 || suggestions.unqualifiedTables[0].Text != "accounts" {
+		t.Errorf("unqualifiedTables not sorted correctly, got %v", suggestions.unqualifiedTables)
+	}
+}
