@@ -1,6 +1,8 @@
 package db_local
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestIsValidDatabaseName(t *testing.T) {
 	tests := map[string]bool{
@@ -26,3 +28,4 @@ func TestIsValidDatabaseName_EmptyString(t *testing.T) {
 		t.Errorf("Expected false for empty string, got %v", result)
 	}
 }
+

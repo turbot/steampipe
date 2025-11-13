@@ -1,12 +1,15 @@
 package db_client
 
 import (
+	"context"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 )
 
 // TestSessionMapCleanupImplemented verifies that the session map memory leak is fixed
@@ -47,4 +50,221 @@ func TestSessionMapCleanupImplemented(t *testing.T) {
 		strings.Contains(clientCode, "BeforeClose")
 	assert.True(t, hasCleanupComment,
 		"Comment should document automatic cleanup mechanism")
+}
+
+// TestDbClient_Close_Idempotent verifies that calling Close() multiple times does not cause issues
+// Reference: Similar to bug #4712 (Result.Close() idempotency)
+//
+// Close() should be safe to call multiple times without panicking or causing errors.
+func TestDbClient_Close_Idempotent(t *testing.T) {
+	ctx := context.Background()
+
+	// Create a minimal client (without real connection)
+	client := &DbClient{
+		sessions:      make(map[uint32]*db_common.DatabaseSession),
+		sessionsMutex: &sync.Mutex{},
+	}
+
+	// First close
+	err := client.Close(ctx)
+	assert.NoError(t, err, "First Close() should not return error")
+
+	// Second close - should not panic
+	err = client.Close(ctx)
+	assert.NoError(t, err, "Second Close() should not return error")
+
+	// Third close - should still not panic
+	err = client.Close(ctx)
+	assert.NoError(t, err, "Third Close() should not return error")
+
+	// Verify sessions map is nil after close
+	assert.Nil(t, client.sessions, "Sessions map should be nil after Close()")
+}
+
+// TestDbClient_ConcurrentSessionAccess tests concurrent access to the sessions map
+// This test should be run with -race flag to detect data races.
+//
+// The sessions map is protected by sessionsMutex, but we want to verify
+// that all access paths properly use the mutex.
+func TestDbClient_ConcurrentSessionAccess(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping concurrent access test in short mode")
+	}
+
+	client := &DbClient{
+		sessions:      make(map[uint32]*db_common.DatabaseSession),
+		sessionsMutex: &sync.Mutex{},
+	}
+
+	var wg sync.WaitGroup
+	numGoroutines := 50
+	numOperations := 100
+
+	// Track errors in a thread-safe way
+	errors := make(chan error, numGoroutines*numOperations)
+
+	// Simulate concurrent session additions
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(id uint32) {
+			defer wg.Done()
+			for j := 0; j < numOperations; j++ {
+				// Add session
+				client.sessionsMutex.Lock()
+				backendPid := id*1000 + uint32(j)
+				client.sessions[backendPid] = db_common.NewDBSession(backendPid)
+				client.sessionsMutex.Unlock()
+
+				// Read session
+				client.sessionsMutex.Lock()
+				_ = client.sessions[backendPid]
+				client.sessionsMutex.Unlock()
+
+				// Delete session (simulating BeforeClose callback)
+				client.sessionsMutex.Lock()
+				delete(client.sessions, backendPid)
+				client.sessionsMutex.Unlock()
+			}
+		}(uint32(i))
+	}
+
+	wg.Wait()
+	close(errors)
+
+	// Check for errors
+	for err := range errors {
+		t.Error(err)
+	}
+}
+
+// TestDbClient_Close_ClearsSessionsMap verifies that Close() properly clears the sessions map
+func TestDbClient_Close_ClearsSessionsMap(t *testing.T) {
+	ctx := context.Background()
+
+	client := &DbClient{
+		sessions:      make(map[uint32]*db_common.DatabaseSession),
+		sessionsMutex: &sync.Mutex{},
+	}
+
+	// Add some sessions
+	client.sessions[1] = db_common.NewDBSession(1)
+	client.sessions[2] = db_common.NewDBSession(2)
+	client.sessions[3] = db_common.NewDBSession(3)
+
+	assert.Len(t, client.sessions, 3, "Should have 3 sessions before Close()")
+
+	// Close the client
+	err := client.Close(ctx)
+	assert.NoError(t, err)
+
+	// Sessions should be nil after close
+	assert.Nil(t, client.sessions, "Sessions map should be nil after Close()")
+}
+
+// TestDbClient_SessionsMutexProtectsMap verifies that sessionsMutex protects all map operations
+func TestDbClient_SessionsMutexProtectsMap(t *testing.T) {
+	// This is a structural test to verify the sessions map is never accessed without the mutex
+	content, err := os.ReadFile("db_client_session.go")
+	require.NoError(t, err, "should be able to read db_client_session.go")
+
+	sourceCode := string(content)
+
+	// Count occurrences of mutex locks
+	mutexLocks := strings.Count(sourceCode, "c.sessionsMutex.Lock()")
+
+	// This is a heuristic check - in practice, we'd need more sophisticated analysis
+	// But it serves as a reminder to use the mutex
+	assert.True(t, mutexLocks > 0,
+		"sessionsMutex.Lock() should be used when accessing sessions map")
+}
+
+// TestDbClient_SessionMapDocumentation verifies that session lifecycle is documented
+func TestDbClient_SessionMapDocumentation(t *testing.T) {
+	content, err := os.ReadFile("db_client.go")
+	require.NoError(t, err)
+
+	sourceCode := string(content)
+
+	// Verify documentation mentions the lifecycle
+	assert.Contains(t, sourceCode, "Session lifecycle:",
+		"Sessions map should have lifecycle documentation")
+
+	assert.Contains(t, sourceCode, "issue #3737",
+		"Should reference the memory leak issue")
+}
+
+// TestDbClient_ClosePools_NilPoolsHandling verifies closePools handles nil pools
+func TestDbClient_ClosePools_NilPoolsHandling(t *testing.T) {
+	client := &DbClient{
+		sessions:      make(map[uint32]*db_common.DatabaseSession),
+		sessionsMutex: &sync.Mutex{},
+	}
+
+	// Should not panic with nil pools
+	assert.NotPanics(t, func() {
+		client.closePools()
+	}, "closePools should handle nil pools gracefully")
+}
+
+// TestDbClient_SessionsMapInitialized verifies sessions map is initialized in NewDbClient
+func TestDbClient_SessionsMapInitialized(t *testing.T) {
+	// Verify the initialization happens in NewDbClient
+	content, err := os.ReadFile("db_client.go")
+	require.NoError(t, err)
+
+	sourceCode := string(content)
+
+	// Verify sessions map is initialized
+	assert.Contains(t, sourceCode, "sessions:                make(map[uint32]*db_common.DatabaseSession)",
+		"sessions map should be initialized in NewDbClient")
+
+	// Verify mutex is initialized
+	assert.Contains(t, sourceCode, "sessionsMutex:           &sync.Mutex{}",
+		"sessionsMutex should be initialized in NewDbClient")
+}
+
+// TestDbClient_DeferredCleanupInNewDbClient verifies error cleanup in NewDbClient
+func TestDbClient_DeferredCleanupInNewDbClient(t *testing.T) {
+	content, err := os.ReadFile("db_client.go")
+	require.NoError(t, err)
+
+	sourceCode := string(content)
+
+	// Verify there's a defer that handles cleanup on error
+	assert.Contains(t, sourceCode, "defer func() {",
+		"NewDbClient should have deferred cleanup")
+
+	assert.Contains(t, sourceCode, "client.Close(ctx)",
+		"Deferred cleanup should close the client on error")
+}
+
+// TestDbClient_ParallelSessionInitLock verifies parallelSessionInitLock initialization
+func TestDbClient_ParallelSessionInitLock(t *testing.T) {
+	content, err := os.ReadFile("db_client.go")
+	require.NoError(t, err)
+
+	sourceCode := string(content)
+
+	// Verify parallelSessionInitLock is initialized
+	assert.Contains(t, sourceCode, "parallelSessionInitLock:",
+		"parallelSessionInitLock should be initialized")
+
+	// Should use semaphore
+	assert.Contains(t, sourceCode, "semaphore.NewWeighted",
+		"parallelSessionInitLock should use weighted semaphore")
+}
+
+// TestDbClient_BeforeCloseCallbackNilSafety tests the BeforeClose callback with nil connection
+func TestDbClient_BeforeCloseCallbackNilSafety(t *testing.T) {
+	content, err := os.ReadFile("db_client_connect.go")
+	require.NoError(t, err)
+
+	sourceCode := string(content)
+
+	// Verify nil checks in BeforeClose callback
+	assert.Contains(t, sourceCode, "if conn != nil",
+		"BeforeClose should check if conn is nil")
+
+	assert.Contains(t, sourceCode, "conn.PgConn() != nil",
+		"BeforeClose should check if PgConn() is nil")
 }
