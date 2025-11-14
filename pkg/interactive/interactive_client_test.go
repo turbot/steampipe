@@ -2,6 +2,7 @@ package interactive
 
 import (
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/c-bata/go-prompt"
@@ -531,4 +532,53 @@ func TestCancelActiveQueryIfAny(t *testing.T) {
 			t.Errorf("Second cancelActiveQueryIfAny() call count = %d, want 1 (should be idempotent)", callCount)
 		}
 	})
+}
+
+// TestInitialisationComplete_RaceCondition tests that concurrent access to
+// the initialisationComplete flag does not cause data races.
+//
+// This test simulates the real-world scenario where:
+// - One goroutine (init goroutine) writes to initialisationComplete
+// - Other goroutines (query executor, notification handler) read from it
+//
+// Bug: #4803
+func TestInitialisationComplete_RaceCondition(t *testing.T) {
+	c := &InteractiveClient{
+		initialisationComplete: false,
+	}
+
+	var wg sync.WaitGroup
+
+	// Simulate initialization goroutine writing to the flag
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
+			c.initialisationComplete = true
+			c.initialisationComplete = false
+		}
+	}()
+
+	// Simulate query executor reading the flag
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
+			_ = c.isInitialised()
+		}
+	}()
+
+	// Simulate notification handler reading the flag
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
+			// Check the flag directly (as handleConnectionUpdateNotification does)
+			if !c.initialisationComplete {
+				continue
+			}
+		}
+	}()
+
+	wg.Wait()
 }
