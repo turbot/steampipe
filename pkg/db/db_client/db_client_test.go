@@ -268,3 +268,52 @@ func TestDbClient_BeforeCloseCallbackNilSafety(t *testing.T) {
 	assert.Contains(t, sourceCode, "conn.PgConn() != nil",
 		"BeforeClose should check if PgConn() is nil")
 }
+
+// TestDbClient_DisableTimingFlag tests for race conditions on the disableTiming field
+// Reference: https://github.com/turbot/steampipe/issues/4808
+//
+// This test demonstrates that the disableTiming boolean is accessed from multiple
+// goroutines without synchronization, which can cause data races.
+//
+// The race occurs between:
+// - shouldFetchTiming() reading disableTiming (db_client.go:138)
+// - getQueryTiming() writing disableTiming (db_client_execute.go:190, 194)
+func TestDbClient_DisableTimingFlag(t *testing.T) {
+	// Read the db_client.go file to check the field type
+	content, err := os.ReadFile("db_client.go")
+	require.NoError(t, err, "should be able to read db_client.go")
+
+	sourceCode := string(content)
+
+	// Verify that disableTiming uses atomic.Bool instead of plain bool
+	// The field declaration should be: disableTiming atomic.Bool
+	assert.Contains(t, sourceCode, "disableTiming        atomic.Bool",
+		"disableTiming must use atomic.Bool to prevent race conditions")
+
+	// Verify the atomic import exists
+	assert.Contains(t, sourceCode, "\"sync/atomic\"",
+		"sync/atomic package must be imported for atomic.Bool")
+
+	// Check that db_client_execute.go uses atomic operations
+	executeContent, err := os.ReadFile("db_client_execute.go")
+	require.NoError(t, err, "should be able to read db_client_execute.go")
+
+	executeCode := string(executeContent)
+
+	// Verify atomic Store operations are used instead of direct assignment
+	assert.Contains(t, executeCode, ".Store(true)",
+		"disableTiming writes must use atomic Store(true)")
+	assert.Contains(t, executeCode, ".Store(false)",
+		"disableTiming writes must use atomic Store(false)")
+
+	// The old non-atomic assignments should not be present
+	assert.NotContains(t, executeCode, "c.disableTiming = true",
+		"direct assignment to disableTiming creates race condition")
+	assert.NotContains(t, executeCode, "c.disableTiming = false",
+		"direct assignment to disableTiming creates race condition")
+
+	// Verify that shouldFetchTiming uses atomic Load
+	shouldFetchTimingLine := "if c.disableTiming.Load() {"
+	assert.Contains(t, sourceCode, shouldFetchTimingLine,
+		"disableTiming reads must use atomic Load()")
+}
