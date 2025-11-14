@@ -200,9 +200,9 @@ func TestGetPreviousWord(t *testing.T) {
 			expected: "from",
 		},
 		{
-			name:     "no previous word",
+			name:     "single word with trailing space",
 			input:    "select ",
-			expected: "",
+			expected: "select",
 		},
 		{
 			name:     "single word",
@@ -324,31 +324,43 @@ func TestGetTable(t *testing.T) {
 func TestIsEditingTable(t *testing.T) {
 	tests := []struct {
 		name     string
+		text     string
 		prevWord string
 		expected bool
 	}{
 		{
-			name:     "from keyword",
+			name:     "from keyword with trailing space",
+			text:     "from ",
 			prevWord: "from",
 			expected: true,
 		},
 		{
+			name:     "from keyword without trailing space",
+			text:     "from",
+			prevWord: "from",
+			expected: false,
+		},
+		{
 			name:     "not from keyword",
+			text:     "select ",
 			prevWord: "select",
 			expected: false,
 		},
 		{
 			name:     "empty string",
+			text:     "",
 			prevWord: "",
 			expected: false,
 		},
 		{
 			name:     "FROM uppercase",
+			text:     "FROM ",
 			prevWord: "FROM",
 			expected: false,
 		},
 		{
 			name:     "whitespace",
+			text:     " from ",
 			prevWord: " from ",
 			expected: false,
 		},
@@ -356,9 +368,9 @@ func TestIsEditingTable(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := isEditingTable(tt.prevWord)
+			result := isEditingTable(tt.text, tt.prevWord)
 			if result != tt.expected {
-				t.Errorf("isEditingTable(%q) = %v, want %v", tt.prevWord, result, tt.expected)
+				t.Errorf("isEditingTable(%q, %q) = %v, want %v", tt.text, tt.prevWord, result, tt.expected)
 			}
 		})
 	}
