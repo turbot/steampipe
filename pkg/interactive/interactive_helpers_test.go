@@ -64,7 +64,8 @@ func TestIsFirstWord(t *testing.T) {
 	}
 }
 
-// TestLastWord tests the lastWord helper function (only passing cases)
+// TestLastWord tests the lastWord helper function
+// Bug: #4787 - lastWord() panics on single word or empty string
 func TestLastWord(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -95,6 +96,16 @@ func TestLastWord(t *testing.T) {
 			name:     "emoji",
 			input:    "select 🔥",
 			expected: " 🔥",
+		},
+		{
+			name:     "single_word", // #4787
+			input:    "select",
+			expected: "select",
+		},
+		{
+			name:     "empty_string", // #4787
+			input:    "",
+			expected: "",
 		},
 	}
 
