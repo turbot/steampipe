@@ -64,6 +64,11 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) (int, error)
 	// display any initialisation messages/warnings
 	initData.Result.DisplayMessages()
 
+	// validate that Client is not nil
+	if initData.Client == nil {
+		return 0, fmt.Errorf("client is required but not initialized")
+	}
+
 	// if there is a custom search path, wait until the first connection of each plugin has loaded
 	if customSearchPath := initData.Client.GetCustomSearchPath(); customSearchPath != nil {
 		if err := connection_sync.WaitForSearchPathSchemas(ctx, initData.Client, customSearchPath); err != nil {
