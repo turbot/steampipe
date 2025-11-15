@@ -16,7 +16,7 @@ import (
 func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db_common.InitResult) {
 	// whatever happens, set initialisationComplete
 	defer func() {
-		c.initialisationComplete = true
+		c.initialisationComplete.Store(true)
 	}()
 
 	if initResult.Error != nil {
@@ -127,7 +127,7 @@ func (c *InteractiveClient) readInitDataStream(ctx context.Context) {
 // return whether the client is initialises
 // there are 3 conditions>
 func (c *InteractiveClient) isInitialised() bool {
-	return c.initialisationComplete
+	return c.initialisationComplete.Load()
 }
 
 func (c *InteractiveClient) waitForInitData(ctx context.Context) error {
