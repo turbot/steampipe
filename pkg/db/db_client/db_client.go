@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -56,7 +57,7 @@ type DbClient struct {
 	// the default user search path
 	userSearchPath []string
 	// disable timing - set whilst in process of querying the timing
-	disableTiming        bool
+	disableTiming        atomic.Bool
 	onConnectionCallback DbConnectionCallback
 }
 
@@ -135,7 +136,7 @@ func (c *DbClient) loadServerSettings(ctx context.Context) error {
 
 func (c *DbClient) shouldFetchTiming() bool {
 	// check for override flag (this is to prevent timing being fetched when we read the timing metadata table)
-	if c.disableTiming {
+	if c.disableTiming.Load() {
 		return false
 	}
 	// only fetch timing if timing flag is set, or output is JSON
