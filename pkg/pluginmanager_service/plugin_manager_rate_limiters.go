@@ -65,11 +65,13 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 		}
 	}
 
+	m.mut.RLock()
 	for _, limitersForPlugin := range m.userLimiters {
 		for _, l := range limitersForPlugin {
 			queries = append(queries, introspection.GetRateLimiterTablePopulateSql(l))
 		}
 	}
+	m.mut.RUnlock()
 
 	conn, err := m.pool.Acquire(ctx)
 	if err != nil {
@@ -93,7 +95,9 @@ func (m *PluginManager) handleUserLimiterChanges(_ context.Context, plugins conn
 	}
 
 	// update stored limiters to the new map
+	m.mut.Lock()
 	m.userLimiters = limiterPluginMap
+	m.mut.Unlock()
 
 	// update the steampipe_plugin_limiters table
 	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
@@ -138,6 +142,9 @@ func (m *PluginManager) setRateLimitersForPlugin(pluginShortName string) error {
 func (m *PluginManager) getPluginsWithChangedLimiters(newLimiters connection.PluginLimiterMap) map[string]struct{} {
 	var pluginsWithChangedLimiters = make(map[string]struct{})
 
+	m.mut.RLock()
+	defer m.mut.RUnlock()
+
 	for plugin, limitersForPlugin := range m.userLimiters {
 		newLimitersForPlugin := newLimiters[plugin]
 		if !limitersForPlugin.Equals(newLimitersForPlugin) {
@@ -173,6 +180,8 @@ func (m *PluginManager) updateRateLimiterStatus() {
 }
 
 func (m *PluginManager) getUserDefinedLimitersForPlugin(plugin string) connection.LimiterMap {
+	m.mut.RLock()
+	defer m.mut.RUnlock()
 	userDefinedLimiters := m.userLimiters[plugin]
 	if userDefinedLimiters == nil {
 		userDefinedLimiters = make(connection.LimiterMap)
