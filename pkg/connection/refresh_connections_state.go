@@ -557,6 +557,15 @@ func (s *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Context
 				sem.Release(1)
 			}()
 
+			// Check if context is cancelled before starting work
+			select {
+			case <-ctx.Done():
+				// Context cancelled - don't process this batch
+				return
+			default:
+				// Context still valid - proceed with work
+			}
+
 			s.executeUpdateForConnections(ctx, errChan, cloneSchemaEnabled, connectionStates...)
 		}(states)
 
@@ -574,6 +583,16 @@ func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context
 	defer log.Println("[DEBUG] refreshConnectionState.executeUpdateForConnections end")
 
 	for _, connectionState := range connectionStates {
+		// Check if context is cancelled before processing each connection
+		select {
+		case <-ctx.Done():
+			// Context cancelled - stop processing remaining connections
+			log.Println("[DEBUG] context cancelled, stopping executeUpdateForConnections")
+			return
+		default:
+			// Context still valid - continue
+		}
+
 		connectionName := connectionState.ConnectionName
 		pluginSchemaName := utils.PluginFQNToSchemaName(connectionState.Plugin)
 		var sql string
