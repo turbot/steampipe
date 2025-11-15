@@ -169,7 +169,10 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 // ClosePrompt cancels the running prompt, setting the action to take after close
 func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
 	c.afterClose = afterClose
-	c.cancelPrompt()
+	// only call cancelPrompt if it is not nil (to prevent panic)
+	if c.cancelPrompt != nil {
+		c.cancelPrompt()
+	}
 }
 
 // retrieve both the raw query result and a sanitised version in list form
