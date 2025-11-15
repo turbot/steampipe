@@ -58,8 +58,14 @@ func RunBatchSession(ctx context.Context, initData *query.InitData) (int, error)
 	// NOTE: use the initData Cancel function to ensure any initialisation is cancelled if needed
 	contexthelpers.StartCancelHandler(initData.Cancel)
 
-	// wait for init
-	<-initData.Loaded
+	// wait for init, respecting context cancellation
+	select {
+	case <-initData.Loaded:
+		// initialization complete, continue
+	case <-ctx.Done():
+		// context cancelled before initialization completed
+		return 0, ctx.Err()
+	}
 
 	if err := initData.Result.Error; err != nil {
 		return 0, err
