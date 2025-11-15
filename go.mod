@@ -156,6 +156,7 @@ require (
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/stevenle/topsort v0.2.0 // indirect
+	github.com/stretchr/testify v1.10.0
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
 	github.com/tkrajina/go-reflector v0.5.8 // indirect
@@ -189,10 +190,9 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	oras.land/oras-go/v2 v2.5.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
-	github.com/stretchr/testify v1.10.0 // indirect
 )
 
-require github.com/stretchr/testify v1.10.0
+require go.uber.org/goleak v1.3.0
 
 require (
 	cel.dev/expr v0.23.0 // indirect

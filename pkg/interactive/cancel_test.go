@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"go.uber.org/goleak"
 )
 
 // TestCreatePromptContext tests prompt context creation
@@ -309,10 +311,12 @@ func TestCancelAfterContextAlreadyCancelled(t *testing.T) {
 	c.cancelActiveQueryIfAny()
 }
 
-// TestQueryContextLeakage tests for context leakage
-func TestQueryContextLeakage(t *testing.T) {
+// TestContextCancellationTiming verifies that context cancellation propagates
+// in a reasonable time across many iterations. This stress test helps identify
+// timing issues or deadlocks in the cancellation logic.
+func TestContextCancellationTiming(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping leak test in short mode")
+		t.Skip("Skipping timing stress test in short mode")
 	}
 
 	c := &InteractiveClient{}
@@ -327,17 +331,17 @@ func TestQueryContextLeakage(t *testing.T) {
 			c.cancelActiveQuery()
 		}
 
-		// Verify context is cancelled
+		// Verify context is cancelled within a reasonable timeout
+		// Using 100ms to avoid flakiness on slower CI runners while still
+		// catching real deadlocks or cancellation issues
 		select {
 		case <-ctx.Done():
-			// Good
-		case <-time.After(1 * time.Millisecond):
-			t.Errorf("Context %d not cancelled", i)
+			// Good - context was cancelled
+		case <-time.After(100 * time.Millisecond):
+			t.Fatalf("Context %d not cancelled within 100ms - possible deadlock or cancellation failure", i)
 			return
 		}
 	}
-
-	// If we get here without hanging or OOM, test passes
 }
 
 // TestCancelFuncReplacement tests that cancel functions are properly replaced
@@ -395,5 +399,29 @@ func TestCancelFuncReplacement(t *testing.T) {
 		// This might happen if parent was cancelled, but shouldn't happen from our cancel
 	case <-time.After(10 * time.Millisecond):
 		// Expected - first context remains active
+	}
+}
+
+// TestNoGoroutineLeaks verifies that creating and cancelling query contexts
+// doesn't leak goroutines. This uses goleak to detect goroutines that are
+// still running after the test completes.
+func TestNoGoroutineLeaks(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping goroutine leak test in short mode")
+	}
+
+	defer goleak.VerifyNone(t)
+
+	c := &InteractiveClient{}
+	parentCtx := context.Background()
+
+	// Create and cancel many contexts to stress test for leaks
+	for i := 0; i < 1000; i++ {
+		ctx := c.createQueryContext(parentCtx)
+		if c.cancelActiveQuery != nil {
+			c.cancelActiveQuery()
+			// Wait for cancellation to complete
+			<-ctx.Done()
+		}
 	}
 }
