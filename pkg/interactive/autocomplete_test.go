@@ -206,6 +206,88 @@ func TestAutocompleteSuggestionsMemoryUsage(t *testing.T) {
 	suggestions = nil
 }
 
+// TestAutocompleteSuggestionsSizeLimits tests that suggestion maps are bounded
+// This test verifies the fix for #4812: autocomplete suggestions should have size limits
+func TestAutocompleteSuggestionsSizeLimits(t *testing.T) {
+	s := newAutocompleteSuggestions()
+
+	// Test setTablesForSchema enforces schema count limit
+	t.Run("schema count limit", func(t *testing.T) {
+		// Add more schemas than the limit
+		for i := 0; i < 150; i++ {
+			tables := []prompt.Suggest{
+				{Text: "table1", Description: "Table"},
+			}
+			s.setTablesForSchema("schema_"+string(rune(i)), tables)
+		}
+
+		// Should not exceed maxSchemasInSuggestions (100)
+		if len(s.tablesBySchema) > 100 {
+			t.Errorf("tablesBySchema size %d exceeds limit of 100", len(s.tablesBySchema))
+		}
+	})
+
+	// Test setTablesForSchema enforces per-schema table limit
+	t.Run("tables per schema limit", func(t *testing.T) {
+		s2 := newAutocompleteSuggestions()
+
+		// Create more tables than the limit
+		manyTables := make([]prompt.Suggest, 600)
+		for i := 0; i < 600; i++ {
+			manyTables[i] = prompt.Suggest{
+				Text:        "table_" + string(rune(i)),
+				Description: "Table",
+			}
+		}
+
+		s2.setTablesForSchema("test_schema", manyTables)
+
+		// Should not exceed maxTablesPerSchema (500)
+		if len(s2.tablesBySchema["test_schema"]) > 500 {
+			t.Errorf("tables per schema %d exceeds limit of 500", len(s2.tablesBySchema["test_schema"]))
+		}
+	})
+
+	// Test setQueriesForMod enforces mod count limit
+	t.Run("mod count limit", func(t *testing.T) {
+		s3 := newAutocompleteSuggestions()
+
+		// Add more mods than the limit
+		for i := 0; i < 150; i++ {
+			queries := []prompt.Suggest{
+				{Text: "query1", Description: "Query"},
+			}
+			s3.setQueriesForMod("mod_"+string(rune(i)), queries)
+		}
+
+		// Should not exceed maxSchemasInSuggestions (100)
+		if len(s3.queriesByMod) > 100 {
+			t.Errorf("queriesByMod size %d exceeds limit of 100", len(s3.queriesByMod))
+		}
+	})
+
+	// Test setQueriesForMod enforces per-mod query limit
+	t.Run("queries per mod limit", func(t *testing.T) {
+		s4 := newAutocompleteSuggestions()
+
+		// Create more queries than the limit
+		manyQueries := make([]prompt.Suggest, 600)
+		for i := 0; i < 600; i++ {
+			manyQueries[i] = prompt.Suggest{
+				Text:        "query_" + string(rune(i)),
+				Description: "Query",
+			}
+		}
+
+		s4.setQueriesForMod("test_mod", manyQueries)
+
+		// Should not exceed maxQueriesPerMod (500)
+		if len(s4.queriesByMod["test_mod"]) > 500 {
+			t.Errorf("queries per mod %d exceeds limit of 500", len(s4.queriesByMod["test_mod"]))
+		}
+	})
+}
+
 // TestAutocompleteSuggestionsEdgeCases tests various edge cases
 func TestAutocompleteSuggestionsEdgeCases(t *testing.T) {
 	tests := []struct {
