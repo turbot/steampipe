@@ -65,3 +65,11 @@ func TestResult_ConcurrentReadAndClose(t *testing.T) {
 		wg.Wait()
 	}
 }
+
+func TestWrapResult_NilResult(t *testing.T) {
+	// WrapResult should handle nil input gracefully
+	result := WrapResult(nil)
+
+	// Result should be nil, not a wrapper around nil
+	assert.Nil(t, result, "WrapResult(nil) should return nil")
+}
