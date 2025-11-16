@@ -2,14 +2,17 @@ package queryresult
 
 import (
 	"sync"
+	"sync/atomic"
 
 	"github.com/turbot/pipe-fittings/v2/queryresult"
 )
 
 // Result wraps queryresult.Result[TimingResultStream] with idempotent Close()
+// and synchronization to prevent race between StreamRow and Close
 type Result struct {
 	*queryresult.Result[TimingResultStream]
 	closeOnce sync.Once
+	closed    atomic.Bool
 }
 
 func NewResult(cols []*queryresult.ColumnDef) *Result {
@@ -21,12 +24,25 @@ func NewResult(cols []*queryresult.ColumnDef) *Result {
 // Close closes the row channel in an idempotent manner
 func (r *Result) Close() {
 	r.closeOnce.Do(func() {
+		r.closed.Store(true)
 		r.Result.Close()
 	})
 }
 
-// StreamRow sends a row to the result stream
+// StreamRow wraps the underlying StreamRow with synchronization to prevent panic on closed channel
 func (r *Result) StreamRow(row []interface{}) {
+	// Check if already closed - if so, silently drop the row
+	if r.closed.Load() {
+		return
+	}
+
+	// Use recover to gracefully handle the race where channel closes between check and send
+	defer func() {
+		if r := recover(); r != nil {
+			// Channel was closed between our check and the send - this is okay, just drop the row
+		}
+	}()
+
 	r.Result.StreamRow(row)
 }
 
