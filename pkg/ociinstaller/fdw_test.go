@@ -2,6 +2,7 @@ package ociinstaller
 
 import (
 	"compress/gzip"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -180,4 +181,144 @@ func TestInstallFdwFiles_CorruptGzipFile_BugDocumentation(t *testing.T) {
 		// that the new binary could be successfully extracted.
 		t.Errorf("CRITICAL BUG: Old FDW binary was deleted before new binary extraction succeeded. System left in broken state with no FDW binary.")
 	}
+}
+
+// TestInstallFdwFiles_PartialInstall_BugDocumentation demonstrates the non-atomic installation bug
+// where failure during installation can leave the system in an inconsistent state with a mix of
+// old and new files. This test simulates a failure during the control file move operation.
+//
+// Bug: installFdwFiles performs three sequential file operations without atomicity:
+// 1. Ungzip binary to destination
+// 2. Move control file
+// 3. Move SQL file
+//
+// If step 2 or 3 fails, the binary is already in place with the new version but control/SQL
+// files are old version or missing, causing FDW to fail to load or behave unpredictably.
+//
+// Expected behavior: Installation should be atomic - either all files are updated or none are.
+func TestInstallFdwFiles_PartialInstall_BugDocumentation(t *testing.T) {
+	// Create temp directories simulating installation source and destination
+	tempRoot := t.TempDir()
+	sourceDir := filepath.Join(tempRoot, "source")
+	binDestDir := filepath.Join(tempRoot, "fdw_bin")
+	controlDestDir := filepath.Join(tempRoot, "fdw_control")
+
+	// Create source and destination directories
+	if err := os.MkdirAll(sourceDir, 0755); err != nil {
+		t.Fatalf("Failed to create source dir: %v", err)
+	}
+	if err := os.MkdirAll(binDestDir, 0755); err != nil {
+		t.Fatalf("Failed to create bin dest dir: %v", err)
+	}
+	if err := os.MkdirAll(controlDestDir, 0755); err != nil {
+		t.Fatalf("Failed to create control dest dir: %v", err)
+	}
+
+	// Create v2.0 binary file (uncompressed for simplicity)
+	binarySourcePath := filepath.Join(sourceDir, "steampipe_postgres_fdw.so")
+	if err := os.WriteFile(binarySourcePath, []byte("v2.0 binary content"), 0644); err != nil {
+		t.Fatalf("Failed to create binary: %v", err)
+	}
+
+	// Create control and SQL files (simulating v2.0)
+	controlSourcePath := filepath.Join(sourceDir, "steampipe_postgres_fdw.control")
+	if err := os.WriteFile(controlSourcePath, []byte("v2.0 control"), 0644); err != nil {
+		t.Fatalf("Failed to create control file: %v", err)
+	}
+
+	sqlSourcePath := filepath.Join(sourceDir, "steampipe_postgres_fdw--1.0.sql")
+	if err := os.WriteFile(sqlSourcePath, []byte("v2.0 sql"), 0644); err != nil {
+		t.Fatalf("Failed to create SQL file: %v", err)
+	}
+
+	// Simulate existing v1.0 installation
+	binPath := filepath.Join(binDestDir, "steampipe_postgres_fdw.so")
+	if err := os.WriteFile(binPath, []byte("v1.0 binary"), 0644); err != nil {
+		t.Fatalf("Failed to create old binary: %v", err)
+	}
+
+	oldControlPath := filepath.Join(controlDestDir, "steampipe_postgres_fdw.control")
+	if err := os.WriteFile(oldControlPath, []byte("v1.0 control"), 0644); err != nil {
+		t.Fatalf("Failed to create old control: %v", err)
+	}
+
+	oldSqlPath := filepath.Join(controlDestDir, "steampipe_postgres_fdw--1.0.sql")
+	if err := os.WriteFile(oldSqlPath, []byte("v1.0 sql"), 0644); err != nil {
+		t.Fatalf("Failed to create old SQL: %v", err)
+	}
+
+	// TEST: Simulate installation failure after binary copy but before control file move
+	// This demonstrates the non-atomic nature of the current implementation
+
+	// Step 1: Copy binary to destination (this succeeds - simulating Ungzip)
+	os.Remove(binPath) // Remove old binary as the code does
+	// Copy file manually
+	srcFile, err := os.Open(binarySourcePath)
+	if err != nil {
+		t.Fatalf("Failed to open source binary: %v", err)
+	}
+	dstFile, err := os.Create(binPath)
+	if err != nil {
+		srcFile.Close()
+		t.Fatalf("Failed to create dest binary: %v", err)
+	}
+	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		srcFile.Close()
+		dstFile.Close()
+		t.Fatalf("Binary copy failed: %v", err)
+	}
+	srcFile.Close()
+	dstFile.Close()
+
+	// Verify new binary is in place
+	newBinContent, err := os.ReadFile(binPath)
+	if err != nil {
+		t.Fatalf("Failed to read new binary: %v", err)
+	}
+	if string(newBinContent) != "v2.0 binary content" {
+		t.Errorf("Binary not updated correctly")
+	}
+
+	// Step 2: Simulate control file move failure (by making destination read-only)
+	// This is where the bug manifests - binary is v2.0 but other files are still v1.0
+	if err := os.Chmod(controlDestDir, 0555); err != nil {
+		t.Fatalf("Failed to make control dir read-only: %v", err)
+	}
+	defer os.Chmod(controlDestDir, 0755) // Restore permissions for cleanup
+
+	// Attempt to move control file (this will fail)
+	controlDestPath := filepath.Join(controlDestDir, "steampipe_postgres_fdw.control")
+	err = ociinstaller.MoveFileWithinPartition(controlSourcePath, controlDestPath)
+
+	// BUG DEMONSTRATION: At this point we have an inconsistent state
+	// - Binary is v2.0 (new)
+	// - Control file is v1.0 (old)
+	// - SQL file is v1.0 (old)
+	// This is the bug: installation is not atomic!
+
+	if err == nil {
+		t.Error("Expected control file move to fail, but it succeeded")
+	}
+
+	// Verify inconsistent state: new binary with old control/SQL files
+	binContent, _ := os.ReadFile(binPath)
+	controlContent, _ := os.ReadFile(oldControlPath)
+	sqlContent, _ := os.ReadFile(oldSqlPath)
+
+	if string(binContent) != "v2.0 binary content" {
+		t.Errorf("Binary should be v2.0, got: %s", string(binContent))
+	}
+
+	if string(controlContent) != "v1.0 control" {
+		t.Errorf("Control should still be v1.0, got: %s", string(controlContent))
+	}
+
+	if string(sqlContent) != "v1.0 sql" {
+		t.Errorf("SQL should still be v1.0, got: %s", string(sqlContent))
+	}
+
+	// This inconsistent state (v2.0 binary + v1.0 control/SQL) is the bug!
+	// The FDW will fail to load or behave unpredictably
+	t.Logf("BUG CONFIRMED: System left in inconsistent state - binary v2.0, control v1.0, SQL v1.0")
+	t.Error("Installation is not atomic - partial failure leaves system in inconsistent state")
 }

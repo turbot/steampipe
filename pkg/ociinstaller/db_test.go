@@ -255,3 +255,124 @@ func TestUpdateVersionFileDB_FailureHandling_BugDocumentation(t *testing.T) {
 		}
 	})
 }
+
+// TestInstallDbFiles_PartialMove_BugDocumentation demonstrates the non-atomic installation bug
+// where MoveFolderWithinPartition can fail partway through moving multiple files, leaving the
+// database installation in a corrupted state with a mix of old and new files.
+//
+// Bug: installDbFiles calls MoveFolderWithinPartition which moves files one at a time.
+// If it fails partway through (disk full, permission error, etc.), some files are new version
+// and some are old version, leaving the database in an inconsistent state.
+//
+// Expected behavior: Installation should be atomic - either all files are updated or none are.
+func TestInstallDbFiles_PartialMove_BugDocumentation(t *testing.T) {
+	// Create temp directories simulating installation source and destination
+	tempRoot := t.TempDir()
+	sourceDir := filepath.Join(tempRoot, "source", "postgres-14")
+	destDir := filepath.Join(tempRoot, "dest")
+
+	// Create source directory with multiple files (simulating v2.0 database)
+	if err := os.MkdirAll(sourceDir, 0755); err != nil {
+		t.Fatalf("Failed to create source dir: %v", err)
+	}
+
+	// Create v2.0 database files
+	files := map[string]string{
+		"postgres":      "v2.0 postgres binary",
+		"pg_config":     "v2.0 config",
+		"libpq.so":      "v2.0 library",
+		"pg_hba.conf":   "v2.0 hba config",
+		"postgresql.conf": "v2.0 postgresql config",
+	}
+
+	for filename, content := range files {
+		path := filepath.Join(sourceDir, filename)
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatalf("Failed to create source file %s: %v", filename, err)
+		}
+	}
+
+	// Simulate existing v1.0 installation
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		t.Fatalf("Failed to create dest dir: %v", err)
+	}
+
+	oldFiles := map[string]string{
+		"postgres":      "v1.0 postgres binary",
+		"pg_config":     "v1.0 config",
+		"libpq.so":      "v1.0 library",
+		"pg_hba.conf":   "v1.0 hba config",
+		"postgresql.conf": "v1.0 postgresql config",
+	}
+
+	for filename, content := range oldFiles {
+		path := filepath.Join(destDir, filename)
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatalf("Failed to create old file %s: %v", filename, err)
+		}
+	}
+
+	// TEST: Simulate partial move by making one destination file read-only
+	// This will cause MoveFolderWithinPartition to fail partway through
+	readOnlyFile := filepath.Join(destDir, "pg_hba.conf")
+	if err := os.Chmod(readOnlyFile, 0444); err != nil {
+		t.Fatalf("Failed to make file read-only: %v", err)
+	}
+	defer os.Chmod(readOnlyFile, 0644) // Restore for cleanup
+
+	// Also make the parent directory writable so we can attempt the move
+	// but the specific file will fail
+	if err := os.Chmod(destDir, 0755); err != nil {
+		t.Fatalf("Failed to make dest dir writable: %v", err)
+	}
+
+	// Attempt the move - this should fail partway through
+	mockImage := &ociinstaller.OciImage[*dbImage, *dbImageConfig]{
+		Data: &dbImage{
+			ArchiveDir: "postgres-14",
+		},
+	}
+
+	err := installDbFiles(mockImage, filepath.Join(tempRoot, "source"), destDir)
+
+	// BUG DEMONSTRATION: MoveFolderWithinPartition may have moved some files before failing
+	// This leaves the database in an inconsistent state with a mix of v1.0 and v2.0 files
+
+	if err == nil {
+		t.Error("Expected installDbFiles to fail due to read-only file, but it succeeded")
+	}
+
+	// Check which files were updated before the failure
+	// Some files will be v2.0 (moved successfully) and some will be v1.0 (not moved yet)
+	updatedCount := 0
+	oldCount := 0
+
+	for filename, oldContent := range oldFiles {
+		path := filepath.Join(destDir, filename)
+		content, readErr := os.ReadFile(path)
+		if readErr != nil {
+			continue
+		}
+
+		if string(content) != oldContent {
+			updatedCount++
+			t.Logf("File %s was updated to v2.0", filename)
+		} else {
+			oldCount++
+			t.Logf("File %s is still v1.0", filename)
+		}
+	}
+
+	// BUG CONFIRMATION: We should have a mix of old and new files
+	// This demonstrates the non-atomic nature of the installation
+	if updatedCount > 0 && oldCount > 0 {
+		t.Logf("BUG CONFIRMED: Database in inconsistent state - %d files updated, %d files still old", updatedCount, oldCount)
+		t.Error("Installation is not atomic - partial failure leaves database in inconsistent state")
+	} else if updatedCount == 0 && oldCount > 0 {
+		// All files are still old - this is actually safe (all-or-nothing worked)
+		t.Log("All files remain at old version - this is safe but may not demonstrate the bug on this platform")
+	} else {
+		// All files were updated despite the error - unexpected
+		t.Log("All files were updated despite the error - unexpected behavior")
+	}
+}
