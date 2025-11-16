@@ -63,6 +63,9 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 	defer log.Println("[DEBUG] newRefreshConnectionState end")
 
 	pool := pluginManager.Pool()
+	if pool == nil {
+		return nil, sperr.New("plugin manager returned nil pool")
+	}
 	// set user search path first
 	log.Printf("[INFO] setting up search path")
 	searchPath, err := db_local.SetUserSearchPath(ctx, pool)
