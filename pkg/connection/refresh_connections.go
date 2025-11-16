@@ -39,12 +39,31 @@ func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceU
 
 	log.Printf("[INFO] acquired refreshQueueLock, try to acquire refreshExecuteLock")
 
-	// so we have the queue lock, now wait on the execute lock
-	executeLock.Lock()
-	defer func() {
-		executeLock.Unlock()
-		log.Printf("[INFO] released refreshExecuteLock")
+	// so we have the queue lock, now wait on the execute lock with a timeout
+	// to prevent indefinite blocking (issue #4761)
+	lockAcquired := make(chan struct{})
+	go func() {
+		executeLock.Lock()
+		close(lockAcquired)
 	}()
+
+	// Wait for lock acquisition with a 5-minute timeout
+	const executeLockTimeout = 5 * time.Minute
+	select {
+	case <-lockAcquired:
+		// Lock acquired successfully
+		defer func() {
+			executeLock.Unlock()
+			log.Printf("[INFO] released refreshExecuteLock")
+		}()
+	case <-time.After(executeLockTimeout):
+		// Timeout - release queueLock and return error
+		queueLock.Unlock()
+		log.Printf("[WARN] timeout waiting for refreshExecuteLock after %v - potential deadlock avoided", executeLockTimeout)
+		return steampipeconfig.NewErrorRefreshConnectionResult(
+			helpers.ToError("timeout waiting for refresh connections lock - another refresh may be hung"),
+		)
+	}
 
 	// we have the execute-lock, release the queue-lock so someone else can queue
 	queueLock.Unlock()
