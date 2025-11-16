@@ -531,20 +531,14 @@ func (s *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Context
 	sem := semaphore.NewWeighted(maxParallel)
 
 	go func() {
-		for {
-			select {
-			case connectionError := <-errChan:
-				if connectionError == nil {
-					return
+		for connectionError := range errChan {
+			errors = append(errors, connectionError.err)
+			conn, poolErr := s.pool.Acquire(ctx)
+			if poolErr == nil {
+				if err := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionError.name, connectionError.err); err != nil {
+					log.Println("[WARN] failed to update connection state table", err.Error())
 				}
-				errors = append(errors, connectionError.err)
-				conn, poolErr := s.pool.Acquire(ctx)
-				if poolErr == nil {
-					if err := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionError.name, connectionError.err); err != nil {
-						log.Println("[WARN] failed to update connection state table", err.Error())
-					}
-					conn.Release()
-				}
+				conn.Release()
 			}
 		}
 	}()
