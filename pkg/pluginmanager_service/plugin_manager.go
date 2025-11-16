@@ -791,6 +791,12 @@ func (m *PluginManager) setRateLimiters(pluginInstance string, pluginClient *sdk
 func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionName string) {
 	log.Printf("[INFO] updateConnectionSchema connection %s", connectionName)
 
+	// check if pool is nil before attempting to refresh connections
+	if m.pool == nil {
+		log.Printf("[WARN] cannot update connection schema: pool is nil")
+		return
+	}
+
 	refreshResult := connection.RefreshConnections(ctx, m, connectionName)
 	if refreshResult.Error != nil {
 		log.Printf("[TRACE] error refreshing connections: %s", refreshResult.Error)
