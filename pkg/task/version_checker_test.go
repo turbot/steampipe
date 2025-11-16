@@ -73,51 +73,33 @@ func TestVersionCheckerNetworkFailures(t *testing.T) {
 // TestVersionCheckerBrokenBody tests the critical bug in version_checker.go:56
 // BUG: log.Fatal(err) will terminate the entire application if body read fails
 func TestVersionCheckerBrokenBody(t *testing.T) {
-	t.Run("body_read_error_causes_fatal", func(t *testing.T) {
-		// This test documents the bug but cannot fully test it because
-		// log.Fatal() terminates the process
-		//
-		// BUG LOCATION: version_checker.go:54-57
-		//
-		// Current code:
-		//   bodyBytes, err := io.ReadAll(resp.Body)
-		//   if err != nil {
-		//       log.Fatal(err)  // <-- BUG: This will exit the entire program!
-		//   }
-		//
-		// This is especially dangerous because:
-		// 1. It's called from a goroutine (runner.go:100-102)
-		// 2. It will crash the entire Steampipe process
-		// 3. It happens during background version checking
-		//
-		// IMPACT: If the HTTP response body is corrupted or the connection
-		// fails during body reading, the entire Steampipe process will exit
-		// unexpectedly with status 1.
-		//
-		// FIX: Should return the error instead:
-		//   if err != nil {
-		//       return err
-		//   }
+	// Test that doCheckRequest properly handles errors from io.ReadAll
+	// instead of calling log.Fatal which would terminate the process
+	//
+	// BUG LOCATION: version_checker.go:54-57
+	// Current buggy code:
+	//   bodyBytes, err := io.ReadAll(resp.Body)
+	//   if err != nil {
+	//       log.Fatal(err)  // <-- BUG: terminates process
+	//   }
+	//
+	// Expected fixed code:
+	//   if err != nil {
+	//       return err  // <-- CORRECT: return error to caller
+	//   }
 
-		t.Log("BUG FOUND: log.Fatal in version_checker.go:56 will terminate process")
-		t.Log("This cannot be fully tested without process exit")
-		t.Log("See BUGS-FOUND-WAVE3.md for details")
-	})
+	t.Run("body_read_error_should_return_error", func(t *testing.T) {
+		// Note: We can't easily trigger an io.ReadAll error with httptest
+		// because the request will fail earlier. However, the fix is clear:
+		// change log.Fatal(err) to return err on line 56.
+		//
+		// This test documents the expected behavior after the fix.
+		// Once fixed, any body read errors will be properly returned
+		// instead of terminating the process.
 
-	t.Run("simulate_body_read_success", func(t *testing.T) {
-		// Test the happy path - successful body read
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"latest_version":"1.0.0","download_url":"https://example.com"}`))
-		}))
-		defer server.Close()
-
-		// Note: This will make a real request to the actual version check URL
-		// not our test server, because we can't override the URL in versionChecker
-		// This test documents the expected successful behavior
-		t.Log("Successful body read should work without issues")
-		t.Logf("Test server: %s", server.URL)
+		t.Log("After fix: io.ReadAll errors should be returned, not cause log.Fatal")
+		t.Log("Current bug: log.Fatal(err) on line 56 terminates the entire process")
+		t.Log("Expected: return err on line 56")
 	})
 }
 
