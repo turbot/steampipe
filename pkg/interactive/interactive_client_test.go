@@ -1,6 +1,7 @@
 package interactive
 
 import (
+	"context"
 	"strings"
 	"sync"
 	"testing"
@@ -629,4 +630,28 @@ func TestGetQueryInfo_FromDetection(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestExecuteMetaquery_NotInitialised tests that executeMetaquery returns
+// an error instead of panicking when the client is not initialized.
+//
+// Bug: #4789
+func TestExecuteMetaquery_NotInitialised(t *testing.T) {
+	// Create an InteractiveClient that is not initialized
+	c := &InteractiveClient{}
+	c.initialisationComplete.Store(false)
+
+	ctx := context.Background()
+
+	// Attempt to execute a metaquery before initialization
+	// This should return an error, not panic
+	err := c.executeMetaquery(ctx, ".inspect")
+
+	// We expect an error
+	if err == nil {
+		t.Error("Expected error when executing metaquery before initialization, but got nil")
+	}
+
+	// The test passes if we get here without a panic
+	t.Logf("Successfully received error instead of panic: %v", err)
 }
