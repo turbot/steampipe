@@ -701,7 +701,12 @@ func (m *PluginManager) waitForPluginLoad(p *runningPlugin, req *pb.GetRequest) 
 	case <-p.initialized:
 		log.Printf("[TRACE] plugin initialized: pid %d (%p)", p.reattach.Pid, req)
 	case <-p.failed:
-		log.Printf("[TRACE] plugin pid %d failed %s (%p)", p.reattach.Pid, p.error.Error(), req)
+		// reattach may be nil if plugin failed before it was set
+		if p.reattach != nil {
+			log.Printf("[TRACE] plugin pid %d failed %s (%p)", p.reattach.Pid, p.error.Error(), req)
+		} else {
+			log.Printf("[TRACE] plugin %s failed before reattach was set: %s (%p)", p.pluginInstance, p.error.Error(), req)
+		}
 		// get error from running plugin
 		return p.error
 	}

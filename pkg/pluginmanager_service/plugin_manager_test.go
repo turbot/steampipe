@@ -773,3 +773,46 @@ func TestPluginManager_Shutdown_NoPlugins(t *testing.T) {
 		t.Error("Shutdown returned nil response")
 	}
 }
+
+// TestWaitForPluginLoadWithNilReattach tests that waitForPluginLoad handles
+// the case where a plugin fails before reattach is set.
+// This reproduces bug #4752 - a nil pointer panic when trying to log p.reattach.Pid
+// after the plugin fails during startup before the reattach config is set.
+func TestWaitForPluginLoadWithNilReattach(t *testing.T) {
+	pm := newTestPluginManager(t)
+
+	// Add plugin config required by waitForPluginLoad with a reasonable timeout
+	timeout := 30 // Set timeout to 30 seconds so test doesn't time out immediately
+	pm.plugins["test-instance"] = &plugin.Plugin{
+		Plugin:        "test-plugin",
+		Instance:      "test-instance",
+		StartTimeout:  &timeout,
+	}
+
+	// Create a runningPlugin that simulates a plugin that failed before reattach was set
+	rp := &runningPlugin{
+		pluginInstance: "test-instance",
+		initialized:    make(chan struct{}),
+		failed:         make(chan struct{}),
+		error:          fmt.Errorf("plugin startup failed"),
+		reattach:       nil, // Explicitly nil - this is the bug condition
+	}
+
+	// Simulate plugin failure by closing the failed channel in a goroutine
+	go func() {
+		time.Sleep(10 * time.Millisecond)
+		close(rp.failed)
+	}()
+
+	// Create a dummy request
+	req := &pb.GetRequest{
+		Connections: []string{"test-conn"},
+	}
+
+	// This should panic with nil pointer dereference when trying to log p.reattach.Pid
+	err := pm.waitForPluginLoad(rp, req)
+
+	// We expect an error (the plugin failed), but we should NOT panic
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "plugin startup failed")
+}
