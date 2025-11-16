@@ -108,6 +108,7 @@ func TestPluginManager_ConcurrentUpdateRateLimiterStatus(t *testing.T) {
 				},
 			},
 		},
+		mut: sync.RWMutex{},
 	}
 
 	// Run concurrent operations to trigger race condition
@@ -119,6 +120,9 @@ func TestPluginManager_ConcurrentUpdateRateLimiterStatus(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		for i := 0; i < iterations; i++ {
+			// Simulate production code behavior - use mutex when writing
+			// (see handleUserLimiterChanges lines 98-100)
+			pm.mut.Lock()
 			pm.userLimiters = connection.PluginLimiterMap{
 				"aws": connection.LimiterMap{
 					"limiter1": &plugin.RateLimiter{
@@ -128,6 +132,7 @@ func TestPluginManager_ConcurrentUpdateRateLimiterStatus(t *testing.T) {
 					},
 				},
 			}
+			pm.mut.Unlock()
 		}
 	}()
 
@@ -187,6 +192,9 @@ func TestPluginManager_ConcurrentRateLimiterMapAccess2(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < iterations; j++ {
+				// Simulate production code behavior - use mutex when writing
+				// (see handleUserLimiterChanges lines 98-100)
+				pm.mut.Lock()
 				pm.userLimiters["aws"] = connection.LimiterMap{
 					"limiter1": &plugin.RateLimiter{
 						Name:   "limiter1",
@@ -194,6 +202,7 @@ func TestPluginManager_ConcurrentRateLimiterMapAccess2(t *testing.T) {
 						Status: plugin.LimiterStatusOverridden,
 					},
 				}
+				pm.mut.Unlock()
 			}
 		}()
 	}
