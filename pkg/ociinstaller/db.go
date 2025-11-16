@@ -14,6 +14,12 @@ import (
 
 // InstallDB :: Install Postgres files fom OCI image
 func InstallDB(ctx context.Context, dblocation string) (string, error) {
+	// Check available disk space BEFORE starting installation
+	// This prevents partial installations that can leave the system in a broken state
+	if err := validateDiskSpace(dblocation, constants.PostgresImageRef); err != nil {
+		return "", err
+	}
+
 	tempDir := ociinstaller.NewTempDir(dblocation)
 	defer func() {
 		if err := tempDir.Delete(); err != nil {
