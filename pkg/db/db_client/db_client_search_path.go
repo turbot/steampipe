@@ -29,9 +29,6 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 	// default required path to user search path
 	requiredSearchPath := c.userSearchPath
 
-	// store custom search path and search path prefix
-	c.searchPathPrefix = searchPathPrefix
-
 	// if a search path was passed, use that
 	if len(configuredSearchPath) > 0 {
 		requiredSearchPath = configuredSearchPath
@@ -43,6 +40,12 @@ func (c *DbClient) SetRequiredSessionSearchPath(ctx context.Context) error {
 	requiredSearchPath = db_common.EnsureInternalSchemaSuffix(requiredSearchPath)
 
 	// if either configuredSearchPath or searchPathPrefix are set, store requiredSearchPath as customSearchPath
+	c.searchPathMutex.Lock()
+	defer c.searchPathMutex.Unlock()
+
+	// store custom search path and search path prefix
+	c.searchPathPrefix = searchPathPrefix
+
 	if len(configuredSearchPath)+len(searchPathPrefix) > 0 {
 		c.customSearchPath = requiredSearchPath
 	} else {
@@ -75,6 +78,9 @@ func (c *DbClient) loadUserSearchPath(ctx context.Context, connection *pgx.Conn)
 
 // GetRequiredSessionSearchPath implements Client
 func (c *DbClient) GetRequiredSessionSearchPath() []string {
+	c.searchPathMutex.Lock()
+	defer c.searchPathMutex.Unlock()
+
 	if c.customSearchPath != nil {
 		return c.customSearchPath
 	}
@@ -83,6 +89,9 @@ func (c *DbClient) GetRequiredSessionSearchPath() []string {
 }
 
 func (c *DbClient) GetCustomSearchPath() []string {
+	c.searchPathMutex.Lock()
+	defer c.searchPathMutex.Unlock()
+
 	return c.customSearchPath
 }
 
@@ -107,7 +116,7 @@ func (c *DbClient) ensureSessionSearchPath(ctx context.Context, session *db_comm
 	}
 
 	// so we need to set the search path
-	log.Printf("[TRACE] session search path will be updated to  %s", strings.Join(c.customSearchPath, ","))
+	log.Printf("[TRACE] session search path will be updated to  %s", strings.Join(requiredSearchPath, ","))
 
 	err := db_common.ExecuteSystemClientCall(ctx, session.Connection.Conn(), func(ctx context.Context, tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, fmt.Sprintf("set search_path to %s", strings.Join(db_common.PgEscapeSearchPath(requiredSearchPath), ",")))
