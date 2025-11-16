@@ -189,9 +189,12 @@ func TestInstallDB_DiskSpaceExhaustion_BugDocumentation(t *testing.T) {
 	if required == 0 {
 		t.Error("estimateRequiredSpace should return non-zero value for Postgres installation")
 	}
-	// Postgres compressed is typically 300-400MB, uncompressed 1GB+
-	// With 2x safety factor, we expect at least 600MB
-	minExpected := uint64(600 * 1024 * 1024) // 600MB
+	// Actual measured sizes (DB 14.19.0 / FDW 2.1.3):
+	// - Compressed: ~128 MB total
+	// - Uncompressed: ~350-450 MB
+	// - Peak usage: ~530 MB
+	// We expect 500MB as the practical minimum
+	minExpected := uint64(500 * 1024 * 1024) // 500MB
 	if required < minExpected {
 		t.Errorf("estimateRequiredSpace returned %d bytes, expected at least %d bytes", required, minExpected)
 	}

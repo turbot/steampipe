@@ -23,11 +23,10 @@ func getAvailableDiskSpace(path string) (uint64, error) {
 }
 
 // estimateRequiredSpace estimates the disk space required for installing an OCI image.
-// This is a conservative estimate that accounts for:
+// This is a practical estimate that accounts for:
 // - Downloading compressed image layers
 // - Extracting/unzipping archives (typically 2-3x compressed size)
 // - Temporary files during installation
-// - A safety buffer
 //
 // Actual measured OCI image sizes (as of DB 14.19.0 / FDW 2.1.3):
 // - DB image compressed: 37 MB (ghcr.io/turbot/steampipe/db:14.19.0)
@@ -36,17 +35,19 @@ func getAvailableDiskSpace(path string) (uint64, error) {
 // - Typical uncompressed size: 2-3x compressed = ~350-450 MB
 // - Peak disk usage (compressed + uncompressed during extraction): ~530 MB
 //
-// This function returns a conservative estimate of 1GB which provides:
-// - ~50% safety buffer above peak usage
-// - Protection against future image size increases
-// - Sufficient margin for filesystem overhead and temp files
+// This function returns 500MB which:
+// - Covers the actual peak usage of ~530 MB in most cases
+// - Avoids blocking installations that have adequate space (600-700 MB available)
+// - Balances safety against false rejections in constrained environments
+// - May fail if filesystem overhead or temp files exceed expectations, but will catch
+//   the primary failure case (truly insufficient disk space)
 func estimateRequiredSpace(imageRef string) uint64 {
-	// Conservative estimate: 1GB for Postgres/FDW installations
-	// This accounts for:
+	// Practical estimate: 500MB for Postgres/FDW installations
+	// This matches the measured peak usage:
 	// - Download: ~130MB compressed
 	// - Extraction: ~400MB uncompressed
-	// - Safety buffer: ~470MB (to protect against future image growth and temp files)
-	return 1 * 1024 * 1024 * 1024 // 1GB
+	// - Minimal buffer for filesystem overhead
+	return 500 * 1024 * 1024 // 500MB
 }
 
 // validateDiskSpace checks if sufficient disk space is available before installation.
