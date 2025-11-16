@@ -319,3 +319,47 @@ func TestPluginMessageServer_StressConcurrentAccess(t *testing.T) {
 	close(stopCh)
 	wg.Wait()
 }
+
+// Test 18: UpdateConnectionSchema with Nil Pool
+// Tests that updateConnectionSchema handles nil pool gracefully without panicking
+// Issue #4783: The method calls RefreshConnections which accesses m.pool before the nil check
+func TestPluginManager_UpdateConnectionSchema_NilPool(t *testing.T) {
+	// Create a PluginManager with a nil pool
+	pm := &PluginManager{
+		runningPluginMap: make(map[string]*runningPlugin),
+		pool:             nil, // explicitly nil pool
+	}
+
+	ctx := context.Background()
+
+	// This should not panic - calling updateConnectionSchema with nil pool
+	// Previously this would panic because RefreshConnections accesses pool before nil check
+	pm.updateConnectionSchema(ctx, "test-connection")
+
+	// If we get here without panicking, the test passes
+}
+
+// Test 19: UpdateConnectionSchema with Nil Pool Concurrent
+// Tests that concurrent calls to updateConnectionSchema with nil pool don't cause race conditions or panics
+func TestPluginManager_UpdateConnectionSchema_NilPool_Concurrent(t *testing.T) {
+	pm := &PluginManager{
+		runningPluginMap: make(map[string]*runningPlugin),
+		pool:             nil,
+	}
+
+	ctx := context.Background()
+
+	var wg sync.WaitGroup
+	numGoroutines := 10
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			// Should not panic
+			pm.updateConnectionSchema(ctx, "test-connection")
+		}(i)
+	}
+
+	wg.Wait()
+}
