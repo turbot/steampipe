@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
-	"github.com/turbot/steampipe/v2/pkg/steampipeconfig"
 )
 
 // setupTestEnvironment sets up the necessary environment for tests
@@ -28,13 +27,6 @@ func setupTestEnvironment(t *testing.T) {
 
 	// Set the install directory to the temp directory
 	app_specific.InstallDir = filepath.Join(tempDir, ".steampipe")
-
-	// Initialize GlobalConfig to prevent nil pointer dereference
-	// BUG FOUND: runner.go:106 accesses steampipeconfig.GlobalConfig.PluginVersions
-	// without checking if GlobalConfig is nil, causing a panic
-	if steampipeconfig.GlobalConfig == nil {
-		steampipeconfig.GlobalConfig = &steampipeconfig.SteampipeConfig{}
-	}
 }
 
 // TestRunTasksGoroutineCleanup tests that goroutines are properly cleaned up
@@ -366,4 +358,41 @@ func TestPreHooksExecution(t *testing.T) {
 	// In a fresh test environment, this might not happen
 	// This test documents the expected behavior
 	t.Log("Pre-hook execution depends on shouldRun() returning true")
+}
+
+// TestPluginVersionCheckWithNilGlobalConfig tests that the plugin version check
+// handles nil GlobalConfig gracefully. This is a regression test for bug #4747.
+func TestPluginVersionCheckWithNilGlobalConfig(t *testing.T) {
+	// DO NOT call setupTestEnvironment here - we want GlobalConfig to be nil
+	// to reproduce the bug from issue #4747
+
+	// Create a temporary directory for test state
+	tempDir, err := os.MkdirTemp("", "steampipe-task-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	t.Cleanup(func() {
+		os.RemoveAll(tempDir)
+	})
+
+	// Set the install directory to the temp directory
+	app_specific.InstallDir = filepath.Join(tempDir, ".steampipe")
+
+	// Create a runner with update checks enabled
+	config := newRunConfig()
+	config.runUpdateCheck = true
+	runner := newRunner(config)
+
+	// Create a context with immediate cancellation to avoid network operations
+	// and race conditions with the CLI version check goroutine
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	// Before the fix, this would panic at runner.go:106 when trying to access
+	// steampipeconfig.GlobalConfig.PluginVersions
+	// After the fix, it should handle nil GlobalConfig gracefully
+	runner.run(ctx)
+
+	// If we got here without panic, the fix is working
+	t.Log("runner.run() completed without panic when GlobalConfig is nil and update checks are enabled")
 }
