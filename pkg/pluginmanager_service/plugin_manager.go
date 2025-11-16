@@ -266,8 +266,10 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 	m.startPluginWg.Wait()
 
 	// close our pool
-	log.Printf("[INFO] PluginManager closing pool")
-	m.pool.Close()
+	if m.pool != nil {
+		log.Printf("[INFO] PluginManager closing pool")
+		m.pool.Close()
+	}
 
 	m.mut.RLock()
 	defer func() {
@@ -798,9 +800,14 @@ func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionNa
 	// also send a postgres notification
 	notification := steampipeconfig.NewSchemaUpdateNotification()
 
+	if m.pool == nil {
+		log.Printf("[WARN] cannot send schema update notification: pool is nil")
+		return
+	}
 	conn, err := m.pool.Acquire(ctx)
 	if err != nil {
 		log.Printf("[WARN] failed to send schema update notification: %s", err)
+		return
 	}
 	defer conn.Release()
 
