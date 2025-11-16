@@ -81,9 +81,13 @@ func SetUserSearchPath(ctx context.Context, pool *pgxpool.Pool) ([]string, error
 func getDefaultSearchPath() []string {
 	// add all connections to the seatrch path (UNLESS ImportSchema is disabled)
 	var searchPath []string
-	for connectionName, connection := range steampipeconfig.GlobalConfig.Connections {
-		if connection.ImportSchema == modconfig.ImportSchemaEnabled {
-			searchPath = append(searchPath, connectionName)
+
+	// Check if GlobalConfig is initialized
+	if steampipeconfig.GlobalConfig != nil {
+		for connectionName, connection := range steampipeconfig.GlobalConfig.Connections {
+			if connection.ImportSchema == modconfig.ImportSchemaEnabled {
+				searchPath = append(searchPath, connectionName)
+			}
 		}
 	}
 
