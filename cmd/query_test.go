@@ -7,9 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 )
 
@@ -73,13 +71,17 @@ func TestValidateQueryArgs_ConcurrentCalls(t *testing.T) {
 		go func(iteration int) {
 			defer wg.Done()
 
-			// Each goroutine resets and sets viper config
-			// This simulates concurrent test execution or potential concurrent validation
-			viper.Reset()
-			viper.Set(pconstants.ArgOutput, constants.OutputFormatTable)
+			// Create config struct - this is now thread-safe
+			// Each goroutine has its own config instance
+			cfg := &queryConfig{
+				snapshot: false,
+				share:    false,
+				export:   []string{},
+				output:   constants.OutputFormatTable,
+			}
 
 			// Call validateQueryArgs with a query argument (non-interactive mode)
-			err := validateQueryArgs(ctx, []string{"SELECT 1"})
+			err := validateQueryArgs(ctx, []string{"SELECT 1"}, cfg)
 			if err != nil {
 				errors <- err
 			}
@@ -103,13 +105,16 @@ func TestValidateQueryArgs_ConcurrentCalls(t *testing.T) {
 func TestValidateQueryArgs_InteractiveModeWithSnapshot(t *testing.T) {
 	ctx := context.Background()
 
-	// Setup viper config
-	viper.Reset()
-	viper.Set(pconstants.ArgSnapshot, true)
-	viper.Set(pconstants.ArgOutput, constants.OutputFormatTable)
+	// Setup config with snapshot enabled
+	cfg := &queryConfig{
+		snapshot: true,
+		share:    false,
+		export:   []string{},
+		output:   constants.OutputFormatTable,
+	}
 
 	// Call with no args (interactive mode)
-	err := validateQueryArgs(ctx, []string{})
+	err := validateQueryArgs(ctx, []string{}, cfg)
 
 	// Should return error for snapshot in interactive mode
 	assert.Error(t, err)
@@ -120,13 +125,16 @@ func TestValidateQueryArgs_InteractiveModeWithSnapshot(t *testing.T) {
 func TestValidateQueryArgs_BatchModeWithSnapshot(t *testing.T) {
 	ctx := context.Background()
 
-	// Setup viper config
-	viper.Reset()
-	viper.Set(pconstants.ArgSnapshot, true)
-	viper.Set(pconstants.ArgOutput, constants.OutputFormatTable)
+	// Setup config with snapshot enabled
+	cfg := &queryConfig{
+		snapshot: true,
+		share:    false,
+		export:   []string{},
+		output:   constants.OutputFormatTable,
+	}
 
 	// Call with args (batch mode)
-	err := validateQueryArgs(ctx, []string{"SELECT 1"})
+	err := validateQueryArgs(ctx, []string{"SELECT 1"}, cfg)
 
 	// Should not return error for snapshot in batch mode
 	// (unless there are other validation errors from cmdconfig.ValidateSnapshotArgs)
@@ -141,12 +149,16 @@ func TestValidateQueryArgs_BatchModeWithSnapshot(t *testing.T) {
 func TestValidateQueryArgs_InvalidOutputFormat(t *testing.T) {
 	ctx := context.Background()
 
-	// Setup viper config with invalid output format
-	viper.Reset()
-	viper.Set(pconstants.ArgOutput, "invalid-format")
+	// Setup config with invalid output format
+	cfg := &queryConfig{
+		snapshot: false,
+		share:    false,
+		export:   []string{},
+		output:   "invalid-format",
+	}
 
 	// Call with args (batch mode)
-	err := validateQueryArgs(ctx, []string{"SELECT 1"})
+	err := validateQueryArgs(ctx, []string{"SELECT 1"}, cfg)
 
 	// Should return error for invalid output format
 	assert.Error(t, err)

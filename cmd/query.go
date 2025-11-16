@@ -30,6 +30,15 @@ var queryTimingMode = constants.QueryTimingModeOff
 // variable used to assign the output mode flag
 var queryOutputMode = constants.QueryOutputModeTable
 
+// queryConfig holds the configuration needed for query validation
+// This avoids concurrent access to global viper state
+type queryConfig struct {
+	snapshot bool
+	share    bool
+	export   []string
+	output   string
+}
+
 func queryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:              "query",
@@ -93,8 +102,16 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	// Read configuration from viper once to avoid concurrent access issues
+	cfg := &queryConfig{
+		snapshot: viper.IsSet(pconstants.ArgSnapshot),
+		share:    viper.IsSet(pconstants.ArgShare),
+		export:   viper.GetStringSlice(pconstants.ArgExport),
+		output:   viper.GetString(pconstants.ArgOutput),
+	}
+
 	// validate args
-	err := validateQueryArgs(ctx, args)
+	err := validateQueryArgs(ctx, args, cfg)
 	error_helpers.FailOnError(err)
 
 	// if diagnostic mode is set, print out config and return
@@ -150,13 +167,13 @@ func runQueryCmd(cmd *cobra.Command, args []string) {
 	}
 }
 
-func validateQueryArgs(ctx context.Context, args []string) error {
+func validateQueryArgs(ctx context.Context, args []string, cfg *queryConfig) error {
 	interactiveMode := len(args) == 0
-	if interactiveMode && (viper.IsSet(pconstants.ArgSnapshot) || viper.IsSet(pconstants.ArgShare)) {
+	if interactiveMode && (cfg.snapshot || cfg.share) {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return sperr.New("cannot share snapshots in interactive mode")
 	}
-	if interactiveMode && len(viper.GetStringSlice(pconstants.ArgExport)) > 0 {
+	if interactiveMode && len(cfg.export) > 0 {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return sperr.New("cannot export query results in interactive mode")
 	}
@@ -168,10 +185,9 @@ func validateQueryArgs(ctx context.Context, args []string) error {
 	}
 
 	validOutputFormats := []string{constants.OutputFormatLine, constants.OutputFormatCSV, constants.OutputFormatTable, constants.OutputFormatJSON, constants.OutputFormatSnapshot, constants.OutputFormatSnapshotShort, constants.OutputFormatNone}
-	output := viper.GetString(pconstants.ArgOutput)
-	if !slices.Contains(validOutputFormats, output) {
+	if !slices.Contains(validOutputFormats, cfg.output) {
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
-		return sperr.New("invalid output format: '%s', must be one of [%s]", output, strings.Join(validOutputFormats, ", "))
+		return sperr.New("invalid output format: '%s', must be one of [%s]", cfg.output, strings.Join(validOutputFormats, ", "))
 	}
 
 	return nil
