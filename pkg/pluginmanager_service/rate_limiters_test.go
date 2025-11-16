@@ -186,7 +186,7 @@ func TestPluginManager_ConcurrentRateLimiterMapAccess2(t *testing.T) {
 		}()
 	}
 
-	// Multiple writers
+	// Multiple writers - must use mutex protection when writing to maps
 	for i := 0; i < 2; i++ {
 		wg.Add(1)
 		go func() {
