@@ -29,19 +29,24 @@ func getAvailableDiskSpace(path string) (uint64, error) {
 // - Temporary files during installation
 // - A safety buffer
 //
-// For Postgres images, typical sizes are:
-// - Compressed: 300-400 MB
-// - Uncompressed: 1-1.2 GB
-// - With extraction overhead and temp files: ~2x uncompressed size
+// Actual measured OCI image sizes (as of DB 14.19.0 / FDW 2.1.3):
+// - DB image compressed: 37 MB (ghcr.io/turbot/steampipe/db:14.19.0)
+// - FDW image compressed: 91 MB (ghcr.io/turbot/steampipe/fdw:2.1.3)
+// - Total compressed: ~128 MB
+// - Typical uncompressed size: 2-3x compressed = ~350-450 MB
+// - Peak disk usage (compressed + uncompressed during extraction): ~530 MB
 //
-// This function returns a conservative estimate of 2GB for database installations.
+// This function returns a conservative estimate of 1GB which provides:
+// - ~50% safety buffer above peak usage
+// - Protection against future image size increases
+// - Sufficient margin for filesystem overhead and temp files
 func estimateRequiredSpace(imageRef string) uint64 {
-	// Conservative estimate: 2GB for Postgres/FDW installations
+	// Conservative estimate: 1GB for Postgres/FDW installations
 	// This accounts for:
-	// - Download: ~400MB compressed
-	// - Extraction: ~1.2GB uncompressed
-	// - Temp files and safety buffer: additional ~400MB
-	return 2 * 1024 * 1024 * 1024 // 2GB
+	// - Download: ~130MB compressed
+	// - Extraction: ~400MB uncompressed
+	// - Safety buffer: ~470MB (to protect against future image growth and temp files)
+	return 1 * 1024 * 1024 * 1024 // 1GB
 }
 
 // validateDiskSpace checks if sufficient disk space is available before installation.
