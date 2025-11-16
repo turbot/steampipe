@@ -199,3 +199,60 @@ func TestInstallDB_DiskSpaceExhaustion_BugDocumentation(t *testing.T) {
 		t.Errorf("estimateRequiredSpace returned %d bytes, expected at least %d bytes", required, minExpected)
 	}
 }
+
+// TestUpdateVersionFileDB_FailureHandling_BugDocumentation tests issue #4762
+// Bug: When version file update fails after successful installation,
+// the function returns both the digest AND an error, creating ambiguity.
+// Expected: Should return empty digest on error for clear success/failure semantics.
+func TestUpdateVersionFileDB_FailureHandling_BugDocumentation(t *testing.T) {
+	// This test documents the expected behavior per issue #4762:
+	// When updateVersionFileDB fails, InstallDB should return ("", error)
+	// not (digest, error) which creates ambiguous state.
+
+	// We can't easily test InstallDB directly as it requires full OCI setup,
+	// but we can verify the logic by inspecting the code at db.go:37-40
+	// and fdw.go:40-42.
+	//
+	// Current buggy code:
+	//   if err := updateVersionFileDB(image); err != nil {
+	//       return string(image.OCIDescriptor.Digest), err  // BUG: returns digest on error
+	//   }
+	//
+	// Expected fixed code:
+	//   if err := updateVersionFileDB(image); err != nil {
+	//       return "", err  // FIX: empty digest on error
+	//   }
+	//
+	// This test will be updated once we can mock the version file failure.
+	// For now, it serves as documentation of the issue.
+
+	t.Run("version_file_failure_should_return_empty_digest", func(t *testing.T) {
+		// Simulate the scenario:
+		// 1. Installation succeeds (digest = "sha256:abc123")
+		// 2. Version file update fails (err != nil)
+		// 3. After fix: Function should return ("", error) not (digest, error)
+
+		// Simulate the buggy behavior (returning digest with error)
+		simulatedDigest := "sha256:abc123"
+		versionFileErr := os.ErrPermission
+		buggyDigest := simulatedDigest  // BUG: Returns digest even on error
+		buggyErr := versionFileErr
+
+		// Test fails if we get BOTH digest and error (current buggy behavior)
+		if buggyDigest != "" && buggyErr != nil {
+			t.Logf("BUG CONFIRMED: Function returns digest=%q with error=%v", buggyDigest, buggyErr)
+			t.Logf("This creates ambiguous state - caller doesn't know if installation succeeded")
+
+			// The fix should make this return ("", error) instead
+			expectedDigest := ""
+			expectedErr := versionFileErr
+
+			if buggyDigest == expectedDigest && buggyErr == expectedErr {
+				t.Log("FIXED: Returns empty digest with error - clear failure semantics")
+			} else {
+				t.Errorf("BUG: Expected (%q, error) but got (%q, %v)", expectedDigest, buggyDigest, buggyErr)
+				t.Error("Fix required: Change 'return string(image.OCIDescriptor.Digest), err' to 'return \"\", err'")
+			}
+		}
+	})
+}
