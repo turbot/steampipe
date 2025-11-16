@@ -279,8 +279,10 @@ func TestInstallFdwFiles_PartialInstall_BugDocumentation(t *testing.T) {
 		t.Errorf("Binary not updated correctly")
 	}
 
-	// Step 2: Simulate control file move failure (by making destination read-only)
-	// This is where the bug manifests - binary is v2.0 but other files are still v1.0
+	// Step 2: Verify the bug - with the OLD approach, if control file move fails,
+	// binary is already updated but control/SQL are not
+
+	// Make control dir read-only to simulate failure
 	if err := os.Chmod(controlDestDir, 0555); err != nil {
 		t.Fatalf("Failed to make control dir read-only: %v", err)
 	}
@@ -291,9 +293,9 @@ func TestInstallFdwFiles_PartialInstall_BugDocumentation(t *testing.T) {
 	err = ociinstaller.MoveFileWithinPartition(controlSourcePath, controlDestPath)
 
 	// BUG DEMONSTRATION: At this point we have an inconsistent state
-	// - Binary is v2.0 (new)
-	// - Control file is v1.0 (old)
-	// - SQL file is v1.0 (old)
+	// - Binary is v2.0 (new) - already copied in step 1
+	// - Control file is v1.0 (old) - move failed
+	// - SQL file is v1.0 (old) - never attempted
 	// This is the bug: installation is not atomic!
 
 	if err == nil {
@@ -321,4 +323,9 @@ func TestInstallFdwFiles_PartialInstall_BugDocumentation(t *testing.T) {
 	// The FDW will fail to load or behave unpredictably
 	t.Logf("BUG CONFIRMED: System left in inconsistent state - binary v2.0, control v1.0, SQL v1.0")
 	t.Error("Installation is not atomic - partial failure leaves system in inconsistent state")
+
+	// NOTE: The fix implemented in installFdwFiles() uses a staging directory approach:
+	// 1. All files are prepared in a staging directory first
+	// 2. Only after ALL files are ready, they are moved to final destinations
+	// 3. This ensures either all files update or none do (atomic operation)
 }
