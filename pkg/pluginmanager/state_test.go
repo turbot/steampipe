@@ -14,14 +14,14 @@ func TestStateWithNilAddr(t *testing.T) {
 		ProtocolVersion: 1,
 		Pid:             12345,
 		Executable:      "/usr/local/bin/steampipe",
-		Addr:            nil, // Nil address - this will cause panic
+		Addr:            nil, // Nil address - this will cause panic without fix
 	}
 
-	// This should not panic
+	// This should not panic - it should return nil gracefully
 	config := state.reattachConfig()
 
-	// If we reach here without panic, the bug is fixed
-	if config == nil {
-		t.Error("Expected non-nil reattach config")
+	// With nil Addr, we expect nil config (not a panic)
+	if config != nil {
+		t.Error("Expected nil reattach config when Addr is nil")
 	}
 }

@@ -86,6 +86,10 @@ func (s *State) Save() error {
 }
 
 func (s *State) reattachConfig() *plugin.ReattachConfig {
+	// if Addr is nil, we cannot create a valid reattach config
+	if s.Addr == nil {
+		return nil
+	}
 	return &plugin.ReattachConfig{
 		Protocol:        s.Protocol,
 		ProtocolVersion: s.ProtocolVersion,
