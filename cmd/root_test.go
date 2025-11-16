@@ -29,7 +29,7 @@ func TestAddCommands_Concurrent(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			rootCmd.ResetCommands()
+			ResetCommands()
 			AddCommands()
 		}()
 	}

@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"os"
+	"sync"
 
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -16,6 +17,9 @@ import (
 )
 
 var exitCode int
+
+// commandMutex protects concurrent access to rootCmd's command list
+var commandMutex sync.Mutex
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -86,7 +90,15 @@ func hideRootFlags(flags ...string) {
 	}
 }
 
+// AddCommands adds all subcommands to the root command.
+//
+// This function is thread-safe and can be called concurrently.
+// However, it is typically only called during CLI initialization
+// in a single-threaded context.
 func AddCommands() {
+	commandMutex.Lock()
+	defer commandMutex.Unlock()
+
 	// explicitly initialise commands here rather than in init functions to allow us to handle errors from the config load
 	rootCmd.AddCommand(
 		pluginCmd(),
@@ -96,6 +108,17 @@ func AddCommands() {
 		pluginManagerCmd(),
 		loginCmd(),
 	)
+}
+
+// ResetCommands removes all subcommands from the root command.
+//
+// This function is thread-safe and can be called concurrently.
+// It is primarily used for testing.
+func ResetCommands() {
+	commandMutex.Lock()
+	defer commandMutex.Unlock()
+
+	rootCmd.ResetCommands()
 }
 
 func Execute() int {
