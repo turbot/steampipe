@@ -53,7 +53,7 @@ func (c *versionChecker) doCheckRequest(ctx context.Context) error {
 	}
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	bodyString := string(bodyBytes)
 	defer resp.Body.Close()
