@@ -73,3 +73,52 @@ func TestWrapResult_NilResult(t *testing.T) {
 	// Result should be nil, not a wrapper around nil
 	assert.Nil(t, result, "WrapResult(nil) should return nil")
 }
+
+// TestResult_CloseAfterPartialRead tests the race condition from issue #4790
+// This test verifies that StreamRow() is safe to call concurrently with Close()
+// When Close() closes the RowChan while StreamRow() is trying to send, it should not panic
+func TestResult_CloseAfterPartialRead(t *testing.T) {
+	// Run multiple iterations to increase chance of triggering the race
+	for iteration := 0; iteration < 50; iteration++ {
+		cols := []*queryresult.ColumnDef{
+			{Name: "id", DataType: "integer"},
+			{Name: "value", DataType: "text"},
+		}
+		result := NewResult(cols)
+
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		// Goroutine 1: Stream many rows continuously
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 1000; i++ {
+				result.StreamRow([]interface{}{i, "value"})
+				// No sleep - maximize chance of race
+			}
+		}()
+
+		// Goroutine 2: Close after partial read
+		go func() {
+			defer wg.Done()
+			// Read a few rows then close while streaming is still active
+			count := 0
+			for row := range result.RowChan {
+				if row == nil {
+					break
+				}
+				count++
+				if count > 5 {
+					// Close while StreamRow is still being called
+					result.Close()
+					// Continue draining the channel to prevent deadlock
+					for range result.RowChan {
+					}
+					break
+				}
+			}
+		}()
+
+		wg.Wait()
+	}
+}
