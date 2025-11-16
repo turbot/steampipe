@@ -309,7 +309,18 @@ func (s *refreshConnectionState) addMissingPluginWarnings() {
 }
 
 func (s *refreshConnectionState) logRefreshConnectionResults() {
-	var cmdName = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name()
+	// Safe type assertion to avoid panic if viper.Get returns nil or wrong type
+	cmdValue := viper.Get(constants.ConfigKeyActiveCommand)
+	if cmdValue == nil {
+		return
+	}
+
+	cmd, ok := cmdValue.(*cobra.Command)
+	if !ok || cmd == nil {
+		return
+	}
+
+	cmdName := cmd.Name()
 	if cmdName != "plugin-manager" {
 		return
 	}
