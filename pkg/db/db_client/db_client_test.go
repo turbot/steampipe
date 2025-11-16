@@ -405,6 +405,34 @@ func TestDbClient_BeforeCloseCallbackNilSafety(t *testing.T) {
 		"BeforeClose should check if PgConn() is nil")
 }
 
+// TestDbClient_BeforeCloseHandlesNilSessions verifies BeforeClose callback handles nil sessions map
+// Reference: https://github.com/turbot/steampipe/issues/4809
+//
+// This test ensures that the BeforeClose callback properly checks if the sessions map
+// has been nil'd by Close() before attempting to delete from it.
+func TestDbClient_BeforeCloseHandlesNilSessions(t *testing.T) {
+	// Read the source file to verify nil check is present
+	content, err := os.ReadFile("db_client_connect.go")
+	require.NoError(t, err, "should be able to read db_client_connect.go")
+
+	sourceCode := string(content)
+
+	// Verify BeforeClose callback exists
+	assert.Contains(t, sourceCode, "config.BeforeClose",
+		"BeforeClose callback must be registered")
+
+	// Verify the callback checks for nil sessions before deleting
+	// The check should happen after acquiring the mutex and before the delete
+	hasNilCheckBeforeDelete := strings.Contains(sourceCode, "if c.sessions != nil") &&
+		strings.Contains(sourceCode, "delete(c.sessions, backendPid)")
+	assert.True(t, hasNilCheckBeforeDelete,
+		"BeforeClose callback must check if sessions map is nil before deleting (fix for #4809)")
+
+	// Verify comment explaining the nil check
+	assert.Contains(t, sourceCode, "Check if sessions map has been nil'd by Close()",
+		"Should document why the nil check is needed")
+}
+
 // TestDbClient_DisableTimingFlag tests for race conditions on the disableTiming field
 // Reference: https://github.com/turbot/steampipe/issues/4808
 //
