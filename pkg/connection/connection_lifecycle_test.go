@@ -111,6 +111,68 @@ func TestExemplarSchemaMapRaceCondition(t *testing.T) {
 	}
 }
 
+// TestRefreshConnectionsDeadlockTimeout tests that RefreshConnections cannot deadlock
+// This test demonstrates issue #4761 - the double-lock mechanism (queueLock + executeLock)
+// could theoretically lead to deadlock if executeLock is never released.
+func TestRefreshConnectionsDeadlockTimeout(t *testing.T) {
+	// This test simulates the scenario where:
+	// 1. Goroutine A acquires queueLock via TryLock()
+	// 2. Goroutine A blocks on executeLock.Lock() indefinitely
+	// 3. Goroutine B tries queueLock.TryLock() and fails, returns immediately
+	// 4. If executeLock is never released, system is effectively deadlocked
+
+	// Acquire the executeLock to simulate a hung goroutine
+	executeLock.Lock()
+
+	// Create a channel to track if RefreshConnections completes or times out
+	done := make(chan bool, 1)
+
+	// Start RefreshConnections in a goroutine
+	go func() {
+		// This should block trying to acquire executeLock
+		RefreshConnections(context.Background(), nil)
+		done <- true
+	}()
+
+	// Wait for goroutine to block on executeLock
+	time.Sleep(100 * time.Millisecond)
+
+	// Try to call RefreshConnections again - should return immediately
+	// because queueLock.TryLock() will fail
+	start := time.Now()
+	RefreshConnections(context.Background(), nil)
+	elapsed := time.Since(start)
+
+	// This should return quickly (< 1 second) because TryLock fails
+	if elapsed > 1*time.Second {
+		t.Errorf("RefreshConnections took too long when queueLock was held: %v", elapsed)
+	}
+
+	// Now the problem: the first goroutine is stuck forever waiting for executeLock
+	// In a real scenario, if executeLock holder crashes/hangs, we have a deadlock
+
+	// For this test, we'll verify the goroutine is still blocked after a timeout
+	select {
+	case <-done:
+		t.Error("RefreshConnections completed unexpectedly - it should be blocked on executeLock")
+	case <-time.After(500 * time.Millisecond):
+		// Expected - goroutine is still blocked
+		// This demonstrates the issue: without a timeout mechanism,
+		// the goroutine would block indefinitely
+	}
+
+	// Clean up - release the lock so the goroutine can complete
+	executeLock.Unlock()
+
+	// Verify goroutine completes now
+	select {
+	case <-done:
+		// Good - goroutine completed after lock was released
+	case <-time.After(1 * time.Second):
+		t.Error("RefreshConnections failed to complete even after executeLock was released")
+	}
+}
+
 // TestRefreshConnectionState_ContextCancellation tests that executeUpdateSetsInParallel
 // properly checks context cancellation in spawned goroutines.
 // This test demonstrates issue #4806 - goroutines continue running until completion
