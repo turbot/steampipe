@@ -17,6 +17,12 @@ import (
 
 // InstallFdw installs the Steampipe Postgres foreign data wrapper from an OCI image
 func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
+	// Check available disk space BEFORE starting installation
+	// This prevents partial installations that can leave the system in a broken state
+	if err := validateDiskSpace(dbLocation, constants.FdwImageRef); err != nil {
+		return "", err
+	}
+
 	tempDir := ociinstaller.NewTempDir(dbLocation)
 	defer func() {
 		if err := tempDir.Delete(); err != nil {
