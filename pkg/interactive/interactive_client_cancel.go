@@ -18,11 +18,16 @@ func (c *InteractiveClient) createPromptContext(parentContext context.Context) c
 
 func (c *InteractiveClient) createQueryContext(ctx context.Context) context.Context {
 	ctx, cancel := context.WithCancel(ctx)
+	c.cancelMutex.Lock()
 	c.cancelActiveQuery = cancel
+	c.cancelMutex.Unlock()
 	return ctx
 }
 
 func (c *InteractiveClient) cancelActiveQueryIfAny() {
+	c.cancelMutex.Lock()
+	defer c.cancelMutex.Unlock()
+
 	if c.cancelActiveQuery != nil {
 		log.Println("[INFO] cancelActiveQueryIfAny CALLING cancelActiveQuery")
 		c.cancelActiveQuery()
