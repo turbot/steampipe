@@ -44,7 +44,7 @@ func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
 	}
 
 	if err := updateVersionFileFdw(image); err != nil {
-		return string(image.OCIDescriptor.Digest), err
+		return "", err
 	}
 
 	return string(image.OCIDescriptor.Digest), nil

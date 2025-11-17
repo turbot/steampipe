@@ -41,7 +41,7 @@ func InstallDB(ctx context.Context, dblocation string) (string, error) {
 	}
 
 	if err := updateVersionFileDB(image); err != nil {
-		return string(image.OCIDescriptor.Digest), err
+		return "", err
 	}
 	return string(image.OCIDescriptor.Digest), nil
 }
