@@ -66,6 +66,12 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 	if pool == nil {
 		return nil, sperr.New("plugin manager returned nil pool")
 	}
+
+	// Check if GlobalConfig is initialized before proceeding
+	if steampipeconfig.GlobalConfig == nil {
+		return nil, sperr.New("GlobalConfig is not initialized")
+	}
+
 	// set user search path first
 	log.Printf("[INFO] setting up search path")
 	searchPath, err := db_local.SetUserSearchPath(ctx, pool)

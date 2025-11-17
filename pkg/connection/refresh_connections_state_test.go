@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -542,4 +543,40 @@ func TestNewRefreshConnectionState_NilPool(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error when pool is nil, got nil")
 	}
+}
+
+// TestRefreshConnectionState_ConnectionOrderEdgeCases tests edge cases in connection ordering
+// This test demonstrates issue #4779 - nil GlobalConfig causes panic in newRefreshConnectionState
+func TestRefreshConnectionState_ConnectionOrderEdgeCases(t *testing.T) {
+	t.Run("nil_global_config", func(t *testing.T) {
+		// ARRANGE: Save original GlobalConfig and set it to nil
+		originalConfig := steampipeconfig.GlobalConfig
+		steampipeconfig.GlobalConfig = nil
+		defer func() {
+			steampipeconfig.GlobalConfig = originalConfig
+		}()
+
+		ctx := context.Background()
+
+		// Create a mock plugin manager with a valid pool
+		// We need a pool to get past the nil pool check
+		// For this test, we can use a nil pool since we expect the function to fail
+		// before it tries to use the pool
+		mockPM := &mockPluginManager{
+			pool: &pgxpool.Pool{}, // Need a non-nil pool to get past line 66-68
+		}
+
+		// ACT: Call newRefreshConnectionState with nil GlobalConfig
+		// This should not panic - should return an error instead
+		_, err := newRefreshConnectionState(ctx, mockPM, nil)
+
+		// ASSERT: Should return an error, not panic
+		if err == nil {
+			t.Error("Expected error when GlobalConfig is nil, got nil")
+		}
+
+		if err != nil && !strings.Contains(err.Error(), "GlobalConfig") {
+			t.Errorf("Expected error message to mention GlobalConfig, got: %v", err)
+		}
+	})
 }
