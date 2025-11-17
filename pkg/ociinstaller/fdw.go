@@ -3,6 +3,7 @@ package ociinstaller
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -50,6 +51,28 @@ func InstallFdw(ctx context.Context, dbLocation string) (string, error) {
 	return string(image.OCIDescriptor.Digest), nil
 }
 
+// copyFile copies a file from src to dst
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	if _, err := io.Copy(destFile, sourceFile); err != nil {
+		return err
+	}
+
+	// Sync to ensure data is written
+	return destFile.Sync()
+}
+
 func updateVersionFileFdw(image *ociinstaller.OciImage[*fdwImage, *FdwImageConfig]) error {
 	timeNow := putils.FormatTime(time.Now())
 	v, err := versionfile.LoadDatabaseVersionFile()
@@ -66,57 +89,85 @@ func updateVersionFileFdw(image *ociinstaller.OciImage[*fdwImage, *FdwImageConfi
 }
 
 func installFdwFiles(image *ociinstaller.OciImage[*fdwImage, *FdwImageConfig], tempdir string) error {
-	fdwBinDir := filepaths.GetFDWBinaryDir()
-	fdwBinFileSourcePath := filepath.Join(tempdir, image.Data.BinaryFile)
-	fdwBinFileDestPath := filepath.Join(fdwBinDir, constants.FdwBinaryFileName)
+	// Create staging directory for atomic installation
+	// All files will be prepared in staging first, then moved atomically to their final locations
+	stagingDir := filepath.Join(tempdir, "staging")
+	if err := os.MkdirAll(stagingDir, 0755); err != nil {
+		return fmt.Errorf("could not create staging directory: %s", err.Error())
+	}
 
+	// Determine final destination paths
+	fdwBinDir := filepaths.GetFDWBinaryDir()
+	fdwControlDir := filepaths.GetFDWSQLAndControlDir()
+	fdwSQLDir := filepaths.GetFDWSQLAndControlDir()
+
+	fdwBinFileSourcePath := filepath.Join(tempdir, image.Data.BinaryFile)
+	controlFileSourcePath := filepath.Join(tempdir, image.Data.ControlFile)
+	sqlFileSourcePath := filepath.Join(tempdir, image.Data.SqlFile)
+
+	// Stage 1: Extract and stage all files to staging directory
+	// If any operation fails here, no destination files have been touched yet
+
+	// Stage binary: ungzip to staging directory
+	stagingBinDir := filepath.Join(stagingDir, "bin")
+	if err := os.MkdirAll(stagingBinDir, 0755); err != nil {
+		return fmt.Errorf("could not create staging bin directory: %s", err.Error())
+	}
+
+	stagedBinaryPath, err := ociinstaller.Ungzip(fdwBinFileSourcePath, stagingBinDir)
+	if err != nil {
+		return fmt.Errorf("could not unzip %s to staging: %s", fdwBinFileSourcePath, err.Error())
+	}
+
+	// Stage control file: copy to staging
+	stagingControlPath := filepath.Join(stagingDir, image.Data.ControlFile)
+	if err := copyFile(controlFileSourcePath, stagingControlPath); err != nil {
+		return fmt.Errorf("could not stage control file %s: %s", controlFileSourcePath, err.Error())
+	}
+
+	// Stage SQL file: copy to staging
+	stagingSQLPath := filepath.Join(stagingDir, image.Data.SqlFile)
+	if err := copyFile(sqlFileSourcePath, stagingSQLPath); err != nil {
+		return fmt.Errorf("could not stage SQL file %s: %s", sqlFileSourcePath, err.Error())
+	}
+
+	// Stage 2: All files staged successfully - now atomically move them to final destinations
 	// NOTE: for Mac M1 machines, if the fdw binary is updated in place without deleting the existing file,
 	// the updated fdw may crash on execution - for an undetermined reason
-	// To avoid this AND prevent leaving the system without a binary if extraction fails,
-	// we use a two-phase approach:
-	// 1. Extract to the target directory first
-	// 2. Verify extraction succeeded
-	// 3. Only delete the old binary after verifying the new one was successfully extracted
-	// 4. Atomically move the new binary into place
+	// To avoid this AND prevent leaving the system without a binary if the move fails,
+	// we move to a temp location first, then delete old, then rename to final location
+	fdwBinFileDestPath := filepath.Join(fdwBinDir, constants.FdwBinaryFileName)
+	tempBinaryPath := fdwBinFileDestPath + ".tmp"
 
-	// Extract to target directory first
-	if _, err := ociinstaller.Ungzip(fdwBinFileSourcePath, fdwBinDir); err != nil {
-		return fmt.Errorf("could not unzip %s to %s: %s", fdwBinFileSourcePath, fdwBinDir, err.Error())
+	// Move staged binary to temp location first (verifies the move works)
+	if err := ociinstaller.MoveFileWithinPartition(stagedBinaryPath, tempBinaryPath); err != nil {
+		return fmt.Errorf("could not move binary from staging to temp location: %s", err.Error())
 	}
 
-	// Verify extraction succeeded by checking if the extracted file exists
-	extractedPath := filepath.Join(fdwBinDir, constants.FdwBinaryFileName)
-	if _, err := os.Stat(extractedPath); err != nil {
-		return fmt.Errorf("ungzip succeeded but binary not found at %s: %s", extractedPath, err.Error())
-	}
-
-	// Move extracted file to temp name to prepare for atomic swap
-	tempBinaryPath := filepath.Join(fdwBinDir, constants.FdwBinaryFileName+".tmp")
-	if err := os.Rename(extractedPath, tempBinaryPath); err != nil {
-		return fmt.Errorf("could not rename extracted binary to temp location: %s", err.Error())
-	}
-
-	// NOW it's safe to remove the old binary and move new one into place
+	// Now that we know the new binary is ready, remove the old one
 	os.Remove(fdwBinFileDestPath)
+
+	// Finally, atomically rename temp to final location
 	if err := os.Rename(tempBinaryPath, fdwBinFileDestPath); err != nil {
-		return fmt.Errorf("could not install binary: %s", err.Error())
+		return fmt.Errorf("could not install binary to %s: %s", fdwBinDir, err.Error())
 	}
 
-	fdwControlDir := filepaths.GetFDWSQLAndControlDir()
-	controlFileName := image.Data.ControlFile
-	controlFileSourcePath := filepath.Join(tempdir, controlFileName)
+	// Move staged control file to destination
 	controlFileDestPath := filepath.Join(fdwControlDir, image.Data.ControlFile)
-
-	if err := ociinstaller.MoveFileWithinPartition(controlFileSourcePath, controlFileDestPath); err != nil {
-		return fmt.Errorf("could not install %s to %s", controlFileSourcePath, fdwControlDir)
+	if err := ociinstaller.MoveFileWithinPartition(stagingControlPath, controlFileDestPath); err != nil {
+		// Binary was already moved - try to rollback by removing it
+		os.Remove(fdwBinFileDestPath)
+		return fmt.Errorf("could not install control file from staging to %s: %s", fdwControlDir, err.Error())
 	}
 
-	fdwSQLDir := filepaths.GetFDWSQLAndControlDir()
-	sqlFileName := image.Data.SqlFile
-	sqlFileSourcePath := filepath.Join(tempdir, sqlFileName)
-	sqlFileDestPath := filepath.Join(fdwSQLDir, sqlFileName)
-	if err := ociinstaller.MoveFileWithinPartition(sqlFileSourcePath, sqlFileDestPath); err != nil {
-		return fmt.Errorf("could not install %s to %s", sqlFileSourcePath, fdwSQLDir)
+	// Move staged SQL file to destination
+	sqlFileDestPath := filepath.Join(fdwSQLDir, image.Data.SqlFile)
+	if err := ociinstaller.MoveFileWithinPartition(stagingSQLPath, sqlFileDestPath); err != nil {
+		// Binary and control were already moved - try to rollback
+		os.Remove(fdwBinFileDestPath)
+		os.Remove(controlFileDestPath)
+		return fmt.Errorf("could not install SQL file from staging to %s: %s", fdwSQLDir, err.Error())
 	}
+
 	return nil
 }

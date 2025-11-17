@@ -255,3 +255,4 @@ func TestUpdateVersionFileDB_FailureHandling_BugDocumentation(t *testing.T) {
 		}
 	})
 }
+

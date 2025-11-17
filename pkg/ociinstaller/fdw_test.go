@@ -181,3 +181,4 @@ func TestInstallFdwFiles_CorruptGzipFile_BugDocumentation(t *testing.T) {
 		t.Errorf("CRITICAL BUG: Old FDW binary was deleted before new binary extraction succeeded. System left in broken state with no FDW binary.")
 	}
 }
+
