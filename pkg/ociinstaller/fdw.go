@@ -134,13 +134,22 @@ func installFdwFiles(image *ociinstaller.OciImage[*fdwImage, *FdwImageConfig], t
 	// Stage 2: All files staged successfully - now atomically move them to final destinations
 	// NOTE: for Mac M1 machines, if the fdw binary is updated in place without deleting the existing file,
 	// the updated fdw may crash on execution - for an undetermined reason
-	// To avoid this, first remove the existing .so file
+	// To avoid this AND prevent leaving the system without a binary if the move fails,
+	// we move to a temp location first, then delete old, then rename to final location
 	fdwBinFileDestPath := filepath.Join(fdwBinDir, constants.FdwBinaryFileName)
+	tempBinaryPath := fdwBinFileDestPath + ".tmp"
+
+	// Move staged binary to temp location first (verifies the move works)
+	if err := ociinstaller.MoveFileWithinPartition(stagedBinaryPath, tempBinaryPath); err != nil {
+		return fmt.Errorf("could not move binary from staging to temp location: %s", err.Error())
+	}
+
+	// Now that we know the new binary is ready, remove the old one
 	os.Remove(fdwBinFileDestPath)
 
-	// Move staged binary to destination
-	if err := ociinstaller.MoveFileWithinPartition(stagedBinaryPath, fdwBinFileDestPath); err != nil {
-		return fmt.Errorf("could not install binary from staging to %s: %s", fdwBinDir, err.Error())
+	// Finally, atomically rename temp to final location
+	if err := os.Rename(tempBinaryPath, fdwBinFileDestPath); err != nil {
+		return fmt.Errorf("could not install binary to %s: %s", fdwBinDir, err.Error())
 	}
 
 	// Move staged control file to destination
