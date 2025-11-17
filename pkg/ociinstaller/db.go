@@ -75,9 +75,12 @@ func installDbFiles(image *ociinstaller.OciImage[*dbImage, *dbImageConfig], temp
 
 	// Create staging directory next to destination for atomic swap
 	stagingDest := dest + ".staging"
+	backupDest := dest + ".backup"
 
-	// Clean up any previous failed staging attempts
+	// Clean up any previous failed installation attempts
+	// This handles cases where the process was killed during installation
 	os.RemoveAll(stagingDest)
+	os.RemoveAll(backupDest)
 
 	// Move source to staging location
 	if err := ociinstaller.MoveFolderWithinPartition(source, stagingDest); err != nil {
@@ -86,7 +89,6 @@ func installDbFiles(image *ociinstaller.OciImage[*dbImage, *dbImageConfig], temp
 
 	// Now atomically swap: rename old dest as backup, rename staging to dest
 	// If destination exists, rename it to backup location
-	backupDest := dest + ".backup"
 	destExists := false
 	if _, err := os.Stat(dest); err == nil {
 		destExists = true
