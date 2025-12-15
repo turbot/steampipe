@@ -1,5 +1,4 @@
 ## v2.3.3 [2025-12-15]
-_Bug fixes_
 
 **Memory and Resource Management**
 - Fix query history memory leak due to unbounded growth. ([#4811](https://github.com/turbot/steampipe/issues/4811))
