@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -42,8 +43,9 @@ type DbClient struct {
 
 	// map of database sessions, keyed to the backend_pid in postgres
 	// used to update session search path where necessary
-	// TODO: there's no code which cleans up this map when connections get dropped by pgx
-	// https://github.com/turbot/steampipe/issues/3737
+	// Session lifecycle: entries are added when connections are established and automatically
+	// removed via a pgxpool BeforeClose callback when connections are closed by the pool.
+	// This prevents memory accumulation from stale connection entries (see issue #3737)
 	sessions map[uint32]*db_common.DatabaseSession
 
 	// allows locked access to the 'sessions' map
@@ -52,10 +54,12 @@ type DbClient struct {
 	// if a custom search path or a prefix is used, store it here
 	customSearchPath []string
 	searchPathPrefix []string
+	// allows locked access to customSearchPath and searchPathPrefix
+	searchPathMutex *sync.Mutex
 	// the default user search path
 	userSearchPath []string
 	// disable timing - set whilst in process of querying the timing
-	disableTiming        bool
+	disableTiming        atomic.Bool
 	onConnectionCallback DbConnectionCallback
 }
 
@@ -69,6 +73,7 @@ func NewDbClient(ctx context.Context, connectionString string, opts ...ClientOpt
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
 		sessions:                make(map[uint32]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
+		searchPathMutex:         &sync.Mutex{},
 		connectionString:        connectionString,
 	}
 
@@ -134,7 +139,7 @@ func (c *DbClient) loadServerSettings(ctx context.Context) error {
 
 func (c *DbClient) shouldFetchTiming() bool {
 	// check for override flag (this is to prevent timing being fetched when we read the timing metadata table)
-	if c.disableTiming {
+	if c.disableTiming.Load() {
 		return false
 	}
 	// only fetch timing if timing flag is set, or output is JSON
@@ -167,7 +172,10 @@ func (c *DbClient) Close(context.Context) error {
 	c.closePools()
 	// nullify active sessions, since with the closing of the pools
 	// none of the sessions will be valid anymore
+	// Acquire mutex to prevent concurrent access to sessions map
+	c.sessionsMutex.Lock()
 	c.sessions = nil
+	c.sessionsMutex.Unlock()
 
 	return nil
 }
@@ -241,8 +249,12 @@ func (c *DbClient) ResetPools(ctx context.Context) {
 	log.Println("[TRACE] db_client.ResetPools start")
 	defer log.Println("[TRACE] db_client.ResetPools end")
 
-	c.userPool.Reset()
-	c.managementPool.Reset()
+	if c.userPool != nil {
+		c.userPool.Reset()
+	}
+	if c.managementPool != nil {
+		c.managementPool.Reset()
+	}
 }
 
 func (c *DbClient) buildSchemasQuery(schemas ...string) string {

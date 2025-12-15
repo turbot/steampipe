@@ -17,12 +17,16 @@ func getQueryInfo(text string) *queryCompletionInfo {
 
 	return &queryCompletionInfo{
 		Table:        table,
-		EditingTable: isEditingTable(prevWord),
+		EditingTable: isEditingTable(text, prevWord),
 	}
 }
 
-func isEditingTable(prevWord string) bool {
-	var editingTable = prevWord == "from"
+func isEditingTable(text string, prevWord string) bool {
+	// Only consider it editing table if:
+	// 1. The previous word is "from"
+	// 2. The text ends with a space (meaning cursor is after "from ", not in the middle of typing a table name)
+	endsWithSpace := len(text) > 0 && text[len(text)-1] == ' '
+	var editingTable = prevWord == "from" && endsWithSpace
 	return editingTable
 }
 
@@ -52,7 +56,8 @@ func getPreviousWord(text string) string {
 	}
 	prevSpace := strings.LastIndex(text[:lastNotSpace], " ")
 	if prevSpace == -1 {
-		return ""
+		// No space before the word, so return from the beginning to lastNotSpace
+		return text[0 : lastNotSpace+1]
 	}
 	return text[prevSpace+1 : lastNotSpace+1]
 }
@@ -73,7 +78,11 @@ func isFirstWord(text string) bool {
 
 // split the string by spaces and return the last segment
 func lastWord(text string) string {
-	return text[strings.LastIndex(text, " "):]
+	idx := strings.LastIndex(text, " ")
+	if idx == -1 {
+		return text
+	}
+	return text[idx:]
 }
 
 //

@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/hashicorp/go-plugin"
@@ -15,6 +17,9 @@ import (
 )
 
 const PluginManagerStructVersion = 20220411
+
+// stateMutex protects concurrent writes to the state file
+var stateMutex sync.Mutex
 
 type State struct {
 	Protocol        plugin.Protocol `json:"protocol"`
@@ -75,6 +80,10 @@ func LoadState() (*State, error) {
 }
 
 func (s *State) Save() error {
+	// Protect concurrent writes with a mutex
+	stateMutex.Lock()
+	defer stateMutex.Unlock()
+
 	// set struct version
 	s.StructVersion = PluginManagerStructVersion
 
@@ -82,10 +91,33 @@ func (s *State) Save() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepaths.PluginManagerStateFilePath(), content, 0644)
+
+	// Use atomic write to prevent file corruption from concurrent writes
+	// Write to a temporary file first, then atomically rename it
+	stateFilePath := filepaths.PluginManagerStateFilePath()
+
+	// Ensure the directory exists
+	if err := os.MkdirAll(filepath.Dir(stateFilePath), 0755); err != nil {
+		return err
+	}
+
+	tempFile := stateFilePath + ".tmp"
+
+	// Write to temporary file
+	if err := os.WriteFile(tempFile, content, 0644); err != nil {
+		return err
+	}
+
+	// Atomically rename the temp file to the final location
+	// This ensures that the state file is never partially written
+	return os.Rename(tempFile, stateFilePath)
 }
 
 func (s *State) reattachConfig() *plugin.ReattachConfig {
+	// if Addr is nil, we cannot create a valid reattach config
+	if s.Addr == nil {
+		return nil
+	}
 	return &plugin.ReattachConfig{
 		Protocol:        s.Protocol,
 		ProtocolVersion: s.ProtocolVersion,

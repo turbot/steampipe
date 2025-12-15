@@ -187,11 +187,11 @@ func (c *DbClient) getQueryTiming(ctx context.Context, startTime time.Time, sess
 		DurationMs: time.Since(startTime).Milliseconds(),
 	}
 	// disable fetching timing information to avoid recursion
-	c.disableTiming = true
+	c.disableTiming.Store(true)
 
 	// whatever happens, we need to reenable timing, and send the result back with at least the duration
 	defer func() {
-		c.disableTiming = false
+		c.disableTiming.Store(false)
 		resultChannel.SetTiming(timingResult)
 	}()
 

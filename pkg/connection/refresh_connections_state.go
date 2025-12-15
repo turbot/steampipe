@@ -63,6 +63,15 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 	defer log.Println("[DEBUG] newRefreshConnectionState end")
 
 	pool := pluginManager.Pool()
+	if pool == nil {
+		return nil, sperr.New("plugin manager returned nil pool")
+	}
+
+	// Check if GlobalConfig is initialized before proceeding
+	if steampipeconfig.GlobalConfig == nil {
+		return nil, sperr.New("GlobalConfig is not initialized")
+	}
+
 	// set user search path first
 	log.Printf("[INFO] setting up search path")
 	searchPath, err := db_local.SetUserSearchPath(ctx, pool)
@@ -306,7 +315,18 @@ func (s *refreshConnectionState) addMissingPluginWarnings() {
 }
 
 func (s *refreshConnectionState) logRefreshConnectionResults() {
-	var cmdName = viper.Get(constants.ConfigKeyActiveCommand).(*cobra.Command).Name()
+	// Safe type assertion to avoid panic if viper.Get returns nil or wrong type
+	cmdValue := viper.Get(constants.ConfigKeyActiveCommand)
+	if cmdValue == nil {
+		return
+	}
+
+	cmd, ok := cmdValue.(*cobra.Command)
+	if !ok || cmd == nil {
+		return
+	}
+
+	cmdName := cmd.Name()
 	if cmdName != "plugin-manager" {
 		return
 	}
@@ -517,20 +537,14 @@ func (s *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Context
 	sem := semaphore.NewWeighted(maxParallel)
 
 	go func() {
-		for {
-			select {
-			case connectionError := <-errChan:
-				if connectionError == nil {
-					return
+		for connectionError := range errChan {
+			errors = append(errors, connectionError.err)
+			conn, poolErr := s.pool.Acquire(ctx)
+			if poolErr == nil {
+				if err := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionError.name, connectionError.err); err != nil {
+					log.Println("[WARN] failed to update connection state table", err.Error())
 				}
-				errors = append(errors, connectionError.err)
-				conn, poolErr := s.pool.Acquire(ctx)
-				if poolErr == nil {
-					if err := s.tableUpdater.onConnectionError(ctx, conn.Conn(), connectionError.name, connectionError.err); err != nil {
-						log.Println("[WARN] failed to update connection state table", err.Error())
-					}
-					conn.Release()
-				}
+				conn.Release()
 			}
 		}
 	}()
@@ -557,6 +571,15 @@ func (s *refreshConnectionState) executeUpdateSetsInParallel(ctx context.Context
 				sem.Release(1)
 			}()
 
+			// Check if context is cancelled before starting work
+			select {
+			case <-ctx.Done():
+				// Context cancelled - don't process this batch
+				return
+			default:
+				// Context still valid - proceed with work
+			}
+
 			s.executeUpdateForConnections(ctx, errChan, cloneSchemaEnabled, connectionStates...)
 		}(states)
 
@@ -574,6 +597,16 @@ func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context
 	defer log.Println("[DEBUG] refreshConnectionState.executeUpdateForConnections end")
 
 	for _, connectionState := range connectionStates {
+		// Check if context is cancelled before processing each connection
+		select {
+		case <-ctx.Done():
+			// Context cancelled - stop processing remaining connections
+			log.Println("[DEBUG] context cancelled, stopping executeUpdateForConnections")
+			return
+		default:
+			// Context still valid - continue
+		}
+
 		connectionName := connectionState.ConnectionName
 		pluginSchemaName := utils.PluginFQNToSchemaName(connectionState.Plugin)
 		var sql string
@@ -598,7 +631,10 @@ func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context
 			// we can clone this plugin, add to exemplarSchemaMap
 			// (AFTER executing the update query)
 			if !haveExemplarSchema && connectionState.CanCloneSchema() {
+				// Fix #4757: Protect map write with mutex to prevent race condition
+				s.exemplarSchemaMapMut.Lock()
 				s.exemplarSchemaMap[connectionState.Plugin] = connectionName
+				s.exemplarSchemaMapMut.Unlock()
 			}
 		}
 	}

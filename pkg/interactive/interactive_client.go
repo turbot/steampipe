@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/alecthomas/chroma/formatters"
@@ -54,11 +55,13 @@ type InteractiveClient struct {
 	// NOTE: should ONLY be called by cancelActiveQueryIfAny
 	cancelActiveQuery context.CancelFunc
 	cancelPrompt      context.CancelFunc
+	// mutex to protect concurrent access to cancelActiveQuery
+	cancelMutex sync.Mutex
 
 	// channel used internally to pass the initialisation result
 	initResultChan chan *db_common.InitResult
 	// flag set when initialisation is complete (with or without errors)
-	initialisationComplete bool
+	initialisationComplete atomic.Bool
 	afterClose             AfterPromptCloseAction
 	// lock while execution is occurring to avoid errors/warnings being shown
 	executionLock sync.Mutex
@@ -168,7 +171,10 @@ func (c *InteractiveClient) InteractivePrompt(parentContext context.Context) {
 // ClosePrompt cancels the running prompt, setting the action to take after close
 func (c *InteractiveClient) ClosePrompt(afterClose AfterPromptCloseAction) {
 	c.afterClose = afterClose
-	c.cancelPrompt()
+	// only call cancelPrompt if it is not nil (to prevent panic)
+	if c.cancelPrompt != nil {
+		c.cancelPrompt()
+	}
 }
 
 // retrieve both the raw query result and a sanitised version in list form
@@ -401,7 +407,7 @@ func (c *InteractiveClient) executeQuery(ctx context.Context, queryCtx context.C
 			querydisplay.DisplayErrorTiming(t)
 		}
 	} else {
-		c.promptResult.Streamer.StreamResult(result)
+		c.promptResult.Streamer.StreamResult(result.Result)
 	}
 }
 
@@ -509,7 +515,7 @@ func (c *InteractiveClient) getQuery(ctx context.Context, line string) *modconfi
 func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) error {
 	// the client must be initialised to get here
 	if !c.isInitialised() {
-		panic("client is not initalised")
+		return fmt.Errorf("client is not initialised")
 	}
 	// validate the metaquery arguments
 	validateResult := metaquery.Validate(query)
@@ -647,6 +653,9 @@ func (c *InteractiveClient) getTableAndConnectionSuggestions(word string) []prom
 
 	connection := strings.TrimSpace(parts[0])
 	t := c.suggestions.tablesBySchema[connection]
+	if t == nil {
+		return []prompt.Suggest{}
+	}
 	return t
 }
 
@@ -728,7 +737,7 @@ func (c *InteractiveClient) handleConnectionUpdateNotification(ctx context.Conte
 	// ignore schema update notifications until initialisation is complete
 	// (we may receive schema update messages from the initial refresh connections, but we do not need to reload
 	// the schema as we will have already loaded the correct schema)
-	if !c.initialisationComplete {
+	if !c.initialisationComplete.Load() {
 		log.Printf("[INFO] received schema update notification but ignoring it as we are initializing")
 		return
 	}

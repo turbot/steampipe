@@ -72,7 +72,9 @@ func validateSnapshotLocation(ctx context.Context, cloudToken string) error {
 		}
 
 		// write back to viper
+		viperMutex.Lock()
 		viper.Set(pconstants.ArgSnapshotLocation, snapshotLocation)
+		viperMutex.Unlock()
 
 		if !filehelpers.DirectoryExists(snapshotLocation) {
 			return fmt.Errorf("snapshot location %s does not exist", snapshotLocation)
@@ -87,7 +89,9 @@ func setSnapshotLocationFromDefaultWorkspace(ctx context.Context, cloudToken str
 		return err
 	}
 
+	viperMutex.Lock()
 	viper.Set(pconstants.ArgSnapshotLocation, workspaceHandle)
+	viperMutex.Unlock()
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	pfilepaths "github.com/turbot/pipe-fittings/v2/filepaths"
 
@@ -16,6 +17,9 @@ import (
 	"github.com/turbot/pipe-fittings/v2/workspace_profile"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 )
+
+// viperMutex protects concurrent access to Viper's global state
+var viperMutex sync.RWMutex
 
 // Viper fetches the global viper instance
 func Viper() *viper.Viper {
@@ -44,7 +48,9 @@ func bootstrapViper(loader *parse.WorkspaceProfileLoader[*workspace_profile.Stea
 	if loader.ConfiguredProfile != nil {
 		if loader.ConfiguredProfile.InstallDir != nil {
 			log.Printf("[TRACE] setting install dir from configured profile '%s' to '%s'", loader.ConfiguredProfile.Name(), *loader.ConfiguredProfile.InstallDir)
+			viperMutex.Lock()
 			viper.SetDefault(pconstants.ArgInstallDir, *loader.ConfiguredProfile.InstallDir)
+			viperMutex.Unlock()
 		}
 	}
 
@@ -60,17 +66,24 @@ func tildefyPaths() error {
 	}
 	var err error
 	for _, argName := range pathArgs {
-		if argVal := viper.GetString(argName); argVal != "" {
+		viperMutex.RLock()
+		argVal := viper.GetString(argName)
+		isSet := viper.IsSet(argName)
+		viperMutex.RUnlock()
+
+		if argVal != "" {
 			if argVal, err = filehelpers.Tildefy(argVal); err != nil {
 				return err
 			}
-			if viper.IsSet(argName) {
+			viperMutex.Lock()
+			if isSet {
 				// if the value was already set re-set
 				viper.Set(argName, argVal)
 			} else {
 				// otherwise just update the default
 				viper.SetDefault(argName, argVal)
 			}
+			viperMutex.Unlock()
 		}
 	}
 	return nil
@@ -78,6 +91,8 @@ func tildefyPaths() error {
 
 // SetDefaultsFromConfig overrides viper default values from hcl config values
 func SetDefaultsFromConfig(configMap map[string]interface{}) {
+	viperMutex.Lock()
+	defer viperMutex.Unlock()
 	for k, v := range configMap {
 		viper.SetDefault(k, v)
 	}
@@ -116,6 +131,8 @@ func setBaseDefaults() error {
 		pconstants.ArgPluginStartTimeout: constants.PluginStartTimeout.Seconds(),
 	}
 
+	viperMutex.Lock()
+	defer viperMutex.Unlock()
 	for k, v := range defaults {
 		viper.SetDefault(k, v)
 	}
@@ -188,6 +205,8 @@ func setConfigFromEnv(envVar string, configs []string, varType EnvVarType) {
 
 func SetDefaultFromEnv(k string, configVar string, varType EnvVarType) {
 	if val, ok := os.LookupEnv(k); ok {
+		viperMutex.Lock()
+		defer viperMutex.Unlock()
 		switch varType {
 		case String:
 			viper.SetDefault(configVar, val)

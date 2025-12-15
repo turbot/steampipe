@@ -96,15 +96,19 @@ func (r *Runner) run(ctx context.Context) {
 	waitGroup := sync.WaitGroup{}
 
 	if r.options.runUpdateCheck {
-		// check whether an updated version is available
-		r.runJobAsync(ctx, func(c context.Context) {
-			availableCliVersion, _ = fetchAvailableCLIVersion(ctx, r.currentState.InstallationID)
-		}, &waitGroup)
+		// Only perform version checks if GlobalConfig is initialized
+		// This can be nil during tests or unusual startup scenarios
+		if steampipeconfig.GlobalConfig != nil {
+			// check whether an updated version is available
+			r.runJobAsync(ctx, func(c context.Context) {
+				availableCliVersion, _ = fetchAvailableCLIVersion(ctx, r.currentState.InstallationID)
+			}, &waitGroup)
 
-		// check whether an updated version is available
-		r.runJobAsync(ctx, func(ctx context.Context) {
-			availablePluginVersions = plugin.GetAllUpdateReport(ctx, r.currentState.InstallationID, steampipeconfig.GlobalConfig.PluginVersions)
-		}, &waitGroup)
+			// check whether an updated version is available
+			r.runJobAsync(ctx, func(ctx context.Context) {
+				availablePluginVersions = plugin.GetAllUpdateReport(ctx, r.currentState.InstallationID, steampipeconfig.GlobalConfig.PluginVersions)
+			}, &waitGroup)
+		}
 	}
 
 	// remove log files older than 7 days

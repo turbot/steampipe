@@ -38,14 +38,11 @@ func (q *QueryHistory) Push(query string) {
 		return
 	}
 
-	// limit the history length to HistorySize
-	historyLength := len(q.history)
-	if historyLength >= constants.HistorySize {
-		q.history = q.history[historyLength-constants.HistorySize+1:]
-	}
-
 	// append the new entry
 	q.history = append(q.history, query)
+
+	// enforce the size limit after adding
+	q.enforceLimit()
 }
 
 // Peek returns the last element of the history stack.
@@ -78,9 +75,20 @@ func (q *QueryHistory) Persist() error {
 	return jsonEncoder.Encode(q.history)
 }
 
-// Get returns the full history
+// Get returns the full history, enforcing the size limit
 func (q *QueryHistory) Get() []string {
+	// Ensure history doesn't exceed the limit before returning
+	q.enforceLimit()
 	return q.history
+}
+
+// enforceLimit ensures the history size doesn't exceed HistorySize
+func (q *QueryHistory) enforceLimit() {
+	historyLength := len(q.history)
+	if historyLength > constants.HistorySize {
+		// Keep only the most recent HistorySize entries
+		q.history = q.history[historyLength-constants.HistorySize:]
+	}
 }
 
 // loads up the history from the file where it is persisted
@@ -103,5 +111,12 @@ func (q *QueryHistory) load() error {
 	if err == io.EOF {
 		return nil
 	}
+
+	// Enforce size limit after loading from file to prevent unbounded growth
+	// in case the file was corrupted or manually edited
+	if err == nil {
+		q.enforceLimit()
+	}
+
 	return err
 }

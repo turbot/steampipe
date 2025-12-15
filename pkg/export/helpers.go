@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -14,13 +15,40 @@ func GenerateDefaultExportFileName(executionName, fileExtension string) string {
 }
 
 func Write(filePath string, exportData io.Reader) error {
-	// create the output file
-	destination, err := os.Create(filePath)
+	// Create a temporary file in the same directory as the target file
+	// This ensures the temp file is on the same filesystem for atomic rename
+	dir := filepath.Dir(filePath)
+	tmpFile, err := os.CreateTemp(dir, ".steampipe-export-*.tmp")
 	if err != nil {
 		return err
 	}
-	defer destination.Close()
+	tmpPath := tmpFile.Name()
 
-	_, err = io.Copy(destination, exportData)
-	return err
+	// Ensure cleanup of temp file on failure
+	defer func() {
+		tmpFile.Close()
+		// If we still have a temp file at this point, remove it
+		// (successful path will have already renamed it)
+		os.Remove(tmpPath)
+	}()
+
+	// Write data to temp file
+	_, err = io.Copy(tmpFile, exportData)
+	if err != nil {
+		return err
+	}
+
+	// Ensure all data is written to disk
+	if err := tmpFile.Sync(); err != nil {
+		return err
+	}
+
+	// Close the temp file before renaming
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+
+	// Atomically move temp file to final destination
+	// This is atomic on POSIX systems and will not leave partial files
+	return os.Rename(tmpPath, filePath)
 }

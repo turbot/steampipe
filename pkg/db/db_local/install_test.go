@@ -1,6 +1,8 @@
 package db_local
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestIsValidDatabaseName(t *testing.T) {
 	tests := map[string]bool{
@@ -17,3 +19,13 @@ func TestIsValidDatabaseName(t *testing.T) {
 		}
 	}
 }
+
+func TestIsValidDatabaseName_EmptyString(t *testing.T) {
+	// Test that isValidDatabaseName handles empty strings gracefully
+	// An empty string should return false, not panic
+	result := isValidDatabaseName("")
+	if result != false {
+		t.Errorf("Expected false for empty string, got %v", result)
+	}
+}
+

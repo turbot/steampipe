@@ -46,6 +46,10 @@ func NewInitData() *InitData {
 
 func (i *InitData) RegisterExporters(exporters ...export.Exporter) *InitData {
 	for _, e := range exporters {
+		// Skip nil exporters to prevent nil pointer panic
+		if e == nil {
+			continue
+		}
 		if err := i.ExportManager.Register(e); err != nil {
 			// short circuit if there is an error
 			i.Result.Error = err
@@ -120,6 +124,9 @@ func GetDbClient(ctx context.Context, invoker constants.Invoker, opts ...db_clie
 	if connectionString := viper.GetString(pconstants.ArgConnectionString); connectionString != "" {
 		statushooks.SetStatus(ctx, "Connecting to remote Steampipe database")
 		client, err := db_client.NewDbClient(ctx, connectionString, opts...)
+		if err != nil {
+			return nil, error_helpers.NewErrorsAndWarning(err)
+		}
 		return client, error_helpers.NewErrorsAndWarning(err)
 	}
 

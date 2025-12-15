@@ -71,6 +71,9 @@ func (m *PluginMessageServer) runMessageListener(stream sdkproto.WrapperPlugin_E
 }
 
 func (m *PluginMessageServer) logReceiveError(err error, connection string) {
+	if err == nil {
+		return
+	}
 	log.Printf("[TRACE] receive error for connection '%s': %v", connection, err)
 	switch {
 	case sdkgrpc.IsEOFError(err):

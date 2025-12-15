@@ -50,6 +50,11 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 		return nil
 	}
 
+	// if the pool is nil, we cannot refresh the table
+	if m.pool == nil {
+		return nil
+	}
+
 	// update the status of the plugin rate limiters (determine which are overriden and set state accordingly)
 	m.updateRateLimiterStatus()
 
@@ -65,11 +70,13 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 		}
 	}
 
+	m.mut.RLock()
 	for _, limitersForPlugin := range m.userLimiters {
 		for _, l := range limitersForPlugin {
 			queries = append(queries, introspection.GetRateLimiterTablePopulateSql(l))
 		}
 	}
+	m.mut.RUnlock()
 
 	conn, err := m.pool.Acquire(ctx)
 	if err != nil {
@@ -93,7 +100,9 @@ func (m *PluginManager) handleUserLimiterChanges(_ context.Context, plugins conn
 	}
 
 	// update stored limiters to the new map
+	m.mut.Lock()
 	m.userLimiters = limiterPluginMap
+	m.mut.Unlock()
 
 	// update the steampipe_plugin_limiters table
 	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
@@ -138,6 +147,9 @@ func (m *PluginManager) setRateLimitersForPlugin(pluginShortName string) error {
 func (m *PluginManager) getPluginsWithChangedLimiters(newLimiters connection.PluginLimiterMap) map[string]struct{} {
 	var pluginsWithChangedLimiters = make(map[string]struct{})
 
+	m.mut.RLock()
+	defer m.mut.RUnlock()
+
 	for plugin, limitersForPlugin := range m.userLimiters {
 		newLimitersForPlugin := newLimiters[plugin]
 		if !limitersForPlugin.Equals(newLimitersForPlugin) {
@@ -155,10 +167,13 @@ func (m *PluginManager) getPluginsWithChangedLimiters(newLimiters connection.Plu
 }
 
 func (m *PluginManager) updateRateLimiterStatus() {
+	m.mut.Lock()
+	defer m.mut.Unlock()
+
 	// iterate through limiters for each plug
 	for p, pluginDefinedLimiters := range m.pluginLimiters {
-		// get user limiters for this plugin
-		userDefinedLimiters := m.getUserDefinedLimitersForPlugin(p)
+		// get user limiters for this plugin (already holding lock, so call internal version)
+		userDefinedLimiters := m.getUserDefinedLimitersForPluginInternal(p)
 
 		// is there a user override? - if so set status to overriden
 		for name, pluginLimiter := range pluginDefinedLimiters {
@@ -173,6 +188,14 @@ func (m *PluginManager) updateRateLimiterStatus() {
 }
 
 func (m *PluginManager) getUserDefinedLimitersForPlugin(plugin string) connection.LimiterMap {
+	m.mut.RLock()
+	defer m.mut.RUnlock()
+	return m.getUserDefinedLimitersForPluginInternal(plugin)
+}
+
+// getUserDefinedLimitersForPluginInternal returns user-defined limiters for a plugin
+// WITHOUT acquiring the lock - caller must hold the lock
+func (m *PluginManager) getUserDefinedLimitersForPluginInternal(plugin string) connection.LimiterMap {
 	userDefinedLimiters := m.userLimiters[plugin]
 	if userDefinedLimiters == nil {
 		userDefinedLimiters = make(connection.LimiterMap)

@@ -266,8 +266,10 @@ func (m *PluginManager) Shutdown(*pb.ShutdownRequest) (resp *pb.ShutdownResponse
 	m.startPluginWg.Wait()
 
 	// close our pool
-	log.Printf("[INFO] PluginManager closing pool")
-	m.pool.Close()
+	if m.pool != nil {
+		log.Printf("[INFO] PluginManager closing pool")
+		m.pool.Close()
+	}
 
 	m.mut.RLock()
 	defer func() {
@@ -699,7 +701,12 @@ func (m *PluginManager) waitForPluginLoad(p *runningPlugin, req *pb.GetRequest) 
 	case <-p.initialized:
 		log.Printf("[TRACE] plugin initialized: pid %d (%p)", p.reattach.Pid, req)
 	case <-p.failed:
-		log.Printf("[TRACE] plugin pid %d failed %s (%p)", p.reattach.Pid, p.error.Error(), req)
+		// reattach may be nil if plugin failed before it was set
+		if p.reattach != nil {
+			log.Printf("[TRACE] plugin pid %d failed %s (%p)", p.reattach.Pid, p.error.Error(), req)
+		} else {
+			log.Printf("[TRACE] plugin %s failed before reattach was set: %s (%p)", p.pluginInstance, p.error.Error(), req)
+		}
 		// get error from running plugin
 		return p.error
 	}
@@ -772,9 +779,11 @@ func (m *PluginManager) setRateLimiters(pluginInstance string, pluginClient *sdk
 	log.Printf("[INFO] setRateLimiters for plugin '%s'", pluginInstance)
 	var defs []*sdkproto.RateLimiterDefinition
 
+	m.mut.RLock()
 	for _, l := range m.userLimiters[pluginInstance] {
 		defs = append(defs, RateLimiterAsProto(l))
 	}
+	m.mut.RUnlock()
 
 	req := &sdkproto.SetRateLimitersRequest{Definitions: defs}
 
@@ -787,6 +796,12 @@ func (m *PluginManager) setRateLimiters(pluginInstance string, pluginClient *sdk
 func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionName string) {
 	log.Printf("[INFO] updateConnectionSchema connection %s", connectionName)
 
+	// check if pool is nil before attempting to refresh connections
+	if m.pool == nil {
+		log.Printf("[WARN] cannot update connection schema: pool is nil")
+		return
+	}
+
 	refreshResult := connection.RefreshConnections(ctx, m, connectionName)
 	if refreshResult.Error != nil {
 		log.Printf("[TRACE] error refreshing connections: %s", refreshResult.Error)
@@ -796,9 +811,14 @@ func (m *PluginManager) updateConnectionSchema(ctx context.Context, connectionNa
 	// also send a postgres notification
 	notification := steampipeconfig.NewSchemaUpdateNotification()
 
+	if m.pool == nil {
+		log.Printf("[WARN] cannot send schema update notification: pool is nil")
+		return
+	}
 	conn, err := m.pool.Acquire(ctx)
 	if err != nil {
 		log.Printf("[WARN] failed to send schema update notification: %s", err)
+		return
 	}
 	defer conn.Release()
 
