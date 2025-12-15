@@ -1,4 +1,4 @@
-## v2.3.3 [tbd]
+## v2.3.3 [2025-12-15]
 _Bug fixes_
 
 **Memory and Resource Management**
