@@ -19,6 +19,9 @@ _Bug fixes_
 - Improved SQL query parameterization in connection state management to prevent SQL injections. ([#4748](https://github.com/turbot/steampipe/issues/4748))
 - Increase snapshot row streaming timeout from 5s to 30s. ([#4866](https://github.com/turbot/steampipe/issues/4866))
 
+**Dependencies**
+- Updated `containerd` and `crypto` packages to remediate vulnerabilities.
+
 ## v2.3.2 [2025-11-03]
 _Bug fixes_
 - Fix Linux builds by aligning the glibc baseline with supported distros to restore compatibility. ([#4691](https://github.com/turbot/steampipe/issues/4691))
