@@ -1,3 +1,27 @@
+## v2.3.3 [tbd]
+_Bug fixes_
+
+**Memory and Resource Management**
+- Fix query history memory leak due to unbounded growth. ([#4811](https://github.com/turbot/steampipe/issues/4811))
+- Fix unbounded growth in autocomplete suggestions maps. ([#4812](https://github.com/turbot/steampipe/issues/4812))
+- Fix goroutine leak in snapshot functionality. ([#4768](https://github.com/turbot/steampipe/issues/4768))
+
+**Context and Synchronization**
+- Fix RunBatchSession blocking when initData.Loaded never closes. ([#4781](https://github.com/turbot/steampipe/issues/4781))
+
+**File Operations and Installation**
+- Fix atomic write to prevent partial files during export. ([#4718](https://github.com/turbot/steampipe/issues/4718))
+- Fix atomic OCI installations to prevent inconsistent states. ([#4758](https://github.com/turbot/steampipe/issues/4758))
+- Fix atomic FDW binary replacement. ([#4753](https://github.com/turbot/steampipe/issues/4753))
+- Fix disk space validation before OCI installation. ([#4754](https://github.com/turbot/steampipe/issues/4754))
+
+**General Fixes**
+- Improved SQL query parameterization in connection state management to prevent SQL injections. ([#4748](https://github.com/turbot/steampipe/issues/4748))
+- Increase snapshot row streaming timeout from 5s to 30s. ([#4866](https://github.com/turbot/steampipe/issues/4866))
+
+**Dependencies**
+- Updated `containerd` and `crypto` packages to remediate vulnerabilities.
+
 ## v2.3.2 [2025-11-03]
 _Bug fixes_
 - Fix Linux builds by aligning the glibc baseline with supported distros to restore compatibility. ([#4691](https://github.com/turbot/steampipe/issues/4691))
