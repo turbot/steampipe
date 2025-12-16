@@ -49,13 +49,14 @@ type DbClient struct {
 	sessions map[uint32]*db_common.DatabaseSession
 
 	// allows locked access to the 'sessions' map
-	sessionsMutex *sync.Mutex
+	sessionsMutex    *sync.Mutex
+	sessionsLockFlag atomic.Bool
 
 	// if a custom search path or a prefix is used, store it here
 	customSearchPath []string
 	searchPathPrefix []string
 	// allows locked access to customSearchPath and searchPathPrefix
-	searchPathMutex *sync.Mutex
+	searchPathMutex *sync.RWMutex
 	// the default user search path
 	userSearchPath []string
 	// disable timing - set whilst in process of querying the timing
@@ -73,7 +74,7 @@ func NewDbClient(ctx context.Context, connectionString string, opts ...ClientOpt
 		parallelSessionInitLock: semaphore.NewWeighted(constants.MaxParallelClientInits),
 		sessions:                make(map[uint32]*db_common.DatabaseSession),
 		sessionsMutex:           &sync.Mutex{},
-		searchPathMutex:         &sync.Mutex{},
+		searchPathMutex:         &sync.RWMutex{},
 		connectionString:        connectionString,
 	}
 
@@ -152,6 +153,37 @@ func (c *DbClient) shouldFetchVerboseTiming() bool {
 		(viper.GetString(pconstants.ArgOutput) == constants.OutputFormatJSON)
 }
 
+// lockSessions acquires the sessionsMutex and tracks ownership for tryLock compatibility.
+func (c *DbClient) lockSessions() {
+	if c.sessionsMutex == nil {
+		return
+	}
+	c.sessionsLockFlag.Store(true)
+	c.sessionsMutex.Lock()
+}
+
+// sessionsTryLock attempts to acquire the sessionsMutex without blocking.
+// Returns false if the lock is already held.
+func (c *DbClient) sessionsTryLock() bool {
+	if c.sessionsMutex == nil {
+		return false
+	}
+	// best-effort: only one contender sets the flag and proceeds to lock
+	if !c.sessionsLockFlag.CompareAndSwap(false, true) {
+		return false
+	}
+	c.sessionsMutex.Lock()
+	return true
+}
+
+func (c *DbClient) sessionsUnlock() {
+	if c.sessionsMutex == nil {
+		return
+	}
+	c.sessionsMutex.Unlock()
+	c.sessionsLockFlag.Store(false)
+}
+
 // ServerSettings returns the settings of the steampipe service that this DbClient is connected to
 //
 // Keep in mind that when connecting to pre-0.21.x servers, the server_settings data is not available. This is expected.
@@ -173,9 +205,9 @@ func (c *DbClient) Close(context.Context) error {
 	// nullify active sessions, since with the closing of the pools
 	// none of the sessions will be valid anymore
 	// Acquire mutex to prevent concurrent access to sessions map
-	c.sessionsMutex.Lock()
+	c.lockSessions()
 	c.sessions = nil
-	c.sessionsMutex.Unlock()
+	c.sessionsUnlock()
 
 	return nil
 }

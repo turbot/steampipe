@@ -78,8 +78,8 @@ func (c *DbClient) loadUserSearchPath(ctx context.Context, connection *pgx.Conn)
 
 // GetRequiredSessionSearchPath implements Client
 func (c *DbClient) GetRequiredSessionSearchPath() []string {
-	c.searchPathMutex.Lock()
-	defer c.searchPathMutex.Unlock()
+	c.searchPathMutex.RLock()
+	defer c.searchPathMutex.RUnlock()
 
 	if c.customSearchPath != nil {
 		return c.customSearchPath
@@ -89,8 +89,8 @@ func (c *DbClient) GetRequiredSessionSearchPath() []string {
 }
 
 func (c *DbClient) GetCustomSearchPath() []string {
-	c.searchPathMutex.Lock()
-	defer c.searchPathMutex.Unlock()
+	c.searchPathMutex.RLock()
+	defer c.searchPathMutex.RUnlock()
 
 	return c.customSearchPath
 }
