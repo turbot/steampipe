@@ -37,10 +37,10 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	}
 	backendPid := databaseConnection.Conn().PgConn().PID()
 
-	c.sessionsMutex.Lock()
+	c.lockSessions()
 	// Check if client has been closed (sessions set to nil)
 	if c.sessions == nil {
-		c.sessionsMutex.Unlock()
+		c.sessionsUnlock()
 		sessionResult.Error = fmt.Errorf("client has been closed")
 		return sessionResult
 	}
@@ -52,7 +52,7 @@ func (c *DbClient) AcquireSession(ctx context.Context) (sessionResult *db_common
 	// we get a new *sql.Conn everytime. USE IT!
 	session.Connection = databaseConnection
 	sessionResult.Session = session
-	c.sessionsMutex.Unlock()
+	c.sessionsUnlock()
 
 	// make sure that we close the acquired session, in case of error
 	defer func() {

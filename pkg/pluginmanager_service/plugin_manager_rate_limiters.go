@@ -29,6 +29,9 @@ func (m *PluginManager) ShouldFetchRateLimiterDefs() bool {
 // update the stored limiters, refrresh the rate limiter table and call `setRateLimiters`
 // for all plugins with changed limiters
 func (m *PluginManager) HandlePluginLimiterChanges(newLimiters connection.PluginLimiterMap) error {
+	m.mut.Lock()
+	defer m.mut.Unlock()
+
 	if m.pluginLimiters == nil {
 		// this must be the first time we have populated them
 		m.pluginLimiters = make(connection.PluginLimiterMap)
@@ -38,13 +41,22 @@ func (m *PluginManager) HandlePluginLimiterChanges(newLimiters connection.Plugin
 	}
 
 	// update the steampipe_plugin_limiters table
-	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
+	// NOTE: we hold m.mut lock, so call internal version
+	if err := m.refreshRateLimiterTableInternal(context.Background()); err != nil {
 		log.Println("[WARN] could not refresh rate limiter table", err)
 	}
 	return nil
 }
 
 func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
+	m.mut.Lock()
+	defer m.mut.Unlock()
+	return m.refreshRateLimiterTableInternal(ctx)
+}
+
+func (m *PluginManager) refreshRateLimiterTableInternal(ctx context.Context) error {
+	// NOTE: caller must hold m.mut lock
+
 	// if we have not yet populated the rate limiter table, do nothing
 	if m.pluginLimiters == nil {
 		return nil
@@ -56,7 +68,7 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 	}
 
 	// update the status of the plugin rate limiters (determine which are overriden and set state accordingly)
-	m.updateRateLimiterStatus()
+	m.updateRateLimiterStatusInternal()
 
 	queries := []db_common.QueryWithArgs{
 		introspection.GetRateLimiterTableDropSql(),
@@ -70,13 +82,12 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 		}
 	}
 
-	m.mut.RLock()
+	// NOTE: no lock needed here, caller already holds m.mut
 	for _, limitersForPlugin := range m.userLimiters {
 		for _, l := range limitersForPlugin {
 			queries = append(queries, introspection.GetRateLimiterTablePopulateSql(l))
 		}
 	}
-	m.mut.RUnlock()
 
 	conn, err := m.pool.Acquire(ctx)
 	if err != nil {
@@ -92,30 +103,42 @@ func (m *PluginManager) refreshRateLimiterTable(ctx context.Context) error {
 // update the stored limiters, refresh the rate limiter table and call `setRateLimiters`
 // for all plugins with changed limiters
 func (m *PluginManager) handleUserLimiterChanges(_ context.Context, plugins connection.PluginMap) error {
+	log.Printf("[DEBUG] handleUserLimiterChanges: start")
 	limiterPluginMap := plugins.ToPluginLimiterMap()
-	pluginsWithChangedLimiters := m.getPluginsWithChangedLimiters(limiterPluginMap)
+	log.Printf("[DEBUG] handleUserLimiterChanges: got limiter plugin map")
+	// NOTE: caller (OnConnectionConfigChanged) already holds m.mut lock, so use internal version
+	pluginsWithChangedLimiters := m.getPluginsWithChangedLimitersInternal(limiterPluginMap)
+	log.Printf("[DEBUG] handleUserLimiterChanges: found %d plugins with changed limiters", len(pluginsWithChangedLimiters))
 
 	if len(pluginsWithChangedLimiters) == 0 {
+		log.Printf("[DEBUG] handleUserLimiterChanges: no changes, returning")
 		return nil
 	}
 
 	// update stored limiters to the new map
-	m.mut.Lock()
+	// NOTE: caller (OnConnectionConfigChanged) already holds m.mut lock, so we don't lock here
+	log.Printf("[DEBUG] handleUserLimiterChanges: updating user limiters")
 	m.userLimiters = limiterPluginMap
-	m.mut.Unlock()
 
 	// update the steampipe_plugin_limiters table
-	if err := m.refreshRateLimiterTable(context.Background()); err != nil {
+	// NOTE: caller already holds m.mut lock, so call internal version
+	log.Printf("[DEBUG] handleUserLimiterChanges: calling refreshRateLimiterTableInternal")
+	if err := m.refreshRateLimiterTableInternal(context.Background()); err != nil {
 		log.Println("[WARN] could not refresh rate limiter table", err)
 	}
+	log.Printf("[DEBUG] handleUserLimiterChanges: refreshRateLimiterTableInternal complete")
 
 	// now update the plugins - call setRateLimiters for any plugin with updated user limiters
+	log.Printf("[DEBUG] handleUserLimiterChanges: setting rate limiters for plugins")
 	for p := range pluginsWithChangedLimiters {
+		log.Printf("[DEBUG] handleUserLimiterChanges: calling setRateLimitersForPlugin for %s", p)
 		if err := m.setRateLimitersForPlugin(p); err != nil {
 			return err
 		}
+		log.Printf("[DEBUG] handleUserLimiterChanges: setRateLimitersForPlugin complete for %s", p)
 	}
 
+	log.Printf("[DEBUG] handleUserLimiterChanges: complete")
 	return nil
 }
 
@@ -138,17 +161,22 @@ func (m *PluginManager) setRateLimitersForPlugin(pluginShortName string) error {
 		return sperr.WrapWithMessage(err, "failed to create a plugin client when updating the rate limiter for plugin '%s'", imageRef)
 	}
 
-	if err := m.setRateLimiters(pluginShortName, pluginClient); err != nil {
+	// NOTE: caller (handleUserLimiterChanges via OnConnectionConfigChanged) already holds m.mut lock
+	if err := m.setRateLimitersInternal(pluginShortName, pluginClient); err != nil {
 		return sperr.WrapWithMessage(err, "failed to update rate limiters for plugin '%s'", imageRef)
 	}
 	return nil
 }
 
 func (m *PluginManager) getPluginsWithChangedLimiters(newLimiters connection.PluginLimiterMap) map[string]struct{} {
-	var pluginsWithChangedLimiters = make(map[string]struct{})
-
 	m.mut.RLock()
 	defer m.mut.RUnlock()
+	return m.getPluginsWithChangedLimitersInternal(newLimiters)
+}
+
+func (m *PluginManager) getPluginsWithChangedLimitersInternal(newLimiters connection.PluginLimiterMap) map[string]struct{} {
+	// NOTE: caller must hold m.mut lock (at least RLock)
+	var pluginsWithChangedLimiters = make(map[string]struct{})
 
 	for plugin, limitersForPlugin := range m.userLimiters {
 		newLimitersForPlugin := newLimiters[plugin]
@@ -169,7 +197,11 @@ func (m *PluginManager) getPluginsWithChangedLimiters(newLimiters connection.Plu
 func (m *PluginManager) updateRateLimiterStatus() {
 	m.mut.Lock()
 	defer m.mut.Unlock()
+	m.updateRateLimiterStatusInternal()
+}
 
+func (m *PluginManager) updateRateLimiterStatusInternal() {
+	// NOTE: caller must hold m.mut lock
 	// iterate through limiters for each plug
 	for p, pluginDefinedLimiters := range m.pluginLimiters {
 		// get user limiters for this plugin (already holding lock, so call internal version)

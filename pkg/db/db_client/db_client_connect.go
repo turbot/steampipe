@@ -66,12 +66,14 @@ func (c *DbClient) establishConnectionPool(ctx context.Context, overrides client
 	config.BeforeClose = func(conn *pgx.Conn) {
 		if conn != nil && conn.PgConn() != nil {
 			backendPid := conn.PgConn().PID()
-			c.sessionsMutex.Lock()
-			// Check if sessions map has been nil'd by Close()
-			if c.sessions != nil {
-				delete(c.sessions, backendPid)
+			// Best-effort cleanup: do not block pool.Close() if sessions lock is busy.
+			if c.sessionsTryLock() {
+				// Check if sessions map has been nil'd by Close()
+				if c.sessions != nil {
+					delete(c.sessions, backendPid)
+				}
+				c.sessionsUnlock()
 			}
-			c.sessionsMutex.Unlock()
 		}
 	}
 	// set an app name so that we can track database connections from this Steampipe execution

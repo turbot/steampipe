@@ -1,5 +1,8 @@
-## v2.3.3 [tbd]
+## v2.3.4 [2025-12-16]
 _Bug fixes_
+- Fix database client deadlocks caused by concurrent session map access during connection pool cleanup. ([#4917](https://github.com/turbot/steampipe/issues/4917))
+
+## v2.3.3 [2025-12-15]
 
 **Memory and Resource Management**
 - Fix query history memory leak due to unbounded growth. ([#4811](https://github.com/turbot/steampipe/issues/4811))
