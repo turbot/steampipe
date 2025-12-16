@@ -65,7 +65,7 @@ func TestBeforeCloseCleanupShouldBeNonBlocking(t *testing.T) {
 
 	// Guardrail: the BeforeClose hook should avoid unconditionally blocking on sessionsMutex.
 	assert.Contains(t, source, "config.BeforeClose", "BeforeClose cleanup hook must exist")
-	assert.Contains(t, source, "sessionsMutex", "BeforeClose cleanup should reference sessionsMutex")
+	assert.Contains(t, source, "sessionsTryLock", "BeforeClose cleanup should use non-blocking lock helper")
 
 	// Expect a non-blocking lock pattern; if we only find Lock()/Unlock, this fails.
 	nonBlockingPatterns := []string{"TryLock", "tryLock", "non-block", "select {"}
@@ -314,13 +314,14 @@ func TestDbClient_SessionsMutexProtectsMap(t *testing.T) {
 
 	sourceCode := string(content)
 
-	// Count occurrences of mutex locks
-	mutexLocks := strings.Count(sourceCode, "c.sessionsMutex.Lock()")
+	// Count occurrences of mutex lock helpers
+	mutexLocks := strings.Count(sourceCode, "lockSessions()") +
+		strings.Count(sourceCode, "sessionsTryLock()")
 
 	// This is a heuristic check - in practice, we'd need more sophisticated analysis
 	// But it serves as a reminder to use the mutex
 	assert.True(t, mutexLocks > 0,
-		"sessionsMutex.Lock() should be used when accessing sessions map")
+		"sessions lock helpers should be used when accessing sessions map")
 }
 
 // TestDbClient_SessionMapDocumentation verifies that session lifecycle is documented
