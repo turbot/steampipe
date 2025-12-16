@@ -51,7 +51,29 @@ type PluginManager struct {
 	// map of max cache size, keyed by plugin instance
 	pluginCacheSizeMap map[string]int64
 
-	// map lock
+	// mut protects concurrent access to plugin manager state (runningPluginMap, connectionConfigMap, etc.)
+	//
+	// LOCKING PATTERN TO PREVENT DEADLOCKS:
+	// - Functions that acquire mut.Lock() and call other methods MUST only call *Internal versions
+	// - Public methods that need locking: acquire lock → call internal version → release lock
+	// - Internal methods: assume caller holds lock, never acquire lock themselves
+	//
+	// Example:
+	//   func (m *PluginManager) SomeMethod() {
+	//       m.mut.Lock()
+	//       defer m.mut.Unlock()
+	//       return m.someMethodInternal()
+	//   }
+	//   func (m *PluginManager) someMethodInternal() {
+	//       // NOTE: caller must hold m.mut lock
+	//       // ... implementation without locking ...
+	//   }
+	//
+	// Functions with internal/external versions:
+	// - refreshRateLimiterTable / refreshRateLimiterTableInternal
+	// - updateRateLimiterStatus / updateRateLimiterStatusInternal
+	// - setRateLimiters / setRateLimitersInternal
+	// - getPluginsWithChangedLimiters / getPluginsWithChangedLimitersInternal
 	mut sync.RWMutex
 
 	// shutdown synchronization
@@ -231,23 +253,32 @@ func (m *PluginManager) doRefresh() {
 
 // OnConnectionConfigChanged is the callback function invoked by the connection watcher when the config changed
 func (m *PluginManager) OnConnectionConfigChanged(ctx context.Context, configMap connection.ConnectionConfigMap, plugins map[string]*plugin.Plugin) {
+	log.Printf("[DEBUG] OnConnectionConfigChanged: acquiring lock")
 	m.mut.Lock()
 	defer m.mut.Unlock()
+	log.Printf("[DEBUG] OnConnectionConfigChanged: lock acquired")
 
 	log.Printf("[TRACE] OnConnectionConfigChanged: connections: %s plugin instances: %s", strings.Join(utils.SortedMapKeys(configMap), ","), strings.Join(utils.SortedMapKeys(plugins), ","))
 
+	log.Printf("[DEBUG] OnConnectionConfigChanged: calling handleConnectionConfigChanges")
 	if err := m.handleConnectionConfigChanges(ctx, configMap); err != nil {
 		log.Printf("[WARN] handleConnectionConfigChanges failed: %s", err.Error())
 	}
+	log.Printf("[DEBUG] OnConnectionConfigChanged: handleConnectionConfigChanges complete")
 
 	// update our plugin configs
+	log.Printf("[DEBUG] OnConnectionConfigChanged: calling handlePluginInstanceChanges")
 	if err := m.handlePluginInstanceChanges(ctx, plugins); err != nil {
 		log.Printf("[WARN] handlePluginInstanceChanges failed: %s", err.Error())
 	}
+	log.Printf("[DEBUG] OnConnectionConfigChanged: handlePluginInstanceChanges complete")
 
+	log.Printf("[DEBUG] OnConnectionConfigChanged: calling handleUserLimiterChanges")
 	if err := m.handleUserLimiterChanges(ctx, plugins); err != nil {
 		log.Printf("[WARN] handleUserLimiterChanges failed: %s", err.Error())
 	}
+	log.Printf("[DEBUG] OnConnectionConfigChanged: handleUserLimiterChanges complete")
+	log.Printf("[DEBUG] OnConnectionConfigChanged: about to release lock and return")
 }
 
 func (m *PluginManager) GetConnectionConfig() connection.ConnectionConfigMap {
@@ -776,14 +807,19 @@ func (m *PluginManager) setCacheOptions(pluginClient *sdkgrpc.PluginClient) erro
 }
 
 func (m *PluginManager) setRateLimiters(pluginInstance string, pluginClient *sdkgrpc.PluginClient) error {
+	m.mut.RLock()
+	defer m.mut.RUnlock()
+	return m.setRateLimitersInternal(pluginInstance, pluginClient)
+}
+
+func (m *PluginManager) setRateLimitersInternal(pluginInstance string, pluginClient *sdkgrpc.PluginClient) error {
+	// NOTE: caller must hold m.mut lock (at least RLock)
 	log.Printf("[INFO] setRateLimiters for plugin '%s'", pluginInstance)
 	var defs []*sdkproto.RateLimiterDefinition
 
-	m.mut.RLock()
 	for _, l := range m.userLimiters[pluginInstance] {
 		defs = append(defs, RateLimiterAsProto(l))
 	}
-	m.mut.RUnlock()
 
 	req := &sdkproto.SetRateLimitersRequest{Definitions: defs}
 
