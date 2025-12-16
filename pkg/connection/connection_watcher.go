@@ -26,12 +26,19 @@ func NewConnectionWatcher(pluginManager pluginManager) (*ConnectionWatcher, erro
 		pluginManager: pluginManager,
 	}
 
+	configDir := filepaths.EnsureConfigDir()
+	log.Printf("[INFO] ConnectionWatcher will watch directory: %s for %s files", configDir, constants.ConfigExtension)
+
 	watcherOptions := &filewatcher.WatcherOptions{
-		Directories: []string{filepaths.EnsureConfigDir()},
+		Directories: []string{configDir},
 		Include:     filehelpers.InclusionsFromExtensions([]string{constants.ConfigExtension}),
 		ListFlag:    filehelpers.FilesRecursive,
 		EventMask:   fsnotify.Create | fsnotify.Remove | fsnotify.Rename | fsnotify.Write | fsnotify.Chmod,
 		OnChange: func(events []fsnotify.Event) {
+			log.Printf("[INFO] ConnectionWatcher detected %d file events", len(events))
+			for _, event := range events {
+				log.Printf("[INFO] ConnectionWatcher event: %s - %s", event.Op, event.Name)
+			}
 			w.handleFileWatcherEvent(events)
 		},
 	}
@@ -80,13 +87,17 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	// as these are both used by RefreshConnectionAndSearchPathsWithLocalClient
 
 	// set the global steampipe config
+	log.Printf("[DEBUG] ConnectionWatcher: setting GlobalConfig")
 	steampipeconfig.GlobalConfig = config
 
 	// call on changed callback - we must call this BEFORE calling refresh connections
 	// convert config to format expected by plugin manager
 	// (plugin manager cannot reference steampipe config to avoid circular deps)
+	log.Printf("[DEBUG] ConnectionWatcher: creating connection config map")
 	configMap := NewConnectionConfigMap(config.Connections)
+	log.Printf("[DEBUG] ConnectionWatcher: calling OnConnectionConfigChanged with %d connections", len(configMap))
 	w.pluginManager.OnConnectionConfigChanged(ctx, configMap, config.PluginsInstances)
+	log.Printf("[DEBUG] ConnectionWatcher: OnConnectionConfigChanged complete")
 
 	// The only configurations from GlobalConfig which have
 	// impact during Refresh are Database options and the Connections
@@ -99,7 +110,9 @@ func (w *ConnectionWatcher) handleFileWatcherEvent([]fsnotify.Event) {
 	// Workspace Profile does not have any setting which can alter
 	// behavior in service mode (namely search path). Therefore, it is safe
 	// to use the GlobalConfig here and ignore Workspace Profile in general
+	log.Printf("[DEBUG] ConnectionWatcher: calling SetDefaultsFromConfig")
 	cmdconfig.SetDefaultsFromConfig(steampipeconfig.GlobalConfig.ConfigMap())
+	log.Printf("[DEBUG] ConnectionWatcher: SetDefaultsFromConfig complete")
 
 	log.Printf("[INFO] calling RefreshConnections asyncronously")
 

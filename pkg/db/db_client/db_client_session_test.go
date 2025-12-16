@@ -2,10 +2,13 @@ package db_client
 
 import (
 	"context"
+	"os"
+	"strings"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 )
 
@@ -160,6 +163,28 @@ func TestDbClient_SearchPathUpdates(t *testing.T) {
 	assert.Len(t, client.customSearchPath, 2, "Should have 2 schemas in search path")
 }
 
+// TestSearchPathAccessShouldUseReadLocks checks that search path access does not block other goroutines unnecessarily.
+//
+// Holding an exclusive mutex during search-path reads in concurrent query setup can deadlock when
+// another goroutine is setting the path. The current code uses Lock/Unlock; this test documents
+// the expectation to move to a read/non-blocking lock so concurrent reads are safe.
+func TestSearchPathAccessShouldUseReadLocks(t *testing.T) {
+	content, err := os.ReadFile("db_client_search_path.go")
+	require.NoError(t, err, "should be able to read db_client_search_path.go")
+
+	source := string(content)
+
+	assert.Contains(t, source, "GetRequiredSessionSearchPath", "getter must exist")
+	assert.Contains(t, source, "searchPathMutex", "getter must guard access to searchPath state")
+
+	// Expect a read or non-blocking lock in getters; fail if only full Lock/Unlock is present.
+	hasRLock := strings.Contains(source, "RLock")
+	hasTry := strings.Contains(source, "TryLock") || strings.Contains(source, "tryLock")
+	if !hasRLock && !hasTry {
+		t.Fatalf("GetRequiredSessionSearchPath should avoid exclusive Lock/Unlock to prevent deadlocks under concurrent query setup")
+	}
+}
+
 // TestDbClient_SessionConnectionNilSafety verifies handling of nil connections
 func TestDbClient_SessionConnectionNilSafety(t *testing.T) {
 	session := db_common.NewDBSession(12345)
@@ -181,7 +206,7 @@ func TestDbClient_SessionSearchPathUpdatesThreadSafe(t *testing.T) {
 	client := &DbClient{
 		customSearchPath: []string{"public", "internal"},
 		userSearchPath:   []string{"public"},
-		searchPathMutex:  &sync.Mutex{},
+		searchPathMutex:  &sync.RWMutex{},
 	}
 
 	// Number of concurrent operations to test

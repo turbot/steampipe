@@ -52,6 +52,36 @@ func TestSessionMapCleanupImplemented(t *testing.T) {
 		"Comment should document automatic cleanup mechanism")
 }
 
+// TestBeforeCloseCleanupShouldBeNonBlocking ensures the cleanup hook does not take a blocking lock.
+//
+// A blocking mutex in the BeforeClose hook can deadlock pool.Close() when another goroutine
+// holds sessionsMutex (service stop/restart hangs). This test is intentionally strict and
+// will fail until the hook uses a non-blocking strategy (e.g., TryLock or similar).
+func TestBeforeCloseCleanupShouldBeNonBlocking(t *testing.T) {
+	content, err := os.ReadFile("db_client_connect.go")
+	require.NoError(t, err, "should be able to read db_client_connect.go")
+
+	source := string(content)
+
+	// Guardrail: the BeforeClose hook should avoid unconditionally blocking on sessionsMutex.
+	assert.Contains(t, source, "config.BeforeClose", "BeforeClose cleanup hook must exist")
+	assert.Contains(t, source, "sessionsTryLock", "BeforeClose cleanup should use non-blocking lock helper")
+
+	// Expect a non-blocking lock pattern; if we only find Lock()/Unlock, this fails.
+	nonBlockingPatterns := []string{"TryLock", "tryLock", "non-block", "select {"}
+	foundNonBlocking := false
+	for _, p := range nonBlockingPatterns {
+		if strings.Contains(source, p) {
+			foundNonBlocking = true
+			break
+		}
+	}
+
+	if !foundNonBlocking {
+		t.Fatalf("BeforeClose cleanup appears to take a blocking lock on sessionsMutex; add a non-blocking guard to prevent pool.Close deadlocks")
+	}
+}
+
 // TestDbClient_Close_Idempotent verifies that calling Close() multiple times does not cause issues
 // Reference: Similar to bug #4712 (Result.Close() idempotency)
 //
@@ -284,13 +314,14 @@ func TestDbClient_SessionsMutexProtectsMap(t *testing.T) {
 
 	sourceCode := string(content)
 
-	// Count occurrences of mutex locks
-	mutexLocks := strings.Count(sourceCode, "c.sessionsMutex.Lock()")
+	// Count occurrences of mutex lock helpers
+	mutexLocks := strings.Count(sourceCode, "lockSessions()") +
+		strings.Count(sourceCode, "sessionsTryLock()")
 
 	// This is a heuristic check - in practice, we'd need more sophisticated analysis
 	// But it serves as a reminder to use the mutex
 	assert.True(t, mutexLocks > 0,
-		"sessionsMutex.Lock() should be used when accessing sessions map")
+		"sessions lock helpers should be used when accessing sessions map")
 }
 
 // TestDbClient_SessionMapDocumentation verifies that session lifecycle is documented

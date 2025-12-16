@@ -60,11 +60,15 @@ func doRunPluginManager(cmd *cobra.Command) error {
 		log.Printf("[INFO] starting connection watcher")
 		connectionWatcher, err := connection.NewConnectionWatcher(pluginManager)
 		if err != nil {
+			log.Printf("[ERROR] failed to create connection watcher: %v", err)
 			return err
 		}
+		log.Printf("[INFO] connection watcher created successfully")
 
 		// close the connection watcher
 		defer connectionWatcher.Close()
+	} else {
+		log.Printf("[WARN] connection watcher is DISABLED")
 	}
 
 	log.Printf("[INFO] about to serve")
