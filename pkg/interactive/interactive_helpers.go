@@ -17,17 +17,12 @@ func getQueryInfo(text string) *queryCompletionInfo {
 
 	return &queryCompletionInfo{
 		Table:        table,
-		EditingTable: isEditingTable(text, prevWord),
+		EditingTable: isEditingTable(prevWord),
 	}
 }
 
-func isEditingTable(text string, prevWord string) bool {
-	// Only consider it editing table if:
-	// 1. The previous word is "from"
-	// 2. The text ends with a space (meaning cursor is after "from ", not in the middle of typing a table name)
-	endsWithSpace := len(text) > 0 && text[len(text)-1] == ' '
-	var editingTable = prevWord == "from" && endsWithSpace
-	return editingTable
+func isEditingTable(prevWord string) bool {
+	return prevWord == "from"
 }
 
 func getTable(text string) string {
