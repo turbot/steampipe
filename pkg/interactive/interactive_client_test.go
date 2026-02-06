@@ -587,9 +587,10 @@ func TestInitialisationComplete_RaceCondition(t *testing.T) {
 //
 // This is important for autocomplete - when a user types "from " (with a space),
 // the system should recognize they are about to enter a table name and enable
-// table suggestions.
+// table suggestions. It should also remain true while typing a table name so
+// that autocomplete can filter suggestions as the user types.
 //
-// Bug: #4810
+// Bug: #4810, #4928
 func TestGetQueryInfo_FromDetection(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -598,22 +599,28 @@ func TestGetQueryInfo_FromDetection(t *testing.T) {
 		expectedEditTable bool
 	}{
 		{
-			name:              "just_from",
+			name:              "just_from_with_space",
 			input:             "from ",
 			expectedTable:     "",
-			expectedEditTable: true, // Should be true - user is about to enter table name
+			expectedEditTable: true,
 		},
 		{
-			name:              "from_with_table",
+			name:              "from_typing_table",
 			input:             "from my_table",
 			expectedTable:     "my_table",
-			expectedEditTable: false, // Not editing, already entered
+			expectedEditTable: true, // Still editing - prevWord is "from"
 		},
 		{
 			name:              "from_keyword_only",
 			input:             "from",
 			expectedTable:     "",
 			expectedEditTable: false,
+		},
+		{
+			name:              "from_table_done",
+			input:             "from my_table ",
+			expectedTable:     "my_table",
+			expectedEditTable: false, // Done editing - prevWord is now "my_table"
 		},
 	}
 

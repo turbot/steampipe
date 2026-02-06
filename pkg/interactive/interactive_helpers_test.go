@@ -324,59 +324,53 @@ func TestGetTable(t *testing.T) {
 func TestIsEditingTable(t *testing.T) {
 	tests := []struct {
 		name     string
-		text     string
 		prevWord string
 		expected bool
 	}{
 		{
-			name:     "from keyword with trailing space",
-			text:     "from ",
+			name:     "from keyword",
 			prevWord: "from",
 			expected: true,
 		},
 		{
-			name:     "from keyword without trailing space",
-			text:     "from",
-			prevWord: "from",
-			expected: false,
-		},
-		{
 			name:     "not from keyword",
-			text:     "select ",
 			prevWord: "select",
 			expected: false,
 		},
 		{
 			name:     "empty string",
-			text:     "",
 			prevWord: "",
 			expected: false,
 		},
 		{
 			name:     "FROM uppercase",
-			text:     "FROM ",
 			prevWord: "FROM",
 			expected: false,
 		},
 		{
 			name:     "whitespace",
-			text:     " from ",
 			prevWord: " from ",
+			expected: false,
+		},
+		{
+			name:     "table name after from",
+			prevWord: "aws_s3_bucket",
 			expected: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := isEditingTable(tt.text, tt.prevWord)
+			result := isEditingTable(tt.prevWord)
 			if result != tt.expected {
-				t.Errorf("isEditingTable(%q, %q) = %v, want %v", tt.text, tt.prevWord, result, tt.expected)
+				t.Errorf("isEditingTable(%q) = %v, want %v", tt.prevWord, result, tt.expected)
 			}
 		})
 	}
 }
 
-// TestGetQueryInfo tests the getQueryInfo function (passing cases only)
+// TestGetQueryInfo tests the getQueryInfo function
+// Bug: #4928 - autocomplete suggestions disappear when typing table name after 'from '
 func TestGetQueryInfo(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -391,8 +385,32 @@ func TestGetQueryInfo(t *testing.T) {
 			expectedEditing: true,
 		},
 		{
-			name:            "table specified",
+			name:            "typing table name after from",
+			input:           "select * from aws",
+			expectedTable:   "aws",
+			expectedEditing: true,
+		},
+		{
+			name:            "typing partial table name",
+			input:           "select * from aws_s3",
+			expectedTable:   "aws_s3",
+			expectedEditing: true,
+		},
+		{
+			name:            "typing qualified table name",
+			input:           "select * from aws.aws_s3_bucket",
+			expectedTable:   "aws.aws_s3_bucket",
+			expectedEditing: true,
+		},
+		{
+			name:            "table specified with trailing space",
 			input:           "select * from users ",
+			expectedTable:   "users",
+			expectedEditing: false,
+		},
+		{
+			name:            "past table into where clause",
+			input:           "select * from users where",
 			expectedTable:   "users",
 			expectedEditing: false,
 		},

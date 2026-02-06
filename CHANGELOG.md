@@ -1,3 +1,10 @@
+## v2.3.5 [2026-02-06]
+_Bug fixes_
+- Fix autocomplete regression where suggestions disappear when typing a table name after `from `. ([#4928](https://github.com/turbot/steampipe/issues/4928))
+
+_Dependencies_
+- Updated `golang.org/x/crypto` package to remediate security vulnerabilities.
+
 ## v2.3.4 [2025-12-16]
 _Bug fixes_
 - Fix database client deadlocks caused by concurrent session map access during connection pool cleanup. ([#4917](https://github.com/turbot/steampipe/issues/4917))
