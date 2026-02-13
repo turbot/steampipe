@@ -17,7 +17,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gertd/go-pluralize v0.2.1
-	github.com/go-git/go-git/v5 v5.16.2
+	github.com/go-git/go-git/v5 v5.16.5
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.7.0
@@ -40,7 +40,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/thediveo/enumflag/v2 v2.0.7
 	github.com/turbot/go-kit v1.3.0
-	github.com/turbot/pipe-fittings/v2 v2.7.2
+	github.com/turbot/pipe-fittings/v2 v2.7.3
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.13.0
 	github.com/turbot/terraform-components v0.0.0-20250114051614-04b806a9cbed
 	github.com/zclconf/go-cty v1.16.3 // indirect
