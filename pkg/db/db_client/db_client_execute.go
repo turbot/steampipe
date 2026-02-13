@@ -272,8 +272,15 @@ quals from %s.%s order by duration_ms desc`, constants.InternalSchema, constants
 func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string, args ...any) (rows pgx.Rows, err error) {
 	doneChan := make(chan bool)
 	go func() {
-		// start asynchronous query
-		rows, err = conn.Query(ctx, query, args...)
+		// Request text format for timestamptz so PostgreSQL returns the value
+		// formatted in the session timezone, matching psql behavior.
+		// By default pgx uses binary format which loses session timezone info.
+		queryArgs := make([]any, 0, len(args)+1)
+		queryArgs = append(queryArgs, pgx.QueryResultFormatsByOID{
+			pgtype.TimestamptzOID: pgx.TextFormatCode,
+		})
+		queryArgs = append(queryArgs, args...)
+		rows, err = conn.Query(ctx, query, queryArgs...)
 		close(doneChan)
 	}()
 
