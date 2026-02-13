@@ -101,6 +101,7 @@ jobs:
           - "blank_aggregators"
           - "search_path"
           - "chaos_and_query"
+          - "date_time_types"
           - "dynamic_schema"
           - "dynamic_aggregators"
           - "cache"
