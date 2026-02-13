@@ -358,6 +358,26 @@ func populateRow(columnValues []interface{}, cols []*pqueryresult.ColumnDef) ([]
 					elements := utils.Map(arr, func(e interface{}) string { return e.(string) })
 					result[i] = strings.Join(elements, ",")
 				}
+			case "_DATE":
+				if arr, ok := columnValue.([]interface{}); ok {
+					elements := utils.Map(arr, func(e interface{}) string {
+						if t, ok := e.(time.Time); ok {
+							return t.Format("2006-01-02")
+						}
+						return fmt.Sprintf("%v", e)
+					})
+					result[i] = strings.Join(elements, ",")
+				}
+			case "_TIMESTAMPTZ":
+				if arr, ok := columnValue.([]interface{}); ok {
+					elements := utils.Map(arr, func(e interface{}) string {
+						if t, ok := e.(time.Time); ok {
+							return t.Format(time.RFC3339)
+						}
+						return fmt.Sprintf("%v", e)
+					})
+					result[i] = strings.Join(elements, ",")
+				}
 			case "INET":
 				if inet, ok := columnValue.(netip.Prefix); ok {
 					result[i] = strings.TrimSuffix(inet.String(), "/32")
