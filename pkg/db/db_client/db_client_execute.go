@@ -272,8 +272,15 @@ quals from %s.%s order by duration_ms desc`, constants.InternalSchema, constants
 func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string, args ...any) (rows pgx.Rows, err error) {
 	doneChan := make(chan bool)
 	go func() {
-		// start asynchronous query
-		rows, err = conn.Query(ctx, query, args...)
+		// Request text format for timestamptz so PostgreSQL returns the value
+		// formatted in the session timezone, matching psql behavior.
+		// By default pgx uses binary format which loses session timezone info.
+		queryArgs := make([]any, 0, len(args)+1)
+		queryArgs = append(queryArgs, pgx.QueryResultFormatsByOID{
+			pgtype.TimestamptzOID: pgx.TextFormatCode,
+		})
+		queryArgs = append(queryArgs, args...)
+		rows, err = conn.Query(ctx, query, queryArgs...)
 		close(doneChan)
 	}()
 
@@ -349,6 +356,26 @@ func populateRow(columnValues []interface{}, cols []*pqueryresult.ColumnDef) ([]
 			case "_TEXT":
 				if arr, ok := columnValue.([]interface{}); ok {
 					elements := utils.Map(arr, func(e interface{}) string { return e.(string) })
+					result[i] = strings.Join(elements, ",")
+				}
+			case "_DATE":
+				if arr, ok := columnValue.([]interface{}); ok {
+					elements := utils.Map(arr, func(e interface{}) string {
+						if t, ok := e.(time.Time); ok {
+							return t.Format("2006-01-02")
+						}
+						return fmt.Sprintf("%v", e)
+					})
+					result[i] = strings.Join(elements, ",")
+				}
+			case "_TIMESTAMPTZ":
+				if arr, ok := columnValue.([]interface{}); ok {
+					elements := utils.Map(arr, func(e interface{}) string {
+						if t, ok := e.(time.Time); ok {
+							return t.Format(time.RFC3339)
+						}
+						return fmt.Sprintf("%v", e)
+					})
 					result[i] = strings.Join(elements, ",")
 				}
 			case "INET":

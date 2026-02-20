@@ -1,3 +1,7 @@
+## v2.3.6 [2026-02-20]
+_Bug fixes_
+- Fix `date` and `timestamptz` display formatting in query results. ([#4450](https://github.com/turbot/steampipe/issues/4450))
+
 ## v2.3.5 [2026-02-06]
 _Bug fixes_
 - Fix autocomplete regression where suggestions disappear when typing a table name after `from `. ([#4928](https://github.com/turbot/steampipe/issues/4928))
