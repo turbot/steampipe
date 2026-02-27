@@ -26,16 +26,17 @@ jobs:
           path: pipe-fittings
           ref: v1.6.x
 
-      - name: Set up Go
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      # this is required, check golangci-lint-action docs
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
-          go-version: 1.24
+          go-version: '1.26'
+          cache: false # setup-go v4 caches by default, do not change this parameter, check golangci-lint-action doc: https://github.com/golangci/golangci-lint-action/pull/704
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@0a35821d5c230e903fcfe077583637dea1b27b47 # v9.0.0
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
         continue-on-error: true # we dont want to enforce just yet
         with:
-          version: v1.52.2
-          args: --timeout=15m --config=.golangci.yml
-          skip-pkg-cache: true
-          skip-build-cache: true
+          version: latest
+          args: --timeout=10m
+          working-directory: steampipe
+          skip-cache: true

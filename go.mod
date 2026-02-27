@@ -1,6 +1,6 @@
 module github.com/turbot/steampipe/v2
 
-go 1.24.0
+go 1.26.0
 
 replace (
 	github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50
@@ -41,7 +41,7 @@ require (
 	github.com/thediveo/enumflag/v2 v2.0.7
 	github.com/turbot/go-kit v1.3.0
 	github.com/turbot/pipe-fittings/v2 v2.7.3
-	github.com/turbot/steampipe-plugin-sdk/v5 v5.13.2
+	github.com/turbot/steampipe-plugin-sdk/v5 v5.14.0
 	github.com/turbot/terraform-components v0.0.0-20250114051614-04b806a9cbed
 	github.com/zclconf/go-cty v1.16.3 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
