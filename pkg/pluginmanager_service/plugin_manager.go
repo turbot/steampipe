@@ -98,6 +98,13 @@ type PluginManager struct {
 	plugins connection.PluginMap
 
 	pool *pgxpool.Pool
+
+	// Per-connection mutexes for the Config API.
+	// Serializes handleSetConnectionConfig for the same connection name so that
+	// ensureConnectionSchema completes before a concurrent request for the same
+	// connection can return success.
+	connLocks   map[string]*sync.Mutex
+	connLocksMu sync.Mutex
 }
 
 func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto.ConnectionConfig, pluginConfigs connection.PluginMap, logger hclog.Logger) (*PluginManager, error) {
@@ -108,6 +115,7 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 		connectionConfigMap: connectionConfig,
 		userLimiters:        pluginConfigs.ToPluginLimiterMap(),
 		plugins:             pluginConfigs,
+		connLocks:           make(map[string]*sync.Mutex),
 	}
 
 	pluginManager.messageServer = &PluginMessageServer{pluginManager: pluginManager}
@@ -139,6 +147,9 @@ func NewPluginManager(ctx context.Context, connectionConfig map[string]*sdkproto
 // plugin interface functions
 
 func (m *PluginManager) Serve() {
+	// Start HTTP config API server (if enabled via env var)
+	m.startConfigAPIServer()
+
 	// create a plugin map, using ourselves as the implementation
 	pluginMap := map[string]goplugin.Plugin{
 		pluginshared.PluginName: &pluginshared.PluginManagerPlugin{Impl: m},

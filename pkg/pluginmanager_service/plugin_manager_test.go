@@ -33,6 +33,7 @@ func newTestPluginManager(t *testing.T) *PluginManager {
 		plugins:                   make(connection.PluginMap),
 		userLimiters:              make(connection.PluginLimiterMap),
 		pluginLimiters:            make(connection.PluginLimiterMap),
+		connLocks:                 make(map[string]*sync.Mutex),
 	}
 
 	pm.messageServer = &PluginMessageServer{pluginManager: pm}
