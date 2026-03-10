@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/fatih/color"
@@ -12,8 +14,9 @@ import (
 
 func TestShowLoginWarnings(t *testing.T) {
 	// disable color output for consistent test assertions
+	prevNoColor := color.NoColor
 	color.NoColor = true
-	defer func() { color.NoColor = false }()
+	t.Cleanup(func() { color.NoColor = prevNoColor })
 
 	tests := []struct {
 		name           string
@@ -83,51 +86,48 @@ func TestShowLoginWarnings(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// setup env vars
-			if tt.envPipesToken != nil {
-				t.Setenv(constants.EnvPipesToken, *tt.envPipesToken)
-			} else {
-				os.Unsetenv(constants.EnvPipesToken)
-			}
-			if tt.envPipesHost != nil {
-				t.Setenv(constants.EnvPipesHost, *tt.envPipesHost)
-			} else {
-				os.Unsetenv(constants.EnvPipesHost)
-			}
+			// setup env vars with proper cleanup
+			setOrUnsetEnv(t, constants.EnvPipesToken, tt.envPipesToken)
+			setOrUnsetEnv(t, constants.EnvPipesHost, tt.envPipesHost)
 
 			// setup viper
 			viper.Set(pconstants.ArgPipesHost, tt.viperPipesHost)
-			defer viper.Reset()
+			t.Cleanup(viper.Reset)
 
 			// capture stderr output (ShowWarning writes to color.Error)
+			r, w, err := os.Pipe()
+			if err != nil {
+				t.Fatalf("failed to create pipe: %v", err)
+			}
 			oldErr := color.Error
-			r, w, _ := os.Pipe()
 			color.Error = w
+			t.Cleanup(func() { color.Error = oldErr })
 
 			showLoginWarnings()
 
 			w.Close()
-			out := make([]byte, 4096)
-			n, _ := r.Read(out)
-			output := string(out[:n])
-			color.Error = oldErr
+			out, err := io.ReadAll(r)
+			if err != nil {
+				t.Fatalf("failed to read pipe: %v", err)
+			}
+			output := string(out)
 
 			if tt.expectToken {
-				if !containsSubstring(output, constants.EnvPipesToken) {
+				if !strings.Contains(output, constants.EnvPipesToken) {
 					t.Errorf("expected warning about %s, got: %q", constants.EnvPipesToken, output)
 				}
 			} else {
-				if containsSubstring(output, constants.EnvPipesToken) {
+				if strings.Contains(output, constants.EnvPipesToken) {
 					t.Errorf("did not expect warning about %s, got: %q", constants.EnvPipesToken, output)
 				}
 			}
 
 			if tt.expectHost {
-				if !containsSubstring(output, constants.EnvPipesHost) {
+				if !strings.Contains(output, constants.EnvPipesHost) {
 					t.Errorf("expected warning about %s, got: %q", constants.EnvPipesHost, output)
 				}
 			} else {
-				if containsSubstring(output, constants.EnvPipesHost) {
+				if strings.Contains(output, constants.EnvPipesHost) {
 					t.Errorf("did not expect warning about %s, got: %q", constants.EnvPipesHost, output)
 				}
 			}
@@ -135,19 +135,24 @@ func TestShowLoginWarnings(t *testing.T) {
 	}
 }
 
+// setOrUnsetEnv sets or unsets an env var with proper cleanup.
+func setOrUnsetEnv(t *testing.T, key string, val *string) {
+	t.Helper()
+	if val != nil {
+		t.Setenv(key, *val)
+	} else {
+		orig, had := os.LookupEnv(key)
+		os.Unsetenv(key)
+		t.Cleanup(func() {
+			if had {
+				os.Setenv(key, orig)
+			} else {
+				os.Unsetenv(key)
+			}
+		})
+	}
+}
+
 func strPtr(s string) *string {
 	return &s
-}
-
-func containsSubstring(s, substr string) bool {
-	return len(substr) > 0 && len(s) >= len(substr) && contains(s, substr)
-}
-
-func contains(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
