@@ -21,6 +21,9 @@ on:
         required: true
         type: boolean
 
+permissions:
+  contents: write
+
 env:
   # Version number from user input, used throughout the workflow for tagging, branching, and release operations
   VERSION: ${{ github.event.inputs.version }}

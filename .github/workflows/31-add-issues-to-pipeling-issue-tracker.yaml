@@ -4,6 +4,9 @@ on:
   issues:
     types: [opened]
 
+permissions:
+  contents: read
+
 jobs:
   add-to-project:
     uses: turbot/steampipe-workflows/.github/workflows/assign-issue-to-pipeling-issue-tracker.yml@main
