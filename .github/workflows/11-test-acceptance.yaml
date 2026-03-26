@@ -3,7 +3,7 @@ on:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   STEAMPIPE_UPDATE_CHECK: false
