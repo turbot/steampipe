@@ -16,6 +16,10 @@ on:
         required: true
         default: 14.19.0
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   PROJECT_ID: steampipe
   IMAGE_NAME: db

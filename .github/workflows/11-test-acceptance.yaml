@@ -2,6 +2,9 @@ name: "11 - Test: Acceptance"
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 env:
   STEAMPIPE_UPDATE_CHECK: false
   SPIPETOOLS_PG_CONN_STRING: ${{ secrets.SPIPETOOLS_PG_CONN_STRING }}
