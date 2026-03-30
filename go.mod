@@ -1,6 +1,6 @@
 module github.com/turbot/steampipe/v2
 
-go 1.26.0
+go 1.26.1
 
 replace (
 	github.com/c-bata/go-prompt => github.com/turbot/go-prompt v0.2.6-steampipe.0.0.20221028122246-eb118ec58d50
