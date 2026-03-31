@@ -28,7 +28,7 @@ require (
 	github.com/karrick/gows v0.3.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
-	github.com/olekukonko/tablewriter v0.0.5
+	github.com/olekukonko/tablewriter v1.1.4
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/pkg/errors v0.9.1
 	github.com/sethvargo/go-retry v0.3.0
@@ -131,7 +131,7 @@ require (
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-runewidth v0.0.16 // indirect
+	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/mattn/go-tty v0.0.7 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
@@ -143,7 +143,6 @@ require (
 	github.com/pjbgf/sha1cd v0.3.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.63.0 // indirect
-	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rs/xid v1.6.0 // indirect
 	github.com/sagikazarmark/locafero v0.8.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
@@ -199,6 +198,8 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.51.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.51.0 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
+	github.com/clipperhouse/displaywidth v0.10.0 // indirect
+	github.com/clipperhouse/uax29/v2 v2.6.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20251210132809-ee656c7534f5 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -208,6 +209,9 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/logrusorgru/aurora v2.0.3+incompatible // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 // indirect
+	github.com/olekukonko/errors v1.2.0 // indirect
+	github.com/olekukonko/ll v0.1.6 // indirect
 	github.com/pkg/term v1.1.0 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
