@@ -44,7 +44,7 @@ require (
 	github.com/turbot/terraform-components v0.0.0-20250114051614-04b806a9cbed
 	github.com/zclconf/go-cty v1.16.3 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 	golang.org/x/text v0.33.0
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
