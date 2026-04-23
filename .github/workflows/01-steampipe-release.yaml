@@ -253,7 +253,7 @@ jobs:
       - name: Fail if PR title does not match with version
         if: steps.semver_parser.outputs.prerelease == ''
         run: |
-          if [[ "${{ steps.pr_title.outputs.PR_TITLE }}" == "Steampipe ${{ env.VERSION }}" ]]; then
+          if [[ "${{ steps.pr_title.outputs.PR_TITLE }}" == "Steampipe ${{ github.event.inputs.version }}" ]]; then
             echo "Correct version"
           else
             echo "Incorrect version"
