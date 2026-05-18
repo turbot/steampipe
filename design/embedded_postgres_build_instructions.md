@@ -17,6 +17,16 @@ This document provides step-by-step instructions for building the embedded Postg
 #### 3.1. Pre-requisites
 
 * `openssl`
+* `pkg-config`
+* **`icu4c` — required for PostgreSQL 16+ (mandatory for PG18).** `configure`
+  hard-fails on PG18 with `Package requirements (icu-uc icu-i18n) were not
+  met` unless ICU is present and on `PKG_CONFIG_PATH` and `--with-icu` is
+  passed (PG14/15 build without it). **Relocatability caveat:** a
+  `--with-icu` build links `libicuuc`/`libicui18n` at the build machine's
+  absolute path; for a shippable artifact the ICU dylibs/so's must be
+  bundled into `lib/postgresql` and rpath-patched (as is done for `libpq`),
+  or ICU static-linked. The current shipped PG14 artifact has no ICU
+  dependency; PG18 introduces this and it must be handled before shipping.
 
 ---
 
