@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
@@ -57,6 +58,47 @@ const (
 	noMatViewRefreshListFileName   = "without_refresh.lst"
 	onlyMatViewRefreshListFileName = "only_refresh.lst"
 )
+
+// pgMigrationKind classifies an old on-disk PostgreSQL install relative to the
+// target (constants.DatabaseVersion).
+type pgMigrationKind int
+
+const (
+	// pgMigrationMinor - same major, different (older) minor, e.g. 14.17 -> 14.19.
+	// The automatic pg_dump+pg_restore path is safe and is retained; only a
+	// restore *failure* is made non-fatal. This is the zero value: when in
+	// doubt (e.g. an unparseable version) we preserve the historical
+	// automatic behaviour rather than strand data.
+	pgMigrationMinor pgMigrationKind = iota
+	// pgMigrationMajor - different (older) major, e.g. 14 -> 18. pg_restore
+	// cannot load a lower-major dump into a higher-major server, so the
+	// automatic restore is NOT attempted (Option B): an insurance dump is
+	// retained, the old data directory is kept, the service starts fresh and
+	// the user is told how to restore manually. Option D (block startup until
+	// the user acknowledges) is the documented fallback; this code builds to
+	// Option B and the B-vs-D choice is deliberately left open.
+	pgMigrationMajor
+)
+
+// classifyPgMigration decides how an old install (oldVersion, e.g. "14.17.0")
+// relates to the target (targetVersion, e.g. "14.19.0").
+//
+// On a parse failure it returns pgMigrationMinor: that preserves the historical
+// automatic dump+restore behaviour (and keeps the green same-major migration
+// tests green) rather than stranding data on a routine bump. A cross-major
+// jump is only ever concluded from two successfully-parsed versions with
+// differing majors.
+func classifyPgMigration(oldVersion, targetVersion string) pgMigrationKind {
+	ov, errOld := semver.NewVersion(oldVersion)
+	tv, errTarget := semver.NewVersion(targetVersion)
+	if errOld != nil || errTarget != nil {
+		return pgMigrationMinor
+	}
+	if ov.Major() != tv.Major() {
+		return pgMigrationMajor
+	}
+	return pgMigrationMinor
+}
 
 // prepareBackup creates a backup file of the public schema for the current database, if we are migrating
 // if a backup was taken, this returns the name of the database that was backed up
@@ -245,6 +287,25 @@ func restoreDBBackup(ctx context.Context) error {
 		return fmt.Errorf("steampipe service is not running")
 	}
 
+	// Determine whether the on-disk old install is a same-major (minor) or a
+	// cross-major migration. pg_restore cannot load a lower-major dump into a
+	// higher-major server, so for a cross-major jump we do NOT auto-restore
+	// (Option B): keep the retained insurance dump and the old data directory,
+	// let the service start fresh, and tell the user how to restore manually.
+	// (Option D - block startup until acknowledged - is the documented
+	// fallback; this builds to Option B and leaves the B-vs-D choice open.)
+	if found, location, ferr := findDifferentPgInstallation(ctx); ferr == nil && found {
+		if classifyPgMigration(filepath.Base(location), constants.DatabaseVersion) == pgMigrationMajor {
+			if err := retainBackup(ctx); err != nil {
+				error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
+			}
+			error_helpers.ShowWarning(crossMajorMigrationWarning(filepath.Base(location), constants.DatabaseVersion))
+			// the old data directory is intentionally NOT removed on the
+			// cross-major path - it is the user's only copy of the old data.
+			return nil
+		}
+	}
+
 	// extract the Table of Contents from the Backup Archive
 	toc, err := getTableOfContentsFromBackup(ctx)
 	if err != nil {
@@ -266,7 +327,15 @@ func restoreDBBackup(ctx context.Context) error {
 	// restore everything, but don't refresh Materialized views.
 	err = runRestoreUsingList(ctx, runningInfo, objectAndStaticDataListFile)
 	if err != nil {
-		return err
+		// Same-major restore failed. Do NOT brick the service: retain the
+		// insurance dump, keep the old data directory in place, warn the user
+		// honestly, and let the service start (the data did not carry over but
+		// is recoverable from the retained dump / preserved old directory).
+		if rerr := retainBackup(ctx); rerr != nil {
+			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", rerr))
+		}
+		error_helpers.ShowWarning(restoreFailedWarning(constants.DatabaseVersion))
+		return nil
 	}
 
 	//
