@@ -89,15 +89,27 @@ This document provides step-by-step instructions for building the embedded Postg
 
 11. Remove the `include` directory.
 
-12. Remove unneeded binaries from `bin`.
+12. Remove unneeded binaries from `bin`. Steampipe ships and uses only
+    **five**: keep exactly `initdb`, `pg_ctl`, `pg_dump`, `pg_restore`,
+    `postgres` and delete everything else in `bin/`. (Verified against the
+    current shipped `darwin-arm_64` artifact, which contains exactly these
+    five.)
 
-13. Check that all extensions exist.
+13. Check that all extensions exist (`ltree`, `tablefunc` in
+    `lib/postgresql` and `share/postgresql/extension`).
 
 ---
 
 #### 3.3. Fix RPATHs
 
-Run the `fix_rpath.sh` script to fix the rpaths of the binaries (`initdb`, `pg_restore`, `pg_dump`):
+Run the `fix_rpath.sh` script to fix the rpaths of the binaries (`initdb`, `pg_restore`, `pg_dump`).
+
+> **Note (verified against the shipped artifact):** the current shipped
+> `darwin-arm_64` binaries carry **two** `LC_RPATH` entries —
+> `@loader_path/../lib` *and* `@loader_path/../lib/postgresql`. The script
+> below adds only the latter; add the former as well for faithful parity
+> (a single `@loader_path/../lib/postgresql` rpath is sufficient for
+> `libpq` resolution, but the shipped artifact has both).
 
 ```bash
 #!/bin/bash
