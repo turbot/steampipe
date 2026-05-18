@@ -72,12 +72,37 @@ if [[ "$OS" == "Darwin" ]]; then
   export LDFLAGS="-mmacosx-version-min=11.0 -Wl,-rpath,@loader_path/../lib/postgresql"
   OPENSSL_PREFIX="$(brew --prefix openssl)"
 
+  # PostgreSQL 16+ builds with ICU by default and `configure` hard-fails
+  # without icu-uc/icu-i18n (PG18 in particular). PG14/15 build fine
+  # without it (and the proven PG14 path is left byte-identical). When
+  # building >=16, require icu4c (keg-only on Homebrew) and put its
+  # pkg-config on PKG_CONFIG_PATH, mirroring how Homebrew builds its own
+  # postgresql@18 (--with-icu + icu4c pkgconfig).
+  PG_MAJOR="${PG_VERSION%%.*}"
+  ICU_CONFIGURE=()
+  if [[ "$PG_MAJOR" -ge 16 ]]; then
+    ICU_PREFIX="$(brew --prefix icu4c 2>/dev/null || true)"
+    if [[ -z "$ICU_PREFIX" || ! -d "$ICU_PREFIX/lib/pkgconfig" ]]; then
+      # fall back to the highest installed versioned icu4c keg
+      ICU_PREFIX="$(ls -d /opt/homebrew/opt/icu4c@* 2>/dev/null | sort -V | tail -1 || true)"
+    fi
+    if [[ -z "$ICU_PREFIX" || ! -d "$ICU_PREFIX/lib/pkgconfig" ]]; then
+      echo "ERROR: PostgreSQL $PG_VERSION needs ICU but icu4c was not found; run 'brew install icu4c'" >&2
+      exit 1
+    fi
+    echo "== PG$PG_MAJOR: building --with-icu using $ICU_PREFIX"
+    export PKG_CONFIG_PATH="$ICU_PREFIX/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+    ICU_CONFIGURE=(--with-icu)
+  fi
+  # PG<16: no ICU flag at all - identical to the validated PG14 recipe.
+
   ./configure --prefix="$PREFIX" \
     --libdir="$PREFIX/lib/postgresql" \
     --datadir="$PREFIX/share/postgresql" \
     --with-openssl \
     --with-includes="$OPENSSL_PREFIX/include" \
-    --with-libraries="$OPENSSL_PREFIX/lib"
+    --with-libraries="$OPENSSL_PREFIX/lib" \
+    "${ICU_CONFIGURE[@]}"
 
   make -j"$(sysctl -n hw.ncpu)"
   make install
