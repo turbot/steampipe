@@ -26,12 +26,42 @@ import (
 
 var ensureMux sync.Mutex
 
+// noBackupWarning is shown when we could not even take a backup (pg_dump) of
+// the previous database before installing the new one. It is intentionally
+// version-agnostic: the dump-side failure can happen on any upgrade and the
+// previous version is not reliably known at this point.
 func noBackupWarning() string {
-	warningMessage := `Steampipe database has been upgraded from Postgres 14.17 to Postgres 14.19.
+	warningMessage := `Steampipe could not back up the data in your public schema before upgrading the embedded database.
 
-Unfortunately the data in your public schema failed migration using the standard pg_dump and pg_restore tools. Your data has been preserved in the ~/.steampipe/db directory.
+Your previous data directory has been preserved under ~/.steampipe/db and was not modified. The new database has started with an empty public schema.
 
-If you need to restore the contents of your public schema, please open an issue at https://github.com/turbot/steampipe.`
+If you need that data, do not run another upgrade; open an issue at https://github.com/turbot/steampipe for recovery guidance.`
+
+	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
+}
+
+// crossMajorMigrationWarning is shown on a cross-major upgrade (e.g. Postgres
+// 14 -> 18). The automatic pg_restore is deliberately not attempted because it
+// cannot load a lower-major dump into a higher-major server. The new service
+// starts fresh; the old data directory and a retained dump are kept so the
+// user can migrate manually.
+func crossMajorMigrationWarning(oldVersion, newVersion string) string {
+	warningMessage := fmt.Sprintf(`The embedded database has been upgraded from PostgreSQL %s to PostgreSQL %s (a major version change).
+
+Steampipe did not automatically migrate your public schema: a major-version upgrade cannot be restored with the standard pg_dump/pg_restore path, and attempting it would fail. To keep the service usable, it has started with an empty public schema.
+
+Nothing was deleted. A dump of your old data has been retained in ~/.steampipe/backups and your previous database directory is preserved under ~/.steampipe/db. To restore manually, load the retained .sql dump into the new database, resolving any major-version incompatibilities.`, oldVersion, newVersion)
+
+	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
+}
+
+// restoreFailedWarning is shown when a same-major (minor) migration took a
+// backup but the automatic restore failed. The service is still allowed to
+// start; the data is recoverable from the retained dump.
+func restoreFailedWarning(newVersion string) string {
+	warningMessage := fmt.Sprintf(`The embedded database was upgraded to PostgreSQL %s, but automatic restore of your public schema failed.
+
+The service has started so it remains usable. Nothing was deleted: a dump of your old data has been retained in ~/.steampipe/backups and your previous database directory is preserved under ~/.steampipe/db. You can restore manually from the retained .sql dump, or open an issue at https://github.com/turbot/steampipe for help.`, newVersion)
 
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
