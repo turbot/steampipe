@@ -214,10 +214,19 @@ if [[ "$OS" == "Darwin" ]]; then
 
   # ---- verify contrib extensions exist (recipe §3.2 step 13) ----
   # a broken `make -C contrib install` would otherwise ship an artifact
-  # silently missing ltree/tablefunc, which Steampipe loads.
+  # silently missing ltree/tablefunc, which Steampipe loads. The loadable
+  # module suffix follows PostgreSQL's DLSUFFIX: .so on Linux and PG<=17
+  # macOS, but .dylib on macOS PG18 (src/Makefile.global). Accept either -
+  # this check is for a *missing* module, not the suffix.
+  # NOTE: the macOS shipped-convention mismatch (Steampipe and the current
+  # artifact use .so; from-source PG18-macOS emits .dylib - the same
+  # family as the FDW `inst` .so/.dylib quirk) is a packaging decision
+  # for the release step, deliberately NOT forced here. The shipped
+  # builds are Linux, where DLSUFFIX is .so and this is moot.
   for ext in ltree tablefunc; do
-    [[ -f "$PREFIX/lib/postgresql/${ext}.so" && -f "$PREFIX/share/postgresql/extension/${ext}.control" ]] \
-      || { echo "ERROR: required extension '$ext' missing after contrib build (expected lib/postgresql/${ext}.so + share/postgresql/extension/${ext}.control)" >&2; exit 1; }
+    { [[ -f "$PREFIX/lib/postgresql/${ext}.so" || -f "$PREFIX/lib/postgresql/${ext}.dylib" ]] \
+      && [[ -f "$PREFIX/share/postgresql/extension/${ext}.control" ]]; } \
+      || { echo "ERROR: required extension '$ext' missing after contrib build (no lib/postgresql/${ext}.{so,dylib} or share/postgresql/extension/${ext}.control)" >&2; exit 1; }
   done
 
   # ---- macOS pack: design doc §3.4 ----
@@ -271,9 +280,12 @@ else
   rm -rf "$PREFIX/include"
 
   # ---- verify contrib extensions exist (recipe §3.2 step 13) ----
+  # Linux DLSUFFIX is .so; accept .dylib too for symmetry with the macOS
+  # path. This catches a *missing* contrib module, not the suffix.
   for ext in ltree tablefunc; do
-    [[ -f "$PREFIX/lib/postgresql/${ext}.so" && -f "$PREFIX/share/postgresql/extension/${ext}.control" ]] \
-      || { echo "ERROR: required extension '$ext' missing after contrib build (expected lib/postgresql/${ext}.so + share/postgresql/extension/${ext}.control)" >&2; exit 1; }
+    { [[ -f "$PREFIX/lib/postgresql/${ext}.so" || -f "$PREFIX/lib/postgresql/${ext}.dylib" ]] \
+      && [[ -f "$PREFIX/share/postgresql/extension/${ext}.control" ]]; } \
+      || { echo "ERROR: required extension '$ext' missing after contrib build (no lib/postgresql/${ext}.{so,dylib} or share/postgresql/extension/${ext}.control)" >&2; exit 1; }
   done
 
   ( cd "$PREFIX" && tar -cJf "$OUTPUT_DIR/$TARFILE" bin lib share )

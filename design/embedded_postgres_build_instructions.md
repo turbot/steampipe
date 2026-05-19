@@ -133,6 +133,22 @@ Run the `fix_rpath.sh` script to fix the rpaths of the binaries (`initdb`, `pg_r
 > `install_name_tool` operations. `scripts/build-embedded-pg.sh` now
 > does this automatically.
 
+> **Loadable-module suffix on macOS PG18 (verified 2026-05-19):**
+> PostgreSQL's `DLSUFFIX` is `.so` on Linux and on macOS PG ≤ 17, but
+> **`.dylib` on macOS PG18** (`src/Makefile.global`). So a from-source
+> PG18 macOS build emits `ltree.dylib` / `tablefunc.dylib` (and the FDW
+> `.dylib` — same family as the FDW `inst` `.so`/`.dylib` quirk),
+> whereas the current shipped artifact and Steampipe's hard-coded
+> `FdwBinaryFileName` use `.so`. For the PG18 server itself `.dylib` is
+> internally consistent (it resolves modules via its own `DLSUFFIX`), so
+> do NOT blindly rename `.dylib`→`.so` (that would break module
+> resolution on the macOS PG18 server). Reconciling the macOS
+> `.so`-vs-`.dylib` convention with Steampipe's `.so` expectation is a
+> packaging decision for the release step. **The shipped builds are
+> Linux, where `DLSUFFIX` is `.so` and this does not arise** — so it is
+> not a blocker, but it must be settled before a macOS-from-source PG18
+> artifact is shipped.
+
 ```bash
 #!/bin/bash
 set -euo pipefail
