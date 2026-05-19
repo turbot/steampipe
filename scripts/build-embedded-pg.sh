@@ -113,11 +113,10 @@ if [[ "$OS" == "Darwin" ]]; then
   rm -rf "$PREFIX/include"
   # §3.2 step 12: keep only the binaries the shipped artifact ships. The
   # committed doc said "remove unneeded binaries" without enumerating them;
-  # the current shipped darwin-arm64 .txz was inspected and contains exactly
-  # these five (see output/exec3-oracle-parity-14x.md). Pruning to match
-  # keeps the from-source artifact structurally faithful to what Steampipe
-  # ships and uses (initdb / postgres / pg_ctl + pg_dump / pg_restore for the
-  # migration path).
+  # the current shipped darwin-arm64 .txz contains exactly these five.
+  # Pruning to match keeps the from-source artifact structurally faithful
+  # to what Steampipe ships and uses (initdb / postgres / pg_ctl for the
+  # service; pg_dump / pg_restore for the migration path).
   ( cd "$PREFIX/bin"
     for b in *; do
       case "$b" in
@@ -153,9 +152,10 @@ if [[ "$OS" == "Darwin" ]]; then
   # rewrite references (same pattern as libpq, extended to the 3-lib
   # chain): binary->icu = @rpath (bins already have the ../lib/postgresql
   # rpath); icu->icu = @loader_path (co-located in the same dir); each
-  # bundled lib id = @rpath. The pinned ICU major is whatever
-  # $ICU_PREFIX provides at build time (record it as a stability
-  # contract - see exec-4 B2.1a).
+  # bundled lib id = @rpath. The ICU major is pinned to whatever
+  # $ICU_PREFIX provides at build time and is a collation-stability
+  # contract: changing it can alter text sort order, so treat an ICU
+  # major bump as a deliberate, separately-tested change.
   if [[ "$PG_MAJOR" -ge 16 ]]; then
     (
       cd "$PREFIX"
@@ -163,8 +163,11 @@ if [[ "$OS" == "Darwin" ]]; then
       BUNDLE_ROOT="$(pwd)"
       echo "📦 Bundling ICU from $ICU_PREFIX"
       for stem in libicudata libicuuc libicui18n; do
-        src="$(ls "$ICU_PREFIX"/lib/${stem}.*.dylib 2>/dev/null | grep -E "/${stem}\.[0-9]+\.dylib$" | head -1)"
-        [[ -z "$src" ]] && src="$(ls "$ICU_PREFIX"/lib/${stem}.*.dylib 2>/dev/null | head -1)"
+        # `|| true`: under `set -o pipefail` a no-match from grep makes the
+        # whole substitution exit non-zero; on a bare assignment `set -e`
+        # would then abort here BEFORE the fallback/error below could run.
+        src="$(ls "$ICU_PREFIX"/lib/${stem}.*.dylib 2>/dev/null | grep -E "/${stem}\.[0-9]+\.dylib$" | head -1)" || true
+        [[ -z "$src" ]] && src="$(ls "$ICU_PREFIX"/lib/${stem}.*.dylib 2>/dev/null | head -1)" || true
         [[ -z "$src" ]] && { echo "ERROR: ICU lib $stem not found in $ICU_PREFIX/lib" >&2; exit 1; }
         cp -L "$src" "$BUNDLE_ROOT/$LIB_SUBDIR/$(basename "$src")"
         install_name_tool -id "@rpath/$(basename "$src")" "$BUNDLE_ROOT/$LIB_SUBDIR/$(basename "$src")"
@@ -209,6 +212,14 @@ if [[ "$OS" == "Darwin" ]]; then
     done
   )
 
+  # ---- verify contrib extensions exist (recipe §3.2 step 13) ----
+  # a broken `make -C contrib install` would otherwise ship an artifact
+  # silently missing ltree/tablefunc, which Steampipe loads.
+  for ext in ltree tablefunc; do
+    [[ -f "$PREFIX/lib/postgresql/${ext}.so" && -f "$PREFIX/share/postgresql/extension/${ext}.control" ]] \
+      || { echo "ERROR: required extension '$ext' missing after contrib build (expected lib/postgresql/${ext}.so + share/postgresql/extension/${ext}.control)" >&2; exit 1; }
+  done
+
   # ---- macOS pack: design doc §3.4 ----
   ( cd "$PREFIX" && tar --disable-copyfile --exclude='._*' -cJf "$OUTPUT_DIR/$TARFILE" bin lib share )
 
@@ -239,15 +250,17 @@ else
   # ELF resolves by soname via rpath, so bundling = drop the 3 ICU
   # .so.<major> into lib/postgresql (bins already have
   # $ORIGIN/../lib/postgresql rpath) and give the ICU libs an $ORIGIN
-  # rpath so icu->icu resolves within the bundle. NOTE: implemented but
-  # NOT locally proven (no Linux build host here; verify in the Linux
-  # CI runner per exec-4 B2).
+  # rpath so icu->icu resolves within the bundle. NOTE: this Linux path
+  # is implemented but has only been logic-reviewed, not run (built/
+  # proven on macOS only); verify it on a Linux build host/CI runner.
   PG_MAJOR_L="${PG_VERSION%%.*}"
   if [[ "$PG_MAJOR_L" -ge 16 ]]; then
     ICU_LIBDIR="$(pkg-config --variable=libdir icu-uc 2>/dev/null || echo /usr/lib/${ARCH}-linux-gnu)"
     for stem in libicudata libicuuc libicui18n; do
-      src="$(ls "$ICU_LIBDIR"/${stem}.so.* 2>/dev/null | grep -E "/${stem}\.so\.[0-9]+$" | head -1)"
-      [[ -z "$src" ]] && src="$(ls "$ICU_LIBDIR"/${stem}.so.* 2>/dev/null | head -1)"
+      # `|| true`: pipefail + bare assignment would abort under set -e on
+      # a grep no-match before the fallback/error below could run.
+      src="$(ls "$ICU_LIBDIR"/${stem}.so.* 2>/dev/null | grep -E "/${stem}\.so\.[0-9]+$" | head -1)" || true
+      [[ -z "$src" ]] && src="$(ls "$ICU_LIBDIR"/${stem}.so.* 2>/dev/null | head -1)" || true
       [[ -z "$src" ]] && { echo "ERROR: ICU lib $stem not found in $ICU_LIBDIR" >&2; exit 1; }
       cp -L "$src" "$PREFIX/lib/postgresql/$(basename "$src")"
       patchelf --set-rpath '$ORIGIN' "$PREFIX/lib/postgresql/$(basename "$src")" 2>/dev/null || true
@@ -256,6 +269,13 @@ else
   fi
 
   rm -rf "$PREFIX/include"
+
+  # ---- verify contrib extensions exist (recipe §3.2 step 13) ----
+  for ext in ltree tablefunc; do
+    [[ -f "$PREFIX/lib/postgresql/${ext}.so" && -f "$PREFIX/share/postgresql/extension/${ext}.control" ]] \
+      || { echo "ERROR: required extension '$ext' missing after contrib build (expected lib/postgresql/${ext}.so + share/postgresql/extension/${ext}.control)" >&2; exit 1; }
+  done
+
   ( cd "$PREFIX" && tar -cJf "$OUTPUT_DIR/$TARFILE" bin lib share )
 fi
 
