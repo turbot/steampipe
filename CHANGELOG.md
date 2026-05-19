@@ -3,6 +3,7 @@ _Dependencies_
 - Bump `jackc/pgx/v5` from v5.7.6 to v5.9.2 to remediate CVE-2026-41889. ([#4990](https://github.com/turbot/steampipe/pull/4990))
 - Bump `go-jose/go-jose/v4` from v4.1.3 to v4.1.4 to remediate CVE-2026-34986.
 - Bump `go.opentelemetry.io/otel/sdk` from v1.40.0 to v1.43.0 to remediate CVE-2026-24051 and CVE-2026-39883.
+- Update embedded `steampipe-postgres-fdw` to `v2.2.3` (carries the pgx v5.9.2 / CVE-2026-41889 fix).
 
 ## v2.4.2 [2026-04-22]
 _Bug fixes_
