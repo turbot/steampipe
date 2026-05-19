@@ -199,11 +199,14 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 	}
 
 	// if there is an unprocessed db backup file, restore it now.
-	// a migration problem must NOT prevent the service from starting: the
-	// insurance dump is retained and the old data directory is preserved,
-	// so degrade any residual error to a warning and continue.
+	// restoreDBBackup itself makes the *migration* cases non-fatal
+	// (cross-major and a failed same-major restore both retain the
+	// insurance dump, preserve the old data dir, warn, and return nil).
+	// A non-nil error here is therefore a genuine infrastructure failure
+	// (e.g. unreadable backup archive, state load failure) - that must
+	// still fail startup rather than be silently swallowed.
 	if err := restoreDBBackup(ctx); err != nil {
-		error_helpers.ShowWarning(sperr.WrapWithMessage(err, "failed to migrate db public schema").Error())
+		return sperr.WrapWithMessage(err, "failed to migrate db public schema")
 	}
 
 	// create the clone_foreign_schema function

@@ -72,11 +72,11 @@ const (
 	pgMigrationMinor pgMigrationKind = iota
 	// pgMigrationMajor - different (older) major, e.g. 14 -> 18. pg_restore
 	// cannot load a lower-major dump into a higher-major server, so the
-	// automatic restore is NOT attempted (Option B): an insurance dump is
-	// retained, the old data directory is kept, the service starts fresh and
-	// the user is told how to restore manually. Option D (block startup until
-	// the user acknowledges) is the documented fallback; this code builds to
-	// Option B and the B-vs-D choice is deliberately left open.
+	// automatic restore is NOT attempted: an insurance dump is retained,
+	// the old data directory is kept, the service starts fresh, and the
+	// user is told how to restore manually. (Blocking startup until the
+	// user acknowledges is a possible alternative policy, retained as a
+	// documented fallback rather than implemented here.)
 	pgMigrationMajor
 )
 
@@ -236,8 +236,11 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 
 // findDifferentPgInstallation checks whether the '$STEAMPIPE_INSTALL_DIR/db' directory contains any database installation
 // other than desired version.
-// it's called as part of `prepareBackup` to decide whether `pg_dump` needs to run
-// it's also called as part of `restoreDBBackup` for removal of the installation once restoration successfully completes
+// it's called from `prepareBackup` to decide whether `pg_dump` needs to run,
+// and from `restoreDBBackup` both to classify the old install (same-major vs
+// cross-major) and, on a successful same-major restore, to locate the old
+// installation for removal. On the cross-major path the old dir is
+// deliberately NOT removed (it is the user's only copy of the old data).
 func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 	dbBaseDirectory := filepaths.EnsureDatabaseDir()
 	entries, err := os.ReadDir(dbBaseDirectory)
@@ -289,11 +292,9 @@ func restoreDBBackup(ctx context.Context) error {
 
 	// Determine whether the on-disk old install is a same-major (minor) or a
 	// cross-major migration. pg_restore cannot load a lower-major dump into a
-	// higher-major server, so for a cross-major jump we do NOT auto-restore
-	// (Option B): keep the retained insurance dump and the old data directory,
-	// let the service start fresh, and tell the user how to restore manually.
-	// (Option D - block startup until acknowledged - is the documented
-	// fallback; this builds to Option B and leaves the B-vs-D choice open.)
+	// higher-major server, so for a cross-major jump we do NOT auto-restore:
+	// keep the retained insurance dump and the old data directory, let the
+	// service start fresh, and tell the user how to restore manually.
 	if found, location, ferr := findDifferentPgInstallation(ctx); ferr == nil && found {
 		if classifyPgMigration(filepath.Base(location), constants.DatabaseVersion) == pgMigrationMajor {
 			if err := retainBackup(ctx); err != nil {
@@ -302,6 +303,13 @@ func restoreDBBackup(ctx context.Context) error {
 			error_helpers.ShowWarning(crossMajorMigrationWarning(filepath.Base(location), constants.DatabaseVersion))
 			// the old data directory is intentionally NOT removed on the
 			// cross-major path - it is the user's only copy of the old data.
+			// KNOWN LIMITATION: it is retained indefinitely and
+			// findDifferentPgInstallation returns the first non-target
+			// version dir it finds (no recency ordering), so a *subsequent*
+			// upgrade could detect this now-stale dir instead of the current
+			// one. Acceptable for the embedded DB (low-churn, mostly
+			// Steampipe's own + ephemeral data); revisit if multi-generation
+			// upgrade chains become common.
 			return nil
 		}
 	}
@@ -328,8 +336,8 @@ func restoreDBBackup(ctx context.Context) error {
 	err = runRestoreUsingList(ctx, runningInfo, objectAndStaticDataListFile)
 	if err != nil {
 		// Same-major restore failed. Do NOT brick the service: retain the
-		// insurance dump, keep the old data directory in place, warn the user
-		// honestly, and let the service start (the data did not carry over but
+		// insurance dump, keep the old data directory in place, warn the
+		// user, and let the service start (the data did not carry over but
 		// is recoverable from the retained dump / preserved old directory).
 		if rerr := retainBackup(ctx); rerr != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", rerr))
