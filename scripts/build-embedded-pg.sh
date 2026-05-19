@@ -146,6 +146,69 @@ if [[ "$OS" == "Darwin" ]]; then
     done
   )
 
+  # ---- macOS ICU bundling (PG16+; Option A: full unfiltered ICU) ----
+  # PG18 is built --with-icu, so postgres links libicui18n/libicuuc/
+  # libicudata at the build machine's absolute icu4c path - not
+  # relocatable. Bundle the three ICU dylibs into lib/postgresql and
+  # rewrite references (same pattern as libpq, extended to the 3-lib
+  # chain): binary->icu = @rpath (bins already have the ../lib/postgresql
+  # rpath); icu->icu = @loader_path (co-located in the same dir); each
+  # bundled lib id = @rpath. The pinned ICU major is whatever
+  # $ICU_PREFIX provides at build time (record it as a stability
+  # contract - see exec-4 B2.1a).
+  if [[ "$PG_MAJOR" -ge 16 ]]; then
+    (
+      cd "$PREFIX"
+      LIB_SUBDIR="lib/postgresql"
+      BUNDLE_ROOT="$(pwd)"
+      echo "📦 Bundling ICU from $ICU_PREFIX"
+      for stem in libicudata libicuuc libicui18n; do
+        src="$(ls "$ICU_PREFIX"/lib/${stem}.*.dylib 2>/dev/null | grep -E "/${stem}\.[0-9]+\.dylib$" | head -1)"
+        [[ -z "$src" ]] && src="$(ls "$ICU_PREFIX"/lib/${stem}.*.dylib 2>/dev/null | head -1)"
+        [[ -z "$src" ]] && { echo "ERROR: ICU lib $stem not found in $ICU_PREFIX/lib" >&2; exit 1; }
+        cp -L "$src" "$BUNDLE_ROOT/$LIB_SUBDIR/$(basename "$src")"
+        install_name_tool -id "@rpath/$(basename "$src")" "$BUNDLE_ROOT/$LIB_SUBDIR/$(basename "$src")"
+      done
+      # rewrite every reference into the build-machine ICU prefix:
+      # within a bundled ICU lib -> @loader_path (siblings); elsewhere
+      # (the bin/* binaries) -> @rpath.
+      relocate_icu() {
+        local f="$1" anchor="$2"
+        otool -L "$f" | awk 'NR>1{print $1}' | while read -r dep; do
+          case "$dep" in
+            "$ICU_PREFIX"/*|*/icu4c*/lib/libicu*)
+              install_name_tool -change "$dep" "$anchor/$(basename "$dep")" "$f" 2>/dev/null || true ;;
+          esac
+        done
+      }
+      for stem in libicudata libicuuc libicui18n; do
+        for l in "$BUNDLE_ROOT/$LIB_SUBDIR/${stem}".*.dylib; do
+          [[ -f "$l" ]] && relocate_icu "$l" "@loader_path"
+        done
+      done
+      for binfile in "$BUNDLE_ROOT"/bin/*; do
+        [[ -x "$binfile" && ! -d "$binfile" ]] || continue
+        relocate_icu "$binfile" "@rpath"
+      done
+      echo "✅ ICU bundled: $(ls "$BUNDLE_ROOT/$LIB_SUBDIR"/libicu*.dylib | xargs -n1 basename | tr '\n' ' ')"
+    )
+  fi
+
+  # ---- macOS re-sign (MANDATORY on Apple Silicon) ----
+  # install_name_tool invalidates the Mach-O code signature; arm64 macOS
+  # then SIGKILLs the binary/dylib on load ("Killed: 9", no output - NOT
+  # a dyld 'library not loaded' error). Ad-hoc re-sign every Mach-O the
+  # rpath/ICU fixups touched. The committed recipe's fix_rpath.sh omits
+  # this; ICU bundling (many more install_name_tool ops) makes it fatal.
+  (
+    cd "$PREFIX"
+    for f in bin/* lib/postgresql/*.dylib; do
+      [[ -f "$f" ]] || continue
+      file "$f" | grep -q 'Mach-O' || continue
+      codesign --force --sign - "$f" 2>/dev/null || true
+    done
+  )
+
   # ---- macOS pack: design doc §3.4 ----
   ( cd "$PREFIX" && tar --disable-copyfile --exclude='._*' -cJf "$OUTPUT_DIR/$TARFILE" bin lib share )
 
@@ -172,6 +235,26 @@ else
       fi
     done
   )
+  # ---- Linux ICU bundling (PG16+; Option A) ----
+  # ELF resolves by soname via rpath, so bundling = drop the 3 ICU
+  # .so.<major> into lib/postgresql (bins already have
+  # $ORIGIN/../lib/postgresql rpath) and give the ICU libs an $ORIGIN
+  # rpath so icu->icu resolves within the bundle. NOTE: implemented but
+  # NOT locally proven (no Linux build host here; verify in the Linux
+  # CI runner per exec-4 B2).
+  PG_MAJOR_L="${PG_VERSION%%.*}"
+  if [[ "$PG_MAJOR_L" -ge 16 ]]; then
+    ICU_LIBDIR="$(pkg-config --variable=libdir icu-uc 2>/dev/null || echo /usr/lib/${ARCH}-linux-gnu)"
+    for stem in libicudata libicuuc libicui18n; do
+      src="$(ls "$ICU_LIBDIR"/${stem}.so.* 2>/dev/null | grep -E "/${stem}\.so\.[0-9]+$" | head -1)"
+      [[ -z "$src" ]] && src="$(ls "$ICU_LIBDIR"/${stem}.so.* 2>/dev/null | head -1)"
+      [[ -z "$src" ]] && { echo "ERROR: ICU lib $stem not found in $ICU_LIBDIR" >&2; exit 1; }
+      cp -L "$src" "$PREFIX/lib/postgresql/$(basename "$src")"
+      patchelf --set-rpath '$ORIGIN' "$PREFIX/lib/postgresql/$(basename "$src")" 2>/dev/null || true
+    done
+    echo "✅ ICU bundled (linux): $(ls "$PREFIX"/lib/postgresql/libicu*.so.* | xargs -n1 basename | tr '\n' ' ')"
+  fi
+
   rm -rf "$PREFIX/include"
   ( cd "$PREFIX" && tar -cJf "$OUTPUT_DIR/$TARFILE" bin lib share )
 fi

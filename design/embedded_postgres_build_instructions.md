@@ -120,6 +120,18 @@ Run the `fix_rpath.sh` script to fix the rpaths of the binaries (`initdb`, `pg_r
 > below adds only the latter; add the former as well for faithful parity
 > (a single `@loader_path/../lib/postgresql` rpath is sufficient for
 > `libpq` resolution, but the shipped artifact has both).
+>
+> **MANDATORY on Apple Silicon (verified 2026-05-19):** every
+> `install_name_tool` edit **invalidates the Mach-O code signature**.
+> arm64 macOS then **SIGKILLs** the binary/dylib on load — it dies with
+> "Killed: 9" and *no output* (this is NOT a `dyld: Library not loaded`
+> error, so it is easily misdiagnosed). After all `install_name_tool`
+> edits, ad-hoc re-sign every modified Mach-O:
+> `codesign --force --sign - <file>` (all of `bin/*` and the relocated
+> `lib/postgresql/*.dylib`). This step is absent from the historical
+> `fix_rpath.sh`; it became fatal once ICU bundling added many more
+> `install_name_tool` operations. `scripts/build-embedded-pg.sh` now
+> does this automatically.
 
 ```bash
 #!/bin/bash
