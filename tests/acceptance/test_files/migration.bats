@@ -71,8 +71,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_equal "$(cat verify$i.txt)" "$(cat verify$i$i.txt)"
   done
 
-  # exec-2 migration hardening: a same-major (minor) upgrade must retain an
-  # insurance dump (both binary .dump and text .sql) under <install-dir>/backups
+  # a same-major (minor) upgrade must retain an insurance dump
+  # (both binary .dump and text .sql) under <install-dir>/backups
   run bash -c "ls $tmpdir/backups/database-*.dump >/dev/null 2>&1 && ls $tmpdir/backups/database-*.sql >/dev/null 2>&1 && echo retained"
   assert_output "retained"
 
@@ -148,8 +148,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_equal "$(cat verify$i.txt)" "$(cat verify$i$i.txt)"
   done
 
-  # exec-2 migration hardening: a same-major (minor) upgrade must retain an
-  # insurance dump (both binary .dump and text .sql) under <install-dir>/backups
+  # a same-major (minor) upgrade must retain an insurance dump
+  # (both binary .dump and text .sql) under <install-dir>/backups
   run bash -c "ls $tmpdir/backups/database-*.dump >/dev/null 2>&1 && ls $tmpdir/backups/database-*.sql >/dev/null 2>&1 && echo retained"
   assert_output "retained"
 
