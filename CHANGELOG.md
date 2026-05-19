@@ -1,3 +1,9 @@
+## v2.4.3 [2026-05-19]
+_Dependencies_
+- Bump `jackc/pgx/v5` from v5.7.6 to v5.9.2 to remediate CVE-2026-41889. ([#4990](https://github.com/turbot/steampipe/pull/4990))
+- Bump `go-jose/go-jose/v4` from v4.1.3 to v4.1.4 to remediate CVE-2026-34986.
+- Bump `go.opentelemetry.io/otel/sdk` from v1.40.0 to v1.43.0 to remediate CVE-2026-24051 and CVE-2026-39883.
+
 ## v2.4.2 [2026-04-22]
 _Bug fixes_
 - Fix `steampipe plugin install` failing with an opaque `403 Forbidden` when stale GHCR credentials are present in `~/.docker/config.json` (e.g. from a prior `docker login`). Now retries the OCI pull anonymously when stored credentials are rejected. ([pipe-fittings#792](https://github.com/turbot/pipe-fittings/pull/792))
