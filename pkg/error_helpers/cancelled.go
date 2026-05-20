@@ -2,7 +2,7 @@ package error_helpers
 
 import (
 	"context"
-	sdkerrorhelpers "github.com/turbot/steampipe-plugin-sdk/v5/error_helpers"
+	sdkerrorhelpers "github.com/turbot/steampipe-plugin-sdk/v6/error_helpers"
 )
 
 func IsContextCanceled(ctx context.Context) bool {

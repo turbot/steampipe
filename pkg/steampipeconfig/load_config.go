@@ -28,7 +28,7 @@ import (
 	"github.com/turbot/pipe-fittings/v2/utils"
 	"github.com/turbot/pipe-fittings/v2/versionfile"
 	"github.com/turbot/pipe-fittings/v2/workspace_profile"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe-plugin-sdk/v6/sperr"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 	"github.com/turbot/steampipe/v2/pkg/error_helpers"

@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
 )
 
 // Test helpers for message server tests

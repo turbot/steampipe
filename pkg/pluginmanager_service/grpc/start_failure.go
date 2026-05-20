@@ -3,8 +3,8 @@ package grpc
 import (
 	"strings"
 
-	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v6/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v6/sperr"
 )
 
 // HandleStartFailure is used to handle errors when starting both Steampipe plugins an dthe plugin manage

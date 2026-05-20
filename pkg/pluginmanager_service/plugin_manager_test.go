@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/turbot/pipe-fittings/v2/plugin"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
 	"github.com/turbot/steampipe/v2/pkg/connection"
 	pb "github.com/turbot/steampipe/v2/pkg/pluginmanager_service/grpc/proto"
 )

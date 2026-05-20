@@ -1,9 +1,9 @@
 package pluginmanager_service
 
 import (
-	"github.com/turbot/steampipe-plugin-sdk/v5/error_helpers"
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v6/error_helpers"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v6/grpc"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
 	"log"
 )
 

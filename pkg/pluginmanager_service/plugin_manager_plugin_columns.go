@@ -7,9 +7,9 @@ import (
 	"slices"
 	"strings"
 
-	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v5/grpc"
-	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	sdkgrpc "github.com/turbot/steampipe-plugin-sdk/v6/grpc"
+	"github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
+	sdkplugin "github.com/turbot/steampipe-plugin-sdk/v6/plugin"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 	"github.com/turbot/steampipe/v2/pkg/db/db_local"

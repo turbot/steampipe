@@ -3,7 +3,7 @@ package connection
 import (
 	typehelpers "github.com/turbot/go-kit/types"
 	"github.com/turbot/pipe-fittings/v2/modconfig"
-	sdkproto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	sdkproto "github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
 )
 
 type ConnectionConfigMap map[string]*sdkproto.ConnectionConfig

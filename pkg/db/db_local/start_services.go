@@ -20,7 +20,7 @@ import (
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 	perror_helpers "github.com/turbot/pipe-fittings/v2/error_helpers"
 	putils "github.com/turbot/pipe-fittings/v2/utils"
-	"github.com/turbot/steampipe-plugin-sdk/v5/sperr"
+	"github.com/turbot/steampipe-plugin-sdk/v6/sperr"
 	"github.com/turbot/steampipe/v2/pkg/constants"
 	"github.com/turbot/steampipe/v2/pkg/db/db_common"
 	"github.com/turbot/steampipe/v2/pkg/error_helpers"

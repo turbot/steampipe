@@ -2,7 +2,7 @@ package pluginmanager_service
 
 import (
 	"github.com/turbot/pipe-fittings/v2/plugin"
-	"github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
+	"github.com/turbot/steampipe-plugin-sdk/v6/grpc/proto"
 )
 
 // RateLimiterFromProto converts the proto format RateLimiterDefinition into a Defintion
