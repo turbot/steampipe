@@ -63,6 +63,13 @@ rm -rf "$SRC_DIR"
 tar -xf "$SRC_TARBALL"
 cd "$SRC_DIR"
 
+# Clean the install prefix between runs. Without this, stale files from
+# a prior build (e.g. an ICU bundle from a different ICU major) survive
+# into the new artifact because `make install` and the wrapper's
+# bundling step only write, never delete. Mirrors how SRC_DIR is
+# cleaned above. Idempotent for first runs (rm -rf on a missing dir is
+# a no-op).
+rm -rf "$PREFIX"
 mkdir -p "$PREFIX"
 
 if [[ "$OS" == "Darwin" ]]; then
