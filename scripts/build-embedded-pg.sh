@@ -235,13 +235,30 @@ if [[ "$OS" == "Darwin" ]]; then
 else
   # ---- Linux: design doc §3.6 ----
   export LDFLAGS='-Wl,-rpath,$ORIGIN/../lib/postgresql -Wl,--enable-new-dtags'
+
+  # PG16+ requires --with-icu at configure time (PG18 hard-fails
+  # without it). Mirror of the macOS ICU-detection block above; on
+  # Linux/Ubuntu libicu-dev provides icu-uc.pc / icu-i18n.pc, so detect
+  # via pkg-config (vs Homebrew prefix on macOS).
+  PG_MAJOR_LC="${PG_VERSION%%.*}"
+  ICU_CONFIGURE=()
+  if [[ "$PG_MAJOR_LC" -ge 16 ]]; then
+    if ! pkg-config --exists icu-uc icu-i18n 2>/dev/null; then
+      echo "ERROR: PostgreSQL $PG_VERSION needs ICU but icu-uc/icu-i18n pkg-config not found; install libicu-dev" >&2
+      exit 1
+    fi
+    echo "== PG$PG_MAJOR_LC: building --with-icu (linux) using $(pkg-config --variable=libdir icu-uc)"
+    ICU_CONFIGURE=(--with-icu)
+  fi
+
   ./configure \
     --prefix="$PREFIX" \
     --libdir="$PREFIX/lib/postgresql" \
     --datadir="$PREFIX/share/postgresql" \
     --with-openssl \
     --with-includes=/usr/include \
-    --with-libraries="/usr/lib/${ARCH}-linux-gnu"
+    --with-libraries="/usr/lib/${ARCH}-linux-gnu" \
+    "${ICU_CONFIGURE[@]}"
 
   make -j"$(nproc)"
   make install
@@ -288,7 +305,10 @@ else
       || { echo "ERROR: required extension '$ext' missing after contrib build (no lib/postgresql/${ext}.{so,dylib} or share/postgresql/extension/${ext}.control)" >&2; exit 1; }
   done
 
-  ( cd "$PREFIX" && tar -cJf "$OUTPUT_DIR/$TARFILE" bin lib share )
+  # --hard-dereference: follow symlinks at archive time so the .txz
+  # carries plain files (matches zonky's Linux pack pattern; avoids
+  # downstream surprises when an upstream lib is a symlink).
+  ( cd "$PREFIX" && tar --hard-dereference -cJf "$OUTPUT_DIR/$TARFILE" bin lib share )
 fi
 
 echo "== done: $OUTPUT_DIR/$TARFILE"
