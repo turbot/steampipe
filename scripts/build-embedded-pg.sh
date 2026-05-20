@@ -265,6 +265,20 @@ else
   make -C contrib -j"$(nproc)"
   make -C contrib install
 
+  # Keep only the 5 binaries Steampipe ships — mirror of the macOS
+  # prune (this file, "step 12: keep only the binaries the shipped
+  # artifact ships" block). The Linux branch previously skipped this,
+  # so the .txz carried ~30 unused binaries (clusterdb, pgbench,
+  # pg_upgrade, psql, ...).
+  ( cd "$PREFIX/bin"
+    for b in *; do
+      case "$b" in
+        initdb|pg_ctl|pg_dump|pg_restore|postgres) ;;
+        *) rm -f "$b" ;;
+      esac
+    done
+  )
+
   ( cd "$PREFIX"
     for f in bin/*; do
       if [[ -x "$f" ]] && file "$f" | grep -q ELF; then
