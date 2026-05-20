@@ -1,6 +1,7 @@
 # Editor cache and lock files
 *.swp
 *.swo
+*.wip
 .idea/
 .vscode/
 .DS_Store
