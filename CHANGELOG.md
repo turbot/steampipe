@@ -1,3 +1,7 @@
+## v2.4.4 [2026-05-25]
+_Bug fixes_
+- Update embedded `steampipe-postgres-fdw` to `v2.2.4` — fixes `statement_timeout`, `pg_cancel_backend`, and `pg_terminate_backend` having no effect when a plugin's gRPC stream stalls. Affected sessions previously held `AccessShareLock` indefinitely, blocking partition swaps and other DDL until restart. ([steampipe-postgres-fdw#671](https://github.com/turbot/steampipe-postgres-fdw/issues/671))
+
 ## v2.4.3 [2026-05-19]
 _Dependencies_
 - Bump `jackc/pgx/v5` from v5.7.6 to v5.9.2 to remediate CVE-2026-41889. ([#4990](https://github.com/turbot/steampipe/pull/4990))
