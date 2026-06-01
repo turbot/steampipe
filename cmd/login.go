@@ -107,6 +107,21 @@ func displayLoginMessage(ctx context.Context, token string) {
 	fmt.Println()
 	fmt.Printf("Logged in as: %s\n", pconstants.Bold(userName))
 	fmt.Println()
+
+	showLoginWarnings()
+}
+
+func showLoginWarnings() {
+	// warn if PIPES_TOKEN env var is set, as it will override the saved login token
+	if _, ok := os.LookupEnv(constants.EnvPipesToken); ok {
+		error_helpers.ShowWarning(fmt.Sprintf("%s is set and will take precedence over the login token. To use the login token, run:\n  unset %s", constants.EnvPipesToken, constants.EnvPipesToken))
+	}
+
+	// warn if PIPES_HOST env var is set to a different host than the one used for login
+	loginHost := viper.GetString(pconstants.ArgPipesHost)
+	if envHost, ok := os.LookupEnv(constants.EnvPipesHost); ok && envHost != loginHost {
+		error_helpers.ShowWarning(fmt.Sprintf("%s is set to %s, but login was for %s. Subsequent commands will use %s unless --pipes-host is specified.", constants.EnvPipesHost, pconstants.Bold(envHost), pconstants.Bold(loginHost), pconstants.Bold(envHost)))
+	}
 }
 
 func promptUserForString(prompt string) (string, error) {
