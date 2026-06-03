@@ -315,6 +315,26 @@ else
     echo "✅ ICU bundled (linux): $(ls "$PREFIX"/lib/postgresql/libicu*.so.* | xargs -n1 basename | tr '\n' ' ')"
   fi
 
+  # Fix RUNPATH on contrib `.so` files (ltree, tablefunc, hstore, etc.).
+  # PG's make eats `$O` from `$ORIGIN` in our LDFLAGS, so the linker writes
+  # a broken `RIGIN/../lib/postgresql:<build-host-libdir>` RUNPATH that
+  # resolves nowhere on a user's machine (verified via readelf on
+  # `lib/postgresql/ltree.so` of an existing artifact). bin/* already gets
+  # patchelf'd above; ICU libs were patchelf'd in the bundling block. This
+  # block covers the contrib `.so` files in between. The glob `*.so` matches
+  # contribs but NOT bundled ICU (`libicu*.so.78`), so it's safe to run
+  # unconditionally and idempotent vs the ICU block.
+  # No user-visible breakage today (shipped contribs only NEED libc/libm,
+  # which the system loader finds), but the build-host absolute path in the
+  # RUNPATH is wrong-on-its-face and any future contrib that links a
+  # bundled lib would fail.
+  ( cd "$PREFIX"
+    for f in lib/postgresql/*.so; do
+      [[ -f "$f" ]] || continue
+      patchelf --set-rpath '$ORIGIN' "$f"
+    done
+  )
+
   rm -rf "$PREFIX/include"
 
   # ---- verify contrib extensions exist (recipe §3.2 step 13) ----
