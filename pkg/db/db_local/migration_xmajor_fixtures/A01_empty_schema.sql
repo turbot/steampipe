@@ -1,0 +1,1 @@
+-- A01: no public objects beyond the empty schema
