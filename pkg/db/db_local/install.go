@@ -40,17 +40,49 @@ If you need that data, do not run another upgrade; open an issue at https://gith
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
 
-// crossMajorMigrationWarning is shown on a cross-major upgrade (e.g. Postgres
-// 14 -> 18). The automatic pg_restore is deliberately not attempted because it
-// cannot load a lower-major dump into a higher-major server. The new service
-// starts fresh; the old data directory and a retained dump are kept so the
-// user can migrate manually.
-func crossMajorMigrationWarning(oldVersion, newVersion string) string {
+// crossMajorPreflightSkippedWarning is shown on a cross-major upgrade (e.g.
+// Postgres 14 -> 18) when the pre-flight collation scan detected
+// collation-dependent objects in the public schema. Restoring those into a
+// cluster whose default collation provider differs from the old one could
+// silently corrupt index ordering and uniqueness, so the automatic restore is
+// skipped. The new service starts fresh; the old data directory and a retained
+// dump are kept so the user can migrate manually.
+func crossMajorPreflightSkippedWarning(oldVersion, newVersion string) string {
 	warningMessage := fmt.Sprintf(`The embedded database has been upgraded from PostgreSQL %s to PostgreSQL %s (a major version change).
 
-Steampipe did not automatically migrate your public schema: a major-version upgrade cannot be restored with the standard pg_dump/pg_restore path, and attempting it would fail. To keep the service usable, it has started with an empty public schema.
+Pre-flight detected collation-dependent objects (text indexes, unique constraints, or ordered views over non-ASCII data) in your public schema. A major-version upgrade changes the default collation provider, so automatically restoring these objects could silently corrupt their ordering or uniqueness. To keep the service usable and your data safe, the restore was skipped and the service started with an empty public schema.
+
+Nothing was deleted. A dump of your old data has been retained in ~/.steampipe/backups and your previous database directory is preserved under ~/.steampipe/db. To restore manually, load the retained .sql dump into the new database, resolving any collation incompatibilities.`, oldVersion, newVersion)
+
+	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
+}
+
+// crossMajorRestoreFailedWarning is shown on a cross-major upgrade when the
+// best-effort automatic restore (pg_restore) returned a non-zero exit code.
+// The new service starts fresh; the old data directory and a retained dump are
+// kept so the user can migrate manually.
+func crossMajorRestoreFailedWarning(oldVersion, newVersion string) string {
+	warningMessage := fmt.Sprintf(`The embedded database has been upgraded from PostgreSQL %s to PostgreSQL %s (a major version change).
+
+Steampipe attempted to automatically migrate your public schema, but pg_restore reported an error (some objects in the dump are not compatible with the new major version). To keep the service usable, it has started with an empty public schema.
 
 Nothing was deleted. A dump of your old data has been retained in ~/.steampipe/backups and your previous database directory is preserved under ~/.steampipe/db. To restore manually, load the retained .sql dump into the new database, resolving any major-version incompatibilities.`, oldVersion, newVersion)
+
+	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
+}
+
+// crossMajorValidationDivergedWarning is shown on a cross-major upgrade when
+// pg_restore succeeded but the post-restore validation pass found the restored
+// data diverged from the old cluster (row-count, sample-row checksum, or an
+// invalid index). The restored schema is rolled back to an empty public schema
+// so the service does not start with silently-corrupted data; the old data
+// directory and a retained dump are kept so the user can migrate manually.
+func crossMajorValidationDivergedWarning(oldVersion, newVersion string) string {
+	warningMessage := fmt.Sprintf(`The embedded database has been upgraded from PostgreSQL %s to PostgreSQL %s (a major version change).
+
+Steampipe automatically migrated your public schema, but a post-restore validation pass found the restored data diverged from your old database (a row count, a sample-row checksum, or an index validity check did not match). Rather than start with silently-corrupted data, the restore was rolled back and the service started with an empty public schema.
+
+Nothing was deleted. A dump of your old data has been retained in ~/.steampipe/backups and your previous database directory is preserved under ~/.steampipe/db. To restore manually, load the retained .sql dump into the new database, resolving any collation incompatibilities.`, oldVersion, newVersion)
 
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/jackc/pgx/v5"
 	"github.com/shirou/gopsutil/process"
 	"github.com/turbot/go-kit/files"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
@@ -100,6 +101,401 @@ func classifyPgMigration(oldVersion, targetVersion string) pgMigrationKind {
 	return pgMigrationMinor
 }
 
+// collationRisk describes a single collation-dependent object found by the
+// pre-flight scan. A cross-major restore changes the default collation
+// provider, so these objects can have their index ordering / uniqueness or
+// view ordering silently change after a restore.
+type collationRisk struct {
+	kind      string // "text_btree_index" | "text_unique_constraint" | "ordered_view_text"
+	schemaObj string // e.g. "public.my_table.my_idx"
+	sample    string // sample value / reason showing why flagged
+}
+
+// validationDivergence describes a single post-restore mismatch between the old
+// PG14 cluster and the new PG18 cluster.
+type validationDivergence struct {
+	kind   string // "row_count" | "checksum" | "index_invalid"
+	target string // e.g. "public.my_table" or "public.my_idx"
+	detail string // e.g. "old=1234 new=1230" or "md5 mismatch"
+}
+
+// nonAsciiTextDetector is the cheap multi-byte detector used by the pre-flight
+// scan. With the embedded DB initdb'd LC_ALL=C --encoding=UTF-8, a value whose
+// octet_length differs from its character length necessarily contains a
+// multi-byte UTF-8 sequence and therefore non-ASCII content. See the encoding
+// guard in runPreflightCollationScan.
+const nonAsciiTextDetector = `octet_length(%[1]s) <> length(%[1]s)`
+
+// runPreflightCollationScan inspects the old (source) cluster for
+// collation-dependent objects whose underlying text data actually contains
+// non-ASCII bytes. It is data-aware (per the locked 2026-06-05 B02/B04 policy):
+// a text index/constraint/view over purely ASCII data is NOT flagged, because
+// ASCII sorts identically under every collation provider. Returns an empty
+// slice when the schema is clean.
+func runPreflightCollationScan(ctx context.Context, conn *pgx.Conn) ([]collationRisk, error) {
+	// Encoding guard: the non-ASCII detector relies on a multi-byte UTF-8
+	// encoding. Under a single-byte encoding (SQL_ASCII / LATIN1) the detector
+	// silently returns false negatives, so we conservatively flag-all rather
+	// than under-report.
+	var encoding string
+	if err := conn.QueryRow(ctx, "SELECT pg_encoding_to_char(encoding) FROM pg_database WHERE datname = current_database()").Scan(&encoding); err != nil {
+		return nil, err
+	}
+	multiByteEncoding := encoding == "UTF8" || encoding == "UTF-8"
+
+	var risks []collationRisk
+
+	// 1. B-tree indexes (including unique and expression indexes) on public
+	//    tables that touch a text/varchar column. GIN/GiST and other non-btree
+	//    access methods are not collation-ordered, so they are excluded.
+	const idxQuery = `
+SELECT c.relname AS idxname, t.relname AS tabname, i.indisunique
+FROM pg_index i
+JOIN pg_class c ON c.oid = i.indexrelid
+JOIN pg_class t ON t.oid = i.indrelid
+JOIN pg_namespace n ON n.oid = t.relnamespace
+JOIN pg_am am ON am.oid = c.relam
+WHERE n.nspname = 'public'
+  AND am.amname = 'btree'
+  AND (
+    EXISTS (
+      SELECT 1 FROM unnest(i.indkey) AS k(attnum)
+      JOIN pg_attribute pa ON pa.attrelid = t.oid AND pa.attnum = k.attnum
+      WHERE format_type(pa.atttypid, pa.atttypmod) IN ('text','character varying')
+         OR format_type(pa.atttypid, pa.atttypmod) LIKE 'character varying%'
+    )
+    OR pg_get_indexdef(i.indexrelid) ~* '(text|varchar|lower\(|upper\()'
+  )
+GROUP BY c.relname, t.relname, i.indisunique`
+
+	idxRows, err := conn.Query(ctx, idxQuery)
+	if err != nil {
+		return nil, err
+	}
+	type idxHit struct {
+		idx, tab string
+		unique   bool
+	}
+	var idxHits []idxHit
+	for idxRows.Next() {
+		var h idxHit
+		if err := idxRows.Scan(&h.idx, &h.tab, &h.unique); err != nil {
+			idxRows.Close()
+			return nil, err
+		}
+		idxHits = append(idxHits, h)
+	}
+	idxRows.Close()
+	if err := idxRows.Err(); err != nil {
+		return nil, err
+	}
+
+	for _, h := range idxHits {
+		flag := !multiByteEncoding
+		if multiByteEncoding {
+			nonAscii, derr := pfTableHasNonASCIIText(ctx, conn, h.tab)
+			if derr != nil {
+				return nil, derr
+			}
+			flag = nonAscii
+		}
+		if flag {
+			kind := "text_btree_index"
+			if h.unique {
+				kind = "text_unique_constraint"
+			}
+			risks = append(risks, collationRisk{
+				kind:      kind,
+				schemaObj: fmt.Sprintf("public.%s.%s", h.tab, h.idx),
+				sample:    "non-ASCII text data under a collation-ordered index",
+			})
+		}
+	}
+
+	// 2. Views / materialized views whose definition orders by a text column
+	//    over non-ASCII data.
+	const viewQuery = `
+SELECT c.relname, pg_get_viewdef(c.oid) AS def
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public' AND c.relkind IN ('v','m')`
+	viewRows, err := conn.Query(ctx, viewQuery)
+	if err != nil {
+		return nil, err
+	}
+	type viewHit struct{ name, def string }
+	var views []viewHit
+	for viewRows.Next() {
+		var v viewHit
+		if err := viewRows.Scan(&v.name, &v.def); err != nil {
+			viewRows.Close()
+			return nil, err
+		}
+		views = append(views, v)
+	}
+	viewRows.Close()
+	if err := viewRows.Err(); err != nil {
+		return nil, err
+	}
+	for _, v := range views {
+		if !strings.Contains(strings.ToUpper(v.def), "ORDER BY") {
+			continue
+		}
+		flag := !multiByteEncoding
+		if multiByteEncoding {
+			anyNonAscii, derr := pfSchemaHasNonASCIIText(ctx, conn)
+			if derr != nil {
+				return nil, derr
+			}
+			flag = anyNonAscii
+		}
+		if flag {
+			risks = append(risks, collationRisk{
+				kind:      "ordered_view_text",
+				schemaObj: fmt.Sprintf("public.%s", v.name),
+				sample:    "view orders by text over non-ASCII data",
+			})
+		}
+	}
+
+	return risks, nil
+}
+
+// pfTableHasNonASCIIText reports whether any text/varchar column of the named
+// public table holds a value with a byte > 0x7F.
+func pfTableHasNonASCIIText(ctx context.Context, conn *pgx.Conn, table string) (bool, error) {
+	cols, err := pfTextColumns(ctx, conn, table)
+	if err != nil {
+		return false, err
+	}
+	for _, col := range cols {
+		detector := fmt.Sprintf(nonAsciiTextDetector, pfQuoteIdent(col))
+		q := fmt.Sprintf(
+			`SELECT EXISTS(SELECT 1 FROM public.%s WHERE %s IS NOT NULL AND %s)`,
+			pfQuoteIdent(table), pfQuoteIdent(col), detector)
+		var hit bool
+		if err := conn.QueryRow(ctx, q).Scan(&hit); err != nil {
+			return false, err
+		}
+		if hit {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func pfSchemaHasNonASCIIText(ctx context.Context, conn *pgx.Conn) (bool, error) {
+	tables, err := pfPublicBaseTables(ctx, conn)
+	if err != nil {
+		return false, err
+	}
+	for _, t := range tables {
+		hit, err := pfTableHasNonASCIIText(ctx, conn, t)
+		if err != nil {
+			return false, err
+		}
+		if hit {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func pfTextColumns(ctx context.Context, conn *pgx.Conn, table string) ([]string, error) {
+	const q = `
+SELECT a.attname
+FROM pg_attribute a
+JOIN pg_class c ON c.oid = a.attrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname='public' AND c.relname=$1 AND a.attnum > 0 AND NOT a.attisdropped
+  AND format_type(a.atttypid, a.atttypmod) IN ('text','character varying')`
+	rows, err := conn.Query(ctx, q, table)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var cols []string
+	for rows.Next() {
+		var c string
+		if err := rows.Scan(&c); err != nil {
+			return nil, err
+		}
+		cols = append(cols, c)
+	}
+	return cols, rows.Err()
+}
+
+func pfPublicBaseTables(ctx context.Context, conn *pgx.Conn) ([]string, error) {
+	const q = `
+SELECT c.relname
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname='public' AND c.relkind IN ('r','p')
+ORDER BY c.relname`
+	rows, err := conn.Query(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var tables []string
+	for rows.Next() {
+		var t string
+		if err := rows.Scan(&t); err != nil {
+			return nil, err
+		}
+		tables = append(tables, t)
+	}
+	return tables, rows.Err()
+}
+
+func pfQuoteIdent(s string) string {
+	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
+}
+
+// runValidateRestore runs while the old (source) server is still live. For every
+// public base table it compares row count and an order-stable sample-row
+// checksum between the old and new clusters, and verifies every public index
+// reports indisvalid=true on the new cluster. Any mismatch is a divergence
+// regardless of pg_restore's exit code. Returns an empty slice on a full
+// match.
+func runValidateRestore(ctx context.Context, oldConn, newConn *pgx.Conn) ([]validationDivergence, error) {
+	oldTables, err := pfPublicBaseTables(ctx, oldConn)
+	if err != nil {
+		return nil, err
+	}
+
+	var divergences []validationDivergence
+	for _, tab := range oldTables {
+		oldCount, err := vrTableRowCount(ctx, oldConn, tab)
+		if err != nil {
+			return nil, err
+		}
+		newCount, err := vrTableRowCount(ctx, newConn, tab)
+		if err != nil {
+			divergences = append(divergences, validationDivergence{
+				kind:   "row_count",
+				target: fmt.Sprintf("public.%s", tab),
+				detail: fmt.Sprintf("table missing on new cluster: %v", err),
+			})
+			continue
+		}
+		if oldCount != newCount {
+			divergences = append(divergences, validationDivergence{
+				kind:   "row_count",
+				target: fmt.Sprintf("public.%s", tab),
+				detail: fmt.Sprintf("old=%d new=%d", oldCount, newCount),
+			})
+			continue
+		}
+		oldDigest, err := vrTableSampleChecksum(ctx, oldConn, tab)
+		if err != nil {
+			return nil, err
+		}
+		newDigest, err := vrTableSampleChecksum(ctx, newConn, tab)
+		if err != nil {
+			return nil, err
+		}
+		if oldDigest != newDigest {
+			divergences = append(divergences, validationDivergence{
+				kind:   "checksum",
+				target: fmt.Sprintf("public.%s", tab),
+				detail: "md5 mismatch",
+			})
+		}
+	}
+
+	// every public index on the new cluster must be valid
+	invalid, err := vrInvalidIndexes(ctx, newConn)
+	if err != nil {
+		return nil, err
+	}
+	for _, idx := range invalid {
+		divergences = append(divergences, validationDivergence{
+			kind:   "index_invalid",
+			target: fmt.Sprintf("public.%s", idx),
+			detail: "pg_index.indisvalid = false",
+		})
+	}
+
+	return divergences, nil
+}
+
+func vrTableRowCount(ctx context.Context, conn *pgx.Conn, table string) (int64, error) {
+	var n int64
+	q := fmt.Sprintf("SELECT count(*) FROM public.%s", pfQuoteIdent(table))
+	err := conn.QueryRow(ctx, q).Scan(&n)
+	return n, err
+}
+
+// vrTableSampleChecksum computes an order-stable md5 over the table's rows. It
+// casts the whole row to text and orders by that text so the comparison is
+// independent of physical (ctid) ordering, which differs after a dump/restore.
+func vrTableSampleChecksum(ctx context.Context, conn *pgx.Conn, table string) (string, error) {
+	q := fmt.Sprintf(
+		`SELECT coalesce(md5(string_agg(s, E'\n' ORDER BY s)), '') FROM (SELECT r.*::text AS s FROM public.%s r) x`,
+		pfQuoteIdent(table))
+	var digest string
+	if err := conn.QueryRow(ctx, q).Scan(&digest); err != nil {
+		return "", err
+	}
+	return digest, nil
+}
+
+func vrInvalidIndexes(ctx context.Context, conn *pgx.Conn) ([]string, error) {
+	const q = `
+SELECT c.relname
+FROM pg_index i
+JOIN pg_class c ON c.oid = i.indexrelid
+JOIN pg_class t ON t.oid = i.indrelid
+JOIN pg_namespace n ON n.oid = t.relnamespace
+WHERE n.nspname='public' AND NOT i.indisvalid`
+	rows, err := conn.Query(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var bad []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		bad = append(bad, name)
+	}
+	return bad, rows.Err()
+}
+
+// retainedOldServer holds the still-running old (source) cluster on a
+// cross-major migration. On a same-major (minor) migration prepareBackup tears
+// the old server down internally as before. On a cross-major jump it is left
+// running and stashed here so restoreDBBackup can run the pre-flight collation
+// scan (against the old data) and the post-restore validation pass (old vs new)
+// while the old server is still live. restoreDBBackup is responsible for
+// stopping it (see stopRetainedOldServer) once those steps complete or the
+// fall-back message is emitted.
+var retainedOldServer *pgRunningInfo
+
+// connectOldServer opens a pgx connection to the retained old (source) cluster.
+func connectOldServer(ctx context.Context) (*pgx.Conn, error) {
+	if retainedOldServer == nil {
+		return nil, fmt.Errorf("no retained old server to connect to")
+	}
+	connStr := fmt.Sprintf("host=127.0.0.1 port=%d user=%s dbname=%s sslmode=disable",
+		retainedOldServer.port, constants.DatabaseSuperUser, retainedOldServer.dbName)
+	return pgx.Connect(ctx, connStr)
+}
+
+// stopRetainedOldServer stops the retained old (source) cluster, if any, and
+// clears the handle. Safe to call multiple times.
+func stopRetainedOldServer(ctx context.Context) {
+	if retainedOldServer == nil {
+		return
+	}
+	//nolint:golint,errcheck // best-effort shutdown of the old cluster
+	retainedOldServer.stop(ctx)
+	retainedOldServer = nil
+}
+
 // prepareBackup creates a backup file of the public schema for the current database, if we are migrating
 // if a backup was taken, this returns the name of the database that was backed up
 func prepareBackup(ctx context.Context) (*string, error) {
@@ -127,11 +523,29 @@ func prepareBackup(ctx context.Context) (*string, error) {
 		log.Printf("[TRACE] Error while starting old db in %s: %v", location, err)
 		return nil, err
 	}
-	//nolint:golint,errcheck // this will probably never error - if it does, it's not something we can recover from with code
-	defer runConfig.stop(ctx)
 
-	if err := takeBackup(ctx, runConfig); err != nil {
-		return &runConfig.dbName, err
+	// On a cross-major jump the old server must stay up so restoreDBBackup can
+	// run the pre-flight collation scan and the post-restore validation pass
+	// against the old data while it is still live. For a same-major (minor)
+	// migration there is no pre-flight/validation step, so tear it down here as
+	// before.
+	crossMajor := classifyPgMigration(filepath.Base(location), constants.DatabaseVersion) == pgMigrationMajor
+
+	takeErr := takeBackup(ctx, runConfig)
+	if takeErr != nil {
+		// the dump failed - the old server is no longer needed; tear it down
+		// and surface the error.
+		//nolint:golint,errcheck // best-effort shutdown
+		runConfig.stop(ctx)
+		return &runConfig.dbName, takeErr
+	}
+
+	if crossMajor {
+		// leave the old server running; restoreDBBackup stops it.
+		retainedOldServer = runConfig
+	} else {
+		//nolint:golint,errcheck // this will probably never error - if it does, it's not something we can recover from with code
+		runConfig.stop(ctx)
 	}
 
 	return &runConfig.dbName, nil
@@ -291,38 +705,90 @@ func restoreDBBackup(ctx context.Context) error {
 	}
 
 	// Determine whether the on-disk old install is a same-major (minor) or a
-	// cross-major migration. pg_restore cannot load a lower-major dump into a
-	// higher-major server, so for a cross-major jump we do NOT auto-restore:
-	// keep the retained insurance dump and the old data directory, let the
-	// service start fresh, and tell the user how to restore manually.
+	// cross-major migration. On a cross-major jump we run the five-step
+	// best-effort flow (insurance dump -> pre-flight collation scan -> restore
+	// -> post-restore validation -> success-or-fall-back). The fall-back state
+	// (hardened-B: retain the dump and the old data dir, start the service on an
+	// empty public schema, warn the user) is rolled to whenever pre-flight
+	// detects collation risk, pg_restore returns non-zero, or validation finds
+	// divergence.
+	var crossMajor bool
+	var oldVersion string
+	var oldConn *pgx.Conn
 	if found, location, ferr := findDifferentPgInstallation(ctx); ferr == nil && found {
 		if classifyPgMigration(filepath.Base(location), constants.DatabaseVersion) == pgMigrationMajor {
-			if err := retainBackup(ctx); err != nil {
-				error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
-			}
-			error_helpers.ShowWarning(crossMajorMigrationWarning(filepath.Base(location), constants.DatabaseVersion))
-			// the old data directory is intentionally NOT removed on the
-			// cross-major path - it is the user's only copy of the old data.
-			// KNOWN LIMITATION: it is retained indefinitely and
-			// findDifferentPgInstallation returns the first non-target
-			// version dir it finds (no recency ordering), so a *subsequent*
-			// upgrade could detect this now-stale dir instead of the current
-			// one. Acceptable for the embedded DB (low-churn, mostly
-			// Steampipe's own + ephemeral data); revisit if multi-generation
-			// upgrade chains become common.
-			return nil
+			crossMajor = true
+			oldVersion = filepath.Base(location)
 		}
+	}
+	newVersion := constants.DatabaseVersion
+
+	// fallBackCrossMajor rolls to the hardened-B fall-back state with a
+	// cause-specific warning. The insurance dump is retained and the old data
+	// directory is intentionally NOT removed - it is the user's only copy of the
+	// old data.
+	// KNOWN LIMITATION: the old dir is retained indefinitely and
+	// findDifferentPgInstallation returns the first non-target version dir it
+	// finds (no recency ordering), so a *subsequent* upgrade could detect this
+	// now-stale dir instead of the current one. Acceptable for the embedded DB
+	// (low-churn); revisit if multi-generation upgrade chains become common.
+	fallBackCrossMajor := func(warning string) error {
+		if oldConn != nil {
+			oldConn.Close(ctx)
+		}
+		stopRetainedOldServer(ctx)
+		if err := retainBackup(ctx); err != nil {
+			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
+		}
+		error_helpers.ShowWarning(warning)
+		return nil
+	}
+
+	if crossMajor {
+		// Step 1: the insurance dump was already taken by prepareBackup and the
+		// backup file exists on disk (checked above). It is retained as part of
+		// every fall-back path and at the end of the success path.
+
+		// The pre-flight and validation steps need a live connection to the old
+		// (source) cluster, which prepareBackup left running on the cross-major
+		// path. If it is unavailable (unexpected), fall back conservatively to
+		// the pre-flight-skipped state rather than risk an unvalidated restore.
+		conn, oerr := connectOldServer(ctx)
+		if oerr != nil {
+			log.Printf("[WARN] cross-major migration: could not connect to old cluster for pre-flight/validation: %v", oerr)
+			return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
+		}
+		oldConn = conn
+
+		// Step 2: pre-flight collation scan against the old data.
+		risks, perr := runPreflightCollationScan(ctx, oldConn)
+		if perr != nil {
+			log.Printf("[WARN] cross-major migration: pre-flight scan failed: %v", perr)
+			return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
+		}
+		if len(risks) > 0 {
+			log.Printf("[TRACE] cross-major migration: pre-flight flagged %d collation risk(s); skipping restore", len(risks))
+			return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
+		}
+		// pre-flight clear: fall through to Step 3 (the shared restore
+		// machinery below). The old connection stays open for Step 4.
 	}
 
 	// extract the Table of Contents from the Backup Archive
 	toc, err := getTableOfContentsFromBackup(ctx)
 	if err != nil {
+		if crossMajor {
+			return fallBackCrossMajor(crossMajorRestoreFailedWarning(oldVersion, newVersion))
+		}
 		return err
 	}
 
 	// create separate TableOfContent files - one containing only DB OBJECT CREATION (with static data) instructions and another containing only REFRESH MATERIALIZED VIEW instructions
 	objectAndStaticDataListFile, matviewRefreshListFile, err := partitionTableOfContents(ctx, toc)
 	if err != nil {
+		if crossMajor {
+			return fallBackCrossMajor(crossMajorRestoreFailedWarning(oldVersion, newVersion))
+		}
 		return err
 	}
 	defer func() {
@@ -332,9 +798,15 @@ func restoreDBBackup(ctx context.Context) error {
 		os.Remove(matviewRefreshListFile)
 	}()
 
-	// restore everything, but don't refresh Materialized views.
+	// Step 3 (cross-major) / restore (same-major): restore everything, but
+	// don't refresh Materialized views.
 	err = runRestoreUsingList(ctx, runningInfo, objectAndStaticDataListFile)
 	if err != nil {
+		if crossMajor {
+			// Cross-major restore failed - roll to the hardened-B fall-back.
+			log.Printf("[WARN] cross-major migration: pg_restore failed: %v", err)
+			return fallBackCrossMajor(crossMajorRestoreFailedWarning(oldVersion, newVersion))
+		}
 		// Same-major restore failed. Do NOT brick the service: retain the
 		// insurance dump, keep the old data directory in place, warn the
 		// user, and let the service start (the data did not carry over but
@@ -344,6 +816,29 @@ func restoreDBBackup(ctx context.Context) error {
 		}
 		error_helpers.ShowWarning(restoreFailedWarning(constants.DatabaseVersion))
 		return nil
+	}
+
+	// Step 4 (cross-major): post-restore validation, old server still live.
+	if crossMajor {
+		newConn, nerr := createMaintenanceClient(ctx, runningInfo.Port)
+		if nerr != nil {
+			log.Printf("[WARN] cross-major migration: could not connect to new cluster for validation: %v", nerr)
+			return fallBackCrossMajor(crossMajorValidationDivergedWarning(oldVersion, newVersion))
+		}
+		divergences, verr := runValidateRestore(ctx, oldConn, newConn)
+		newConn.Close(ctx)
+		if verr != nil {
+			log.Printf("[WARN] cross-major migration: validation query failed: %v", verr)
+			return fallBackCrossMajor(crossMajorValidationDivergedWarning(oldVersion, newVersion))
+		}
+		if len(divergences) > 0 {
+			log.Printf("[TRACE] cross-major migration: validation found %d divergence(s); rolling back", len(divergences))
+			return fallBackCrossMajor(crossMajorValidationDivergedWarning(oldVersion, newVersion))
+		}
+		// Step 5: validation clean. The old server is no longer needed.
+		oldConn.Close(ctx)
+		oldConn = nil
+		stopRetainedOldServer(ctx)
 	}
 
 	//
