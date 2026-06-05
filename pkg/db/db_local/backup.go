@@ -28,6 +28,16 @@ var (
 	errDbInstanceRunning = fmt.Errorf("cannot start DB backup - a postgres instance is still running and Steampipe could not kill it. Please kill this manually and restart Steampipe")
 )
 
+// targetDatabaseVersion is the version this build targets as the embedded
+// PostgreSQL. In production it is constants.DatabaseVersion. It exists as a
+// package-level variable purely so the in-package cross-major migration test
+// matrix (migration_xmajor_test.go) can drive the cross-major branch in
+// restoreDBBackup at run time - the compile-time constant would otherwise pin
+// the test to whatever major matches the current shipped DB and the
+// classifyPgMigration branch under test would never be reached. NEVER override
+// outside tests in the same package.
+var targetDatabaseVersion = constants.DatabaseVersion
+
 const (
 	backupFormat            = "custom"
 	backupDumpFileExtension = "dump"
@@ -465,6 +475,119 @@ WHERE n.nspname='public' AND NOT i.indisvalid`
 	return bad, rows.Err()
 }
 
+// crossMajorOutcome enumerates the possible end states of the cross-major
+// migration orchestration (pre-flight scan -> restore -> post-restore
+// validation). See runCrossMajorMigration.
+type crossMajorOutcome int
+
+const (
+	// crossMajorOutcomeSuccess: pre-flight clear, restore succeeded, validation
+	// matched. The new cluster carries the old data; the caller should proceed
+	// with the post-restore steps (matview refresh, retain backup, remove old
+	// dir).
+	crossMajorOutcomeSuccess crossMajorOutcome = iota
+	// crossMajorOutcomePreflightSkipped: pre-flight detected collation risk
+	// (or could not run); restore was not attempted. Fall-back warning:
+	// crossMajorPreflightSkippedWarning.
+	crossMajorOutcomePreflightSkipped
+	// crossMajorOutcomeRestoreFailed: pre-flight clear but restore returned a
+	// non-zero exit (or a precursor step failed). Fall-back warning:
+	// crossMajorRestoreFailedWarning.
+	crossMajorOutcomeRestoreFailed
+	// crossMajorOutcomeValidationDiverged: restore succeeded but the
+	// post-restore validation pass found divergence (row count, sample-row
+	// checksum, or invalid index) - or the validation query itself failed.
+	// Fall-back warning: crossMajorValidationDivergedWarning.
+	crossMajorOutcomeValidationDiverged
+)
+
+func (o crossMajorOutcome) String() string {
+	switch o {
+	case crossMajorOutcomeSuccess:
+		return "Success"
+	case crossMajorOutcomePreflightSkipped:
+		return "PreflightSkipped"
+	case crossMajorOutcomeRestoreFailed:
+		return "RestoreFailed"
+	case crossMajorOutcomeValidationDiverged:
+		return "ValidationDiverged"
+	default:
+		return fmt.Sprintf("crossMajorOutcome(%d)", int(o))
+	}
+}
+
+// runCrossMajorMigration runs the pre-flight collation scan, restore, and
+// post-restore validation pass that together define the cross-major migration
+// policy. The caller (restoreDBBackup in production; the cross-major test
+// matrix under go test) supplies:
+//
+//   - oldConn: open pgx connection to the source (old major) cluster. The
+//     scan + validation pass query this. The caller owns and closes oldConn.
+//   - runRestore: closure that performs the actual restore of the dump into
+//     the new (target major) cluster. Production wraps the TOC-partition +
+//     runRestoreUsingList flow; the test wraps a single pg_restore call.
+//   - newConnFn: factory that opens a fresh pgx connection to the new
+//     cluster, called once after a successful restore for the validation
+//     pass. The returned connection is closed inside this function. Returns
+//     nil + an error on connect failure (treated as a validation divergence).
+//
+// The caller is responsible for producing the cause-specific warning from the
+// returned outcome (e.g. crossMajorPreflightSkippedWarning) and for the
+// fall-back side effects (retain dump, leave old dir in place, etc.) - those
+// are intentionally NOT in this helper so it stays unit-testable against two
+// real clusters without touching the install-dir filesystem.
+//
+// This helper exists because exec-2a's test matrix needs to exercise the
+// shipped pre-flight and validation functions (runPreflightCollationScan,
+// runValidateRestore) end-to-end as the production code calls them, not via a
+// harness reimplementation. See migration_xmajor_test.go.
+func runCrossMajorMigration(
+	ctx context.Context,
+	oldConn *pgx.Conn,
+	runRestore func() error,
+	newConnFn func() (*pgx.Conn, error),
+) (crossMajorOutcome, error) {
+	// Step 1: the insurance dump is assumed to have already been taken by the
+	// caller (production: prepareBackup; test: dumpPublicSchema).
+
+	// Step 2: pre-flight collation scan against the old data.
+	risks, perr := runPreflightCollationScan(ctx, oldConn)
+	if perr != nil {
+		log.Printf("[WARN] cross-major migration: pre-flight scan failed: %v", perr)
+		return crossMajorOutcomePreflightSkipped, nil
+	}
+	if len(risks) > 0 {
+		log.Printf("[TRACE] cross-major migration: pre-flight flagged %d collation risk(s); skipping restore", len(risks))
+		return crossMajorOutcomePreflightSkipped, nil
+	}
+
+	// Step 3: restore.
+	if rerr := runRestore(); rerr != nil {
+		log.Printf("[WARN] cross-major migration: restore failed: %v", rerr)
+		return crossMajorOutcomeRestoreFailed, nil
+	}
+
+	// Step 4: post-restore validation, old server still live.
+	newConn, nerr := newConnFn()
+	if nerr != nil {
+		log.Printf("[WARN] cross-major migration: could not connect to new cluster for validation: %v", nerr)
+		return crossMajorOutcomeValidationDiverged, nil
+	}
+	defer newConn.Close(ctx)
+	divergences, verr := runValidateRestore(ctx, oldConn, newConn)
+	if verr != nil {
+		log.Printf("[WARN] cross-major migration: validation query failed: %v", verr)
+		return crossMajorOutcomeValidationDiverged, nil
+	}
+	if len(divergences) > 0 {
+		log.Printf("[TRACE] cross-major migration: validation found %d divergence(s); rolling back", len(divergences))
+		return crossMajorOutcomeValidationDiverged, nil
+	}
+
+	// Step 5: success.
+	return crossMajorOutcomeSuccess, nil
+}
+
 // retainedOldServer holds the still-running old (source) cluster on a
 // cross-major migration. On a same-major (minor) migration prepareBackup tears
 // the old server down internally as before. On a cross-major jump it is left
@@ -529,7 +652,7 @@ func prepareBackup(ctx context.Context) (*string, error) {
 	// against the old data while it is still live. For a same-major (minor)
 	// migration there is no pre-flight/validation step, so tear it down here as
 	// before.
-	crossMajor := classifyPgMigration(filepath.Base(location), constants.DatabaseVersion) == pgMigrationMajor
+	crossMajor := classifyPgMigration(filepath.Base(location), targetDatabaseVersion) == pgMigrationMajor
 
 	takeErr := takeBackup(ctx, runConfig)
 	if takeErr != nil {
@@ -675,7 +798,7 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 			)
 
 			// if not the target DB version
-			if de.Name() != constants.DatabaseVersion && isDBInstallationDirectory {
+			if de.Name() != targetDatabaseVersion && isDBInstallationDirectory {
 				// this is an unknown directory.
 				// this MUST be some other installation
 				return true, filepath.Join(dbBaseDirectory, de.Name()), nil
@@ -714,14 +837,13 @@ func restoreDBBackup(ctx context.Context) error {
 	// divergence.
 	var crossMajor bool
 	var oldVersion string
-	var oldConn *pgx.Conn
 	if found, location, ferr := findDifferentPgInstallation(ctx); ferr == nil && found {
-		if classifyPgMigration(filepath.Base(location), constants.DatabaseVersion) == pgMigrationMajor {
+		if classifyPgMigration(filepath.Base(location), targetDatabaseVersion) == pgMigrationMajor {
 			crossMajor = true
 			oldVersion = filepath.Base(location)
 		}
 	}
-	newVersion := constants.DatabaseVersion
+	newVersion := targetDatabaseVersion
 
 	// fallBackCrossMajor rolls to the hardened-B fall-back state with a
 	// cause-specific warning. The insurance dump is retained and the old data
@@ -733,9 +855,6 @@ func restoreDBBackup(ctx context.Context) error {
 	// now-stale dir instead of the current one. Acceptable for the embedded DB
 	// (low-churn); revisit if multi-generation upgrade chains become common.
 	fallBackCrossMajor := func(warning string) error {
-		if oldConn != nil {
-			oldConn.Close(ctx)
-		}
 		stopRetainedOldServer(ctx)
 		if err := retainBackup(ctx); err != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
@@ -753,42 +872,93 @@ func restoreDBBackup(ctx context.Context) error {
 		// (source) cluster, which prepareBackup left running on the cross-major
 		// path. If it is unavailable (unexpected), fall back conservatively to
 		// the pre-flight-skipped state rather than risk an unvalidated restore.
-		conn, oerr := connectOldServer(ctx)
+		oldConn, oerr := connectOldServer(ctx)
 		if oerr != nil {
 			log.Printf("[WARN] cross-major migration: could not connect to old cluster for pre-flight/validation: %v", oerr)
 			return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
 		}
-		oldConn = conn
 
-		// Step 2: pre-flight collation scan against the old data.
-		risks, perr := runPreflightCollationScan(ctx, oldConn)
-		if perr != nil {
-			log.Printf("[WARN] cross-major migration: pre-flight scan failed: %v", perr)
-			return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
+		// runRestore wraps the TOC-partition + runRestoreUsingList machinery
+		// (same restore steps as the same-major path) so the orchestration can
+		// own restore-failure recovery without duplicating the flow.
+		var objectListFile, matviewListFile string
+		runRestore := func() error {
+			toc, err := getTableOfContentsFromBackup(ctx)
+			if err != nil {
+				return err
+			}
+			objectListFile, matviewListFile, err = partitionTableOfContents(ctx, toc)
+			if err != nil {
+				return err
+			}
+			return runRestoreUsingList(ctx, runningInfo, objectListFile)
 		}
-		if len(risks) > 0 {
-			log.Printf("[TRACE] cross-major migration: pre-flight flagged %d collation risk(s); skipping restore", len(risks))
-			return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
+		newConnFn := func() (*pgx.Conn, error) {
+			return createMaintenanceClient(ctx, runningInfo.Port)
 		}
-		// pre-flight clear: fall through to Step 3 (the shared restore
-		// machinery below). The old connection stays open for Step 4.
+
+		outcome, oerr2 := runCrossMajorMigration(ctx, oldConn, runRestore, newConnFn)
+		oldConn.Close(ctx)
+		// Clean up TOC list files that may have been written by the restore
+		// closure regardless of the outcome path taken.
+		defer func() {
+			if objectListFile != "" {
+				os.Remove(objectListFile)
+			}
+			if matviewListFile != "" {
+				os.Remove(matviewListFile)
+			}
+		}()
+		if oerr2 != nil {
+			// Internal error in the orchestration helper itself (not a
+			// migration outcome). Surface to the caller.
+			return oerr2
+		}
+		switch outcome {
+		case crossMajorOutcomePreflightSkipped:
+			return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
+		case crossMajorOutcomeRestoreFailed:
+			return fallBackCrossMajor(crossMajorRestoreFailedWarning(oldVersion, newVersion))
+		case crossMajorOutcomeValidationDiverged:
+			return fallBackCrossMajor(crossMajorValidationDivergedWarning(oldVersion, newVersion))
+		case crossMajorOutcomeSuccess:
+			// Restore + validation clean. Refresh materialized views (Step 6),
+			// retain the backup, and remove the old install dir as the
+			// same-major success path does.
+			stopRetainedOldServer(ctx)
+			if matviewListFile != "" {
+				if err := runRestoreUsingList(ctx, runningInfo, matviewListFile); err != nil {
+					error_helpers.ShowWarning("Could not REFRESH Materialized Views while restoring data. Please REFRESH manually.")
+				}
+			}
+			if err := retainBackup(ctx); err != nil {
+				error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
+			}
+			found, location, err := findDifferentPgInstallation(ctx)
+			if err != nil {
+				return err
+			}
+			if found {
+				if err := os.RemoveAll(location); err != nil {
+					log.Printf("[WARN] Could not remove old installation at %s.", location)
+				}
+			}
+			return nil
+		}
+		return fmt.Errorf("cross-major migration: unknown outcome %v", outcome)
 	}
+
+	// ---- Same-major (minor) migration: existing flow ----
 
 	// extract the Table of Contents from the Backup Archive
 	toc, err := getTableOfContentsFromBackup(ctx)
 	if err != nil {
-		if crossMajor {
-			return fallBackCrossMajor(crossMajorRestoreFailedWarning(oldVersion, newVersion))
-		}
 		return err
 	}
 
 	// create separate TableOfContent files - one containing only DB OBJECT CREATION (with static data) instructions and another containing only REFRESH MATERIALIZED VIEW instructions
 	objectAndStaticDataListFile, matviewRefreshListFile, err := partitionTableOfContents(ctx, toc)
 	if err != nil {
-		if crossMajor {
-			return fallBackCrossMajor(crossMajorRestoreFailedWarning(oldVersion, newVersion))
-		}
 		return err
 	}
 	defer func() {
@@ -798,15 +968,9 @@ func restoreDBBackup(ctx context.Context) error {
 		os.Remove(matviewRefreshListFile)
 	}()
 
-	// Step 3 (cross-major) / restore (same-major): restore everything, but
-	// don't refresh Materialized views.
+	// restore everything, but don't refresh Materialized views.
 	err = runRestoreUsingList(ctx, runningInfo, objectAndStaticDataListFile)
 	if err != nil {
-		if crossMajor {
-			// Cross-major restore failed - roll to the hardened-B fall-back.
-			log.Printf("[WARN] cross-major migration: pg_restore failed: %v", err)
-			return fallBackCrossMajor(crossMajorRestoreFailedWarning(oldVersion, newVersion))
-		}
 		// Same-major restore failed. Do NOT brick the service: retain the
 		// insurance dump, keep the old data directory in place, warn the
 		// user, and let the service start (the data did not carry over but
@@ -814,31 +978,8 @@ func restoreDBBackup(ctx context.Context) error {
 		if rerr := retainBackup(ctx); rerr != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", rerr))
 		}
-		error_helpers.ShowWarning(restoreFailedWarning(constants.DatabaseVersion))
+		error_helpers.ShowWarning(restoreFailedWarning(targetDatabaseVersion))
 		return nil
-	}
-
-	// Step 4 (cross-major): post-restore validation, old server still live.
-	if crossMajor {
-		newConn, nerr := createMaintenanceClient(ctx, runningInfo.Port)
-		if nerr != nil {
-			log.Printf("[WARN] cross-major migration: could not connect to new cluster for validation: %v", nerr)
-			return fallBackCrossMajor(crossMajorValidationDivergedWarning(oldVersion, newVersion))
-		}
-		divergences, verr := runValidateRestore(ctx, oldConn, newConn)
-		newConn.Close(ctx)
-		if verr != nil {
-			log.Printf("[WARN] cross-major migration: validation query failed: %v", verr)
-			return fallBackCrossMajor(crossMajorValidationDivergedWarning(oldVersion, newVersion))
-		}
-		if len(divergences) > 0 {
-			log.Printf("[TRACE] cross-major migration: validation found %d divergence(s); rolling back", len(divergences))
-			return fallBackCrossMajor(crossMajorValidationDivergedWarning(oldVersion, newVersion))
-		}
-		// Step 5: validation clean. The old server is no longer needed.
-		oldConn.Close(ctx)
-		oldConn = nil
-		stopRetainedOldServer(ctx)
 	}
 
 	//
