@@ -784,8 +784,34 @@ func dtLoadCases() []dtCase {
 		// LE-11: LE-3 + catalog corruption that defeats all tiers. Aborts cleanly; PG14 stays runnable.
 		{name: "LE-11", loadTest: true, expected: dtOutcomeDataPreservedOnDisk, wantOldClusterRetained: true,
 			setup: withFlags(le3Setup(), func(s *dtCaseSetup) { s.failAllTiers = true })},
+		// LE-MEGA: the combined worst case - all three stress axes maxed at once,
+		// which no single other case does. LE-3 maxes rows in ONE table (36M / 600
+		// partitions); LE-4 maxes tables+partitions but with tiny rows (~33.6k
+		// partitions x 10). LE-MEGA combines them: 60 tables x 600 partitions x
+		// 1,000 rows = 36,000 partitions and 36M rows spread across 60 tables - the
+		// partition/table fan-out of the aggregate AND the row volume of the biggest
+		// single table, together. Strictly heavier than either (same row volume,
+		// more restore units, more per-table + ATTACH overhead).
+		//
+		// The 1,000 rows/partition is a stress-test choice, not a measured client
+		// number - bump volMegaRowsPerPart to match a real workspace if you have it.
+		// At full volume this is a multi-minute offline run; the STEAMPIPE_DT_XMIG_VOLUME
+		// knob scales every axis down (0.01 -> 4 tables x 6 partitions x 10 rows) so
+		// normal/smoke runs stay fast. Expected: clean tier-1 restore.
+		{name: "LE-MEGA", loadTest: true, expected: dtOutcomeAutoRestoreSucceededAtTier1, wantMinTier: 1,
+			setup: dtCaseSetup{
+				volTables:      dtScalePartitions(60),
+				volPartitions:  dtScalePartitions(600),
+				volRowsPerPart: dtScaleRows(volMegaRowsPerPart),
+			}},
 	}
 }
+
+// volMegaRowsPerPart is the rows-per-partition for the LE-MEGA combined stress
+// case. A stress-test target, not a measured client figure; raise it to match a
+// real largest-workspace shape. At 1,000 the case is 60 tables x 600 partitions
+// x 1,000 rows = 36M rows over 36,000 partitions at full volume.
+const volMegaRowsPerPart = 1000
 
 // -----------------------------------------------------------------------------
 // Worker - owns its data dirs and runs one case at a time.
