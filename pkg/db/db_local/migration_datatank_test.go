@@ -605,12 +605,12 @@ type dtCase struct {
 	setup    dtCaseSetup
 
 	// Report-level assertions. These make the reserved-word, tier-escalation,
-	// and rollback cases assert HOW the outcome was reached, not just the final
-	// enum - so an accidental enum match against the baseline reference (which
-	// leaves the report empty) does not count as a pass.
+	// and preserve/failure cases assert HOW the outcome was reached, not just the
+	// final enum - so an accidental enum match against the baseline reference
+	// (which leaves the report empty) does not count as a pass.
 	wantReservedWordRouted bool // DT-C1 / DT-F6: reserved-word scan routed to tier 3
 	wantMinTier            int  // DT-F2..F4: the escalation must reach at least this tier
-	wantOldClusterRetained bool // DT-E3 / DT-E4 / DT-F5: rollback must retain the PG14 dir
+	wantOldClusterRetained bool // DT-E3 / DT-E4 / DT-F5: a preserve outcome must retain the old PG14 dir
 
 	// loadTest marks the exec-5c LE-* cases. runCase captures wall-clock + disk
 	// metrics for these and appends them to the per-run metrics file so the load-
@@ -760,7 +760,7 @@ func dtLoadCases() []dtCase {
 		// LE-6: LE-3 + simulated disk pressure. Disk pre-flight aborts cleanly; PG14 retained.
 		{name: "LE-6", loadTest: true, expected: dtOutcomeDiskPreflightFailed, wantOldClusterRetained: true,
 			setup: withFlags(le3Setup(), func(s *dtCaseSetup) { s.forceDiskPreflightFail = true })},
-		// LE-7: LE-3 + SIGKILL mid-restore. Rolls back to PG14 cleanly; old cluster intact.
+		// LE-7: LE-3 + SIGKILL mid-restore. New version still runs; old data dir + dump preserved on disk, old cluster intact.
 		{name: "LE-7", loadTest: true, expected: dtOutcomeDataPreservedOnDisk, wantOldClusterRetained: true,
 			setup: withFlags(le3Setup(), func(s *dtCaseSetup) { s.interruptMidRestore = true })},
 		// LE-8: LE-3 + tier-1 failure injected. Tier 2 (serial pg_restore) picks up. Budget 1.5xLE-3.
@@ -905,7 +905,7 @@ func (w *dtWorker) runCase(ctx context.Context, tc dtCase) (dataTankMigrationOut
 		return got, fmt.Errorf("expected escalation to reach at least tier %d, but highestTierAttempted=%d", tc.wantMinTier, report.highestTierAttempted)
 	}
 	if tc.wantOldClusterRetained && !report.oldClusterRetained {
-		return got, fmt.Errorf("expected rollback to retain the PG14 cluster dir, but report.oldClusterRetained=false")
+		return got, fmt.Errorf("expected a preserve outcome to retain the old PG14 cluster dir, but report.oldClusterRetained=false")
 	}
 
 	// Data-preservation invariant (governing decision 2026-06-08): for EVERY
