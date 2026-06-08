@@ -1,0 +1,11 @@
+NOTE (not a fixture): P15.4 plpython2u/plpythonu removal.
+The catalogue marks this a HARD restore failure ("language does not exist").
+It CANNOT be reproduced as a loadable PG14 fixture on this host: the wrapper-built
+PG14 install ships no plpython2u, so CREATE FUNCTION ... LANGUAGE plpython2u fails at
+FIXTURE-APPLY time on the SOURCE (a broken fixture), never reaching the migration step.
+Same reason F01 substituted P18.3 for the original P15.4 slot. The public-side test
+records P15.4 as covered-by-class: F03 (a restore that aborts because a referenced
+object does not exist on PG18) exercises the identical engine path -- pg_restore
+returns non-zero, runCrossMajorMigration returns RestoreFailedGracefully, dump+old dir
+retained. A dedicated plpython2u fixture would need a PG14 build with the language
+present.

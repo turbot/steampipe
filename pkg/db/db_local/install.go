@@ -98,6 +98,30 @@ The service has started so it remains usable. Nothing was deleted: a dump of you
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
 
+// dataTankMigrationDataPreservedWarning is the user/orchestrator-facing message
+// emitted when the tiered data-tank restore exhausts every tier. Under the
+// 2026-06-08 governing decision (data-preservation over version-revert) the new
+// Postgres version still runs, but the original is preserved on disk in two
+// independent forms - the untouched old data directory plus the retained dump -
+// so nothing is lost. The structured signal lives in the JSON marker file; this
+// is the human-readable companion.
+func dataTankMigrationDataPreservedWarning(retainedDumpPath string) string {
+	warningMessage := fmt.Sprintf(`Data-tank migration to Postgres 18 could not be completed automatically.
+
+The new database has started, but your original data has NOT been dropped - it is preserved on disk in two forms: your previous data directory under ~/.steampipe/db, and an insurance dump retained at %s.
+
+This has been flagged for investigation. No action is required from you.`, retainedDumpPath)
+
+	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
+}
+
+// Note: the per-cause data-tank fall-back warnings (refresh-pause-failed,
+// disk-preflight-failed) were converged into dataTankMigrationDataPreservedWarning
+// under the 2026-06-08 data-preservation decision. Every data-tank failure cause
+// now surfaces the same outcome - the new version runs, the original is preserved
+// on disk - so a single warning covers them all. The per-cause detail lives in the
+// JSON marker file the engine writes (writeDataTankStatus).
+
 // EnsureDBInstalled makes sure that the embedded postgres database is installed and ready to run
 func EnsureDBInstalled(ctx context.Context) (err error) {
 	putils.LogTime("db_local.EnsureDBInstalled start")

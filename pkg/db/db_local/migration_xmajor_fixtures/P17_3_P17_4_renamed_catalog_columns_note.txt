@@ -1,0 +1,14 @@
+NOTE (not a fixture): P17.3 (pg_collation.colliculocale -> colllocale) and
+P17.4 (pg_database.daticulocale -> datlocale).
+
+These ICU locale columns were introduced in PG15, NOT PG14. A view referencing
+colliculocale / daticulocale CANNOT be created on the PG14 source - fixture-apply
+fails with "column colliculocale does not exist" (verified on PG14.19). The
+catalogue's restore-failure premise is a dump taken FROM PG15/16 (which has the
+column) restored into PG18; the embedded migration under test is PG14 -> PG18,
+which never had the column. Non-reproducible from a PG14 source.
+
+Covered-by-class in migration_xmajor_test.go via the P17_3_colliculocale_control /
+P17_4_daticulocale_control cases (a plain schema asserting AutoRestoreSucceeded,
+proving the engine is not tripped). A real renamed-catalog-column fixture would
+need a PG15-or-later source cluster.

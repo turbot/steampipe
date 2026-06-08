@@ -922,9 +922,37 @@ func restoreDBBackup(ctx context.Context) error {
 		case crossMajorOutcomeValidationDiverged:
 			return fallBackCrossMajor(crossMajorValidationDivergedWarning(oldVersion, newVersion))
 		case crossMajorOutcomeSuccess:
-			// Restore + validation clean. Refresh materialized views (Step 6),
-			// retain the backup, and remove the old install dir as the
-			// same-major success path does.
+			// Public-schema restore + validation clean. Before stopping the old
+			// server, migrate any data-tank schemas through the shared engine - it
+			// needs the old cluster live to read partition topology and stream the
+			// data old -> new. On the normal CLI workspace there are no data-tank
+			// schemas and this is a clean no-op.
+			//
+			// The old data directory is removed only after BOTH the public-schema
+			// migration AND the data-tank migration confirm full success (the single
+			// deletion gate). A data-tank failure preserves the old dir and warns,
+			// but does NOT revert the public-schema success: the new version still
+			// runs (the 2026-06-08 data-preservation decision).
+			dtCommitted := true
+			if found, location, ferr := findDifferentPgInstallation(ctx); ferr == nil && found {
+				old := oldClusterRef(oldVersion, location, retainedOldServer.dbName, retainedOldServer.port)
+				newRef := newClusterRef(runningInfo.Port, runningInfo.Database)
+				dtRes, dtErr := migrateDataTankSchemasOnStartup(ctx, old, newRef, filepaths.EnsureDatabaseDir())
+				if dtErr != nil || !dtRes.committed {
+					// A data-tank failure does NOT revert the public-schema success
+					// (the new version still runs). The old data dir + the retained
+					// data-tank dump are the two preserved recovery copies.
+					dtCommitted = false
+					if dtErr != nil {
+						log.Printf("[WARN] cross-major data-tank migration failed: %v", dtErr)
+					}
+					error_helpers.ShowWarning(dataTankMigrationDataPreservedWarning(dtRes.dumpDir))
+				}
+			}
+
+			// Refresh materialized views (Step 6), retain the backup, and (only if
+			// the data-tank migration also fully succeeded) remove the old install
+			// dir through the single deletion gate.
 			stopRetainedOldServer(ctx)
 			if matviewListFile != "" {
 				if err := runRestoreUsingList(ctx, runningInfo, matviewListFile); err != nil {
@@ -939,9 +967,7 @@ func restoreDBBackup(ctx context.Context) error {
 				return err
 			}
 			if found {
-				if err := os.RemoveAll(location); err != nil {
-					log.Printf("[WARN] Could not remove old installation at %s.", location)
-				}
+				removeOldDataDirOnMigrationSuccess(dtCommitted, location)
 			}
 			return nil
 		}
@@ -1014,11 +1040,12 @@ func restoreDBBackup(ctx context.Context) error {
 		return err
 	}
 
-	// remove it
+	// remove it through the single deletion gate (the only code that removes the
+	// old data dir). A same-major restore that reaches here has succeeded, so the
+	// removal is unlocked; the behaviour is identical to the previous inline
+	// os.RemoveAll.
 	if found {
-		if err := os.RemoveAll(location); err != nil {
-			log.Printf("[WARN] Could not remove old installation at %s.", location)
-		}
+		removeOldDataDirOnMigrationSuccess(true, location)
 	}
 
 	return nil

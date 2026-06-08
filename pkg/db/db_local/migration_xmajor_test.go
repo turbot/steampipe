@@ -418,6 +418,50 @@ func errString(err error) string {
 	return err.Error()
 }
 
+// isPublicFailureOutcome reports whether an outcome is a terminal failure where
+// the data-preservation invariant must hold (old dir + dump retained on disk).
+func isPublicFailureOutcome(o migrationOutcome) bool {
+	switch o {
+	case outcomeRestoreFailedGracefully,
+		outcomePostValidationFailedGracefully,
+		outcomeDumpFailed:
+		return true
+	}
+	return false
+}
+
+// assertOldDataDirPreserved confirms the source PG14 data directory still exists
+// and still holds a real cluster (its PG_VERSION marker is present and the data
+// is not an empty husk). This is the half of the data-preservation invariant that
+// guarantees the original is recoverable after a failed migration.
+func assertOldDataDirPreserved(dataDir string) error {
+	info, err := os.Stat(dataDir)
+	if err != nil {
+		return fmt.Errorf("old PG14 data dir %s missing after migration: %w", dataDir, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("old PG14 data path %s is not a directory", dataDir)
+	}
+	if _, err := os.Stat(filepath.Join(dataDir, "PG_VERSION")); err != nil {
+		return fmt.Errorf("old PG14 data dir %s no longer contains a cluster (PG_VERSION absent): %w", dataDir, err)
+	}
+	return nil
+}
+
+// assertDumpRetained confirms the safety dump artefact is still on disk and
+// non-empty after a restore/validation failure (the second independent recovery
+// copy required by the governing decision).
+func assertDumpRetained(dumpFile string) error {
+	info, err := os.Stat(dumpFile)
+	if err != nil {
+		return fmt.Errorf("safety dump %s not retained after failure: %w", dumpFile, err)
+	}
+	if info.Size() == 0 {
+		return fmt.Errorf("safety dump %s retained but empty", dumpFile)
+	}
+	return nil
+}
+
 // -----------------------------------------------------------------------------
 // Test case table.
 // -----------------------------------------------------------------------------
@@ -526,6 +570,115 @@ func xmigCases() []xmigCase {
 		c("F04_removed_grant_rule_pg18", "F04_removed_grant_rule_pg18.sql", "F04_removed_grant_rule_pg18.assert.sql", outcomeAutoRestoreSucceeded),
 		c("F05_reserved_word_system_user", "F05_reserved_word_system_user.sql", "", outcomeRestoreFailedGracefully),
 		c("F06_interval_text_index_pg15", "F06_interval_text_index_pg15.sql", "", outcomeRestoreFailedGracefully),
+
+		// ---- Category P: exhaustive PG15-18 catalogue coverage (public shape) ----
+		//
+		// One case per catalogue item P15.x..P18.x that the F/E set above does not
+		// already cover. Each cites the catalogue ID. The REQUIRED outcome is
+		// derived from the catalogue's stated restore behaviour AND the governing
+		// data-preservation decision:
+		//   - items that ABORT pg_restore => outcomeRestoreFailedGracefully
+		//     (dump + old dir retained; asserted by the data-preservation guard).
+		//   - items that restore cleanly (body opacity, behavioural-only divergence,
+		//     C-locale-safe FTS, custom-format-safe COPY) => outcomeAutoRestoreSucceeded.
+		//
+		// Catalogue items already covered elsewhere (NOT duplicated here):
+		//   P15.1 -> E01_grant_public, P15.2 -> E03_non_default_owner,
+		//   P15.3 -> F02 (body opacity) + F03 (view-references-removed-func),
+		//   P15.6 -> F06_interval_text_index, P18.1 -> F04_removed_grant_rule,
+		//   P18.3 -> F01_unlogged_partition, reserved-word SYSTEM_USER -> F05.
+		//
+		// Catalogue items that CANNOT be reproduced as a restore failure through
+		// Steampipe's PG14 --schema=public dump-and-restore path (recorded as
+		// covered-by-class controls below, with the reason - each verified against the
+		// real PG14.19 wrapper binary):
+		//   P15.4 plpython2u (no plpython2u.control ships in the PG14 wrapper build;
+		//     CREATE EXTENSION plpython2u errors "could not open extension control
+		//     file", so the breakage trigger cannot be loaded onto the source).
+		//   P16.3 NULLS NOT DISTINCT on a PK (PG14 rejects the syntax outright -
+		//     "syntax error at or near nulls"; the feature arrived in PG15).
+		//   P17.1 adminpack (the extension DOES install on this PG14 build -
+		//     CREATE EXTENSION adminpack succeeds - but Steampipe dumps with
+		//     --schema=public, which excludes CREATE EXTENSION entirely; adminpack
+		//     lives outside the public schema, so the removed extension never reaches
+		//     the PG18 restore. Verified: the public-only custom dump TOC carries no
+		//     adminpack entry and the restore succeeds without it. NOT the same path as
+		//     F03 - F03 is a removed-FUNCTION (pg_is_in_backup) restore abort, a
+		//     different mechanism; adminpack simply never enters a public dump).
+		//   P17.2 db_user_namespace (a postgresql.conf GUC, never serialised into any
+		//     dump).
+		//   P17.3 / P17.4 colliculocale / daticulocale (catalog columns the PG15 ICU
+		//     work added; absent from the PG14 catalog - verified pg_collation /
+		//     pg_database carry no such column - so the breakage-triggering view cannot
+		//     be created on the source).
+		//   P18.5 data checksums (pg_dump output is checksum-agnostic; checksums are a
+		//     cluster-init / pg_upgrade property never carried in a dump).
+
+		// -- PG15 --
+		c("P15_5_xml2_qualified", "P15_5_xml2_qualified.sql", "", outcomeRestoreFailedGracefully),
+
+		// -- PG16 --
+		c("P16_1_wal_records_info", "P16_1_wal_records_info.sql", "P16_1_wal_records_info.assert.sql", outcomeAutoRestoreSucceeded),
+		c("P16_2_wal_stats", "P16_2_wal_stats.sql", "P16_2_wal_stats.assert.sql", outcomeAutoRestoreSucceeded),
+		// P16.4: the catalogue's predicted restore failure is for direct DDL replay /
+		// pg_upgrade, NOT the dump-and-restore path. A _RETURN ON SELECT rule makes the
+		// relation a view (relkind 'v'); pg_dump serialises a view as an ordinary
+		// CREATE VIEW, which PG18 accepts - so on the dump-and-restore path the restore
+		// SUCCEEDS by first principles (reasoned in the fixture, mirroring F04). The
+		// case still exercises the engine on the rule-converted-view path.
+		c("P16_4_on_select_rule_view", "P16_4_on_select_rule_view.sql", "P16_4_on_select_rule_view.assert.sql", outcomeAutoRestoreSucceeded),
+		c("P16_5_cursor_assignment", "P16_5_cursor_assignment.sql", "P16_5_cursor_assignment.assert.sql", outcomeAutoRestoreSucceeded),
+
+		// -- PG17 --
+		// P17.3 / P17.4 reference catalog columns (pg_collation.colliculocale,
+		// pg_database.daticulocale) that the ICU work introduced in PG15 - they do
+		// NOT exist on the PG14 source at all, so the view cannot be created at
+		// fixture-apply time (verified: "column colliculocale does not exist" on
+		// PG14.19). The catalogue's premise is a dump FROM PG15/16 (which HAS the
+		// column) restored into PG18; our source is PG14, which predates the column.
+		// Non-reproducible from a PG14 source -> covered-by-class controls.
+		// not constructible on PG14: pg_collation.colliculocale is a PG15 ICU catalog
+		// column absent from the PG14 catalog.
+		c("P17_3_colliculocale_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
+		// not constructible on PG14: pg_database.daticulocale is a PG15 ICU catalog
+		// column absent from the PG14 catalog.
+		c("P17_4_daticulocale_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
+		// P17.5: behavioural-only divergence (the view restores; PG14 and PG18
+		// return different rows by design), so no row-comparing golden is attached.
+		c("P17_5_attstattarget_view", "P17_5_attstattarget_view.sql", "", outcomeAutoRestoreSucceeded),
+		c("P17_6_search_path_index", "P17_6_search_path_index.sql", "P17_6_search_path_index.assert.sql", outcomeAutoRestoreSucceeded),
+
+		// -- PG18 --
+		c("P18_2_memory_contexts_view", "P18_2_memory_contexts_view.sql", "", outcomeRestoreFailedGracefully),
+		c("P18_4_copy_dot_eof", "P18_4_copy_dot_eof.sql", "P18_4_copy_dot_eof.assert.sql", outcomeAutoRestoreSucceeded),
+		c("P18_6_fts_index", "P18_6_fts_index.sql", "P18_6_fts_index.assert.sql", outcomeAutoRestoreSucceeded),
+
+		// -- Covered-by-class controls for the items that CANNOT be constructed as a
+		// restore failure on a real PG14 source through Steampipe's --schema=public
+		// dump-and-restore path. Each loads a minimal ordinary schema (A02) and asserts
+		// AutoRestoreSucceeded: these are NOT breakage coverage, they are documented
+		// non-reproducibility controls proving the engine cleanly migrates a
+		// representative cluster when the catalogue's breakage trigger cannot exist on
+		// the source. The per-item reason (each verified against the PG14.19 binary) is
+		// stated in the block comment above; the one-line "not constructible on PG14"
+		// rationale is repeated on each case below. --
+		// not constructible on PG14: no plpython2u.control in the wrapper build;
+		// CREATE EXTENSION plpython2u errors at fixture-apply time.
+		c("P15_4_plpython2u_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
+		// not constructible on PG14: NULLS NOT DISTINCT is PG15 syntax; PG14 rejects it
+		// with a syntax error.
+		c("P16_3_nulls_not_distinct_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
+		// not constructible on PG14: adminpack DOES install on PG14, but a
+		// --schema=public dump excludes CREATE EXTENSION, so the extension PG18 removed
+		// never reaches the restore (distinct from F03, which is a removed-FUNCTION
+		// abort).
+		c("P17_1_adminpack_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
+		// not constructible on PG14: db_user_namespace is a postgresql.conf GUC, never
+		// serialised into a dump.
+		c("P17_2_db_user_namespace_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
+		// not constructible on PG14: data checksums are a cluster-init / pg_upgrade
+		// property; pg_dump output is checksum-agnostic.
+		c("P18_5_checksums_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
 
 		// ---- Category G (pre-flight scan unit cases) ----
 		{name: "G01_scan_no_text_objects", fixture: "G01_scan_no_text_objects.sql", preflightOnly: true, preflightWant: false},
@@ -674,6 +827,27 @@ func (w *worker) runCase(ctx context.Context, tc xmigCase) (migrationOutcome, er
 	res, merr := runMigration(ctx, src, target, dumpFile, tc.setup)
 	if merr != nil {
 		return 0, merr
+	}
+
+	// Data-preservation invariant (governing decision 2026-06-08): for every
+	// failure-ending outcome the migration must leave the original recoverable -
+	// the old PG14 data directory present and populated, plus (where a dump was
+	// taken) the safety dump retained. This is asserted PER failure case here so a
+	// regression in exec-6b that deletes the old dir before the migration is 100%
+	// complete is caught at the point of failure. exec-6d is the dedicated gate
+	// test; this is the per-case guard.
+	if isPublicFailureOutcome(res.outcome) {
+		if perr := assertOldDataDirPreserved(w.pg14Data()); perr != nil {
+			return res.outcome, fmt.Errorf("data-preservation invariant violated for %s: %w", res.outcome, perr)
+		}
+		// On a dump failure the dump artefact may be absent/partial by definition
+		// (the dump step is what failed); the old data dir is the surviving copy.
+		// On restore / validation failures the safety dump MUST be retained.
+		if res.outcome != outcomeDumpFailed {
+			if derr := assertDumpRetained(dumpFile); derr != nil {
+				return res.outcome, fmt.Errorf("data-preservation invariant violated for %s: %w", res.outcome, derr)
+			}
+		}
 	}
 
 	// For AutoRestoreSucceeded cases, run the assert golden against BOTH
