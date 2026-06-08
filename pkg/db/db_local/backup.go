@@ -830,11 +830,13 @@ func restoreDBBackup(ctx context.Context) error {
 	// Determine whether the on-disk old install is a same-major (minor) or a
 	// cross-major migration. On a cross-major jump we run the five-step
 	// best-effort flow (insurance dump -> pre-flight collation scan -> restore
-	// -> post-restore validation -> success-or-fall-back). The fall-back state
-	// (hardened-B: retain the dump and the old data dir, start the service on an
-	// empty public schema, warn the user) is rolled to whenever pre-flight
-	// detects collation risk, pg_restore returns non-zero, or validation finds
-	// divergence.
+	// -> post-restore validation -> success-or-fall-back) for the public schema,
+	// then, on public success and while the old cluster is still live, run the
+	// data-tank migration (migrateDataTankSchemasOnStartup); the old data dir is
+	// removed only when both commit. The fall-back state (hardened-B: retain the
+	// dump and the old data dir, start the service on an empty public schema,
+	// warn the user) is rolled to whenever pre-flight detects collation risk,
+	// pg_restore returns non-zero, or validation finds divergence.
 	var crossMajor bool
 	var oldVersion string
 	if found, location, ferr := findDifferentPgInstallation(ctx); ferr == nil && found {

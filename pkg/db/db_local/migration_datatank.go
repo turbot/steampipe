@@ -10,10 +10,11 @@ package db_local
 // catalog risk - a column literally named system_user (PG16+ reserves
 // SYSTEM_USER).
 //
-// Failure stance: on any unrecoverable failure the OLD PG14 cluster is left
-// intact and the workspace stays on PG14. Data is never dropped. The tiered
-// restore escalates parallel -> serial -> per-table COPY -> per-partition COPY
-// before giving up.
+// Failure stance: on any unrecoverable or partial failure the OLD PG14 data
+// directory (plus the safety dump) is left intact on disk; the new Postgres
+// version still runs and the original is preserved for recovery. No
+// version-revert; data is never dropped. The tiered restore escalates
+// parallel -> serial -> per-table COPY -> per-partition COPY before giving up.
 
 import (
 	"context"
@@ -157,7 +158,8 @@ type dataTankMigrationFaults struct {
 
 	// interruptMidRestore / targetUnusable model an interrupted migration
 	// (SIGKILL / OOM / pod restart) or an old-cluster binary issue: the restore
-	// cannot proceed and the migration rolls back to PG14.
+	// cannot proceed, so the old data directory + safety dump are preserved on
+	// disk and the failure is surfaced (no version-revert).
 	interruptMidRestore bool
 	targetUnusable      bool
 }

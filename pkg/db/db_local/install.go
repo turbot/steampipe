@@ -99,7 +99,9 @@ The service has started so it remains usable. Nothing was deleted: a dump of you
 }
 
 // dataTankMigrationDataPreservedWarning is the user/orchestrator-facing message
-// emitted when the tiered data-tank restore exhausts every tier. Under the
+// emitted whenever the data-tank migration does not fully commit - a disk
+// pre-flight or refresh-pause abort, a dump failure, a partial restore (tier 4
+// reached but >=1 partition unmigrated), or all tiers exhausted. Under the
 // 2026-06-08 governing decision (data-preservation over version-revert) the new
 // Postgres version still runs, but the original is preserved on disk in two
 // independent forms - the untouched old data directory plus the retained dump -
