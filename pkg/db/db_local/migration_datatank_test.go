@@ -411,7 +411,7 @@ func runDataTankMigration(ctx context.Context, oldC, newC *dtCluster, backupDir 
 
 	src := dtClusterRef(oldC)
 	target := dtClusterRef(newC)
-	faults := dataTankMigrationFaults{
+	faults := migrationFaults{
 		forceDumpFailure:        setup.forceDumpFailure,
 		forceDiskPreflightFail:  setup.forceDiskPreflightFail,
 		refreshPauseNotHonoured: setup.refreshDuringDump && !setup.respectPauseHook,

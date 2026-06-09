@@ -151,6 +151,50 @@ insert into public.things values (1, 'alpha'), (2, 'bravo');`
 	assertOldDataDirCleared(t, oldDataDir)
 }
 
+// TestDataTankStartup_RetryAfterFailureOverwritesStaleDump: a FAILED data-tank
+// migration leaves its retained dump dir behind (it is a recovery copy), and
+// the old data dir is preserved, so the next startup retries the migration.
+// pg_dump's directory format refuses an existing directory, so without
+// clearing the stale dump first every retry would fail at the dump step with
+// "File exists" - a permanent fail-loop on the failure path (observed live
+// 2026-06-09). The retry must replace the stale dump and commit.
+func TestDataTankStartup_RetryAfterFailureOverwritesStaleDump(t *testing.T) {
+	skipIfNoBinaries(t)
+
+	srcSQL, err := dtReadFixture("DT-A2_list_partition_4.sql")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+
+	old, newRef, _, _, oldDataDir, backupDir := startupClusters(t, srcSQL)
+
+	// Simulate the prior failed attempt's leftover: a non-empty retained dump
+	// dir at the exact path the engine dumps to.
+	staleDump := filepath.Join(backupDir, "data-tank")
+	if err := os.MkdirAll(staleDump, 0755); err != nil {
+		t.Fatalf("plant stale dump dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(staleDump, "toc.dat"), []byte("stale prior attempt"), 0644); err != nil {
+		t.Fatalf("plant stale toc: %v", err)
+	}
+
+	res, err := migrateDataTankSchemasOnStartup(context.Background(), old, newRef, backupDir)
+	if err != nil {
+		t.Fatalf("retry over a stale dump dir must succeed, got error: %v (res=%+v)", err, res)
+	}
+	if !res.committed {
+		t.Errorf("retry over a stale dump dir must commit, got %+v", res)
+	}
+
+	// The stale marker is gone - the dump was replaced, not appended to.
+	if b, rerr := os.ReadFile(filepath.Join(staleDump, "toc.dat")); rerr == nil && string(b) == "stale prior attempt" {
+		t.Errorf("stale dump content survived the retry; the dump dir was not replaced")
+	}
+
+	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
+	assertOldDataDirCleared(t, oldDataDir)
+}
+
 // TestDataTankStartup_FailurePreservesOldDir: when the data-tank migration does
 // NOT commit, the deletion gate must keep the old data directory (the public
 // success is not reverted, but the old dir is the preserved recovery copy).

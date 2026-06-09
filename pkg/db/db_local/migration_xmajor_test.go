@@ -4,16 +4,18 @@ package db_local
 //
 // This suite drives the SHIPPED cross-major migration code directly:
 //
+//   - runMigrationEngine + publicMigrationShape (migration_engine.go) -
+//     the shared engine production's restoreDBBackup runs for the public
+//     schema (the single cross-major orchestration: collation pre-flight ->
+//     dump -> restore ladder -> validation -> tolerant matview refresh).
 //   - runPreflightCollationScan (backup.go) - the pre-flight collation scan
-//     that gates the cross-major restore.
+//     that gates the cross-major restore (also driven in isolation by the G
+//     category).
 //   - runValidateRestore (backup.go) - the post-restore validation pass.
-//   - runCrossMajorMigration (backup.go) - the orchestration helper extracted
-//     from restoreDBBackup that wires the scan, the restore step, and the
-//     validation pass together into the four outcomes the matrix asserts.
 //
 // The harness owns only the OUT-of-process plumbing (boots a real PG14 source
 // cluster and a real PG18 target cluster over Unix sockets, applies fixture
-// SQL, calls pg_dump / pg_restore). All policy decisions are made by the
+// SQL, takes the insurance dump). All policy decisions are made by the
 // production code under test.
 //
 // HOW THE SEAM FOR constants.DatabaseVersion WORKS
@@ -41,6 +43,7 @@ package db_local
 import (
 	"context"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -57,9 +60,9 @@ import (
 )
 
 // -----------------------------------------------------------------------------
-// Outcome enum (mirrors the four outcomes runCrossMajorMigration distinguishes,
-// plus a DumpFailed sentinel for cases where the harness blocks the pre-dump
-// step).
+// Outcome enum (mirrors the four end states the shared engine's public shape
+// distinguishes, plus a DumpFailed sentinel for cases where the harness blocks
+// the pre-dump step).
 // -----------------------------------------------------------------------------
 
 type migrationOutcome int
@@ -275,15 +278,17 @@ func (c *cluster) applyFixtureSQL(ctx context.Context, sqlText string) error {
 }
 
 // -----------------------------------------------------------------------------
-// Migration building blocks (dump / restore).
+// Migration building blocks.
 //
-// The pre-flight scan and the post-restore validation pass are NOT
-// reimplemented here - the harness calls the shipped runPreflightCollationScan
-// and runValidateRestore (backup.go) via runCrossMajorMigration.
+// Nothing of the migration itself is reimplemented here - the harness builds
+// two pgClusterRef handles and runs the SHIPPED shared engine
+// (runMigrationEngine with publicMigrationShape), exactly as production's
+// restoreDBBackup does.
 // -----------------------------------------------------------------------------
 
 // dumpPublicSchema runs pg_dump (custom format, public schema only) against the
-// source cluster, mirroring takeBackup (backup.go :169).
+// source cluster, mirroring the insurance dump prepareBackup/takeBackup takes
+// before the engine runs (the engine takes its own working dump separately).
 func dumpPublicSchema(ctx context.Context, src *cluster, dumpFile string) error {
 	pgDump := filepath.Join(pgBinDir(src.version), "pg_dump")
 	cmd := exec.CommandContext(ctx, pgDump,
@@ -301,114 +306,103 @@ func dumpPublicSchema(ctx context.Context, src *cluster, dumpFile string) error 
 	return nil
 }
 
-// restorePublicSchema runs pg_restore --single-transaction against the target
-// cluster, mirroring runRestoreUsingList (backup.go :391).
-func restorePublicSchema(ctx context.Context, target *cluster, dumpFile string) error {
-	pgRestore := filepath.Join(pgBinDir(target.version), "pg_restore")
-	cmd := exec.CommandContext(ctx, pgRestore,
-		dumpFile,
-		"--format=custom",
-		"--schema=public",
-		"--single-transaction",
-		"--dbname="+target.dbName,
-		"--host="+target.sockDir,
-		"--username="+target.superUsr,
-	)
-	cmd.Env = libEnv(target.version)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("pg_restore failed: %v\n%s", err, out)
+// xmigClusterRef adapts a harness cluster to the engine's cluster handle.
+func xmigClusterRef(c *cluster) *pgClusterRef {
+	return &pgClusterRef{
+		version: c.version,
+		binDir:  pgBinDir(c.version),
+		env:     libEnv(c.version),
+		sockDir: c.sockDir,
+		dbName:  c.dbName,
+		user:    c.superUsr,
+		dataDir: c.dataDir,
+	}
+}
+
+// plantInvalidIndex leaves a genuinely INVALID index in the target's fixture
+// database: CREATE UNIQUE INDEX CONCURRENTLY over duplicate values fails and
+// leaves the index behind with pg_index.indisvalid=false. The shipped
+// runValidateRestore must then report an index_invalid divergence and the
+// engine must roll the migration outcome back to ValidationDiverged.
+func plantInvalidIndex(ctx context.Context, target *cluster) error {
+	conn, err := target.connect(ctx, target.dbName)
+	if err != nil {
+		return err
+	}
+	defer conn.Close(ctx)
+	if _, err := conn.Exec(ctx, "CREATE TABLE public.validation_canary (id int)"); err != nil {
+		return err
+	}
+	if _, err := conn.Exec(ctx, "INSERT INTO public.validation_canary VALUES (1),(1)"); err != nil {
+		return err
+	}
+	// expected to fail (duplicate values under a unique index), leaving an
+	// INVALID index entry behind
+	if _, err := conn.Exec(ctx, "CREATE UNIQUE INDEX CONCURRENTLY validation_canary_bad_idx ON public.validation_canary (id)"); err == nil {
+		return fmt.Errorf("CREATE UNIQUE INDEX CONCURRENTLY over duplicates unexpectedly succeeded")
+	}
+	var valid bool
+	if err := conn.QueryRow(ctx, "SELECT i.indisvalid FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid WHERE c.relname = 'validation_canary_bad_idx'").Scan(&valid); err != nil {
+		return fmt.Errorf("invalid-index plant not found: %w", err)
+	}
+	if valid {
+		return fmt.Errorf("planted index is unexpectedly valid")
 	}
 	return nil
 }
 
 // -----------------------------------------------------------------------------
-// runMigration executes the SHIPPED runCrossMajorMigration orchestration
-// against the two test clusters and maps its outcome back to the matrix's
-// outcome enum.
+// runMigration executes the SHIPPED shared engine (public shape) against the
+// two test clusters and maps its result back to the matrix's outcome enum.
 // -----------------------------------------------------------------------------
 
-type migrationResult struct {
+type xmigResult struct {
 	outcome migrationOutcome
 	detail  string
 }
 
-func runMigration(ctx context.Context, oldC, newC *cluster, dumpFile string, opts caseSetup) (migrationResult, error) {
-	// Step 1: insurance dump.
+func runMigration(ctx context.Context, oldC, newC *cluster, dumpFile string, opts caseSetup) (xmigResult, error) {
+	// Step 1: insurance dump (production: prepareBackup/takeBackup). The engine
+	// takes its own working dump; this one is the independently-retained copy
+	// the data-preservation assertions check.
 	dumpErr := dumpPublicSchema(ctx, oldC, dumpFile)
 	if opts.forceDumpFailure || dumpErr != nil {
-		return migrationResult{outcome: outcomeDumpFailed, detail: errString(dumpErr)}, nil
+		return xmigResult{outcome: outcomeDumpFailed, detail: errString(dumpErr)}, nil
 	}
 
-	// Open the connections runCrossMajorMigration needs.
-	oldConn, oerr := oldC.connect(ctx, oldC.dbName)
-	if oerr != nil {
-		return migrationResult{}, fmt.Errorf("open old conn: %w", oerr)
-	}
-	defer oldConn.Close(ctx)
-
-	// runRestore wraps a single pg_restore call. In production this closure
-	// owns the TOC-partition + runRestoreUsingList flow; the test harness
-	// runs the simpler one-shot pg_restore here. Either way, the production
-	// runCrossMajorMigration drives it.
-	runRestore := func() error {
-		if opts.forceRestoreFailure {
-			return fmt.Errorf("forced restore failure")
+	// opts.forceValidationFailure drives the validation-divergence path with a
+	// REAL catalog divergence: an invalid index planted on the target, which the
+	// shipped runValidateRestore detects (index_invalid). This replaces the old
+	// harness device of pointing the validation connection at an empty database
+	// - the engine owns its connections, so the divergence now lives in the
+	// catalog itself. A real PG14->PG18 data divergence that escapes the
+	// pre-flight scan is still hard to construct deterministically (see the
+	// I04 / NFC-NFD discussion).
+	if opts.forceValidationFailure {
+		if err := plantInvalidIndex(ctx, newC); err != nil {
+			return xmigResult{}, err
 		}
-		return restorePublicSchema(ctx, newC, dumpFile)
-	}
-	newConnFn := func() (*pgx.Conn, error) {
-		// opts.forceValidationFailure simulates the post-restore validation
-		// path catching a divergence: we intentionally return a connection
-		// pointed at the SOURCE (old) cluster, so runValidateRestore compares
-		// old-vs-old (no divergence). To force a divergence reliably, we
-		// instead point at a brand-new empty database on the new cluster -
-		// every table on the old side will be "missing" on the new, yielding
-		// row_count divergences. This exercises the production validation +
-		// roll-back path without relying on a real PG14->PG18 catalog
-		// difference that happens to escape the pre-flight scan (which is
-		// hard to construct deterministically; see I04 / NFC-NFD discussion).
-		if opts.forceValidationFailure {
-			// Connect to an EMPTY scratch db on the new cluster. Validation
-			// will see the old cluster's tables and not find them on the
-			// new side, producing row_count divergences.
-			emptyDB := "validation_empty"
-			ctrl, cerr := newC.connect(ctx, "postgres")
-			if cerr != nil {
-				return nil, cerr
-			}
-			var exists bool
-			if err := ctrl.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname=$1)", emptyDB).Scan(&exists); err != nil {
-				ctrl.Close(ctx)
-				return nil, err
-			}
-			if !exists {
-				if _, err := ctrl.Exec(ctx, "CREATE DATABASE "+emptyDB); err != nil {
-					ctrl.Close(ctx)
-					return nil, err
-				}
-			}
-			ctrl.Close(ctx)
-			return pgx.Connect(ctx, fmt.Sprintf("host=%s user=%s dbname=%s sslmode=disable", newC.sockDir, newC.superUsr, emptyDB))
-		}
-		return newC.connect(ctx, newC.dbName)
 	}
 
-	outcome, oerr2 := runCrossMajorMigration(ctx, oldConn, runRestore, newConnFn)
-	if oerr2 != nil {
-		return migrationResult{}, oerr2
+	// opts.forceRestoreFailure maps to the engine's own fault injection: every
+	// restore tier fails, as a disk-full / unusable-target restore would.
+	faults := migrationFaults{}
+	if opts.forceRestoreFailure {
+		faults.failAllTiers = true
 	}
 
-	switch outcome {
-	case crossMajorOutcomeSuccess:
-		return migrationResult{outcome: outcomeAutoRestoreSucceeded}, nil
-	case crossMajorOutcomePreflightSkipped:
-		return migrationResult{outcome: outcomePreflightSkipped}, nil
-	case crossMajorOutcomeRestoreFailed:
-		return migrationResult{outcome: outcomeRestoreFailedGracefully}, nil
-	case crossMajorOutcomeValidationDiverged:
-		return migrationResult{outcome: outcomePostValidationFailedGracefully}, nil
+	res, err := runMigrationEngine(ctx, publicMigrationShape(), xmigClusterRef(oldC), xmigClusterRef(newC), filepath.Dir(dumpFile), "", 1, faults)
+	switch {
+	case err == nil && res.committed:
+		return xmigResult{outcome: outcomeAutoRestoreSucceeded}, nil
+	case errors.Is(err, errMigrationPreflightSkipped):
+		return xmigResult{outcome: outcomePreflightSkipped}, nil
+	case errors.Is(err, errMigrationValidationDiverged):
+		return xmigResult{outcome: outcomePostValidationFailedGracefully}, nil
+	case errors.Is(err, errDataTankAllTiersFailed), errors.Is(err, errDataTankDumpFailed):
+		return xmigResult{outcome: outcomeRestoreFailedGracefully}, nil
 	}
-	return migrationResult{}, fmt.Errorf("unknown cross-major outcome %v", outcome)
+	return xmigResult{}, fmt.Errorf("unexpected engine result: err=%v result=%+v", err, res)
 }
 
 func errString(err error) string {
@@ -471,7 +465,7 @@ func assertDumpRetained(dumpFile string) error {
 type caseSetup struct {
 	forceDumpFailure       bool // H02 / H06: dump cannot proceed
 	forceRestoreFailure    bool // H07 / I-style forced restore failure
-	forceValidationFailure bool // I02 / I03: drive the validation-failure path of runCrossMajorMigration without depending on a real PG14->PG18 divergence
+	forceValidationFailure bool // I02 / I03: drive the engine's validation-failure path via a planted invalid index, without depending on a real PG14->PG18 data divergence
 	corruptPG14Binary      bool // H02: replace the PG14 postgres binary
 	leaveSourceRunning     bool // H03: source still running at migration trigger
 	reMigration            bool // H05: PG18 dir already present
@@ -702,15 +696,16 @@ func xmigCases() []xmigCase {
 		// ---- Category I (post-restore validation orchestration) ----
 		//
 		// I02 / I03 use forceValidationFailure to drive the production
-		// validation-failure path without relying on a real PG14->PG18 catalog
+		// validation-failure path without relying on a real PG14->PG18 data
 		// divergence that happens to escape the pre-flight scan. Manufacturing
 		// such a divergence on ASCII data is hard to do deterministically; the
 		// realistic NFC/NFD-only case (former I04) is unreachable because the
 		// multi-byte detector catches any non-ASCII byte before validation
-		// ever runs. Forcing the validation-failure path covers what these
-		// cases were always meant to cover: that runCrossMajorMigration rolls
-		// back to PostValidationFailedGracefully when validation reports
-		// divergence.
+		// ever runs. The harness instead plants a genuinely INVALID index on
+		// the target, which the shipped runValidateRestore detects
+		// (index_invalid), covering what these cases were always meant to
+		// cover: the engine rolls back to PostValidationFailedGracefully when
+		// validation reports divergence.
 		c("I01_validation_control", "I01_validation_control.sql", "I01_validation_control.assert.sql", outcomeAutoRestoreSucceeded),
 		{name: "I02_validation_collation_divergence", fixture: "I02_validation_collation_divergence.sql", expected: outcomePostValidationFailedGracefully, setup: caseSetup{forceValidationFailure: true}},
 		{name: "I03_validation_index_invalid", fixture: "I03_validation_index_invalid.sql", expected: outcomePostValidationFailedGracefully, setup: caseSetup{forceValidationFailure: true}},

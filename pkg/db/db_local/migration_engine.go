@@ -1,6 +1,7 @@
 package db_local
 
-// Shared cross-major (PG14 -> PG18) copy-and-fallback migration engine.
+// Shared cross-major (PG14 -> PG18) migration engine (runMigrationEngine):
+// dump, fallback restore ladder, validation, commit.
 //
 // This is the single engine both data shapes run on (the 2026-06-08 governing
 // decision: "public-schema and data migrations converge onto one engine; their
@@ -15,7 +16,8 @@ package db_local
 // confirmed full success, in exactly one place (removeOldDataDirOnMigrationSuccess).
 // Any failure OR partial result leaves the new version running (possibly
 // empty/partial) with the original preserved on disk in two independent forms -
-// the untouched old data directory plus the retained safety dump. No
+// the untouched old data directory plus that attempt's retained safety dump
+// (a retry replaces the dump from the still-intact old directory). No
 // version-revert.
 
 import (
@@ -75,6 +77,16 @@ type migrationShape struct {
 	// pairs).
 	listSchemas func(ctx context.Context, conn *pgx.Conn) ([]string, error)
 
+	// matviewRefresh splits the restore into two separate pg_restore
+	// invocations - the objects+static-data list first, then the REFRESH
+	// MATERIALIZED VIEW list - each in its own --single-transaction. The first
+	// commits the data; a failure of the second is WARNED and recorded
+	// (matviewRefreshFailed), never rolled back - a failed matview refresh is a
+	// warning, not a migration failure. ON for public (matviews with
+	// transitive unqualified table references fail to refresh under pg_dump's
+	// blank search_path); OFF for data tank (no matviews).
+	matviewRefresh bool
+
 	// dumpFn, restoreTier1Fn, restoreTier2Fn supply the shape-specific insurance
 	// dump and the two pg_restore tiers of the shared ladder. They differ only in
 	// the dump FORMAT and the schema-selection flags: the data-tank shape uses a
@@ -96,6 +108,7 @@ func dataTankMigrationShape() migrationShape {
 		collationPreCheck:     false,
 		rowChecksumValidation: false,
 		refreshPauseHook:      true,
+		matviewRefresh:        false,
 		copyTierCeiling:       dtRestoreTier4PerPartition,
 		dumpSubdir:            "data-tank",
 		listSchemas:           listDataTankSchemas,
@@ -108,23 +121,25 @@ func dataTankMigrationShape() migrationShape {
 // publicMigrationShape is the public-schema parameterisation of the shared
 // engine. The COPY tiers are unreachable (a public schema carries arbitrary
 // objects that COPY cannot rebuild), so the ladder stops after the pg_restore
-// tiers; those use a custom-format --schema=public dump restored with
-// --single-transaction.
+// tiers; those restore the objects+static-data list of a custom-format
+// --schema=public dump with --single-transaction, leaving the matview-refresh
+// list to the engine's separate, tolerated refresh step (matviewRefresh).
 func publicMigrationShape() migrationShape {
 	return migrationShape{
 		name:                  "public",
 		collationPreCheck:     true,
 		rowChecksumValidation: true,
 		refreshPauseHook:      false,
+		matviewRefresh:        true,
 		copyTierCeiling:       dtRestoreTier2Serial,
 		dumpSubdir:            "public.dump",
 		listSchemas: func(ctx context.Context, _ *pgx.Conn) ([]string, error) {
 			return []string{"public"}, nil
 		},
 		dumpFn:         dumpPublicSchemaCustom,
-		restoreTier1Fn: restorePublicSchemaCustom,
+		restoreTier1Fn: restorePublicObjectsOnly,
 		restoreTier2Fn: func(ctx context.Context, target *pgClusterRef, dumpPath string) error {
-			return restorePublicSchemaCustom(ctx, target, dumpPath, 1)
+			return restorePublicObjectsOnly(ctx, target, dumpPath, 1)
 		},
 	}
 }
@@ -152,31 +167,51 @@ func dumpPublicSchemaCustom(ctx context.Context, src *pgClusterRef, _ []string, 
 	return nil
 }
 
-// restorePublicSchemaCustom restores the custom-format public dump with
-// --single-transaction. Unlike the directory-format restore, this tolerates the
-// pre-existing public schema on the target. jobs is ignored (a single
-// transaction cannot run parallel jobs); both ladder tiers map onto it because
-// the public shape has no parallel-vs-serial distinction.
-func restorePublicSchemaCustom(ctx context.Context, target *pgClusterRef, dumpPath string, _ int) error {
-	args := []string{
-		dumpPath,
-		"--format=custom",
-		"--schema=public",
-		"--single-transaction",
-		"--no-owner",
-		"--dbname=" + target.dbName,
-		"--username=" + target.user,
+// publicDumpListFiles extracts the dump's table of contents and partitions it
+// into the objects+static-data list and the matview-refresh list, written
+// alongside the dump. The caller removes both files.
+func publicDumpListFiles(ctx context.Context, target *pgClusterRef, dumpPath string) (string, string, error) {
+	toc, err := getTableOfContentsFromBackup(ctx, target, dumpPath)
+	if err != nil {
+		return "", "", err
 	}
-	args = append(args, target.toolConnArgs()...)
-	cmd := exec.CommandContext(ctx, target.tool("pg_restore"), args...)
-	cmd.Env = target.env
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("pg_restore (custom, public) failed: %w\n%s", err, out)
-	}
-	return nil
+	return partitionTableOfContents(toc, filepath.Dir(dumpPath))
 }
 
-// runCopyFallbackMigration is the shared engine. Given a shape and the two
+// restorePublicObjectsOnly restores the custom-format public dump WITHOUT its
+// REFRESH MATERIALIZED VIEW entries, in one pg_restore --single-transaction
+// invocation (which tolerates the pre-existing public schema, unlike a
+// directory-format restore). The refresh entries run later as their own
+// transaction (refreshPublicMatviews) so a failed refresh cannot roll back the
+// committed objects+data. jobs is ignored (a single transaction cannot run
+// parallel jobs); both ladder tiers map onto it because the public shape has no
+// parallel-vs-serial distinction.
+func restorePublicObjectsOnly(ctx context.Context, target *pgClusterRef, dumpPath string, _ int) error {
+	objectListFile, matviewListFile, err := publicDumpListFiles(ctx, target, dumpPath)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(objectListFile)
+	defer os.Remove(matviewListFile)
+	return runRestoreUsingList(ctx, target, dumpPath, objectListFile)
+}
+
+// refreshPublicMatviews runs ONLY the REFRESH MATERIALIZED VIEW entries of the
+// public dump, as a second, separate pg_restore --single-transaction invocation
+// - the tolerated half of the matview split. The objects+data restore has
+// already committed; the engine treats a failure here as a warning, never a
+// rollback.
+func refreshPublicMatviews(ctx context.Context, target *pgClusterRef, dumpPath string) error {
+	objectListFile, matviewListFile, err := publicDumpListFiles(ctx, target, dumpPath)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(objectListFile)
+	defer os.Remove(matviewListFile)
+	return runRestoreUsingList(ctx, target, dumpPath, matviewListFile)
+}
+
+// runMigrationEngine is the shared engine. Given a shape and the two
 // cluster handles it runs the same flow for both data shapes:
 //
 //  1. enumerate the shape's schemas and (for the COPY tiers) the partitioned
@@ -185,18 +220,22 @@ func restorePublicSchemaCustom(ctx context.Context, target *pgClusterRef, dumpPa
 //  3. refresh-pause coordination (shape-gated);
 //  4. optional collation pre-check (shape-gated);
 //  5. reserved-word scan -> route decision;
-//  6. insurance dump (directory format, reused by every restore tier);
+//  6. insurance dump (format per shape: directory for data-tank, custom
+//     single-file for public; reused by every restore tier);
 //  7. the shared fallback restore ladder (capped at the shape's tier ceiling);
 //  8. post-restore sanity check + optional row-checksum validation (shape-gated);
-//  9. commit.
+//  9. tolerant matview refresh (shape-gated): a second, separate pg_restore
+//     transaction over the REFRESH MATERIALIZED VIEW list; a failure here is
+//     warned and recorded, never rolled back;
+//  10. commit.
 //
 // On any failure or partial result the original is preserved on disk and the
 // failure is surfaced (oldClusterRetained=true + a non-nil error). The deletion
 // gate (removeOldDataDirOnMigrationSuccess) is NOT called here - it is the
 // caller's single, success-only side effect - so the engine stays unit-testable
 // against two real clusters without touching the install-dir filesystem.
-func runCopyFallbackMigration(ctx context.Context, shape migrationShape, src, target *pgClusterRef, backupDir, statusPath string, jobs int, faults dataTankMigrationFaults) (dataTankMigrationResult, error) {
-	res := dataTankMigrationResult{}
+func runMigrationEngine(ctx context.Context, shape migrationShape, src, target *pgClusterRef, backupDir, statusPath string, jobs int, faults migrationFaults) (migrationResult, error) {
+	res := migrationResult{}
 
 	srcConn, err := src.connect(ctx)
 	if err != nil {
@@ -220,8 +259,8 @@ func runCopyFallbackMigration(ctx context.Context, shape migrationShape, src, ta
 		res.skippedMgrTables = append(res.skippedMgrTables, qualName(m.schema, m.table))
 	}
 
-	dumpDir := filepath.Join(backupDir, shape.dumpSubdir)
-	res.dumpDir = dumpDir
+	dumpPath := filepath.Join(backupDir, shape.dumpSubdir)
+	res.dumpPath = dumpPath
 
 	// Step 2: disk pre-flight.
 	if faults.forceDiskPreflightFail {
@@ -285,7 +324,7 @@ func runCopyFallbackMigration(ctx context.Context, shape migrationShape, src, ta
 		writeDataTankStatus(statusPath, res, "pg_dump failed (disk full during dump)")
 		return res, errDataTankDumpFailed
 	}
-	if derr := shape.dumpFn(ctx, src, schemas, dumpDir, jobs); derr != nil {
+	if derr := shape.dumpFn(ctx, src, schemas, dumpPath, jobs); derr != nil {
 		res.oldClusterRetained = true
 		writeDataTankStatus(statusPath, res, derr.Error())
 		return res, fmt.Errorf("%w: %v", errDataTankDumpFailed, derr)
@@ -299,7 +338,7 @@ func runCopyFallbackMigration(ctx context.Context, shape migrationShape, src, ta
 		return res, errDataTankAllTiersFailed
 	}
 
-	tier, partFailures, restoreErr := runTieredRestore(ctx, src, target, parents, dumpDir, jobs, res.reservedWordRouted, shape.copyTierCeiling, shape.restoreTier1Fn, shape.restoreTier2Fn, faults)
+	tier, partFailures, restoreErr := runTieredRestore(ctx, src, target, parents, dumpPath, jobs, res.reservedWordRouted, shape.copyTierCeiling, shape.restoreTier1Fn, shape.restoreTier2Fn, faults)
 	res.tierReached = tier
 	res.partitionFailures = partFailures
 	if restoreErr != nil {
@@ -350,7 +389,22 @@ func runCopyFallbackMigration(ctx context.Context, shape migrationShape, src, ta
 		}
 	}
 
-	// Step 9: commit - but only if the restore was FULLY complete. A non-empty
+	// Step 9: tolerant matview refresh (shape-gated). The objects+static-data
+	// restore above already committed its own transaction; the REFRESH
+	// MATERIALIZED VIEW entries now run as a SECOND, separate pg_restore
+	// --single-transaction invocation. A failure is warned and recorded - never
+	// a rollback - because matviews with transitive unqualified table references
+	// cannot refresh under pg_dump's blank search_path and the data is already
+	// safely restored (a failed matview refresh is a warning, not a migration
+	// failure).
+	if shape.matviewRefresh {
+		if rerr := refreshPublicMatviews(ctx, target, dumpPath); rerr != nil {
+			log.Printf("[WARN] %s migration: could not refresh materialized views (refresh manually): %v", shape.name, rerr)
+			res.matviewRefreshFailed = true
+		}
+	}
+
+	// Step 10: commit - but only if the restore was FULLY complete. A non-empty
 	// partitionFailures list means the per-partition COPY tier isolated and skipped
 	// at least one partition: most rows landed, but that partition's rows never
 	// reached the new cluster. The sanityCheckRestore above only confirms the
@@ -378,7 +432,7 @@ func runCopyFallbackMigration(ctx context.Context, shape migrationShape, src, ta
 // directory is the user's preserved copy of the original data.
 //
 // committed MUST be the engine's confirmed-success signal
-// (dataTankMigrationResult.committed). A best-effort removal failure is logged
+// (migrationResult.committed). A best-effort removal failure is logged
 // and swallowed: a left-behind old directory is safe (data is preserved), only
 // wasteful.
 func removeOldDataDirOnMigrationSuccess(committed bool, oldDataDir string) {

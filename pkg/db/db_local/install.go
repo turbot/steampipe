@@ -74,15 +74,16 @@ Nothing was deleted. A dump of your old data has been retained in ~/.steampipe/b
 // crossMajorValidationDivergedWarning is shown on a cross-major upgrade when
 // pg_restore succeeded but the post-restore validation pass found the restored
 // data diverged from the old cluster (row-count, sample-row checksum, or an
-// invalid index). The restored schema is rolled back to an empty public schema
-// so the service does not start with silently-corrupted data; the old data
-// directory and a retained dump are kept so the user can migrate manually.
+// invalid index). The restored data is NOT removed - it stays in the new
+// database, flagged as unverified - and the migration is not committed: the
+// old data directory and a retained dump are kept as the authoritative copies
+// so the user can migrate manually.
 func crossMajorValidationDivergedWarning(oldVersion, newVersion string) string {
 	warningMessage := fmt.Sprintf(`The embedded database has been upgraded from PostgreSQL %s to PostgreSQL %s (a major version change).
 
-Steampipe automatically migrated your public schema, but a post-restore validation pass found the restored data diverged from your old database (a row count, a sample-row checksum, or an index validity check did not match). Rather than start with silently-corrupted data, the restore was rolled back and the service started with an empty public schema.
+Steampipe automatically migrated your public schema, but a post-restore validation pass found the restored data diverged from your old database (a row count, a sample-row checksum, or an index validity check did not match). The restored data is still present in the new database, but it failed verification and may be incomplete or incorrect - treat it with caution.
 
-Nothing was deleted. A dump of your old data has been retained in ~/.steampipe/backups and your previous database directory is preserved under ~/.steampipe/db. To restore manually, load the retained .sql dump into the new database, resolving any collation incompatibilities.`, oldVersion, newVersion)
+Nothing was deleted from your original data. A dump of your old data has been retained in ~/.steampipe/backups and your previous database directory is preserved under ~/.steampipe/db - these are the authoritative copies. To migrate manually, drop the unverified objects and load the retained .sql dump into the new database, then compare the reported divergence (see the service log for the table or index that did not match).`, oldVersion, newVersion)
 
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
@@ -104,9 +105,10 @@ The service has started so it remains usable. Nothing was deleted: a dump of you
 // reached but >=1 partition unmigrated), or all tiers exhausted. Under the
 // 2026-06-08 governing decision (data-preservation over version-revert) the new
 // Postgres version still runs, but the original is preserved on disk in two
-// independent forms - the untouched old data directory plus the retained dump -
-// so nothing is lost. The structured signal lives in the JSON marker file; this
-// is the human-readable companion.
+// independent forms - the untouched old data directory plus that attempt's
+// retained dump (a retry replaces the dump from the old directory) - so nothing
+// is lost. The structured signal lives in the JSON marker file; this is the
+// human-readable companion.
 func dataTankMigrationDataPreservedWarning(retainedDumpPath string) string {
 	warningMessage := fmt.Sprintf(`Data-tank migration to Postgres 18 could not be completed automatically.
 

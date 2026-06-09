@@ -81,13 +81,13 @@ const (
 	// doubt (e.g. an unparseable version) we preserve the historical
 	// automatic behaviour rather than strand data.
 	pgMigrationMinor pgMigrationKind = iota
-	// pgMigrationMajor - different (older) major, e.g. 14 -> 18. pg_restore
-	// cannot load a lower-major dump into a higher-major server, so the
-	// automatic restore is NOT attempted: an insurance dump is retained,
-	// the old data directory is kept, the service starts fresh, and the
-	// user is told how to restore manually. (Blocking startup until the
-	// user acknowledges is a possible alternative policy, retained as a
-	// documented fallback rather than implemented here.)
+	// pgMigrationMajor - different (older) major, e.g. 14 -> 18. The public
+	// schema migrates through the shared copy-and-fallback engine
+	// (runMigrationEngine, public shape): collation pre-flight, restore
+	// ladder, row-checksum validation, tolerant matview refresh. On any
+	// failure the service starts on an empty public schema with the insurance
+	// dump retained and the old data directory kept (the hardened-B
+	// fall-back); the old install is removed only on confirmed full success.
 	pgMigrationMajor
 )
 
@@ -481,122 +481,6 @@ WHERE n.nspname='public' AND NOT i.indisvalid`
 	return bad, rows.Err()
 }
 
-// crossMajorOutcome enumerates the possible end states of the cross-major
-// migration orchestration (pre-flight scan -> restore -> post-restore
-// validation). See runCrossMajorMigration.
-type crossMajorOutcome int
-
-const (
-	// crossMajorOutcomeSuccess: pre-flight clear, restore succeeded, validation
-	// matched. The new cluster carries the old data; the caller should proceed
-	// with the post-restore steps (matview refresh, retain backup, remove old
-	// dir).
-	crossMajorOutcomeSuccess crossMajorOutcome = iota
-	// crossMajorOutcomePreflightSkipped: pre-flight detected collation risk
-	// (or could not run); restore was not attempted. Fall-back warning:
-	// crossMajorPreflightSkippedWarning.
-	crossMajorOutcomePreflightSkipped
-	// crossMajorOutcomeRestoreFailed: pre-flight clear but restore returned a
-	// non-zero exit (or a precursor step failed). Fall-back warning:
-	// crossMajorRestoreFailedWarning.
-	crossMajorOutcomeRestoreFailed
-	// crossMajorOutcomeValidationDiverged: restore succeeded but the
-	// post-restore validation pass found divergence (row count, sample-row
-	// checksum, or invalid index) - or the validation query itself failed.
-	// Fall-back warning: crossMajorValidationDivergedWarning.
-	crossMajorOutcomeValidationDiverged
-)
-
-func (o crossMajorOutcome) String() string {
-	switch o {
-	case crossMajorOutcomeSuccess:
-		return "Success"
-	case crossMajorOutcomePreflightSkipped:
-		return "PreflightSkipped"
-	case crossMajorOutcomeRestoreFailed:
-		return "RestoreFailed"
-	case crossMajorOutcomeValidationDiverged:
-		return "ValidationDiverged"
-	default:
-		return fmt.Sprintf("crossMajorOutcome(%d)", int(o))
-	}
-}
-
-// runCrossMajorMigration runs the pre-flight collation scan, restore, and
-// post-restore validation pass that together define the cross-major migration
-// policy. The caller (restoreDBBackup in production; the cross-major test
-// matrix under go test) supplies:
-//
-//   - oldConn: open pgx connection to the source (old major) cluster. The
-//     scan + validation pass query this. The caller owns and closes oldConn.
-//   - runRestore: closure that performs the actual restore of the dump into
-//     the new (target major) cluster. Production wraps the TOC-partition +
-//     runRestoreUsingList flow; the test wraps a single pg_restore call.
-//   - newConnFn: factory that opens a fresh pgx connection to the new
-//     cluster, called once after a successful restore for the validation
-//     pass. The returned connection is closed inside this function. Returns
-//     nil + an error on connect failure (treated as a validation divergence).
-//
-// The caller is responsible for producing the cause-specific warning from the
-// returned outcome (e.g. crossMajorPreflightSkippedWarning) and for the
-// fall-back side effects (retain dump, leave old dir in place, etc.) - those
-// are intentionally NOT in this helper so it stays unit-testable against two
-// real clusters without touching the install-dir filesystem.
-//
-// This helper exists because exec-2a's test matrix needs to exercise the
-// shipped pre-flight and validation functions (runPreflightCollationScan,
-// runValidateRestore) end-to-end as the production code calls them, not via a
-// harness reimplementation. See migration_xmajor_test.go.
-func runCrossMajorMigration(
-	ctx context.Context,
-	oldConn *pgx.Conn,
-	runRestore func() error,
-	newConnFn func() (*pgx.Conn, error),
-) (crossMajorOutcome, error) {
-	// Step 1: the insurance dump is assumed to have already been taken by the
-	// caller (production: prepareBackup; test: dumpPublicSchema).
-
-	// Step 2: pre-flight collation scan against the old data.
-	risks, perr := runPreflightCollationScan(ctx, oldConn)
-	if perr != nil {
-		log.Printf("[WARN] cross-major migration: pre-flight scan failed: %v", perr)
-		return crossMajorOutcomePreflightSkipped, nil
-	}
-	if len(risks) > 0 {
-		log.Printf("[TRACE] cross-major migration: pre-flight flagged %d collation risk(s); skipping restore", len(risks))
-		return crossMajorOutcomePreflightSkipped, nil
-	}
-
-	// Step 3: restore.
-	if rerr := runRestore(); rerr != nil {
-		log.Printf("[WARN] cross-major migration: restore failed: %v", rerr)
-		return crossMajorOutcomeRestoreFailed, nil
-	}
-
-	// Step 4: post-restore validation, old server still live.
-	newConn, nerr := newConnFn()
-	if nerr != nil {
-		log.Printf("[WARN] cross-major migration: could not connect to new cluster for validation: %v", nerr)
-		return crossMajorOutcomeValidationDiverged, nil
-	}
-	defer newConn.Close(ctx)
-	divergences, verr := runValidateRestore(ctx, oldConn, newConn)
-	if verr != nil {
-		log.Printf("[WARN] cross-major migration: validation query failed: %v", verr)
-		return crossMajorOutcomeValidationDiverged, nil
-	}
-	if len(divergences) > 0 {
-		for _, d := range divergences {
-			log.Printf("[WARN] cross-major validation divergence: kind=%s target=%s detail=%s", d.kind, d.target, d.detail)
-		}
-		log.Printf("[TRACE] cross-major migration: validation found %d divergence(s); rolling back", len(divergences))
-		return crossMajorOutcomeValidationDiverged, nil
-	}
-
-	// Step 5: success.
-	return crossMajorOutcomeSuccess, nil
-}
-
 // retainedOldServer holds the still-running old (source) cluster on a
 // cross-major migration. On a same-major (minor) migration prepareBackup tears
 // the old server down internally as before. On a cross-major jump it is left
@@ -606,16 +490,6 @@ func runCrossMajorMigration(
 // stopping it (see stopRetainedOldServer) once those steps complete or the
 // fall-back message is emitted.
 var retainedOldServer *pgRunningInfo
-
-// connectOldServer opens a pgx connection to the retained old (source) cluster.
-func connectOldServer(ctx context.Context) (*pgx.Conn, error) {
-	if retainedOldServer == nil {
-		return nil, fmt.Errorf("no retained old server to connect to")
-	}
-	connStr := fmt.Sprintf("host=127.0.0.1 port=%d user=%s dbname=%s sslmode=disable",
-		retainedOldServer.port, constants.DatabaseSuperUser, retainedOldServer.dbName)
-	return pgx.Connect(ctx, connStr)
-}
 
 // stopRetainedOldServer stops the retained old (source) cluster, if any, and
 // clears the handle. Safe to call multiple times.
@@ -860,21 +734,24 @@ func restoreDBBackup(ctx context.Context) error {
 	}
 
 	// Determine whether the on-disk old install is a same-major (minor) or a
-	// cross-major migration. On a cross-major jump we run the five-step
-	// best-effort flow (insurance dump -> pre-flight collation scan -> restore
-	// -> post-restore validation -> success-or-fall-back) for the public schema,
-	// then, on public success and while the old cluster is still live, run the
-	// data-tank migration (migrateDataTankSchemasOnStartup); the old data dir is
-	// removed only when both commit. The fall-back state (hardened-B: retain the
-	// dump and the old data dir, start the service on an empty public schema,
-	// warn the user) is rolled to whenever pre-flight detects collation risk,
-	// pg_restore returns non-zero, or validation finds divergence.
+	// cross-major migration. On a cross-major jump the public schema migrates
+	// through the shared copy-and-fallback engine (runMigrationEngine with
+	// the public shape: insurance dump -> collation pre-flight -> restore ladder
+	// -> row-checksum validation -> tolerant matview refresh -> commit), then,
+	// on public success and while the old cluster is still live, the data-tank
+	// migration (migrateDataTankSchemasOnStartup) runs on the SAME engine; the
+	// old data dir is removed only when both commit. The fall-back state
+	// (hardened-B: retain the dump and the old data dir, start the service on an
+	// empty public schema, warn the user) is rolled to whenever pre-flight
+	// detects collation risk, the restore ladder fails, or validation finds
+	// divergence.
 	var crossMajor bool
-	var oldVersion string
+	var oldVersion, oldLocation string
 	if found, location, ferr := findDifferentPgInstallation(ctx); ferr == nil && found {
 		if classifyPgMigration(filepath.Base(location), targetDatabaseVersion) == pgMigrationMajor {
 			crossMajor = true
 			oldVersion = filepath.Base(location)
+			oldLocation = location
 		}
 	}
 	newVersion := targetDatabaseVersion
@@ -882,12 +759,9 @@ func restoreDBBackup(ctx context.Context) error {
 	// fallBackCrossMajor rolls to the hardened-B fall-back state with a
 	// cause-specific warning. The insurance dump is retained and the old data
 	// directory is intentionally NOT removed - it is the user's only copy of the
-	// old data.
-	// KNOWN LIMITATION: the old dir is retained indefinitely and
-	// findDifferentPgInstallation returns the first non-target version dir it
-	// finds (no recency ordering), so a *subsequent* upgrade could detect this
-	// now-stale dir instead of the current one. Acceptable for the embedded DB
-	// (low-churn); revisit if multi-generation upgrade chains become common.
+	// old data. The old dir is retained indefinitely; a subsequent upgrade
+	// migrates from the most-recent prior install, so a stale fall-back dir is
+	// never picked over a newer one.
 	fallBackCrossMajor := func(warning string) error {
 		stopRetainedOldServer(ctx)
 		if err := retainBackup(ctx); err != nil {
@@ -898,134 +772,85 @@ func restoreDBBackup(ctx context.Context) error {
 	}
 
 	if crossMajor {
-		// Step 1: the insurance dump was already taken by prepareBackup and the
-		// backup file exists on disk (checked above). It is retained as part of
-		// every fall-back path and at the end of the success path.
-
-		// The pre-flight and validation steps need a live connection to the old
-		// (source) cluster, which prepareBackup left running on the cross-major
-		// path. If it is unavailable (unexpected), fall back conservatively to
-		// the pre-flight-skipped state rather than risk an unvalidated restore.
-		oldConn, oerr := connectOldServer(ctx)
-		if oerr != nil {
-			log.Printf("[WARN] cross-major migration: could not connect to old cluster for pre-flight/validation: %v", oerr)
+		// The engine needs the old (source) cluster live - prepareBackup leaves
+		// it running on the cross-major path. If it is unavailable (unexpected),
+		// fall back conservatively rather than risk an unvalidated restore. The
+		// insurance dump prepareBackup took (backup.bk, checked above) is
+		// retained on every fall-back path and at the end of the success path;
+		// the engine takes its own working dump under the database dir.
+		if retainedOldServer == nil {
+			log.Printf("[WARN] cross-major migration: old cluster not retained for pre-flight/validation")
 			return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
 		}
+		old := oldClusterRef(oldVersion, oldLocation, retainedOldServer.dbName, retainedOldServer.port)
+		newRef := newClusterRef(runningInfo.Port, runningInfo.Database)
+		backupDir := filepaths.EnsureDatabaseDir()
+		statusPath := filepath.Join(backupDir, "public-migration-status.json")
 
-		// runRestore wraps the TOC-partition + runRestoreUsingList machinery
-		// (same restore steps as the same-major path) so the orchestration can
-		// own restore-failure recovery without duplicating the flow.
-		var objectListFile, matviewListFile string
-		runRestore := func() error {
-			toc, err := getTableOfContentsFromBackup(ctx)
-			if err != nil {
-				return err
+		pubRes, pubErr := runMigrationEngine(ctx, publicMigrationShape(), old, newRef, backupDir, statusPath, dataTankMigrationJobs, migrationFaults{})
+		if pubErr != nil || !pubRes.committed {
+			if pubErr != nil {
+				log.Printf("[WARN] cross-major public-schema migration failed: %v", pubErr)
 			}
-			objectListFile, matviewListFile, err = partitionTableOfContents(ctx, toc)
-			if err != nil {
-				return err
+			switch {
+			case pubRes.preflightSkipped:
+				return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
+			case pubRes.validationDiverged:
+				return fallBackCrossMajor(crossMajorValidationDivergedWarning(oldVersion, newVersion))
+			default:
+				return fallBackCrossMajor(crossMajorRestoreFailedWarning(oldVersion, newVersion))
 			}
-			return runRestoreUsingList(ctx, runningInfo, objectListFile)
 		}
-		newConnFn := func() (*pgx.Conn, error) {
-			// Validation must compare the SAME database on both sides - the
-			// steampipe database the data was restored into. createMaintenanceClient
-			// connects to the `postgres` maintenance DB, where the restored tables do
-			// NOT exist, so every public table reads as "missing on new cluster" and
-			// the migration falsely rolls back. Connect to runningInfo.Database (the
-			// steampipe DB), mirroring connectOldServer on the old side.
-			connStr := fmt.Sprintf("host=127.0.0.1 port=%d user=%s dbname=%s sslmode=disable",
-				runningInfo.Port, constants.DatabaseSuperUser, runningInfo.Database)
-			return pgx.Connect(ctx, connStr)
+		if pubRes.matviewRefreshFailed {
+			error_helpers.ShowWarning("Could not REFRESH Materialized Views while restoring data. Please REFRESH manually.")
 		}
 
-		outcome, oerr2 := runCrossMajorMigration(ctx, oldConn, runRestore, newConnFn)
-		oldConn.Close(ctx)
-		// Clean up TOC list files that may have been written by the restore
-		// closure regardless of the outcome path taken.
-		defer func() {
-			if objectListFile != "" {
-				os.Remove(objectListFile)
+		// Public-schema restore + validation clean. Before stopping the old
+		// server, migrate any data-tank schemas through the shared engine - it
+		// needs the old cluster live to read partition topology and stream the
+		// data old -> new. On the normal CLI workspace there are no data-tank
+		// schemas and this is a clean no-op.
+		//
+		// The old data directory is removed only after BOTH the public-schema
+		// migration AND the data-tank migration confirm full success (the single
+		// deletion gate). A data-tank failure preserves the old dir and warns,
+		// but does NOT revert the public-schema success: the new version still
+		// runs (the 2026-06-08 data-preservation decision).
+		dtCommitted := true
+		dtRes, dtErr := migrateDataTankSchemasOnStartup(ctx, old, newRef, backupDir)
+		if dtErr != nil || !dtRes.committed {
+			// A data-tank failure does NOT revert the public-schema success
+			// (the new version still runs). The old data dir + the retained
+			// data-tank dump are the two preserved recovery copies.
+			dtCommitted = false
+			if dtErr != nil {
+				log.Printf("[WARN] cross-major data-tank migration failed: %v", dtErr)
 			}
-			if matviewListFile != "" {
-				os.Remove(matviewListFile)
-			}
-		}()
-		if oerr2 != nil {
-			// Internal error in the orchestration helper itself (not a
-			// migration outcome). Surface to the caller.
-			return oerr2
+			error_helpers.ShowWarning(dataTankMigrationDataPreservedWarning(dtRes.dumpPath))
 		}
-		switch outcome {
-		case crossMajorOutcomePreflightSkipped:
-			return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
-		case crossMajorOutcomeRestoreFailed:
-			return fallBackCrossMajor(crossMajorRestoreFailedWarning(oldVersion, newVersion))
-		case crossMajorOutcomeValidationDiverged:
-			return fallBackCrossMajor(crossMajorValidationDivergedWarning(oldVersion, newVersion))
-		case crossMajorOutcomeSuccess:
-			// Public-schema restore + validation clean. Before stopping the old
-			// server, migrate any data-tank schemas through the shared engine - it
-			// needs the old cluster live to read partition topology and stream the
-			// data old -> new. On the normal CLI workspace there are no data-tank
-			// schemas and this is a clean no-op.
-			//
-			// The old data directory is removed only after BOTH the public-schema
-			// migration AND the data-tank migration confirm full success (the single
-			// deletion gate). A data-tank failure preserves the old dir and warns,
-			// but does NOT revert the public-schema success: the new version still
-			// runs (the 2026-06-08 data-preservation decision).
-			dtCommitted := true
-			if found, location, ferr := findDifferentPgInstallation(ctx); ferr == nil && found {
-				old := oldClusterRef(oldVersion, location, retainedOldServer.dbName, retainedOldServer.port)
-				newRef := newClusterRef(runningInfo.Port, runningInfo.Database)
-				dtRes, dtErr := migrateDataTankSchemasOnStartup(ctx, old, newRef, filepaths.EnsureDatabaseDir())
-				if dtErr != nil || !dtRes.committed {
-					// A data-tank failure does NOT revert the public-schema success
-					// (the new version still runs). The old data dir + the retained
-					// data-tank dump are the two preserved recovery copies.
-					dtCommitted = false
-					if dtErr != nil {
-						log.Printf("[WARN] cross-major data-tank migration failed: %v", dtErr)
-					}
-					error_helpers.ShowWarning(dataTankMigrationDataPreservedWarning(dtRes.dumpDir))
-				}
-			}
 
-			// Refresh materialized views (Step 6), retain the backup, and (only if
-			// the data-tank migration also fully succeeded) remove the old install
-			// dir through the single deletion gate.
-			stopRetainedOldServer(ctx)
-			if matviewListFile != "" {
-				if err := runRestoreUsingList(ctx, runningInfo, matviewListFile); err != nil {
-					error_helpers.ShowWarning("Could not REFRESH Materialized Views while restoring data. Please REFRESH manually.")
-				}
-			}
-			if err := retainBackup(ctx); err != nil {
-				error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
-			}
-			found, location, err := findDifferentPgInstallation(ctx)
-			if err != nil {
-				return err
-			}
-			if found {
-				removeOldDataDirOnMigrationSuccess(dtCommitted, filepath.Join(location, "data"))
-			}
-			return nil
+		// Retain the backup and (only if the data-tank migration also fully
+		// succeeded) remove the old data dir through the single deletion gate.
+		stopRetainedOldServer(ctx)
+		if err := retainBackup(ctx); err != nil {
+			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
 		}
-		return fmt.Errorf("cross-major migration: unknown outcome %v", outcome)
+		removeOldDataDirOnMigrationSuccess(dtCommitted, filepath.Join(oldLocation, "data"))
+		return nil
 	}
 
 	// ---- Same-major (minor) migration: existing flow ----
 
+	target := newClusterRef(runningInfo.Port, runningInfo.Database)
+
 	// extract the Table of Contents from the Backup Archive
-	toc, err := getTableOfContentsFromBackup(ctx)
+	toc, err := getTableOfContentsFromBackup(ctx, target, backupFilePath)
 	if err != nil {
 		return err
 	}
 
 	// create separate TableOfContent files - one containing only DB OBJECT CREATION (with static data) instructions and another containing only REFRESH MATERIALIZED VIEW instructions
-	objectAndStaticDataListFile, matviewRefreshListFile, err := partitionTableOfContents(ctx, toc)
+	objectAndStaticDataListFile, matviewRefreshListFile, err := partitionTableOfContents(toc, filepaths.EnsureDatabaseDir())
 	if err != nil {
 		return err
 	}
@@ -1037,7 +862,7 @@ func restoreDBBackup(ctx context.Context) error {
 	}()
 
 	// restore everything, but don't refresh Materialized views.
-	err = runRestoreUsingList(ctx, runningInfo, objectAndStaticDataListFile)
+	err = runRestoreUsingList(ctx, target, backupFilePath, objectAndStaticDataListFile)
 	if err != nil {
 		// Same-major restore failed. Do NOT brick the service: retain the
 		// insurance dump, keep the old data directory in place, warn the
@@ -1060,7 +885,7 @@ func restoreDBBackup(ctx context.Context) error {
 	// since 'pg_dump' always set a blank 'search_path', it will not be able to resolve the aforementioned transitive
 	// dependencies and will inevitably fail to refresh
 	//
-	err = runRestoreUsingList(ctx, runningInfo, matviewRefreshListFile)
+	err = runRestoreUsingList(ctx, target, backupFilePath, matviewRefreshListFile)
 	if err != nil {
 		//
 		// we could not refresh the Materialized views
@@ -1093,10 +918,9 @@ func restoreDBBackup(ctx context.Context) error {
 	return nil
 }
 
-func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listFile string) error {
-	cmd := pgRestoreCmd(
-		ctx,
-		filepaths.DatabaseBackupFilePath(),
+func runRestoreUsingList(ctx context.Context, target *pgClusterRef, dumpPath, listFile string) error {
+	args := []string{
+		dumpPath,
 		fmt.Sprintf("--format=%s", backupFormat),
 		// only the public schema is backed up
 		"--schema=public",
@@ -1107,12 +931,12 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 		// Restore only those archive elements that are listed in list-file, and restore them in the order they appear in the file.
 		fmt.Sprintf("--use-list=%s", listFile),
 		// the database name
-		fmt.Sprintf("--dbname=%s", info.Database),
-		// connection parameters
-		"--host=127.0.0.1",
-		fmt.Sprintf("--port=%d", info.Port),
-		fmt.Sprintf("--username=%s", constants.DatabaseSuperUser),
-	)
+		fmt.Sprintf("--dbname=%s", target.dbName),
+		fmt.Sprintf("--username=%s", target.user),
+	}
+	args = append(args, target.toolConnArgs()...)
+	cmd := exec.CommandContext(ctx, target.tool("pg_restore"), args...)
+	cmd.Env = target.env
 
 	log.Println("[TRACE] pg_restore command:", cmd.String())
 
@@ -1130,13 +954,13 @@ func runRestoreUsingList(ctx context.Context, info *RunningDBInstanceInfo, listF
 //
 // This needs to be done because the pg_dump will always set a blank search path in the backup archive
 // and backed up MATERIALIZED VIEWS may have functions with unqualified table names
-func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []string) (string, string, error) {
+func partitionTableOfContents(tableOfContentsOfBackup []string, listDir string) (string, string, error) {
 	onlyRefresh, withoutRefresh := putils.Partition(tableOfContentsOfBackup, func(v string) bool {
 		return strings.Contains(strings.ToUpper(v), "MATERIALIZED VIEW DATA")
 	})
 
-	withoutFile := filepath.Join(filepaths.EnsureDatabaseDir(), noMatViewRefreshListFileName)
-	onlyFile := filepath.Join(filepaths.EnsureDatabaseDir(), onlyMatViewRefreshListFileName)
+	withoutFile := filepath.Join(listDir, noMatViewRefreshListFileName)
+	onlyFile := filepath.Join(listDir, onlyMatViewRefreshListFileName)
 
 	err := error_helpers.CombineErrors(
 		os.WriteFile(withoutFile, []byte(strings.Join(withoutRefresh, "\n")), 0644),
@@ -1147,16 +971,19 @@ func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []str
 }
 
 // getTableOfContentsFromBackup uses pg_restore to read the TableOfContents from the
-// back archive
-func getTableOfContentsFromBackup(ctx context.Context) ([]string, error) {
-	cmd := pgRestoreCmd(
+// back archive. cluster supplies the pg_restore binary + library environment (the
+// TOC listing never connects to a server).
+func getTableOfContentsFromBackup(ctx context.Context, cluster *pgClusterRef, dumpPath string) ([]string, error) {
+	cmd := exec.CommandContext(
 		ctx,
-		filepaths.DatabaseBackupFilePath(),
+		cluster.tool("pg_restore"),
+		dumpPath,
 		fmt.Sprintf("--format=%s", backupFormat),
 		// only the public schema is backed up
 		"--schema=public",
 		"--list",
 	)
+	cmd.Env = cluster.env
 	log.Println("[TRACE] TableOfContent extraction command: ", cmd.String())
 
 	b, err := cmd.Output()

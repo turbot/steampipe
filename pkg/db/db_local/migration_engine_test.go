@@ -2,7 +2,7 @@ package db_local
 
 // Shared engine, public shape.
 //
-// migrateDataTank exercises runCopyFallbackMigration with the DATA-TANK shape
+// migrateDataTank exercises runMigrationEngine with the DATA-TANK shape
 // (collation pre-check OFF, row-checksum validation OFF) across the whole
 // TestDataTankMigration matrix. This suite exercises the SAME shared engine with
 // the PUBLIC shape (collation pre-check ON, row-checksum validation ON, COPY-tier
@@ -26,8 +26,9 @@ import (
 // runPublicShapeEngine boots a PG14 source + PG18 target, applies publicSQL to
 // the source, and runs the shared engine with the public shape. It returns the
 // engine result, the source data dir (for the data-preservation assertion), and
-// any error.
-func runPublicShapeEngine(t *testing.T, publicSQL string) (dataTankMigrationResult, string, error) {
+// any error. verify, if non-nil, runs against the target cluster after the
+// engine finishes and before the clusters are torn down.
+func runPublicShapeEngine(t *testing.T, publicSQL string, verify func(ctx context.Context, target *pgClusterRef) error) (migrationResult, string, error) {
 	t.Helper()
 	ctx := context.Background()
 
@@ -77,7 +78,12 @@ func runPublicShapeEngine(t *testing.T, publicSQL string) (dataTankMigrationResu
 	}
 
 	statusPath := filepath.Join(backupDir, "public-migration-status.json")
-	res, merr := runCopyFallbackMigration(ctx, publicMigrationShape(), dtClusterRef(src), dtClusterRef(target), backupDir, statusPath, dtParallelism(), dataTankMigrationFaults{})
+	res, merr := runMigrationEngine(ctx, publicMigrationShape(), dtClusterRef(src), dtClusterRef(target), backupDir, statusPath, dtParallelism(), migrationFaults{})
+	if verify != nil {
+		if verr := verify(ctx, dtClusterRef(target)); verr != nil {
+			t.Errorf("post-migration verification on the target cluster failed: %v", verr)
+		}
+	}
 	return res, pg14Data, merr
 }
 
@@ -113,7 +119,7 @@ create table public.things (id int primary key, name text);
 insert into public.things values (1, 'alpha'), (2, 'bravo'), (3, 'charlie');
 create index things_name_idx on public.things (name);`
 
-	res, _, err := runPublicShapeEngine(t, publicSQL)
+	res, _, err := runPublicShapeEngine(t, publicSQL, nil)
 	if err != nil {
 		t.Fatalf("public-shape clean migration returned error: %v", err)
 	}
@@ -125,6 +131,9 @@ create index things_name_idx on public.things (name);`
 	}
 	if res.validationDiverged {
 		t.Errorf("row-checksum validation should match on a clean restore, but validationDiverged=true")
+	}
+	if res.matviewRefreshFailed {
+		t.Errorf("the matview-refresh invocation must succeed cleanly on a schema with no matviews (empty refresh list), but matviewRefreshFailed=true")
 	}
 }
 
@@ -143,7 +152,7 @@ create table public.names (id int primary key, label text);
 insert into public.names values (1, 'Zürich'), (2, 'Köln'), (3, 'Genève');
 create index names_label_idx on public.names (label);`
 
-	res, pg14Data, err := runPublicShapeEngine(t, publicSQL)
+	res, pg14Data, err := runPublicShapeEngine(t, publicSQL, nil)
 	if !errors.Is(err, errMigrationPreflightSkipped) {
 		t.Fatalf("expected errMigrationPreflightSkipped from the public-shape collation pre-check, got err=%v result=%+v", err, res)
 	}
@@ -159,6 +168,109 @@ create index names_label_idx on public.names (label);`
 	// Data-preservation invariant: the source data dir survives untouched.
 	if err := dtAssertOldDataDirPreserved(pg14Data); err != nil {
 		t.Errorf("data-preservation invariant violated after pre-flight skip: %v", err)
+	}
+}
+
+// TestSharedEnginePublicShape_MatviewRefreshFailureTolerated proves the matview
+// tolerance the production flow promises: when the objects+data restore
+// succeeds but the separate REFRESH MATERIALIZED VIEW invocation fails, the
+// migration still COMMITS with a warning (matviewRefreshFailed=true) and the
+// rest of the data is present on the target - NOT a rollback (a failed matview
+// refresh is a warning, not a migration failure).
+//
+// The fixture is the documented production failure mode: a matview over a
+// plpgsql function with a transitive UNQUALIFIED table reference. At creation
+// time the default search_path resolves it; during pg_restore the search_path
+// is blank, so REFRESH fails ("relation does not exist") while every other
+// object restores cleanly. plpgsql is used (not SQL) so the body is neither
+// validated at CREATE FUNCTION time nor inlined when the matview is created
+// WITH NO DATA - the failure fires only at REFRESH execution.
+func TestSharedEnginePublicShape_MatviewRefreshFailureTolerated(t *testing.T) {
+	skipIfNoBinaries(t)
+
+	const publicSQL = `
+create table public.base (id int primary key);
+insert into public.base values (1),(2),(3);
+create function public.base_ids() returns setof int language plpgsql as
+$$ begin return query select id from base; end $$;
+create materialized view public.mv_unqualified as select * from public.base_ids() as id;`
+
+	verify := func(ctx context.Context, target *pgClusterRef) error {
+		conn, err := target.connect(ctx)
+		if err != nil {
+			return err
+		}
+		defer conn.Close(ctx)
+		// the committed objects+data restore carried the table rows
+		var rows int
+		if err := conn.QueryRow(ctx, "select count(*) from public.base").Scan(&rows); err != nil {
+			return fmt.Errorf("base table missing on target after tolerated refresh failure: %w", err)
+		}
+		if rows != 3 {
+			return fmt.Errorf("base table has %d rows on target, want 3", rows)
+		}
+		// the matview exists but is unpopulated - the refresh failed, nothing rolled back
+		var populated bool
+		if err := conn.QueryRow(ctx, "select relispopulated from pg_class where relname = 'mv_unqualified'").Scan(&populated); err != nil {
+			return fmt.Errorf("matview missing on target: %w", err)
+		}
+		if populated {
+			return fmt.Errorf("matview is populated - the REFRESH unexpectedly succeeded, so this case no longer exercises the failure path")
+		}
+		return nil
+	}
+
+	res, _, err := runPublicShapeEngine(t, publicSQL, verify)
+	if err != nil {
+		t.Fatalf("a failed matview refresh must NOT fail the migration, got error: %v (result %+v)", err, res)
+	}
+	if !res.committed {
+		t.Errorf("a failed matview refresh must still COMMIT the migration, got result %+v", res)
+	}
+	if !res.matviewRefreshFailed {
+		t.Errorf("expected matviewRefreshFailed=true so the caller can surface the REFRESH-manually warning")
+	}
+	if res.oldClusterRetained {
+		t.Errorf("a committed migration must not report oldClusterRetained=true")
+	}
+}
+
+// TestSharedEnginePublicShape_MatviewRefreshSucceeds: the success half of the
+// matview split - a well-qualified matview is refreshed by the second
+// invocation and arrives populated, with no warning recorded.
+func TestSharedEnginePublicShape_MatviewRefreshSucceeds(t *testing.T) {
+	skipIfNoBinaries(t)
+
+	const publicSQL = `
+create table public.base (id int primary key, val int);
+insert into public.base values (1,10),(2,20),(3,30);
+create materialized view public.mv_ok as select id, val*2 as doubled from public.base;`
+
+	verify := func(ctx context.Context, target *pgClusterRef) error {
+		conn, err := target.connect(ctx)
+		if err != nil {
+			return err
+		}
+		defer conn.Close(ctx)
+		var total int
+		if err := conn.QueryRow(ctx, "select sum(doubled)::int from public.mv_ok").Scan(&total); err != nil {
+			return fmt.Errorf("matview not queryable on target (not refreshed?): %w", err)
+		}
+		if total != 120 {
+			return fmt.Errorf("matview content wrong on target: sum(doubled)=%d, want 120", total)
+		}
+		return nil
+	}
+
+	res, _, err := runPublicShapeEngine(t, publicSQL, verify)
+	if err != nil {
+		t.Fatalf("clean matview migration returned error: %v", err)
+	}
+	if !res.committed {
+		t.Errorf("expected committed=true, got result %+v", res)
+	}
+	if res.matviewRefreshFailed {
+		t.Errorf("matviewRefreshFailed=true on a clean refresh")
 	}
 }
 
@@ -179,6 +291,7 @@ func TestSharedEngineShapesDiffer(t *testing.T) {
 		{"collationPreCheck", pub.collationPreCheck, dt.collationPreCheck, true, false},
 		{"rowChecksumValidation", pub.rowChecksumValidation, dt.rowChecksumValidation, true, false},
 		{"refreshPauseHook", pub.refreshPauseHook, dt.refreshPauseHook, false, true},
+		{"matviewRefresh", pub.matviewRefresh, dt.matviewRefresh, true, false},
 	}
 	for _, c := range checks {
 		if c.pub != c.wantPub {

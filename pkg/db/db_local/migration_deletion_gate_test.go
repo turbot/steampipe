@@ -204,7 +204,7 @@ func TestDeletionGate_DataTank_RestoreFailed_PreservesEverything(t *testing.T) {
 		t.Fatalf("expected DataPreservedOnDisk when every tier fails, got %s", got)
 	}
 
-	res := dataTankMigrationResult{committed: false}
+	res := migrationResult{committed: false}
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
 
 	// Safety dump must be retained.
@@ -292,7 +292,7 @@ func TestDeletionGate_DataTank_PartialSuccess_PreservesEverything(t *testing.T) 
 	// Force tiers 1-3 to fail and corrupt exactly one partition so tier 4 lands a
 	// degraded (partial) result.
 	res, mErr := migrateDataTank(ctx, dtClusterRef(srcCluster), dtClusterRef(targetCluster),
-		backupDir, filepath.Join(backupDir, "data-tank-migration-status.json"), dtParallelism(), dataTankMigrationFaults{
+		backupDir, filepath.Join(backupDir, "data-tank-migration-status.json"), dtParallelism(), migrationFaults{
 			failTier1: true, failTier2: true, failTier3: true, corruptOnePartition: true,
 		})
 	// A partial restore is signalled by the distinct errDataTankPartialRestore
@@ -390,7 +390,7 @@ func TestDeletionGate_DataTank_FullSuccess_GateRemovesOnlyAfterCommit(t *testing
 	_, _, srcCluster, targetCluster, oldDataDir, backupDir := gateClusters(t, srcSQL)
 
 	res, mErr := migrateDataTank(ctx, dtClusterRef(srcCluster), dtClusterRef(targetCluster),
-		backupDir, filepath.Join(backupDir, "data-tank-migration-status.json"), dtParallelism(), dataTankMigrationFaults{})
+		backupDir, filepath.Join(backupDir, "data-tank-migration-status.json"), dtParallelism(), migrationFaults{})
 	if mErr != nil {
 		t.Fatalf("clean migration returned unexpected error: %v", mErr)
 	}
@@ -428,8 +428,8 @@ create index things_label_idx on public.things (label);`
 
 	src, target, srcCluster, targetCluster, oldDataDir, backupDir := gateClusters(t, publicSQL)
 
-	res, mErr := runCopyFallbackMigration(ctx, publicMigrationShape(), src, target,
-		backupDir, filepath.Join(backupDir, "public-migration-status.json"), dtParallelism(), dataTankMigrationFaults{})
+	res, mErr := runMigrationEngine(ctx, publicMigrationShape(), src, target,
+		backupDir, filepath.Join(backupDir, "public-migration-status.json"), dtParallelism(), migrationFaults{})
 	if !errors.Is(mErr, errMigrationPreflightSkipped) {
 		t.Fatalf("expected errMigrationPreflightSkipped from the public collation pre-check, got err=%v res=%+v", mErr, res)
 	}
@@ -461,8 +461,8 @@ insert into public.things values (1, 'alpha'), (2, 'bravo'), (3, 'charlie'), (4,
 	// dump is retained.
 	targetCluster.stop()
 
-	res, mErr := runCopyFallbackMigration(ctx, publicMigrationShape(), src, target,
-		backupDir, filepath.Join(backupDir, "public-migration-status.json"), dtParallelism(), dataTankMigrationFaults{})
+	res, mErr := runMigrationEngine(ctx, publicMigrationShape(), src, target,
+		backupDir, filepath.Join(backupDir, "public-migration-status.json"), dtParallelism(), migrationFaults{})
 	if mErr == nil {
 		t.Fatalf("expected a restore failure when the target is unreachable, got committed res=%+v", res)
 	}
