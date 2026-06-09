@@ -359,6 +359,24 @@ else
     echo "✅ ICU bundled (linux): $(ls "$PREFIX"/lib/postgresql/libicu*.so.* | xargs -n1 basename | tr '\n' ' ')"
   fi
 
+  # ---- Linux OpenSSL bundling (PG built --with-openssl) ----
+  # Same gap as ICU: postgres/initdb NEED libssl.so.3 + libcrypto.so.3 by
+  # soname, resolved from the system - absent in minimal/slim images
+  # ("error while loading shared libraries: libssl.so.3"). Drop both into
+  # lib/postgresql (bins already have the $ORIGIN/../lib/postgresql rpath)
+  # and give them an $ORIGIN rpath so libssl->libcrypto resolves in-bundle
+  # (Linux RUNPATH is not transitive). The `*.so` contrib-rpath block below
+  # does NOT match these `.so.3` names, so they are patchelf'd here.
+  SSL_LIBDIR="/usr/lib/${ARCH}-linux-gnu"
+  for stem in libcrypto libssl; do
+    src="$(ls "$SSL_LIBDIR"/${stem}.so.* 2>/dev/null | grep -E "/${stem}\.so\.[0-9]+$" | head -1)" || true
+    [[ -z "$src" ]] && src="$(ls "$SSL_LIBDIR"/${stem}.so.* 2>/dev/null | head -1)" || true
+    [[ -z "$src" ]] && { echo "ERROR: OpenSSL lib $stem not found in $SSL_LIBDIR" >&2; exit 1; }
+    cp -L "$src" "$PREFIX/lib/postgresql/$(basename "$src")"
+    patchelf --set-rpath '$ORIGIN' "$PREFIX/lib/postgresql/$(basename "$src")" 2>/dev/null || true
+  done
+  echo "✅ OpenSSL bundled (linux): $(ls "$PREFIX"/lib/postgresql/lib{ssl,crypto}.so.* | xargs -n1 basename | tr '\n' ' ')"
+
   # Fix RUNPATH on contrib `.so` files (ltree, tablefunc, hstore, etc.).
   # PG's make eats `$O` from `$ORIGIN` in our LDFLAGS, so the linker writes
   # a broken `RIGIN/../lib/postgresql:<build-host-libdir>` RUNPATH that
