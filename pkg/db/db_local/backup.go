@@ -784,29 +784,52 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 	if err != nil {
 		return false, "", err
 	}
-	for _, de := range entries {
-		if de.IsDir() {
-			// check if it contains a postgres binary - meaning this is a DB installation
-			isDBInstallationDirectory := files.FileExists(
-				filepath.Join(
-					dbBaseDirectory,
-					de.Name(),
-					"postgres",
-					"bin",
-					"postgres",
-				),
-			)
 
-			// if not the target DB version
-			if de.Name() != targetDatabaseVersion && isDBInstallationDirectory {
-				// this is an unknown directory.
-				// this MUST be some other installation
-				return true, filepath.Join(dbBaseDirectory, de.Name()), nil
-			}
+	// The version this build targets, parsed once for comparison. If it is not
+	// valid semver we simply skip the "older than target" guard below.
+	targetVersion, targetErr := semver.NewVersion(targetDatabaseVersion)
+
+	// When several old installs are on disk (e.g. fossils left by earlier
+	// upgrades), the one to migrate from is the most-recent prior version - the
+	// one that was live before this upgrade - NOT whichever happens to sort
+	// first. Pick the highest version that is older than the target and that
+	// holds real data.
+	var bestPath string
+	var bestVersion *semver.Version
+	for _, de := range entries {
+		if !de.IsDir() || de.Name() == targetDatabaseVersion {
+			continue
+		}
+		dir := filepath.Join(dbBaseDirectory, de.Name())
+
+		// A migration source must have both a postgres binary AND an initialised
+		// data directory (data/PG_VERSION) - a binary-only dir has nothing to dump.
+		hasBinary := files.FileExists(filepath.Join(dir, "postgres", "bin", "postgres"))
+		hasData := files.FileExists(filepath.Join(dir, "data", "PG_VERSION"))
+		if !hasBinary || !hasData {
+			continue
+		}
+
+		// The directory name is the embedded-PG version.
+		v, err := semver.NewVersion(de.Name())
+		if err != nil {
+			log.Printf("[TRACE] findDifferentPgInstallation - skipping non-semver db dir %q: %s", de.Name(), err.Error())
+			continue
+		}
+		// Never migrate "down" from a leftover install newer than the target.
+		if targetErr == nil && !v.LessThan(targetVersion) {
+			continue
+		}
+		if bestVersion == nil || v.GreaterThan(bestVersion) {
+			bestVersion = v
+			bestPath = dir
 		}
 	}
 
-	return false, "", nil
+	if bestVersion == nil {
+		return false, "", nil
+	}
+	return true, bestPath, nil
 }
 
 // restoreDBBackup loads the back up file into the database
