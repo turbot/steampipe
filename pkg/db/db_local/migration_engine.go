@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 
 	"github.com/jackc/pgx/v5"
+	putils "github.com/turbot/pipe-fittings/v2/utils"
 )
 
 // migrationShape holds the per-shape parameters that distinguish the
@@ -339,6 +340,9 @@ func runCopyFallbackMigration(ctx context.Context, shape migrationShape, src, ta
 			return res, errMigrationValidationDiverged
 		}
 		if len(divergences) > 0 {
+			for _, d := range divergences {
+				log.Printf("[WARN] post-restore validation divergence: kind=%s target=%s detail=%s", d.kind, d.target, d.detail)
+			}
 			res.oldClusterRetained = true
 			res.validationDiverged = true
 			writeDataTankStatus(statusPath, res, fmt.Sprintf("post-restore validation found %d divergence(s)", len(divergences)))
@@ -377,16 +381,36 @@ func runCopyFallbackMigration(ctx context.Context, shape migrationShape, src, ta
 // (dataTankMigrationResult.committed). A best-effort removal failure is logged
 // and swallowed: a left-behind old directory is safe (data is preserved), only
 // wasteful.
-func removeOldDataDirOnMigrationSuccess(committed bool, oldDataDirLocation string) {
+func removeOldDataDirOnMigrationSuccess(committed bool, oldDataDir string) {
 	if !committed {
 		// Not a confirmed full success - preserve the original. This is the
 		// invariant the governing decision protects.
 		return
 	}
-	if oldDataDirLocation == "" {
+	if oldDataDir == "" {
 		return
 	}
-	if err := os.RemoveAll(oldDataDirLocation); err != nil {
-		log.Printf("[WARN] Could not remove old installation at %s.", oldDataDirLocation)
+
+	// oldDataDir is the old cluster's data directory. In Pipes it is a mounted
+	// volume - delete its CONTENTS, not the directory itself (you cannot remove a
+	// mount point). Single flow: identical behaviour on a laptop. The old binaries
+	// (the sibling postgres/ dir) are left untouched - harmless, and on a baked
+	// image they are an ephemeral layer anyway; the dir-selection scan ignores a
+	// binaries-only old install because it requires data/PG_VERSION.
+
+	// Commit (point of no return): unlink PG_VERSION FIRST. This single atomic
+	// operation makes the directory stop reading as a migratable cluster (the
+	// startup trigger keys on PG_VERSION), so a crash during the bulk cleanup
+	// below can never leave a corrupt-but-migratable source behind.
+	pgVersion := filepath.Join(oldDataDir, "PG_VERSION")
+	if err := os.Remove(pgVersion); err != nil && !os.IsNotExist(err) {
+		log.Printf("[WARN] migration commit: could not remove %s (%v); old data left in place", pgVersion, err)
+		return
+	}
+
+	// Cleanup: remove the remaining contents. Crash-tolerant - any leftover files
+	// are harmless now that PG_VERSION is gone. The directory itself is preserved.
+	if err := putils.RemoveDirectoryContents(oldDataDir); err != nil {
+		log.Printf("[WARN] migration commit: could not clear old data dir contents at %s: %v", oldDataDir, err)
 	}
 }

@@ -442,7 +442,13 @@ func vrTableRowCount(ctx context.Context, conn *pgx.Conn, table string) (int64, 
 // independent of physical (ctid) ordering, which differs after a dump/restore.
 func vrTableSampleChecksum(ctx context.Context, conn *pgx.Conn, table string) (string, error) {
 	q := fmt.Sprintf(
-		`SELECT coalesce(md5(string_agg(s, E'\n' ORDER BY s)), '') FROM (SELECT r.*::text AS s FROM public.%s r) x`,
+		// ORDER BY s COLLATE "C" forces a byte-stable sort. The default collation
+		// differs across PG majors (libc/ICU version), so ordering by it would make
+		// the old (PG14) and new (PG18) checksums diverge for IDENTICAL data - a
+		// false validation failure that rolls every real migration back. Byte order
+		// is version-stable, so identical data yields identical checksums while a
+		// genuine content difference still diverges.
+		`SELECT coalesce(md5(string_agg(s, E'\n' ORDER BY s COLLATE "C")), '') FROM (SELECT r.*::text AS s FROM public.%s r) x`,
 		pfQuoteIdent(table))
 	var digest string
 	if err := conn.QueryRow(ctx, q).Scan(&digest); err != nil {
@@ -580,6 +586,9 @@ func runCrossMajorMigration(
 		return crossMajorOutcomeValidationDiverged, nil
 	}
 	if len(divergences) > 0 {
+		for _, d := range divergences {
+			log.Printf("[WARN] cross-major validation divergence: kind=%s target=%s detail=%s", d.kind, d.target, d.detail)
+		}
 		log.Printf("[TRACE] cross-major migration: validation found %d divergence(s); rolling back", len(divergences))
 		return crossMajorOutcomeValidationDiverged, nil
 	}
@@ -919,7 +928,15 @@ func restoreDBBackup(ctx context.Context) error {
 			return runRestoreUsingList(ctx, runningInfo, objectListFile)
 		}
 		newConnFn := func() (*pgx.Conn, error) {
-			return createMaintenanceClient(ctx, runningInfo.Port)
+			// Validation must compare the SAME database on both sides - the
+			// steampipe database the data was restored into. createMaintenanceClient
+			// connects to the `postgres` maintenance DB, where the restored tables do
+			// NOT exist, so every public table reads as "missing on new cluster" and
+			// the migration falsely rolls back. Connect to runningInfo.Database (the
+			// steampipe DB), mirroring connectOldServer on the old side.
+			connStr := fmt.Sprintf("host=127.0.0.1 port=%d user=%s dbname=%s sslmode=disable",
+				runningInfo.Port, constants.DatabaseSuperUser, runningInfo.Database)
+			return pgx.Connect(ctx, connStr)
 		}
 
 		outcome, oerr2 := runCrossMajorMigration(ctx, oldConn, runRestore, newConnFn)
@@ -992,7 +1009,7 @@ func restoreDBBackup(ctx context.Context) error {
 				return err
 			}
 			if found {
-				removeOldDataDirOnMigrationSuccess(dtCommitted, location)
+				removeOldDataDirOnMigrationSuccess(dtCommitted, filepath.Join(location, "data"))
 			}
 			return nil
 		}
@@ -1070,7 +1087,7 @@ func restoreDBBackup(ctx context.Context) error {
 	// removal is unlocked; the behaviour is identical to the previous inline
 	// os.RemoveAll.
 	if found {
-		removeOldDataDirOnMigrationSuccess(true, location)
+		removeOldDataDirOnMigrationSuccess(true, filepath.Join(location, "data"))
 	}
 
 	return nil

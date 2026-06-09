@@ -113,9 +113,7 @@ func TestDataTankStartup_MigratesWhenSchemasPresent(t *testing.T) {
 	// On full success the deletion gate is unlocked. Confirm the gate removes the
 	// old dir only when committed; here it is, so it removes.
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
-	if _, statErr := os.Stat(oldDataDir); !os.IsNotExist(statErr) {
-		t.Errorf("expected old data dir removed after combined full success, stat err=%v", statErr)
-	}
+	assertOldDataDirCleared(t, oldDataDir)
 }
 
 // TestDataTankStartup_NoOpWhenNoSchemas: the normal CLI workspace has no
@@ -150,9 +148,7 @@ insert into public.things values (1, 'alpha'), (2, 'bravo');`
 	// The combined gate still removes the old dir on a public-success +
 	// data-tank-no-op start.
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
-	if _, statErr := os.Stat(oldDataDir); !os.IsNotExist(statErr) {
-		t.Errorf("expected old data dir removed after public success + data-tank no-op, stat err=%v", statErr)
-	}
+	assertOldDataDirCleared(t, oldDataDir)
 }
 
 // TestDataTankStartup_FailurePreservesOldDir: when the data-tank migration does

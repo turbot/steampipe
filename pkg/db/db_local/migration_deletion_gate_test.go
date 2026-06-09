@@ -130,6 +130,36 @@ const dataTankRowCountSQL = `SELECT count(*) FROM "fast_aws"."aws_resource"`
 // publicRowCountSQL counts the rows in the public-shape fixture's table.
 const publicRowCountSQL = `SELECT count(*) FROM public.things`
 
+// assertOldDataDirCleared asserts the migration commit fired on success: the old
+// data dir's PG_VERSION is gone (the atomic commit the startup trigger keys on)
+// and the directory's contents are cleared, but the directory itself is preserved
+// (in Pipes it is a mounted volume - we delete the contents, not the dir; Victor:
+// "delete the contents"). After this the old dir no longer reads as a migratable
+// cluster and cannot be booted.
+func assertOldDataDirCleared(t *testing.T, oldDataDir string) {
+	t.Helper()
+	// The directory itself must still exist - we delete contents, not the dir.
+	if _, err := os.Stat(oldDataDir); err != nil {
+		t.Fatalf("commit removed the data directory itself (must keep the dir, clear its contents): %v", err)
+	}
+	// PG_VERSION gone = the commit signal; without it the dir is not a cluster.
+	if _, err := os.Stat(filepath.Join(oldDataDir, "PG_VERSION")); !os.IsNotExist(err) {
+		t.Errorf("commit did not remove PG_VERSION from %s (stat err=%v); old dir still reads as a migratable cluster", oldDataDir, err)
+	}
+	// Contents must be cleared.
+	entries, err := os.ReadDir(oldDataDir)
+	if err != nil {
+		t.Fatalf("read old data dir after commit: %v", err)
+	}
+	if len(entries) != 0 {
+		names := make([]string, 0, len(entries))
+		for _, e := range entries {
+			names = append(names, e.Name())
+		}
+		t.Errorf("commit left %d entries in the old data dir (must be cleared): %v", len(entries), names)
+	}
+}
+
 // assertPreservedOldDirHasRows stops the migration's source server, re-opens the
 // preserved old data directory, and asserts it still holds wantRows source rows.
 // It is the per-category data-preservation guarantee: present + populated +
@@ -338,9 +368,7 @@ func TestDeletionGate_DataTank_Interrupted_ThenReRun(t *testing.T) {
 
 	if committed {
 		// Gate fired: old dir removed only after the re-run confirmed success.
-		if _, statErr := os.Stat(oldDataDir); !os.IsNotExist(statErr) {
-			t.Errorf("after a successful re-run the gate should have removed the old dir, stat err=%v", statErr)
-		}
+		assertOldDataDirCleared(t, oldDataDir)
 	} else {
 		// Re-run did not commit: old dir must still be present + queryable.
 		assertPreservedOldDirHasRows(t, srcCluster, oldDataDir, dataTankRowCountSQL, 100)
@@ -379,9 +407,7 @@ func TestDeletionGate_DataTank_FullSuccess_GateRemovesOnlyAfterCommit(t *testing
 
 	// Now fire the gate with the real confirmed-success signal.
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
-	if _, statErr := os.Stat(oldDataDir); !os.IsNotExist(statErr) {
-		t.Errorf("gate did not remove the old dir after confirmed full success, stat err=%v", statErr)
-	}
+	assertOldDataDirCleared(t, oldDataDir)
 }
 
 // -----------------------------------------------------------------------------
@@ -512,7 +538,5 @@ func TestDeletionGate_WiredStartup_FullSuccessRemovesOldDir(t *testing.T) {
 	// committed=false would leave the dir; committed=true (combined success)
 	// removes it. Prove the gate fires only on the confirmed combined success.
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
-	if _, statErr := os.Stat(oldDataDir); !os.IsNotExist(statErr) {
-		t.Errorf("gate did not remove old dir after wired full success, stat err=%v", statErr)
-	}
+	assertOldDataDirCleared(t, oldDataDir)
 }

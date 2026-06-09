@@ -302,7 +302,35 @@ func prepareDb(ctx context.Context) error {
 		messageRenderer("%s updated to %s.", pconstants.Bold("steampipe-postgres-fdw"), pconstants.Bold(constants.FdwVersion))
 	}
 
-	if needsInit() {
+	// Fire a migration when an old-version data directory is present even though
+	// the binaries are already installed - the production (Pipes) case: the new PG
+	// binaries are baked into the container image, so IsDBInstalled() is true and
+	// the !IsDBInstalled() path (which normally runs prepareBackup) never executes,
+	// yet a previous-version data dir is mounted in and must migrate. prepareBackup
+	// dumps the old data to the backup file (a no-op when no old install is found);
+	// restoreDBBackup loads it after the service starts. dbName is non-nil exactly
+	// when a dump was taken, and on a cross-major jump prepareBackup leaves the OLD
+	// cluster running for the restore/validation.
+	dbName, backupErr := prepareBackup(ctx)
+	if backupErr != nil {
+		log.Printf("[ERROR] prepareBackup failed: %s", backupErr.Error())
+		if errors.Is(backupErr, errDbInstanceRunning) {
+			return backupErr
+		}
+		statushooks.Message(ctx, noBackupWarning())
+		dbName = nil
+	}
+	migrationPending := dbName != nil
+
+	if migrationPending {
+		// runInstall wipes the current data dir contents (clearing any partial
+		// cluster from a crashed previous attempt) and initdb's a fresh cluster;
+		// the restore lands after the service starts. Do NOT kill instances here -
+		// the old cluster prepareBackup started must stay live for restoreDBBackup.
+		if err := runInstall(ctx, dbName); err != nil {
+			return err
+		}
+	} else if needsInit() {
 		statushooks.SetStatus(ctx, "Cleanup any Steampipe processes…")
 		killInstanceIfAny(ctx)
 		if err := runInstall(ctx, nil); err != nil {
