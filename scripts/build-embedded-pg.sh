@@ -204,6 +204,50 @@ if [[ "$OS" == "Darwin" ]]; then
     )
   fi
 
+  # ---- macOS OpenSSL bundling (PG built --with-openssl) ----
+  # postgres / pg_dump / libpq / contrib (sslinfo, pgcrypto) link
+  # libssl.3 + libcrypto.3 at the build machine's absolute brew openssl
+  # path - not relocatable (dyld "Library not loaded:
+  # .../openssl@3/lib/libssl.3.dylib" on any host without that path).
+  # Same bundle pattern as ICU: copy the two dylibs into lib/postgresql,
+  # set each id -> @rpath; rewrite every reference into the brew openssl
+  # prefix to @loader_path inside the co-located libs (libssl->libcrypto)
+  # and to @rpath in the bin/* binaries. The openssl ABI soname (3) is a
+  # pinned compatibility contract, like the ICU major.
+  (
+    cd "$PREFIX"
+    LIB_SUBDIR="lib/postgresql"
+    BUNDLE_ROOT="$(pwd)"
+    echo "📦 Bundling OpenSSL from $OPENSSL_PREFIX"
+    for stem in libcrypto libssl; do
+      src="$(ls "$OPENSSL_PREFIX"/lib/${stem}.*.dylib 2>/dev/null | grep -E "/${stem}\.[0-9]+\.dylib$" | head -1)" || true
+      [[ -z "$src" ]] && src="$(ls "$OPENSSL_PREFIX"/lib/${stem}.*.dylib 2>/dev/null | head -1)" || true
+      [[ -z "$src" ]] && { echo "ERROR: OpenSSL lib $stem not found in $OPENSSL_PREFIX/lib" >&2; exit 1; }
+      cp -L "$src" "$BUNDLE_ROOT/$LIB_SUBDIR/$(basename "$src")"
+      chmod u+w "$BUNDLE_ROOT/$LIB_SUBDIR/$(basename "$src")"
+      install_name_tool -id "@rpath/$(basename "$src")" "$BUNDLE_ROOT/$LIB_SUBDIR/$(basename "$src")"
+    done
+    relocate_ssl() {
+      local f="$1" anchor="$2"
+      otool -L "$f" | awk 'NR>1{print $1}' | while read -r dep; do
+        case "$dep" in
+          "$OPENSSL_PREFIX"/*|*/openssl@*/lib/lib*)
+            install_name_tool -change "$dep" "$anchor/$(basename "$dep")" "$f" 2>/dev/null || true ;;
+        esac
+      done
+    }
+    # every dylib in lib/postgresql (libpq, contrib, the two bundled
+    # openssl libs) references siblings -> @loader_path.
+    for l in "$BUNDLE_ROOT/$LIB_SUBDIR"/*.dylib; do
+      [[ -f "$l" ]] && relocate_ssl "$l" "@loader_path"
+    done
+    for binfile in "$BUNDLE_ROOT"/bin/*; do
+      [[ -x "$binfile" && ! -d "$binfile" ]] || continue
+      relocate_ssl "$binfile" "@rpath"
+    done
+    echo "✅ OpenSSL bundled: $(ls "$BUNDLE_ROOT/$LIB_SUBDIR"/lib{ssl,crypto}.*.dylib | xargs -n1 basename | tr '\n' ' ')"
+  )
+
   # ---- macOS re-sign (MANDATORY on Apple Silicon) ----
   # install_name_tool invalidates the Mach-O code signature; arm64 macOS
   # then SIGKILLs the binary/dylib on load ("Killed: 9", no output - NOT
