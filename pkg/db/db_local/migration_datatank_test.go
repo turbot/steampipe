@@ -390,6 +390,7 @@ func runDataTankMigration(ctx context.Context, oldC, newC *dtCluster, backupDir 
 		failTier1:               setup.failTier1,
 		failTier2:               setup.failTier2,
 		failTier3:               setup.failTier3,
+		failTier3MidTable:       setup.failTier3MidTable,
 		corruptOnePartition:     setup.corruptOnePartition,
 		failAllTiers:            setup.failAllTiers,
 		interruptMidRestore:     setup.interruptMidRestore,
@@ -543,6 +544,7 @@ type dtCaseSetup struct {
 	failTier1           bool // DT-F2: parallel restore fails
 	failTier2           bool // DT-F3: serial restore fails
 	failTier3           bool // DT-F4 setup half: per-table COPY fails for one partition
+	failTier3MidTable   bool // DT-F7: tier 3 dies after half a parent's partitions are fully loaded
 	corruptOnePartition bool // DT-F4: exactly one partition's data is unrestorable
 	failAllTiers        bool // DT-F5: hostile - every tier fails
 
@@ -640,6 +642,14 @@ func dtCases() []dtCase {
 		// DT-F6: reserved-word fixture re-run; assert the TIER reached (3), via the reserved-word escalation path (not
 		// the F3 path).
 		{name: "DT-F6", fixture: "DT-C1_reserved_word_system_user.sql", expected: dtOutcomeAutoRestoreSucceededAtTier3, wantReservedWordRouted: true},
+		// DT-F7: tier 3 dies AFTER fully loading half a parent's partitions; tier 4 then rebuilds that parent from
+		// scratch and succeeds. The golden compares source vs target row counts, so any tier-3 leftovers surviving
+		// into tier 4 (COPY appends - rows would double) fail the assert.
+		{name: "DT-F7", fixture: "DT-A3_list_partition_10.sql", assert: "DT-A3_list_partition_10.assert.sql", expected: dtOutcomeAutoRestoreSucceededAtTier3, setup: dtCaseSetup{failTier1: true, failTier2: true, failTier3MidTable: true}, wantMinTier: 4},
+		// DT-F8: a PLAIN (non-partitioned) table lives in the tank schema alongside a partitioned one - the
+		// detached-partition-awaiting-cleanup / interrupted-refresh shape. The copy tiers must migrate its rows
+		// directly (they live in the table, not in partitions); the golden asserts both tables' contents.
+		{name: "DT-F8", fixture: "DT-F8_plain_table_in_tank.sql", assert: "DT-F8_plain_table_in_tank.assert.sql", expected: dtOutcomeAutoRestoreSucceededAtTier3, setup: dtCaseSetup{failTier1: true, failTier2: true}, wantMinTier: 3},
 
 		// ---- Category DT-P: PG15-18 catalogue coverage (data-tank shape) ----
 		//

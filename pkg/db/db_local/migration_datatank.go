@@ -143,6 +143,7 @@ type migrationFaults struct {
 	failTier1           bool
 	failTier2           bool
 	failTier3           bool
+	failTier3MidTable   bool // tier 3 dies halfway through one parent's partitions - some fully loaded, then error
 	corruptOnePartition bool
 	failAllTiers        bool
 
@@ -456,7 +457,7 @@ func restoreTier3PerTableCOPY(ctx context.Context, src, target *pgClusterRef, pa
 			failed = append(failed, p)
 			continue
 		}
-		if cerr := copyParentTable(ctx, src, target, p); cerr != nil {
+		if cerr := copyParentTable(ctx, src, target, p, faults); cerr != nil {
 			failed = append(failed, p)
 		}
 	}
@@ -465,7 +466,7 @@ func restoreTier3PerTableCOPY(ctx context.Context, src, target *pgClusterRef, pa
 
 // copyParentTable creates the partitioned parent + every child partition on the target (all identifiers quoted),
 // attaches the partitions, then COPYs each partition's rows across. The structure is read from the live source catalog.
-func copyParentTable(ctx context.Context, src, target *pgClusterRef, parent dataTankTable) error {
+func copyParentTable(ctx context.Context, src, target *pgClusterRef, parent dataTankTable, faults migrationFaults) error {
 	srcConn, err := src.connect(ctx)
 	if err != nil {
 		return err
@@ -485,12 +486,48 @@ func copyParentTable(ctx context.Context, src, target *pgClusterRef, parent data
 	if err := createParentAndPartitions(ctx, srcConn, tgtConn, parent, parts); err != nil {
 		return err
 	}
-	for _, part := range parts {
+	for i, part := range parts {
+		// Models the real-world tier-3 failure shape: some partitions fully loaded, then a mid-table death. The
+		// escalation to tier 4 must rebuild this parent from scratch or the loaded partitions get their rows twice.
+		if faults.failTier3MidTable && i == len(parts)/2 {
+			return fmt.Errorf("injected mid-table failure after %d of %d partitions", i, len(parts))
+		}
 		if err := copyPartitionData(ctx, src, target, part); err != nil {
 			return fmt.Errorf("copy partition %q.%q: %w", part.partSchema, part.partTable, err)
 		}
 	}
+	// A plain (non-partitioned) table holds its rows directly - there are no partitions to carry them. A partitioned
+	// parent with zero partitions has no rows by definition, so this only fires for genuinely plain tables.
+	if len(parts) == 0 {
+		if plain, perr := isPlainTable(ctx, srcConn, parent); perr != nil {
+			return perr
+		} else if plain {
+			if err := copyTableRows(ctx, src, target, parent); err != nil {
+				return fmt.Errorf("copy table %q.%q: %w", parent.schema, parent.table, err)
+			}
+		}
+	}
 	return nil
+}
+
+// isPlainTable reports whether the table is non-partitioned (no partition key).
+func isPlainTable(ctx context.Context, conn *pgx.Conn, t dataTankTable) (bool, error) {
+	expr, err := partitionKeyExpr(ctx, conn, t.schema, t.table)
+	if err != nil {
+		return false, err
+	}
+	return expr == "", nil
+}
+
+// copyTableRows streams a plain table's rows old -> new via the same COPY pipe the partition path uses.
+func copyTableRows(ctx context.Context, src, target *pgClusterRef, t dataTankTable) error {
+	return copyPartitionData(ctx, src, target, dataTankPartition{partSchema: t.schema, partTable: t.table})
+}
+
+// dropTargetTable removes one table (and its attached partitions) on the target so a rebuild starts from empty.
+func dropTargetTable(ctx context.Context, tgtConn *pgx.Conn, t dataTankTable) error {
+	_, err := tgtConn.Exec(ctx, "DROP TABLE IF EXISTS "+qualName(t.schema, t.table)+" CASCADE")
+	return err
 }
 
 // restoreTier4PerPartitionCOPY handles parents that tier 3 could not migrate whole. It creates the parent and migrates
@@ -515,8 +552,48 @@ func restoreTier4PerPartitionCOPY(ctx context.Context, src, target *pgClusterRef
 			return nil, lerr
 		}
 
-		// Create the bare parent (no partitions yet); ignore "already exists" from a partial earlier tier.
-		_ = createParent(ctx, srcConn, tgtConn, parent)
+		// Rebuild this parent from scratch. A failed tier-3 attempt may have left some partitions fully loaded on the
+		// target; re-copying into them would APPEND (COPY adds rows), silently doubling their data. Dropping just this
+		// parent (never the whole schema - tier 3 may have completed OTHER parents that tier 4 won't revisit)
+		// guarantees every partition below starts empty.
+		if derr := dropTargetTable(ctx, tgtConn, parent); derr != nil {
+			srcConn.Close(ctx)
+			tgtConn.Close(ctx)
+			return nil, fmt.Errorf("tier4 reset of %s failed: %w", qualName(parent.schema, parent.table), derr)
+		}
+		// Create the bare parent (no partitions yet). A failure here is NOT tolerable: with no parent every partition
+		// below would "fail" - or, for a parent with zero partitions, NOTHING would fail and the table would silently
+		// vanish from the migration. Record it and move to the next parent.
+		if cerr := createParent(ctx, srcConn, tgtConn, parent); cerr != nil {
+			failures = append(failures, partitionFailure{
+				ParentSchema: parent.schema,
+				ParentTable:  parent.table,
+				Reason:       "create table on target failed: " + cerr.Error(),
+			})
+			srcConn.Close(ctx)
+			tgtConn.Close(ctx)
+			continue
+		}
+
+		// Plain table: its rows live in the table itself, not in partitions - copy them directly, recording a
+		// failure like any partition would get.
+		if len(parts) == 0 {
+			if plain, perr := isPlainTable(ctx, srcConn, parent); perr == nil && plain {
+				if cerr := copyTableRows(ctx, src, target, parent); cerr != nil {
+					failures = append(failures, partitionFailure{
+						ParentSchema: parent.schema,
+						ParentTable:  parent.table,
+						Reason:       "table data copy failed: " + cerr.Error(),
+					})
+				}
+			} else if perr != nil {
+				failures = append(failures, partitionFailure{
+					ParentSchema: parent.schema,
+					ParentTable:  parent.table,
+					Reason:       "could not classify table: " + perr.Error(),
+				})
+			}
+		}
 
 		for i, part := range parts {
 			// corruptOnePartition models exactly one unrestorable partition.
@@ -597,7 +674,10 @@ func columnDDL(ctx context.Context, conn *pgx.Conn, schema, table string) ([]str
 
 // partitionKeyExpr returns the parent table's PARTITION BY expression text.
 func partitionKeyExpr(ctx context.Context, conn *pgx.Conn, schema, table string) (string, error) {
-	var expr string
+	// pg_get_partkeydef returns NULL for a non-partitioned table - a legitimate inhabitant of tank schemas (a
+	// detached old partition awaiting cleanup, or an interrupted refresh's pre-attach table). Scan via a pointer so
+	// NULL means "plain table" instead of a scan error.
+	var expr *string
 	err := conn.QueryRow(ctx, `
 		SELECT pg_get_partkeydef(c.oid)
 		FROM pg_class c
@@ -606,7 +686,10 @@ func partitionKeyExpr(ctx context.Context, conn *pgx.Conn, schema, table string)
 	if err != nil {
 		return "", err
 	}
-	return expr, nil
+	if expr == nil {
+		return "", nil
+	}
+	return *expr, nil
 }
 
 // createParent creates only the partitioned parent (no children) on the target.
@@ -711,8 +794,12 @@ func copyPartitionData(ctx context.Context, src, target *pgClusterRef, part data
 	}()
 
 	_, inErr := tgtConn.PgConn().CopyFrom(ctx, pr, fmt.Sprintf("COPY %s FROM STDIN (FORMAT binary)", rel))
+	// If the target aborted mid-stream, its reader is gone and the source goroutine is blocked in pw.Write on the
+	// unbuffered pipe - it would never reach its CloseWithError/send and the receive below would hang forever. Closing
+	// the read end unblocks that Write immediately with this error.
+	pr.CloseWithError(inErr)
 	outErr := <-copyErr
-	if outErr != nil {
+	if outErr != nil && inErr == nil {
 		return fmt.Errorf("source COPY out failed: %w", outErr)
 	}
 	if inErr != nil {
@@ -945,6 +1032,15 @@ func sanityCheckRestore(ctx context.Context, src, target *pgClusterRef, parents 
 	defer tgtConn.Close(ctx)
 
 	for _, p := range parents {
+		// Existence is its own requirement: listAttachedPartitions on a nonexistent table returns zero rows, not an
+		// error, so without this check a table that was never created on the target would sail through below.
+		var exists *string
+		if err := tgtConn.QueryRow(ctx, "SELECT to_regclass($1)::text", qualName(p.schema, p.table)).Scan(&exists); err != nil {
+			return err
+		}
+		if exists == nil {
+			return fmt.Errorf("table %s missing on target", qualName(p.schema, p.table))
+		}
 		srcParts, serr := listAttachedPartitions(ctx, srcConn, p)
 		if serr != nil {
 			return serr
@@ -976,6 +1072,12 @@ func writeDataTankStatus(statusPath string, res migrationResult, message string)
 		RetainedDumpPath:   res.dumpPath,
 		FailedPartitions:   res.partitionFailures,
 		Message:            message,
+	}
+	// FailedTank is the schema of the first recorded partition failure - the orchestrator's entry point for a
+	// targeted retry. Failures with no partition attribution (e.g. a whole-dump or whole-restore error) leave it
+	// empty; the message carries the cause there.
+	if len(res.partitionFailures) > 0 {
+		status.FailedTank = res.partitionFailures[0].ParentSchema
 	}
 	data, err := json.MarshalIndent(status, "", "  ")
 	if err != nil {

@@ -53,6 +53,7 @@ func TestMigrationStatusJSONSchema(t *testing.T) {
 		"reserved_word_routed": true,
 		"old_cluster_retained": true,
 		"retained_dump_path":   "/some/dump/dir",
+		"failed_tank":          "tank",
 		"message":              "1 partition(s) could not be migrated; original preserved on disk",
 	} {
 		if got[field] != want {
