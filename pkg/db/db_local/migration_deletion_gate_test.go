@@ -344,6 +344,11 @@ func TestDeletionGate_DataTank_Interrupted_ThenReRun(t *testing.T) {
 	// The re-run completes (clean tier-1 restore) OR stays preserved; either way the old dir must survive until the
 	// gate confirms success. Confirm the gate only fires when the re-run committed.
 	committed := isDataTankSuccess(got2)
+	if committed {
+		// Production order: the retained old server stops before the gate removes its data dir. (The else branch
+		// still queries the source, so only stop on the committed path.)
+		srcCluster.stop()
+	}
 	removeOldDataDirOnMigrationSuccess(committed, oldDataDir)
 
 	if committed {
@@ -384,7 +389,9 @@ func TestDeletionGate_DataTank_FullSuccess_GateRemovesOnlyAfterCommit(t *testing
 		t.Fatalf("gate removed the old dir while committed=false (it must only remove on success): %v", statErr)
 	}
 
-	// Now fire the gate with the real confirmed-success signal.
+	// Now fire the gate with the real confirmed-success signal. Production order: the retained old server stops
+	// before the gate removes its data dir.
+	srcCluster.stop()
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
 	assertOldDataDirCleared(t, oldDataDir)
 }
@@ -501,7 +508,7 @@ func TestDeletionGate_WiredStartup_FullSuccessRemovesOldDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read fixture: %v", err)
 	}
-	old, newRef, _, _, oldDataDir, backupDir := gateClusters(t, srcSQL)
+	old, newRef, srcCluster, _, oldDataDir, backupDir := gateClusters(t, srcSQL)
 
 	res, mErr := migrateDataTankSchemasOnStartup(ctx, old, newRef, backupDir)
 	if mErr != nil {
@@ -512,7 +519,9 @@ func TestDeletionGate_WiredStartup_FullSuccessRemovesOldDir(t *testing.T) {
 	}
 
 	// committed=false would leave the dir; committed=true (combined success) removes it. Prove the gate fires only on
-	// the confirmed combined success.
+	// the confirmed combined success. Production order: the retained old server stops before the gate removes its
+	// data dir.
+	srcCluster.stop()
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
 	assertOldDataDirCleared(t, oldDataDir)
 }

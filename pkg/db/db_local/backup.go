@@ -3,6 +3,7 @@ package db_local
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log"
@@ -26,9 +27,10 @@ import (
 
 var (
 	errDbInstanceRunning = fmt.Errorf("cannot start DB backup - a postgres instance is still running and Steampipe could not kill it. Please kill this manually and restart Steampipe")
-	// errCrossMajorDumpFailed marks a failed pg_dump on a CROSS-major migration. Both install paths fail-stop on it:
-	// starting on an empty new-major database while the real data sits unmigrated in the old directory is the state
-	// the fail-stop design exists to prevent, regardless of which step failed.
+	// errCrossMajorDumpFailed marks any failure preparing or taking the backup of the old cluster on a CROSS-major
+	// migration - the orphan-process kill, starting the old server, or pg_dump itself. Both install paths fail-stop on
+	// it: starting on an empty new-major database while the real data sits unmigrated in the old directory is the
+	// state the fail-stop design exists to prevent, regardless of which step failed.
 	errCrossMajorDumpFailed = fmt.Errorf("cross-major migration: backing up the old database failed")
 )
 
@@ -514,25 +516,39 @@ func prepareBackup(ctx context.Context, targetVersion string) (*string, error) {
 		return nil, nil
 	}
 
+	// Classify up front: the version pair is known from the directory name alone, and EVERY failure from here on must
+	// carry the fail-stop sentinel on a cross-major jump - whether the old cluster failed to start, an orphan kill
+	// failed, or the dump itself failed, starting empty on the new major with the real data unmigrated is the state
+	// the fail-stop design prevents, regardless of which step failed.
+	crossMajor := classifyPgMigration(filepath.Base(location), targetVersion) == pgMigrationMajor
+	failPrepare := func(cause error) error {
+		if crossMajor {
+			return fmt.Errorf("%w: %v", errCrossMajorDumpFailed, cause)
+		}
+		return cause
+	}
+
 	// ensure there is no orphaned instance of postgres running
 	// (if the service state file was in-tact, we would already have found it and
 	// failed before now with a suitable message
 	// - to get here the state file must be missing/invalid, so just kill the postgres process)
 	// ignore error - just proceed with installation
 	if err := killRunningDbInstance(ctx); err != nil {
-		return nil, err
+		if errors.Is(err, errDbInstanceRunning) {
+			return nil, err
+		}
+		return nil, failPrepare(err)
 	}
 
 	runConfig, err := startDatabaseInLocation(ctx, location)
 	if err != nil {
 		log.Printf("[TRACE] Error while starting old db in %s: %v", location, err)
-		return nil, err
+		return nil, failPrepare(err)
 	}
 
 	// On a cross-major jump the old server must stay up so restoreDBBackup can run the pre-flight collation scan and
 	// the post-restore validation pass against the old data while it is still live. For a same-major (minor) migration
 	// there is no pre-flight/validation step, so tear it down here as before.
-	crossMajor := classifyPgMigration(filepath.Base(location), targetVersion) == pgMigrationMajor
 
 	takeErr := takeBackup(ctx, runConfig)
 	if takeErr != nil {

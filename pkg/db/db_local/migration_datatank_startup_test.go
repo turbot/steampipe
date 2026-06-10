@@ -22,6 +22,7 @@ package db_local
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -91,7 +92,7 @@ func TestDataTankStartup_MigratesWhenSchemasPresent(t *testing.T) {
 		t.Fatalf("read fixture: %v", err)
 	}
 
-	old, newRef, _, _, oldDataDir, backupDir := startupClusters(t, srcSQL)
+	old, newRef, srcCluster, _, oldDataDir, backupDir := startupClusters(t, srcSQL)
 
 	res, err := migrateDataTankSchemasOnStartup(context.Background(), old, newRef, backupDir)
 	if err != nil {
@@ -104,8 +105,10 @@ func TestDataTankStartup_MigratesWhenSchemasPresent(t *testing.T) {
 		t.Errorf("expected a clean tank to restore at tier 1, got tier %v", res.tierReached)
 	}
 
-	// On full success the deletion gate is unlocked. Confirm the gate removes the old dir only when committed; here it
-	// is, so it removes.
+	// On full success the deletion gate is unlocked. Production order: the retained old server stops BEFORE the gate
+	// removes its data dir (deleting under a live postmaster forces an abnormal shutdown that leaks its SysV shared
+	// memory segment).
+	srcCluster.stop()
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
 	assertOldDataDirCleared(t, oldDataDir)
 }
@@ -113,6 +116,8 @@ func TestDataTankStartup_MigratesWhenSchemasPresent(t *testing.T) {
 // TestDataTankStartup_NoOpWhenNoSchemas: the normal CLI workspace has no data-tank schemas. The wired call must be a
 // clean no-op - committed=true, no error, no dump written - so it never blocks the deletion gate or slows startup.
 // (Only the public schema is present here, which the data-tank enumeration excludes.)
+// The no-op must still write the status file with committed:true, overwriting any stale committed:false a prior
+// attempt's early-error write left behind - the status JSON is the orchestrator's only view of the outcome.
 func TestDataTankStartup_NoOpWhenNoSchemas(t *testing.T) {
 	skipIfNoBinaries(t)
 
@@ -120,7 +125,13 @@ func TestDataTankStartup_NoOpWhenNoSchemas(t *testing.T) {
 create table public.things (id int primary key, name text);
 insert into public.things values (1, 'alpha'), (2, 'bravo');`
 
-	old, newRef, _, _, oldDataDir, backupDir := startupClusters(t, publicOnlySQL)
+	old, newRef, srcCluster, _, oldDataDir, backupDir := startupClusters(t, publicOnlySQL)
+
+	// Seed a stale failure status from a hypothetical earlier attempt; the no-op must overwrite it.
+	statusPath := filepath.Join(backupDir, "data-tank-migration-status.json")
+	if err := os.WriteFile(statusPath, []byte(`{"committed":false,"detail":"stale prior failure"}`), 0644); err != nil {
+		t.Fatalf("seed stale status: %v", err)
+	}
 
 	res, err := migrateDataTankSchemasOnStartup(context.Background(), old, newRef, backupDir)
 	if err != nil {
@@ -136,8 +147,24 @@ insert into public.things values (1, 'alpha'), (2, 'bravo');`
 	if _, statErr := os.Stat(filepath.Join(backupDir, "data-tank")); !os.IsNotExist(statErr) {
 		t.Errorf("expected no data-tank dump dir for a no-op, but one exists (stat err=%v)", statErr)
 	}
+	// The stale committed:false must have been replaced by the no-op's committed:true.
+	statusBytes, readErr := os.ReadFile(statusPath)
+	if readErr != nil {
+		t.Fatalf("read status file after no-op: %v", readErr)
+	}
+	var status struct {
+		Committed bool `json:"committed"`
+	}
+	if jsonErr := json.Unmarshal(statusBytes, &status); jsonErr != nil {
+		t.Fatalf("unmarshal status file: %v", jsonErr)
+	}
+	if !status.Committed {
+		t.Errorf("no-op left status file committed=false; stale prior status not overwritten: %s", statusBytes)
+	}
 
-	// The combined gate still removes the old dir on a public-success + data-tank-no-op start.
+	// The combined gate still removes the old dir on a public-success + data-tank-no-op start. Production order: stop
+	// the retained old server before the gate removes its data dir.
+	srcCluster.stop()
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
 	assertOldDataDirCleared(t, oldDataDir)
 }
@@ -155,7 +182,7 @@ func TestDataTankStartup_RetryAfterFailureOverwritesStaleDump(t *testing.T) {
 		t.Fatalf("read fixture: %v", err)
 	}
 
-	old, newRef, _, _, oldDataDir, backupDir := startupClusters(t, srcSQL)
+	old, newRef, srcCluster, _, oldDataDir, backupDir := startupClusters(t, srcSQL)
 
 	// Simulate the prior failed attempt's leftover: a non-empty retained dump dir at the exact path the engine dumps
 	// to.
@@ -180,6 +207,8 @@ func TestDataTankStartup_RetryAfterFailureOverwritesStaleDump(t *testing.T) {
 		t.Errorf("stale dump content survived the retry; the dump dir was not replaced")
 	}
 
+	// Production order: stop the retained old server before the gate removes its data dir.
+	srcCluster.stop()
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
 	assertOldDataDirCleared(t, oldDataDir)
 }

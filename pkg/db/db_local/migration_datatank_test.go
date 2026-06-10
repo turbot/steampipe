@@ -299,9 +299,24 @@ func (c *dtCluster) stop() {
 	stopCmd := exec.Command(pgctl, "stop", "-D", c.dataDir, "-m", "fast", "-w", "-t", "20")
 	stopCmd.Env = dtLibEnv(c.version)
 	if err := stopCmd.Run(); err != nil {
-		_ = c.cmd.Process.Kill()
+		// pg_ctl needs the data dir's PID file; deletion-gate success tests remove the data dir while the postmaster
+		// is still up, so fall back to signalling the process directly. SIGINT is postgres's fast shutdown - the
+		// postmaster removes its SysV shared memory segment on the way out. SIGKILL leaks the segment, and once 32
+		// accumulate (the macOS SHMMNI default) every later initdb in the suite fails with "could not create shared
+		// memory segment: No space left on device".
+		_ = c.cmd.Process.Signal(os.Interrupt)
 	}
-	_ = c.cmd.Wait()
+	done := make(chan struct{})
+	go func() {
+		_ = c.cmd.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(20 * time.Second):
+		_ = c.cmd.Process.Kill()
+		<-done
+	}
 }
 
 func (c *dtCluster) applyFixtureSQL(ctx context.Context, sqlText string) error {

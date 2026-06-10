@@ -33,11 +33,14 @@ package db_local
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
+	pconstants "github.com/turbot/pipe-fittings/v2/constants"
 )
 
 // detectionTestInstallDir points app_specific.InstallDir (the root all filepaths helpers resolve under) at a fresh
@@ -197,5 +200,63 @@ func TestMigrationDetection(t *testing.T) {
 				t.Fatalf("location = %q, want version dir %q", location, tc.wantDir)
 			}
 		})
+	}
+}
+
+// corruptOldClusterInstallDir lays down a db/14.19.0 install whose binaries are real (symlinked from the test binary
+// root) but whose data dir holds only PG_VERSION - a cluster the detector accepts but the postmaster cannot start.
+func corruptOldClusterInstallDir(t *testing.T) {
+	t.Helper()
+	installDir := detectionTestInstallDir(t)
+	base := filepath.Join(installDir, "db", dtPG14Version)
+	if err := os.MkdirAll(base, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(dtTestRoot(), "db", dtPG14Version, "postgres"), filepath.Join(base, "postgres")); err != nil {
+		t.Fatal(err)
+	}
+	dataDir := filepath.Join(base, "data")
+	if err := os.MkdirAll(dataDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dataDir, "PG_VERSION"), []byte("14\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Keep the connect-wait short: the postmaster exits immediately on the corrupt data dir, so there is nothing to
+	// wait for.
+	prevTimeout := viper.Get(pconstants.ArgDatabaseStartTimeout)
+	viper.Set(pconstants.ArgDatabaseStartTimeout, 2)
+	t.Cleanup(func() { viper.Set(pconstants.ArgDatabaseStartTimeout, prevTimeout) })
+}
+
+// TestPrepareBackup_CrossMajor_OldClusterWontStart_FailStops: scenario 6 before the dump even runs. When the old
+// cluster exists but will not start (corrupt data dir), a CROSS-major prepareBackup must return the fail-stop sentinel
+// - otherwise both install paths would warn-and-continue and the service would start empty on the new major with the
+// real data unmigrated.
+func TestPrepareBackup_CrossMajor_OldClusterWontStart_FailStops(t *testing.T) {
+	skipIfNoBinaries(t)
+	corruptOldClusterInstallDir(t)
+
+	_, err := prepareBackup(context.Background(), "18.4.0")
+	if err == nil {
+		t.Fatal("prepareBackup succeeded against a cluster that cannot start")
+	}
+	if !errors.Is(err, errCrossMajorDumpFailed) {
+		t.Fatalf("cross-major prepare failure missing the fail-stop sentinel: %v", err)
+	}
+}
+
+// Same failure on a SAME-major (minor) bump keeps the historical warn-and-continue contract: the error comes back
+// plain, without the fail-stop sentinel.
+func TestPrepareBackup_SameMajor_OldClusterWontStart_NoSentinel(t *testing.T) {
+	skipIfNoBinaries(t)
+	corruptOldClusterInstallDir(t)
+
+	_, err := prepareBackup(context.Background(), "14.20.0")
+	if err == nil {
+		t.Fatal("prepareBackup succeeded against a cluster that cannot start")
+	}
+	if errors.Is(err, errCrossMajorDumpFailed) {
+		t.Fatalf("same-major prepare failure must not carry the cross-major fail-stop sentinel: %v", err)
 	}
 }

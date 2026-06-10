@@ -926,8 +926,11 @@ func migrateDataTankSchemasOnStartup(ctx context.Context, old, new *pgClusterRef
 	}
 	if len(schemas) == 0 {
 		// No data tank present (the normal CLI workspace). Nothing to migrate; report a clean no-op so the caller's
-		// deletion gate stays unblocked.
-		return migrationResult{committed: true}, nil
+		// deletion gate stays unblocked. Write the status file too - a prior attempt's early-error write above may have
+		// left committed:false, and the no-op outcome must overwrite it.
+		result := migrationResult{committed: true}
+		writeDataTankStatus(statusPath, result, "no data-tank schemas present; nothing to migrate")
+		return result, nil
 	}
 
 	return migrateDataTank(ctx, old, new, backupDir, statusPath, dataTankMigrationJobs, migrationFaults{})
