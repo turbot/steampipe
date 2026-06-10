@@ -238,7 +238,14 @@ func runMigrationEngine(ctx context.Context, shape migrationShape, src, target *
 		writeDataTankStatus(statusPath, res, "disk pre-flight: insufficient space for migration window")
 		return res, errDataTankDiskPreflight
 	}
-	if shortfall, derr := dataTankDiskPreflight(ctx, srcConn, schemas, target.dataDir); derr == nil && shortfall > 0 {
+	if shortfall, derr := dataTankDiskPreflight(ctx, srcConn, schemas, target.dataDir); derr != nil {
+		// An error in the scan itself is a pre-flight failure, not a license to proceed: silently skipping the gate
+		// would convert the exact disk-full scenario it guards into a mid-dump failure on a possibly shared volume.
+		srcConn.Close(ctx)
+		res.oldClusterRetained = true
+		writeDataTankStatus(statusPath, res, "disk pre-flight could not run: "+derr.Error())
+		return res, fmt.Errorf("%w: scan failed: %v", errDataTankDiskPreflight, derr)
+	} else if shortfall > 0 {
 		srcConn.Close(ctx)
 		res.oldClusterRetained = true
 		writeDataTankStatus(statusPath, res, fmt.Sprintf("disk pre-flight: need %d more bytes", shortfall))

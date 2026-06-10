@@ -469,6 +469,32 @@ func stopRetainedOldServer(ctx context.Context) {
 	retainedOldServer = nil
 }
 
+// migrationIncompleteMarkerPath is a flag file recording that a cross-major migration has started and not yet fully
+// committed. While it exists, the current version's data directory is a disposable draft. Its job is the opt-out
+// path: if the user parks the old data directory to skip migrating, the next startup must NOT silently boot whatever
+// half-written draft the failed attempt left at the current version's path - the marker makes that state detectable.
+func migrationIncompleteMarkerPath() string {
+	return filepath.Join(filepaths.EnsureDatabaseDir(), "migration-incomplete.flag")
+}
+
+func writeMigrationIncompleteMarker(oldVersion, newVersion string) {
+	content := fmt.Sprintf("cross-major migration %s -> %s started and not yet committed\n", oldVersion, newVersion)
+	if err := os.WriteFile(migrationIncompleteMarkerPath(), []byte(content), 0644); err != nil {
+		log.Printf("[WARN] could not write migration-incomplete marker: %v", err)
+	}
+}
+
+func clearMigrationIncompleteMarker() {
+	if err := os.Remove(migrationIncompleteMarkerPath()); err != nil && !os.IsNotExist(err) {
+		log.Printf("[WARN] could not remove migration-incomplete marker: %v", err)
+	}
+}
+
+func migrationIncompleteMarkerExists() bool {
+	_, err := os.Stat(migrationIncompleteMarkerPath())
+	return err == nil
+}
+
 // prepareBackup creates a backup file of the public schema for the current database, if we are migrating
 // if a backup was taken, this returns the name of the database that was backed up.
 // targetVersion is the embedded-PG version this build ships (constants.DatabaseVersion in production).
@@ -502,6 +528,9 @@ func prepareBackup(ctx context.Context, targetVersion string) (*string, error) {
 	// the post-restore validation pass against the old data while it is still live. For a same-major (minor) migration
 	// there is no pre-flight/validation step, so tear it down here as before.
 	crossMajor := classifyPgMigration(filepath.Base(location), targetVersion) == pgMigrationMajor
+	if crossMajor {
+		writeMigrationIncompleteMarker(filepath.Base(location), targetVersion)
+	}
 
 	takeErr := takeBackup(ctx, runConfig)
 	if takeErr != nil {
@@ -688,12 +717,15 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 	}
 	log.Printf("[TRACE] restoreDBBackup: backup file '%s' found, restoring", backupFilePath)
 
-	// load the db status
+	// load the db status. On any exit before the cross-major flow consumes the retained old server, stop it - these
+	// early returns previously leaked the old postmaster as an orphaned process.
 	runningInfo, err := GetState()
 	if err != nil {
+		stopRetainedOldServer(ctx)
 		return err
 	}
 	if runningInfo == nil {
+		stopRetainedOldServer(ctx)
 		return fmt.Errorf("steampipe service is not running")
 	}
 
@@ -716,17 +748,19 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 	}
 	newVersion := targetVersion
 
-	// fallBackCrossMajor rolls to the hardened-B fall-back state with a cause-specific warning. The insurance dump is
-	// retained and the old data directory is intentionally NOT removed - it is the user's only copy of the old data.
-	// The old dir is retained indefinitely; a subsequent upgrade migrates from the most-recent prior install, so a
-	// stale fall-back dir is never picked over a newer one.
-	fallBackCrossMajor := func(warning string) error {
+	// failCrossMajor is the fail-stop exit for every cross-major failure: stop the retained old server, keep the
+	// insurance dump and the untouched old data directory, and return an error so startup FAILS with instructions.
+	// The service never runs on an empty or unverified database, which is also what makes the automatic retry on the
+	// next start safe - the new side is always a disposable draft until the one attempt that fully commits.
+	failCrossMajor := func(cause string) error {
 		stopRetainedOldServer(ctx)
+		retainedDump := ""
 		if err := retainBackup(ctx); err != nil {
-			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
+			log.Printf("[WARN] failed to retain backup file: %v", err)
+		} else {
+			retainedDump = filepaths.BackupsDir()
 		}
-		error_helpers.ShowWarning(warning)
-		return nil
+		return crossMajorMigrationFailedError(cause, oldVersion, newVersion, oldLocation, retainedDump)
 	}
 
 	if crossMajor {
@@ -736,7 +770,7 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 		// end of the success path; the engine takes its own working dump under the database dir.
 		if retainedOldServer == nil {
 			log.Printf("[WARN] cross-major migration: old cluster not retained for pre-flight/validation")
-			return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
+			return failCrossMajor("the old database server could not be kept running for the migration's pre-flight and validation steps")
 		}
 		old := oldClusterRef(oldVersion, oldLocation, retainedOldServer.dbName, retainedOldServer.port)
 		newRef := newClusterRef(runningInfo.Port, runningInfo.Database, targetVersion)
@@ -750,11 +784,11 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 			}
 			switch {
 			case pubRes.preflightSkipped:
-				return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
+				return failCrossMajor("the pre-flight collation scan flagged collation-dependent objects (or could not run), so the restore was skipped to protect index ordering and uniqueness")
 			case pubRes.validationDiverged:
-				return fallBackCrossMajor(crossMajorValidationDivergedWarning(oldVersion, newVersion))
+				return failCrossMajor("post-restore validation found the restored data diverged from the original; the restored copy is unverified")
 			default:
-				return fallBackCrossMajor(crossMajorRestoreFailedWarning(oldVersion, newVersion))
+				return failCrossMajor("the public schema restore failed")
 			}
 		}
 		if pubRes.matviewRefreshFailed {
@@ -766,28 +800,30 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 		// -> new. On the normal CLI workspace there are no data-tank schemas and this is a clean no-op.
 		//
 		// The old data directory is removed only after BOTH the public-schema migration AND the data-tank migration
-		// confirm full success (the single deletion gate). A data-tank failure preserves the old dir and warns, but
-		// does NOT revert the public-schema success: the new version still runs (the 2026-06-08 data-preservation
-		// decision).
-		dtCommitted := true
+		// confirm full success (the single deletion gate). A data-tank failure is a fail-stop like any other
+		// cross-major failure: the public-schema success is not "reverted" (nothing needs reverting - the whole new
+		// side is rebuilt from the preserved old data on the next attempt), but the service must not run on a
+		// half-migrated database.
 		dtRes, dtErr := migrateDataTankSchemasOnStartup(ctx, old, newRef, backupDir)
 		if dtErr != nil || !dtRes.committed {
-			// A data-tank failure does NOT revert the public-schema success (the new version still runs). The old data
-			// dir + the retained data-tank dump are the two preserved recovery copies.
-			dtCommitted = false
 			if dtErr != nil {
 				log.Printf("[WARN] cross-major data-tank migration failed: %v", dtErr)
 			}
-			error_helpers.ShowWarning(dataTankMigrationDataPreservedWarning(dtRes.dumpPath))
+			cause := "the data-tank migration did not fully commit"
+			if dtRes.dumpPath != "" {
+				cause += fmt.Sprintf(" (that attempt's data-tank dump is retained at %s)", dtRes.dumpPath)
+			}
+			return failCrossMajor(cause)
 		}
 
-		// Retain the backup and (only if the data-tank migration also fully succeeded) remove the old data dir through
-		// the single deletion gate.
+		// Full success on both shapes: retain the backup, remove the old data dir through the single deletion gate,
+		// and clear the in-progress marker - the new cluster is now the committed database.
 		stopRetainedOldServer(ctx)
 		if err := retainBackup(ctx); err != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
 		}
-		removeOldDataDirOnMigrationSuccess(dtCommitted, filepath.Join(oldLocation, "data"))
+		removeOldDataDirOnMigrationSuccess(true, filepath.Join(oldLocation, "data"))
+		clearMigrationIncompleteMarker()
 		return nil
 	}
 

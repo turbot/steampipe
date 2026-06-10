@@ -198,10 +198,12 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 		return err
 	}
 
-	// if there is an unprocessed db backup file, restore it now. restoreDBBackup itself makes the *migration* cases
-	// non-fatal (cross-major and a failed same-major restore both retain the insurance dump, preserve the old data dir,
-	// warn, and return nil). A non-nil error here is therefore a genuine infrastructure failure (e.g. unreadable backup
-	// archive, state load failure) - that must still fail startup rather than be silently swallowed.
+	// if there is an unprocessed db backup file, restore it now. A failed SAME-major restore stays non-fatal
+	// (restoreDBBackup warns and returns nil - the historical behaviour). A failed CROSS-major migration is a
+	// fail-stop: restoreDBBackup returns an error carrying the preservation facts and recovery instructions, and
+	// startup fails - the service must not run on an empty or unverified database while the real data sits in the
+	// preserved old directory. Genuine infrastructure failures (unreadable backup archive, state load failure) also
+	// fail startup.
 	if err := restoreDBBackup(ctx, constants.DatabaseVersion); err != nil {
 		return sperr.WrapWithMessage(err, "failed to migrate db public schema")
 	}

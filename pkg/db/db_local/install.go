@@ -39,47 +39,25 @@ If you need that data, do not run another upgrade; open an issue at https://gith
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
 
-// crossMajorPreflightSkippedWarning is shown on a cross-major upgrade (e.g. Postgres 14 -> 18) when the pre-flight
-// collation scan detected collation-dependent objects in the public schema. Restoring those into a cluster whose
-// default collation provider differs from the old one could silently corrupt index ordering and uniqueness, so the
-// automatic restore is skipped. The new service starts fresh; the old data directory and a retained dump are kept so
-// the user can migrate manually.
-func crossMajorPreflightSkippedWarning(oldVersion, newVersion string) string {
-	warningMessage := fmt.Sprintf(`The embedded database has been upgraded from PostgreSQL %s to PostgreSQL %s (a major version change).
+// crossMajorMigrationFailedError is the fail-stop error for ANY cross-major migration failure. The service does not
+// start: running on an empty or unverified database while the real data sits in the old directory invites silent data
+// loss, and anything written before a retry would be erased by the retry's clean-slate rebuild. Failure leaves the new
+// side a disposable draft, which is exactly what makes the automatic retry on the next start safe.
+func crossMajorMigrationFailedError(cause, oldVersion, newVersion, oldLocation, retainedDump string) error {
+	preserved := fmt.Sprintf("your previous database directory is preserved at %s", oldLocation)
+	if retainedDump != "" {
+		preserved += fmt.Sprintf(", and a dump of your old data is retained at %s", retainedDump)
+	}
+	return fmt.Errorf(`cross-major database migration (PostgreSQL %s to %s) failed: %s
 
-Pre-flight detected collation-dependent objects (text indexes, unique constraints, or ordered views over non-ASCII data) in your public schema. A major-version upgrade changes the default collation provider, so automatically restoring these objects could silently corrupt their ordering or uniqueness. To keep the service usable and your data safe, the restore was skipped and the service started with an empty public schema.
+Nothing was deleted - %s.
 
-Nothing was deleted. A dump of your old data has been retained in ~/.steampipe/backups and your previous database directory is preserved under ~/.steampipe/db. To restore manually, load the retained .sql dump into the new database, resolving any collation incompatibilities.`, oldVersion, newVersion)
+Steampipe has not started: the new database is empty or unverified, and using it now could be mistaken for data loss.
 
-	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
-}
-
-// crossMajorRestoreFailedWarning is shown on a cross-major upgrade when the best-effort automatic restore (pg_restore)
-// returned a non-zero exit code. The new service starts fresh; the old data directory and a retained dump are kept so
-// the user can migrate manually.
-func crossMajorRestoreFailedWarning(oldVersion, newVersion string) string {
-	warningMessage := fmt.Sprintf(`The embedded database has been upgraded from PostgreSQL %s to PostgreSQL %s (a major version change).
-
-Steampipe attempted to automatically migrate your public schema, but pg_restore reported an error (some objects in the dump are not compatible with the new major version). To keep the service usable, it has started with an empty public schema.
-
-Nothing was deleted. A dump of your old data has been retained in ~/.steampipe/backups and your previous database directory is preserved under ~/.steampipe/db. To restore manually, load the retained .sql dump into the new database, resolving any major-version incompatibilities.`, oldVersion, newVersion)
-
-	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
-}
-
-// crossMajorValidationDivergedWarning is shown on a cross-major upgrade when pg_restore succeeded but the post-restore
-// validation pass found the restored data diverged from the old cluster (row-count, sample-row checksum, or an invalid
-// index). The restored data is NOT removed - it stays in the new database, flagged as unverified - and the migration is
-// not committed: the old data directory and a retained dump are kept as the authoritative copies so the user can
-// migrate manually.
-func crossMajorValidationDivergedWarning(oldVersion, newVersion string) string {
-	warningMessage := fmt.Sprintf(`The embedded database has been upgraded from PostgreSQL %s to PostgreSQL %s (a major version change).
-
-Steampipe automatically migrated your public schema, but a post-restore validation pass found the restored data diverged from your old database (a row count, a sample-row checksum, or an index validity check did not match). The restored data is still present in the new database, but it failed verification and may be incomplete or incorrect - treat it with caution.
-
-Nothing was deleted from your original data. A dump of your old data has been retained in ~/.steampipe/backups and your previous database directory is preserved under ~/.steampipe/db - these are the authoritative copies. To migrate manually, drop the unverified objects and load the retained .sql dump into the new database, then compare the reported divergence (see the service log for the table or index that did not match).`, oldVersion, newVersion)
-
-	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
+To try again:           start Steampipe again - the migration re-runs from your preserved old data.
+To skip migrating:      move the old directory aside (e.g. add a '.parked' suffix to its name), remove the contents of the new version's data directory if any exist, then start Steampipe for a fresh, empty database.
+To recover manually:    restore the retained dump into a database of your choice.`,
+		oldVersion, newVersion, cause, preserved)
 }
 
 // restoreFailedWarning is shown when a same-major (minor) migration took a backup but the automatic restore failed. The
@@ -92,27 +70,11 @@ The service has started so it remains usable. Nothing was deleted: a dump of you
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
 
-// dataTankMigrationDataPreservedWarning is the user/orchestrator-facing message emitted whenever the data-tank
-// migration does not fully commit - a disk pre-flight or refresh-pause abort, a dump failure, a partial restore (tier 4
-// reached but >=1 partition unmigrated), or all tiers exhausted. Under the 2026-06-08 governing decision
-// (data-preservation over version-revert) the new Postgres version still runs, but the original is preserved on disk in
-// two independent forms - the untouched old data directory plus that attempt's retained dump (a retry replaces the dump
-// from the old directory) - so nothing is lost. The structured signal lives in the JSON marker file; this is the
-// human-readable companion.
-func dataTankMigrationDataPreservedWarning(retainedDumpPath string) string {
-	warningMessage := fmt.Sprintf(`Data-tank migration to Postgres 18 could not be completed automatically.
-
-The new database has started, but your original data has NOT been dropped - it is preserved on disk in two forms: your previous data directory under ~/.steampipe/db, and an insurance dump retained at %s.
-
-This has been flagged for investigation. No action is required from you.`, retainedDumpPath)
-
-	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
-}
-
-// Note: the per-cause data-tank fall-back warnings (refresh-pause-failed, disk-preflight-failed) were converged into
-// dataTankMigrationDataPreservedWarning under the 2026-06-08 data-preservation decision. Every data-tank failure cause
-// now surfaces the same outcome - the new version runs, the original is preserved on disk - so a single warning covers
-// them all. The per-cause detail lives in the JSON marker file the engine writes (writeDataTankStatus).
+// Note: the per-cause cross-major and data-tank fall-back warnings were replaced by the single fail-stop
+// crossMajorMigrationFailedError above. Every cross-major failure cause now surfaces the same outcome - startup fails
+// with preservation facts and recovery options - and the per-cause detail lives in the JSON status files the engine
+// writes (writeDataTankStatus). Only the same-major path (restoreFailedWarning) keeps its historical
+// warn-and-continue behaviour.
 
 // EnsureDBInstalled makes sure that the embedded postgres database is installed and ready to run
 func EnsureDBInstalled(ctx context.Context) (err error) {
@@ -177,16 +139,19 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 		statushooks.Message(ctx, noBackupWarning())
 	}
 
-	// install the fdw
+	// install the fdw. On failure stop the retained old server (a cross-major prepareBackup leaves the old cluster
+	// running for the later restore/validation) - leaving it running leaked an orphaned postgres process.
 	_, err = installFDW(ctx, true)
 	if err != nil {
 		log.Printf("[TRACE] installFDW failed: %v", err)
+		stopRetainedOldServer(ctx)
 		return fmt.Errorf("Download & install steampipe-postgres-fdw... FAILED!")
 	}
 
 	// run the database installation
 	err = runInstall(ctx, dbName)
 	if err != nil {
+		stopRetainedOldServer(ctx)
 		return err
 	}
 
@@ -309,11 +274,25 @@ func prepareDb(ctx context.Context) error {
 	}
 	migrationPending := dbName != nil
 
+	// A migration-incomplete marker with NO pending migration means a previous cross-major attempt never committed
+	// and its source has since disappeared (e.g. the old directory was parked to opt out). The current data dir may
+	// hold that attempt's half-written draft - refusing to start beats silently booting it as if it were real data.
+	if !migrationPending && migrationIncompleteMarkerExists() {
+		return fmt.Errorf(`a previous cross-major database migration started but never completed, and its source data directory is no longer present.
+
+The current version's data directory may hold an incomplete copy from that attempt - starting on it could be mistaken for data loss.
+
+To start fresh: remove the contents of the current version's data directory under ~/.steampipe/db, delete %s, then start Steampipe again.
+To migrate after all: restore the old version's directory to its original path and start Steampipe again.`, migrationIncompleteMarkerPath())
+	}
+
 	if migrationPending {
 		// runInstall wipes the current data dir contents (clearing any partial cluster from a crashed previous attempt)
 		// and initdb's a fresh cluster; the restore lands after the service starts. Do NOT kill instances here - the
-		// old cluster prepareBackup started must stay live for restoreDBBackup.
+		// old cluster prepareBackup started must stay live for restoreDBBackup. If the install fails, stop that old
+		// cluster on the way out - leaving it running leaked an orphaned postgres process.
 		if err := runInstall(ctx, dbName); err != nil {
+			stopRetainedOldServer(ctx)
 			return err
 		}
 	} else if needsInit() {
