@@ -2,21 +2,16 @@ package db_local
 
 // Data-tank cross-major (PG14 -> PG18) migration.
 //
-// This implements the light-migration + tiered-restore path for data-tank
-// schemas (the <handle> + "<handle>-parts" schema pairs that carry the
-// PARTITION BY LIST(_cloud_partition) cached upstream data). It is deliberately
-// narrower than the general public-schema migration: data tank has no
-// procedural code, no expression/partial/GIN/GIST indexes, and only one
-// catalog risk - a column literally named system_user (PG16+ reserves
-// SYSTEM_USER).
+// This implements the light-migration + tiered-restore path for data-tank schemas (the <handle> + "<handle>-parts"
+// schema pairs that carry the PARTITION BY LIST(_cloud_partition) cached upstream data). It is deliberately narrower
+// than the general public-schema migration: data tank has no procedural code, no expression/partial/GIN/GIST indexes,
+// and only one catalog risk - a column literally named system_user (PG16+ reserves SYSTEM_USER).
 //
-// Failure stance: on any unrecoverable or partial failure the OLD PG14 data
-// directory (plus that attempt's safety dump) is left intact on disk; the new
-// Postgres version still runs and the original is preserved for recovery. No
-// version-revert; data is never dropped. The old data directory is the durable
-// copy - a retry replaces the prior attempt's dump with a fresh one from it
-// (dumpDataTankSchemas). The tiered restore escalates
-// parallel -> serial -> per-table COPY -> per-partition COPY before giving up.
+// Failure stance: on any unrecoverable or partial failure the OLD PG14 data directory (plus that attempt's safety dump)
+// is left intact on disk; the new Postgres version still runs and the original is preserved for recovery. No
+// version-revert; data is never dropped. The old data directory is the durable copy - a retry replaces the prior
+// attempt's dump with a fresh one from it (dumpDataTankSchemas). The tiered restore escalates parallel -> serial ->
+// per-table COPY -> per-partition COPY before giving up.
 
 import (
 	"context"
@@ -46,15 +41,15 @@ func availableDiskBytes(path string) (int64, error) {
 	return int64(stat.Bavail) * int64(stat.Bsize), nil
 }
 
-// reservedColumnNames are the lower-cased column names that a PG14 pg_dump emits
-// unquoted and a PG18 pg_restore then rejects with a syntax error. Currently the
-// only data-tank-relevant entry is system_user (SYSTEM_USER reserved in PG16+).
+// reservedColumnNames are the lower-cased column names that a PG14 pg_dump emits unquoted and a PG18 pg_restore then
+// rejects with a syntax error. Currently the only data-tank-relevant entry is system_user (SYSTEM_USER reserved in
+// PG16+).
 var reservedColumnNames = map[string]struct{}{
 	"system_user": {},
 }
 
-// dataTankRestoreTier names the restore strategy reached. The operational cost
-// differs per tier, so the migration records the highest tier it had to use.
+// dataTankRestoreTier names the restore strategy reached. The operational cost differs per tier, so the migration
+// records the highest tier it had to use.
 type dataTankRestoreTier int
 
 const (
@@ -65,16 +60,15 @@ const (
 	dtRestoreTier4PerPartition
 )
 
-// reservedWordHit records a data-tank column whose name is a reserved word that
-// would break an unquoted pg_restore.
+// reservedWordHit records a data-tank column whose name is a reserved word that would break an unquoted pg_restore.
 type reservedWordHit struct {
 	schema string
 	table  string
 	column string
 }
 
-// partitionFailure records a single partition that could not be migrated even by
-// the per-partition COPY tier. It feeds the orchestrator's "needs help" list.
+// partitionFailure records a single partition that could not be migrated even by the per-partition COPY tier. It feeds
+// the orchestrator's "needs help" list.
 type partitionFailure struct {
 	parentSchema string
 	parentTable  string
@@ -83,9 +77,8 @@ type partitionFailure struct {
 	reason       string
 }
 
-// dataTankMigrationStatus is the orchestrator-facing structured failure signal.
-// It is JSON-serialised to a well-known marker file the orchestrator polls. The
-// marker is the contract surface this task ships; orchestrator-side polling is
+// dataTankMigrationStatus is the orchestrator-facing structured failure signal. It is JSON-serialised to a well-known
+// marker file the orchestrator polls. The marker is the contract surface this task ships; orchestrator-side polling is
 // the separate 5b-orchestrator task.
 type dataTankMigrationStatus struct {
 	Committed          bool               `json:"committed"`
@@ -98,13 +91,11 @@ type dataTankMigrationStatus struct {
 	Message            string             `json:"message,omitempty"`
 }
 
-// pgClusterRef is the minimal handle the shared cross-major migration engine
-// needs to talk to one PostgreSQL cluster - enough to run the bundled pg_dump /
-// pg_restore binaries and open a pgx connection. It generalises both shapes:
-// the data-tank test harness and the production startup path both supply one.
-// A cluster is reached either over a Unix socket directory (sockDir, used by
-// the in-package test clusters) or over a TCP loopback port (port>0, used by
-// the production old/new embedded clusters).
+// pgClusterRef is the minimal handle the shared cross-major migration engine needs to talk to one PostgreSQL cluster -
+// enough to run the bundled pg_dump / pg_restore binaries and open a pgx connection. It generalises both shapes: the
+// data-tank test harness and the production startup path both supply one. A cluster is reached either over a Unix
+// socket directory (sockDir, used by the in-package test clusters) or over a TCP loopback port (port>0, used by the
+// production old/new embedded clusters).
 type pgClusterRef struct {
 	version string   // postgres version (selects the matching binary set)
 	binDir  string   // directory holding pg_dump / pg_restore / psql
@@ -131,9 +122,8 @@ func (r *pgClusterRef) tool(name string) string {
 	return filepath.Join(r.binDir, name)
 }
 
-// toolConnArgs returns the host/port arguments the bundled pg_dump / pg_restore
-// binaries need to reach this cluster, matching connString's socket-vs-TCP
-// selection.
+// toolConnArgs returns the host/port arguments the bundled pg_dump / pg_restore binaries need to reach this cluster,
+// matching connString's socket-vs-TCP selection.
 func (r *pgClusterRef) toolConnArgs() []string {
 	if r.port > 0 {
 		return []string{"--host=127.0.0.1", fmt.Sprintf("--port=%d", r.port)}
@@ -141,12 +131,10 @@ func (r *pgClusterRef) toolConnArgs() []string {
 	return []string{"--host=" + r.sockDir}
 }
 
-// migrationFaults carries deterministic failure injection for testing
-// the tier-escalation and pre-flight paths. In production every field is false /
-// zero and the migration runs against real cluster state. The faults model
-// failure modes that cannot be reliably produced on a developer host (a full
-// disk, a restore that fails for one partition's bytes, an orchestration that
-// did not honour the refresh-pause contract).
+// migrationFaults carries deterministic failure injection for testing the tier-escalation and pre-flight paths. In
+// production every field is false / zero and the migration runs against real cluster state. The faults model failure
+// modes that cannot be reliably produced on a developer host (a full disk, a restore that fails for one partition's
+// bytes, an orchestration that did not honour the refresh-pause contract).
 type migrationFaults struct {
 	forceDumpFailure        bool
 	forceDiskPreflightFail  bool
@@ -158,40 +146,35 @@ type migrationFaults struct {
 	corruptOnePartition bool
 	failAllTiers        bool
 
-	// interruptMidRestore / targetUnusable model an interrupted migration
-	// (SIGKILL / OOM / pod restart) or an old-cluster binary issue: the restore
-	// cannot proceed, so the old data directory + safety dump are preserved on
+	// interruptMidRestore / targetUnusable model an interrupted migration (SIGKILL / OOM / pod restart) or an
+	// old-cluster binary issue: the restore cannot proceed, so the old data directory + safety dump are preserved on
 	// disk and the failure is surfaced (no version-revert).
 	interruptMidRestore bool
 	targetUnusable      bool
 }
 
-// migrationResult is the engine's full report. The test seam and the
-// real startup wiring both read it.
+// migrationResult is the engine's full report. The test seam and the real startup wiring both read it.
 type migrationResult struct {
 	tierReached        dataTankRestoreTier
 	reservedWordRouted bool
 	oldClusterRetained bool
 	committed          bool
-	// dumpPath is the retained dump artefact: a directory for the data-tank
-	// shape, a single custom-format file for the public shape.
+	// dumpPath is the retained dump artefact: a directory for the data-tank shape, a single custom-format file for the
+	// public shape.
 	dumpPath          string
 	partitionFailures []partitionFailure
 	skippedMgrTables  []string
 
-	// preflightSkipped is set when the public shape's collation pre-check flagged
-	// a risk (or could not run) and the restore was skipped. validationDiverged
-	// is set when the public shape's post-restore row-checksum validation found a
-	// divergence. Both are public-shape-only signals (the data-tank shape runs
-	// neither gate); they let the production caller pick the cause-specific
-	// warning.
+	// preflightSkipped is set when the public shape's collation pre-check flagged a risk (or could not run) and the
+	// restore was skipped. validationDiverged is set when the public shape's post-restore row-checksum validation found
+	// a divergence. Both are public-shape-only signals (the data-tank shape runs neither gate); they let the production
+	// caller pick the cause-specific warning.
 	preflightSkipped   bool
 	validationDiverged bool
 
-	// matviewRefreshFailed is set when the public shape's separate
-	// matview-refresh invocation failed. The migration still commits (a failed
-	// refresh is a warning, not a migration failure); the caller surfaces the
-	// user-facing "REFRESH manually" warning.
+	// matviewRefreshFailed is set when the public shape's separate matview-refresh invocation failed. The migration
+	// still commits (a failed refresh is a warning, not a migration failure); the caller surfaces the user-facing
+	// "REFRESH manually" warning.
 	matviewRefreshFailed bool
 }
 
@@ -199,9 +182,8 @@ type migrationResult struct {
 // Schema / table / partition enumeration.
 // ----------------------------------------------------------------------------
 
-// listDataTankSchemas enumerates the data-tank schema pairs on the source
-// cluster: every <handle> schema and its "<handle>-parts" sibling. System
-// schemas and public are excluded.
+// listDataTankSchemas enumerates the data-tank schema pairs on the source cluster: every <handle> schema and its
+// "<handle>-parts" sibling. System schemas and public are excluded.
 func listDataTankSchemas(ctx context.Context, conn *pgx.Conn) ([]string, error) {
 	rows, err := conn.Query(ctx, `
 		SELECT nspname FROM pg_namespace
@@ -224,18 +206,17 @@ func listDataTankSchemas(ctx context.Context, conn *pgx.Conn) ([]string, error) 
 	return schemas, rows.Err()
 }
 
-// dataTankTable identifies a partitioned parent table living in a <handle>
-// schema (NOT the -parts schema, which only holds child partitions).
+// dataTankTable identifies a partitioned parent table living in a <handle> schema (NOT the -parts schema, which only
+// holds child partitions).
 type dataTankTable struct {
 	schema string
 	table  string
 }
 
-// listDataTankParentTables returns the partitioned parent tables across the
-// given schemas. The -parts schemas hold only attached child partitions, so the
-// parents are what the per-table tier iterates. Tables carrying the _mgr_ infix
-// (an in-flight user-driven intra-version migration) are returned separately so
-// the caller can decide to skip-or-wait rather than racing the cleanup workflow.
+// listDataTankParentTables returns the partitioned parent tables across the given schemas. The -parts schemas hold only
+// attached child partitions, so the parents are what the per-table tier iterates. Tables carrying the _mgr_ infix (an
+// in-flight user-driven intra-version migration) are returned separately so the caller can decide to skip-or-wait
+// rather than racing the cleanup workflow.
 func listDataTankParentTables(ctx context.Context, conn *pgx.Conn, schemas []string) (parents []dataTankTable, mgrTables []dataTankTable, err error) {
 	for _, schema := range schemas {
 		rows, qerr := conn.Query(ctx, `
@@ -273,16 +254,15 @@ func listDataTankParentTables(ctx context.Context, conn *pgx.Conn, schemas []str
 	return parents, mgrTables, nil
 }
 
-// dataTankPartition identifies one attached child partition plus the value list
-// needed to re-attach it on the target.
+// dataTankPartition identifies one attached child partition plus the value list needed to re-attach it on the target.
 type dataTankPartition struct {
 	partSchema string
 	partTable  string
 	forValues  string // the FOR VALUES IN (...) expression text
 }
 
-// listAttachedPartitions returns each attached child partition of a parent
-// table, with the partition-bound expression needed to re-ATTACH it.
+// listAttachedPartitions returns each attached child partition of a parent table, with the partition-bound expression
+// needed to re-ATTACH it.
 func listAttachedPartitions(ctx context.Context, conn *pgx.Conn, parent dataTankTable) ([]dataTankPartition, error) {
 	rows, err := conn.Query(ctx, `
 		SELECT child_n.nspname, child.relname, pg_get_expr(child.relpartbound, child.oid)
@@ -312,11 +292,10 @@ func listAttachedPartitions(ctx context.Context, conn *pgx.Conn, parent dataTank
 // Reserved-word pre-flight scan.
 // ----------------------------------------------------------------------------
 
-// reservedWordColumnScan scans every column of every table in the given
-// data-tank schemas and flags any column whose lower-cased name is a reserved
-// word. A hit routes the migration straight to tier 3 (per-table COPY with
-// quoted identifiers), because pg_restore's syntax-level rejection happens on
-// the unquoted DDL pg_dump emits - which tiers 1 and 2 cannot avoid.
+// reservedWordColumnScan scans every column of every table in the given data-tank schemas and flags any column whose
+// lower-cased name is a reserved word. A hit routes the migration straight to tier 3 (per-table COPY with quoted
+// identifiers), because pg_restore's syntax-level rejection happens on the unquoted DDL pg_dump emits - which tiers 1
+// and 2 cannot avoid.
 func reservedWordColumnScan(ctx context.Context, conn *pgx.Conn, schemaNames []string) ([]reservedWordHit, error) {
 	if len(schemaNames) == 0 {
 		return nil, nil
@@ -351,9 +330,8 @@ func reservedWordColumnScan(ctx context.Context, conn *pgx.Conn, schemaNames []s
 // Disk-space pre-flight.
 // ----------------------------------------------------------------------------
 
-// dataTankDiskPreflight estimates the disk the migration window needs (~2x the
-// data-tank cluster size) and checks the install directory has it, minus a 1 GB
-// safety margin. Returns the shortfall in bytes (0 = ok).
+// dataTankDiskPreflight estimates the disk the migration window needs (~2x the data-tank cluster size) and checks the
+// install directory has it, minus a 1 GB safety margin. Returns the shortfall in bytes (0 = ok).
 func dataTankDiskPreflight(ctx context.Context, conn *pgx.Conn, schemas []string, targetDir string) (shortfallBytes int64, err error) {
 	var totalBytes int64
 	for _, schema := range schemas {
@@ -385,19 +363,15 @@ func dataTankDiskPreflight(ctx context.Context, conn *pgx.Conn, schemas []string
 // Dump.
 // ----------------------------------------------------------------------------
 
-// dumpDataTankSchemas runs a single directory-format pg_dump covering every
-// data-tank schema pair against the still-running old cluster. Directory format
-// lets every restore tier read the SAME artefact (TOC + per-table data files)
-// without re-dumping. The whole schema set is dumped in one invocation so the
-// hyphenated "<handle>-parts" partition tables and their parents land in one
-// consistent, dependency-ordered archive.
+// dumpDataTankSchemas runs a single directory-format pg_dump covering every data-tank schema pair against the
+// still-running old cluster. Directory format lets every restore tier read the SAME artefact (TOC + per-table data
+// files) without re-dumping. The whole schema set is dumped in one invocation so the hyphenated "<handle>-parts"
+// partition tables and their parents land in one consistent, dependency-ordered archive.
 func dumpDataTankSchemas(ctx context.Context, src *pgClusterRef, schemas []string, dumpDir string, jobs int) error {
-	// A prior FAILED attempt leaves its retained dump dir behind, and pg_dump's
-	// directory format refuses an existing directory ("File exists") - without
-	// this, every retry deadlocks at the dump step. A retry only runs while the
-	// old cluster is still intact on disk (the deletion gate fires on full
-	// success only), so replacing the stale dump with a fresh one from the same
-	// source sacrifices nothing.
+	// A prior FAILED attempt leaves its retained dump dir behind, and pg_dump's directory format refuses an existing
+	// directory ("File exists") - without this, every retry deadlocks at the dump step. A retry only runs while the old
+	// cluster is still intact on disk (the deletion gate fires on full success only), so replacing the stale dump with
+	// a fresh one from the same source sacrifices nothing.
 	if err := os.RemoveAll(dumpDir); err != nil {
 		return err
 	}
@@ -427,9 +401,8 @@ func dumpDataTankSchemas(ctx context.Context, src *pgClusterRef, schemas []strin
 // Restore tiers.
 // ----------------------------------------------------------------------------
 
-// restoreTier1ParallelDump restores the directory dump with parallel jobs inside
-// a single transaction. Fast path; expected to succeed for almost all
-// workspaces given data tank's narrow risk surface.
+// restoreTier1ParallelDump restores the directory dump with parallel jobs inside a single transaction. Fast path;
+// expected to succeed for almost all workspaces given data tank's narrow risk surface.
 func restoreTier1ParallelDump(ctx context.Context, target *pgClusterRef, dumpDir string, jobs int) error {
 	args := []string{
 		dumpDir,
@@ -449,9 +422,8 @@ func restoreTier1ParallelDump(ctx context.Context, target *pgClusterRef, dumpDir
 	return nil
 }
 
-// restoreTier2SerialDump restores the directory dump serially in a single
-// transaction. Avoids parallel-dependency-ordering edges that can trip tier 1 on
-// schemas with unusual constraint shapes.
+// restoreTier2SerialDump restores the directory dump serially in a single transaction. Avoids
+// parallel-dependency-ordering edges that can trip tier 1 on schemas with unusual constraint shapes.
 func restoreTier2SerialDump(ctx context.Context, target *pgClusterRef, dumpDir string) error {
 	args := []string{
 		dumpDir,
@@ -470,21 +442,17 @@ func restoreTier2SerialDump(ctx context.Context, target *pgClusterRef, dumpDir s
 	return nil
 }
 
-// restoreTier3PerTableCOPY recreates each parent table's DDL with quoted
-// identifiers (sidestepping the SYSTEM_USER reserved-word case) and COPYs the
-// data table-by-table. Bypasses pg_restore's all-or-nothing transaction: a
-// single bad table does not block the others. Returns the parent tables that
-// failed (input to tier 4).
+// restoreTier3PerTableCOPY recreates each parent table's DDL with quoted identifiers (sidestepping the SYSTEM_USER
+// reserved-word case) and COPYs the data table-by-table. Bypasses pg_restore's all-or-nothing transaction: a single bad
+// table does not block the others. Returns the parent tables that failed (input to tier 4).
 //
-// It reads the LIVE old cluster for table structure + partition metadata and
-// streams data from old -> new via COPY, so it does not depend on pg_restore
-// being able to parse the dump's emitted DDL at all.
+// It reads the LIVE old cluster for table structure + partition metadata and streams data from old -> new via COPY, so
+// it does not depend on pg_restore being able to parse the dump's emitted DDL at all.
 func restoreTier3PerTableCOPY(ctx context.Context, src, target *pgClusterRef, parents []dataTankTable, faults migrationFaults) (failed []dataTankTable, err error) {
 	for _, p := range parents {
 		if faults.corruptOnePartition {
-			// A corrupt partition's data cannot be COPYed as a whole table, so
-			// the per-table tier fails for the affected parent and defers it to
-			// the per-partition tier.
+			// A corrupt partition's data cannot be COPYed as a whole table, so the per-table tier fails for the
+			// affected parent and defers it to the per-partition tier.
 			failed = append(failed, p)
 			continue
 		}
@@ -495,9 +463,8 @@ func restoreTier3PerTableCOPY(ctx context.Context, src, target *pgClusterRef, pa
 	return failed, nil
 }
 
-// copyParentTable creates the partitioned parent + every child partition on the
-// target (all identifiers quoted), attaches the partitions, then COPYs each
-// partition's rows across. The structure is read from the live source catalog.
+// copyParentTable creates the partitioned parent + every child partition on the target (all identifiers quoted),
+// attaches the partitions, then COPYs each partition's rows across. The structure is read from the live source catalog.
 func copyParentTable(ctx context.Context, src, target *pgClusterRef, parent dataTankTable) error {
 	srcConn, err := src.connect(ctx)
 	if err != nil {
@@ -526,11 +493,9 @@ func copyParentTable(ctx context.Context, src, target *pgClusterRef, parent data
 	return nil
 }
 
-// restoreTier4PerPartitionCOPY handles parents that tier 3 could not migrate
-// whole. It creates the parent and migrates partitions one at a time, attaching
-// the ones that COPY cleanly and recording the failures on the needs-help list.
-// A tank that lands 19/20 partitions is degraded-but-functional; the bad
-// partition can be hand-migrated.
+// restoreTier4PerPartitionCOPY handles parents that tier 3 could not migrate whole. It creates the parent and migrates
+// partitions one at a time, attaching the ones that COPY cleanly and recording the failures on the needs-help list. A
+// tank that lands 19/20 partitions is degraded-but-functional; the bad partition can be hand-migrated.
 func restoreTier4PerPartitionCOPY(ctx context.Context, src, target *pgClusterRef, parents []dataTankTable, faults migrationFaults) (failures []partitionFailure, err error) {
 	for _, parent := range parents {
 		srcConn, cerr := src.connect(ctx)
@@ -550,8 +515,7 @@ func restoreTier4PerPartitionCOPY(ctx context.Context, src, target *pgClusterRef
 			return nil, lerr
 		}
 
-		// Create the bare parent (no partitions yet); ignore "already exists"
-		// from a partial earlier tier.
+		// Create the bare parent (no partitions yet); ignore "already exists" from a partial earlier tier.
 		_ = createParent(ctx, srcConn, tgtConn, parent)
 
 		for i, part := range parts {
@@ -582,9 +546,8 @@ func restoreTier4PerPartitionCOPY(ctx context.Context, src, target *pgClusterRef
 	return failures, nil
 }
 
-// corruptPartitionIndex picks which partition the corrupt-injection fault hits.
-// The DT-F4 fixture documents "partition 7"; for smaller scaled fixtures it
-// clamps into range so exactly one partition is always affected.
+// corruptPartitionIndex picks which partition the corrupt-injection fault hits. The DT-F4 fixture documents "partition
+// 7"; for smaller scaled fixtures it clamps into range so exactly one partition is always affected.
 func corruptPartitionIndex(n int) int {
 	idx := 6 // 0-based -> "partition 7"
 	if idx >= n {
@@ -605,9 +568,8 @@ func qualName(schema, table string) string {
 	return quoteIdent(schema) + "." + quoteIdent(table)
 }
 
-// columnDDL returns the "<quoted col> <type>" fragments for a relation, in
-// attribute order, with identifiers quoted so a reserved-word column name is
-// safe.
+// columnDDL returns the "<quoted col> <type>" fragments for a relation, in attribute order, with identifiers quoted so
+// a reserved-word column name is safe.
 func columnDDL(ctx context.Context, conn *pgx.Conn, schema, table string) ([]string, []string, error) {
 	rows, err := conn.Query(ctx, `
 		SELECT a.attname, format_type(a.atttypid, a.atttypmod)
@@ -668,8 +630,8 @@ func createParent(ctx context.Context, srcConn, tgtConn *pgx.Conn, parent dataTa
 	return err
 }
 
-// createParentAndPartitions creates the parent plus every child partition table
-// (in its -parts schema) and attaches them. Used by the whole-table tier 3 path.
+// createParentAndPartitions creates the parent plus every child partition table (in its -parts schema) and attaches
+// them. Used by the whole-table tier 3 path.
 func createParentAndPartitions(ctx context.Context, srcConn, tgtConn *pgx.Conn, parent dataTankTable, parts []dataTankPartition) error {
 	if err := createParent(ctx, srcConn, tgtConn, parent); err != nil {
 		return err
@@ -686,8 +648,8 @@ func createParentAndPartitions(ctx context.Context, srcConn, tgtConn *pgx.Conn, 
 	return nil
 }
 
-// createAndAttachPartitionTable creates one child partition table with quoted
-// identifiers and attaches it to the parent.
+// createAndAttachPartitionTable creates one child partition table with quoted identifiers and attaches it to the
+// parent.
 func createAndAttachPartitionTable(ctx context.Context, tgtConn *pgx.Conn, parent dataTankTable, part dataTankPartition, parentDefs []string) error {
 	if _, err := tgtConn.Exec(ctx, "CREATE SCHEMA IF NOT EXISTS "+quoteIdent(part.partSchema)); err != nil {
 		return err
@@ -707,8 +669,8 @@ func createAndAttachPartitionTable(ctx context.Context, tgtConn *pgx.Conn, paren
 	return nil
 }
 
-// copyAndAttachPartition (tier 4) creates+attaches a single partition then COPYs
-// its data, so one bad partition is isolated from the rest.
+// copyAndAttachPartition (tier 4) creates+attaches a single partition then COPYs its data, so one bad partition is
+// isolated from the rest.
 func copyAndAttachPartition(ctx context.Context, src, target *pgClusterRef, srcConn, tgtConn *pgx.Conn, parent dataTankTable, part dataTankPartition) error {
 	parentDefs, _, err := columnDDL(ctx, srcConn, parent.schema, parent.table)
 	if err != nil {
@@ -720,12 +682,10 @@ func copyAndAttachPartition(ctx context.Context, src, target *pgClusterRef, srcC
 	return copyPartitionData(ctx, src, target, part)
 }
 
-// copyPartitionData streams one partition's rows old -> new using the PostgreSQL
-// COPY protocol over pgx: `COPY ... TO STDOUT (FORMAT binary)` from the source
-// piped into `COPY ... FROM STDIN (FORMAT binary)` on the target. This keeps the
-// data path independent of pg_restore's DDL parser AND independent of any
-// external psql binary (the Steampipe DB bundle ships only postgres / initdb /
-// pg_ctl / pg_dump / pg_restore).
+// copyPartitionData streams one partition's rows old -> new using the PostgreSQL COPY protocol over pgx: `COPY ... TO
+// STDOUT (FORMAT binary)` from the source piped into `COPY ... FROM STDIN (FORMAT binary)` on the target. This keeps
+// the data path independent of pg_restore's DDL parser AND independent of any external psql binary (the Steampipe DB
+// bundle ships only postgres / initdb / pg_ctl / pg_dump / pg_restore).
 func copyPartitionData(ctx context.Context, src, target *pgClusterRef, part dataTankPartition) error {
 	rel := qualName(part.partSchema, part.partTable)
 
@@ -771,46 +731,38 @@ var (
 	errDataTankDiskPreflight  = errors.New("data-tank disk pre-flight failed")
 	errDataTankAllTiersFailed = errors.New("restore failed at all tiers; original preserved on disk")
 
-	// errDataTankPartialRestore means the restore ladder produced a PARTIAL
-	// result: the ladder climbed (typically to the per-partition COPY tier) and
-	// most rows landed, but at least one partition could not be migrated. Unlike
-	// errDataTankAllTiersFailed (nothing moved), some data did reach the new
-	// cluster - but because a partition's rows are missing this is NOT a success.
-	// The original is preserved on disk (old data dir + safety dump) and the
+	// errDataTankPartialRestore means the restore ladder produced a PARTIAL result: the ladder climbed (typically to
+	// the per-partition COPY tier) and most rows landed, but at least one partition could not be migrated. Unlike
+	// errDataTankAllTiersFailed (nothing moved), some data did reach the new cluster - but because a partition's rows
+	// are missing this is NOT a success. The original is preserved on disk (old data dir + safety dump) and the
 	// deletion gate must NOT fire.
 	errDataTankPartialRestore = errors.New("restore partially failed; one or more partitions not migrated; original preserved on disk")
 
-	// errMigrationPreflightSkipped and errMigrationValidationDiverged are the
-	// public-shape gate failures the shared engine surfaces (the data-tank shape
-	// runs neither gate, so it never returns these). Both preserve the original on
+	// errMigrationPreflightSkipped and errMigrationValidationDiverged are the public-shape gate failures the shared
+	// engine surfaces (the data-tank shape runs neither gate, so it never returns these). Both preserve the original on
 	// disk, like every other failure outcome.
 	errMigrationPreflightSkipped   = errors.New("cross-major migration: pre-flight collation scan skipped the restore")
 	errMigrationValidationDiverged = errors.New("cross-major migration: post-restore validation found divergence")
 )
 
-// migrateDataTank runs the data-tank cross-major migration from src (PG14) to
-// target (PG18). It is a thin shape adapter over the shared copy-and-fallback
-// engine (runMigrationEngine): it builds the data-tank shape (many
-// <handle>/<handle>-parts schema pairs; collation pre-check OFF and row-checksum
-// validation OFF, per the light-migration policy; refresh-pause coordination ON)
-// and delegates. On any unrecoverable failure the result carries
-// oldClusterRetained=true and a non-nil error; under the 2026-06-08 governing
-// decision the new version still runs while the old data directory + safety dump
-// are preserved on disk. statusPath, if non-empty, receives the JSON orchestrator
+// migrateDataTank runs the data-tank cross-major migration from src (PG14) to target (PG18). It is a thin shape adapter
+// over the shared copy-and-fallback engine (runMigrationEngine): it builds the data-tank shape (many
+// <handle>/<handle>-parts schema pairs; collation pre-check OFF and row-checksum validation OFF, per the
+// light-migration policy; refresh-pause coordination ON) and delegates. On any unrecoverable failure the result carries
+// oldClusterRetained=true and a non-nil error; under the 2026-06-08 governing decision the new version still runs while
+// the old data directory + safety dump are preserved on disk. statusPath, if non-empty, receives the JSON orchestrator
 // marker.
 func migrateDataTank(ctx context.Context, src, target *pgClusterRef, backupDir, statusPath string, jobs int, faults migrationFaults) (migrationResult, error) {
 	return runMigrationEngine(ctx, dataTankMigrationShape(), src, target, backupDir, statusPath, jobs, faults)
 }
 
-// dataTankMigrationJobs is the parallelism used for the production data-tank
-// dump/restore. The CLI is single-workspace and not contending for cores during
-// startup, so a small fixed value keeps the migration window bounded without
+// dataTankMigrationJobs is the parallelism used for the production data-tank dump/restore. The CLI is single-workspace
+// and not contending for cores during startup, so a small fixed value keeps the migration window bounded without
 // over-subscribing.
 const dataTankMigrationJobs = 4
 
-// migrationLibEnv builds the process environment a bundled pg_dump / pg_restore
-// needs to find the matching libraries for a given install. The Steampipe DB
-// bundle links the dump/restore binaries against libraries in the install's lib
+// migrationLibEnv builds the process environment a bundled pg_dump / pg_restore needs to find the matching libraries
+// for a given install. The Steampipe DB bundle links the dump/restore binaries against libraries in the install's lib
 // directory, so the platform's dynamic-library search path must point at it.
 func migrationLibEnv(libDir string) []string {
 	env := append(os.Environ(), "PGSSLMODE=disable")
@@ -823,12 +775,10 @@ func migrationLibEnv(libDir string) []string {
 	return env
 }
 
-// oldClusterRef builds the engine cluster handle for the retained old (source)
-// cluster on a cross-major startup migration. The old server is reached over its
-// TCP loopback port (prepareBackup leaves it listening on 127.0.0.1); the bundled
-// pg_dump lives under the OLD install location so the dump speaks the old
-// catalog. oldInstallLocation is the db/<oldVersion> directory returned by
-// findDifferentPgInstallation; dataDir is its data directory (the
+// oldClusterRef builds the engine cluster handle for the retained old (source) cluster on a cross-major startup
+// migration. The old server is reached over its TCP loopback port (prepareBackup leaves it listening on 127.0.0.1); the
+// bundled pg_dump lives under the OLD install location so the dump speaks the old catalog. oldInstallLocation is the
+// db/<oldVersion> directory returned by findDifferentPgInstallation; dataDir is its data directory (the
 // preserved-on-failure original).
 func oldClusterRef(oldVersion, oldInstallLocation, dbName string, port int) *pgClusterRef {
 	binDir := filepath.Join(oldInstallLocation, "postgres", "bin")
@@ -844,10 +794,9 @@ func oldClusterRef(oldVersion, oldInstallLocation, dbName string, port int) *pgC
 	}
 }
 
-// newClusterRef builds the engine cluster handle for the new (target) embedded
-// cluster on a cross-major startup migration. It is the freshly-started target
-// service reached over its loopback port, with the bundled pg_restore from the
-// current install location.
+// newClusterRef builds the engine cluster handle for the new (target) embedded cluster on a cross-major startup
+// migration. It is the freshly-started target service reached over its loopback port, with the bundled pg_restore from
+// the current install location.
 func newClusterRef(port int, dbName string) *pgClusterRef {
 	return &pgClusterRef{
 		version: targetDatabaseVersion,
@@ -860,20 +809,16 @@ func newClusterRef(port int, dbName string) *pgClusterRef {
 	}
 }
 
-// migrateDataTankSchemasOnStartup is the production entry point the cross-major
-// startup path calls AFTER the public-schema migration has succeeded and while
-// the old cluster is still live. It detects data-tank schemas on the old cluster
-// and, if any exist, runs the shared engine to migrate them old -> new. When the
-// old cluster has no data-tank schemas (the normal CLI case) it is a clean no-op:
-// it returns committed=true with no work done, so the caller's deletion gate is
-// not blocked.
+// migrateDataTankSchemasOnStartup is the production entry point the cross-major startup path calls AFTER the
+// public-schema migration has succeeded and while the old cluster is still live. It detects data-tank schemas on the
+// old cluster and, if any exist, runs the shared engine to migrate them old -> new. When the old cluster has no
+// data-tank schemas (the normal CLI case) it is a clean no-op: it returns committed=true with no work done, so the
+// caller's deletion gate is not blocked.
 //
-// On any data-tank failure or partial result it returns committed=false with a
-// non-nil error; the caller must then preserve the old data directory (the
-// public-schema success is NOT reverted - the new version still runs). The
-// directory-format dump under backupDir/data-tank is the second independent
-// recovery copy required by the 2026-06-08 governing decision; a retry
-// replaces it with a fresh dump from the preserved old directory.
+// On any data-tank failure or partial result it returns committed=false with a non-nil error; the caller must then
+// preserve the old data directory (the public-schema success is NOT reverted - the new version still runs). The
+// directory-format dump under backupDir/data-tank is the second independent recovery copy required by the 2026-06-08
+// governing decision; a retry replaces it with a fresh dump from the preserved old directory.
 func migrateDataTankSchemasOnStartup(ctx context.Context, old, new *pgClusterRef, backupDir string) (migrationResult, error) {
 	oldConn, err := old.connect(ctx)
 	if err != nil {
@@ -885,8 +830,8 @@ func migrateDataTankSchemasOnStartup(ctx context.Context, old, new *pgClusterRef
 		return migrationResult{}, fmt.Errorf("data-tank migration: could not list data-tank schemas: %w", err)
 	}
 	if len(schemas) == 0 {
-		// No data tank present (the normal CLI workspace). Nothing to migrate;
-		// report a clean no-op so the caller's deletion gate stays unblocked.
+		// No data tank present (the normal CLI workspace). Nothing to migrate; report a clean no-op so the caller's
+		// deletion gate stays unblocked.
 		return migrationResult{committed: true}, nil
 	}
 
@@ -894,17 +839,15 @@ func migrateDataTankSchemasOnStartup(ctx context.Context, old, new *pgClusterRef
 	return migrateDataTank(ctx, old, new, backupDir, statusPath, dataTankMigrationJobs, migrationFaults{})
 }
 
-// runTieredRestore tries the restore tiers in order, escalating on failure, up
-// to ceiling - the highest tier this shape's content can use. When a reserved
-// word was detected, tiers 1-2 are skipped (their pg_restore would hit the
+// runTieredRestore tries the restore tiers in order, escalating on failure, up to ceiling - the highest tier this
+// shape's content can use. When a reserved word was detected, tiers 1-2 are skipped (their pg_restore would hit the
 // unquoted-DDL syntax error) and the migration starts at tier 3.
 //
-// ceiling caps the ladder per shape: the data-tank shape allows the full ladder
-// (dtRestoreTier4PerPartition); the public shape stops after the pg_restore
-// tiers (dtRestoreTier2Serial), because the per-table / per-partition COPY tiers
-// reconstruct PARTITION BY LIST topology that only a data tank has. When the
-// pg_restore tiers fail under a tier-2 ceiling (or a reserved word forces a jump
-// past the ceiling) the restore is reported as failed, preserving the original.
+// ceiling caps the ladder per shape: the data-tank shape allows the full ladder (dtRestoreTier4PerPartition); the
+// public shape stops after the pg_restore tiers (dtRestoreTier2Serial), because the per-table / per-partition COPY
+// tiers reconstruct PARTITION BY LIST topology that only a data tank has. When the pg_restore tiers fail under a tier-2
+// ceiling (or a reserved word forces a jump past the ceiling) the restore is reported as failed, preserving the
+// original.
 func runTieredRestore(ctx context.Context, src, target *pgClusterRef, parents []dataTankTable, dumpPath string, jobs int, reservedWordRouted bool, ceiling dataTankRestoreTier, restoreTier1Fn func(context.Context, *pgClusterRef, string, int) error, restoreTier2Fn func(context.Context, *pgClusterRef, string) error, faults migrationFaults) (dataTankRestoreTier, []partitionFailure, error) {
 	// Reserved-word route: skip straight to tier 3.
 	if !reservedWordRouted {
@@ -914,8 +857,8 @@ func runTieredRestore(ctx context.Context, src, target *pgClusterRef, parents []
 				return dtRestoreTier1Parallel, nil, nil
 			}
 		}
-		// Tier 2: serial pg_restore. The target may hold partial objects from a
-		// failed tier 1; reset it first so tier 2 starts clean.
+		// Tier 2: serial pg_restore. The target may hold partial objects from a failed tier 1; reset it first so tier 2
+		// starts clean.
 		if err := resetTargetDataTankSchemas(ctx, src, target); err == nil {
 			if !faults.failTier2 && !faults.failAllTiers {
 				if err := restoreTier2Fn(ctx, target, dumpPath); err == nil {
@@ -925,9 +868,8 @@ func runTieredRestore(ctx context.Context, src, target *pgClusterRef, parents []
 		}
 	}
 
-	// Shape ceiling: shapes that cannot use the COPY tiers (public) stop here.
-	// The pg_restore tiers failed (or a reserved word forced a jump past the
-	// ceiling); report a restore failure so the original is preserved.
+	// Shape ceiling: shapes that cannot use the COPY tiers (public) stop here. The pg_restore tiers failed (or a
+	// reserved word forced a jump past the ceiling); report a restore failure so the original is preserved.
 	if ceiling < dtRestoreTier3PerTable {
 		return dtRestoreTier2Serial, nil, errDataTankAllTiersFailed
 	}
@@ -963,9 +905,8 @@ func runTieredRestore(ctx context.Context, src, target *pgClusterRef, parents []
 	return dtRestoreTier4PerPartition, partFailures, nil
 }
 
-// resetTargetDataTankSchemas drops the data-tank schemas on the target so a
-// subsequent tier restores into a clean slate. The source list defines which
-// schemas to clear.
+// resetTargetDataTankSchemas drops the data-tank schemas on the target so a subsequent tier restores into a clean
+// slate. The source list defines which schemas to clear.
 func resetTargetDataTankSchemas(ctx context.Context, src, target *pgClusterRef) error {
 	srcConn, err := src.connect(ctx)
 	if err != nil {
@@ -989,9 +930,8 @@ func resetTargetDataTankSchemas(ctx context.Context, src, target *pgClusterRef) 
 	return nil
 }
 
-// sanityCheckRestore confirms every expected parent table exists on the target
-// and has the same attached-partition count as the source. This is the
-// light-migration validation - no row-level checksum.
+// sanityCheckRestore confirms every expected parent table exists on the target and has the same attached-partition
+// count as the source. This is the light-migration validation - no row-level checksum.
 func sanityCheckRestore(ctx context.Context, src, target *pgClusterRef, parents []dataTankTable) error {
 	srcConn, err := src.connect(ctx)
 	if err != nil {
@@ -1013,8 +953,8 @@ func sanityCheckRestore(ctx context.Context, src, target *pgClusterRef, parents 
 		if terr != nil {
 			return fmt.Errorf("table %s missing on target: %w", qualName(p.schema, p.table), terr)
 		}
-		// Tier 4 may legitimately land fewer partitions (degraded). Only flag a
-		// total absence of partitions where the source had some.
+		// Tier 4 may legitimately land fewer partitions (degraded). Only flag a total absence of partitions where the
+		// source had some.
 		if len(srcParts) > 0 && len(tgtParts) == 0 {
 			return fmt.Errorf("table %s has no attached partitions on target", qualName(p.schema, p.table))
 		}
@@ -1022,8 +962,8 @@ func sanityCheckRestore(ctx context.Context, src, target *pgClusterRef, parents 
 	return nil
 }
 
-// writeDataTankStatus serialises the orchestrator-facing marker. A nil/empty
-// path is a no-op (the test harness does not require the marker on disk).
+// writeDataTankStatus serialises the orchestrator-facing marker. A nil/empty path is a no-op (the test harness does not
+// require the marker on disk).
 func writeDataTankStatus(statusPath string, res migrationResult, message string) {
 	if statusPath == "" {
 		return

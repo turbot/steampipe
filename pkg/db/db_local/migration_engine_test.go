@@ -2,16 +2,14 @@ package db_local
 
 // Shared engine, public shape.
 //
-// migrateDataTank exercises runMigrationEngine with the DATA-TANK shape
-// (collation pre-check OFF, row-checksum validation OFF) across the whole
-// TestDataTankMigration matrix. This suite exercises the SAME shared engine with
-// the PUBLIC shape (collation pre-check ON, row-checksum validation ON, COPY-tier
-// ceiling at the pg_restore tiers), proving the two shapes really do run on one
-// engine and that the collation pre-check / row-checksum validation are genuine
-// parameters that fire for public and are absent for data tank.
+// migrateDataTank exercises runMigrationEngine with the DATA-TANK shape (collation pre-check OFF, row-checksum
+// validation OFF) across the whole TestDataTankMigration matrix. This suite exercises the SAME shared engine with the
+// PUBLIC shape (collation pre-check ON, row-checksum validation ON, COPY-tier ceiling at the pg_restore tiers),
+// proving the two shapes really do run on one engine and that the collation pre-check / row-checksum validation are
+// genuine parameters that fire for public and are absent for data tank.
 //
-// It reuses the TestDataTankMigration harness (dtInitCluster / dtStartCluster /
-// dtClusterRef) and the same pre-placed PG14 + PG18 binaries.
+// It reuses the TestDataTankMigration harness (dtInitCluster / dtStartCluster / dtClusterRef) and the same pre-placed
+// PG14 + PG18 binaries.
 
 import (
 	"context"
@@ -23,18 +21,16 @@ import (
 	"testing"
 )
 
-// runPublicShapeEngine boots a PG14 source + PG18 target, applies publicSQL to
-// the source, and runs the shared engine with the public shape. It returns the
-// engine result, the source data dir (for the data-preservation assertion), and
-// any error. verify, if non-nil, runs against the target cluster after the
-// engine finishes and before the clusters are torn down.
+// runPublicShapeEngine boots a PG14 source + PG18 target, applies publicSQL to the source, and runs the shared engine
+// with the public shape. It returns the engine result, the source data dir (for the data-preservation assertion), and
+// any error. verify, if non-nil, runs against the target cluster after the engine finishes and before the clusters
+// are torn down.
 func runPublicShapeEngine(t *testing.T, publicSQL string, verify func(ctx context.Context, target *pgClusterRef) error) (migrationResult, string, error) {
 	t.Helper()
 	ctx := context.Background()
 
-	// Keep the base path short: the Unix socket path (base/s14/.s.PGSQL.NNNN) must
-	// stay under the ~104-char sockaddr limit, so the full test name cannot be in
-	// it. A short stable per-test directory under the test root suffices.
+	// Keep the base path short: the Unix socket path (base/s14/.s.PGSQL.NNNN) must stay under the ~104-char sockaddr
+	// limit, so the full test name cannot be in it. A short stable per-test directory under the test root suffices.
 	base := filepath.Join(dtTestRoot(), "ep", shortTestKey(t.Name()))
 	if err := os.RemoveAll(base); err != nil {
 		t.Fatalf("clean base: %v", err)
@@ -87,8 +83,8 @@ func runPublicShapeEngine(t *testing.T, publicSQL string, verify func(ctx contex
 	return res, pg14Data, merr
 }
 
-// shortTestKey maps a test name to a short, stable, filesystem-safe directory
-// key so the Unix socket path stays under the sockaddr length limit.
+// shortTestKey maps a test name to a short, stable, filesystem-safe directory key so the Unix socket path stays under
+// the sockaddr length limit.
 func shortTestKey(name string) string {
 	sum := md5.Sum([]byte(name))
 	return fmt.Sprintf("%x", sum[:4])
@@ -107,10 +103,9 @@ func skipIfNoBinaries(t *testing.T) {
 	}
 }
 
-// TestSharedEnginePublicShape_CleanASCII: a clean ASCII public schema migrates to
-// a committed restore through the shared engine's public shape. The collation
-// pre-check (ON for public) runs and finds nothing; the row-checksum validation
-// (ON for public) runs and matches.
+// TestSharedEnginePublicShape_CleanASCII: a clean ASCII public schema migrates to a committed restore through the
+// shared engine's public shape. The collation pre-check (ON for public) runs and finds nothing; the row-checksum
+// validation (ON for public) runs and matches.
 func TestSharedEnginePublicShape_CleanASCII(t *testing.T) {
 	skipIfNoBinaries(t)
 
@@ -137,16 +132,15 @@ create index things_name_idx on public.things (name);`
 	}
 }
 
-// TestSharedEnginePublicShape_CollationPreCheckFires: the public shape's
-// collation pre-check (a PARAMETER the data-tank shape does NOT run) must flag a
-// btree text index over genuinely non-ASCII data and skip the restore, leaving
-// the original preserved on disk. This is the public-vs-data-tank parameter made
-// concrete on the shared engine.
+// TestSharedEnginePublicShape_CollationPreCheckFires: the public shape's collation pre-check (a PARAMETER the
+// data-tank shape does NOT run) must flag a btree text index over genuinely non-ASCII data and skip the restore,
+// leaving the original preserved on disk. This is the public-vs-data-tank parameter made concrete on the shared
+// engine.
 func TestSharedEnginePublicShape_CollationPreCheckFires(t *testing.T) {
 	skipIfNoBinaries(t)
 
-	// Non-ASCII text under a btree index: the collation provider changes across a
-	// major upgrade, so the pre-flight scan must flag this and skip the restore.
+	// Non-ASCII text under a btree index: the collation provider changes across a major upgrade, so the pre-flight
+	// scan must flag this and skip the restore.
 	const publicSQL = `
 create table public.names (id int primary key, label text);
 insert into public.names values (1, 'Zürich'), (2, 'Köln'), (3, 'Genève');
@@ -171,20 +165,16 @@ create index names_label_idx on public.names (label);`
 	}
 }
 
-// TestSharedEnginePublicShape_MatviewRefreshFailureTolerated proves the matview
-// tolerance the production flow promises: when the objects+data restore
-// succeeds but the separate REFRESH MATERIALIZED VIEW invocation fails, the
-// migration still COMMITS with a warning (matviewRefreshFailed=true) and the
-// rest of the data is present on the target - NOT a rollback (a failed matview
-// refresh is a warning, not a migration failure).
+// TestSharedEnginePublicShape_MatviewRefreshFailureTolerated proves the matview tolerance the production flow
+// promises: when the objects+data restore succeeds but the separate REFRESH MATERIALIZED VIEW invocation fails, the
+// migration still COMMITS with a warning (matviewRefreshFailed=true) and the rest of the data is present on the
+// target - NOT a rollback (a failed matview refresh is a warning, not a migration failure).
 //
-// The fixture is the documented production failure mode: a matview over a
-// plpgsql function with a transitive UNQUALIFIED table reference. At creation
-// time the default search_path resolves it; during pg_restore the search_path
-// is blank, so REFRESH fails ("relation does not exist") while every other
-// object restores cleanly. plpgsql is used (not SQL) so the body is neither
-// validated at CREATE FUNCTION time nor inlined when the matview is created
-// WITH NO DATA - the failure fires only at REFRESH execution.
+// The fixture is the documented production failure mode: a matview over a plpgsql function with a transitive
+// UNQUALIFIED table reference. At creation time the default search_path resolves it; during pg_restore the
+// search_path is blank, so REFRESH fails ("relation does not exist") while every other object restores cleanly.
+// plpgsql is used (not SQL) so the body is neither validated at CREATE FUNCTION time nor inlined when the matview is
+// created WITH NO DATA - the failure fires only at REFRESH execution.
 func TestSharedEnginePublicShape_MatviewRefreshFailureTolerated(t *testing.T) {
 	skipIfNoBinaries(t)
 
@@ -235,9 +225,8 @@ create materialized view public.mv_unqualified as select * from public.base_ids(
 	}
 }
 
-// TestSharedEnginePublicShape_MatviewRefreshSucceeds: the success half of the
-// matview split - a well-qualified matview is refreshed by the second
-// invocation and arrives populated, with no warning recorded.
+// TestSharedEnginePublicShape_MatviewRefreshSucceeds: the success half of the matview split - a well-qualified
+// matview is refreshed by the second invocation and arrives populated, with no warning recorded.
 func TestSharedEnginePublicShape_MatviewRefreshSucceeds(t *testing.T) {
 	skipIfNoBinaries(t)
 
@@ -274,10 +263,9 @@ create materialized view public.mv_ok as select id, val*2 as doubled from public
 	}
 }
 
-// TestSharedEngineShapesDiffer documents, at the type level, the exact parameter
-// contrast the governing decision mandates: collation pre-check + row-checksum
-// validation ON for public, OFF for data tank; refresh-pause coordination ON for
-// data tank, OFF for public; the COPY tiers reachable only for data tank.
+// TestSharedEngineShapesDiffer documents, at the type level, the exact parameter contrast the governing decision
+// mandates: collation pre-check + row-checksum validation ON for public, OFF for data tank; refresh-pause
+// coordination ON for data tank, OFF for public; the COPY tiers reachable only for data tank.
 func TestSharedEngineShapesDiffer(t *testing.T) {
 	pub := publicMigrationShape()
 	dt := dataTankMigrationShape()

@@ -2,15 +2,13 @@ package db_local
 
 // Deletion-gate guarantee test (exec-6d).
 //
-// The whole data-safety design reduces to one rule (the 2026-06-08 governing
-// decision): the old data directory is NEVER deleted until the migration is
-// confirmed 100% complete; on any failure or partial result the original is
-// preserved on disk in two independent forms - the untouched old PG14 data
-// directory AND the retained safety dump - and the new Postgres version still
-// runs (no version-revert).
+// The whole data-safety design reduces to one rule (the 2026-06-08 governing decision): the old data directory is
+// NEVER deleted until the migration is confirmed 100% complete; on any failure or partial result the original is
+// preserved on disk in two independent forms - the untouched old PG14 data directory AND the retained safety dump -
+// and the new Postgres version still runs (no version-revert).
 //
-// exec-6a asserts per-breakage OUTCOMES. This suite asserts the INVARIANT itself,
-// exhaustively over outcome categories, for both data shapes:
+// exec-6a asserts per-breakage OUTCOMES. This suite asserts the INVARIANT itself, exhaustively over outcome
+// categories, for both data shapes:
 //
 //   | Outcome category            | Old data dir            | Safety dump |
 //   | full success                | removed (gate fires)    | retained    |
@@ -20,16 +18,14 @@ package db_local
 //   | interrupted mid-restore     | present + populated     | retained    |
 //   |   then re-run               | survives the re-run                   |
 //
-// For every NON-full-success outcome the test does not merely stat the path: it
-// re-boots the preserved old data directory as a live PostgreSQL cluster on a
-// fresh socket (after the source used during the migration has been stopped) and
-// QUERIES THE SOURCE ROWS BACK. That proves the preserved directory is a fully
-// usable cluster still holding the original data, which is the property the
-// governing decision actually guarantees - not just that some files remain on
-// disk.
+// For every NON-full-success outcome the test does not merely stat the path: it re-boots the preserved old data
+// directory as a live PostgreSQL cluster on a fresh socket (after the source used during the migration has been
+// stopped) and QUERIES THE SOURCE ROWS BACK. That proves the preserved directory is a fully usable cluster still
+// holding the original data, which is the property the governing decision actually guarantees - not just that some
+// files remain on disk.
 //
-// It reuses the TestDataTankMigration harness (dtInitCluster / dtStartCluster /
-// dtClusterRef) and the same pre-placed PG14 + PG18 binaries.
+// It reuses the TestDataTankMigration harness (dtInitCluster / dtStartCluster / dtClusterRef) and the same pre-placed
+// PG14 + PG18 binaries.
 
 import (
 	"context"
@@ -39,11 +35,10 @@ import (
 	"testing"
 )
 
-// gateClusters boots a PG14 source + PG18 target over Unix sockets, applies
-// srcSQL to the source, and returns the engine cluster handles, the raw harness
-// handles (so a test can stop the source and re-open its data dir, or stop the
-// target to force a real restore failure), the source data dir, and the backup
-// dir. It mirrors runPublicShapeEngine's short-socket-path discipline.
+// gateClusters boots a PG14 source + PG18 target over Unix sockets, applies srcSQL to the source, and returns the
+// engine cluster handles, the raw harness handles (so a test can stop the source and re-open its data dir, or stop
+// the target to force a real restore failure), the source data dir, and the backup dir. It mirrors
+// runPublicShapeEngine's short-socket-path discipline.
 func gateClusters(t *testing.T, srcSQL string) (src, target *pgClusterRef, srcCluster, targetCluster *dtCluster, oldDataDir, backupDir string) {
 	t.Helper()
 	ctx := context.Background()
@@ -93,12 +88,11 @@ func gateClusters(t *testing.T, srcSQL string) (src, target *pgClusterRef, srcCl
 	return dtClusterRef(srcC), dtClusterRef(targetC), srcC, targetC, pg14Data, backupDir
 }
 
-// reopenAndCountRows re-boots a (preserved) data directory as a live cluster on a
-// fresh socket and runs countSQL, returning the scalar bigint it yields. This is
-// the strong form of the data-preservation assertion: it proves the preserved
-// old data directory is not an empty husk but a working cluster that still
-// returns the source rows. The caller must have stopped any other server that
-// was attached to dataDir first (two postmasters cannot share one data dir).
+// reopenAndCountRows re-boots a (preserved) data directory as a live cluster on a fresh socket and runs countSQL,
+// returning the scalar bigint it yields. This is the strong form of the data-preservation assertion: it proves the
+// preserved old data directory is not an empty husk but a working cluster that still returns the source rows. The
+// caller must have stopped any other server that was attached to dataDir first (two postmasters cannot share one
+// data dir).
 func reopenAndCountRows(t *testing.T, dataDir, countSQL string) int64 {
 	t.Helper()
 	ctx := context.Background()
@@ -123,19 +117,17 @@ func reopenAndCountRows(t *testing.T, dataDir, countSQL string) int64 {
 	return n
 }
 
-// dataTankRowCountSQL counts the rows in the DT-F base fixture's partitioned
-// parent table. The fixture loads 4 partitions x 25 rows = 100 rows.
+// dataTankRowCountSQL counts the rows in the DT-F base fixture's partitioned parent table. The fixture loads 4
+// partitions x 25 rows = 100 rows.
 const dataTankRowCountSQL = `SELECT count(*) FROM "fast_aws"."aws_resource"`
 
 // publicRowCountSQL counts the rows in the public-shape fixture's table.
 const publicRowCountSQL = `SELECT count(*) FROM public.things`
 
-// assertOldDataDirCleared asserts the migration commit fired on success: the old
-// data dir's PG_VERSION is gone (the atomic commit the startup trigger keys on)
-// and the directory's contents are cleared, but the directory itself is preserved
-// (in Pipes it is a mounted volume - we delete the contents, not the dir; Victor:
-// "delete the contents"). After this the old dir no longer reads as a migratable
-// cluster and cannot be booted.
+// assertOldDataDirCleared asserts the migration commit fired on success: the old data dir's PG_VERSION is gone (the
+// atomic commit the startup trigger keys on) and the directory's contents are cleared, but the directory itself is
+// preserved (in Pipes it is a mounted volume - we delete the contents, not the dir; Victor: "delete the contents").
+// After this the old dir no longer reads as a migratable cluster and cannot be booted.
 func assertOldDataDirCleared(t *testing.T, oldDataDir string) {
 	t.Helper()
 	// The directory itself must still exist - we delete contents, not the dir.
@@ -160,10 +152,9 @@ func assertOldDataDirCleared(t *testing.T, oldDataDir string) {
 	}
 }
 
-// assertPreservedOldDirHasRows stops the migration's source server, re-opens the
-// preserved old data directory, and asserts it still holds wantRows source rows.
-// It is the per-category data-preservation guarantee: present + populated +
-// queryable, not just a path that exists.
+// assertPreservedOldDirHasRows stops the migration's source server, re-opens the preserved old data directory, and
+// asserts it still holds wantRows source rows. It is the per-category data-preservation guarantee: present +
+// populated + queryable, not just a path that exists.
 func assertPreservedOldDirHasRows(t *testing.T, srcCluster *dtCluster, oldDataDir, countSQL string, wantRows int64) {
 	t.Helper()
 	// Path + PG_VERSION first (cheap structural check), then the live query.
@@ -182,10 +173,9 @@ func assertPreservedOldDirHasRows(t *testing.T, srcCluster *dtCluster, oldDataDi
 // Data-tank shape.
 // -----------------------------------------------------------------------------
 
-// TestDeletionGate_DataTank_RestoreFailed_PreservesEverything: every restore tier
-// fails (failAllTiers). The engine reports DataPreservedOnDisk; the gate must NOT
-// remove the old dir, and the source rows must still be queryable from the
-// preserved directory, with the safety dump retained.
+// TestDeletionGate_DataTank_RestoreFailed_PreservesEverything: every restore tier fails (failAllTiers). The engine
+// reports DataPreservedOnDisk; the gate must NOT remove the old dir, and the source rows must still be queryable from
+// the preserved directory, with the safety dump retained.
 func TestDeletionGate_DataTank_RestoreFailed_PreservesEverything(t *testing.T) {
 	skipIfNoBinaries(t)
 	ctx := context.Background()
@@ -215,9 +205,8 @@ func TestDeletionGate_DataTank_RestoreFailed_PreservesEverything(t *testing.T) {
 	assertPreservedOldDirHasRows(t, srcCluster, oldDataDir, dataTankRowCountSQL, 100)
 }
 
-// TestDeletionGate_DataTank_PreCheckAborted_PreservesEverything: the disk
-// pre-flight aborts before any restore. Old dir preserved + queryable; the gate
-// does not fire. (Pre-check aborts before the dump, so only the old dir is the
+// TestDeletionGate_DataTank_PreCheckAborted_PreservesEverything: the disk pre-flight aborts before any restore. Old
+// dir preserved + queryable; the gate does not fire. (Pre-check aborts before the dump, so only the old dir is the
 // recovery copy here - matching the engine, which returns before shape.dumpFn.)
 func TestDeletionGate_DataTank_PreCheckAborted_PreservesEverything(t *testing.T) {
 	skipIfNoBinaries(t)
@@ -241,9 +230,8 @@ func TestDeletionGate_DataTank_PreCheckAborted_PreservesEverything(t *testing.T)
 	assertPreservedOldDirHasRows(t, srcCluster, oldDataDir, dataTankRowCountSQL, 100)
 }
 
-// TestDeletionGate_DataTank_DumpFailed_PreservesOldDir: the insurance dump fails.
-// Old dir preserved + queryable. (No completed dump exists by definition, so the
-// old dir is the surviving recovery copy.)
+// TestDeletionGate_DataTank_DumpFailed_PreservesOldDir: the insurance dump fails. Old dir preserved + queryable. (No
+// completed dump exists by definition, so the old dir is the surviving recovery copy.)
 func TestDeletionGate_DataTank_DumpFailed_PreservesOldDir(t *testing.T) {
 	skipIfNoBinaries(t)
 	ctx := context.Background()
@@ -266,16 +254,13 @@ func TestDeletionGate_DataTank_DumpFailed_PreservesOldDir(t *testing.T) {
 	assertPreservedOldDirHasRows(t, srcCluster, oldDataDir, dataTankRowCountSQL, 100)
 }
 
-// TestDeletionGate_DataTank_PartialSuccess_PreservesEverything: a partial restore
-// (one partition unrestorable; the rest land at tier 4). The governing decision:
-// "Partial success is safe too: any table/partition that didn't migrate is still
-// in the preserved original." A degraded restore is NOT 100% complete, so the
-// old data directory MUST be preserved (and the safety dump retained) so the
-// failed partition's rows remain recoverable.
+// TestDeletionGate_DataTank_PartialSuccess_PreservesEverything: a partial restore (one partition unrestorable; the
+// rest land at tier 4). The governing decision: "Partial success is safe too: any table/partition that didn't migrate
+// is still in the preserved original." A degraded restore is NOT 100% complete, so the old data directory MUST be
+// preserved (and the safety dump retained) so the failed partition's rows remain recoverable.
 //
-// This asserts the DESIRED behaviour. If the shipped engine commits a degraded
-// tier-4 result (res.committed=true) and the gate then removes the old dir, this
-// test fails - and that failure is the spec, not a reason to weaken the
+// This asserts the DESIRED behaviour. If the shipped engine commits a degraded tier-4 result (res.committed=true) and
+// the gate then removes the old dir, this test fails - and that failure is the spec, not a reason to weaken the
 // assertion.
 func TestDeletionGate_DataTank_PartialSuccess_PreservesEverything(t *testing.T) {
 	skipIfNoBinaries(t)
@@ -287,17 +272,16 @@ func TestDeletionGate_DataTank_PartialSuccess_PreservesEverything(t *testing.T) 
 	}
 	_, _, srcCluster, targetCluster, oldDataDir, backupDir := gateClusters(t, srcSQL)
 
-	// Drive the engine directly so we can read the raw result (committed +
-	// partitionFailures) the production gate keys on, not just the suite enum.
-	// Force tiers 1-3 to fail and corrupt exactly one partition so tier 4 lands a
+	// Drive the engine directly so we can read the raw result (committed + partitionFailures) the production gate
+	// keys on, not just the suite enum. Force tiers 1-3 to fail and corrupt exactly one partition so tier 4 lands a
 	// degraded (partial) result.
 	res, mErr := migrateDataTank(ctx, dtClusterRef(srcCluster), dtClusterRef(targetCluster),
 		backupDir, filepath.Join(backupDir, "data-tank-migration-status.json"), dtParallelism(), migrationFaults{
 			failTier1: true, failTier2: true, failTier3: true, corruptOnePartition: true,
 		})
-	// A partial restore is signalled by the distinct errDataTankPartialRestore
-	// sentinel (not nil, and not errDataTankAllTiersFailed which means nothing
-	// moved). Any OTHER error means the case did not reach the partial path.
+	// A partial restore is signalled by the distinct errDataTankPartialRestore sentinel (not nil, and not
+	// errDataTankAllTiersFailed which means nothing moved). Any OTHER error means the case did not reach the partial
+	// path.
 	if !errors.Is(mErr, errDataTankPartialRestore) {
 		t.Fatalf("expected errDataTankPartialRestore (the partial-result signal), got: %v", mErr)
 	}
@@ -305,9 +289,8 @@ func TestDeletionGate_DataTank_PartialSuccess_PreservesEverything(t *testing.T) 
 		t.Fatalf("expected a partial (degraded) result with >=1 failed partition, got %+v", res)
 	}
 
-	// Production gate: removeOldDataDirOnMigrationSuccess(res.committed, location).
-	// A partial result is NOT a confirmed-100%-complete migration, so committed
-	// must be false here for the gate to preserve the old dir.
+	// Production gate: removeOldDataDirOnMigrationSuccess(res.committed, location). A partial result is NOT a
+	// confirmed-100%-complete migration, so committed must be false here for the gate to preserve the old dir.
 	if res.committed {
 		t.Errorf("partial success (%d partition(s) failed) must NOT report committed=true: "+
 			"the deletion gate keys on committed, and removing the old dir would lose the "+
@@ -319,14 +302,13 @@ func TestDeletionGate_DataTank_PartialSuccess_PreservesEverything(t *testing.T) 
 	if err := dtAssertDumpDirRetained(filepath.Join(backupDir, "data-tank")); err != nil {
 		t.Errorf("safety dump not retained after partial success: %v", err)
 	}
-	// The DT-F4 fixture loads 20 partitions x 5 rows = 100 source rows; all of
-	// them must still be present in the preserved original.
+	// The DT-F4 fixture loads 20 partitions x 5 rows = 100 source rows; all of them must still be present in the
+	// preserved original.
 	assertPreservedOldDirHasRows(t, srcCluster, oldDataDir, dataTankRowCountSQL, 100)
 }
 
-// TestDeletionGate_DataTank_Interrupted_ThenReRun: a migration interrupted
-// mid-restore (SIGKILL / OOM / pod restart) preserves the old dir, and a re-run
-// on the next start does not destroy it. The old data directory survives BOTH the
+// TestDeletionGate_DataTank_Interrupted_ThenReRun: a migration interrupted mid-restore (SIGKILL / OOM / pod restart)
+// preserves the old dir, and a re-run on the next start does not destroy it. The old data directory survives BOTH the
 // interruption and the subsequent re-run.
 func TestDeletionGate_DataTank_Interrupted_ThenReRun(t *testing.T) {
 	skipIfNoBinaries(t)
@@ -353,16 +335,14 @@ func TestDeletionGate_DataTank_Interrupted_ThenReRun(t *testing.T) {
 		t.Fatalf("old dir not intact across the interruption: %v", err)
 	}
 
-	// Re-run on next start (no interruption this time). The re-run reads the same
-	// still-live source and restores into the same target; it must not destroy the
-	// old dir before it confirms success.
+	// Re-run on next start (no interruption this time). The re-run reads the same still-live source and restores into
+	// the same target; it must not destroy the old dir before it confirms success.
 	got2, _, mErr2 := runDataTankMigration(ctx, srcCluster, targetCluster, backupDir, dtCaseSetup{})
 	if mErr2 != nil {
 		t.Fatalf("re-run returned unexpected error: %v", mErr2)
 	}
-	// The re-run completes (clean tier-1 restore) OR stays preserved; either way
-	// the old dir must survive until the gate confirms success. Confirm the gate
-	// only fires when the re-run committed.
+	// The re-run completes (clean tier-1 restore) OR stays preserved; either way the old dir must survive until the
+	// gate confirms success. Confirm the gate only fires when the re-run committed.
 	committed := isDataTankSuccess(got2)
 	removeOldDataDirOnMigrationSuccess(committed, oldDataDir)
 
@@ -375,9 +355,8 @@ func TestDeletionGate_DataTank_Interrupted_ThenReRun(t *testing.T) {
 	}
 }
 
-// TestDeletionGate_DataTank_FullSuccess_GateRemovesOnlyAfterCommit: a clean
-// migration commits; the gate is the ONLY remover and removes the old dir ONLY
-// when committed=true. The two-step assertion proves the gate is a no-op before
+// TestDeletionGate_DataTank_FullSuccess_GateRemovesOnlyAfterCommit: a clean migration commits; the gate is the ONLY
+// remover and removes the old dir ONLY when committed=true. The two-step assertion proves the gate is a no-op before
 // success is confirmed and removes after.
 func TestDeletionGate_DataTank_FullSuccess_GateRemovesOnlyAfterCommit(t *testing.T) {
 	skipIfNoBinaries(t)
@@ -398,8 +377,8 @@ func TestDeletionGate_DataTank_FullSuccess_GateRemovesOnlyAfterCommit(t *testing
 		t.Fatalf("expected committed=true for a clean data-tank migration, got %+v", res)
 	}
 
-	// Before confirming success the gate must be a no-op: call it with committed
-	// hard-false and prove the old dir is untouched.
+	// Before confirming success the gate must be a no-op: call it with committed hard-false and prove the old dir is
+	// untouched.
 	removeOldDataDirOnMigrationSuccess(false, oldDataDir)
 	if _, statErr := os.Stat(oldDataDir); statErr != nil {
 		t.Fatalf("gate removed the old dir while committed=false (it must only remove on success): %v", statErr)
@@ -414,9 +393,8 @@ func TestDeletionGate_DataTank_FullSuccess_GateRemovesOnlyAfterCommit(t *testing
 // Public shape.
 // -----------------------------------------------------------------------------
 
-// TestDeletionGate_Public_PreCheckAborted_PreservesEverything: the public shape's
-// collation pre-check fires (non-ASCII data under a btree index) and skips the
-// restore. Old dir preserved + queryable; the gate does not fire.
+// TestDeletionGate_Public_PreCheckAborted_PreservesEverything: the public shape's collation pre-check fires
+// (non-ASCII data under a btree index) and skips the restore. Old dir preserved + queryable; the gate does not fire.
 func TestDeletionGate_Public_PreCheckAborted_PreservesEverything(t *testing.T) {
 	skipIfNoBinaries(t)
 	ctx := context.Background()
@@ -443,9 +421,8 @@ create index things_label_idx on public.things (label);`
 	assertPreservedOldDirHasRows(t, srcCluster, oldDataDir, publicRowCountSQL, 3)
 }
 
-// TestDeletionGate_Public_RestoreFailed_PreservesEverything: the public shape's
-// restore fails for every tier (target unreachable). Old dir preserved +
-// queryable; safety dump retained; the gate does not fire.
+// TestDeletionGate_Public_RestoreFailed_PreservesEverything: the public shape's restore fails for every tier (target
+// unreachable). Old dir preserved + queryable; safety dump retained; the gate does not fire.
 func TestDeletionGate_Public_RestoreFailed_PreservesEverything(t *testing.T) {
 	skipIfNoBinaries(t)
 	ctx := context.Background()
@@ -456,9 +433,8 @@ insert into public.things values (1, 'alpha'), (2, 'bravo'), (3, 'charlie'), (4,
 
 	src, target, srcCluster, targetCluster, oldDataDir, backupDir := gateClusters(t, publicSQL)
 
-	// Make the restore fail at every tier: stop the target so pg_restore cannot
-	// connect. The dump (read from the live source) still completes, so the safety
-	// dump is retained.
+	// Make the restore fail at every tier: stop the target so pg_restore cannot connect. The dump (read from the live
+	// source) still completes, so the safety dump is retained.
 	targetCluster.stop()
 
 	res, mErr := runMigrationEngine(ctx, publicMigrationShape(), src, target,
@@ -483,12 +459,10 @@ insert into public.things values (1, 'alpha'), (2, 'bravo'), (3, 'charlie'), (4,
 // Wired startup path (exec-6c).
 // -----------------------------------------------------------------------------
 
-// TestDeletionGate_WiredStartup_FailurePreservesOldDir: drive a real failure
-// through the production entry point migrateDataTankSchemasOnStartup (target
-// stopped -> every tier fails -> committed=false), feed the actual result into
-// the gate exactly as restoreDBBackup's cross-major success branch does, and
-// prove the old dir is preserved + queryable. This is the wired-path half of the
-// guarantee.
+// TestDeletionGate_WiredStartup_FailurePreservesOldDir: drive a real failure through the production entry point
+// migrateDataTankSchemasOnStartup (target stopped -> every tier fails -> committed=false), feed the actual result
+// into the gate exactly as restoreDBBackup's cross-major success branch does, and prove the old dir is preserved +
+// queryable. This is the wired-path half of the guarantee.
 func TestDeletionGate_WiredStartup_FailurePreservesOldDir(t *testing.T) {
 	skipIfNoBinaries(t)
 	ctx := context.Background()
@@ -513,10 +487,9 @@ func TestDeletionGate_WiredStartup_FailurePreservesOldDir(t *testing.T) {
 	assertPreservedOldDirHasRows(t, srcCluster, oldDataDir, dataTankRowCountSQL, 100)
 }
 
-// TestDeletionGate_WiredStartup_FullSuccessRemovesOldDir: the combined-success
-// wired path. A clean data-tank migration through migrateDataTankSchemasOnStartup
-// commits, and (public success already assumed) the single gate removes the old
-// dir only on the combined committed=true.
+// TestDeletionGate_WiredStartup_FullSuccessRemovesOldDir: the combined-success wired path. A clean data-tank
+// migration through migrateDataTankSchemasOnStartup commits, and (public success already assumed) the single gate
+// removes the old dir only on the combined committed=true.
 func TestDeletionGate_WiredStartup_FullSuccessRemovesOldDir(t *testing.T) {
 	skipIfNoBinaries(t)
 	ctx := context.Background()
@@ -535,8 +508,8 @@ func TestDeletionGate_WiredStartup_FullSuccessRemovesOldDir(t *testing.T) {
 		t.Fatalf("expected committed=true for a clean wired migration, got %+v", res)
 	}
 
-	// committed=false would leave the dir; committed=true (combined success)
-	// removes it. Prove the gate fires only on the confirmed combined success.
+	// committed=false would leave the dir; committed=true (combined success) removes it. Prove the gate fires only on
+	// the confirmed combined success.
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
 	assertOldDataDirCleared(t, oldDataDir)
 }

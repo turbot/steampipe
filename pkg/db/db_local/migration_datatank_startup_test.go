@@ -2,27 +2,23 @@ package db_local
 
 // Startup-wiring test for the data-tank cross-major migration.
 //
-// exec-6c wires the shared engine into the cross-major startup path: after the
-// public-schema migration succeeds (and while the old cluster is still live),
-// restoreDBBackup calls migrateDataTankSchemasOnStartup, which detects data-tank
-// schemas on the old cluster and migrates them old -> new. The single deletion
-// gate (removeOldDataDirOnMigrationSuccess) then removes the old data directory
-// only when BOTH the public-schema and the data-tank migrations confirm full
-// success.
+// exec-6c wires the shared engine into the cross-major startup path: after the public-schema migration succeeds (and
+// while the old cluster is still live), restoreDBBackup calls migrateDataTankSchemasOnStartup, which detects data-tank
+// schemas on the old cluster and migrates them old -> new. The single deletion gate
+// (removeOldDataDirOnMigrationSuccess) then removes the old data directory only when BOTH the public-schema and the
+// data-tank migrations confirm full success.
 //
-// restoreDBBackup itself pulls in heavy production plumbing (service state file,
-// install-dir filepaths, viper-configured connection timeouts), so this suite
-// drives the production entry point the cross-major branch calls -
-// migrateDataTankSchemasOnStartup - against two real clusters booted by the
-// data-tank harness, plus the deletion gate, asserting the wired contract:
+// restoreDBBackup itself pulls in heavy production plumbing (service state file, install-dir filepaths,
+// viper-configured connection timeouts), so this suite drives the production entry point the cross-major branch calls -
+// migrateDataTankSchemasOnStartup - against two real clusters booted by the data-tank harness, plus the deletion gate,
+// asserting the wired contract:
 //
 //   - data-tank schemas present  -> the migration runs and commits
 //   - no data-tank schemas       -> a clean no-op (committed=true, no work)
-//   - the deletion gate removes the old dir ONLY on combined full success; a
-//     data-tank failure preserves the old dir
+//   - the deletion gate removes the old dir ONLY on combined full success; a data-tank failure preserves the old dir
 //
-// It reuses the TestDataTankMigration harness (dtInitCluster / dtStartCluster /
-// dtClusterRef) and the same pre-placed PG14 + PG18 binaries.
+// It reuses the TestDataTankMigration harness (dtInitCluster / dtStartCluster / dtClusterRef) and the same pre-placed
+// PG14 + PG18 binaries.
 
 import (
 	"context"
@@ -31,11 +27,10 @@ import (
 	"testing"
 )
 
-// startupClusters boots a PG14 source + PG18 target over Unix sockets, applies
-// srcSQL to the source, and returns the two engine cluster handles plus the raw
-// harness cluster handles (so a test can stop one mid-flight to induce a real
-// failure), the source data dir, and a writable backup dir. It mirrors
-// runPublicShapeEngine's short-socket-path discipline.
+// startupClusters boots a PG14 source + PG18 target over Unix sockets, applies srcSQL to the source, and returns the
+// two engine cluster handles plus the raw harness cluster handles (so a test can stop one mid-flight to induce a real
+// failure), the source data dir, and a writable backup dir. It mirrors runPublicShapeEngine's short-socket-path
+// discipline.
 func startupClusters(t *testing.T, srcSQL string) (old, new *pgClusterRef, srcCluster, targetCluster *dtCluster, oldDataDir, backupDir string) {
 	t.Helper()
 	ctx := context.Background()
@@ -85,9 +80,8 @@ func startupClusters(t *testing.T, srcSQL string) (old, new *pgClusterRef, srcCl
 	return dtClusterRef(src), dtClusterRef(target), src, target, pg14Data, backupDir
 }
 
-// TestDataTankStartup_MigratesWhenSchemasPresent: a cross-major start whose old
-// cluster carries a data tank runs the data-tank migration through the shared
-// engine and commits. This is the wired path the production cross-major success
+// TestDataTankStartup_MigratesWhenSchemasPresent: a cross-major start whose old cluster carries a data tank runs the
+// data-tank migration through the shared engine and commits. This is the wired path the production cross-major success
 // branch takes.
 func TestDataTankStartup_MigratesWhenSchemasPresent(t *testing.T) {
 	skipIfNoBinaries(t)
@@ -110,17 +104,15 @@ func TestDataTankStartup_MigratesWhenSchemasPresent(t *testing.T) {
 		t.Errorf("expected a clean tank to restore at tier 1, got tier %v", res.tierReached)
 	}
 
-	// On full success the deletion gate is unlocked. Confirm the gate removes the
-	// old dir only when committed; here it is, so it removes.
+	// On full success the deletion gate is unlocked. Confirm the gate removes the old dir only when committed; here it
+	// is, so it removes.
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
 	assertOldDataDirCleared(t, oldDataDir)
 }
 
-// TestDataTankStartup_NoOpWhenNoSchemas: the normal CLI workspace has no
-// data-tank schemas. The wired call must be a clean no-op - committed=true, no
-// error, no dump written - so it never blocks the deletion gate or slows
-// startup. (Only the public schema is present here, which the data-tank
-// enumeration excludes.)
+// TestDataTankStartup_NoOpWhenNoSchemas: the normal CLI workspace has no data-tank schemas. The wired call must be a
+// clean no-op - committed=true, no error, no dump written - so it never blocks the deletion gate or slows startup.
+// (Only the public schema is present here, which the data-tank enumeration excludes.)
 func TestDataTankStartup_NoOpWhenNoSchemas(t *testing.T) {
 	skipIfNoBinaries(t)
 
@@ -145,19 +137,16 @@ insert into public.things values (1, 'alpha'), (2, 'bravo');`
 		t.Errorf("expected no data-tank dump dir for a no-op, but one exists (stat err=%v)", statErr)
 	}
 
-	// The combined gate still removes the old dir on a public-success +
-	// data-tank-no-op start.
+	// The combined gate still removes the old dir on a public-success + data-tank-no-op start.
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
 	assertOldDataDirCleared(t, oldDataDir)
 }
 
-// TestDataTankStartup_RetryAfterFailureOverwritesStaleDump: a FAILED data-tank
-// migration leaves its retained dump dir behind (it is a recovery copy), and
-// the old data dir is preserved, so the next startup retries the migration.
-// pg_dump's directory format refuses an existing directory, so without
-// clearing the stale dump first every retry would fail at the dump step with
-// "File exists" - a permanent fail-loop on the failure path (observed live
-// 2026-06-09). The retry must replace the stale dump and commit.
+// TestDataTankStartup_RetryAfterFailureOverwritesStaleDump: a FAILED data-tank migration leaves its retained dump dir
+// behind (it is a recovery copy), and the old data dir is preserved, so the next startup retries the migration.
+// pg_dump's directory format refuses an existing directory, so without clearing the stale dump first every retry would
+// fail at the dump step with "File exists" - a permanent fail-loop on the failure path (observed live 2026-06-09). The
+// retry must replace the stale dump and commit.
 func TestDataTankStartup_RetryAfterFailureOverwritesStaleDump(t *testing.T) {
 	skipIfNoBinaries(t)
 
@@ -168,8 +157,8 @@ func TestDataTankStartup_RetryAfterFailureOverwritesStaleDump(t *testing.T) {
 
 	old, newRef, _, _, oldDataDir, backupDir := startupClusters(t, srcSQL)
 
-	// Simulate the prior failed attempt's leftover: a non-empty retained dump
-	// dir at the exact path the engine dumps to.
+	// Simulate the prior failed attempt's leftover: a non-empty retained dump dir at the exact path the engine dumps
+	// to.
 	staleDump := filepath.Join(backupDir, "data-tank")
 	if err := os.MkdirAll(staleDump, 0755); err != nil {
 		t.Fatalf("plant stale dump dir: %v", err)
@@ -195,18 +184,15 @@ func TestDataTankStartup_RetryAfterFailureOverwritesStaleDump(t *testing.T) {
 	assertOldDataDirCleared(t, oldDataDir)
 }
 
-// TestDataTankStartup_FailurePreservesOldDir: when the data-tank migration does
-// NOT commit, the deletion gate must keep the old data directory (the public
-// success is not reverted, but the old dir is the preserved recovery copy).
+// TestDataTankStartup_FailurePreservesOldDir: when the data-tank migration does NOT commit, the deletion gate must keep
+// the old data directory (the public success is not reverted, but the old dir is the preserved recovery copy).
 //
-// This drives a REAL failure through the production entry point rather than
-// hand-setting committed=false: a data-tank schema is present on the old cluster,
-// but the target cluster is stopped before the migration runs, so every restore
-// tier fails and migrateDataTankSchemasOnStartup returns committed=false. The
-// test then feeds that actual result into the gate, exactly as restoreDBBackup's
-// cross-major success branch does (dtCommitted = res.committed; gate(dtCommitted,
-// location)). It proves the wired contract end-to-end: a real data-tank failure
-// produces committed=false, and committed=false preserves the old dir.
+// This drives a REAL failure through the production entry point rather than hand-setting committed=false: a data-tank
+// schema is present on the old cluster, but the target cluster is stopped before the migration runs, so every restore
+// tier fails and migrateDataTankSchemasOnStartup returns committed=false. The test then feeds that actual result into
+// the gate, exactly as restoreDBBackup's cross-major success branch does (dtCommitted = res.committed;
+// gate(dtCommitted, location)). It proves the wired contract end-to-end: a real data-tank failure produces
+// committed=false, and committed=false preserves the old dir.
 func TestDataTankStartup_FailurePreservesOldDir(t *testing.T) {
 	skipIfNoBinaries(t)
 
@@ -217,9 +203,8 @@ func TestDataTankStartup_FailurePreservesOldDir(t *testing.T) {
 
 	old, newRef, _, target, oldDataDir, backupDir := startupClusters(t, srcSQL)
 
-	// Make the target unreachable so the restore cannot land. Every tier fails;
-	// the engine reports committed=false and preserves the source (old dir + the
-	// retained data-tank dump) - the 2026-06-08 data-preservation invariant.
+	// Make the target unreachable so the restore cannot land. Every tier fails; the engine reports committed=false and
+	// preserves the source (old dir + the retained data-tank dump) - the 2026-06-08 data-preservation invariant.
 	target.stop()
 
 	res, mErr := migrateDataTankSchemasOnStartup(context.Background(), old, newRef, backupDir)
@@ -227,8 +212,7 @@ func TestDataTankStartup_FailurePreservesOldDir(t *testing.T) {
 		t.Fatalf("expected committed=false when the target is unreachable, got committed=true (err=%v, res=%+v)", mErr, res)
 	}
 
-	// Feed the actual migration result into the gate exactly as restoreDBBackup
-	// does on the cross-major success branch.
+	// Feed the actual migration result into the gate exactly as restoreDBBackup does on the cross-major success branch.
 	dtCommitted := res.committed
 	removeOldDataDirOnMigrationSuccess(dtCommitted, oldDataDir)
 

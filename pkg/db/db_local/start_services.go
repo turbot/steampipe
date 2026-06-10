@@ -198,13 +198,10 @@ func postServiceStart(ctx context.Context, res *StartResult) error {
 		return err
 	}
 
-	// if there is an unprocessed db backup file, restore it now.
-	// restoreDBBackup itself makes the *migration* cases non-fatal
-	// (cross-major and a failed same-major restore both retain the
-	// insurance dump, preserve the old data dir, warn, and return nil).
-	// A non-nil error here is therefore a genuine infrastructure failure
-	// (e.g. unreadable backup archive, state load failure) - that must
-	// still fail startup rather than be silently swallowed.
+	// if there is an unprocessed db backup file, restore it now. restoreDBBackup itself makes the *migration* cases
+	// non-fatal (cross-major and a failed same-major restore both retain the insurance dump, preserve the old data dir,
+	// warn, and return nil). A non-nil error here is therefore a genuine infrastructure failure (e.g. unreadable backup
+	// archive, state load failure) - that must still fail startup rather than be silently swallowed.
 	if err := restoreDBBackup(ctx); err != nil {
 		return sperr.WrapWithMessage(err, "failed to migrate db public schema")
 	}
@@ -660,11 +657,10 @@ func FindAllSteampipePostgresInstances(ctx context.Context) ([]*psutils.Process,
 	for _, p := range allProcesses {
 		cmdLine, err := p.CmdlineSliceWithContext(ctx)
 		if err != nil {
-			// A process whose cmdline cannot be read (it exited between listing
-			// and read, or is owned by another user) cannot be one of our own
-			// postgres instances. Skip it rather than aborting the whole scan -
-			// otherwise a single unreadable process on the machine fails the scan
-			// and, via killRunningDbInstance, aborts the pre-upgrade backup.
+			// A process whose cmdline cannot be read (it exited between listing and read, or is owned by another user)
+			// cannot be one of our own postgres instances. Skip it rather than aborting the whole scan - otherwise a
+			// single unreadable process on the machine fails the scan and, via killRunningDbInstance, aborts the
+			// pre-upgrade backup.
 			log.Printf("[TRACE] FindAllSteampipePostgresInstances - skipping pid %d (cmdline unreadable): %s", p.Pid, err.Error())
 			continue
 		}

@@ -4,33 +4,27 @@ package db_local
 //
 // This suite drives the SHIPPED cross-major migration code directly:
 //
-//   - runMigrationEngine + publicMigrationShape (migration_engine.go) -
-//     the shared engine production's restoreDBBackup runs for the public
-//     schema (the single cross-major orchestration: collation pre-flight ->
+//   - runMigrationEngine + publicMigrationShape (migration_engine.go) - the shared engine production's
+//     restoreDBBackup runs for the public schema (the single cross-major orchestration: collation pre-flight ->
 //     dump -> restore ladder -> validation -> tolerant matview refresh).
-//   - runPreflightCollationScan (backup.go) - the pre-flight collation scan
-//     that gates the cross-major restore (also driven in isolation by the G
-//     category).
+//   - runPreflightCollationScan (backup.go) - the pre-flight collation scan that gates the cross-major restore (also
+//     driven in isolation by the G category).
 //   - runValidateRestore (backup.go) - the post-restore validation pass.
 //
-// The harness owns only the OUT-of-process plumbing (boots a real PG14 source
-// cluster and a real PG18 target cluster over Unix sockets, applies fixture
-// SQL, takes the insurance dump). All policy decisions are made by the
-// production code under test.
+// The harness owns only the OUT-of-process plumbing (boots a real PG14 source cluster and a real PG18 target cluster
+// over Unix sockets, applies fixture SQL, takes the insurance dump). All policy decisions are made by the production
+// code under test.
 //
 // HOW THE SEAM FOR constants.DatabaseVersion WORKS
 // ------------------------------------------------
-// The production migration code resolves the target major from
-// constants.DatabaseVersion ("14.19.0", a compile-time constant). With the
-// constant pinned to 14, classifyPgMigration could never return the
-// cross-major branch under `go test` and the production cross-major code
-// path would be dead under the test runner.
+// The production migration code resolves the target major from constants.DatabaseVersion ("14.19.0", a compile-time
+// constant). With the constant pinned to 14, classifyPgMigration could never return the cross-major branch under
+// `go test` and the production cross-major code path would be dead under the test runner.
 //
-// The seam is a package-private var targetDatabaseVersion (backup.go) that
-// defaults to constants.DatabaseVersion in production. TestMain overrides
-// it to "18.4.0" for the duration of the cross-major test suite so the
-// shipped classifyPgMigration / findDifferentPgInstallation logic sees PG18
-// as the target and the cross-major branch actually executes.
+// The seam is a package-private var targetDatabaseVersion (backup.go) that defaults to constants.DatabaseVersion in
+// production. TestMain overrides it to "18.4.0" for the duration of the cross-major test suite so the shipped
+// classifyPgMigration / findDifferentPgInstallation logic sees PG18 as the target and the cross-major branch actually
+// executes.
 //
 // HOW TO RUN
 // ----------
@@ -60,23 +54,20 @@ import (
 )
 
 // -----------------------------------------------------------------------------
-// Outcome enum (mirrors the four end states the shared engine's public shape
-// distinguishes, plus a DumpFailed sentinel for cases where the harness blocks
-// the pre-dump step).
+// Outcome enum (mirrors the four end states the shared engine's public shape distinguishes, plus a DumpFailed
+// sentinel for cases where the harness blocks the pre-dump step).
 // -----------------------------------------------------------------------------
 
 type migrationOutcome int
 
 const (
-	// PG18 has data; pre-flight cleared; restore succeeded; validation
-	// matched; no warnings.
+	// PG18 has data; pre-flight cleared; restore succeeded; validation matched; no warnings.
 	outcomeAutoRestoreSucceeded migrationOutcome = iota
 	// pre-flight detected collation risk; restore skipped; dump retained.
 	outcomePreflightSkipped
 	// pg_restore returned non-zero; non-fatal; dump retained; old dir retained.
 	outcomeRestoreFailedGracefully
-	// pg_restore succeeded BUT validation found divergence; rollback to
-	// B-equivalent; dump retained; old dir retained.
+	// pg_restore succeeded BUT validation found divergence; rollback to B-equivalent; dump retained; old dir retained.
 	outcomePostValidationFailedGracefully
 	// dump itself failed; no usable insurance dump.
 	outcomeDumpFailed
@@ -100,8 +91,8 @@ func (o migrationOutcome) String() string {
 }
 
 // -----------------------------------------------------------------------------
-// Binary locations. The suite expects PG14 + PG18 binaries pre-placed under
-// /tmp/sp-xmig-tests/db/<version>/postgres/ . Overridable via env for CI.
+// Binary locations. The suite expects PG14 + PG18 binaries pre-placed under /tmp/sp-xmig-tests/db/<version>/postgres/ .
+// Overridable via env for CI.
 // -----------------------------------------------------------------------------
 
 const (
@@ -135,8 +126,8 @@ func parallelism() int {
 }
 
 // -----------------------------------------------------------------------------
-// Cluster - a running PostgreSQL instance over a Unix socket (no TCP port
-// allocation race; PG supports Unix sockets natively).
+// Cluster - a running PostgreSQL instance over a Unix socket (no TCP port allocation race; PG supports Unix sockets
+// natively).
 // -----------------------------------------------------------------------------
 
 type cluster struct {
@@ -171,10 +162,9 @@ func initCluster(ctx context.Context, version, dataDir string) error {
 		"--pgdata="+dataDir,
 		"--encoding=UTF-8",
 	)
-	// Mirror production: force a stable libc 'C' locale for initdb so the
-	// cluster's default collation matches what Steampipe ships (install.go
-	// initDatabase :425). PG18's default ICU/builtin collation otherwise
-	// diverges and would mask the very collation risks the suite targets.
+	// Mirror production: force a stable libc 'C' locale for initdb so the cluster's default collation matches what
+	// Steampipe ships (install.go initDatabase :425). PG18's default ICU/builtin collation otherwise diverges and
+	// would mask the very collation risks the suite targets.
 	cmd.Env = append(libEnv(version), "LC_ALL=C")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("initdb (%s) failed: %v\n%s", version, err, out)
@@ -182,8 +172,7 @@ func initCluster(ctx context.Context, version, dataDir string) error {
 	return nil
 }
 
-// startCluster boots postgres over a Unix socket in sockDir and waits for it
-// to accept connections.
+// startCluster boots postgres over a Unix socket in sockDir and waits for it to accept connections.
 func startCluster(ctx context.Context, version, dataDir, sockDir string) (*cluster, error) {
 	if err := os.MkdirAll(sockDir, 0755); err != nil {
 		return nil, err
@@ -203,8 +192,8 @@ func startCluster(ctx context.Context, version, dataDir, sockDir string) (*clust
 	}
 	c := &cluster{version: version, dataDir: dataDir, sockDir: sockDir, cmd: cmd, dbName: fixtureDBName, superUsr: "root"}
 
-	// Wait until the server accepts connections (initdb creates 'postgres'
-	// and 'template1' databases; connect to 'postgres' for readiness).
+	// Wait until the server accepts connections (initdb creates 'postgres' and 'template1' databases; connect to
+	// 'postgres' for readiness).
 	deadline := time.Now().Add(30 * time.Second)
 	for {
 		conn, err := c.connect(ctx, "postgres")
@@ -262,9 +251,8 @@ func (c *cluster) stop() {
 	_ = c.cmd.Wait()
 }
 
-// applyFixtureSQL runs the fixture's SQL against the fixture database. Returns
-// an error if the SQL fails to apply (a broken fixture, not a migration
-// outcome).
+// applyFixtureSQL runs the fixture's SQL against the fixture database. Returns an error if the SQL fails to apply (a
+// broken fixture, not a migration outcome).
 func (c *cluster) applyFixtureSQL(ctx context.Context, sqlText string) error {
 	conn, err := c.connect(ctx, c.dbName)
 	if err != nil {
@@ -280,15 +268,13 @@ func (c *cluster) applyFixtureSQL(ctx context.Context, sqlText string) error {
 // -----------------------------------------------------------------------------
 // Migration building blocks.
 //
-// Nothing of the migration itself is reimplemented here - the harness builds
-// two pgClusterRef handles and runs the SHIPPED shared engine
-// (runMigrationEngine with publicMigrationShape), exactly as production's
-// restoreDBBackup does.
+// Nothing of the migration itself is reimplemented here - the harness builds two pgClusterRef handles and runs the
+// SHIPPED shared engine (runMigrationEngine with publicMigrationShape), exactly as production's restoreDBBackup does.
 // -----------------------------------------------------------------------------
 
-// dumpPublicSchema runs pg_dump (custom format, public schema only) against the
-// source cluster, mirroring the insurance dump prepareBackup/takeBackup takes
-// before the engine runs (the engine takes its own working dump separately).
+// dumpPublicSchema runs pg_dump (custom format, public schema only) against the source cluster, mirroring the
+// insurance dump prepareBackup/takeBackup takes before the engine runs (the engine takes its own working dump
+// separately).
 func dumpPublicSchema(ctx context.Context, src *cluster, dumpFile string) error {
 	pgDump := filepath.Join(pgBinDir(src.version), "pg_dump")
 	cmd := exec.CommandContext(ctx, pgDump,
@@ -319,11 +305,10 @@ func xmigClusterRef(c *cluster) *pgClusterRef {
 	}
 }
 
-// plantInvalidIndex leaves a genuinely INVALID index in the target's fixture
-// database: CREATE UNIQUE INDEX CONCURRENTLY over duplicate values fails and
-// leaves the index behind with pg_index.indisvalid=false. The shipped
-// runValidateRestore must then report an index_invalid divergence and the
-// engine must roll the migration outcome back to ValidationDiverged.
+// plantInvalidIndex leaves a genuinely INVALID index in the target's fixture database: CREATE UNIQUE INDEX
+// CONCURRENTLY over duplicate values fails and leaves the index behind with pg_index.indisvalid=false. The shipped
+// runValidateRestore must then report an index_invalid divergence and the engine must roll the migration outcome back
+// to ValidationDiverged.
 func plantInvalidIndex(ctx context.Context, target *cluster) error {
 	conn, err := target.connect(ctx, target.dbName)
 	if err != nil {
@@ -336,8 +321,7 @@ func plantInvalidIndex(ctx context.Context, target *cluster) error {
 	if _, err := conn.Exec(ctx, "INSERT INTO public.validation_canary VALUES (1),(1)"); err != nil {
 		return err
 	}
-	// expected to fail (duplicate values under a unique index), leaving an
-	// INVALID index entry behind
+	// expected to fail (duplicate values under a unique index), leaving an INVALID index entry behind
 	if _, err := conn.Exec(ctx, "CREATE UNIQUE INDEX CONCURRENTLY validation_canary_bad_idx ON public.validation_canary (id)"); err == nil {
 		return fmt.Errorf("CREATE UNIQUE INDEX CONCURRENTLY over duplicates unexpectedly succeeded")
 	}
@@ -352,8 +336,8 @@ func plantInvalidIndex(ctx context.Context, target *cluster) error {
 }
 
 // -----------------------------------------------------------------------------
-// runMigration executes the SHIPPED shared engine (public shape) against the
-// two test clusters and maps its result back to the matrix's outcome enum.
+// runMigration executes the SHIPPED shared engine (public shape) against the two test clusters and maps its result
+// back to the matrix's outcome enum.
 // -----------------------------------------------------------------------------
 
 type xmigResult struct {
@@ -362,30 +346,26 @@ type xmigResult struct {
 }
 
 func runMigration(ctx context.Context, oldC, newC *cluster, dumpFile string, opts caseSetup) (xmigResult, error) {
-	// Step 1: insurance dump (production: prepareBackup/takeBackup). The engine
-	// takes its own working dump; this one is the independently-retained copy
-	// the data-preservation assertions check.
+	// Step 1: insurance dump (production: prepareBackup/takeBackup). The engine takes its own working dump; this one
+	// is the independently-retained copy the data-preservation assertions check.
 	dumpErr := dumpPublicSchema(ctx, oldC, dumpFile)
 	if opts.forceDumpFailure || dumpErr != nil {
 		return xmigResult{outcome: outcomeDumpFailed, detail: errString(dumpErr)}, nil
 	}
 
-	// opts.forceValidationFailure drives the validation-divergence path with a
-	// REAL catalog divergence: an invalid index planted on the target, which the
-	// shipped runValidateRestore detects (index_invalid). This replaces the old
-	// harness device of pointing the validation connection at an empty database
-	// - the engine owns its connections, so the divergence now lives in the
-	// catalog itself. A real PG14->PG18 data divergence that escapes the
-	// pre-flight scan is still hard to construct deterministically (see the
-	// I04 / NFC-NFD discussion).
+	// opts.forceValidationFailure drives the validation-divergence path with a REAL catalog divergence: an invalid
+	// index planted on the target, which the shipped runValidateRestore detects (index_invalid). This replaces the
+	// old harness device of pointing the validation connection at an empty database - the engine owns its
+	// connections, so the divergence now lives in the catalog itself. A real PG14->PG18 data divergence that escapes
+	// the pre-flight scan is still hard to construct deterministically (see the I04 / NFC-NFD discussion).
 	if opts.forceValidationFailure {
 		if err := plantInvalidIndex(ctx, newC); err != nil {
 			return xmigResult{}, err
 		}
 	}
 
-	// opts.forceRestoreFailure maps to the engine's own fault injection: every
-	// restore tier fails, as a disk-full / unusable-target restore would.
+	// opts.forceRestoreFailure maps to the engine's own fault injection: every restore tier fails, as a disk-full /
+	// unusable-target restore would.
 	faults := migrationFaults{}
 	if opts.forceRestoreFailure {
 		faults.failAllTiers = true
@@ -412,8 +392,8 @@ func errString(err error) string {
 	return err.Error()
 }
 
-// isPublicFailureOutcome reports whether an outcome is a terminal failure where
-// the data-preservation invariant must hold (old dir + dump retained on disk).
+// isPublicFailureOutcome reports whether an outcome is a terminal failure where the data-preservation invariant must
+// hold (old dir + dump retained on disk).
 func isPublicFailureOutcome(o migrationOutcome) bool {
 	switch o {
 	case outcomeRestoreFailedGracefully,
@@ -424,10 +404,9 @@ func isPublicFailureOutcome(o migrationOutcome) bool {
 	return false
 }
 
-// assertOldDataDirPreserved confirms the source PG14 data directory still exists
-// and still holds a real cluster (its PG_VERSION marker is present and the data
-// is not an empty husk). This is the half of the data-preservation invariant that
-// guarantees the original is recoverable after a failed migration.
+// assertOldDataDirPreserved confirms the source PG14 data directory still exists and still holds a real cluster (its
+// PG_VERSION marker is present and the data is not an empty husk). This is the half of the data-preservation
+// invariant that guarantees the original is recoverable after a failed migration.
 func assertOldDataDirPreserved(dataDir string) error {
 	info, err := os.Stat(dataDir)
 	if err != nil {
@@ -442,9 +421,8 @@ func assertOldDataDirPreserved(dataDir string) error {
 	return nil
 }
 
-// assertDumpRetained confirms the safety dump artefact is still on disk and
-// non-empty after a restore/validation failure (the second independent recovery
-// copy required by the governing decision).
+// assertDumpRetained confirms the safety dump artefact is still on disk and non-empty after a restore/validation
+// failure (the second independent recovery copy required by the governing decision).
 func assertDumpRetained(dumpFile string) error {
 	info, err := os.Stat(dumpFile)
 	if err != nil {
@@ -460,8 +438,7 @@ func assertDumpRetained(dumpFile string) error {
 // Test case table.
 // -----------------------------------------------------------------------------
 
-// caseSetup carries per-case harness instructions for the edge-case (H)
-// category and the I-category validation cases.
+// caseSetup carries per-case harness instructions for the edge-case (H) category and the I-category validation cases.
 type caseSetup struct {
 	forceDumpFailure       bool // H02 / H06: dump cannot proceed
 	forceRestoreFailure    bool // H07 / I-style forced restore failure
@@ -507,26 +484,24 @@ func xmigCases() []xmigCase {
 		c("A18_partition_list", "A18_partition_list.sql", "A18_partition_list.assert.sql", outcomeAutoRestoreSucceeded),
 		c("A19_partition_hash", "A19_partition_hash.sql", "A19_partition_hash.assert.sql", outcomeAutoRestoreSucceeded),
 		c("A20_toast_large_blob", "A20_toast_large_blob.sql", "A20_toast_large_blob.assert.sql", outcomeAutoRestoreSucceeded),
-		// ltree-dependent objects do NOT restore with `pg_dump --schema=public`:
-		// CREATE EXTENSION is not a schema object, so the dump references
-		// public.ltree without creating the extension and pg_restore aborts with
-		// `type "public.ltree" does not exist`. Verified against the PG18.4
-		// wrapper build. Non-fatal degrade per D04.
+		// ltree-dependent objects do NOT restore with `pg_dump --schema=public`: CREATE EXTENSION is not a schema
+		// object, so the dump references public.ltree without creating the extension and pg_restore aborts with
+		// `type "public.ltree" does not exist`. Verified against the PG18.4 wrapper build. Non-fatal degrade per D04.
 		c("A21_ltree_extension", "A21_ltree_extension.sql", "", outcomeRestoreFailedGracefully),
 		c("A22_all_nulls", "A22_all_nulls.sql", "A22_all_nulls.assert.sql", outcomeAutoRestoreSucceeded),
 		c("A23_empty_table", "A23_empty_table.sql", "A23_empty_table.assert.sql", outcomeAutoRestoreSucceeded),
 		c("A24_large_table", "A24_large_table.sql", "A24_large_table.assert.sql", outcomeAutoRestoreSucceeded),
 
-		// ---- Category B (collation-risk zone). B02/B04/B09 are ASCII-only and
-		// per the data-aware pre-flight policy restore cleanly. ----
+		// ---- Category B (collation-risk zone). B02/B04/B09 are ASCII-only and per the data-aware pre-flight policy
+		// restore cleanly. ----
 		c("B01_btree_int", "B01_btree_int.sql", "B01_btree_int.assert.sql", outcomeAutoRestoreSucceeded),
 		c("B02_btree_text_ascii", "B02_btree_text_ascii.sql", "", outcomeAutoRestoreSucceeded),
 		c("B03_btree_text_nonascii", "B03_btree_text_nonascii.sql", "", outcomePreflightSkipped),
 		c("B04_unique_text_ascii", "B04_unique_text_ascii.sql", "", outcomeAutoRestoreSucceeded),
 		c("B05_unique_text_nonascii", "B05_unique_text_nonascii.sql", "", outcomePreflightSkipped),
 		c("B06_gin_jsonb", "B06_gin_jsonb.sql", "B06_gin_jsonb.assert.sql", outcomeAutoRestoreSucceeded),
-		// Same root cause as A21: the GiST-on-ltree fixture's public.ltree type
-		// is not recreated by `--schema=public`, so the restore aborts.
+		// Same root cause as A21: the GiST-on-ltree fixture's public.ltree type is not recreated by
+		// `--schema=public`, so the restore aborts.
 		c("B07_gist_ltree", "B07_gist_ltree.sql", "", outcomeRestoreFailedGracefully),
 		c("B08_functional_index", "B08_functional_index.sql", "", outcomePreflightSkipped),
 		c("B09_partial_index", "B09_partial_index.sql", "", outcomePreflightSkipped),
@@ -558,23 +533,21 @@ func xmigCases() []xmigCase {
 		c("F01_unlogged_partition_pg18", "F01_unlogged_partition_pg18.sql", "", outcomeRestoreFailedGracefully),
 		c("F02_removed_func_pg16_walinfo", "F02_removed_func_pg16_walinfo.sql", "F02_removed_func_pg16_walinfo.assert.sql", outcomeAutoRestoreSucceeded),
 		c("F03_removed_ext_adminpack", "F03_removed_ext_adminpack.sql", "", outcomeRestoreFailedGracefully),
-		// Catalog P18.1 predicted a syntax error on GRANT RULE, but the PG18.4
-		// wrapper build accepts the dump's GRANT RULE clause and the restore
-		// succeeds.
+		// Catalog P18.1 predicted a syntax error on GRANT RULE, but the PG18.4 wrapper build accepts the dump's
+		// GRANT RULE clause and the restore succeeds.
 		c("F04_removed_grant_rule_pg18", "F04_removed_grant_rule_pg18.sql", "F04_removed_grant_rule_pg18.assert.sql", outcomeAutoRestoreSucceeded),
 		c("F05_reserved_word_system_user", "F05_reserved_word_system_user.sql", "", outcomeRestoreFailedGracefully),
 		c("F06_interval_text_index_pg15", "F06_interval_text_index_pg15.sql", "", outcomeRestoreFailedGracefully),
 
 		// ---- Category P: exhaustive PG15-18 catalogue coverage (public shape) ----
 		//
-		// One case per catalogue item P15.x..P18.x that the F/E set above does not
-		// already cover. Each cites the catalogue ID. The REQUIRED outcome is
-		// derived from the catalogue's stated restore behaviour AND the governing
-		// data-preservation decision:
-		//   - items that ABORT pg_restore => outcomeRestoreFailedGracefully
-		//     (dump + old dir retained; asserted by the data-preservation guard).
-		//   - items that restore cleanly (body opacity, behavioural-only divergence,
-		//     C-locale-safe FTS, custom-format-safe COPY) => outcomeAutoRestoreSucceeded.
+		// One case per catalogue item P15.x..P18.x that the F/E set above does not already cover. Each cites the
+		// catalogue ID. The REQUIRED outcome is derived from the catalogue's stated restore behaviour AND the
+		// governing data-preservation decision:
+		//   - items that ABORT pg_restore => outcomeRestoreFailedGracefully (dump + old dir retained; asserted by
+		//     the data-preservation guard).
+		//   - items that restore cleanly (body opacity, behavioural-only divergence, C-locale-safe FTS,
+		//     custom-format-safe COPY) => outcomeAutoRestoreSucceeded.
 		//
 		// Catalogue items already covered elsewhere (NOT duplicated here):
 		//   P15.1 -> E01_grant_public, P15.2 -> E03_non_default_owner,
@@ -582,31 +555,26 @@ func xmigCases() []xmigCase {
 		//   P15.6 -> F06_interval_text_index, P18.1 -> F04_removed_grant_rule,
 		//   P18.3 -> F01_unlogged_partition, reserved-word SYSTEM_USER -> F05.
 		//
-		// Catalogue items that CANNOT be reproduced as a restore failure through
-		// Steampipe's PG14 --schema=public dump-and-restore path (recorded as
-		// covered-by-class controls below, with the reason - each verified against the
-		// real PG14.19 wrapper binary):
-		//   P15.4 plpython2u (no plpython2u.control ships in the PG14 wrapper build;
-		//     CREATE EXTENSION plpython2u errors "could not open extension control
-		//     file", so the breakage trigger cannot be loaded onto the source).
-		//   P16.3 NULLS NOT DISTINCT on a PK (PG14 rejects the syntax outright -
-		//     "syntax error at or near nulls"; the feature arrived in PG15).
-		//   P17.1 adminpack (the extension DOES install on this PG14 build -
-		//     CREATE EXTENSION adminpack succeeds - but Steampipe dumps with
-		//     --schema=public, which excludes CREATE EXTENSION entirely; adminpack
-		//     lives outside the public schema, so the removed extension never reaches
-		//     the PG18 restore. Verified: the public-only custom dump TOC carries no
-		//     adminpack entry and the restore succeeds without it. NOT the same path as
-		//     F03 - F03 is a removed-FUNCTION (pg_is_in_backup) restore abort, a
-		//     different mechanism; adminpack simply never enters a public dump).
-		//   P17.2 db_user_namespace (a postgresql.conf GUC, never serialised into any
-		//     dump).
-		//   P17.3 / P17.4 colliculocale / daticulocale (catalog columns the PG15 ICU
-		//     work added; absent from the PG14 catalog - verified pg_collation /
-		//     pg_database carry no such column - so the breakage-triggering view cannot
-		//     be created on the source).
-		//   P18.5 data checksums (pg_dump output is checksum-agnostic; checksums are a
-		//     cluster-init / pg_upgrade property never carried in a dump).
+		// Catalogue items that CANNOT be reproduced as a restore failure through Steampipe's PG14 --schema=public
+		// dump-and-restore path (recorded as covered-by-class controls below, with the reason - each verified against
+		// the real PG14.19 wrapper binary):
+		//   P15.4 plpython2u (no plpython2u.control ships in the PG14 wrapper build; CREATE EXTENSION plpython2u
+		//     errors "could not open extension control file", so the breakage trigger cannot be loaded onto the
+		//     source).
+		//   P16.3 NULLS NOT DISTINCT on a PK (PG14 rejects the syntax outright - "syntax error at or near nulls";
+		//     the feature arrived in PG15).
+		//   P17.1 adminpack (the extension DOES install on this PG14 build - CREATE EXTENSION adminpack succeeds -
+		//     but Steampipe dumps with --schema=public, which excludes CREATE EXTENSION entirely; adminpack lives
+		//     outside the public schema, so the removed extension never reaches the PG18 restore. Verified: the
+		//     public-only custom dump TOC carries no adminpack entry and the restore succeeds without it. NOT the
+		//     same path as F03 - F03 is a removed-FUNCTION (pg_is_in_backup) restore abort, a different mechanism;
+		//     adminpack simply never enters a public dump).
+		//   P17.2 db_user_namespace (a postgresql.conf GUC, never serialised into any dump).
+		//   P17.3 / P17.4 colliculocale / daticulocale (catalog columns the PG15 ICU work added; absent from the
+		//     PG14 catalog - verified pg_collation / pg_database carry no such column - so the breakage-triggering
+		//     view cannot be created on the source).
+		//   P18.5 data checksums (pg_dump output is checksum-agnostic; checksums are a cluster-init / pg_upgrade
+		//     property never carried in a dump).
 
 		// -- PG15 --
 		c("P15_5_xml2_qualified", "P15_5_xml2_qualified.sql", "", outcomeRestoreFailedGracefully),
@@ -614,31 +582,28 @@ func xmigCases() []xmigCase {
 		// -- PG16 --
 		c("P16_1_wal_records_info", "P16_1_wal_records_info.sql", "P16_1_wal_records_info.assert.sql", outcomeAutoRestoreSucceeded),
 		c("P16_2_wal_stats", "P16_2_wal_stats.sql", "P16_2_wal_stats.assert.sql", outcomeAutoRestoreSucceeded),
-		// P16.4: the catalogue's predicted restore failure is for direct DDL replay /
-		// pg_upgrade, NOT the dump-and-restore path. A _RETURN ON SELECT rule makes the
-		// relation a view (relkind 'v'); pg_dump serialises a view as an ordinary
-		// CREATE VIEW, which PG18 accepts - so on the dump-and-restore path the restore
-		// SUCCEEDS by first principles (reasoned in the fixture, mirroring F04). The
-		// case still exercises the engine on the rule-converted-view path.
+		// P16.4: the catalogue's predicted restore failure is for direct DDL replay / pg_upgrade, NOT the
+		// dump-and-restore path. A _RETURN ON SELECT rule makes the relation a view (relkind 'v'); pg_dump serialises
+		// a view as an ordinary CREATE VIEW, which PG18 accepts - so on the dump-and-restore path the restore
+		// SUCCEEDS by first principles (reasoned in the fixture, mirroring F04). The case still exercises the engine
+		// on the rule-converted-view path.
 		c("P16_4_on_select_rule_view", "P16_4_on_select_rule_view.sql", "P16_4_on_select_rule_view.assert.sql", outcomeAutoRestoreSucceeded),
 		c("P16_5_cursor_assignment", "P16_5_cursor_assignment.sql", "P16_5_cursor_assignment.assert.sql", outcomeAutoRestoreSucceeded),
 
 		// -- PG17 --
-		// P17.3 / P17.4 reference catalog columns (pg_collation.colliculocale,
-		// pg_database.daticulocale) that the ICU work introduced in PG15 - they do
-		// NOT exist on the PG14 source at all, so the view cannot be created at
-		// fixture-apply time (verified: "column colliculocale does not exist" on
-		// PG14.19). The catalogue's premise is a dump FROM PG15/16 (which HAS the
-		// column) restored into PG18; our source is PG14, which predates the column.
-		// Non-reproducible from a PG14 source -> covered-by-class controls.
-		// not constructible on PG14: pg_collation.colliculocale is a PG15 ICU catalog
-		// column absent from the PG14 catalog.
+		// P17.3 / P17.4 reference catalog columns (pg_collation.colliculocale, pg_database.daticulocale) that the ICU
+		// work introduced in PG15 - they do NOT exist on the PG14 source at all, so the view cannot be created at
+		// fixture-apply time (verified: "column colliculocale does not exist" on PG14.19). The catalogue's premise is
+		// a dump FROM PG15/16 (which HAS the column) restored into PG18; our source is PG14, which predates the
+		// column. Non-reproducible from a PG14 source -> covered-by-class controls.
+		// not constructible on PG14: pg_collation.colliculocale is a PG15 ICU catalog column absent from the PG14
+		// catalog.
 		c("P17_3_colliculocale_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
-		// not constructible on PG14: pg_database.daticulocale is a PG15 ICU catalog
-		// column absent from the PG14 catalog.
+		// not constructible on PG14: pg_database.daticulocale is a PG15 ICU catalog column absent from the PG14
+		// catalog.
 		c("P17_4_daticulocale_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
-		// P17.5: behavioural-only divergence (the view restores; PG14 and PG18
-		// return different rows by design), so no row-comparing golden is attached.
+		// P17.5: behavioural-only divergence (the view restores; PG14 and PG18 return different rows by design), so
+		// no row-comparing golden is attached.
 		c("P17_5_attstattarget_view", "P17_5_attstattarget_view.sql", "", outcomeAutoRestoreSucceeded),
 		c("P17_6_search_path_index", "P17_6_search_path_index.sql", "P17_6_search_path_index.assert.sql", outcomeAutoRestoreSucceeded),
 
@@ -647,31 +612,26 @@ func xmigCases() []xmigCase {
 		c("P18_4_copy_dot_eof", "P18_4_copy_dot_eof.sql", "P18_4_copy_dot_eof.assert.sql", outcomeAutoRestoreSucceeded),
 		c("P18_6_fts_index", "P18_6_fts_index.sql", "P18_6_fts_index.assert.sql", outcomeAutoRestoreSucceeded),
 
-		// -- Covered-by-class controls for the items that CANNOT be constructed as a
-		// restore failure on a real PG14 source through Steampipe's --schema=public
-		// dump-and-restore path. Each loads a minimal ordinary schema (A02) and asserts
-		// AutoRestoreSucceeded: these are NOT breakage coverage, they are documented
-		// non-reproducibility controls proving the engine cleanly migrates a
-		// representative cluster when the catalogue's breakage trigger cannot exist on
-		// the source. The per-item reason (each verified against the PG14.19 binary) is
-		// stated in the block comment above; the one-line "not constructible on PG14"
-		// rationale is repeated on each case below. --
-		// not constructible on PG14: no plpython2u.control in the wrapper build;
-		// CREATE EXTENSION plpython2u errors at fixture-apply time.
+		// -- Covered-by-class controls for the items that CANNOT be constructed as a restore failure on a real PG14
+		// source through Steampipe's --schema=public dump-and-restore path. Each loads a minimal ordinary schema
+		// (A02) and asserts AutoRestoreSucceeded: these are NOT breakage coverage, they are documented
+		// non-reproducibility controls proving the engine cleanly migrates a representative cluster when the
+		// catalogue's breakage trigger cannot exist on the source. The per-item reason (each verified against the
+		// PG14.19 binary) is stated in the block comment above; the one-line "not constructible on PG14" rationale is
+		// repeated on each case below. --
+		// not constructible on PG14: no plpython2u.control in the wrapper build; CREATE EXTENSION plpython2u errors
+		// at fixture-apply time.
 		c("P15_4_plpython2u_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
-		// not constructible on PG14: NULLS NOT DISTINCT is PG15 syntax; PG14 rejects it
-		// with a syntax error.
+		// not constructible on PG14: NULLS NOT DISTINCT is PG15 syntax; PG14 rejects it with a syntax error.
 		c("P16_3_nulls_not_distinct_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
-		// not constructible on PG14: adminpack DOES install on PG14, but a
-		// --schema=public dump excludes CREATE EXTENSION, so the extension PG18 removed
-		// never reaches the restore (distinct from F03, which is a removed-FUNCTION
-		// abort).
+		// not constructible on PG14: adminpack DOES install on PG14, but a --schema=public dump excludes CREATE
+		// EXTENSION, so the extension PG18 removed never reaches the restore (distinct from F03, which is a
+		// removed-FUNCTION abort).
 		c("P17_1_adminpack_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
-		// not constructible on PG14: db_user_namespace is a postgresql.conf GUC, never
-		// serialised into a dump.
+		// not constructible on PG14: db_user_namespace is a postgresql.conf GUC, never serialised into a dump.
 		c("P17_2_db_user_namespace_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
-		// not constructible on PG14: data checksums are a cluster-init / pg_upgrade
-		// property; pg_dump output is checksum-agnostic.
+		// not constructible on PG14: data checksums are a cluster-init / pg_upgrade property; pg_dump output is
+		// checksum-agnostic.
 		c("P18_5_checksums_control", "A02_primitives_int.sql", "A02_primitives_int.assert.sql", outcomeAutoRestoreSucceeded),
 
 		// ---- Category G (pre-flight scan unit cases) ----
@@ -695,27 +655,21 @@ func xmigCases() []xmigCase {
 
 		// ---- Category I (post-restore validation orchestration) ----
 		//
-		// I02 / I03 use forceValidationFailure to drive the production
-		// validation-failure path without relying on a real PG14->PG18 data
-		// divergence that happens to escape the pre-flight scan. Manufacturing
-		// such a divergence on ASCII data is hard to do deterministically; the
-		// realistic NFC/NFD-only case (former I04) is unreachable because the
-		// multi-byte detector catches any non-ASCII byte before validation
-		// ever runs. The harness instead plants a genuinely INVALID index on
-		// the target, which the shipped runValidateRestore detects
-		// (index_invalid), covering what these cases were always meant to
-		// cover: the engine rolls back to PostValidationFailedGracefully when
-		// validation reports divergence.
+		// I02 / I03 use forceValidationFailure to drive the production validation-failure path without relying on a
+		// real PG14->PG18 data divergence that happens to escape the pre-flight scan. Manufacturing such a divergence
+		// on ASCII data is hard to do deterministically; the realistic NFC/NFD-only case (former I04) is unreachable
+		// because the multi-byte detector catches any non-ASCII byte before validation ever runs. The harness instead
+		// plants a genuinely INVALID index on the target, which the shipped runValidateRestore detects
+		// (index_invalid), covering what these cases were always meant to cover: the engine rolls back to
+		// PostValidationFailedGracefully when validation reports divergence.
 		c("I01_validation_control", "I01_validation_control.sql", "I01_validation_control.assert.sql", outcomeAutoRestoreSucceeded),
 		{name: "I02_validation_collation_divergence", fixture: "I02_validation_collation_divergence.sql", expected: outcomePostValidationFailedGracefully, setup: caseSetup{forceValidationFailure: true}},
 		{name: "I03_validation_index_invalid", fixture: "I03_validation_index_invalid.sql", expected: outcomePostValidationFailedGracefully, setup: caseSetup{forceValidationFailure: true}},
-		// I04 was a realistic NFC/NFD-only divergence case. Dropped: the
-		// pre-flight multi-byte detector catches any non-ASCII byte (which
-		// both NFC and NFD encodings of the test data contain), so the
-		// fixture would always fall to PreflightSkipped before validation
-		// can run. C04 already covers the "non-ASCII view ORDER BY" preflight
-		// flag; reframing I04 to a fully ASCII validation-divergence case
-		// is what I02/I03 now cover via forceValidationFailure.
+		// I04 was a realistic NFC/NFD-only divergence case. Dropped: the pre-flight multi-byte detector catches any
+		// non-ASCII byte (which both NFC and NFD encodings of the test data contain), so the fixture would always
+		// fall to PreflightSkipped before validation can run. C04 already covers the "non-ASCII view ORDER BY"
+		// preflight flag; reframing I04 to a fully ASCII validation-divergence case is what I02/I03 now cover via
+		// forceValidationFailure.
 		c("I05_validation_stress", "I05_validation_stress.sql", "I05_validation_stress.assert.sql", outcomeAutoRestoreSucceeded),
 	}
 	return cases
@@ -745,9 +699,8 @@ func (w *worker) reset() error {
 	return os.MkdirAll(w.backupDir(), 0755)
 }
 
-// runCase executes a single case end-to-end on this worker and returns the
-// observed outcome (plus a checksum-comparison error for AutoRestoreSucceeded
-// cases whose assert golden mismatches).
+// runCase executes a single case end-to-end on this worker and returns the observed outcome (plus a
+// checksum-comparison error for AutoRestoreSucceeded cases whose assert golden mismatches).
 func (w *worker) runCase(ctx context.Context, tc xmigCase) (migrationOutcome, error) {
 	if err := w.reset(); err != nil {
 		return 0, fmt.Errorf("worker reset: %w", err)
@@ -824,20 +777,17 @@ func (w *worker) runCase(ctx context.Context, tc xmigCase) (migrationOutcome, er
 		return 0, merr
 	}
 
-	// Data-preservation invariant (governing decision 2026-06-08): for every
-	// failure-ending outcome the migration must leave the original recoverable -
-	// the old PG14 data directory present and populated, plus (where a dump was
-	// taken) the safety dump retained. This is asserted PER failure case here so a
-	// regression in exec-6b that deletes the old dir before the migration is 100%
-	// complete is caught at the point of failure. exec-6d is the dedicated gate
-	// test; this is the per-case guard.
+	// Data-preservation invariant (governing decision 2026-06-08): for every failure-ending outcome the migration
+	// must leave the original recoverable - the old PG14 data directory present and populated, plus (where a dump was
+	// taken) the safety dump retained. This is asserted PER failure case here so a regression in exec-6b that deletes
+	// the old dir before the migration is 100% complete is caught at the point of failure. exec-6d is the dedicated
+	// gate test; this is the per-case guard.
 	if isPublicFailureOutcome(res.outcome) {
 		if perr := assertOldDataDirPreserved(w.pg14Data()); perr != nil {
 			return res.outcome, fmt.Errorf("data-preservation invariant violated for %s: %w", res.outcome, perr)
 		}
-		// On a dump failure the dump artefact may be absent/partial by definition
-		// (the dump step is what failed); the old data dir is the surviving copy.
-		// On restore / validation failures the safety dump MUST be retained.
+		// On a dump failure the dump artefact may be absent/partial by definition (the dump step is what failed); the
+		// old data dir is the surviving copy. On restore / validation failures the safety dump MUST be retained.
 		if res.outcome != outcomeDumpFailed {
 			if derr := assertDumpRetained(dumpFile); derr != nil {
 				return res.outcome, fmt.Errorf("data-preservation invariant violated for %s: %w", res.outcome, derr)
@@ -845,9 +795,8 @@ func (w *worker) runCase(ctx context.Context, tc xmigCase) (migrationOutcome, er
 		}
 	}
 
-	// For AutoRestoreSucceeded cases, run the assert golden against BOTH
-	// clusters and compare. The PG14 result is the golden; the PG18 result
-	// must match it byte-for-byte.
+	// For AutoRestoreSucceeded cases, run the assert golden against BOTH clusters and compare. The PG14 result is the
+	// golden; the PG18 result must match it byte-for-byte.
 	if res.outcome == outcomeAutoRestoreSucceeded && tc.assert != "" {
 		assertSQL, aerr := readAssert(tc.assert)
 		if aerr != nil {
@@ -937,8 +886,7 @@ func stripComments(sqlText string) string {
 }
 
 // -----------------------------------------------------------------------------
-// TestMain - flip the production seam so the cross-major branch is the
-// target classification under `go test`.
+// TestMain - flip the production seam so the cross-major branch is the target classification under `go test`.
 // -----------------------------------------------------------------------------
 
 func TestMain(m *testing.M) {
@@ -957,9 +905,8 @@ func TestCrossMajorMigration(t *testing.T) {
 	if os.Getenv("STEAMPIPE_XMIG_TEST") == "off" {
 		t.Skip("cross-major migration matrix disabled via STEAMPIPE_XMIG_TEST=off")
 	}
-	// Require the pre-placed PG14 + PG18 binaries. If absent, this is an
-	// environment problem, not a code defect - skip with a clear message
-	// rather than fail (the suite cannot run without two real clusters).
+	// Require the pre-placed PG14 + PG18 binaries. If absent, this is an environment problem, not a code defect -
+	// skip with a clear message rather than fail (the suite cannot run without two real clusters).
 	for _, v := range []string{pg14Version, pg18Version} {
 		bin := filepath.Join(pgBinDir(v), "postgres")
 		if _, err := os.Stat(bin); err != nil {

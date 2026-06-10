@@ -28,14 +28,11 @@ var (
 	errDbInstanceRunning = fmt.Errorf("cannot start DB backup - a postgres instance is still running and Steampipe could not kill it. Please kill this manually and restart Steampipe")
 )
 
-// targetDatabaseVersion is the version this build targets as the embedded
-// PostgreSQL. In production it is constants.DatabaseVersion. It exists as a
-// package-level variable purely so the in-package cross-major migration test
-// matrix (migration_xmajor_test.go) can drive the cross-major branch in
-// restoreDBBackup at run time - the compile-time constant would otherwise pin
-// the test to whatever major matches the current shipped DB and the
-// classifyPgMigration branch under test would never be reached. NEVER override
-// outside tests in the same package.
+// targetDatabaseVersion is the version this build targets as the embedded PostgreSQL. In production it is
+// constants.DatabaseVersion. It exists as a package-level variable purely so the in-package cross-major migration test
+// matrix (migration_xmajor_test.go) can drive the cross-major branch in restoreDBBackup at run time - the compile-time
+// constant would otherwise pin the test to whatever major matches the current shipped DB and the classifyPgMigration
+// branch under test would never be reached. NEVER override outside tests in the same package.
 var targetDatabaseVersion = constants.DatabaseVersion
 
 const (
@@ -70,35 +67,28 @@ const (
 	onlyMatViewRefreshListFileName = "only_refresh.lst"
 )
 
-// pgMigrationKind classifies an old on-disk PostgreSQL install relative to the
-// target (constants.DatabaseVersion).
+// pgMigrationKind classifies an old on-disk PostgreSQL install relative to the target (constants.DatabaseVersion).
 type pgMigrationKind int
 
 const (
-	// pgMigrationMinor - same major, different (older) minor, e.g. 14.17 -> 14.19.
-	// The automatic pg_dump+pg_restore path is safe and is retained; only a
-	// restore *failure* is made non-fatal. This is the zero value: when in
-	// doubt (e.g. an unparseable version) we preserve the historical
-	// automatic behaviour rather than strand data.
+	// pgMigrationMinor - same major, different (older) minor, e.g. 14.17 -> 14.19. The automatic pg_dump+pg_restore
+	// path is safe and is retained; only a restore *failure* is made non-fatal. This is the zero value: when in doubt
+	// (e.g. an unparseable version) we preserve the historical automatic behaviour rather than strand data.
 	pgMigrationMinor pgMigrationKind = iota
-	// pgMigrationMajor - different (older) major, e.g. 14 -> 18. The public
-	// schema migrates through the shared copy-and-fallback engine
-	// (runMigrationEngine, public shape): collation pre-flight, restore
-	// ladder, row-checksum validation, tolerant matview refresh. On any
-	// failure the service starts on an empty public schema with the insurance
-	// dump retained and the old data directory kept (the hardened-B
-	// fall-back); the old install is removed only on confirmed full success.
+	// pgMigrationMajor - different (older) major, e.g. 14 -> 18. The public schema migrates through the shared
+	// copy-and-fallback engine (runMigrationEngine, public shape): collation pre-flight, restore ladder, row-checksum
+	// validation, tolerant matview refresh. On any failure the service starts on an empty public schema with the
+	// insurance dump retained and the old data directory kept (the hardened-B fall-back); the old install is removed
+	// only on confirmed full success.
 	pgMigrationMajor
 )
 
-// classifyPgMigration decides how an old install (oldVersion, e.g. "14.17.0")
-// relates to the target (targetVersion, e.g. "14.19.0").
+// classifyPgMigration decides how an old install (oldVersion, e.g. "14.17.0") relates to the target (targetVersion,
+// e.g. "14.19.0").
 //
-// On a parse failure it returns pgMigrationMinor: that preserves the historical
-// automatic dump+restore behaviour (and keeps the green same-major migration
-// tests green) rather than stranding data on a routine bump. A cross-major
-// jump is only ever concluded from two successfully-parsed versions with
-// differing majors.
+// On a parse failure it returns pgMigrationMinor: that preserves the historical automatic dump+restore behaviour (and
+// keeps the green same-major migration tests green) rather than stranding data on a routine bump. A cross-major jump is
+// only ever concluded from two successfully-parsed versions with differing majors.
 func classifyPgMigration(oldVersion, targetVersion string) pgMigrationKind {
 	ov, errOld := semver.NewVersion(oldVersion)
 	tv, errTarget := semver.NewVersion(targetVersion)
@@ -111,42 +101,35 @@ func classifyPgMigration(oldVersion, targetVersion string) pgMigrationKind {
 	return pgMigrationMinor
 }
 
-// collationRisk describes a single collation-dependent object found by the
-// pre-flight scan. A cross-major restore changes the default collation
-// provider, so these objects can have their index ordering / uniqueness or
-// view ordering silently change after a restore.
+// collationRisk describes a single collation-dependent object found by the pre-flight scan. A cross-major restore
+// changes the default collation provider, so these objects can have their index ordering / uniqueness or view ordering
+// silently change after a restore.
 type collationRisk struct {
 	kind      string // "text_btree_index" | "text_unique_constraint" | "ordered_view_text"
 	schemaObj string // e.g. "public.my_table.my_idx"
 	sample    string // sample value / reason showing why flagged
 }
 
-// validationDivergence describes a single post-restore mismatch between the old
-// PG14 cluster and the new PG18 cluster.
+// validationDivergence describes a single post-restore mismatch between the old PG14 cluster and the new PG18 cluster.
 type validationDivergence struct {
 	kind   string // "row_count" | "checksum" | "index_invalid"
 	target string // e.g. "public.my_table" or "public.my_idx"
 	detail string // e.g. "old=1234 new=1230" or "md5 mismatch"
 }
 
-// nonAsciiTextDetector is the cheap multi-byte detector used by the pre-flight
-// scan. With the embedded DB initdb'd LC_ALL=C --encoding=UTF-8, a value whose
-// octet_length differs from its character length necessarily contains a
-// multi-byte UTF-8 sequence and therefore non-ASCII content. See the encoding
-// guard in runPreflightCollationScan.
+// nonAsciiTextDetector is the cheap multi-byte detector used by the pre-flight scan. With the embedded DB initdb'd
+// LC_ALL=C --encoding=UTF-8, a value whose octet_length differs from its character length necessarily contains a
+// multi-byte UTF-8 sequence and therefore non-ASCII content. See the encoding guard in runPreflightCollationScan.
 const nonAsciiTextDetector = `octet_length(%[1]s) <> length(%[1]s)`
 
-// runPreflightCollationScan inspects the old (source) cluster for
-// collation-dependent objects whose underlying text data actually contains
-// non-ASCII bytes. It is data-aware (per the locked 2026-06-05 B02/B04 policy):
-// a text index/constraint/view over purely ASCII data is NOT flagged, because
-// ASCII sorts identically under every collation provider. Returns an empty
-// slice when the schema is clean.
+// runPreflightCollationScan inspects the old (source) cluster for collation-dependent objects whose underlying text
+// data actually contains non-ASCII bytes. It is data-aware (per the locked 2026-06-05 B02/B04 policy): a text
+// index/constraint/view over purely ASCII data is NOT flagged, because ASCII sorts identically under every collation
+// provider. Returns an empty slice when the schema is clean.
 func runPreflightCollationScan(ctx context.Context, conn *pgx.Conn) ([]collationRisk, error) {
-	// Encoding guard: the non-ASCII detector relies on a multi-byte UTF-8
-	// encoding. Under a single-byte encoding (SQL_ASCII / LATIN1) the detector
-	// silently returns false negatives, so we conservatively flag-all rather
-	// than under-report.
+	// Encoding guard: the non-ASCII detector relies on a multi-byte UTF-8 encoding. Under a single-byte encoding
+	// (SQL_ASCII / LATIN1) the detector silently returns false negatives, so we conservatively flag-all rather than
+	// under-report.
 	var encoding string
 	if err := conn.QueryRow(ctx, "SELECT pg_encoding_to_char(encoding) FROM pg_database WHERE datname = current_database()").Scan(&encoding); err != nil {
 		return nil, err
@@ -155,9 +138,8 @@ func runPreflightCollationScan(ctx context.Context, conn *pgx.Conn) ([]collation
 
 	var risks []collationRisk
 
-	// 1. B-tree indexes (including unique and expression indexes) on public
-	//    tables that touch a text/varchar column. GIN/GiST and other non-btree
-	//    access methods are not collation-ordered, so they are excluded.
+	// 1. B-tree indexes (including unique and expression indexes) on public tables that touch a text/varchar column.
+	//    GIN/GiST and other non-btree access methods are not collation-ordered, so they are excluded.
 	const idxQuery = `
 SELECT c.relname AS idxname, t.relname AS tabname, i.indisunique
 FROM pg_index i
@@ -222,8 +204,7 @@ GROUP BY c.relname, t.relname, i.indisunique`
 		}
 	}
 
-	// 2. Views / materialized views whose definition orders by a text column
-	//    over non-ASCII data.
+	// 2. Views / materialized views whose definition orders by a text column over non-ASCII data.
 	const viewQuery = `
 SELECT c.relname, pg_get_viewdef(c.oid) AS def
 FROM pg_class c
@@ -271,8 +252,8 @@ WHERE n.nspname = 'public' AND c.relkind IN ('v','m')`
 	return risks, nil
 }
 
-// pfTableHasNonASCIIText reports whether any text/varchar column of the named
-// public table holds a value with a byte > 0x7F.
+// pfTableHasNonASCIIText reports whether any text/varchar column of the named public table holds a value with a byte >
+// 0x7F.
 func pfTableHasNonASCIIText(ctx context.Context, conn *pgx.Conn, table string) (bool, error) {
 	cols, err := pfTextColumns(ctx, conn, table)
 	if err != nil {
@@ -362,12 +343,10 @@ func pfQuoteIdent(s string) string {
 	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
 }
 
-// runValidateRestore runs while the old (source) server is still live. For every
-// public base table it compares row count and an order-stable sample-row
-// checksum between the old and new clusters, and verifies every public index
-// reports indisvalid=true on the new cluster. Any mismatch is a divergence
-// regardless of pg_restore's exit code. Returns an empty slice on a full
-// match.
+// runValidateRestore runs while the old (source) server is still live. For every public base table it compares row
+// count and an order-stable sample-row checksum between the old and new clusters, and verifies every public index
+// reports indisvalid=true on the new cluster. Any mismatch is a divergence regardless of pg_restore's exit code.
+// Returns an empty slice on a full match.
 func runValidateRestore(ctx context.Context, oldConn, newConn *pgx.Conn) ([]validationDivergence, error) {
 	oldTables, err := pfPublicBaseTables(ctx, oldConn)
 	if err != nil {
@@ -437,17 +416,14 @@ func vrTableRowCount(ctx context.Context, conn *pgx.Conn, table string) (int64, 
 	return n, err
 }
 
-// vrTableSampleChecksum computes an order-stable md5 over the table's rows. It
-// casts the whole row to text and orders by that text so the comparison is
-// independent of physical (ctid) ordering, which differs after a dump/restore.
+// vrTableSampleChecksum computes an order-stable md5 over the table's rows. It casts the whole row to text and orders
+// by that text so the comparison is independent of physical (ctid) ordering, which differs after a dump/restore.
 func vrTableSampleChecksum(ctx context.Context, conn *pgx.Conn, table string) (string, error) {
 	q := fmt.Sprintf(
-		// ORDER BY s COLLATE "C" forces a byte-stable sort. The default collation
-		// differs across PG majors (libc/ICU version), so ordering by it would make
-		// the old (PG14) and new (PG18) checksums diverge for IDENTICAL data - a
-		// false validation failure that rolls every real migration back. Byte order
-		// is version-stable, so identical data yields identical checksums while a
-		// genuine content difference still diverges.
+		// ORDER BY s COLLATE "C" forces a byte-stable sort. The default collation differs across PG majors (libc/ICU
+		// version), so ordering by it would make the old (PG14) and new (PG18) checksums diverge for IDENTICAL data - a
+		// false validation failure that rolls every real migration back. Byte order is version-stable, so identical
+		// data yields identical checksums while a genuine content difference still diverges.
 		`SELECT coalesce(md5(string_agg(s, E'\n' ORDER BY s COLLATE "C")), '') FROM (SELECT r.*::text AS s FROM public.%s r) x`,
 		pfQuoteIdent(table))
 	var digest string
@@ -481,18 +457,15 @@ WHERE n.nspname='public' AND NOT i.indisvalid`
 	return bad, rows.Err()
 }
 
-// retainedOldServer holds the still-running old (source) cluster on a
-// cross-major migration. On a same-major (minor) migration prepareBackup tears
-// the old server down internally as before. On a cross-major jump it is left
-// running and stashed here so restoreDBBackup can run the pre-flight collation
-// scan (against the old data) and the post-restore validation pass (old vs new)
-// while the old server is still live. restoreDBBackup is responsible for
-// stopping it (see stopRetainedOldServer) once those steps complete or the
-// fall-back message is emitted.
+// retainedOldServer holds the still-running old (source) cluster on a cross-major migration. On a same-major (minor)
+// migration prepareBackup tears the old server down internally as before. On a cross-major jump it is left running and
+// stashed here so restoreDBBackup can run the pre-flight collation scan (against the old data) and the post-restore
+// validation pass (old vs new) while the old server is still live. restoreDBBackup is responsible for stopping it (see
+// stopRetainedOldServer) once those steps complete or the fall-back message is emitted.
 var retainedOldServer *pgRunningInfo
 
-// stopRetainedOldServer stops the retained old (source) cluster, if any, and
-// clears the handle. Safe to call multiple times.
+// stopRetainedOldServer stops the retained old (source) cluster, if any, and clears the handle. Safe to call multiple
+// times.
 func stopRetainedOldServer(ctx context.Context) {
 	if retainedOldServer == nil {
 		return
@@ -530,17 +503,14 @@ func prepareBackup(ctx context.Context) (*string, error) {
 		return nil, err
 	}
 
-	// On a cross-major jump the old server must stay up so restoreDBBackup can
-	// run the pre-flight collation scan and the post-restore validation pass
-	// against the old data while it is still live. For a same-major (minor)
-	// migration there is no pre-flight/validation step, so tear it down here as
-	// before.
+	// On a cross-major jump the old server must stay up so restoreDBBackup can run the pre-flight collation scan and
+	// the post-restore validation pass against the old data while it is still live. For a same-major (minor) migration
+	// there is no pre-flight/validation step, so tear it down here as before.
 	crossMajor := classifyPgMigration(filepath.Base(location), targetDatabaseVersion) == pgMigrationMajor
 
 	takeErr := takeBackup(ctx, runConfig)
 	if takeErr != nil {
-		// the dump failed - the old server is no longer needed; tear it down
-		// and surface the error.
+		// the dump failed - the old server is no longer needed; tear it down and surface the error.
 		//nolint:golint,errcheck // best-effort shutdown
 		runConfig.stop(ctx)
 		return &runConfig.dbName, takeErr
@@ -656,11 +626,10 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 
 // findDifferentPgInstallation checks whether the '$STEAMPIPE_INSTALL_DIR/db' directory contains any database installation
 // other than desired version.
-// it's called from `prepareBackup` to decide whether `pg_dump` needs to run,
-// and from `restoreDBBackup` both to classify the old install (same-major vs
-// cross-major) and, on a successful same-major restore, to locate the old
-// installation for removal. On the cross-major path the old dir is
-// deliberately NOT removed (it is the user's only copy of the old data).
+// it's called from `prepareBackup` to decide whether `pg_dump` needs to run, and from `restoreDBBackup` both to
+// classify the old install (same-major vs cross-major) and, on a successful same-major restore, to locate the old
+// installation for removal. On the cross-major path the old dir is deliberately NOT removed (it is the user's only
+// copy of the old data).
 func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 	dbBaseDirectory := filepaths.EnsureDatabaseDir()
 	entries, err := os.ReadDir(dbBaseDirectory)
@@ -668,15 +637,13 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 		return false, "", err
 	}
 
-	// The version this build targets, parsed once for comparison. If it is not
-	// valid semver we simply skip the "older than target" guard below.
+	// The version this build targets, parsed once for comparison. If it is not valid semver we simply skip the "older
+	// than target" guard below.
 	targetVersion, targetErr := semver.NewVersion(targetDatabaseVersion)
 
-	// When several old installs are on disk (e.g. fossils left by earlier
-	// upgrades), the one to migrate from is the most-recent prior version - the
-	// one that was live before this upgrade - NOT whichever happens to sort
-	// first. Pick the highest version that is older than the target and that
-	// holds real data.
+	// When several old installs are on disk (e.g. fossils left by earlier upgrades), the one to migrate from is the
+	// most-recent prior version - the one that was live before this upgrade - NOT whichever happens to sort first. Pick
+	// the highest version that is older than the target and that holds real data.
 	var bestPath string
 	var bestVersion *semver.Version
 	for _, de := range entries {
@@ -685,8 +652,8 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 		}
 		dir := filepath.Join(dbBaseDirectory, de.Name())
 
-		// A migration source must have both a postgres binary AND an initialised
-		// data directory (data/PG_VERSION) - a binary-only dir has nothing to dump.
+		// A migration source must have both a postgres binary AND an initialised data directory (data/PG_VERSION) - a
+		// binary-only dir has nothing to dump.
 		hasBinary := files.FileExists(filepath.Join(dir, "postgres", "bin", "postgres"))
 		hasData := files.FileExists(filepath.Join(dir, "data", "PG_VERSION"))
 		if !hasBinary || !hasData {
@@ -733,18 +700,14 @@ func restoreDBBackup(ctx context.Context) error {
 		return fmt.Errorf("steampipe service is not running")
 	}
 
-	// Determine whether the on-disk old install is a same-major (minor) or a
-	// cross-major migration. On a cross-major jump the public schema migrates
-	// through the shared copy-and-fallback engine (runMigrationEngine with
-	// the public shape: insurance dump -> collation pre-flight -> restore ladder
-	// -> row-checksum validation -> tolerant matview refresh -> commit), then,
-	// on public success and while the old cluster is still live, the data-tank
-	// migration (migrateDataTankSchemasOnStartup) runs on the SAME engine; the
-	// old data dir is removed only when both commit. The fall-back state
-	// (hardened-B: retain the dump and the old data dir, start the service on an
-	// empty public schema, warn the user) is rolled to whenever pre-flight
-	// detects collation risk, the restore ladder fails, or validation finds
-	// divergence.
+	// Determine whether the on-disk old install is a same-major (minor) or a cross-major migration. On a cross-major
+	// jump the public schema migrates through the shared copy-and-fallback engine (runMigrationEngine with the public
+	// shape: insurance dump -> collation pre-flight -> restore ladder -> row-checksum validation -> tolerant matview
+	// refresh -> commit), then, on public success and while the old cluster is still live, the data-tank migration
+	// (migrateDataTankSchemasOnStartup) runs on the SAME engine; the old data dir is removed only when both commit. The
+	// fall-back state (hardened-B: retain the dump and the old data dir, start the service on an empty public schema,
+	// warn the user) is rolled to whenever pre-flight detects collation risk, the restore ladder fails, or validation
+	// finds divergence.
 	var crossMajor bool
 	var oldVersion, oldLocation string
 	if found, location, ferr := findDifferentPgInstallation(ctx); ferr == nil && found {
@@ -756,12 +719,10 @@ func restoreDBBackup(ctx context.Context) error {
 	}
 	newVersion := targetDatabaseVersion
 
-	// fallBackCrossMajor rolls to the hardened-B fall-back state with a
-	// cause-specific warning. The insurance dump is retained and the old data
-	// directory is intentionally NOT removed - it is the user's only copy of the
-	// old data. The old dir is retained indefinitely; a subsequent upgrade
-	// migrates from the most-recent prior install, so a stale fall-back dir is
-	// never picked over a newer one.
+	// fallBackCrossMajor rolls to the hardened-B fall-back state with a cause-specific warning. The insurance dump is
+	// retained and the old data directory is intentionally NOT removed - it is the user's only copy of the old data.
+	// The old dir is retained indefinitely; a subsequent upgrade migrates from the most-recent prior install, so a
+	// stale fall-back dir is never picked over a newer one.
 	fallBackCrossMajor := func(warning string) error {
 		stopRetainedOldServer(ctx)
 		if err := retainBackup(ctx); err != nil {
@@ -772,12 +733,10 @@ func restoreDBBackup(ctx context.Context) error {
 	}
 
 	if crossMajor {
-		// The engine needs the old (source) cluster live - prepareBackup leaves
-		// it running on the cross-major path. If it is unavailable (unexpected),
-		// fall back conservatively rather than risk an unvalidated restore. The
-		// insurance dump prepareBackup took (backup.bk, checked above) is
-		// retained on every fall-back path and at the end of the success path;
-		// the engine takes its own working dump under the database dir.
+		// The engine needs the old (source) cluster live - prepareBackup leaves it running on the cross-major path. If
+		// it is unavailable (unexpected), fall back conservatively rather than risk an unvalidated restore. The
+		// insurance dump prepareBackup took (backup.bk, checked above) is retained on every fall-back path and at the
+		// end of the success path; the engine takes its own working dump under the database dir.
 		if retainedOldServer == nil {
 			log.Printf("[WARN] cross-major migration: old cluster not retained for pre-flight/validation")
 			return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
@@ -805,23 +764,19 @@ func restoreDBBackup(ctx context.Context) error {
 			error_helpers.ShowWarning("Could not REFRESH Materialized Views while restoring data. Please REFRESH manually.")
 		}
 
-		// Public-schema restore + validation clean. Before stopping the old
-		// server, migrate any data-tank schemas through the shared engine - it
-		// needs the old cluster live to read partition topology and stream the
-		// data old -> new. On the normal CLI workspace there are no data-tank
-		// schemas and this is a clean no-op.
+		// Public-schema restore + validation clean. Before stopping the old server, migrate any data-tank schemas
+		// through the shared engine - it needs the old cluster live to read partition topology and stream the data old
+		// -> new. On the normal CLI workspace there are no data-tank schemas and this is a clean no-op.
 		//
-		// The old data directory is removed only after BOTH the public-schema
-		// migration AND the data-tank migration confirm full success (the single
-		// deletion gate). A data-tank failure preserves the old dir and warns,
-		// but does NOT revert the public-schema success: the new version still
-		// runs (the 2026-06-08 data-preservation decision).
+		// The old data directory is removed only after BOTH the public-schema migration AND the data-tank migration
+		// confirm full success (the single deletion gate). A data-tank failure preserves the old dir and warns, but
+		// does NOT revert the public-schema success: the new version still runs (the 2026-06-08 data-preservation
+		// decision).
 		dtCommitted := true
 		dtRes, dtErr := migrateDataTankSchemasOnStartup(ctx, old, newRef, backupDir)
 		if dtErr != nil || !dtRes.committed {
-			// A data-tank failure does NOT revert the public-schema success
-			// (the new version still runs). The old data dir + the retained
-			// data-tank dump are the two preserved recovery copies.
+			// A data-tank failure does NOT revert the public-schema success (the new version still runs). The old data
+			// dir + the retained data-tank dump are the two preserved recovery copies.
 			dtCommitted = false
 			if dtErr != nil {
 				log.Printf("[WARN] cross-major data-tank migration failed: %v", dtErr)
@@ -829,8 +784,8 @@ func restoreDBBackup(ctx context.Context) error {
 			error_helpers.ShowWarning(dataTankMigrationDataPreservedWarning(dtRes.dumpPath))
 		}
 
-		// Retain the backup and (only if the data-tank migration also fully
-		// succeeded) remove the old data dir through the single deletion gate.
+		// Retain the backup and (only if the data-tank migration also fully succeeded) remove the old data dir through
+		// the single deletion gate.
 		stopRetainedOldServer(ctx)
 		if err := retainBackup(ctx); err != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
@@ -864,10 +819,9 @@ func restoreDBBackup(ctx context.Context) error {
 	// restore everything, but don't refresh Materialized views.
 	err = runRestoreUsingList(ctx, target, backupFilePath, objectAndStaticDataListFile)
 	if err != nil {
-		// Same-major restore failed. Do NOT brick the service: retain the
-		// insurance dump, keep the old data directory in place, warn the
-		// user, and let the service start (the data did not carry over but
-		// is recoverable from the retained dump / preserved old directory).
+		// Same-major restore failed. Do NOT brick the service: retain the insurance dump, keep the old data directory
+		// in place, warn the user, and let the service start (the data did not carry over but is recoverable from the
+		// retained dump / preserved old directory).
 		if rerr := retainBackup(ctx); rerr != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", rerr))
 		}
@@ -907,9 +861,8 @@ func restoreDBBackup(ctx context.Context) error {
 		return err
 	}
 
-	// remove it through the single deletion gate (the only code that removes the
-	// old data dir). A same-major restore that reaches here has succeeded, so the
-	// removal is unlocked; the behaviour is identical to the previous inline
+	// remove it through the single deletion gate (the only code that removes the old data dir). A same-major restore
+	// that reaches here has succeeded, so the removal is unlocked; the behaviour is identical to the previous inline
 	// os.RemoveAll.
 	if found {
 		removeOldDataDirOnMigrationSuccess(true, filepath.Join(location, "data"))
@@ -971,8 +924,8 @@ func partitionTableOfContents(tableOfContentsOfBackup []string, listDir string) 
 }
 
 // getTableOfContentsFromBackup uses pg_restore to read the TableOfContents from the
-// back archive. cluster supplies the pg_restore binary + library environment (the
-// TOC listing never connects to a server).
+// back archive. cluster supplies the pg_restore binary + library environment (the TOC listing never connects to a
+// server).
 func getTableOfContentsFromBackup(ctx context.Context, cluster *pgClusterRef, dumpPath string) ([]string, error) {
 	cmd := exec.CommandContext(
 		ctx,

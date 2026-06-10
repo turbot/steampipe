@@ -26,10 +26,9 @@ import (
 
 var ensureMux sync.Mutex
 
-// noBackupWarning is shown when we could not even take a backup (pg_dump) of
-// the previous database before installing the new one. It is intentionally
-// version-agnostic: the dump-side failure can happen on any upgrade and the
-// previous version is not reliably known at this point.
+// noBackupWarning is shown when we could not even take a backup (pg_dump) of the previous database before installing
+// the new one. It is intentionally version-agnostic: the dump-side failure can happen on any upgrade and the previous
+// version is not reliably known at this point.
 func noBackupWarning() string {
 	warningMessage := `Steampipe could not back up the data in your public schema before upgrading the embedded database.
 
@@ -40,13 +39,11 @@ If you need that data, do not run another upgrade; open an issue at https://gith
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
 
-// crossMajorPreflightSkippedWarning is shown on a cross-major upgrade (e.g.
-// Postgres 14 -> 18) when the pre-flight collation scan detected
-// collation-dependent objects in the public schema. Restoring those into a
-// cluster whose default collation provider differs from the old one could
-// silently corrupt index ordering and uniqueness, so the automatic restore is
-// skipped. The new service starts fresh; the old data directory and a retained
-// dump are kept so the user can migrate manually.
+// crossMajorPreflightSkippedWarning is shown on a cross-major upgrade (e.g. Postgres 14 -> 18) when the pre-flight
+// collation scan detected collation-dependent objects in the public schema. Restoring those into a cluster whose
+// default collation provider differs from the old one could silently corrupt index ordering and uniqueness, so the
+// automatic restore is skipped. The new service starts fresh; the old data directory and a retained dump are kept so
+// the user can migrate manually.
 func crossMajorPreflightSkippedWarning(oldVersion, newVersion string) string {
 	warningMessage := fmt.Sprintf(`The embedded database has been upgraded from PostgreSQL %s to PostgreSQL %s (a major version change).
 
@@ -57,10 +54,9 @@ Nothing was deleted. A dump of your old data has been retained in ~/.steampipe/b
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
 
-// crossMajorRestoreFailedWarning is shown on a cross-major upgrade when the
-// best-effort automatic restore (pg_restore) returned a non-zero exit code.
-// The new service starts fresh; the old data directory and a retained dump are
-// kept so the user can migrate manually.
+// crossMajorRestoreFailedWarning is shown on a cross-major upgrade when the best-effort automatic restore (pg_restore)
+// returned a non-zero exit code. The new service starts fresh; the old data directory and a retained dump are kept so
+// the user can migrate manually.
 func crossMajorRestoreFailedWarning(oldVersion, newVersion string) string {
 	warningMessage := fmt.Sprintf(`The embedded database has been upgraded from PostgreSQL %s to PostgreSQL %s (a major version change).
 
@@ -71,13 +67,11 @@ Nothing was deleted. A dump of your old data has been retained in ~/.steampipe/b
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
 
-// crossMajorValidationDivergedWarning is shown on a cross-major upgrade when
-// pg_restore succeeded but the post-restore validation pass found the restored
-// data diverged from the old cluster (row-count, sample-row checksum, or an
-// invalid index). The restored data is NOT removed - it stays in the new
-// database, flagged as unverified - and the migration is not committed: the
-// old data directory and a retained dump are kept as the authoritative copies
-// so the user can migrate manually.
+// crossMajorValidationDivergedWarning is shown on a cross-major upgrade when pg_restore succeeded but the post-restore
+// validation pass found the restored data diverged from the old cluster (row-count, sample-row checksum, or an invalid
+// index). The restored data is NOT removed - it stays in the new database, flagged as unverified - and the migration is
+// not committed: the old data directory and a retained dump are kept as the authoritative copies so the user can
+// migrate manually.
 func crossMajorValidationDivergedWarning(oldVersion, newVersion string) string {
 	warningMessage := fmt.Sprintf(`The embedded database has been upgraded from PostgreSQL %s to PostgreSQL %s (a major version change).
 
@@ -88,9 +82,8 @@ Nothing was deleted from your original data. A dump of your old data has been re
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
 
-// restoreFailedWarning is shown when a same-major (minor) migration took a
-// backup but the automatic restore failed. The service is still allowed to
-// start; the data is recoverable from the retained dump.
+// restoreFailedWarning is shown when a same-major (minor) migration took a backup but the automatic restore failed. The
+// service is still allowed to start; the data is recoverable from the retained dump.
 func restoreFailedWarning(newVersion string) string {
 	warningMessage := fmt.Sprintf(`The embedded database was upgraded to PostgreSQL %s, but automatic restore of your public schema failed.
 
@@ -99,15 +92,12 @@ The service has started so it remains usable. Nothing was deleted: a dump of you
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
 
-// dataTankMigrationDataPreservedWarning is the user/orchestrator-facing message
-// emitted whenever the data-tank migration does not fully commit - a disk
-// pre-flight or refresh-pause abort, a dump failure, a partial restore (tier 4
-// reached but >=1 partition unmigrated), or all tiers exhausted. Under the
-// 2026-06-08 governing decision (data-preservation over version-revert) the new
-// Postgres version still runs, but the original is preserved on disk in two
-// independent forms - the untouched old data directory plus that attempt's
-// retained dump (a retry replaces the dump from the old directory) - so nothing
-// is lost. The structured signal lives in the JSON marker file; this is the
+// dataTankMigrationDataPreservedWarning is the user/orchestrator-facing message emitted whenever the data-tank
+// migration does not fully commit - a disk pre-flight or refresh-pause abort, a dump failure, a partial restore (tier 4
+// reached but >=1 partition unmigrated), or all tiers exhausted. Under the 2026-06-08 governing decision
+// (data-preservation over version-revert) the new Postgres version still runs, but the original is preserved on disk in
+// two independent forms - the untouched old data directory plus that attempt's retained dump (a retry replaces the dump
+// from the old directory) - so nothing is lost. The structured signal lives in the JSON marker file; this is the
 // human-readable companion.
 func dataTankMigrationDataPreservedWarning(retainedDumpPath string) string {
 	warningMessage := fmt.Sprintf(`Data-tank migration to Postgres 18 could not be completed automatically.
@@ -119,12 +109,10 @@ This has been flagged for investigation. No action is required from you.`, retai
 	return fmt.Sprintf("%s: %v\n", color.YellowString("Warning"), warningMessage)
 }
 
-// Note: the per-cause data-tank fall-back warnings (refresh-pause-failed,
-// disk-preflight-failed) were converged into dataTankMigrationDataPreservedWarning
-// under the 2026-06-08 data-preservation decision. Every data-tank failure cause
-// now surfaces the same outcome - the new version runs, the original is preserved
-// on disk - so a single warning covers them all. The per-cause detail lives in the
-// JSON marker file the engine writes (writeDataTankStatus).
+// Note: the per-cause data-tank fall-back warnings (refresh-pause-failed, disk-preflight-failed) were converged into
+// dataTankMigrationDataPreservedWarning under the 2026-06-08 data-preservation decision. Every data-tank failure cause
+// now surfaces the same outcome - the new version runs, the original is preserved on disk - so a single warning covers
+// them all. The per-cause detail lives in the JSON marker file the engine writes (writeDataTankStatus).
 
 // EnsureDBInstalled makes sure that the embedded postgres database is installed and ready to run
 func EnsureDBInstalled(ctx context.Context) (err error) {
@@ -304,15 +292,12 @@ func prepareDb(ctx context.Context) error {
 		messageRenderer("%s updated to %s.", pconstants.Bold("steampipe-postgres-fdw"), pconstants.Bold(constants.FdwVersion))
 	}
 
-	// Fire a migration when an old-version data directory is present even though
-	// the binaries are already installed - the production (Pipes) case: the new PG
-	// binaries are baked into the container image, so IsDBInstalled() is true and
-	// the !IsDBInstalled() path (which normally runs prepareBackup) never executes,
-	// yet a previous-version data dir is mounted in and must migrate. prepareBackup
-	// dumps the old data to the backup file (a no-op when no old install is found);
-	// restoreDBBackup loads it after the service starts. dbName is non-nil exactly
-	// when a dump was taken, and on a cross-major jump prepareBackup leaves the OLD
-	// cluster running for the restore/validation.
+	// Fire a migration when an old-version data directory is present even though the binaries are already installed -
+	// the production (Pipes) case: the new PG binaries are baked into the container image, so IsDBInstalled() is true
+	// and the !IsDBInstalled() path (which normally runs prepareBackup) never executes, yet a previous-version data dir
+	// is mounted in and must migrate. prepareBackup dumps the old data to the backup file (a no-op when no old install
+	// is found); restoreDBBackup loads it after the service starts. dbName is non-nil exactly when a dump was taken,
+	// and on a cross-major jump prepareBackup leaves the OLD cluster running for the restore/validation.
 	dbName, backupErr := prepareBackup(ctx)
 	if backupErr != nil {
 		log.Printf("[ERROR] prepareBackup failed: %s", backupErr.Error())
@@ -325,10 +310,9 @@ func prepareDb(ctx context.Context) error {
 	migrationPending := dbName != nil
 
 	if migrationPending {
-		// runInstall wipes the current data dir contents (clearing any partial
-		// cluster from a crashed previous attempt) and initdb's a fresh cluster;
-		// the restore lands after the service starts. Do NOT kill instances here -
-		// the old cluster prepareBackup started must stay live for restoreDBBackup.
+		// runInstall wipes the current data dir contents (clearing any partial cluster from a crashed previous attempt)
+		// and initdb's a fresh cluster; the restore lands after the service starts. Do NOT kill instances here - the
+		// old cluster prepareBackup started must stay live for restoreDBBackup.
 		if err := runInstall(ctx, dbName); err != nil {
 			return err
 		}
