@@ -12,9 +12,9 @@ package db_local
 //
 // Terminal rule (the hard invariant): the old data directory is removed ONLY on confirmed full success, in exactly one
 // place (removeOldDataDirOnMigrationSuccess). Any failure OR partial result leaves the new version running (possibly
-// empty/partial) with the original preserved on disk in two independent forms - the untouched old data directory plus
-// that attempt's retained safety dump (a retry replaces the dump from the still-intact old directory). No
-// version-revert.
+// empty/partial) with the original preserved on disk in the untouched old data directory - plus, once the dump step
+// has run, that attempt's retained safety dump as a second independent copy (a retry replaces the dump from the
+// still-intact old directory). No version-revert.
 
 import (
 	"context"

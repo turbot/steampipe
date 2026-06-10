@@ -14,7 +14,7 @@ package db_local
 //   | full success                | removed (gate fires)    | retained    |
 //   | restore failed (all tiers)  | present + populated     | retained    |
 //   | partial success (some parts)| present + populated     | retained    |
-//   | pre-check aborted           | present + populated     | retained    |
+//   | pre-check aborted           | present + populated     | none taken (aborts precede the dump) |
 //   | interrupted mid-restore     | present + populated     | retained    |
 //   |   then re-run               | survives the re-run                   |
 //

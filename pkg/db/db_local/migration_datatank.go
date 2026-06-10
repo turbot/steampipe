@@ -98,7 +98,7 @@ type dataTankMigrationStatus struct {
 // production old/new embedded clusters).
 type pgClusterRef struct {
 	version string   // postgres version (selects the matching binary set)
-	binDir  string   // directory holding pg_dump / pg_restore / psql
+	binDir  string   // directory holding pg_dump / pg_restore
 	env     []string // process env (library path, PGSSLMODE, ...)
 	sockDir string   // Unix socket directory (used as host= when port == 0)
 	port    int      // TCP loopback port (used as host=127.0.0.1 port= when > 0)
@@ -809,7 +809,7 @@ func copyPartitionData(ctx context.Context, src, target *pgClusterRef, part data
 }
 
 // ----------------------------------------------------------------------------
-// Orchestration: the whole 9-step flow.
+// Orchestration: thin adapters over the shared engine's 10-step flow (runMigrationEngine, migration_engine.go).
 // ----------------------------------------------------------------------------
 
 var (

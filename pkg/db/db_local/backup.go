@@ -71,9 +71,9 @@ const (
 	pgMigrationMinor pgMigrationKind = iota
 	// pgMigrationMajor - different (older) major, e.g. 14 -> 18. The public schema migrates through the shared
 	// copy-and-fallback engine (runMigrationEngine, public shape): collation pre-flight, restore ladder, row-checksum
-	// validation, tolerant matview refresh. On any failure the service starts on an empty public schema with the
-	// insurance dump retained and the old data directory kept (the hardened-B fall-back); the old install is removed
-	// only on confirmed full success.
+	// validation, tolerant matview refresh. On any failure startup FAILS (failCrossMajor) with the old data directory
+	// preserved untouched and the insurance dump retained; a validation divergence additionally leaves the
+	// restored-but-unverified copy in the new cluster. The old install is removed only on confirmed full success.
 	pgMigrationMajor
 )
 
@@ -416,8 +416,9 @@ func vrTableSampleChecksum(ctx context.Context, conn *pgx.Conn, table string) (s
 	q := fmt.Sprintf(
 		// ORDER BY s COLLATE "C" forces a byte-stable sort. The default collation differs across PG majors (libc/ICU
 		// version), so ordering by it would make the old (PG14) and new (PG18) checksums diverge for IDENTICAL data - a
-		// false validation failure that rolls every real migration back. Byte order is version-stable, so identical
-		// data yields identical checksums while a genuine content difference still diverges.
+		// false validation failure that would fail-stop every real migration (preserving the old dir + dump; nothing is
+		// rolled back). Byte order is version-stable, so identical data yields identical checksums while a genuine
+		// content difference still diverges.
 		`SELECT coalesce(md5(string_agg(s, E'\n' ORDER BY s COLLATE "C")), '') FROM (SELECT r.*::text AS s FROM public.%s r) x`,
 		pfQuoteIdent(table))
 	var digest string
@@ -706,7 +707,6 @@ func findDifferentPgInstallation(ctx context.Context, targetVersion string) (boo
 	return true, bestPath, nil
 }
 
-// restoreDBBackup loads the back up file into the database
 // restoreDBBackup loads the backup file (if any) into the running service. targetVersion is the embedded-PG version
 // this build ships (constants.DatabaseVersion in production).
 func restoreDBBackup(ctx context.Context, targetVersion string) error {
@@ -731,12 +731,13 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 
 	// Determine whether the on-disk old install is a same-major (minor) or a cross-major migration. On a cross-major
 	// jump the public schema migrates through the shared copy-and-fallback engine (runMigrationEngine with the public
-	// shape: insurance dump -> collation pre-flight -> restore ladder -> row-checksum validation -> tolerant matview
-	// refresh -> commit), then, on public success and while the old cluster is still live, the data-tank migration
-	// (migrateDataTankSchemasOnStartup) runs on the SAME engine; the old data dir is removed only when both commit. The
-	// fall-back state (hardened-B: retain the dump and the old data dir, start the service on an empty public schema,
-	// warn the user) is rolled to whenever pre-flight detects collation risk, the restore ladder fails, or validation
-	// finds divergence.
+	// shape: schema enumeration -> disk pre-flight -> collation pre-flight -> reserved-word scan -> insurance dump ->
+	// restore ladder -> sanity check + row-checksum validation -> tolerant matview refresh -> commit), then, on public
+	// success and while the old cluster is still live, the data-tank migration (migrateDataTankSchemasOnStartup) runs
+	// on the SAME engine; the old data dir is removed only when both commit. Every failure - collation risk flagged by
+	// pre-flight, restore-ladder exhaustion, validation divergence, a data-tank failure - is a fail-stop
+	// (failCrossMajor): the old data dir and the insurance dump are kept and startup returns an error, so the service
+	// never runs on an empty or unverified database.
 	var crossMajor bool
 	var oldVersion, oldLocation string
 	if found, location, ferr := findDifferentPgInstallation(ctx, targetVersion); ferr == nil && found {
@@ -895,8 +896,9 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 	}
 
 	// remove it through the single deletion gate (the only code that removes the old data dir). A same-major restore
-	// that reaches here has succeeded, so the removal is unlocked; the behaviour is identical to the previous inline
-	// os.RemoveAll.
+	// that reaches here has succeeded, so the removal is unlocked. The gate clears the data dir CONTENTS (no PG_VERSION
+	// remains), which is equivalent for re-detection; unlike the old inline os.RemoveAll the binaries and directories
+	// stay on disk.
 	if found {
 		removeOldDataDirOnMigrationSuccess(true, filepath.Join(location, "data"))
 	}

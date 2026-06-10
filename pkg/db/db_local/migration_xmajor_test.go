@@ -19,8 +19,8 @@ package db_local
 // ----------------------------------
 // The production migration functions take the target embedded-PG version as an explicit parameter (the production
 // callers pass constants.DatabaseVersion). This suite drives the shared engine and its helpers directly with PG18 as
-// the target, so the cross-major code path executes under `go test` even while the shipped constant is a PG14 version.
-// No package state, build tags, or ldflags are involved.
+// the target, so the cross-major code path executes under `go test` regardless of which version the shipped constant
+// holds. No package state, build tags, or ldflags are involved.
 //
 // HOW TO RUN
 // ----------
@@ -61,7 +61,8 @@ const (
 	outcomePreflightSkipped
 	// pg_restore returned non-zero; non-fatal; dump retained; old dir retained.
 	outcomeRestoreFailedGracefully
-	// pg_restore succeeded BUT validation found divergence; rollback to B-equivalent; dump retained; old dir retained.
+	// pg_restore succeeded BUT validation found divergence; no rollback - the restored-but-unverified copy stays in the
+	// new cluster (production fail-stops startup); dump retained; old dir retained.
 	outcomePostValidationFailedGracefully
 	// dump itself failed; no usable insurance dump.
 	outcomeDumpFailed

@@ -10,20 +10,19 @@ package db_local
 //   - The light-migration variant applies: no collation pre-flight blocking, no row-level checksum gate. The ONLY
 //     catalog risk is the SYSTEM_USER reserved word (F05), which must route the migration to tier 3 rather than
 //     blocking it.
-//   - The restore is TIERED. Tier 1 (parallel pg_restore) is the normal path; tiers 2-5 escalate as each prior tier
+//   - The restore is TIERED. Tier 1 (parallel pg_restore) is the normal path; tiers 2-4 escalate as each prior tier
 //     fails. The outcome names the tier reached, since the operational cost differs per tier (tier 4 = degraded
 //     service). When every tier fails the terminal outcome is dtOutcomeDataPreservedOnDisk: under the 2026-06-08
 //     governing decision the new Postgres version still runs, but the old data directory and the safety dump are both
 //     kept on disk untouched so nothing is lost (no version-revert).
 //
-// BASELINE EXPECTATION (this commit, exec-5a):
-// ---------------------------------------------
-// There is NO data-tank migration code yet. runDataTankMigration below drives a minimal self-contained REFERENCE
-// migration (per-data-tank-schema pg_dump + pg_restore) so the suite COMPILES and RUNS, but the reference path has no
-// tier concept, no reserved-word routing, no per-partition degraded restore, and breaks on the hyphenated -parts schema
-// and the reserved-word column. So every case FAILS its assertion against this baseline. Those failures ARE the spec
-// for exec-5b; exec-5b replaces the reference driver with the real tiered data-tank migration and the matrix goes
-// green.
+// WHAT THE SUITE DRIVES
+// ---------------------
+// The matrix drives the PRODUCTION engine. runDataTankMigration below is a thin adapter: it maps the harness's
+// dtCluster handles and dtCaseSetup fault-injection flags onto migrateDataTank (migration_datatank.go, itself a shape
+// adapter over the shared runMigrationEngine) and folds the engine's result + sentinel errors back onto this suite's
+// outcome enum and report. All policy decisions - tier escalation, reserved-word routing, data preservation - are made
+// by the production code under test.
 //
 // HOW TO RUN
 // ----------
@@ -344,27 +343,20 @@ func dtListDataTankSchemas(ctx context.Context, c *dtCluster) ([]string, error) 
 }
 
 // -----------------------------------------------------------------------------
-// REFERENCE migration (baseline only).
+// Adapter onto the production engine.
 //
-// This is NOT the data-tank migration. It is a deliberately minimal stand-in so the suite compiles and runs against a
-// branch with no exec-5b code. It dumps each discovered data-tank schema with `pg_dump --schema=<name>` and restores
-// with a single parallel pg_restore. It has:
-//   - no reserved-word scan (so DT-C1 / DT-F6 cannot route to tier 3),
-//   - no tier escalation (so DT-F2..F5 cannot reach the asserted tier),
-//   - no per-partition degraded restore (DT-F4),
-//   - no -parts dependency ordering handling (the hyphenated parts schema's partition tables LIKE the parent in the
-//     sibling schema, which a naive per-schema dump/restore does not order correctly).
-//
-// exec-5b replaces this function with the real tiered migration entrypoint and the matrix turns green.
+// runDataTankMigration maps the harness's dtCluster handles + dtCaseSetup fault-injection flags onto migrateDataTank
+// (migration_datatank.go) and folds the engine's result and sentinel errors back onto the suite's outcome enum +
+// report. No migration policy lives here.
 // -----------------------------------------------------------------------------
 
 // dtMigrationReport carries WHAT the migration actually did, beyond the final outcome enum. The reserved-word /
-// tier-escalation / recovery cases assert on this so that an accidental match of the outcome enum (e.g. the reference
-// driver returning DataPreservedOnDisk because its plain restore happened to fail) does NOT count as a pass. exec-5b
-// populates these fields from the real tiered migration; the baseline reference leaves them zero/false.
+// tier-escalation / recovery cases assert on this so that an accidental match of the outcome enum does NOT count as a
+// pass. The fields are copied straight from the engine's migrationResult, so they record how the engine actually
+// routed and escalated.
 type dtMigrationReport struct {
-	// highestTierAttempted is the last restore tier the migration tried (1..4). Zero means no tiered restore logic ran
-	// at all (the baseline reference).
+	// highestTierAttempted is the last restore tier the migration tried (1..4). Zero means the migration aborted
+	// before the restore ladder ran (pre-flight / refresh-pause / dump failure).
 	highestTierAttempted int
 	// reservedWordRouted is true if a reserved-word column was detected and the migration routed straight to tier 3.
 	// The reserved-word cases assert this.
@@ -538,9 +530,8 @@ type dtCaseSetup struct {
 	forceDumpFailure       bool // DT-E1 disk full during dump
 	forceDiskPreflightFail bool // DT-E preflight disk check fails
 
-	// DT-F tier injection: force the named tier(s) to fail so the next tier must pick up. The data-tank migration
-	// (exec-5b) reads these to simulate each tier's failure deterministically; the reference driver ignores them (which
-	// is why DT-F2..F5 fail on baseline).
+	// DT-F tier injection: force the named tier(s) to fail so the next tier must pick up. The adapter maps these onto
+	// the engine's migrationFaults so each tier's failure is simulated deterministically inside the production ladder.
 	failTier1           bool // DT-F2: parallel restore fails
 	failTier2           bool // DT-F3: serial restore fails
 	failTier3           bool // DT-F4 setup half: per-table COPY fails for one partition
@@ -572,8 +563,8 @@ type dtCase struct {
 	setup    dtCaseSetup
 
 	// Report-level assertions. These make the reserved-word, tier-escalation, and preserve/failure cases assert HOW the
-	// outcome was reached, not just the final enum - so an accidental enum match against the baseline reference (which
-	// leaves the report empty) does not count as a pass.
+	// outcome was reached, not just the final enum - the report fields are copied from the engine's migrationResult, so
+	// an accidental enum match cannot pass without the engine having actually routed/escalated that way.
 	wantReservedWordRouted bool // DT-C1 / DT-F6: reserved-word scan routed to tier 3
 	wantMinTier            int  // DT-F2..F4: the escalation must reach at least this tier
 	wantOldClusterRetained bool // DT-E3 / DT-E4 / DT-F5: a preserve outcome must retain the old PG14 dir
@@ -875,8 +866,8 @@ func (w *dtWorker) runCase(ctx context.Context, tc dtCase) (dataTankMigrationOut
 		})
 	}
 
-	// Report-level assertions: HOW the outcome was reached. These fail against the baseline reference (which leaves the
-	// report empty), preventing an accidental enum match from passing.
+	// Report-level assertions: HOW the outcome was reached. The report is populated from the engine's migrationResult,
+	// so these verify the engine really routed/escalated as the case demands, not just that the final enum matched.
 	if tc.wantReservedWordRouted && !report.reservedWordRouted {
 		return got, fmt.Errorf("expected reserved-word routing to tier 3, but migration did not route on a reserved word (report.reservedWordRouted=false)")
 	}
