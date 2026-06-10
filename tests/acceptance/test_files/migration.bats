@@ -71,8 +71,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_equal "$(cat verify$i.txt)" "$(cat verify$i$i.txt)"
   done
 
-  # a same-major (minor) upgrade must retain an insurance dump
-  # (both binary .dump and text .sql) under <install-dir>/backups
+  # v1.0.3 ships PG14, so against this build's PG18 target this exercises the CROSS-major migration; it must retain
+  # an insurance dump (both binary .dump and text .sql) under <install-dir>/backups
   run bash -c "ls $tmpdir/backups/database-*.dump >/dev/null 2>&1 && ls $tmpdir/backups/database-*.sql >/dev/null 2>&1 && echo retained"
   assert_output "retained"
 
@@ -148,8 +148,8 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_equal "$(cat verify$i.txt)" "$(cat verify$i$i.txt)"
   done
 
-  # a same-major (minor) upgrade must retain an insurance dump
-  # (both binary .dump and text .sql) under <install-dir>/backups
+  # v2.2.0 ships PG14, so against this build's PG18 target this exercises the CROSS-major migration; it must retain
+  # an insurance dump (both binary .dump and text .sql) under <install-dir>/backups
   run bash -c "ls $tmpdir/backups/database-*.dump >/dev/null 2>&1 && ls $tmpdir/backups/database-*.sql >/dev/null 2>&1 && echo retained"
   assert_output "retained"
 

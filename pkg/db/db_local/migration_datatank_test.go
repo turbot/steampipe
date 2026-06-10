@@ -13,8 +13,10 @@ package db_local
 //   - The restore is TIERED. Tier 1 (parallel pg_restore) is the normal path; tiers 2-4 escalate as each prior tier
 //     fails. The outcome names the tier reached, since the operational cost differs per tier (tier 4 = degraded
 //     service). When every tier fails the terminal outcome is dtOutcomeDataPreservedOnDisk: under the 2026-06-08
-//     governing decision the new Postgres version still runs, but the old data directory and the safety dump are both
-//     kept on disk untouched so nothing is lost (no version-revert).
+//     governing decision the old data directory and the safety dump are both kept on disk untouched so nothing is lost
+//     (no version-revert). In PRODUCTION such a failure fail-stops startup (restoreDBBackup); the harness here keeps
+//     its test cluster running, which is harness mechanics, not the production contract - what these cases assert is
+//     the preserved-on-disk invariant.
 //
 // WHAT THE SUITE DRIVES
 // ---------------------
@@ -79,9 +81,10 @@ const (
 	dtOutcomeRefreshPauseFailed  // could not pause refreshes within budget
 	dtOutcomeDiskPreflightFailed // insufficient disk to migrate
 	// dtOutcomeDataPreservedOnDisk is the terminal failure outcome under the 2026-06-08 governing decision
-	// (data-preservation over version-revert): the migration did NOT complete, the new Postgres version still runs
-	// (possibly empty/partial), and the original data is preserved on disk in two independent forms - the untouched old
-	// PG14 data directory plus the retained safety dump - so it is recoverable. This REPLACES the former
+	// (data-preservation over version-revert): the migration did NOT complete and the original data is preserved on
+	// disk in two independent forms - the untouched old PG14 data directory plus the retained safety dump - so it is
+	// recoverable. In PRODUCTION this failure fail-stops startup (restoreDBBackup); the harness's test cluster keeps
+	// running, which is harness mechanics, not the production contract. This REPLACES the former
 	// dtOutcomeRolledBackToPG14 ("stay on PG14"), which encoded the version-revert policy the decision supersedes. The
 	// engine signals this via errDataTankAllTiersFailed with oldClusterRetained=true; the harness asserts the old dir +
 	// dump are still on disk.
@@ -362,8 +365,8 @@ type dtMigrationReport struct {
 	// The reserved-word cases assert this.
 	reservedWordRouted bool
 	// oldClusterRetained is true if, on a failure, the migration left the old PG14 data directory in place on disk (the
-	// data-preservation guarantee, NOT a version-revert: the new version still runs). DT-E3 / DT-E4 / DT-F5 assert
-	// this.
+	// preserved-on-disk guarantee these tests assert; in production the failure also fail-stops startup - no
+	// version-revert). DT-E3 / DT-E4 / DT-F5 assert this.
 	oldClusterRetained bool
 }
 
@@ -712,7 +715,8 @@ func dtLoadCases() []dtCase {
 		// LE-6: LE-3 + simulated disk pressure. Disk pre-flight aborts cleanly; PG14 retained.
 		{name: "LE-6", loadTest: true, expected: dtOutcomeDiskPreflightFailed, wantOldClusterRetained: true,
 			setup: withFlags(le3Setup(), func(s *dtCaseSetup) { s.forceDiskPreflightFail = true })},
-		// LE-7: LE-3 + SIGKILL mid-restore. New version still runs; old data dir + dump preserved on disk, old cluster intact.
+		// LE-7: LE-3 + SIGKILL mid-restore. Old data dir + dump preserved on disk, old cluster intact (in production
+		// this failure fail-stops startup; the harness's running test cluster is harness mechanics).
 		{name: "LE-7", loadTest: true, expected: dtOutcomeDataPreservedOnDisk, wantOldClusterRetained: true,
 			setup: withFlags(le3Setup(), func(s *dtCaseSetup) { s.interruptMidRestore = true })},
 		// LE-8: LE-3 + tier-1 failure injected. Tier 2 (serial pg_restore) picks up. Budget 1.5xLE-3.

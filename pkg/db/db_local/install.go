@@ -55,9 +55,9 @@ Nothing was deleted - %s.
 Steampipe has not started: the new database is empty or unverified, and using it now could be mistaken for data loss.
 
 To try again:           start Steampipe again - the migration re-runs from your preserved old data.
-To skip migrating:      move the old directory aside (e.g. add a '.parked' suffix to its name), remove the contents of the new version's data directory if any exist, then start Steampipe for a fresh, empty database.
-To recover manually:    restore the retained dump into a database of your choice.`,
-		oldVersion, newVersion, cause, preserved)
+To skip migrating:      move the old directory aside (e.g. add a '.parked' suffix to its name), remove the contents of the new version's data directory if any exist, delete %s, then start Steampipe for a fresh, empty database.
+To recover manually:    restore this attempt's dump (see above; if no retained path is shown, look under ~/.steampipe/backups and next to the database directory) into a database of your choice.`,
+		oldVersion, newVersion, cause, preserved, migrationIncompleteMarkerPath())
 }
 
 // restoreFailedWarning is shown when a same-major (minor) migration took a backup but the automatic restore failed. The
@@ -135,7 +135,12 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 			os.RemoveAll(filepaths.DatabaseInstanceDir())
 			return err
 		}
-		// ignore all other errors with the backup, displaying a warning instead
+		// A failed CROSS-major dump is a fail-stop, exactly like every other cross-major failure: the service must
+		// not start empty on the new major while the real data sits unmigrated in the old directory.
+		if errors.Is(err, errCrossMajorDumpFailed) {
+			return err
+		}
+		// ignore same-major backup errors, displaying a warning instead (the historical behaviour)
 		statushooks.Message(ctx, noBackupWarning())
 	}
 
@@ -269,20 +274,27 @@ func prepareDb(ctx context.Context) error {
 		if errors.Is(backupErr, errDbInstanceRunning) {
 			return backupErr
 		}
+		// A failed CROSS-major dump is a fail-stop (the same contract as EnsureDBInstalled): never start empty on the
+		// new major while the real data sits unmigrated in the old directory.
+		if errors.Is(backupErr, errCrossMajorDumpFailed) {
+			return backupErr
+		}
+		// same-major backup errors warn and continue (the historical behaviour)
 		statushooks.Message(ctx, noBackupWarning())
 		dbName = nil
 	}
 	migrationPending := dbName != nil
 
-	// A migration-incomplete marker with NO pending migration means a previous cross-major attempt never committed
-	// and its source has since disappeared (e.g. the old directory was parked to opt out). The current data dir may
-	// hold that attempt's half-written draft - refusing to start beats silently booting it as if it were real data.
+	// A migration-incomplete marker with NO pending migration means a previous cross-major attempt got past its dump
+	// (the marker is written only after a successful dump) but never committed, and its source is now undetectable -
+	// most likely the old directory was parked to opt out. The current data dir may hold that attempt's half-written
+	// draft - refusing to start beats silently booting it as if it were real data.
 	if !migrationPending && migrationIncompleteMarkerExists() {
-		return fmt.Errorf(`a previous cross-major database migration started but never completed, and its source data directory is no longer present.
+		return fmt.Errorf(`a previous cross-major database migration started but never completed, and no old version's data directory can be found to migrate from (it may have been moved aside).
 
 The current version's data directory may hold an incomplete copy from that attempt - starting on it could be mistaken for data loss.
 
-To start fresh: remove the contents of the current version's data directory under ~/.steampipe/db, delete %s, then start Steampipe again.
+To start fresh:       remove the contents of the current version's data directory under ~/.steampipe/db, delete %s, then start Steampipe again.
 To migrate after all: restore the old version's directory to its original path and start Steampipe again.`, migrationIncompleteMarkerPath())
 	}
 

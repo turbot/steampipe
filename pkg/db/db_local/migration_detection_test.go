@@ -2,10 +2,12 @@ package db_local
 
 // Migration scenario matrix
 // -------------------------
-// The cross-major migration is driven by exactly two facts on disk: whether an old version directory holds a real
-// cluster (db/<old>/data/PG_VERSION present, plus its binaries), and the state of the target version's data directory.
-// The status JSON files are write-only reports - they are never consulted for decisions. The full permutation table,
-// with where each scenario's behaviour is pinned by an executing test:
+// The cross-major migration is driven by exactly three facts on disk: whether an old version directory holds a real
+// cluster (db/<old>/data/PG_VERSION present, plus its binaries), the state of the target version's data directory, and
+// the migration-incomplete marker (db/migration-incomplete.flag), consulted by prepareDb's stale-marker guard: when the
+// marker exists but no pending migration was detected, startup refuses rather than booting a half-written draft. The
+// status JSON files are write-only reports - they are never consulted for decisions. The full permutation table, with
+// where each scenario's behaviour is pinned by an executing test:
 //
 // | #  | Scenario                                   | Old data dir                   | New data dir              | Decision                                              | Covered by                                                                  |
 // |----|--------------------------------------------|--------------------------------|---------------------------|-------------------------------------------------------|-----------------------------------------------------------------------------|
@@ -24,6 +26,7 @@ package db_local
 // | 10 | Several old version dirs (fossils)         | multiple with PG_VERSION       | empty                     | migrate from highest version older than target with real data | TestMigrationDetection (this file)                                    |
 // | 11 | Leftover dir newer than this build         | PG_VERSION, version > target   | any                       | ignored - never migrate down                          | TestMigrationDetection (this file); TestClassifyPgMigration                  |
 // | 12 | Minor bump (14.17 -> 14.19)                | full cluster, PG_VERSION       | empty                     | same-major lightweight dump/restore                   | TestClassifyPgMigration; migration.bats (acceptance)                         |
+// | 13 | Opt-out: old dir parked, marker present    | no PG_VERSION anywhere         | possibly half-written draft | startup REFUSES with instructions                    | prepareDb marker guard; no executing test yet                                |
 //
 // This file unit-tests the detector itself - findDifferentPgInstallation - which needs no live clusters: it only
 // inspects the directory layout. The engine-behaviour rows are pinned by the heavyweight suites named above.

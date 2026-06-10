@@ -5,7 +5,7 @@ package db_local
 // The whole data-safety design reduces to one rule (the 2026-06-08 governing decision): the old data directory is
 // NEVER deleted until the migration is confirmed 100% complete; on any failure or partial result the original is
 // preserved on disk in two independent forms - the untouched old PG14 data directory AND the retained safety dump -
-// and the new Postgres version still runs (no version-revert).
+// and in production the failure fail-stops startup (restoreDBBackup; no version-revert).
 //
 // exec-6a asserts per-breakage OUTCOMES. This suite asserts the INVARIANT itself, exhaustively over outcome
 // categories, for both data shapes:
@@ -460,9 +460,11 @@ insert into public.things values (1, 'alpha'), (2, 'bravo'), (3, 'charlie'), (4,
 // -----------------------------------------------------------------------------
 
 // TestDeletionGate_WiredStartup_FailurePreservesOldDir: drive a real failure through the production entry point
-// migrateDataTankSchemasOnStartup (target stopped -> every tier fails -> committed=false), feed the actual result
-// into the gate exactly as restoreDBBackup's cross-major success branch does, and prove the old dir is preserved +
-// queryable. This is the wired-path half of the guarantee.
+// migrateDataTankSchemasOnStartup (target stopped -> every tier fails -> committed=false) and prove the old dir is
+// preserved + queryable. In restoreDBBackup a data-tank failure returns (failCrossMajor) before the deletion gate is
+// ever reached - the gate runs only on full success, with committed=true - so feeding the failed result into the gate
+// here additionally proves the gate itself refuses to delete on committed=false. This is the wired-path half of the
+// guarantee.
 func TestDeletionGate_WiredStartup_FailurePreservesOldDir(t *testing.T) {
 	skipIfNoBinaries(t)
 	ctx := context.Background()
@@ -481,7 +483,8 @@ func TestDeletionGate_WiredStartup_FailurePreservesOldDir(t *testing.T) {
 		t.Fatalf("expected committed=false when the target is unreachable (err=%v res=%+v)", mErr, res)
 	}
 
-	// restoreDBBackup: dtCommitted = res.committed; gate(dtCommitted, location).
+	// In production this failed result never reaches the gate (restoreDBBackup fail-stops first); calling the gate
+	// with committed=false asserts the gate's own refuse-to-delete behaviour.
 	removeOldDataDirOnMigrationSuccess(res.committed, oldDataDir)
 
 	assertPreservedOldDirHasRows(t, srcCluster, oldDataDir, dataTankRowCountSQL, 100)

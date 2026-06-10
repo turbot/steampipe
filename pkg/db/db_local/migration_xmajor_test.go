@@ -59,7 +59,7 @@ const (
 	outcomeAutoRestoreSucceeded migrationOutcome = iota
 	// pre-flight detected collation risk; restore skipped; dump retained.
 	outcomePreflightSkipped
-	// pg_restore returned non-zero; non-fatal; dump retained; old dir retained.
+	// pg_restore returned non-zero; dump retained; old dir retained (production fail-stops startup).
 	outcomeRestoreFailedGracefully
 	// pg_restore succeeded BUT validation found divergence; no rollback - the restored-but-unverified copy stays in the
 	// new cluster (production fail-stops startup); dump retained; old dir retained.

@@ -26,6 +26,10 @@ import (
 
 var (
 	errDbInstanceRunning = fmt.Errorf("cannot start DB backup - a postgres instance is still running and Steampipe could not kill it. Please kill this manually and restart Steampipe")
+	// errCrossMajorDumpFailed marks a failed pg_dump on a CROSS-major migration. Both install paths fail-stop on it:
+	// starting on an empty new-major database while the real data sits unmigrated in the old directory is the state
+	// the fail-stop design exists to prevent, regardless of which step failed.
+	errCrossMajorDumpFailed = fmt.Errorf("cross-major migration: backing up the old database failed")
 )
 
 const (
@@ -529,19 +533,25 @@ func prepareBackup(ctx context.Context, targetVersion string) (*string, error) {
 	// the post-restore validation pass against the old data while it is still live. For a same-major (minor) migration
 	// there is no pre-flight/validation step, so tear it down here as before.
 	crossMajor := classifyPgMigration(filepath.Base(location), targetVersion) == pgMigrationMajor
-	if crossMajor {
-		writeMigrationIncompleteMarker(filepath.Base(location), targetVersion)
-	}
 
 	takeErr := takeBackup(ctx, runConfig)
 	if takeErr != nil {
-		// the dump failed - the old server is no longer needed; tear it down and surface the error.
+		// the dump failed - the old server is no longer needed; tear it down and surface the error. Cross-major dump
+		// failures carry the fail-stop sentinel so neither install path starts the service on an empty new-major
+		// database. No migration-incomplete marker exists at this point (it is written only after a successful dump),
+		// so a retry starts clean.
 		//nolint:golint,errcheck // best-effort shutdown
 		runConfig.stop(ctx)
+		if crossMajor {
+			return &runConfig.dbName, fmt.Errorf("%w: %v", errCrossMajorDumpFailed, takeErr)
+		}
 		return &runConfig.dbName, takeErr
 	}
 
 	if crossMajor {
+		// The dump succeeded and the migration is now genuinely underway: mark the new side as a draft until full
+		// commit. Written only AFTER the dump so a dump failure cannot leave a stale marker behind.
+		writeMigrationIncompleteMarker(filepath.Base(location), targetVersion)
 		// leave the old server running; restoreDBBackup stops it.
 		retainedOldServer = runConfig
 	} else {
@@ -740,7 +750,12 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 	// never runs on an empty or unverified database.
 	var crossMajor bool
 	var oldVersion, oldLocation string
-	if found, location, ferr := findDifferentPgInstallation(ctx, targetVersion); ferr == nil && found {
+	if found, location, ferr := findDifferentPgInstallation(ctx, targetVersion); ferr != nil {
+		// A scan error here must not silently demote a cross-major migration to the unvalidated same-major path
+		// (and the same-major path would never stop the retained old server). Fail instead - the next start retries.
+		stopRetainedOldServer(ctx)
+		return fmt.Errorf("could not classify the pending migration (scanning installed database versions failed): %w", ferr)
+	} else if found {
 		if classifyPgMigration(filepath.Base(location), targetVersion) == pgMigrationMajor {
 			crossMajor = true
 			oldVersion = filepath.Base(location)
@@ -769,14 +784,18 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 		// it is unavailable (unexpected), fall back conservatively rather than risk an unvalidated restore. The
 		// insurance dump prepareBackup took (backup.bk, checked above) is retained on every fall-back path and at the
 		// end of the success path; the engine takes its own working dump under the database dir.
+		backupDir := filepaths.EnsureDatabaseDir()
+		statusPath := filepath.Join(backupDir, "public-migration-status.json")
 		if retainedOldServer == nil {
+			// This failure never reaches the engine, so write the status file here - otherwise a previous attempt's
+			// file (possibly committed:true) would remain as the orchestrator-visible state for THIS attempt.
 			log.Printf("[WARN] cross-major migration: old cluster not retained for pre-flight/validation")
+			writeDataTankStatus(statusPath, migrationResult{oldClusterRetained: true},
+				"old database server unavailable for pre-flight/validation; migration not attempted")
 			return failCrossMajor("the old database server could not be kept running for the migration's pre-flight and validation steps")
 		}
 		old := oldClusterRef(oldVersion, oldLocation, retainedOldServer.dbName, retainedOldServer.port)
 		newRef := newClusterRef(runningInfo.Port, runningInfo.Database, targetVersion)
-		backupDir := filepaths.EnsureDatabaseDir()
-		statusPath := filepath.Join(backupDir, "public-migration-status.json")
 
 		pubRes, pubErr := runMigrationEngine(ctx, publicMigrationShape(), old, newRef, backupDir, statusPath, dataTankMigrationJobs, migrationFaults{})
 		if pubErr != nil || !pubRes.committed {
@@ -817,14 +836,17 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 			return failCrossMajor(cause)
 		}
 
-		// Full success on both shapes: retain the backup, remove the old data dir through the single deletion gate,
-		// and clear the in-progress marker - the new cluster is now the committed database.
+		// Full success on both shapes. Clear the in-progress marker FIRST: engine + data-tank commit is the moment the
+		// new cluster becomes the real database, so the marker must not outlive it. Clearing after the deletion gate
+		// would open a crash window (the old dir's bulk delete can be long) where no migratable source remains but the
+		// marker still says "draft" - the next startup would then refuse to boot a fully committed database. A crash
+		// in the opposite order is harmless: old dir intact + marker rewritten on the idempotent re-run.
+		clearMigrationIncompleteMarker()
 		stopRetainedOldServer(ctx)
 		if err := retainBackup(ctx); err != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
 		}
 		removeOldDataDirOnMigrationSuccess(true, filepath.Join(oldLocation, "data"))
-		clearMigrationIncompleteMarker()
 		return nil
 	}
 

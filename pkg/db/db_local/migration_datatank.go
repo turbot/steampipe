@@ -8,10 +8,11 @@ package db_local
 // and only one catalog risk - a column literally named system_user (PG16+ reserves SYSTEM_USER).
 //
 // Failure stance: on any unrecoverable or partial failure the OLD PG14 data directory (plus that attempt's safety dump)
-// is left intact on disk; the new Postgres version still runs and the original is preserved for recovery. No
-// version-revert; data is never dropped. The old data directory is the durable copy - a retry replaces the prior
-// attempt's dump with a fresh one from it (dumpDataTankSchemas). The tiered restore escalates parallel -> serial ->
-// per-table COPY -> per-partition COPY before giving up.
+// is left intact on disk and the failure is surfaced to the caller; the production caller (restoreDBBackup) fail-stops
+// startup on any cross-major failure, so the service never runs on a half-migrated database. No version-revert; data is
+// never dropped. The old data directory is the durable copy - a retry replaces the prior attempt's dump with a fresh
+// one from it (dumpDataTankSchemas). The tiered restore escalates parallel -> serial -> per-table COPY -> per-partition
+// COPY before giving up.
 
 import (
 	"context"
@@ -836,9 +837,9 @@ var (
 // over the shared copy-and-fallback engine (runMigrationEngine): it builds the data-tank shape (many
 // <handle>/<handle>-parts schema pairs; collation pre-check OFF and row-checksum validation OFF, per the
 // light-migration policy; refresh-pause coordination ON) and delegates. On any unrecoverable failure the result carries
-// oldClusterRetained=true and a non-nil error; under the 2026-06-08 governing decision the new version still runs while
-// the old data directory + safety dump are preserved on disk. statusPath, if non-empty, receives the JSON orchestrator
-// marker.
+// oldClusterRetained=true and a non-nil error; under the 2026-06-08 governing decision the old data directory + safety
+// dump are preserved on disk, and the production caller (restoreDBBackup) fail-stops startup on the surfaced failure.
+// statusPath, if non-empty, receives the JSON orchestrator marker.
 func migrateDataTank(ctx context.Context, src, target *pgClusterRef, backupDir, statusPath string, jobs int, faults migrationFaults) (migrationResult, error) {
 	return runMigrationEngine(ctx, dataTankMigrationShape(), src, target, backupDir, statusPath, jobs, faults)
 }
@@ -902,18 +903,25 @@ func newClusterRef(port int, dbName string, targetVersion string) *pgClusterRef 
 // data-tank schemas (the normal CLI case) it is a clean no-op: it returns committed=true with no work done, so the
 // caller's deletion gate is not blocked.
 //
-// On any data-tank failure or partial result it returns committed=false with a non-nil error; the caller must then
-// preserve the old data directory (the public-schema success is NOT reverted - the new version still runs). The
-// directory-format dump under backupDir/data-tank is the second independent recovery copy required by the 2026-06-08
-// governing decision; a retry replaces it with a fresh dump from the preserved old directory.
+// On any data-tank failure or partial result it returns committed=false with a non-nil error; the caller preserves the
+// old data directory and fail-stops startup (the public-schema success is not reverted, but startup fails; the next
+// attempt rebuilds the whole new side from the preserved old data). The directory-format dump under backupDir/data-tank
+// is the second independent recovery copy required by the 2026-06-08 governing decision; a retry replaces it with a
+// fresh dump from the preserved old directory.
 func migrateDataTankSchemasOnStartup(ctx context.Context, old, new *pgClusterRef, backupDir string) (migrationResult, error) {
+	// Build the status path up front: the early failures below never reach the engine, and without a status write a
+	// previous attempt's file (possibly committed:true) would remain as the orchestrator-visible state.
+	statusPath := filepath.Join(backupDir, "data-tank-migration-status.json")
+
 	oldConn, err := old.connect(ctx)
 	if err != nil {
+		writeDataTankStatus(statusPath, migrationResult{oldClusterRetained: true}, "could not connect to old cluster: "+err.Error())
 		return migrationResult{}, fmt.Errorf("data-tank migration: could not connect to old cluster: %w", err)
 	}
 	schemas, err := listDataTankSchemas(ctx, oldConn)
 	oldConn.Close(ctx)
 	if err != nil {
+		writeDataTankStatus(statusPath, migrationResult{oldClusterRetained: true}, "could not list data-tank schemas: "+err.Error())
 		return migrationResult{}, fmt.Errorf("data-tank migration: could not list data-tank schemas: %w", err)
 	}
 	if len(schemas) == 0 {
@@ -922,7 +930,6 @@ func migrateDataTankSchemasOnStartup(ctx context.Context, old, new *pgClusterRef
 		return migrationResult{committed: true}, nil
 	}
 
-	statusPath := filepath.Join(backupDir, "data-tank-migration-status.json")
 	return migrateDataTank(ctx, old, new, backupDir, statusPath, dataTankMigrationJobs, migrationFaults{})
 }
 
