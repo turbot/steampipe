@@ -70,11 +70,11 @@ type reservedWordHit struct {
 // partitionFailure records a single partition that could not be migrated even by the per-partition COPY tier. It feeds
 // the orchestrator's "needs help" list.
 type partitionFailure struct {
-	parentSchema string
-	parentTable  string
-	partSchema   string
-	partTable    string
-	reason       string
+	ParentSchema string `json:"parent_schema"`
+	ParentTable  string `json:"parent_table"`
+	PartSchema   string `json:"part_schema"`
+	PartTable    string `json:"part_table"`
+	Reason       string `json:"reason"`
 }
 
 // dataTankMigrationStatus is the orchestrator-facing structured failure signal. It is JSON-serialised to a well-known
@@ -522,21 +522,21 @@ func restoreTier4PerPartitionCOPY(ctx context.Context, src, target *pgClusterRef
 			// corruptOnePartition models exactly one unrestorable partition.
 			if faults.corruptOnePartition && i == corruptPartitionIndex(len(parts)) {
 				failures = append(failures, partitionFailure{
-					parentSchema: parent.schema,
-					parentTable:  parent.table,
-					partSchema:   part.partSchema,
-					partTable:    part.partTable,
-					reason:       "partition data unrestorable; deferred to manual migration",
+					ParentSchema: parent.schema,
+					ParentTable:  parent.table,
+					PartSchema:   part.partSchema,
+					PartTable:    part.partTable,
+					Reason:       "partition data unrestorable; deferred to manual migration",
 				})
 				continue
 			}
 			if perr := copyAndAttachPartition(ctx, src, target, srcConn, tgtConn, parent, part); perr != nil {
 				failures = append(failures, partitionFailure{
-					parentSchema: parent.schema,
-					parentTable:  parent.table,
-					partSchema:   part.partSchema,
-					partTable:    part.partTable,
-					reason:       perr.Error(),
+					ParentSchema: parent.schema,
+					ParentTable:  parent.table,
+					PartSchema:   part.partSchema,
+					PartTable:    part.partTable,
+					Reason:       perr.Error(),
 				})
 			}
 		}
