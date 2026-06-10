@@ -28,13 +28,6 @@ var (
 	errDbInstanceRunning = fmt.Errorf("cannot start DB backup - a postgres instance is still running and Steampipe could not kill it. Please kill this manually and restart Steampipe")
 )
 
-// targetDatabaseVersion is the version this build targets as the embedded PostgreSQL. In production it is
-// constants.DatabaseVersion. It exists as a package-level variable purely so the in-package cross-major migration test
-// matrix (migration_xmajor_test.go) can drive the cross-major branch in restoreDBBackup at run time - the compile-time
-// constant would otherwise pin the test to whatever major matches the current shipped DB and the classifyPgMigration
-// branch under test would never be reached. NEVER override outside tests in the same package.
-var targetDatabaseVersion = constants.DatabaseVersion
-
 const (
 	backupFormat            = "custom"
 	backupDumpFileExtension = "dump"
@@ -67,7 +60,8 @@ const (
 	onlyMatViewRefreshListFileName = "only_refresh.lst"
 )
 
-// pgMigrationKind classifies an old on-disk PostgreSQL install relative to the target (constants.DatabaseVersion).
+// pgMigrationKind is the kind of migration needed between an old installed PostgreSQL version and the version this
+// build ships: same-major (minor) or cross-major. Produced by classifyPgMigration.
 type pgMigrationKind int
 
 const (
@@ -476,9 +470,10 @@ func stopRetainedOldServer(ctx context.Context) {
 }
 
 // prepareBackup creates a backup file of the public schema for the current database, if we are migrating
-// if a backup was taken, this returns the name of the database that was backed up
-func prepareBackup(ctx context.Context) (*string, error) {
-	found, location, err := findDifferentPgInstallation(ctx)
+// if a backup was taken, this returns the name of the database that was backed up.
+// targetVersion is the embedded-PG version this build ships (constants.DatabaseVersion in production).
+func prepareBackup(ctx context.Context, targetVersion string) (*string, error) {
+	found, location, err := findDifferentPgInstallation(ctx, targetVersion)
 	if err != nil {
 		log.Println("[TRACE] Error while finding different PG Version:", err)
 		return nil, err
@@ -506,7 +501,7 @@ func prepareBackup(ctx context.Context) (*string, error) {
 	// On a cross-major jump the old server must stay up so restoreDBBackup can run the pre-flight collation scan and
 	// the post-restore validation pass against the old data while it is still live. For a same-major (minor) migration
 	// there is no pre-flight/validation step, so tear it down here as before.
-	crossMajor := classifyPgMigration(filepath.Base(location), targetDatabaseVersion) == pgMigrationMajor
+	crossMajor := classifyPgMigration(filepath.Base(location), targetVersion) == pgMigrationMajor
 
 	takeErr := takeBackup(ctx, runConfig)
 	if takeErr != nil {
@@ -630,7 +625,7 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 // classify the old install (same-major vs cross-major) and, on a successful same-major restore, to locate the old
 // installation for removal. On the cross-major path the old dir is deliberately NOT removed (it is the user's only
 // copy of the old data).
-func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
+func findDifferentPgInstallation(ctx context.Context, targetVersion string) (bool, string, error) {
 	dbBaseDirectory := filepaths.EnsureDatabaseDir()
 	entries, err := os.ReadDir(dbBaseDirectory)
 	if err != nil {
@@ -639,7 +634,7 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 
 	// The version this build targets, parsed once for comparison. If it is not valid semver we simply skip the "older
 	// than target" guard below.
-	targetVersion, targetErr := semver.NewVersion(targetDatabaseVersion)
+	targetSemver, targetErr := semver.NewVersion(targetVersion)
 
 	// When several old installs are on disk (e.g. fossils left by earlier upgrades), the one to migrate from is the
 	// most-recent prior version - the one that was live before this upgrade - NOT whichever happens to sort first. Pick
@@ -647,7 +642,7 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 	var bestPath string
 	var bestVersion *semver.Version
 	for _, de := range entries {
-		if !de.IsDir() || de.Name() == targetDatabaseVersion {
+		if !de.IsDir() || de.Name() == targetVersion {
 			continue
 		}
 		dir := filepath.Join(dbBaseDirectory, de.Name())
@@ -667,7 +662,7 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 			continue
 		}
 		// Never migrate "down" from a leftover install newer than the target.
-		if targetErr == nil && !v.LessThan(targetVersion) {
+		if targetErr == nil && !v.LessThan(targetSemver) {
 			continue
 		}
 		if bestVersion == nil || v.GreaterThan(bestVersion) {
@@ -683,7 +678,9 @@ func findDifferentPgInstallation(ctx context.Context) (bool, string, error) {
 }
 
 // restoreDBBackup loads the back up file into the database
-func restoreDBBackup(ctx context.Context) error {
+// restoreDBBackup loads the backup file (if any) into the running service. targetVersion is the embedded-PG version
+// this build ships (constants.DatabaseVersion in production).
+func restoreDBBackup(ctx context.Context, targetVersion string) error {
 	backupFilePath := filepaths.DatabaseBackupFilePath()
 	if !files.FileExists(backupFilePath) {
 		// nothing to do here
@@ -710,14 +707,14 @@ func restoreDBBackup(ctx context.Context) error {
 	// finds divergence.
 	var crossMajor bool
 	var oldVersion, oldLocation string
-	if found, location, ferr := findDifferentPgInstallation(ctx); ferr == nil && found {
-		if classifyPgMigration(filepath.Base(location), targetDatabaseVersion) == pgMigrationMajor {
+	if found, location, ferr := findDifferentPgInstallation(ctx, targetVersion); ferr == nil && found {
+		if classifyPgMigration(filepath.Base(location), targetVersion) == pgMigrationMajor {
 			crossMajor = true
 			oldVersion = filepath.Base(location)
 			oldLocation = location
 		}
 	}
-	newVersion := targetDatabaseVersion
+	newVersion := targetVersion
 
 	// fallBackCrossMajor rolls to the hardened-B fall-back state with a cause-specific warning. The insurance dump is
 	// retained and the old data directory is intentionally NOT removed - it is the user's only copy of the old data.
@@ -742,7 +739,7 @@ func restoreDBBackup(ctx context.Context) error {
 			return fallBackCrossMajor(crossMajorPreflightSkippedWarning(oldVersion, newVersion))
 		}
 		old := oldClusterRef(oldVersion, oldLocation, retainedOldServer.dbName, retainedOldServer.port)
-		newRef := newClusterRef(runningInfo.Port, runningInfo.Database)
+		newRef := newClusterRef(runningInfo.Port, runningInfo.Database, targetVersion)
 		backupDir := filepaths.EnsureDatabaseDir()
 		statusPath := filepath.Join(backupDir, "public-migration-status.json")
 
@@ -796,7 +793,7 @@ func restoreDBBackup(ctx context.Context) error {
 
 	// ---- Same-major (minor) migration: existing flow ----
 
-	target := newClusterRef(runningInfo.Port, runningInfo.Database)
+	target := newClusterRef(runningInfo.Port, runningInfo.Database, targetVersion)
 
 	// extract the Table of Contents from the Backup Archive
 	toc, err := getTableOfContentsFromBackup(ctx, target, backupFilePath)
@@ -825,7 +822,7 @@ func restoreDBBackup(ctx context.Context) error {
 		if rerr := retainBackup(ctx); rerr != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", rerr))
 		}
-		error_helpers.ShowWarning(restoreFailedWarning(targetDatabaseVersion))
+		error_helpers.ShowWarning(restoreFailedWarning(targetVersion))
 		return nil
 	}
 
@@ -856,7 +853,7 @@ func restoreDBBackup(ctx context.Context) error {
 	}
 
 	// get the location of the other instance which was backed up
-	found, location, err := findDifferentPgInstallation(ctx)
+	found, location, err := findDifferentPgInstallation(ctx, targetVersion)
 	if err != nil {
 		return err
 	}

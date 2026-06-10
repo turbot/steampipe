@@ -796,10 +796,10 @@ func oldClusterRef(oldVersion, oldInstallLocation, dbName string, port int) *pgC
 
 // newClusterRef builds the engine cluster handle for the new (target) embedded cluster on a cross-major startup
 // migration. It is the freshly-started target service reached over its loopback port, with the bundled pg_restore from
-// the current install location.
-func newClusterRef(port int, dbName string) *pgClusterRef {
+// the current install location. targetVersion is the embedded-PG version this build ships.
+func newClusterRef(port int, dbName string, targetVersion string) *pgClusterRef {
 	return &pgClusterRef{
-		version: targetDatabaseVersion,
+		version: targetVersion,
 		binDir:  filepath.Join(filepaths.GetDatabaseLocation(), "bin"),
 		env:     migrationLibEnv(filepaths.GetDatabaseLibPath()),
 		port:    port,

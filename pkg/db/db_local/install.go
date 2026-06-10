@@ -165,7 +165,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 
 	// call prepareBackup to generate the db dump file if necessary
 	// NOTE: this returns the existing database name - we use this when creating the new database
-	dbName, err := prepareBackup(ctx)
+	dbName, err := prepareBackup(ctx, constants.DatabaseVersion)
 	if err != nil {
 		log.Printf("[ERROR] prepareBackup failed: %s", err.Error())
 		if errors.Is(err, errDbInstanceRunning) {
@@ -298,7 +298,7 @@ func prepareDb(ctx context.Context) error {
 	// is mounted in and must migrate. prepareBackup dumps the old data to the backup file (a no-op when no old install
 	// is found); restoreDBBackup loads it after the service starts. dbName is non-nil exactly when a dump was taken,
 	// and on a cross-major jump prepareBackup leaves the OLD cluster running for the restore/validation.
-	dbName, backupErr := prepareBackup(ctx)
+	dbName, backupErr := prepareBackup(ctx, constants.DatabaseVersion)
 	if backupErr != nil {
 		log.Printf("[ERROR] prepareBackup failed: %s", backupErr.Error())
 		if errors.Is(backupErr, errDbInstanceRunning) {

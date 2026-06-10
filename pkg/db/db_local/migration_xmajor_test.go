@@ -15,24 +15,18 @@ package db_local
 // over Unix sockets, applies fixture SQL, takes the insurance dump). All policy decisions are made by the production
 // code under test.
 //
-// HOW THE SEAM FOR constants.DatabaseVersion WORKS
-// ------------------------------------------------
-// The production migration code resolves the target major from constants.DatabaseVersion ("14.19.0", a compile-time
-// constant). With the constant pinned to 14, classifyPgMigration could never return the cross-major branch under
-// `go test` and the production cross-major code path would be dead under the test runner.
-//
-// The seam is a package-private var targetDatabaseVersion (backup.go) that defaults to constants.DatabaseVersion in
-// production. TestMain overrides it to "18.4.0" for the duration of the cross-major test suite so the shipped
-// classifyPgMigration / findDifferentPgInstallation logic sees PG18 as the target and the cross-major branch actually
-// executes.
+// HOW THE TARGET VERSION IS SUPPLIED
+// ----------------------------------
+// The production migration functions take the target embedded-PG version as an explicit parameter (the production
+// callers pass constants.DatabaseVersion). This suite drives the shared engine and its helpers directly with PG18 as
+// the target, so the cross-major code path executes under `go test` even while the shipped constant is a PG14 version.
+// No package state, build tags, or ldflags are involved.
 //
 // HOW TO RUN
 // ----------
 //   # Place PG14 and PG18 binaries under (default) /tmp/sp-xmig-tests/db/<ver>/postgres
 //   # (or set STEAMPIPE_XMIG_TEST_ROOT). Then:
 //   go test ./pkg/db/db_local/... -run TestCrossMajorMigration -v -count=1
-//
-// No build tags or ldflags are required: the seam is set in TestMain.
 
 import (
 	"context"
@@ -883,18 +877,6 @@ func stripComments(sqlText string) string {
 		b.WriteString("\n")
 	}
 	return b.String()
-}
-
-// -----------------------------------------------------------------------------
-// TestMain - flip the production seam so the cross-major branch is the target classification under `go test`.
-// -----------------------------------------------------------------------------
-
-func TestMain(m *testing.M) {
-	prev := targetDatabaseVersion
-	targetDatabaseVersion = pg18Version
-	code := m.Run()
-	targetDatabaseVersion = prev
-	os.Exit(code)
 }
 
 // -----------------------------------------------------------------------------
