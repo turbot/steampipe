@@ -29,6 +29,21 @@ package db_local
 //     postgres writes; the flag is the only witness that a restore started and was never confirmed complete.
 //  4. Pre-flight: scan the old data for non-ASCII text under collation-ordered indexes (public shape only).
 //  5. Restore into the new version, escalating: parallel pg_restore -> serial -> per-table COPY -> per-partition COPY.
+//     Why each tier exists (escalation order = cost order; each tier fixes the one above's specific failure mode):
+//       - tier 1 parallel pg_restore: the fast normal path; minutes at full scale.
+//       - tier 2 serial pg_restore: same dump, one worker - rescues failures caused by the parallelism itself
+//         (worker deadlocks on lock-heavy DDL, ordering races, memory pressure).
+//       - tier 3 per-table COPY: the dump is taken with the OLD version's pg_dump, whose keyword list predates the
+//         new major - e.g. SYSTEM_USER became reserved in PG16, so the dump carries it unquoted and the restore
+//         fails with a syntax error in the dump's own SQL. No pg_restore retry can fix an unrestorable dump;
+//         tier 3 rebuilds DDL from the live old catalog with correct quoting and copies rows over the wire.
+//       - tier 4 per-partition COPY: tier 3 moves each table as ONE stream (tens of millions of rows), so one
+//         transient blip mid-stream loses the whole table; tier 4 copies partition by partition, so a blip costs
+//         one partition - and when data is genuinely bad it names the exact failed partitions in the status file.
+//         Not tried first because its per-partition overhead (~85ms each) is ~48min of pure overhead at a
+//         33k-partition workspace; blips are rare, so pay that only when forced.
+//     The COPY tiers are data-tank-only: a public schema carries views/functions/triggers that COPY cannot
+//     rebuild, and succeeding while silently dropping them would be worse than failing - public stops at tier 2.
 //  6. Validate against the still-live old server: row counts, sample checksums, index validity (public shape only).
 //  7. Data-tank schemas (when present) run through this same engine with the pre-flight/validation gates off.
 //  8. Status files: the CLI writes ~/.steampipe/db/public-migration-status.json (and
