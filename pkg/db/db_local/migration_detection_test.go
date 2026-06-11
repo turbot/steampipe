@@ -2,12 +2,12 @@ package db_local
 
 // Migration scenario matrix
 // -------------------------
-// The cross-major migration is driven by exactly three facts on disk: whether an old version directory holds a real
-// cluster (db/<old>/data/PG_VERSION present, plus its binaries), the state of the target version's data directory, and
-// the migration-incomplete marker (db/migration-incomplete.flag), consulted by prepareDb's stale-marker guard: when the
-// marker exists but no pending migration was detected, startup refuses rather than booting a half-written draft. The
-// status JSON files are write-only reports - they are never consulted for decisions. The full permutation table, with
-// where each scenario's behaviour is pinned by an executing test:
+// The cross-major migration is driven by exactly two facts on disk: whether an old version directory holds a real
+// cluster (db/<old>/data/PG_VERSION present, plus its binaries), and the state of the target version's data directory.
+// The status JSON files are write-only reports - they are never consulted for decisions. The deployment contract is
+// that the old data directory stays visible until well after commit (in Pipes, the old mount is guaranteed for the
+// whole window); steampipe carries no extra on-disk guard for an unreachable old directory. The full permutation
+// table, with where each scenario's behaviour is pinned by an executing test:
 //
 // | #  | Scenario                                   | Old data dir                   | New data dir              | Decision                                              | Covered by                                                                  |
 // |----|--------------------------------------------|--------------------------------|---------------------------|-------------------------------------------------------|-----------------------------------------------------------------------------|
@@ -26,7 +26,7 @@ package db_local
 // | 10 | Several old version dirs (fossils)         | multiple with PG_VERSION       | empty                     | migrate from highest version older than target with real data | TestMigrationDetection (this file)                                    |
 // | 11 | Leftover dir newer than this build         | PG_VERSION, version > target   | any                       | ignored - never migrate down                          | TestMigrationDetection (this file); TestClassifyPgMigration                  |
 // | 12 | Minor bump (14.17 -> 14.19)                | full cluster, PG_VERSION       | empty                     | same-major lightweight dump/restore                   | TestClassifyPgMigration; migration.bats (acceptance)                         |
-// | 13 | Opt-out: old dir parked, marker present    | no PG_VERSION anywhere         | possibly half-written draft | startup REFUSES with instructions                    | TestPrepareDb_StaleMarkerNoPendingMigration_RefusesStartup (this file)       |
+// | 13 | Opt-out: old dir parked by operator        | no PG_VERSION anywhere         | contents cleared by operator | fresh initdb, no migration (same as row 1)         | TestMigrationDetection (this file)                                           |
 //
 // This file unit-tests the detector itself - findDifferentPgInstallation - which needs no live clusters: it only
 // inspects the directory layout. The engine-behaviour rows are pinned by the heavyweight suites named above.
@@ -36,15 +36,11 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
 	"github.com/turbot/pipe-fittings/v2/app_specific"
 	pconstants "github.com/turbot/pipe-fittings/v2/constants"
-	"github.com/turbot/steampipe/v2/pkg/constants"
-	"github.com/turbot/steampipe/v2/pkg/filepaths"
-	"github.com/turbot/steampipe/v2/pkg/ociinstaller/versionfile"
 )
 
 // detectionTestInstallDir points app_specific.InstallDir (the root all filepaths helpers resolve under) at a fresh
@@ -265,46 +261,3 @@ func TestPrepareBackup_SameMajor_OldClusterWontStart_NoSentinel(t *testing.T) {
 	}
 }
 
-// Scenario 13: a migration-incomplete marker with NO pending migration (the old directory was parked / never
-// mounted) must refuse startup - the current data dir may hold a half-written draft from the unfinished attempt.
-// This drives the production entry point (prepareDb) end to end, with the install faked as complete and up to date
-// so no download path runs: the version file claims the shipped digests, and the FDW files exist as stubs.
-func TestPrepareDb_StaleMarkerNoPendingMigration_RefusesStartup(t *testing.T) {
-	installDir := detectionTestInstallDir(t)
-	_ = installDir
-
-	// Version file matching the shipped constants -> dbNeedsUpdate and fdwNeedsUpdate are both false.
-	vf := versionfile.NewDBVersionFile()
-	vf.EmbeddedDB.ImageDigest = constants.PostgresImageDigest
-	vf.FdwExtension.Version = constants.FdwVersion
-	if err := vf.Save(); err != nil {
-		t.Fatalf("save version file: %v", err)
-	}
-
-	// FDW present as stubs -> IsFDWInstalled is true, installFDW never runs.
-	sqlLoc, controlLoc := filepaths.GetFDWSQLAndControlLocation()
-	for _, f := range []string{sqlLoc, controlLoc, filepaths.GetFDWBinaryLocation()} {
-		if err := os.MkdirAll(filepath.Dir(f), 0755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(f, []byte("stub"), 0644); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	// No old version dir anywhere (prepareBackup is a no-op) - but the marker from an unfinished attempt remains.
-	writeMigrationIncompleteMarker("14.19.0", constants.DatabaseVersion)
-
-	err := prepareDb(context.Background())
-	if err == nil {
-		t.Fatal("prepareDb started up over a stale migration-incomplete marker with no migration source")
-	}
-	if !strings.Contains(err.Error(), "never completed") {
-		t.Fatalf("expected the stale-marker refusal, got: %v", err)
-	}
-
-	// The opt-out instruction must point at the real marker path.
-	if !strings.Contains(err.Error(), migrationIncompleteMarkerPath()) {
-		t.Fatalf("refusal message does not name the marker path: %v", err)
-	}
-}

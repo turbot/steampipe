@@ -55,9 +55,9 @@ Nothing was deleted - %s.
 Steampipe has not started: the new database is empty or unverified, and using it now could be mistaken for data loss.
 
 To try again:           start Steampipe again - the migration re-runs from your preserved old data.
-To skip migrating:      move the old directory aside (e.g. add a '.parked' suffix to its name), remove the contents of the new version's data directory if any exist, delete %s, then start Steampipe for a fresh, empty database.
+To skip migrating:      move the old directory aside (e.g. add a '.parked' suffix to its name) and remove the contents of the new version's data directory if any exist, then start Steampipe for a fresh, empty database.
 To recover manually:    restore this attempt's dump (see above; if no retained path is shown, look under ~/.steampipe/backups and next to the database directory) into a database of your choice.`,
-		oldVersion, newVersion, cause, preserved, migrationIncompleteMarkerPath())
+		oldVersion, newVersion, cause, preserved)
 }
 
 // restoreFailedWarning is shown when a same-major (minor) migration took a backup but the automatic restore failed. The
@@ -285,19 +285,6 @@ func prepareDb(ctx context.Context) error {
 		dbName = nil
 	}
 	migrationPending := dbName != nil
-
-	// A migration-incomplete marker with NO pending migration means a previous cross-major attempt got past its dump
-	// (the marker is written only after a successful dump) but never committed, and its source is now undetectable -
-	// most likely the old directory was parked to opt out. The current data dir may hold that attempt's half-written
-	// draft - refusing to start beats silently booting it as if it were real data.
-	if !migrationPending && migrationIncompleteMarkerExists() {
-		return fmt.Errorf(`a previous cross-major database migration started but never completed, and no old version's data directory can be found to migrate from (it may have been moved aside).
-
-The current version's data directory may hold an incomplete copy from that attempt - starting on it could be mistaken for data loss.
-
-To start fresh:       remove the contents of the current version's data directory under ~/.steampipe/db, delete %s, then start Steampipe again.
-To migrate after all: restore the old version's directory to its original path and start Steampipe again.`, migrationIncompleteMarkerPath())
-	}
 
 	if migrationPending {
 		// runInstall wipes the current data dir contents (clearing any partial cluster from a crashed previous attempt)

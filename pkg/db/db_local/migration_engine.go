@@ -23,12 +23,9 @@ package db_local
 //     data/PG_VERSION. PG_VERSION is postgres's own file (initdb writes it), which is why detection can key on it:
 //     it predates this code on every existing install. Same-major bump -> light dump/restore, warn-and-continue.
 //     Cross-major -> everything below, and every failure fail-stops startup.
-//  2. Start the old server and dump its public schema (the insurance copy). The old server stays up for steps 6-7.
-//  3. Write db/migration-incomplete.flag - OUR file, on the new side's tree. The new data dir is a valid, bootable
-//     cluster from the moment initdb runs, so a 40% restore is indistinguishable from a finished one by anything
-//     postgres writes; the flag is the only witness that a restore started and was never confirmed complete.
-//  4. Pre-flight: scan the old data for non-ASCII text under collation-ordered indexes (public shape only).
-//  5. Restore into the new version, escalating: parallel pg_restore -> serial -> per-table COPY -> per-partition COPY.
+//  2. Start the old server and dump its public schema (the insurance copy). The old server stays up for steps 5-6.
+//  3. Pre-flight: scan the old data for non-ASCII text under collation-ordered indexes (public shape only).
+//  4. Restore into the new version, escalating: parallel pg_restore -> serial -> per-table COPY -> per-partition COPY.
 //     Why each tier exists (escalation order = cost order; each tier fixes the one above's specific failure mode):
 //       - tier 1 parallel pg_restore: the fast normal path; minutes at full scale.
 //       - tier 2 serial pg_restore: same dump, one worker - rescues failures caused by the parallelism itself
@@ -44,35 +41,32 @@ package db_local
 //         33k-partition workspace; blips are rare, so pay that only when forced.
 //     The COPY tiers are data-tank-only: a public schema carries views/functions/triggers that COPY cannot
 //     rebuild, and succeeding while silently dropping them would be worse than failing - public stops at tier 2.
-//  6. Validate against the still-live old server: row counts, sample checksums, index validity (public shape only).
-//  7. Data-tank schemas (when present) run through this same engine with the pre-flight/validation gates off.
-//  8. Status files: the CLI writes ~/.steampipe/db/public-migration-status.json (and
+//  5. Validate against the still-live old server: row counts, sample checksums, index validity (public shape only).
+//  6. Data-tank schemas (when present) run through this same engine with the pre-flight/validation gates off.
+//  7. Status files: the CLI writes ~/.steampipe/db/public-migration-status.json (and
 //     data-tank-migration-status.json when tanks exist) on EVERY outcome; "committed" is the verdict field a
-//     consuming orchestrator reads to decide whether the old volume can be unmounted/released.
+//     consuming orchestrator reads to decide whether the old data can be released.
 //
 // Two endings:
-//   - Success: clear the flag -> stop the old server -> retain the dump -> clear the old dir's contents, unlinking
-//     PG_VERSION FIRST (the old side atomically stops looking migratable; new side was declared trustworthy first).
+//   - Success: stop the old server -> retain the dump -> clear the old dir's contents, unlinking PG_VERSION FIRST
+//     (the old side atomically stops looking migratable).
 //   - Failure: startup fails with retry/opt-out/recovery instructions. Old dir untouched (PG_VERSION still present,
 //     so the next start detects and re-runs; a retry always wipes the new side and redoes it from the old data).
-//     Deleting the flag is the explicit operator opt-out.
+//     The operator opt-out is parking the old directory (move it aside) and clearing the new side's contents.
 //
-// Why BOTH PG_VERSION and the flag: they answer different questions from different disks. Old PG_VERSION = "is there
-// old data to migrate from?" - but startup can only ask "do I SEE it now?", and in a hosted deployment the old data
-// can live on a separate volume that is simply not mounted (in which case absence proves nothing). The flag lives on
-// the NEW side's tree, so it travels with the database it vouches for: present + no pending migration detected ->
-// REFUSE to start rather than boot a half-restored database that looks healthy. State table:
+// The single source of truth on disk is the OLD side's PG_VERSION: present = a migration is pending (re-run; the new
+// side is a disposable draft until commit), absent = nothing to migrate. The deployment therefore guarantees the old
+// data directory stays mounted/visible until well after commit - if the old data were unreachable while a half-written
+// new side existed, startup would have no way to tell that state from a committed one. State table:
 //
-//   | old PG_VERSION              | flag    | meaning                                  | startup behaviour            |
-//   |-----------------------------|---------|------------------------------------------|------------------------------|
-//   | absent (no old install)     | absent  | fresh machine / fresh pod                | fresh initdb                 |
-//   | present                     | absent  | migration pending, dump never completed  | run the migration            |
-//   | present                     | present | crash mid-restore / post-dump failure    | re-run (wipe new side first) |
-//   | absent (unlinked at commit) | absent  | post-migration steady state              | normal start                 |
-//   | leftovers, no PG_VERSION    | absent  | died during post-commit bulk cleanup     | normal start (leftovers inert)|
-//   | NOT VISIBLE (vol unmounted) | present | half-restored new db, detection blind    | REFUSE to start              |
-//   | not visible                 | absent  | complete db on its own volume            | normal start                 |
-//   | present                     | deleted by operator | explicit opt-out             | start without migrating      |
+//   | old PG_VERSION              | meaning                                  | startup behaviour            |
+//   |-----------------------------|------------------------------------------|------------------------------|
+//   | absent (no old install)     | fresh machine / fresh pod                | fresh initdb                 |
+//   | present, new side empty     | migration pending                        | run the migration            |
+//   | present, new side populated | crash mid-restore / failed attempt       | re-run (wipe new side first) |
+//   | absent (unlinked at commit) | post-migration steady state              | normal start                 |
+//   | leftovers, no PG_VERSION    | died during post-commit bulk cleanup     | normal start (leftovers inert)|
+//   | dir parked by operator      | explicit opt-out                         | start fresh, no migration    |
 
 import (
 	"context"

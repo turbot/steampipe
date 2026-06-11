@@ -476,40 +476,13 @@ func stopRetainedOldServer(ctx context.Context) {
 	retainedOldServer = nil
 }
 
-// migrationIncompleteMarkerPath is a flag file recording that a cross-major migration has started and not yet fully
-// committed. While it exists, the current version's data directory is a disposable draft. Its job is the opt-out
-// path: if the user parks the old data directory to skip migrating, the next startup must NOT silently boot whatever
-// half-written draft the failed attempt left at the current version's path - the marker makes that state detectable.
-func migrationIncompleteMarkerPath() string {
-	return filepath.Join(filepaths.EnsureDatabaseDir(), "migration-incomplete.flag")
-}
-
-func writeMigrationIncompleteMarker(oldVersion, newVersion string) {
-	content := fmt.Sprintf("cross-major migration %s -> %s started and not yet committed\n", oldVersion, newVersion)
-	if err := os.WriteFile(migrationIncompleteMarkerPath(), []byte(content), 0644); err != nil {
-		log.Printf("[WARN] could not write migration-incomplete marker: %v", err)
-	}
-}
-
-func clearMigrationIncompleteMarker() {
-	if err := os.Remove(migrationIncompleteMarkerPath()); err != nil && !os.IsNotExist(err) {
-		log.Printf("[WARN] could not remove migration-incomplete marker: %v", err)
-	}
-}
-
-func migrationIncompleteMarkerExists() bool {
-	_, err := os.Stat(migrationIncompleteMarkerPath())
-	return err == nil
-}
-
 // prepareBackup detects a prior PG install and, if one exists, dumps its public schema as the insurance backup for
 // the migration. targetVersion is the embedded-PG version this build ships (constants.DatabaseVersion in production).
 // If a backup was taken, it returns the name of the database that was backed up.
 //
-// On a CROSS-major jump it does three further things callers must know about:
+// On a CROSS-major jump it does two further things callers must know about:
 //   - every failure (orphan kill, old-server start, dump) is wrapped in errCrossMajorDumpFailed, on which both
 //     install paths fail-stop instead of warn-and-continue (errDbInstanceRunning keeps its own dedicated handling);
-//   - after a successful dump it writes the migration-incomplete marker, cleared only at full commit;
 //   - it LEAVES THE OLD SERVER RUNNING, parked in the package global retainedOldServer, because restoreDBBackup needs
 //     the old cluster live for the collation pre-flight and post-restore validation. Every later exit path -
 //     success or failure - must stop it (stopRetainedOldServer).
@@ -562,8 +535,7 @@ func prepareBackup(ctx context.Context, targetVersion string) (*string, error) {
 	if takeErr != nil {
 		// the dump failed - the old server is no longer needed; tear it down and surface the error. Cross-major dump
 		// failures carry the fail-stop sentinel so neither install path starts the service on an empty new-major
-		// database. No migration-incomplete marker exists at this point (it is written only after a successful dump),
-		// so a retry starts clean.
+		// database.
 		//nolint:golint,errcheck // best-effort shutdown
 		runConfig.stop(ctx)
 		if crossMajor {
@@ -573,9 +545,6 @@ func prepareBackup(ctx context.Context, targetVersion string) (*string, error) {
 	}
 
 	if crossMajor {
-		// The dump succeeded and the migration is now genuinely underway: mark the new side as a draft until full
-		// commit. Written only AFTER the dump so a dump failure cannot leave a stale marker behind.
-		writeMigrationIncompleteMarker(filepath.Base(location), targetVersion)
 		// leave the old server running; restoreDBBackup stops it.
 		retainedOldServer = runConfig
 	} else {
@@ -860,12 +829,7 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 			return failCrossMajor(cause)
 		}
 
-		// Full success on both shapes. Clear the in-progress marker FIRST: engine + data-tank commit is the moment the
-		// new cluster becomes the real database, so the marker must not outlive it. Clearing after the deletion gate
-		// would open a crash window (the old dir's bulk delete can be long) where no migratable source remains but the
-		// marker still says "draft" - the next startup would then refuse to boot a fully committed database. A crash
-		// in the opposite order is harmless: old dir intact + marker rewritten on the idempotent re-run.
-		clearMigrationIncompleteMarker()
+		// Full success on both shapes.
 		stopRetainedOldServer(ctx)
 		if err := retainBackup(ctx); err != nil {
 			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
