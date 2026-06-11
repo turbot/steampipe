@@ -16,6 +16,48 @@ package db_local
 // independent copy (a retry replaces the dump from the still-intact old directory) - and surfaces the failure to the
 // caller. Whether the service then runs is the CALLER's decision; the production caller (restoreDBBackup) fail-stops
 // startup on any cross-major failure. No version-revert.
+//
+// THE FULL FLOW (orchestrated by prepareBackup/restoreDBBackup in backup.go; the engine below is steps 4-7):
+//
+//  1. Detection: startup scans ~/.steampipe/db/ for an old version dir holding BOTH postgres/bin/postgres and
+//     data/PG_VERSION. PG_VERSION is postgres's own file (initdb writes it), which is why detection can key on it:
+//     it predates this code on every existing install. Same-major bump -> light dump/restore, warn-and-continue.
+//     Cross-major -> everything below, and every failure fail-stops startup.
+//  2. Start the old server and dump its public schema (the insurance copy). The old server stays up for steps 6-7.
+//  3. Write db/migration-incomplete.flag - OUR file, on the new side's tree. The new data dir is a valid, bootable
+//     cluster from the moment initdb runs, so a 40% restore is indistinguishable from a finished one by anything
+//     postgres writes; the flag is the only witness that a restore started and was never confirmed complete.
+//  4. Pre-flight: scan the old data for non-ASCII text under collation-ordered indexes (public shape only).
+//  5. Restore into the new version, escalating: parallel pg_restore -> serial -> per-table COPY -> per-partition COPY.
+//  6. Validate against the still-live old server: row counts, sample checksums, index validity (public shape only).
+//  7. Data-tank schemas (when present) run through this same engine with the pre-flight/validation gates off.
+//  8. Status files: the CLI writes ~/.steampipe/db/public-migration-status.json (and
+//     data-tank-migration-status.json when tanks exist) on EVERY outcome; "committed" is the verdict field a
+//     consuming orchestrator reads to decide whether the old volume can be unmounted/released.
+//
+// Two endings:
+//   - Success: clear the flag -> stop the old server -> retain the dump -> clear the old dir's contents, unlinking
+//     PG_VERSION FIRST (the old side atomically stops looking migratable; new side was declared trustworthy first).
+//   - Failure: startup fails with retry/opt-out/recovery instructions. Old dir untouched (PG_VERSION still present,
+//     so the next start detects and re-runs; a retry always wipes the new side and redoes it from the old data).
+//     Deleting the flag is the explicit operator opt-out.
+//
+// Why BOTH PG_VERSION and the flag: they answer different questions from different disks. Old PG_VERSION = "is there
+// old data to migrate from?" - but startup can only ask "do I SEE it now?", and in a hosted deployment the old data
+// can live on a separate volume that is simply not mounted (in which case absence proves nothing). The flag lives on
+// the NEW side's tree, so it travels with the database it vouches for: present + no pending migration detected ->
+// REFUSE to start rather than boot a half-restored database that looks healthy. State table:
+//
+//   | old PG_VERSION              | flag    | meaning                                  | startup behaviour            |
+//   |-----------------------------|---------|------------------------------------------|------------------------------|
+//   | absent (no old install)     | absent  | fresh machine / fresh pod                | fresh initdb                 |
+//   | present                     | absent  | migration pending, dump never completed  | run the migration            |
+//   | present                     | present | crash mid-restore / post-dump failure    | re-run (wipe new side first) |
+//   | absent (unlinked at commit) | absent  | post-migration steady state              | normal start                 |
+//   | leftovers, no PG_VERSION    | absent  | died during post-commit bulk cleanup     | normal start (leftovers inert)|
+//   | NOT VISIBLE (vol unmounted) | present | half-restored new db, detection blind    | REFUSE to start              |
+//   | not visible                 | absent  | complete db on its own volume            | normal start                 |
+//   | present                     | deleted by operator | explicit opt-out             | start without migrating      |
 
 import (
 	"context"
