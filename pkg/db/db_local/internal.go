@@ -137,6 +137,11 @@ func setupInternal(ctx context.Context, conn *pgx.Conn) error {
 
 	queries := []string{
 		"lock table pg_namespace;",
+		// PostgreSQL 15 removed the default CREATE grant on the public schema (world-creatable on PG14). Steampipe
+		// users create tables/views in public over their own connections, so restore that behaviour for the steampipe
+		// database - granted to the users role rather than PUBLIC, tighter than the PG14 default. Runs every start, so
+		// it also repairs databases migrated or created before this statement existed.
+		fmt.Sprintf(`GRANT USAGE, CREATE ON SCHEMA public TO %s;`, constants.DatabaseUsersRole),
 		// drop internal schema tables to force recreation (in case of schema change)
 		fmt.Sprintf(`DROP FOREIGN TABLE IF EXISTS %s.%s;`, constants.InternalSchema, constants.ForeignTableScanMetadataSummary),
 		fmt.Sprintf(`DROP FOREIGN TABLE IF EXISTS %s.%s;`, constants.InternalSchema, constants.ForeignTableScanMetadata),
