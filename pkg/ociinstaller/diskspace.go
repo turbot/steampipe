@@ -28,25 +28,21 @@ func getAvailableDiskSpace(path string) (uint64, error) {
 // - Extracting/unzipping archives (typically 2-3x compressed size)
 // - Temporary files during installation
 //
-// Actual measured OCI image sizes (as of DB 14.19.0 / FDW 2.1.3):
-// - DB image compressed: 37 MB (ghcr.io/turbot/steampipe/db:14.19.0)
-// - FDW image compressed: 91 MB (ghcr.io/turbot/steampipe/fdw:2.1.3)
-// - Total compressed: ~128 MB
-// - Typical uncompressed size: 2-3x compressed = ~350-450 MB
-// - Peak disk usage (compressed + uncompressed during extraction): ~530 MB
+// Actual measured OCI image sizes (as of DB 18.4.0-rc.1 / FDW 2.3.0-rc.0; one platform layer is downloaded):
+// - DB platform layer compressed: 26-27 MB (ghcr.io/turbot/steampipe/db:18.4.0-rc.1)
+// - DB installed (uncompressed, incl. bundled ICU + OpenSSL): ~136 MB
+// - FDW platform layer compressed: 19-34 MB (ghcr.io/turbot/steampipe/fdw:2.3.0-rc.0)
+// - FDW uncompressed: ~62 MB darwin-arm64, larger on linux (~100-130 MB)
+// - Peak disk usage (compressed + uncompressed during extraction): ~330 MB worst-case platform
 //
 // This function returns 500MB which:
-// - Covers the actual peak usage of ~530 MB in most cases
+// - Covers the measured ~330 MB peak with ~170 MB headroom
 // - Avoids blocking installations that have adequate space (600-700 MB available)
 // - Balances safety against false rejections in constrained environments
 // - May fail if filesystem overhead or temp files exceed expectations, but will catch
 //   the primary failure case (truly insufficient disk space)
 func estimateRequiredSpace(imageRef string) uint64 {
-	// Practical estimate: 500MB for Postgres/FDW installations
-	// This matches the measured peak usage:
-	// - Download: ~130MB compressed
-	// - Extraction: ~400MB uncompressed
-	// - Minimal buffer for filesystem overhead
+	// Practical estimate: 500MB for Postgres/FDW installations - measured peak ~330 MB plus buffer.
 	return 500 * 1024 * 1024 // 500MB
 }
 
