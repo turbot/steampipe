@@ -265,6 +265,42 @@ func TestPrepareBackup_SameMajor_OldClusterWontStart_NoSentinel(t *testing.T) {
 	}
 }
 
+// The working dumps never outlive a cross-major attempt: deleteMigrationDumps runs at commit AND before
+// fail-stopping. It must remove all three artifacts (backup.bk, public.dump, the data-tank dump dir) and be a clean
+// no-op when none exist (early failures never wrote them).
+func TestDeleteMigrationDumps(t *testing.T) {
+	detectionTestInstallDir(t)
+
+	dbDir := filepaths.EnsureDatabaseDir()
+	if err := os.WriteFile(filepath.Join(dbDir, "backup.bk"), []byte("dump"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dbDir, "public.dump"), []byte("dump"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dbDir, "data-tank"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dbDir, "data-tank", "toc.dat"), []byte("dump"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	deleteMigrationDumps()
+
+	for _, p := range []string{
+		filepath.Join(dbDir, "backup.bk"),
+		filepath.Join(dbDir, "public.dump"),
+		filepath.Join(dbDir, "data-tank"),
+	} {
+		if _, err := os.Stat(p); !os.IsNotExist(err) {
+			t.Errorf("dump artifact survived deleteMigrationDumps: %s (stat err=%v)", p, err)
+		}
+	}
+
+	// Idempotent / no-op safe: nothing exists now, must not panic or error-spam.
+	deleteMigrationDumps()
+}
+
 // Scenario 13: a migration-incomplete marker with NO pending migration (the old directory was parked / never
 // mounted) must refuse startup - the current data dir may hold a half-written draft from the unfinished attempt.
 // This drives the production entry point (prepareDb) end to end, with the install faked as complete and up to date

@@ -5,17 +5,18 @@ package db_local
 //
 // This is the single engine both data shapes run on (the 2026-06-08 governing decision: "public-schema and data
 // migrations converge onto one engine; their differences are parameters"). The public-schema migration and the
-// data-tank migration differ only in a small parameter set held by migrationShape; every other step - the insurance
+// data-tank migration differ only in a small parameter set held by migrationShape; every other step - the working
 // dump, the reserved-word scan, the fallback restore ladder (parallel pg_restore -> serial pg_restore -> per-table COPY
 // -> per-partition COPY), the post-restore sanity check, and the terminal data-preservation rule - is shared, not
 // duplicated.
 //
 // Terminal rule (the hard invariant): the old data directory is removed ONLY on confirmed full success, in exactly one
 // place (removeOldDataDirOnMigrationSuccess). Any failure OR partial result preserves the original on disk in the
-// untouched old data directory - plus, once the dump step has run, that attempt's retained safety dump as a second
-// independent copy (a retry replaces the dump from the still-intact old directory) - and surfaces the failure to the
-// caller. Whether the service then runs is the CALLER's decision; the production caller (restoreDBBackup) fail-stops
-// startup on any cross-major failure. No version-revert.
+// untouched old data directory - the sole recovery copy - and surfaces the failure to the caller. Whether the service
+// then runs is the CALLER's decision; the production caller (restoreDBBackup) fail-stops startup on any cross-major
+// failure and deletes the working dumps on every exit (the engine itself never deletes a dump - lifecycle belongs to
+// the caller, which is why the engine-level tests can still assert the dump survives a failed engine run). No
+// version-revert.
 //
 // THE FULL FLOW (orchestrated by prepareBackup/restoreDBBackup in backup.go; the engine below is steps 4-7):
 //
@@ -23,7 +24,8 @@ package db_local
 //     data/PG_VERSION. PG_VERSION is postgres's own file (initdb writes it), which is why detection can key on it:
 //     it predates this code on every existing install. Same-major bump -> light dump/restore, warn-and-continue.
 //     Cross-major -> everything below, and every failure fail-stops startup.
-//  2. Start the old server and dump its public schema (the insurance copy). The old server stays up for steps 5-6.
+//  2. Start the old server and dump its public schema (the working dump tiers 1-2 restore from; deleted at the end
+//     of every attempt, success or failure). The old server stays up for steps 5-6.
 //  3. Pre-flight: scan the old data for non-ASCII text under collation-ordered indexes (public shape only).
 //  4. Restore into the new version, escalating: parallel pg_restore -> serial -> per-table COPY -> per-partition COPY.
 //     Why each tier exists (escalation order = cost order; each tier fixes the one above's specific failure mode):
@@ -48,7 +50,7 @@ package db_local
 //     consuming orchestrator reads to decide whether the old data can be released.
 //
 // Two endings:
-//   - Success: stop the old server -> retain the dump -> clear the old dir's contents, unlinking PG_VERSION FIRST
+//   - Success: stop the old server -> delete the working dumps -> clear the old dir's contents, unlinking PG_VERSION FIRST
 //     (the old side atomically stops looking migratable).
 //   - Failure: startup fails with retry/opt-out/recovery instructions. Old dir untouched (PG_VERSION still present,
 //     so the next start detects and re-runs; a retry always wipes the new side and redoes it from the old data).
@@ -134,7 +136,7 @@ type migrationShape struct {
 	// to refresh under pg_dump's blank search_path); OFF for data tank (no matviews).
 	matviewRefresh bool
 
-	// dumpFn, restoreTier1Fn, restoreTier2Fn supply the shape-specific insurance dump and the two pg_restore tiers of
+	// dumpFn, restoreTier1Fn, restoreTier2Fn supply the shape-specific working dump and the two pg_restore tiers of
 	// the shared ladder. They differ only in the dump FORMAT and the schema-selection flags: the data-tank shape uses a
 	// directory-format dump restored with parallel / serial pg_restore over fresh <handle> schemas; the public shape
 	// uses a custom-format --schema=public dump restored with --single-transaction (which tolerates the pre-existing
@@ -254,7 +256,7 @@ func refreshPublicMatviews(ctx context.Context, target *pgClusterRef, dumpPath s
 //  3. refresh-pause coordination (shape-gated);
 //  4. optional collation pre-check (shape-gated);
 //  5. reserved-word scan -> route decision;
-//  6. insurance dump (format per shape: directory for data-tank, custom single-file for public; reused by every restore
+//  6. working dump (format per shape: directory for data-tank, custom single-file for public; reused by every restore
 //     tier);
 //  7. the shared fallback restore ladder (capped at the shape's tier ceiling);
 //  8. post-restore sanity check + optional row-checksum validation (shape-gated);
@@ -355,7 +357,7 @@ func runMigrationEngine(ctx context.Context, shape migrationShape, src, target *
 	res.reservedWordRouted = len(hits) > 0
 	srcConn.Close(ctx)
 
-	// Step 6: insurance dump (always), unless the harness forces a dump failure.
+	// Step 6: working dump (always), unless the harness forces a dump failure.
 	if faults.forceDumpFailure {
 		res.oldClusterRetained = true
 		writeDataTankStatus(statusPath, res, "pg_dump failed (disk full during dump)")

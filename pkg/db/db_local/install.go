@@ -43,21 +43,17 @@ If you need that data, do not run another upgrade; open an issue at https://gith
 // start: running on an empty or unverified database while the real data sits in the old directory invites silent data
 // loss, and anything written before a retry would be erased by the retry's clean-slate rebuild. Failure leaves the new
 // side a disposable draft, which is exactly what makes the automatic retry on the next start safe.
-func crossMajorMigrationFailedError(cause, oldVersion, newVersion, oldLocation, retainedDump string) error {
-	preserved := fmt.Sprintf("your previous database directory is preserved at %s", oldLocation)
-	if retainedDump != "" {
-		preserved += fmt.Sprintf(", and a dump of your old data is retained at %s", retainedDump)
-	}
+func crossMajorMigrationFailedError(cause, oldVersion, newVersion, oldLocation string) error {
 	return fmt.Errorf(`cross-major database migration (PostgreSQL %s to %s) failed: %s
 
-Nothing was deleted - %s.
+Your data is untouched - the previous database directory is preserved at %s.
 
 Steampipe has not started: the new database is empty or unverified, and using it now could be mistaken for data loss.
 
 To try again:           start Steampipe again - the migration re-runs from your preserved old data.
 To skip migrating:      move the old directory aside (e.g. add a '.parked' suffix to its name), remove the contents of the new version's data directory if any exist, delete %s, then start Steampipe for a fresh, empty database.
-To recover manually:    restore this attempt's dump (see above; if no retained path is shown, look under ~/.steampipe/backups and next to the database directory) into a database of your choice.`,
-		oldVersion, newVersion, cause, preserved, migrationIncompleteMarkerPath())
+To recover manually:    your previous database directory (above) is a complete PostgreSQL %s cluster - it can be started with the matching binaries and dumped/inspected directly.`,
+		oldVersion, newVersion, cause, oldLocation, migrationIncompleteMarkerPath(), oldVersion)
 }
 
 // restoreFailedWarning is shown when a same-major (minor) migration took a backup but the automatic restore failed. The

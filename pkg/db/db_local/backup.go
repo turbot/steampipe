@@ -78,7 +78,7 @@ const (
 	// pgMigrationMajor - different (older) major, e.g. 14 -> 18. The public schema migrates through the shared
 	// copy-and-fallback engine (runMigrationEngine, public shape): collation pre-flight, restore ladder, row-checksum
 	// validation, tolerant matview refresh. On any failure startup FAILS (failCrossMajor) with the old data directory
-	// preserved untouched and the insurance dump retained; a validation divergence additionally leaves the
+	// preserved untouched (the sole recovery copy - working dumps are deleted on every exit); a validation divergence additionally leaves the
 	// restored-but-unverified copy in the new cluster. The old install is removed only on confirmed full success.
 	pgMigrationMajor
 )
@@ -505,7 +505,28 @@ func migrationIncompleteMarkerExists() bool {
 	return err == nil
 }
 
-// prepareBackup detects a prior PG install and, if one exists, dumps its public schema as the insurance backup for
+// deleteMigrationDumps removes every working dump a cross-major attempt writes: the public-schema dump from
+// prepareBackup (backup.bk), the engine's public dump (public.dump) and the data-tank directory dump. Called on BOTH
+// endings - at commit and before fail-stopping. The dumps are the restore SOURCE during an attempt, never a retained
+// artefact: on failure the untouched old data directory is the recovery copy (a retry re-dumps from it), and after
+// commit rollback belongs to the platform's backup story. Deleting on every exit keeps a parked failed workspace
+// from holding gigabytes of dead dump on a possibly shared volume.
+func deleteMigrationDumps() {
+	for _, p := range []string{
+		filepaths.DatabaseBackupFilePath(),
+		filepath.Join(filepaths.EnsureDatabaseDir(), "public.dump"),
+	} {
+		if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
+			log.Printf("[WARN] could not remove migration dump %s: %v", p, err)
+		}
+	}
+	dtDump := filepath.Join(filepaths.EnsureDatabaseDir(), "data-tank")
+	if err := os.RemoveAll(dtDump); err != nil {
+		log.Printf("[WARN] could not remove data-tank dump dir %s: %v", dtDump, err)
+	}
+}
+
+// prepareBackup detects a prior PG install and, if one exists, dumps its public schema as the working backup for
 // the migration. targetVersion is the embedded-PG version this build ships (constants.DatabaseVersion in production).
 // If a backup was taken, it returns the name of the database that was backed up.
 //
@@ -768,12 +789,12 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 
 	// Determine whether the on-disk old install is a same-major (minor) or a cross-major migration. On a cross-major
 	// jump the public schema migrates through the shared copy-and-fallback engine (runMigrationEngine with the public
-	// shape: schema enumeration -> disk pre-flight -> collation pre-flight -> reserved-word scan -> insurance dump ->
+	// shape: schema enumeration -> disk pre-flight -> collation pre-flight -> reserved-word scan -> working dump ->
 	// restore ladder -> sanity check + row-checksum validation -> tolerant matview refresh -> commit), then, on public
 	// success and while the old cluster is still live, the data-tank migration (migrateDataTankSchemasOnStartup) runs
 	// on the SAME engine; the old data dir is removed only when both commit. Every failure - collation risk flagged by
 	// pre-flight, restore-ladder exhaustion, validation divergence, a data-tank failure - is a fail-stop
-	// (failCrossMajor): the old data dir and the insurance dump are kept and startup returns an error, so the service
+	// (failCrossMajor): the old data dir is kept (dumps deleted) and startup returns an error, so the service
 	// never runs on an empty or unverified database.
 	var crossMajor bool
 	var oldVersion, oldLocation string
@@ -791,26 +812,24 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 	}
 	newVersion := targetVersion
 
-	// failCrossMajor is the fail-stop exit for every cross-major failure: stop the retained old server, keep the
-	// insurance dump and the untouched old data directory, and return an error so startup FAILS with instructions.
-	// The service never runs on an empty or unverified database, which is also what makes the automatic retry on the
-	// next start safe - the new side is always a disposable draft until the one attempt that fully commits.
+	// failCrossMajor is the fail-stop exit for every cross-major failure: stop the retained old server, delete the
+	// working dumps, and return an error so startup FAILS with instructions. The untouched old data directory is the
+	// sole recovery copy on failure - the dump never outlives the attempt (it is the restore SOURCE during the
+	// attempt, not a retained artefact; a retry re-dumps from the preserved old data, and on a shared volume leaving
+	// gigabytes of dead dump behind while the workspace sits parked costs real space). The service never runs on an
+	// empty or unverified database, which is also what makes the automatic retry on the next start safe - the new
+	// side is always a disposable draft until the one attempt that fully commits.
 	failCrossMajor := func(cause string) error {
 		stopRetainedOldServer(ctx)
-		retainedDump := ""
-		if err := retainBackup(ctx); err != nil {
-			log.Printf("[WARN] failed to retain backup file: %v", err)
-		} else {
-			retainedDump = filepaths.BackupsDir()
-		}
-		return crossMajorMigrationFailedError(cause, oldVersion, newVersion, oldLocation, retainedDump)
+		deleteMigrationDumps()
+		return crossMajorMigrationFailedError(cause, oldVersion, newVersion, oldLocation)
 	}
 
 	if crossMajor {
 		// The engine needs the old (source) cluster live - prepareBackup leaves it running on the cross-major path. If
-		// it is unavailable (unexpected), fall back conservatively rather than risk an unvalidated restore. The
-		// insurance dump prepareBackup took (backup.bk, checked above) is retained on every fall-back path and at the
-		// end of the success path; the engine takes its own working dump under the database dir.
+		// it is unavailable (unexpected), fall back conservatively rather than risk an unvalidated restore. The dump
+		// prepareBackup took (backup.bk, checked above) and the engine's own working dumps live under the database
+		// dir for the duration of the attempt; both exits (commit / fail-stop) delete them.
 		backupDir := filepaths.EnsureDatabaseDir()
 		statusPath := filepath.Join(backupDir, "public-migration-status.json")
 		if retainedOldServer == nil {
@@ -857,9 +876,6 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 				log.Printf("[WARN] cross-major data-tank migration failed: %v", dtErr)
 			}
 			cause := "the data-tank migration did not fully commit"
-			if dtRes.dumpPath != "" {
-				cause += fmt.Sprintf(" (that attempt's data-tank dump is retained at %s)", dtRes.dumpPath)
-			}
 			return failCrossMajor(cause)
 		}
 
@@ -868,11 +884,11 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 		// would open a crash window (the old dir's bulk delete can be long) where no migratable source remains but the
 		// marker still says "draft" - the next startup would then refuse to boot a fully committed database. A crash
 		// in the opposite order is harmless: old dir intact + marker rewritten on the idempotent re-run.
+		// The dumps were only ever the restore source - delete them at commit (post-success rollback is the
+		// platform's backup story, e.g. pgbackrest in Pipes, not a dump on the pod's disk).
 		clearMigrationIncompleteMarker()
 		stopRetainedOldServer(ctx)
-		if err := retainBackup(ctx); err != nil {
-			error_helpers.ShowWarning(fmt.Sprintf("Failed to save backup file: %v", err))
-		}
+		deleteMigrationDumps()
 		removeOldDataDirOnMigrationSuccess(true, filepath.Join(oldLocation, "data"))
 		return nil
 	}
@@ -902,7 +918,7 @@ func restoreDBBackup(ctx context.Context, targetVersion string) error {
 	// restore everything, but don't refresh Materialized views.
 	err = runRestoreUsingList(ctx, target, backupFilePath, objectAndStaticDataListFile)
 	if err != nil {
-		// Same-major restore failed. Do NOT brick the service: retain the insurance dump, keep the old data directory
+		// Same-major restore failed. Do NOT brick the service: retain the dump in ~/.steampipe/backups, keep the old data directory
 		// in place, warn the user, and let the service start (the data did not carry over but is recoverable from the
 		// retained dump / preserved old directory).
 		if rerr := retainBackup(ctx); rerr != nil {

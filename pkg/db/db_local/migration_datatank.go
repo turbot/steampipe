@@ -7,12 +7,12 @@ package db_local
 // than the general public-schema migration: data tank has no procedural code, no expression/partial/GIN/GIST indexes,
 // and only one catalog risk - a column literally named system_user (PG16+ reserves SYSTEM_USER).
 //
-// Failure stance: on any unrecoverable or partial failure the OLD PG14 data directory (plus that attempt's safety dump)
-// is left intact on disk and the failure is surfaced to the caller; the production caller (restoreDBBackup) fail-stops
-// startup on any cross-major failure, so the service never runs on a half-migrated database. No version-revert; data is
-// never dropped. The old data directory is the durable copy - a retry replaces the prior attempt's dump with a fresh
-// one from it (dumpDataTankSchemas). The tiered restore escalates parallel -> serial -> per-table COPY -> per-partition
-// COPY before giving up.
+// Failure stance: on any unrecoverable or partial failure the OLD PG14 data directory is left intact on disk and the
+// failure is surfaced to the caller; the production caller (restoreDBBackup) fail-stops startup on any cross-major
+// failure and deletes the working dumps on every exit, so the service never runs on a half-migrated database and no
+// dead dump lingers. No version-revert; data is never dropped. The old data directory is the sole durable copy - a
+// retry takes a fresh dump from it (dumpDataTankSchemas). The tiered restore escalates parallel -> serial -> per-table
+// COPY -> per-partition COPY before giving up.
 
 import (
 	"context"
@@ -82,14 +82,16 @@ type partitionFailure struct {
 // status file. Steampipe only writes the file; reading/polling it is the consuming orchestrator's side of the
 // contract (in Turbot Pipes, the workspace-management workflows).
 type dataTankMigrationStatus struct {
-	Committed          bool               `json:"committed"`
-	TierReached        int                `json:"tier_reached"`
-	ReservedWordRouted bool               `json:"reserved_word_routed"`
-	OldClusterRetained bool               `json:"old_cluster_retained"`
-	RetainedDumpPath   string             `json:"retained_dump_path"`
-	FailedTank         string             `json:"failed_tank,omitempty"`
-	FailedPartitions   []partitionFailure `json:"failed_partitions,omitempty"`
-	Message            string             `json:"message,omitempty"`
+	Committed          bool `json:"committed"`
+	TierReached        int  `json:"tier_reached"`
+	ReservedWordRouted bool `json:"reserved_word_routed"`
+	OldClusterRetained bool `json:"old_cluster_retained"`
+	// RetainedDumpPath is the dump's in-window location at the time the status was written. The dump does NOT
+	// outlive the attempt (the production caller deletes it at commit AND before fail-stopping) - do not rely on it.
+	RetainedDumpPath string             `json:"retained_dump_path"`
+	FailedTank       string             `json:"failed_tank,omitempty"`
+	FailedPartitions []partitionFailure `json:"failed_partitions,omitempty"`
+	Message          string             `json:"message,omitempty"`
 }
 
 // pgClusterRef is the minimal handle the shared cross-major migration engine needs to talk to one PostgreSQL cluster -
@@ -161,8 +163,8 @@ type migrationResult struct {
 	reservedWordRouted bool
 	oldClusterRetained bool
 	committed          bool
-	// dumpPath is the retained dump artefact: a directory for the data-tank shape, a single custom-format file for the
-	// public shape.
+	// dumpPath is the working dump's in-window location: a directory for the data-tank shape, a single custom-format
+	// file for the public shape. The production caller deletes it on every exit; engine-level callers see it in place.
 	dumpPath          string
 	partitionFailures []partitionFailure
 	skippedMgrTables  []string
