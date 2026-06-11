@@ -502,9 +502,17 @@ func migrationIncompleteMarkerExists() bool {
 	return err == nil
 }
 
-// prepareBackup creates a backup file of the public schema for the current database, if we are migrating
-// if a backup was taken, this returns the name of the database that was backed up.
-// targetVersion is the embedded-PG version this build ships (constants.DatabaseVersion in production).
+// prepareBackup detects a prior PG install and, if one exists, dumps its public schema as the insurance backup for
+// the migration. targetVersion is the embedded-PG version this build ships (constants.DatabaseVersion in production).
+// If a backup was taken, it returns the name of the database that was backed up.
+//
+// On a CROSS-major jump it does three further things callers must know about:
+//   - every failure (orphan kill, old-server start, dump) is wrapped in errCrossMajorDumpFailed, on which both
+//     install paths fail-stop instead of warn-and-continue (errDbInstanceRunning keeps its own dedicated handling);
+//   - after a successful dump it writes the migration-incomplete marker, cleared only at full commit;
+//   - it LEAVES THE OLD SERVER RUNNING, parked in the package global retainedOldServer, because restoreDBBackup needs
+//     the old cluster live for the collation pre-flight and post-restore validation. Every later exit path -
+//     success or failure - must stop it (stopRetainedOldServer).
 func prepareBackup(ctx context.Context, targetVersion string) (*string, error) {
 	found, location, err := findDifferentPgInstallation(ctx, targetVersion)
 	if err != nil {

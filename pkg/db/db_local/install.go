@@ -166,6 +166,7 @@ func EnsureDBInstalled(ctx context.Context) (err error) {
 	err = updateDownloadedBinarySignature()
 	if err != nil {
 		log.Printf("[TRACE] updateDownloadedBinarySignature failed: %v", err)
+		stopRetainedOldServer(ctx)
 		return fmt.Errorf("Updating install records... FAILED!")
 	}
 

@@ -219,7 +219,7 @@ apt install -y build-essential wget ca-certificates \
 2. Set installation prefix and linker flags:
 
    ```bash
-   export PREFIX=/postgres-binaries-14.19/linux-$(uname -m)
+   export PREFIX=/postgres-binaries-18.4/linux-$(uname -m)
    mkdir -p "$PREFIX"
    export LDFLAGS='-Wl,-rpath,$ORIGIN/../lib/postgresql -Wl,--enable-new-dtags'
    ```
@@ -285,7 +285,7 @@ apt install -y build-essential wget ca-certificates \
 
 ```bash
 cd $(dirname "$PREFIX")
-tar -cJf postgres-14.19-$(uname -m).txz $(basename "$PREFIX")
+tar -cJf postgres-18.4-$(uname -m).txz $(basename "$PREFIX")
 ```
 
 ✅ **Done.**
