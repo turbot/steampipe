@@ -476,10 +476,13 @@ func stopRetainedOldServer(ctx context.Context) {
 	retainedOldServer = nil
 }
 
-// migrationIncompleteMarkerPath is a flag file recording that a cross-major migration has started and not yet fully
-// committed. While it exists, the current version's data directory is a disposable draft. Its job is the opt-out
-// path: if the user parks the old data directory to skip migrating, the next startup must NOT silently boot whatever
-// half-written draft the failed attempt left at the current version's path - the marker makes that state detectable.
+// The migration-incomplete flag is a BACKSTOP, not part of the migration's decision flow - see the "BACKSTOP"
+// section of migration_engine.go's header for the full rationale. In one line: it makes "old data unreachable while
+// a half-written new-side cluster exists" detectable, a state the PG_VERSION check cannot see, so startup refuses
+// (prepareDb's guard) instead of silently serving partial data. Written once a cross-major migration starts writing
+// into the new side (after a successful dump, so a dump failure cannot strand a stale flag); cleared at commit,
+// BEFORE the old-data deletion gate (a crash between the two is harmless either way: old dir intact -> idempotent
+// re-run rewrites the flag; flag cleared + old dir intact -> plain re-run). Never consulted to decide a migration.
 func migrationIncompleteMarkerPath() string {
 	return filepath.Join(filepaths.EnsureDatabaseDir(), "migration-incomplete.flag")
 }

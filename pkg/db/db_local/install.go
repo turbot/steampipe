@@ -286,10 +286,12 @@ func prepareDb(ctx context.Context) error {
 	}
 	migrationPending := dbName != nil
 
-	// A migration-incomplete marker with NO pending migration means a previous cross-major attempt got past its dump
-	// (the marker is written only after a successful dump) but never committed, and its source is now undetectable -
-	// most likely the old directory was parked to opt out. The current data dir may hold that attempt's half-written
-	// draft - refusing to start beats silently booting it as if it were real data.
+	// BACKSTOP guard (see the BACKSTOP section of migration_engine.go's header). The flag with NO pending migration
+	// means a previous cross-major attempt started writing into the current data dir but never committed, and its
+	// source is now undetectable - on a laptop the old directory was parked; in a hosted deployment the old data's
+	// mount was dropped mid-window (stale renderer config, a fleet config flip racing this workspace's completion, or
+	// a hand-built pod spec). The current data dir may hold that attempt's half-written draft, which is a valid,
+	// bootable cluster - refusing to start beats silently serving partial data as if it were complete.
 	if !migrationPending && migrationIncompleteMarkerExists() {
 		return fmt.Errorf(`a previous cross-major database migration started but never completed, and no old version's data directory can be found to migrate from (it may have been moved aside).
 
