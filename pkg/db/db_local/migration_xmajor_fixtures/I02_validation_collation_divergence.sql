@@ -1,4 +1,4 @@
--- Reframed (exec-2c, updated task-10): the original fixture inserted non-ASCII
+-- Reframed: the original fixture inserted non-ASCII
 -- text, which the production pre-flight collation scan flags before the
 -- post-restore validation pass gets a chance to run. The case's intent was
 -- always to exercise the validation-divergence rollback path, so the fixture

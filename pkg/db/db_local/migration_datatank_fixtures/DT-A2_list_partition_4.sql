@@ -1,12 +1,9 @@
 -- DT-A2: Single data tank, one table, 4 partitions (100 rows total).
 --
--- The task file originally proposed HASH partitioning here. exec-5
--- (data-tank-storage-patterns.md, "Partitioning") establishes that real data
--- tank uses ONLY declarative PARTITION BY LIST(_cloud_partition) - "No
--- PARTITION BY HASH or PARTITION BY RANGE anywhere." DT-A2 is therefore a
+-- Real data tank uses ONLY declarative PARTITION BY LIST(_cloud_partition) -
+-- no PARTITION BY HASH or PARTITION BY RANGE anywhere. DT-A2 is therefore a
 -- LIST-partition fixture with 4 children (4 connections / aggregator parts),
--- not HASH. This is the deviation called out in the task header ("if a
--- category below turns out to not apply to real data tank, drop it").
+-- not HASH.
 
 create schema if not exists "fast_aws";
 create schema if not exists "fast_aws-parts";

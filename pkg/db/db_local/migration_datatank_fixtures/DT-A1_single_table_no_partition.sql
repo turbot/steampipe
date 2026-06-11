@@ -3,8 +3,8 @@
 -- Real data tank ALWAYS uses PARTITION BY LIST(_cloud_partition) even for the
 -- "no partition" / aggregator case - the parent is still partitioned, with a
 -- single child partition keyed by the aggregator/connection name
--- (data-tank-storage-patterns.md: "even an aggregator data-tank with one part
--- still uses PARTITION BY LIST with a single child"). There is no
+-- (even an aggregator data tank with one part
+-- still uses PARTITION BY LIST with a single child). There is no
 -- non-partitioned standalone-table code path. So "no partitions" here means
 -- "one partition", matching the real shape.
 --

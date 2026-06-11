@@ -1,7 +1,7 @@
 -- DT-C1: reserved-word trip wire. A source-plugin column named system_user.
 -- PG16+ reserves SYSTEM_USER; a PG14 pg_dump that emits the column unquoted
 -- restore-fails on PG18 with a syntax error (catalog item F05). The DESIRED
--- behaviour exec-5b must implement: a reserved-word pre-flight scan flags the
+-- behaviour the engine implements: a reserved-word pre-flight scan flags the
 -- column and routes the migration directly to tier 3 (per-table COPY with
 -- quoted identifiers), which succeeds. Outcome:
 -- dtOutcomeAutoRestoreSucceededAtTier3.

@@ -2,7 +2,7 @@ package db_local
 
 // Startup-wiring test for the data-tank cross-major migration.
 //
-// exec-6c wires the shared engine into the cross-major startup path: after the public-schema migration succeeds (and
+// The shared engine is wired into the cross-major startup path: after the public-schema migration succeeds (and
 // while the old cluster is still live), restoreDBBackup calls migrateDataTankSchemasOnStartup, which detects data-tank
 // schemas on the old cluster and migrates them old -> new. The single deletion gate
 // (removeOldDataDirOnMigrationSuccess) then removes the old data directory only when BOTH the public-schema and the

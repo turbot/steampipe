@@ -1,4 +1,4 @@
--- DT-A4: Aggregator-only data tank. Per exec-5, the aggregator type is NOT a
+-- DT-A4: Aggregator-only data tank. In the real data tank, the aggregator type is NOT a
 -- separate storage shape - it is the same parent + parts + PARTITION BY LIST
 -- shape with ONE partition keyed by the aggregator's name (rather than per
 -- connection). aggregator.go is pure orchestration; storage goes through the

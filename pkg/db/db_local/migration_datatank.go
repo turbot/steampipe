@@ -79,8 +79,8 @@ type partitionFailure struct {
 }
 
 // dataTankMigrationStatus is the orchestrator-facing structured failure signal. It is JSON-serialised to a well-known
-// marker file the orchestrator polls. The marker is the contract surface this task ships; orchestrator-side polling is
-// the separate 5b-orchestrator task.
+// status file. Steampipe only writes the file; reading/polling it is the consuming orchestrator's side of the
+// contract (in Turbot Pipes, the workspace-management workflows).
 type dataTankMigrationStatus struct {
 	Committed          bool               `json:"committed"`
 	TierReached        int                `json:"tier_reached"`

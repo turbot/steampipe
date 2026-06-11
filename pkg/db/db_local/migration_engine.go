@@ -37,8 +37,7 @@ type migrationShape struct {
 
 	// collationPreCheck runs the non-ASCII / collation pre-flight scan (runPreflightCollationScan) against the source
 	// before restoring. ON for public (arbitrary user content can carry non-ASCII text under collation-ordered
-	// indexes/views); OFF for data tank (its key columns were shown ASCII-only, so the scan would never fire -
-	// exec-5-followup Q2).
+	// indexes/views); OFF for data tank (its key columns were shown ASCII-only, so the scan would never fire).
 	collationPreCheck bool
 
 	// rowChecksumValidation runs the post-restore row-count + sample-row checksum + index-validity pass

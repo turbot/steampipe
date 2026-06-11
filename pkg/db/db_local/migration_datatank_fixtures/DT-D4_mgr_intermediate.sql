@@ -1,9 +1,9 @@
 -- DT-D4: a user-driven intra-version schema migration is in flight when the
--- PG-version migration begins. exec-5 (cleanup.go:174, relname like '%_mgr_%')
+-- PG-version migration begins. The Pipes data-tank code (cleanup.go, relname like '%_mgr_%')
 -- documents the _mgr_ infix convention for "migrating" parent tables that sit
 -- under a temporary name until the user-driven swap completes.
 --
--- DESIRED behaviour exec-5b must implement: detect _mgr_ infix tables and
+-- DESIRED behaviour the engine must implement: detect _mgr_ infix tables and
 -- either skip them or wait for the cleanup workflow before the PG migration
 -- starts. This fixture seeds both a normal data-tank table AND a _mgr_
 -- intermediate so the harness can assert the chosen path is honoured.

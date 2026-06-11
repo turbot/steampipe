@@ -774,9 +774,9 @@ func (w *worker) runCase(ctx context.Context, tc xmigCase) (migrationOutcome, er
 
 	// Data-preservation invariant (governing decision 2026-06-08): for every failure-ending outcome the migration
 	// must leave the original recoverable - the old PG14 data directory present and populated, plus (where a dump was
-	// taken) the safety dump retained. This is asserted PER failure case here so a regression in exec-6b that deletes
-	// the old dir before the migration is 100% complete is caught at the point of failure. exec-6d is the dedicated
-	// gate test; this is the per-case guard.
+	// taken) the safety dump retained. This is asserted PER failure case here so an engine regression that deletes
+	// the old dir before the migration is 100% complete is caught at the point of failure.
+	// migration_deletion_gate_test.go is the dedicated gate test; this is the per-case guard.
 	if isPublicFailureOutcome(res.outcome) {
 		if perr := assertOldDataDirPreserved(w.pg14Data()); perr != nil {
 			return res.outcome, fmt.Errorf("data-preservation invariant violated for %s: %w", res.outcome, perr)

@@ -1,6 +1,6 @@
 -- DT-A3: Single data tank, one table, 10 partitions keyed by connection-ID-like
 -- value, small. This is the canonical real shape: "Partition per connection"
--- (data-tank-storage-patterns.md / Victor) - a workspace with 10 connections
+-- - a workspace with 10 connections
 -- becomes 10 _cloud_partition values. Partition names follow the real format
 -- <datatank_part_id>-<YYYYMMDDHHMMSS> (partition.go generatePartitionName).
 

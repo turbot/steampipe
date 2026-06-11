@@ -1,4 +1,4 @@
--- Reframed (exec-2c, updated task-10): the original fixture used non-ASCII
+-- Reframed: the original fixture used non-ASCII
 -- data plus a functional index over lower(name), which the production
 -- pre-flight collation scan flags (lower( regex hit + non-ASCII data) before
 -- the post-restore validation pass can see anything. The case's intent was

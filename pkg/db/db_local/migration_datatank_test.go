@@ -2,8 +2,8 @@ package db_local
 
 // Data-tank cross-major (PG14 -> PG18) migration test matrix.
 //
-// This suite is the TEST CONTRACT for the data-tank cross-major migration path (exec-5b). It is written against the
-// DESIRED behaviour described in data-tank-storage-patterns.md (exec-5):
+// This suite is the TEST CONTRACT for the data-tank cross-major migration path (migration_datatank.go). It is written
+// against the DESIRED behaviour of that path:
 //
 //   - Each data tank is a <handle> + <handle>-parts schema PAIR. The migration must dump/restore every data-tank schema
 //     pair, preserving the declarative PARTITION BY LIST(_cloud_partition) topology and re-attaching every partition.
@@ -29,12 +29,12 @@ package db_local
 // HOW TO RUN
 // ----------
 //   # Place PG14 and PG18 binaries under (default) /tmp/sp-dt-xmig-tests/db/<ver>/postgres
-//   # OR set STEAMPIPE_DT_XMIG_TEST_ROOT. (The exec-2a suite's default root
-//   # /tmp/sp-xmig-tests already has the binaries; point the env var there.)
+//   # OR set STEAMPIPE_DT_XMIG_TEST_ROOT. (The cross-major suite's default root
+//   # /tmp/sp-xmig-tests - see migration_xmajor_test.go - already has the binaries; point the env var there.)
 //   go test ./pkg/db/db_local/... -run TestDataTankMigration -v -count=1
 //
 // The harness owns only the out-of-process plumbing (boots a real PG14 source cluster + a real PG18 target cluster over
-// Unix sockets, applies fixture SQL, runs pg_dump / pg_restore). Policy decisions belong to exec-5b's code.
+// Unix sockets, applies fixture SQL, runs pg_dump / pg_restore). Policy decisions belong to the production code.
 
 import (
 	"context"
@@ -58,8 +58,8 @@ import (
 )
 
 // -----------------------------------------------------------------------------
-// Outcome enum. Separate type / separate prefix from exec-2a's migrationOutcome because the data-tank value set names
-// the restore TIER reached. (Spec: exec-5a task file, "Outcome enum" section.)
+// Outcome enum. Separate type / separate prefix from migration_xmajor_test.go's migrationOutcome because the
+// data-tank value set names the restore TIER reached.
 // -----------------------------------------------------------------------------
 
 type dataTankMigrationOutcome int
@@ -115,8 +115,8 @@ func (o dataTankMigrationOutcome) String() string {
 }
 
 // -----------------------------------------------------------------------------
-// Binary locations. Mirrors the exec-2a layout under a data-tank-specific root so the two suites don't share a worker
-// tree.
+// Binary locations. Mirrors migration_xmajor_test.go's layout under a data-tank-specific root so the two suites don't
+// share a worker tree.
 // -----------------------------------------------------------------------------
 
 const (
@@ -172,7 +172,7 @@ func dtScaleRows(n int) int {
 // dtScalePartitions scales partition COUNTS by the same volume knob, but only for counts above a small floor - so a
 // smoke run (STEAMPIPE_DT_XMIG_VOLUME small) does not spend minutes building tens of thousands of partition tables just
 // to load a fixture. At the default multiplier (1.0) the production-scale counts (DT-B5 = 600, DT-B6 = 33,600) are
-// preserved exactly, which is what feeds exec-5b's ATTACH-cost budget.
+// preserved exactly, which is what feeds the partition-ATTACH cost budget.
 func dtScalePartitions(n int) int {
 	if n <= 4 {
 		return n // small fixtures keep their exact shape
@@ -239,7 +239,7 @@ func dtStartCluster(ctx context.Context, version, dataDir, sockDir string) (*dtC
 		"-c", "full_page_writes=off",
 		"-c", "synchronous_commit=off",
 		// DT-B6 attaches ~33k partitions; the default max_locks_per_transaction (64) overflows the lock table when a
-		// single transaction touches that many relations. Raise it so the fixture can load. (exec-5b's real
+		// single transaction touches that many relations. Raise it so the fixture can load. (The production
 		// partition-batch ATTACH spreads this across transactions instead.)
 		"-c", "max_locks_per_transaction=50000",
 	)
@@ -385,7 +385,7 @@ type dtMigrationReport struct {
 	oldClusterRetained bool
 }
 
-// runDataTankMigration is the SEAM exec-5b implements. It adapts the test harness's dtCluster handles + dtCaseSetup
+// runDataTankMigration is the suite's single entry point into the engine. It adapts the test harness's dtCluster handles + dtCaseSetup
 // injection flags onto the real tiered data-tank migration engine (migration_datatank.go) and maps the engine's result
 // back onto the suite's outcome enum + report.
 func runDataTankMigration(ctx context.Context, oldC, newC *dtCluster, backupDir string, setup dtCaseSetup) (dataTankMigrationOutcome, dtMigrationReport, error) {
@@ -503,7 +503,7 @@ end $$;`, partitions, rowsPerPart))
 }
 
 // dtGenVolumeSQLMultiTable builds a multi-table volume fixture: `tables` tables, each with `partitionsPerTable`
-// partitions and `rowsPerPart` rows. Used by DT-B6 (state-farm workspace aggregate: ~33k partitions across 60 tables).
+// partitions and `rowsPerPart` rows. Used by DT-B6 (largest-production-workspace aggregate: ~33k partitions across 60 tables).
 func dtGenVolumeSQLMultiTable(tables, partitionsPerTable, rowsPerPart int) string {
 	var b strings.Builder
 	b.WriteString(`create schema if not exists "vol_aws";`)
@@ -587,7 +587,7 @@ type dtCase struct {
 	wantMinTier            int  // DT-F2..F4: the escalation must reach at least this tier
 	wantOldClusterRetained bool // DT-E3 / DT-E4 / DT-F5: a preserve outcome must retain the old PG14 dir
 
-	// loadTest marks the exec-5c LE-* cases. runCase captures wall-clock + disk metrics for these and appends them to
+	// loadTest marks the LE-* load cases. runCase captures wall-clock + disk metrics for these and appends them to
 	// the per-run metrics file so the load-test report (output/data-tank-load-test-<date>.md) is built from measured
 	// numbers, not estimates.
 	loadTest bool
@@ -610,9 +610,9 @@ func dtCases() []dtCase {
 		{name: "DT-B2", expected: dtOutcomeAutoRestoreSucceededAtTier1, setup: dtCaseSetup{volPartitions: 1, volRowsPerPart: dtScaleRows(100000)}},
 		{name: "DT-B3", expected: dtOutcomeAutoRestoreSucceededAtTier1, setup: dtCaseSetup{volPartitions: 1, volRowsPerPart: dtScaleRows(1000000)}},
 		{name: "DT-B4", expected: dtOutcomeAutoRestoreSucceededAtTier1, setup: dtCaseSetup{volPartitions: dtScalePartitions(60), volRowsPerPart: dtScaleRows(100000)}},
-		// DT-B5: state-farm single-table max (600 partitions x 60k rows = 36M).
+		// DT-B5: largest observed production single-table max (600 partitions x 60k rows = 36M).
 		{name: "DT-B5", expected: dtOutcomeAutoRestoreSucceededAtTier1, setup: dtCaseSetup{volPartitions: dtScalePartitions(600), volRowsPerPart: dtScaleRows(60000)}},
-		// DT-B6: state-farm workspace aggregate (~33k partitions across 60 tables). 60 tables x 560 partitions ~=
+		// DT-B6: largest-production-workspace aggregate (~33k partitions across 60 tables). 60 tables x 560 partitions ~=
 		// 33,600 partitions. Small rows-per-part so the ATTACH cost - not the row volume - is what is exercised.
 		{name: "DT-B6", expected: dtOutcomeAutoRestoreSucceededAtTier1, setup: dtCaseSetup{volTables: dtScalePartitions(60), volPartitions: dtScalePartitions(560), volRowsPerPart: dtScaleRows(10)}},
 
@@ -629,8 +629,8 @@ func dtCases() []dtCase {
 		// (post-swap-or-pre-swap) snapshot and the restore succeeds at tier 1 (ATTACH transactions are atomic
 		// per-table).
 		{name: "DT-D3", fixture: "DT-D_base.sql", assert: "DT-D_base.assert.sql", expected: dtOutcomeAutoRestoreSucceededAtTier1, setup: dtCaseSetup{swapInFlight: true}},
-		// DT-D4: _mgr_ intermediate-table cleanup in flight. Desired: exec-5b detects _mgr_ infix tables and migrates
-		// cleanly (skip-or-wait path).
+		// DT-D4: _mgr_ intermediate-table cleanup in flight. Desired: the engine detects _mgr_ infix tables and
+		// migrates cleanly (skip-or-wait path).
 		{name: "DT-D4", fixture: "DT-D4_mgr_intermediate.sql", assert: "DT-D4_mgr_intermediate.assert.sql", expected: dtOutcomeAutoRestoreSucceededAtTier1, setup: dtCaseSetup{mgrCleanupInFlight: true}},
 
 		// ---- Category DT-E: operational edge cases ----
@@ -692,16 +692,16 @@ func dtCases() []dtCase {
 	return cases
 }
 
-// dtLoadCases returns the LE-1..LE-11 load / resilience / tier-escalation cases (exec-5c). They reuse the same harness,
-// volume generators and fault-injection flags as the DT-* matrix but at production-calibrated scale (state-farm: 600
+// dtLoadCases returns the LE-1..LE-11 load / resilience / tier-escalation cases. They reuse the same harness,
+// volume generators and fault-injection flags as the DT-* matrix but at production-calibrated scale (largest observed production workspace: 600
 // partitions in the largest single table, ~33,600 partitions per workspace). Every LE case carries loadTest=true so
 // runCase captures wall-clock + disk metrics into the per-run metrics file (see dtRecordMetrics).
 //
 // Scale knobs (LE_* volume): the LE-3-derived cases (LE-3, LE-5..LE-11) all use the same 600x60k = 36M-row single-tank
-// fixture so their wall-clocks are directly comparable (LE-8 = 1.5xLE-3, LE-9 = 2xLE-3, etc. budgets in the task).
+// fixture so their wall-clocks are directly comparable (the escalation budgets are multiples of LE-3's baseline).
 func dtLoadCases() []dtCase {
 	const (
-		le3Partitions  = 600   // state-farm largest single table
+		le3Partitions  = 600   // largest observed production single table
 		le3RowsPerPart = 60000 // 600 x 60k = 36M rows
 	)
 	le3Setup := func() dtCaseSetup {
@@ -718,9 +718,9 @@ func dtLoadCases() []dtCase {
 		// LE-2: 60 partitions x 100k = 6M rows (mid-size single-table). Tier 1.
 		{name: "LE-2", loadTest: true, expected: dtOutcomeAutoRestoreSucceededAtTier1, wantMinTier: 1,
 			setup: dtCaseSetup{volPartitions: dtScalePartitions(60), volRowsPerPart: dtScaleRows(100000)}},
-		// LE-3: 600 partitions x 60k = 36M rows (state-farm largest single table). Tier 1.
+		// LE-3: 600 partitions x 60k = 36M rows (largest observed production single table). Tier 1.
 		{name: "LE-3", loadTest: true, expected: dtOutcomeAutoRestoreSucceededAtTier1, wantMinTier: 1, setup: le3Setup()},
-		// LE-4: state-farm workspace aggregate: ~33,600 partitions across 60 tables. Tier 1.
+		// LE-4: largest-production-workspace aggregate: ~33,600 partitions across 60 tables. Tier 1.
 		{name: "LE-4", loadTest: true, expected: dtOutcomeAutoRestoreSucceededAtTier1, wantMinTier: 1,
 			setup: dtCaseSetup{volTables: dtScalePartitions(60), volPartitions: dtScalePartitions(560), volRowsPerPart: dtScaleRows(10)}},
 		// LE-5: LE-3 + concurrent refresh attempt during migration, pause hook honoured. Refresh-pause respected =>
@@ -865,7 +865,7 @@ func (w *dtWorker) runCase(ctx context.Context, tc dtCase) (dataTankMigrationOut
 		return 0, merr
 	}
 
-	// Load-test metric capture (exec-5c). Measured AFTER the migration returns so the dump dir + target data dir
+	// Load-test metric capture. Measured AFTER the migration returns so the dump dir + target data dir
 	// reflect peak on-disk footprint of the run.
 	if tc.loadTest {
 		dumpBytes := dtDirSize(w.backupDir())
@@ -900,7 +900,8 @@ func (w *dtWorker) runCase(ctx context.Context, tc dtCase) (dataTankMigrationOut
 	// Data-preservation invariant (governing decision 2026-06-08): for EVERY failure-ending outcome the original must
 	// remain recoverable on disk - the old PG14 data directory present and populated, plus (where a dump was taken) the
 	// safety dump directory retained. Asserted per failure case so a regression that deletes the old dir before the
-	// migration is 100% complete is caught here. (exec-6d is the dedicated gate test; this is the per-case guard.)
+	// migration is 100% complete is caught here. (migration_deletion_gate_test.go is the dedicated gate test; this is
+	// the per-case guard.)
 	if isDataTankFailureOutcome(got) {
 		if perr := dtAssertOldDataDirPreserved(w.pg14Data()); perr != nil {
 			return got, fmt.Errorf("data-preservation invariant violated for %s: %w", got, perr)
@@ -1055,7 +1056,7 @@ func dtReadAssert(name string) (string, error) {
 }
 
 // -----------------------------------------------------------------------------
-// Load-test metric capture (exec-5c). Each LE-* case appends one JSON line to the metrics file named by
+// Load-test metric capture. Each LE-* case appends one JSON line to the metrics file named by
 // STEAMPIPE_DT_XMIG_METRICS (default: a file under the test root). The load-test report is built from these measured
 // numbers.
 // -----------------------------------------------------------------------------

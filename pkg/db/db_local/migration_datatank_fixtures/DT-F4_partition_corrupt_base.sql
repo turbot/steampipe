@@ -1,5 +1,5 @@
 -- DT-F4 base: a data tank with many partitions. The harness corrupts the data
--- of ONE partition at restore time. DESIRED behaviour exec-5b implements:
+-- of ONE partition at restore time. DESIRED behaviour the engine implements:
 -- tiers 1-3 fail at the bad partition, tier 4 (per-partition COPY) lands the
 -- good partitions but the bad one never migrates - a PARTIAL result, NOT a
 -- success. Outcome: dtOutcomePartialRestoreDataPreserved (committed=false; old

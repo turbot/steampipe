@@ -1,14 +1,14 @@
 package db_local
 
-// Deletion-gate guarantee test (exec-6d).
+// Deletion-gate guarantee test.
 //
 // The whole data-safety design reduces to one rule (the 2026-06-08 governing decision): the old data directory is
 // NEVER deleted until the migration is confirmed 100% complete; on any failure or partial result the original is
 // preserved on disk in two independent forms - the untouched old PG14 data directory AND the retained safety dump -
 // and in production the failure fail-stops startup (restoreDBBackup; no version-revert).
 //
-// exec-6a asserts per-breakage OUTCOMES. This suite asserts the INVARIANT itself, exhaustively over outcome
-// categories, for both data shapes:
+// The cross-major and data-tank matrices assert per-breakage OUTCOMES. This suite asserts the INVARIANT itself,
+// exhaustively over outcome categories, for both data shapes:
 //
 //   | Outcome category            | Old data dir            | Safety dump |
 //   | full success                | removed (gate fires)    | retained    |
@@ -126,7 +126,7 @@ const publicRowCountSQL = `SELECT count(*) FROM public.things`
 
 // assertOldDataDirCleared asserts the migration commit fired on success: the old data dir's PG_VERSION is gone (the
 // atomic commit the startup trigger keys on) and the directory's contents are cleared, but the directory itself is
-// preserved (in Pipes it is a mounted volume - we delete the contents, not the dir; Victor: "delete the contents").
+// preserved (in Pipes it is a mounted volume - we delete the contents, not the dir).
 // After this the old dir no longer reads as a migratable cluster and cannot be booted.
 func assertOldDataDirCleared(t *testing.T, oldDataDir string) {
 	t.Helper()
@@ -463,7 +463,7 @@ insert into public.things values (1, 'alpha'), (2, 'bravo'), (3, 'charlie'), (4,
 }
 
 // -----------------------------------------------------------------------------
-// Wired startup path (exec-6c).
+// Wired startup path (migrateDataTankSchemasOnStartup, called from restoreDBBackup's cross-major success branch).
 // -----------------------------------------------------------------------------
 
 // TestDeletionGate_WiredStartup_FailurePreservesOldDir: drive a real failure through the production entry point
