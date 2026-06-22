@@ -981,6 +981,30 @@ func runRestoreUsingList(ctx context.Context, target *pgClusterRef, dumpPath, li
 		// This ensures that either all the commands complete successfully, or no changes are applied.
 		// This option implies --exit-on-error.
 		"--single-transaction",
+		// --no-owner --no-privileges: restore the public schema's objects WITHOUT their ownership
+		// (ALTER ... OWNER TO) or access-privilege (GRANT/REVOKE) statements. This is the public-schema
+		// counterpart of the --no-owner the data-tank restore already uses, and it is safe here for
+		// reasons specific to the public schema:
+		//
+		//   Ownership: every object is restored as the connecting superuser (target.user), the role
+		//   steampipe runs as. Re-assigning ownership to the source cluster's owning roles adds nothing
+		//   and would FAIL whenever such a role is absent from the freshly-initdb'd target - initdb
+		//   creates only steampipe's own roles, not roles a managed deployment provisions separately.
+		//
+		//   Privileges: a workspace's public schema can carry GRANT/REVOKE referencing roles that do not
+		//   exist in a fresh cluster (e.g. an auth role a managed deployment such as Turbot Pipes
+		//   provisions outside this migration). Under --single-transaction one such statement aborts the
+		//   ENTIRE restore. Dropping these grants loses nothing real: every privilege steampipe itself
+		//   depends on is re-applied unconditionally on each startup by setupInternal (see internal.go) -
+		//   steampipe_users USAGE/SELECT/INSERT on the public, internal and command schemas - and any
+		//   remaining grants belong to roles the managed deployment re-provisions itself. Standalone
+		//   steampipe's public schema carries no such grants at all.
+		//
+		// NB: the data-tank restore deliberately does the OPPOSITE for privileges (it keeps them): tank
+		// tables carry steampipe_users grants that are persisted data nothing re-applies after a
+		// migration, so stripping them there would silently drop read access to the tank data.
+		"--no-owner",
+		"--no-privileges",
 		// Restore only those archive elements that are listed in list-file, and restore them in the order they appear in the file.
 		fmt.Sprintf("--use-list=%s", listFile),
 		// the database name

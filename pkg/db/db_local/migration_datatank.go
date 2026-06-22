@@ -414,6 +414,12 @@ func restoreTier1ParallelDump(ctx context.Context, target *pgClusterRef, dumpDir
 		"--format=directory",
 		fmt.Sprintf("--jobs=%d", jobs),
 		"--exit-on-error",
+		// --no-owner but deliberately NOT --no-privileges: restore as the connecting superuser, yet KEEP
+		// the dump's GRANT/REVOKE. Tank tables carry steampipe_users read grants that are persisted data
+		// nothing re-applies after a migration; both grantees (root and steampipe_users) already exist in
+		// the target before the restore runs, so the grants resolve cleanly and MUST be preserved. Adding
+		// --no-privileges here would silently strip read access to the tank data. (The public-schema
+		// restore is the opposite case and DOES pass --no-privileges - see runRestoreUsingList.)
 		"--no-owner",
 		"--dbname=" + target.dbName,
 		"--username=" + target.user,
@@ -434,6 +440,7 @@ func restoreTier2SerialDump(ctx context.Context, target *pgClusterRef, dumpDir s
 		dumpDir,
 		"--format=directory",
 		"--single-transaction",
+		// --no-owner but NOT --no-privileges (keep the dump's grants) - see restoreTier1ParallelDump for why.
 		"--no-owner",
 		"--dbname=" + target.dbName,
 		"--username=" + target.user,
