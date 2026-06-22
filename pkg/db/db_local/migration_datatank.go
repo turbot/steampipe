@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -453,7 +454,9 @@ func restoreTier2SerialDump(ctx context.Context, target *pgClusterRef, dumpDir s
 // It reads the LIVE old cluster for table structure + partition metadata and streams data from old -> new via COPY, so
 // it does not depend on pg_restore being able to parse the dump's emitted DDL at all.
 func restoreTier3PerTableCOPY(ctx context.Context, src, target *pgClusterRef, parents []dataTankTable, faults migrationFaults) (failed []dataTankTable, err error) {
-	for _, p := range parents {
+	log.Printf("[INFO] restore tier 3: per-table COPY of %d table(s)", len(parents))
+	for i, p := range parents {
+		log.Printf("[INFO] tier 3: table %d/%d %s", i+1, len(parents), qualName(p.schema, p.table))
 		if faults.corruptOnePartition {
 			// A corrupt partition's data cannot be COPYed as a whole table, so the per-table tier fails for the
 			// affected parent and defers it to the per-partition tier.
@@ -498,6 +501,9 @@ func copyParentTable(ctx context.Context, src, target *pgClusterRef, parent data
 		if err := copyPartitionData(ctx, src, target, part); err != nil {
 			return fmt.Errorf("copy partition %q.%q: %w", part.partSchema, part.partTable, err)
 		}
+		if n := i + 1; len(parts) >= 500 && (n%500 == 0 || n == len(parts)) {
+			log.Printf("[INFO] %s: %d/%d partitions copied", qualName(parent.schema, parent.table), n, len(parts))
+		}
 	}
 	// A plain (non-partitioned) table holds its rows directly - there are no partitions to carry them. A partitioned
 	// parent with zero partitions has no rows by definition, so this only fires for genuinely plain tables.
@@ -537,7 +543,9 @@ func dropTargetTable(ctx context.Context, tgtConn *pgx.Conn, t dataTankTable) er
 // partitions one at a time, attaching the ones that COPY cleanly and recording the failures on the needs-help list. A
 // tank that lands 19/20 partitions is degraded-but-functional; the bad partition can be hand-migrated.
 func restoreTier4PerPartitionCOPY(ctx context.Context, src, target *pgClusterRef, parents []dataTankTable, faults migrationFaults) (failures []partitionFailure, err error) {
-	for _, parent := range parents {
+	log.Printf("[INFO] restore tier 4: per-partition COPY of %d table(s)", len(parents))
+	for i, parent := range parents {
+		log.Printf("[INFO] tier 4: table %d/%d %s", i+1, len(parents), qualName(parent.schema, parent.table))
 		srcConn, cerr := src.connect(ctx)
 		if cerr != nil {
 			return nil, cerr
@@ -618,6 +626,9 @@ func restoreTier4PerPartitionCOPY(ctx context.Context, src, target *pgClusterRef
 					PartTable:    part.partTable,
 					Reason:       perr.Error(),
 				})
+			}
+			if n := i + 1; len(parts) >= 500 && (n%500 == 0 || n == len(parts)) {
+				log.Printf("[INFO] %s: %d/%d partitions copied", qualName(parent.schema, parent.table), n, len(parts))
 			}
 		}
 		srcConn.Close(ctx)
@@ -949,8 +960,12 @@ func migrateDataTankSchemasOnStartup(ctx context.Context, old, new *pgClusterRef
 // original.
 func runTieredRestore(ctx context.Context, src, target *pgClusterRef, parents []dataTankTable, dumpPath string, jobs int, reservedWordRouted bool, ceiling dataTankRestoreTier, restoreTier1Fn func(context.Context, *pgClusterRef, string, int) error, restoreTier2Fn func(context.Context, *pgClusterRef, string) error, faults migrationFaults) (dataTankRestoreTier, []partitionFailure, error) {
 	// Reserved-word route: skip straight to tier 3.
+	if reservedWordRouted {
+		log.Printf("[INFO] reserved word in source DDL; restore starting at tier 3 (per-table COPY)")
+	}
 	if !reservedWordRouted {
 		// Tier 1: parallel pg_restore.
+		log.Printf("[INFO] restore tier 1: parallel pg_restore")
 		if !faults.failTier1 && !faults.failAllTiers {
 			if err := restoreTier1Fn(ctx, target, dumpPath, jobs); err == nil {
 				return dtRestoreTier1Parallel, nil, nil
@@ -958,6 +973,7 @@ func runTieredRestore(ctx context.Context, src, target *pgClusterRef, parents []
 		}
 		// Tier 2: serial pg_restore. The target may hold partial objects from a failed tier 1; reset it first so tier 2
 		// starts clean.
+		log.Printf("[INFO] restore tier 1 unsuccessful; escalating to tier 2: serial pg_restore")
 		if err := resetTargetDataTankSchemas(ctx, src, target); err == nil {
 			if !faults.failTier2 && !faults.failAllTiers {
 				if err := restoreTier2Fn(ctx, target, dumpPath); err == nil {

@@ -295,6 +295,8 @@ func runMigrationEngine(ctx context.Context, shape migrationShape, src, target *
 	dumpPath := filepath.Join(backupDir, shape.dumpSubdir)
 	res.dumpPath = dumpPath
 
+	log.Printf("[INFO] %s migration: starting - %d schema(s), %d partitioned table(s)", shape.name, len(schemas), len(parents))
+
 	// Step 2: disk pre-flight.
 	if faults.forceDiskPreflightFail {
 		srcConn.Close(ctx)
@@ -363,6 +365,7 @@ func runMigrationEngine(ctx context.Context, shape migrationShape, src, target *
 		writeDataTankStatus(statusPath, res, "pg_dump failed (disk full during dump)")
 		return res, errDataTankDumpFailed
 	}
+	log.Printf("[INFO] %s migration: dumping source schema(s)", shape.name)
 	if derr := shape.dumpFn(ctx, src, schemas, dumpPath, jobs); derr != nil {
 		res.oldClusterRetained = true
 		writeDataTankStatus(statusPath, res, derr.Error())
@@ -386,6 +389,7 @@ func runMigrationEngine(ctx context.Context, shape migrationShape, src, target *
 		writeDataTankStatus(statusPath, res, restoreErr.Error())
 		return res, errDataTankAllTiersFailed
 	}
+	log.Printf("[INFO] %s migration: restore complete at tier %d", shape.name, int(tier))
 
 	// Step 8: post-restore sanity check (every expected parent + partition present), then the optional row-checksum
 	// validation pass (shape-gated).
@@ -395,6 +399,7 @@ func runMigrationEngine(ctx context.Context, shape migrationShape, src, target *
 		return res, errDataTankAllTiersFailed
 	}
 	if shape.rowChecksumValidation {
+		log.Printf("[INFO] %s migration: validating restored rows", shape.name)
 		newConn, nerr := target.connect(ctx)
 		if nerr != nil {
 			res.oldClusterRetained = true
@@ -452,6 +457,7 @@ func runMigrationEngine(ctx context.Context, shape migrationShape, src, target *
 		return res, errDataTankPartialRestore
 	}
 
+	log.Printf("[INFO] %s migration: committed", shape.name)
 	res.committed = true
 	writeDataTankStatus(statusPath, res, "")
 	return res, nil
