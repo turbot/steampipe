@@ -187,15 +187,26 @@ type migrationResult struct {
 // Schema / table / partition enumeration.
 // ----------------------------------------------------------------------------
 
-// listDataTankSchemas enumerates the data-tank schema pairs on the source cluster: every <handle> schema and its
-// "<handle>-parts" sibling. System schemas and public are excluded.
+// listDataTankSchemas enumerates the data-tank schemas on the source cluster: each <handle> schema (holding the
+// PARTITION BY LIST parent tables) and its "<handle>-parts" sibling (holding the attached child partitions).
+//
+// Tank schemas are identified STRUCTURALLY: a schema qualifies iff it contains a partitioned parent (relkind 'p', the
+// <handle> side) or an attached partition (relkind 'r' AND relispartition, the "<handle>-parts" side). This replaces an
+// earlier blocklist ("every schema except the system ones"), which wrongly swept in steampipe_command and every
+// per-connection foreign-table schema. Those are not tank data - connection foreign tables are regenerated on
+// connection refresh and steampipe_command is recreated on startup - and carrying them broke the pg_restore tiers at
+// scale: a CREATE SCHEMA collision on the already-present steampipe_command, and shared-lock-table exhaustion ("out of
+// shared memory") from restoring thousands of extra tables in a single transaction.
 func listDataTankSchemas(ctx context.Context, conn *pgx.Conn) ([]string, error) {
 	rows, err := conn.Query(ctx, `
-		SELECT nspname FROM pg_namespace
-		WHERE nspname NOT IN ('public', 'pg_catalog', 'information_schema', 'pg_toast', 'steampipe_internal')
-		  AND nspname NOT LIKE 'pg_temp%'
-		  AND nspname NOT LIKE 'pg_toast_temp%'
-		ORDER BY nspname`)
+		SELECT DISTINCT n.nspname
+		FROM pg_class c
+		JOIN pg_namespace n ON n.oid = c.relnamespace
+		WHERE n.nspname NOT IN ('public', 'pg_catalog', 'information_schema', 'pg_toast', 'steampipe_internal')
+		  AND n.nspname NOT LIKE 'pg_temp%'
+		  AND n.nspname NOT LIKE 'pg_toast_temp%'
+		  AND (c.relkind = 'p' OR (c.relkind = 'r' AND c.relispartition))
+		ORDER BY n.nspname`)
 	if err != nil {
 		return nil, err
 	}

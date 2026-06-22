@@ -1183,3 +1183,87 @@ func TestDataTankMigration(t *testing.T) {
 		t.Logf("data-tank migration matrix: %d cases (this run: %d PASS, %d FAIL)", len(cases), atomic.LoadInt32(&passCount), atomic.LoadInt32(&failCount))
 	})
 }
+
+// TestListDataTankSchemas_ScopesToTanksOnly drives the REAL listDataTankSchemas (migration_datatank.go) - not the
+// harness's dtListDataTankSchemas copy - against the schema mix a real workspace carries: a data tank (<handle> +
+// <handle>-parts), the steampipe_command schema, a per-connection foreign-table schema, a plain ordinary-table schema,
+// an empty schema, and steampipe_internal. It asserts the enumeration returns ONLY the tank's two schemas.
+//
+// Regression guard for the blocklist->allowlist fix. The earlier "every schema except the system ones" query swept in
+// steampipe_command and every per-connection (foreign-table) schema; at real scale that broke the pg_restore tiers - a
+// CREATE SCHEMA collision on the already-present steampipe_command (tier 1) and shared-lock-table exhaustion from
+// restoring thousands of extra tables in one transaction (tier 2). A revert to the blocklist fails this test.
+func TestListDataTankSchemas_ScopesToTanksOnly(t *testing.T) {
+	v := dtPG14Version
+	if _, err := os.Stat(filepath.Join(dtPGBinDir(v), "postgres")); err != nil {
+		t.Skipf("PG%s binary not found at %s - place binaries per the suite header", v, dtPGBinDir(v))
+	}
+	ctx := context.Background()
+
+	base := filepath.Join(dtTestRoot(), "workers", "list-datatank-schemas")
+	if err := os.RemoveAll(base); err != nil {
+		t.Fatalf("clean base dir: %v", err)
+	}
+	dataDir := filepath.Join(base, "data")
+	sockDir := filepath.Join(base, "sock")
+	if err := os.MkdirAll(dataDir, 0700); err != nil {
+		t.Fatalf("mkdir data dir: %v", err)
+	}
+	if err := dtInitCluster(ctx, v, dataDir); err != nil {
+		t.Fatalf("initdb: %v", err)
+	}
+	c, err := dtStartCluster(ctx, v, dataDir, sockDir)
+	if err != nil {
+		t.Fatalf("start cluster: %v", err)
+	}
+	defer c.stop()
+	if err := c.ensureFixtureDB(ctx); err != nil {
+		t.Fatalf("ensure fixture db: %v", err)
+	}
+
+	// One data tank (a <handle> schema with a partitioned parent + its <handle>-parts schema holding an attached
+	// partition) alongside the non-tank schemas a real workspace carries - every one of which must be EXCLUDED.
+	const setup = `
+		CREATE SCHEMA "tank1";
+		CREATE TABLE "tank1"."things" (id int, p text) PARTITION BY LIST (p);
+		CREATE SCHEMA "tank1-parts";
+		CREATE TABLE "tank1-parts"."things_a" PARTITION OF "tank1"."things" FOR VALUES IN ('a');
+
+		-- foreign-table schemas (a connection schema + steampipe_command) via a handler-less dummy FDW: relkind 'f',
+		-- DDL only, never queried. These are regenerated/recreated at runtime and must not be treated as tanks.
+		CREATE FOREIGN DATA WRAPPER dt_dummy_fdw;
+		CREATE SERVER dt_dummy_srv FOREIGN DATA WRAPPER dt_dummy_fdw;
+		CREATE SCHEMA "steampipe_command";
+		CREATE FOREIGN TABLE "steampipe_command"."cmd" (x int) SERVER dt_dummy_srv;
+		CREATE SCHEMA "aws_prod";
+		CREATE FOREIGN TABLE "aws_prod"."res" (x int) SERVER dt_dummy_srv;
+
+		-- a plain ordinary-table schema and an empty schema: also non-tanks.
+		CREATE SCHEMA "plain_sch";
+		CREATE TABLE "plain_sch"."ord" (x int);
+		CREATE SCHEMA "empty_sch";
+
+		-- steampipe_internal (blocklisted) carrying an ordinary table: still excluded.
+		CREATE SCHEMA "steampipe_internal";
+		CREATE TABLE "steampipe_internal"."meta" (x int);`
+	if err := c.applyFixtureSQL(ctx, setup); err != nil {
+		t.Fatalf("apply fixture sql: %v", err)
+	}
+
+	conn, err := c.connect(ctx, c.dbName)
+	if err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+	defer conn.Close(ctx)
+
+	got, err := listDataTankSchemas(ctx, conn)
+	if err != nil {
+		t.Fatalf("listDataTankSchemas: %v", err)
+	}
+	want := []string{"tank1", "tank1-parts"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Errorf("listDataTankSchemas() = %v, want %v\n"+
+			"  must include ONLY the tank's <handle> + <handle>-parts; steampipe_command, connection (foreign-table) "+
+			"schemas, plain/empty schemas and steampipe_internal must all be excluded", got, want)
+	}
+}
