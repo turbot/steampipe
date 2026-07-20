@@ -43,7 +43,7 @@ require (
 	github.com/turbot/terraform-components v0.0.0-20250114051614-04b806a9cbed
 	github.com/zclconf/go-cty v1.16.3 // indirect
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
-	golang.org/x/sync v0.20.0
+	golang.org/x/sync v0.22.0
 	golang.org/x/text v0.37.0
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
@@ -182,7 +182,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	oras.land/oras-go/v2 v2.5.0 // indirect
+	oras.land/oras-go/v2 v2.6.2 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
