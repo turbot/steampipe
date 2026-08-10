@@ -1,3 +1,14 @@
+## v2.4.5 [2026-08-10]
+_Dependencies_
+- Compiled with Go 1.26.5 to remediate CVE-2026-27143 and other Go standard-library CVEs.
+- Bump `golang.org/x/crypto` from v0.47.0 to v0.52.0 to remediate CVE-2026-39830 through CVE-2026-39834, CVE-2026-42508 and CVE-2026-46595.
+- Bump `github.com/containerd/containerd` from v1.7.29 to v1.7.33 to remediate CVE-2026-46680 and CVE-2026-53488.
+- Bump `github.com/go-git/go-git/v5` from v5.17.1 to v5.19.1 to remediate CVE-2026-45022 and CVE-2026-41506.
+- Bump `github.com/go-git/go-billy/v5` from v5.8.0 to v5.9.0 to remediate CVE-2026-44973.
+- Bump `oras.land/oras-go/v2` from v2.5.0 to v2.6.2 to remediate CVE-2026-50151.
+- Bump `github.com/hashicorp/go-getter` from v1.7.9 to v1.8.6 to remediate CVE-2026-4660.
+- Update embedded `steampipe-postgres-fdw` to `v2.2.5` (carries the same dependency and Go toolchain updates).
+
 ## v2.4.4 [2026-05-25]
 _Bug fixes_
 - Update embedded `steampipe-postgres-fdw` to `v2.2.4` — fixes `statement_timeout`, `pg_cancel_backend`, and `pg_terminate_backend` having no effect when a plugin's gRPC stream stalls. Affected sessions previously held `AccessShareLock` indefinitely, blocking partition swaps and other DDL until restart. ([steampipe-postgres-fdw#671](https://github.com/turbot/steampipe-postgres-fdw/issues/671))
