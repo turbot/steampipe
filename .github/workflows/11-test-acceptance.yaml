@@ -111,7 +111,9 @@ jobs:
           - "performance"
           - "config_precedence"
           - "cloud"
-          - "snapshot"
+          # Disabled: snapshot creates against turbot-ops/clitesting exceed the
+          # 60s gateway limit and return 504. Re-enable via #5025.
+          # - "snapshot"
           - "schema_cloning"
           - "exit_codes"
           - "force_stop"
