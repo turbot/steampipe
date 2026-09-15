@@ -59,17 +59,18 @@ load "$LIB_BATS_SUPPORT/load.bash"
     assert_success
 }
 
-@test "steampipe should return an error for duplicate connection name" {
+@test "steampipe should warn on duplicate connection name and still run the query" {
     cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos2.json
     cp $SRC_DATA_DIR/chaos.json $STEAMPIPE_INSTALL_DIR/config/chaos3.json
     
-    # this should fail because of duplicate connection name
+    # the duplicate connections should be skipped with warnings, but the query should still run
     run steampipe query "select time_col from chaos.chaos_cache_check"
 
     # remove the config file
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos2.json
     rm -f $STEAMPIPE_INSTALL_DIR/config/chaos3.json
 
+    assert_success
     assert_output --partial 'duplicate connection name'
 }
 
