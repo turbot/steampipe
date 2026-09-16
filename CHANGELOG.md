@@ -1,3 +1,18 @@
+## v2.4.7 [2026-09-16]
+_Dependencies_
+- Bump `golang.org/x/crypto` from v0.52.0 to v0.55.0 to remediate CVE-2026-56854.
+- Bump `google.golang.org/grpc` from v1.79.3 to v1.83.2 to remediate CVE-2026-84445.
+- Bump `github.com/containerd/containerd` from v1.7.33 to v1.7.35 to remediate CVE-2026-53495.
+- Bump `github.com/go-git/go-git/v5` from v5.19.1 to v5.19.2 to remediate CVE-2026-71556 and CVE-2026-71557.
+- Bump `golang.org/x/net` from v0.54.0 to v0.58.0 to remediate CVE-2026-25680.
+- Bump `github.com/aws/aws-sdk-go-v2/service/s3` from v1.97.1 to v1.97.3 to remediate GHSA-xmrv-pmrh-hhx2.
+- Update embedded `steampipe-postgres-fdw` to `v2.2.7` (carries the same dependency updates).
+
+## v2.4.6 [2026-09-09]
+_Dependencies_
+- Compiled with Go 1.26.7 to remediate CVE-2026-39821.
+- Update embedded `steampipe-postgres-fdw` to `v2.2.6` (compiled with Go 1.26.7).
+
 ## v2.4.5 [2026-08-10]
 _Dependencies_
 - Compiled with Go 1.26.5 to remediate CVE-2026-27143 and other Go standard-library CVEs.
