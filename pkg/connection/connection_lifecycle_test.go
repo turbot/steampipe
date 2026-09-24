@@ -311,16 +311,10 @@ func TestExecuteUpdateSetsInParallelGoroutineLeak(t *testing.T) {
 
 	// Simulate the current (non-idiomatic) pattern
 	go func() {
-		for {
-			select {
-			case connectionError := <-errChan:
-				if connectionError == nil {
-					return
-				}
-				mu.Lock()
-				errorList = append(errorList, connectionError.err)
-				mu.Unlock()
-			}
+		for connectionError := range errChan {
+			mu.Lock()
+			errorList = append(errorList, connectionError.err)
+			mu.Unlock()
 		}
 	}()
 

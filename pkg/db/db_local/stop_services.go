@@ -100,7 +100,7 @@ type ClientCount struct {
 // If we do not exclude connections from this execution, the DB will not be shut down after a cancellation
 func GetClientCount(ctx context.Context) (*ClientCount, error) {
 	putils.LogTime("db_local.GetClientCount start")
-	defer putils.LogTime(fmt.Sprintf("db_local.GetClientCount end"))
+	defer putils.LogTime("db_local.GetClientCount end")
 
 	rootClient, err := CreateLocalDbConnection(ctx, &CreateDbOptions{Username: constants.DatabaseSuperUser})
 	if err != nil {

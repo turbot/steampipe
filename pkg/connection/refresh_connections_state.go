@@ -485,7 +485,6 @@ func (s *refreshConnectionState) executeUpdateQueries(ctx context.Context) {
 		}
 	}
 	log.Printf("[INFO] executeUpdateQueries complete")
-	return
 }
 
 // convert map update sets (used for dynamic schemas) to an array of the underlying connection states
@@ -696,14 +695,8 @@ func (s *refreshConnectionState) UpdateCommentsInParallel(ctx context.Context, u
 	sem := semaphore.NewWeighted(maxUpdateThreads)
 
 	go func() {
-		for {
-			select {
-			case connectionError := <-errChan:
-				if connectionError == nil {
-					return
-				}
-				errors = append(errors, connectionError.err)
-			}
+		for connectionError := range errChan {
+			errors = append(errors, connectionError.err)
 		}
 	}()
 

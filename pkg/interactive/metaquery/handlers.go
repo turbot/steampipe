@@ -59,8 +59,6 @@ func showTimingFlag() {
 		pconstants.Bold(strings.Join(maps.Keys(constants.QueryTimingValueLookup), ", ")))
 	// add an empty line here so that the rendering buffer can start from the next line
 	fmt.Println() //nolint:forbidigo // acceptable
-
-	return
 }
 
 // .separator and .output
