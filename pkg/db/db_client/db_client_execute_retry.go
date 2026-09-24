@@ -41,6 +41,9 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 			res = rows
 			return nil
 		}
+		// rows is not used again on this path - close it now, since pgx requires
+		// Rows to be closed even when Query returned an error
+		rows.Close()
 
 		log.Println("[TRACE] queryError:", queryError)
 		// so there is an error - is it "relation not found"?
