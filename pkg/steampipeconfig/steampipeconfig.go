@@ -307,7 +307,7 @@ func (c *SteampipeConfig) resolvePluginInstanceForConnection(connection *modconf
 		pluginBinaryPath := filepaths.PluginBinaryPath(imageRef, connection.PluginAlias)
 		if _, err := os.Stat(pluginBinaryPath); err != nil {
 			log.Printf("[INFO] plugin '%s' is not installed", imageRef)
-			return nil, nil
+			return nil, nil //nolint:nilerr // any os.Stat error here means the binary can't be used, so it is treated as "not installed" rather than propagated
 		}
 
 		// so the plugin binary exists but it does not exist in the versions.json
