@@ -1,6 +1,6 @@
 ---
 name: release
-description: Cut a steampipe CLI patch release from a v{maj}.{min}.x release branch - release turbot/steampipe-postgres-fdw first when it changed (changelog, tag, draft release, image publish) and bump FdwVersion, then steampipe's own changelog and release issue, the release workflow, verification and release notes, the merge-back, main and steampipe.io PRs, and the hand-over to the Pipes release.
+description: Cut a steampipe CLI patch release from a v{maj}.{min}.x release branch - release turbot/steampipe-postgres-fdw first when it changed (version and changelog, tag, draft release, image publish) and bump FdwVersion, then steampipe's own changelog and release issue, the release workflow, verification and release notes, the merge-back, main and steampipe.io PRs, and the hand-over to the Pipes release.
 ---
 
 # Release steampipe
@@ -10,46 +10,40 @@ Release branches are `v{maj}.{min}.x` (e.g. `v2.4.x`). A release is a tag cut fr
 does not build binaries, publish, or update Homebrew.
 
 Placeholders: `{x.y.z}` is the new version (e.g. `2.4.8`), `{prev}` the previous tag (e.g. `v2.4.7`,
-from `gh release list --repo turbot/steampipe --limit 1`), `{x}-{y}-{z}` and `{xyz}` the same version
+from `gh release list --repo turbot/steampipe --limit 1 --exclude-pre-releases`), `{x}-{y}-{z}` and `{xyz}` the same version
 dash-separated (`2-4-8`) and with no separators (`248`). `{f.x.y.z}` is the FDW version being released
-(e.g. `2.2.7`), distinct from steampipe's own `{x.y.z}`.
+(e.g. `2.2.8`) and `v{fmaj}.{fmin}.x` its release branch (e.g. `v2.2.x`).
 
 Every PR you open below is opened under your own `gh` auth and needs a teammate's approval before it
-merges. The one exception is the `turbot/homebrew-tap` PR, which the workflow opens and merges itself.
+merges. Exceptions: the `turbot/homebrew-tap` PR, which the workflow opens and merges itself, and PRs
+into steampipe.io `main` or the FDW release branch, which require no review.
 
 ## 1. FDW first, only if the FDW changed
 
-Skip to step 2 if `turbot/steampipe-postgres-fdw` hasn't changed since the FDW version currently in
-`pkg/constants/db.go`. No workflow tags an FDW release - every step below is manual.
+Skip to section 2 if `turbot/steampipe-postgres-fdw` hasn't changed since the `FdwVersion` in
+`pkg/constants/db.go`. No workflow tags an FDW release; the tag is pushed by hand.
 
-1. On the FDW's own release branch (`v{fmaj}.{fmin}.x`, e.g. `v2.2.x`, reused across patches the same way
-   steampipe's own release branch is), confirm `CHANGELOG.md` has an entry for `{f.x.y.z}` in the existing
-   style (`## v{f.x.y.z} [YYYY-MM-DD]`), added via a PR into that branch.
-2. Tag the branch head and push the tag - this is what triggers the build, nothing else does:
+1. PR into the FDW release branch `v{fmaj}.{fmin}.x`, committed as `v{f.x.y.z}`: set
+   `fdwVersion = "{f.x.y.z}"` in `version/version.go` and add a `## v{f.x.y.z} [YYYY-MM-DD]` entry to
+   `CHANGELOG.md`. Both, before tagging: the binary reports `version.go`'s value.
+2. Tag the branch head as it is on GitHub, without touching your checkout (`<fdw>` = your FDW clone):
    ```bash
-   cd ../steampipe-postgres-fdw && git checkout v{fmaj}.{fmin}.x && git pull
-   git tag v{f.x.y.z} && git push origin v{f.x.y.z}
+   git -C <fdw> fetch origin && git -C <fdw> tag -a v{f.x.y.z} -m v{f.x.y.z} origin/v{fmaj}.{fmin}.x      && git -C <fdw> push origin v{f.x.y.z}
    ```
-   `Build Draft Release` (`buildimage.yml`, triggered on any `v*` tag push) builds all four platform binaries
-   and opens a **draft** GitHub release named `v{f.x.y.z}`.
+   `Build Draft Release` (`buildimage.yml`, on `v*` tags matching `vN.N.N[-suffix]`) builds four
+   platform binaries into a **draft** release `v{f.x.y.z}`.
 3. Publish the draft: `gh release edit v{f.x.y.z} --repo turbot/steampipe-postgres-fdw --draft=false`.
-4. Dispatch `Publish FDW Image` with that tag:
+4. Push the image, which steampipe downloads (`ghcr.io/turbot/steampipe/fdw:{f.x.y.z}`, plus `:latest`
+   for a version with no suffix):
    ```bash
-   gh workflow run publish.yml --repo turbot/steampipe-postgres-fdw -f release=v{f.x.y.z}
+   gh workflow run publish.yml --repo turbot/steampipe-postgres-fdw --ref develop -f release=v{f.x.y.z}
    ```
-   It downloads the release's assets and pushes `ghcr.io/turbot/steampipe/fdw:{f.x.y.z}` (and `:latest`,
-   unless `{f.x.y.z}` is an rc). Steampipe pulls the FDW from this image, not the GitHub release, so it must
-   exist before step 2 below.
-5. Verify the image landed: `docker manifest inspect ghcr.io/turbot/steampipe/fdw:{f.x.y.z}` (needs `docker`
-   locally), or `gh api /orgs/turbot/packages/container/steampipe%2Ffdw/versions` if your token has
-   `read:packages`.
-6. Open the merge-back PR, `v{fmaj}.{fmin}.x` into `develop`, titled
-   `Merge branch 'v{fmaj}.{fmin}.x' into develop`. A PR into `main` (`v{fmaj}.{fmin}.x` → `main`, titled
-   `Release steampipe-postgres-fdw v{f.x.y.z}`) catches `main` up when it's fallen behind - it does not
-   follow every patch.
-7. On a branch off `v{maj}.{min}.x`, set `FdwVersion = "{f.x.y.z}"` in `pkg/constants/db.go` and open a
-   PR into `v{maj}.{min}.x`. It can be the same PR as the step 2 changelog entry below; it must merge
-   before step 3.
+5. Verify: `docker manifest inspect ghcr.io/turbot/steampipe/fdw:{f.x.y.z}` returns a manifest.
+6. FDW PRs: `v{fmaj}.{fmin}.x` into `develop`, titled `Merge branch 'v{fmaj}.{fmin}.x' into develop`, and
+   into `main`, titled `Release steampipe-postgres-fdw v{f.x.y.z}` (the FDW repo asks for both each release).
+7. On a branch off `v{maj}.{min}.x`, set `FdwVersion = "{f.x.y.z}"` in `pkg/constants/db.go` and open a PR
+   into `v{maj}.{min}.x`. It can be the same PR as the section 2 changelog entry; it must merge before
+   section 3, and only once step 5 passes.
 
 ## 2. Confirm what is being released
 
@@ -72,11 +66,12 @@ gh api 'repos/turbot/steampipe/contents/pkg/constants/db.go?ref=v{maj}.{min}.x' 
 ```bash
 gh workflow run 01-steampipe-release.yaml --repo turbot/steampipe --ref v{maj}.{min}.x \
   -f environment='Final (RC and final release)' -f version={x.y.z} -f confirmDevelop=false
-sleep 15; gh run list --repo turbot/steampipe --workflow 01-steampipe-release.yaml --limit 1 --json databaseId,createdAt,headBranch
+sleep 15; gh run list --repo turbot/steampipe --workflow 01-steampipe-release.yaml --limit 3 --json databaseId,createdAt,headBranch
 gh run watch --repo turbot/steampipe <run-id>
 ```
 
-Check `createdAt` and `headBranch` are your dispatch, not the previous release. `version` has no `v` prefix; the workflow adds it. The `--ref` is the branch that gets tagged.
+Take the run whose `createdAt` is after your dispatch; if none is, list again. `version` has no `v` prefix;
+the workflow adds it. The `--ref` is the branch that gets tagged.
 `Development (alpha)` / `Development (beta)` are for pre-release test builds only.
 
 The `Release CLI` job creates the tag and GitHub release; later jobs open and merge the homebrew-tap PR
@@ -99,7 +94,9 @@ paste in the `CHANGELOG.md` entry for `v{x.y.z}`.
 1. `v{maj}.{min}.x` into `develop`, titled `Merge branch 'v{maj}.{min}.x' into develop`. If the branches
    conflict (usually `go.mod`/`go.sum`), open it from a branch cut off `develop` that merges
    `origin/v{maj}.{min}.x` with the conflicts resolved (keep the higher version of each dependency), then `go mod tidy`.
-2. `v{maj}.{min}.x` into `main`, titled `Release Steampipe v{x.y.z}`, label `release`, body:
+2. `v{maj}.{min}.x` into `main`, titled `Release Steampipe v{x.y.z}`, label `release`. Never merge `main` into
+   the release branch: if they conflict, open it from a branch cut off `v{maj}.{min}.x` that merges
+   `origin/main`, keeping `main`'s workflow action pins. Body:
    ```
    ## Release Issue
    [Steampipe v{x.y.z}](<release issue URL>)
