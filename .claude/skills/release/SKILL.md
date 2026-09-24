@@ -20,15 +20,16 @@ into steampipe.io `main` or the FDW release branch, which require no review.
 
 ## 1. FDW first, only if the FDW changed
 
-Skip to section 2 if `turbot/steampipe-postgres-fdw` hasn't changed since the `FdwVersion` in
-`pkg/constants/db.go`. No workflow tags an FDW release; the tag is pushed by hand.
+Skip to section 2 if `turbot/steampipe-postgres-fdw` has nothing new since the `FdwVersion` in
+`pkg/constants/db.go`: `gh api repos/turbot/steampipe-postgres-fdw/compare/v<FdwVersion>...v{fmaj}.{fmin}.x -q .ahead_by`.
+No workflow tags an FDW release; the tag is pushed by hand.
 
 1. PR into the FDW release branch `v{fmaj}.{fmin}.x`, committed as `v{f.x.y.z}`: set
    `fdwVersion = "{f.x.y.z}"` in `version/version.go` and add a `## v{f.x.y.z} [YYYY-MM-DD]` entry to
    `CHANGELOG.md`. Both, before tagging: the binary reports `version.go`'s value.
 2. Tag the branch head as it is on GitHub, without touching your checkout (`<fdw>` = your FDW clone):
    ```bash
-   git -C <fdw> fetch origin && git -C <fdw> tag -a v{f.x.y.z} -m v{f.x.y.z} origin/v{fmaj}.{fmin}.x      && git -C <fdw> push origin v{f.x.y.z}
+   git -C <fdw> fetch origin && git -C <fdw> tag -a v{f.x.y.z} -m v{f.x.y.z} origin/v{fmaj}.{fmin}.x && git -C <fdw> push origin v{f.x.y.z}
    ```
    `Build Draft Release` (`buildimage.yml`, on `v*` tags matching `vN.N.N[-suffix]`) builds four
    platform binaries into a **draft** release `v{f.x.y.z}`.
@@ -96,7 +97,7 @@ paste in the `CHANGELOG.md` entry for `v{x.y.z}`.
    `origin/v{maj}.{min}.x` with the conflicts resolved (keep the higher version of each dependency), then `go mod tidy`.
 2. `v{maj}.{min}.x` into `main`, titled `Release Steampipe v{x.y.z}`, label `release`. Never merge `main` into
    the release branch: if they conflict, open it from a branch cut off `v{maj}.{min}.x` that merges
-   `origin/main`, keeping `main`'s workflow action pins. Body:
+   `origin/main`, taking the release branch's side of any conflict. Body:
    ```
    ## Release Issue
    [Steampipe v{x.y.z}](<release issue URL>)
