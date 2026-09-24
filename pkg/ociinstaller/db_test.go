@@ -123,7 +123,7 @@ func TestInstallDbFiles_SimpleMove(t *testing.T) {
 		t.Fatalf("Failed to create source dir: %v", err)
 	}
 	testFile := filepath.Join(sourceDir, "test.txt")
-	if err := os.WriteFile(testFile, []byte("test content"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("test content"), 0600); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 

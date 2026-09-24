@@ -46,7 +46,7 @@ type pgRunningInfo struct {
 // It is not expected that any client is connected to the instance when 'stop' is called.
 // Connected clients will be forcefully disconnected
 func (r *pgRunningInfo) stop(ctx context.Context) error {
-	p, err := process.NewProcess(int32(r.cmd.Process.Pid))
+	p, err := process.NewProcess(int32(r.cmd.Process.Pid)) //nolint:gosec // G115: OS process IDs never exceed int32 range on any supported platform
 	if err != nil {
 		return err
 	}
@@ -357,8 +357,8 @@ func partitionTableOfContents(ctx context.Context, tableOfContentsOfBackup []str
 	onlyFile := filepath.Join(filepaths.EnsureDatabaseDir(), onlyMatViewRefreshListFileName)
 
 	err := error_helpers.CombineErrors(
-		os.WriteFile(withoutFile, []byte(strings.Join(withoutRefresh, "\n")), 0644),
-		os.WriteFile(onlyFile, []byte(strings.Join(onlyRefresh, "\n")), 0644),
+		os.WriteFile(withoutFile, []byte(strings.Join(withoutRefresh, "\n")), 0600),
+		os.WriteFile(onlyFile, []byte(strings.Join(onlyRefresh, "\n")), 0600),
 	)
 
 	return withoutFile, onlyFile, err
@@ -442,7 +442,7 @@ func retainBackup(ctx context.Context) error {
 }
 
 func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
-	cmd := exec.CommandContext(
+	cmd := exec.CommandContext( //nolint:gosec // G204: filepaths.PgDumpBinaryExecutablePath() is steampipe's own installed pg_dump binary path, not user input
 		ctx,
 		filepaths.PgDumpBinaryExecutablePath(),
 		args...,
@@ -460,7 +460,7 @@ func pgDumpCmd(ctx context.Context, args ...string) *exec.Cmd {
 }
 
 func pgRestoreCmd(ctx context.Context, args ...string) *exec.Cmd {
-	cmd := exec.CommandContext(
+	cmd := exec.CommandContext( //nolint:gosec // G204: filepaths.PgRestoreBinaryExecutablePath() is steampipe's own installed pg_restore binary path, not user input
 		ctx,
 		filepaths.PgRestoreBinaryExecutablePath(),
 		args...,

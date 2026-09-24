@@ -138,7 +138,7 @@ func CreateConnectionPool(ctx context.Context, opts *CreateDbOptions, maxConnect
 	)
 
 	poolConfig.MinConns = 0
-	poolConfig.MaxConns = int32(maxConnections)
+	poolConfig.MaxConns = int32(maxConnections) //nolint:gosec // G115: the sole caller (plugin_manager.go) passes a hardcoded literal (20), never user input
 	poolConfig.MaxConnLifetime = connMaxLifetime
 	poolConfig.MaxConnIdleTime = connMaxIdleTime
 

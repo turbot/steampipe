@@ -104,7 +104,7 @@ func (s *State) Save() error {
 	tempFile := stateFilePath + ".tmp"
 
 	// Write to temporary file
-	if err := os.WriteFile(tempFile, content, 0644); err != nil {
+	if err := os.WriteFile(tempFile, content, 0600); err != nil {
 		return err
 	}
 

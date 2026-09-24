@@ -62,7 +62,7 @@ func (s *InstallationState) Save() error {
 	_ = os.Remove(stateFilePath)
 	// save state file
 	file, _ := json.MarshalIndent(s, "", " ")
-	return os.WriteFile(stateFilePath, file, 0644)
+	return os.WriteFile(stateFilePath, file, 0600)
 }
 
 // IsValid checks whether the struct was correctly deserialized,
