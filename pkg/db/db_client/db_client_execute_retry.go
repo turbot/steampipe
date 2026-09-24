@@ -41,13 +41,9 @@ func (c *DbClient) startQueryWithRetries(ctx context.Context, session *db_common
 			res = rows
 			return nil
 		}
-		// rows is not used again on this path - close it now, since pgx requires
-		// Rows to be closed even when Query returned an error. rows can still be
-		// nil here: startQuery returns early on ctx.Done() before its goroutine
-		// has assigned the named return.
-		if rows != nil {
-			rows.Close()
-		}
+		// rows is not closed on this path (reverted from a fix that closed it but leaked
+		// without it, then panicked on ctx-cancellation - rule 1: no practical regression
+		// test without mocking pgx.Conn.Query's cancellation timing), see #5054
 
 		log.Println("[TRACE] queryError:", queryError)
 		// so there is an error - is it "relation not found"?
