@@ -282,34 +282,27 @@ func TestLogRefreshConnectionResultsTypeAssertion(t *testing.T) {
 	})
 }
 
-// TestExecuteUpdateSetsInParallelGoroutineLeak tests for goroutine leak in executeUpdateSetsInParallel
-// This test demonstrates issue #4791 - potential goroutine leak with non-idiomatic channel pattern
+// TestExecuteUpdateSetsInParallelGoroutineLeak guards against issue #4791 -
+// a goroutine leak from consuming an error channel with a non-idiomatic
+// for-select-nil-check pattern instead of 'for range'.
 //
-// The issue is in refresh_connections_state.go:519-536 where the goroutine uses:
-//   for { select { case connectionError := <-errChan: if connectionError == nil { return } } }
-//
-// While this pattern technically works when the channel is closed (returns nil, then returns from goroutine),
-// it has several problems:
-// 1. It's not idiomatic Go - the standard pattern for consuming until close is 'for range'
-// 2. It relies on nil checks which can be error-prone
-// 3. It's harder to understand and maintain
-// 4. If the nil check is accidentally removed or modified, it causes a goroutine leak
-//
-// The idiomatic pattern 'for range errChan' automatically exits when channel is closed,
-// making the code safer and more maintainable.
+// refresh_connections_state.go's error-collecting goroutines (around
+// executeUpdateSetsInParallel and updateCommentsInParallel) now both use
+// 'for range errChan', which exits automatically when the channel is
+// closed. This test exercises that same pattern here and asserts it
+// doesn't leak a goroutine.
 func TestExecuteUpdateSetsInParallelGoroutineLeak(t *testing.T) {
 	// Get baseline goroutine count
 	runtime.GC()
 	time.Sleep(100 * time.Millisecond)
 	baselineGoroutines := runtime.NumGoroutine()
 
-	// Test the CURRENT pattern from refresh_connections_state.go:519-536
-	// This pattern has potential for goroutine leaks if not carefully maintained
+	// Mirrors the idiomatic 'for range errChan' pattern used in
+	// refresh_connections_state.go
 	errChan := make(chan *connectionError)
 	var errorList []error
 	var mu sync.Mutex
 
-	// Simulate the current (non-idiomatic) pattern
 	go func() {
 		for connectionError := range errChan {
 			mu.Lock()
@@ -323,7 +316,7 @@ func TestExecuteUpdateSetsInParallelGoroutineLeak(t *testing.T) {
 	errChan <- &connectionError{name: "test1", err: testErr}
 	errChan <- &connectionError{name: "test2", err: testErr}
 
-	// Close the channel (this should cause goroutine to exit via nil check)
+	// Close the channel - the goroutine's 'for range' exits automatically
 	close(errChan)
 
 	// Give time for the goroutine to process and exit
@@ -335,8 +328,6 @@ func TestExecuteUpdateSetsInParallelGoroutineLeak(t *testing.T) {
 	afterGoroutines := runtime.NumGoroutine()
 	goroutineDiff := afterGoroutines - baselineGoroutines
 
-	// The current pattern SHOULD work (goroutine exits via nil check),
-	// but we're testing to document that the pattern is risky
 	if goroutineDiff > 2 {
 		t.Errorf("Goroutine leak detected with current pattern: baseline=%d, after=%d, diff=%d",
 			baselineGoroutines, afterGoroutines, goroutineDiff)
@@ -348,8 +339,4 @@ func TestExecuteUpdateSetsInParallelGoroutineLeak(t *testing.T) {
 		t.Errorf("Expected 2 errors, got %d", len(errorList))
 	}
 	mu.Unlock()
-
-	t.Logf("BUG #4791: Current pattern works but is non-idiomatic and error-prone")
-	t.Logf("The for-select-nil-check pattern at refresh_connections_state.go:520-535")
-	t.Logf("should be replaced with idiomatic 'for range errChan' for safety and clarity")
 }

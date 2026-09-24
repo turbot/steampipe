@@ -403,7 +403,8 @@ func TestRefreshConnectionState_ErrorChannelBlocking(t *testing.T) {
 
 	var wg sync.WaitGroup
 
-	// Start a consumer goroutine (like in the actual code at line 519-536)
+	// Start a consumer goroutine, mirroring the error-collecting goroutines
+	// in refresh_connections_state.go
 	consumerDone := make(chan bool)
 	go func() {
 		for err := range errChan {
