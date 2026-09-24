@@ -275,7 +275,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	}
 
 	// a leading blank line - since we always output multiple lines
-	fmt.Println()
+	fmt.Println() //nolint:forbidigo // acceptable
 	progressBars := uiprogress.New()
 	installWaitGroup := &sync.WaitGroup{}
 	reportChannel := make(chan *pplugin.PluginInstallReport, len(plugins))
@@ -345,7 +345,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 	pplugin.PrintInstallReports(installReports, false)
 
 	// a concluding blank line - since we always output multiple lines
-	fmt.Println()
+	fmt.Println() //nolint:forbidigo // acceptable
 }
 
 func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string, resolvedPlugin pplugin.ResolvedPluginVersion, wg *sync.WaitGroup, returnChannel chan *pplugin.PluginInstallReport) {
@@ -408,21 +408,21 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	showProgress := viper.GetBool(pconstants.ArgProgress)
 
 	if err != nil {
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 		error_helpers.ShowError(ctx, err)
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 		cmd.Help()
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return
 	}
 
 	if len(plugins) > 0 && !(cmdconfig.Viper().GetBool(pconstants.ArgAll)) && plugins[0] == pconstants.ArgAll {
 		// improve the response to wrong argument "steampipe plugin update all"
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		error_helpers.ShowError(ctx, fmt.Errorf("Did you mean %s?", pconstants.Bold("--all")))
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 		return
 	}
 
@@ -440,7 +440,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	updateResults := make(pplugin.PluginInstallReports, 0, len(plugins))
 
 	// a leading blank line - since we always output multiple lines
-	fmt.Println()
+	fmt.Println() //nolint:forbidigo // acceptable
 
 	if cmdconfig.Viper().GetBool(pconstants.ArgAll) {
 		for k, v := range pluginVersions {
@@ -481,7 +481,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		// this may happen if all given plugins are
 		// not installed
 		pplugin.PrintInstallReports(updateResults, true)
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 		return
 	}
 
@@ -532,7 +532,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 	pplugin.PrintInstallReports(updateResults, true)
 
 	// a concluding blank line - since we always output multiple lines
-	fmt.Println()
+	fmt.Println() //nolint:forbidigo // acceptable
 }
 
 func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr pplugin.PluginVersionCheckReport, wg *sync.WaitGroup, returnChannel chan *pplugin.PluginInstallReport) {
@@ -710,7 +710,7 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 		rows = append(rows, []string{"", "", ""})
 	}
 	querydisplay.ShowWrappedTable(headers, rows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
-	fmt.Printf("\n")
+	fmt.Printf("\n") //nolint:forbidigo // acceptable
 
 	// List failed/missing plugins in a separate table
 	if len(failedPluginMap)+len(missingPluginMap) != 0 {
@@ -737,13 +737,13 @@ func showPluginListAsTable(pluginList []plugin.PluginListItem, failedPluginMap, 
 		}
 
 		querydisplay.ShowWrappedTable(headers, missingRows, &querydisplay.ShowWrappedTableOptions{AutoMerge: false})
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 	}
 
 	if len(res.Warnings) > 0 {
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 		res.ShowWarnings()
-		fmt.Printf("\n")
+		fmt.Printf("\n") //nolint:forbidigo // acceptable
 	}
 	return nil
 }
@@ -794,8 +794,8 @@ func showPluginListAsJSON(pluginList []plugin.PluginListItem, failedPluginMap, m
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(jsonOutput))
-	fmt.Println()
+	fmt.Println(string(jsonOutput)) //nolint:forbidigo // acceptable
+	fmt.Println() //nolint:forbidigo // acceptable
 	return nil
 }
 
@@ -815,11 +815,11 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 	}()
 
 	if len(args) == 0 {
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 		error_helpers.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to uninstall"))
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 		cmd.Help()
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return
 	}

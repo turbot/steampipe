@@ -42,7 +42,7 @@ func runPluginManagerCmd(cmd *cobra.Command, _ []string) {
 		}
 		if err != nil {
 			// write to stdout so the plugin manager can extract the error message
-			fmt.Println(fmt.Sprintf("%s%s", plugin.PluginStartupFailureMessage, err.Error()))
+			fmt.Printf("%s%s\n", plugin.PluginStartupFailureMessage, err.Error()) //nolint:forbidigo // acceptable
 		}
 		os.Exit(1)
 	}()

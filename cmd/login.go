@@ -68,7 +68,7 @@ func runLoginCmd(cmd *cobra.Command, _ []string) {
 func getToken(ctx context.Context, id string) (loginToken string, err error) {
 	log.Printf("[TRACE] prompt for verification code")
 
-	fmt.Println()
+	fmt.Println() //nolint:forbidigo // acceptable
 	retries := 0
 	for {
 		var code string
@@ -104,9 +104,9 @@ func displayLoginMessage(ctx context.Context, token string) {
 	userName, err := pipes.GetUserName(ctx, token)
 	error_helpers.FailOnError(sperr.WrapWithMessage(err, "failed to read user name"))
 
-	fmt.Println()
-	fmt.Printf("Logged in as: %s\n", pconstants.Bold(userName))
-	fmt.Println()
+	fmt.Println() //nolint:forbidigo // acceptable
+	fmt.Printf("Logged in as: %s\n", pconstants.Bold(userName)) //nolint:forbidigo // acceptable
+	fmt.Println() //nolint:forbidigo // acceptable
 
 	showLoginWarnings()
 }
@@ -125,12 +125,12 @@ func showLoginWarnings() {
 }
 
 func promptUserForString(prompt string) (string, error) {
-	fmt.Print(prompt)
+	fmt.Print(prompt) //nolint:forbidigo // acceptable
 
 	scanner := bufio.NewScanner(os.Stdin)
 	if !scanner.Scan() {
 		// handle ctrl+d
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 		os.Exit(0)
 	}
 

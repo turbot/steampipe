@@ -150,14 +150,14 @@ func TestInstallFdwFiles_CorruptGzipFile_BugDocumentation(t *testing.T) {
 	// Create a valid "existing" FDW binary (v1.0)
 	existingBinaryPath := filepath.Join(tempInstallDir, "steampipe-postgres-fdw.so")
 	existingBinaryContent := []byte("existing FDW v1.0 binary")
-	if err := os.WriteFile(existingBinaryPath, existingBinaryContent, 0755); err != nil {
+	if err := os.WriteFile(existingBinaryPath, existingBinaryContent, 0600); err != nil {
 		t.Fatalf("Failed to create existing FDW binary: %v", err)
 	}
 
 	// Create a CORRUPT gzip file (not a valid gzip) that will fail to ungzip
 	corruptGzipPath := filepath.Join(tempSourceDir, "steampipe-postgres-fdw.so.gz")
 	corruptGzipContent := []byte("this is not a valid gzip file, ungzip will fail")
-	if err := os.WriteFile(corruptGzipPath, corruptGzipContent, 0644); err != nil {
+	if err := os.WriteFile(corruptGzipPath, corruptGzipContent, 0600); err != nil {
 		t.Fatalf("Failed to create corrupt gzip file: %v", err)
 	}
 

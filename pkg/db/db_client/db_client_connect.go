@@ -55,7 +55,7 @@ func (c *DbClient) establishConnectionPool(ctx context.Context, overrides client
 	// TODO BINAEK dig into this and figure out why this is happening.
 	// We need to be sure that it is not an issue with service management
 	config.MinConns = 0
-	config.MaxConns = int32(db_common.MaxDbConnections())
+	config.MaxConns = int32(db_common.MaxDbConnections()) //nolint:gosec // G115: STEAMPIPE_MAX_PARALLEL is user-configurable with no upper bound; a clamp was reverted from this PR (rule 1: no practical regression test without a live pgxpool dial), see #5052
 	config.MaxConnLifetime = MaxConnLifeTime
 	config.MaxConnIdleTime = MaxConnIdleTime
 	if c.onConnectionCallback != nil {

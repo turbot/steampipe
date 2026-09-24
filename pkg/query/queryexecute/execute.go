@@ -125,7 +125,7 @@ func executeQueries(ctx context.Context, initData *query.InitData) int {
 		// TODO move into display layer
 		// Only show the blank line between queries, not after the last one
 		if (i < len(initData.Queries)-1) && showBlankLineBetweenResults() {
-			fmt.Println()
+			fmt.Println() //nolint:forbidigo // acceptable
 		}
 	}
 
@@ -251,7 +251,7 @@ func publishSnapshotIfNeeded(ctx context.Context, snapshot *steampipeconfig.Stea
 		return handlePublishSnapshotError(err)
 	}
 	if viper.GetBool(constants.ArgProgress) {
-		fmt.Println(message)
+		fmt.Println(message) //nolint:forbidigo // acceptable
 	}
 	return nil
 }

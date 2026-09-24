@@ -15,12 +15,12 @@ func DiagsToError(prefix string, diags tfdiags.Diagnostics) error {
 	if !diags.HasErrors() {
 		return nil
 	}
-	errorStrings := []string{fmt.Sprintf("%s", prefix)}
+	errorStrings := []string{prefix}
 	// store list of messages (without the range) and use for deduping (we may get the same message for multiple ranges)
 	errorMessages := []string{}
 	for _, diag := range diags {
 		if diag.Severity() == tfdiags.Error {
-			errorString := fmt.Sprintf("%s", diag.Description().Summary)
+			errorString := diag.Description().Summary
 			if diag.Description().Detail != "" {
 				errorString += fmt.Sprintf(": %s", diag.Description().Detail)
 			}

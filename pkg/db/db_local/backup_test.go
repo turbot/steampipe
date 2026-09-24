@@ -1,6 +1,7 @@
 package db_local
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,7 +26,7 @@ func TestTrimBackups(t *testing.T) {
 
 		fileName := fmt.Sprintf("database-%s-%2d", timeLastYear.Format("2006-01-02-15-04"), i)
 		createFile := filepath.Join(backupDir, fileName)
-		if err := os.WriteFile(filepath.Join(backupDir, fileName), []byte(""), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(backupDir, fileName), []byte(""), 0600); err != nil {
 			filesCreated = append(filesCreated, createFile)
 		}
 	}
@@ -38,4 +39,29 @@ func TestTrimBackups(t *testing.T) {
 		}
 	}
 
+}
+
+func TestPartitionTableOfContentsFilePermissions(t *testing.T) {
+	tempDir := t.TempDir()
+	app_specific.InstallDir = filepath.Join(tempDir, ".steampipe")
+
+	tableOfContents := []string{
+		"1; 1 2 3 TABLE public foo",
+		"2; 1 2 4 MATERIALIZED VIEW DATA public bar",
+	}
+
+	withoutFile, onlyFile, err := partitionTableOfContents(context.Background(), tableOfContents)
+	if err != nil {
+		t.Fatalf("partitionTableOfContents failed: %v", err)
+	}
+
+	for _, f := range []string{withoutFile, onlyFile} {
+		info, err := os.Stat(f)
+		if err != nil {
+			t.Fatalf("failed to stat %s: %v", f, err)
+		}
+		if perm := info.Mode().Perm(); perm != 0600 {
+			t.Errorf("expected %s to have permissions 0600, got %o", f, perm)
+		}
+	}
 }

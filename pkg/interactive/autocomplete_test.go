@@ -202,8 +202,6 @@ func TestAutocompleteSuggestionsMemoryUsage(t *testing.T) {
 	}
 
 	// If we get here without OOM, the test passes
-	// Clear suggestions to allow GC
-	suggestions = nil
 }
 
 // TestAutocompleteSuggestionsSizeLimits tests that suggestion maps are bounded

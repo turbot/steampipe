@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"context"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -12,7 +13,6 @@ import (
 	"github.com/turbot/pipe-fittings/v2/hclhelpers"
 	"github.com/turbot/pipe-fittings/v2/modconfig"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"golang.org/x/exp/maps"
 )
 
 // TODO KAI add plugin block tests
@@ -126,6 +126,23 @@ func TestLoadConfig(t *testing.T) {
 		if !SteampipeConfigEquals(config, expectedConfig) {
 			t.Errorf("Test: '%s'' FAILED : expected:\n%s\n\ngot:\n%s", name, expectedConfig, config)
 		}
+	}
+}
+
+func TestEnsureDefaultConfigFileSamplePermissions(t *testing.T) {
+	configFolder := t.TempDir()
+
+	if err := ensureDefaultConfigFile(configFolder); err != nil {
+		t.Fatalf("ensureDefaultConfigFile failed: %v", err)
+	}
+
+	sampleFile := filepath.Join(configFolder, defaultConfigSampleFileName)
+	info, err := os.Stat(sampleFile)
+	if err != nil {
+		t.Fatalf("failed to stat %s: %v", sampleFile, err)
+	}
+	if perm := info.Mode().Perm(); perm != 0600 {
+		t.Errorf("expected %s to have permissions 0600, got %o", sampleFile, perm)
 	}
 }
 

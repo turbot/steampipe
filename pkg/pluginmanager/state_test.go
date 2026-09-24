@@ -110,3 +110,35 @@ func TestStateFileRaceCondition(t *testing.T) {
 			state.StructVersion, PluginManagerStructVersion)
 	}
 }
+
+func TestStateSaveFilePermissions(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "steampipe-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	app_specific.InstallDir = filepath.Join(tempDir, ".steampipe")
+
+	addr := &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 8080}
+	reattach := &plugin.ReattachConfig{
+		Protocol:        plugin.ProtocolGRPC,
+		ProtocolVersion: 1,
+		Addr:            pb.NewSimpleAddr(addr),
+		Pid:             1234,
+	}
+	state := NewState("/test/executable", reattach)
+
+	if err := state.Save(); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	stateFilePath := filepaths.PluginManagerStateFilePath()
+	info, err := os.Stat(stateFilePath)
+	if err != nil {
+		t.Fatalf("failed to stat %s: %v", stateFilePath, err)
+	}
+	if perm := info.Mode().Perm(); perm != 0600 {
+		t.Errorf("expected %s to have permissions 0600, got %o", stateFilePath, perm)
+	}
+}

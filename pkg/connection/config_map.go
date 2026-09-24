@@ -46,10 +46,8 @@ func (m ConnectionConfigMap) Diff(otherMap ConnectionConfigMap) (addedConnection
 			if connection.PluginInstance != otherConnection.PluginInstance {
 				addedConnections[otherConnection.PluginInstance] = append(addedConnections[otherConnection.PluginInstance], otherConnection)
 				deletedConnections[connection.PluginInstance] = append(deletedConnections[connection.PluginInstance], connection)
-			} else {
-				if !connection.Equals(otherConnection) {
-					changedConnections[connection.PluginInstance] = append(changedConnections[connection.PluginInstance], otherConnection)
-				}
+			} else if !connection.Equals(otherConnection) {
+				changedConnections[connection.PluginInstance] = append(changedConnections[connection.PluginInstance], otherConnection)
 			}
 		}
 	}

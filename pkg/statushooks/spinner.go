@@ -80,7 +80,7 @@ func (s *StatusSpinner) Message(msgs ...string) {
 		defer s.spinner.Start()
 	}
 	for _, msg := range msgs {
-		fmt.Println(msg)
+		fmt.Println(msg) //nolint:forbidigo // acceptable
 	}
 }
 
@@ -89,7 +89,7 @@ func (s *StatusSpinner) Warn(msg string) {
 		s.spinner.Stop()
 		defer s.spinner.Start()
 	}
-	fmt.Fprintf(color.Output, "%s: %v\n", constants.ColoredWarn, msg)
+	fmt.Fprintf(color.Output, "%s: %v\n", constants.ColoredWarn, msg) //nolint:forbidigo // acceptable
 }
 
 // Hide implements StatusHooks

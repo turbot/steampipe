@@ -81,8 +81,8 @@ func (av *AvailableVersionCache) cliNotificationMessage() ([]string, error) {
 
 	currentVersion, err := semver.NewVersion(currentVer)
 	if err != nil {
-		fmt.Println(fmt.Errorf("there's something wrong with the Current Version"))
-		fmt.Println(err)
+		fmt.Println(fmt.Errorf("there's something wrong with the Current Version")) //nolint:forbidigo // acceptable
+		fmt.Println(err) //nolint:forbidigo // acceptable
 	}
 
 	if newVersion.GreaterThan(currentVersion) {
