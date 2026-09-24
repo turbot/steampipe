@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +14,9 @@ import (
 )
 
 const StateStructVersion = 20220411
+
+// stateMutex protects concurrent writes to the state file
+var stateMutex sync.Mutex
 
 type InstallationState struct {
 	LastCheck      string `json:"last_checked"`    // an RFC3339 encoded time stamp
@@ -51,6 +55,10 @@ func Load() (InstallationState, error) {
 // Save the state
 // NOTE: this updates the last checked time to the current time
 func (s *InstallationState) Save() error {
+	// protect concurrent writes to the state file
+	stateMutex.Lock()
+	defer stateMutex.Unlock()
+
 	// set the struct version
 	s.StructVersion = StateStructVersion
 
@@ -58,11 +66,22 @@ func (s *InstallationState) Save() error {
 	// ensure internal dirs exists
 	_ = os.MkdirAll(filepaths.EnsureInternalDir(), os.ModePerm)
 	stateFilePath := filepath.Join(filepaths.EnsureInternalDir(), filepaths.StateFileName())
-	// if there is an existing file it must be bad/corrupt, so delete it
-	_ = os.Remove(stateFilePath)
-	// save state file
-	file, _ := json.MarshalIndent(s, "", " ")
-	return os.WriteFile(stateFilePath, file, 0644)
+	file, err := json.MarshalIndent(s, "", " ")
+	if err != nil {
+		return err
+	}
+
+	// write to a temp file, then atomically rename it into place, so a
+	// concurrent Load() never sees the file disappear or contain partial
+	// JSON in the window between its existence check and its read (the
+	// mutex above serializes writers within this process; it does not
+	// protect against two separate steampipe processes saving at once,
+	// matching pluginmanager/state.go)
+	tempFile := stateFilePath + ".tmp"
+	if err := os.WriteFile(tempFile, file, 0644); err != nil {
+		return err
+	}
+	return os.Rename(tempFile, stateFilePath)
 }
 
 // IsValid checks whether the struct was correctly deserialized,
