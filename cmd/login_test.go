@@ -100,8 +100,8 @@ func TestShowLoginWarnings(t *testing.T) {
 				t.Fatalf("failed to create pipe: %v", err)
 			}
 			oldErr := color.Error
-			color.Error = w
-			t.Cleanup(func() { color.Error = oldErr })
+			color.Error = w                            //nolint:reassign // test-only: capture stderr output, restored via t.Cleanup below
+			t.Cleanup(func() { color.Error = oldErr }) //nolint:reassign // restores the saved value
 
 			showLoginWarnings()
 
