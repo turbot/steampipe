@@ -40,7 +40,7 @@ func cacheControl(ctx context.Context, input *HandlerInput) error {
 	case pconstants.ArgOn:
 		serverSettings := input.Client.ServerSettings()
 		if serverSettings != nil && !serverSettings.CacheEnabled {
-			fmt.Println("Caching is disabled on the server.")
+			fmt.Println("Caching is disabled on the server.") //nolint:forbidigo // acceptable
 		}
 		viper.Set(pconstants.ArgClientCacheEnabled, true)
 		return db_common.SetCacheEnabled(ctx, true, conn)
@@ -67,7 +67,7 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 		return sperr.New("TTL must be greater than 0")
 	}
 	if can, whyCannotSet := db_common.CanSetCacheTtl(input.Client.ServerSettings(), seconds); !can {
-		fmt.Println(whyCannotSet)
+		fmt.Println(whyCannotSet) //nolint:forbidigo // acceptable
 	}
 	sessionResult := input.Client.AcquireSession(ctx)
 	if sessionResult.Error != nil {
@@ -84,7 +84,7 @@ func cacheTTL(ctx context.Context, input *HandlerInput) error {
 
 func showCache(_ context.Context, input *HandlerInput) error {
 	if input.Client.ServerSettings() != nil && !input.Client.ServerSettings().CacheEnabled {
-		fmt.Println("Caching is disabled on the server.")
+		fmt.Println("Caching is disabled on the server.") //nolint:forbidigo // acceptable
 		return nil
 	}
 
@@ -96,7 +96,7 @@ func showCache(_ context.Context, input *HandlerInput) error {
 		action = "off"
 	}
 
-	fmt.Printf(
+	fmt.Printf( //nolint:forbidigo // acceptable
 		`Caching is %s. To turn it %s, type %s`,
 		pconstants.Bold(currentStatusString),
 		pconstants.Bold(action),
@@ -104,7 +104,7 @@ func showCache(_ context.Context, input *HandlerInput) error {
 	)
 
 	// add an empty line here so that the rendering buffer can start from the next line
-	fmt.Println()
+	fmt.Println() //nolint:forbidigo // acceptable
 
 	return nil
 }
@@ -112,10 +112,10 @@ func showCache(_ context.Context, input *HandlerInput) error {
 func showCacheTtl(ctx context.Context, input *HandlerInput) error {
 	if viper.IsSet(pconstants.ArgCacheTtl) {
 		ttl := getEffectiveCacheTtl(input.Client.ServerSettings(), viper.GetInt(pconstants.ArgCacheTtl))
-		fmt.Println("Cache TTL is", ttl, "seconds.")
+		fmt.Println("Cache TTL is", ttl, "seconds.") //nolint:forbidigo // acceptable
 	} else if input.Client.ServerSettings() != nil {
 		serverTtl := input.Client.ServerSettings().CacheMaxTtl
-		fmt.Println("Cache TTL is", serverTtl, "seconds.")
+		fmt.Println("Cache TTL is", serverTtl, "seconds.") //nolint:forbidigo // acceptable
 	}
 	errorsAndWarnings := db_common.ValidateClientCacheTtl(input.Client)
 	errorsAndWarnings.ShowWarnings()

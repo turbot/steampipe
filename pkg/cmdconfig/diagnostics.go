@@ -56,7 +56,7 @@ func DisplayConfig() {
 		for _, line := range lines {
 			b.WriteString(line)
 		}
-		fmt.Println(b.String())
+		fmt.Println(b.String()) //nolint:forbidigo // acceptable
 	case "config_json":
 		// iterate once more for the non-serializable values
 		for k, v := range res {
@@ -66,7 +66,7 @@ func DisplayConfig() {
 		}
 		jsonBytes, err := json.MarshalIndent(res, "", " ")
 		error_helpers.FailOnError(err)
-		fmt.Println(string(jsonBytes))
+		fmt.Println(string(jsonBytes)) //nolint:forbidigo // acceptable
 	}
 
 }

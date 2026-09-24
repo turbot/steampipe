@@ -20,9 +20,9 @@ func DisplayTiming(result *queryresult.Result, rowCount int) {
 	if viper.GetString(pconstants.ArgTiming) != pconstants.ArgOff && timingResult != nil {
 		str := buildTimingString(timingResult)
 		if viper.GetBool(pconstants.ConfigKeyInteractive) {
-			fmt.Println(str)
+			fmt.Println(str) //nolint:forbidigo // acceptable
 		} else {
-			fmt.Fprintln(os.Stderr, str)
+			fmt.Fprintln(os.Stderr, str) //nolint:forbidigo // acceptable
 		}
 	}
 }

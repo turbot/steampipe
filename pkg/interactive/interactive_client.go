@@ -520,7 +520,7 @@ func (c *InteractiveClient) executeMetaquery(ctx context.Context, query string) 
 	// validate the metaquery arguments
 	validateResult := metaquery.Validate(query)
 	if validateResult.Message != "" {
-		fmt.Println(validateResult.Message)
+		fmt.Println(validateResult.Message) //nolint:forbidigo // acceptable
 	}
 	if err := validateResult.Err; err != nil {
 		return err
