@@ -256,8 +256,6 @@ func TestReadAllFailureScenarios(t *testing.T) {
 
 	t.Run("failing_body_reader", func(t *testing.T) {
 		// Test reading from a failing reader
-		type failReader struct{}
-
 		// Note: This demonstrates how io.ReadAll can fail, which triggers
 		// the log.Fatal bug in version_checker.go:56
 		t.Log("io.ReadAll can fail in various scenarios:")
