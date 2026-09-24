@@ -18,9 +18,9 @@ merges. The one exception is the `turbot/homebrew-tap` PR, which the workflow op
 
 ## 1. FDW first, only if the FDW changed
 
-1. Release `turbot/steampipe-postgres-fdw`, then run its `Publish FDW Image` workflow with that release
-   tag. Steampipe downloads the FDW from `ghcr.io/turbot/steampipe/fdw:<version>`, not from the GitHub
-   release, so the image must exist before the CLI ships.
+1. Release `turbot/steampipe-postgres-fdw` (publish the draft release its tag builds), then run its
+   `Publish FDW Image` workflow with that release tag. Steampipe downloads the FDW from
+   `ghcr.io/turbot/steampipe/fdw:<version>`, not the GitHub release, so the image must exist first.
 2. On a branch off `v{maj}.{min}.x`, set `FdwVersion = "<fdw version>"` in `pkg/constants/db.go` and open a
    PR into `v{maj}.{min}.x`. It can be the same PR as the step 2 changelog entry; it must merge before step 3.
 
@@ -45,11 +45,11 @@ gh api 'repos/turbot/steampipe/contents/pkg/constants/db.go?ref=v{maj}.{min}.x' 
 ```bash
 gh workflow run 01-steampipe-release.yaml --repo turbot/steampipe --ref v{maj}.{min}.x \
   -f environment='Final (RC and final release)' -f version={x.y.z} -f confirmDevelop=false
-gh run list --repo turbot/steampipe --workflow 01-steampipe-release.yaml --limit 1 --json databaseId -q '.[0].databaseId'
+sleep 15; gh run list --repo turbot/steampipe --workflow 01-steampipe-release.yaml --limit 1 --json databaseId,createdAt,headBranch
 gh run watch --repo turbot/steampipe <run-id>
 ```
 
-`version` has no `v` prefix; the workflow adds it. The `--ref` is the branch that gets tagged.
+Check `createdAt` and `headBranch` are your dispatch, not the previous release. `version` has no `v` prefix; the workflow adds it. The `--ref` is the branch that gets tagged.
 `Development (alpha)` / `Development (beta)` are for pre-release test builds only.
 
 The `Release CLI` job creates the tag and GitHub release; later jobs open and merge the homebrew-tap PR
