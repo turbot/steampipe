@@ -25,7 +25,7 @@ Top level: `lastUpdated`, `vulnerabilities[]` and `nowFixableSnoozedItems[]` (sn
 that now have a fix — treat them as open). Each row has `id` (Vanta's id), `externalId` (CVE/GHSA),
 `severity`, `status` (`OVERDUE` / `DUE_SOON` / `OK` / `NO_SLA`), `remediateByDate` (null when no
 SLA), `packageName` (ecosystem prefix + vulnerable range, e.g. `go-go.opentelemetry.io/otel/sdk
->= 1.5.0, <= 1.44.0` — strip the `go-`/`npm-` prefix to match Dependabot), `isFixable`, `repo`,
+>= 1.5.0, <= 1.44.0` — strip the ecosystem prefix to match Dependabot), `isFixable`, `repo`,
 `integration`. One CVE can have several rows (one per affected package or path). The snapshot is
 weekly and lags Dependabot — state its `lastUpdated` date.
 
@@ -34,7 +34,7 @@ an argument instead. Filter and sort by SLA:
 
 ```bash
 jq -r --arg repo steampipe '
-  .vulnerabilities | map(select(.repo == $repo))
+  (.vulnerabilities + .nowFixableSnoozedItems) | map(select(.repo == $repo))
   | sort_by(.remediateByDate // "9999") | .[]
   | "\(.status)\t\((.remediateByDate // "none")[:10])\t\(.severity)\t\(.externalId)\t\(.packageName)"
 ' /tmp/vuln-state.json
