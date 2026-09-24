@@ -109,11 +109,11 @@ func (r *RunningDBInstanceInfo) Save() error {
 	// set struct version
 	r.StructVersion = RunningDBStructVersion
 
-	content, err := json.MarshalIndent(r, "", "  ")
+	content, err := json.MarshalIndent(r, "", "  ") //nolint:gosec // G117: this file is where steampipe intentionally persists the running instance's connection password so it can reconnect later; narrowed to 0600 below
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepaths.RunningInfoFilePath(), content, 0644)
+	return os.WriteFile(filepaths.RunningInfoFilePath(), content, 0600)
 }
 
 func (r *RunningDBInstanceInfo) String() string {
@@ -126,7 +126,7 @@ func (r *RunningDBInstanceInfo) String() string {
 	r.Password = "XXXX-XXXX-XXXX"
 
 	jsonEncoder.SetIndent("", "")
-	err := jsonEncoder.Encode(r)
+	err := jsonEncoder.Encode(r) //nolint:gosec // G117: r.Password is overwritten with a redacted placeholder above and restored below, so this encode never marshals the real password
 	if err != nil {
 		log.Printf("[TRACE] Encode failed: %v\n", err)
 	}

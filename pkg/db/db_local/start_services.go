@@ -443,7 +443,7 @@ func updateDatabaseNameInRunningInfo(ctx context.Context, databaseName string) (
 }
 
 func createCmd(ctx context.Context, port int, listenAddresses []string) *exec.Cmd {
-	postgresCmd := exec.Command(
+	postgresCmd := exec.Command( //nolint:gosec // G204: filepaths.GetPostgresBinaryExecutablePath() is steampipe's own installed postgres binary path, not user input
 		filepaths.GetPostgresBinaryExecutablePath(),
 		// by this time, we are sure that the port is free to listen to
 		"-p", fmt.Sprint(port),

@@ -209,7 +209,7 @@ func stopDBService(ctx context.Context, force bool) (StopStatus, error) {
 	}
 
 	// GetStatus has made sure that the process exists
-	process, err := psutils.NewProcess(int32(dbState.Pid))
+	process, err := psutils.NewProcess(int32(dbState.Pid)) //nolint:gosec // G115: dbState.Pid is persisted from an OS process ID, which never exceeds int32 range on any supported platform
 	if err != nil {
 		return ServiceStopFailed, err
 	}

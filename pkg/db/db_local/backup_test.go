@@ -25,7 +25,7 @@ func TestTrimBackups(t *testing.T) {
 
 		fileName := fmt.Sprintf("database-%s-%2d", timeLastYear.Format("2006-01-02-15-04"), i)
 		createFile := filepath.Join(backupDir, fileName)
-		if err := os.WriteFile(filepath.Join(backupDir, fileName), []byte(""), 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(backupDir, fileName), []byte(""), 0600); err != nil {
 			filesCreated = append(filesCreated, createFile)
 		}
 	}

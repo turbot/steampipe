@@ -2,6 +2,7 @@ package db_client
 
 import (
 	"context"
+	"math"
 	"slices"
 	"time"
 
@@ -55,7 +56,7 @@ func (c *DbClient) establishConnectionPool(ctx context.Context, overrides client
 	// TODO BINAEK dig into this and figure out why this is happening.
 	// We need to be sure that it is not an issue with service management
 	config.MinConns = 0
-	config.MaxConns = int32(db_common.MaxDbConnections())
+	config.MaxConns = int32(min(db_common.MaxDbConnections(), math.MaxInt32)) //nolint:gosec // G115: already clamped to math.MaxInt32 above, gosec can't see through the min() call
 	config.MaxConnLifetime = MaxConnLifeTime
 	config.MaxConnIdleTime = MaxConnIdleTime
 	if c.onConnectionCallback != nil {
