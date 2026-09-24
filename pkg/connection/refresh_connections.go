@@ -28,7 +28,9 @@ func RefreshConnections(ctx context.Context, pluginManager pluginManager, forceU
 	}()
 
 	t := time.Now()
-	defer log.Printf("[INFO] refreshConnections completion time (%fs)", time.Since(t).Seconds())
+	defer func() {
+		log.Printf("[INFO] refreshConnections completion time (%fs)", time.Since(t).Seconds())
+	}()
 
 	// first grab the queue lock
 	if !queueLock.TryLock() {

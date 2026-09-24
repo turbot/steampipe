@@ -18,7 +18,7 @@ import (
 
 // LocalDbClient wraps over DbClient
 type LocalDbClient struct {
-	db_client.DbClient
+	*db_client.DbClient
 	notificationListener *db_common.NotificationListener
 	invoker              constants.Invoker
 }
@@ -82,7 +82,7 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_c
 		return nil, err
 	}
 
-	client := &LocalDbClient{DbClient: *dbClient, invoker: invoker}
+	client := &LocalDbClient{DbClient: dbClient, invoker: invoker}
 	log.Printf("[INFO] created local client %p", client)
 
 	if err := client.initNotificationListener(ctx); err != nil {
