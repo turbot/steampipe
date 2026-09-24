@@ -61,7 +61,7 @@ func TestVersionCheckerNetworkFailures(t *testing.T) {
 	t.Run("server_returns_invalid_json", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("invalid json"))
+			_, _ = w.Write([]byte("invalid json"))
 		}))
 		defer server.Close()
 
@@ -202,7 +202,7 @@ func TestVersionCheckerBodyReadFailure(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Length", "1000000") // Claim large body
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("partial")) // Write only partial data
+			_, _ = w.Write([]byte("partial")) // Write only partial data
 			// Connection will be closed by server closing
 		}))
 

@@ -27,6 +27,8 @@ func (h *Highlighter) Highlight(d prompt.Document) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	h.formatter.Format(buffer, h.style, tokens)
+	if err := h.formatter.Format(buffer, h.style, tokens); err != nil {
+		return nil, err
+	}
 	return buffer.Bytes(), nil
 }

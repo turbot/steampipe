@@ -101,7 +101,7 @@ func TestDoExport(t *testing.T) {
 
 	m := NewManager()
 	for _, e := range exportersToRegister {
-		m.Register(e)
+		_ = m.Register(e)
 	}
 	for _, testCase := range exporterTestCases {
 		targets, err := m.resolveTargetsFromArgs([]string{testCase.input}, "dummy_execution_name")
