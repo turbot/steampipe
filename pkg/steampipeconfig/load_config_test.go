@@ -129,6 +129,23 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
+func TestEnsureDefaultConfigFileSamplePermissions(t *testing.T) {
+	configFolder := t.TempDir()
+
+	if err := ensureDefaultConfigFile(configFolder); err != nil {
+		t.Fatalf("ensureDefaultConfigFile failed: %v", err)
+	}
+
+	sampleFile := filepath.Join(configFolder, defaultConfigSampleFileName)
+	info, err := os.Stat(sampleFile)
+	if err != nil {
+		t.Fatalf("failed to stat %s: %v", sampleFile, err)
+	}
+	if perm := info.Mode().Perm(); perm != 0600 {
+		t.Errorf("expected %s to have permissions 0600, got %o", sampleFile, perm)
+	}
+}
+
 // helpers
 func SteampipeConfigEquals(left, right *SteampipeConfig) bool {
 	if left == nil || right == nil {
