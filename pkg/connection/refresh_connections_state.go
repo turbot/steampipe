@@ -84,7 +84,7 @@ func newRefreshConnectionState(ctx context.Context, pluginManager pluginManager,
 	nonSearchPathConnections := steampipeconfig.GlobalConfig.GetNonSearchPathConnections(searchPath)
 	// sort alphabetically
 	slices.Sort(nonSearchPathConnections)
-	connectionOrder := append(searchPath, nonSearchPathConnections...)
+	connectionOrder := slices.Concat(searchPath, nonSearchPathConnections)
 
 	res := &refreshConnectionState{
 		pool:                       pool,
@@ -627,15 +627,13 @@ func (s *refreshConnectionState) executeUpdateForConnections(ctx context.Context
 		// - all other errors are written to the state table
 		if err := s.executeUpdateQuery(ctx, sql, connectionName); err != nil {
 			errChan <- &connectionError{connectionName, err}
-		} else {
+		} else if !haveExemplarSchema && connectionState.CanCloneSchema() {
 			// we can clone this plugin, add to exemplarSchemaMap
 			// (AFTER executing the update query)
-			if !haveExemplarSchema && connectionState.CanCloneSchema() {
-				// Fix #4757: Protect map write with mutex to prevent race condition
-				s.exemplarSchemaMapMut.Lock()
-				s.exemplarSchemaMap[connectionState.Plugin] = connectionName
-				s.exemplarSchemaMapMut.Unlock()
-			}
+			// Fix #4757: Protect map write with mutex to prevent race condition
+			s.exemplarSchemaMapMut.Lock()
+			s.exemplarSchemaMap[connectionState.Plugin] = connectionName
+			s.exemplarSchemaMapMut.Unlock()
 		}
 	}
 }
