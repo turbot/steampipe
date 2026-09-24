@@ -279,7 +279,7 @@ func (c *DbClient) startQuery(ctx context.Context, conn *pgx.Conn, query string,
 			pgtype.TimestamptzOID: pgx.TextFormatCode,
 		})
 		queryArgs = append(queryArgs, args...)
-		rows, err = conn.Query(ctx, query, queryArgs...) //nolint:sqlclosecheck // rows is a named return, closed by the caller (see startQueryWithRetries)
+		rows, err = conn.Query(ctx, query, queryArgs...) //nolint:sqlclosecheck // rows is a named return; on error the caller (startQueryWithRetries) does not close it today - a fix was reverted from this PR, see #5054
 		close(doneChan)
 	}()
 
