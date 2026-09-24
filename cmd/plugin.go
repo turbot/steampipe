@@ -269,7 +269,7 @@ func runPluginInstallCmd(cmd *cobra.Command, args []string) {
 
 	state, err := installationstate.Load()
 	if err != nil {
-		error_helpers.ShowError(ctx, fmt.Errorf("could not load state"))
+		error_helpers.ShowError(ctx, sperr.WrapWithMessage(err, "could not load state"))
 		exitCode = constants.ExitCodePluginLoadingError
 		return
 	}
@@ -355,7 +355,7 @@ func doPluginInstall(ctx context.Context, bar *uiprogress.Bar, pluginName string
 	if pluginAlreadyInstalled {
 		// set the bar to MAX
 		//nolint:golint,errcheck // the error happens if we set this over the max value
-		bar.Set(len(pluginInstallSteps))
+		_ = bar.Set(len(pluginInstallSteps))
 		// let the bar append itself with "Already Installed"
 		bar.AppendFunc(func(b *uiprogress.Bar) string {
 			return helpers.Resize(pconstants.InstallMessagePluginAlreadyInstalled, 20)
@@ -411,7 +411,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		error_helpers.ShowError(ctx, err)
 		fmt.Println()
-		cmd.Help()
+		_ = cmd.Help()
 		fmt.Println()
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return
@@ -428,7 +428,7 @@ func runPluginUpdateCmd(cmd *cobra.Command, args []string) {
 
 	state, err := installationstate.Load()
 	if err != nil {
-		error_helpers.ShowError(ctx, fmt.Errorf("could not load state"))
+		error_helpers.ShowError(ctx, sperr.WrapWithMessage(err, "could not load state"))
 		exitCode = constants.ExitCodePluginLoadingError
 		return
 	}
@@ -557,7 +557,7 @@ func doPluginUpdate(ctx context.Context, bar *uiprogress.Bar, pvr pplugin.Plugin
 			return helpers.Resize(pconstants.InstallMessagePluginLatestAlreadyInstalled, 30)
 		})
 		// set the progress bar to the maximum
-		bar.Set(len(pluginInstallSteps))
+		_ = bar.Set(len(pluginInstallSteps))
 		report = &pplugin.PluginInstallReport{
 			Plugin:         fmt.Sprintf("%s@%s", pvr.CheckResponse.Name, pvr.CheckResponse.Constraint),
 			Skipped:        true,
@@ -818,7 +818,7 @@ func runPluginUninstallCmd(cmd *cobra.Command, args []string) {
 		fmt.Println()
 		error_helpers.ShowError(ctx, fmt.Errorf("you need to provide at least one plugin to uninstall"))
 		fmt.Println()
-		cmd.Help()
+		_ = cmd.Help()
 		fmt.Println()
 		exitCode = constants.ExitCodeInsufficientOrWrongInputs
 		return

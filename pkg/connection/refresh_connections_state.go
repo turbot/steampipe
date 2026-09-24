@@ -651,9 +651,9 @@ func (s *refreshConnectionState) executeUpdateQuery(ctx context.Context, sql, co
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback(ctx)
+			_ = tx.Rollback(ctx)
 		} else {
-			tx.Commit(ctx)
+			_ = tx.Commit(ctx)
 		}
 	}()
 
@@ -791,9 +791,9 @@ func (s *refreshConnectionState) executeCommentQuery(ctx context.Context, sql, c
 	}
 	defer func() {
 		if err != nil {
-			tx.Rollback(ctx)
+			_ = tx.Rollback(ctx)
 		} else {
-			tx.Commit(ctx)
+			_ = tx.Commit(ctx)
 		}
 	}()
 

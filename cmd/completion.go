@@ -117,11 +117,11 @@ func runGenCompletionScriptsCmd(cmd *cobra.Command, args []string) {
 
 	switch completionFor {
 	case "bash":
-		cmd.Root().GenBashCompletionV2(os.Stdout, false)
+		_ = cmd.Root().GenBashCompletionV2(os.Stdout, false)
 	case "zsh":
-		cmd.Root().GenZshCompletionNoDesc(os.Stdout)
+		_ = cmd.Root().GenZshCompletionNoDesc(os.Stdout)
 	case "fish":
-		cmd.Root().GenFishCompletion(os.Stdout, false)
+		_ = cmd.Root().GenFishCompletion(os.Stdout, false)
 	default:
 		completionHelp(cmd, args)
 	}
