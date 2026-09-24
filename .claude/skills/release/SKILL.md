@@ -1,6 +1,6 @@
 ---
 name: release
-description: Cut a steampipe CLI patch release from a v{maj}.{min}.x release branch - optional FDW bump, changelog and release issue, the release workflow, verification and release notes, the merge-back, main and steampipe.io PRs, and the hand-over to the Pipes release.
+description: Cut a steampipe CLI patch release from a v{maj}.{min}.x release branch - release turbot/steampipe-postgres-fdw first when it changed (changelog, tag, draft release, image publish) and bump FdwVersion, then steampipe's own changelog and release issue, the release workflow, verification and release notes, the merge-back, main and steampipe.io PRs, and the hand-over to the Pipes release.
 ---
 
 # Release steampipe
@@ -11,18 +11,45 @@ does not build binaries, publish, or update Homebrew.
 
 Placeholders: `{x.y.z}` is the new version (e.g. `2.4.8`), `{prev}` the previous tag (e.g. `v2.4.7`,
 from `gh release list --repo turbot/steampipe --limit 1`), `{x}-{y}-{z}` and `{xyz}` the same version
-dash-separated (`2-4-8`) and with no separators (`248`).
+dash-separated (`2-4-8`) and with no separators (`248`). `{f.x.y.z}` is the FDW version being released
+(e.g. `2.2.7`), distinct from steampipe's own `{x.y.z}`.
 
 Every PR you open below is opened under your own `gh` auth and needs a teammate's approval before it
 merges. The one exception is the `turbot/homebrew-tap` PR, which the workflow opens and merges itself.
 
 ## 1. FDW first, only if the FDW changed
 
-1. Release `turbot/steampipe-postgres-fdw` (publish the draft release its tag builds), then run its
-   `Publish FDW Image` workflow with that release tag. Steampipe downloads the FDW from
-   `ghcr.io/turbot/steampipe/fdw:<version>`, not the GitHub release, so the image must exist first.
-2. On a branch off `v{maj}.{min}.x`, set `FdwVersion = "<fdw version>"` in `pkg/constants/db.go` and open a
-   PR into `v{maj}.{min}.x`. It can be the same PR as the step 2 changelog entry; it must merge before step 3.
+Skip to step 2 if `turbot/steampipe-postgres-fdw` hasn't changed since the FDW version currently in
+`pkg/constants/db.go`. No workflow tags an FDW release - every step below is manual.
+
+1. On the FDW's own release branch (`v{fmaj}.{fmin}.x`, e.g. `v2.2.x`, reused across patches the same way
+   steampipe's own release branch is), confirm `CHANGELOG.md` has an entry for `{f.x.y.z}` in the existing
+   style (`## v{f.x.y.z} [YYYY-MM-DD]`), added via a PR into that branch.
+2. Tag the branch head and push the tag - this is what triggers the build, nothing else does:
+   ```bash
+   cd ../steampipe-postgres-fdw && git checkout v{fmaj}.{fmin}.x && git pull
+   git tag v{f.x.y.z} && git push origin v{f.x.y.z}
+   ```
+   `Build Draft Release` (`buildimage.yml`, triggered on any `v*` tag push) builds all four platform binaries
+   and opens a **draft** GitHub release named `v{f.x.y.z}`.
+3. Publish the draft: `gh release edit v{f.x.y.z} --repo turbot/steampipe-postgres-fdw --draft=false`.
+4. Dispatch `Publish FDW Image` with that tag:
+   ```bash
+   gh workflow run publish.yml --repo turbot/steampipe-postgres-fdw -f release=v{f.x.y.z}
+   ```
+   It downloads the release's assets and pushes `ghcr.io/turbot/steampipe/fdw:{f.x.y.z}` (and `:latest`,
+   unless `{f.x.y.z}` is an rc). Steampipe pulls the FDW from this image, not the GitHub release, so it must
+   exist before step 2 below.
+5. Verify the image landed: `docker manifest inspect ghcr.io/turbot/steampipe/fdw:{f.x.y.z}` (needs `docker`
+   locally), or `gh api /orgs/turbot/packages/container/steampipe%2Ffdw/versions` if your token has
+   `read:packages`.
+6. Open the merge-back PR, `v{fmaj}.{fmin}.x` into `develop`, titled
+   `Merge branch 'v{fmaj}.{fmin}.x' into develop`. A PR into `main` (`v{fmaj}.{fmin}.x` → `main`, titled
+   `Release steampipe-postgres-fdw v{f.x.y.z}`) catches `main` up when it's fallen behind - it does not
+   follow every patch.
+7. On a branch off `v{maj}.{min}.x`, set `FdwVersion = "{f.x.y.z}"` in `pkg/constants/db.go` and open a
+   PR into `v{maj}.{min}.x`. It can be the same PR as the step 2 changelog entry below; it must merge
+   before step 3.
 
 ## 2. Confirm what is being released
 
