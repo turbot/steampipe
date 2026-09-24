@@ -65,7 +65,7 @@ func ShowErrorWithMessage(ctx context.Context, err error, message string) {
 // drivers and libraries
 func TransformErrorToSteampipe(err error) error {
 	if err == nil {
-		return err
+		return nil
 	}
 	// transform to a context
 	err = HandleCancelError(err)
