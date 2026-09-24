@@ -322,8 +322,6 @@ func (c *InteractiveClient) runInteractivePrompt(ctx context.Context) {
 	// set this to a default
 	c.autocompleteOnEmpty = false
 	c.interactivePrompt.RunCtx(ctx)
-
-	return
 }
 
 func cleanBufferForWSL(s string) (string, bool) {

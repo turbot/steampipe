@@ -166,7 +166,7 @@ func formatQuals(scan *queryresult.ScanMetadataRow) string {
 				// Build the string of array elements
 				valueElements := make([]string, val.Len())
 				for i := 0; i < val.Len(); i++ {
-					valueElements[i] = fmt.Sprintf("%s", formatQualValue(val.Index(i).Interface()))
+					valueElements[i] = formatQualValue(val.Index(i).Interface())
 				}
 				valueStr = fmt.Sprintf("(%s)", strings.Join(valueElements, ", "))
 			} else {
