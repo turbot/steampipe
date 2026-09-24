@@ -51,9 +51,9 @@ func TestConcurrentPerms(t *testing.T) {
 	for {
 		select {
 		case err := <-errchan:
-			fmt.Println("ERROR ", err)
+			fmt.Println("ERROR ", err) //nolint:forbidigo // acceptable
 		case <-doneChan:
-			fmt.Println("DONE!")
+			fmt.Println("DONE!") //nolint:forbidigo // acceptable
 			return
 		}
 	}

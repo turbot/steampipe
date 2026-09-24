@@ -54,11 +54,11 @@ func setTiming(ctx context.Context, input *HandlerInput) error {
 func showTimingFlag() {
 	timing := cmdconfig.Viper().GetString(pconstants.ArgTiming)
 
-	fmt.Printf(`Timing is %s. Available options are: %s`,
+	fmt.Printf(`Timing is %s. Available options are: %s`, //nolint:forbidigo // acceptable
 		pconstants.Bold(timing),
 		pconstants.Bold(strings.Join(maps.Keys(constants.QueryTimingValueLookup), ", ")))
 	// add an empty line here so that the rendering buffer can start from the next line
-	fmt.Println()
+	fmt.Println() //nolint:forbidigo // acceptable
 
 	return
 }

@@ -22,7 +22,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	if initResult.Error != nil {
 		c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 		c.promptResult.PromptErr = initResult.Error
 		return
 	}
@@ -30,7 +30,7 @@ func (c *InteractiveClient) handleInitResult(ctx context.Context, initResult *db
 	if error_helpers.IsContextCanceled(ctx) {
 		c.ClosePrompt(AfterPromptCloseExit)
 		// add newline to ensure error is not printed at end of current prompt line
-		fmt.Println()
+		fmt.Println() //nolint:forbidigo // acceptable
 		error_helpers.ShowError(ctx, initResult.Error)
 		log.Printf("[TRACE] prompt context has been cancelled - not handling init result")
 		return

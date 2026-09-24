@@ -24,11 +24,11 @@ func doHelp(_ context.Context, _ *HandlerInput) error {
 	}
 	advanceCmdRows := getMetaQueryHelpRows(advanceCmds, true)
 	// print out
-	fmt.Printf("Welcome to Steampipe shell.\n\nTo start, simply enter your SQL query at the prompt:\n\n  select * from aws_iam_user\n\nCommon commands:\n\n%s\n\nAdvanced commands:\n\n%s\n\nDocumentation available at %s\n",
+	fmt.Printf("Welcome to Steampipe shell.\n\nTo start, simply enter your SQL query at the prompt:\n\n  select * from aws_iam_user\n\nCommon commands:\n\n%s\n\nAdvanced commands:\n\n%s\n\nDocumentation available at %s\n", //nolint:forbidigo // acceptable
 		buildTable(commonCmdRows, true),
 		buildTable(advanceCmdRows, true),
 		pconstants.Bold("https://steampipe.io/docs"))
-	fmt.Println()
+	fmt.Println() //nolint:forbidigo // acceptable
 	return nil
 }
 
