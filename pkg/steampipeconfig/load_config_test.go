@@ -2,6 +2,7 @@ package steampipeconfig
 
 import (
 	"context"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -12,7 +13,6 @@ import (
 	"github.com/turbot/pipe-fittings/v2/hclhelpers"
 	"github.com/turbot/pipe-fittings/v2/modconfig"
 	"github.com/turbot/pipe-fittings/v2/utils"
-	"golang.org/x/exp/maps"
 )
 
 // TODO KAI add plugin block tests
