@@ -183,7 +183,8 @@ func startDatabaseInLocation(ctx context.Context, location string) (*pgRunningIn
 
 	dbName, err := getDatabaseName(ctx, port)
 	if err != nil {
-		runConfig.stop(ctx)
+		// best-effort cleanup - we are already returning the getDatabaseName error
+		_ = runConfig.stop(ctx)
 		return nil, err
 	}
 

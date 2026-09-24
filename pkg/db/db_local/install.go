@@ -244,7 +244,9 @@ func installFDW(ctx context.Context, firstSetup bool) (string, error) {
 		defer func() {
 			if !firstSetup {
 				// update the signature
-				updateDownloadedBinarySignature()
+				if err := updateDownloadedBinarySignature(); err != nil {
+					log.Printf("[WARN] failed to update downloaded binary signature: %s", err)
+				}
 			}
 		}()
 	}
@@ -300,7 +302,9 @@ func runInstall(ctx context.Context, oldDbName *string) error {
 	defer func() {
 		statushooks.SetStatus(ctx, "Completing configuration")
 		client.Close(ctx)
-		doThreeStepPostgresExit(ctx, process)
+		if err := doThreeStepPostgresExit(ctx, process); err != nil {
+			log.Printf("[WARN] failed to stop postgres process started for install: %s", err)
+		}
 	}()
 
 	statushooks.SetStatus(ctx, "Generating database passwords…")
