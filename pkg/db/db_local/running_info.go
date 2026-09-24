@@ -73,7 +73,7 @@ func getListenAddresses(listenAddresses []string) []string {
 		if err != nil {
 			return nil
 		}
-		addresses = append(loopAddrs, publicAddrs...)
+		addresses = slices.Concat(loopAddrs, publicAddrs)
 	}
 
 	// now add back the listenAddresses to address arguments where the interface addresses were sent

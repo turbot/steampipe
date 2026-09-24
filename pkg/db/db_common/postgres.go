@@ -9,7 +9,7 @@ import (
 // (table names, column names, schema names)
 func PgEscapeName(name string) string {
 	// first escape all quotes by prefixing an addition quote
-	name = strings.Replace(name, `"`, `""`, -1)
+	name = strings.ReplaceAll(name, `"`, `""`)
 	// now wrap the whole string in quotes
 	return fmt.Sprintf(`"%s"`, name)
 }
