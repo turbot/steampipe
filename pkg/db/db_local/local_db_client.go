@@ -17,7 +17,7 @@ import (
 
 // LocalDbClient wraps over DbClient
 type LocalDbClient struct {
-	db_client.DbClient //nolint:govet // copylocks: reverted from an embedded pointer (rule 1: no practical regression test - the original *DbClient is never retained after construction, so there's no currently-triggerable divergence), see #5053
+	db_client.DbClient
 	notificationListener *db_common.NotificationListener
 	invoker              constants.Invoker
 }
@@ -81,7 +81,7 @@ func newLocalClient(ctx context.Context, invoker constants.Invoker, opts ...db_c
 		return nil, err
 	}
 
-	client := &LocalDbClient{DbClient: *dbClient, invoker: invoker}
+	client := &LocalDbClient{DbClient: *dbClient, invoker: invoker} //nolint:govet // copylocks: reverted from an embedded pointer (rule 1: no practical regression test - the original *DbClient is never retained after construction, so there's no currently-triggerable divergence), see #5053
 	log.Printf("[INFO] created local client %p", client)
 
 	if err := client.initNotificationListener(ctx); err != nil {
